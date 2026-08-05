@@ -15,7 +15,6 @@ import type {
   MusicEntryDto,
   MusicItemDto,
   MusicSource,
-  MusicStatsDto,
   PagedResult,
 } from "@tracklore/shared";
 import { ActivityType, ReviewTargetType } from "@tracklore/shared";
@@ -27,7 +26,6 @@ import { ActivityService } from "../social/activity.service";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
 import { MusicItemService } from "./music-item.service";
-import { aggregateMusicStats } from "./music-stats.util";
 
 // Entries always need the album + its external IDs (canonical sourceId).
 const ENTRY_INCLUDE = {
@@ -320,27 +318,6 @@ export class MusicLibraryService {
   async deleteEntry(userId: string, entryId: string): Promise<void> {
     await this.assertEntryOwnership(userId, entryId);
     await this.prisma.musicEntry.delete({ where: { id: entryId } });
-  }
-
-  /** Aggregated stats for the user's music library. */
-  async getStats(userId: string): Promise<MusicStatsDto> {
-    const entries = await this.prisma.musicEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        musicItem: { select: { genres: true, artists: true } },
-      },
-    });
-
-    return aggregateMusicStats(
-      entries.map((e) => ({
-        status: e.status,
-        favorite: e.favorite,
-        genres: e.musicItem.genres,
-        artists: e.musicItem.artists,
-      })),
-    );
   }
 
   /**

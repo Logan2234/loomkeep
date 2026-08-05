@@ -9,7 +9,7 @@
     getAdminBackupFiles,
     getAdminJobs,
     getAdminServices,
-    getAdminStats,
+    getAdminOverview,
     getAdminVersion,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
@@ -17,13 +17,13 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import type {
     AdminBackupFileDto,
-    AdminStatsDto,
+    AdminOverviewDto,
     JobDto,
     ServiceStatusDto,
   } from "@tracklore/shared";
 
   let version = $state<string | null>(null);
-  let stats = $state<AdminStatsDto | null>(null);
+  let overview = $state<AdminOverviewDto | null>(null);
   let services = $state<ServiceStatusDto[] | null>(null);
   let jobs = $state<JobDto[] | null>(null);
   let backups = $state<AdminBackupFileDto[] | null>(null);
@@ -33,8 +33,8 @@
       .then((v) => (version = v.version))
       .catch(() => {});
     void adminReports.refresh();
-    getAdminStats()
-      .then((s) => (stats = s))
+    getAdminOverview()
+      .then((o) => (overview = o))
       .catch(() => {});
     getAdminServices()
       .then((r) => (services = r.services))
@@ -51,10 +51,8 @@
   // failed fetch just leaves that card/metric blank rather than breaking
   // the page) ----
 
-  const usersTotal = $derived(stats?.accounts.total ?? null);
-  const usersDeltaWeek = $derived(
-    stats ? (stats.trends.newAccounts.at(-1)?.count ?? 0) : null,
-  );
+  const usersTotal = $derived(overview?.accounts ?? null);
+  const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);
 
   /** A service counts as degraded once it's live/required and either unconfigured or unreachable. */
   function isDegraded(s: ServiceStatusDto): boolean {
@@ -76,16 +74,7 @@
     return starts.length > 0 ? starts.reduce((a, b) => (a > b ? a : b)) : null;
   });
 
-  const cacheTotal = $derived.by(() => {
-    if (!stats) return null;
-    const c = stats.cache;
-    return (
-      c.mediaByType.reduce((sum, t) => sum + t.count, 0) +
-      c.totalGames +
-      c.totalBooks +
-      c.totalMusic
-    );
-  });
+  const cacheTotal = $derived(overview?.cachedItems ?? null);
 
   const relTime = new Intl.RelativeTimeFormat("fr-FR", { numeric: "auto" });
   function relative(iso: string): string {
@@ -103,8 +92,8 @@
     return {
       "/admin/users": usersTotal !== null ? nf.format(usersTotal) : undefined,
       "/admin/communications":
-        stats !== null
-          ? `${nf.format(stats.accounts.withPush)} abonné${stats.accounts.withPush > 1 ? "s" : ""} push`
+        overview !== null
+          ? `${nf.format(overview.accountsWithPush)} abonné${overview.accountsWithPush > 1 ? "s" : ""} push`
           : undefined,
       "/admin/services": services
         ? `${servicesLive.length - servicesDegraded}/${servicesLive.length}`

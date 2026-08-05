@@ -1,5 +1,4 @@
 import type { MusicOwnershipStatus, MusicSource, MusicStatus } from "../enums";
-import type { GenreCountDto } from "./library";
 
 /** An album as returned by a live catalogue search (not persisted). */
 export interface MusicSummaryDto {
@@ -127,25 +126,4 @@ export interface UpdateMusicEntryDto {
  */
 export interface MusicDetailDto extends MusicDetailsDto {
   entry: MusicEntryDto | null;
-}
-
-/** How many of the user's albums an artist has. */
-export interface MusicArtistCountDto {
-  artist: string;
-  count: number;
-}
-
-/**
- * Aggregated stats for the user's music library: library counts + the status
- * funnel + genre and artist breakdowns.
- */
-export interface MusicStatsDto {
-  totalAlbums: number;
-  toListen: number;
-  listened: number;
-  favorites: number;
-  /** Most-represented artists across the library, descending (top few). */
-  topArtists: MusicArtistCountDto[];
-  /** Most-common genres across the library, descending (top few). */
-  topGenres: GenreCountDto[];
 }

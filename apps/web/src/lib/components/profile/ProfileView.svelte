@@ -23,6 +23,8 @@
   import Modal from "$lib/components/Modal.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
+  import StreakBadge from "$lib/components/StreakBadge.svelte";
+  import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import { appConfig } from "$lib/config.svelte";
   import type {
     ListDto,
@@ -115,6 +117,28 @@
           year: "numeric",
         }).format(new Date(profile.createdAt))
       : "",
+  );
+
+  const shortDate = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  let firstActivity = $derived(
+    profile?.activityStats.firstActivityAt
+      ? shortDate.format(new Date(profile.activityStats.firstActivityAt))
+      : null,
+  );
+  let watchDays = $derived(
+    profile ? Math.round(profile.activityStats.totalMinutes / 1440) : 0,
+  );
+  // The heatmap teaser spans the last 90 days — count the days with any
+  // activity in it, rather than the mockup's "cette année" wording (which
+  // assumed a full-year window this teaser deliberately isn't).
+  let activeRecentDays = $derived(
+    profile
+      ? profile.activityStats.heatmap.filter((d) => d.count > 0).length
+      : 0,
   );
 
   // The primary action label reflects the relationship + the target's access.
@@ -295,11 +319,15 @@
           <Avatar seed={profile.username} size={80} />
         </button>
         <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h1
               class="font-display truncate text-2xl font-extrabold md:text-3xl">
               {profile.displayName}
             </h1>
+            <StreakBadge
+              days={profile.activityStats.visible
+                ? profile.activityStats.streakDays
+                : undefined} />
             {#if rel?.isFriend && !rel.isSelf}
               <span class="chip chip-on !py-1 text-xs">Amis</span>
             {:else if rel?.followsYou && !rel.isSelf}
@@ -330,7 +358,7 @@
 
           <!-- Credits: followers / following as quiet mono figures, clickable
                to list who they are. -->
-          <div class="mt-4 flex gap-6">
+          <div class="mt-4 flex flex-wrap gap-6">
             <button
               type="button"
               class="hover:text-fg"
@@ -398,7 +426,12 @@
     </section>
 
     <!-- Per-domain library, gated by the viewer's visibility. -->
-    <section class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <p
+      class="text-dim mt-8 mb-3 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] uppercase">
+      Bibliothèque
+      <span class="border-border flex-1 border-t" aria-hidden="true"></span>
+    </p>
+    <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {#each profile.domains as d (d.domain)}
         {@const href = rel?.isSelf ? DOMAIN_HREF[d.domain] : undefined}
         <svelte:element
@@ -415,12 +448,120 @@
             <p class="text-dim text-xs">
               {d.count > 1 ? "titres" : "titre"}
             </p>
+            {#if d.favorites > 0}
+              <p
+                class="text-accent mt-1.5 flex items-center gap-1 text-xs font-bold">
+                ♥ {d.favorites} favori{d.favorites > 1 ? "s" : ""}
+              </p>
+            {/if}
           {:else}
             <p class="text-dim mt-1 text-sm">Privé</p>
           {/if}
         </svelte:element>
       {/each}
     </section>
+
+    <!-- Cross-domain video figures + social counters, gated the same way as
+         the streak above (activityStats: MEDIA Activité facet; social counts:
+         each type's own visibility rule). -->
+    {#if (profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null || profile.activityStats.topGenres.length > 0)) || profile.reviewsCount > 0 || profile.commentsCount > 0 || profile.listsCount > 0}
+      <p
+        class="text-dim mt-8 mb-3 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] uppercase">
+        En chiffres
+        <span class="border-border flex-1 border-t" aria-hidden="true"></span>
+      </p>
+
+      {#if profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null)}
+        <div
+          class="border-border flex flex-wrap overflow-hidden rounded-xl border">
+          {#if watchDays > 0}
+            <div
+              class="border-border min-w-[140px] flex-1 border-r border-b p-3.5">
+              <p class="font-display text-xl font-extrabold tracking-tight">
+                {watchDays}<span class="text-dim text-xs font-bold"> j</span>
+              </p>
+              <p class="text-dim mt-0.5 text-xs">Temps cumulé</p>
+            </div>
+          {/if}
+          {#if profile.activityStats.mostActiveYear !== null}
+            <div class="min-w-[140px] flex-1 border-b p-3.5">
+              <p class="font-display text-xl font-extrabold tracking-tight">
+                {profile.activityStats.mostActiveYear}
+              </p>
+              <p class="text-dim mt-0.5 text-xs">Année la plus active</p>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if profile.activityStats.topGenres.length > 0}
+        <div class="mt-2.5 flex flex-wrap gap-1.5">
+          {#each profile.activityStats.topGenres as g (g.label)}
+            <span
+              class="bg-surface-2 border-border rounded-full border px-2.5 py-1 text-xs">
+              {g.label}<b class="timecode ml-1 font-normal">{g.count}</b>
+            </span>
+          {/each}
+        </div>
+      {/if}
+
+      {#if profile.reviewsCount > 0 || profile.commentsCount > 0 || profile.listsCount > 0}
+        <div
+          class="border-border mt-3 flex flex-wrap gap-5 border-t pt-3 text-sm">
+          {#if profile.reviewsCount > 0}
+            <div>
+              <span class="timecode text-fg font-bold"
+                >{profile.reviewsCount}</span>
+              <span class="text-dim ml-1 text-xs"
+                >{profile.reviewsCount > 1 ? "critiques" : "critique"}</span>
+            </div>
+          {/if}
+          {#if profile.commentsCount > 0}
+            <div>
+              <span class="timecode text-fg font-bold"
+                >{profile.commentsCount}</span>
+              <span class="text-dim ml-1 text-xs">commentaires</span>
+            </div>
+          {/if}
+          {#if profile.listsCount > 0}
+            <div>
+              <span class="timecode text-fg font-bold"
+                >{profile.listsCount}</span>
+              <span class="text-dim ml-1 text-xs"
+                >{profile.listsCount > 1 ? "listes" : "liste"}</span>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    {/if}
+
+    <!-- Mini activity heatmap teaser (video-only) — the card itself isn't a
+         link, only the "voir tout" line is, matching the mockup. -->
+    {#if profile.activityStats.visible && profile.activityStats.heatmap.some((d) => d.count > 0)}
+      <p
+        class="text-dim mt-8 mb-3 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] uppercase">
+        Activité
+        <span class="border-border flex-1 border-t" aria-hidden="true"></span>
+      </p>
+      <div class="card flex flex-wrap items-center gap-3.5 p-4">
+        <CalendarHeatmap
+          days={profile.activityStats.heatmap}
+          legend={false}
+          compact />
+        <div class="text-sm">
+          <p>
+            Actif <b class="font-bold">{activeRecentDays} jours</b> ces 3
+            derniers mois{#if firstActivity}
+              · première trace le {firstActivity}{/if}
+          </p>
+          <a
+            href="/stats"
+            class="text-accent mt-0.5 inline-block text-xs font-bold hover:underline">
+            Voir toute l’activité dans les statistiques →
+          </a>
+        </div>
+      </div>
+    {/if}
 
     {#if appConfig.socialEnabled && listTiles.length > 0}
       <section class="mt-10">

@@ -20,6 +20,7 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
+import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
 import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
 import { extractMentions } from "./mention.util";
@@ -96,14 +97,17 @@ export class CommentService {
       : [];
     const visibleReplies = await this.filterBlocked(viewerId, replyRows);
 
-    const allIds = [...visible, ...visibleReplies].map((c) => c.id);
-    const [reactionMap, myReactionMap] = await this.loadReactions(
-      viewerId,
-      allIds,
-    );
+    const allComments = [...visible, ...visibleReplies];
+    const allIds = allComments.map((c) => c.id);
+    const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
+      this.loadReactions(viewerId, allIds),
+      fetchStreaksByUser(this.prisma, [
+        ...new Set(allComments.map((c) => c.author.id)),
+      ]),
+    ]);
 
     const toDtoWithMask = async (row: CommentRow): Promise<CommentDto> =>
-      this.toDto(row, reactionMap, myReactionMap, viewerId);
+      this.toDto(row, reactionMap, myReactionMap, viewerId, streakMap);
 
     const repliesByParent = new Map<string, CommentRow[]>();
 
@@ -214,10 +218,17 @@ export class CommentService {
 
     await this.notifyOnCreate(row, parent);
 
-    const [reactionMap, myReactionMap] = await this.loadReactions(authorId, [
-      row.id,
+    const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
+      this.loadReactions(authorId, [row.id]),
+      fetchStreaksByUser(this.prisma, [authorId]),
     ]);
-    const dto = await this.toDto(row, reactionMap, myReactionMap, authorId);
+    const dto = await this.toDto(
+      row,
+      reactionMap,
+      myReactionMap,
+      authorId,
+      streakMap,
+    );
     dto.replies = [];
     return dto;
   }
@@ -240,10 +251,17 @@ export class CommentService {
       include: { author: { select: AUTHOR_SELECT } },
     });
 
-    const [reactionMap, myReactionMap] = await this.loadReactions(authorId, [
-      row.id,
+    const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
+      this.loadReactions(authorId, [row.id]),
+      fetchStreaksByUser(this.prisma, [authorId]),
     ]);
-    const dto = await this.toDto(row, reactionMap, myReactionMap, authorId);
+    const dto = await this.toDto(
+      row,
+      reactionMap,
+      myReactionMap,
+      authorId,
+      streakMap,
+    );
     dto.replies = [];
     return dto;
   }
@@ -363,6 +381,7 @@ export class CommentService {
     reactionMap: Map<string, CommentReactionSummaryDto[]>,
     myReactionMap: Map<string, CommentEmote>,
     viewerId: string,
+    streakMap: Map<string, number>,
   ): Promise<CommentDto> {
     const masked = row.deletedAt
       ? false
@@ -386,11 +405,9 @@ export class CommentService {
       masked,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
-      author: anonymizeAuthor(
-        row.author,
-        viewerId,
-        row.targetType,
-        row.targetId,
+      author: withStreakDays(
+        anonymizeAuthor(row.author, viewerId, row.targetType, row.targetId),
+        streakMap,
       ),
       reactions: reactionMap.get(row.id) ?? [],
       myReaction: myReactionMap.get(row.id) ?? null,

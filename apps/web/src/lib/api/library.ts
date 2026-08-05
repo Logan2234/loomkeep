@@ -4,7 +4,6 @@ import type {
   LibraryEntryDto,
   MediaType,
   PagedResult,
-  StatsDto,
   UpsertLibraryEntryDto,
 } from "@tracklore/shared";
 import { request } from "./core";
@@ -91,8 +90,4 @@ export function unwatchEpisode(episodeId: string): Promise<void> {
 
 export function getCalendar(): Promise<CalendarEntryDto[]> {
   return request("/library/calendar");
-}
-
-export function getStats(): Promise<StatsDto> {
-  return request("/library/stats");
 }

@@ -120,31 +120,3 @@ export interface CalendarEntryDto {
   /** ISO air date (always in the future for the calendar feed). */
   airDate: string;
 }
-
-/** Watch time for one media type (used for the "time split" breakdown). */
-export interface TypeHoursDto {
-  type: MediaType;
-  hours: number;
-}
-
-/** How often a genre appears across watched titles (weighted by viewings). */
-export interface GenreCountDto {
-  genre: string;
-  count: number;
-}
-
-/** Aggregated viewing statistics for the current user. */
-export interface StatsDto {
-  /** Rounded total hours watched (episodes hors specials + seen movies). */
-  hoursWatched: number;
-  /** Total episode viewings, rewatches included, specials excluded. */
-  episodesWatched: number;
-  /** Series/anime library entries marked COMPLETED. */
-  seriesCompleted: number;
-  /** Movie library entries marked COMPLETED (seen). */
-  moviesWatched: number;
-  /** Watch time split by media type, descending. */
-  timeByType: TypeHoursDto[];
-  /** Most-watched genres, descending (top few). */
-  topGenres: GenreCountDto[];
-}

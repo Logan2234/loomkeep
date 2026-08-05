@@ -49,6 +49,7 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
       groupBy: jest.fn().mockResolvedValue([]),
       findMany: jest.fn().mockResolvedValue([]),
     },
+    episodeWatch: { findMany: jest.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const visibility = {
     getRelation: jest.fn((_v: string, target: { id: string }) =>
@@ -156,6 +157,7 @@ function makeForWrite(
         .fn()
         .mockResolvedValue({ defaultReviewVisibility: "FRIENDS" }),
     },
+    episodeWatch: { findMany: jest.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const activity = { emit: jest.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;

@@ -7,23 +7,20 @@ import {
   HttpStatus,
   Param,
   Post,
-  Query,
 } from "@nestjs/common";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
   AdminBackupFileContentDto,
   AdminBackupFileDto,
-  AdminStatsDto,
-  AdminTrendsDto,
+  AdminOverviewDto,
   AdminVersionDto,
   SchemaGraphResponseDto,
   ServiceStatusResponseDto,
-  TrendPeriod,
 } from "@tracklore/shared";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminService } from "./admin.service";
-import { AdminStatsService } from "./admin-stats.service";
+import { AdminOverviewService } from "./admin-overview.service";
 import { BackupService } from "./backup.service";
 import { RestoreBackupDto } from "./dto/restore-backup.dto";
 
@@ -31,13 +28,13 @@ import { RestoreBackupDto } from "./dto/restore-backup.dto";
 // (WORKDIR) — same trick as admin.service.ts's DOCS_DIR.
 const ROOT_PACKAGE_JSON = join(process.cwd(), "..", "..", "package.json");
 
-/** Instance-wide system info: version, backup, dependency health, schema, stats. */
+/** Instance-wide system info: version, backup, dependency health, schema, overview. */
 @AdminOnly()
 @Controller("admin")
 export class AdminSystemController {
   constructor(
     private readonly admin: AdminService,
-    private readonly adminStats: AdminStatsService,
+    private readonly overview: AdminOverviewService,
     private readonly backup: BackupService,
   ) {}
 
@@ -89,19 +86,13 @@ export class AdminSystemController {
     return this.admin.getSchemaGraphs();
   }
 
-  /** Instance-wide dashboard: cross-account aggregates, distinct from the per-user /stats page. */
-  @Get("stats")
-  getStats(): Promise<AdminStatsDto> {
-    return this.adminStats.getStats();
-  }
-
-  /** Trend series at a chosen granularity (day/week/month/year). Unknown periods fall back to week. */
-  @Get("stats/trends")
-  getTrends(@Query("period") period?: string): Promise<AdminTrendsDto> {
-    const valid: TrendPeriod[] = ["day", "week", "month", "year"];
-    const resolved = valid.includes(period as TrendPeriod)
-      ? (period as TrendPeriod)
-      : "week";
-    return this.adminStats.getTrends(resolved);
+  /**
+   * The few counters the admin dashboard strip and /admin/communications read.
+   * Instance *statistics* live on /admin/stats (AdminStatsController), section
+   * by section — this is deliberately not a statistics endpoint.
+   */
+  @Get("overview")
+  getOverview(): Promise<AdminOverviewDto> {
+    return this.overview.getOverview();
   }
 }

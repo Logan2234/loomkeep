@@ -8,6 +8,7 @@
     meta,
     desc,
     activeClass,
+    dot,
     onSelect,
   }: {
     statuses: T[];
@@ -16,6 +17,9 @@
     meta: Record<T, { label: string }>;
     desc: Record<T, string>;
     activeClass: Record<T, string>;
+    // Optional per-value swatch color (CSS color), e.g. a domain's stat hue.
+    // Absent by default — existing status pickers render no dot.
+    dot?: Record<T, string>;
     onSelect: (status: T) => void;
   } = $props();
 </script>
@@ -31,11 +35,17 @@
       aria-pressed={current === status}
       {disabled}
       title={desc[status]}
-      class="rounded-lg py-2 text-xs font-bold transition-colors disabled:opacity-50 {current ===
+      class="inline-flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-colors disabled:cursor-default disabled:opacity-40 {current ===
       status
         ? activeClass[status]
         : 'text-dim hover:text-fg'}"
       onclick={() => onSelect(status)}>
+      {#if dot?.[status]}
+        <span
+          class="h-2 w-2 shrink-0 rounded-full"
+          style="background:{dot[status]}"
+          aria-hidden="true"></span>
+      {/if}
       {meta[status].label}
     </button>
   {/each}

@@ -34,6 +34,7 @@
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
+  import StreakBadge from "./StreakBadge.svelte";
 
   let {
     targetType,
@@ -378,6 +379,7 @@
                 class="truncate text-sm font-semibold hover:underline">
                 {c.author.displayName}
               </a>
+              <StreakBadge days={c.author.streakDays} />
             {/if}
             <RelativeTime iso={c.createdAt} class="timecode text-xs" />
             {#if c.edited}

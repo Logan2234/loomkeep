@@ -10,6 +10,7 @@
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
+  import StreakBadge from "./StreakBadge.svelte";
   import type {
     ReviewDto,
     ReviewTargetType,
@@ -211,8 +212,10 @@
                   <Avatar seed={review.author.username} size={32} />
                 </a>
                 <a href="/u/{review.author.username}" class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-semibold hover:underline">
+                  <p
+                    class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
                     {review.author.displayName}
+                    <StreakBadge days={review.author.streakDays} />
                   </p>
                   <p class="timecode truncate text-xs">
                     @{review.author.username}

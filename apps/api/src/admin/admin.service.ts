@@ -11,6 +11,7 @@ import type {
 } from "@tracklore/shared";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import type { ProviderQuotaSpec } from "./admin-system-stats.util";
 
 // docs/ is gitignored and regenerated locally (`prisma generate` for the ERD,
 // `pnpm --filter @tracklore/api run graph` for the module graph). process.cwd()
@@ -257,6 +258,23 @@ export class AdminService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Label + documented daily quota of every live provider, keyed by the string
+   * `QuotaTrackerService.record()` writes. Exposed so the /admin/stats
+   * "Système" section can name and rate its call counters without redeclaring
+   * the quotas that {@link specs} already holds.
+   */
+  getProviderQuotaSpecs(): ProviderQuotaSpec[] {
+    return this.specs
+      .filter((spec) => !spec.comingSoon)
+      .map((spec) => ({
+        key: spec.key,
+        label: spec.label,
+        dailyLimit:
+          spec.quotaLimit?.window === "day" ? spec.quotaLimit.max : null,
+      }));
   }
 
   async getServicesStatus(): Promise<ServiceStatusResponseDto> {

@@ -1,6 +1,5 @@
 import type { BookOwnershipStatus, BookSource, BookStatus } from "../enums";
 import type { RatingDto } from "./catalog";
-import type { GenreCountDto } from "./library";
 
 /** A book as returned by a live catalogue search (not persisted). */
 export interface BookSummaryDto {
@@ -117,27 +116,4 @@ export interface UpdateBookEntryDto {
  */
 export interface BookDetailDto extends BookDetailsDto {
   entry: BookEntryDto | null;
-}
-
-/** How many of the user's books an author wrote. */
-export interface BookAuthorCountDto {
-  author: string;
-  count: number;
-}
-
-/**
- * Aggregated stats for the user's book library: library counts + the status
- * funnel + genre and author breakdowns.
- */
-export interface BookStatsDto {
-  totalBooks: number;
-  toRead: number;
-  reading: number;
-  read: number;
-  dropped: number;
-  favorites: number;
-  /** Most-read authors across the library, descending (top few). */
-  topAuthors: BookAuthorCountDto[];
-  /** Most-common genres across the library, descending (top few). */
-  topGenres: GenreCountDto[];
 }

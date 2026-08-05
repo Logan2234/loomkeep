@@ -21,6 +21,7 @@ import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { computeIsFriend } from "../social/visibility.util";
 import { VisibilityService } from "../social/visibility.service";
+import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
 
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
 const DOMAIN_BY_TARGET: Record<string, Domain> = {
@@ -504,12 +505,17 @@ export class ReviewService {
       include: { user: { select: AUTHOR_SELECT } },
     });
 
-    const voteMap = await this.voteInfoBatch(
-      rows.map((r) => r.id),
-      viewerId,
-    );
+    const [voteMap, streakMap] = await Promise.all([
+      this.voteInfoBatch(
+        rows.map((r) => r.id),
+        viewerId,
+      ),
+      fetchStreaksByUser(this.prisma, [...new Set(rows.map((r) => r.user.id))]),
+    ]);
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };
+    const withStreak = (author: UserSummaryDto): UserSummaryDto =>
+      withStreakDays(author, streakMap);
 
     const visible: ReviewDto[] = [];
 
@@ -517,7 +523,7 @@ export class ReviewService {
       const author = row.user;
 
       if (author.id === viewerId) {
-        visible.push(this.toDto(row, author, votesFor(row.id)));
+        visible.push(this.toDto(row, withStreak(author), votesFor(row.id)));
         continue;
       }
 
@@ -538,7 +544,7 @@ export class ReviewService {
         visible.push(
           this.toDto(
             row,
-            anonymizeAuthor(author, viewerId, targetType, targetId),
+            withStreak(anonymizeAuthor(author, viewerId, targetType, targetId)),
             votesFor(row.id),
           ),
         );
@@ -667,9 +673,13 @@ export class ReviewService {
   }
 
   private async author(userId: string): Promise<UserSummaryDto> {
-    return this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: AUTHOR_SELECT,
-    }) as Promise<UserSummaryDto>;
+    const [user, streaks] = await Promise.all([
+      this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: AUTHOR_SELECT,
+      }),
+      fetchStreaksByUser(this.prisma, [userId]),
+    ]);
+    return { ...user, streakDays: streaks.get(userId) } as UserSummaryDto;
   }
 }

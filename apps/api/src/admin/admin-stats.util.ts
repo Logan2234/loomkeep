@@ -10,7 +10,8 @@ export const TREND_BUCKETS: Record<TrendPeriod, number> = {
   year: 5,
 };
 
-function utcMidnight(d: Date): Date {
+/** Start of `d`'s UTC day — the boundary every daily bucket/counter uses. */
+export function startOfUtcDay(d: Date): Date {
   return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
   );
@@ -27,7 +28,7 @@ export function trendBucketStarts(period: TrendPeriod, now: Date): Date[] {
 
   if (period === "day" || period === "week") {
     const span = period === "day" ? DAY_MS : 7 * DAY_MS;
-    const base = utcMidnight(now).getTime();
+    const base = startOfUtcDay(now).getTime();
     for (let i = n - 1; i >= 0; i--) starts.push(new Date(base - i * span));
   } else if (period === "month") {
     const y = now.getUTCFullYear();

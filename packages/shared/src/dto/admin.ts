@@ -1,4 +1,4 @@
-import type { Domain, MediaType, Role, SecurityEventType } from "../enums";
+import type { Domain, Role, SecurityEventType } from "../enums";
 
 /** Which app area a dependency powers, for grouping in the admin services page. */
 export type ServiceArea =
@@ -188,66 +188,23 @@ export interface TrendPointDto {
   count: number;
 }
 
-/** The four trend series shown on the admin stats page, all sharing one period. */
-export interface AdminTrendsSeriesDto {
-  /** Cumulative MediaItem+GameItem+BookItem+MusicItem total, bucket by bucket. */
-  catalogGrowth: TrendPointDto[];
-  /** EpisodeWatch rows created per bucket, across every account. */
-  watchActivity: TrendPointDto[];
-  /** Accounts created per bucket. */
-  newAccounts: TrendPointDto[];
-  /** Notifications created per bucket, across every account. */
-  notifications: TrendPointDto[];
-}
-
-/** Trend series for one chosen period — the re-queryable part of the stats page. */
-export interface AdminTrendsDto {
-  period: TrendPeriod;
-  /** When the series were computed (ISO 8601). */
-  generatedAt: string;
-  trends: AdminTrendsSeriesDto;
-}
-
-export interface AdminAccountsStatsDto {
-  total: number;
-  /** How many accounts keep each domain enabled. */
-  byDomain: { domain: Domain; count: number }[];
-  /** Accounts with at least one active push subscription. */
-  withPush: number;
-}
-
-export interface AdminCacheStatsDto {
-  mediaByType: { type: MediaType; count: number }[];
-  totalGames: number;
-  totalBooks: number;
-  totalMusic: number;
-  totalSeasons: number;
-  totalEpisodes: number;
-  /** Tracked media past the 24h refresh TTL — a freshness proxy, not a full browser. */
-  staleMediaCount: number;
-}
-
-export interface AdminActivityStatsDto {
-  totalLibraryEntries: number;
-  totalGameEntries: number;
-  totalBookEntries: number;
-  totalMusicEntries: number;
-  totalEpisodeWatches: number;
-  totalNotifications: number;
-  totalPushDevices: number;
-}
-
-/** Instance-wide dashboard: cross-account aggregates, distinct from the per-user /stats page. */
-export interface AdminStatsDto {
-  accounts: AdminAccountsStatsDto;
-  cache: AdminCacheStatsDto;
-  activity: AdminActivityStatsDto;
-  /** Current on-disk size of every app table, in bytes (live snapshot, not tracked over time). */
-  databaseBytes: number;
-  /** When the aggregates were computed (ISO 8601). */
-  generatedAt: string;
-  /** Trends at the default weekly granularity; re-query other periods via the trends endpoint. */
-  trends: AdminTrendsSeriesDto;
+/**
+ * The few instance counters the admin *dashboard* (/admin) and
+ * /admin/communications need for their status strips — deliberately not a
+ * statistics payload. Everything analytical lives on /admin/stats, section by
+ * section (dto/admin-stats.ts); this is what remains of the former
+ * `AdminStatsDto` once that page took over.
+ */
+export interface AdminOverviewDto {
+  accounts: number;
+  /** Accounts created since the start of the current weekly bucket. */
+  newAccountsThisWeek: number;
+  /** Accounts with at least one push subscription. */
+  accountsWithPush: number;
+  /** Push subscription rows (an account can have several devices). */
+  pushDevices: number;
+  /** Cached works across all four domains. */
+  cachedItems: number;
 }
 
 /** One cached catalogue item (media/game/book/album), as browsed on the admin cache page. */

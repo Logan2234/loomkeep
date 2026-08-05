@@ -1,4 +1,5 @@
 import type {
+  AdminAccountsSectionDto,
   AdminBackupFileContentDto,
   AdminBackupFileDto,
   AdminBackupRestoreRequestDto,
@@ -7,12 +8,16 @@ import type {
   AdminCacheListResponseDto,
   AdminCacheResyncStaleResultDto,
   AdminCacheSort,
+  AdminCatalogueSectionDto,
   AdminImportRunListResponseDto,
+  AdminNewAccountsTrendDto,
   AdminPushBroadcastResponseDto,
   AdminPushDeviceDto,
   AdminPushSendResponseDto,
-  AdminStatsDto,
-  AdminTrendsDto,
+  AdminOverviewDto,
+  AdminSocialActivityTrendDto,
+  AdminSocialSectionDto,
+  AdminSystemSectionDto,
   AdminUserCommentDto,
   AdminUserDto,
   AdminUserRoleDto,
@@ -91,14 +96,43 @@ export function getAdminSchema(): Promise<SchemaGraphResponseDto> {
   return request("/admin/schema");
 }
 
-/** Instance-wide dashboard: cross-account aggregates, distinct from the per-user /stats page. */
-export function getAdminStats(): Promise<AdminStatsDto> {
-  return request("/admin/stats");
+/** The few instance counters the admin dashboard and /admin/communications read. */
+export function getAdminOverview(): Promise<AdminOverviewDto> {
+  return request("/admin/overview");
 }
 
-/** Trend series at a chosen granularity, to re-query the évolution charts. */
-export function getAdminTrends(period: TrendPeriod): Promise<AdminTrendsDto> {
-  return request(`/admin/stats/trends?period=${period}`);
+/** "Comptes & engagement" section of /admin/stats. */
+export function getAdminAccountsStats(): Promise<AdminAccountsSectionDto> {
+  return request("/admin/stats/accounts");
+}
+
+/** Registration curve alone — re-queried by the card's own period picker. */
+export function getAdminNewAccountsTrend(
+  period: TrendPeriod,
+): Promise<AdminNewAccountsTrendDto> {
+  return request(`/admin/stats/accounts/new?period=${period}`);
+}
+
+/** "Catalogue & cache" section of /admin/stats. */
+export function getAdminCatalogueStats(): Promise<AdminCatalogueSectionDto> {
+  return request("/admin/stats/catalogue");
+}
+
+/** "Social" section of /admin/stats — `{ enabled: false }` when SOCIAL_ENABLED is off. */
+export function getAdminSocialStats(): Promise<AdminSocialSectionDto> {
+  return request("/admin/stats/social");
+}
+
+/** Social activity curve alone — re-queried by the card's own period picker. */
+export function getAdminSocialActivityTrend(
+  period: TrendPeriod,
+): Promise<AdminSocialActivityTrendDto> {
+  return request(`/admin/stats/social/activity?period=${period}`);
+}
+
+/** "Système" section of /admin/stats. */
+export function getAdminSystemStats(): Promise<AdminSystemSectionDto> {
+  return request("/admin/stats/system");
 }
 
 /** Every known scheduled job, with its recent run history. */

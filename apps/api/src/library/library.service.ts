@@ -23,7 +23,6 @@ import type {
   MediaType,
   PagedResult,
   ProgressDto,
-  StatsDto,
 } from "@tracklore/shared";
 import { ActivityType, isDormant, ReviewTargetType } from "@tracklore/shared";
 import { MediaItemService } from "../catalog/media-item.service";
@@ -36,7 +35,6 @@ import { AgeGateService } from "../users/age-gate.service";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
-import { aggregateStats } from "./stats.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
 // Reused include: entries always need the media + its external IDs (sourceId).
@@ -678,51 +676,6 @@ export class LibraryService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
-  }
-
-  /** Aggregated viewing statistics for the profile's stats page. */
-  async getStats(userId: string): Promise<StatsDto> {
-    const [watches, entries] = await Promise.all([
-      this.prisma.episodeWatch.findMany({
-        where: { userId },
-        select: {
-          episode: {
-            select: {
-              season: {
-                select: {
-                  number: true,
-                  mediaItem: {
-                    select: { type: true, genres: true, runtimeMin: true },
-                  },
-                },
-              },
-            },
-          },
-        },
-      }),
-      this.prisma.libraryEntry.findMany({
-        where: { userId },
-        select: {
-          status: true,
-          mediaItem: { select: { type: true, genres: true, runtimeMin: true } },
-        },
-      }),
-    ]);
-
-    return aggregateStats(
-      watches.map((w) => ({
-        seasonNumber: w.episode.season.number,
-        type: w.episode.season.mediaItem.type as MediaType,
-        genres: w.episode.season.mediaItem.genres,
-        runtimeMin: w.episode.season.mediaItem.runtimeMin,
-      })),
-      entries.map((e) => ({
-        type: e.mediaItem.type as MediaType,
-        status: e.status as EntryStatus,
-        genres: e.mediaItem.genres,
-        runtimeMin: e.mediaItem.runtimeMin,
-      })),
-    );
   }
 
   /**

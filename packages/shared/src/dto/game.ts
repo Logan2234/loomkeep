@@ -1,6 +1,5 @@
 import type { GameOwnershipStatus, GameSource, GameStatus } from "../enums";
 import type { RatingDto } from "./catalog";
-import type { GenreCountDto } from "./library";
 
 /** A game as returned by a live catalogue search (not persisted). */
 export interface GameSummaryDto {
@@ -121,28 +120,4 @@ export interface UpdateGameEntryDto {
  */
 export interface GameDetailDto extends GameDetailsDto {
   entry: GameEntryDto | null;
-}
-
-/** How many of the user's games are available on a platform. */
-export interface GamePlatformCountDto {
-  platform: string;
-  count: number;
-}
-
-/**
- * Aggregated stats for the user's game library. No playtime yet (games have no
- * session model), so figures are library counts + the status funnel + genre and
- * platform breakdowns.
- */
-export interface GameStatsDto {
-  totalGames: number;
-  backlog: number;
-  playing: number;
-  completed: number;
-  dropped: number;
-  favorites: number;
-  /** Most-common platforms across the library, descending (top few). */
-  topPlatforms: GamePlatformCountDto[];
-  /** Most-common genres across the library, descending (top few). */
-  topGenres: GenreCountDto[];
 }

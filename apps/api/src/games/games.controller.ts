@@ -18,7 +18,6 @@ import {
   GameEntryDto,
   GameSearchResponseDto,
   GameSource,
-  GameStatsDto,
 } from "@tracklore/shared";
 import type { PagedResult } from "@tracklore/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -65,12 +64,6 @@ export class GamesController {
       this.ageGate.allowsAdultContent(user.sub),
     ]);
     return { results: filterAdultContent(results, allowAdult) };
-  }
-
-  @Get("stats")
-  async getStats(@CurrentUser() user: JwtPayload): Promise<GameStatsDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
-    return this.gameLibraryService.getStats(user.sub);
   }
 
   @Get()
