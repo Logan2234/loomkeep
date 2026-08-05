@@ -1074,6 +1074,9 @@ model MusicItem {
   albumType       String?
   // Number of tracks, when the source knows it.
   trackCount      Int?
+  // Sum of known track durations, in minutes — null until enough tracks carry
+  // a duration (see MusicBrainzProvider's totalDurationMs).
+  durationMin     Int?
   metadata        Json        @default("{}")
   lastSyncedAt    DateTime    @default(now())
   createdAt       DateTime    @default(now())
