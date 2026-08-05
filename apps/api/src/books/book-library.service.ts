@@ -17,7 +17,6 @@ import type {
   BookItemDto,
   BookReplayDto,
   BookSource,
-  BookStatsDto,
   PagedResult,
 } from "@tracklore/shared";
 import { ActivityType, ReviewTargetType } from "@tracklore/shared";
@@ -29,7 +28,6 @@ import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
-import { aggregateBookStats } from "./book-stats.util";
 import { AddBookReplayDto } from "./dto/add-book-replay.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
@@ -407,27 +405,6 @@ export class BookLibraryService {
     }
 
     await this.prisma.bookReplay.delete({ where: { id: replayId } });
-  }
-
-  /** Aggregated stats for the user's book library. */
-  async getStats(userId: string): Promise<BookStatsDto> {
-    const entries = await this.prisma.bookEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        bookItem: { select: { genres: true, authors: true } },
-      },
-    });
-
-    return aggregateBookStats(
-      entries.map((e) => ({
-        status: e.status,
-        favorite: e.favorite,
-        genres: e.bookItem.genres,
-        authors: e.bookItem.authors,
-      })),
-    );
   }
 
   /**

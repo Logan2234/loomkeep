@@ -2,7 +2,6 @@ import type {
   BookDetailDto,
   BookEntryDto,
   BookSearchResponseDto,
-  BookStatsDto,
   PagedResult,
   UpdateBookEntryDto,
   UpsertBookEntryDto,
@@ -36,10 +35,6 @@ export function listBooks(
     params.set("page", String(filters.page));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/books${suffix}`);
-}
-
-export function getBookStats(): Promise<BookStatsDto> {
-  return request("/books/stats");
 }
 
 /** Book detail (catalogue metadata + the user's library state). */

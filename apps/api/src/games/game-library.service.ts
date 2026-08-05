@@ -17,7 +17,6 @@ import type {
   GameItemDto,
   GameReplayDto,
   GameSource,
-  GameStatsDto,
   PagedResult,
 } from "@tracklore/shared";
 import { ActivityType, ReviewTargetType } from "@tracklore/shared";
@@ -29,7 +28,6 @@ import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { GameItemService } from "./game-item.service";
-import { aggregateGameStats } from "./game-stats.util";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
@@ -386,27 +384,6 @@ export class GameLibraryService {
     }
 
     await this.prisma.gameReplay.delete({ where: { id: replayId } });
-  }
-
-  /** Aggregated stats for the user's game library. */
-  async getStats(userId: string): Promise<GameStatsDto> {
-    const entries = await this.prisma.gameEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        gameItem: { select: { genres: true, platforms: true } },
-      },
-    });
-
-    return aggregateGameStats(
-      entries.map((e) => ({
-        status: e.status,
-        favorite: e.favorite,
-        genres: e.gameItem.genres,
-        platforms: e.gameItem.platforms,
-      })),
-    );
   }
 
   /**

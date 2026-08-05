@@ -18,7 +18,6 @@ import type {
   LibraryEntryDto,
   MediaType,
   PagedResult,
-  StatsDto,
 } from "@tracklore/shared";
 import { Domain } from "@tracklore/shared";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
@@ -71,12 +70,6 @@ export class LibraryController {
   @Get("calendar")
   getCalendar(@CurrentUser() user: JwtPayload): Promise<CalendarEntryDto[]> {
     return this.libraryService.getCalendar(user.sub);
-  }
-
-  @Get("stats")
-  async getStats(@CurrentUser() user: JwtPayload): Promise<StatsDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
-    return this.libraryService.getStats(user.sub);
   }
 
   @Get("entries/:id")

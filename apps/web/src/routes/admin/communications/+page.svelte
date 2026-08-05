@@ -7,7 +7,7 @@
     getAdminEmailPreview,
     getAdminEmailTemplates,
     getAdminPushDevices,
-    getAdminStats,
+    getAdminOverview,
     getAdminUsers,
     sendAdminBroadcastPush,
     sendAdminTestEmail,
@@ -217,9 +217,9 @@
 
   async function refreshCounts() {
     try {
-      const stats = await getAdminStats();
-      accountCount = stats.accounts.withPush;
-      deviceCount = stats.activity.totalPushDevices;
+      const overview = await getAdminOverview();
+      accountCount = overview.accountsWithPush;
+      deviceCount = overview.pushDevices;
     } catch {
       accountCount = null;
       deviceCount = null;

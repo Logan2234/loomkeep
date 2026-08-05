@@ -1,17 +1,43 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import {
   Domain,
+  type ListVisibility,
+  type ProfileActivityStatsDto,
   type ProfileDomainStatDto,
   ProfileAccess,
+  type ReviewVisibility,
   type SocialProfileDto,
   type UserSummaryDto,
   VisibilityFacet,
 } from "@tracklore/shared";
 import { PrismaService } from "../prisma/prisma.service";
+import { runtimeFor } from "../stats/video-stats.util";
+import {
+  computeHeatmap,
+  computeStreak,
+  computeYearlyMinutes,
+  mostActiveYear,
+} from "../stats/video-temporal.util";
 import { FollowService } from "./follow.service";
 import { SOCIAL_DOMAINS } from "./social.constants";
-import { resolveFacet, resolveProfileVisibility } from "./visibility.util";
+import {
+  resolveFacet,
+  resolveOwnVisibility,
+  resolveProfileVisibility,
+  type ViewerRelation,
+} from "./visibility.util";
 import { VisibilityService } from "./visibility.service";
+
+const EMPTY_ACTIVITY_STATS: ProfileActivityStatsDto = {
+  visible: false,
+  streakDays: 0,
+  firstActivityAt: null,
+  lastActivityAt: null,
+  totalMinutes: 0,
+  mostActiveYear: null,
+  topGenres: [],
+  heatmap: [],
+};
 
 @Injectable()
 export class ProfileService {
@@ -61,6 +87,10 @@ export class ProfileService {
         followingCount: 0,
         relationship: this.visibility.toRelationshipDto(relation),
         domains: [],
+        activityStats: EMPTY_ACTIVITY_STATS,
+        reviewsCount: 0,
+        commentsCount: 0,
+        listsCount: 0,
         locked: true,
       };
     }
@@ -84,12 +114,48 @@ export class ProfileService {
         VisibilityFacet.LIBRARY,
       );
       const visible = resolveFacet(target.profileAccess, audience, relation);
-      domains.push({
-        domain,
-        visible,
-        count: visible ? await this.countLibrary(target.id, domain) : 0,
-      });
+      const [count, favorites] = visible
+        ? await Promise.all([
+            this.countLibrary(target.id, domain),
+            this.countFavorites(target.id, domain),
+          ])
+        : [0, 0];
+      domains.push({ domain, visible, count, favorites });
     }
+
+    const activityVisible = resolveFacet(
+      target.profileAccess,
+      this.visibility.audienceFor(
+        settings,
+        Domain.MEDIA,
+        VisibilityFacet.ACTIVITY,
+      ),
+      relation,
+    );
+
+    const [activityStats, reviewsCount, commentsCount, listsCount] =
+      await Promise.all([
+        this.computeActivityStats(target.id, activityVisible),
+        this.countOwnVisible(
+          this.prisma.review.findMany({
+            where: { userId: target.id },
+            select: { visibility: true },
+          }),
+          target.profileAccess,
+          relation,
+        ),
+        this.prisma.comment.count({
+          where: { authorId: target.id, deletedAt: null },
+        }),
+        this.countOwnVisible(
+          this.prisma.list.findMany({
+            where: { userId: target.id },
+            select: { visibility: true },
+          }),
+          target.profileAccess,
+          relation,
+        ),
+      ]);
 
     return {
       id: target.id,
@@ -102,6 +168,10 @@ export class ProfileService {
       followingCount,
       relationship: this.visibility.toRelationshipDto(relation),
       domains,
+      activityStats,
+      reviewsCount,
+      commentsCount,
+      listsCount,
       locked: false,
     };
   }
@@ -172,17 +242,134 @@ export class ProfileService {
   }
 
   private countLibrary(userId: string, domain: Domain): Promise<number> {
+    return this.countEntries(userId, domain, false);
+  }
+
+  private countFavorites(userId: string, domain: Domain): Promise<number> {
+    return this.countEntries(userId, domain, true);
+  }
+
+  /** Entry count in one domain's own table — every domain has the same two columns. */
+  private countEntries(
+    userId: string,
+    domain: Domain,
+    favoritesOnly: boolean,
+  ): Promise<number> {
+    const where = favoritesOnly ? { userId, favorite: true } : { userId };
+
     switch (domain) {
       case Domain.MEDIA:
-        return this.prisma.libraryEntry.count({ where: { userId } });
+        return this.prisma.libraryEntry.count({ where });
       case Domain.GAMES:
-        return this.prisma.gameEntry.count({ where: { userId } });
+        return this.prisma.gameEntry.count({ where });
       case Domain.BOOKS:
-        return this.prisma.bookEntry.count({ where: { userId } });
+        return this.prisma.bookEntry.count({ where });
       case Domain.MUSIC:
-        return this.prisma.musicEntry.count({ where: { userId } });
+        return this.prisma.musicEntry.count({ where });
       default:
         return Promise.resolve(0);
     }
+  }
+
+  // Counts rows carrying their own explicit visibility (Review/List) that
+  // the viewer may see — same `resolveOwnVisibility` rule as their activity
+  // feed entries.
+  private async countOwnVisible(
+    rows: Promise<{ visibility: ReviewVisibility | ListVisibility }[]>,
+    access: ProfileAccess,
+    relation: ViewerRelation,
+  ): Promise<number> {
+    return (await rows).filter((r) =>
+      resolveOwnVisibility(r.visibility, access, relation),
+    ).length;
+  }
+
+  /**
+   * Video-derived activity summary (streak, heatmap teaser, genres…) —
+   * deliberately video-only, since EpisodeWatch is the only true per-event
+   * log in the app. Gated as one block by the caller via `visible`.
+   */
+  private async computeActivityStats(
+    userId: string,
+    visible: boolean,
+  ): Promise<ProfileActivityStatsDto> {
+    if (!visible) return EMPTY_ACTIVITY_STATS;
+
+    const [entries, watches] = await Promise.all([
+      this.prisma.libraryEntry.findMany({
+        where: { userId },
+        select: {
+          createdAt: true,
+          updatedAt: true,
+          mediaItem: { select: { genres: true } },
+        },
+      }),
+      this.prisma.episodeWatch.findMany({
+        where: { userId },
+        select: {
+          watchedAt: true,
+          episode: {
+            select: {
+              season: {
+                select: {
+                  number: true,
+                  mediaItem: { select: { type: true, runtimeMin: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    const regular = watches.filter((w) => w.episode.season.number !== 0);
+    const now = new Date();
+    const watchDates = regular.map((w) => w.watchedAt);
+
+    const datedMinutes = regular.map((w) => ({
+      watchedAt: w.watchedAt,
+      minutes: runtimeFor(
+        w.episode.season.mediaItem.type,
+        w.episode.season.mediaItem.runtimeMin,
+      ),
+    }));
+    const totalMinutes = datedMinutes.reduce((sum, d) => sum + d.minutes, 0);
+
+    const genreCounts = new Map<string, number>();
+
+    for (const e of entries) {
+      for (const g of e.mediaItem.genres) {
+        genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
+      }
+    }
+
+    const topGenres = [...genreCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([genre, count]) => ({ label: genre, count }));
+
+    const firstTimestamps = [...entries.map((e) => e.createdAt), ...watchDates];
+    const lastTimestamps = [...entries.map((e) => e.updatedAt), ...watchDates];
+
+    return {
+      visible: true,
+      streakDays: computeStreak(watchDates, now),
+      firstActivityAt:
+        firstTimestamps.length > 0
+          ? new Date(
+              Math.min(...firstTimestamps.map((d) => d.getTime())),
+            ).toISOString()
+          : null,
+      lastActivityAt:
+        lastTimestamps.length > 0
+          ? new Date(
+              Math.max(...lastTimestamps.map((d) => d.getTime())),
+            ).toISOString()
+          : null,
+      totalMinutes,
+      mostActiveYear: mostActiveYear(computeYearlyMinutes(datedMinutes)),
+      topGenres,
+      heatmap: computeHeatmap(watchDates, 90, now),
+    };
   }
 }

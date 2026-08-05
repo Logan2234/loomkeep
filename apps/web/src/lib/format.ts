@@ -38,3 +38,23 @@ export function formatRelative(iso: string): string {
   if (abs < 604_800) return relFmt.format(Math.round(diffSec / 86_400), "day");
   return formatDate(iso);
 }
+
+const BYTE_UNITS = ["Ko", "Mo", "Go"];
+
+/** Byte size in the largest unit that keeps it readable, e.g. "218 Mo", "1,4 Go". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} o`;
+
+  let value = bytes / 1024;
+  let unit = 0;
+
+  while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+
+  return `${value.toFixed(value < 10 ? 1 : 0)} ${BYTE_UNITS[unit]}`.replace(
+    ".",
+    ",",
+  );
+}

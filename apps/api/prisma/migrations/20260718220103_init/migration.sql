@@ -1,11 +1,53 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "MediaType" AS ENUM ('MOVIE', 'SERIES', 'ANIME');
 
 -- CreateEnum
-CREATE TYPE "Domain" AS ENUM ('MEDIA', 'BOOKS', 'GAMES', 'MUSIC');
+CREATE TYPE "Domain" AS ENUM ('MEDIA', 'BOOKS', 'GAMES', 'MUSIC', 'PODCASTS', 'BOARDGAMES');
 
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "ProfileAccess" AS ENUM ('PUBLIC', 'PRIVATE', 'GHOST');
+
+-- CreateEnum
+CREATE TYPE "VisibilityAudience" AS ENUM ('PUBLIC', 'FRIENDS', 'NONE');
+
+-- CreateEnum
+CREATE TYPE "VisibilityFacet" AS ENUM ('LIBRARY', 'ACTIVITY');
+
+-- CreateEnum
+CREATE TYPE "FollowStatus" AS ENUM ('PENDING', 'ACCEPTED');
+
+-- CreateEnum
+CREATE TYPE "ReviewTargetType" AS ENUM ('MEDIA', 'SEASON', 'EPISODE', 'GAME', 'BOOK', 'MUSIC');
+
+-- CreateEnum
+CREATE TYPE "ReviewVisibility" AS ENUM ('FRIENDS', 'PUBLIC');
+
+-- CreateEnum
+CREATE TYPE "CommentTargetType" AS ENUM ('MEDIA', 'SEASON', 'EPISODE', 'GAME', 'BOOK', 'MUSIC');
+
+-- CreateEnum
+CREATE TYPE "CommentEmote" AS ENUM ('LIKE', 'LOVE', 'LAUGH', 'WOW', 'SAD', 'DISLIKE');
+
+-- CreateEnum
+CREATE TYPE "ReviewVoteValue" AS ENUM ('UP', 'DOWN');
+
+-- CreateEnum
+CREATE TYPE "ReportTargetType" AS ENUM ('COMMENT', 'REVIEW', 'USER', 'LIST');
+
+-- CreateEnum
+CREATE TYPE "ListKind" AS ENUM ('RANKED', 'COLLECTION');
+
+-- CreateEnum
+CREATE TYPE "ListVisibility" AS ENUM ('PRIVATE', 'FRIENDS', 'PUBLIC');
+
+-- CreateEnum
+CREATE TYPE "ReportStatus" AS ENUM ('PENDING', 'RESOLVED', 'DISMISSED');
 
 -- CreateEnum
 CREATE TYPE "CatalogSource" AS ENUM ('TMDB', 'ANILIST');
@@ -65,13 +107,158 @@ CREATE TABLE "User" (
     "notifyEmail" BOOLEAN NOT NULL DEFAULT false,
     "notifyPush" BOOLEAN NOT NULL DEFAULT false,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "bio" TEXT,
+    "profileAccess" "ProfileAccess" NOT NULL DEFAULT 'PRIVATE',
+    "defaultReviewVisibility" "ReviewVisibility" NOT NULL DEFAULT 'FRIENDS',
+    "defaultListVisibility" "ListVisibility" NOT NULL DEFAULT 'PRIVATE',
     "entitlements" JSONB NOT NULL DEFAULT '[]',
     "role" "Role" NOT NULL DEFAULT 'USER',
     "enabledDomains" "Domain"[] DEFAULT ARRAY['MEDIA', 'BOOKS', 'GAMES', 'MUSIC']::"Domain"[],
+    "mobileNavShortcuts" TEXT[] DEFAULT ARRAY['home', 'search', 'menu', 'calendar', 'account']::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VisibilitySetting" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "domain" "Domain" NOT NULL,
+    "facet" "VisibilityFacet" NOT NULL,
+    "audience" "VisibilityAudience" NOT NULL,
+
+    CONSTRAINT "VisibilitySetting_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Follow" (
+    "id" TEXT NOT NULL,
+    "followerId" TEXT NOT NULL,
+    "followeeId" TEXT NOT NULL,
+    "status" "FollowStatus" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Follow_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Block" (
+    "id" TEXT NOT NULL,
+    "blockerId" TEXT NOT NULL,
+    "blockedId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Block_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Review" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "targetType" "ReviewTargetType" NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "rating" DOUBLE PRECISION NOT NULL,
+    "text" TEXT,
+    "visibility" "ReviewVisibility" NOT NULL DEFAULT 'FRIENDS',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReviewVote" (
+    "id" TEXT NOT NULL,
+    "reviewId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "value" "ReviewVoteValue" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ReviewVote_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReviewRevision" (
+    "id" TEXT NOT NULL,
+    "reviewId" TEXT NOT NULL,
+    "rating" DOUBLE PRECISION NOT NULL,
+    "text" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ReviewRevision_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Comment" (
+    "id" TEXT NOT NULL,
+    "targetType" "CommentTargetType" NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "authorId" TEXT NOT NULL,
+    "parentId" TEXT,
+    "text" TEXT,
+    "spoilerTag" BOOLEAN NOT NULL DEFAULT false,
+    "edited" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
+    "deletedByAdmin" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Comment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CommentReaction" (
+    "id" TEXT NOT NULL,
+    "commentId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "emote" "CommentEmote" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CommentReaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Report" (
+    "id" TEXT NOT NULL,
+    "targetType" "ReportTargetType" NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "reporterId" TEXT NOT NULL,
+    "reason" TEXT,
+    "status" "ReportStatus" NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "resolvedAt" TIMESTAMP(3),
+    "resolvedById" TEXT,
+
+    CONSTRAINT "Report_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "List" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "kind" "ListKind" NOT NULL,
+    "visibility" "ListVisibility" NOT NULL DEFAULT 'PRIVATE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "List_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ListItem" (
+    "id" TEXT NOT NULL,
+    "listId" TEXT NOT NULL,
+    "targetType" "ReviewTargetType" NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "position" INTEGER NOT NULL,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ListItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -92,18 +279,34 @@ CREATE TABLE "Notification" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL DEFAULT 'NEW_EPISODE',
-    "mediaTitle" TEXT NOT NULL,
-    "mediaType" "MediaType" NOT NULL,
-    "sourceId" TEXT NOT NULL,
-    "seasonNumber" INTEGER NOT NULL,
-    "episodeNumber" INTEGER NOT NULL,
-    "episodeTitle" TEXT,
-    "episodeId" TEXT NOT NULL,
-    "airDate" TIMESTAMP(3) NOT NULL,
+    "title" TEXT NOT NULL,
+    "body" TEXT,
+    "url" TEXT,
+    "dedupeKey" TEXT,
+    "data" JSONB NOT NULL DEFAULT '{}',
     "readAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ActivityEvent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "domain" TEXT NOT NULL,
+    "targetType" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "level" TEXT NOT NULL DEFAULT 'WORK',
+    "homeFeed" BOOLEAN NOT NULL DEFAULT false,
+    "title" TEXT NOT NULL,
+    "imageUrl" TEXT,
+    "href" TEXT,
+    "data" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ActivityEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -156,6 +359,43 @@ CREATE TABLE "SecurityEvent" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "SecurityEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ImportRun" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "identifier" TEXT NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "itemCount" INTEGER NOT NULL,
+    "overwrite" BOOLEAN NOT NULL DEFAULT false,
+    "summary" TEXT,
+    "error" TEXT,
+    "startedAt" TIMESTAMP(3) NOT NULL,
+    "finishedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ImportRun_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BackupFile" (
+    "id" TEXT NOT NULL,
+    "filename" TEXT NOT NULL,
+    "sizeBytes" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "BackupFile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ApiCallCounter" (
+    "id" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "day" TIMESTAMP(3) NOT NULL,
+    "count" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "ApiCallCounter_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -231,7 +471,6 @@ CREATE TABLE "LibraryEntry" (
     "userId" TEXT NOT NULL,
     "mediaItemId" TEXT NOT NULL,
     "status" "EntryStatus" NOT NULL DEFAULT 'PLANNED',
-    "rating" DOUBLE PRECISION,
     "notes" TEXT,
     "favorite" BOOLEAN NOT NULL DEFAULT false,
     "startedAt" TIMESTAMP(3),
@@ -290,7 +529,6 @@ CREATE TABLE "GameEntry" (
     "userId" TEXT NOT NULL,
     "gameItemId" TEXT NOT NULL,
     "status" "GameStatus" NOT NULL DEFAULT 'BACKLOG',
-    "rating" DOUBLE PRECISION,
     "notes" TEXT,
     "favorite" BOOLEAN NOT NULL DEFAULT false,
     "playtimeMinutes" INTEGER NOT NULL DEFAULT 0,
@@ -349,7 +587,6 @@ CREATE TABLE "BookEntry" (
     "userId" TEXT NOT NULL,
     "bookItemId" TEXT NOT NULL,
     "status" "BookStatus" NOT NULL DEFAULT 'TO_READ',
-    "rating" DOUBLE PRECISION,
     "notes" TEXT,
     "favorite" BOOLEAN NOT NULL DEFAULT false,
     "currentPage" INTEGER NOT NULL DEFAULT 0,
@@ -383,6 +620,7 @@ CREATE TABLE "MusicItem" (
     "genres" TEXT[],
     "albumType" TEXT,
     "trackCount" INTEGER,
+    "durationMin" INTEGER,
     "metadata" JSONB NOT NULL DEFAULT '{}',
     "lastSyncedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -407,7 +645,6 @@ CREATE TABLE "MusicEntry" (
     "userId" TEXT NOT NULL,
     "musicItemId" TEXT NOT NULL,
     "status" "MusicStatus" NOT NULL DEFAULT 'TO_LISTEN',
-    "rating" DOUBLE PRECISION,
     "notes" TEXT,
     "favorite" BOOLEAN NOT NULL DEFAULT false,
     "startedAt" TIMESTAMP(3),
@@ -427,6 +664,54 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "VisibilitySetting_userId_domain_facet_key" ON "VisibilitySetting"("userId", "domain", "facet");
+
+-- CreateIndex
+CREATE INDEX "Follow_followeeId_status_idx" ON "Follow"("followeeId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Follow_followerId_followeeId_key" ON "Follow"("followerId", "followeeId");
+
+-- CreateIndex
+CREATE INDEX "Block_blockedId_idx" ON "Block"("blockedId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Block_blockerId_blockedId_key" ON "Block"("blockerId", "blockedId");
+
+-- CreateIndex
+CREATE INDEX "Review_targetType_targetId_idx" ON "Review"("targetType", "targetId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Review_userId_targetType_targetId_key" ON "Review"("userId", "targetType", "targetId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ReviewVote_reviewId_userId_key" ON "ReviewVote"("reviewId", "userId");
+
+-- CreateIndex
+CREATE INDEX "ReviewRevision_reviewId_createdAt_idx" ON "ReviewRevision"("reviewId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Comment_targetType_targetId_createdAt_idx" ON "Comment"("targetType", "targetId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Comment_parentId_idx" ON "Comment"("parentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CommentReaction_commentId_userId_key" ON "CommentReaction"("commentId", "userId");
+
+-- CreateIndex
+CREATE INDEX "Report_status_createdAt_idx" ON "Report"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "List_userId_idx" ON "List"("userId");
+
+-- CreateIndex
+CREATE INDEX "ListItem_listId_position_idx" ON "ListItem"("listId", "position");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ListItem_listId_targetType_targetId_key" ON "ListItem"("listId", "targetType", "targetId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PushSubscription_endpoint_key" ON "PushSubscription"("endpoint");
 
 -- CreateIndex
@@ -436,7 +721,13 @@ CREATE INDEX "PushSubscription_userId_idx" ON "PushSubscription"("userId");
 CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Notification_userId_episodeId_key" ON "Notification"("userId", "episodeId");
+CREATE UNIQUE INDEX "Notification_userId_dedupeKey_key" ON "Notification"("userId", "dedupeKey");
+
+-- CreateIndex
+CREATE INDEX "ActivityEvent_userId_createdAt_idx" ON "ActivityEvent"("userId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "ActivityEvent_homeFeed_createdAt_idx" ON "ActivityEvent"("homeFeed", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "JobRun_jobKey_startedAt_idx" ON "JobRun"("jobKey", "startedAt");
@@ -461,6 +752,21 @@ CREATE INDEX "SecurityEvent_type_createdAt_idx" ON "SecurityEvent"("type", "crea
 
 -- CreateIndex
 CREATE INDEX "SecurityEvent_userId_idx" ON "SecurityEvent"("userId");
+
+-- CreateIndex
+CREATE INDEX "ImportRun_sourceId_startedAt_idx" ON "ImportRun"("sourceId", "startedAt");
+
+-- CreateIndex
+CREATE INDEX "ImportRun_userId_idx" ON "ImportRun"("userId");
+
+-- CreateIndex
+CREATE INDEX "BackupFile_createdAt_idx" ON "BackupFile"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "ApiCallCounter_provider_idx" ON "ApiCallCounter"("provider");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ApiCallCounter_provider_day_key" ON "ApiCallCounter"("provider", "day");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EmailChangeRequest_codeHash_key" ON "EmailChangeRequest"("codeHash");
@@ -520,10 +826,64 @@ CREATE UNIQUE INDEX "MusicExternalId_source_externalId_key" ON "MusicExternalId"
 CREATE UNIQUE INDEX "MusicEntry_userId_musicItemId_key" ON "MusicEntry"("userId", "musicItemId");
 
 -- AddForeignKey
+ALTER TABLE "VisibilitySetting" ADD CONSTRAINT "VisibilitySetting_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followeeId_fkey" FOREIGN KEY ("followeeId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Block" ADD CONSTRAINT "Block_blockerId_fkey" FOREIGN KEY ("blockerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Block" ADD CONSTRAINT "Block_blockedId_fkey" FOREIGN KEY ("blockedId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReviewVote" ADD CONSTRAINT "ReviewVote_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "Review"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReviewVote" ADD CONSTRAINT "ReviewVote_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReviewRevision" ADD CONSTRAINT "ReviewRevision_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "Review"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Comment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CommentReaction" ADD CONSTRAINT "CommentReaction_commentId_fkey" FOREIGN KEY ("commentId") REFERENCES "Comment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CommentReaction" ADD CONSTRAINT "CommentReaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Report" ADD CONSTRAINT "Report_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Report" ADD CONSTRAINT "Report_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "List" ADD CONSTRAINT "List_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ListItem" ADD CONSTRAINT "ListItem_listId_fkey" FOREIGN KEY ("listId") REFERENCES "List"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "PushSubscription" ADD CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ActivityEvent" ADD CONSTRAINT "ActivityEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -533,6 +893,9 @@ ALTER TABLE "UserToken" ADD CONSTRAINT "UserToken_userId_fkey" FOREIGN KEY ("use
 
 -- AddForeignKey
 ALTER TABLE "SecurityEvent" ADD CONSTRAINT "SecurityEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ImportRun" ADD CONSTRAINT "ImportRun_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EmailChangeRequest" ADD CONSTRAINT "EmailChangeRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -590,3 +953,4 @@ ALTER TABLE "MusicEntry" ADD CONSTRAINT "MusicEntry_userId_fkey" FOREIGN KEY ("u
 
 -- AddForeignKey
 ALTER TABLE "MusicEntry" ADD CONSTRAINT "MusicEntry_musicItemId_fkey" FOREIGN KEY ("musicItemId") REFERENCES "MusicItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

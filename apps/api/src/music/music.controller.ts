@@ -17,7 +17,6 @@ import {
   MusicEntryDto,
   MusicSearchResponseDto,
   MusicSource,
-  MusicStatsDto,
 } from "@tracklore/shared";
 import type { PagedResult } from "@tracklore/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -54,12 +53,6 @@ export class MusicController {
 
     const results = await this.musicItemService.search(query);
     return { results };
-  }
-
-  @Get("stats")
-  async getStats(@CurrentUser() user: JwtPayload): Promise<MusicStatsDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
-    return this.musicLibraryService.getStats(user.sub);
   }
 
   @Get()

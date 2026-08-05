@@ -173,6 +173,9 @@ export class MusicItemService {
       genres: details.genres,
       albumType: details.albumType,
       trackCount: details.trackCount,
+      durationMin: details.totalDurationMs
+        ? Math.round(details.totalDurationMs / 60_000)
+        : null,
       lastSyncedAt: new Date(),
     };
   }

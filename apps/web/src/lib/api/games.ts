@@ -2,7 +2,6 @@ import type {
   GameDetailDto,
   GameEntryDto,
   GameSearchResponseDto,
-  GameStatsDto,
   PagedResult,
   UpdateGameEntryDto,
   UpsertGameEntryDto,
@@ -36,10 +35,6 @@ export function listGames(
     params.set("page", String(filters.page));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/games${suffix}`);
-}
-
-export function getGameStats(): Promise<GameStatsDto> {
-  return request("/games/stats");
 }
 
 /** Game detail (catalogue metadata + the user's library state). */

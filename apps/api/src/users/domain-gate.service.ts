@@ -13,13 +13,20 @@ export class DomainGateService {
 
   /** Throws 403 unless the user keeps `domain` enabled. */
   async assertEnabled(userId: string, domain: Domain): Promise<void> {
+    const enabled = await this.getEnabledDomains(userId);
+
+    if (!enabled.includes(domain)) {
+      throw new ForbiddenException(`Domain '${domain}' is disabled`);
+    }
+  }
+
+  /** The domains this user currently keeps enabled. */
+  async getEnabledDomains(userId: string): Promise<Domain[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { enabledDomains: true },
     });
 
-    if (!user?.enabledDomains.includes(domain)) {
-      throw new ForbiddenException(`Domain '${domain}' is disabled`);
-    }
+    return user?.enabledDomains ?? [];
   }
 }

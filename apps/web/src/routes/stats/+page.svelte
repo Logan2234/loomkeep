@@ -1,239 +1,180 @@
 <script lang="ts">
   import type {
-    BookStatsDto,
-    BookStatus,
-    GameStatsDto,
-    GameStatus,
-    MediaType,
-    MusicStatsDto,
-    MusicStatus,
-    StatsDto,
+    StatsDomain,
+    StatsOverviewDto,
+    StatsWindow,
+    StatsWorkDto,
   } from "@tracklore/shared";
+  import { STATS_DOMAINS } from "@tracklore/shared";
   import {
-    getBookStats,
-    getGameStats,
-    getMusicStats,
-    getStats,
-    ApiError,
-  } from "$lib/api/client";
+    getStatsOverview,
+    getStatsWorksByDecade,
+    getStatsWorksByRating,
+  } from "$lib/api/stats";
+  import { ApiError } from "$lib/api/core";
+  import { appConfig } from "$lib/config.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import { isDomainEnabled } from "$lib/domains";
+  import BookStatsSection from "$lib/components/stats/BookStatsSection.svelte";
+  import DomainFilter from "$lib/components/stats/DomainFilter.svelte";
+  import GameStatsSection from "$lib/components/stats/GameStatsSection.svelte";
+  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
+  import InsufficientDataNotice from "$lib/components/stats/InsufficientDataNotice.svelte";
+  import MusicStatsSection from "$lib/components/stats/MusicStatsSection.svelte";
+  import PeriodFilter from "$lib/components/stats/PeriodFilter.svelte";
+  import RankBars from "$lib/components/stats/RankBars.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import SocialStatsSection from "$lib/components/stats/SocialStatsSection.svelte";
+  import StackedBar from "$lib/components/stats/StackedBar.svelte";
+  import StatTile from "$lib/components/stats/StatTile.svelte";
+  import StatTilesSkeleton from "$lib/components/stats/StatTilesSkeleton.svelte";
+  import StatsWorksModal from "$lib/components/stats/StatsWorksModal.svelte";
+  import VideoStatsSection from "$lib/components/stats/VideoStatsSection.svelte";
+  import VideoTemporalSection from "$lib/components/stats/VideoTemporalSection.svelte";
   import {
-    BOOK_STATUS_LABELS,
-    BOOK_STATUS_ORDER,
-    GAME_STATUS_LABELS,
-    GAME_STATUS_ORDER,
-    MUSIC_STATUS_LABELS,
-    MUSIC_STATUS_ORDER,
-  } from "$lib/status-labels";
-  import { Domain } from "@tracklore/shared";
+    STATS_DOMAIN_COLOR_VAR,
+    STATS_DOMAIN_LABEL,
+    STATUS_BUCKET_COLOR,
+    STATUS_BUCKET_LABEL,
+    STATUS_BUCKET_ORDER,
+  } from "$lib/components/stats/stats-domain";
+  import { POSSESSION_STATUS_LABEL } from "$lib/components/stats/possession-labels";
 
-  let stats = $state<StatsDto | null>(null);
-  let gameStats = $state<GameStatsDto | null>(null);
-  let bookStats = $state<BookStatsDto | null>(null);
-  let musicStats = $state<MusicStatsDto | null>(null);
+  type Choice = "ALL" | StatsDomain;
+
+  const enabledDomains = $derived<StatsDomain[]>(
+    STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
+  );
+
+  let selected = $state<Choice>("ALL");
+  // Narrows the "Activité dans le temps" weekday/hour curves only — see
+  // PeriodFilter.
+  let period = $state<StatsWindow>("ALL");
+  let overview = $state<StatsOverviewDto | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  const mediaOn = $derived(isDomainEnabled(Domain.MEDIA));
-  const gamesOn = $derived(isDomainEnabled(Domain.GAMES));
-  const booksOn = $derived(isDomainEnabled(Domain.BOOKS));
-  const musicOn = $derived(isDomainEnabled(Domain.MUSIC));
-  // Planned domains: no stats yet, just a placeholder section when enabled.
-  const podcastsOn = $derived(isDomainEnabled(Domain.PODCASTS));
-  const boardgamesOn = $derived(isDomainEnabled(Domain.BOARDGAMES));
-
-  // Only query the domains the user keeps enabled — the API 403s the others.
-  // Waits for the profile so a disabled domain is never fetched. Re-runs when a
-  // domain is toggled in /settings.
   $effect(() => {
-    if (!auth.user) return;
+    const domain = selected;
     loading = true;
     error = null;
-
-    const jobs: Promise<unknown>[] = [];
-    if (mediaOn) jobs.push(getStats().then((s) => (stats = s)));
-    else stats = null;
-    if (gamesOn) jobs.push(getGameStats().then((g) => (gameStats = g)));
-    else gameStats = null;
-    if (booksOn) jobs.push(getBookStats().then((b) => (bookStats = b)));
-    else bookStats = null;
-    if (musicOn) jobs.push(getMusicStats().then((m) => (musicStats = m)));
-    else musicStats = null;
-
-    Promise.all(jobs)
-      .catch((err) => {
+    getStatsOverview(domain)
+      .then((o) => (overview = o))
+      .catch((e) => {
         error =
-          err instanceof ApiError ? err.message : "Statistiques indisponibles";
+          e instanceof ApiError ? e.message : "Statistiques indisponibles";
       })
       .finally(() => (loading = false));
   });
 
   const nf = new Intl.NumberFormat("fr-FR");
+  const pf = new Intl.NumberFormat("fr-FR", {
+    style: "percent",
+    maximumFractionDigits: 0,
+  });
 
-  const TYPE_LABEL: Record<MediaType, string> = {
-    MOVIE: "Films",
-    SERIES: "Séries",
-    ANIME: "Animés",
-  };
-  // Few, distinct category colors (kept in sync with the type split).
-  const TYPE_COLOR: Record<MediaType, string> = {
-    SERIES: "var(--accent)",
-    ANIME: "#4a9db8",
-    MOVIE: "#c77da0",
-  };
+  // "Tous" shows the domain split; a single domain shows its status funnel.
+  const compositionSegments = $derived.by(() => {
+    if (!overview) return [];
+    const { breakdowns } = overview;
+    if (selected === "ALL") {
+      return breakdowns.map((b) => ({
+        label: STATS_DOMAIN_LABEL[b.domain],
+        color: STATS_DOMAIN_COLOR_VAR[b.domain],
+        value: b.total,
+      }));
+    }
+    return STATUS_BUCKET_ORDER.map((bucket) => ({
+      label: STATUS_BUCKET_LABEL[bucket],
+      color: STATUS_BUCKET_COLOR[bucket],
+      value:
+        breakdowns[0]?.byStatus.find((s) => s.bucket === bucket)?.count ?? 0,
+    }));
+  });
 
-  // Game status funnel: dim pile → amber in-progress → green done → red dropped.
-  const GAME_STATUS: Record<GameStatus, { label: string; color: string }> = {
-    BACKLOG: { label: GAME_STATUS_LABELS.BACKLOG, color: "var(--dim)" },
-    PLAYING: { label: GAME_STATUS_LABELS.PLAYING, color: "var(--accent)" },
-    COMPLETED: { label: GAME_STATUS_LABELS.COMPLETED, color: "var(--success)" },
-    DROPPED: { label: GAME_STATUS_LABELS.DROPPED, color: "var(--danger)" },
-  };
-
-  // Book status funnel: dim to-read → amber reading → green read → red dropped.
-  const BOOK_STATUS: Record<BookStatus, { label: string; color: string }> = {
-    TO_READ: { label: BOOK_STATUS_LABELS.TO_READ, color: "var(--dim)" },
-    READING: { label: BOOK_STATUS_LABELS.READING, color: "var(--accent)" },
-    READ: { label: BOOK_STATUS_LABELS.READ, color: "var(--success)" },
-    DROPPED: { label: BOOK_STATUS_LABELS.DROPPED, color: "var(--danger)" },
-  };
-  // BookStatsDto keys, in the same order as BOOK_STATUS_ORDER.
-  const BOOK_STATUS_KEY: Record<
-    BookStatus,
-    "toRead" | "reading" | "read" | "dropped"
-  > = {
-    TO_READ: "toRead",
-    READING: "reading",
-    READ: "read",
-    DROPPED: "dropped",
-  };
-
-  // Music status funnel: dim to-listen → green listened. Deliberately binary.
-  const MUSIC_STATUS: Record<MusicStatus, { label: string; color: string }> = {
-    TO_LISTEN: { label: MUSIC_STATUS_LABELS.TO_LISTEN, color: "var(--dim)" },
-    LISTENED: { label: MUSIC_STATUS_LABELS.LISTENED, color: "var(--success)" },
-  };
-  // MusicStatsDto keys, in the same order as MUSIC_STATUS_ORDER.
-  const MUSIC_STATUS_KEY: Record<MusicStatus, "toListen" | "listened"> = {
-    TO_LISTEN: "toListen",
-    LISTENED: "listened",
-  };
-
-  const tiles = $derived(
-    stats
-      ? [
-          {
-            value: nf.format(stats.hoursWatched),
-            unit: "h",
-            label: "Heures vues",
-          },
-          {
-            value: nf.format(stats.episodesWatched),
-            unit: "",
-            label: "Épisodes vus",
-          },
-          {
-            value: nf.format(stats.seriesCompleted),
-            unit: "",
-            label: "Séries terminées",
-          },
-          {
-            value: nf.format(stats.moviesWatched),
-            unit: "",
-            label: "Films vus",
-          },
-        ]
+  const ratingBars = $derived(
+    overview
+      ? overview.ratingDistribution.map((b) => ({
+          label: String(b.rating),
+          value: b.count,
+        }))
+      : [],
+  );
+  const decadeBars = $derived(
+    overview
+      ? overview.decades.map((b) => ({
+          label: String(b.decade),
+          value: b.count,
+        }))
+      : [],
+  );
+  const possessionBars = $derived(
+    overview?.possession.sufficientData
+      ? overview.possession.byStatus
+          .map((s) => ({
+            label: POSSESSION_STATUS_LABEL[s.status] ?? s.status,
+            value: s.count,
+          }))
+          .sort((a, b) => b.value - a.value)
       : [],
   );
 
-  const gameTiles = $derived(
-    gameStats
-      ? [
-          { value: gameStats.totalGames, label: "Jeux" },
-          { value: gameStats.backlog, label: "À jouer" },
-          { value: gameStats.playing, label: "En cours" },
-          { value: gameStats.completed, label: "Terminés" },
-        ]
-      : [],
-  );
+  const isEmpty = $derived(!!overview && overview.total === 0);
 
-  const bookTiles = $derived(
-    bookStats
-      ? [
-          { value: bookStats.totalBooks, label: "Livres" },
-          { value: bookStats.toRead, label: "À lire" },
-          { value: bookStats.reading, label: "En lecture" },
-          { value: bookStats.read, label: "Lus" },
-        ]
-      : [],
-  );
+  // A domain's deep section shows when the user enabled it and the filter
+  // doesn't exclude it; it reuses the status breakdown the overview loaded.
+  function showSection(domain: StatsDomain): boolean {
+    return (
+      enabledDomains.includes(domain) &&
+      (selected === "ALL" || selected === domain)
+    );
+  }
 
-  const musicTiles = $derived(
-    musicStats
-      ? [
-          { value: musicStats.totalAlbums, label: "Albums" },
-          { value: musicStats.toListen, label: "À écouter" },
-          { value: musicStats.listened, label: "Écoutés" },
-          { value: musicStats.favorites, label: "Favoris" },
-        ]
-      : [],
-  );
+  function breakdownOf(domain: StatsDomain) {
+    return overview?.breakdowns.find((b) => b.domain === domain);
+  }
 
-  const totalHours = $derived(
-    stats ? stats.timeByType.reduce((sum, t) => sum + t.hours, 0) : 0,
-  );
-  const maxGenre = $derived(stats?.topGenres[0]?.count ?? 0);
-  const maxPlatform = $derived(gameStats?.topPlatforms[0]?.count ?? 0);
-  const maxAuthor = $derived(bookStats?.topAuthors[0]?.count ?? 0);
-  const maxArtist = $derived(musicStats?.topArtists[0]?.count ?? 0);
+  // Works drill-down modal, opened from a clicked rating/decade bar.
+  let modalOpen = $state(false);
+  let modalTitle = $state("");
+  let modalWorks = $state<StatsWorkDto[]>([]);
+  let modalLoading = $state(false);
 
-  const gameCount = (status: GameStatus): number =>
-    gameStats
-      ? gameStats[
-          status.toLowerCase() as
-            "backlog" | "playing" | "completed" | "dropped"
-        ]
-      : 0;
+  function openRatingModal(ratingLabel: string) {
+    const rating = Number(ratingLabel);
+    modalOpen = true;
+    modalLoading = true;
+    modalTitle = `Notées ${rating}/10`;
+    getStatsWorksByRating(selected, rating)
+      .then((w) => (modalWorks = w))
+      .finally(() => (modalLoading = false));
+  }
 
-  const bookCount = (status: BookStatus): number =>
-    bookStats ? bookStats[BOOK_STATUS_KEY[status]] : 0;
-
-  const musicCount = (status: MusicStatus): number =>
-    musicStats ? musicStats[MUSIC_STATUS_KEY[status]] : 0;
-
-  // A disabled domain counts as "empty" so it neither renders its section nor
-  // blocks the global empty state.
-  const mediaEmpty = $derived(
-    !mediaOn ||
-      (!!stats &&
-        stats.episodesWatched === 0 &&
-        stats.moviesWatched === 0 &&
-        stats.seriesCompleted === 0),
-  );
-  const gamesEmpty = $derived(
-    !gamesOn || (!!gameStats && gameStats.totalGames === 0),
-  );
-  const booksEmpty = $derived(
-    !booksOn || (!!bookStats && bookStats.totalBooks === 0),
-  );
-  const musicEmpty = $derived(
-    !musicOn || (!!musicStats && musicStats.totalAlbums === 0),
-  );
-  // An enabled coming-soon domain keeps the page from reading as fully empty:
-  // its placeholder section is worth showing on its own.
-  const allEmpty = $derived(
-    mediaEmpty &&
-      gamesEmpty &&
-      booksEmpty &&
-      musicEmpty &&
-      !podcastsOn &&
-      !boardgamesOn,
-  );
+  function openDecadeModal(decadeLabel: string) {
+    const decade = Number(decadeLabel);
+    modalOpen = true;
+    modalLoading = true;
+    modalTitle = `Sorties dans les années ${decade}`;
+    getStatsWorksByDecade(selected, decade)
+      .then((w) => (modalWorks = w))
+      .finally(() => (modalLoading = false));
+  }
 </script>
+
+<!-- Filter console: sticky, the spine that drives everything below. -->
+<div
+  class="border-border bg-surface/95 sticky top-0 z-20 border-b backdrop-blur">
+  <div
+    class="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-5 py-3 md:px-8">
+    <DomainFilter
+      {enabledDomains}
+      {selected}
+      onSelect={(c) => (selected = c)} />
+    <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
+  </div>
+</div>
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
@@ -244,330 +185,103 @@
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if loading}
-    <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {#each { length: 4 } as _, i (i)}
-        <div class="card p-4">
-          <div class="skeleton h-8 w-2/3 rounded"></div>
-          <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
-        </div>
-      {/each}
-    </div>
-  {:else if allEmpty}
+    <StatTilesSkeleton />
+  {:else if isEmpty}
     <EmptyState>
-      Rien à afficher pour l’instant. Marque des épisodes, des films, des jeux
-      ou des livres pour voir tes statistiques.
+      Rien à afficher pour l’instant. Marque des œuvres pour voir tes
+      statistiques.
     </EmptyState>
-  {:else}
-    {#if stats && !mediaEmpty}
-      <!-- Vidéo -->
-      <section class="mb-10">
-        <p class="timecode mb-3 text-xs uppercase">Vidéo</p>
-        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {#each tiles as t (t.label)}
-            <div class="card p-4">
-              <p class="font-display text-3xl font-extrabold tabular-nums">
-                {t.value}<span class="text-dim text-lg">{t.unit}</span>
-              </p>
-              <p class="timecode mt-1 text-xs uppercase">{t.label}</p>
-            </div>
-          {/each}
-        </div>
+  {:else if overview}
+    <SectionLabel label="Vue d’ensemble" />
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <StatTile value={nf.format(overview.total)} label="Œuvres" />
+      <StatTile
+        value={pf.format(overview.completionRate)}
+        label="Taux de complétion" />
+      <StatTile
+        value={pf.format(overview.abandonRate)}
+        label="Taux d’abandon" />
+      <StatTile
+        value={overview.averageRating ?? "—"}
+        unit="/10"
+        label="Note moyenne · {pf.format(overview.ratingRate)} noté" />
+    </div>
 
-        <div class="grid gap-5 md:grid-cols-2">
-          <!-- Type split (share of watch time) -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">
-              Répartition du temps
-            </h2>
-            {#if totalHours > 0}
-              <div class="flex h-3 overflow-hidden rounded-full">
-                {#each stats.timeByType as s (s.type)}
-                  <div
-                    style={`width:${(s.hours / totalHours) * 100}%;background:${TYPE_COLOR[s.type]}`}>
-                  </div>
-                {/each}
-              </div>
-              <ul class="mt-4 flex flex-col gap-2">
-                {#each stats.timeByType as s (s.type)}
-                  <li class="flex items-center gap-2.5 text-sm">
-                    <span
-                      class="h-3 w-3 rounded-sm"
-                      style={`background:${TYPE_COLOR[s.type]}`}></span>
-                    <span class="flex-1">{TYPE_LABEL[s.type]}</span>
-                    <span class="timecode"
-                      >{Math.round((s.hours / totalHours) * 100)} %</span>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="timecode text-sm">Pas encore de temps de visionnage.</p>
-            {/if}
-          </section>
-
-          <!-- Top genres -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Genres favoris</h2>
-            {#if stats.topGenres.length > 0}
-              <ul class="flex flex-col gap-3">
-                {#each stats.topGenres as g (g.genre)}
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span>{g.genre}</span>
-                    </div>
-                    <div class="bg-surface-2 h-2 overflow-hidden rounded-full">
-                      <div
-                        class="bg-accent h-full rounded-full"
-                        style={`width:${maxGenre > 0 ? (g.count / maxGenre) * 100 : 0}%`}>
-                      </div>
-                    </div>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="timecode text-sm">Aucun genre pour l’instant.</p>
-            {/if}
-          </section>
-        </div>
+    <div class="mt-5 grid gap-5 md:grid-cols-2">
+      <section class="card p-5">
+        <h2 class="font-display mb-4 text-lg font-bold">
+          {selected === "ALL" ? "Composition" : "Progression"}
+        </h2>
+        <StackedBar segments={compositionSegments} />
       </section>
+
+      <section class="card p-5">
+        <h2 class="font-display mb-4 text-lg font-bold">
+          Distribution des notes
+        </h2>
+        {#if overview.ratedCount > 0}
+          <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
+        {:else}
+          <p class="text-dim text-sm">Aucune œuvre notée pour l’instant.</p>
+        {/if}
+      </section>
+    </div>
+
+    <div class="mt-5 grid gap-5 md:grid-cols-2">
+      <section class="card p-5">
+        <h2 class="font-display mb-4 text-lg font-bold">Décennie de sortie</h2>
+        {#if decadeBars.length > 0}
+          <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
+        {:else}
+          <p class="text-dim text-sm">Aucune date de sortie connue.</p>
+        {/if}
+      </section>
+
+      <section class="card p-5">
+        <h2 class="font-display mb-4 text-lg font-bold">Mode de possession</h2>
+        {#if overview.possession.sufficientData}
+          <RankBars items={possessionBars} />
+        {:else}
+          <InsufficientDataNotice
+            renseignedRatio={overview.possession.renseignedRatio} />
+        {/if}
+      </section>
+    </div>
+
+    {#if showSection("MEDIA")}
+      <SectionLabel label="Activité dans le temps" class="mt-10" />
+      <VideoTemporalSection {period} />
+
+      <SectionLabel label="Vidéo — en détail" class="mt-10" />
+      <VideoStatsSection mediaBreakdown={breakdownOf("MEDIA")} />
     {/if}
 
-    {#if gameStats && !gamesEmpty}
-      <!-- Jeux -->
-      <section class="mb-10">
-        <p class="timecode mb-3 text-xs uppercase">Jeux</p>
-        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {#each gameTiles as t (t.label)}
-            <div class="card p-4">
-              <p class="font-display text-3xl font-extrabold tabular-nums">
-                {t.value}
-              </p>
-              <p class="timecode mt-1 text-xs uppercase">{t.label}</p>
-            </div>
-          {/each}
-        </div>
-
-        <div class="grid gap-5 md:grid-cols-2">
-          <!-- Status funnel -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Progression</h2>
-            <div class="bg-surface-2 flex h-3 overflow-hidden rounded-full">
-              {#each GAME_STATUS_ORDER as status (status)}
-                {#if gameCount(status) > 0}
-                  <div
-                    style={`width:${(gameCount(status) / gameStats.totalGames) * 100}%;background:${GAME_STATUS[status].color}`}>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-            <ul class="mt-4 flex flex-col gap-2">
-              {#each GAME_STATUS_ORDER as status (status)}
-                {#if gameCount(status) > 0}
-                  <li class="flex items-center gap-2.5 text-sm">
-                    <span
-                      class="h-3 w-3 rounded-sm"
-                      style={`background:${GAME_STATUS[status].color}`}></span>
-                    <span class="flex-1">{GAME_STATUS[status].label}</span>
-                    <span class="timecode">{gameCount(status)}</span>
-                  </li>
-                {/if}
-              {/each}
-            </ul>
-          </section>
-
-          <!-- Top platforms -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Plateformes</h2>
-            {#if gameStats.topPlatforms.length > 0}
-              <ul class="flex flex-col gap-3">
-                {#each gameStats.topPlatforms as p (p.platform)}
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="truncate">{p.platform}</span>
-                      <span class="timecode shrink-0">{p.count}</span>
-                    </div>
-                    <div class="bg-surface-2 h-2 overflow-hidden rounded-full">
-                      <div
-                        class="bg-accent h-full rounded-full"
-                        style={`width:${maxPlatform > 0 ? (p.count / maxPlatform) * 100 : 0}%`}>
-                      </div>
-                    </div>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="timecode text-sm">Pas encore de plateforme.</p>
-            {/if}
-          </section>
-        </div>
-      </section>
+    {#if showSection("GAMES")}
+      <SectionLabel label="Jeux — en détail" class="mt-10" />
+      <GameStatsSection gameBreakdown={breakdownOf("GAMES")} />
     {/if}
 
-    {#if bookStats && !booksEmpty}
-      <!-- Livres -->
-      <section>
-        <p class="timecode mb-3 text-xs uppercase">Livres</p>
-        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {#each bookTiles as t (t.label)}
-            <div class="card p-4">
-              <p class="font-display text-3xl font-extrabold tabular-nums">
-                {t.value}
-              </p>
-              <p class="timecode mt-1 text-xs uppercase">{t.label}</p>
-            </div>
-          {/each}
-        </div>
-
-        <div class="grid gap-5 md:grid-cols-2">
-          <!-- Status funnel -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Progression</h2>
-            <div class="bg-surface-2 flex h-3 overflow-hidden rounded-full">
-              {#each BOOK_STATUS_ORDER as status (status)}
-                {#if bookCount(status) > 0}
-                  <div
-                    style={`width:${(bookCount(status) / bookStats.totalBooks) * 100}%;background:${BOOK_STATUS[status].color}`}>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-            <ul class="mt-4 flex flex-col gap-2">
-              {#each BOOK_STATUS_ORDER as status (status)}
-                {#if bookCount(status) > 0}
-                  <li class="flex items-center gap-2.5 text-sm">
-                    <span
-                      class="h-3 w-3 rounded-sm"
-                      style={`background:${BOOK_STATUS[status].color}`}></span>
-                    <span class="flex-1">{BOOK_STATUS[status].label}</span>
-                    <span class="timecode">{bookCount(status)}</span>
-                  </li>
-                {/if}
-              {/each}
-            </ul>
-          </section>
-
-          <!-- Top authors -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Auteurs</h2>
-            {#if bookStats.topAuthors.length > 0}
-              <ul class="flex flex-col gap-3">
-                {#each bookStats.topAuthors as a (a.author)}
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="truncate">{a.author}</span>
-                      <span class="timecode shrink-0">{a.count}</span>
-                    </div>
-                    <div class="bg-surface-2 h-2 overflow-hidden rounded-full">
-                      <div
-                        class="bg-accent h-full rounded-full"
-                        style={`width:${maxAuthor > 0 ? (a.count / maxAuthor) * 100 : 0}%`}>
-                      </div>
-                    </div>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="timecode text-sm">Pas encore d’auteur.</p>
-            {/if}
-          </section>
-        </div>
-      </section>
+    {#if showSection("BOOKS")}
+      <SectionLabel label="Livres — en détail" class="mt-10" />
+      <BookStatsSection bookBreakdown={breakdownOf("BOOKS")} />
     {/if}
 
-    {#if musicStats && !musicEmpty}
-      <!-- Musique -->
-      <section class="mt-10">
-        <p class="timecode mb-3 text-xs uppercase">Musique</p>
-        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {#each musicTiles as t (t.label)}
-            <div class="card p-4">
-              <p class="font-display text-3xl font-extrabold tabular-nums">
-                {t.value}
-              </p>
-              <p class="timecode mt-1 text-xs uppercase">{t.label}</p>
-            </div>
-          {/each}
-        </div>
-
-        <div class="grid gap-5 md:grid-cols-2">
-          <!-- Status funnel -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Progression</h2>
-            <div class="bg-surface-2 flex h-3 overflow-hidden rounded-full">
-              {#each MUSIC_STATUS_ORDER as status (status)}
-                {#if musicCount(status) > 0}
-                  <div
-                    style={`width:${(musicCount(status) / musicStats.totalAlbums) * 100}%;background:${MUSIC_STATUS[status].color}`}>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-            <ul class="mt-4 flex flex-col gap-2">
-              {#each MUSIC_STATUS_ORDER as status (status)}
-                {#if musicCount(status) > 0}
-                  <li class="flex items-center gap-2.5 text-sm">
-                    <span
-                      class="h-3 w-3 rounded-sm"
-                      style={`background:${MUSIC_STATUS[status].color}`}></span>
-                    <span class="flex-1">{MUSIC_STATUS[status].label}</span>
-                    <span class="timecode">{musicCount(status)}</span>
-                  </li>
-                {/if}
-              {/each}
-            </ul>
-          </section>
-
-          <!-- Top artists -->
-          <section class="card p-5">
-            <h2 class="font-display mb-4 text-lg font-bold">Artistes</h2>
-            {#if musicStats.topArtists.length > 0}
-              <ul class="flex flex-col gap-3">
-                {#each musicStats.topArtists as a (a.artist)}
-                  <li>
-                    <div class="mb-1 flex justify-between text-sm">
-                      <span class="truncate">{a.artist}</span>
-                      <span class="timecode shrink-0">{a.count}</span>
-                    </div>
-                    <div class="bg-surface-2 h-2 overflow-hidden rounded-full">
-                      <div
-                        class="bg-accent h-full rounded-full"
-                        style={`width:${maxArtist > 0 ? (a.count / maxArtist) * 100 : 0}%`}>
-                      </div>
-                    </div>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="timecode text-sm">Pas encore d’artiste.</p>
-            {/if}
-          </section>
-        </div>
-      </section>
+    {#if showSection("MUSIC")}
+      <SectionLabel label="Musique — en détail" class="mt-10" />
+      <MusicStatsSection musicBreakdown={breakdownOf("MUSIC")} />
     {/if}
 
-    {#if podcastsOn}
-      <!-- Podcasts — planned domain, no stats yet. -->
-      <section class="mt-10">
-        <p class="timecode mb-3 text-xs uppercase">Podcasts</p>
-        <div
-          class="card text-dim flex flex-col items-center gap-1 px-6 py-10 text-center">
-          <p class="text-fg font-semibold">Bientôt disponible</p>
-          <p class="text-sm">Les statistiques podcasts arriveront ici.</p>
-        </div>
-      </section>
-    {/if}
-
-    {#if boardgamesOn}
-      <!-- Jeux de société — planned domain, no stats yet. -->
-      <section class="mt-10">
-        <p class="timecode mb-3 text-xs uppercase">Jeux de société</p>
-        <div
-          class="card text-dim flex flex-col items-center gap-1 px-6 py-10 text-center">
-          <p class="text-fg font-semibold">Bientôt disponible</p>
-          <p class="text-sm">
-            Les statistiques jeux de société arriveront ici.
-          </p>
-        </div>
-      </section>
+    {#if appConfig.socialEnabled}
+      <SectionLabel label="Social" class="mt-10" />
+      <SocialStatsSection />
     {/if}
   {/if}
 </div>
+
+{#if modalOpen}
+  <StatsWorksModal
+    title={modalTitle}
+    works={modalWorks}
+    loading={modalLoading}
+    onclose={() => (modalOpen = false)} />
+{/if}

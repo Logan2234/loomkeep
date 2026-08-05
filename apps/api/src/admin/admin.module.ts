@@ -21,11 +21,16 @@ import { AdminJobsController } from "./admin-jobs.controller";
 import { AdminPushController } from "./admin-push.controller";
 import { AdminReportsController } from "./admin-reports.controller";
 import { AdminSecurityController } from "./admin-security.controller";
+import { AdminStatsController } from "./admin-stats.controller";
 import { AdminSystemController } from "./admin-system.controller";
 import { AdminUsersController } from "./admin-users.controller";
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
-import { AdminStatsService } from "./admin-stats.service";
+import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
+import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
+import { AdminOverviewService } from "./admin-overview.service";
+import { AdminSocialStatsService } from "./admin-social-stats.service";
+import { AdminSystemStatsService } from "./admin-system-stats.service";
 import { BackupService } from "./backup.service";
 
 @Module({
@@ -56,7 +61,17 @@ import { BackupService } from "./backup.service";
     AdminCacheController,
     AdminImportsController,
     AdminReportsController,
+    AdminStatsController,
   ],
-  providers: [AdminService, AdminGuard, AdminStatsService, BackupService],
+  providers: [
+    AdminService,
+    AdminGuard,
+    AdminOverviewService,
+    AdminAccountsStatsService,
+    AdminCatalogueStatsService,
+    AdminSocialStatsService,
+    AdminSystemStatsService,
+    BackupService,
+  ],
 })
 export class AdminModule {}

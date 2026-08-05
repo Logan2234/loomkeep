@@ -19,6 +19,10 @@
   --color-btn-fg: var(--btn-fg);
   --color-success: var(--success);
   --color-danger: var(--danger);
+  --color-stat-media: var(--stat-media);
+  --color-stat-games: var(--stat-games);
+  --color-stat-books: var(--stat-books);
+  --color-stat-music: var(--stat-music);
 
   --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
   --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;
@@ -43,6 +47,14 @@
   --btn-fg: #fbfaf7;
   --success: #2fa070;
   --danger: #c9445e;
+  /* Stats: one hue per domain, fixed order, CVD-validated (see
+     tracklore-stats-plan memory) — never cycled, never reused for anything
+     else. Sub-splits within a domain (e.g. movie/series/anime) tint this
+     hue rather than borrowing another domain's color. */
+  --stat-media: #b07e10;
+  --stat-games: #0e8f9e;
+  --stat-books: #c7508e;
+  --stat-music: #3e6fc9;
   color-scheme: light;
 }
 
@@ -60,6 +72,10 @@
   --btn-fg: #1a1406;
   --success: #5bd6a0;
   --danger: #f0647c;
+  --stat-media: #d6a02a;
+  --stat-games: #1f9dae;
+  --stat-books: #d866a0;
+  --stat-music: #6e97e0;
   color-scheme: dark;
 }
 

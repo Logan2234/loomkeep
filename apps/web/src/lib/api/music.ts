@@ -2,7 +2,6 @@ import type {
   MusicDetailDto,
   MusicEntryDto,
   MusicSearchResponseDto,
-  MusicStatsDto,
   PagedResult,
   UpdateMusicEntryDto,
   UpsertMusicEntryDto,
@@ -36,10 +35,6 @@ export function listMusic(
     params.set("page", String(filters.page));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/music${suffix}`);
-}
-
-export function getMusicStats(): Promise<MusicStatsDto> {
-  return request("/music/stats");
 }
 
 /** Album detail (catalogue metadata + the user's library state). */

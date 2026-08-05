@@ -17,7 +17,6 @@ import {
   BookEntryDto,
   BookSearchResponseDto,
   BookSource,
-  BookStatsDto,
   Domain,
 } from "@tracklore/shared";
 import type { PagedResult } from "@tracklore/shared";
@@ -62,12 +61,6 @@ export class BooksController {
       this.ageGate.allowsAdultContent(user.sub),
     ]);
     return { results: filterAdultContent(results, allowAdult) };
-  }
-
-  @Get("stats")
-  async getStats(@CurrentUser() user: JwtPayload): Promise<BookStatsDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
-    return this.bookLibraryService.getStats(user.sub);
   }
 
   @Get()

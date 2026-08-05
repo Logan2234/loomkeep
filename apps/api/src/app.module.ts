@@ -22,6 +22,7 @@ import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SocialModule } from "./social/social.module";
+import { StatsModule } from "./stats/stats.module";
 import { UsersModule } from "./users/users.module";
 
 @Module({
@@ -50,6 +51,7 @@ import { UsersModule } from "./users/users.module";
     ReviewsModule,
     CommentsModule,
     ListsModule,
+    StatsModule,
   ],
   controllers: [],
   providers: [

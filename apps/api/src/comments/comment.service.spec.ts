@@ -171,7 +171,14 @@ describe("CommentService.list — spoiler masking", () => {
         }),
       },
       episodeWatch: {
-        findMany: jest.fn().mockResolvedValue([{ episodeId: "e1" }]),
+        // Shared by isMasked's watched-episode check (needs `episodeId`) and
+        // the comment-list streak lookup (needs `userId`/`watchedAt`) — this
+        // mock serves both since jest doesn't distinguish by `select`.
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { episodeId: "e1", userId: "someone", watchedAt: new Date() },
+          ]),
       },
     });
     const page = await svc.list("viewer", "SEASON" as never, "s1");
