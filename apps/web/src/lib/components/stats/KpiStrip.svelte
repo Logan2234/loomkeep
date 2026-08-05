@@ -1,7 +1,8 @@
 <script lang="ts">
-  // The six numbers the mockup pins above every section — assembled from the
-  // section payloads rather than from an endpoint of their own, so the strip
-  // can never disagree with the cards underneath it.
+  // The row of headline numbers pinned above a page's content — on /admin/stats
+  // the six the mockup called for, on the operational admin pages the two to
+  // five that summarise the raw list underneath. Always assembled from the same
+  // payload as what it sits above, so the strip can never disagree with it.
   let {
     tiles,
   }: {

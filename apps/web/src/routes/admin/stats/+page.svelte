@@ -24,7 +24,7 @@
   } from "@tracklore/shared";
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
-  import KpiStrip from "./components/KpiStrip.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import SocialSection from "./components/SocialSection.svelte";
   import SystemSection from "./components/SystemSection.svelte";
 

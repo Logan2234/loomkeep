@@ -3,6 +3,9 @@
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
+  import RankBars from "$lib/components/stats/RankBars.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import type { ServiceStatusDto } from "@tracklore/shared";
 
   let services = $state<ServiceStatusDto[] | null>(null);
@@ -54,6 +57,73 @@
   });
 
   const nf = new Intl.NumberFormat("fr-FR");
+
+  // --- page header summary ---------------------------------------------------
+  // Everything below is derived from the payload the list already renders: the
+  // page loads every service in one call, so a summary endpoint would only
+  // re-fetch what's on screen (and risk disagreeing with it).
+
+  /** Planned providers are excluded everywhere: they have nothing to be healthy or spend. */
+  const live = $derived((services ?? []).filter((s) => !s.comingSoon));
+
+  /** Configured and either probed-OK or unprobeable (VAPID has nothing to ping). */
+  const healthy = $derived(
+    live.filter((s) => s.configured && s.reachable !== false).length,
+  );
+
+  const callsToday = $derived(live.reduce((sum, s) => sum + (s.today ?? 0), 0));
+
+  const metered = $derived(live.filter((s) => s.limit !== undefined));
+  /** Providers billed by call but with no documented ceiling — the ones nothing warns about. */
+  const unmetered = $derived(
+    live.filter((s) => s.limit === undefined && s.today !== undefined),
+  );
+
+  const busiestQuota = $derived(
+    metered.reduce((max, s) => Math.max(max, s.percentUsed ?? 0), 0),
+  );
+
+  const kpis = $derived([
+    { value: `${healthy}/${live.length}`, label: "Services opérationnels" },
+    { value: nf.format(callsToday), label: "Appels aujourd'hui" },
+    {
+      value: String(busiestQuota),
+      unit: "%",
+      label: "Quota le plus chargé",
+      alert: busiestQuota >= 80,
+    },
+  ]);
+
+  /** Calls counted against the window the provider's own quota resets on. */
+  function quotaUsage(s: ServiceStatusDto): number {
+    return (s.limit?.window === "month" ? s.thisMonth : s.today) ?? 0;
+  }
+
+  const meteredBars = $derived(
+    [...metered]
+      .sort((a, b) => (b.percentUsed ?? 0) - (a.percentUsed ?? 0))
+      .map((s) => ({
+        label: s.label,
+        value: quotaUsage(s),
+        display: `${nf.format(quotaUsage(s))} / ${nf.format(s.limit?.max ?? 0)}`,
+        badge: {
+          text: `${s.percentUsed ?? 0} %`,
+          tone: ((s.percentUsed ?? 0) >= 80 ? "warn" : "neutral") as
+            "warn" | "neutral",
+        },
+      })),
+  );
+
+  const unmeteredBars = $derived(
+    [...unmetered]
+      .sort((a, b) => (b.today ?? 0) - (a.today ?? 0))
+      .map((s) => ({
+        label: s.label,
+        value: s.today ?? 0,
+        display: `${nf.format(s.today ?? 0)} auj.`,
+        badge: { text: "sans limite" },
+      })),
+  );
 
   type Health = { label: string; cls: string };
 
@@ -125,6 +195,22 @@
       {/each}
     </div>
   {:else}
+    <KpiStrip tiles={kpis} />
+
+    <!-- Quota providers and free-running ones read very differently: one is a
+         budget to watch, the other only a volume. Splitting them here keeps the
+         list below free of that distinction. -->
+    <div class="mb-6 grid gap-3.5 lg:grid-cols-2">
+      <div class="card p-4">
+        <SectionLabel label="Sous quota documenté" class="mb-3" />
+        <RankBars items={meteredBars} />
+      </div>
+      <div class="card p-4">
+        <SectionLabel label="Sans limite connue" class="mb-3" />
+        <RankBars items={unmeteredBars} />
+      </div>
+    </div>
+
     <div class="space-y-8">
       {#each grouped as group (group.area)}
         <section>

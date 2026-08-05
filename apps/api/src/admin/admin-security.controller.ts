@@ -1,5 +1,6 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import type {
+  AdminSecuritySummaryDto,
   SecurityEventListResponseDto,
   SecurityEventType,
 } from "@tracklore/shared";
@@ -20,6 +21,12 @@ const SECURITY_EVENT_TYPES: SecurityEventType[] = [
 @Controller("admin")
 export class AdminSecurityController {
   constructor(private readonly securityEvents: SecurityEventService) {}
+
+  /** Failed-login pressure over 24 h / 7 j / 30 j, for the page header. */
+  @Get("security/summary")
+  getSecuritySummary(): Promise<AdminSecuritySummaryDto> {
+    return this.securityEvents.summary();
+  }
 
   /** Sensitive account actions, filterable by type/identifier and paginated. */
   @Get("security")

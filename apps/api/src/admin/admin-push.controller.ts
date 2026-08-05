@@ -10,10 +10,12 @@ import type {
   AdminPushBroadcastResponseDto,
   AdminPushDeviceDto,
   AdminPushSendResponseDto,
+  AdminPushSummaryDto,
 } from "@tracklore/shared";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
+import { groupByUserAgentFamily } from "./admin-push.util";
 import { SendAdminBroadcastPushDto } from "./dto/send-admin-broadcast-push.dto";
 import { SendAdminTestPushDto } from "./dto/send-admin-test-push.dto";
 
@@ -25,6 +27,29 @@ export class AdminPushController {
     private readonly push: PushService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Instance-wide push reach, for the header of the Communications "Push" tab.
+   * Active subscriptions only — a subscription the push service rejects is
+   * deleted on the spot (see `PushService.sendToUserDetailed`), so there is no
+   * dead-subscription count to report against it.
+   */
+  @Get("push/summary")
+  async getPushSummary(): Promise<AdminPushSummaryDto> {
+    const [rows, accounts] = await Promise.all([
+      this.prisma.pushSubscription.findMany({ select: { userAgent: true } }),
+      this.prisma.pushSubscription.findMany({
+        distinct: ["userId"],
+        select: { userId: true },
+      }),
+    ]);
+
+    return {
+      subscriptions: rows.length,
+      accounts: accounts.length,
+      byUserAgent: groupByUserAgentFamily(rows.map((r) => r.userAgent)),
+    };
+  }
 
   /** Devices the account matching `email` has an active push subscription on. */
   @Get("push/devices")

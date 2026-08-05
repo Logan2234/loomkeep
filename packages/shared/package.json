@@ -1,6 +1,6 @@
 {
   "name": "@tracklore/shared",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "Types, enums and DTOs shared between the Tracklore API and web app",
   "private": true,
   "license": "AGPL-3.0-only",

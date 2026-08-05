@@ -1,4 +1,5 @@
 import type { CommentService } from "../comments/comment.service";
+import type { PrismaService } from "../prisma/prisma.service";
 import type { ReportService } from "../reports/report.service";
 import { AdminReportsController } from "./admin-reports.controller";
 
@@ -18,8 +19,17 @@ function makeController(
     adminRemove: jest.fn(),
   } as unknown as CommentService;
 
-  const controller = new AdminReportsController(reports, comments);
-  return { controller, reports, comments };
+  const prisma = {
+    report: {
+      count: jest.fn().mockResolvedValue(0),
+      findMany: jest.fn().mockResolvedValue([]),
+      groupBy: jest.fn().mockResolvedValue([]),
+    },
+    user: { findMany: jest.fn().mockResolvedValue([]) },
+  } as unknown as PrismaService;
+
+  const controller = new AdminReportsController(reports, comments, prisma);
+  return { controller, reports, comments, prisma };
 }
 
 const ADMIN = { sub: "admin1" } as never;
@@ -53,5 +63,41 @@ describe("AdminReportsController.takeDown", () => {
     });
 
     await expect(controller.takeDown(ADMIN, "missing")).rejects.toThrow();
+  });
+});
+
+describe("AdminReportsController.summary", () => {
+  it("counts the whole queue and ranks the reporters", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.report.count as jest.Mock)
+      .mockResolvedValueOnce(2) // pending
+      .mockResolvedValueOnce(7) // resolved
+      .mockResolvedValueOnce(3); // dismissed
+    (prisma.report.findMany as jest.Mock).mockResolvedValue([
+      {
+        createdAt: new Date("2026-07-01T00:00:00.000Z"),
+        resolvedAt: new Date("2026-07-01T04:00:00.000Z"),
+      },
+    ]);
+    (prisma.report.groupBy as jest.Mock).mockResolvedValue([
+      { reporterId: "u1", _count: { _all: 8 } },
+      { reporterId: "u2", _count: { _all: 1 } },
+    ]);
+    (prisma.user.findMany as jest.Mock).mockResolvedValue([
+      { id: "u1", username: "logan" },
+      { id: "u2", username: "mira" },
+    ]);
+
+    await expect(controller.summary()).resolves.toEqual({
+      pending: 2,
+      resolved: 7,
+      dismissed: 3,
+      medianResolutionHours: 4,
+      foundedPercent: 70,
+      topReporters: [
+        { username: "logan", reports: 8 },
+        { username: "mira", reports: 1 },
+      ],
+    });
   });
 });

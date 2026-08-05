@@ -1,7 +1,13 @@
-import type { AdminTopContributorDto } from "@tracklore/shared";
+import type {
+  AdminTopContributorDto,
+  AdminTopReporterDto,
+} from "@tracklore/shared";
 
 /** How many writers the "Top contributeurs" ranking carries. */
 const TOP_CONTRIBUTORS_LIMIT = 5;
+
+/** How many accounts the "Top signaleurs" ranking carries. */
+const TOP_REPORTERS_LIMIT = 5;
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -39,6 +45,29 @@ export function foundedPercent(
 ): number | null {
   const closed = resolved + dismissed;
   return closed === 0 ? null : Math.round((resolved / closed) * 100);
+}
+
+/**
+ * Who files the reports, descending — the moderation queue's own ranking, so an
+ * admin can tell a genuinely reported instance from one account flagging
+ * everything. Same resolution rule as {@link rankContributors}: an id whose
+ * username didn't resolve is dropped rather than shown anonymously.
+ */
+export function rankReporters(
+  /** userId → reports filed. */
+  counts: Map<string, number>,
+  usernames: Map<string, string>,
+  limit = TOP_REPORTERS_LIMIT,
+): AdminTopReporterDto[] {
+  return [...counts.entries()]
+    .flatMap(([id, reports]) => {
+      const username = usernames.get(id);
+      return username ? [{ username, reports }] : [];
+    })
+    .sort(
+      (a, b) => b.reports - a.reports || a.username.localeCompare(b.username),
+    )
+    .slice(0, limit);
 }
 
 /** One account's writing volume, as counted separately on each table. */

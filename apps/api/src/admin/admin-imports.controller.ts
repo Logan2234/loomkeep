@@ -1,9 +1,11 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import type {
   AdminImportRunListResponseDto,
+  AdminImportSummaryDto,
   JobStatus,
 } from "@tracklore/shared";
 import { PrismaService } from "../prisma/prisma.service";
+import { buildImportSummary } from "./admin-imports.util";
 import { AdminOnly } from "./admin-only.decorator";
 
 const PAGE_SIZE = 50;
@@ -14,6 +16,34 @@ const STATUSES: JobStatus[] = ["SUCCESS", "FAILURE"];
 @Controller("admin")
 export class AdminImportsController {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Page-header figures over the *whole* log, ignoring the list's filters and
+   * pagination — summing the 50 rows on screen would drift as soon as the admin
+   * scrolls or filters.
+   */
+  @Get("imports/summary")
+  async getImportSummary(): Promise<AdminImportSummaryDto> {
+    const [success, failure, bySource] = await Promise.all([
+      this.prisma.importRun.count({ where: { status: "SUCCESS" } }),
+      this.prisma.importRun.count({ where: { status: "FAILURE" } }),
+      this.prisma.importRun.groupBy({
+        by: ["sourceId"],
+        _count: { _all: true },
+        _sum: { itemCount: true },
+      }),
+    ]);
+
+    return buildImportSummary(
+      success,
+      failure,
+      bySource.map((row) => ({
+        sourceId: row.sourceId,
+        runs: row._count._all,
+        items: row._sum.itemCount ?? 0,
+      })),
+    );
+  }
 
   /** Most recent commits first, filterable by source/status/account and paginated. */
   @Get("imports")

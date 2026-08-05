@@ -10,11 +10,15 @@ import type {
   AdminCacheSort,
   AdminCatalogueSectionDto,
   AdminImportRunListResponseDto,
+  AdminImportSummaryDto,
   AdminNewAccountsTrendDto,
   AdminPushBroadcastResponseDto,
   AdminPushDeviceDto,
   AdminPushSendResponseDto,
+  AdminPushSummaryDto,
   AdminOverviewDto,
+  AdminReportsSummaryDto,
+  AdminSecuritySummaryDto,
   AdminSocialActivityTrendDto,
   AdminSocialSectionDto,
   AdminSystemSectionDto,
@@ -82,6 +86,11 @@ export function getAdminPushDevices(
 ): Promise<AdminPushDeviceDto[]> {
   const params = new URLSearchParams({ email });
   return request(`/admin/push/devices?${params}`);
+}
+
+/** Instance-wide push reach (active subscriptions, accounts, browser families). */
+export function getAdminPushSummary(): Promise<AdminPushSummaryDto> {
+  return request("/admin/push/summary");
 }
 
 /** Sends one push to every subscribed device on the instance, across every account. */
@@ -342,6 +351,16 @@ export function getAdminImportRuns(
   return request(`/admin/imports${suffix}`);
 }
 
+/** Totals/success rate/per-source volume over the whole import log, ignoring the list filters. */
+export function getAdminImportSummary(): Promise<AdminImportSummaryDto> {
+  return request("/admin/imports/summary");
+}
+
+/** Failed-login pressure over 24 h / 7 j / 30 j, plus the most-targeted identifiers. */
+export function getAdminSecuritySummary(): Promise<AdminSecuritySummaryDto> {
+  return request("/admin/security/summary");
+}
+
 /** Sensitive account actions, filterable by type and identifier, paginated. */
 export function getAdminSecurityEvents(
   filters: {
@@ -369,6 +388,11 @@ export function getAdminReports(
   if (filters.reporterId) params.set("reporterId", filters.reporterId);
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/reports${suffix}`);
+}
+
+/** Queue-wide moderation figures (statuses, delay, founded share, top reporters). */
+export function getAdminReportsSummary(): Promise<AdminReportsSummaryDto> {
+  return request("/admin/reports/summary");
 }
 
 export function getAdminReportsPendingCount(): Promise<{ count: number }> {
