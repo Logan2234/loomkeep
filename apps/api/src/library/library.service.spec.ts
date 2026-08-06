@@ -352,3 +352,78 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     );
   });
 });
+
+describe("LibraryService.unwatchSeason", () => {
+  it("clears every watch for the season's episodes and re-syncs finishedAt", async () => {
+    const seasonEpisodes = [{ id: "ep1" }, { id: "ep2" }];
+    const progressEpisodes = [
+      { id: "ep1", number: 1, airDate: null, season: { number: 1 } },
+      { id: "ep2", number: 2, airDate: null, season: { number: 1 } },
+    ];
+
+    const deleteMany = jest.fn().mockResolvedValue({ count: 2 });
+    const prisma = {
+      season: {
+        findUnique: jest.fn().mockResolvedValue({
+          mediaItemId: "media-1",
+          mediaItem: { type: "SERIES" },
+        }),
+      },
+      episode: {
+        findMany: jest
+          .fn()
+          // unwatchSeason's own lookup (season's episode ids)
+          .mockImplementationOnce(() => Promise.resolve(seasonEpisodes))
+          // computeProgress, via syncFinishedAt
+          .mockImplementationOnce(() => Promise.resolve(progressEpisodes)),
+      },
+      episodeWatch: {
+        deleteMany,
+        findMany: jest.fn().mockResolvedValue([]), // nothing left watched
+      },
+      libraryEntry: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ status: "COMPLETED", finishedAt: new Date() }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    } as unknown as PrismaService;
+
+    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      activity,
+    );
+
+    await service.unwatchSeason("user-1", "season-1");
+
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", episodeId: { in: ["ep1", "ep2"] } },
+    });
+    // The entry was COMPLETED with finishedAt set, but progress is now 0/2
+    // watched, so syncFinishedAt should clear it back to null.
+    expect(prisma.libraryEntry.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { finishedAt: null } }),
+    );
+  });
+
+  it("throws when the season doesn't exist", async () => {
+    const prisma = {
+      season: { findUnique: jest.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: jest.fn() } as unknown as ActivityService,
+    );
+
+    await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
+      "Season not found",
+    );
+  });
+});

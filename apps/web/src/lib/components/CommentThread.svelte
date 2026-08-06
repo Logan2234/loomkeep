@@ -49,7 +49,15 @@
   let {
     targetType,
     targetId,
-  }: { targetType: CommentTargetType; targetId: string } = $props();
+    digest = false,
+  }: {
+    targetType: CommentTargetType;
+    targetId: string;
+    /** Media detail page ("Cinéma minimal"): always expanded, top-level
+     * comments capped at 5 and replies at the last 2, each behind a discreet
+     * mono "+N" reveal instead of the collapsed-by-default gate below. */
+    digest?: boolean;
+  } = $props();
 
   const queryClient = useQueryClient();
   const key = $derived(["comments", targetType, targetId] as const);
@@ -57,8 +65,9 @@
 
   // Collapsed by default — the thread only opens on demand (see
   // conversation with Logan, 2026-07-21: comments shouldn't dominate the
-  // detail page the way the single-per-person review does).
-  let expanded = $state(false);
+  // detail page the way the single-per-person review does). `digest` pages
+  // opt out: they show a capped list up front instead of gating it entirely.
+  let expanded = $state(digest);
 
   const countQuery = createQuery(() => ({
     queryKey: countKey,
@@ -90,6 +99,22 @@
   const visibleComments = $derived(
     comments.filter((c) => !(c.deleted && c.replies.length === 0)),
   );
+
+  // Digest mode's own progressive disclosure: capped top-level list (reveals
+  // everything already loaded in one go, rather than incrementally) and a
+  // per-comment "show earlier replies" set.
+  let showAllTop = $state(false);
+  let expandedReplies = $state<Set<string>>(new Set());
+  const displayedComments = $derived(
+    digest && !showAllTop ? visibleComments.slice(0, 5) : visibleComments,
+  );
+  const hiddenTopCount = $derived(
+    digest && !showAllTop ? Math.max(0, visibleComments.length - 5) : 0,
+  );
+
+  function expandReplies(id: string) {
+    expandedReplies = new Set(expandedReplies).add(id);
+  }
 
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: key });
@@ -436,10 +461,21 @@
               {editText.length}/{COMMENT_TEXT_MAX_LENGTH}
             </p>
             {#if allowSpoilerTag}
-              <label class="mt-1 flex items-center gap-1.5 text-xs">
-                <input type="checkbox" bind:checked={editSpoilerTag} />
-                Contient un spoiler
-              </label>
+              <button
+                type="button"
+                aria-pressed={editSpoilerTag}
+                title={editSpoilerTag
+                  ? "Retirer le tag spoiler"
+                  : "Marquer comme spoiler"}
+                aria-label={editSpoilerTag
+                  ? "Retirer le tag spoiler"
+                  : "Marquer comme spoiler"}
+                onclick={() => (editSpoilerTag = !editSpoilerTag)}
+                class="mt-1 grid h-7 w-7 place-items-center rounded-full border transition-colors {editSpoilerTag
+                  ? 'border-accent text-accent'
+                  : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
+                <Icon name="eye-off" class="h-4 w-4" />
+              </button>
             {/if}
             <div class="mt-1 flex gap-2">
               <button
@@ -497,23 +533,32 @@
 {/snippet}
 
 <section class="mt-6">
-  <button
-    type="button"
-    class="border-border hover:bg-surface-2 flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2.5"
-    onclick={() => (expanded = !expanded)}>
-    <span class="flex items-center gap-1.5 text-sm font-semibold">
-      <Icon name="message" class="h-4 w-4" />
+  {#if digest}
+    <h2 class="font-display mb-3 text-xl font-bold">
       Commentaires
       {#if countQuery.data}
         <span class="text-dim font-normal">({countQuery.data.count})</span>
       {/if}
-    </span>
-    <Icon
-      name="chevron-right"
-      class="text-dim h-4 w-4 transition-transform {expanded
-        ? 'rotate-90'
-        : ''}" />
-  </button>
+    </h2>
+  {:else}
+    <button
+      type="button"
+      class="border-border hover:bg-surface-2 flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2.5"
+      onclick={() => (expanded = !expanded)}>
+      <span class="flex items-center gap-1.5 text-sm font-semibold">
+        <Icon name="message" class="h-4 w-4" />
+        Commentaires
+        {#if countQuery.data}
+          <span class="text-dim font-normal">({countQuery.data.count})</span>
+        {/if}
+      </span>
+      <Icon
+        name="chevron-right"
+        class="text-dim h-4 w-4 transition-transform {expanded
+          ? 'rotate-90'
+          : ''}" />
+    </button>
+  {/if}
 
   {#if expanded}
     <div class="mt-3">
@@ -540,10 +585,21 @@
         </p>
         <div class="mt-1 flex items-center justify-between gap-2">
           {#if allowSpoilerTag}
-            <label class="text-dim flex items-center gap-1.5 text-xs">
-              <input type="checkbox" bind:checked={newSpoilerTag} />
-              Contient un spoiler
-            </label>
+            <button
+              type="button"
+              aria-pressed={newSpoilerTag}
+              title={newSpoilerTag
+                ? "Retirer le tag spoiler"
+                : "Marquer comme spoiler"}
+              aria-label={newSpoilerTag
+                ? "Retirer le tag spoiler"
+                : "Marquer comme spoiler"}
+              onclick={() => (newSpoilerTag = !newSpoilerTag)}
+              class="grid h-7 w-7 place-items-center rounded-full border transition-colors {newSpoilerTag
+                ? 'border-accent text-accent'
+                : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
+              <Icon name="eye-off" class="h-4 w-4" />
+            </button>
           {:else}
             <span></span>
           {/if}
@@ -565,18 +621,48 @@
       {:else if visibleComments.length === 0}
         <p class="text-dim text-sm">Aucun commentaire pour l'instant.</p>
       {:else}
-        <div class="flex flex-col gap-2">
-          {#each visibleComments as c (c.id)}
-            {@render commentCard(c, false)}
-            {#each c.replies as r (r.id)}
-              {#if !r.deleted}
-                {@render commentCard(r, true)}
+        <div class="relative">
+          <div class="flex flex-col gap-2">
+            {#each displayedComments as c (c.id)}
+              {@const shownReplies =
+                digest && !expandedReplies.has(c.id)
+                  ? c.replies.slice(-2)
+                  : c.replies}
+              {@const hiddenReplyCount =
+                digest && !expandedReplies.has(c.id)
+                  ? Math.max(0, c.replies.length - 2)
+                  : 0}
+              {@render commentCard(c, false)}
+              {#each shownReplies as r (r.id)}
+                {#if !r.deleted}
+                  {@render commentCard(r, true)}
+                {/if}
+              {/each}
+              {#if hiddenReplyCount > 0}
+                <button
+                  type="button"
+                  class="timecode ml-8 block text-left text-xs hover:underline"
+                  onclick={() => expandReplies(c.id)}>
+                  +{hiddenReplyCount} réponse{hiddenReplyCount > 1 ? "s" : ""}
+                </button>
               {/if}
             {/each}
-          {/each}
+          </div>
+
+          {#if hiddenTopCount > 0}
+            <div
+              class="from-bg via-bg/90 pointer-events-none absolute inset-x-0 -bottom-2 flex h-16 items-end justify-center bg-linear-to-t to-transparent pb-1">
+              <button
+                type="button"
+                class="chip timecode pointer-events-auto"
+                onclick={() => (showAllTop = true)}>
+                +{hiddenTopCount} commentaire{hiddenTopCount > 1 ? "s" : ""}
+              </button>
+            </div>
+          {/if}
         </div>
 
-        {#if query.hasNextPage}
+        {#if (!digest || showAllTop) && query.hasNextPage}
           <button
             class="btn btn-ghost btn-sm mt-3"
             disabled={query.isFetchingNextPage}

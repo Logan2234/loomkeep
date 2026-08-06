@@ -168,5 +168,13 @@
     <circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none" />
     <circle cx="9" cy="18" r="1.2" fill="currentColor" stroke="none" />
     <circle cx="15" cy="18" r="1.2" fill="currentColor" stroke="none" />
+  {:else if name === "dots-horizontal"}
+    <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" />
+  {:else if name === "dots-vertical"}
+    <circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none" />
   {/if}
 </svg>
