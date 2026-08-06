@@ -76,7 +76,7 @@
       <a href="/" class="flex min-w-0 items-center overflow-hidden">
         <span
           class="font-display text-accent grid h-10 w-10 shrink-0 place-items-center text-xl font-extrabold">
-          T
+          L
         </span>
 
         <span

@@ -27,7 +27,7 @@
   <div class="w-full max-w-sm">
     <div class="mb-8 text-center">
       <p class="font-display text-3xl font-extrabold tracking-tight">
-        TRACK<span class="text-accent">LORE</span>
+        LOOM<span class="text-accent">KEEP</span>
       </p>
       <p class="text-dim mt-2 text-sm">Ta salle de projection privée.</p>
     </div>

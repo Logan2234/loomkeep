@@ -47,10 +47,10 @@
   --btn-fg: #fbfaf7;
   --success: #2fa070;
   --danger: #c9445e;
-  /* Stats: one hue per domain, fixed order, CVD-validated (see
-     tracklore-stats-plan memory) — never cycled, never reused for anything
-     else. Sub-splits within a domain (e.g. movie/series/anime) tint this
-     hue rather than borrowing another domain's color. */
+  /* Stats: one hue per domain, fixed order, CVD-validated — never cycled,
+     never reused for anything else. Sub-splits within a domain (e.g.
+     movie/series/anime) tint this hue rather than borrowing another
+     domain's color. */
   --stat-media: #b07e10;
   --stat-games: #0e8f9e;
   --stat-books: #c7508e;
