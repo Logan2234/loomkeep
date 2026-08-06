@@ -53,11 +53,18 @@ function makeService(
 ) {
   const prisma = {
     libraryEntry: { findMany: jest.fn().mockResolvedValue(rows) },
+    // listEntries fetches episodes/watches batched across all media items
+    // (`mediaItemId: { in: [...] }`) rather than one query per entry.
     episode: {
       findMany: jest.fn(
-        ({ where }: { where: { season: { mediaItemId: string } } }) =>
+        ({ where }: { where: { season: { mediaItemId: { in: string[] } } } }) =>
           Promise.resolve(
-            opts.episodesByMediaItem?.[where.season.mediaItemId] ?? [],
+            where.season.mediaItemId.in.flatMap((mediaItemId) =>
+              (opts.episodesByMediaItem?.[mediaItemId] ?? []).map((e) => ({
+                ...e,
+                season: { ...e.season, mediaItemId },
+              })),
+            ),
           ),
       ),
     },
@@ -66,27 +73,21 @@ function makeService(
         ({
           where,
         }: {
-          where: { episode: { season: { mediaItemId: string } } };
-        }) => {
-          const ids =
-            opts.watchedByMediaItem?.[where.episode.season.mediaItemId] ?? [];
-          return Promise.resolve(ids.map((episodeId) => ({ episodeId })));
-        },
-      ),
-      aggregate: jest.fn(
-        ({
-          where,
-        }: {
-          where: { episode: { season: { mediaItemId: string } } };
+          where: { episode: { season: { mediaItemId: { in: string[] } } } };
         }) =>
-          Promise.resolve({
-            _max: {
-              watchedAt:
-                opts.lastWatchedByMediaItem?.[
-                  where.episode.season.mediaItemId
-                ] ?? null,
-            },
-          }),
+          Promise.resolve(
+            where.episode.season.mediaItemId.in.flatMap((mediaItemId) => {
+              const watchedAt =
+                opts.lastWatchedByMediaItem?.[mediaItemId] ?? new Date(0);
+              return (opts.watchedByMediaItem?.[mediaItemId] ?? []).map(
+                (episodeId) => ({
+                  episodeId,
+                  watchedAt,
+                  episode: { season: { mediaItemId, number: 1 } },
+                }),
+              );
+            }),
+          ),
       ),
     },
   } as unknown as PrismaService;

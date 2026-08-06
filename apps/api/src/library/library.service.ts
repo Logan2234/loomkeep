@@ -219,21 +219,20 @@ export class LibraryService {
       orderBy: { updatedAt: "desc" },
     });
 
-    const ratings = await this.reviews.getRatings(
-      userId,
-      ReviewTargetType.MEDIA,
-      entries.map((e) => e.mediaItemId),
-    );
-    const dtos = await Promise.all(
-      entries.map(async (entry) =>
-        this.toEntryDto(
-          entry,
-          await this.computeProgress(userId, entry.mediaItemId),
-          await this.lastWatchedAt(userId, entry.mediaItemId),
-          ratings.get(entry.mediaItemId) ?? null,
-        ),
-      ),
-    );
+    const mediaItemIds = entries.map((e) => e.mediaItemId);
+    const [ratings, progressByMedia] = await Promise.all([
+      this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
+      this.computeProgressBatch(userId, mediaItemIds),
+    ]);
+    const dtos = entries.map((entry) => {
+      const p = progressByMedia.get(entry.mediaItemId);
+      return this.toEntryDto(
+        entry,
+        p?.progress ?? null,
+        p?.lastWatchedAt ?? null,
+        ratings.get(entry.mediaItemId) ?? null,
+      );
+    });
 
     // Status is derived, so filter on the effective status, not the stored
     // one — "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
@@ -759,6 +758,114 @@ export class LibraryService {
    * Season 0 holds specials on TMDB: they are watchable but excluded from the
    * watched/total progress so "100%" means the regular run is complete.
    */
+  /**
+   * Batched form of `computeProgress` + `lastWatchedAt` for `listEntries`:
+   * that call site was doing 2-3 DB round trips *per entry* (fine for
+   * `getEntry`'s single row, but a query storm across a whole library),
+   * so this fetches every relevant episode/watch once and reduces them
+   * per media item in memory instead.
+   */
+  private async computeProgressBatch(
+    userId: string,
+    mediaItemIds: string[],
+  ): Promise<
+    Map<string, { progress: ProgressDto | null; lastWatchedAt: Date | null }>
+  > {
+    const result = new Map<
+      string,
+      { progress: ProgressDto | null; lastWatchedAt: Date | null }
+    >();
+    if (mediaItemIds.length === 0) return result;
+
+    const episodes = await this.prisma.episode.findMany({
+      where: {
+        season: { mediaItemId: { in: mediaItemIds }, number: { gt: 0 } },
+      },
+      orderBy: [{ season: { number: "asc" } }, { number: "asc" }],
+      select: {
+        id: true,
+        number: true,
+        airDate: true,
+        season: { select: { number: true, mediaItemId: true } },
+      },
+    });
+    const episodesByMedia = new Map<string, typeof episodes>();
+
+    for (const e of episodes) {
+      const list = episodesByMedia.get(e.season.mediaItemId);
+      if (list) list.push(e);
+      else episodesByMedia.set(e.season.mediaItemId, [e]);
+    }
+
+    // Watches across ALL seasons (specials included) — `lastWatchedAt`
+    // tracks any viewing, while progress below only counts regular ones.
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: {
+        userId,
+        episode: { season: { mediaItemId: { in: mediaItemIds } } },
+      },
+      select: {
+        episodeId: true,
+        watchedAt: true,
+        episode: {
+          select: { season: { select: { mediaItemId: true, number: true } } },
+        },
+      },
+    });
+    const watchedRegularIdsByMedia = new Map<string, Set<string>>();
+    const lastWatchedByMedia = new Map<string, Date>();
+
+    for (const w of watches) {
+      const mediaItemId = w.episode.season.mediaItemId;
+      const prevLast = lastWatchedByMedia.get(mediaItemId);
+      if (!prevLast || w.watchedAt > prevLast)
+        lastWatchedByMedia.set(mediaItemId, w.watchedAt);
+
+      if (w.episode.season.number > 0) {
+        const set = watchedRegularIdsByMedia.get(mediaItemId);
+        if (set) set.add(w.episodeId);
+        else watchedRegularIdsByMedia.set(mediaItemId, new Set([w.episodeId]));
+      }
+    }
+
+    const now = new Date();
+
+    for (const mediaItemId of mediaItemIds) {
+      const mediaEpisodes = episodesByMedia.get(mediaItemId);
+
+      if (!mediaEpisodes || mediaEpisodes.length === 0) {
+        result.set(mediaItemId, {
+          progress: null,
+          lastWatchedAt: lastWatchedByMedia.get(mediaItemId) ?? null,
+        });
+        continue;
+      }
+
+      const watchedIds =
+        watchedRegularIdsByMedia.get(mediaItemId) ?? new Set<string>();
+      const next = mediaEpisodes.find(
+        (e) =>
+          !watchedIds.has(e.id) && (e.airDate === null || e.airDate <= now),
+      );
+      result.set(mediaItemId, {
+        progress: {
+          watchedEpisodes: watchedIds.size,
+          totalEpisodes: mediaEpisodes.length,
+          nextEpisode: next
+            ? {
+                episodeId: next.id,
+                seasonNumber: next.season.number,
+                episodeNumber: next.number,
+              }
+            : null,
+        },
+        lastWatchedAt: lastWatchedByMedia.get(mediaItemId) ?? null,
+      });
+    }
+
+    return result;
+  }
+
   private async computeProgress(
     userId: string,
     mediaItemId: string,
