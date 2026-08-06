@@ -33,7 +33,7 @@ export class PushService {
 
     if (this.enabled) {
       webpush.setVapidDetails(
-        VAPID_SUBJECT ?? "mailto:logan.w@sfr.fr",
+        VAPID_SUBJECT ?? "mailto:loganwi322.dev@gmail.com",
         VAPID_PUBLIC_KEY!,
         VAPID_PRIVATE_KEY!,
       );

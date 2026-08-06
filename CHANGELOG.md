@@ -28,7 +28,7 @@ every surface, verified by a full build, the API unit suite and
   `docker-compose.ngrok.yml`, both `.env.example` files, `ngrok.example.yml`
   and the CI Postgres service: database user/name and the ngrok tunnel name
   are now `loomkeep`, and `SMTP_FROM` defaults to
-  `Loomkeep <no-reply@loomkeep.app>`. Safe to change wholesale — no
+  `Loomkeep <noreply@loomkeep.app>`. Safe to change wholesale — no
   production instance exists yet, so there is nothing to migrate. An existing
   local `tracklore-dev-db` container keeps its own name and credentials until
   it is recreated.

@@ -34,7 +34,7 @@ describe("MailService", () => {
     process.env.SMTP_PORT = "587";
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
-    process.env.SMTP_FROM = "Loomkeep <no-reply@loomkeep.app>";
+    process.env.SMTP_FROM = "Loomkeep <noreply@loomkeep.app>";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
     const sendMail = jest.fn().mockResolvedValue(undefined);
@@ -53,7 +53,7 @@ describe("MailService", () => {
     );
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "Loomkeep <no-reply@loomkeep.app>",
+        from: "Loomkeep <noreply@loomkeep.app>",
         to: "alice@example.com",
         text: expect.stringContaining(
           "https://loomkeep.example/reset-password?token=tok123",

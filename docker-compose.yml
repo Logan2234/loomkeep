@@ -48,13 +48,13 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: "${SMTP_FROM:-Loomkeep <no-reply@loomkeep.app>}"
+      SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       BACKUP_DIR: /data/backups
     volumes:
       - backup-data:/data/backups
     ports:
-      - "${API_PORT:-3000}:3000"
+      - "3000:3000"
 
   web:
     build:
@@ -68,7 +68,7 @@ services:
       # from outside the compose network.
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
     ports:
-      - "${WEB_PORT:-8080}:3000"
+      - "8080:3000"
 
 volumes:
   db-data:

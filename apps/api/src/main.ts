@@ -64,7 +64,7 @@ async function bootstrap() {
 
   // Bind to 0.0.0.0: the Fastify adapter defaults to 127.0.0.1, which is
   // unreachable from other containers (reverse proxy) or the published port.
-  await app.listen(process.env.API_PORT ?? 3000, "0.0.0.0");
+  await app.listen(3000, "0.0.0.0");
 }
 
 void bootstrap();

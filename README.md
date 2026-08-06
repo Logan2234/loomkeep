@@ -28,7 +28,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Then open http://localhost:8080 (or `WEB_PORT`), create an account, done.
+Then open http://localhost:8080, create an account, done.
 On a NAS, set `PUBLIC_API_URL` and `WEB_ORIGIN` to the host's address
 (e.g. `http://nas.local:3000/api` and `http://nas.local:8080`).
 

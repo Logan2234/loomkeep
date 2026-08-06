@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import type {
   CatalogSource,
@@ -72,6 +72,7 @@ interface CommitTally {
  */
 @Injectable()
 export class TvTimeImportSource implements ImportSource<ParsedImport> {
+  private readonly logger = new Logger(TvTimeImportSource.name);
   readonly id = "tvtime";
   readonly searchDomain = "media" as const;
   readonly supportsOverwrite = true;
@@ -202,13 +203,25 @@ export class TvTimeImportSource implements ImportSource<ParsedImport> {
 
     for (const show of includedShows) {
       const match = this.resolvedMatch(showKey(show), decisions, matchByKey);
-      if (match) await this.writeShow(userId, show, match, tally);
+      if (match) {
+        try {
+          await this.writeShow(userId, show, match, tally);
+        } catch (error) {
+          throw this.contextualize(error, show.title);
+        }
+      }
       progress.tick();
     }
 
     for (const movie of includedMovies) {
       const match = this.resolvedMatch(movieKey(movie), decisions, matchByKey);
-      if (match) await this.writeMovie(userId, movie, match, tally);
+      if (match) {
+        try {
+          await this.writeMovie(userId, movie, match, tally);
+        } catch (error) {
+          throw this.contextualize(error, movie.title);
+        }
+      }
       progress.tick();
     }
 
@@ -232,6 +245,13 @@ export class TvTimeImportSource implements ImportSource<ParsedImport> {
         },
       ],
     };
+  }
+
+  /** Logs and re-throws a commit-time failure with the title it happened on. */
+  private contextualize(error: unknown, title: string): Error {
+    const message = error instanceof Error ? error.message : String(error);
+    this.logger.error(`Failed to import "${title}": ${message}`);
+    return new Error(`"${title}": ${message}`, { cause: error });
   }
 
   /** The write target for a key: a manual override wins over the auto-match. */
