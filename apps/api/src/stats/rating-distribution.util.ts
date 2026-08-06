@@ -1,4 +1,4 @@
-import type { RatingBucketDto } from "@tracklore/shared";
+import type { RatingBucketDto } from "@loomkeep/shared";
 
 /**
  * Buckets ratings into the 10 integer stars, always returning all 10 buckets

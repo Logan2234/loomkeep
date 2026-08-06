@@ -3,7 +3,7 @@ import type {
   ImportCommitRequest,
   ImportPlan,
   ImportPlanItem,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { ImportJobService } from "../../import-job.service";
 import { TvTimeImportSource } from "./tvtime.source";
 import { makeZip } from "./make-zip";

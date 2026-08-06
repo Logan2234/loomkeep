@@ -15,7 +15,7 @@ import {
   type MyListDto,
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";

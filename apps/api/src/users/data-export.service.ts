@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { UserDataExportDto } from "@tracklore/shared";
-import { ReviewTargetType } from "@tracklore/shared";
+import type { UserDataExportDto } from "@loomkeep/shared";
+import { ReviewTargetType } from "@loomkeep/shared";
 import { toUserDto } from "../auth/auth.service";
 import {
   canonicalExternalId,

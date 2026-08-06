@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { MusicSource, MusicSummaryDto } from "@tracklore/shared";
+import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {
   MusicCatalogProvider,
@@ -284,7 +284,7 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
-          "User-Agent": `Tracklore/1.0 (${contact})`,
+          "User-Agent": `Loomkeep/1.0 (${contact})`,
         },
       });
 

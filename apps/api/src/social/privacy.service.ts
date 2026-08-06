@@ -6,7 +6,7 @@ import {
   type UpdateVisibilitySettingsDto,
   type VisibilitySettingItemDto,
   type VisibilitySettingsDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { SOCIAL_DOMAINS, SOCIAL_FACETS } from "./social.constants";
 import { VisibilityService } from "./visibility.service";

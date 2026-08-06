@@ -45,8 +45,8 @@ export default defineConfig({
         type: "module",
       },
       manifest: {
-        name: "Tracklore",
-        short_name: "Tracklore",
+        name: "Loomkeep",
+        short_name: "Loomkeep",
         description: "Self-hosted tracker for series, movies and anime",
         theme_color: "#0c0d10",
         background_color: "#0c0d10",
@@ -72,16 +72,16 @@ export default defineConfig({
       },
     }),
   ],
-  // @tracklore/shared is a linked workspace package, so Vite treats it as
+  // @loomkeep/shared is a linked workspace package, so Vite treats it as
   // source and skips its usual CJS→ESM pre-bundling — but it's compiled to
   // CommonJS (consumed as dist/, see root CLAUDE.md), so named imports break
   // in dev without forcing that conversion explicitly.
   optimizeDeps: {
-    include: ["@tracklore/shared"],
+    include: ["@loomkeep/shared"],
   },
   build: {
     commonjsOptions: {
-      include: [/@tracklore\/shared/, /node_modules/],
+      include: [/@loomkeep\/shared/, /node_modules/],
     },
   },
 });

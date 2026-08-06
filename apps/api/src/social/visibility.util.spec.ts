@@ -1,4 +1,4 @@
-import { ProfileAccess, VisibilityAudience } from "@tracklore/shared";
+import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 import {
   canAccessProfile,
   computeIsFriend,

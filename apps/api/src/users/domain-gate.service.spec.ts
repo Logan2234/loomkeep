@@ -1,5 +1,5 @@
 import { ForbiddenException } from "@nestjs/common";
-import { Domain } from "@tracklore/shared";
+import { Domain } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { DomainGateService } from "./domain-gate.service";
 

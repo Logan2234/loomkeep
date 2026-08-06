@@ -36,7 +36,7 @@
     ReportDto,
     SessionDto,
     UserSummaryDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   type Filter = "all" | "admin" | "unverified" | "never";
 
@@ -250,7 +250,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tracklore-export-${selected.username}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `loomkeep-export-${selected.username}-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

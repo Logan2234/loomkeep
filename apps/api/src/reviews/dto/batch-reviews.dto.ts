@@ -1,7 +1,7 @@
 import {
   type ReviewVisibility,
   ReviewVisibility as ReviewVisibilityEnum,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { ArrayNotEmpty, IsArray, IsIn, IsString } from "class-validator";
 
 /** Bulk-delete a set of the current user's reviews, by review id. */

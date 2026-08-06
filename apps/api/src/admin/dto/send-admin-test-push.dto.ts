@@ -1,5 +1,5 @@
 import { IsEmail, IsOptional, IsString, MaxLength } from "class-validator";
-import type { SendAdminTestPushRequestDto } from "@tracklore/shared";
+import type { SendAdminTestPushRequestDto } from "@loomkeep/shared";
 
 export class SendAdminTestPushDto implements SendAdminTestPushRequestDto {
   @IsEmail()

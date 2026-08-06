@@ -1,7 +1,7 @@
 import type {
   AdminCohortRowDto,
   AdminEnabledDomainsBucketDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /**
  * How many signup-month cohorts the retention table shows. Six is what the

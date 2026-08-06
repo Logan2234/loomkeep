@@ -1,4 +1,4 @@
-# Override for hosting Tracklore publicly on a VPS with a real domain
+# Override for hosting Loomkeep publicly on a VPS with a real domain
 # (e.g. OVH) behind Caddy, which obtains and renews a Let's Encrypt
 # certificate automatically. Use it on top of the base compose:
 #

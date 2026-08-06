@@ -7,7 +7,7 @@
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
   import { isDomainEnabled } from "$lib/domains";
-  import { Domain } from "@tracklore/shared";
+  import { Domain } from "@loomkeep/shared";
 
   type DomainIcon =
     "tv" | "gamepad" | "book" | "music" | "podcast" | "boardgame";

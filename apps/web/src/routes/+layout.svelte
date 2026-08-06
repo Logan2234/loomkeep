@@ -80,7 +80,7 @@
   <!-- iOS home-screen icon (ignores the SVG favicon / manifest); required for
        installing the PWA, which is itself a prerequisite for Web Push on iOS. -->
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <title>Tracklore</title>
+  <title>Loomkeep</title>
 </svelte:head>
 
 <QueryClientProvider client={queryClient}>

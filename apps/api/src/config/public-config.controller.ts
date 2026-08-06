@@ -1,6 +1,6 @@
 import { Controller, Get } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { PublicConfigDto } from "@tracklore/shared";
+import type { PublicConfigDto } from "@loomkeep/shared";
 import { Public } from "../auth/decorators/public.decorator";
 import { isSocialEnabled } from "../social/social.config";
 

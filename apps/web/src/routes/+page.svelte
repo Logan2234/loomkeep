@@ -21,8 +21,8 @@
     LibraryEntryDto,
     MusicEntryDto,
     NextEpisodeDto,
-  } from "@tracklore/shared";
-  import { Domain } from "@tracklore/shared";
+  } from "@loomkeep/shared";
+  import { Domain } from "@loomkeep/shared";
 
   const mediaOn = $derived(isDomainEnabled(Domain.MEDIA));
   const gamesOn = $derived(isDomainEnabled(Domain.GAMES));
@@ -431,7 +431,7 @@
           <p class="font-display text-sm font-bold">
             🎧 Podcasts &amp; 🎲 Jeux de société
           </p>
-          <p class="text-dim text-xs">Bientôt disponible dans Tracklore.</p>
+          <p class="text-dim text-xs">Bientôt disponible dans Loomkeep.</p>
           <span
             class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
             Bientôt

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createList, deleteList, updateList } from "$lib/api/client";
   import { appConfig } from "$lib/config.svelte";
-  import type { ListDto, ListKind, ListVisibility } from "@tracklore/shared";
+  import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
 
   // Shared "create/edit a list" modal. RANKED/COLLECTION share the same

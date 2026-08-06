@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getUserActivity } from "$lib/api/client";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
-  import type { ActivityEventDto } from "@tracklore/shared";
+  import type { ActivityEventDto } from "@loomkeep/shared";
 
   // A user's recent activity timeline, shown under their profile stats. Loads
   // its own data (visibility-filtered server-side) and hides when empty.

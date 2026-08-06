@@ -2,7 +2,7 @@ import {
   MusicOwnershipStatus,
   MusicStatus,
   UpdateMusicEntryDto as UpdateMusicEntryContract,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsDateString,

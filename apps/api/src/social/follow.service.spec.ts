@@ -1,4 +1,4 @@
-import { NotificationType } from "@tracklore/shared";
+import { NotificationType } from "@loomkeep/shared";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { FollowService } from "./follow.service";

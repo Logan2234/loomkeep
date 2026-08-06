@@ -13,8 +13,8 @@ import {
   type ReviewVoteValue,
   type UpsertReviewDto,
   type UserSummaryDto,
-} from "@tracklore/shared";
-import { ActivityType, type Domain } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { ActivityType, type Domain } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";

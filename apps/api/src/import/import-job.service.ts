@@ -12,7 +12,7 @@ import type {
   ImportJobDto,
   ImportPlan,
   ImportReport,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import {

@@ -1,4 +1,4 @@
-import type { AdminPushUserAgentStatDto } from "@tracklore/shared";
+import type { AdminPushUserAgentStatDto } from "@loomkeep/shared";
 
 /** Label used when the browser has no stored user-agent, or none we recognise. */
 const UNKNOWN_LABEL = "Inconnu";

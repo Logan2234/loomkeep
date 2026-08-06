@@ -2,7 +2,7 @@
 // the same constants aren't retyped across list, detail, import and stats pages.
 // (Media entry statuses are server-derived and handled separately.)
 
-import type { BookStatus, GameStatus, MusicStatus } from "@tracklore/shared";
+import type { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared";
 
 // --- Books ---
 

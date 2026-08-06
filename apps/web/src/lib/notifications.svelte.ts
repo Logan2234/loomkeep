@@ -1,4 +1,4 @@
-import type { NotificationDto } from "@tracklore/shared";
+import type { NotificationDto } from "@loomkeep/shared";
 import {
   getNotifications,
   markNotificationRead,

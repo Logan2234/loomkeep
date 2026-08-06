@@ -1,6 +1,6 @@
 import { ConfigService } from "@nestjs/config";
-import { GameSource } from "@tracklore/shared";
-import type { ImportPlan, ImportPlanItem } from "@tracklore/shared";
+import { GameSource } from "@loomkeep/shared";
+import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import type { ProviderGameDetails } from "../../../games/providers/game-provider.types";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";

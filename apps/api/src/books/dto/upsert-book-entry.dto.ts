@@ -2,7 +2,7 @@ import {
   BookSource,
   BookStatus,
   UpsertBookEntryDto as UpsertBookEntryContract,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsIn,

@@ -5,7 +5,7 @@
     getMyLists,
     removeListItem,
   } from "$lib/api/client";
-  import type { ListItemTargetType, MyListDto } from "@tracklore/shared";
+  import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
   import Icon from "./Icon.svelte";
   import ListFormModal from "./ListFormModal.svelte";
   import Modal from "./Modal.svelte";

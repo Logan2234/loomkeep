@@ -47,7 +47,7 @@ import type {
   TrendPeriod,
   UserDataExportDto,
   UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 /** Health and quota usage of every external dependency (config presence, live probe, call counters). */

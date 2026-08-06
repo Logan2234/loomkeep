@@ -2,7 +2,7 @@ import {
   GameSource,
   GameStatus,
   UpsertGameEntryDto as UpsertGameEntryContract,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsIn,

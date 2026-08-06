@@ -1,4 +1,4 @@
-import { ActivityType, type Domain } from "@tracklore/shared";
+import { ActivityType, type Domain } from "@loomkeep/shared";
 
 /**
  * The role a domain status plays in the shared lifecycle. Each domain's status

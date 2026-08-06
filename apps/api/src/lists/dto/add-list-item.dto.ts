@@ -1,4 +1,4 @@
-import type { ListItemTargetType } from "@tracklore/shared";
+import type { ListItemTargetType } from "@loomkeep/shared";
 import { IsIn, IsString } from "class-validator";
 
 // Work-level only — narrower than ReviewTargetType/CommentTargetType, whose

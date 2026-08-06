@@ -53,7 +53,7 @@ async function bootstrap() {
   if (isDev) {
     const { SwaggerModule, DocumentBuilder } = await import("@nestjs/swagger");
     const config = new DocumentBuilder()
-      .setTitle("Tracklore API")
+      .setTitle("Loomkeep API")
       .setDescription("REST API contract")
       .setVersion("0.1.0")
       .addBearerAuth()

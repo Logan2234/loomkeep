@@ -5,8 +5,8 @@ import type {
   AdminSocialSectionDto,
   AdminSocialStatsDto,
   TrendPeriod,
-} from "@tracklore/shared";
-import { FollowStatus, ReportStatus, ReviewVoteValue } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { FollowStatus, ReportStatus, ReviewVoteValue } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 import {

@@ -1,4 +1,4 @@
-import { COMMENT_TEXT_MAX_LENGTH } from "@tracklore/shared";
+import { COMMENT_TEXT_MAX_LENGTH } from "@loomkeep/shared";
 import {
   IsBoolean,
   IsOptional,

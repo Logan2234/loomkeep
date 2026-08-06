@@ -6,7 +6,7 @@ import type {
   UpdateVisibilitySettingsDto,
   UserSummaryDto,
   VisibilitySettingsDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function getProfile(username: string): Promise<SocialProfileDto> {

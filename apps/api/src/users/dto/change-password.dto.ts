@@ -1,5 +1,5 @@
 import { IsString, MaxLength, MinLength } from "class-validator";
-import type { ChangePasswordRequestDto } from "@tracklore/shared";
+import type { ChangePasswordRequestDto } from "@loomkeep/shared";
 
 export class ChangePasswordDto implements ChangePasswordRequestDto {
   @IsString()

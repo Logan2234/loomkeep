@@ -17,7 +17,7 @@ import type {
   AdminVersionDto,
   SchemaGraphResponseDto,
   ServiceStatusResponseDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminService } from "./admin.service";
 import { AdminOverviewService } from "./admin-overview.service";

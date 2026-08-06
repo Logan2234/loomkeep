@@ -5,7 +5,7 @@
   import type {
     BookStatsDto,
     DomainStatusBreakdownDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import { getBookStats } from "$lib/api/stats";
   import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";

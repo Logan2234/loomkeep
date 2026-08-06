@@ -1,5 +1,5 @@
 import { IsEmail, IsObject, IsOptional } from "class-validator";
-import type { SendTestEmailRequestDto } from "@tracklore/shared";
+import type { SendTestEmailRequestDto } from "@loomkeep/shared";
 
 export class SendTestEmailDto implements SendTestEmailRequestDto {
   @IsEmail()

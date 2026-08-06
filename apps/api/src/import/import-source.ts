@@ -3,7 +3,7 @@ import type {
   ImportPlan,
   ImportReport,
   ImportSearchDomain,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /**
  * DI token collecting every {@link ImportSource} provider into an array, so the

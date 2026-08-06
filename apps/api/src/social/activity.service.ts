@@ -10,7 +10,7 @@ import {
   type ListVisibility,
   type ProfileAccess,
   VisibilityFacet,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import {

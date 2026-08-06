@@ -17,7 +17,7 @@
     VisibilityAudience,
     VisibilityFacet,
     type VisibilitySettingsDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   const ACCESS: { id: ProfileAccess; label: string; desc: string }[] = [
     {

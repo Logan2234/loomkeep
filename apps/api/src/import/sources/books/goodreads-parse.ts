@@ -1,4 +1,4 @@
-import type { BookOwnershipStatus, BookStatus } from "@tracklore/shared";
+import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
 import { parseReadCount, parseStarRatingToTen } from "./csv-field.util";
 

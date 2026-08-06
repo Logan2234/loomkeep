@@ -1,6 +1,6 @@
 {
-  "name": "tracklore",
-  "version": "1.0.0",
+  "name": "loomkeep",
+  "version": "1.0.1",
   "private": true,
   "description": "Self-hosted tracker for series, movies, anime — and later games, books and more.",
   "license": "AGPL-3.0-only",

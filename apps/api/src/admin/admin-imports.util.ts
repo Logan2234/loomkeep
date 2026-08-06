@@ -1,7 +1,7 @@
 import type {
   AdminImportSourceStatDto,
   AdminImportSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /** How many sources the summary's per-source breakdown carries. */
 const TOP_SOURCES_LIMIT = 6;

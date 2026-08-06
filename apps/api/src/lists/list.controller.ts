@@ -18,7 +18,7 @@ import type {
   ListItemTargetType,
   ListMembershipDto,
   MyListDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

@@ -14,7 +14,7 @@ import type {
   RelationshipDto,
   SocialProfileDto,
   UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

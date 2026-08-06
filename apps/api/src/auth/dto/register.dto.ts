@@ -1,5 +1,5 @@
 import { IsEmail, IsString, MaxLength, MinLength } from "class-validator";
-import type { RegisterRequestDto } from "@tracklore/shared";
+import type { RegisterRequestDto } from "@loomkeep/shared";
 
 export class RegisterDto implements RegisterRequestDto {
   @IsEmail()

@@ -18,8 +18,8 @@ import type {
   GameReplayDto,
   GameSource,
   PagedResult,
-} from "@tracklore/shared";
-import { ActivityType, ReviewTargetType } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";

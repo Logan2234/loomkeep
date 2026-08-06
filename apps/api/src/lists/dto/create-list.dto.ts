@@ -3,7 +3,7 @@ import {
   type ListKind as ListKindT,
   type ListVisibility,
   ListVisibility as ListVisibilityEnum,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsIn,
   IsOptional,

@@ -16,7 +16,7 @@
     LibraryEntryDto,
     MediaDetailSeasonDto,
     ReviewTargetType,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
 
   let {

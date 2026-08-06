@@ -2,7 +2,7 @@
   // Time-window filter for /stats all-time aggregates (Tout/Année/Mois/
   // Semaine). Distinct from the trend-curve period pickers (bucket size) —
   // this narrows *which* entries count, not how a curve is bucketed.
-  import type { StatsWindow } from "@tracklore/shared";
+  import type { StatsWindow } from "@loomkeep/shared";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
 
   const WINDOWS: StatsWindow[] = ["ALL", "YEAR", "MONTH", "WEEK"];

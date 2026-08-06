@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TrendPeriod, TrendPointDto } from "@tracklore/shared";
+  import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
 
   let { points, period }: { points: TrendPointDto[]; period: TrendPeriod } =
     $props();

@@ -1,4 +1,4 @@
-import { ActivityType } from "@tracklore/shared";
+import { ActivityType } from "@loomkeep/shared";
 import { classifyStatusTransition } from "./activity-transition.util";
 
 describe("classifyStatusTransition", () => {

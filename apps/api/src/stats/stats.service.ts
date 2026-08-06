@@ -15,8 +15,8 @@ import type {
   VideoStatsDto,
   VideoTemporalDto,
   WatchStaleness,
-} from "@tracklore/shared";
-import { DORMANT_AFTER_DAYS } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";

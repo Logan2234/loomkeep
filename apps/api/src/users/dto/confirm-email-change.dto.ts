@@ -1,5 +1,5 @@
 import { IsString, Length } from "class-validator";
-import type { ConfirmEmailChangeRequestDto } from "@tracklore/shared";
+import type { ConfirmEmailChangeRequestDto } from "@loomkeep/shared";
 
 export class ConfirmEmailChangeDto implements ConfirmEmailChangeRequestDto {
   @IsString()

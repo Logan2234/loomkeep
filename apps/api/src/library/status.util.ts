@@ -1,4 +1,4 @@
-import type { EntryStatus, MediaType, ProgressDto } from "@tracklore/shared";
+import type { EntryStatus, MediaType, ProgressDto } from "@loomkeep/shared";
 
 /**
  * Source airing-status strings that mean "the show is over, no more episodes

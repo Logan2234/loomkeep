@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ListItemTargetType } from "@tracklore/shared";
+  import type { ListItemTargetType } from "@loomkeep/shared";
   import AddToListModal from "./AddToListModal.svelte";
   import Icon from "./Icon.svelte";
 

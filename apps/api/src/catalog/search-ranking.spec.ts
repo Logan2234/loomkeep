@@ -1,4 +1,4 @@
-import type { MediaSummaryDto } from "@tracklore/shared";
+import type { MediaSummaryDto } from "@loomkeep/shared";
 import { rankBySearchRelevance, relevanceScore } from "./search-ranking";
 
 const media = (

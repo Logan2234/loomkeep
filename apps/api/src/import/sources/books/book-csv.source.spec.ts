@@ -2,7 +2,7 @@ import type {
   BookSummaryDto,
   ImportPlan,
   ImportPlanItem,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import type { AgeGateService } from "../../../users/age-gate.service";
 import type { BookItemService } from "../../../books/book-item.service";
 import type { PrismaService } from "../../../prisma/prisma.service";

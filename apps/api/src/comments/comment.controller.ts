@@ -17,7 +17,7 @@ import {
   type CommentPageDto,
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

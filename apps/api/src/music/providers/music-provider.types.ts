@@ -3,7 +3,7 @@ import type {
   MusicSource,
   MusicSummaryDto,
   MusicTrackDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 interface ProviderMusicExternalId {
   source: MusicSource;

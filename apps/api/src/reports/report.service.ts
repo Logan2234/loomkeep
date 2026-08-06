@@ -6,7 +6,7 @@ import {
   type ReportTargetSummaryDto,
   type ReportTargetType,
   type UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { resolveWorkHref } from "../common/work-href.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";

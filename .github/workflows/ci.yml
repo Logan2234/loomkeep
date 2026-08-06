@@ -54,16 +54,16 @@ jobs:
       - run: pnpm lint
       - name: svelte-check
         if: needs.changes.outputs.web == 'true'
-        run: pnpm --filter @tracklore/web check
+        run: pnpm --filter @loomkeep/web check
       - name: web production build
         if: needs.changes.outputs.web == 'true'
-        run: pnpm --filter @tracklore/web build
+        run: pnpm --filter @loomkeep/web build
       - name: generate Prisma client
         if: needs.changes.outputs.api == 'true'
-        run: pnpm --filter @tracklore/api exec prisma generate
+        run: pnpm --filter @loomkeep/api exec prisma generate
       - name: api unit tests (with coverage)
         if: needs.changes.outputs.api == 'true'
-        run: pnpm --filter @tracklore/api test:cov
+        run: pnpm --filter @loomkeep/api test:cov
       - name: upload coverage to Codecov
         if: needs.changes.outputs.api == 'true'
         uses: codecov/codecov-action@v7
@@ -80,9 +80,9 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: tracklore
-          POSTGRES_PASSWORD: tracklore
-          POSTGRES_DB: tracklore
+          POSTGRES_USER: loomkeep
+          POSTGRES_PASSWORD: loomkeep
+          POSTGRES_DB: loomkeep
         ports:
           - 5432:5432
         options: >-
@@ -91,7 +91,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://tracklore:tracklore@localhost:5432/tracklore?schema=public
+      DATABASE_URL: postgresql://loomkeep:loomkeep@localhost:5432/loomkeep?schema=public
       JWT_ACCESS_SECRET: ci-test-access-secret
       JWT_REFRESH_SECRET: ci-test-refresh-secret
     steps:
@@ -103,8 +103,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
-      - run: pnpm --filter @tracklore/api exec prisma generate
-      - run: pnpm --filter @tracklore/api test:e2e
+      - run: pnpm --filter @loomkeep/api exec prisma generate
+      - run: pnpm --filter @loomkeep/api test:e2e
 
   knip:
     runs-on: ubuntu-latest

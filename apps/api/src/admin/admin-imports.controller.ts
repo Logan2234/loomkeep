@@ -3,7 +3,7 @@ import type {
   AdminImportRunListResponseDto,
   AdminImportSummaryDto,
   JobStatus,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildImportSummary } from "./admin-imports.util";
 import { AdminOnly } from "./admin-only.decorator";

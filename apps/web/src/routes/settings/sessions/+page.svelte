@@ -9,7 +9,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
-  import type { SessionDto } from "@tracklore/shared";
+  import type { SessionDto } from "@loomkeep/shared";
   import { onMount } from "svelte";
 
   let sessions = $state<SessionDto[]>([]);

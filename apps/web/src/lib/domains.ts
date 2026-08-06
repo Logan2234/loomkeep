@@ -1,4 +1,4 @@
-import type { Domain } from "@tracklore/shared";
+import type { Domain } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 
 /**

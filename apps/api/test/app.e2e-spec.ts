@@ -1,6 +1,6 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { CatalogSource, MediaSource, MediaType } from "@tracklore/shared";
+import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "./../src/app.module";
@@ -71,12 +71,12 @@ const tmdbStub = {
   getExtras: jest.fn().mockResolvedValue(EMPTY_EXTRAS),
 };
 
-describe("Tracklore API (e2e)", () => {
+describe("Loomkeep API (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
 
   const user = {
-    email: "e2e@tracklore.test",
+    email: "e2e@loomkeep.test",
     password: "e2e-password-1",
     displayName: "E2E",
   };
@@ -540,7 +540,7 @@ describe("Tracklore API (e2e)", () => {
 
   it("tracks device sessions and rotates them in place", async () => {
     const u = {
-      email: "e2e-sessions@tracklore.test",
+      email: "e2e-sessions@loomkeep.test",
       password: "sessions-1",
       displayName: "Sessions",
     };
@@ -620,7 +620,7 @@ describe("Tracklore API (e2e)", () => {
   it("deletes the account and wipes access to it", async () => {
     // Throwaway account so the shared suite user stays intact.
     const victim = {
-      email: "e2e-delete@tracklore.test",
+      email: "e2e-delete@loomkeep.test",
       password: "delete-me-1",
       displayName: "Delete",
     };

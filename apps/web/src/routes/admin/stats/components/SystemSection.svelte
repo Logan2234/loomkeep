@@ -3,7 +3,7 @@
   // snapshot — nothing here is historised.
   import { formatBytes, formatRelative } from "$lib/format";
   import RankBars from "$lib/components/stats/RankBars.svelte";
-  import type { AdminSystemSectionDto } from "@tracklore/shared";
+  import type { AdminSystemSectionDto } from "@loomkeep/shared";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminSystemSectionDto } = $props();

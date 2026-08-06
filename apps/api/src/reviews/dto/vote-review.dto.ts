@@ -1,7 +1,7 @@
 import {
   type ReviewVoteValue,
   ReviewVoteValue as ReviewVoteValueEnum,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { IsIn } from "class-validator";
 
 /** Casts (or replaces) the viewer's vote on someone else's review. */

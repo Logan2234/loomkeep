@@ -1,4 +1,4 @@
-import type { ImportSourceDescriptor } from "@tracklore/shared";
+import type { ImportSourceDescriptor } from "@loomkeep/shared";
 
 /**
  * The per-source configuration dictionary that drives the generic

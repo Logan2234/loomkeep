@@ -1,7 +1,7 @@
 import {
   POSSESSION_MIN_RATIO,
   type PossessionBreakdownDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /**
  * Aggregates ownership statuses into a breakdown, or flags "not enough data"

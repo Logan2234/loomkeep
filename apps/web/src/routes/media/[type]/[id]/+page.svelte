@@ -33,8 +33,8 @@
     MediaDetailDto,
     MediaExtrasDto,
     MediaType,
-  } from "@tracklore/shared";
-  import { isDormant } from "@tracklore/shared";
+  } from "@loomkeep/shared";
+  import { isDormant } from "@loomkeep/shared";
   import CastSection from "./components/CastSection.svelte";
   import EpisodesSection from "./components/EpisodesSection.svelte";
 

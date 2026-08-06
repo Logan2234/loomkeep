@@ -2,7 +2,7 @@
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
-  import { Domain } from "@tracklore/shared";
+  import { Domain } from "@loomkeep/shared";
 
   // Content domains the user composes the app from. Podcasts and board games
   // have no screens yet (planned P3) — enabling them only reveals their

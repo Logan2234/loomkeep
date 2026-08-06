@@ -1,5 +1,5 @@
 import { IsString, MaxLength, MinLength } from "class-validator";
-import type { UpdateUsernameRequestDto } from "@tracklore/shared";
+import type { UpdateUsernameRequestDto } from "@loomkeep/shared";
 
 export class UpdateUsernameDto implements UpdateUsernameRequestDto {
   @IsString()

@@ -8,17 +8,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm install                                   # workspace-wide
 pnpm dev                                       # api on :3000 + web on :5173 (parallel)
 pnpm build                                     # builds packages/* first, then apps/*
-pnpm --filter @tracklore/shared build          # REQUIRED after any change in packages/shared
+pnpm --filter @loomkeep/shared build          # REQUIRED after any change in packages/shared
                                                # (api and web consume its dist/, not its sources)
 
 # API
-pnpm --filter @tracklore/api test              # unit tests (jest)
-pnpm --filter @tracklore/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # single file
-pnpm --filter @tracklore/api test:e2e          # full API flow; needs the dev Postgres running
-pnpm --filter @tracklore/api exec prisma migrate dev --name <name>   # after editing schema.prisma
+pnpm --filter @loomkeep/api test              # unit tests (jest)
+pnpm --filter @loomkeep/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # single file
+pnpm --filter @loomkeep/api test:e2e          # full API flow; needs the dev Postgres running
+pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
 
 # Web
-pnpm --filter @tracklore/web check             # svelte-check (type errors in .svelte files)
+pnpm --filter @loomkeep/web check             # svelte-check (type errors in .svelte files)
 
 # Self-host stack
 docker compose up -d --build                   # db + api + web (see .env.example)
@@ -27,7 +27,7 @@ docker compose up -d --build                   # db + api + web (see .env.exampl
 # standalone: it has no build context of its own (only `environment:` blocks +
 # the Caddy service), so it ALWAYS needs the base file passed alongside it.
 docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d --build
-ngrok start tracklore --config ngrok.yml        # separate process; domain from ngrok.yml (gitignored,
+ngrok start loomkeep --config ngrok.yml        # separate process; domain from ngrok.yml (gitignored,
                                                 # copy from the example, needs NGROK_DOMAIN in .env too)
 ```
 
@@ -38,12 +38,12 @@ step covers both; `prettier --write` for json/md/css/yaml) and re-stages them.
 **Formatting is handled by this hook — don't run `pnpm format` by hand before
 committing, it's redundant and the hook will re-touch the files anyway.**
 `pre-push` runs the heavier gate once per push: `pnpm build:package && pnpm
-lint && pnpm --filter @tracklore/web check` (unit tests and e2e are left to
+lint && pnpm --filter @loomkeep/web check` (unit tests and e2e are left to
 CI's `lint-build-test`/`e2e` jobs — running them again locally on every push
 just duplicates that gate). `knip` (dead code / unused dependency detection) is available via
 `pnpm knip` but isn't wired into a hook — run it on demand.
 
-Dev database: Docker container `tracklore-dev-db`, Postgres 17 on port **5433**
+Dev database: Docker container `loomkeep-dev-db`, Postgres 17 on port **5433**
 (5432 is taken by an unrelated project on this machine). Connection string lives
 in `apps/api/.env` (copy from `.env.example`). e2e tests reuse that server but
 run in an isolated `e2e` schema (see `apps/api/test/global-setup.js`), so they

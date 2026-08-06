@@ -1,7 +1,7 @@
 import type {
   ImportCommitOverride,
   ImportCommitRequest,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsArray,
   IsBoolean,

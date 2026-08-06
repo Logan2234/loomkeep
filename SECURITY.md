@@ -1,6 +1,6 @@
 # Security Policy
 
-Tracklore is a self-hosted, single-owner project — there's no hosted
+Loomkeep is a self-hosted, single-owner project — there's no hosted
 multi-tenant instance to protect, but a vulnerability in the code still
 matters for anyone self-hosting it.
 

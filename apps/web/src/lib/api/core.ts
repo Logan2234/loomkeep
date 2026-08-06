@@ -1,5 +1,5 @@
 import { env } from "$env/dynamic/public";
-import type { AuthTokensDto, PagedResult } from "@tracklore/shared";
+import type { AuthTokensDto, PagedResult } from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
 
 const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";

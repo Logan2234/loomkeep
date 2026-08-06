@@ -3,7 +3,7 @@ import type {
   AdminSecuritySummaryDto,
   SecurityEventDto,
   SecurityEventType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
 

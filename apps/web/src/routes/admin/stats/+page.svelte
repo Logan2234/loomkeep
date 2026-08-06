@@ -21,7 +21,7 @@
     AdminCatalogueSectionDto,
     AdminSocialSectionDto,
     AdminSystemSectionDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";

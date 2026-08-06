@@ -9,7 +9,7 @@ import {
   ProfileAccess,
   type RelationshipDto,
   type UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { VisibilityService } from "./visibility.service";

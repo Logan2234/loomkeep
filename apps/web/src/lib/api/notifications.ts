@@ -2,7 +2,7 @@ import type {
   NotificationFeedDto,
   PushPublicKeyDto,
   PushSubscriptionRequestDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 // --- Notifications ---

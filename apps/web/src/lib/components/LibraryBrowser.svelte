@@ -30,7 +30,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
   import { debounce } from "$lib/debounce";
-  import type { Domain, PagedResult } from "@tracklore/shared";
+  import type { Domain, PagedResult } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];

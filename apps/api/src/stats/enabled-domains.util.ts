@@ -1,8 +1,4 @@
-import {
-  STATS_DOMAINS,
-  type Domain,
-  type StatsDomain,
-} from "@tracklore/shared";
+import { STATS_DOMAINS, type Domain, type StatsDomain } from "@loomkeep/shared";
 
 /**
  * Resolves which domains a stats request should aggregate: the intersection

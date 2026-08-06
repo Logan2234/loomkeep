@@ -1,7 +1,7 @@
 import {
   CommentEmote,
   type CommentEmote as CommentEmoteT,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { IsIn } from "class-validator";
 
 export class ReactCommentBody {

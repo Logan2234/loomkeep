@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { GameItem } from "@prisma/client";
-import type { GameDetailsDto, GameSource } from "@tracklore/shared";
+import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { IgdbProvider } from "./providers/igdb.provider";
 import type {

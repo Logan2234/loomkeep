@@ -1,4 +1,4 @@
-import type { DomainStatusBreakdownDto } from "@tracklore/shared";
+import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
 
 import { sumStatusBreakdowns } from "./cross-domain-totals.util";
 

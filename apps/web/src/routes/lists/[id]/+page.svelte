@@ -16,7 +16,7 @@
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import type { ListDetailDto, ListDto, ListItemDto } from "@tracklore/shared";
+  import type { ListDetailDto, ListDto, ListItemDto } from "@loomkeep/shared";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: "Classement",

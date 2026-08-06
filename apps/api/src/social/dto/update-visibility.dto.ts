@@ -7,7 +7,7 @@ import {
   VisibilityAudience as VisibilityAudienceEnum,
   type VisibilityFacet,
   VisibilityFacet as VisibilityFacetEnum,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import { IsArray, IsIn, IsOptional, ValidateNested } from "class-validator";
 

@@ -6,7 +6,7 @@ import {
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { MailService } from "../mail/mail.service";
 import { JOB_KEYS } from "../jobs/job-keys";

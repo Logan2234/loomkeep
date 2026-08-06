@@ -11,8 +11,8 @@ import type {
   MediaSummaryDto,
   MediaType,
   TvTimeImportFilesDto,
-} from "@tracklore/shared";
-import { entryStatusFromProgress } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { entryStatusFromProgress } from "@loomkeep/shared";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";

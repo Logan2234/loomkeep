@@ -35,7 +35,7 @@
     MUSIC_STATUS_META as STATUS_META,
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/status-labels";
-  import type { MusicDetailDto } from "@tracklore/shared";
+  import type { MusicDetailDto } from "@loomkeep/shared";
 
   // MusicBrainz is the only music source today; the web route carries just the id.
   const SOURCE = "musicbrainz";

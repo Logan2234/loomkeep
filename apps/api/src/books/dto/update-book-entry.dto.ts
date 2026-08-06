@@ -2,7 +2,7 @@ import {
   BookOwnershipStatus,
   BookStatus,
   UpdateBookEntryDto as UpdateBookEntryContract,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsDateString,

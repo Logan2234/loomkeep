@@ -2,7 +2,7 @@
   // Monthly retention grid: one row per signup month, one column per month
   // elapsed since, cell intensity = retention %. Rows shorten as cohorts get
   // more recent (no future months), which draws the staircase.
-  import type { AdminCohortRowDto } from "@tracklore/shared";
+  import type { AdminCohortRowDto } from "@loomkeep/shared";
 
   let { cohorts }: { cohorts: AdminCohortRowDto[] } = $props();
 

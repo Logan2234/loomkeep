@@ -6,7 +6,7 @@
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
   } from "$lib/components/stats/stats-domain";
-  import type { AdminCatalogueSectionDto } from "@tracklore/shared";
+  import type { AdminCatalogueSectionDto } from "@loomkeep/shared";
   import Sparkline from "./Sparkline.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
 

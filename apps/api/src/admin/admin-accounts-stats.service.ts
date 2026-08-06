@@ -4,8 +4,8 @@ import type {
   AdminNewAccountsTrendDto,
   ProfileAccess,
   TrendPeriod,
-} from "@tracklore/shared";
-import { DORMANT_AFTER_DAYS } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   cohortMonthStarts,

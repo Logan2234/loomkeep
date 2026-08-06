@@ -9,7 +9,7 @@ import {
   type SocialProfileDto,
   type UserSummaryDto,
   VisibilityFacet,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { runtimeFor } from "../stats/video-stats.util";
 import {

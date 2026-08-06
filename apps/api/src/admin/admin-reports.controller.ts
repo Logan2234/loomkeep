@@ -11,7 +11,7 @@ import type {
   AdminReportsSummaryDto,
   ReportPageDto,
   ReportStatus,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

@@ -4,7 +4,7 @@ import type {
   CommentEmote,
   CommentPageDto,
   CommentTargetType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function getCommentCount(

@@ -5,7 +5,7 @@ import type {
   PagedResult,
   UpdateBookEntryDto,
   UpsertBookEntryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function searchBooks(query: string): Promise<BookSearchResponseDto> {

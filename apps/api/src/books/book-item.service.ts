@@ -4,7 +4,7 @@ import type {
   BookDetailsDto,
   BookSource,
   BookSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { GoogleBooksProvider } from "./providers/google-books.provider";
 import type {

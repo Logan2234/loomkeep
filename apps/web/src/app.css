@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Tracklore — "Séance" design system.
+/* Loomkeep — "Séance" design system.
    Semantic tokens flip between light ("le programme") and dark ("la salle").
    Components use utilities like `bg-surface text-fg border-border`; the raw
    values below are swapped by the `.dark` class on <html>, so most components

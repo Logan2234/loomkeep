@@ -9,7 +9,7 @@ import { Cron } from "@nestjs/schedule";
 import type {
   AdminBackupFileContentDto,
   AdminBackupFileDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { spawn } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -103,7 +103,7 @@ export class BackupService {
 
   private async writeBackup(): Promise<AdminBackupFileDto> {
     const sql = await this.dump();
-    const filename = `tracklore-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
+    const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
     await mkdir(this.dir, { recursive: true });
     await writeFile(join(this.dir, filename), sql, "utf-8");
 

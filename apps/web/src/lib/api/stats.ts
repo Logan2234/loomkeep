@@ -10,7 +10,7 @@ import type {
   VideoStatsDto,
   VideoTemporalDto,
   WatchStaleness,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function getStatsOverview(

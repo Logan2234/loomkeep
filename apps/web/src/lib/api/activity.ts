@@ -1,4 +1,4 @@
-import type { ActivityEventDto, ActivityFeedDto } from "@tracklore/shared";
+import type { ActivityEventDto, ActivityFeedDto } from "@loomkeep/shared";
 import { request } from "./core";
 
 /** Home feed: the users you follow, paginated by opaque cursor. */

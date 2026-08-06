@@ -8,7 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
-import type { AuthTokensDto, SessionDto, UserDto } from "@tracklore/shared";
+import type { AuthTokensDto, SessionDto, UserDto } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { MailService } from "../mail/mail.service";

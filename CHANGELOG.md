@@ -12,6 +12,41 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.0.1 — Rebrand: Tracklore → Loomkeep
+
+The project is renamed to **Loomkeep** (loom — weaving together everything you
+watch, read, play and listen to; keep — safekeeping), matching the
+`loomkeep.app` domain. No behaviour changes: this release is a rename across
+every surface, verified by a full build, the API unit suite and
+`svelte-check`.
+
+- **Workspace scope** renamed `@tracklore/*` → `@loomkeep/*` (root package
+  `tracklore` → `loomkeep`), touching all three workspaces and every
+  cross-package import, plus the `--filter` invocations in both Dockerfiles,
+  the CI workflow, `.husky/pre-push` and the `/admin/schema` command hints.
+- **Defaults** in `docker-compose.yml`, `docker-compose.prod.yml`,
+  `docker-compose.ngrok.yml`, both `.env.example` files, `ngrok.example.yml`
+  and the CI Postgres service: database user/name and the ngrok tunnel name
+  are now `loomkeep`, and `SMTP_FROM` defaults to
+  `Loomkeep <no-reply@loomkeep.app>`. Safe to change wholesale — no
+  production instance exists yet, so there is nothing to migrate. An existing
+  local `tracklore-dev-db` container keeps its own name and credentials until
+  it is recreated.
+- **User-facing strings**: page title, sidebar wordmark, PWA manifest
+  `name`/`short_name`, the version line in `/settings` and `/admin`, admin
+  push/broadcast placeholders, and all transactional email copy (subjects,
+  bodies and the shared mail header/footer).
+- **Stored keys and generated filenames**: the localStorage token key
+  (`tracklore.tokens` → `loomkeep.tokens` — logs existing sessions out once,
+  acceptable pre-launch), the service-worker notification tag, the
+  MusicBrainz `User-Agent`, the Swagger title, and the `loomkeep-*` prefixes
+  on data exports and database backups.
+- **Docs** (`README.md`, `CLAUDE.md`, `SECURITY.md`, `MONETIZATION-IDEAS.md`)
+  updated. Historical changelog entries are deliberately left untouched —
+  each documents what shipped under the name in use at the time. The GitHub
+  and Codecov badge URLs still point at `Logan2234/tracklore` and will be
+  updated once the repository itself is renamed.
+
 ## 1.0.0 — Stats overhaul: /stats, /profile, /admin/stats & ops pages
 
 The roadmap has now shipped P1 through P4 with the app stable enough to call

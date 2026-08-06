@@ -20,7 +20,7 @@
     AdminReportsSummaryDto,
     ReportDto,
     ReportStatus,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   const STATUS_LABELS: Record<ReportStatus, string> = {
     PENDING: "En attente",

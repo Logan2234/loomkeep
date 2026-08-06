@@ -11,7 +11,7 @@
     type ReviewRevisionDto,
     type ReviewTargetType,
     type ReviewVisibility,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
   import RatingPips from "./RatingPips.svelte";
 

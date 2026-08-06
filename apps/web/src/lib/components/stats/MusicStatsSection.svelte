@@ -5,7 +5,7 @@
   import type {
     DomainStatusBreakdownDto,
     MusicStatsDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import { getMusicStats } from "$lib/api/stats";
   import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";

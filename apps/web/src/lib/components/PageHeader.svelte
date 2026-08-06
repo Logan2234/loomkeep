@@ -1,7 +1,7 @@
 <script lang="ts">
   // Recurring top-of-page block: icon + title (+ optional subtitle / actions).
   // Not used by the auth pages (login/register/...), which have their own
-  // centered TRACKLORE wordmark instead of this icon+title layout.
+  // centered LOOMKEEP wordmark instead of this icon+title layout.
   import type { ComponentProps, Snippet } from "svelte";
   import Icon from "./Icon.svelte";
 

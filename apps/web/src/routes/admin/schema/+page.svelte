@@ -4,7 +4,7 @@
   import Banner from "$lib/components/Banner.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import type { SchemaGraphResponseDto } from "@tracklore/shared";
+  import type { SchemaGraphResponseDto } from "@loomkeep/shared";
 
   type Tab = "erd" | "modules";
 
@@ -33,12 +33,12 @@
     {
       value: "erd",
       label: "Base de données",
-      regenerate: "pnpm --filter @tracklore/api exec prisma generate",
+      regenerate: "pnpm --filter @loomkeep/api exec prisma generate",
     },
     {
       value: "modules",
       label: "Modules",
-      regenerate: "pnpm --filter @tracklore/api run graph",
+      regenerate: "pnpm --filter @loomkeep/api run graph",
     },
   ];
 

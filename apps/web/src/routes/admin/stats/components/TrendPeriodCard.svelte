@@ -7,7 +7,7 @@
   // overrides it locally, and remounting the section drops the override.
   import { ApiError } from "$lib/api/client";
   import TrendChart from "$lib/components/TrendChart.svelte";
-  import type { TrendPeriod, TrendPointDto } from "@tracklore/shared";
+  import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
 
   let {

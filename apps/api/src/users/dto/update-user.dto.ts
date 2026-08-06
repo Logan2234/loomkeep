@@ -16,12 +16,12 @@ import type {
   ListVisibility,
   ReviewVisibility,
   UpdateUserRequestDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
   ReviewVisibility as ReviewVisibilityValues,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()

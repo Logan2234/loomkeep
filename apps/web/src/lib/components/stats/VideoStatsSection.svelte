@@ -8,7 +8,7 @@
     StatsWorkDto,
     VideoStatsDto,
     WatchStaleness,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import { getVideoSeries, getVideoStats } from "$lib/api/stats";
   import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";

@@ -1,5 +1,5 @@
 # Example ngrok config for exposing the local stack to your phone.
-# Copy to ngrok.yml, fill in the two values, then run:  ngrok start tracklore
+# Copy to ngrok.yml, fill in the two values, then run:  ngrok start loomkeep
 #
 # - authtoken: from https://dashboard.ngrok.com/get-started/your-authtoken
 # - domain:    claim your one free static domain at
@@ -9,7 +9,7 @@
 version: "2"
 authtoken: YOUR_NGROK_AUTHTOKEN
 tunnels:
-  tracklore:
+  loomkeep:
     proto: http
     # Must match PROXY_PORT (the Caddy reverse proxy), not web/api directly.
     addr: 8088
