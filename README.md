@@ -84,6 +84,38 @@ On ngrok's free tier the first page load shows a one-time warning page you
 click through; API calls skip it via `PUBLIC_NGROK`. For daily use by more than
 one person, host the app publicly instead (VPS or a PaaS).
 
+### Public hosting (VPS)
+
+For a stack that's always up under your own domain (e.g. an OVH VPS), use the
+`docker-compose.prod.yml` override instead of the ngrok one. It adds the same
+single-origin Caddy proxy, but Caddy requests and renews a real Let's Encrypt
+certificate itself and serves HTTPS on the standard ports — no tunnel, no
+warning page.
+
+1. Point the domain's **A** (and **AAAA** if you have IPv6) record at the
+   VPS's public IP, and make sure ports **80** and **443** are open on the
+   VPS firewall (80 is required for the Let's Encrypt HTTP challenge, and
+   Caddy redirects it to 443).
+2. Set the domain once in `.env` — the override derives `PUBLIC_API_URL`,
+   `WEB_ORIGIN` and Caddy's `SITE_ADDRESS` from it:
+
+   ```sh
+   DOMAIN=loomkeep.app
+   ```
+
+3. Start the stack with the prod override:
+
+   ```sh
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+   ```
+
+4. Open `https://<DOMAIN>` — the first request can take a few seconds while
+   Caddy obtains the certificate. Check `docker compose logs caddy` if it
+   doesn't come up (common causes: DNS not yet propagated, or port 80/443
+   blocked by the VPS provider's firewall in addition to the OS one — OVH
+   VPS also has a network firewall in the control panel that must allow
+   80/443 separately from any `ufw`/`iptables` rules on the box).
+
 ## Development
 
 ```sh
