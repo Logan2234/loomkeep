@@ -1,0 +1,40 @@
+# Override for hosting Tracklore publicly on a VPS with a real domain
+# (e.g. OVH) behind Caddy, which obtains and renews a Let's Encrypt
+# certificate automatically. Use it on top of the base compose:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Point the domain's A/AAAA record at the VPS and open ports 80+443 first
+# (see README "Public hosting (VPS)").
+services:
+  web:
+    environment:
+      PUBLIC_API_URL: https://${DOMAIN:?set DOMAIN in .env}/api
+
+  api:
+    environment:
+      WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      # This is the public instance — turn the P4 social features on (the
+      # web reads this back via GET /api/config).
+      SOCIAL_ENABLED: "true"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    environment:
+      SITE_ADDRESS: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  caddy-data:
+  caddy-config:

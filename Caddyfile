@@ -1,10 +1,17 @@
 # Single-origin reverse proxy used to put `web` and `api` behind one URL.
-# ngrok (and later a VPS) only need to point at this one endpoint, and the
+# ngrok (and a public VPS) only need to point at this one endpoint, and the
 # browser sees a single origin, so CORS becomes same-origin.
 #
-# TLS is terminated upstream (by ngrok, or by a real cert on a VPS), so Caddy
-# itself serves plain HTTP on :80 inside the compose network.
-:80 {
+# ngrok (docker-compose.ngrok.yml): TLS is terminated upstream by ngrok, so
+# Caddy serves plain HTTP on :80 inside the compose network — SITE_ADDRESS is
+# left unset and falls back to that default.
+#
+# Public VPS (docker-compose.prod.yml): SITE_ADDRESS is set to your real
+# domain (e.g. loomkeep.app), so Caddy requests and renews a Let's Encrypt
+# certificate itself and serves HTTPS on :443 (with :80 → :443 redirect).
+# This requires ports 80 and 443 reachable from the internet and the
+# domain's DNS already pointed at the VPS.
+{$SITE_ADDRESS::80} {
 	# The NestJS API mounts every route under the `api` global prefix
 	# (see apps/api/src/main.ts), so forward `/api/*` untouched.
 	handle /api/* {
