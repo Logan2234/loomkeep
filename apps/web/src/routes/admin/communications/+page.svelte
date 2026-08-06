@@ -7,7 +7,7 @@
     getAdminEmailPreview,
     getAdminEmailTemplates,
     getAdminPushDevices,
-    getAdminOverview,
+    getAdminPushSummary,
     getAdminUsers,
     sendAdminBroadcastPush,
     sendAdminTestEmail,
@@ -18,11 +18,15 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
+  import RankBars from "$lib/components/stats/RankBars.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { toast } from "$lib/toast.svelte";
   import type {
     AdminPushBroadcastResponseDto,
     AdminPushDeviceDto,
     AdminPushSendResponseDto,
+    AdminPushSummaryDto,
     AdminUserDto,
     MailTemplateInfoDto,
   } from "@tracklore/shared";
@@ -212,23 +216,46 @@
     void loadDevices();
   });
 
-  let accountCount = $state<number | null>(null);
-  let deviceCount = $state<number | null>(null);
+  // Instance-wide push reach. Also feeds the broadcast section's "portée
+  // actuelle", which used to read the same two numbers off /admin/overview —
+  // one source now, so the header and the warning can't disagree.
+  let pushSummary = $state<AdminPushSummaryDto | null>(null);
 
   async function refreshCounts() {
     try {
-      const overview = await getAdminOverview();
-      accountCount = overview.accountsWithPush;
-      deviceCount = overview.pushDevices;
+      pushSummary = await getAdminPushSummary();
     } catch {
-      accountCount = null;
-      deviceCount = null;
+      pushSummary = null;
     }
   }
 
   $effect(() => {
     void refreshCounts();
   });
+
+  const accountCount = $derived(pushSummary?.accounts ?? null);
+  const deviceCount = $derived(pushSummary?.subscriptions ?? null);
+
+  const nf = new Intl.NumberFormat("fr-FR");
+
+  const pushKpis = $derived(
+    pushSummary
+      ? [
+          {
+            value: nf.format(pushSummary.subscriptions),
+            label: "Abonnements actifs",
+          },
+          { value: nf.format(pushSummary.accounts), label: "Comptes abonnés" },
+        ]
+      : [],
+  );
+
+  const userAgentBars = $derived(
+    (pushSummary?.byUserAgent ?? []).map((u) => ({
+      label: u.label,
+      value: u.count,
+    })),
+  );
 
   let broadcastTitle = $state("");
   let broadcastBody = $state("");
@@ -426,6 +453,20 @@
       </div>
     {/if}
   {:else}
+    {#if pushSummary}
+      <div class="max-w-xl">
+        <KpiStrip tiles={pushKpis} />
+        {#if userAgentBars.length > 0}
+          <div class="card mb-6 p-4">
+            <!-- Active subscriptions only: a rejected one is deleted on send,
+                 so there is no dead/alive ratio to show against it. -->
+            <SectionLabel label="Appareils par navigateur" class="mb-3" />
+            <RankBars items={userAgentBars} />
+          </div>
+        {/if}
+      </div>
+    {/if}
+
     <div class="max-w-xl">
       <section class="card mb-6 space-y-4 p-4 md:p-5">
         <h2 class="font-display text-lg font-bold">Test individuel</h2>

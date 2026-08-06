@@ -12,6 +12,59 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.0.0 — Stats overhaul: /stats, /profile, /admin/stats & ops pages
+
+The roadmap has now shipped P1 through P4 with the app stable enough to call
+finished — this is the first release reserved for that milestone (see
+`CLAUDE.md` → Conventions), not a specific commit.
+
+- New personal **`/stats` dashboard** ("La Régie"): a sticky domain/period
+  filter console drives a cross-domain overview (totals, completion/abandon
+  rates, rating distribution and decade-of-release histograms — both
+  clickable through to the underlying works) plus a dedicated deep section
+  per domain — Vidéo (total time, movie/series/anime split, longest binge,
+  ghost/paused series), Jeux (playtime, never-launched, replays, rating by
+  platform/genre), Livres (pages read, top authors by pages, rereads),
+  Musique (listen duration — a new `MusicItem.durationMin` field captured
+  from MusicBrainz — release-type split, top artists). A "Vidéo — activité
+  dans le temps" section adds a GitHub-style calendar heatmap, day-of-week
+  and hour-of-day curves, and monthly/yearly totals, since `EpisodeWatch` is
+  the only true per-event log in the app today. A **Social** section (gated
+  `SOCIAL_ENABLED`) covers reviews/comments/lists written, your rating vs the
+  community's on works you both rated, new followers and social activity per
+  month, and a contribution streak.
+- **`/profile` "Intégré"**: per-domain totals and favorites, a streak badge
+  (🎬N, shown wherever a pseudo appears — profile header, reviews, comments —
+  never for a Figurant), first/last activity, a stats strip (time watched /
+  most active year), top genres, inline social counters, and a mini
+  consumption-heatmap teaser linking to the full `/stats` page.
+- **`/admin/stats` rebuilt** as "Salle des machines": a KPI strip (accounts,
+  active 24h/30j, cached works, DB size, pending reports) atop four dense
+  sections — Comptes & engagement (new-account trend, retention cohorts,
+  domains-enabled split, profile-privacy split, account health), Catalogue &
+  cache (per-domain cache table with growth sparklines, most-popular works
+  across the whole instance, cache mutualization/orphans), Social (totals,
+  a reviews+comments activity trend, instance-wide rating distribution, top
+  contributors, the reports queue's pending/resolved/median-delay/founded
+  rate), and Système (DB size per table, API calls per provider, notification
+  read rate, push subscriptions, login failures, last backup). The former
+  `AdminStatsService`/`AdminStatsDto` — a single endpoint mixing four
+  unrelated aggregate blocks for two unrelated pages — is gone, replaced by
+  this dedicated page plus a small `AdminOverviewService` serving just the
+  handful of counters the `/admin` dashboard and `/admin/communications`
+  actually need.
+- Every remaining operational admin page (Jobs, Import, Services, Cache,
+  Signalements, Sécurité, Communications, Sauvegarde) gained a small
+  summary-metrics header: failure rate/avg duration per job, import
+  success rate and items-by-source, quota-bound vs unlimited service
+  providers, top reporters and founded-rate on the reports queue, login
+  failures by 24h/7j/30j, active push subscriptions by browser family, and
+  backup regularity (median interval between dumps). Cache's own page
+  already exposed staleness/orphans and was left untouched.
+- Reviews and comments now show a streak badge next to any non-anonymized
+  author's pseudo, computed with a single batched query per request rather
+  than one per author.
+
 ## 0.8.0 — Reviews: votes & season/episode critiques, admin polish
 
 - Reviews can now be upvoted/downvoted by other users (Reddit-style: one

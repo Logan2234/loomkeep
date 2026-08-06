@@ -2,6 +2,7 @@
   import {
     ApiError,
     getAdminReports,
+    getAdminReportsSummary,
     resolveAdminReport,
     takeDownAdminReport,
   } from "$lib/api/client";
@@ -11,8 +12,15 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
+  import RankBars from "$lib/components/stats/RankBars.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
-  import type { ReportDto, ReportStatus } from "@tracklore/shared";
+  import type {
+    AdminReportsSummaryDto,
+    ReportDto,
+    ReportStatus,
+  } from "@tracklore/shared";
 
   const STATUS_LABELS: Record<ReportStatus, string> = {
     PENDING: "En attente",
@@ -82,6 +90,7 @@
       await resolveAdminReport(id, status);
       reports = reports.filter((r) => r.id !== id);
       void adminReports.refresh();
+      void loadSummary();
     } catch (err) {
       error = err instanceof ApiError ? err.message : "L'action a échoué";
     } finally {
@@ -99,6 +108,7 @@
       await takeDownAdminReport(id);
       reports = reports.filter((r) => r.id !== id);
       void adminReports.refresh();
+      void loadSummary();
     } catch (err) {
       error = err instanceof ApiError ? err.message : "L'action a échoué";
     } finally {
@@ -110,6 +120,61 @@
   $effect(() => {
     void load(true);
   });
+
+  // Queue-wide, so it doesn't follow the status/reporter filters — but it does
+  // follow every moderation action, which moves the very counts it shows.
+  let summary = $state<AdminReportsSummaryDto | null>(null);
+
+  async function loadSummary() {
+    try {
+      summary = await getAdminReportsSummary();
+    } catch {
+      summary = null;
+    }
+  }
+
+  $effect(() => {
+    void loadSummary();
+  });
+
+  const nf = new Intl.NumberFormat("fr-FR");
+
+  const kpis = $derived(
+    summary
+      ? [
+          {
+            value: nf.format(summary.pending),
+            label: "En attente",
+            alert: summary.pending > 0,
+          },
+          { value: nf.format(summary.resolved), label: "Résolus" },
+          { value: nf.format(summary.dismissed), label: "Rejetés" },
+          {
+            value:
+              summary.medianResolutionHours === null
+                ? "—"
+                : String(summary.medianResolutionHours),
+            unit: summary.medianResolutionHours === null ? undefined : "h",
+            label: "Délai médian",
+          },
+          {
+            value:
+              summary.foundedPercent === null
+                ? "—"
+                : String(summary.foundedPercent),
+            unit: summary.foundedPercent === null ? undefined : "%",
+            label: "Signalements fondés",
+          },
+        ]
+      : [],
+  );
+
+  const reporterBars = $derived(
+    (summary?.topReporters ?? []).map((r) => ({
+      label: `@${r.username}`,
+      value: r.reports,
+    })),
+  );
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
@@ -117,6 +182,16 @@
     icon="flag"
     title="Signalements"
     subtitle="Commentaires (et à terme reviews/profils) signalés par les utilisateurs." />
+
+  {#if summary}
+    <KpiStrip tiles={kpis} />
+    {#if reporterBars.length > 0}
+      <div class="card mb-5 p-4">
+        <SectionLabel label="Top signaleurs" class="mb-3" />
+        <RankBars items={reporterBars} />
+      </div>
+    {/if}
+  {/if}
 
   <div class="mb-5 flex flex-wrap items-center gap-2">
     <Combobox

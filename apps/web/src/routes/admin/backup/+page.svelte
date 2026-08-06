@@ -12,6 +12,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import { formatBytes } from "$lib/format";
   import { toast } from "$lib/toast.svelte";
   import type { AdminBackupFileDto } from "@tracklore/shared";
@@ -62,6 +63,61 @@
 
   $effect(() => {
     void load();
+  });
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  /**
+   * Header figures, derived from the list the page already loaded (7 files at
+   * most — an endpoint of its own would only re-fetch what's on screen).
+   * "Régularité" is the *median* gap between two consecutive dumps rather than
+   * the mean: one manual "Sauvegarder maintenant" a minute after the nightly
+   * cron shouldn't make the rhythm look broken.
+   */
+  const summary = $derived.by(() => {
+    if (!files || files.length === 0) return null;
+
+    // listFiles() returns most recent first.
+    const gaps = files
+      .slice(1)
+      .map(
+        (f, i) =>
+          new Date(files![i].createdAt).getTime() -
+          new Date(f.createdAt).getTime(),
+      )
+      .sort((a, b) => a - b);
+    const mid = Math.floor(gaps.length / 2);
+    const medianGapMs =
+      gaps.length === 0
+        ? null
+        : gaps.length % 2 === 1
+          ? gaps[mid]
+          : (gaps[mid - 1] + gaps[mid]) / 2;
+
+    return {
+      last: files[0],
+      count: files.length,
+      medianGapDays:
+        medianGapMs === null ? null : (medianGapMs / DAY_MS).toFixed(1),
+    };
+  });
+
+  const kpis = $derived.by(() => {
+    if (!summary) return [];
+    const [size, unit] = formatBytes(summary.last.sizeBytes).split(" ");
+    return [
+      {
+        value: dateFmt.format(new Date(summary.last.createdAt)),
+        label: "Dernière sauvegarde",
+      },
+      { value: size, unit, label: "Taille" },
+      {
+        value: summary.medianGapDays ?? "—",
+        unit: summary.medianGapDays === null ? undefined : "j",
+        label: "Intervalle médian",
+      },
+      { value: String(summary.count), label: "Sauvegardes conservées" },
+    ];
   });
 
   async function runNow() {
@@ -170,6 +226,10 @@
       </button>
     {/snippet}
   </PageHeader>
+
+  {#if summary}
+    <KpiStrip tiles={kpis} />
+  {/if}
 
   <section class="card mb-5 p-5 md:p-6">
     <h2 class="font-display mb-3 text-lg font-bold">Sauvegardes</h2>

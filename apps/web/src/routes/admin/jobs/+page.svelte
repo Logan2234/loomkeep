@@ -4,6 +4,7 @@
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import type { JobDto } from "@tracklore/shared";
 
   let jobs = $state<JobDto[] | null>(null);
@@ -52,6 +53,29 @@
       new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()
     );
   }
+
+  function durationLabel(ms: number): string {
+    return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+  }
+
+  /**
+   * Header figures for one job, derived from the run history the page already
+   * holds — `GET /admin/jobs` ships the last 20 runs per job in full, so an
+   * endpoint of its own would only re-fetch what's on screen. The window is
+   * therefore explicitly "the runs shown here", not "since the beginning".
+   * "Dernier run" isn't repeated: the banner right below already carries it,
+   * with its status and summary.
+   */
+  function summarize(runs: JobDto["runs"]) {
+    if (runs.length === 0) return null;
+    const failures = runs.filter((r) => r.status === "FAILURE").length;
+    const totalMs = runs.reduce((sum, r) => sum + durationMs(r), 0);
+    return {
+      failurePercent: Math.round((failures / runs.length) * 100),
+      averageMs: Math.round(totalMs / runs.length),
+      count: runs.length,
+    };
+  }
 </script>
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
@@ -83,6 +107,7 @@
     <div class="space-y-8">
       {#each jobs as job (job.key)}
         {@const last = job.runs[0]}
+        {@const stats = summarize(job.runs)}
         <section>
           <div class="mb-2 flex items-center justify-between gap-3">
             <div>
@@ -96,6 +121,19 @@
               {running === job.key ? "En cours…" : "Lancer maintenant"}
             </button>
           </div>
+
+          {#if stats}
+            <div class="card mb-2 grid grid-cols-3 gap-3 px-4 py-3">
+              <StatFigure
+                value="{stats.failurePercent} %"
+                label="Taux d'échec"
+                alert={stats.failurePercent > 0} />
+              <StatFigure
+                value={durationLabel(stats.averageMs)}
+                label="Durée moyenne" />
+              <StatFigure value={stats.count} label="Runs analysés" />
+            </div>
+          {/if}
 
           {#if last}
             <div

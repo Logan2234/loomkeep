@@ -3,6 +3,7 @@ import {
   foundedPercent,
   medianResolutionHours,
   rankContributors,
+  rankReporters,
   type ContributionCounts,
 } from "./admin-social-stats.util";
 
@@ -107,5 +108,48 @@ describe("contributorIds / rankContributors", () => {
 
   it("honours the limit", () => {
     expect(rankContributors(counts, usernames, 1)).toHaveLength(1);
+  });
+});
+
+describe("rankReporters", () => {
+  const usernames = new Map([
+    ["u1", "logan"],
+    ["u2", "mira"],
+    ["u3", "sacha"],
+  ]);
+
+  it("orders accounts by reports filed, most first", () => {
+    const counts = new Map([
+      ["u1", 2],
+      ["u2", 9],
+    ]);
+    expect(rankReporters(counts, usernames)).toEqual([
+      { username: "mira", reports: 9 },
+      { username: "logan", reports: 2 },
+    ]);
+  });
+
+  it("breaks ties on the username so the order is stable between refreshes", () => {
+    const counts = new Map([
+      ["u3", 4],
+      ["u2", 4],
+    ]);
+    expect(rankReporters(counts, usernames).map((r) => r.username)).toEqual([
+      "mira",
+      "sacha",
+    ]);
+  });
+
+  it("drops an account whose username could not be resolved", () => {
+    expect(rankReporters(new Map([["gone", 12]]), usernames)).toEqual([]);
+  });
+
+  it("honours the limit", () => {
+    const counts = new Map([
+      ["u1", 3],
+      ["u2", 2],
+      ["u3", 1],
+    ]);
+    expect(rankReporters(counts, usernames, 2)).toHaveLength(2);
   });
 });

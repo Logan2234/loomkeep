@@ -364,3 +364,95 @@ export interface AdminImportRunListResponseDto {
   runs: AdminImportRunDto[];
   page: number;
 }
+
+/** Committed imports for one source, all accounts and all time. */
+export interface AdminImportSourceStatDto {
+  /** Import source id ("tvtime", "storygraph", "goodreads", "steam"). */
+  sourceId: string;
+  runs: number;
+  /** Items written by those runs. */
+  items: number;
+}
+
+/**
+ * Header summary of the admin "Imports" page. Computed over every logged run,
+ * never over the page currently displayed — the list is paginated and filtered,
+ * so a client-side total would drift as soon as the admin scrolls or filters.
+ */
+export interface AdminImportSummaryDto {
+  total: number;
+  success: number;
+  failure: number;
+  /** Share (0-100) of runs that succeeded; null while nothing was ever imported. */
+  successPercent: number | null;
+  /** Most items first. */
+  bySource: AdminImportSourceStatDto[];
+}
+
+/** One account ranked by how many reports it filed. */
+export interface AdminTopReporterDto {
+  username: string;
+  reports: number;
+}
+
+/**
+ * Header summary of the admin "Signalements" page, over the whole queue rather
+ * than the cursor page on screen. Same figures as the /admin/stats "Social"
+ * moderation card (they share the API-side helpers), plus the reporter ranking
+ * that only makes sense next to the queue itself.
+ */
+export interface AdminReportsSummaryDto {
+  pending: number;
+  resolved: number;
+  dismissed: number;
+  /** Median hours between filing and closing; null while nothing is closed. */
+  medianResolutionHours: number | null;
+  /** Share (0-100) of closed reports acted on rather than dismissed; null while nothing is closed. */
+  foundedPercent: number | null;
+  topReporters: AdminTopReporterDto[];
+}
+
+/** One identifier targeted by failed logins over the summary's recent window. */
+export interface AdminFailedLoginTargetDto {
+  /** Email or username the failed attempts were made against. */
+  identifier: string;
+  failures: number;
+}
+
+/**
+ * Header summary of the admin "Sécurité" page. Scoped to LOGIN_FAILED: the other
+ * event types are deliberate account actions the log already reads well as a
+ * list, whereas failed logins only mean something as a rate. The three windows
+ * mirror the ones /admin/stats uses for account activity (24 h / 7 j / 30 j).
+ */
+export interface AdminSecuritySummaryDto {
+  loginFailed24h: number;
+  loginFailed7d: number;
+  loginFailed30d: number;
+  /** Every failed login ever logged. */
+  loginFailedTotal: number;
+  /** Most-targeted identifiers over the last 7 days, most failures first. */
+  topTargets7d: AdminFailedLoginTargetDto[];
+}
+
+/** Active push subscriptions sharing one user-agent family. */
+export interface AdminPushUserAgentStatDto {
+  /** Browser family derived from the stored user-agent ("Chrome", "Safari", "Inconnu"…). */
+  label: string;
+  count: number;
+}
+
+/**
+ * Header summary of the "Push" tab of admin "Communications". Active
+ * subscriptions only, and deliberately no alive/dead ratio: a subscription the
+ * push service rejects is deleted on the spot (see `PushService`), so a dead one
+ * leaves no row to count.
+ */
+export interface AdminPushSummaryDto {
+  /** Subscription rows on the instance (an account can have several devices). */
+  subscriptions: number;
+  /** Distinct accounts with at least one subscription. */
+  accounts: number;
+  /** Most devices first. */
+  byUserAgent: AdminPushUserAgentStatDto[];
+}

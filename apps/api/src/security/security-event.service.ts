@@ -1,9 +1,17 @@
 import { Injectable } from "@nestjs/common";
-import type { SecurityEventDto, SecurityEventType } from "@tracklore/shared";
+import type {
+  AdminSecuritySummaryDto,
+  SecurityEventDto,
+  SecurityEventType,
+} from "@tracklore/shared";
 import { PrismaService } from "../prisma/prisma.service";
+import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
 
 /** Events per page on the admin "Sécurité" list. */
 const PAGE_SIZE = 50;
+
+/** Window the "most targeted identifiers" ranking looks back over, in days. */
+const TARGETS_WINDOW_DAYS = 7;
 
 export interface RecordSecurityEventParams {
   type: SecurityEventType;
@@ -34,6 +42,51 @@ export class SecurityEventService {
         detail: params.detail,
         userAgent: params.userAgent,
       },
+    });
+  }
+
+  /**
+   * Failed-login pressure over three trailing windows, for the header of the
+   * admin "Sécurité" page. Only LOGIN_FAILED: the other event types are
+   * deliberate account actions that read fine as a chronological list, whereas
+   * failed logins only mean something as a rate. The ranking is what makes the
+   * counts actionable — a hundred failures spread over every account is noise,
+   * a hundred against one identifier is an attack.
+   */
+  async summary(now = new Date()): Promise<AdminSecuritySummaryDto> {
+    const type: SecurityEventType = "LOGIN_FAILED";
+    const [total, last24h, last7d, last30d, byIdentifier] = await Promise.all([
+      this.prisma.securityEvent.count({ where: { type } }),
+      this.countFailedSince(sinceDaysAgo(now, 1)),
+      this.countFailedSince(sinceDaysAgo(now, 7)),
+      this.countFailedSince(sinceDaysAgo(now, 30)),
+      this.prisma.securityEvent.groupBy({
+        by: ["identifier"],
+        where: {
+          type,
+          createdAt: { gte: sinceDaysAgo(now, TARGETS_WINDOW_DAYS) },
+        },
+        _count: { _all: true },
+      }),
+    ]);
+
+    return {
+      loginFailedTotal: total,
+      loginFailed24h: last24h,
+      loginFailed7d: last7d,
+      loginFailed30d: last30d,
+      topTargets7d: rankFailedTargets(
+        byIdentifier.map((row) => ({
+          identifier: row.identifier,
+          failures: row._count._all,
+        })),
+      ),
+    };
+  }
+
+  private countFailedSince(since: Date): Promise<number> {
+    return this.prisma.securityEvent.count({
+      where: { type: "LOGIN_FAILED", createdAt: { gte: since } },
     });
   }
 

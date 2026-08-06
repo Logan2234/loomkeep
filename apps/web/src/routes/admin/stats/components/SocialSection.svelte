@@ -5,7 +5,7 @@
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import type { AdminSocialStatsDto } from "@tracklore/shared";
-  import StatFigure from "./StatFigure.svelte";
+  import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminSocialStatsDto } = $props();

@@ -1,12 +1,23 @@
 <script lang="ts">
-  import { getAdminImportRuns, ApiError } from "$lib/api/client";
+  import {
+    getAdminImportRuns,
+    getAdminImportSummary,
+    ApiError,
+  } from "$lib/api/client";
   import { IMPORT_SOURCES } from "$lib/import/sources";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
+  import RankBars from "$lib/components/stats/RankBars.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
-  import type { AdminImportRunDto, JobStatus } from "@tracklore/shared";
+  import type {
+    AdminImportRunDto,
+    AdminImportSummaryDto,
+    JobStatus,
+  } from "@tracklore/shared";
 
   const sourceLabel = (id: string) => IMPORT_SOURCES[id]?.label ?? id;
 
@@ -68,6 +79,49 @@
     void load(true);
   });
 
+  // The summary covers the whole log, so it is loaded once and never re-queried
+  // when a filter changes — it would otherwise contradict its own page header.
+  let summary = $state<AdminImportSummaryDto | null>(null);
+
+  $effect(() => {
+    getAdminImportSummary()
+      .then((s) => (summary = s))
+      .catch(() => (summary = null));
+  });
+
+  const nf = new Intl.NumberFormat("fr-FR");
+
+  const kpis = $derived(
+    summary
+      ? [
+          { value: nf.format(summary.total), label: "Imports" },
+          { value: nf.format(summary.success), label: "Réussis" },
+          {
+            value: nf.format(summary.failure),
+            label: "Échecs",
+            alert: summary.failure > 0,
+          },
+          {
+            value:
+              summary.successPercent === null
+                ? "—"
+                : String(summary.successPercent),
+            unit: summary.successPercent === null ? undefined : "%",
+            label: "Taux de succès",
+          },
+        ]
+      : [],
+  );
+
+  const sourceBars = $derived(
+    (summary?.bySource ?? []).map((s) => ({
+      label: sourceLabel(s.sourceId),
+      value: s.items,
+      display: `${nf.format(s.items)} élém.`,
+      badge: { text: `${s.runs} import${s.runs > 1 ? "s" : ""}` },
+    })),
+  );
+
   function durationLabel(run: AdminImportRunDto): string {
     const ms =
       new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime();
@@ -81,6 +135,16 @@
     icon="download"
     title="Imports"
     subtitle="Journal des imports commis, tous comptes confondus. Les analyses non validées n'écrivent rien et n'apparaissent pas ici." />
+
+  {#if summary}
+    <KpiStrip tiles={kpis} />
+    {#if sourceBars.length > 0}
+      <div class="card mb-5 p-4">
+        <SectionLabel label="Éléments importés par source" class="mb-3" />
+        <RankBars items={sourceBars} />
+      </div>
+    {/if}
+  {/if}
 
   <div class="mb-5 flex flex-wrap items-center gap-2">
     <Combobox

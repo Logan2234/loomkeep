@@ -8,7 +8,7 @@
   } from "$lib/components/stats/stats-domain";
   import type { AdminCatalogueSectionDto } from "@tracklore/shared";
   import Sparkline from "./Sparkline.svelte";
-  import StatFigure from "./StatFigure.svelte";
+  import StatFigure from "$lib/components/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminCatalogueSectionDto } = $props();
 

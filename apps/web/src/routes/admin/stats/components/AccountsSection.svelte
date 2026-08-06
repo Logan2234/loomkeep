@@ -11,7 +11,7 @@
     type TrendPeriod,
   } from "@tracklore/shared";
   import CohortTable from "./CohortTable.svelte";
-  import StatFigure from "./StatFigure.svelte";
+  import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminAccountsSectionDto } = $props();

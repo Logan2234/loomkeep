@@ -1,10 +1,21 @@
 <script lang="ts">
-  import { getAdminSecurityEvents, ApiError } from "$lib/api/client";
+  import {
+    getAdminSecurityEvents,
+    getAdminSecuritySummary,
+    ApiError,
+  } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import type { SecurityEventDto, SecurityEventType } from "@tracklore/shared";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
+  import RankBars from "$lib/components/stats/RankBars.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import type {
+    AdminSecuritySummaryDto,
+    SecurityEventDto,
+    SecurityEventType,
+  } from "@tracklore/shared";
 
   const TYPE_LABELS: Record<SecurityEventType, string> = {
     USER_REGISTERED: "Inscription",
@@ -83,6 +94,43 @@
   $effect(() => {
     void load(true);
   });
+
+  // Failed logins only, over fixed windows — see the API for why the other
+  // event types don't get a rate. Independent of the list's own filters.
+  let summary = $state<AdminSecuritySummaryDto | null>(null);
+
+  $effect(() => {
+    getAdminSecuritySummary()
+      .then((s) => (summary = s))
+      .catch(() => (summary = null));
+  });
+
+  const nf = new Intl.NumberFormat("fr-FR");
+
+  const kpis = $derived(
+    summary
+      ? [
+          {
+            value: nf.format(summary.loginFailed24h),
+            label: "Échecs · 24 h",
+            alert: summary.loginFailed24h > 0,
+          },
+          { value: nf.format(summary.loginFailed7d), label: "Échecs · 7 j" },
+          { value: nf.format(summary.loginFailed30d), label: "Échecs · 30 j" },
+          {
+            value: nf.format(summary.loginFailedTotal),
+            label: "Échecs · total",
+          },
+        ]
+      : [],
+  );
+
+  const targetBars = $derived(
+    (summary?.topTargets7d ?? []).map((t) => ({
+      label: t.identifier,
+      value: t.failures,
+    })),
+  );
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
@@ -90,6 +138,19 @@
     icon="shield"
     title="Sécurité"
     subtitle="Actions sensibles sur les comptes : création, suppression, changements d'identifiants, connexions échouées." />
+
+  {#if summary}
+    <KpiStrip tiles={kpis} />
+    {#if targetBars.length > 0}
+      <div class="card mb-5 p-4">
+        <SectionLabel
+          label="Identifiants les plus visés"
+          badge="7 jours"
+          class="mb-3" />
+        <RankBars items={targetBars} />
+      </div>
+    {/if}
+  {/if}
 
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <Combobox
