@@ -1,4 +1,4 @@
-import { MediaType } from "@tracklore/shared";
+import { MediaType } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import {
   IsIn,

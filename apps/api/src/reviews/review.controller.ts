@@ -15,7 +15,7 @@ import {
   type ReviewRevisionDto,
   ReviewTargetType,
   type ReviewVoteValue,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

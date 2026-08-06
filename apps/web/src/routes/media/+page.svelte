@@ -5,8 +5,8 @@
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
-  import type { LibraryEntryDto, MediaType } from "@tracklore/shared";
-  import { Domain, isDormant } from "@tracklore/shared";
+  import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
+  import { Domain, isDormant } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     { label: "En cours", value: "WATCHING" },

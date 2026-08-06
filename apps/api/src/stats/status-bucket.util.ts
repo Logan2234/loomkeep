@@ -5,7 +5,7 @@ import type {
   MusicStatus,
   StatsStatusBucket,
   StatusBucketCountDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /**
  * Maps each domain's own status enum onto the shared stats vocabulary, so a

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { JobDto, JobRunDto } from "@tracklore/shared";
+import type { JobDto, JobRunDto } from "@loomkeep/shared";
 import type { JobRun } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { JOB_KEYS, JOB_REGISTRY, type JobKey } from "./job-keys";

@@ -8,8 +8,8 @@ import {
   MediaSource,
   MediaSummaryDto,
   MediaType,
-} from "@tracklore/shared";
-import type { MediaExtrasDto } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import type { MediaExtrasDto } from "@loomkeep/shared";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {

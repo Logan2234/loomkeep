@@ -6,7 +6,7 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import type { ServiceStatusDto } from "@tracklore/shared";
+  import type { ServiceStatusDto } from "@loomkeep/shared";
 
   let services = $state<ServiceStatusDto[] | null>(null);
   let checkedAt = $state<string | null>(null);

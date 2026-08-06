@@ -2,7 +2,7 @@ import type {
   DomainStatusBreakdownDto,
   StatsStatusBucket,
   StatusBucketCountDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /**
  * Sums per-domain breakdowns into one "Tous domaines" total — the shared

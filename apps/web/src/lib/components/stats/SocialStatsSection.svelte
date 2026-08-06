@@ -2,7 +2,7 @@
   // "Social" section of /stats — gated by SOCIAL_ENABLED (see the page,
   // this component is only mounted when appConfig.socialEnabled is true).
   // Always cross-domain, not affected by the DomainFilter.
-  import type { SocialStatsDto } from "@tracklore/shared";
+  import type { SocialStatsDto } from "@loomkeep/shared";
   import { getSocialStats } from "$lib/api/stats";
   import { ApiError } from "$lib/api/core";
   import LineChart from "./LineChart.svelte";

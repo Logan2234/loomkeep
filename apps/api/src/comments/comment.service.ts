@@ -14,7 +14,7 @@ import {
   NotificationType,
   ProfileAccess,
   type UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { resolveWorkHref } from "../common/work-href.util";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";

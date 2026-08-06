@@ -1,5 +1,5 @@
-import type { RatingVsCommunityDto } from "@tracklore/shared";
-import { RATING_VS_COMMUNITY_MIN_SAMPLE } from "@tracklore/shared";
+import type { RatingVsCommunityDto } from "@loomkeep/shared";
+import { RATING_VS_COMMUNITY_MIN_SAMPLE } from "@loomkeep/shared";
 
 export function computeAvgReviewLength(
   texts: (string | null)[],

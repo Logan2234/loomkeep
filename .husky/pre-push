@@ -1,1 +1,1 @@
-pnpm build:package && pnpm lint && pnpm --filter @tracklore/web check
+pnpm build:package && pnpm lint && pnpm --filter @loomkeep/web check

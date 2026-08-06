@@ -7,7 +7,7 @@ import type {
   AdminSocialSectionDto,
   AdminSystemSectionDto,
   TrendPeriod,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
 import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
 import { AdminOnly } from "./admin-only.decorator";

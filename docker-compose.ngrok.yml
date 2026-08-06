@@ -4,7 +4,7 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d
 #
-# Then run the tunnel (see README "Mobile access"):  ngrok start tracklore
+# Then run the tunnel (see README "Mobile access"):  ngrok start loomkeep
 services:
   # web + API share one origin (the proxy), so both URLs come from NGROK_DOMAIN.
   web:

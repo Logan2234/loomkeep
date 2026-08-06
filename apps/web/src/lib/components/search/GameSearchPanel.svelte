@@ -13,7 +13,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { GAME_STATUS_LABELS as STATUS_LABELS } from "$lib/status-labels";
-  import type { GameEntryDto, GameSummaryDto } from "@tracklore/shared";
+  import type { GameEntryDto, GameSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.

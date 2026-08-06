@@ -99,7 +99,7 @@ describe("MusicBrainzProvider", () => {
     const results = await providerWith("me@example.com").search("discovery");
 
     expect(fn.mock.calls[0][1]).toMatchObject({
-      headers: { "User-Agent": "Tracklore/1.0 (me@example.com)" },
+      headers: { "User-Agent": "Loomkeep/1.0 (me@example.com)" },
     });
     expect(results).toEqual([
       {
@@ -120,7 +120,7 @@ describe("MusicBrainzProvider", () => {
 
     expect(fn.mock.calls[0][1]).toMatchObject({
       headers: {
-        "User-Agent": "Tracklore/1.0 (self-hosted, no contact provided)",
+        "User-Agent": "Loomkeep/1.0 (self-hosted, no contact provided)",
       },
     });
   });

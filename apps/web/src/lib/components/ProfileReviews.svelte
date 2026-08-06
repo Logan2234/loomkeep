@@ -2,7 +2,7 @@
   import { getMyReviews } from "$lib/api/client";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import type { MyReviewDto } from "@tracklore/shared";
+  import type { MyReviewDto } from "@loomkeep/shared";
 
   // Preview of the current user's own reviews, shown on their profile (own
   // view only — "Mes reviews" isn't a public surface). Mirrors the "Listes"

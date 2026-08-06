@@ -32,7 +32,7 @@
     RelationshipDto,
     SocialProfileDto,
     UserSummaryDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   // Shared body for both /u/[username] (any profile) and /profile (the
   // current user's own, via the isSelf branch below — same data, same card,

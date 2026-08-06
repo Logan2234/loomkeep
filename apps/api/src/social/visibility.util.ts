@@ -1,4 +1,4 @@
-import { ProfileAccess, VisibilityAudience } from "@tracklore/shared";
+import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 
 /**
  * The viewer's raw relationship to a target user (viewer's point of view).

@@ -151,6 +151,6 @@
   {/if}
 
   {#if version}
-    <p class="text-dim mt-6 text-center text-xs">Tracklore v{version}</p>
+    <p class="text-dim mt-6 text-center text-xs">Loomkeep v{version}</p>
   {/if}
 </div>

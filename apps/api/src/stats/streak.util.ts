@@ -1,4 +1,4 @@
-import type { UserSummaryDto } from "@tracklore/shared";
+import type { UserSummaryDto } from "@loomkeep/shared";
 import type { PrismaService } from "../prisma/prisma.service";
 import { computeStreaksByUser } from "./video-temporal.util";
 

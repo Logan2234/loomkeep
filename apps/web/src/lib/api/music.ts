@@ -5,7 +5,7 @@ import type {
   PagedResult,
   UpdateMusicEntryDto,
   UpsertMusicEntryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function searchMusic(query: string): Promise<MusicSearchResponseDto> {

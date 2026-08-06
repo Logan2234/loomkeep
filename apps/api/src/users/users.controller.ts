@@ -20,7 +20,7 @@ import {
   type UserDataExportDto,
   type UserDto,
   type UsernameAvailabilityDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";

@@ -20,7 +20,7 @@
     AdminCacheItemDto,
     AdminCacheSort,
     Domain,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   type DomainIcon =
     "tv" | "gamepad" | "book" | "music" | "podcast" | "boardgame";
@@ -601,7 +601,7 @@
         <!-- Actions -->
         <section class="mt-auto space-y-2 pt-2">
           <a href={detail.detailPath} class="btn btn-ghost w-full">
-            Voir la fiche Tracklore
+            Voir la fiche Loomkeep
             <Icon name="chevron-right" class="h-4 w-4" />
           </a>
           <button

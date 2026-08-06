@@ -4,7 +4,7 @@ import type {
   MusicDetailsDto,
   MusicSource,
   MusicSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 import type {

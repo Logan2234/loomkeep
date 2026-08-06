@@ -3,7 +3,7 @@ import {
   EntryStatus,
   MediaType,
   UpsertLibraryEntryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsIn,

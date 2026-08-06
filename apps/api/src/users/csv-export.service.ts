@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { Domain, ReviewTargetType } from "@tracklore/shared";
+import { Domain, ReviewTargetType } from "@loomkeep/shared";
 import { toCsv } from "../common/csv.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";

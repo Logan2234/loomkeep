@@ -1,4 +1,4 @@
-import type { RatingByGroupDto } from "@tracklore/shared";
+import type { RatingByGroupDto } from "@loomkeep/shared";
 
 export interface RatingByGroupInput {
   /** e.g. a game's platforms or genres — one row contributes to every group it's in. */

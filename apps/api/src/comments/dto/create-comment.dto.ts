@@ -2,7 +2,7 @@ import {
   COMMENT_TEXT_MAX_LENGTH,
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsIn,

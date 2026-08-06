@@ -7,7 +7,7 @@ import {
   Param,
   Post,
 } from "@nestjs/common";
-import type { JobListResponseDto } from "@tracklore/shared";
+import type { JobListResponseDto } from "@loomkeep/shared";
 import { MediaItemService } from "../catalog/media-item.service";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";

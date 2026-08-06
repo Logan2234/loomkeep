@@ -17,8 +17,8 @@ import type {
   VideoStatsDto,
   VideoTemporalDto,
   WatchStaleness,
-} from "@tracklore/shared";
-import { Domain, STATS_DOMAINS } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";

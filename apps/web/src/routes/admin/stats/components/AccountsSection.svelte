@@ -9,7 +9,7 @@
     ProfileAccess,
     type AdminAccountsSectionDto,
     type TrendPeriod,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import CohortTable from "./CohortTable.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";

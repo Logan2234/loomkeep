@@ -23,8 +23,8 @@ import type {
   MediaType,
   PagedResult,
   ProgressDto,
-} from "@tracklore/shared";
-import { ActivityType, isDormant, ReviewTargetType } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { ActivityType, isDormant, ReviewTargetType } from "@loomkeep/shared";
 import { MediaItemService } from "../catalog/media-item.service";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";

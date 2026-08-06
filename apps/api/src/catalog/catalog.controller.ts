@@ -12,7 +12,7 @@ import {
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";

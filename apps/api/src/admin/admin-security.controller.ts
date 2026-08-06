@@ -3,7 +3,7 @@ import type {
   AdminSecuritySummaryDto,
   SecurityEventListResponseDto,
   SecurityEventType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { SecurityEventService } from "../security/security-event.service";
 import { AdminOnly } from "./admin-only.decorator";
 

@@ -1,4 +1,4 @@
-import { Domain } from "@tracklore/shared";
+import { Domain } from "@loomkeep/shared";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import { CsvExportService } from "./csv-export.service";

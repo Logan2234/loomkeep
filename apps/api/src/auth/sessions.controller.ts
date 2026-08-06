@@ -8,7 +8,7 @@ import {
   Param,
   Query,
 } from "@nestjs/common";
-import type { SessionDto } from "@tracklore/shared";
+import type { SessionDto } from "@loomkeep/shared";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { JwtPayload } from "./decorators/current-user.decorator";

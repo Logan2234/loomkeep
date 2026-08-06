@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { RatingDto } from "@tracklore/shared";
+import type { RatingDto } from "@loomkeep/shared";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 
 const OMDB_URL = "https://www.omdbapi.com/";

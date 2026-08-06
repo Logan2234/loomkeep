@@ -1,4 +1,4 @@
-# Tracklore
+# Loomkeep
 
 [![CI](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml/badge.svg)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
@@ -75,7 +75,7 @@ provides one by tunnelling to the local proxy. Your computer must stay on.
 
    ```sh
    docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d --build
-   ngrok start tracklore
+   ngrok start loomkeep
    ```
 
 4. Open the domain on your phone → browser menu → _Add to home screen_.
@@ -120,20 +120,20 @@ warning page.
 
 ```sh
 pnpm install
-docker run -d --name tracklore-dev-db -e POSTGRES_USER=tracklore \
-  -e POSTGRES_PASSWORD=tracklore -e POSTGRES_DB=tracklore \
+docker run -d --name loomkeep-dev-db -e POSTGRES_USER=loomkeep \
+  -e POSTGRES_PASSWORD=loomkeep -e POSTGRES_DB=loomkeep \
   -p 5433:5432 postgres:17-alpine
 cp apps/api/.env.example apps/api/.env   # then add your TMDB token
-pnpm --filter @tracklore/api exec prisma migrate dev
-pnpm --filter @tracklore/shared build
+pnpm --filter @loomkeep/api exec prisma migrate dev
+pnpm --filter @loomkeep/shared build
 pnpm dev        # api on :3000, web on :5173
 ```
 
 Tests:
 
 ```sh
-pnpm --filter @tracklore/api test        # unit (provider mapping)
-pnpm --filter @tracklore/api test:e2e    # full API flow, isolated "e2e" schema
+pnpm --filter @loomkeep/api test        # unit (provider mapping)
+pnpm --filter @loomkeep/api test:e2e    # full API flow, isolated "e2e" schema
 ```
 
 ## Roadmap

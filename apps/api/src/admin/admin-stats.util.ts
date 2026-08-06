@@ -1,4 +1,4 @@
-import type { TrendPeriod, TrendPointDto } from "@tracklore/shared";
+import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

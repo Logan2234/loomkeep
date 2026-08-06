@@ -5,7 +5,7 @@ import type {
   MediaType,
   PagedResult,
   UpsertLibraryEntryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export interface ListLibraryFilters {

@@ -6,7 +6,7 @@
   import type {
     DomainStatusBreakdownDto,
     GameStatsDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import { getGameStats } from "$lib/api/stats";
   import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";

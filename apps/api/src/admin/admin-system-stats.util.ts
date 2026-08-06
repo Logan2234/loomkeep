@@ -1,4 +1,4 @@
-import type { AdminProviderCallsDto } from "@tracklore/shared";
+import type { AdminProviderCallsDto } from "@loomkeep/shared";
 
 /** How many tables the "Taille BDD par table" ranking carries. */
 export const TOP_TABLES_LIMIT = 8;

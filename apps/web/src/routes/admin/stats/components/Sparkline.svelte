@@ -2,7 +2,7 @@
   // Chart-less trend hint for a table cell: a bare polyline, no axis, no
   // labels, no tooltip. Distinct from LineChart/TrendChart on purpose — inside
   // a row there is no space for anything but the shape.
-  import type { TrendPointDto } from "@tracklore/shared";
+  import type { TrendPointDto } from "@loomkeep/shared";
 
   let {
     points,

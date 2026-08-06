@@ -4,8 +4,8 @@ import type {
   AdminCatalogueSectionDto,
   AdminPopularWorkDto,
   StatsDomain,
-} from "@tracklore/shared";
-import { Domain } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   percent,

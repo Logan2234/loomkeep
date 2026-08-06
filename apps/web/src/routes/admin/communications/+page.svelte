@@ -29,7 +29,7 @@
     AdminPushSummaryDto,
     AdminUserDto,
     MailTemplateInfoDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   type Tab = "email" | "push";
   let tab = $state<Tab>(
@@ -491,7 +491,7 @@
             id="admin-push-title"
             type="text"
             bind:value={pushTitle}
-            placeholder="Tracklore (admin)"
+            placeholder="Loomkeep (admin)"
             maxlength="100"
             class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
         </div>
@@ -590,7 +590,7 @@
             id="admin-broadcast-title"
             type="text"
             bind:value={broadcastTitle}
-            placeholder="Tracklore (admin)"
+            placeholder="Loomkeep (admin)"
             maxlength="100"
             class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
         </div>

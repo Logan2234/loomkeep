@@ -1,4 +1,4 @@
-import type { MediaSummaryDto } from "@tracklore/shared";
+import type { MediaSummaryDto } from "@loomkeep/shared";
 
 /** Lowercase, strip diacritics and surrounding space for loose title matching. */
 function normalize(value: string): string {

@@ -10,7 +10,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { notifications } from "$lib/notifications.svelte";
-  import type { FollowRequestDto, NotificationDto } from "@tracklore/shared";
+  import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
   import { onMount } from "svelte";
 
   let loading = $state(true);

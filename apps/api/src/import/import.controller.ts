@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-import type { ImportJobDto } from "@tracklore/shared";
+import type { ImportJobDto } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { AnalyzeImportDto } from "./dto/analyze-import.dto";

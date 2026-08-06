@@ -1,5 +1,5 @@
 import { IsString, MinLength } from "class-validator";
-import type { DeleteAccountRequestDto } from "@tracklore/shared";
+import type { DeleteAccountRequestDto } from "@loomkeep/shared";
 
 export class DeleteAccountDto implements DeleteAccountRequestDto {
   @IsString()

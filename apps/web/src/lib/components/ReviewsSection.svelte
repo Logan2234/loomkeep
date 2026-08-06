@@ -15,7 +15,7 @@
     ReviewDto,
     ReviewTargetType,
     ReviewVoteValue,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   // Always-visible review section for a work's detail page: the viewer's own
   // review (add/edit via the shared modal) + everyone else's, visibility-

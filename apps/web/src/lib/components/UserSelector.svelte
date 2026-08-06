@@ -4,7 +4,7 @@
   // filter by account. Loads the
   // account list itself and emits the selected user id (null once cleared).
   import { getAdminUsers } from "$lib/api/client";
-  import type { AdminUserDto } from "@tracklore/shared";
+  import type { AdminUserDto } from "@loomkeep/shared";
   import Combobox from "./Combobox.svelte";
 
   let {

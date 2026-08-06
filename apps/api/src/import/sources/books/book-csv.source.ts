@@ -9,8 +9,8 @@ import type {
   ImportPlanItem,
   ImportReport,
   ImportReportTile,
-} from "@tracklore/shared";
-import { ReviewTargetType } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { ReviewTargetType } from "@loomkeep/shared";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";

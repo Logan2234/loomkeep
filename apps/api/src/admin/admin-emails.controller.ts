@@ -13,7 +13,7 @@ import {
 import type {
   MailTemplateListResponseDto,
   MailTemplatePreviewDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { MailService } from "../mail/mail.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { SendTestEmailDto } from "./dto/send-test-email.dto";

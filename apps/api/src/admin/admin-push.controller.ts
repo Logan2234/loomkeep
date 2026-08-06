@@ -11,7 +11,7 @@ import type {
   AdminPushDeviceDto,
   AdminPushSendResponseDto,
   AdminPushSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -74,7 +74,7 @@ export class AdminPushController {
     const devices = await this.push.listSubscriptions(user.id);
 
     const results = await this.push.sendToUserDetailed(user.id, {
-      title: dto.title?.trim() || "Tracklore (admin)",
+      title: dto.title?.trim() || "Loomkeep (admin)",
       body:
         dto.body?.trim() ||
         "Ceci est une notification de test envoyée depuis le panel admin.",
@@ -97,7 +97,7 @@ export class AdminPushController {
     const perAccount = await Promise.all(
       subscribed.map(({ userId }) =>
         this.push.sendToUserDetailed(userId, {
-          title: dto.title?.trim() || "Tracklore (admin)",
+          title: dto.title?.trim() || "Loomkeep (admin)",
           body:
             dto.body?.trim() ||
             "Message envoyé à tous les comptes depuis le panel admin.",

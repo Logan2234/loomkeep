@@ -34,8 +34,8 @@ describe("MailService", () => {
     process.env.SMTP_PORT = "587";
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
-    process.env.SMTP_FROM = "Tracklore <no-reply@tracklore.app>";
-    process.env.WEB_ORIGIN = "https://tracklore.example";
+    process.env.SMTP_FROM = "Loomkeep <no-reply@loomkeep.app>";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
 
     const sendMail = jest.fn().mockResolvedValue(undefined);
     (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
@@ -53,10 +53,10 @@ describe("MailService", () => {
     );
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "Tracklore <no-reply@tracklore.app>",
+        from: "Loomkeep <no-reply@loomkeep.app>",
         to: "alice@example.com",
         text: expect.stringContaining(
-          "https://tracklore.example/reset-password?token=tok123",
+          "https://loomkeep.example/reset-password?token=tok123",
         ),
       }),
     );
@@ -81,7 +81,7 @@ describe("MailService", () => {
       }),
     );
     const { html } = sendMail.mock.calls[0][0];
-    expect(html).toContain("Tracklore");
+    expect(html).toContain("Loomkeep");
     expect(html).toContain("Confirme ton adresse email");
   });
 
@@ -138,7 +138,7 @@ describe("MailService template gallery", () => {
 
     expect(preview).not.toBeNull();
     expect(preview?.subject).toContain("Bienvenue");
-    expect(preview?.html).toContain("Tracklore");
+    expect(preview?.html).toContain("Loomkeep");
   });
 
   it("returns null for an unknown template key", () => {

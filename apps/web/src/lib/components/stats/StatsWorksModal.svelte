@@ -1,6 +1,6 @@
 <script lang="ts">
   // Drill-down for a clicked rating/decade bar: the works behind that count.
-  import type { StatsWorkDto } from "@tracklore/shared";
+  import type { StatsWorkDto } from "@loomkeep/shared";
   import Modal from "$lib/components/Modal.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { STATS_DOMAIN_LABEL } from "./stats-domain";

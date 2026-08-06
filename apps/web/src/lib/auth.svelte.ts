@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
-import type { AuthTokensDto, UserDto } from "@tracklore/shared";
+import type { AuthTokensDto, UserDto } from "@loomkeep/shared";
 
-const STORAGE_KEY = "tracklore.tokens";
+const STORAGE_KEY = "loomkeep.tokens";
 
 /** Global auth state (Svelte 5 runes). Tokens persist in localStorage. */
 class AuthState {

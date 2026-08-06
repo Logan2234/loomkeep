@@ -82,7 +82,7 @@
         <span
           class="font-display text-lg font-extrabold whitespace-nowrap transition-opacity
           {expanded ? 'opacity-100' : 'opacity-0'}">
-          Tracklore
+          Loomkeep
         </span>
       </a>
 

@@ -4,7 +4,7 @@ import {
   Injectable,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { GameOwnershipStatus, GameSource } from "@tracklore/shared";
+import { GameOwnershipStatus, GameSource } from "@loomkeep/shared";
 import type {
   GameStatus,
   ImportMatch,
@@ -13,7 +13,7 @@ import type {
   ImportPlanItem,
   ImportReport,
   ImportReportTile,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { AgeGateService } from "../../../users/age-gate.service";

@@ -2,7 +2,7 @@
   import { ApiError, exportMyData, exportMyDataCsv } from "$lib/api/client";
   import Icon from "$lib/components/Icon.svelte";
   import { toast } from "$lib/toast.svelte";
-  import { Domain } from "@tracklore/shared";
+  import { Domain } from "@loomkeep/shared";
 
   let exporting = $state(false);
   let exportError = $state("");
@@ -25,7 +25,7 @@
       downloadBlob(
         JSON.stringify(data, null, 2),
         "application/json",
-        `tracklore-export-${new Date().toISOString().slice(0, 10)}.json`,
+        `loomkeep-export-${new Date().toISOString().slice(0, 10)}.json`,
       );
       toast.success("Export terminé.");
     } catch (err) {
@@ -70,7 +70,7 @@
       downloadBlob(
         csv,
         "text/csv",
-        `tracklore-${slug}-${new Date().toISOString().slice(0, 10)}.csv`,
+        `loomkeep-${slug}-${new Date().toISOString().slice(0, 10)}.csv`,
       );
       toast.success("Export terminé.");
     } catch (err) {

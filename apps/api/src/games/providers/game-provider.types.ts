@@ -1,4 +1,4 @@
-import type { GameSource, GameSummaryDto, RatingDto } from "@tracklore/shared";
+import type { GameSource, GameSummaryDto, RatingDto } from "@loomkeep/shared";
 
 interface ProviderGameExternalId {
   source: GameSource;

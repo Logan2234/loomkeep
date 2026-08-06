@@ -4,8 +4,8 @@
     StatsOverviewDto,
     StatsWindow,
     StatsWorkDto,
-  } from "@tracklore/shared";
-  import { STATS_DOMAINS } from "@tracklore/shared";
+  } from "@loomkeep/shared";
+  import { STATS_DOMAINS } from "@loomkeep/shared";
   import {
     getStatsOverview,
     getStatsWorksByDecade,

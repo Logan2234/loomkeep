@@ -15,7 +15,7 @@
     AdminSecuritySummaryDto,
     SecurityEventDto,
     SecurityEventType,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   const TYPE_LABELS: Record<SecurityEventType, string> = {
     USER_REGISTERED: "Inscription",

@@ -5,7 +5,7 @@ import type {
   MediaSource,
   MediaSummaryDto,
   MediaType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 export interface ProviderExternalId {
   source: MediaSource;

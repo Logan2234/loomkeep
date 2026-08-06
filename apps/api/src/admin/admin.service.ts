@@ -8,13 +8,13 @@ import type {
   ServiceArea,
   ServiceStatusDto,
   ServiceStatusResponseDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type { ProviderQuotaSpec } from "./admin-system-stats.util";
 
 // docs/ is gitignored and regenerated locally (`prisma generate` for the ERD,
-// `pnpm --filter @tracklore/api run graph` for the module graph). process.cwd()
+// `pnpm --filter @loomkeep/api run graph` for the module graph). process.cwd()
 // is apps/api in both dev (pnpm --filter) and the Docker image (WORKDIR).
 const DOCS_DIR = join(process.cwd(), "..", "..", "docs");
 
@@ -187,7 +187,7 @@ export class AdminService {
             {
               signal,
               headers: {
-                "User-Agent": `Tracklore/1.0 (${this.env("MUSICBRAINZ_CONTACT") || "self-hosted, no contact provided"})`,
+                "User-Agent": `Loomkeep/1.0 (${this.env("MUSICBRAINZ_CONTACT") || "self-hosted, no contact provided"})`,
               },
             },
           ),

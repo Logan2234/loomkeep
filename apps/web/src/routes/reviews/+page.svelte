@@ -8,7 +8,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import ReviewFormModal from "$lib/components/ReviewFormModal.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import type { MyReviewDto, ReviewVisibility } from "@tracklore/shared";
+  import type { MyReviewDto, ReviewVisibility } from "@loomkeep/shared";
 
   const TYPE_LABEL: Record<string, string> = {
     MEDIA: "Vidéo",

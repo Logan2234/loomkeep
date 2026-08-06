@@ -5,7 +5,7 @@ import type {
   RelationshipDto,
   VisibilityAudience,
   VisibilityFacet,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   computeIsFriend,

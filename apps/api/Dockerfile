@@ -12,13 +12,13 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
-RUN pnpm install --frozen-lockfile --filter @tracklore/api...
+RUN pnpm install --frozen-lockfile --filter @loomkeep/api...
 
 COPY packages/shared packages/shared
 COPY apps/api apps/api
-RUN pnpm --filter @tracklore/shared build \
-  && DISABLE_ERD=true pnpm --filter @tracklore/api exec prisma generate \
-  && pnpm --filter @tracklore/api build
+RUN pnpm --filter @loomkeep/shared build \
+  && DISABLE_ERD=true pnpm --filter @loomkeep/api exec prisma generate \
+  && pnpm --filter @loomkeep/api build
 
 WORKDIR /app/apps/api
 EXPOSE 3000

@@ -19,7 +19,7 @@ import type {
   AdminCacheListResponseDto,
   AdminCacheResyncStaleResultDto,
   AdminCacheSort,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { GameItemService } from "../games/game-item.service";
@@ -377,7 +377,7 @@ export class AdminCacheController {
     return new Date(Date.now() - STALE_TTL_MS);
   }
 
-  /** The item's id in its own canonical source (the one the Tracklore page addresses). */
+  /** The item's id in its own canonical source (the one the Loomkeep page addresses). */
   private canonicalId(
     canonicalSource: string,
     externalIds: { source: string; externalId: string }[],

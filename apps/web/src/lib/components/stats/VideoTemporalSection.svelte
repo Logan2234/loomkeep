@@ -3,7 +3,7 @@
   // true per-event log in the app). `period` narrows only the weekday/hour
   // curves; the heatmap and monthly/yearly bars always show their own
   // natural full range (see VideoTemporalDto).
-  import type { StatsWindow, VideoTemporalDto } from "@tracklore/shared";
+  import type { StatsWindow, VideoTemporalDto } from "@loomkeep/shared";
   import { getVideoTemporal } from "$lib/api/stats";
   import { ApiError } from "$lib/api/core";
   import CalendarHeatmap from "./CalendarHeatmap.svelte";

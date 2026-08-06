@@ -2,8 +2,8 @@ import { Injectable } from "@nestjs/common";
 import type {
   AdminSystemSectionDto,
   AdminTableSizeDto,
-} from "@tracklore/shared";
-import { SecurityEventType } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { SecurityEventType } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
 import { startOfUtcDay } from "./admin-stats.util";

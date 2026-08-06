@@ -20,7 +20,7 @@
     AdminOverviewDto,
     JobDto,
     ServiceStatusDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   let version = $state<string | null>(null);
   let overview = $state<AdminOverviewDto | null>(null);
@@ -299,6 +299,6 @@
   </div>
 
   {#if version}
-    <p class="text-dim mt-8 text-center text-xs">Tracklore v{version}</p>
+    <p class="text-dim mt-8 text-center text-xs">Loomkeep v{version}</p>
   {/if}
 </div>

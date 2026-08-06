@@ -2,7 +2,7 @@ import type {
   ImportAnalyzeRequest,
   ImportCommitRequest,
   ImportJobDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 /** Analyse an export → reconciliation plan (writes nothing). Poll the job. */

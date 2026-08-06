@@ -1,7 +1,7 @@
 import type {
   AdminTopContributorDto,
   AdminTopReporterDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /** How many writers the "Top contributeurs" ranking carries. */
 const TOP_CONTRIBUTORS_LIMIT = 5;

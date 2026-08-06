@@ -1,5 +1,5 @@
 import { IsString, MaxLength, MinLength } from "class-validator";
-import type { ResetPasswordRequestDto } from "@tracklore/shared";
+import type { ResetPasswordRequestDto } from "@loomkeep/shared";
 
 export class ResetPasswordDto implements ResetPasswordRequestDto {
   @IsString()

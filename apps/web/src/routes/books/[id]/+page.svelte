@@ -37,7 +37,7 @@
     BOOK_STATUS_META as STATUS_META,
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/status-labels";
-  import type { BookDetailDto } from "@tracklore/shared";
+  import type { BookDetailDto } from "@loomkeep/shared";
 
   // Google Books is the only book source today; the web route carries just the id.
   const SOURCE = "google_books";

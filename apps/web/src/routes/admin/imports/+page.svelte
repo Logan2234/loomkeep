@@ -17,7 +17,7 @@
     AdminImportRunDto,
     AdminImportSummaryDto,
     JobStatus,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
 
   const sourceLabel = (id: string) => IMPORT_SOURCES[id]?.label ?? id;
 

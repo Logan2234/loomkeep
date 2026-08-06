@@ -6,7 +6,7 @@ import type {
   StatsWindow,
   WeekdayCountDto,
   YearMinutesDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

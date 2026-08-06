@@ -5,7 +5,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
-  import type { CalendarEntryDto } from "@tracklore/shared";
+  import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
 
   let entries = $state<CalendarEntryDto[]>([]);

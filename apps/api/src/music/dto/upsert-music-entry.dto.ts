@@ -2,7 +2,7 @@ import {
   MusicSource,
   MusicStatus,
   UpsertMusicEntryDto as UpsertMusicEntryContract,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsIn,

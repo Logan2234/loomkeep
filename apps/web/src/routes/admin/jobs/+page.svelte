@@ -5,7 +5,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import type { JobDto } from "@tracklore/shared";
+  import type { JobDto } from "@loomkeep/shared";
 
   let jobs = $state<JobDto[] | null>(null);
   let loading = $state(true);

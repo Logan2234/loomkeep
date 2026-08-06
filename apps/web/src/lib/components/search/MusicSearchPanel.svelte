@@ -13,7 +13,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { MUSIC_STATUS_LABELS as STATUS_LABELS } from "$lib/status-labels";
-  import type { MusicEntryDto, MusicSummaryDto } from "@tracklore/shared";
+  import type { MusicEntryDto, MusicSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.

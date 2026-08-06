@@ -1,4 +1,4 @@
-import type { AdminFailedLoginTargetDto } from "@tracklore/shared";
+import type { AdminFailedLoginTargetDto } from "@loomkeep/shared";
 
 /** How many identifiers the "most targeted" ranking carries. */
 const TOP_TARGETS_LIMIT = 5;

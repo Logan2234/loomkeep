@@ -1,4 +1,4 @@
-import { EntryStatus, MediaOwnershipStatus } from "@tracklore/shared";
+import { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared";
 import {
   IsBoolean,
   IsDateString,

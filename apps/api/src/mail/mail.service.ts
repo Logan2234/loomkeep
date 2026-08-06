@@ -136,7 +136,7 @@ export class MailService {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } =
       process.env;
     this.webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
-    this.from = SMTP_FROM ?? "Tracklore <no-reply@tracklore.app>";
+    this.from = SMTP_FROM ?? "Loomkeep <no-reply@loomkeep.app>";
 
     if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
       const port = Number(SMTP_PORT ?? 587);
@@ -277,7 +277,7 @@ export class MailService {
     const label = pendingCount > 1 ? "signalements" : "signalement";
     return {
       subject: `${pendingCount} ${label} en attente de modération`,
-      text: `${pendingCount} ${label} en attente de modération sur Tracklore.\n\n${url}`,
+      text: `${pendingCount} ${label} en attente de modération sur Loomkeep.\n\n${url}`,
       html: this.wrapEmail(
         "Signalements en attente",
         `<p><strong>${pendingCount}</strong> ${label} en attente de modération.</p>
@@ -289,11 +289,11 @@ export class MailService {
   private buildPasswordResetLink(token: string): TemplateBody {
     const url = `${this.webOrigin}/reset-password?token=${token}`;
     return {
-      subject: "Réinitialise ton mot de passe Tracklore",
-      text: `Un lien de réinitialisation a été demandé pour ton compte Tracklore.\n\n${url}\n\nCe lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
+      subject: "Réinitialise ton mot de passe Loomkeep",
+      text: `Un lien de réinitialisation a été demandé pour ton compte Loomkeep.\n\n${url}\n\nCe lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
       html: this.wrapEmail(
         "Réinitialise ton mot de passe",
-        `<p>Un lien de réinitialisation a été demandé pour ton compte Tracklore.</p>
+        `<p>Un lien de réinitialisation a été demandé pour ton compte Loomkeep.</p>
          ${this.button(url, "Réinitialiser mon mot de passe")}
          <p style="color:${COLOR_MUTED};font-size:13px;">Ce lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>`,
       ),
@@ -302,11 +302,11 @@ export class MailService {
 
   private buildPasswordChanged(): TemplateBody {
     return {
-      subject: "Ton mot de passe Tracklore a été modifié",
-      text: "Le mot de passe de ton compte Tracklore vient d'être changé. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.",
+      subject: "Ton mot de passe Loomkeep a été modifié",
+      text: "Le mot de passe de ton compte Loomkeep vient d'être changé. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.",
       html: this.wrapEmail(
         "Mot de passe modifié",
-        `<p>Le mot de passe de ton compte Tracklore vient d'être changé.</p>
+        `<p>Le mot de passe de ton compte Loomkeep vient d'être changé.</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.</p>`,
       ),
     };
@@ -314,11 +314,11 @@ export class MailService {
 
   private buildEmailChangedOld(newEmail: string): TemplateBody {
     return {
-      subject: "L'email de ton compte Tracklore a changé",
-      text: `L'adresse email de ton compte Tracklore a été changée pour ${newEmail}. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.`,
+      subject: "L'email de ton compte Loomkeep a changé",
+      text: `L'adresse email de ton compte Loomkeep a été changée pour ${newEmail}. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.`,
       html: this.wrapEmail(
         "Adresse email modifiée",
-        `<p>L'adresse email de ton compte Tracklore a été changée pour <strong>${newEmail}</strong>.</p>
+        `<p>L'adresse email de ton compte Loomkeep a été changée pour <strong>${newEmail}</strong>.</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.</p>`,
       ),
     };
@@ -326,18 +326,18 @@ export class MailService {
 
   private buildEmailChangedNew(oldEmail: string): TemplateBody {
     return {
-      subject: "Cette adresse est maintenant liée à ton compte Tracklore",
-      text: `Cette adresse est désormais l'email de connexion de ton compte Tracklore (précédemment ${oldEmail}).`,
+      subject: "Cette adresse est maintenant liée à ton compte Loomkeep",
+      text: `Cette adresse est désormais l'email de connexion de ton compte Loomkeep (précédemment ${oldEmail}).`,
       html: this.wrapEmail(
         "Adresse email confirmée",
-        `<p>Cette adresse est désormais l'email de connexion de ton compte Tracklore (précédemment ${oldEmail}).</p>`,
+        `<p>Cette adresse est désormais l'email de connexion de ton compte Loomkeep (précédemment ${oldEmail}).</p>`,
       ),
     };
   }
 
   private buildEmailChangeCode(code: string): TemplateBody {
     return {
-      subject: "Confirme ta nouvelle adresse email Tracklore",
+      subject: "Confirme ta nouvelle adresse email Loomkeep",
       text: `Voici ton code de confirmation : ${code}\n\nCe code expire dans 15 minutes. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
       html: this.wrapEmail(
         "Confirme ton adresse email",
@@ -350,11 +350,11 @@ export class MailService {
 
   private buildWelcome(displayName: string): TemplateBody {
     return {
-      subject: "Bienvenue sur Tracklore",
-      text: `Bienvenue ${displayName} ! Ton compte Tracklore a été créé avec succès.`,
+      subject: "Bienvenue sur Loomkeep",
+      text: `Bienvenue ${displayName} ! Ton compte Loomkeep a été créé avec succès.`,
       html: this.wrapEmail(
-        "Bienvenue sur Tracklore",
-        `<p>Bienvenue <strong>${displayName}</strong> ! Ton compte Tracklore a été créé avec succès.</p>`,
+        "Bienvenue sur Loomkeep",
+        `<p>Bienvenue <strong>${displayName}</strong> ! Ton compte Loomkeep a été créé avec succès.</p>`,
       ),
     };
   }
@@ -362,7 +362,7 @@ export class MailService {
   private buildVerifyEmail(token: string): TemplateBody {
     const url = `${this.webOrigin}/verify-email?token=${token}`;
     return {
-      subject: "Confirme ton adresse email Tracklore",
+      subject: "Confirme ton adresse email Loomkeep",
       text: `Confirme ton adresse email en ouvrant ce lien :\n\n${url}\n\nCe lien expire dans 24h.`,
       html: this.wrapEmail(
         "Confirme ton adresse email",
@@ -390,7 +390,7 @@ export class MailService {
     };
   }
 
-  /** Wraps mail body HTML in the shared Tracklore header/footer. Inline CSS only — mail clients don't load stylesheets. */
+  /** Wraps mail body HTML in the shared Loomkeep header/footer. Inline CSS only — mail clients don't load stylesheets. */
   private wrapEmail(title: string, bodyHtml: string): string {
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOR_BG};padding:32px 0;font-family:Arial,Helvetica,sans-serif;">
   <tr>
@@ -398,7 +398,7 @@ export class MailService {
       <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background:${COLOR_SURFACE};border:1px solid ${COLOR_BORDER};border-radius:12px;overflow:hidden;">
         <tr>
           <td style="padding:24px 32px;border-bottom:1px solid ${COLOR_BORDER};">
-            <span style="font-size:18px;font-weight:700;letter-spacing:0.3px;color:${COLOR_TEXT};">Tracklore</span>
+            <span style="font-size:18px;font-weight:700;letter-spacing:0.3px;color:${COLOR_TEXT};">Loomkeep</span>
           </td>
         </tr>
         <tr>
@@ -409,7 +409,7 @@ export class MailService {
         </tr>
         <tr>
           <td style="padding:16px 32px;background:${COLOR_BG};color:${COLOR_MUTED};font-size:12px;text-align:center;">
-            Tracklore — géré par toi-même
+            Loomkeep — géré par toi-même
           </td>
         </tr>
       </table>

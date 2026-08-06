@@ -1,5 +1,5 @@
 import { IsString, MinLength } from "class-validator";
-import type { LoginRequestDto } from "@tracklore/shared";
+import type { LoginRequestDto } from "@loomkeep/shared";
 
 export class LoginDto implements LoginRequestDto {
   // Email or username — checked against both, so no format constraint here.

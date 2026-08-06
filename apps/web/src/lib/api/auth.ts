@@ -14,7 +14,7 @@ import type {
   UserDataExportDto,
   UserDto,
   UsernameAvailabilityDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
 import { request } from "./core";
 

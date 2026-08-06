@@ -18,8 +18,8 @@ import type {
   LibraryEntryDto,
   MediaType,
   PagedResult,
-} from "@tracklore/shared";
-import { Domain } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { toQueryArray } from "../common/query-array.util";

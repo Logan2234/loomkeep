@@ -7,7 +7,7 @@ import type {
   ListMembershipDto,
   MyListDto,
   UpdateListDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function getMyLists(): Promise<MyListDto[]> {

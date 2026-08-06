@@ -1,4 +1,4 @@
-import type { MediaType } from "@tracklore/shared";
+import type { MediaType } from "@loomkeep/shared";
 
 /** A released episode of a tracked show, considered for a notification. */
 export interface CandidateEpisode {

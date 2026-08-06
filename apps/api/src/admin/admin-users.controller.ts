@@ -21,7 +21,7 @@ import type {
   SessionDto,
   UserDataExportDto,
   UserSummaryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";

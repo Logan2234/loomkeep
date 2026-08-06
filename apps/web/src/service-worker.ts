@@ -32,7 +32,7 @@ self.addEventListener("push", (event) => {
       data: { url: payload.url },
       dir: "auto",
       lang: "fr",
-      tag: "tracklore",
+      tag: "loomkeep",
     }),
   );
 });

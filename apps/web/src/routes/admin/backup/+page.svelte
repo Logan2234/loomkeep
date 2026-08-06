@@ -15,7 +15,7 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import { formatBytes } from "$lib/format";
   import { toast } from "$lib/toast.svelte";
-  import type { AdminBackupFileDto } from "@tracklore/shared";
+  import type { AdminBackupFileDto } from "@loomkeep/shared";
 
   // Mirrors JOB_KEYS.BACKUP in apps/api/src/jobs/job-keys.ts — the daily
   // 3h cron this button also triggers on demand (same code path either way,

@@ -28,7 +28,7 @@
     ImportPlanItem,
     ImportSourceDescriptor,
     MediaSummaryDto,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 

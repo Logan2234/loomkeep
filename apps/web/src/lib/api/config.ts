@@ -1,4 +1,4 @@
-import type { PublicConfigDto } from "@tracklore/shared";
+import type { PublicConfigDto } from "@loomkeep/shared";
 import { appConfig } from "../config.svelte";
 import { request } from "./core";
 

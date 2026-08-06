@@ -2,7 +2,7 @@ import {
   REVIEW_TEXT_MAX_LENGTH,
   type ReviewVisibility,
   ReviewVisibility as ReviewVisibilityEnum,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsIn,
   IsNumber,

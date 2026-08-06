@@ -4,13 +4,13 @@ import type {
   CastDetailDto,
   MediaExtrasDto,
   WatchProviderDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   CatalogSource,
   MediaSource,
   MediaSummaryDto,
   MediaType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { OmdbService } from "../omdb.service";

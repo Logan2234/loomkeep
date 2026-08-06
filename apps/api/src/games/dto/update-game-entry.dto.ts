@@ -2,7 +2,7 @@ import {
   GameOwnershipStatus,
   GameStatus,
   UpdateGameEntryDto as UpdateGameEntryContract,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import {
   IsBoolean,
   IsDateString,

@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { RatingDto } from "@tracklore/shared";
-import { BookSource, BookSummaryDto } from "@tracklore/shared";
+import type { RatingDto } from "@loomkeep/shared";
+import { BookSource, BookSummaryDto } from "@loomkeep/shared";
 import { chunk } from "../../common/array.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {

@@ -37,7 +37,7 @@
     GAME_STATUS_META as STATUS_META,
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/status-labels";
-  import type { GameDetailDto } from "@tracklore/shared";
+  import type { GameDetailDto } from "@loomkeep/shared";
 
   // IGDB is the only game source today; the web route carries just the id.
   const SOURCE = "igdb";

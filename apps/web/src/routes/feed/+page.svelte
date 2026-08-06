@@ -4,7 +4,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import type { ActivityEventDto } from "@tracklore/shared";
+  import type { ActivityEventDto } from "@loomkeep/shared";
 
   let events = $state<ActivityEventDto[]>([]);
   let cursor = $state<string | null>(null);

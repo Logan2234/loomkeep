@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from "$lib/components/Icon.svelte";
   import { isDomainEnabled } from "$lib/domains";
-  import { Domain } from "@tracklore/shared";
+  import { Domain } from "@loomkeep/shared";
 
   type ImportSource = {
     name: string;

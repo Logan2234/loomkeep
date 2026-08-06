@@ -6,7 +6,7 @@ import type {
   ReviewVisibility,
   ReviewVoteValue,
   UpsertReviewDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function getMyReviews(): Promise<MyReviewDto[]> {

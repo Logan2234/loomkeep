@@ -5,7 +5,7 @@ import type {
   CatalogSource,
   MediaDetailsDto,
   MediaType,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";

@@ -1,4 +1,4 @@
-import type { BookSource, BookSummaryDto, RatingDto } from "@tracklore/shared";
+import type { BookSource, BookSummaryDto, RatingDto } from "@loomkeep/shared";
 
 interface ProviderBookExternalId {
   source: BookSource;

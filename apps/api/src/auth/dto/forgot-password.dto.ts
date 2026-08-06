@@ -1,5 +1,5 @@
 import { IsEmail } from "class-validator";
-import type { ForgotPasswordRequestDto } from "@tracklore/shared";
+import type { ForgotPasswordRequestDto } from "@loomkeep/shared";
 
 export class ForgotPasswordDto implements ForgotPasswordRequestDto {
   @IsEmail()

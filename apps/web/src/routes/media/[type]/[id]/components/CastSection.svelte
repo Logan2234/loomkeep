@@ -3,7 +3,7 @@
   import Carousel from "$lib/components/Carousel.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
-  import type { CastDetailDto, CastMemberDto } from "@tracklore/shared";
+  import type { CastDetailDto, CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
     $props();

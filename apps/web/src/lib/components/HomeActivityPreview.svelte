@@ -2,7 +2,7 @@
   import { getFeedPreview } from "$lib/api/client";
   import { appConfig } from "$lib/config.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
-  import type { ActivityEventDto } from "@tracklore/shared";
+  import type { ActivityEventDto } from "@loomkeep/shared";
 
   // Home-page teaser of the activity feed. Social-gated, best-effort, and hides
   // itself entirely when empty so it never clutters a fresh dashboard. The full

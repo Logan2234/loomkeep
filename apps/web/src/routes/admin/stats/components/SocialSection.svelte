@@ -4,7 +4,7 @@
   import { getAdminSocialActivityTrend } from "$lib/api/client";
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
-  import type { AdminSocialStatsDto } from "@tracklore/shared";
+  import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 

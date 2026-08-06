@@ -1,4 +1,4 @@
-import { Domain } from "@tracklore/shared";
+import { Domain } from "@loomkeep/shared";
 import type { IconName } from "./types/icon-name";
 
 interface NavItem {

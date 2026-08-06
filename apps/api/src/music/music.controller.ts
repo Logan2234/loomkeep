@@ -17,8 +17,8 @@ import {
   MusicEntryDto,
   MusicSearchResponseDto,
   MusicSource,
-} from "@tracklore/shared";
-import type { PagedResult } from "@tracklore/shared";
+} from "@loomkeep/shared";
+import type { PagedResult } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";

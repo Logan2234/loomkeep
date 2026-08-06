@@ -15,7 +15,7 @@
     EntryStatus,
     MediaSummaryDto,
     MediaType,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import { onMount } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { fly } from "svelte/transition";

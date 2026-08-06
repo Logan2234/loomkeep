@@ -1,4 +1,4 @@
-import { Domain, VisibilityFacet } from "@tracklore/shared";
+import { Domain, VisibilityFacet } from "@loomkeep/shared";
 
 /**
  * Content domains that actually back a library (and thus a visibility matrix).

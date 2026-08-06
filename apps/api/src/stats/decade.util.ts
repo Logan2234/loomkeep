@@ -1,4 +1,4 @@
-import type { DecadeBucketDto } from "@tracklore/shared";
+import type { DecadeBucketDto } from "@loomkeep/shared";
 
 /** e.g. 1990 for a date in 1990-1999. */
 export function decadeOf(date: Date): number {

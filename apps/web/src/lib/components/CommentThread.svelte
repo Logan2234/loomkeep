@@ -29,7 +29,7 @@
     type CommentEmote,
     type CommentPageDto,
     type CommentTargetType,
-  } from "@tracklore/shared";
+  } from "@loomkeep/shared";
   import Avatar from "./Avatar.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";

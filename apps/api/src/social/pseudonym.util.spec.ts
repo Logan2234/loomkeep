@@ -1,4 +1,4 @@
-import { ProfileAccess, type UserSummaryDto } from "@tracklore/shared";
+import { ProfileAccess, type UserSummaryDto } from "@loomkeep/shared";
 import { anonymizeAuthor, derivePseudonym } from "./pseudonym.util";
 
 function author(over: Partial<UserSummaryDto> = {}): UserSummaryDto {

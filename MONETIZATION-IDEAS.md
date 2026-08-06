@@ -10,7 +10,7 @@ implémentation. Rien ici n'est décidé ou codé.
   as a service, share your changes") — c'est l'ADN du produit, ça ne doit pas
   bouger.
 - Le palier **Gratuit / Premium ne s'applique qu'à une offre hébergée**
-  (une instance Tracklore multi-utilisateurs opérée par nous), via
+  (une instance Loomkeep multi-utilisateurs opérée par nous), via
   `User.entitlements` (`schema.prisma`), la seam déjà prévue depuis le début
   (actuellement vide en self-host).
 - Pas de publicité sur le site (choix explicite) — les leviers ci-dessous sont
@@ -18,12 +18,12 @@ implémentation. Rien ici n'est décidé ou codé.
 
 ## Concurrents étudiés (paliers payants réels dans le même créneau)
 
-| App | Ce qu'ils gatent |
-|---|---|
-| Trakt VIP | Listes/items illimités, filtres avancés, flux calendrier `.ics` personnalisés, stats par genre, "year in review", quota API plus élevé, badge |
+| App                                          | Ce qu'ils gatent                                                                                                                                                       |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trakt VIP                                    | Listes/items illimités, filtres avancés, flux calendrier `.ics` personnalisés, stats par genre, "year in review", quota API plus élevé, badge                          |
 | Plex Pass (self-hosted, référence de modèle) | Sync offline mobile, transcodage matériel, fonctions ML (reconnaissance visages/objets, détection auto intro/générique, radio "sonic similarity"), accès anticipé Labs |
-| Letterboxd Pro/Patron | Stats avancées ("Year in Review" narratif, obscurité, rewatches), covers HD sur les listes, import/export, création de sondages |
-| StoryGraph Plus | Stats mood/pace avancées, buddy reads/challenges illimités |
+| Letterboxd Pro/Patron                        | Stats avancées ("Year in Review" narratif, obscurité, rewatches), covers HD sur les listes, import/export, création de sondages                                        |
+| StoryGraph Plus                              | Stats mood/pace avancées, buddy reads/challenges illimités                                                                                                             |
 
 Enseignement principal : le levier le plus universel n'est pas d'inventer de
 nouvelles fonctionnalités mais d'**enlever un plafond** sur ce qui existe déjà
@@ -45,6 +45,7 @@ flag utilisateur libre.
 ## Idées de fonctionnalités premium — non-IA
 
 **Import & synchronisation**
+
 1. Sources d'import illimitées (TV Time, Steam, StoryGraph, + futures
    Goodreads/Babelio/Backloggd) — Gratuit = 1 source active, Premium = toutes.
 2. Fréquence de refresh réduite (le TTL `lastSyncedAt` de 24h pourrait être
@@ -54,50 +55,36 @@ flag utilisateur libre.
    l'utilisateur fournit sa propre clé, ce plafond correspond à un vrai coût
    qu'on absorbe, pas une restriction artificielle.
 
-**Notifications**
-4. Alertes en temps réel vs digest quotidien groupé en gratuit.
-5. Alertes étendues aux domaines premium (jeux, livres, musique).
+**Notifications** 4. Alertes en temps réel vs digest quotidien groupé en gratuit. 5. Alertes étendues aux domaines premium (jeux, livres, musique).
 
-**Calendrier**
-6. Flux **.ics** exportable du calendrier de sorties (épisodes/jeux/livres
-   suivis) vers Google/Apple Calendar — fait par Trakt, personne d'autre dans
-   l'espace anime/games ne le fait bien. Faible coût de dev, forte valeur
-   perçue.
+**Calendrier** 6. Flux **.ics** exportable du calendrier de sorties (épisodes/jeux/livres
+suivis) vers Google/Apple Calendar — fait par Trakt, personne d'autre dans
+l'espace anime/games ne le fait bien. Faible coût de dev, forte valeur
+perçue.
 
-**Social (P4, déjà livré à 100%)**
-7. Listes partagées illimitées (vs plafond en gratuit).
-8. **Figurant/ghost mode** comme argument premium "vie privée" — fonctionnalité
-   forte, déjà finie (pseudonymisation à la volée, zéro stockage).
-9. Sondages / listes collaboratives éditables à plusieurs (Letterboxd Patron).
-10. Covers/bannières personnalisées de listes et de profil (cohérent avec
-    l'identité visuelle "Séance" déjà posée dans `DESIGN.md`), vanity URL de
-    profil.
-11. Filtres/tri avancés sur les listes (mood, décennie, note, revisionnage).
+**Social (P4, déjà livré à 100%)** 7. Listes partagées illimitées (vs plafond en gratuit). 8. **Figurant/ghost mode** comme argument premium "vie privée" — fonctionnalité
+forte, déjà finie (pseudonymisation à la volée, zéro stockage). 9. Sondages / listes collaboratives éditables à plusieurs (Letterboxd Patron). 10. Covers/bannières personnalisées de listes et de profil (cohérent avec
+l'identité visuelle "Séance" déjà posée dans `DESIGN.md`), vanity URL de
+profil. 11. Filtres/tri avancés sur les listes (mood, décennie, note, revisionnage).
 
-**Data & fiabilité**
-12. Sauvegardes admin déjà existantes (dump quotidien, rétention 7 jours) →
-    en hébergé : rétention étendue + export multi-format à la demande pour le
-    premium.
-13. Stats "insights" plus poussées que le niveau actuel (par domaine, déjà
-    livré en P3) : tendances annuelles, temps cumulé, etc.
-14. "Bilan annuel" façon Letterboxd/Spotify Wrapped à partir des
-    `EpisodeWatch`/reviews existants — fort potentiel viral (les gens
-    partagent leur Wrapped), coûte peu vu que les stats de base existent déjà.
+**Data & fiabilité** 12. Sauvegardes admin déjà existantes (dump quotidien, rétention 7 jours) →
+en hébergé : rétention étendue + export multi-format à la demande pour le
+premium. 13. Stats "insights" plus poussées que le niveau actuel (par domaine, déjà
+livré en P3) : tendances annuelles, temps cumulé, etc. 14. "Bilan annuel" façon Letterboxd/Spotify Wrapped à partir des
+`EpisodeWatch`/reviews existants — fort potentiel viral (les gens
+partagent leur Wrapped), coûte peu vu que les stats de base existent déjà.
 
-**Mobile**
-15. App native (Capacitor, dernier morceau non fini de P2) avec sync
-    offline — argument premium quand elle sortira.
+**Mobile** 15. App native (Capacitor, dernier morceau non fini de P2) avec sync
+offline — argument premium quand elle sortira.
 
-**Confort d'usage**
-16. Quotas généreux en gratuit sur le nombre d'éléments suivis / listes /
-    imports simultanés, illimités en premium — le levier freemium le plus
-    classique et le moins intrusif.
+**Confort d'usage** 16. Quotas généreux en gratuit sur le nombre d'éléments suivis / listes /
+imports simultanés, illimités en premium — le levier freemium le plus
+classique et le moins intrusif.
 
-**Automatisation / écosystème**
-17. API personnelle / webhooks avec quota plus élevé en premium — Trakt vit en
-    partie de son écosystème d'apps tierces (Kodi, Home Assistant,
-    Sonarr/Radarr) ; une clé API perso premium ouvre la voie à des
-    intégrations communautaires sans qu'on doive toutes les construire.
+**Automatisation / écosystème** 17. API personnelle / webhooks avec quota plus élevé en premium — Trakt vit en
+partie de son écosystème d'apps tierces (Kodi, Home Assistant,
+Sonarr/Radarr) ; une clé API perso premium ouvre la voie à des
+intégrations communautaires sans qu'on doive toutes les construire.
 
 ## Idées de packaging / pricing (le modèle, pas juste le contenu)
 
@@ -115,7 +102,7 @@ flag utilisateur libre.
     produit à usage familial fréquent (suivi de séries), et prépare le terrain
     à des idées IA type décision de groupe (voir plus bas).
 23. **Instance marque blanche** pour un club/serveur Discord de passionnés qui
-    veut son propre Tracklore thématisé — segment B2B différent (un groupe qui
+    veut son propre Loomkeep thématisé — segment B2B différent (un groupe qui
     paie collectivement) plutôt que des abonnements individuels.
 24. **Liens affiliés "où regarder"** (façon JustWatch) sur les fiches — ce
     n'est pas une bannière intrusive, c'est une commission sur clic, donc un
@@ -137,64 +124,49 @@ flag utilisateur libre.
 Certaines ont du sens **gratuites avec quota**, d'autres sont de bons
 candidats premium parce qu'elles ont un coût réel par appel API à couvrir.
 
-**Découverte & recommandation**
-26. Recherche en langage naturel ("un film d'horreur psychologique, pas trop
-    gore, années 90") traduite en requête catalogue.
-27. Recommandations conversationnelles basées sur la bibliothèque réelle de
-    l'utilisateur (notes, historique, listes) via function calling sur les
-    endpoints existants — quota gratuit, illimité en premium.
-28. Assistant de tri de watchlist ("tu as 340 films en attente, voici comment
-    les prioriser par mood ou par ce que tu aimes vraiment").
+**Découverte & recommandation** 26. Recherche en langage naturel ("un film d'horreur psychologique, pas trop
+gore, années 90") traduite en requête catalogue. 27. Recommandations conversationnelles basées sur la bibliothèque réelle de
+l'utilisateur (notes, historique, listes) via function calling sur les
+endpoints existants — quota gratuit, illimité en premium. 28. Assistant de tri de watchlist ("tu as 340 films en attente, voici comment
+les prioriser par mood ou par ce que tu aimes vraiment").
 
-**Confort de visionnage (assez unique dans ce créneau)**
-29. **"Avant de reprendre"** : pour une série en pause depuis des mois,
-    résumé spoiler-safe généré de tout ce qui s'est passé jusqu'au dernier
-    épisode vu — gros différenciateur, cacheable par saison/épisode donc coût
-    amorti sur tous les utilisateurs qui regardent la même série. Bon candidat
-    premium naturel (coût par génération, mais mutualisé via cache).
-30. Détection de spoilers dans les commentaires/reviews avant affichage
-    (bouclier configurable par sensibilité) — base gratuite simple, réglages
-    fins en premium.
+**Confort de visionnage (assez unique dans ce créneau)** 29. **"Avant de reprendre"** : pour une série en pause depuis des mois,
+résumé spoiler-safe généré de tout ce qui s'est passé jusqu'au dernier
+épisode vu — gros différenciateur, cacheable par saison/épisode donc coût
+amorti sur tous les utilisateurs qui regardent la même série. Bon candidat
+premium naturel (coût par génération, mais mutualisé via cache). 30. Détection de spoilers dans les commentaires/reviews avant affichage
+(bouclier configurable par sensibilité) — base gratuite simple, réglages
+fins en premium.
 
 **Enrichissement de catalogue (bénéficie à tous, coût interne pas par
-utilisateur)**
-31. Tags "ambiance"/mood générés par IA (cosy, slow-burn, feel-good) au-delà
-    des genres bruts TMDB/AniList — job batch, mis en cache en base.
-32. Assistance à la réconciliation d'import (TV Time/Steam/StoryGraph) quand
-    le matching auto échoue — aujourd'hui correction 100% manuelle ; l'IA
-    propose le bon candidat avec justification. Bon candidat "smart import"
-    premium.
-33. Traductions/polissage de synopsis quand la source ne fournit que
-    l'anglais (cohérent avec l'UI 100% française du projet).
-34. Résolution floue à l'ajout d'une œuvre (titre régional, orthographe
-    approximative) — réduit la friction du tout premier geste utilisateur,
-    un des moments les plus critiques pour la rétention.
+utilisateur)** 31. Tags "ambiance"/mood générés par IA (cosy, slow-burn, feel-good) au-delà
+des genres bruts TMDB/AniList — job batch, mis en cache en base. 32. Assistance à la réconciliation d'import (TV Time/Steam/StoryGraph) quand
+le matching auto échoue — aujourd'hui correction 100% manuelle ; l'IA
+propose le bon candidat avec justification. Bon candidat "smart import"
+premium. 33. Traductions/polissage de synopsis quand la source ne fournit que
+l'anglais (cohérent avec l'UI 100% française du projet). 34. Résolution floue à l'ajout d'une œuvre (titre régional, orthographe
+approximative) — réduit la friction du tout premier geste utilisateur,
+un des moments les plus critiques pour la rétention.
 
-**Social**
-35. Pré-classification IA de la queue `/admin/reports` (module Report déjà
-    branché sur COMMENT) pour prioriser la modération humaine — gain
-    opérationnel plutôt que revenu direct.
-36. **Pouls communautaire par œuvre** : résumé généré à partir de l'agrégat
-    des reviews/commentaires existants sur une fiche ("ce que la communauté en
-    pense" en 3 lignes) — exploite des données déjà collectées, pas de
-    nouvelle collecte nécessaire.
-37. Digest de notifications personnalisé et rédigé plutôt qu'un simple
-    "3 nouveaux épisodes".
+**Social** 35. Pré-classification IA de la queue `/admin/reports` (module Report déjà
+branché sur COMMENT) pour prioriser la modération humaine — gain
+opérationnel plutôt que revenu direct. 36. **Pouls communautaire par œuvre** : résumé généré à partir de l'agrégat
+des reviews/commentaires existants sur une fiche ("ce que la communauté en
+pense" en 3 lignes) — exploite des données déjà collectées, pas de
+nouvelle collecte nécessaire. 37. Digest de notifications personnalisé et rédigé plutôt qu'un simple
+"3 nouveaux épisodes".
 
-**Rétrospective**
-38. "Bilan annuel" rédigé par l'IA plutôt que juste des graphiques — combine
-    les stats existantes et la génération de texte, fort potentiel de partage
-    social (= acquisition gratuite).
+**Rétrospective** 38. "Bilan annuel" rédigé par l'IA plutôt que juste des graphiques — combine
+les stats existantes et la génération de texte, fort potentiel de partage
+social (= acquisition gratuite).
 
-**Famille**
-39. Mode "qu'est-ce qu'on regarde ce soir" : sur un plan famille, l'IA croise
-    les goûts/notes de plusieurs profils du foyer et propose un compromis —
-    exploite plan famille + IA ensemble, personne dans ce créneau ne le fait.
+**Famille** 39. Mode "qu'est-ce qu'on regarde ce soir" : sur un plan famille, l'IA croise
+les goûts/notes de plusieurs profils du foyer et propose un compromis —
+exploite plan famille + IA ensemble, personne dans ce créneau ne le fait.
 
-**Interne / outillage**
-40. Copilote admin : requêtes en langage naturel sur `admin-stats`
-    ("combien d'actifs ce mois, quelle rétention") — pas un revenu direct,
-    évite de construire des dashboards sur mesure à chaque question.
+**Interne / outillage** 40. Copilote admin : requêtes en langage naturel sur `admin-stats`
+("combien d'actifs ce mois, quelle rétention") — pas un revenu direct,
+évite de construire des dashboards sur mesure à chaque question.
 
 ## Priorisation suggérée (meilleur ratio effort/impact vu le code existant)
 

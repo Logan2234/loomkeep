@@ -1,5 +1,5 @@
 import { ConfigService } from "@nestjs/config";
-import { MediaSource, MediaType } from "@tracklore/shared";
+import { MediaSource, MediaType } from "@loomkeep/shared";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";

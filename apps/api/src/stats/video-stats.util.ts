@@ -1,9 +1,9 @@
-import { DORMANT_AFTER_DAYS } from "@tracklore/shared";
+import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
 import type {
   MediaType,
   VideoTypeSplitDto,
   WatchStaleness,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 
 /**
  * Fallback runtime (minutes) for a title with no captured `runtimeMin` yet —

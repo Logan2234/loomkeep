@@ -1,4 +1,4 @@
-import { ProfileAccess, type UserSummaryDto } from "@tracklore/shared";
+import { ProfileAccess, type UserSummaryDto } from "@loomkeep/shared";
 
 /**
  * Derives a stable-but-uncorrelatable display pseudonym for a Figurant

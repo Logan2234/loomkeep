@@ -1,5 +1,5 @@
 import { IsString, MinLength } from "class-validator";
-import type { AdminBackupRestoreRequestDto } from "@tracklore/shared";
+import type { AdminBackupRestoreRequestDto } from "@loomkeep/shared";
 
 export class RestoreBackupDto implements AdminBackupRestoreRequestDto {
   @IsString()

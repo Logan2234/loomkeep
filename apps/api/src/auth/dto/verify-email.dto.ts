@@ -1,5 +1,5 @@
 import { IsString } from "class-validator";
-import type { VerifyEmailRequestDto } from "@tracklore/shared";
+import type { VerifyEmailRequestDto } from "@loomkeep/shared";
 
 export class VerifyEmailDto implements VerifyEmailRequestDto {
   @IsString()

@@ -1,4 +1,4 @@
-import type { ImportAnalyzeRequest } from "@tracklore/shared";
+import type { ImportAnalyzeRequest } from "@loomkeep/shared";
 import { IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
 
 export class AnalyzeImportDto implements ImportAnalyzeRequest {

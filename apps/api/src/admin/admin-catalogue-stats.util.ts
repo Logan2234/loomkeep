@@ -1,4 +1,4 @@
-import type { AdminPopularWorkDto } from "@tracklore/shared";
+import type { AdminPopularWorkDto } from "@loomkeep/shared";
 
 /** How many works the mixed "most popular" ranking carries. */
 export const POPULAR_WORKS_LIMIT = 20;

@@ -4,7 +4,7 @@ import type {
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function searchCatalog(

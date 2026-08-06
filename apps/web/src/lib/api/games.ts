@@ -5,7 +5,7 @@ import type {
   PagedResult,
   UpdateGameEntryDto,
   UpsertGameEntryDto,
-} from "@tracklore/shared";
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 export function searchGames(query: string): Promise<GameSearchResponseDto> {
