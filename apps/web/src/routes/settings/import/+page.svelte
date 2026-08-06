@@ -26,8 +26,7 @@
       sources: [
         {
           name: "TV Time",
-          description:
-            "Films, séries et animes suivis, réconciliation interactive.",
+          description: "Films, séries et anime.",
           href: "/settings/import/tvtime",
         },
         { name: "Trakt", description: "Films et séries." },

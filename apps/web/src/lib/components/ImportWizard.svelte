@@ -24,7 +24,6 @@
     ImportJobDto,
     ImportMatch,
     ImportPlan,
-    ImportPlanGroup,
     ImportPlanItem,
     ImportSourceDescriptor,
     MediaSummaryDto,
@@ -71,6 +70,10 @@
   let searchResults = $state<ImportMatch[]>([]);
   let searching = $state(false);
 
+  // --- Review-step filter ---
+  // Shows only items still needing a manual match; toggled from the recap bar.
+  let filterUnresolved = $state(false);
+
   // Per-item status options (books/games); media derives status server-side.
   const statusOptions = $derived(
     descriptor.domain === "books"
@@ -89,6 +92,17 @@
   const isFileInput = $derived(descriptor.input.type !== "steamId");
   const inputReady = $derived(inputValue.trim().length > 0);
   const selectedCount = $derived(included.size);
+
+  // Live count of items still without a match — decreases as the user resolves
+  // them manually, unlike `plan.counts.unresolved` which is frozen at analyze time.
+  const unresolvedRemaining = $derived.by(() => {
+    if (!plan) return 0;
+    let n = 0;
+    for (const g of plan.groups) {
+      for (const it of g.items) if (!matchOf(it)) n++;
+    }
+    return n;
+  });
 
   const progressPct = $derived.by(() => {
     if (!job || job.progress.total === 0) return 0;
@@ -351,6 +365,7 @@
     searchKey = null;
     searchQuery = "";
     searchResults = [];
+    filterUnresolved = false;
   }
 </script>
 
@@ -452,14 +467,96 @@
       {/if}
     </section>
   {:else if phase === "review" && plan}
+    {#if plan.groups.length === 0}
+      <div
+        class="border-border text-dim mt-6 rounded-xl border border-dashed px-6 py-12 text-center">
+        Rien à importer dans cet export.
+      </div>
+    {:else if filterUnresolved && unresolvedRemaining === 0}
+      <div
+        class="border-border text-dim mt-2 mb-24 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
+        Tout est associé.
+        <button
+          type="button"
+          class="text-accent font-medium hover:underline"
+          onclick={() => (filterUnresolved = false)}>
+          Afficher tout
+        </button>
+      </div>
+    {:else}
+      <div class="mb-24">
+        {#each plan.groups as g, gi (g.id)}
+          {@const visibleItems = filterUnresolved
+            ? g.items.filter((it) => !matchOf(it))
+            : g.items}
+          {#if visibleItems.length > 0}
+            {#if descriptor.collapsibleGroups}
+              <details
+                class="card mb-3 p-4"
+                open={filterUnresolved || gi === 0}>
+                <summary
+                  class="font-display flex cursor-pointer items-center justify-between font-bold">
+                  <span
+                    >{g.label} ({visibleItems.length}{#if filterUnresolved}
+                      / {g.items.length}{/if})</span>
+                  <span class="flex gap-2 text-xs font-normal">
+                    <button
+                      class="chip"
+                      onclick={(e) => {
+                        e.preventDefault();
+                        setAll(visibleItems, true);
+                      }}>Tout</button>
+                    <button
+                      class="chip"
+                      onclick={(e) => {
+                        e.preventDefault();
+                        setAll(visibleItems, false);
+                      }}>Rien</button>
+                  </span>
+                </summary>
+                {@render groupBody(visibleItems)}
+              </details>
+            {:else}
+              <section class="card mb-3 p-4">
+                <div
+                  class="font-display flex items-center justify-between font-bold">
+                  <span
+                    >{g.label} ({visibleItems.length}{#if filterUnresolved}
+                      / {g.items.length}{/if})</span>
+                  <span class="flex gap-2 text-xs font-normal">
+                    <button
+                      class="chip"
+                      onclick={() => setAll(visibleItems, true)}>Tout</button>
+                    <button
+                      class="chip"
+                      onclick={() => setAll(visibleItems, false)}>Rien</button>
+                  </span>
+                </div>
+                {@render groupBody(visibleItems)}
+              </section>
+            {/if}
+          {/if}
+        {/each}
+      </div>
+    {/if}
+
     <div
-      class="border-border bg-surface sticky top-2 z-10 mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3 shadow-sm">
+      class="border-border bg-surface sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom)+0.75rem)] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3 shadow-lg md:bottom-3">
       <p class="flex items-baseline gap-2">
         <span class="font-display text-xl font-extrabold tabular-nums"
           >{selectedCount}</span>
         <span class="text-dim text-sm">
-          {plural(selectedCount)} à importer{#if plan.counts.unresolved > 0}
-            · {plan.counts.unresolved} à associer{/if}
+          {plural(selectedCount)} à importer{#if unresolvedRemaining > 0}
+            ·
+            <button
+              type="button"
+              class="font-medium underline decoration-dotted underline-offset-2 {filterUnresolved
+                ? 'text-accent'
+                : 'text-danger hover:text-fg'}"
+              onclick={() => (filterUnresolved = !filterUnresolved)}>
+              {unresolvedRemaining} à associer
+            </button>
+          {/if}
         </span>
       </p>
       <div class="flex items-center gap-3">
@@ -481,53 +578,6 @@
         </button>
       </div>
     </div>
-
-    {#if plan.groups.length === 0}
-      <div
-        class="border-border text-dim mt-6 rounded-xl border border-dashed px-6 py-12 text-center">
-        Rien à importer dans cet export.
-      </div>
-    {:else}
-      {#each plan.groups as g, gi (g.id)}
-        {#if descriptor.collapsibleGroups}
-          <details class="card mb-3 p-4" open={gi === 0}>
-            <summary
-              class="font-display flex cursor-pointer items-center justify-between font-bold">
-              <span>{g.label} ({g.items.length})</span>
-              <span class="flex gap-2 text-xs font-normal">
-                <button
-                  class="chip"
-                  onclick={(e) => {
-                    e.preventDefault();
-                    setAll(g.items, true);
-                  }}>Tout</button>
-                <button
-                  class="chip"
-                  onclick={(e) => {
-                    e.preventDefault();
-                    setAll(g.items, false);
-                  }}>Rien</button>
-              </span>
-            </summary>
-            {@render groupBody(g)}
-          </details>
-        {:else}
-          <section class="card mb-3 p-4">
-            <div
-              class="font-display flex items-center justify-between font-bold">
-              <span>{g.label} ({g.items.length})</span>
-              <span class="flex gap-2 text-xs font-normal">
-                <button class="chip" onclick={() => setAll(g.items, true)}
-                  >Tout</button>
-                <button class="chip" onclick={() => setAll(g.items, false)}
-                  >Rien</button>
-              </span>
-            </div>
-            {@render groupBody(g)}
-          </section>
-        {/if}
-      {/each}
-    {/if}
   {:else if phase === "done" && job?.report}
     {@const r = job.report}
     <section class="card p-5 md:p-6">
@@ -571,9 +621,9 @@
     onCancel={() => (showOverwriteConfirm = false)} />
 {/if}
 
-{#snippet groupBody(g: ImportPlanGroup)}
+{#snippet groupBody(items: ImportPlanItem[])}
   <ul class="divide-border mt-3 flex flex-col divide-y">
-    {#each g.items as item (item.key)}
+    {#each items as item (item.key)}
       {@const match = matchOf(item)}
       {@const on = included.has(item.key)}
       <li class="flex flex-col gap-2 py-2.5">
