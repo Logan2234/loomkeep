@@ -428,3 +428,92 @@ describe("LibraryService.unwatchSeason", () => {
     );
   });
 });
+
+describe("LibraryService.deleteEntry", () => {
+  it("wipes watches, reviews, and comments for the removed work, not just the entry row", async () => {
+    const seasons = [
+      { id: "s1", episodes: [{ id: "e1" }, { id: "e2" }] },
+      { id: "s2", episodes: [{ id: "e3" }] },
+    ];
+    const episodeWatchDeleteMany = jest.fn().mockResolvedValue({ count: 2 });
+    const reviewDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
+    const commentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const libraryEntryDelete = jest.fn().mockResolvedValue({});
+
+    const prisma = {
+      libraryEntry: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "entry-1",
+          userId: "user-1",
+          mediaItemId: "media-1",
+        }),
+        delete: libraryEntryDelete,
+      },
+      season: { findMany: jest.fn().mockResolvedValue(seasons) },
+      episodeWatch: { deleteMany: episodeWatchDeleteMany },
+      review: { deleteMany: reviewDeleteMany },
+      comment: { updateMany: commentUpdateMany },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as unknown as PrismaService;
+
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: jest.fn() } as unknown as ActivityService,
+    );
+
+    await service.deleteEntry("user-1", "entry-1");
+
+    const allTargetIds = ["media-1", "s1", "s2", "e1", "e2", "e3"];
+
+    expect(episodeWatchDeleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", episodeId: { in: ["e1", "e2", "e3"] } },
+    });
+    expect(reviewDeleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", targetId: { in: allTargetIds } },
+    });
+    expect(commentUpdateMany).toHaveBeenCalledWith({
+      where: {
+        authorId: "user-1",
+        targetId: { in: allTargetIds },
+        deletedAt: null,
+      },
+      data: { text: null, deletedAt: expect.any(Date) },
+    });
+    expect(libraryEntryDelete).toHaveBeenCalledWith({
+      where: { id: "entry-1" },
+    });
+  });
+
+  it("still works for a movie entry with no seasons/episodes", async () => {
+    const prisma = {
+      libraryEntry: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "entry-2",
+          userId: "user-1",
+          mediaItemId: "media-2",
+        }),
+        delete: jest.fn().mockResolvedValue({}),
+      },
+      season: { findMany: jest.fn().mockResolvedValue([]) },
+      episodeWatch: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      review: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      comment: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as unknown as PrismaService;
+
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: jest.fn() } as unknown as ActivityService,
+    );
+
+    await expect(
+      service.deleteEntry("user-1", "entry-2"),
+    ).resolves.toBeUndefined();
+  });
+});

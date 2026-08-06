@@ -151,7 +151,7 @@
         </span>
       </div>
       {#if myReview.text}
-        <p class="mt-2 text-sm leading-relaxed">{myReview.text}</p>
+        <p class="mt-2 text-sm leading-relaxed break-words">{myReview.text}</p>
       {/if}
     </div>
   {/if}
@@ -228,7 +228,9 @@
               </span>
             </div>
             {#if review.text}
-              <p class="mt-2 text-sm leading-relaxed">{review.text}</p>
+              <p class="mt-2 text-sm leading-relaxed break-words">
+                {review.text}
+              </p>
             {/if}
           </li>
         {/each}

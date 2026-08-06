@@ -355,9 +355,48 @@ export class LibraryService {
     );
   }
 
+  /**
+   * Removing a work wipes everything the user attached to it, not just the
+   * entry row itself: watches/reviews/comments key off (userId, targetId)
+   * rather than the entry, so they'd otherwise survive re-adding the same
+   * work later. `notes`/`ownershipStatus`/`ownershipSource` are plain
+   * columns on the entry itself and need no separate cleanup. Comments are
+   * soft-deleted (same tombstone as a manual delete) rather than hard
+   * removed, so replies from other users stay attached instead of cascading
+   * away. targetId alone is enough to scope every table below — cuids are
+   * globally unique, so there's no need to also filter by targetType.
+   */
   async deleteEntry(userId: string, entryId: string): Promise<void> {
-    await this.assertEntryOwnership(userId, entryId);
-    await this.prisma.libraryEntry.delete({ where: { id: entryId } });
+    const entry = await this.assertEntryOwnership(userId, entryId);
+
+    const seasons = await this.prisma.season.findMany({
+      where: { mediaItemId: entry.mediaItemId },
+      select: { id: true, episodes: { select: { id: true } } },
+    });
+    const episodeIds = seasons.flatMap((s) => s.episodes.map((e) => e.id));
+    const targetIds = [
+      entry.mediaItemId,
+      ...seasons.map((s) => s.id),
+      ...episodeIds,
+    ];
+
+    await this.prisma.$transaction([
+      this.prisma.episodeWatch.deleteMany({
+        where: { userId, episodeId: { in: episodeIds } },
+      }),
+      this.prisma.review.deleteMany({
+        where: { userId, targetId: { in: targetIds } },
+      }),
+      this.prisma.comment.updateMany({
+        where: {
+          authorId: userId,
+          targetId: { in: targetIds },
+          deletedAt: null,
+        },
+        data: { text: null, deletedAt: new Date() },
+      }),
+      this.prisma.libraryEntry.delete({ where: { id: entryId } }),
+    ]);
   }
 
   /**

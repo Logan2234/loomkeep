@@ -248,63 +248,76 @@
     <!-- Seasons are collapsible and collapsed by default. -->
     <details class="card group">
       <summary
-        class="bg-surface-2 font-display group-open:border-border flex cursor-pointer list-none items-center gap-3 rounded-[inherit] px-4 py-2.5 font-semibold group-open:rounded-b-none group-open:border-b [&::-webkit-details-marker]:hidden">
-        <Icon
-          name="chevron-right"
-          class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
-        <span class="min-w-0 flex-1 truncate">
-          {season.title ?? `Saison ${season.number}`}
-        </span>
-        <span class="timecode shrink-0 text-xs">
-          {seasonWatchedCount(season)}/{season.episodes.length}
-        </span>
-        {#if entry && season.id && seasonWatched(season)}
-          <span
-            class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-            <Icon name="check" class="h-4 w-4" /> Vue
+        class="bg-surface-2 font-display group-open:border-border cursor-pointer list-none rounded-[inherit] px-4 py-2.5 font-semibold group-open:rounded-b-none group-open:border-b [&::-webkit-details-marker]:hidden">
+        <div class="flex items-center gap-3">
+          <Icon
+            name="chevron-right"
+            class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
+          <span class="min-w-0 flex-1 truncate">
+            {season.title ?? `Saison ${season.number}`}
           </span>
-        {/if}
-        {#if season.id}
-          <button
-            class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-            aria-label="Critique de la saison"
-            onclick={(e) => {
-              e.preventDefault();
-              reviewTarget = {
-                type: "SEASON",
-                id: season.id!,
-                label: season.title ?? `Saison ${season.number}`,
-              };
-            }}>
-            <Icon name="star" class="h-4 w-4" />
-          </button>
-        {/if}
-        {#if appConfig.socialEnabled && season.id}
-          <button
-            class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-            aria-label="Commentaires de la saison"
-            onclick={(e) => {
-              e.preventDefault();
-              commentTarget = {
-                type: "SEASON",
-                id: season.id!,
-                label: season.title ?? `Saison ${season.number}`,
-              };
-            }}>
-            <Icon name="message" class="h-4 w-4" />
-          </button>
-        {/if}
-        {#if entry && season.id}
-          <button
-            class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-            aria-label="Plus d'actions pour la saison"
-            aria-haspopup="menu"
-            onclick={(e) => {
-              e.preventDefault();
-              openSeasonMenu(e, season.id!);
-            }}>
-            <Icon name="dots-vertical" class="h-4 w-4" />
-          </button>
+          {#if entry}
+            <span class="timecode shrink-0 text-xs">
+              {seasonWatchedCount(season)}/{season.episodes.length}
+            </span>
+          {/if}
+          {#if entry && season.id && seasonWatched(season)}
+            <span
+              class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
+              <Icon name="check" class="h-4 w-4" /> Vue
+            </span>
+          {/if}
+          {#if entry && season.id}
+            <button
+              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+              aria-label="Critique de la saison"
+              onclick={(e) => {
+                e.preventDefault();
+                reviewTarget = {
+                  type: "SEASON",
+                  id: season.id!,
+                  label: season.title ?? `Saison ${season.number}`,
+                };
+              }}>
+              <Icon name="star" class="h-4 w-4" />
+            </button>
+          {/if}
+          {#if entry && appConfig.socialEnabled && season.id}
+            <button
+              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+              aria-label="Commentaires de la saison"
+              onclick={(e) => {
+                e.preventDefault();
+                commentTarget = {
+                  type: "SEASON",
+                  id: season.id!,
+                  label: season.title ?? `Saison ${season.number}`,
+                };
+              }}>
+              <Icon name="message" class="h-4 w-4" />
+            </button>
+          {/if}
+          {#if entry && season.id}
+            <button
+              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+              aria-label="Plus d'actions pour la saison"
+              aria-haspopup="menu"
+              onclick={(e) => {
+                e.preventDefault();
+                openSeasonMenu(e, season.id!);
+              }}>
+              <Icon name="dots-vertical" class="h-4 w-4" />
+            </button>
+          {/if}
+        </div>
+        {#if entry && season.episodes.length > 0}
+          {@const seasonPct = Math.round(
+            (seasonWatchedCount(season) / season.episodes.length) * 100,
+          )}
+          <div
+            class="bg-border mt-2 h-[3px] w-full overflow-hidden rounded-full">
+            <div class="bg-accent h-full" style={`width: ${seasonPct}%`}></div>
+          </div>
         {/if}
       </summary>
       <ul>
@@ -330,7 +343,7 @@
                   {dateFmt.format(new Date(episode.watches[0].watchedAt))}
                 </span>
               {/if}
-              {#if episode.id}
+              {#if entry && episode.id}
                 <button
                   class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
                   aria-label="Critique de l'épisode"
@@ -344,7 +357,7 @@
                   <Icon name="star" class="h-4 w-4" />
                 </button>
               {/if}
-              {#if appConfig.socialEnabled && episode.id}
+              {#if entry && appConfig.socialEnabled && episode.id}
                 <button
                   class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
                   aria-label="Commentaires de l'épisode"
