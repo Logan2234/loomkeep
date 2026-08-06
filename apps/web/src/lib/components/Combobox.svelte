@@ -92,8 +92,10 @@
   <button
     bind:this={triggerEl}
     type="button"
-    class="chip inline-flex items-center gap-1.5"
-    class:chip-on={multiselect && values.length > 0}
+    class="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors {multiselect &&
+    values.length > 0
+      ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
+      : 'border-border text-dim hover:text-fg'}"
     aria-haspopup="listbox"
     aria-expanded={open}
     onclick={toggleOpen}>

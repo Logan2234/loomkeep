@@ -40,6 +40,7 @@
     REPORT_MOTIF_LABELS,
   } from "$lib/report-labels";
   import Avatar from "./Avatar.svelte";
+  import Combobox from "./Combobox.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -130,11 +131,14 @@
   let ignoreSpoilers = $state(false);
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
-  let reportStep = $state<"category" | "detail">("category");
   let reportCategory = $state<ReportCategory | null>(null);
   let reportMotif = $state<ReportMotif | null>(null);
   let reportReason = $state("");
 
+  const reportCategoryOptions = REPORT_CATEGORY_ORDER.map((c) => ({
+    label: REPORT_CATEGORY_LABELS[c],
+    value: c,
+  }));
   const reportMotifOptions = $derived(
     reportCategory ? REPORT_CATEGORY_MOTIFS[reportCategory] : [],
   );
@@ -237,7 +241,6 @@
 
   function openReport(id: string) {
     reportingId = id;
-    reportStep = "category";
     reportCategory = null;
     reportMotif = null;
     reportReason = "";
@@ -245,14 +248,10 @@
 
   function chooseReportCategory(category: ReportCategory) {
     reportCategory = category;
-    reportMotif = null;
-    reportStep = "detail";
-  }
-
-  function backToReportCategory() {
-    reportStep = "category";
-    reportCategory = null;
-    reportMotif = null;
+    // Skip the motif step entirely when the category only has one — nothing
+    // to choose between, so pre-check it instead of showing a 1-item list.
+    const motifs = REPORT_CATEGORY_MOTIFS[category];
+    reportMotif = motifs.length === 1 ? motifs[0] : null;
   }
 
   async function submitReport() {
@@ -611,39 +610,22 @@
 
 {#if reportingId}
   <Modal title="Signaler ce commentaire" onclose={() => (reportingId = null)}>
-    {#if reportStep === "category"}
-      <ul
-        class="divide-border -mx-1 flex max-h-[60vh] flex-col divide-y overflow-y-auto">
-        {#each REPORT_CATEGORY_ORDER as category (category)}
-          <li>
-            <button
-              type="button"
-              class="hover:bg-surface-2 flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left"
-              onclick={() => chooseReportCategory(category)}>
-              <span class="min-w-0 flex-1">
-                <span class="text-fg block text-sm font-semibold">
-                  {REPORT_CATEGORY_LABELS[category]}
-                </span>
-                <span class="text-dim block text-xs">
-                  {REPORT_CATEGORY_HINTS[category]}
-                </span>
-              </span>
-              <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-            </button>
-          </li>
-        {/each}
-      </ul>
-    {:else if reportCategory}
-      <button
-        type="button"
-        class="text-dim hover:text-fg mb-3 flex items-center gap-1 text-sm"
-        onclick={backToReportCategory}>
-        <Icon name="chevron-left" class="h-4 w-4" />
-        {REPORT_CATEGORY_LABELS[reportCategory]}
-      </button>
+    <div class="flex flex-col gap-3">
+      <div>
+        <Combobox
+          label="Catégorie"
+          options={reportCategoryOptions}
+          values={reportCategory ? [reportCategory] : []}
+          onChange={(v) => chooseReportCategory(v[0] as ReportCategory)} />
+        {#if reportCategory}
+          <p class="text-dim mt-1.5 text-xs">
+            {REPORT_CATEGORY_HINTS[reportCategory]}
+          </p>
+        {/if}
+      </div>
 
-      {#if reportMotifOptions.length > 0}
-        <ul class="divide-border mb-3 flex flex-col divide-y">
+      {#if reportMotifOptions.length > 1}
+        <ul class="divide-border flex flex-col divide-y">
           {#each reportMotifOptions as motif (motif)}
             <li>
               <label
@@ -661,25 +643,27 @@
         </ul>
       {/if}
 
-      <textarea
-        class="input min-h-20 resize-y text-sm"
-        placeholder={reportIsOther
-          ? "Explique le problème…"
-          : "Détail (optionnel)…"}
-        maxlength={500}
-        bind:value={reportReason}></textarea>
+      {#if reportCategory}
+        <textarea
+          class="input min-h-20 resize-y text-sm"
+          placeholder={reportIsOther
+            ? "Explique le problème…"
+            : "Détail (optionnel)…"}
+          maxlength={500}
+          bind:value={reportReason}></textarea>
+      {/if}
+    </div>
 
-      <div class="mt-3 flex justify-end gap-2">
-        <button class="btn btn-ghost" onclick={() => (reportingId = null)}>
-          Annuler
-        </button>
-        <button
-          class="btn btn-primary"
-          disabled={!canSubmitReport}
-          onclick={submitReport}>
-          Signaler
-        </button>
-      </div>
-    {/if}
+    <div class="mt-3 flex justify-end gap-2">
+      <button class="btn btn-ghost" onclick={() => (reportingId = null)}>
+        Annuler
+      </button>
+      <button
+        class="btn btn-primary"
+        disabled={!canSubmitReport}
+        onclick={submitReport}>
+        Signaler
+      </button>
+    </div>
   </Modal>
 {/if}
