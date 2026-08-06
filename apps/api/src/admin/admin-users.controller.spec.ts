@@ -90,8 +90,40 @@ describe("AdminUsersController.listUsers", () => {
 
     const result = await controller.listUsers();
 
-    expect(result[0].lastActiveAt).toBe("2026-02-01T00:00:00.000Z");
-    expect(result[1].lastActiveAt).toBeNull();
+    expect(result.page).toBe(1);
+    expect(result.users[0].lastActiveAt).toBe("2026-02-01T00:00:00.000Z");
+    expect(result.users[1].lastActiveAt).toBeNull();
+  });
+
+  it("paginates with skip/take derived from the page query param", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+
+    await controller.listUsers(undefined, undefined, "3");
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 100, take: 50 }),
+    );
+  });
+
+  it("applies the search/filter query params to the where clause", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+
+    await controller.listUsers("alice", "unverified");
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { email: { contains: "alice", mode: "insensitive" } },
+            { username: { contains: "alice", mode: "insensitive" } },
+            { displayName: { contains: "alice", mode: "insensitive" } },
+          ],
+          emailVerified: false,
+        },
+      }),
+    );
   });
 });
 

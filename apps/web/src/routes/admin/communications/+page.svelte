@@ -8,7 +8,7 @@
     getAdminEmailTemplates,
     getAdminPushDevices,
     getAdminPushSummary,
-    getAdminUsers,
+    getAdminUserOptions,
     sendAdminBroadcastPush,
     sendAdminTestEmail,
     sendAdminTestPush,
@@ -27,7 +27,7 @@
     AdminPushDeviceDto,
     AdminPushSendResponseDto,
     AdminPushSummaryDto,
-    AdminUserDto,
+    AdminUserOptionDto,
     MailTemplateInfoDto,
   } from "@loomkeep/shared";
 
@@ -147,7 +147,7 @@
 
   // ----------------------------------------------------------------- Push --
 
-  let users = $state<AdminUserDto[]>([]);
+  let users = $state<AdminUserOptionDto[]>([]);
   let email = $state(page.url.searchParams.get("email") ?? "");
   let pushTitle = $state("");
   let pushBody = $state("");
@@ -204,7 +204,7 @@
   }
 
   $effect(() => {
-    getAdminUsers()
+    getAdminUserOptions()
       .then((u) => (users = u))
       .catch(() => {});
   });

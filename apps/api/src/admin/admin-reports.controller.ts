@@ -42,14 +42,14 @@ export class AdminReportsController {
   @Get()
   list(
     @Query("status") status?: string,
-    @Query("cursor") cursor?: string,
+    @Query("page") page?: string,
     @Query("reporterId") reporterId?: string,
   ): Promise<ReportPageDto> {
     return this.reports.list(
       STATUSES.includes(status as ReportStatus)
         ? (status as "PENDING" | "RESOLVED" | "DISMISSED")
         : undefined,
-      cursor,
+      page ? Math.max(1, Number(page)) : 1,
       reporterId,
     );
   }

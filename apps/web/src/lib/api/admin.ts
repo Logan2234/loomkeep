@@ -23,7 +23,9 @@ import type {
   AdminSocialSectionDto,
   AdminSystemSectionDto,
   AdminUserCommentDto,
-  AdminUserDto,
+  AdminUserFilter,
+  AdminUserListResponseDto,
+  AdminUserOptionDto,
   AdminUserRoleDto,
   AdminVersionDto,
   Domain,
@@ -154,8 +156,27 @@ export function runAdminJob(key: string): Promise<void> {
   return request(`/admin/jobs/${key}/run`, { method: "POST" });
 }
 
-export function getAdminUsers(): Promise<AdminUserDto[]> {
-  return request("/admin/users");
+/** Registered accounts, filterable by search/role/verification/activity, paginated. */
+export function getAdminUsers(
+  filters: {
+    search?: string;
+    filter?: AdminUserFilter;
+    page?: number;
+  } = {},
+): Promise<AdminUserListResponseDto> {
+  const params = new URLSearchParams();
+  if (filters.search) params.set("search", filters.search);
+  if (filters.filter && filters.filter !== "all")
+    params.set("filter", filters.filter);
+  if (filters.page && filters.page > 1)
+    params.set("page", String(filters.page));
+  const suffix = params.size > 0 ? `?${params}` : "";
+  return request(`/admin/users${suffix}`);
+}
+
+/** Minimal, unpaginated account list for a picker (UserSelector, communications broadcast target). */
+export function getAdminUserOptions(): Promise<AdminUserOptionDto[]> {
+  return request("/admin/users/options");
 }
 
 export function getAdminUserSessions(userId: string): Promise<SessionDto[]> {
@@ -378,13 +399,18 @@ export function getAdminSecurityEvents(
   return request(`/admin/security${suffix}`);
 }
 
-/** The comment/review/user moderation queue, filterable by status/reporter, cursor-paginated. */
+/** The comment/review/user moderation queue, filterable by status/reporter, paginated. */
 export function getAdminReports(
-  filters: { status?: string; cursor?: string; reporterId?: string } = {},
+  filters: {
+    status?: string;
+    page?: number;
+    reporterId?: string;
+  } = {},
 ): Promise<ReportPageDto> {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
-  if (filters.cursor) params.set("cursor", filters.cursor);
+  if (filters.page && filters.page > 1)
+    params.set("page", String(filters.page));
   if (filters.reporterId) params.set("reporterId", filters.reporterId);
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/reports${suffix}`);

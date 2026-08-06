@@ -10,10 +10,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 import type {
   AdminUserCommentDto,
-  AdminUserDto,
+  AdminUserFilter,
+  AdminUserListResponseDto,
+  AdminUserOptionDto,
   AdminUserRoleDto,
   MyListDto,
   MyReviewDto,
@@ -36,6 +39,9 @@ import { DataExportService } from "../users/data-export.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
+const PAGE_SIZE = 50;
+const FILTERS: AdminUserFilter[] = ["all", "admin", "unverified", "never"];
+
 /** Account administration: listing, role, data export and sessions. */
 @AdminOnly()
 @Controller("admin")
@@ -52,30 +58,82 @@ export class AdminUsersController {
     private readonly lists: ListService,
   ) {}
 
-  /** Every registered account, most recently created first. */
+  /**
+   * Registered accounts, most recently created first — filterable by free-text
+   * search (email/username/displayName) and by role/verification/activity, paginated.
+   */
   @Get("users")
-  async listUsers(): Promise<AdminUserDto[]> {
-    const [users, lastActive] = await Promise.all([
-      this.prisma.user.findMany({ orderBy: { createdAt: "desc" } }),
-      this.prisma.refreshToken.groupBy({
-        by: ["userId"],
-        _max: { lastUsedAt: true },
-      }),
-    ]);
+  async listUsers(
+    @Query("search") search?: string,
+    @Query("filter") filter?: string,
+    @Query("page") page?: string,
+  ): Promise<AdminUserListResponseDto> {
+    const pageNum = page ? Math.max(1, Number(page)) : 1;
+    const q = search?.trim();
+    const activeFilter = FILTERS.includes(filter as AdminUserFilter)
+      ? (filter as AdminUserFilter)
+      : "all";
+
+    const where = {
+      ...(q
+        ? {
+            OR: [
+              { email: { contains: q, mode: "insensitive" as const } },
+              { username: { contains: q, mode: "insensitive" as const } },
+              { displayName: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+      ...(activeFilter === "admin" ? { role: "ADMIN" as const } : {}),
+      ...(activeFilter === "unverified" ? { emailVerified: false } : {}),
+      ...(activeFilter === "never" ? { refreshTokens: { none: {} } } : {}),
+    };
+
+    const users = await this.prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (pageNum - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    });
+
+    // Scoped to this page's accounts only — the full-table groupBy this
+    // replaced didn't scale with the account count, this does.
+    const lastActive = await this.prisma.refreshToken.groupBy({
+      by: ["userId"],
+      where: { userId: { in: users.map((u) => u.id) } },
+      _max: { lastUsedAt: true },
+    });
     const lastActiveByUserId = new Map(
       lastActive.map((r) => [r.userId, r._max.lastUsedAt]),
     );
 
-    return users.map((u) => ({
-      id: u.id,
-      email: u.email,
-      username: u.username,
-      displayName: u.displayName,
-      emailVerified: u.emailVerified,
-      role: u.role,
-      createdAt: u.createdAt.toISOString(),
-      lastActiveAt: lastActiveByUserId.get(u.id)?.toISOString() ?? null,
-    }));
+    return {
+      page: pageNum,
+      users: users.map((u) => ({
+        id: u.id,
+        email: u.email,
+        username: u.username,
+        displayName: u.displayName,
+        emailVerified: u.emailVerified,
+        role: u.role,
+        createdAt: u.createdAt.toISOString(),
+        lastActiveAt: lastActiveByUserId.get(u.id)?.toISOString() ?? null,
+      })),
+    };
+  }
+
+  /**
+   * Minimal, unpaginated account list for pickers (UserSelector, the
+   * communications broadcast target) — distinct from the paginated `users`
+   * endpoint above, which now only returns one page at a time.
+   */
+  @Get("users/options")
+  async listUserOptions(): Promise<AdminUserOptionDto[]> {
+    const users = await this.prisma.user.findMany({
+      orderBy: { displayName: "asc" },
+      select: { id: true, displayName: true, email: true },
+    });
+    return users;
   }
 
   /**

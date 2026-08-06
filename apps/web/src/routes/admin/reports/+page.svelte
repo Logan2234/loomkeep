@@ -41,10 +41,13 @@
       .map((s) => ({ label: STATUS_LABELS[s], value: s })),
   ];
 
+  // Must match PAGE_SIZE in apps/api/src/reports/report.service.ts.
+  const PAGE_SIZE = 20;
+
   let activeStatus = $state<ReportStatus>("PENDING");
   let reporterId = $state<string | null>(null);
   let reports = $state<ReportDto[]>([]);
-  let cursor = $state<string | null>(null);
+  let page = $state(1);
   let hasMore = $state(false);
   let loading = $state(false);
   let error = $state("");
@@ -58,15 +61,16 @@
   async function load(reset: boolean) {
     loading = true;
     error = "";
+    const targetPage = reset ? 1 : page + 1;
     try {
       const res = await getAdminReports({
         status: activeStatus,
-        cursor: reset ? undefined : (cursor ?? undefined),
+        page: targetPage,
         reporterId: reporterId ?? undefined,
       });
       reports = reset ? res.reports : [...reports, ...res.reports];
-      cursor = res.nextCursor;
-      hasMore = !!res.nextCursor;
+      page = targetPage;
+      hasMore = res.reports.length === PAGE_SIZE;
     } catch (err) {
       error = err instanceof ApiError ? err.message : "File indisponible";
     } finally {

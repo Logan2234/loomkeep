@@ -3,8 +3,8 @@
   // /admin/communications uses inline, extracted so any admin surface can
   // filter by account. Loads the
   // account list itself and emits the selected user id (null once cleared).
-  import { getAdminUsers } from "$lib/api/client";
-  import type { AdminUserDto } from "@loomkeep/shared";
+  import { getAdminUserOptions } from "$lib/api/client";
+  import type { AdminUserOptionDto } from "@loomkeep/shared";
   import Combobox from "./Combobox.svelte";
 
   let {
@@ -20,10 +20,10 @@
     onChange: (userId: string | null) => void;
   } = $props();
 
-  let users = $state<AdminUserDto[]>([]);
+  let users = $state<AdminUserOptionDto[]>([]);
 
   $effect(() => {
-    getAdminUsers()
+    getAdminUserOptions()
       .then((u) => (users = u))
       .catch(() => {});
   });

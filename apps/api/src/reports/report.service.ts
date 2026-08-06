@@ -64,7 +64,7 @@ export class ReportService {
 
   async list(
     status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
-    cursor?: string,
+    page: number,
     reporterId?: string,
   ): Promise<ReportPageDto> {
     const rows = await this.prisma.report.findMany({
@@ -73,16 +73,13 @@ export class ReportService {
         ...(reporterId ? { reporterId } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: PAGE_SIZE + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: { reporter: { select: REPORTER_SELECT } },
     });
 
-    const hasMore = rows.length > PAGE_SIZE;
-    const page = rows.slice(0, PAGE_SIZE);
-
     const reports = await Promise.all(
-      page.map(async (r): Promise<ReportDto> => ({
+      rows.map(async (r): Promise<ReportDto> => ({
         id: r.id,
         targetType: r.targetType as ReportTargetType,
         targetId: r.targetId,
@@ -98,10 +95,7 @@ export class ReportService {
       })),
     );
 
-    return {
-      reports,
-      nextCursor: hasMore ? page[page.length - 1].id : null,
-    };
+    return { reports, page };
   }
 
   async resolve(

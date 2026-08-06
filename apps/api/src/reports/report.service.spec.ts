@@ -85,7 +85,7 @@ describe("ReportService.list — target resolution", () => {
         }),
       },
     });
-    const page = await svc.list(undefined);
+    const page = await svc.list(undefined, 1);
     expect(page.reports[0].target?.targetOwnerUsername).toBe("spammer");
     expect(page.reports[0].target?.label).toContain("this is spam");
   });
@@ -121,7 +121,7 @@ describe("ReportService.list — target resolution", () => {
         }),
       },
     });
-    const page = await svc.list(undefined);
+    const page = await svc.list(undefined, 1);
     expect(page.reports[0].target?.label).toContain("commentaire supprimé");
   });
 });
@@ -173,7 +173,7 @@ describe("ReportService.resolve", () => {
 describe("ReportService.list — reporterId filter", () => {
   it("adds reporterId to the where clause when provided", async () => {
     const { svc, prisma } = make();
-    await svc.list("PENDING", undefined, "reporter1");
+    await svc.list("PENDING", 1, "reporter1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { status: "PENDING", reporterId: "reporter1" },
@@ -183,7 +183,7 @@ describe("ReportService.list — reporterId filter", () => {
 
   it("omits reporterId from the where clause when not provided", async () => {
     const { svc, prisma } = make();
-    await svc.list("PENDING");
+    await svc.list("PENDING", 1);
     expect(prisma.report.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: "PENDING" } }),
     );

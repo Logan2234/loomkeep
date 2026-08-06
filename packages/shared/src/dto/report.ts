@@ -27,7 +27,7 @@ export interface ReportDto {
 /** A page of reports for the admin queue, newest first. */
 export interface ReportPageDto {
   reports: ReportDto[];
-  nextCursor: string | null;
+  page: number;
 }
 
 export interface CreateReportDto {

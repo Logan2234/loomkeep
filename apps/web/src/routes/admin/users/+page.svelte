@@ -31,6 +31,7 @@
   import type {
     AdminUserCommentDto,
     AdminUserDto,
+    AdminUserFilter,
     MyListDto,
     MyReviewDto,
     ReportDto,
@@ -38,7 +39,8 @@
     UserSummaryDto,
   } from "@loomkeep/shared";
 
-  type Filter = "all" | "admin" | "unverified" | "never";
+  // Must match PAGE_SIZE in apps/api/src/admin/admin-users.controller.ts.
+  const PAGE_SIZE = 50;
 
   const STATUS_LABELS: Record<ReportDto["status"], string> = {
     PENDING: "En attente",
@@ -51,32 +53,16 @@
     DISMISSED: "border-border bg-surface-2 text-dim",
   };
 
-  let users = $state<AdminUserDto[] | null>(null);
-  let loading = $state(true);
+  let users = $state<AdminUserDto[]>([]);
+  let pageNum = $state(1);
+  let hasMore = $state(false);
+  let loading = $state(false);
   let error = $state<string | null>(null);
 
   // Pre-filled from `?q=` so links like /admin/users?q=<email> land pre-filtered
   // (used by the imports page's "Voir le compte →").
   let query = $state(page.url.searchParams.get("q") ?? "");
-  let filter = $state<Filter>("all");
-
-  const filteredUsers = $derived.by(() => {
-    if (!users) return [];
-    let list = users;
-    if (filter === "admin") list = list.filter((u) => u.role === "ADMIN");
-    else if (filter === "unverified")
-      list = list.filter((u) => !u.emailVerified);
-    else if (filter === "never") list = list.filter((u) => !u.lastActiveAt);
-
-    const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (u) =>
-        u.email.toLowerCase().includes(q) ||
-        u.username.toLowerCase().includes(q) ||
-        u.displayName.toLowerCase().includes(q),
-    );
-  });
+  let filter = $state<AdminUserFilter>("all");
 
   // --- drawer / detail state ---
   let selected = $state<AdminUserDto | null>(null);
@@ -134,17 +120,36 @@
     return reportsAgainst.length;
   }
 
-  async function load() {
+  async function load(reset: boolean) {
     loading = true;
     error = null;
+    const targetPage = reset ? 1 : pageNum + 1;
     try {
-      users = await getAdminUsers();
+      const res = await getAdminUsers({
+        search: query.trim() || undefined,
+        filter,
+        page: targetPage,
+      });
+      users = reset ? res.users : [...users, ...res.users];
+      pageNum = targetPage;
+      hasMore = res.users.length === PAGE_SIZE;
     } catch (err) {
       error =
         err instanceof ApiError ? err.message : "Utilisateurs indisponibles";
     } finally {
       loading = false;
     }
+  }
+
+  let searchTimeout: ReturnType<typeof setTimeout>;
+  function onQueryInput() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => void load(true), 300);
+  }
+
+  function selectFilter(next: AdminUserFilter) {
+    filter = next;
+    void load(true);
   }
 
   async function openUser(user: AdminUserDto) {
@@ -227,7 +232,7 @@
     try {
       const res = await updateAdminUserRole(selected.id, next);
       selected = { ...selected, role: res.role };
-      users = (users ?? []).map((u) =>
+      users = users.map((u) =>
         u.id === selected!.id ? { ...u, role: res.role } : u,
       );
     } catch (err) {
@@ -309,7 +314,7 @@
     try {
       const deletedName = selected.displayName;
       await deleteAdminUser(selected.id);
-      users = (users ?? []).filter((u) => u.id !== selected!.id);
+      users = users.filter((u) => u.id !== selected!.id);
       showDeleteModal = false;
       selected = null;
       toast.success(`Compte de ${deletedName} supprimé.`);
@@ -322,7 +327,7 @@
   }
 
   $effect(() => {
-    void load();
+    void load(true);
   });
 
   const dateFmt = new Intl.DateTimeFormat("fr-FR", {
@@ -350,7 +355,7 @@
     return hoursAgo < 1 ? "bg-success" : "bg-dim";
   }
 
-  const FILTERS: { value: Filter; label: string }[] = [
+  const FILTERS: { value: AdminUserFilter; label: string }[] = [
     { value: "all", label: "Tous" },
     { value: "admin", label: "Admin" },
     { value: "unverified", label: "Non vérifié" },
@@ -369,24 +374,25 @@
     title="Utilisateurs"
     subtitle="Comptes enregistrés, sessions et accès." />
 
+  <div class="mb-4 flex flex-wrap items-center gap-2">
+    <input
+      type="text"
+      bind:value={query}
+      oninput={onQueryInput}
+      placeholder="Filtrer par email, identifiant ou nom…"
+      class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
+    <Combobox
+      label="Filtrer"
+      options={FILTERS}
+      values={[filter]}
+      onChange={(v) => selectFilter((v[0] as AdminUserFilter) ?? "all")} />
+  </div>
+
   {#if error}
     <Banner variant="error">{error}</Banner>
-  {:else if loading}
+  {:else if loading && users.length === 0}
     <div class="card h-64 animate-pulse"></div>
-  {:else if users}
-    <div class="mb-4 flex flex-wrap items-center gap-2">
-      <input
-        type="text"
-        bind:value={query}
-        placeholder="Filtrer par email, identifiant ou nom…"
-        class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
-      <Combobox
-        label="Filtrer"
-        options={FILTERS}
-        values={[filter]}
-        onChange={(v) => (filter = (v[0] as Filter) ?? "all")} />
-    </div>
-
+  {:else}
     <div class="card overflow-x-auto">
       <table class="w-full border-collapse text-sm">
         <thead>
@@ -398,7 +404,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each filteredUsers as u (u.id)}
+          {#each users as u (u.id)}
             <tr
               onclick={() => openUser(u)}
               class="border-border hover:bg-surface-2 cursor-pointer border-b transition-colors last:border-b-0 {selected?.id ===
@@ -447,14 +453,21 @@
       </table>
       {#if users.length === 0}
         <p class="text-dim px-4 py-6 text-center text-sm">
-          Aucun compte enregistré.
-        </p>
-      {:else if filteredUsers.length === 0}
-        <p class="text-dim px-4 py-6 text-center text-sm">
-          Aucun compte ne correspond à ce filtre.
+          {query.trim() || filter !== "all"
+            ? "Aucun compte ne correspond à ce filtre."
+            : "Aucun compte enregistré."}
         </p>
       {/if}
     </div>
+
+    {#if hasMore}
+      <button
+        class="btn btn-ghost mt-4 w-full"
+        disabled={loading}
+        onclick={() => load(false)}>
+        {loading ? "Chargement…" : "Charger plus"}
+      </button>
+    {/if}
   {/if}
 </div>
 

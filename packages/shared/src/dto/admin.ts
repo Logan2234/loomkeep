@@ -283,6 +283,25 @@ export interface AdminUserDto {
   lastActiveAt: string | null;
 }
 
+/** Extra server-side filter for the admin users list, on top of free-text search. */
+export type AdminUserFilter = "all" | "admin" | "unverified" | "never";
+
+export interface AdminUserListResponseDto {
+  users: AdminUserDto[];
+  page: number;
+}
+
+/**
+ * Minimal, unpaginated account list for a picker (UserSelector, the
+ * communications broadcast target field) — distinct from `AdminUserDto`,
+ * which now comes paginated from the admin users page itself.
+ */
+export interface AdminUserOptionDto {
+  id: string;
+  displayName: string;
+  email: string;
+}
+
 export interface UpdateAdminUserRoleRequestDto {
   role: Role;
 }
