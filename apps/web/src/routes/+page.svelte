@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     getCalendar,
-    getLibraryEntry,
     listBooks,
     listGames,
     listLibrary,
@@ -24,6 +23,7 @@
     NextEpisodeDto,
   } from "@loomkeep/shared";
   import { Domain } from "@loomkeep/shared";
+  import { tick } from "svelte";
 
   const mediaOn = $derived(isDomainEnabled(Domain.MEDIA));
   const gamesOn = $derived(isDomainEnabled(Domain.GAMES));
@@ -44,6 +44,7 @@
   let toListenAlbums = $state<MusicEntryDto[]>([]);
   let loading = $state(true);
   let resuming = $state<string | null>(null); // entry id being resumed
+  let resumeCarousel = $state<{ scrollToStart: () => void }>();
 
   // Fetch only the enabled domains' "in progress" content — the dashboard is
   // best-effort, so a failing call just leaves its section empty. Reads the
@@ -104,10 +105,10 @@
 
   /**
    * One-click resume: mark the entry's next unwatched episode as watched.
-   * Patches just this entry in place (no full-page reload) so the rest of
-   * the "à reprendre" strip doesn't flicker: the card either updates its
-   * progress bar / next-episode button, or drops out once nothing's left
-   * to watch.
+   * Re-fetches just the watching list (not the whole dashboard, so no
+   * `loading` skeleton flash) and swaps it in — the entry now sorts first
+   * in `watchingRecent`, so the carousel is scrolled back to its start to
+   * keep it in view.
    */
   async function resume(entry: LibraryEntryDto) {
     const next = entry.progress?.nextEpisode;
@@ -115,12 +116,9 @@
     resuming = entry.id;
     try {
       await watchEpisode(next.episodeId);
-      const updated = await getLibraryEntry(entry.id);
-      if (updated.progress?.nextEpisode) {
-        watching = watching.map((e) => (e.id === entry.id ? updated : e));
-      } else {
-        watching = watching.filter((e) => e.id !== entry.id);
-      }
+      watching = (await listLibrary({ statuses: ["WATCHING"] })).items;
+      await tick();
+      resumeCarousel?.scrollToStart();
     } catch {
       // ignore; the card stays as-is
     } finally {
@@ -215,7 +213,10 @@
           </div>
           <div class="p-4">
             {#if watchingRecent.length > 0}
-              <Carousel items={watchingRecent} keyOf={(e) => e.id}>
+              <Carousel
+                bind:this={resumeCarousel}
+                items={watchingRecent}
+                keyOf={(e) => e.id}>
                 {#snippet card(e)}
                   <div class="w-28 shrink-0 snap-start">
                     <a

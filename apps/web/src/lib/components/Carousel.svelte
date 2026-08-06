@@ -65,6 +65,12 @@
     el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
   }
 
+  /** Imperative reset for callers who reorder `items` (e.g. "just watched"
+   * bumping an entry to the front) and want the strip back at its start. */
+  export function scrollToStart() {
+    stripEl?.scrollTo({ left: 0, behavior: "smooth" });
+  }
+
   $effect(() => {
     void items;
     updateEdges();
