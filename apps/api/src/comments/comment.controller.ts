@@ -121,6 +121,13 @@ export class CommentController {
     @Param("id") id: string,
     @Body() body: CreateReportBody,
   ): Promise<void> {
-    return this.reports.create(user.sub, "COMMENT", id, body.reason);
+    return this.reports.create(
+      user.sub,
+      "COMMENT",
+      id,
+      body.category,
+      body.motif,
+      body.reason,
+    );
   }
 }

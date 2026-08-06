@@ -39,17 +39,74 @@ function make(
 }
 
 describe("ReportService.create", () => {
-  it("persists a report against a polymorphic target", async () => {
+  it("persists a report with a valid category/motif pair", async () => {
     const { svc, prisma } = make();
-    await svc.create("reporter1", "COMMENT" as never, "c1", "spam");
+    await svc.create(
+      "reporter1",
+      "COMMENT" as never,
+      "c1",
+      "SPAM" as never,
+      "SPAM_PROMOTIONAL" as never,
+    );
     expect(prisma.report.create).toHaveBeenCalledWith({
       data: {
         reporterId: "reporter1",
         targetType: "COMMENT",
         targetId: "c1",
-        reason: "spam",
+        category: "SPAM",
+        motif: "SPAM_PROMOTIONAL",
+        reason: null,
       },
     });
+  });
+
+  it("persists OTHER with a trimmed reason and no motif", async () => {
+    const { svc, prisma } = make();
+    await svc.create(
+      "reporter1",
+      "COMMENT" as never,
+      "c1",
+      "OTHER" as never,
+      undefined,
+      "  something specific  ",
+    );
+    expect(prisma.report.create).toHaveBeenCalledWith({
+      data: {
+        reporterId: "reporter1",
+        targetType: "COMMENT",
+        targetId: "c1",
+        category: "OTHER",
+        motif: null,
+        reason: "something specific",
+      },
+    });
+  });
+
+  it("rejects OTHER with no reason", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create("reporter1", "COMMENT" as never, "c1", "OTHER" as never),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a motif that doesn't belong to the given category", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "SPAM" as never,
+        "HARASSMENT_INSULTS" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a non-OTHER category with no motif", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create("reporter1", "COMMENT" as never, "c1", "SPAM" as never),
+    ).rejects.toThrow();
   });
 });
 

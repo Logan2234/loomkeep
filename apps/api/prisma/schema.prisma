@@ -129,6 +129,54 @@ enum ReportTargetType {
   LIST
 }
 
+// Top-level reason bucket for a report, chosen before a precise ReportMotif
+// (except OTHER, which skips straight to the free-text `reason` instead).
+// Deliberately generic across every ReportTargetType — not comment-specific —
+// so filing a report against a review/user/list later needs no enum change.
+enum ReportCategory {
+  SPAM
+  ILLEGAL_CONTENT
+  HARASSMENT
+  HATE_SPEECH
+  SEXUAL_CONTENT
+  VIOLENCE
+  MINOR_ENDANGERMENT
+  SPOILER
+  IMPERSONATION
+  MISINFORMATION
+  STOLEN_CONTENT
+  MISLEADING_REVIEW
+  OTHER
+}
+
+// Precise reason within a ReportCategory. The category->motif mapping is
+// enforced in ReportService.create, not here — Prisma has no cross-column
+// check constraint for this. OTHER has no motif (null): the free-text
+// `reason` carries the detail instead.
+enum ReportMotif {
+  SPAM_PROMOTIONAL
+  SPAM_SUSPICIOUS_LINK
+  SPAM_REPEATED
+  ILLEGAL_PIRACY_LINK
+  HARASSMENT_INSULTS
+  HARASSMENT_THREATS
+  HARASSMENT_STALKING
+  HARASSMENT_DOXXING
+  HATE_RACISM
+  HATE_SEXISM_LGBTQ
+  HATE_OTHER
+  SEXUAL_EXPLICIT
+  VIOLENCE_GRAPHIC
+  MINOR_ENDANGERMENT_CONTENT
+  MINOR_ENDANGERMENT_SOLICITATION
+  SPOILER_UNTAGGED
+  IMPERSONATION_REAL_PERSON
+  IMPERSONATION_FAKE_ACCOUNT
+  MISINFORMATION_FALSE_FACT
+  STOLEN_CONTENT_PLAGIARIZED
+  MISLEADING_REVIEW_MANIPULATION
+}
+
 // A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top 10"),
 // COLLECTION is an unordered grid. Same storage (ListItem + position) either way.
 enum ListKind {
@@ -500,6 +548,10 @@ model Report {
   targetType   ReportTargetType
   targetId     String
   reporterId   String
+  // Nullable: reports filed before the category/motif picker existed have
+  // neither. New submissions always set category (motif too, except OTHER).
+  category     ReportCategory?
+  motif        ReportMotif?
   reason       String?
   status       ReportStatus     @default(PENDING)
   createdAt    DateTime         @default(now())
@@ -510,6 +562,7 @@ model Report {
   resolvedBy User? @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+  @@index([category])
 }
 
 // Social (P4): a cross-domain, user-curated list of works (RANKED "top 10" or

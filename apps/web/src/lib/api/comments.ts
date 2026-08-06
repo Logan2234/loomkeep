@@ -4,6 +4,8 @@ import type {
   CommentEmote,
   CommentPageDto,
   CommentTargetType,
+  ReportCategory,
+  ReportMotif,
 } from "@loomkeep/shared";
 import { request } from "./core";
 
@@ -56,9 +58,14 @@ export function unreactToComment(id: string): Promise<void> {
   return request(`/comments/${id}/react`, { method: "DELETE" });
 }
 
-export function reportComment(id: string, reason?: string): Promise<void> {
+export function reportComment(
+  id: string,
+  category: ReportCategory,
+  motif?: ReportMotif,
+  reason?: string,
+): Promise<void> {
   return request(`/comments/${id}/report`, {
     method: "POST",
-    body: { reason },
+    body: { category, motif, reason },
   });
 }

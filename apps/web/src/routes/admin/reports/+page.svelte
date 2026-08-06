@@ -16,6 +16,10 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
+  import {
+    REPORT_CATEGORY_LABELS,
+    REPORT_MOTIF_LABELS,
+  } from "$lib/report-labels";
   import type {
     AdminReportsSummaryDto,
     ReportDto,
@@ -234,6 +238,12 @@
               {STATUS_LABELS[r.status]}
             </span>
             <span class="text-dim text-xs">{r.targetType}</span>
+            {#if r.category}
+              <span class="chip text-xs">
+                {REPORT_CATEGORY_LABELS[r.category]}
+                {#if r.motif}· {REPORT_MOTIF_LABELS[r.motif]}{/if}
+              </span>
+            {/if}
             <span class="text-dim ml-auto text-xs">
               {dateFmt.format(new Date(r.createdAt))}
             </span>

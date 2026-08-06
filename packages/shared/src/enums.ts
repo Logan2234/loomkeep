@@ -439,6 +439,98 @@ export const ReportStatus = {
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
 
 /**
+ * Top-level reason bucket for a report, chosen before a precise ReportMotif.
+ * Deliberately generic across every ReportTargetType (not comment-specific) —
+ * COMMENT is the only target with a report button today, but the categories
+ * were designed to also make sense for a future REVIEW/USER/LIST report.
+ * OTHER skips the motif step: the free-text `reason` carries the detail.
+ */
+export const ReportCategory = {
+  SPAM: "SPAM",
+  ILLEGAL_CONTENT: "ILLEGAL_CONTENT",
+  HARASSMENT: "HARASSMENT",
+  HATE_SPEECH: "HATE_SPEECH",
+  SEXUAL_CONTENT: "SEXUAL_CONTENT",
+  VIOLENCE: "VIOLENCE",
+  MINOR_ENDANGERMENT: "MINOR_ENDANGERMENT",
+  SPOILER: "SPOILER",
+  IMPERSONATION: "IMPERSONATION",
+  MISINFORMATION: "MISINFORMATION",
+  STOLEN_CONTENT: "STOLEN_CONTENT",
+  MISLEADING_REVIEW: "MISLEADING_REVIEW",
+  OTHER: "OTHER",
+} as const;
+export type ReportCategory =
+  (typeof ReportCategory)[keyof typeof ReportCategory];
+
+/** Precise reason within a ReportCategory. OTHER has no motif — see above. */
+export const ReportMotif = {
+  SPAM_PROMOTIONAL: "SPAM_PROMOTIONAL",
+  SPAM_SUSPICIOUS_LINK: "SPAM_SUSPICIOUS_LINK",
+  SPAM_REPEATED: "SPAM_REPEATED",
+  ILLEGAL_PIRACY_LINK: "ILLEGAL_PIRACY_LINK",
+  HARASSMENT_INSULTS: "HARASSMENT_INSULTS",
+  HARASSMENT_THREATS: "HARASSMENT_THREATS",
+  HARASSMENT_STALKING: "HARASSMENT_STALKING",
+  HARASSMENT_DOXXING: "HARASSMENT_DOXXING",
+  HATE_RACISM: "HATE_RACISM",
+  HATE_SEXISM_LGBTQ: "HATE_SEXISM_LGBTQ",
+  HATE_OTHER: "HATE_OTHER",
+  SEXUAL_EXPLICIT: "SEXUAL_EXPLICIT",
+  VIOLENCE_GRAPHIC: "VIOLENCE_GRAPHIC",
+  MINOR_ENDANGERMENT_CONTENT: "MINOR_ENDANGERMENT_CONTENT",
+  MINOR_ENDANGERMENT_SOLICITATION: "MINOR_ENDANGERMENT_SOLICITATION",
+  SPOILER_UNTAGGED: "SPOILER_UNTAGGED",
+  IMPERSONATION_REAL_PERSON: "IMPERSONATION_REAL_PERSON",
+  IMPERSONATION_FAKE_ACCOUNT: "IMPERSONATION_FAKE_ACCOUNT",
+  MISINFORMATION_FALSE_FACT: "MISINFORMATION_FALSE_FACT",
+  STOLEN_CONTENT_PLAGIARIZED: "STOLEN_CONTENT_PLAGIARIZED",
+  MISLEADING_REVIEW_MANIPULATION: "MISLEADING_REVIEW_MANIPULATION",
+} as const;
+export type ReportMotif = (typeof ReportMotif)[keyof typeof ReportMotif];
+
+/**
+ * Which ReportMotif values are valid under each ReportCategory — the single
+ * source of truth for both the picker UI (category -> motif options) and
+ * server-side validation (ReportService.create rejects a mismatched pair).
+ * OTHER maps to an empty list: it has no motif, only the free-text `reason`.
+ */
+export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
+  SPAM: [
+    ReportMotif.SPAM_PROMOTIONAL,
+    ReportMotif.SPAM_SUSPICIOUS_LINK,
+    ReportMotif.SPAM_REPEATED,
+  ],
+  ILLEGAL_CONTENT: [ReportMotif.ILLEGAL_PIRACY_LINK],
+  HARASSMENT: [
+    ReportMotif.HARASSMENT_INSULTS,
+    ReportMotif.HARASSMENT_THREATS,
+    ReportMotif.HARASSMENT_STALKING,
+    ReportMotif.HARASSMENT_DOXXING,
+  ],
+  HATE_SPEECH: [
+    ReportMotif.HATE_RACISM,
+    ReportMotif.HATE_SEXISM_LGBTQ,
+    ReportMotif.HATE_OTHER,
+  ],
+  SEXUAL_CONTENT: [ReportMotif.SEXUAL_EXPLICIT],
+  VIOLENCE: [ReportMotif.VIOLENCE_GRAPHIC],
+  MINOR_ENDANGERMENT: [
+    ReportMotif.MINOR_ENDANGERMENT_CONTENT,
+    ReportMotif.MINOR_ENDANGERMENT_SOLICITATION,
+  ],
+  SPOILER: [ReportMotif.SPOILER_UNTAGGED],
+  IMPERSONATION: [
+    ReportMotif.IMPERSONATION_REAL_PERSON,
+    ReportMotif.IMPERSONATION_FAKE_ACCOUNT,
+  ],
+  MISINFORMATION: [ReportMotif.MISINFORMATION_FALSE_FACT],
+  STOLEN_CONTENT: [ReportMotif.STOLEN_CONTENT_PLAGIARIZED],
+  MISLEADING_REVIEW: [ReportMotif.MISLEADING_REVIEW_MANIPULATION],
+  OTHER: [],
+};
+
+/**
  * A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top
  * 10"), COLLECTION is an unordered grid. Same storage (items + position)
  * either way — the front adapts its rendering per kind.

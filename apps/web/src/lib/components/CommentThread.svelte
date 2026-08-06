@@ -25,11 +25,20 @@
   import {
     COMMENT_EMOTE_DISPLAY,
     COMMENT_TEXT_MAX_LENGTH,
+    REPORT_CATEGORY_MOTIFS,
     type CommentDto,
     type CommentEmote,
     type CommentPageDto,
     type CommentTargetType,
+    type ReportCategory,
+    type ReportMotif,
   } from "@loomkeep/shared";
+  import {
+    REPORT_CATEGORY_HINTS,
+    REPORT_CATEGORY_LABELS,
+    REPORT_CATEGORY_ORDER,
+    REPORT_MOTIF_LABELS,
+  } from "$lib/report-labels";
   import Avatar from "./Avatar.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
@@ -121,7 +130,19 @@
   let ignoreSpoilers = $state(false);
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
+  let reportStep = $state<"category" | "detail">("category");
+  let reportCategory = $state<ReportCategory | null>(null);
+  let reportMotif = $state<ReportMotif | null>(null);
   let reportReason = $state("");
+
+  const reportMotifOptions = $derived(
+    reportCategory ? REPORT_CATEGORY_MOTIFS[reportCategory] : [],
+  );
+  const reportIsOther = $derived(reportCategory === "OTHER");
+  const canSubmitReport = $derived(
+    reportCategory !== null &&
+      (reportIsOther ? reportReason.trim().length > 0 : reportMotif !== null),
+  );
 
   // Long-press focus (touch): centers the pressed comment with a blurred
   // backdrop and reveals its actions, mirroring the desktop hover reveal.
@@ -216,13 +237,33 @@
 
   function openReport(id: string) {
     reportingId = id;
+    reportStep = "category";
+    reportCategory = null;
+    reportMotif = null;
     reportReason = "";
   }
 
+  function chooseReportCategory(category: ReportCategory) {
+    reportCategory = category;
+    reportMotif = null;
+    reportStep = "detail";
+  }
+
+  function backToReportCategory() {
+    reportStep = "category";
+    reportCategory = null;
+    reportMotif = null;
+  }
+
   async function submitReport() {
-    if (!reportingId) return;
+    if (!reportingId || !reportCategory || !canSubmitReport) return;
     try {
-      await reportComment(reportingId, reportReason.trim() || undefined);
+      await reportComment(
+        reportingId,
+        reportCategory,
+        reportMotif ?? undefined,
+        reportReason.trim() || undefined,
+      );
       toast.success("Commentaire signalé.");
     } catch {
       toast.error("Le signalement a échoué.");
@@ -570,16 +611,75 @@
 
 {#if reportingId}
   <Modal title="Signaler ce commentaire" onclose={() => (reportingId = null)}>
-    <textarea
-      class="input min-h-20 resize-y text-sm"
-      placeholder="Raison du signalement (optionnel)…"
-      maxlength={500}
-      bind:value={reportReason}></textarea>
-    <div class="mt-3 flex justify-end gap-2">
-      <button class="btn btn-ghost" onclick={() => (reportingId = null)}>
-        Annuler
+    {#if reportStep === "category"}
+      <ul
+        class="divide-border -mx-1 flex max-h-[60vh] flex-col divide-y overflow-y-auto">
+        {#each REPORT_CATEGORY_ORDER as category (category)}
+          <li>
+            <button
+              type="button"
+              class="hover:bg-surface-2 flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left"
+              onclick={() => chooseReportCategory(category)}>
+              <span class="min-w-0 flex-1">
+                <span class="text-fg block text-sm font-semibold">
+                  {REPORT_CATEGORY_LABELS[category]}
+                </span>
+                <span class="text-dim block text-xs">
+                  {REPORT_CATEGORY_HINTS[category]}
+                </span>
+              </span>
+              <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {:else if reportCategory}
+      <button
+        type="button"
+        class="text-dim hover:text-fg mb-3 flex items-center gap-1 text-sm"
+        onclick={backToReportCategory}>
+        <Icon name="chevron-left" class="h-4 w-4" />
+        {REPORT_CATEGORY_LABELS[reportCategory]}
       </button>
-      <button class="btn btn-primary" onclick={submitReport}>Signaler</button>
-    </div>
+
+      {#if reportMotifOptions.length > 0}
+        <ul class="divide-border mb-3 flex flex-col divide-y">
+          {#each reportMotifOptions as motif (motif)}
+            <li>
+              <label
+                class="flex cursor-pointer items-center gap-2.5 py-2 text-sm">
+                <input
+                  type="radio"
+                  name="report-motif"
+                  class="accent-accent h-4 w-4 shrink-0"
+                  checked={reportMotif === motif}
+                  onchange={() => (reportMotif = motif)} />
+                {REPORT_MOTIF_LABELS[motif]}
+              </label>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+
+      <textarea
+        class="input min-h-20 resize-y text-sm"
+        placeholder={reportIsOther
+          ? "Explique le problème…"
+          : "Détail (optionnel)…"}
+        maxlength={500}
+        bind:value={reportReason}></textarea>
+
+      <div class="mt-3 flex justify-end gap-2">
+        <button class="btn btn-ghost" onclick={() => (reportingId = null)}>
+          Annuler
+        </button>
+        <button
+          class="btn btn-primary"
+          disabled={!canSubmitReport}
+          onclick={submitReport}>
+          Signaler
+        </button>
+      </div>
+    {/if}
   </Modal>
 {/if}

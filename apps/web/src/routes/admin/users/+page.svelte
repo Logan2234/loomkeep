@@ -27,6 +27,10 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import {
+    REPORT_CATEGORY_LABELS,
+    REPORT_MOTIF_LABELS,
+  } from "$lib/report-labels";
   import { toast } from "$lib/toast.svelte";
   import type {
     AdminUserCommentDto,
@@ -796,6 +800,12 @@
             {:else}
               <p class="mt-1.5">{r.target.label}</p>
             {/if}
+          {/if}
+          {#if r.category}
+            <p class="text-dim mt-1 text-xs">
+              {REPORT_CATEGORY_LABELS[r.category]}
+              {#if r.motif}· {REPORT_MOTIF_LABELS[r.motif]}{/if}
+            </p>
           {/if}
           {#if r.reason}
             <p class="text-dim mt-1 text-xs">« {r.reason} »</p>

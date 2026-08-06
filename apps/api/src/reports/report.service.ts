@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import {
+  REPORT_CATEGORY_MOTIFS,
+  type ReportCategory,
   type ReportDto,
+  type ReportMotif,
   type ReportPageDto,
   type ReportTargetSummaryDto,
   type ReportTargetType,
@@ -31,15 +38,40 @@ export class ReportService {
     private readonly jobRuns: JobRunService,
   ) {}
 
-  /** Files a report against a polymorphic target. Fire-and-forget from the caller's POV. */
+  /**
+   * Files a report against a polymorphic target. Fire-and-forget from the
+   * caller's POV. OTHER requires a non-empty `reason` (it has no motif to
+   * fall back on); every other category requires a `motif` that actually
+   * belongs to it — REPORT_CATEGORY_MOTIFS is the single source of truth for
+   * that pairing, shared with the picker UI.
+   */
   async create(
     reporterId: string,
     targetType: ReportTargetType,
     targetId: string,
+    category: ReportCategory,
+    motif?: ReportMotif,
     reason?: string,
   ): Promise<void> {
+    if (category === "OTHER") {
+      if (!reason?.trim()) {
+        throw new BadRequestException(
+          "Un détail est requis pour la catégorie « Autre »",
+        );
+      }
+    } else if (!motif || !REPORT_CATEGORY_MOTIFS[category].includes(motif)) {
+      throw new BadRequestException("Motif invalide pour cette catégorie");
+    }
+
     await this.prisma.report.create({
-      data: { reporterId, targetType, targetId, reason: reason ?? null },
+      data: {
+        reporterId,
+        targetType,
+        targetId,
+        category,
+        motif: category === "OTHER" ? null : motif,
+        reason: reason?.trim() || null,
+      },
     });
   }
 
@@ -83,6 +115,8 @@ export class ReportService {
         id: r.id,
         targetType: r.targetType as ReportTargetType,
         targetId: r.targetId,
+        category: r.category as ReportCategory | null,
+        motif: r.motif as ReportMotif | null,
         reason: r.reason,
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
@@ -142,6 +176,8 @@ export class ReportService {
         id: r.id,
         targetType: r.targetType as ReportTargetType,
         targetId: r.targetId,
+        category: r.category as ReportCategory | null,
+        motif: r.motif as ReportMotif | null,
         reason: r.reason,
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
