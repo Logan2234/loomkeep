@@ -35,6 +35,10 @@ export function listLibrary(
   return request(`/library${suffix}`);
 }
 
+export function getLibraryEntry(entryId: string): Promise<LibraryEntryDto> {
+  return request(`/library/entries/${entryId}`);
+}
+
 export function upsertLibraryEntry(
   body: UpsertLibraryEntryDto,
 ): Promise<LibraryEntryDto> {

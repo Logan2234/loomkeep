@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     getCalendar,
+    getLibraryEntry,
     listBooks,
     listGames,
     listLibrary,
@@ -101,14 +102,25 @@
   const epCodeOf = (n: NextEpisodeDto) =>
     `S${String(n.seasonNumber).padStart(2, "0")}E${String(n.episodeNumber).padStart(2, "0")}`;
 
-  /** One-click resume: mark the entry's next unwatched episode as watched. */
+  /**
+   * One-click resume: mark the entry's next unwatched episode as watched.
+   * Patches just this entry in place (no full-page reload) so the rest of
+   * the "à reprendre" strip doesn't flicker: the card either updates its
+   * progress bar / next-episode button, or drops out once nothing's left
+   * to watch.
+   */
   async function resume(entry: LibraryEntryDto) {
     const next = entry.progress?.nextEpisode;
     if (!next) return;
     resuming = entry.id;
     try {
       await watchEpisode(next.episodeId);
-      await load();
+      const updated = await getLibraryEntry(entry.id);
+      if (updated.progress?.nextEpisode) {
+        watching = watching.map((e) => (e.id === entry.id ? updated : e));
+      } else {
+        watching = watching.filter((e) => e.id !== entry.id);
+      }
     } catch {
       // ignore; the card stays as-is
     } finally {
