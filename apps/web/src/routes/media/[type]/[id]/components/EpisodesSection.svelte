@@ -419,12 +419,12 @@
     onclick={() => (seasonMenu = null)}></button>
   <div
     role="menu"
-    class="border-border bg-surface fixed z-40 min-w-52 overflow-hidden rounded-lg border shadow-lg"
+    class="border-border bg-surface fixed z-40 min-w-64 overflow-hidden rounded-lg border shadow-lg"
     style={`top: ${active.top}px; right: ${active.right}px`}>
     {#if activeSeason && !seasonWatched(activeSeason)}
       <button
         role="menuitem"
-        class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+        class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
         disabled={busySeasonId === active.seasonId}
         onclick={() => {
           const seasonId = active.seasonId;
@@ -434,16 +434,18 @@
         <Icon name="check" class="h-4 w-4" /> Marquer la saison vue
       </button>
     {/if}
-    <button
-      role="menuitem"
-      class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm"
-      onclick={() => {
-        const seasonId = active.seasonId;
-        seasonMenu = null;
-        confirmUnwatchSeasonId = seasonId;
-      }}>
-      <Icon name="x" class="h-4 w-4" /> Tout annuler la saison
-    </button>
+    {#if activeSeason && seasonWatchedCount(activeSeason) > 0}
+      <button
+        role="menuitem"
+        class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
+        onclick={() => {
+          const seasonId = active.seasonId;
+          seasonMenu = null;
+          confirmUnwatchSeasonId = seasonId;
+        }}>
+        <Icon name="x" class="h-4 w-4" /> Tout annuler la saison
+      </button>
+    {/if}
   </div>
 {/if}
 

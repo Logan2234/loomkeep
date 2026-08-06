@@ -385,12 +385,7 @@ export class CommentService {
   ): Promise<CommentDto> {
     const masked = row.deletedAt
       ? false
-      : await this.isMasked(
-          viewerId,
-          row.targetType as CommentTargetType,
-          row.targetId,
-          row.spoilerTag,
-        );
+      : this.isMasked(row.targetType as CommentTargetType, row.spoilerTag);
 
     return {
       id: row.id,
@@ -416,73 +411,16 @@ export class CommentService {
   }
 
   /**
-   * Whether a comment should render blurred for `viewerId` right now: the
-   * manual tag, or an auto progression-based gate. SEASON/EPISODE compare
-   * against actually-watched episodes; MEDIA/GAME/BOOK fall back to a binary
-   * "has the viewer finished this work" check (no finer sub-target to compare
-   * progress against at that level — a coarser, accepted tradeoff). MUSIC is
-   * never masked (no narrative to spoil).
+   * Whether a comment should render blurred right now: purely the author's
+   * own spoiler tag (V2: no auto progression-based gate — the viewer is
+   * trusted to have tagged it correctly). MUSIC is never masked (no
+   * narrative to spoil), even if a row somehow carries the tag.
    */
-  private async isMasked(
-    viewerId: string,
+  private isMasked(
     targetType: CommentTargetType,
-    targetId: string,
     spoilerTag: boolean,
-  ): Promise<boolean> {
-    if (targetType === "MUSIC") return false;
-    if (spoilerTag) return true;
-
-    if (targetType === "EPISODE") {
-      const watched = await this.prisma.episodeWatch.findFirst({
-        where: { userId: viewerId, episodeId: targetId },
-        select: { id: true },
-      });
-      return !watched;
-    }
-
-    if (targetType === "SEASON") {
-      const season = await this.prisma.season.findUnique({
-        where: { id: targetId },
-        select: { episodes: { select: { id: true } } },
-      });
-      if (!season || season.episodes.length === 0) return false;
-      const watchedEpisodes = await this.prisma.episodeWatch.findMany({
-        where: {
-          userId: viewerId,
-          episodeId: { in: season.episodes.map((e) => e.id) },
-        },
-        distinct: ["episodeId"],
-        select: { episodeId: true },
-      });
-      return watchedEpisodes.length < season.episodes.length;
-    }
-
-    if (targetType === "MEDIA") {
-      const entry = await this.prisma.libraryEntry.findUnique({
-        where: {
-          userId_mediaItemId: { userId: viewerId, mediaItemId: targetId },
-        },
-        select: { finishedAt: true },
-      });
-      return !entry?.finishedAt;
-    }
-
-    if (targetType === "GAME") {
-      const entry = await this.prisma.gameEntry.findUnique({
-        where: {
-          userId_gameItemId: { userId: viewerId, gameItemId: targetId },
-        },
-        select: { finishedAt: true },
-      });
-      return !entry?.finishedAt;
-    }
-
-    // BOOK
-    const entry = await this.prisma.bookEntry.findUnique({
-      where: { userId_bookItemId: { userId: viewerId, bookItemId: targetId } },
-      select: { finishedAt: true },
-    });
-    return !entry?.finishedAt;
+  ): boolean {
+    return targetType !== "MUSIC" && spoilerTag;
   }
 
   private async notifyOnCreate(

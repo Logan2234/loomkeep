@@ -24,8 +24,8 @@ export interface CommentDto {
   spoilerTag: boolean;
   /**
    * Whether this comment should render blurred for the viewer right now —
-   * `spoilerTag` OR the auto progression-based gate. Recomputed per read,
-   * never stored.
+   * purely `spoilerTag` (MUSIC is always false). Recomputed per read, never
+   * stored.
    */
   masked: boolean;
   createdAt: string;

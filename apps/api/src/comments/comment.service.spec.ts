@@ -123,98 +123,38 @@ function make(
 }
 
 describe("CommentService.list — spoiler masking", () => {
-  it("masks an EPISODE comment when the viewer hasn't watched it", async () => {
+  it("masks a comment its author tagged as spoiler", async () => {
     const { svc } = make({
       comment: {
         findMany: jest
           .fn()
           .mockResolvedValueOnce([
-            commentRow({ targetType: "EPISODE", targetId: "e1" }),
+            commentRow({
+              targetType: "EPISODE",
+              targetId: "e1",
+              spoilerTag: true,
+            }),
           ])
           .mockResolvedValueOnce([]),
       },
-      episodeWatch: { findFirst: jest.fn().mockResolvedValue(null) },
     });
     const page = await svc.list("viewer", "EPISODE" as never, "e1");
     expect(page.comments[0].masked).toBe(true);
   });
 
-  it("unmasks an EPISODE comment once the viewer has watched it", async () => {
+  it("does not mask a comment without a spoiler tag", async () => {
     const { svc } = make({
       comment: {
         findMany: jest
           .fn()
           .mockResolvedValueOnce([
-            commentRow({ targetType: "EPISODE", targetId: "e1" }),
+            commentRow({
+              targetType: "MEDIA",
+              targetId: "m1",
+              spoilerTag: false,
+            }),
           ])
           .mockResolvedValueOnce([]),
-      },
-      episodeWatch: { findFirst: jest.fn().mockResolvedValue({ id: "w1" }) },
-    });
-    const page = await svc.list("viewer", "EPISODE" as never, "e1");
-    expect(page.comments[0].masked).toBe(false);
-  });
-
-  it("masks a SEASON comment until every episode is watched", async () => {
-    const { svc } = make({
-      comment: {
-        findMany: jest
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({ targetType: "SEASON", targetId: "s1" }),
-          ])
-          .mockResolvedValueOnce([]),
-      },
-      season: {
-        findUnique: jest.fn().mockResolvedValue({
-          episodes: [{ id: "e1" }, { id: "e2" }],
-        }),
-      },
-      episodeWatch: {
-        // Shared by isMasked's watched-episode check (needs `episodeId`) and
-        // the comment-list streak lookup (needs `userId`/`watchedAt`) — this
-        // mock serves both since jest doesn't distinguish by `select`.
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            { episodeId: "e1", userId: "someone", watchedAt: new Date() },
-          ]),
-      },
-    });
-    const page = await svc.list("viewer", "SEASON" as never, "s1");
-    expect(page.comments[0].masked).toBe(true);
-  });
-
-  it("masks a MEDIA comment until the entry is marked finished", async () => {
-    const { svc } = make({
-      comment: {
-        findMany: jest
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({ targetType: "MEDIA", targetId: "m1" }),
-          ])
-          .mockResolvedValueOnce([]),
-      },
-      libraryEntry: {
-        findUnique: jest.fn().mockResolvedValue({ finishedAt: null }),
-      },
-    });
-    const page = await svc.list("viewer", "MEDIA" as never, "m1");
-    expect(page.comments[0].masked).toBe(true);
-  });
-
-  it("unmasks a MEDIA comment once the entry is finished", async () => {
-    const { svc } = make({
-      comment: {
-        findMany: jest
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({ targetType: "MEDIA", targetId: "m1" }),
-          ])
-          .mockResolvedValueOnce([]),
-      },
-      libraryEntry: {
-        findUnique: jest.fn().mockResolvedValue({ finishedAt: new Date() }),
       },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");

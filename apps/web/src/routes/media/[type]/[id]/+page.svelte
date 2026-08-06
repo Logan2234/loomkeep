@@ -109,6 +109,22 @@
     lightboxOpen = true;
   }
 
+  // Once the hero has scrolled behind the sticky action bar, it grows a
+  // compact title so the viewer never loses track of which work they're on.
+  let heroEnd = $state<HTMLDivElement>();
+  let compact = $state(false);
+
+  $effect(() => {
+    const el = heroEnd;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([e]) => (compact = !e.isIntersecting),
+      { rootMargin: "-65px 0px 0px 0px", threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
   const type = $derived((page.params.type ?? "").toUpperCase() as MediaType);
   const id = $derived(page.params.id ?? "");
 
@@ -280,16 +296,7 @@
        photo, not on the page background. -->
   <div class="relative h-[64vh] max-h-[620px] min-h-[420px]">
     {#if detail.backdropUrl}
-      <button
-        type="button"
-        class="block h-full w-full cursor-zoom-in"
-        aria-label="Agrandir l'image"
-        onclick={() => openLightbox(detail?.backdropUrl ?? null)}>
-        <img
-          src={detail.backdropUrl}
-          alt=""
-          class="h-full w-full object-cover" />
-      </button>
+      <img src={detail.backdropUrl} alt="" class="h-full w-full object-cover" />
     {:else}
       <div class="from-surface-2 to-surface h-full w-full bg-linear-to-br">
       </div>
@@ -306,7 +313,7 @@
     {#if detail.posterUrl}
       <button
         type="button"
-        class="absolute right-4 bottom-4 w-20 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg md:right-6 md:bottom-6 md:w-24"
+        class="absolute right-4 bottom-4 z-10 w-20 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg md:right-6 md:bottom-6 md:w-24"
         aria-label="Agrandir l'affiche"
         onclick={() => openLightbox(detail?.posterUrl ?? null)}>
         <Poster src={detail.posterUrl} title={detail.title} />
@@ -382,10 +389,14 @@
     </div>
   </div>
 
+  <div bind:this={heroEnd}></div>
+
   <ActionBar
     {entry}
     {isMovie}
     {saving}
+    {compact}
+    title={detail.title}
     nextEpisode={entry?.progress?.nextEpisode ?? null}
     continuing={continuingEpisodeId !== null}
     onAdd={add}

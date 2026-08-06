@@ -4,16 +4,18 @@
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
 
   // Sticky action bar for the media detail page ("Cinéma minimal"). Kept to a
-  // handful of frequent, glanceable controls — Continuer/favori/bibliothèque/
-  // liste, plus a "…" for the two rare, consequential actions (abandonner,
-  // retirer). Everything else (note privée, possession) lives in the "Mon
-  // suivi" panel further down the page, not here.
+  // handful of frequent, glanceable controls — Continuer/favori/liste, plus a
+  // "…" for the two rare, consequential actions (abandonner, retirer).
+  // Everything else (note privée, possession) lives in the "Mon suivi" panel
+  // further down the page, not here.
   let {
     entry,
     isMovie,
     saving,
     nextEpisode,
     continuing,
+    compact,
+    title,
     onAdd,
     onToggleFavorite,
     onContinue,
@@ -27,6 +29,9 @@
     saving: boolean;
     nextEpisode: NextEpisodeDto | null;
     continuing: boolean;
+    /** Scrolled past the hero — reveal the title inline. */
+    compact: boolean;
+    title: string;
     onAdd: () => void;
     onToggleFavorite: () => void;
     onContinue: () => void;
@@ -44,16 +49,21 @@
 <svelte:window onclick={() => (menuOpen = false)} />
 
 <div class="bg-bg border-border sticky top-0 z-20 border-b">
-  <div class="mx-auto flex max-w-4xl items-center gap-2.5 px-5 py-3 md:px-8">
+  <div
+    class="mx-auto flex max-w-4xl flex-wrap items-center gap-x-2.5 gap-y-2 px-5 py-3 md:px-8">
+    <h2
+      class="font-display hidden shrink-0 overflow-hidden text-sm font-bold whitespace-nowrap transition-all duration-300 ease-out sm:block {compact
+        ? 'max-w-48 opacity-100'
+        : 'max-w-0 opacity-0'}">
+      {title}
+    </h2>
+
     {#if !entry}
-      <button
-        class="btn btn-primary w-full justify-center"
-        disabled={saving}
-        onclick={onAdd}>
+      <button class="btn btn-primary ml-auto" disabled={saving} onclick={onAdd}>
         <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
       </button>
     {:else}
-      {#if !isMovie && nextEpisode}
+      {#if !isMovie && nextEpisode && !isDropped}
         <button
           type="button"
           class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50"
@@ -76,8 +86,8 @@
         <button
           type="button"
           class="grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50 {isWatched
-            ? 'border-border text-dim border'
-            : 'bg-accent text-accent-fg'}"
+            ? 'bg-accent text-accent-fg'
+            : 'border-border text-dim border'}"
           disabled={saving}
           title={isWatched ? "Marquer comme non vu" : "Marquer comme vu"}
           onclick={onToggleWatched}>
@@ -107,14 +117,6 @@
           class="h-4 w-4 {entry.favorite ? 'fill-accent' : ''}" />
       </button>
 
-      <!-- Status only — "in the library" is derived from `entry` existing;
-           the state-changing action lives in the "…" menu, gated behind a
-           confirmation since it discards progress/notes/rating. -->
-      <span
-        class="border-accent text-accent inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold">
-        <Icon name="check" class="h-4 w-4" /> Bibliothèque
-      </span>
-
       <AddToListButton targetType="MEDIA" targetId={entry.mediaItem.id} />
 
       <div class="relative shrink-0">
@@ -133,12 +135,12 @@
         {#if menuOpen}
           <div
             role="menu"
-            class="border-border bg-surface absolute top-full right-0 z-30 mt-1.5 min-w-52 overflow-hidden rounded-lg border shadow-lg">
+            class="border-border bg-surface absolute top-full right-0 z-30 mt-1.5 min-w-64 overflow-hidden rounded-lg border shadow-lg">
             {#if isDropped}
               <button
                 role="menuitem"
                 type="button"
-                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
                 onclick={() => {
                   menuOpen = false;
                   onResume();
@@ -149,7 +151,7 @@
               <button
                 role="menuitem"
                 type="button"
-                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
                 onclick={() => {
                   menuOpen = false;
                   onDrop();
@@ -160,7 +162,7 @@
             <button
               role="menuitem"
               type="button"
-              class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm"
+              class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
               onclick={() => {
                 menuOpen = false;
                 onRemove();

@@ -153,7 +153,6 @@
   let editSpoilerTag = $state(false);
   let reactingId = $state<string | null>(null);
   let revealed = $state<Set<string>>(new Set());
-  let ignoreSpoilers = $state(false);
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
   let reportCategory = $state<ReportCategory | null>(null);
@@ -411,7 +410,7 @@
           ? "Commentaire supprimé par un administrateur."
           : "Commentaire supprimé."}
       </p>
-    {:else if c.masked && !revealed.has(c.id) && !ignoreSpoilers}
+    {:else if c.masked && !revealed.has(c.id)}
       <button
         class="border-border text-dim hover:text-fg hover:border-accent/40 flex w-full items-center gap-2 rounded-lg border border-dashed py-2 text-sm transition"
         onclick={() => reveal(c.id)}>
@@ -453,44 +452,50 @@
           </div>
 
           {#if editingId === c.id}
-            <textarea
-              class="input mt-1 min-h-16 resize-y text-sm"
-              maxlength={COMMENT_TEXT_MAX_LENGTH}
-              bind:value={editText}></textarea>
-            <p class="text-dim mt-0.5 text-right text-xs">
-              {editText.length}/{COMMENT_TEXT_MAX_LENGTH}
-            </p>
-            {#if allowSpoilerTag}
+            <div class="mt-1 flex flex-wrap items-center gap-2">
+              {#if allowSpoilerTag}
+                <button
+                  type="button"
+                  aria-pressed={editSpoilerTag}
+                  title={editSpoilerTag
+                    ? "Retirer le tag spoiler"
+                    : "Marquer comme spoiler"}
+                  aria-label={editSpoilerTag
+                    ? "Retirer le tag spoiler"
+                    : "Marquer comme spoiler"}
+                  onclick={() => (editSpoilerTag = !editSpoilerTag)}
+                  class="grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors {editSpoilerTag
+                    ? 'border-accent text-accent'
+                    : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
+                  <Icon name="eye-off" class="h-4 w-4" />
+                </button>
+              {/if}
+              <div class="relative min-w-32 flex-1">
+                <input
+                  type="text"
+                  class="input pr-14 text-sm"
+                  maxlength={COMMENT_TEXT_MAX_LENGTH}
+                  bind:value={editText}
+                  onkeydown={(e) => e.key === "Enter" && submitEdit(c.id)} />
+                <span
+                  class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[0.65rem] tabular-nums">
+                  {editText.length}/{COMMENT_TEXT_MAX_LENGTH}
+                </span>
+              </div>
               <button
-                type="button"
-                aria-pressed={editSpoilerTag}
-                title={editSpoilerTag
-                  ? "Retirer le tag spoiler"
-                  : "Marquer comme spoiler"}
-                aria-label={editSpoilerTag
-                  ? "Retirer le tag spoiler"
-                  : "Marquer comme spoiler"}
-                onclick={() => (editSpoilerTag = !editSpoilerTag)}
-                class="mt-1 grid h-7 w-7 place-items-center rounded-full border transition-colors {editSpoilerTag
-                  ? 'border-accent text-accent'
-                  : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
-                <Icon name="eye-off" class="h-4 w-4" />
-              </button>
-            {/if}
-            <div class="mt-1 flex gap-2">
-              <button
-                class="btn btn-primary btn-sm"
+                class="btn btn-primary btn-sm shrink-0"
                 onclick={() => submitEdit(c.id)}>
                 Enregistrer
               </button>
               <button
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm shrink-0"
                 onclick={() => (editingId = null)}>
                 Annuler
               </button>
             </div>
           {:else}
-            <p class="mt-0.5 text-sm leading-relaxed whitespace-pre-wrap">
+            <p
+              class="mt-0.5 text-sm leading-relaxed break-words whitespace-pre-wrap">
               {c.text}
             </p>
           {/if}
@@ -498,21 +503,24 @@
           {@render actionRow(c, isReply, focused)}
 
           {#if replyToId === c.id}
-            <div class="mt-2 flex gap-2">
-              <textarea
-                class="input min-h-12 resize-y text-sm"
-                placeholder={c.author.anonymized
-                  ? `Répondre à ${c.author.displayName}…`
-                  : `Répondre à @${c.author.username}…`}
-                maxlength={COMMENT_TEXT_MAX_LENGTH}
-                bind:value={replyText}></textarea>
-            </div>
-            <p class="text-dim mt-0.5 text-right text-xs">
-              {replyText.length}/{COMMENT_TEXT_MAX_LENGTH}
-            </p>
-            <div class="mt-2 flex gap-2">
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <div class="relative min-w-32 flex-1">
+                <input
+                  type="text"
+                  class="input pr-14 text-sm"
+                  placeholder={c.author.anonymized
+                    ? `Répondre à ${c.author.displayName}…`
+                    : `Répondre à @${c.author.username}…`}
+                  maxlength={COMMENT_TEXT_MAX_LENGTH}
+                  bind:value={replyText}
+                  onkeydown={(e) => e.key === "Enter" && submitReply(c.id)} />
+                <span
+                  class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[0.65rem] tabular-nums">
+                  {replyText.length}/{COMMENT_TEXT_MAX_LENGTH}
+                </span>
+              </div>
               <button
-                class="btn btn-primary btn-sm"
+                class="btn btn-primary btn-sm shrink-0"
                 disabled={!replyText.trim() || cooldownRemaining > 0}
                 onclick={() => submitReply(c.id)}>
                 {cooldownRemaining > 0
@@ -520,7 +528,7 @@
                   : "Répondre"}
               </button>
               <button
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm shrink-0"
                 onclick={() => (replyToId = null)}>
                 Annuler
               </button>
@@ -562,58 +570,45 @@
 
   {#if expanded}
     <div class="mt-3">
-      {#if allowSpoilerTag}
-        <div class="mb-3 flex items-center justify-end">
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        {#if allowSpoilerTag}
           <button
-            class="text-dim hover:text-fg text-xs underline"
-            onclick={() => (ignoreSpoilers = !ignoreSpoilers)}>
-            {ignoreSpoilers
-              ? "Réactiver le flou spoiler"
-              : "Ignorer les spoilers pour cette session"}
+            type="button"
+            aria-pressed={newSpoilerTag}
+            title={newSpoilerTag
+              ? "Retirer le tag spoiler"
+              : "Marquer comme spoiler"}
+            aria-label={newSpoilerTag
+              ? "Retirer le tag spoiler"
+              : "Marquer comme spoiler"}
+            onclick={() => (newSpoilerTag = !newSpoilerTag)}
+            class="grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors {newSpoilerTag
+              ? 'border-accent text-accent'
+              : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
+            <Icon name="eye-off" class="h-4 w-4" />
           </button>
+        {/if}
+        <div class="relative min-w-32 flex-1">
+          <input
+            type="text"
+            class="input pr-14 text-sm"
+            placeholder="Ajouter un commentaire…"
+            maxlength={COMMENT_TEXT_MAX_LENGTH}
+            bind:value={newText}
+            onkeydown={(e) => e.key === "Enter" && submitTop()} />
+          <span
+            class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[0.65rem] tabular-nums">
+            {newText.length}/{COMMENT_TEXT_MAX_LENGTH}
+          </span>
         </div>
-      {/if}
-
-      <div class="mb-4">
-        <textarea
-          class="input min-h-16 resize-y text-sm"
-          placeholder="Ajouter un commentaire…"
-          maxlength={COMMENT_TEXT_MAX_LENGTH}
-          bind:value={newText}></textarea>
-        <p class="text-dim mt-0.5 text-right text-xs">
-          {newText.length}/{COMMENT_TEXT_MAX_LENGTH}
-        </p>
-        <div class="mt-1 flex items-center justify-between gap-2">
-          {#if allowSpoilerTag}
-            <button
-              type="button"
-              aria-pressed={newSpoilerTag}
-              title={newSpoilerTag
-                ? "Retirer le tag spoiler"
-                : "Marquer comme spoiler"}
-              aria-label={newSpoilerTag
-                ? "Retirer le tag spoiler"
-                : "Marquer comme spoiler"}
-              onclick={() => (newSpoilerTag = !newSpoilerTag)}
-              class="grid h-7 w-7 place-items-center rounded-full border transition-colors {newSpoilerTag
-                ? 'border-accent text-accent'
-                : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
-              <Icon name="eye-off" class="h-4 w-4" />
-            </button>
-          {:else}
-            <span></span>
-          {/if}
-          <button
-            class="btn btn-primary btn-sm"
-            disabled={!newText.trim() ||
-              createMut.isPending ||
-              cooldownRemaining > 0}
-            onclick={submitTop}>
-            {cooldownRemaining > 0
-              ? `Patiente ${cooldownRemaining}s`
-              : "Publier"}
-          </button>
-        </div>
+        <button
+          class="btn btn-primary btn-sm shrink-0"
+          disabled={!newText.trim() ||
+            createMut.isPending ||
+            cooldownRemaining > 0}
+          onclick={submitTop}>
+          {cooldownRemaining > 0 ? `Patiente ${cooldownRemaining}s` : "Publier"}
+        </button>
       </div>
 
       {#if query.isPending}
