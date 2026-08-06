@@ -88,6 +88,13 @@ export function unwatchEpisode(episodeId: string): Promise<void> {
   });
 }
 
+/** Clear every watch (all rewatches included) for every episode of a season. */
+export function unwatchSeason(seasonId: string): Promise<void> {
+  return request(`/library/seasons/${seasonId}/watches`, {
+    method: "DELETE",
+  });
+}
+
 export function getCalendar(): Promise<CalendarEntryDto[]> {
   return request("/library/calendar");
 }

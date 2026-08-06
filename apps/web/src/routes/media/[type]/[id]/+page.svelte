@@ -9,7 +9,6 @@
     upsertLibraryEntry,
     watchEpisode,
   } from "$lib/api/client";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -21,7 +20,6 @@
   import Poster from "$lib/components/Poster.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
-  import TrackingPanel from "$lib/components/TrackingPanel.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { createLibraryEntryActions } from "$lib/library-entry";
   import {
@@ -35,6 +33,7 @@
     MediaType,
   } from "@loomkeep/shared";
   import { isDormant } from "@loomkeep/shared";
+  import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
   import EpisodesSection from "./components/EpisodesSection.svelte";
 
@@ -47,13 +46,13 @@
   // Effective-status badge: label + chip styling. Statuses are derived server
   // side; here we only present them.
   const STATUS_META: Record<EntryStatus, { label: string; cls: string }> = {
-    PLANNED: { label: "À voir", cls: "bg-surface-2 text-dim" },
+    PLANNED: { label: "À voir", cls: "bg-white/15 text-white" },
     WATCHING: { label: "En cours", cls: "bg-accent text-accent-fg" },
     UP_TO_DATE: {
       label: "À jour",
       cls: "border border-success text-success",
     },
-    COMPLETED: { label: "Terminé", cls: "bg-success/15 text-success" },
+    COMPLETED: { label: "Terminé", cls: "bg-success/80 text-white" },
     DROPPED: { label: "Abandonné", cls: "border border-danger text-danger" },
   };
 
@@ -204,7 +203,6 @@
 
   const entry = $derived(detail?.entry ?? null);
   const isMovie = $derived(detail?.type === "MOVIE");
-  const isOverride = $derived(entry?.status === "DROPPED");
   const dormant = $derived(entry ? isDormant(entry) : false);
   const pct = $derived(
     entry?.progress && entry.progress.totalEpisodes > 0
@@ -226,8 +224,8 @@
       : [],
   );
 
-  // Powers the hero's "Continuer" shortcut only — the episode accordion
-  // (EpisodesSection) has its own copy for its per-row/per-season actions.
+  // Powers the action bar's "Continuer" shortcut only — the episode
+  // accordion (EpisodesSection) has its own copy for its per-row actions.
   async function markNextWatched(episodeId: string) {
     continuingEpisodeId = episodeId;
     error = null;
@@ -243,6 +241,31 @@
       continuingEpisodeId = null;
     }
   }
+
+  function continueWatching() {
+    const next = entry?.progress?.nextEpisode;
+    if (!next) return;
+    void markNextWatched(next.episodeId);
+  }
+
+  function toggleFavorite() {
+    if (!entry) return;
+    patch({ favorite: !entry.favorite });
+  }
+
+  // Movies: a single seen/not-seen toggle stands in for progress.
+  function toggleWatched() {
+    if (!entry) return;
+    patch({ status: entry.status === "COMPLETED" ? "PLANNED" : "COMPLETED" });
+  }
+
+  function dropEntry() {
+    patch({ status: "DROPPED" });
+  }
+
+  function resumeEntry() {
+    patch({ status: "WATCHING" });
+  }
 </script>
 
 {#if error}
@@ -252,60 +275,51 @@
 {/if}
 
 {#if detail}
-  <!-- Hero: real backdrop, gradient fallback fading into the page. -->
-  <div class="relative">
+  <!-- Hero: full-bleed backdrop, title/meta/ratings overlaid, poster tucked
+       in the corner. Text stays white regardless of theme — it sits on a
+       photo, not on the page background. -->
+  <div class="relative h-[64vh] max-h-[620px] min-h-[420px]">
     {#if detail.backdropUrl}
       <button
         type="button"
-        class="block w-full cursor-zoom-in"
+        class="block h-full w-full cursor-zoom-in"
         aria-label="Agrandir l'image"
         onclick={() => openLightbox(detail?.backdropUrl ?? null)}>
         <img
           src={detail.backdropUrl}
           alt=""
-          class="h-44 w-full object-cover md:h-60" />
+          class="h-full w-full object-cover" />
       </button>
     {:else}
-      <div
-        class="from-surface-2 to-surface h-44 w-full bg-linear-to-br md:h-60">
+      <div class="from-surface-2 to-surface h-full w-full bg-linear-to-br">
       </div>
     {/if}
     <div
-      class="from-bg via-bg/50 absolute inset-0 bg-linear-to-t to-transparent">
+      class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent">
     </div>
     <a
       href="/media"
-      class="border-border bg-bg/60 hover:bg-bg absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold backdrop-blur">
+      class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-black/55">
       ← Vidéo
     </a>
-  </div>
 
-  <!-- relative z-10: the hero above is positioned, so without a stacking
-       context here it would paint over the poster pulled up into it. -->
-  <div class="relative z-10 mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
-    <div class="-mt-24 flex flex-col gap-5 sm:flex-row sm:items-end md:-mt-28">
+    {#if detail.posterUrl}
       <button
         type="button"
-        class="border-border w-32 shrink-0 overflow-hidden rounded-xl border shadow-lg md:w-44 {detail.posterUrl
-          ? 'cursor-zoom-in'
-          : ''}"
-        aria-label="Agrandir l'image"
+        class="absolute right-4 bottom-4 w-20 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg md:right-6 md:bottom-6 md:w-24"
+        aria-label="Agrandir l'affiche"
         onclick={() => openLightbox(detail?.posterUrl ?? null)}>
         <Poster src={detail.posterUrl} title={detail.title} />
       </button>
+    {/if}
 
-      <div class="min-w-0 flex-1">
+    <div class="absolute inset-x-0 bottom-0">
+      <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-8">
         <div class="flex flex-wrap items-center gap-2">
           <span
-            class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
+            class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
             {TYPE_LABELS[detail.type]}
           </span>
-          {#if detail.isAdult}
-            <span
-              class="bg-danger/15 text-danger rounded-full px-2.5 py-0.5 text-xs font-bold">
-              18+
-            </span>
-          {/if}
           {#if entry}
             <span
               title={STATUS_DESC[entry.status]}
@@ -317,17 +331,23 @@
             {#if dormant}
               <span
                 title="Série en cours laissée de côté depuis plus de 30 jours."
-                class="border-border text-dim rounded-full border px-2.5 py-0.5 text-xs font-bold">
+                class="rounded-full border border-white/30 px-2.5 py-0.5 text-xs font-bold text-white">
                 ⏸ En pause
               </span>
             {/if}
           {/if}
+          {#if detail.isAdult}
+            <span
+              class="bg-danger/80 rounded-full px-2.5 py-0.5 text-xs font-bold text-white">
+              18+
+            </span>
+          {/if}
         </div>
         <h1
-          class="font-display mt-2 text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
+          class="font-display mt-2 text-3xl font-extrabold tracking-tight text-balance text-white text-shadow-[0_2px_24px_rgba(0,0,0,.5)] md:text-4xl">
           {detail.title}
         </h1>
-        <p class="timecode mt-1.5 text-sm">
+        <p class="timecode mt-1.5 text-sm text-white/80">
           {#if detail.year}{detail.year}{/if}
           {#if detail.genres.length > 0}
             {#if detail.year}
@@ -349,7 +369,7 @@
                 rel={r.url ? "noopener noreferrer" : undefined}
                 class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
                   r.source
-                ] ?? 'bg-surface-2 text-fg'} {r.url
+                ] ?? 'bg-white/15 text-white'} {r.url
                   ? 'transition-opacity hover:opacity-80'
                   : ''}">
                 <span>{r.source}</span>
@@ -360,7 +380,23 @@
         {/if}
       </div>
     </div>
+  </div>
 
+  <ActionBar
+    {entry}
+    {isMovie}
+    {saving}
+    nextEpisode={entry?.progress?.nextEpisode ?? null}
+    continuing={continuingEpisodeId !== null}
+    onAdd={add}
+    onToggleFavorite={toggleFavorite}
+    onContinue={continueWatching}
+    onToggleWatched={toggleWatched}
+    onDrop={dropEntry}
+    onResume={resumeEntry}
+    onRemove={() => (confirmRemove = true)} />
+
+  <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
     {#if entry?.progress}
       <div class="mt-6 max-w-sm">
         <div class="bg-surface-2 h-1.5 overflow-hidden rounded-full">
@@ -370,17 +406,6 @@
           {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes} épisodes
           vus · {pct} %
         </p>
-        {#if entry.progress.nextEpisode}
-          {@const next = entry.progress.nextEpisode}
-          <button
-            class="btn btn-primary mt-3"
-            disabled={continuingEpisodeId === next.episodeId}
-            onclick={() => markNextWatched(next.episodeId)}>
-            ▶ Continuer · S{String(next.seasonNumber).padStart(2, "0")}E{String(
-              next.episodeNumber,
-            ).padStart(2, "0")}
-          </button>
-        {/if}
       </div>
     {/if}
 
@@ -388,78 +413,37 @@
       <p class="text-dim mt-6 max-w-2xl">{detail.overview}</p>
     {/if}
 
-    <!-- Actions -->
-    {#if !entry}
-      <div class="mt-6">
-        <button class="btn btn-primary" disabled={saving} onclick={add}>
-          <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
-        </button>
-      </div>
-    {:else}
-      <TrackingPanel
-        favorite={entry.favorite}
-        {saving}
-        onToggleFavorite={() => patch({ favorite: !entry.favorite })}
-        onRemove={() => (confirmRemove = true)}>
-        <!-- Status is derived server-side (shown as a badge in the hero); here
-             we only offer the state-changing actions it reacts to. -->
-        <div class="flex flex-wrap items-center gap-2.5">
-          {#if isMovie}
-            <!-- Movies: a single seen/not-seen toggle stands in for progress. -->
-            {#if entry.status === "COMPLETED"}
-              <button
-                class="btn btn-ghost"
-                disabled={saving}
-                onclick={() => patch({ status: "PLANNED" })}>
-                Marquer comme non vu
-              </button>
-            {:else}
-              <button
-                class="btn btn-primary"
-                disabled={saving}
-                onclick={() => patch({ status: "COMPLETED" })}>
-                <Icon name="check" class="h-4 w-4" /> Marquer comme vu
-              </button>
-            {/if}
-          {/if}
+    {#if entry}
+      <!-- Set-once settings, not day-to-day actions — tucked away closed by
+           default rather than living in the action bar above. -->
+      <details
+        class="border-border bg-surface group mt-6 max-w-xl overflow-hidden rounded-xl border">
+        <summary
+          class="group-open:border-border flex cursor-pointer items-center gap-2 px-4 py-3 group-open:border-b [&::-webkit-details-marker]:hidden">
+          <Icon
+            name="chevron-right"
+            class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
+          <span class="text-sm font-semibold">Mon suivi</span>
+          <span class="text-dim text-xs">Note privée · Possession</span>
+        </summary>
+        <div class="flex flex-col gap-4 px-4 py-4">
+          <OwnershipField
+            status={entry.ownershipStatus}
+            source={entry.ownershipSource}
+            statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
+            sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
+            onChange={(status, source) =>
+              patch({
+                ownershipStatus: status as typeof entry.ownershipStatus,
+                ownershipSource: source,
+              })} />
 
-          {#if isOverride}
-            <button
-              class="btn btn-ghost"
-              disabled={saving}
-              onclick={() => patch({ status: "WATCHING" })}>
-              Reprendre
-            </button>
-          {:else}
-            <button
-              class="btn btn-ghost"
-              disabled={saving}
-              onclick={() => patch({ status: "DROPPED" })}>
-              Abandonner
-            </button>
-          {/if}
-
-          <AddToListButton targetType="MEDIA" targetId={entry.mediaItem.id} />
+          <NoteField
+            value={entry.notes}
+            placeholder="Une réplique, un souvenir…"
+            onChange={(v) => patch({ notes: v })} />
         </div>
-
-        <OwnershipField
-          status={entry.ownershipStatus}
-          source={entry.ownershipSource}
-          statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
-          sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
-          onChange={(status, source) =>
-            patch({
-              ownershipStatus: status as typeof entry.ownershipStatus,
-              ownershipSource: source,
-            })} />
-
-        <hr class="border-border" />
-
-        <NoteField
-          value={entry.notes}
-          placeholder="Une réplique, un souvenir…"
-          onChange={(v) => patch({ notes: v })} />
-      </TrackingPanel>
+      </details>
     {/if}
 
     {#if hasProviders && extras}
@@ -503,6 +487,19 @@
         onError={(m) => (error = m)} />
     {/if}
 
+    {#if entry}
+      <ReviewsSection
+        targetType="MEDIA"
+        targetId={entry.mediaItem.id}
+        workTitle={detail.title} />
+      {#if appConfig.socialEnabled}
+        <CommentThread
+          targetType="MEDIA"
+          targetId={entry.mediaItem.id}
+          digest />
+      {/if}
+    {/if}
+
     {#if extras}
       <CastSection
         cast={extras.cast}
@@ -518,16 +515,6 @@
           cover: s.posterUrl,
           title: s.title,
         }))} />
-    {/if}
-
-    {#if entry}
-      <ReviewsSection
-        targetType="MEDIA"
-        targetId={entry.mediaItem.id}
-        workTitle={detail.title} />
-      {#if appConfig.socialEnabled}
-        <CommentThread targetType="MEDIA" targetId={entry.mediaItem.id} />
-      {/if}
     {/if}
   </div>
 

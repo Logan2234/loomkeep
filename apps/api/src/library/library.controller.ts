@@ -125,6 +125,15 @@ export class LibraryController {
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("seasons/:seasonId/watches")
+  async unwatchSeason(
+    @CurrentUser() user: JwtPayload,
+    @Param("seasonId") seasonId: string,
+  ): Promise<void> {
+    await this.libraryService.unwatchSeason(user.sub, seasonId);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post("episodes/:episodeId/watch-through")
   async watchThrough(
     @CurrentUser() user: JwtPayload,

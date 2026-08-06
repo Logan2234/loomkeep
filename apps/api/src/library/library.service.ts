@@ -567,6 +567,35 @@ export class LibraryService {
   }
 
   /**
+   * Undo a whole season: removes every watch the user has recorded for its
+   * episodes (all rewatches included, not just the latest one per episode).
+   */
+  async unwatchSeason(userId: string, seasonId: string): Promise<void> {
+    const season = await this.prisma.season.findUnique({
+      where: { id: seasonId },
+      select: { mediaItemId: true, mediaItem: { select: { type: true } } },
+    });
+
+    if (!season) {
+      throw new NotFoundException("Season not found");
+    }
+
+    const episodes = await this.prisma.episode.findMany({
+      where: { seasonId },
+      select: { id: true },
+    });
+
+    await this.prisma.episodeWatch.deleteMany({
+      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
+    });
+    await this.syncFinishedAt(
+      userId,
+      season.mediaItemId,
+      season.mediaItem.type,
+    );
+  }
+
+  /**
    * "Watch up to here": mark every regular episode of the series from the start
    * up to and including the given one (specials excluded — they are not part of
    * the linear run). If the target itself is a special, only it is marked.

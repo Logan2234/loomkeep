@@ -2,11 +2,13 @@
   import {
     ApiError,
     unwatchEpisode,
+    unwatchSeason,
     watchEpisode,
     watchSeason,
     watchThrough,
   } from "$lib/api/client";
   import CommentThread from "$lib/components/CommentThread.svelte";
+  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
@@ -40,10 +42,22 @@
   let busyEpisodeId = $state<string | null>(null);
   let busySeasonId = $state<string | null>(null);
 
-  // Episode-row dropdown, positioned fixed (the season card clips overflow).
-  let menu = $state<{ episodeId: string; top: number; right: number } | null>(
-    null,
-  );
+  // Fixed-position season "⋮" menu (fixed so it escapes the season card's
+  // clipping) — only one open at a time, mirrors the review/comment icons'
+  // per-row modals below.
+  let seasonMenu = $state<{
+    seasonId: string;
+    top: number;
+    right: number;
+  } | null>(null);
+  let confirmUnwatchSeasonId = $state<string | null>(null);
+  let unwatchingSeasonBusy = $state(false);
+
+  // "Marquer vu" on an episode with unwatched episodes before it asks first —
+  // declining once means we stop asking for the rest of this page view
+  // (component instance), not persisted beyond that.
+  let catchup = $state<{ episodeId: string; count: number } | null>(null);
+  let declinedCatchup = $state(false);
 
   // Each season/episode has its own comment thread (per the target-type
   // granularity), opened in a modal rather than inlined in every row.
@@ -68,35 +82,21 @@
   const seasonWatchedCount = (season: MediaDetailSeasonDto) =>
     season.episodes.filter((e) => e.watchCount > 0).length;
 
-  // True when every regular episode *before* this one is watched — then "mark
-  // through here" would only mark this episode (same as "Marquer vu"), so it's
-  // hidden. Specials are not part of the linear run.
-  function allPreviousWatched(
-    seasonNumber: number,
-    episodeNumber: number,
-  ): boolean {
+  // How many regular episodes *before* this one are still unwatched — drives
+  // the catch-up prompt. Specials are not part of the linear run.
+  function unwatchedGapCount(seasonNumber: number, episodeNumber: number) {
+    let count = 0;
     for (const s of seasons) {
       if (s.number === 0) continue;
       for (const ep of s.episodes) {
         const before =
           s.number < seasonNumber ||
           (s.number === seasonNumber && ep.number < episodeNumber);
-        if (before && ep.watchCount === 0) return false;
+        if (before && ep.watchCount === 0) count++;
       }
     }
-    return true;
+    return count;
   }
-
-  // The episode the open dropdown belongs to (with its season number).
-  const menuCtx = $derived.by(() => {
-    const m = menu;
-    if (!m) return null;
-    for (const s of seasons) {
-      const ep = s.episodes.find((e) => e.id === m.episodeId);
-      if (ep) return { seasonNumber: s.number, episode: ep };
-    }
-    return null;
-  });
 
   // Calendar-day count until an episode's air date; 0 (or negative) once it's
   // aired, matching the backend's `airDate <= now` gate.
@@ -117,10 +117,10 @@
     return days === 1 ? "Demain" : `Dans ${days} jours`;
   }
 
-  function openMenu(event: MouseEvent, episodeId: string) {
+  function openSeasonMenu(event: MouseEvent, seasonId: string) {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    menu = {
-      episodeId,
+    seasonMenu = {
+      seasonId,
       top: rect.bottom + 4,
       right: window.innerWidth - rect.right,
     };
@@ -143,6 +143,50 @@
     }
   }
 
+  // Entry point for the primary "Marquer vu" button — asks first if it would
+  // silently skip over earlier unwatched episodes.
+  function requestMarkWatched(
+    seasonNumber: number,
+    episodeNumber: number,
+    episodeId: string,
+  ) {
+    const gap =
+      seasonNumber > 0 ? unwatchedGapCount(seasonNumber, episodeNumber) : 0;
+    if (gap > 0 && !declinedCatchup) {
+      catchup = { episodeId, count: gap };
+    } else {
+      void markWatched(episodeId);
+    }
+  }
+
+  async function confirmCatchupYes() {
+    if (!catchup) return;
+    const episodeId = catchup.episodeId;
+    catchup = null;
+    busyEpisodeId = episodeId;
+    onError("");
+    try {
+      await watchThrough(episodeId);
+      await reload();
+    } catch (err) {
+      onError(
+        err instanceof ApiError
+          ? err.message
+          : "Impossible de marquer les épisodes",
+      );
+    } finally {
+      busyEpisodeId = null;
+    }
+  }
+
+  function confirmCatchupNo() {
+    if (!catchup) return;
+    const episodeId = catchup.episodeId;
+    declinedCatchup = true;
+    catchup = null;
+    void markWatched(episodeId);
+  }
+
   async function markSeason(seasonId: string) {
     busySeasonId = seasonId;
     onError("");
@@ -160,26 +204,27 @@
     }
   }
 
-  async function markThrough(episodeId: string) {
-    menu = null;
-    busyEpisodeId = episodeId;
+  async function confirmUnwatchSeason() {
+    if (!confirmUnwatchSeasonId) return;
+    const seasonId = confirmUnwatchSeasonId;
+    unwatchingSeasonBusy = true;
     onError("");
     try {
-      await watchThrough(episodeId);
+      await unwatchSeason(seasonId);
       await reload();
+      confirmUnwatchSeasonId = null;
     } catch (err) {
       onError(
         err instanceof ApiError
           ? err.message
-          : "Impossible de marquer les épisodes",
+          : "Impossible d'annuler la saison",
       );
     } finally {
-      busyEpisodeId = null;
+      unwatchingSeasonBusy = false;
     }
   }
 
   async function markUnwatch(episodeId: string) {
-    menu = null;
     busyEpisodeId = episodeId;
     onError("");
     try {
@@ -213,23 +258,11 @@
         <span class="timecode shrink-0 text-xs">
           {seasonWatchedCount(season)}/{season.episodes.length}
         </span>
-        {#if entry && season.id}
-          {#if seasonWatched(season)}
-            <span
-              class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-              <Icon name="check" class="h-4 w-4" /> Vue
-            </span>
-          {:else}
-            <button
-              class="btn btn-ghost shrink-0 px-2.5 py-1 text-xs"
-              disabled={busySeasonId === season.id}
-              onclick={(e) => {
-                e.preventDefault();
-                markSeason(season.id!);
-              }}>
-              Marquer la saison vue
-            </button>
-          {/if}
+        {#if entry && season.id && seasonWatched(season)}
+          <span
+            class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
+            <Icon name="check" class="h-4 w-4" /> Vue
+          </span>
         {/if}
         {#if season.id}
           <button
@@ -259,6 +292,18 @@
               };
             }}>
             <Icon name="message" class="h-4 w-4" />
+          </button>
+        {/if}
+        {#if entry && season.id}
+          <button
+            class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+            aria-label="Plus d'actions pour la saison"
+            aria-haspopup="menu"
+            onclick={(e) => {
+              e.preventDefault();
+              openSeasonMenu(e, season.id!);
+            }}>
+            <Icon name="dots-vertical" class="h-4 w-4" />
           </button>
         {/if}
       </summary>
@@ -321,36 +366,39 @@
                     title="Pas encore diffusé">
                     {upcoming}
                   </span>
-                {:else}
-                  {@const canThrough =
-                    season.number > 0 &&
-                    !allPreviousWatched(season.number, episode.number)}
-                  <!-- Split-button: primary marks this episode; the attached
-                       chevron opens a dropdown (e.g. "mark through here"). -->
-                  <div
-                    class="inline-flex shrink-0 items-stretch overflow-hidden rounded-lg text-xs font-semibold {watched
-                      ? 'border-border text-dim border'
-                      : 'bg-btn text-btn-fg'}">
+                {:else if watched}
+                  <!-- Rare, secondary actions on an already-watched episode:
+                       two quiet icon buttons rather than a hidden menu. -->
+                  <div class="flex shrink-0 items-center gap-1">
                     <button
-                      class="px-2.5 py-1 transition-[filter,background-color,color] disabled:opacity-50 {watched
-                        ? 'hover:bg-surface-2 hover:text-fg'
-                        : 'hover:brightness-95'}"
+                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full disabled:opacity-50"
+                      title="Revoir"
+                      aria-label="Revoir"
                       disabled={busyEpisodeId === episode.id}
                       onclick={() => markWatched(episode.id!)}>
-                      {watched ? "Revoir" : "Marquer vu"}
+                      <Icon name="refresh" class="h-4 w-4" />
                     </button>
-                    {#if canThrough || watched}
-                      <button
-                        class="border-l px-1.5 transition-[filter,background-color,color] {watched
-                          ? 'border-border hover:bg-surface-2 hover:text-fg'
-                          : 'border-btn-fg/25 hover:brightness-95'}"
-                        aria-label="Plus d'actions"
-                        aria-haspopup="menu"
-                        onclick={(e) => openMenu(e, episode.id!)}>
-                        ▾
-                      </button>
-                    {/if}
+                    <button
+                      class="text-dim hover:text-danger hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full disabled:opacity-50"
+                      title="Annuler ce visionnage"
+                      aria-label="Annuler ce visionnage"
+                      disabled={busyEpisodeId === episode.id}
+                      onclick={() => markUnwatch(episode.id!)}>
+                      <Icon name="x" class="h-4 w-4" />
+                    </button>
                   </div>
+                {:else}
+                  <button
+                    class="btn btn-primary shrink-0 px-2.5 py-1 text-xs"
+                    disabled={busyEpisodeId === episode.id}
+                    onclick={() =>
+                      requestMarkWatched(
+                        season.number,
+                        episode.number,
+                        episode.id!,
+                      )}>
+                    Marquer vu
+                  </button>
                 {/if}
               {/if}
             </div>
@@ -361,40 +409,65 @@
   {/each}
 </div>
 
-<!-- Episode-row dropdown (fixed so it escapes the season card's clipping). -->
-{#if menu && menuCtx}
-  {@const active = menu}
-  {@const showThrough =
-    menuCtx.seasonNumber > 0 &&
-    !allPreviousWatched(menuCtx.seasonNumber, menuCtx.episode.number)}
-  {@const showUnwatch = menuCtx.episode.watchCount > 0}
+<!-- Season "⋮" menu (fixed so it escapes the season card's clipping). -->
+{#if seasonMenu}
+  {@const active = seasonMenu}
+  {@const activeSeason = seasons.find((s) => s.id === active.seasonId)}
   <button
     class="fixed inset-0 z-30 cursor-default"
     aria-label="Fermer le menu"
-    onclick={() => (menu = null)}></button>
+    onclick={() => (seasonMenu = null)}></button>
   <div
     role="menu"
-    class="border-border bg-surface fixed z-40 min-w-44 overflow-hidden rounded-lg border shadow-lg"
+    class="border-border bg-surface fixed z-40 min-w-52 overflow-hidden rounded-lg border shadow-lg"
     style={`top: ${active.top}px; right: ${active.right}px`}>
-    {#if showThrough}
+    {#if activeSeason && !seasonWatched(activeSeason)}
       <button
-        class="hover:bg-surface-2 block w-full px-3 py-2 text-left text-sm"
-        onclick={() => markThrough(active.episodeId)}>
-        Marquer vu jusqu'ici
+        role="menuitem"
+        class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+        disabled={busySeasonId === active.seasonId}
+        onclick={() => {
+          const seasonId = active.seasonId;
+          seasonMenu = null;
+          markSeason(seasonId);
+        }}>
+        <Icon name="check" class="h-4 w-4" /> Marquer la saison vue
       </button>
     {/if}
-    {#if showUnwatch}
-      <button
-        class="hover:bg-surface-2 block w-full px-3 py-2 text-left text-sm {showThrough
-          ? 'border-border border-t'
-          : ''}"
-        onclick={() => markUnwatch(active.episodeId)}>
-        {menuCtx.episode.watchCount > 1
-          ? "Retirer un visionnage"
-          : "Marquer non vu"}
-      </button>
-    {/if}
+    <button
+      role="menuitem"
+      class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm"
+      onclick={() => {
+        const seasonId = active.seasonId;
+        seasonMenu = null;
+        confirmUnwatchSeasonId = seasonId;
+      }}>
+      <Icon name="x" class="h-4 w-4" /> Tout annuler la saison
+    </button>
   </div>
+{/if}
+
+{#if catchup}
+  {@const c = catchup}
+  <ConfirmationModal
+    title="Rattraper les épisodes précédents ?"
+    message={`Tu as ${c.count} épisode${c.count > 1 ? "s" : ""} non vu${c.count > 1 ? "s" : ""} avant celui-ci.`}
+    confirmLabel="Oui, tout marquer"
+    cancelLabel="Non, juste celui-ci"
+    busy={busyEpisodeId === c.episodeId}
+    onConfirm={confirmCatchupYes}
+    onCancel={confirmCatchupNo} />
+{/if}
+
+{#if confirmUnwatchSeasonId}
+  <ConfirmationModal
+    title="Tout annuler pour cette saison"
+    message="Tous les visionnages de cette saison (rediffusions comprises) seront supprimés. Cette action est irréversible."
+    confirmLabel="Tout annuler"
+    danger
+    busy={unwatchingSeasonBusy}
+    onConfirm={confirmUnwatchSeason}
+    onCancel={() => (confirmUnwatchSeasonId = null)} />
 {/if}
 
 {#if commentTarget}

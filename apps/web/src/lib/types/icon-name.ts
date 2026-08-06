@@ -44,4 +44,6 @@ export type IconName =
   | "reply"
   | "list"
   | "grip"
-  | "edit";
+  | "edit"
+  | "dots-horizontal"
+  | "dots-vertical";

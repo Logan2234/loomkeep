@@ -38,7 +38,7 @@ export interface CommentDto {
   replies: CommentDto[];
 }
 
-/** A page of top-level comments (with their replies attached), oldest first. */
+/** A page of top-level comments (with their replies attached), newest first. */
 export interface CommentPageDto {
   comments: CommentDto[];
   nextCursor: string | null;
