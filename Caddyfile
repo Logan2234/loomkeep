@@ -23,3 +23,10 @@
 		reverse_proxy web:3000
 	}
 }
+
+# Extra site blocks, one file per service, only present when that service's
+# override is actually in use — e.g. observability/grafana.caddy, mounted
+# here only by docker-compose.observability.yml. A glob over a directory
+# that isn't mounted (plain self-host, or the ngrok override alone) matches
+# zero files and is a no-op, not an error — nothing to guard here.
+import /etc/caddy/sites-enabled/*.caddy
