@@ -29,34 +29,8 @@
   let status = $state<"idle" | "saving" | "error">("idle");
   let error = $state("");
 
-  // Modal renders its content twice in parallel (a mobile Drawer copy and a
-  // desktop dialog copy, toggled by CSS breakpoint, not conditional
-  // rendering — see Modal.svelte), so a plain `bind:this` would silently
-  // grab whichever copy mounts last rather than the one actually on screen.
-  // Register every mounted instance and resolve the one whose *dialog
-  // ancestor* currently has layout — not the element's own offsetParent,
-  // since the file input is deliberately `display:none` in both copies
-  // regardless of which one is active.
-  function registry<T extends HTMLElement>() {
-    let els: T[] = [];
-    return {
-      register: (node: T) => {
-        els = [...els, node];
-        return {
-          destroy() {
-            els = els.filter((el) => el !== node);
-          },
-        };
-      },
-      visible: () =>
-        els.find((el) => {
-          const dialog = el.closest('[role="dialog"]') as HTMLElement | null;
-          return dialog !== null && dialog.offsetParent !== null;
-        }),
-    };
-  }
-  const fileInputs = registry<HTMLInputElement>();
-  const canvases = registry<HTMLCanvasElement>();
+  let fileInput: HTMLInputElement | undefined = $state();
+  let canvasEl: HTMLCanvasElement | undefined = $state();
 
   let bitmap: ImageBitmap | null = null;
   // Top-left of the square crop window, in source-image pixel space.
@@ -71,7 +45,6 @@
   }
 
   function draw() {
-    const canvasEl = canvases.visible();
     if (!bitmap || !canvasEl) return;
     const ctx = canvasEl.getContext("2d");
     if (!ctx) return;
@@ -100,7 +73,7 @@
     cropY = (bitmap.height - cropSide) / 2;
     stage = "editing";
     requestAnimationFrame(draw);
-    (e.target as HTMLInputElement).value = "";
+    if (fileInput) fileInput.value = "";
   }
 
   let dragging = false;
@@ -116,9 +89,7 @@
     dragStartY = e.clientY;
     dragStartCropX = cropX;
     dragStartCropY = cropY;
-    // The event only ever fires on the element the user actually touched —
-    // no need to resolve "the visible one" separately here.
-    (e.currentTarget as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    canvasEl?.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -136,7 +107,7 @@
 
   function onPointerUp(e: PointerEvent) {
     dragging = false;
-    (e.currentTarget as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+    canvasEl?.releasePointerCapture(e.pointerId);
   }
 
   function cancelEdit() {
@@ -203,7 +174,7 @@
       style="width: {PREVIEW_SIZE}px; height: {PREVIEW_SIZE}px;">
       {#if stage === "editing"}
         <canvas
-          use:canvases.register
+          bind:this={canvasEl}
           width={PREVIEW_SIZE}
           height={PREVIEW_SIZE}
           class="h-full w-full cursor-grab touch-none active:cursor-grabbing"
@@ -227,7 +198,7 @@
     {/if}
 
     <input
-      use:fileInputs.register
+      bind:this={fileInput}
       type="file"
       accept="image/png,image/jpeg,image/webp"
       class="hidden"
@@ -252,7 +223,7 @@
         <button
           class="btn btn-ghost w-full"
           disabled={status === "saving"}
-          onclick={() => fileInputs.visible()?.click()}>
+          onclick={() => fileInput?.click()}>
           <Icon name="edit" class="h-4 w-4" />
           Changer la photo
         </button>
