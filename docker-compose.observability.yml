@@ -1,0 +1,66 @@
+# Observability Palier 2: searchable, persistent log history via Grafana +
+# Loki (log storage) + Promtail (ships every container's json-file logs,
+# already rotated by docker-compose.yml's `x-logging`, into Loki). Add on
+# top of the base compose + whichever deployment override you're using:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
+#
+# Grafana is bound to 127.0.0.1 only — it's an admin dashboard, deliberately
+# NOT exposed to the internet by default. Reach it via an SSH tunnel from
+# your own machine:
+#
+#   ssh -L 3001:localhost:3001 <user>@<your-vps>
+#
+# then open http://localhost:3001 in your own browser (Grafana → Explore →
+# pick the Loki data source, already pre-configured — no manual setup).
+#
+# `x-logging` is redeclared here (not reused from docker-compose.yml) since
+# Compose doesn't merge YAML anchors across separate `-f` files — same
+# reasoning as the caddy service's own duplicate in the prod/ngrok overrides.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  loki:
+    image: grafana/loki:3.3.0
+    restart: unless-stopped
+    logging: *default-logging
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./observability/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
+
+  promtail:
+    image: grafana/promtail:3.3.0
+    restart: unless-stopped
+    logging: *default-logging
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    volumes:
+      - ./observability/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana-oss:11.4.0
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/loki.yaml:ro
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      - loki
+
+volumes:
+  loki-data:
+  grafana-data:

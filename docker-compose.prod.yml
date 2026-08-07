@@ -9,10 +9,18 @@
 services:
   web:
     environment:
+      NODE_ENV: production
       PUBLIC_API_URL: https://${DOMAIN:?set DOMAIN in .env}/api
 
   api:
     environment:
+      # Explicit, not just "unset" — several deps (this app's own isDev
+      # checks in main.ts/logger.config.ts included) only special-case the
+      # literal string "development"; NODE_ENV was never set to anything at
+      # all before, which happened to read the same way but left it to
+      # chance for any third-party package that specifically checks for
+      # "production" instead.
+      NODE_ENV: production
       WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       # This is the public instance — turn the P4 social features on (the

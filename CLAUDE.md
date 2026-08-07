@@ -136,9 +136,15 @@ so real bugs aren't buried — then always delegates to
 completely unchanged. Docker log rotation (`max-size: 10m`, `max-file: 5`)
 is set per service in `docker-compose.yml`/`docker-compose.prod.yml`/
 `docker-compose.ngrok.yml` (duplicated by hand in the two overrides — Compose
-doesn't merge YAML anchors across `-f` files). Paliers 2 (Loki/Grafana log
-search) and 3 (GlitchTip error grouping) are deliberately deferred — see the
-`loomkeep-observability-plan` memory, not this file, for that reasoning.
+doesn't merge YAML anchors across `-f` files). **Palier 2** (searchable log
+history) is `docker-compose.observability.yml`, an optional override adding
+Grafana + Loki + Promtail (config in `observability/`) — Promtail
+auto-discovers every container via the Docker socket and ships its
+already-rotated json-file logs into Loki, Grafana's Loki data source is
+pre-provisioned. Grafana binds to `127.0.0.1` only (reach it via an SSH
+tunnel, never expose an admin dashboard publicly) — see README "Logs and
+monitoring". **Palier 3** (GlitchTip error grouping) is still deliberately
+deferred — see the `loomkeep-observability-plan` memory for that reasoning.
 
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via

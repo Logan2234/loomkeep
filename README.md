@@ -119,6 +119,30 @@ warning page.
    VPS also has a network firewall in the control panel that must allow
    80/443 separately from any `ufw`/`iptables` rules on the box).
 
+### Logs and monitoring (optional)
+
+The API logs structured JSON (level, route, duration) via `nestjs-pino` —
+`docker compose logs api` works out of the box, and every service's logs are
+capped at 10MB × 5 files so they can't slowly fill the disk. For a
+searchable log history and dashboards, add the observability override on
+top of whichever deployment you're running:
+
+```sh
+# set GRAFANA_ADMIN_PASSWORD in .env first
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
+```
+
+This adds Grafana + Loki + Promtail (Promtail ships every container's logs
+into Loki automatically). Grafana is bound to `127.0.0.1` only — reach it
+through an SSH tunnel rather than exposing an admin dashboard publicly:
+
+```sh
+ssh -L 3001:localhost:3001 <user>@<your-vps>
+```
+
+then open `http://localhost:3001` locally (Loki is already set up as the
+default data source — nothing to configure).
+
 ## Development
 
 ```sh
