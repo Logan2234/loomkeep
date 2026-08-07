@@ -428,7 +428,10 @@
           </span>
         {:else}
           <a href="/u/{c.author.username}" class="shrink-0">
-            <Avatar seed={c.author.username} size={28} />
+            <Avatar
+              seed={c.author.username}
+              url={c.author.avatarUrl}
+              size={28} />
           </a>
         {/if}
         <div class="min-w-0 flex-1">

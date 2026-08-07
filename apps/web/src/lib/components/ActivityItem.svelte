@@ -46,7 +46,7 @@
 
 <li class="card flex items-center gap-3 p-3">
   <a href="/u/{event.actor.username}" class="shrink-0">
-    <Avatar seed={event.actor.username} size={36} />
+    <Avatar seed={event.actor.username} url={event.actor.avatarUrl} size={36} />
   </a>
 
   <div class="min-w-0 flex-1">

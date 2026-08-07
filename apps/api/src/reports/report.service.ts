@@ -12,13 +12,13 @@ import {
   type ReportPageDto,
   type ReportTargetSummaryDto,
   type ReportTargetType,
-  type UserSummaryDto,
 } from "@loomkeep/shared";
 import { resolveWorkHref } from "../common/work-href.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { toUserSummaryDto } from "../users/avatar.util";
 
 const PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
@@ -28,6 +28,7 @@ const REPORTER_SELECT = {
   username: true,
   displayName: true,
   profileAccess: true,
+  avatarUpdatedAt: true,
 } as const;
 
 @Injectable()
@@ -121,7 +122,7 @@ export class ReportService {
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
-        reporter: r.reporter as UserSummaryDto,
+        reporter: toUserSummaryDto(r.reporter),
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,
@@ -182,7 +183,7 @@ export class ReportService {
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
-        reporter: r.reporter as UserSummaryDto,
+        reporter: toUserSummaryDto(r.reporter),
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,

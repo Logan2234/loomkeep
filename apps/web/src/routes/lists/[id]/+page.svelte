@@ -141,7 +141,10 @@
             <a
               href="/u/{list.author.username}"
               class="hover:text-fg inline-flex items-center gap-1.5">
-              <Avatar seed={list.author.username} size={18} />
+              <Avatar
+                seed={list.author.username}
+                url={list.author.avatarUrl}
+                size={18} />
               @{list.author.username}
             </a>
           {/if}

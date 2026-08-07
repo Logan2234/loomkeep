@@ -282,3 +282,87 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });
+
+describe("UsersController — uploadAvatar", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let controller: UsersController;
+
+  const PNG_MAGIC = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
+
+  function updatedUser() {
+    return {
+      id: userId,
+      email: "alice@example.com",
+      username: "alice",
+      displayName: "Alice",
+      birthDate: null,
+      allowAdultContent: false,
+      notifyInApp: true,
+      notifyEmail: false,
+      notifyPush: false,
+      emailVerified: false,
+      role: "USER",
+      enabledDomains: ["MEDIA"],
+      mobileNavShortcuts: [],
+      createdAt: new Date(),
+      avatarUpdatedAt: new Date(),
+    };
+  }
+
+  beforeEach(() => {
+    prisma = {
+      user: { update: jest.fn() },
+    } as unknown as PrismaService;
+    controller = new UsersController(
+      prisma,
+      {} as unknown as MailService,
+      { record: jest.fn() } as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+    );
+  });
+
+  it("stores a valid PNG upload and cache-busts avatarUrl", async () => {
+    (prisma.user.update as jest.Mock).mockResolvedValueOnce(updatedUser());
+
+    const dto = await controller.uploadAvatar(jwtPayload(userId), {
+      mimeType: "image/png",
+      data: PNG_MAGIC.toString("base64"),
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: userId },
+        data: expect.objectContaining({ avatarMimeType: "image/png" }),
+      }),
+    );
+    expect(dto.avatarUrl).toContain(`/users/${userId}/avatar`);
+  });
+
+  it("rejects a payload whose bytes don't match the declared mime type", async () => {
+    await expect(
+      controller.uploadAvatar(jwtPayload(userId), {
+        mimeType: "image/png",
+        data: Buffer.from("not an image").toString("base64"),
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized decoded payload", async () => {
+    const huge = Buffer.concat([PNG_MAGIC, Buffer.alloc(3 * 1024 * 1024)]);
+
+    await expect(
+      controller.uploadAvatar(jwtPayload(userId), {
+        mimeType: "image/png",
+        data: huge.toString("base64"),
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});

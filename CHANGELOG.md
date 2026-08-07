@@ -12,6 +12,27 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.1.0 — Profile pictures & profile sharing
+
+- **Profile picture upload**: `User.avatar` (bytes, stored in-row so it rides
+  along with `pg_dump` backups rather than needing a separate volume) plus
+  `avatarMimeType`/`avatarUpdatedAt`. New endpoints `PATCH`/`DELETE
+  /users/me/avatar` (size + magic-byte validated) and a public `GET
+  /users/:id/avatar` (no auth — a plain `<img src>` can't send the JWT kept
+  in localStorage; cuids are unguessable enough). The web client resizes to a
+  square (canvas, WebP) before upload. `avatarUrl` is now carried on
+  `UserDto`/`UserSummaryDto`/`SocialProfileDto`/`ActivityActorDto`/
+  `AdminUserDto`; a Figurant (Ghost mode) never exposes their real avatar —
+  same anonymization path as their username/pseudonym.
+- **Profile sharing**: a "Partager" action (Paramètres → Profil, and on your
+  own public profile page) opens the native OS share sheet
+  (`navigator.share`) where supported, falling back to a link-copy + QR code
+  modal otherwise. A separate always-available "QR code" action covers the
+  in-person case (someone scanning your screen) on every device, mobile
+  included. The QR encodes the plain profile URL (`/u/username`), so it's
+  scannable by any camera, not just the app. New dependency: `qrcode`
+  (client-side SVG generation, no external calls).
+
 ## 1.0.1 — Rebrand: Tracklore → Loomkeep
 
 The project is renamed to **Loomkeep** (loom — weaving together everything you

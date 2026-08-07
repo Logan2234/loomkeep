@@ -311,7 +311,10 @@
             : ''}">
           <span class="grid h-10 w-10 shrink-0 place-items-center">
             {#if auth.user}
-              <Avatar seed={auth.user.username} size={32} />
+              <Avatar
+                seed={auth.user.username}
+                url={auth.user.avatarUrl}
+                size={32} />
             {/if}
           </span>
           <span

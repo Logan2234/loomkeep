@@ -9,8 +9,10 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  Param,
   Patch,
   Query,
+  Res,
   UnauthorizedException,
 } from "@nestjs/common";
 import type { User } from "@prisma/client";
@@ -22,15 +24,18 @@ import {
   type UsernameAvailabilityDto,
 } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
+import type { FastifyReply } from "fastify";
 import { randomInt } from "node:crypto";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { Public } from "../auth/decorators/public.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { isAdult } from "./age.util";
+import { matchesMimeType } from "./avatar.util";
 import { CsvExportService } from "./csv-export.service";
 import { DataExportService } from "./data-export.service";
 import { ChangeEmailDto } from "./dto/change-email.dto";
@@ -39,6 +44,12 @@ import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
+import { UploadAvatarDto } from "./dto/upload-avatar.dto";
+
+// Decoded byte ceiling for an uploaded avatar — base64 for this is checked by
+// UploadAvatarDto's MaxLength, this is the belt-and-suspenders check on the
+// actual decoded buffer.
+const MAX_AVATAR_BYTES = 2.5 * 1024 * 1024;
 
 const EMAIL_CHANGE_TTL_MINUTES = 15;
 const MAX_EMAIL_CHANGE_ATTEMPTS = 5;
@@ -63,6 +74,71 @@ export class UsersController {
       throw new NotFoundException("User not found");
     }
 
+    return toUserDto(user);
+  }
+
+  /**
+   * Public (no auth) so a plain `<img src>` can load it — the SPA keeps its
+   * JWT in localStorage, unreachable from an image request. Cuids are
+   * unguessable enough that this doesn't leak anything the id itself doesn't.
+   */
+  @Public()
+  @Get(":id/avatar")
+  async getAvatar(
+    @Param("id") id: string,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { avatar: true, avatarMimeType: true },
+    });
+
+    if (!user?.avatar || !user.avatarMimeType) {
+      throw new NotFoundException();
+    }
+
+    reply
+      .header("Cache-Control", "public, max-age=31536000, immutable")
+      .type(user.avatarMimeType)
+      .send(user.avatar);
+  }
+
+  /** Replaces the account's profile picture. */
+  @Patch("me/avatar")
+  async uploadAvatar(
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: UploadAvatarDto,
+  ): Promise<UserDto> {
+    const buffer = Buffer.from(dto.data, "base64");
+
+    if (buffer.length === 0 || buffer.length > MAX_AVATAR_BYTES) {
+      throw new BadRequestException("Image trop volumineuse");
+    }
+
+    if (!matchesMimeType(buffer, dto.mimeType)) {
+      throw new BadRequestException(
+        "Le fichier ne correspond pas au type d'image déclaré",
+      );
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: {
+        avatar: buffer,
+        avatarMimeType: dto.mimeType,
+        avatarUpdatedAt: new Date(),
+      },
+    });
+    return toUserDto(user);
+  }
+
+  /** Clears the profile picture — the client falls back to the identicon. */
+  @Delete("me/avatar")
+  async deleteAvatar(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
+    const user = await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: { avatar: null, avatarMimeType: null, avatarUpdatedAt: null },
+    });
     return toUserDto(user);
   }
 

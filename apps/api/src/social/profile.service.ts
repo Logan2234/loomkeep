@@ -12,6 +12,7 @@ import {
 } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { runtimeFor } from "../stats/video-stats.util";
+import { avatarUrl } from "../users/avatar.util";
 import {
   computeHeatmap,
   computeStreak,
@@ -61,6 +62,7 @@ export class ProfileService {
         bio: true,
         profileAccess: true,
         createdAt: true,
+        avatarUpdatedAt: true,
       },
     });
     if (!target) throw new NotFoundException();
@@ -80,6 +82,7 @@ export class ProfileService {
         id: target.id,
         username: target.username,
         displayName: target.displayName,
+        avatarUrl: avatarUrl(target),
         bio: null,
         profileAccess: target.profileAccess as ProfileAccess,
         createdAt: target.createdAt.toISOString(),
@@ -161,6 +164,7 @@ export class ProfileService {
       id: target.id,
       username: target.username,
       displayName: target.displayName,
+      avatarUrl: avatarUrl(target),
       bio: target.bio,
       profileAccess: target.profileAccess as ProfileAccess,
       createdAt: target.createdAt.toISOString(),

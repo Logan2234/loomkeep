@@ -176,5 +176,15 @@
     <circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none" />
     <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
     <circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none" />
+  {:else if name === "share"}
+    <circle cx="18" cy="5" r="2.5" />
+    <circle cx="6" cy="12" r="2.5" />
+    <circle cx="18" cy="19" r="2.5" />
+    <path d="m8.3 10.7 7.4-4.4M8.3 13.3l7.4 4.4" />
+  {:else if name === "qr-code"}
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <path d="M14 14h3v3M20 14v3h-3M14 20h3v.01M20 20v.01" />
   {/if}
 </svg>

@@ -22,6 +22,7 @@ import { anonymizeAuthor } from "../social/pseudonym.util";
 import { computeIsFriend } from "../social/visibility.util";
 import { VisibilityService } from "../social/visibility.service";
 import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
+import { toUserSummaryDto } from "../users/avatar.util";
 
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
 const DOMAIN_BY_TARGET: Record<string, Domain> = {
@@ -49,6 +50,7 @@ const AUTHOR_SELECT = {
   username: true,
   displayName: true,
   profileAccess: true,
+  avatarUpdatedAt: true,
 } as const;
 
 @Injectable()
@@ -520,7 +522,7 @@ export class ReviewService {
     const visible: ReviewDto[] = [];
 
     for (const row of rows) {
-      const author = row.user;
+      const author = toUserSummaryDto(row.user);
 
       if (author.id === viewerId) {
         visible.push(this.toDto(row, withStreak(author), votesFor(row.id)));
@@ -680,6 +682,9 @@ export class ReviewService {
       }),
       fetchStreaksByUser(this.prisma, [userId]),
     ]);
-    return { ...user, streakDays: streaks.get(userId) } as UserSummaryDto;
+    return {
+      ...toUserSummaryDto(user),
+      streakDays: streaks.get(userId),
+    };
   }
 }

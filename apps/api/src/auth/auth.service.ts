@@ -14,6 +14,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { avatarUrl } from "../users/avatar.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
@@ -457,5 +458,6 @@ export function toUserDto(user: User): UserDto {
       user.defaultListVisibility as UserDto["defaultListVisibility"],
     profileAccess: user.profileAccess as UserDto["profileAccess"],
     createdAt: user.createdAt.toISOString(),
+    avatarUrl: avatarUrl(user),
   };
 }

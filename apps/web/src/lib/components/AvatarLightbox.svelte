@@ -2,10 +2,14 @@
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
 
-  // Fullscreen zoom for a profile avatar. Avatar is a generated identicon
-  // (inline SVG, no bitmap `src`), so it can't reuse Lightbox — same chrome,
-  // just a bigger Avatar instead of an <img>.
-  let { seed, onClose }: { seed: string; onClose: () => void } = $props();
+  // Fullscreen zoom for a profile avatar — same chrome as Lightbox, but
+  // wrapping Avatar itself (identicon fallback or uploaded picture) instead
+  // of a plain <img>.
+  let {
+    seed,
+    url = null,
+    onClose,
+  }: { seed: string; url?: string | null; onClose: () => void } = $props();
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onClose()} />
@@ -36,7 +40,7 @@
     aria-label="Réduire l'avatar"
     onclick={onClose}>
     <div class="pointer-events-none">
-      <Avatar {seed} size={280} />
+      <Avatar {seed} {url} size={280} />
     </div>
   </button>
 </div>

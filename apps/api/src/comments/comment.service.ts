@@ -13,7 +13,6 @@ import {
   COMMENT_REACTION_NOTIFY_THRESHOLD,
   NotificationType,
   ProfileAccess,
-  type UserSummaryDto,
 } from "@loomkeep/shared";
 import { resolveWorkHref } from "../common/work-href.util";
 import { NotificationService } from "../notifications/notification.service";
@@ -21,6 +20,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
 import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
+import { toUserSummaryDto } from "../users/avatar.util";
 import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
 import { extractMentions } from "./mention.util";
@@ -33,7 +33,16 @@ const AUTHOR_SELECT = {
   username: true,
   displayName: true,
   profileAccess: true,
+  avatarUpdatedAt: true,
 } as const;
+
+type CommentAuthor = {
+  id: string;
+  username: string;
+  displayName: string;
+  profileAccess: ProfileAccess;
+  avatarUpdatedAt: Date | null;
+};
 
 type CommentRow = {
   id: string;
@@ -48,7 +57,7 @@ type CommentRow = {
   deletedByAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
-  author: UserSummaryDto;
+  author: CommentAuthor;
 };
 
 @Injectable()
@@ -401,7 +410,12 @@ export class CommentService {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       author: withStreakDays(
-        anonymizeAuthor(row.author, viewerId, row.targetType, row.targetId),
+        anonymizeAuthor(
+          toUserSummaryDto(row.author),
+          viewerId,
+          row.targetType,
+          row.targetId,
+        ),
         streakMap,
       ),
       reactions: reactionMap.get(row.id) ?? [],

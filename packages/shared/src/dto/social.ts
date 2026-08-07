@@ -13,6 +13,12 @@ export interface UserSummaryDto {
   displayName: string;
   profileAccess: ProfileAccess;
   /**
+   * Path to the uploaded profile picture (see `UserDto.avatarUrl`), or null
+   * for the identicon fallback. Always null when `anonymized` — a real photo
+   * would deanonymize a Figurant.
+   */
+  avatarUrl: string | null;
+  /**
    * Set when this identity was swapped for a Figurant's derived pseudonym
    * (comment/review authorship) — `username` is then empty and `displayName`
    * holds the pseudo, never the real one. Absent/false everywhere else.
@@ -88,6 +94,7 @@ export interface SocialProfileDto {
   id: string;
   username: string;
   displayName: string;
+  avatarUrl: string | null;
   bio: string | null;
   profileAccess: ProfileAccess;
   createdAt: string;

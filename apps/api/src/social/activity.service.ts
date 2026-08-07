@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import {
+  type ActivityActorDto,
   type ActivityDomain,
   type ActivityEventDto,
   type ActivityFeedDto,
@@ -13,6 +14,7 @@ import {
 } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
+import { avatarUrl } from "../users/avatar.util";
 import {
   resolveFacet,
   resolveOwnVisibility,
@@ -192,7 +194,11 @@ export class ActivityService {
       href: e.href,
       data: (e.data ?? {}) as Record<string, unknown>,
       createdAt: e.createdAt.toISOString(),
-      actor: actors.get(e.userId) ?? { username: "", displayName: "" },
+      actor: actors.get(e.userId) ?? {
+        username: "",
+        displayName: "",
+        avatarUrl: null,
+      },
       count: e.count,
     }));
 
@@ -300,19 +306,26 @@ export class ActivityService {
     return kept;
   }
 
-  private async actors(
-    ids: string[],
-  ): Promise<Map<string, { username: string; displayName: string }>> {
+  private async actors(ids: string[]): Promise<Map<string, ActivityActorDto>> {
     const unique = [...new Set(ids)];
     if (unique.length === 0) return new Map();
     const users = await this.prisma.user.findMany({
       where: { id: { in: unique } },
-      select: { id: true, username: true, displayName: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        avatarUpdatedAt: true,
+      },
     });
     return new Map(
       users.map((u) => [
         u.id,
-        { username: u.username, displayName: u.displayName },
+        {
+          username: u.username,
+          displayName: u.displayName,
+          avatarUrl: avatarUrl(u),
+        },
       ]),
     );
   }

@@ -417,7 +417,7 @@
                 : ''}">
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                  <Avatar seed={u.username} size={36} />
+                  <Avatar seed={u.username} url={u.avatarUrl} size={36} />
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
                       <span class="text-fg truncate font-semibold"
@@ -493,7 +493,10 @@
             aria-label="Voir l'avatar en grand"
             onclick={() => (avatarLightbox = true)}
             class="cursor-zoom-in">
-            <Avatar seed={selected.username} size={48} />
+            <Avatar
+              seed={selected.username}
+              url={selected.avatarUrl}
+              size={48} />
           </button>
           <div class="min-w-0">
             <h2
@@ -522,6 +525,7 @@
       {#if avatarLightbox}
         <AvatarLightbox
           seed={selected.username}
+          url={selected.avatarUrl}
           onClose={() => (avatarLightbox = false)} />
       {/if}
 
@@ -753,7 +757,7 @@
           <a
             href="/u/{u.username}"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg px-2 py-2">
-            <Avatar seed={u.username} size={36} />
+            <Avatar seed={u.username} url={u.avatarUrl} size={36} />
             <span class="min-w-0">
               <span class="text-fg block truncate text-sm font-semibold"
                 >{u.displayName}</span>

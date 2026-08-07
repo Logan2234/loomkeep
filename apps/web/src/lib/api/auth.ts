@@ -11,6 +11,7 @@ import type {
   SessionDto,
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
+  UploadAvatarRequestDto,
   UserDataExportDto,
   UserDto,
   UsernameAvailabilityDto,
@@ -85,6 +86,25 @@ export async function login(body: LoginRequestDto): Promise<void> {
 
 export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {
   const user = await request<UserDto>("/users/me", { method: "PATCH", body });
+  auth.user = user;
+  return user;
+}
+
+export async function uploadAvatar(
+  body: UploadAvatarRequestDto,
+): Promise<UserDto> {
+  const user = await request<UserDto>("/users/me/avatar", {
+    method: "PATCH",
+    body,
+  });
+  auth.user = user;
+  return user;
+}
+
+export async function deleteAvatar(): Promise<UserDto> {
+  const user = await request<UserDto>("/users/me/avatar", {
+    method: "DELETE",
+  });
   auth.user = user;
   return user;
 }

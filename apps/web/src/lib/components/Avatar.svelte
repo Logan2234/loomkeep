@@ -1,13 +1,23 @@
 <script lang="ts">
-  // Deterministic identicon generated from a username — no upload, no storage.
-  // Séance-restrained: a single per-user hue (not a rainbow), a symmetric 5×5
-  // pattern rendered as a tiny "film cell". The hue reads on both themes; the
-  // frame uses theme-aware surface tokens.
+  import { API_URL } from "$lib/api/core";
+
+  // Falls back to a deterministic identicon generated from a username when
+  // no `url` (uploaded profile picture) is given. Séance-restrained: a single
+  // per-user hue (not a rainbow), a symmetric 5×5 pattern rendered as a tiny
+  // "film cell". The hue reads on both themes; the frame uses theme-aware
+  // surface tokens.
   let {
     seed,
+    url = null,
     size = 40,
     class: cls = "",
-  }: { seed: string; size?: number; class?: string } = $props();
+  }: {
+    seed: string;
+    /** Relative path from `UserSummaryDto`/`UserDto.avatarUrl` (e.g. `/users/:id/avatar?v=…`). */
+    url?: string | null;
+    size?: number;
+    class?: string;
+  } = $props();
 
   // djb2 → unsigned 32-bit. Stable across sessions for the same username.
   function hash(value: string): number {
@@ -45,13 +55,22 @@
   style="width:{size}px;height:{size}px"
   role="img"
   aria-label="Avatar de {seed}">
-  <svg
-    viewBox="-0.4 -0.4 5.8 5.8"
-    width={size}
-    height={size}
-    aria-hidden="true">
-    {#each cells as cell (cell.x + "-" + cell.y)}
-      <rect x={cell.x} y={cell.y} width="1" height="1" {fill} />
-    {/each}
-  </svg>
+  {#if url}
+    <img
+      src="{API_URL}{url}"
+      alt=""
+      width={size}
+      height={size}
+      class="h-full w-full object-cover" />
+  {:else}
+    <svg
+      viewBox="-0.4 -0.4 5.8 5.8"
+      width={size}
+      height={size}
+      aria-hidden="true">
+      {#each cells as cell (cell.x + "-" + cell.y)}
+        <rect x={cell.x} y={cell.y} width="1" height="1" {fill} />
+      {/each}
+    </svg>
+  {/if}
 </span>

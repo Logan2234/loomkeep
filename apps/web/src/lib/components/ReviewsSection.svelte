@@ -128,7 +128,10 @@
     <div class="card mb-3 p-3">
       <div class="flex items-center gap-3">
         {#if auth.user}
-          <Avatar seed={auth.user.username} size={32} />
+          <Avatar
+            seed={auth.user.username}
+            url={auth.user.avatarUrl}
+            size={32} />
         {/if}
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-semibold">Votre critique</p>
@@ -209,7 +212,10 @@
                 </div>
               {:else}
                 <a href="/u/{review.author.username}" class="shrink-0">
-                  <Avatar seed={review.author.username} size={32} />
+                  <Avatar
+                    seed={review.author.username}
+                    url={review.author.avatarUrl}
+                    size={32} />
                 </a>
                 <a href="/u/{review.author.username}" class="min-w-0 flex-1">
                   <p

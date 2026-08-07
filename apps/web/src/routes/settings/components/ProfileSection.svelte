@@ -1,14 +1,97 @@
 <script lang="ts">
-  import { ApiError, updateMe } from "$lib/api/client";
+  import {
+    ApiError,
+    deleteAvatar,
+    updateMe,
+    uploadAvatar,
+  } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
+  import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
+  import { shareProfile as shareProfileNative } from "$lib/share-profile";
   import Switch from "$lib/components/Switch.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import type { UploadAvatarRequestDto } from "@loomkeep/shared";
+
+  // Uploaded avatars are stored as-is server-side (no processing there), so
+  // the client resizes to a square before sending — keeps the request small
+  // and every avatar the same aspect ratio regardless of the source photo.
+  const AVATAR_SIZE = 512;
+
+  let avatarInput: HTMLInputElement | undefined = $state();
+  let avatarStatus = $state<"idle" | "saving" | "error">("idle");
+  let avatarError = $state("");
+
+  async function resizeToSquare(file: File): Promise<{
+    mimeType: string;
+    data: string;
+  }> {
+    const bitmap = await createImageBitmap(file);
+    const side = Math.min(bitmap.width, bitmap.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas non supporté");
+
+    // Center-crop to a square, then scale down to AVATAR_SIZE.
+    ctx.drawImage(
+      bitmap,
+      (bitmap.width - side) / 2,
+      (bitmap.height - side) / 2,
+      side,
+      side,
+      0,
+      0,
+      AVATAR_SIZE,
+      AVATAR_SIZE,
+    );
+
+    const dataUrl = canvas.toDataURL("image/webp", 0.85);
+    const [header, data] = dataUrl.split(",");
+    const mimeType = header.match(/data:(.*);base64/)?.[1] ?? "image/png";
+    return { mimeType, data };
+  }
+
+  async function onAvatarSelected(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    avatarStatus = "saving";
+    avatarError = "";
+
+    try {
+      const { mimeType, data } = await resizeToSquare(file);
+      await uploadAvatar({
+        mimeType: mimeType as UploadAvatarRequestDto["mimeType"],
+        data,
+      });
+      avatarStatus = "idle";
+    } catch (err) {
+      avatarStatus = "error";
+      avatarError =
+        err instanceof ApiError ? err.message : "Envoi de l'image impossible";
+    } finally {
+      if (avatarInput) avatarInput.value = "";
+    }
+  }
+
+  async function removeAvatar() {
+    avatarStatus = "saving";
+    avatarError = "";
+    try {
+      await deleteAvatar();
+      avatarStatus = "idle";
+    } catch (err) {
+      avatarStatus = "error";
+      avatarError =
+        err instanceof ApiError ? err.message : "Suppression impossible";
+    }
+  }
 
   let displayNameInput = $state(auth.user?.displayName ?? "");
   let displayNameStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
   let displayNameError = $state("");
-  let copied = $state(false);
 
   async function saveDisplayName() {
     const value = displayNameInput.trim();
@@ -101,18 +184,54 @@
     }
   }
 
+  let shareModalOpen = $state(false);
+
   async function shareProfile() {
     if (!auth.user) return;
-    const url = `${window.location.origin}/u/${auth.user.username}`;
-    await navigator.clipboard.writeText(url);
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
+    const handled = await shareProfileNative(
+      auth.user.username,
+      auth.user.displayName,
+    );
+    if (!handled) shareModalOpen = true;
   }
 </script>
 
 {#if auth.user}
   <section class="card mb-5 p-5 md:p-6">
     <h2 class="font-display mb-4 text-lg font-bold">Profil</h2>
+
+    <div class="mb-5 flex items-center gap-4">
+      <Avatar seed={auth.user.username} url={auth.user.avatarUrl} size={72} />
+      <div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            class="btn btn-ghost btn-sm"
+            disabled={avatarStatus === "saving"}
+            onclick={() => avatarInput?.click()}>
+            <Icon name="edit" class="h-4 w-4" />
+            Changer la photo
+          </button>
+          {#if auth.user.avatarUrl}
+            <button
+              class="btn btn-ghost btn-sm"
+              disabled={avatarStatus === "saving"}
+              onclick={removeAvatar}>
+              <Icon name="trash" class="h-4 w-4" />
+              Retirer
+            </button>
+          {/if}
+        </div>
+        <input
+          bind:this={avatarInput}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          class="hidden"
+          onchange={onAvatarSelected} />
+        {#if avatarStatus === "error"}
+          <p class="text-danger mt-1.5 text-xs">{avatarError}</p>
+        {/if}
+      </div>
+    </div>
 
     <label class="block max-w-xs">
       <span class="mb-1.5 block text-sm font-semibold">Nom affiché</span>
@@ -208,10 +327,22 @@
         Il n'y a pas encore d'annuaire public — partagez le lien de votre profil
         pour que d'autres puissent vous suivre.
       </p>
-      <button class="btn btn-ghost" onclick={shareProfile}>
-        <Icon name={copied ? "check" : "users"} class="h-4 w-4" />
-        {copied ? "Lien copié" : "Partager mon profil"}
-      </button>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn btn-ghost" onclick={shareProfile}>
+          <Icon name="share" class="h-4 w-4" />
+          Partager mon profil
+        </button>
+        <button class="btn btn-ghost" onclick={() => (shareModalOpen = true)}>
+          <Icon name="qr-code" class="h-4 w-4" />
+          QR code
+        </button>
+      </div>
     </div>
   </section>
+{/if}
+
+{#if shareModalOpen && auth.user}
+  <ShareProfileModal
+    username={auth.user.username}
+    onclose={() => (shareModalOpen = false)} />
 {/if}

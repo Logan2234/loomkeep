@@ -276,6 +276,7 @@ export interface AdminUserDto {
   email: string;
   username: string;
   displayName: string;
+  avatarUrl: string | null;
   emailVerified: boolean;
   role: Role;
   createdAt: string;

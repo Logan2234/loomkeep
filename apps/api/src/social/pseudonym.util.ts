@@ -42,6 +42,7 @@ export function anonymizeAuthor(
     ...author,
     username: "",
     displayName: derivePseudonym(author.id, targetType, targetId),
+    avatarUrl: null,
     anonymized: true,
   };
 }

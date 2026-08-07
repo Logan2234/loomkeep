@@ -46,4 +46,6 @@ export type IconName =
   | "grip"
   | "edit"
   | "dots-horizontal"
-  | "dots-vertical";
+  | "dots-vertical"
+  | "share"
+  | "qr-code";

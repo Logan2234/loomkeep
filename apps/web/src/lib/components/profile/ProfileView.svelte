@@ -23,9 +23,11 @@
   import Modal from "$lib/components/Modal.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
+  import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
   import StreakBadge from "$lib/components/StreakBadge.svelte";
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { shareProfile as shareProfileNative } from "$lib/share-profile";
   import type {
     ListDto,
     MyListDto,
@@ -226,6 +228,17 @@
     await goto("/login");
   }
 
+  let shareModalOpen = $state(false);
+
+  async function share() {
+    if (!profile) return;
+    const handled = await shareProfileNative(
+      profile.username,
+      profile.displayName,
+    );
+    if (!handled) shareModalOpen = true;
+  }
+
   // Followers/following modal, opened from the counts below.
   let connectionsKind = $state<"followers" | "following" | null>(null);
   let connections = $state<UserSummaryDto[]>([]);
@@ -270,7 +283,7 @@
     <section class="card flex flex-col items-center gap-4 p-8 text-center">
       <div class="relative">
         <div class="blur-[6px] select-none" aria-hidden="true">
-          <Avatar seed={profile.username} size={88} />
+          <Avatar seed={profile.username} url={profile.avatarUrl} size={88} />
         </div>
         <div
           class="absolute inset-0 flex items-center justify-center"
@@ -316,7 +329,7 @@
           class="shrink-0 cursor-zoom-in"
           aria-label="Agrandir l'avatar"
           onclick={() => (avatarZoomed = true)}>
-          <Avatar seed={profile.username} size={80} />
+          <Avatar seed={profile.username} url={profile.avatarUrl} size={80} />
         </button>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -414,6 +427,15 @@
           </div>
         {:else if rel?.isSelf}
           <div class="flex shrink-0 gap-2">
+            <button class="btn btn-ghost" onclick={share}>
+              <Icon name="share" class="h-4 w-4" /> Partager
+            </button>
+            <button
+              class="btn btn-ghost"
+              aria-label="QR code du profil"
+              onclick={() => (shareModalOpen = true)}>
+              <Icon name="qr-code" class="h-4 w-4" />
+            </button>
             <a href="/settings" class="btn btn-ghost">
               <Icon name="gear" class="h-4 w-4" /> Paramètres
             </a>
@@ -658,7 +680,7 @@
               href={`/u/${u.username}`}
               class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2"
               onclick={() => (connectionsKind = null)}>
-              <Avatar seed={u.username} size={36} />
+              <Avatar seed={u.username} url={u.avatarUrl} size={36} />
               <span class="min-w-0">
                 <span class="block truncate text-sm font-semibold"
                   >{u.displayName}</span>
@@ -684,9 +706,16 @@
     onCancel={() => (confirmBlock = false)} />
 {/if}
 
+{#if shareModalOpen && profile}
+  <ShareProfileModal
+    username={profile.username}
+    onclose={() => (shareModalOpen = false)} />
+{/if}
+
 {#if avatarZoomed && profile}
   <AvatarLightbox
     seed={profile.username}
+    url={profile.avatarUrl}
     onClose={() => (avatarZoomed = false)} />
 {/if}
 

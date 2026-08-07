@@ -66,6 +66,12 @@ export interface UserDto {
   profileAccess: ProfileAccess;
   /** ISO datetime the account was created — shown as "member since". */
   createdAt: string;
+  /**
+   * Path (relative to the API base) to the uploaded profile picture, or null
+   * if the user hasn't set one — the client falls back to the generated
+   * identicon. Includes a `?v=` cache-buster tied to the last upload.
+   */
+  avatarUrl: string | null;
 }
 
 export interface UpdateUserRequestDto {
@@ -95,6 +101,12 @@ export interface UpdateUsernameRequestDto {
 
 export interface UsernameAvailabilityDto {
   available: boolean;
+}
+
+export interface UploadAvatarRequestDto {
+  mimeType: "image/png" | "image/jpeg" | "image/webp";
+  /** Base64, no `data:...;base64,` prefix. */
+  data: string;
 }
 
 export interface ChangeEmailRequestDto {

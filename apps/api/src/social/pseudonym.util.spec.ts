@@ -7,6 +7,7 @@ function author(over: Partial<UserSummaryDto> = {}): UserSummaryDto {
     username: "ghosty",
     displayName: "Ghosty",
     profileAccess: ProfileAccess.GHOST,
+    avatarUrl: "/users/ghost-1/avatar?v=1",
     ...over,
   };
 }
@@ -35,6 +36,11 @@ describe("anonymizeAuthor", () => {
     expect(result.anonymized).toBe(true);
     expect(result.username).toBe("");
     expect(result.displayName).toBe(derivePseudonym("ghost-1", "MEDIA", "m1"));
+  });
+
+  it("strips the real avatar too — a photo would deanonymize the Figurant", () => {
+    const result = anonymizeAuthor(author(), "viewer-1", "MEDIA", "m1");
+    expect(result.avatarUrl).toBeNull();
   });
 
   it("is a no-op for a non-GHOST author", () => {

@@ -333,6 +333,13 @@ model User {
   emailVerified     Boolean   @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
   bio               String?
+  // Profile picture, stored in-row (not on disk) so it rides along with
+  // pg_dump backups like everything else. avatarMimeType/avatarUpdatedAt are
+  // null together with avatar; avatarUpdatedAt also cache-busts the public
+  // GET /users/:id/avatar URL.
+  avatar            Bytes?
+  avatarMimeType    String?
+  avatarUpdatedAt   DateTime?
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.

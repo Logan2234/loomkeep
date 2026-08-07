@@ -35,6 +35,7 @@ import { ReportService } from "../reports/report.service";
 import { ReviewService } from "../reviews/review.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { FollowService } from "../social/follow.service";
+import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
@@ -114,6 +115,7 @@ export class AdminUsersController {
         email: u.email,
         username: u.username,
         displayName: u.displayName,
+        avatarUrl: avatarUrl(u),
         emailVerified: u.emailVerified,
         role: u.role,
         createdAt: u.createdAt.toISOString(),

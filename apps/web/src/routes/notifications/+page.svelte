@@ -78,7 +78,10 @@
         {#each requests as req (req.id)}
           <li class="card flex items-center gap-3 p-3">
             <a href="/u/{req.user.username}">
-              <Avatar seed={req.user.username} size={40} />
+              <Avatar
+                seed={req.user.username}
+                url={req.user.avatarUrl}
+                size={40} />
             </a>
             <div class="min-w-0 flex-1">
               <a

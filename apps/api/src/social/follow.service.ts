@@ -12,6 +12,7 @@ import {
 } from "@loomkeep/shared";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { toUserSummaryDto } from "../users/avatar.util";
 import { VisibilityService } from "./visibility.service";
 
 const USER_SUMMARY_SELECT = {
@@ -19,6 +20,7 @@ const USER_SUMMARY_SELECT = {
   username: true,
   displayName: true,
   profileAccess: true,
+  avatarUpdatedAt: true,
 } as const;
 
 @Injectable()
@@ -275,7 +277,7 @@ export class FollowService {
     return rows.map((r) => ({
       id: r.id,
       createdAt: r.createdAt.toISOString(),
-      user: r.follower as UserSummaryDto,
+      user: toUserSummaryDto(r.follower),
     }));
   }
 
@@ -286,7 +288,7 @@ export class FollowService {
       orderBy: { createdAt: "desc" },
       select: { follower: { select: USER_SUMMARY_SELECT } },
     });
-    return rows.map((r) => r.follower as UserSummaryDto);
+    return rows.map((r) => toUserSummaryDto(r.follower));
   }
 
   /** Users a user follows (accepted). */
@@ -296,6 +298,6 @@ export class FollowService {
       orderBy: { createdAt: "desc" },
       select: { followee: { select: USER_SUMMARY_SELECT } },
     });
-    return rows.map((r) => r.followee as UserSummaryDto);
+    return rows.map((r) => toUserSummaryDto(r.followee));
   }
 }

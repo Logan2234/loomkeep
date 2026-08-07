@@ -21,6 +21,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { resolveOwnVisibility } from "../social/visibility.util";
 import { VisibilityService } from "../social/visibility.service";
+import { toUserSummaryDto } from "../users/avatar.util";
 import type { AddListItemBody } from "./dto/add-list-item.dto";
 import type { CreateListBody } from "./dto/create-list.dto";
 import type { UpdateListBody } from "./dto/update-list.dto";
@@ -30,6 +31,7 @@ const AUTHOR_SELECT = {
   username: true,
   displayName: true,
   profileAccess: true,
+  avatarUpdatedAt: true,
 } as const;
 
 /** How many items feed the collage preview (1 = full cover, 2-4 = quadrants). */
@@ -76,10 +78,11 @@ export class ListService {
   }
 
   private async author(userId: string): Promise<UserSummaryDto> {
-    return this.prisma.user.findUniqueOrThrow({
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: AUTHOR_SELECT,
-    }) as Promise<UserSummaryDto>;
+    });
+    return toUserSummaryDto(user);
   }
 
   /** Creates a list. Not social-gated — managing your own lists always works. */

@@ -4,6 +4,7 @@ import type { ActivityType, Domain } from "../enums";
 export interface ActivityActorDto {
   username: string;
   displayName: string;
+  avatarUrl: string | null;
 }
 
 /** Granularity of an activity event's target, per the feed matrix. */
