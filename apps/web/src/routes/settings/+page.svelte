@@ -28,7 +28,7 @@
   // below each section component. `social` entries hide when the flag is off.
   const SECTIONS: { id: string; label: string; social?: boolean }[] = [
     { id: "securite", label: "Sécurité" },
-    { id: "profil", label: "Profil" },
+    { id: "contenu", label: "Contenu" },
     { id: "confidentialite", label: "Confidentialité", social: true },
     { id: "domaines", label: "Domaines" },
     { id: "communications", label: "Communications" },
@@ -122,7 +122,7 @@
         <div id="securite" data-section-id="securite">
           <SecuritySection />
         </div>
-        <div id="profil" data-section-id="profil">
+        <div id="contenu" data-section-id="contenu">
           <ProfileSection />
         </div>
         <div id="confidentialite" data-section-id="confidentialite">

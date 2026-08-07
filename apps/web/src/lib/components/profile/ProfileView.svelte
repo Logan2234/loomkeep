@@ -17,6 +17,8 @@
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
+  import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
+  import EditProfileModal from "$lib/components/EditProfileModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
@@ -231,6 +233,17 @@
 
   let shareModalOpen = $state(false);
   let scanModalOpen = $state(false);
+  let avatarModalOpen = $state(false);
+  let editProfileModalOpen = $state(false);
+
+  function applyAvatar(url: string | null) {
+    if (profile) profile = { ...profile, avatarUrl: url };
+  }
+
+  function applyProfileEdit(user: { displayName: string; bio: string | null }) {
+    if (profile)
+      profile = { ...profile, displayName: user.displayName, bio: user.bio };
+  }
 
   // Followers/following modal, opened from the counts below.
   let connectionsKind = $state<"followers" | "following" | null>(null);
@@ -317,13 +330,24 @@
     <!-- Billing block: the person credited, handle set like a film credit. -->
     <section class="card p-5 md:p-6">
       <div class="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <button
-          type="button"
-          class="shrink-0 cursor-zoom-in"
-          aria-label="Agrandir l'avatar"
-          onclick={() => (avatarZoomed = true)}>
-          <Avatar seed={profile.username} url={profile.avatarUrl} size={80} />
-        </button>
+        <div class="relative shrink-0">
+          <button
+            type="button"
+            class="cursor-zoom-in"
+            aria-label="Agrandir l'avatar"
+            onclick={() => (avatarZoomed = true)}>
+            <Avatar seed={profile.username} url={profile.avatarUrl} size={80} />
+          </button>
+          {#if rel?.isSelf}
+            <button
+              type="button"
+              class="bg-accent text-accent-fg border-surface absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full border-2"
+              aria-label="Changer la photo de profil"
+              onclick={() => (avatarModalOpen = true)}>
+              <Icon name="camera" class="h-3.5 w-3.5" />
+            </button>
+          {/if}
+        </div>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h1
@@ -334,9 +358,17 @@
               days={profile.activityStats.visible
                 ? profile.activityStats.streakDays
                 : undefined} />
-            {#if rel?.isFriend && !rel.isSelf}
+            {#if rel?.isSelf}
+              <button
+                type="button"
+                class="text-dim hover:text-fg hover:bg-surface-2 rounded-full p-1"
+                aria-label="Modifier le profil"
+                onclick={() => (editProfileModalOpen = true)}>
+                <Icon name="edit" class="h-3.5 w-3.5" />
+              </button>
+            {:else if rel?.isFriend}
               <span class="chip chip-on !py-1 text-xs">Amis</span>
-            {:else if rel?.followsYou && !rel.isSelf}
+            {:else if rel?.followsYou}
               <span class="chip !py-1 text-xs">Vous suit</span>
             {/if}
           </div>
@@ -701,6 +733,22 @@
 
 {#if scanModalOpen}
   <ScanProfileModal onclose={() => (scanModalOpen = false)} />
+{/if}
+
+{#if avatarModalOpen && profile}
+  <EditAvatarModal
+    seed={profile.username}
+    avatarUrl={profile.avatarUrl}
+    onSaved={applyAvatar}
+    onclose={() => (avatarModalOpen = false)} />
+{/if}
+
+{#if editProfileModalOpen && profile}
+  <EditProfileModal
+    displayName={profile.displayName}
+    bio={profile.bio}
+    onSaved={applyProfileEdit}
+    onclose={() => (editProfileModalOpen = false)} />
 {/if}
 
 {#if avatarZoomed && profile}
