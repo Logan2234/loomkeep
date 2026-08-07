@@ -7,7 +7,7 @@
   import { goto } from "$app/navigation";
   import QrScanner from "qr-scanner";
   import WorkerPath from "qr-scanner/qr-scanner-worker.min.js?url";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
@@ -42,8 +42,14 @@
       return;
     }
     notice = "";
+    // Stop the camera and let the modal actually unmount (`onclose` just
+    // flips a flag in the parent — without waiting a tick, `goto()` could
+    // start the same-route navigation to /u/[username] before Svelte has
+    // applied that DOM removal, leaving the drawer/dialog visibly stuck).
     await scanner?.stop();
+    scanner?.destroy();
     onclose();
+    await tick();
     await goto(`/u/${username}`);
   }
 

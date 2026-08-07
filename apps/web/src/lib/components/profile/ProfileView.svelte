@@ -15,6 +15,7 @@
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
+  import Banner from "$lib/components/Banner.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
@@ -39,10 +40,14 @@
     UserSummaryDto,
   } from "@loomkeep/shared";
 
-  // Shared body for both /u/[username] (any profile) and /profile (the
-  // current user's own, via the isSelf branch below — same data, same card,
-  // just the extra self-management actions).
-  let { username }: { username: string } = $props();
+  // Shared body for both /u/[username] (any profile, including your own —
+  // read-only there even for yourself) and /profile (your own, with the
+  // self-management actions). Same data either way; `publicView` is what
+  // tells them apart when `rel.isSelf` is true.
+  let {
+    username,
+    publicView = false,
+  }: { username: string; publicView?: boolean } = $props();
 
   const DOMAIN_LABEL: Record<string, string> = {
     MEDIA: "Vidéo",
@@ -81,6 +86,10 @@
 
   let rel = $derived<RelationshipDto | null>(profile?.relationship ?? null);
 
+  // True only on /profile viewing yourself — /u/[username] never shows
+  // self-management, even for your own username (see `publicView`).
+  let selfManage = $derived(rel?.isSelf && !publicView);
+
   // Shared/public lists visible to the viewer — social-gated (own-visibility
   // per list, see ListService.listForUser), so only fetched when enabled.
   let lists = $state<MyListDto[]>([]);
@@ -102,7 +111,7 @@
     | { kind: "create"; key: "create" }
     | { kind: "list"; key: string; list: MyListDto };
   const listTiles = $derived<ListTile[]>(
-    rel?.isSelf
+    selfManage
       ? [
           ...lists.map((l): ListTile => ({ kind: "list", key: l.id, list: l })),
           { kind: "create", key: "create" },
@@ -327,13 +336,19 @@
       {/if}
     </section>
   {:else}
+    {#if rel?.isSelf && publicView}
+      <Banner variant="info" class="mb-4">
+        Vue publique de votre profil — c'est ce que les autres voient.
+      </Banner>
+    {/if}
+
     <!-- Billing block: the person credited, handle set like a film credit. -->
     <section class="card relative p-5 md:p-6">
       <!-- Reserve room on wider screens so the name/handle/meta text (which
            sits beside the avatar there, not below it) never runs under the
            icon cluster floating top-right — see below. -->
       <div
-        class="flex flex-col gap-5 sm:flex-row sm:items-start {rel?.isSelf
+        class="flex flex-col gap-5 sm:flex-row sm:items-start {selfManage
           ? 'sm:pr-40'
           : ''}">
         <div class="relative shrink-0 self-start">
@@ -344,7 +359,7 @@
             onclick={() => (avatarZoomed = true)}>
             <Avatar seed={profile.username} url={profile.avatarUrl} size={80} />
           </button>
-          {#if rel?.isSelf}
+          {#if selfManage}
             <button
               type="button"
               class="bg-accent text-accent-fg border-surface absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full border-2"
@@ -364,7 +379,7 @@
               days={profile.activityStats.visible
                 ? profile.activityStats.streakDays
                 : undefined} />
-            {#if rel?.isSelf}
+            {#if selfManage}
               <button
                 type="button"
                 class="text-dim hover:text-fg hover:bg-surface-2 rounded-full p-1"
@@ -381,7 +396,7 @@
           <p
             class="text-dim mt-0.5 flex flex-wrap items-center gap-x-2 text-sm">
             <span class="timecode">@{profile.username}</span>
-            {#if rel?.isSelf && auth.user}
+            {#if selfManage && auth.user}
               <span aria-hidden="true">·</span>
               <span>{auth.user.email}</span>
             {/if}
@@ -458,7 +473,16 @@
             </button>
           {/if}
         </div>
-      {:else if rel?.isSelf}
+      {:else if rel?.isSelf && publicView}
+        <!-- Your own profile, viewed the way anyone else sees it — no
+             self-management here, just a way back to the real thing. -->
+        <a
+          href="/profile"
+          class="border-border text-dim hover:bg-surface-2 hover:text-fg absolute top-5 right-5 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold md:top-6 md:right-6">
+          <Icon name="chevron-left" class="h-3.5 w-3.5" />
+          Revenir à mon profil
+        </a>
+      {:else if selfManage}
         <!-- Icon-only, top-right of the card, flush with its own padding —
              lighter than a labelled button row/grid. Scanning is dropped
              past sm: it's a "point your phone at theirs" action that doesn't
@@ -503,7 +527,7 @@
     <SectionLabel label="Bibliothèque" class="mt-8 mb-3" />
     <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {#each profile.domains as d (d.domain)}
-        {@const href = rel?.isSelf ? DOMAIN_HREF[d.domain] : undefined}
+        {@const href = selfManage ? DOMAIN_HREF[d.domain] : undefined}
         <svelte:element
           this={href ? "a" : "div"}
           {href}
@@ -629,7 +653,7 @@
       <section class="mt-10">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="font-display text-xl font-bold">Listes</h2>
-          {#if rel?.isSelf && lists.length > 0}
+          {#if selfManage && lists.length > 0}
             <a
               href="/lists"
               class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold md:hidden">
@@ -639,7 +663,7 @@
           {/if}
         </div>
         <div class="flex items-stretch gap-4">
-          {#if rel?.isSelf && lists.length > 0}
+          {#if selfManage && lists.length > 0}
             <a href="/lists" class="mt-2 hidden w-28 shrink-0 sm:w-32 md:block">
               <div
                 class="card hover:border-accent text-dim hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 transition-colors">
@@ -684,7 +708,7 @@
       </section>
     {/if}
 
-    {#if rel?.isSelf}
+    {#if selfManage}
       <ProfileReviews />
     {/if}
 

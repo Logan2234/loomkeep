@@ -5,4 +5,4 @@
   let username = $derived(page.params.username ?? "");
 </script>
 
-<ProfileView {username} />
+<ProfileView {username} publicView />
