@@ -163,6 +163,23 @@ Adds [Portainer](https://www.portainer.io/), reachable at
 `portainer.<DOMAIN>` via Caddy — a web UI for containers/images/volumes
 without SSH. Gated by Portainer's own admin login (set on first visit).
 
+### Error tracking (optional)
+
+```sh
+# set GLITCHTIP_SECRET_KEY and GLITCHTIP_DB_PASSWORD in .env first
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.glitchtip.yml up -d --build
+```
+
+Adds [GlitchTip](https://glitchtip.com/) (Sentry-API-compatible, self-hosted
+error tracker), reachable at `glitchtip.<DOMAIN>` via Caddy. Where the log
+search above shows every log line, GlitchTip groups exceptions by
+fingerprint into a single "issue" with an occurrence count, and can email
+you the moment a *new* error type first appears rather than waiting for you
+to go looking. Gated by GlitchTip's own login (the first visitor sets up the
+org). Runs its own dedicated Postgres + Valkey, separate from the app's
+database. Email alerts are off out of the box — see the
+`GLITCHTIP_EMAIL_URL` comment in `.env.example` to enable them.
+
 ## Development
 
 ```sh

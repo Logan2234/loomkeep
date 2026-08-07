@@ -1,0 +1,93 @@
+# Observability Palier 3: grouped, alerted error tracking (GlitchTip — a
+# self-hostable, Sentry-API-compatible error tracker). Add on top of the
+# base compose + whichever deployment override you're using:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.glitchtip.yml up -d --build
+#
+# Runs GlitchTip in `SERVER_ROLE: all_in_one` mode (web + Celery worker +
+# beat in one container) rather than splitting them into separate services —
+# this is a low-traffic single/few-user instance, not worth the extra
+# moving parts. Gets its own dedicated postgres+valkey rather than sharing
+# the app's `db`, same reasoning as Loki/Grafana getting their own storage:
+# an add-on shouldn't share a failure domain with the app it's watching.
+#
+# Reachable at GLITCHTIP_SITE_ADDRESS (e.g. glitchtip.loomkeep.app) via
+# Caddy — see observability/glitchtip.caddy, imported by the base Caddyfile
+# only when this override is in use. Gated by GlitchTip's own login only
+# (first visit creates the org/first user), no basic auth in front — same
+# call as Grafana/Portainer.
+#
+# Config values (compose.sample.yml on glitchtip.com's own install docs):
+# https://glitchtip.com/documentation/install
+x-glitchtip-logging: &glitchtip-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-glitchtip-environment: &glitchtip-environment
+  DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:?set GLITCHTIP_DB_PASSWORD in .env}@glitchtip-postgres:5432/glitchtip
+  VALKEY_URL: redis://glitchtip-valkey:6379
+  SECRET_KEY: ${GLITCHTIP_SECRET_KEY:?set GLITCHTIP_SECRET_KEY in .env}
+  GLITCHTIP_DOMAIN: https://glitchtip.${DOMAIN:?set DOMAIN in .env}
+  # Without this, Django falls back to a wildcard ALLOWED_HOSTS (its own
+  # startup log flags this explicitly as unsafe for production). `glitchtip`
+  # (the bare service name) is included alongside the public hostname since
+  # Caddy's own healthcheck/internal requests hit the container by that name.
+  ALLOWED_HOSTS: glitchtip.${DOMAIN:?set DOMAIN in .env},glitchtip
+  # Emails (new-error/regression alerts) are off by default — GlitchTip's
+  # EMAIL_URL is parsed as a plain URL (user:pass@host), and the app's own
+  # Brevo SMTP_USER contains a literal "@", which breaks that parsing
+  # unescaped. Not worth auto-deriving; set GLITCHTIP_EMAIL_URL yourself
+  # (percent-encoded) in .env if you want real delivery — see .env.example.
+  EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
+  DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@example.com}
+  ENABLE_ADMIN: "False"
+
+services:
+  glitchtip-postgres:
+    image: postgres:18.4-alpine
+    restart: unless-stopped
+    logging: *glitchtip-logging
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:?set GLITCHTIP_DB_PASSWORD in .env}
+      POSTGRES_DB: glitchtip
+    volumes:
+      # Parent-dir mount, same reasoning as the app's own `db` service in
+      # docker-compose.yml: postgres 18+'s image refuses a volume mounted
+      # directly at .../data.
+      - glitchtip-pg-data:/var/lib/postgresql
+
+  glitchtip-valkey:
+    image: valkey/valkey:9.0.3-alpine
+    restart: unless-stopped
+    logging: *glitchtip-logging
+
+  glitchtip:
+    image: glitchtip/glitchtip:6.2.3
+    restart: unless-stopped
+    logging: *glitchtip-logging
+    environment:
+      <<: *glitchtip-environment
+      SERVER_ROLE: all_in_one
+    volumes:
+      - glitchtip-uploads:/code/uploads
+    depends_on:
+      - glitchtip-postgres
+      - glitchtip-valkey
+
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml
+  # / docker-compose.ngrok.yml: adds the GlitchTip site block + its domain,
+  # without redeclaring the whole service.
+  caddy:
+    environment:
+      GLITCHTIP_SITE_ADDRESS: glitchtip.${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./observability/glitchtip.caddy:/etc/caddy/sites-enabled/glitchtip.caddy:ro
+    depends_on:
+      - glitchtip
+
+volumes:
+  glitchtip-pg-data:
+  glitchtip-uploads:

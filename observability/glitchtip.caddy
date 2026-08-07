@@ -1,0 +1,13 @@
+# Public site block for GlitchTip, imported by the base Caddyfile — only
+# mounted when docker-compose.glitchtip.yml is in use (it sets
+# GLITCHTIP_SITE_ADDRESS on the caddy service and mounts this file into
+# /etc/caddy/sites-enabled/). Same automatic Let's Encrypt handling as the
+# main site: Caddy requests and renews its own certificate for this domain
+# too, independently.
+#
+# No basic auth in front of this on purpose — GlitchTip's own login (the
+# first visitor creates the org/first user) is the only gate, same call as
+# Grafana/Portainer.
+{$GLITCHTIP_SITE_ADDRESS} {
+	reverse_proxy glitchtip:8000
+}

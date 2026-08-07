@@ -149,11 +149,18 @@ gated by Grafana's own login only, no basic auth — Logan's call) and via
 `127.0.0.1:3001` as an SSH-tunnel fallback — see README "Logs and
 monitoring". Promtail is deprecated upstream (merged into Grafana Alloy) and
 is planned to be replaced by it, likely taking node_exporter/postgres_exporter's
-job too at the same time. **Palier 3** (GlitchTip error grouping) is still
-deliberately deferred — see the `loomkeep-observability-plan` memory for that
-reasoning. A separate optional override, `docker-compose.portainer.yml`,
-adds a Docker management UI at `portainer.<DOMAIN>` (same public-with-own-login
-pattern, no basic auth).
+job too at the same time. **Palier 3** (`docker-compose.glitchtip.yml`) adds
+GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in
+`SERVER_ROLE: all_in_one` mode with its own dedicated Postgres + Valkey
+(deliberately not sharing the app's `db`, same reasoning as Loki/Grafana's
+own storage). Reachable at `glitchtip.<DOMAIN>`, same
+public-with-own-login-no-basic-auth pattern as Grafana/Portainer. Email
+alerts (new-error/regression notifications) are opt-in via
+`GLITCHTIP_EMAIL_URL` — not auto-derived from the app's own SMTP config
+because GlitchTip's `EMAIL_URL` is parsed as a plain URL and the app's Brevo
+`SMTP_USER` contains a literal `@` that breaks that unescaped. A separate
+optional override, `docker-compose.portainer.yml`, adds a Docker management
+UI at `portainer.<DOMAIN>` (same pattern).
 
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
