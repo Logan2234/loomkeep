@@ -1,6 +1,7 @@
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
+import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -12,7 +13,9 @@ async function bootstrap() {
     // Fastify limit is too small for a full watch history.
     new FastifyAdapter({ bodyLimit: 25 * 1024 * 1024 }),
     {
-      logger: ["error", "warn", "log", "fatal", "debug", "verbose"],
+      // Nest's built-in console logger is replaced by nestjs-pino below
+      // (structured JSON, see common/logger.config.ts) — bufferLogs holds
+      // every log emitted before app.useLogger() attaches it.
       httpsOptions:
         process.env.API_TLS_KEY && process.env.API_TLS_CERT
           ? {
@@ -45,6 +48,7 @@ async function bootstrap() {
     },
   );
 
+  app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 

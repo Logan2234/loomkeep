@@ -119,6 +119,27 @@ validates every importer in the lockfile). The api image runs
 `prisma migrate deploy` at boot; the web runtime image ships only the
 self-contained adapter-node `build/` output.
 
+**Logging (Observability Palier 1):** `nestjs-pino` (`main.ts` /
+`common/logger.config.ts`) replaces Nest's console logger with structured
+JSON — pretty-printed only when `NODE_ENV=development` (never true inside
+Docker, so the built image always logs JSON; same `isDev` check `main.ts`
+already used for gating Swagger). Level via `LOG_LEVEL`
+(fatal/error/warn/info/debug/trace/silent), default debug in dev / info
+otherwise. `Authorization`/`Cookie`/`Set-Cookie` are redacted; request bodies
+are never logged (pino-http's default `req` serializer already excludes them
+— don't add a custom one that includes it). A global `AllExceptionsFilter`
+(`common/all-exceptions.filter.ts`, `APP_FILTER`) logs every thrown
+exception — 5xx at "error" with the stack, 4xx (`NotFoundException`,
+`ConflictException`, etc. — the app rejecting a request on purpose) at "warn"
+so real bugs aren't buried — then always delegates to
+`BaseExceptionFilter.catch()`, so the response sent to the client is
+completely unchanged. Docker log rotation (`max-size: 10m`, `max-file: 5`)
+is set per service in `docker-compose.yml`/`docker-compose.prod.yml`/
+`docker-compose.ngrok.yml` (duplicated by hand in the two overrides — Compose
+doesn't merge YAML anchors across `-f` files). Paliers 2 (Loki/Grafana log
+search) and 3 (GlitchTip error grouping) are deliberately deferred — see the
+`loomkeep-observability-plan` memory, not this file, for that reasoning.
+
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
 `GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the

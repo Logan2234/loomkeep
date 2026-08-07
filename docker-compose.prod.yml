@@ -22,6 +22,14 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    # Same rotation as the base compose's services — Compose doesn't merge
+    # YAML anchors across -f files, so this is a deliberate duplicate of
+    # docker-compose.yml's `x-logging`, not drift.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     depends_on:
       - api
       - web

@@ -1,7 +1,17 @@
+# No log-shipping stack yet (Observability Palier 1 — see the memory note
+# for the deferred Palier 2 Loki/Grafana plan) — bound each service's Docker
+# log driver instead, so a chatty container can't slowly fill the VPS disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-loomkeep}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -23,6 +33,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
@@ -61,6 +72,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       - api
     environment:
