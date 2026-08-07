@@ -197,6 +197,90 @@ only — no performance tracing on the web side, no session replay (GlitchTip
 doesn't implement the replay protocol, so those events would just be
 dropped). See `apps/api/src/instrument.ts` and `apps/web/src/hooks.client.ts`.
 
+### Landing page (optional)
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.homepage.yml up -d --build
+```
+
+Adds [Homepage](https://gethomepage.dev/), reachable at `home.<DOMAIN>` — one
+page with a link tile for every dashboard above (Grafana, Portainer,
+GlitchTip, the app itself). Static config only (`homepage/services.yaml`),
+no Docker socket access. **Requires the single sign-on section below too** —
+Homepage has no login of its own and is gated entirely by Authelia's
+`forward_auth`.
+
+### Single sign-on (optional)
+
+One login for every dashboard above instead of a separate password each —
+[Authelia](https://www.authelia.com/) sits in front of Caddy and either
+gates a site directly (Homepage) or lets the app itself redirect to it via
+OIDC (Grafana, GlitchTip, Portainer — visiting a second app after the first
+just bounces through silently, no second password).
+
+1. Copy the two templates and fill in every `REPLACE_ME` (never share the
+   plaintext values in chat, including with Claude):
+
+   ```sh
+   cp authelia/configuration.yml.example authelia/configuration.yml
+   cp authelia/users_database.yml.example authelia/users_database.yml
+   ```
+
+2. Generate the secrets (run each once, paste the output where the matching
+   `REPLACE_ME` says so):
+
+   ```sh
+   docker run --rm authelia/authelia:4.39.20 authelia crypto rand --length 64   # x4: reset-password jwt_secret, session secret, storage encryption_key, oidc hmac_secret
+   docker run --rm authelia/authelia:4.39.20 authelia crypto pair rsa generate -d .   # writes private.pem — paste its full contents (indented) into the oidc.jwks key
+   docker run --rm authelia/authelia:4.39.20 authelia crypto hash generate argon2 --password 'your-own-password'   # your login — never tell anyone (including Claude) the plaintext
+   ```
+
+3. For each of the three OIDC clients (grafana/glitchtip/portainer) in
+   `authelia/configuration.yml`: generate a random secret and its hash, keep
+   the plaintext somewhere safe (you'll need it in step 5/6), paste the hash
+   into `client_secret`:
+
+   ```sh
+   docker run --rm authelia/authelia:4.39.20 authelia crypto rand --length 64 --charset alphanumeric   # the plaintext
+   docker run --rm authelia/authelia:4.39.20 authelia crypto hash generate pbkdf2 --variant sha512 --password 'paste-the-plaintext-above'   # the hash, goes in configuration.yml
+   ```
+
+4. Also fill in `notifier.smtp.username`/`password` with the same values as
+   this repo's `SMTP_USER`/`SMTP_PASS` — **unlike the rest of the app,
+   Authelia hard-fails to start without working SMTP** (it's a startup
+   health check, not an optional feature — no blank-SMTP degraded mode
+   here).
+
+5. Set `GRAFANA_OIDC_CLIENT_SECRET` in `.env` to the **plaintext** secret
+   from step 3 for the `grafana` client.
+
+6. Bring the stack up, then do the two integrations that can't be done
+   through config alone:
+
+   ```sh
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.observability.yml -f docker-compose.portainer.yml -f docker-compose.glitchtip.yml up -d --build
+   ```
+
+   - **GlitchTip**: temporarily set `ENABLE_ADMIN: "True"` in
+     `docker-compose.glitchtip.yml`, redeploy, visit
+     `https://errors.<DOMAIN>/admin/socialaccount/socialapp/`, add a
+     SocialApp — Provider `OpenID Connect`, Provider ID `authelia`, Client
+     ID `glitchtip`, Secret Key = the plaintext from step 3 for the
+     `glitchtip` client, Settings
+     `{"server_url":"https://auth.<DOMAIN>/.well-known/openid-configuration"}`.
+     Then set `ENABLE_ADMIN` back to `"False"` and redeploy again.
+   - **Portainer**: Settings → Authentication → OAuth → Provider `Custom`,
+     Client ID `portainer`, Client Secret = the plaintext from step 3 for
+     the `portainer` client, Authorization URL
+     `https://auth.<DOMAIN>/api/oidc/authorization`, Access Token URL
+     `https://auth.<DOMAIN>/api/oidc/token`, Resource URL
+     `https://auth.<DOMAIN>/api/oidc/userinfo`, Redirect URL
+     `https://portainer.<DOMAIN>`, User Identifier `preferred_username`,
+     Scopes `openid profile email`.
+
+Grafana needs no manual step — it's fully wired via env vars in
+`docker-compose.observability.yml`.
+
 ## Development
 
 ```sh

@@ -11,6 +11,11 @@ build/
 .env.*
 !.env.example
 
+# Authelia — real config holds plaintext secrets + an RSA private key, same
+# "commit the .example, never the real file" convention as .env above.
+authelia/configuration.yml
+authelia/users_database.yml
+
 # Generated docs (prisma-erd-generator output; regenerated on prisma generate OR modules.md for NestJS modules)
 docs/*
 !docs/.gitkeep

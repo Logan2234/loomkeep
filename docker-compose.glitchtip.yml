@@ -42,7 +42,10 @@ x-glitchtip-environment: &glitchtip-environment
   # (percent-encoded) in .env if you want real delivery — see .env.example.
   EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
   DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@example.com}
-  ENABLE_ADMIN: "True"
+  # Django admin at /admin/ exposes raw DB-level access — off by default.
+  # Needs to be flipped to "True" temporarily for the one-time OIDC/SSO
+  # SocialApp setup (see docker-compose.authelia.yml), then back to "False".
+  ENABLE_ADMIN: "False"
 
 services:
   glitchtip-postgres:

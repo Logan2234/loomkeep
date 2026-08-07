@@ -1,0 +1,126 @@
+# Authelia configuration TEMPLATE — copy this to authelia/configuration.yml
+# (gitignored, real secrets go there) and fill in every REPLACE_ME. See the
+# README "Single sign-on" section for the exact commands to generate each
+# value. Domains are already filled in for loomkeep.app — change them if
+# you're self-hosting under a different domain.
+---
+theme: "dark"
+
+server:
+  address: "tcp://:9091"
+
+log:
+  level: "info"
+
+# One-time secret for password-reset emails, sent via the same Brevo SMTP as
+# the app itself (see notifier below).
+identity_validation:
+  reset_password:
+    jwt_secret: "REPLACE_ME" # authelia crypto rand --length 64
+
+totp:
+  issuer: "loomkeep.app"
+
+# File-based user database — fine for a single admin account. No LDAP, no
+# extra service to run.
+authentication_backend:
+  file:
+    path: "/config/users_database.yml"
+
+# Deny-by-default: every domain must be explicitly listed to be reachable at
+# all. auth.<domain> itself must bypass (it's the login page — gating it
+# behind itself would be a lockout). Add a rule here for every new
+# forward_auth-protected site (e.g. home.<domain> for Homepage); apps using
+# OIDC directly (Grafana/GlitchTip/Portainer) don't need a rule here at all
+# — they're not behind Caddy's forward_auth, they call Authelia themselves.
+access_control:
+  default_policy: "deny"
+  rules:
+    - domain: "auth.loomkeep.app"
+      policy: "bypass"
+    - domain: "home.loomkeep.app"
+      policy: "one_factor"
+
+# No session.redis block — in-memory session storage. This is a
+# single-instance deployment (one Authelia container, not a cluster), so
+# Redis would only buy HA we don't need; the one downside is that a
+# container restart logs everyone out (rare, single admin user, just log
+# back in).
+session:
+  secret: "REPLACE_ME" # authelia crypto rand --length 64
+  expiration: "1h"
+  cookies:
+    - domain: "loomkeep.app"
+      authelia_url: "https://auth.loomkeep.app"
+      default_redirection_url: "https://home.loomkeep.app"
+
+# SQLite — fine at this scale, avoids a third dedicated Postgres instance
+# (GlitchTip already has its own, separate from the app's).
+storage:
+  encryption_key: "REPLACE_ME" # authelia crypto rand --length 64
+  local:
+    path: "/config/data/db.sqlite3"
+
+# Reuses the app's own Brevo SMTP relay — same account, different sender
+# address so alerts are distinguishable at a glance.
+notifier:
+  smtp:
+    address: "submission://smtp-relay.brevo.com:587"
+    sender: "Loomkeep Auth <noreply@loomkeep.app>"
+    username: "REPLACE_ME" # same value as this repo's SMTP_USER
+    password: "REPLACE_ME" # same value as this repo's SMTP_PASS
+
+# True SSO for the three apps below: each one redirects to Authelia on
+# login (Grafana via env vars — see docker-compose.observability.yml;
+# GlitchTip and Portainer need a one-time manual step in their own admin UI
+# — see the README "Single sign-on" section for the exact values to paste).
+# Once logged into Authelia, visiting a second app just bounces through
+# this redirect silently — no second password.
+identity_providers:
+  oidc:
+    hmac_secret: "REPLACE_ME" # authelia crypto rand --length 64
+    jwks:
+      - key_id: "main"
+        algorithm: "RS256"
+        use: "sig"
+        key: |
+          REPLACE_ME
+          (paste the full PEM private key here, indented to match this
+          level — see README for the keygen command. Every line of the
+          PEM, including -----BEGIN/END PRIVATE KEY-----, goes here.)
+    clients:
+      - client_id: "grafana"
+        client_name: "Grafana"
+        client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
+        public: false
+        authorization_policy: "one_factor"
+        redirect_uris:
+          - "https://grafana.loomkeep.app/login/generic_oauth"
+        scopes: ["openid", "profile", "email"]
+        response_types: ["code"]
+        grant_types: ["authorization_code"]
+        token_endpoint_auth_method: "client_secret_basic"
+
+      - client_id: "glitchtip"
+        client_name: "GlitchTip"
+        client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
+        public: false
+        authorization_policy: "one_factor"
+        redirect_uris:
+          - "https://errors.loomkeep.app/accounts/authelia/login/callback/"
+        scopes: ["openid", "profile", "email"]
+        response_types: ["code"]
+        grant_types: ["authorization_code"]
+        token_endpoint_auth_method: "client_secret_basic"
+
+      - client_id: "portainer"
+        client_name: "Portainer"
+        client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
+        public: false
+        authorization_policy: "one_factor"
+        redirect_uris:
+          - "https://portainer.loomkeep.app"
+        scopes: ["openid", "profile", "email"]
+        response_types: ["code"]
+        grant_types: ["authorization_code"]
+        token_endpoint_auth_method: "client_secret_basic"

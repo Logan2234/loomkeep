@@ -1,0 +1,37 @@
+# Landing page aggregating every dashboard added this session (Grafana,
+# Portainer, GlitchTip, the app itself) into one set of link tiles. Add on
+# top of the base compose + whichever deployment override you're using —
+# REQUIRES docker-compose.authelia.yml too, since Homepage has no login of
+# its own and is gated entirely via Authelia's forward_auth:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.homepage.yml up -d --build
+#
+# Static config only (no Docker socket mount) — just link tiles, not live
+# auto-discovery. Keeps this add-on to exactly what it needs: read-only
+# config files, nothing with container-management privileges.
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v1.13.2
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: home.${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./homepage/services.yaml:/app/config/services.yaml:ro
+      - ./homepage/settings.yaml:/app/config/settings.yaml:ro
+
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml
+  # / docker-compose.ngrok.yml: adds the Homepage site block + its domain,
+  # without redeclaring the whole service.
+  caddy:
+    environment:
+      HOMEPAGE_SITE_ADDRESS: home.${DOMAIN:?set DOMAIN in .env}
+      AUTHELIA_URL: https://auth.${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./homepage/homepage.caddy:/etc/caddy/sites-enabled/homepage.caddy:ro
+    depends_on:
+      - homepage

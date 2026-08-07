@@ -1,0 +1,20 @@
+---
+- Loomkeep:
+    - App:
+        href: https://loomkeep.app
+        description: Series, movies, anime, games, books, music
+        icon: si-simpleicons
+
+- Observability:
+    - Grafana:
+        href: https://grafana.loomkeep.app
+        description: Logs, metrics, dashboards
+        icon: si-grafana
+    - GlitchTip:
+        href: https://errors.loomkeep.app
+        description: Error tracking
+        icon: si-sentry
+    - Portainer:
+        href: https://portainer.loomkeep.app
+        description: Docker management
+        icon: si-portainer

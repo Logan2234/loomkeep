@@ -192,6 +192,36 @@ is explicitly declined in `pnpm-workspace.yaml`'s `allowBuilds`). A separate
 optional override, `docker-compose.portainer.yml`, adds a Docker management
 UI at `portainer.<DOMAIN>` (same pattern).
 
+**cAdvisor** (`docker-compose.observability.yml`) adds per-container metrics
+(node_exporter only sees the host in aggregate) — no public port, scraped by
+Prometheus like the other exporters.
+
+**Single sign-on** (`docker-compose.authelia.yml`) is
+[Authelia](https://www.authelia.com/) — chosen over Authentik specifically
+for its footprint (single binary + SQLite, no dedicated Postgres/Redis;
+Authentik would've meant a *fourth* dedicated Postgres instance in this
+stack, disproportionate for a single-user setup). Two integration modes:
+Grafana/GlitchTip/Portainer use real OIDC (the app redirects to Authelia and
+back — true SSO, no re-login visiting a second app), while Homepage
+(`docker-compose.homepage.yml`, chosen over Dashy for being lighter and
+matching this repo's committed-YAML-config convention rather than an
+in-UI editor) has no login of its own and is gated via Caddy `forward_auth`
+instead (`homepage/homepage.caddy`). Grafana's OIDC is fully env-var driven
+(`docker-compose.observability.yml`); GlitchTip and Portainer don't support
+that and need a one-time manual step in their own admin UI after Authelia
+exists — see README "Single sign-on" for the exact values. Real secrets
+(session/storage/OIDC HMAC secrets, the RSA JWKS signing key, the user
+database) live in `authelia/configuration.yml` and
+`authelia/users_database.yml` — gitignored, copied from `*.example`
+templates, same convention as `.env`; OIDC client secrets specifically
+**must** be file-based (Authelia doesn't support environment variables for
+values inside config lists, confirmed via its own docs), which is why this
+uses gitignored real files rather than `.env` interpolation like everything
+else in this repo. **Authelia hard-fails to start without working SMTP**
+(a startup health check, not an optional degrade-gracefully feature like the
+rest of this app's SMTP integration) — reuses the same Brevo credentials as
+`SMTP_USER`/`SMTP_PASS`.
+
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
 `GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the

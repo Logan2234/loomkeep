@@ -69,6 +69,22 @@ services:
       # (secure) defaults so out-of-date warnings still show in the UI.
       GF_NEWS_NEWS_FEED_ENABLED: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
+      # Single sign-on via Authelia (see docker-compose.authelia.yml) — fully
+      # env-var configurable, unlike GlitchTip/Portainer which need one
+      # manual step in their own admin UI (see README "Single sign-on").
+      # GRAFANA_OIDC_CLIENT_SECRET is the PLAINTEXT secret (Grafana needs the
+      # real value); Authelia's own config stores only its hash.
+      GF_SERVER_ROOT_URL: https://grafana.${DOMAIN:-localhost}
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: Authelia
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: grafana
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-}
+      GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email"
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: https://auth.${DOMAIN:-localhost}/api/oidc/authorization
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: https://auth.${DOMAIN:-localhost}/api/oidc/token
+      GF_AUTH_GENERIC_OAUTH_API_URL: https://auth.${DOMAIN:-localhost}/api/oidc/userinfo
+      GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: preferred_username
+      GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
@@ -108,6 +124,21 @@ services:
       db:
         condition: service_healthy
 
+  # Per-container metrics (CPU/RAM/network/IO by container) — node_exporter
+  # only sees the host in aggregate, this is what tells you *which* service
+  # is actually using the resources. Read-only host mounts; no privileged
+  # flag needed on modern kernels (only ever required on CentOS/RHEL-family
+  # hosts with older cgroup layouts, not this project's Debian/Ubuntu VPS).
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    restart: unless-stopped
+    logging: *default-logging
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
   prometheus:
     image: prom/prometheus:v3.13.2
     restart: unless-stopped
@@ -121,6 +152,7 @@ services:
     depends_on:
       - node_exporter
       - postgres_exporter
+      - cadvisor
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml
   # / docker-compose.ngrok.yml: adds the Grafana site block + its domain,

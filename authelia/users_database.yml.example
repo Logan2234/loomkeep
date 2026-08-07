@@ -1,0 +1,16 @@
+# TEMPLATE — copy to authelia/users_database.yml (gitignored) and fill in
+# your own password hash. Generate it with your own real password (never
+# share the plaintext with anyone, including Claude):
+#
+#   docker run --rm authelia/authelia:4.39.20 authelia crypto hash generate argon2 --password 'your-password-here'
+#
+# Paste the full $argon2id$... output below.
+---
+users:
+  logan:
+    disabled: false
+    displayname: "Logan"
+    password: "REPLACE_ME"
+    email: "REPLACE_ME" # your real email — Authelia sends password-reset links here
+    groups:
+      - "admins"
