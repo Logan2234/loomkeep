@@ -346,9 +346,29 @@ export class BookLibraryService {
     );
   }
 
+  /**
+   * `BookReplay` cascades at the DB level (`onDelete: Cascade` on the entry
+   * FK), but `Review`/`Comment` are polymorphic (targetType/targetId, no FK)
+   * so they never did — same bug class as MEDIA's `deleteEntry` had before
+   * commit `0db5dc6` fixed it there.
+   */
   async deleteEntry(userId: string, entryId: string): Promise<void> {
-    await this.assertEntryOwnership(userId, entryId);
-    await this.prisma.bookEntry.delete({ where: { id: entryId } });
+    const entry = await this.assertEntryOwnership(userId, entryId);
+
+    await this.prisma.$transaction([
+      this.prisma.review.deleteMany({
+        where: { userId, targetId: entry.bookItemId },
+      }),
+      this.prisma.comment.updateMany({
+        where: {
+          authorId: userId,
+          targetId: entry.bookItemId,
+          deletedAt: null,
+        },
+        data: { text: null, deletedAt: new Date() },
+      }),
+      this.prisma.bookEntry.delete({ where: { id: entryId } }),
+    ]);
   }
 
   /** Log a completed reread (a completion beyond the entry's first one). */

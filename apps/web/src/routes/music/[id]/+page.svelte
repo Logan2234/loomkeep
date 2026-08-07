@@ -425,7 +425,7 @@
   {#if confirmRemove}
     <ConfirmationModal
       title="Retirer de ma bibliothèque"
-      message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression et ta note seront supprimées.`}
+      message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
       confirmLabel="Retirer"
       danger
       busy={removing}

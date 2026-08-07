@@ -315,9 +315,29 @@ export class MusicLibraryService {
     );
   }
 
+  /**
+   * `Review`/`Comment` are polymorphic (targetType/targetId, no FK) so they
+   * never cascaded on entry removal — same bug class as MEDIA's
+   * `deleteEntry` had before commit `0db5dc6` fixed it there. Music has no
+   * replay/reread concept, so no third table to clean up here.
+   */
   async deleteEntry(userId: string, entryId: string): Promise<void> {
-    await this.assertEntryOwnership(userId, entryId);
-    await this.prisma.musicEntry.delete({ where: { id: entryId } });
+    const entry = await this.assertEntryOwnership(userId, entryId);
+
+    await this.prisma.$transaction([
+      this.prisma.review.deleteMany({
+        where: { userId, targetId: entry.musicItemId },
+      }),
+      this.prisma.comment.updateMany({
+        where: {
+          authorId: userId,
+          targetId: entry.musicItemId,
+          deletedAt: null,
+        },
+        data: { text: null, deletedAt: new Date() },
+      }),
+      this.prisma.musicEntry.delete({ where: { id: entryId } }),
+    ]);
   }
 
   /**

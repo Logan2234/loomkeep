@@ -112,3 +112,46 @@ describe("GameLibraryService.listEntries", () => {
     expect(result.items.map((i) => i.id)).toEqual(["b", "a"]);
   });
 });
+
+describe("GameLibraryService.deleteEntry", () => {
+  it("wipes the user's reviews and comments for the game, not just the entry row", async () => {
+    const reviewDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
+    const commentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const gameEntryDelete = jest.fn().mockResolvedValue({});
+
+    const prisma = {
+      gameEntry: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "entry-1",
+          userId: "user-1",
+          gameItemId: "game-1",
+        }),
+        delete: gameEntryDelete,
+      },
+      review: { deleteMany: reviewDeleteMany },
+      comment: { updateMany: commentUpdateMany },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as unknown as PrismaService;
+
+    const service = new GameLibraryService(
+      prisma,
+      {} as GameItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {
+        emit: jest.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+    );
+
+    await service.deleteEntry("user-1", "entry-1");
+
+    expect(reviewDeleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", targetId: "game-1" },
+    });
+    expect(commentUpdateMany).toHaveBeenCalledWith({
+      where: { authorId: "user-1", targetId: "game-1", deletedAt: null },
+      data: { text: null, deletedAt: expect.any(Date) },
+    });
+    expect(gameEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
+  });
+});

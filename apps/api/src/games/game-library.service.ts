@@ -325,9 +325,29 @@ export class GameLibraryService {
     );
   }
 
+  /**
+   * `GameReplay` cascades at the DB level (`onDelete: Cascade` on the entry
+   * FK), but `Review`/`Comment` are polymorphic (targetType/targetId, no FK)
+   * so they never did — same bug class as MEDIA's `deleteEntry` had before
+   * commit `0db5dc6` fixed it there.
+   */
   async deleteEntry(userId: string, entryId: string): Promise<void> {
-    await this.assertEntryOwnership(userId, entryId);
-    await this.prisma.gameEntry.delete({ where: { id: entryId } });
+    const entry = await this.assertEntryOwnership(userId, entryId);
+
+    await this.prisma.$transaction([
+      this.prisma.review.deleteMany({
+        where: { userId, targetId: entry.gameItemId },
+      }),
+      this.prisma.comment.updateMany({
+        where: {
+          authorId: userId,
+          targetId: entry.gameItemId,
+          deletedAt: null,
+        },
+        data: { text: null, deletedAt: new Date() },
+      }),
+      this.prisma.gameEntry.delete({ where: { id: entryId } }),
+    ]);
   }
 
   /** Log a completed replay (a completion beyond the entry's first one). */

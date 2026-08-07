@@ -117,3 +117,47 @@ describe("MusicLibraryService.listEntries", () => {
     expect(negated.items.map((i) => i.id)).toEqual(["a", "b"]);
   });
 });
+
+describe("MusicLibraryService.deleteEntry", () => {
+  it("wipes the user's reviews and comments for the album, not just the entry row", async () => {
+    const reviewDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
+    const commentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const musicEntryDelete = jest.fn().mockResolvedValue({});
+
+    const prisma = {
+      musicEntry: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "entry-1",
+          userId: "user-1",
+          musicItemId: "album-1",
+        }),
+        delete: musicEntryDelete,
+      },
+      review: { deleteMany: reviewDeleteMany },
+      comment: { updateMany: commentUpdateMany },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as unknown as PrismaService;
+
+    const service = new MusicLibraryService(
+      prisma,
+      {} as MusicItemService,
+      {} as import("../reviews/review.service").ReviewService,
+      {
+        emit: jest.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+    );
+
+    await service.deleteEntry("user-1", "entry-1");
+
+    expect(reviewDeleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", targetId: "album-1" },
+    });
+    expect(commentUpdateMany).toHaveBeenCalledWith({
+      where: { authorId: "user-1", targetId: "album-1", deletedAt: null },
+      data: { text: null, deletedAt: expect.any(Date) },
+    });
+    expect(musicEntryDelete).toHaveBeenCalledWith({
+      where: { id: "entry-1" },
+    });
+  });
+});
