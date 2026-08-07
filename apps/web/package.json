@@ -22,10 +22,10 @@
     "@fontsource/space-mono": "^5.3.0",
     "@loomkeep/shared": "workspace:*",
     "@tanstack/svelte-query": "^6.1.38",
-    "mermaid": "^11.16.0",
+    "mermaid": "^11.16.1",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
-    "svelte-dnd-action": "^0.9.76"
+    "svelte-dnd-action": "^0.9.77"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.5.7",
