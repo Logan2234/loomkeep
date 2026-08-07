@@ -119,6 +119,14 @@ warning page.
    VPS also has a network firewall in the control panel that must allow
    80/443 separately from any `ufw`/`iptables` rules on the box).
 
+**Auto-deploy from CI**: `.github/workflows/deploy.yml` redeploys automatically
+on every successful CI run on `main` (`git reset --hard origin/main` +
+`docker compose up -d --build`, no `-f` flags). It relies on `COMPOSE_FILE`
+being set in the VPS's own `.env` (see `.env.example`) to know which override
+files to combine — so turning an optional add-on (observability, Portainer,
+GlitchTip, ...) on or off in production is done by editing that line on the
+VPS, not by touching the workflow.
+
 ### Logs and monitoring (optional)
 
 The API logs structured JSON (level, route, duration) via `nestjs-pino` —

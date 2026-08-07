@@ -30,4 +30,9 @@ jobs:
             cd ${{ secrets.VPS_DEPLOY_PATH }}
             git fetch origin main
             git reset --hard origin/main
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
+            # Which override files to combine (prod, observability, portainer,
+            # glitchtip, ...) is NOT hardcoded here — it comes from COMPOSE_FILE
+            # in the VPS's own .env (Compose reads that automatically). Adding a
+            # new optional add-on later means editing .env on the VPS, not this
+            # workflow. See .env.example / README "Self-hosting" for the format.
+            docker compose up -d --build

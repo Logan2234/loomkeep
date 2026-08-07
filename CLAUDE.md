@@ -117,7 +117,13 @@ shown in more than one component.
 `tsconfig.base.json` before `pnpm install --frozen-lockfile` (a frozen install
 validates every importer in the lockfile). The api image runs
 `prisma migrate deploy` at boot; the web runtime image ships only the
-self-contained adapter-node `build/` output.
+self-contained adapter-node `build/` output. **`.github/workflows/deploy.yml`
+auto-redeploys on every successful CI run on `main`** via a plain
+`docker compose up -d --build` (no `-f` flags) — which override files get
+combined comes from `COMPOSE_FILE` in the VPS's own `.env` (Compose reads
+this itself), not from the workflow. Adding a new optional
+`docker-compose.<addon>.yml` that should run continuously in production means
+updating that `COMPOSE_FILE` line (see `.env.example`), not `deploy.yml`.
 
 **Logging (Observability Palier 1):** `nestjs-pino` (`main.ts` /
 `common/logger.config.ts`) replaces Nest's console logger with structured
