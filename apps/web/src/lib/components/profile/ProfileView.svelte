@@ -328,9 +328,15 @@
     </section>
   {:else}
     <!-- Billing block: the person credited, handle set like a film credit. -->
-    <section class="card p-5 md:p-6">
-      <div class="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <div class="relative shrink-0">
+    <section class="card relative p-5 md:p-6">
+      <!-- Reserve room on wider screens so the name/handle/meta text (which
+           sits beside the avatar there, not below it) never runs under the
+           icon cluster floating top-right — see below. -->
+      <div
+        class="flex flex-col gap-5 sm:flex-row sm:items-start {rel?.isSelf
+          ? 'sm:pr-40'
+          : ''}">
+        <div class="relative shrink-0 self-start">
           <button
             type="button"
             class="cursor-zoom-in"
@@ -421,13 +427,11 @@
         </div>
       </div>
 
-      <!-- Actions live on their own row below the avatar/info block instead
-           of sharing it — the card is capped at max-w-3xl, and 3-4 labelled
-           buttons competing with the info column for that width squeezed it
-           down to almost nothing (forced the follower/following figures to
-           wrap onto separate lines). Full-width room here lets them wrap
-           naturally instead. -->
       {#if rel && !rel.isSelf}
+        <!-- Own row below the avatar/info block instead of sharing it — the
+             card is capped at max-w-3xl, and buttons competing with the info
+             column for that width squeezed it down to almost nothing (forced
+             the follower/following figures to wrap onto separate lines). -->
         <div class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5">
           {#if rel.blocking}
             <button class="btn btn-ghost" disabled={busy} onclick={toggleBlock}>
@@ -455,25 +459,41 @@
           {/if}
         </div>
       {:else if rel?.isSelf}
-        <!-- 2×2 grid on mobile so 4 actions never wrap into a ragged row;
-             plain wrap on wider screens. Scanning is dropped past sm: it's a
-             "point your phone at theirs" action that doesn't make sense on a
-             laptop. -->
-        <div
-          class="border-border mt-5 grid grid-cols-2 gap-2 border-t pt-5 sm:flex sm:flex-wrap">
-          <button class="btn btn-ghost" onclick={() => (shareModalOpen = true)}>
-            <Icon name="share" class="h-4 w-4" /> Partager
+        <!-- Icon-only, top-right of the card, flush with its own padding —
+             lighter than a labelled button row/grid. Scanning is dropped
+             past sm: it's a "point your phone at theirs" action that doesn't
+             make sense on a laptop. -->
+        <div class="absolute top-5 right-5 flex gap-1.5 md:top-6 md:right-6">
+          <button
+            type="button"
+            class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
+            title="Partager le profil"
+            aria-label="Partager le profil"
+            onclick={() => (shareModalOpen = true)}>
+            <Icon name="share" class="h-4 w-4" />
           </button>
           <button
-            class="btn btn-ghost sm:hidden"
+            type="button"
+            class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border sm:hidden"
+            title="Scanner un profil"
+            aria-label="Scanner un profil"
             onclick={() => (scanModalOpen = true)}>
-            <Icon name="camera" class="h-4 w-4" /> Scanner
+            <Icon name="camera" class="h-4 w-4" />
           </button>
-          <a href="/settings" class="btn btn-ghost">
-            <Icon name="gear" class="h-4 w-4" /> Paramètres
+          <a
+            href="/settings"
+            class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
+            title="Paramètres"
+            aria-label="Paramètres">
+            <Icon name="gear" class="h-4 w-4" />
           </a>
-          <button class="btn btn-danger" onclick={signOut}>
-            Se déconnecter
+          <button
+            type="button"
+            class="border-danger/40 text-danger hover:bg-danger/10 grid h-9 w-9 place-items-center rounded-full border"
+            title="Se déconnecter"
+            aria-label="Se déconnecter"
+            onclick={signOut}>
+            <Icon name="logout" class="h-4 w-4" />
           </button>
         </div>
       {/if}

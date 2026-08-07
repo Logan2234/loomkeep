@@ -72,20 +72,26 @@
   <div class="flex flex-col items-center gap-3">
     <div
       class="bg-surface-2 relative aspect-square w-full overflow-hidden rounded-xl">
+      <!-- The video must never be visibility:hidden/display:none — qr-scanner
+           treats a hidden video at start-up as "hidden on purpose" (a Safari
+           workaround for a video-hiding bug) and responds by force-zeroing
+           its opacity/width/height via inline styles, which then never
+           recovers even once we flip our own class back. The "starting"/
+           "denied" placeholders sit on an opaque background on top of it
+           instead of toggling the video's own visibility. -->
       <video
         bind:this={videoEl}
-        class="h-full w-full object-cover {status === 'scanning'
-          ? ''
-          : 'invisible'}"
+        class="h-full w-full object-cover"
         muted
         playsinline></video>
       {#if status === "starting"}
-        <div class="text-dim absolute inset-0 flex items-center justify-center">
+        <div
+          class="bg-surface-2 text-dim absolute inset-0 flex items-center justify-center">
           <Icon name="camera" class="h-8 w-8 animate-pulse" />
         </div>
       {:else if status === "denied"}
         <div
-          class="text-dim absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm">
+          class="bg-surface-2 text-dim absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm">
           <Icon name="camera" class="h-8 w-8" />
           Accès à la caméra refusé ou indisponible.
         </div>

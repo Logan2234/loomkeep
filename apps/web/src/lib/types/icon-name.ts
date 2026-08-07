@@ -50,4 +50,5 @@ export type IconName =
   | "share"
   | "qr-code"
   | "camera"
-  | "link";
+  | "link"
+  | "logout";
