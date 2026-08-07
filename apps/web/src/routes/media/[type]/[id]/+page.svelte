@@ -484,8 +484,17 @@
             </div>
           {/if}
         {/each}
-        <span class="timecode text-dim w-full text-[0.6rem]"
-          >JustWatch · France</span>
+        {#if extras.watchProviders.link}
+          <a
+            href={extras.watchProviders.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="timecode text-dim hover:text-accent w-full text-[0.6rem] hover:underline">
+            Voir sur TMDB · France
+          </a>
+        {:else}
+          <span class="timecode text-dim w-full text-[0.6rem]">France</span>
+        {/if}
       </section>
     {/if}
 
