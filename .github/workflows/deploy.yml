@@ -30,4 +30,4 @@ jobs:
             cd ${{ secrets.VPS_DEPLOY_PATH }}
             git fetch origin main
             git reset --hard origin/main
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
