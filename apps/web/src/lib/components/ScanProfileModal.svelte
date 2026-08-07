@@ -15,7 +15,28 @@
 
   let { onclose }: { onclose: () => void } = $props();
 
-  let videoEl: HTMLVideoElement | undefined = $state();
+  // Modal renders its content twice in parallel (a mobile Drawer copy and a
+  // desktop dialog copy, toggled by CSS breakpoint, not conditional
+  // rendering — see Modal.svelte) so a plain `bind:this` on the <video>
+  // would silently grab whichever copy mounts last, which isn't necessarily
+  // the one actually on screen. Register every mounted instance and pick
+  // the one whose *dialog ancestor* currently has layout, once at start time.
+  let videoEls: HTMLVideoElement[] = [];
+  function registerVideo(node: HTMLVideoElement) {
+    videoEls = [...videoEls, node];
+    return {
+      destroy() {
+        videoEls = videoEls.filter((el) => el !== node);
+      },
+    };
+  }
+  function visibleVideo(): HTMLVideoElement | undefined {
+    return videoEls.find((el) => {
+      const dialog = el.closest('[role="dialog"]') as HTMLElement | null;
+      return dialog !== null && dialog.offsetParent !== null;
+    });
+  }
+
   let scanner: QrScanner | undefined;
   let status = $state<"starting" | "scanning" | "denied" | "error">("starting");
   let notice = $state("");
@@ -48,6 +69,7 @@
   }
 
   onMount(async () => {
+    const videoEl = visibleVideo();
     if (!videoEl) return;
     scanner = new QrScanner(videoEl, onDecode, {
       preferredCamera: "environment",
@@ -73,7 +95,7 @@
     <div
       class="bg-surface-2 relative aspect-square w-full overflow-hidden rounded-xl">
       <video
-        bind:this={videoEl}
+        use:registerVideo
         class="h-full w-full object-cover {status === 'scanning'
           ? ''
           : 'invisible'}"

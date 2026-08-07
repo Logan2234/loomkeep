@@ -419,62 +419,64 @@
             </button>
           </div>
         </div>
+      </div>
 
-        {#if rel && !rel.isSelf}
-          <div class="flex shrink-0 gap-2">
-            {#if rel.blocking}
+      <!-- Actions live on their own row below the avatar/info block instead
+           of sharing it — the card is capped at max-w-3xl, and 3-4 labelled
+           buttons competing with the info column for that width squeezed it
+           down to almost nothing (forced the follower/following figures to
+           wrap onto separate lines). Full-width room here lets them wrap
+           naturally instead. -->
+      {#if rel && !rel.isSelf}
+        <div class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5">
+          {#if rel.blocking}
+            <button class="btn btn-ghost" disabled={busy} onclick={toggleBlock}>
+              Débloquer
+            </button>
+          {:else}
+            {#if !ghostCantFollow}
               <button
-                class="btn btn-ghost"
+                class="btn {rel.following || rel.requested
+                  ? 'btn-ghost'
+                  : 'btn-primary'}"
                 disabled={busy}
-                onclick={toggleBlock}>
-                Débloquer
-              </button>
-            {:else}
-              {#if !ghostCantFollow}
-                <button
-                  class="btn {rel.following || rel.requested
-                    ? 'btn-ghost'
-                    : 'btn-primary'}"
-                  disabled={busy}
-                  onclick={toggleFollow}>
-                  {followLabel}
-                </button>
-              {/if}
-              <button
-                class="btn btn-ghost"
-                disabled={busy}
-                title="Bloquer"
-                aria-label="Bloquer"
-                onclick={toggleBlock}>
-                Bloquer
+                onclick={toggleFollow}>
+                {followLabel}
               </button>
             {/if}
-          </div>
-        {:else if rel?.isSelf}
-          <!-- Mobile: an even 2×2 grid so 4 actions never wrap into a ragged
-               row on a narrow screen. Desktop: back to the usual inline row,
-               scanning dropped since it's a "point your phone at theirs"
-               action that doesn't make sense on a laptop. -->
-          <div class="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0">
             <button
               class="btn btn-ghost"
-              onclick={() => (shareModalOpen = true)}>
-              <Icon name="share" class="h-4 w-4" /> Partager
+              disabled={busy}
+              title="Bloquer"
+              aria-label="Bloquer"
+              onclick={toggleBlock}>
+              Bloquer
             </button>
-            <button
-              class="btn btn-ghost sm:hidden"
-              onclick={() => (scanModalOpen = true)}>
-              <Icon name="camera" class="h-4 w-4" /> Scanner
-            </button>
-            <a href="/settings" class="btn btn-ghost">
-              <Icon name="gear" class="h-4 w-4" /> Paramètres
-            </a>
-            <button class="btn btn-danger" onclick={signOut}>
-              Se déconnecter
-            </button>
-          </div>
-        {/if}
-      </div>
+          {/if}
+        </div>
+      {:else if rel?.isSelf}
+        <!-- 2×2 grid on mobile so 4 actions never wrap into a ragged row;
+             plain wrap on wider screens. Scanning is dropped past sm: it's a
+             "point your phone at theirs" action that doesn't make sense on a
+             laptop. -->
+        <div
+          class="border-border mt-5 grid grid-cols-2 gap-2 border-t pt-5 sm:flex sm:flex-wrap">
+          <button class="btn btn-ghost" onclick={() => (shareModalOpen = true)}>
+            <Icon name="share" class="h-4 w-4" /> Partager
+          </button>
+          <button
+            class="btn btn-ghost sm:hidden"
+            onclick={() => (scanModalOpen = true)}>
+            <Icon name="camera" class="h-4 w-4" /> Scanner
+          </button>
+          <a href="/settings" class="btn btn-ghost">
+            <Icon name="gear" class="h-4 w-4" /> Paramètres
+          </a>
+          <button class="btn btn-danger" onclick={signOut}>
+            Se déconnecter
+          </button>
+        </div>
+      {/if}
     </section>
 
     <!-- Per-domain library, gated by the viewer's visibility. -->
