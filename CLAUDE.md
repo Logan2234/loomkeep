@@ -155,7 +155,20 @@ gated by Grafana's own login only, no basic auth — Logan's call) and via
 `127.0.0.1:3001` as an SSH-tunnel fallback — see README "Logs and
 monitoring". Promtail is deprecated upstream (merged into Grafana Alloy) and
 is planned to be replaced by it, likely taking node_exporter/postgres_exporter's
-job too at the same time. **Palier 3** (`docker-compose.glitchtip.yml`) adds
+job too at the same time. Caddy itself (`Caddyfile`) contributes to both
+halves of Palier 2 without an extra container: `encode gzip zstd` compresses
+responses, `log { output stdout; format json }` puts its access log in the
+same json-file/Promtail pipeline as every app container, and a global
+`admin 0.0.0.0:2019` + `metrics` option exposes a Prometheus `/metrics`
+endpoint scraped as the `caddy` job in `observability/prometheus.yml` — bound
+to the compose network only, not published to the host, same trust level as
+`db`. It also sends baseline security headers (HSTS with
+`includeSubDomains`, `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`) on the main site block. `www-redirect.caddy` (mounted only
+by `docker-compose.prod.yml`, not the ngrok override) redirects
+`www.<DOMAIN>` to the apex; it's a dedicated site block matching only that
+one hostname so it can't shadow subdomain blocks like `grafana.<DOMAIN>`.
+**Palier 3** (`docker-compose.glitchtip.yml`) adds
 GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in
 `SERVER_ROLE: all_in_one` mode with its own dedicated Postgres + Valkey
 (deliberately not sharing the app's `db`, same reasoning as Loki/Grafana's

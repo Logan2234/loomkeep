@@ -11,7 +11,45 @@
 # certificate itself and serves HTTPS on :443 (with :80 → :443 redirect).
 # This requires ports 80 and 443 reachable from the internet and the
 # domain's DNS already pointed at the VPS.
+
+# Global options. `admin` binds the config/metrics API to all interfaces
+# instead of the container-local default (127.0.0.1:2019) so Prometheus
+# (a separate container, see docker-compose.observability.yml) can reach
+# GET /metrics — it's not published to the host, so only other containers on
+# the same compose network can reach it, same trust boundary as `db`. The
+# admin API can reconfigure Caddy at runtime with no auth of its own; that's
+# an acceptable tradeoff here since nothing untrusted shares this network.
+{
+	admin 0.0.0.0:2019
+	metrics
+}
+
 {$SITE_ADDRESS::80} {
+	# Compresses text-ish responses (html/js/css/json) before they leave the
+	# server — SvelteKit and the API's JSON bodies both benefit.
+	encode gzip zstd
+
+	# Access log as JSON on stdout so Promtail (Palier 2) picks it up the
+	# same way it already picks up every other container's json-file log
+	# driver output — no extra scrape config needed.
+	log {
+		output stdout
+		format json
+	}
+
+	# Baseline security headers. HSTS is safe to send unconditionally: browsers
+	# only honor it on a response actually delivered over HTTPS, which is true
+	# both in prod (Caddy terminates TLS itself) and behind ngrok (ngrok
+	# terminates TLS before forwarding plain HTTP here) — over plain local
+	# HTTP it's simply ignored. `includeSubDomains` is safe too since every
+	# subdomain (grafana./errors.<DOMAIN>) is also served over HTTPS by Caddy.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
 	# The NestJS API mounts every route under the `api` global prefix
 	# (see apps/api/src/main.ts), so forward `/api/*` untouched.
 	handle /api/* {

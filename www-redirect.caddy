@@ -1,0 +1,13 @@
+# Redirects the bare `www.` prefix on the primary domain to the apex.
+# Mounted only by docker-compose.prod.yml (real DOMAIN required) — not by
+# docker-compose.ngrok.yml, where SITE_ADDRESS has no real hostname to
+# prefix. Deliberately its own site block matching only `www.{$SITE_ADDRESS}`
+# so it can't shadow subdomain blocks like grafana.<domain> or
+# errors.<domain>, which are unaffected.
+#
+# Requires a `www` DNS record pointed at the VPS too — Caddy auto-provisions
+# its own Let's Encrypt cert for this hostname, same as every other site
+# block here.
+www.{$SITE_ADDRESS} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}

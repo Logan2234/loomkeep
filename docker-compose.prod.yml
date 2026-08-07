@@ -45,6 +45,7 @@ services:
       SITE_ADDRESS: ${DOMAIN:?set DOMAIN in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./www-redirect.caddy:/etc/caddy/sites-enabled/www-redirect.caddy:ro
       - caddy-data:/data
       - caddy-config:/config
     ports:
