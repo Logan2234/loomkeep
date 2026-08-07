@@ -179,16 +179,16 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compos
 ```
 
 Adds [GlitchTip](https://glitchtip.com/) (Sentry-API-compatible, self-hosted
-error tracker), reachable at `glitchtip.<DOMAIN>` via Caddy. Where the log
+error tracker), reachable at `errors.<DOMAIN>` via Caddy. Where the log
 search above shows every log line, GlitchTip groups exceptions by
 fingerprint into a single "issue" with an occurrence count, and can email
-you the moment a *new* error type first appears rather than waiting for you
+you the moment a _new_ error type first appears rather than waiting for you
 to go looking. Gated by GlitchTip's own login (the first visitor sets up the
 org). Runs its own dedicated Postgres + Valkey, separate from the app's
 database. Email alerts are off out of the box — see the
 `GLITCHTIP_EMAIL_URL` comment in `.env.example` to enable them.
 
-The app itself only *reports* to GlitchTip once you create a project there
+The app itself only _reports_ to GlitchTip once you create a project there
 (one for the API, platform "Node"; one for the web app, platform
 "JavaScript") and set the resulting DSNs — `GLITCHTIP_API_DSN` and
 `PUBLIC_GLITCHTIP_WEB_DSN` in `.env` (both empty by default, meaning

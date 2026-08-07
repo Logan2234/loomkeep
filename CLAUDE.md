@@ -159,7 +159,7 @@ job too at the same time. **Palier 3** (`docker-compose.glitchtip.yml`) adds
 GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in
 `SERVER_ROLE: all_in_one` mode with its own dedicated Postgres + Valkey
 (deliberately not sharing the app's `db`, same reasoning as Loki/Grafana's
-own storage). Reachable at `glitchtip.<DOMAIN>`, same
+own storage). Reachable at `errors.<DOMAIN>`, same
 public-with-own-login-no-basic-auth pattern as Grafana/Portainer. Email
 alerts (new-error/regression notifications) are opt-in via
 `GLITCHTIP_EMAIL_URL` — not auto-derived from the app's own SMTP config
