@@ -94,6 +94,13 @@ identity_providers:
         client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
         public: false
         authorization_policy: "one_factor"
+        # Remembers your consent for a month instead of re-prompting on
+        # every single login — Authelia's own docs explicitly recommend
+        # this over "implicit" (which skips the consent screen forever,
+        # discouraged for security reasons) for exactly this "stop asking
+        # every time" itch.
+        consent_mode: "pre-configured"
+        pre_configured_consent_duration: "1M"
         redirect_uris:
           - "https://grafana.loomkeep.app/login/generic_oauth"
         scopes: ["openid", "profile", "email"]
@@ -106,6 +113,13 @@ identity_providers:
         client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
         public: false
         authorization_policy: "one_factor"
+        # Remembers your consent for a month instead of re-prompting on
+        # every single login — Authelia's own docs explicitly recommend
+        # this over "implicit" (which skips the consent screen forever,
+        # discouraged for security reasons) for exactly this "stop asking
+        # every time" itch.
+        consent_mode: "pre-configured"
+        pre_configured_consent_duration: "1M"
         redirect_uris:
           - "https://errors.loomkeep.app/accounts/authelia/login/callback/"
         scopes: ["openid", "profile", "email"]
@@ -118,6 +132,13 @@ identity_providers:
         client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
         public: false
         authorization_policy: "one_factor"
+        # Remembers your consent for a month instead of re-prompting on
+        # every single login — Authelia's own docs explicitly recommend
+        # this over "implicit" (which skips the consent screen forever,
+        # discouraged for security reasons) for exactly this "stop asking
+        # every time" itch.
+        consent_mode: "pre-configured"
+        pre_configured_consent_duration: "1M"
         redirect_uris:
           - "https://portainer.loomkeep.app"
         scopes: ["openid", "profile", "email"]
