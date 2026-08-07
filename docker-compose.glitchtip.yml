@@ -35,6 +35,12 @@ x-glitchtip-environment: &glitchtip-environment
   # (the bare service name) is included alongside the public hostname since
   # Caddy's own healthcheck/internal requests hit the container by that name.
   ALLOWED_HOSTS: errors.${DOMAIN:?set DOMAIN in .env},glitchtip
+  # Empty by default (GlitchTip's own settings.py), but required behind a
+  # reverse proxy fronting a different domain than the container sees
+  # directly — without it, cross-origin requests during the OIDC/SSO
+  # callback (browser bounces from auth.<DOMAIN> back here) can be silently
+  # rejected. Found live debugging the Authelia SSO integration.
+  CSRF_TRUSTED_ORIGINS: https://errors.${DOMAIN:?set DOMAIN in .env}
   # Emails (new-error/regression alerts) are off by default — GlitchTip's
   # EMAIL_URL is parsed as a plain URL (user:pass@host), and the app's own
   # Brevo SMTP_USER contains a literal "@", which breaks that parsing
