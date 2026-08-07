@@ -164,7 +164,18 @@ public-with-own-login-no-basic-auth pattern as Grafana/Portainer. Email
 alerts (new-error/regression notifications) are opt-in via
 `GLITCHTIP_EMAIL_URL` — not auto-derived from the app's own SMTP config
 because GlitchTip's `EMAIL_URL` is parsed as a plain URL and the app's Brevo
-`SMTP_USER` contains a literal `@` that breaks that unescaped. A separate
+`SMTP_USER` contains a literal `@` that breaks that unescaped. The app
+reports to it via the standard Sentry SDKs (GlitchTip is Sentry-API-
+compatible) — `@sentry/node` in `apps/api/src/instrument.ts` (imported first
+in `main.ts`, `Sentry.captureException` called from `AllExceptionsFilter`
+only for 5xx, matching its existing warn/error log split) and
+`@sentry/sveltekit` in `apps/web/src/hooks.client.ts`. Both are gated on
+their DSN env var (`GLITCHTIP_API_DSN` / `PUBLIC_GLITCHTIP_WEB_DSN`) being
+set, which only happens in the production Docker deployment — empty
+disables reporting, same convention as every other optional integration.
+Errors only: no tracing on the web side, no session replay (GlitchTip drops
+those events silently), no source-map upload yet (`@sentry/cli`'s postinstall
+is explicitly declined in `pnpm-workspace.yaml`'s `allowBuilds`). A separate
 optional override, `docker-compose.portainer.yml`, adds a Docker management
 UI at `portainer.<DOMAIN>` (same pattern).
 

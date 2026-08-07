@@ -7,6 +7,9 @@ allowBuilds:
   # prisma-erd-generator pulls puppeteer, but the .md ERD target never launches
   # a browser, so we skip its Chromium download. @scarf/scarf is opt-in analytics.
   "@scarf/scarf": false
+  # Only needed for source-map upload during build (not set up yet — see
+  # docker-compose.glitchtip.yml's GlitchTip section, "not for now" call).
+  "@sentry/cli": false
   prisma: true
   puppeteer: false
   unrs-resolver: true

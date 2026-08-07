@@ -80,6 +80,10 @@ services:
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       BACKUP_DIR: /data/backups
+      # Error tracking (GlitchTip, see docker-compose.glitchtip.yml). Empty =
+      # the SDK never initializes (see src/instrument.ts), same "empty
+      # disables it" convention as every other optional integration above.
+      GLITCHTIP_API_DSN: ${GLITCHTIP_API_DSN:-}
     volumes:
       - backup-data:/data/backups
     ports:
@@ -97,6 +101,9 @@ services:
       # URL the *browser* uses to reach the API, so it must be reachable
       # from outside the compose network.
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
+      # Error tracking (GlitchTip, see docker-compose.glitchtip.yml). PUBLIC_
+      # since it's read client-side; empty = the SDK never initializes.
+      PUBLIC_GLITCHTIP_WEB_DSN: ${PUBLIC_GLITCHTIP_WEB_DSN:-}
     ports:
       - "8080:3000"
 

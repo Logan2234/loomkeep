@@ -188,6 +188,15 @@ org). Runs its own dedicated Postgres + Valkey, separate from the app's
 database. Email alerts are off out of the box — see the
 `GLITCHTIP_EMAIL_URL` comment in `.env.example` to enable them.
 
+The app itself only *reports* to GlitchTip once you create a project there
+(one for the API, platform "Node"; one for the web app, platform
+"JavaScript") and set the resulting DSNs — `GLITCHTIP_API_DSN` and
+`PUBLIC_GLITCHTIP_WEB_DSN` in `.env` (both empty by default, meaning
+reporting stays off). Production only; `pnpm dev` never reports here. Errors
+only — no performance tracing on the web side, no session replay (GlitchTip
+doesn't implement the replay protocol, so those events would just be
+dropped). See `apps/api/src/instrument.ts` and `apps/web/src/hooks.client.ts`.
+
 ## Development
 
 ```sh
