@@ -207,7 +207,11 @@
       const res = await deleteAdminCacheOrphans(activeDomain);
       showDeleteOrphansConfirm = false;
       await refreshInPlace();
-      toast.success(`${res.deleted} orphelin(s) supprimé(s) du cache.`);
+      toast.success(
+        res.skipped > 0
+          ? `${res.deleted} orphelin(s) supprimé(s) du cache — ${res.skipped} laissé(s) car référencé(s) par une critique, un commentaire ou une activité.`
+          : `${res.deleted} orphelin(s) supprimé(s) du cache.`,
+      );
     } catch (err) {
       error = err instanceof ApiError ? err.message : "Suppression impossible";
       showDeleteOrphansConfirm = false;

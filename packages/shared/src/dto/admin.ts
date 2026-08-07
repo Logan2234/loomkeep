@@ -268,6 +268,8 @@ export interface AdminCacheResyncStaleResultDto {
 export interface AdminCacheDeleteOrphansResultDto {
   /** Items removed from the cache. */
   deleted: number;
+  /** Orphans left alone because a review/comment/activity row still targets them. */
+  skipped: number;
 }
 
 /** One registered account, as listed in the admin users page. */

@@ -1,4 +1,8 @@
-import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
+import {
+  ProfileAccess,
+  type ReviewVisibility,
+  VisibilityAudience,
+} from "@loomkeep/shared";
 
 /**
  * The viewer's raw relationship to a target user (viewer's point of view).
@@ -91,6 +95,31 @@ export function resolveOwnVisibility(
   if (relation.blocking || relation.blockedByTarget) return false;
   if (access === ProfileAccess.GHOST) return false;
   if (ownVisibility === "PRIVATE") return false;
+  if (ownVisibility === "PUBLIC") return access === ProfileAccess.PUBLIC;
+  return computeIsFriend(access, relation.following, relation.followsYou);
+}
+
+/**
+ * Reviews have one deliberate divergence from `resolveOwnVisibility`: a
+ * Figurant's review stays reachable (their own audience choice doesn't
+ * apply — Figurants have no friends by design) instead of being hidden
+ * outright, shown to the viewer under the author's derived pseudonym
+ * instead of their real identity (see `pseudonym.util.ts`). Kept as its own
+ * named function — rather than an inline copy of `resolveOwnVisibility`'s
+ * shape in `ReviewService.listForTarget` — so this one intentional
+ * difference (GHOST → visible, not hidden) is explicit and unit-testable on
+ * its own, not duplicated logic that quietly drifted. `ReviewVisibility`
+ * has no PRIVATE value (a review is at least FRIENDS), so there's no
+ * corresponding branch here.
+ */
+export function resolveReviewVisibility(
+  ownVisibility: ReviewVisibility,
+  access: ProfileAccess,
+  relation: ViewerRelation,
+): boolean {
+  if (relation.isSelf) return true;
+  if (relation.blocking || relation.blockedByTarget) return false;
+  if (access === ProfileAccess.GHOST) return true;
   if (ownVisibility === "PUBLIC") return access === ProfileAccess.PUBLIC;
   return computeIsFriend(access, relation.following, relation.followsYou);
 }

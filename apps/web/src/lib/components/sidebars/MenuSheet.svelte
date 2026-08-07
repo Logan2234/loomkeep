@@ -82,18 +82,12 @@
 
 {#if open}
   <Drawer onclose={close} labelledby="menu-sheet-title">
-    <div class="flex shrink-0 items-center justify-between px-5 pt-2 pb-2">
+    <div class="shrink-0 px-5 pt-2 pb-2">
       <h2
         id="menu-sheet-title"
         class="font-display text-xl font-extrabold tracking-tight">
         {inAdmin ? "Administration" : "Menu"}
       </h2>
-      <button
-        onclick={close}
-        aria-label="Fermer"
-        class="hover:bg-surface-2 text-dim grid h-9 w-9 place-items-center rounded-full">
-        <Icon name="x" class="h-5 w-5" />
-      </button>
     </div>
 
     <div

@@ -4,6 +4,7 @@ import {
   computeIsFriend,
   resolveFacet,
   resolveProfileVisibility,
+  resolveReviewVisibility,
   type ViewerRelation,
 } from "./visibility.util";
 
@@ -185,5 +186,80 @@ describe("resolveFacet", () => {
         relation({ isFriend: true }),
       ),
     ).toBe(false);
+  });
+});
+
+describe("resolveReviewVisibility", () => {
+  it("is always visible to the author themself", () => {
+    expect(
+      resolveReviewVisibility(
+        "FRIENDS",
+        ProfileAccess.PRIVATE,
+        relation({ isSelf: true }),
+      ),
+    ).toBe(true);
+  });
+
+  it("is hidden across a block, either direction", () => {
+    expect(
+      resolveReviewVisibility(
+        "PUBLIC",
+        ProfileAccess.PUBLIC,
+        relation({ blocking: true }),
+      ),
+    ).toBe(false);
+    expect(
+      resolveReviewVisibility(
+        "PUBLIC",
+        ProfileAccess.PUBLIC,
+        relation({ blockedByTarget: true }),
+      ),
+    ).toBe(false);
+  });
+
+  // The one deliberate divergence from resolveOwnVisibility: a Figurant's
+  // review stays reachable (shown under their pseudonym) instead of hidden.
+  it("stays visible for a Figurant author, unlike resolveOwnVisibility", () => {
+    expect(
+      resolveReviewVisibility("FRIENDS", ProfileAccess.GHOST, relation()),
+    ).toBe(true);
+  });
+
+  it("a PUBLIC review only reaches a PUBLIC author's audience", () => {
+    expect(
+      resolveReviewVisibility("PUBLIC", ProfileAccess.PUBLIC, relation()),
+    ).toBe(true);
+    expect(
+      resolveReviewVisibility("PUBLIC", ProfileAccess.PRIVATE, relation()),
+    ).toBe(false);
+  });
+
+  it("a FRIENDS review needs isFriend (via computeIsFriend)", () => {
+    // PRIVATE author: following them is enough.
+    expect(
+      resolveReviewVisibility(
+        "FRIENDS",
+        ProfileAccess.PRIVATE,
+        relation({ following: true }),
+      ),
+    ).toBe(true);
+    expect(
+      resolveReviewVisibility("FRIENDS", ProfileAccess.PRIVATE, relation()),
+    ).toBe(false);
+    // PUBLIC author: needs a *mutual* follow.
+    expect(
+      resolveReviewVisibility(
+        "FRIENDS",
+        ProfileAccess.PUBLIC,
+        relation({ following: true }),
+      ),
+    ).toBe(false);
+    expect(
+      resolveReviewVisibility(
+        "FRIENDS",
+        ProfileAccess.PUBLIC,
+        relation({ following: true, followsYou: true }),
+      ),
+    ).toBe(true);
   });
 });

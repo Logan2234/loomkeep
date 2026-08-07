@@ -19,8 +19,8 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
-import { computeIsFriend } from "../social/visibility.util";
 import { VisibilityService } from "../social/visibility.service";
+import { resolveReviewVisibility } from "../social/visibility.util";
 import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 
@@ -530,19 +530,10 @@ export class ReviewService {
       }
 
       const relation = await this.visibility.getRelation(viewerId, author);
-      if (relation.blocking || relation.blockedByTarget) continue;
 
-      const ok =
-        author.profileAccess === "GHOST" ||
-        (row.visibility === "PUBLIC"
-          ? author.profileAccess === "PUBLIC"
-          : computeIsFriend(
-              author.profileAccess,
-              relation.following,
-              relation.followsYou,
-            ));
-
-      if (ok) {
+      if (
+        resolveReviewVisibility(row.visibility, author.profileAccess, relation)
+      ) {
         visible.push(
           this.toDto(
             row,

@@ -19,6 +19,8 @@ import type {
   AdminCacheListResponseDto,
   AdminCacheResyncStaleResultDto,
   AdminCacheSort,
+  CommentTargetType,
+  ReviewTargetType,
 } from "@loomkeep/shared";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
@@ -34,6 +36,22 @@ type CacheDomain = (typeof DOMAINS)[number];
 
 /** An item with no library/game/book/music entry pointing at it, across every account. */
 const ORPHAN_WHERE = { entries: { none: {} } } as const;
+
+/**
+ * Review/Comment/ActivityEvent target an item by a polymorphic
+ * (targetType, targetId) pair, not a real FK — Prisma can't join them to
+ * MediaItem/GameItem/etc, so "does this item still have content on it" has
+ * to be checked by hand rather than folded into the entries-based ORPHAN_WHERE.
+ * Work-level only (a SEASON/EPISODE review/comment on a work with zero
+ * *work-level* rows is a narrower, accepted gap — see the cache page's admin
+ * memory note).
+ */
+const TARGET_TYPE: Record<CacheDomain, string> = {
+  MEDIA: "MEDIA",
+  GAMES: "GAME",
+  BOOKS: "BOOK",
+  MUSIC: "MUSIC",
+};
 
 /** Ordering shared by every domain — the field names all exist on each model. */
 function orderByFor(sort: AdminCacheSort) {
@@ -314,16 +332,49 @@ export class AdminCacheController {
   }
 
   /**
-   * Purges every orphaned (unreferenced) item in a domain. Declared before the
-   * `:id` delete so "orphans" isn't swallowed as an id. Referenced items are
-   * never touched — the `none` filter guarantees it.
+   * Purges every orphaned (unreferenced) item in a domain — except ones that
+   * still carry a review/comment/activity row, which are skipped rather than
+   * silently stranding that content (see `idsWithContent`). Declared before
+   * the `:id` delete so "orphans" isn't swallowed as an id.
    */
   @Delete("cache/:domain/orphans")
   async removeOrphans(
     @Param("domain") domain: string,
   ): Promise<AdminCacheDeleteOrphansResultDto> {
     const cacheDomain = this.domainOrThrow(domain);
-    const where = ORPHAN_WHERE;
+
+    const orphanIds: string[] =
+      cacheDomain === "MEDIA"
+        ? (
+            await this.prisma.mediaItem.findMany({
+              where: ORPHAN_WHERE,
+              select: { id: true },
+            })
+          ).map((o) => o.id)
+        : cacheDomain === "GAMES"
+          ? (
+              await this.prisma.gameItem.findMany({
+                where: ORPHAN_WHERE,
+                select: { id: true },
+              })
+            ).map((o) => o.id)
+          : cacheDomain === "BOOKS"
+            ? (
+                await this.prisma.bookItem.findMany({
+                  where: ORPHAN_WHERE,
+                  select: { id: true },
+                })
+              ).map((o) => o.id)
+            : (
+                await this.prisma.musicItem.findMany({
+                  where: ORPHAN_WHERE,
+                  select: { id: true },
+                })
+              ).map((o) => o.id);
+
+    const withContent = await this.idsWithContent(cacheDomain, orphanIds);
+    const deletable = orphanIds.filter((id) => !withContent.has(id));
+    const where = { id: { in: deletable } };
 
     const { count } =
       cacheDomain === "MEDIA"
@@ -334,12 +385,17 @@ export class AdminCacheController {
             ? await this.prisma.bookItem.deleteMany({ where })
             : await this.prisma.musicItem.deleteMany({ where });
 
-    return { deleted: count };
+    return { deleted: count, skipped: withContent.size };
   }
 
   /**
    * Deletes an orphaned cached item (no account references it). Referenced
    * items 409 — a delete would strand another user's library/watch history.
+   * Same 409 when a review/comment/activity row still targets it: those
+   * outlive a library entry today (only MEDIA's own `deleteEntry` cleans
+   * them up on removal, games/books/music don't yet — see admin memory),
+   * so an orphan can still carry content the delete would otherwise orphan
+   * forever (no FK, nothing else would ever clean it up).
    */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("cache/:domain/:id")
@@ -357,6 +413,12 @@ export class AdminCacheController {
       );
     }
 
+    if ((await this.idsWithContent(cacheDomain, [id])).size > 0) {
+      throw new ConflictException(
+        "Des critiques, commentaires ou activités référencent encore cet item — impossible de supprimer",
+      );
+    }
+
     switch (cacheDomain) {
       case "MEDIA":
         await this.prisma.mediaItem.delete({ where: { id } });
@@ -371,6 +433,40 @@ export class AdminCacheController {
         await this.prisma.musicItem.delete({ where: { id } });
         return;
     }
+  }
+
+  /** Subset of `ids` that still have a work-level review, comment, or activity row. */
+  private async idsWithContent(
+    domain: CacheDomain,
+    ids: string[],
+  ): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const targetType = TARGET_TYPE[domain];
+    const [reviews, comments, activity] = await Promise.all([
+      this.prisma.review.findMany({
+        where: {
+          targetType: targetType as ReviewTargetType,
+          targetId: { in: ids },
+        },
+        select: { targetId: true },
+      }),
+      this.prisma.comment.findMany({
+        where: {
+          targetType: targetType as CommentTargetType,
+          targetId: { in: ids },
+        },
+        select: { targetId: true },
+      }),
+      this.prisma.activityEvent.findMany({
+        where: { targetType, targetId: { in: ids } },
+        select: { targetId: true },
+      }),
+    ]);
+    return new Set([
+      ...reviews.map((r) => r.targetId),
+      ...comments.map((c) => c.targetId),
+      ...activity.map((a) => a.targetId),
+    ]);
   }
 
   private staleBefore(): Date {

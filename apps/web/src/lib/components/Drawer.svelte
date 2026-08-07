@@ -65,6 +65,35 @@
   let startY = 0;
   let panelHeight = 1;
 
+  // A `[data-drawer-scroll]` descendant declares `touch-pan-y` (see Modal/
+  // MenuSheet) so it can scroll natively — but that CSS is set once and
+  // applies regardless of actual scroll position, so a downward swipe
+  // starting at scrollTop 0 (nothing to scroll) still got contested between
+  // native panning and our pointer-drag below: the browser would fire
+  // pointercancel a frame or two in, snapping the sheet straight back to
+  // its resting position before the drag could register (confirmed: this is
+  // exactly why dragging only ever worked from the header/grabber, which has
+  // no `[data-drawer-scroll]` descendant to compete with). Toggling it to
+  // `touch-action: none` while at the top hands the whole gesture to our own
+  // pointer handlers instead; back to `pan-y` once scrolled away from the
+  // top, where native momentum scrolling should take over again.
+  $effect(() => {
+    if (!panelEl) return;
+    const scrollables = Array.from(
+      panelEl.querySelectorAll<HTMLElement>("[data-drawer-scroll]"),
+    );
+    const sync = (el: HTMLElement) => {
+      el.style.touchAction = el.scrollTop <= 0 ? "none" : "pan-y";
+    };
+    const cleanups = scrollables.map((el) => {
+      sync(el);
+      const onScroll = () => sync(el);
+      el.addEventListener("scroll", onScroll, { passive: true });
+      return () => el.removeEventListener("scroll", onScroll);
+    });
+    return () => cleanups.forEach((fn) => fn());
+  });
+
   // Below this fraction of the panel's height (or past a velocity threshold),
   // a released drag completes the close instead of snapping back.
   const CLOSE_FRACTION = 0.3;

@@ -20,6 +20,7 @@ import {
   mostActiveYear,
 } from "../stats/video-temporal.util";
 import { FollowService } from "./follow.service";
+import { earliest, latest } from "./profile-stats.util";
 import { SOCIAL_DOMAINS } from "./social.constants";
 import {
   resolveFacet,
@@ -358,18 +359,8 @@ export class ProfileService {
     return {
       visible: true,
       streakDays: computeStreak(watchDates, now),
-      firstActivityAt:
-        firstTimestamps.length > 0
-          ? new Date(
-              Math.min(...firstTimestamps.map((d) => d.getTime())),
-            ).toISOString()
-          : null,
-      lastActivityAt:
-        lastTimestamps.length > 0
-          ? new Date(
-              Math.max(...lastTimestamps.map((d) => d.getTime())),
-            ).toISOString()
-          : null,
+      firstActivityAt: earliest(firstTimestamps)?.toISOString() ?? null,
+      lastActivityAt: latest(lastTimestamps)?.toISOString() ?? null,
       totalMinutes,
       mostActiveYear: mostActiveYear(computeYearlyMinutes(datedMinutes)),
       topGenres,
