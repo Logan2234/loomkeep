@@ -124,24 +124,44 @@ warning page.
 The API logs structured JSON (level, route, duration) via `nestjs-pino` —
 `docker compose logs api` works out of the box, and every service's logs are
 capped at 10MB × 5 files so they can't slowly fill the disk. For a
-searchable log history and dashboards, add the observability override on
-top of whichever deployment you're running:
+searchable log history, dashboards, and metrics, add the observability
+override on top of whichever deployment you're running:
 
 ```sh
 # set GRAFANA_ADMIN_PASSWORD in .env first
 docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
 ```
 
-This adds Grafana + Loki + Promtail (Promtail ships every container's logs
-into Loki automatically). Grafana is bound to `127.0.0.1` only — reach it
-through an SSH tunnel rather than exposing an admin dashboard publicly:
+This adds:
+
+- **Grafana + Loki + Promtail** — Promtail ships every container's logs into
+  Loki automatically.
+- **Prometheus + node_exporter + postgres_exporter** — host-level metrics
+  (CPU/RAM/disk) and Postgres metrics (connections, table sizes...), both
+  pre-wired as a Grafana data source.
+
+If you set `DOMAIN` (see "Public hosting" above), Grafana is also reachable
+publicly at `grafana.<DOMAIN>` via Caddy, gated by Grafana's own login. It's
+always reachable at `127.0.0.1:3001` too, whether or not `DOMAIN` is set —
+useful as a tunnel-only fallback:
 
 ```sh
 ssh -L 3001:localhost:3001 <user>@<your-vps>
 ```
 
-then open `http://localhost:3001` locally (Loki is already set up as the
-default data source — nothing to configure).
+then open `http://localhost:3001` locally. Prometheus itself has no exposed
+port at all — it's purely a Grafana data source, queried through Grafana's
+own auth.
+
+### Docker management UI (optional)
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.portainer.yml up -d --build
+```
+
+Adds [Portainer](https://www.portainer.io/), reachable at
+`portainer.<DOMAIN>` via Caddy — a web UI for containers/images/volumes
+without SSH. Gated by Portainer's own admin login (set on first visit).
 
 ## Development
 

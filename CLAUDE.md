@@ -137,14 +137,23 @@ completely unchanged. Docker log rotation (`max-size: 10m`, `max-file: 5`)
 is set per service in `docker-compose.yml`/`docker-compose.prod.yml`/
 `docker-compose.ngrok.yml` (duplicated by hand in the two overrides — Compose
 doesn't merge YAML anchors across `-f` files). **Palier 2** (searchable log
-history) is `docker-compose.observability.yml`, an optional override adding
-Grafana + Loki + Promtail (config in `observability/`) — Promtail
-auto-discovers every container via the Docker socket and ships its
-already-rotated json-file logs into Loki, Grafana's Loki data source is
-pre-provisioned. Grafana binds to `127.0.0.1` only (reach it via an SSH
-tunnel, never expose an admin dashboard publicly) — see README "Logs and
-monitoring". **Palier 3** (GlitchTip error grouping) is still deliberately
-deferred — see the `loomkeep-observability-plan` memory for that reasoning.
+history + metrics) is `docker-compose.observability.yml`, an optional
+override adding Grafana + Loki + Promtail (logs) and Prometheus +
+node_exporter + postgres_exporter (host/DB metrics) — config in
+`observability/`. Promtail auto-discovers every container via the Docker
+socket and ships its already-rotated json-file logs into Loki; both Loki and
+Prometheus are pre-provisioned as Grafana data sources
+(`observability/grafana-datasources.yaml`). Grafana is reachable both
+publicly at `grafana.<DOMAIN>` via Caddy (`observability/grafana.caddy`,
+gated by Grafana's own login only, no basic auth — Logan's call) and via
+`127.0.0.1:3001` as an SSH-tunnel fallback — see README "Logs and
+monitoring". Promtail is deprecated upstream (merged into Grafana Alloy) and
+is planned to be replaced by it, likely taking node_exporter/postgres_exporter's
+job too at the same time. **Palier 3** (GlitchTip error grouping) is still
+deliberately deferred — see the `loomkeep-observability-plan` memory for that
+reasoning. A separate optional override, `docker-compose.portainer.yml`,
+adds a Docker management UI at `portainer.<DOMAIN>` (same public-with-own-login
+pattern, no basic auth).
 
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via

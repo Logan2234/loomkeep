@@ -1,0 +1,45 @@
+# Optional add-on: Portainer, a web UI for managing this VPS's Docker
+# containers/images/volumes without SSH. Add on top of the base compose +
+# whichever deployment override you're using:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.portainer.yml up -d --build
+#
+# Reachable at PORTAINER_SITE_ADDRESS (e.g. portainer.loomkeep.app) via Caddy
+# — see observability/portainer.caddy, imported by the base Caddyfile only
+# when this override is in use. Gated by Portainer's own admin login only
+# (set on first visit), no basic auth in front — same call as Grafana.
+#
+# `x-logging` is redeclared here rather than reused from docker-compose.yml,
+# same reasoning as every other override (Compose doesn't merge YAML anchors
+# across separate -f files).
+services:
+  portainer:
+    image: portainer/portainer-ce:2.39.5
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    # --http-enabled: Portainer's HTTPS on :9443 uses a self-signed cert, and
+    # Caddy already terminates real TLS for the public domain — proxying to
+    # that self-signed backend just produces confusing TLS errors. Serve
+    # plain HTTP on :9000 instead for Caddy to sit in front of.
+    command: -H unix:///var/run/docker.sock --http-enabled
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml
+  # / docker-compose.ngrok.yml: adds the Portainer site block + its domain,
+  # without redeclaring the whole service.
+  caddy:
+    environment:
+      PORTAINER_SITE_ADDRESS: portainer.${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./observability/portainer.caddy:/etc/caddy/sites-enabled/portainer.caddy:ro
+    depends_on:
+      - portainer
+
+volumes:
+  portainer-data:

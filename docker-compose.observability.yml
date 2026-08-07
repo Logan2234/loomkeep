@@ -1,7 +1,7 @@
-# Observability Palier 2: searchable, persistent log history via Grafana +
-# Loki (log storage) + Promtail (ships every container's json-file logs,
-# already rotated by docker-compose.yml's `x-logging`, into Loki). Add on
-# top of the base compose + whichever deployment override you're using:
+# Observability Palier 2: searchable, persistent log history AND metrics via
+# Grafana + Loki/Promtail (logs) + Prometheus/node_exporter/postgres_exporter
+# (metrics). Add on top of the base compose + whichever deployment override
+# you're using:
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
 #
@@ -14,6 +14,12 @@
 #  - 127.0.0.1:3001 directly, kept as a fallback that doesn't need Caddy/DNS
 #    at all — reach it via an SSH tunnel: `ssh -L 3001:localhost:3001 <user>@<vps>`.
 #
+# Prometheus itself has no public/tunnel access point — it's only a Grafana
+# data source, queried through Grafana's own auth, so there's nothing to gate.
+#
+# Promtail is planned to be replaced by Grafana Alloy (see the promtail
+# service comment below) — when that happens, the same Alloy agent will
+# likely also take over node_exporter/postgres_exporter's job, not just logs.
 # `x-logging` is redeclared here (not reused from docker-compose.yml) since
 # Compose doesn't merge YAML anchors across separate `-f` files — same
 # reasoning as the caddy service's own duplicate in the prod/ngrok overrides.
@@ -59,13 +65,62 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      # Cloud-upsell noise off; version/plugin-update checks left on the
+      # (secure) defaults so out-of-date warnings still show in the UI.
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./observability/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/loki.yaml:ro
+      - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
     ports:
       - "127.0.0.1:3001:3000"
     depends_on:
       - loki
+      - prometheus
+
+  # Host-level metrics (CPU/RAM/disk/network) for the VPS itself. No public
+  # port — Prometheus scrapes it by service name over the compose network.
+  node_exporter:
+    image: prom/node-exporter:v1.10.2
+    restart: unless-stopped
+    logging: *default-logging
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+  # Postgres-level metrics (connections, table sizes, cache hit ratio...).
+  # Reuses the app's own DB user — this is a single-user self-host, not
+  # worth provisioning a separate read-only monitoring role for.
+  postgres_exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.11.1
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-loomkeep}?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v3.13.2
+    restart: unless-stopped
+    logging: *default-logging
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - node_exporter
+      - postgres_exporter
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml
   # / docker-compose.ngrok.yml: adds the Grafana site block + its domain,
@@ -83,3 +138,4 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:

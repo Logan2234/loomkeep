@@ -1,0 +1,12 @@
+# Public site block for Portainer, imported by the base Caddyfile — only
+# mounted when docker-compose.portainer.yml is in use (it sets
+# PORTAINER_SITE_ADDRESS on the caddy service and mounts this file into
+# /etc/caddy/sites-enabled/). Same automatic Let's Encrypt handling as the
+# main site: Caddy requests and renews its own certificate for this domain
+# too, independently.
+#
+# Proxies to Portainer's plain-HTTP port (see docker-compose.portainer.yml's
+# --http-enabled comment) — Caddy is the only TLS termination point.
+{$PORTAINER_SITE_ADDRESS} {
+	reverse_proxy portainer:9000
+}
