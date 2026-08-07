@@ -292,7 +292,12 @@ just bounces through silently, no second password).
      `https://auth.<DOMAIN>/api/oidc/token`, Resource URL
      `https://auth.<DOMAIN>/api/oidc/userinfo`, Redirect URL
      `https://portainer.<DOMAIN>`, User Identifier `preferred_username`,
-     Scopes `openid profile email`.
+     Scopes `openid profile email` — **space-separated, no commas**:
+     Portainer's own Scopes field placeholder looks comma-separated but
+     sends whatever you type verbatim as one raw OAuth `scope` parameter, so
+     commas produce a single invalid scope
+     (`invalid_scope: ... 'openid,profile,email'`) instead of three valid
+     ones.
 
 Grafana needs no manual step — it's fully wired via env vars in
 `docker-compose.observability.yml`.
