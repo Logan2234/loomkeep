@@ -239,6 +239,16 @@ just bounces through silently, no second password).
    docker run --rm authelia/authelia:4.39.20 authelia crypto hash generate argon2 --password 'your-own-password'   # your login — never tell anyone (including Claude) the plaintext
    ```
 
+   Every `crypto hash generate`/`crypto rand` command above prints a
+   labelled line, e.g. `Digest: $argon2id$v=19$...` or
+   `Random Value: xY7k...` — copy only the part **after** the `Digest: `/
+   `Random Value: ` label into the config. Pasting the label too is the
+   single most common way this setup silently fails to authenticate.
+
+   Log in with the **username** (the YAML key in `users_database.yml`,
+   e.g. `logan`), not the email address — Authelia's file backend doesn't
+   accept email-as-username at the login form.
+
 3. For each of the three OIDC clients (grafana/glitchtip/portainer) in
    `authelia/configuration.yml`: generate a random secret and its hash, keep
    the plaintext somewhere safe (you'll need it in step 5/6), paste the hash
@@ -265,14 +275,16 @@ just bounces through silently, no second password).
    docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.observability.yml -f docker-compose.portainer.yml -f docker-compose.glitchtip.yml up -d --build
    ```
 
-   - **GlitchTip**: temporarily set `ENABLE_ADMIN: "True"` in
-     `docker-compose.glitchtip.yml`, redeploy, visit
+   - **GlitchTip**: on the VPS, temporarily set `GLITCHTIP_ENABLE_ADMIN=True`
+     in `.env` and `docker compose up -d glitchtip` (no rebuild, no git
+     push needed — this is a runtime toggle, not a code change). Visit
      `https://errors.<DOMAIN>/admin/socialaccount/socialapp/`, add a
      SocialApp — Provider `OpenID Connect`, Provider ID `authelia`, Client
      ID `glitchtip`, Secret Key = the plaintext from step 3 for the
      `glitchtip` client, Settings
      `{"server_url":"https://auth.<DOMAIN>/.well-known/openid-configuration"}`.
-     Then set `ENABLE_ADMIN` back to `"False"` and redeploy again.
+     Then set `GLITCHTIP_ENABLE_ADMIN` back to `False` in `.env` and
+     `docker compose up -d glitchtip` again.
    - **Portainer**: Settings → Authentication → OAuth → Provider `Custom`,
      Client ID `portainer`, Client Secret = the plaintext from step 3 for
      the `portainer` client, Authorization URL

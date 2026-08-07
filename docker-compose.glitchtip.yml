@@ -43,9 +43,12 @@ x-glitchtip-environment: &glitchtip-environment
   EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
   DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@example.com}
   # Django admin at /admin/ exposes raw DB-level access — off by default.
-  # Needs to be flipped to "True" temporarily for the one-time OIDC/SSO
-  # SocialApp setup (see docker-compose.authelia.yml), then back to "False".
-  ENABLE_ADMIN: "False"
+  # Env-var driven (not a hardcoded "False") specifically so it can be
+  # flipped on the VPS's own .env for the one-time OIDC/SSO SocialApp setup
+  # (see docker-compose.authelia.yml) with a `docker compose up -d`, not a
+  # git commit — auto-deploy on every push to main would otherwise silently
+  # revert a hardcoded value back on the next unrelated push.
+  ENABLE_ADMIN: ${GLITCHTIP_ENABLE_ADMIN:-False}
 
 services:
   glitchtip-postgres:
