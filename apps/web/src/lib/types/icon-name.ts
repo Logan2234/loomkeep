@@ -48,4 +48,6 @@ export type IconName =
   | "dots-horizontal"
   | "dots-vertical"
   | "share"
-  | "qr-code";
+  | "qr-code"
+  | "camera"
+  | "link";

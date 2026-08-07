@@ -4,6 +4,7 @@
   import { getAdminSocialActivityTrend } from "$lib/api/client";
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
+  import { REPORT_CATEGORY_LABELS } from "$lib/report-labels";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
@@ -37,6 +38,13 @@
     stats.topContributors.map((c) => ({
       label: `@${c.username}`,
       value: c.contributions,
+    })),
+  );
+
+  const categoryItems = $derived(
+    stats.reports.byCategory.map((c) => ({
+      label: REPORT_CATEGORY_LABELS[c.category],
+      value: c.count,
     })),
   );
 
@@ -104,10 +112,12 @@
           : `${stats.reports.foundedPercent} %`}
         label="Taux fondé" />
     </div>
-    <p class="text-dim mt-3 text-[11px] italic">
-      Par motif : nécessite le champ
-      <span class="font-mono not-italic">reasonCategory</span> (backlog).
-    </p>
+    {#if categoryItems.length > 0}
+      <p class="text-dim mt-3.5 mb-2 text-[11px] font-bold uppercase">
+        Par catégorie
+      </p>
+      <RankBars items={categoryItems} />
+    {/if}
   </div>
 
   <div class="card p-4">

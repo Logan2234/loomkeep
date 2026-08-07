@@ -19,6 +19,8 @@
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
+    REPORT_STATUS_COLORS,
+    REPORT_STATUS_LABELS,
   } from "$lib/report-labels";
   import type {
     AdminReportsSummaryDto,
@@ -26,23 +28,11 @@
     ReportStatus,
   } from "@loomkeep/shared";
 
-  const STATUS_LABELS: Record<ReportStatus, string> = {
-    PENDING: "En attente",
-    RESOLVED: "Résolu",
-    DISMISSED: "Rejeté",
-  };
-
-  const STATUS_COLORS: Record<ReportStatus, string> = {
-    PENDING: "border-accent/40 bg-accent/10 text-accent",
-    RESOLVED: "border-success/40 bg-success/10 text-success",
-    DISMISSED: "border-border bg-surface-2 text-dim",
-  };
-
   const STATUS_OPTIONS = [
     { label: "En attente", value: "PENDING" },
-    ...(Object.keys(STATUS_LABELS) as ReportStatus[])
+    ...(Object.keys(REPORT_STATUS_LABELS) as ReportStatus[])
       .filter((s) => s !== "PENDING")
-      .map((s) => ({ label: STATUS_LABELS[s], value: s })),
+      .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
   ];
 
   // Must match PAGE_SIZE in apps/api/src/reports/report.service.ts.
@@ -232,10 +222,10 @@
         <li class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
             <span
-              class="rounded-full border px-2 py-0.5 text-xs font-bold {STATUS_COLORS[
+              class="rounded-full border px-2 py-0.5 text-xs font-bold {REPORT_STATUS_COLORS[
                 r.status
               ]}">
-              {STATUS_LABELS[r.status]}
+              {REPORT_STATUS_LABELS[r.status]}
             </span>
             <span class="text-dim text-xs">{r.targetType}</span>
             {#if r.category}

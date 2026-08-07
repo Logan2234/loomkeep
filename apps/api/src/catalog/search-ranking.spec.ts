@@ -11,6 +11,7 @@ const media = (
   title,
   year: null,
   posterUrl: null,
+  isAdult: false,
   ...extra,
 });
 

@@ -53,6 +53,9 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     prisma,
     {} as MusicItemService,
     reviews,
+    {
+      emit: jest.fn(),
+    } as unknown as import("../social/activity.service").ActivityService,
   );
   return { service, prisma };
 }

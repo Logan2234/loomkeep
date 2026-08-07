@@ -2,12 +2,17 @@
   import QRCode from "qrcode";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
-  import { profileUrl } from "$lib/share-profile";
+  import { profileUrl, shareProfile } from "$lib/share-profile";
 
-  // Fallback for browsers without the native share sheet (desktop, mostly):
-  // the link to copy, and a QR code a phone can scan straight off the screen.
-  let { username, onclose }: { username: string; onclose: () => void } =
-    $props();
+  // The QR shows first, always — scanning straight off the screen is the
+  // fastest path when two people are physically together. "Partager avec…"
+  // and "Copier le lien" cover everything else (native share sheet where
+  // supported, plain link otherwise).
+  let {
+    username,
+    displayName,
+    onclose,
+  }: { username: string; displayName: string; onclose: () => void } = $props();
 
   let url = $derived(profileUrl(username));
   let qrSvg = $state("");
@@ -20,6 +25,10 @@
       color: { dark: "#000000", light: "#ffffff" },
     }).then((svg) => (qrSvg = svg));
   });
+
+  async function shareWith() {
+    await shareProfile(username, displayName);
+  }
 
   async function copyLink() {
     await navigator.clipboard.writeText(url);
@@ -48,10 +57,16 @@
       profil.
     </p>
 
-    <button class="btn btn-ghost w-full" onclick={copyLink}>
-      <Icon name={copied ? "check" : "share"} class="h-4 w-4" />
-      {copied ? "Lien copié" : "Copier le lien"}
-    </button>
+    <div class="flex w-full flex-col gap-2">
+      <button class="btn btn-primary w-full" onclick={shareWith}>
+        <Icon name="share" class="h-4 w-4" />
+        Partager avec…
+      </button>
+      <button class="btn btn-ghost w-full" onclick={copyLink}>
+        <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
+        {copied ? "Lien copié" : "Copier le lien"}
+      </button>
+    </div>
   </div>
 </Modal>
 

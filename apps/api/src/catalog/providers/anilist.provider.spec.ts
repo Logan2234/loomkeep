@@ -53,7 +53,7 @@ describe("AnilistProvider", () => {
   it("maps details: one generated season, episode titles from streaming episodes", async () => {
     mockFetch(fixture("anilist-details.json"));
 
-    const details = await provider.getDetails("154587", MediaType.ANIME);
+    const details = await provider.getDetails("154587");
 
     expect(details.summary.title).toBe("Frieren: Beyond Journey’s End");
     expect(details.genres).toEqual(["Adventure", "Drama", "Fantasy"]);
@@ -95,7 +95,7 @@ describe("AnilistProvider", () => {
       },
     });
 
-    const details = await provider.getDetails("999", MediaType.ANIME);
+    const details = await provider.getDetails("999");
 
     // 7 aired episodes (next airing is #8), romaji title fallback.
     expect(details.summary.title).toBe("Ongoing Show");

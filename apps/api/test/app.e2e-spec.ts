@@ -16,6 +16,7 @@ const ANIME_SUMMARY = {
   title: "Test Anime",
   year: 2024,
   posterUrl: "https://example.com/poster.jpg",
+  isAdult: false,
 };
 
 const FUTURE_AIR_DATE = new Date(
@@ -29,6 +30,7 @@ const ANIME_DETAILS: ProviderMediaDetails = {
   genres: ["Fantasy"],
   status: "FINISHED",
   releaseDate: "2024-01-05",
+  runtimeMin: null,
   externalIds: [{ source: MediaSource.ANILIST, externalId: "4242" }],
   seasons: [
     {

@@ -23,6 +23,7 @@
     "@loomkeep/shared": "workspace:*",
     "@tanstack/svelte-query": "^6.1.38",
     "mermaid": "^11.16.0",
+    "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "svelte-dnd-action": "^0.9.76"
   },

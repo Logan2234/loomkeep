@@ -3,10 +3,13 @@
 [![CI](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml/badge.svg)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
 
-Self-hosted tracker for **series, movies and anime** — with games, books and
-more planned. Built as a TV Time replacement you fully own: your data lives in
-your own PostgreSQL, catalogues come live from [TMDB](https://www.themoviedb.org/)
-(movies & series) and [AniList](https://anilist.co/) (anime).
+Self-hosted tracker for **series, movies, anime, games, books and music** —
+with optional friends/reviews/comments social features. Built as a TV Time
+replacement you fully own: your data lives in your own PostgreSQL, catalogues
+come live from [TMDB](https://www.themoviedb.org/) (movies & series),
+[AniList](https://anilist.co/) (anime), [IGDB](https://www.igdb.com/) (games),
+[Google Books](https://books.google.com/) (books) and
+[MusicBrainz](https://musicbrainz.org/) (music).
 
 ## Stack
 
@@ -151,16 +154,20 @@ pnpm --filter @loomkeep/api test:e2e    # full API flow, isolated "e2e" schema
   ngrok setup (single-origin Caddy proxy) exposes the local stack to your phone
   from anywhere — see "Mobile access" above. The native (Capacitor) wrapper is
   still to do.
-- **P3** (current) — games & books modules: games (IGDB, library + statuses +
-  playtime + Steam import) and books (Google Books/Open Library, library +
-  reading progress + StoryGraph import) are built, with per-domain stats and
-  community ratings. A unified global search covers all three domains, and
-  `enabledDomains` is enforced server-side on search/stats and filters
-  notifications. Manual match-correction is available on Steam and
-  StoryGraph imports. Remaining: more import sources (Goodreads, Babelio,
-  Backloggd), e2e coverage for games/books.
-- **P4** — social (friends, activity feed, shared lists)
-- **P5** — hosted offer / entitlements (open core)
+- **P3** ✓ — games, books & music modules: games (IGDB, library + statuses +
+  playtime + Steam import), books (Google Books, library + reading progress +
+  StoryGraph import) and music (MusicBrainz, library + listen status) are
+  built, with per-domain stats and community ratings. A unified global search
+  covers all four domains, and `enabledDomains` is enforced server-side on
+  search/stats and filters notifications. Manual match-correction is
+  available on Steam and StoryGraph imports. Remaining: more import sources
+  (Goodreads, Babelio, Backloggd, Discogs), e2e coverage for games/books.
+- **P4** ✓ — social: friends (follow/block, public/private/ghost profiles),
+  reviews (mandatory rating + optional text, separate from private notes),
+  threaded comments with spoiler-masking, an activity feed, cross-domain
+  shared lists, and a "Figurant" (ghost/incognito) mode. Gated behind the
+  `SOCIAL_ENABLED` runtime flag — off by default on self-host.
+- **P5** (current) — hosted offer / entitlements (open core). Not started.
 
 ## License
 

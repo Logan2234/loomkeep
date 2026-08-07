@@ -8,8 +8,6 @@
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
-  import { shareProfile as shareProfileNative } from "$lib/share-profile";
   import Switch from "$lib/components/Switch.svelte";
   import { appConfig } from "$lib/config.svelte";
   import type { UploadAvatarRequestDto } from "@loomkeep/shared";
@@ -183,17 +181,6 @@
         err instanceof ApiError ? err.message : "Enregistrement impossible";
     }
   }
-
-  let shareModalOpen = $state(false);
-
-  async function shareProfile() {
-    if (!auth.user) return;
-    const handled = await shareProfileNative(
-      auth.user.username,
-      auth.user.displayName,
-    );
-    if (!handled) shareModalOpen = true;
-  }
 </script>
 
 {#if auth.user}
@@ -320,29 +307,5 @@
         <p class="text-danger mt-2 text-sm">{adultContentError}</p>
       {/if}
     </div>
-
-    <div class="border-border mt-5 border-t pt-5">
-      <h2 class="font-semibold">Inviter des membres</h2>
-      <p class="text-dim mb-4 text-sm">
-        Il n'y a pas encore d'annuaire public — partagez le lien de votre profil
-        pour que d'autres puissent vous suivre.
-      </p>
-      <div class="flex flex-wrap gap-2">
-        <button class="btn btn-ghost" onclick={shareProfile}>
-          <Icon name="share" class="h-4 w-4" />
-          Partager mon profil
-        </button>
-        <button class="btn btn-ghost" onclick={() => (shareModalOpen = true)}>
-          <Icon name="qr-code" class="h-4 w-4" />
-          QR code
-        </button>
-      </div>
-    </div>
   </section>
-{/if}
-
-{#if shareModalOpen && auth.user}
-  <ShareProfileModal
-    username={auth.user.username}
-    onclose={() => (shareModalOpen = false)} />
 {/if}

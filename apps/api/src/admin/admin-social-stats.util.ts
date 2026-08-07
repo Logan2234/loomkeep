@@ -1,6 +1,8 @@
 import type {
+  AdminReportCategoryCountDto,
   AdminTopContributorDto,
   AdminTopReporterDto,
+  ReportCategory,
 } from "@loomkeep/shared";
 
 /** How many writers the "Top contributeurs" ranking carries. */
@@ -68,6 +70,18 @@ export function rankReporters(
       (a, b) => b.reports - a.reports || a.username.localeCompare(b.username),
     )
     .slice(0, limit);
+}
+
+/**
+ * Reports grouped by category, descending — `counts` excludes `null`
+ * (pre-picker reports) at the call site, this just orders what's left.
+ */
+export function rankByCategory(
+  counts: Map<ReportCategory, number>,
+): AdminReportCategoryCountDto[] {
+  return [...counts.entries()]
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category));
 }
 
 /** One account's writing volume, as counted separately on each table. */

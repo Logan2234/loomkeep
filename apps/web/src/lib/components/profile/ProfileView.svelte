@@ -23,11 +23,12 @@
   import Modal from "$lib/components/Modal.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
+  import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
   import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
   import StreakBadge from "$lib/components/StreakBadge.svelte";
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
+  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { shareProfile as shareProfileNative } from "$lib/share-profile";
   import type {
     ListDto,
     MyListDto,
@@ -229,15 +230,7 @@
   }
 
   let shareModalOpen = $state(false);
-
-  async function share() {
-    if (!profile) return;
-    const handled = await shareProfileNative(
-      profile.username,
-      profile.displayName,
-    );
-    if (!handled) shareModalOpen = true;
-  }
+  let scanModalOpen = $state(false);
 
   // Followers/following modal, opened from the counts below.
   let connectionsKind = $state<"followers" | "following" | null>(null);
@@ -426,15 +419,20 @@
             {/if}
           </div>
         {:else if rel?.isSelf}
-          <div class="flex shrink-0 gap-2">
-            <button class="btn btn-ghost" onclick={share}>
+          <!-- Mobile: an even 2×2 grid so 4 actions never wrap into a ragged
+               row on a narrow screen. Desktop: back to the usual inline row,
+               scanning dropped since it's a "point your phone at theirs"
+               action that doesn't make sense on a laptop. -->
+          <div class="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0">
+            <button
+              class="btn btn-ghost"
+              onclick={() => (shareModalOpen = true)}>
               <Icon name="share" class="h-4 w-4" /> Partager
             </button>
             <button
-              class="btn btn-ghost"
-              aria-label="QR code du profil"
-              onclick={() => (shareModalOpen = true)}>
-              <Icon name="qr-code" class="h-4 w-4" />
+              class="btn btn-ghost sm:hidden"
+              onclick={() => (scanModalOpen = true)}>
+              <Icon name="camera" class="h-4 w-4" /> Scanner
             </button>
             <a href="/settings" class="btn btn-ghost">
               <Icon name="gear" class="h-4 w-4" /> Paramètres
@@ -448,11 +446,7 @@
     </section>
 
     <!-- Per-domain library, gated by the viewer's visibility. -->
-    <p
-      class="text-dim mt-8 mb-3 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] uppercase">
-      Bibliothèque
-      <span class="border-border flex-1 border-t" aria-hidden="true"></span>
-    </p>
+    <SectionLabel label="Bibliothèque" class="mt-8 mb-3" />
     <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {#each profile.domains as d (d.domain)}
         {@const href = rel?.isSelf ? DOMAIN_HREF[d.domain] : undefined}
@@ -487,11 +481,7 @@
          the streak above (activityStats: MEDIA Activité facet; social counts:
          each type's own visibility rule). -->
     {#if (profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null || profile.activityStats.topGenres.length > 0)) || profile.reviewsCount > 0 || profile.commentsCount > 0 || profile.listsCount > 0}
-      <p
-        class="text-dim mt-8 mb-3 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] uppercase">
-        En chiffres
-        <span class="border-border flex-1 border-t" aria-hidden="true"></span>
-      </p>
+      <SectionLabel label="En chiffres" class="mt-8 mb-3" />
 
       {#if profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null)}
         <div
@@ -560,11 +550,7 @@
     <!-- Mini activity heatmap teaser (video-only) — the card itself isn't a
          link, only the "voir tout" line is, matching the mockup. -->
     {#if profile.activityStats.visible && profile.activityStats.heatmap.some((d) => d.count > 0)}
-      <p
-        class="text-dim mt-8 mb-3 flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] uppercase">
-        Activité
-        <span class="border-border flex-1 border-t" aria-hidden="true"></span>
-      </p>
+      <SectionLabel label="Activité" class="mt-8 mb-3" />
       <div class="card flex flex-wrap items-center gap-3.5 p-4">
         <CalendarHeatmap
           days={profile.activityStats.heatmap}
@@ -709,7 +695,12 @@
 {#if shareModalOpen && profile}
   <ShareProfileModal
     username={profile.username}
+    displayName={profile.displayName}
     onclose={() => (shareModalOpen = false)} />
+{/if}
+
+{#if scanModalOpen}
+  <ScanProfileModal onclose={() => (scanModalOpen = false)} />
 {/if}
 
 {#if avatarZoomed && profile}

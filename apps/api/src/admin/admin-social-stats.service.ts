@@ -4,6 +4,7 @@ import type {
   AdminSocialActivityTrendDto,
   AdminSocialSectionDto,
   AdminSocialStatsDto,
+  ReportCategory,
   TrendPeriod,
 } from "@loomkeep/shared";
 import { FollowStatus, ReportStatus, ReviewVoteValue } from "@loomkeep/shared";
@@ -18,6 +19,7 @@ import {
   contributorIds,
   foundedPercent,
   medianResolutionHours,
+  rankByCategory,
   rankContributors,
   type ContributionCounts,
 } from "./admin-social-stats.util";
@@ -134,15 +136,23 @@ export class AdminSocialStatsService {
   }
 
   private async reports(): Promise<AdminSocialStatsDto["reports"]> {
-    const [pending, resolved, dismissed, closed] = await Promise.all([
-      this.prisma.report.count({ where: { status: ReportStatus.PENDING } }),
-      this.prisma.report.count({ where: { status: ReportStatus.RESOLVED } }),
-      this.prisma.report.count({ where: { status: ReportStatus.DISMISSED } }),
-      this.prisma.report.findMany({
-        where: { resolvedAt: { not: null } },
-        select: { createdAt: true, resolvedAt: true },
-      }),
-    ]);
+    const [pending, resolved, dismissed, closed, byCategory] =
+      await Promise.all([
+        this.prisma.report.count({ where: { status: ReportStatus.PENDING } }),
+        this.prisma.report.count({ where: { status: ReportStatus.RESOLVED } }),
+        this.prisma.report.count({
+          where: { status: ReportStatus.DISMISSED },
+        }),
+        this.prisma.report.findMany({
+          where: { resolvedAt: { not: null } },
+          select: { createdAt: true, resolvedAt: true },
+        }),
+        this.prisma.report.groupBy({
+          by: ["category"],
+          where: { category: { not: null } },
+          _count: { _all: true },
+        }),
+      ]);
 
     return {
       pending,
@@ -155,6 +165,15 @@ export class AdminSocialStatsService {
         })),
       ),
       foundedPercent: foundedPercent(resolved, dismissed),
+      byCategory: rankByCategory(
+        new Map(
+          byCategory.map((r) => [
+            // Narrowed by the `not: null` filter above.
+            r.category as ReportCategory,
+            r._count._all,
+          ]),
+        ),
+      ),
     };
   }
 

@@ -6,7 +6,7 @@
 // the handful of counters the /admin dashboard and /admin/communications read
 // survive, as `AdminOverviewDto` (dto/admin.ts).
 
-import type { ProfileAccess } from "../enums";
+import type { ProfileAccess, ReportCategory } from "../enums";
 import type { TrendPeriod, TrendPointDto } from "./admin";
 import type { RatingBucketDto, StatsDomain } from "./stats";
 
@@ -141,6 +141,12 @@ export interface AdminSocialActivityTrendDto {
   total: number;
 }
 
+/** One report category ranked by volume, descending. */
+export interface AdminReportCategoryCountDto {
+  category: ReportCategory;
+  count: number;
+}
+
 export interface AdminReportsStatsDto {
   pending: number;
   resolved: number;
@@ -152,6 +158,13 @@ export interface AdminReportsStatsDto {
    * Null when nothing is closed.
    */
   foundedPercent: number | null;
+  /**
+   * Descending, every category with at least one report. Excludes reports
+   * filed before the category/motif picker existed (`category: null`) — an
+   * "unknown" bucket would just be noise on an instance old enough to have
+   * pre-picker rows.
+   */
+  byCategory: AdminReportCategoryCountDto[];
 }
 
 /** One account ranked by how much it writes. */

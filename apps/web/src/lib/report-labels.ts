@@ -1,7 +1,23 @@
 // French labels for the report category/motif picker (CommentThread.svelte
 // today; any future REVIEW/USER/LIST report button reuses the same picker).
 
-import type { ReportCategory, ReportMotif } from "@loomkeep/shared";
+import type {
+  ReportCategory,
+  ReportMotif,
+  ReportStatus,
+} from "@loomkeep/shared";
+
+export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+  PENDING: "En attente",
+  RESOLVED: "Résolu",
+  DISMISSED: "Rejeté",
+};
+
+export const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
+  PENDING: "border-accent/40 bg-accent/10 text-accent",
+  RESOLVED: "border-success/40 bg-success/10 text-success",
+  DISMISSED: "border-border bg-surface-2 text-dim",
+};
 
 export const REPORT_CATEGORY_ORDER: ReportCategory[] = [
   "SPAM",

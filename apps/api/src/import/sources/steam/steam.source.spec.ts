@@ -40,9 +40,18 @@ function detail(id: string, adult = false): ProviderGameDetails {
     },
     overview: null,
     backdropUrl: null,
+    screenshots: [],
     genres: [],
     platforms: [],
     releaseDate: null,
+    website: null,
+    similarGames: [],
+    developers: [],
+    publishers: [],
+    gameModes: [],
+    playerPerspectives: [],
+    franchiseGames: [],
+    ratings: [],
     externalIds: [{ source: GameSource.IGDB, externalId: id }],
   };
 }

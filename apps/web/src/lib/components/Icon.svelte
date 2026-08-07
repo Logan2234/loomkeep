@@ -186,5 +186,13 @@
     <rect x="14" y="3" width="7" height="7" rx="1" />
     <rect x="3" y="14" width="7" height="7" rx="1" />
     <path d="M14 14h3v3M20 14v3h-3M14 20h3v.01M20 20v.01" />
+  {:else if name === "camera"}
+    <path
+      d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+    <circle cx="12" cy="12.5" r="3.5" />
+  {:else if name === "link"}
+    <path d="M9 12h6" />
+    <path
+      d="M8.5 15.5H7a3.5 3.5 0 0 1 0-7h1.5M15.5 8.5H17a3.5 3.5 0 0 1 0 7h-1.5" />
   {/if}
 </svg>

@@ -1,7 +1,9 @@
+import type { ReportCategory } from "@loomkeep/shared";
 import {
   contributorIds,
   foundedPercent,
   medianResolutionHours,
+  rankByCategory,
   rankContributors,
   rankReporters,
   type ContributionCounts,
@@ -151,5 +153,29 @@ describe("rankReporters", () => {
       ["u3", 1],
     ]);
     expect(rankReporters(counts, usernames, 2)).toHaveLength(2);
+  });
+});
+
+describe("rankByCategory", () => {
+  it("orders categories by report count, most first", () => {
+    const counts = new Map<ReportCategory, number>([
+      ["SPAM", 3],
+      ["HARASSMENT", 11],
+    ]);
+    expect(rankByCategory(counts)).toEqual([
+      { category: "HARASSMENT", count: 11 },
+      { category: "SPAM", count: 3 },
+    ]);
+  });
+
+  it("breaks ties on the category name so the order is stable between refreshes", () => {
+    const counts = new Map<ReportCategory, number>([
+      ["VIOLENCE", 4],
+      ["HATE_SPEECH", 4],
+    ]);
+    expect(rankByCategory(counts).map((c) => c.category)).toEqual([
+      "HATE_SPEECH",
+      "VIOLENCE",
+    ]);
   });
 });

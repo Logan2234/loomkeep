@@ -30,6 +30,8 @@
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
+    REPORT_STATUS_COLORS,
+    REPORT_STATUS_LABELS,
   } from "$lib/report-labels";
   import { toast } from "$lib/toast.svelte";
   import type {
@@ -45,17 +47,6 @@
 
   // Must match PAGE_SIZE in apps/api/src/admin/admin-users.controller.ts.
   const PAGE_SIZE = 50;
-
-  const STATUS_LABELS: Record<ReportDto["status"], string> = {
-    PENDING: "En attente",
-    RESOLVED: "Résolu",
-    DISMISSED: "Rejeté",
-  };
-  const STATUS_COLORS: Record<ReportDto["status"], string> = {
-    PENDING: "border-accent/40 bg-accent/10 text-accent",
-    RESOLVED: "border-success/40 bg-success/10 text-success",
-    DISMISSED: "border-border bg-surface-2 text-dim",
-  };
 
   let users = $state<AdminUserDto[]>([]);
   let pageNum = $state(1);
@@ -791,9 +782,9 @@
         <li class="border-border rounded-lg border p-3 text-sm">
           <div class="flex items-center gap-2">
             <span
-              class="rounded-full border px-2 py-0.5 text-xs font-bold {STATUS_COLORS[
+              class="rounded-full border px-2 py-0.5 text-xs font-bold {REPORT_STATUS_COLORS[
                 r.status
-              ]}">{STATUS_LABELS[r.status]}</span>
+              ]}">{REPORT_STATUS_LABELS[r.status]}</span>
             <span class="text-dim ml-auto text-xs"
               >{dateFmt.format(new Date(r.createdAt))}</span>
           </div>

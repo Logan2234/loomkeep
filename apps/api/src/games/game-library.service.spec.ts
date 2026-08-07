@@ -55,6 +55,9 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     {} as GameItemService,
     {} as AgeGateService,
     reviews,
+    {
+      emit: jest.fn(),
+    } as unknown as import("../social/activity.service").ActivityService,
   );
   return { service, prisma };
 }
