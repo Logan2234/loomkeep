@@ -231,7 +231,11 @@ just bounces through silently, no second password).
 
    ```sh
    docker run --rm authelia/authelia:4.39.20 authelia crypto rand --length 64   # x4: reset-password jwt_secret, session secret, storage encryption_key, oidc hmac_secret
-   docker run --rm authelia/authelia:4.39.20 authelia crypto pair rsa generate -d .   # writes private.pem — paste its full contents (indented) into the oidc.jwks key
+   cd authelia && docker run --rm -v "$(pwd):/out" authelia/authelia:4.39.20 authelia crypto pair rsa generate -d /out && cd ..
+   # writes authelia/private.pem — paste its full contents (indented, including
+   # -----BEGIN/END PRIVATE KEY-----) into the oidc.jwks key, then delete both
+   # private.pem and public.pem (the -v mount is required — without it "-d ."
+   # writes inside the throwaway --rm container instead of your machine)
    docker run --rm authelia/authelia:4.39.20 authelia crypto hash generate argon2 --password 'your-own-password'   # your login — never tell anyone (including Claude) the plaintext
    ```
 

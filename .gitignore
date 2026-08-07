@@ -15,6 +15,10 @@ build/
 # "commit the .example, never the real file" convention as .env above.
 authelia/configuration.yml
 authelia/users_database.yml
+# Stray keygen output if the RSA keypair command is ever run without
+# deleting its output afterwards (see README "Single sign-on").
+authelia/private.pem
+authelia/public.pem
 
 # Generated docs (prisma-erd-generator output; regenerated on prisma generate OR modules.md for NestJS modules)
 docs/*
