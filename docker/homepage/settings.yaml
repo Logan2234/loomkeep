@@ -1,10 +1,13 @@
 ---
 title: Loomkeep
 theme: dark
-# "teal" is one of Homepage's built-in preset palettes (drives buttons,
-# hover/focus rings, widget accents) — picked to match custom.css's accent
-# instead of fighting it with two different teals.
-color: teal
+# Not "teal" here: Homepage's `color` setting doesn't just tint accents, it
+# recolors the whole page background/surfaces (theme-800/900 shades in dark
+# mode) — tried it live, produced a flat teal wash everywhere instead of a
+# dark neutral base, nowhere near the mockup. Keep the neutral "slate" base
+# and get the teal accent entirely from custom.css's hardcoded hex instead,
+# so it stays under our control.
+color: slate
 headerStyle: clean
 layout:
   # Single flat group (see services.yaml) standing in for the mockup's
