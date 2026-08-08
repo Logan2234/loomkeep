@@ -11,26 +11,21 @@
           # its own VPS's public hostname from inside the Docker network can
           # fail (hairpin NAT / depends on the host's own routing setup),
           # where the internal service name always works.
-          url: http://api:3000/api/health
-          # Homepage's customapi component has a specific rule: a response
-          # body containing a field literally named "error" that ISN'T also
-          # referenced in `mappings` gets treated as a failed call outright,
-          # even on a clean HTTP 200 (confirmed against Homepage's own
-          # component source) — and @nestjs/terminus's health check shape
-          # always includes an `error` key (`{}` when healthy). Mapping it
-          # is required to stop that false positive, but `format: text` on
-          # an *object* value crashes the whole tile (React error #31:
-          # "Objects are not valid as a React child") — found live. `remap`
-          # with `any: true` sidesteps this: it replaces literally any value
-          # with a fixed string before React ever sees the raw object.
+          #
+          # Deliberately NOT @nestjs/terminus's /health (used by Docker's
+          # own healthcheck, left untouched): its response always includes
+          # an `error` key (`{}` when healthy), and Homepage's customapi
+          # component crashes outright trying to render that object as a
+          # React child (error #31) — happened live even after mapping AND
+          # remapping that field. public-stats/summary is a plain
+          # string/number shape end to end, no such risk, and doubles as an
+          # implicit health check anyway (it fails if the DB query does).
+          url: http://api:3000/api/public-stats/summary
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
           mappings:
             - field: status
               label: Statut
-            - field: error
-              label: Erreurs
-              remap:
-                - any: true
-                  to: "—"
     - Admin:
         href: https://loomkeep.app/admin
         description: Panel admin (utilisateurs, backups, signalements...)

@@ -317,16 +317,22 @@ generate each): `PORTAINER_API_KEY`, `PORTAINER_ENV_ID`,
 `GLITCHTIP_API_TOKEN`, `GLITCHTIP_ORG_SLUG`. Any left empty just means that
 tile's widget shows no data — nothing else breaks.
 
-The app's own tile shows its `/health` status (no key needed — same
-endpoint Docker's own healthcheck uses). A separate "Statistiques" tile
-shows the registered-account count via a small dedicated endpoint,
+The app's own tile and the "Statistiques" tile both read
 `GET /api/public-stats/summary` (`apps/api/src/admin/public-stats.controller.ts`)
-— deliberately not the full `/admin/stats` page's `getStats()`, which
-computes cohorts/retention curves too heavy to run on every ~10s widget
-poll. Gated by a shared secret (`HOMEPAGE_STATS_API_KEY` in `.env`, sent as
-a bearer token) rather than the app's normal JWT login, since Homepage has
-no user session — generate any long random string, the endpoint fails
-closed (unreachable, not just widget-less) if it's unset. Authelia's tile
+— a small dedicated endpoint, deliberately not the full `/admin/stats`
+page's `getStats()`, which computes cohorts/retention curves too heavy to
+run on every ~10s widget poll. Gated by a shared secret
+(`HOMEPAGE_STATS_API_KEY` in `.env`, sent as a bearer token) rather than the
+app's normal JWT login, since Homepage has no user session — generate any
+long random string, the endpoint fails closed (unreachable, not just
+widget-less) if it's unset. It's used here rather than `@nestjs/terminus`'s
+`/health` (still what Docker's own healthcheck uses, untouched) because
+Terminus's response always includes an `error` object field (`{}` when
+healthy), and Homepage's customapi widget crashes outright trying to render
+that as a React child (error #31) — happened live, even after mapping and
+remapping that field away. `public-stats/summary` is plain strings/numbers
+end to end, no such risk, and still doubles as an implicit health signal
+(it fails if the DB query does). Authelia's tile
 lives in
 `bookmarks.yaml`, not the main service tiles — nothing to manage there
 day-to-day, kept only as a visible reminder the dashboards sit behind SSO.

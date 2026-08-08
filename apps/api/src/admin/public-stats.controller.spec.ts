@@ -19,6 +19,7 @@ describe("PublicStatsController", () => {
     process.env.GIT_SHA = "a1b2c3d4e5f6";
     const controller = makeController(3);
     await expect(controller.getSummary()).resolves.toEqual({
+      status: "ok",
       userCount: 3,
       gitSha: "a1b2c3d",
     });
@@ -28,6 +29,7 @@ describe("PublicStatsController", () => {
     delete process.env.GIT_SHA;
     const controller = makeController(0);
     await expect(controller.getSummary()).resolves.toEqual({
+      status: "ok",
       userCount: 0,
       gitSha: "unknown",
     });
