@@ -26,6 +26,8 @@ import { AdminSystemController } from "./admin-system.controller";
 import { AdminUsersController } from "./admin-users.controller";
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
+import { PublicStatsController } from "./public-stats.controller";
+import { PublicStatsGuard } from "./public-stats.guard";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
 import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
 import { AdminOverviewService } from "./admin-overview.service";
@@ -62,10 +64,12 @@ import { BackupService } from "./backup.service";
     AdminImportsController,
     AdminReportsController,
     AdminStatsController,
+    PublicStatsController,
   ],
   providers: [
     AdminService,
     AdminGuard,
+    PublicStatsGuard,
     AdminOverviewService,
     AdminAccountsStatsService,
     AdminCatalogueStatsService,

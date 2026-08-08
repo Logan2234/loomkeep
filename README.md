@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml/badge.svg)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
+[![healthchecks.io](https://healthchecks.io/badge/e006c4d6-231b-434f-8357-4fa7ab/CWqULdZN.svg)](https://healthchecks.io/)
 
 Self-hosted tracker for **series, movies, anime, games, books and music** —
 with optional friends/reviews/comments social features. Built as a TV Time
@@ -228,7 +229,16 @@ generate each): `PORTAINER_API_KEY`, `PORTAINER_ENV_ID`,
 tile's widget shows no data — nothing else breaks.
 
 The app's own tile shows its `/health` status (no key needed — same
-endpoint Docker's own healthcheck uses). Authelia's tile lives in
+endpoint Docker's own healthcheck uses). A separate "Statistiques" tile
+shows the registered-account count via a small dedicated endpoint,
+`GET /api/public-stats/summary` (`apps/api/src/admin/public-stats.controller.ts`)
+— deliberately not the full `/admin/stats` page's `getStats()`, which
+computes cohorts/retention curves too heavy to run on every ~10s widget
+poll. Gated by a shared secret (`HOMEPAGE_STATS_API_KEY` in `.env`, sent as
+a bearer token) rather than the app's normal JWT login, since Homepage has
+no user session — generate any long random string, the endpoint fails
+closed (unreachable, not just widget-less) if it's unset. Authelia's tile
+lives in
 `bookmarks.yaml`, not the main service tiles — nothing to manage there
 day-to-day, kept only as a visible reminder the dashboards sit behind SSO.
 `bookmarks.yaml` also has a "recent error logs" deep link straight into

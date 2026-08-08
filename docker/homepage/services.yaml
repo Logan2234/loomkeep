@@ -19,6 +19,23 @@
         href: https://loomkeep.app/admin
         description: Panel admin (utilisateurs, backups, signalements...)
         icon: mdi-shield-account
+    - Statistiques:
+        # Click goes to the real admin stats page — this tile is just the
+        # one cheap number worth seeing at a glance (see
+        # apps/api/src/admin/public-stats.controller.ts — deliberately not
+        # the full /admin/stats getStats(), which computes cohorts/
+        # retention curves that are too heavy for a ~10s widget poll).
+        href: https://loomkeep.app/admin/stats
+        description: Nombre de comptes inscrits
+        icon: mdi-chart-line
+        widget:
+          type: customapi
+          url: http://api:3000/api/public-stats/summary
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
+          mappings:
+            - field: userCount
+              label: Comptes
 
 - Observability:
     - Grafana:
