@@ -42,7 +42,8 @@ Domain modules, one per bounded concern:
 - `lists/` — user-curated, optionally shared collections.
 - `notifications/`, `jobs/` — in-app notifications, Web Push, and the
   scheduled jobs (`@nestjs/schedule`) that scan tracked shows for new
-  episodes.
+  episodes. `JobRunService` records every run for the admin "Jobs" page and
+  optionally pings Healthchecks.io per job — see the [Docker README](../../docker/README.md#job-monitoring-healthchecksio).
 - `stats/` — per-domain and admin aggregate statistics.
 - `admin/` — moderation queue, ops summaries.
 - `auth/`, `users/`, `security/` — auth flows, account management,

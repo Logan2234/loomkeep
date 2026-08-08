@@ -65,6 +65,23 @@ redirects `www.<DOMAIN>` to the apex; it's a dedicated site block matching
 only that one hostname so it can't shadow subdomain blocks like
 `grafana.<DOMAIN>`.
 
+## Job monitoring (Healthchecks.io)
+
+Not a compose override — no container to run. `JobRunService.record()`
+(`apps/api/src/jobs/job-run.service.ts`) already wraps every `@Cron()` job
+and persists success/failure to the `JobRun` table for the admin "Jobs"
+page; `ping()` on the same class additionally pings a per-job
+Healthchecks.io URL (`JOB_HEALTHCHECK_ENV` in `job-keys.ts` maps each
+`JobKey` to its env var) on both outcomes — success to the plain URL,
+failure to its `/fail` suffix. The two mechanisms are complementary, not
+redundant: `JobRun` only gets written when the job actually runs, so it
+can't see a job that silently stopped firing at all — that's exactly the
+gap Healthchecks.io's own "no ping arrived in time" alerting covers, since
+the *absence* of a ping is itself the signal. Best-effort by design: a
+`fetch()` failure to Healthchecks.io is swallowed, never allowed to affect
+the job's own recorded outcome. See root README "Job monitoring" for the
+account setup and env vars.
+
 ## Error tracking (`docker-compose.glitchtip.yml`)
 
 GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in

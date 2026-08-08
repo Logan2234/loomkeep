@@ -2,7 +2,12 @@ import { Injectable } from "@nestjs/common";
 import type { JobDto, JobRunDto } from "@loomkeep/shared";
 import type { JobRun } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { JOB_KEYS, JOB_REGISTRY, type JobKey } from "./job-keys";
+import {
+  JOB_HEALTHCHECK_ENV,
+  JOB_KEYS,
+  JOB_REGISTRY,
+  type JobKey,
+} from "./job-keys";
 
 /** Runs kept per job — bounds the table on a self-host instance running for years. */
 const RUNS_KEPT_PER_JOB = 50;
@@ -27,6 +32,7 @@ export class JobRunService {
     try {
       const result = await fn();
       await this.persist(jobKey, startedAt, "SUCCESS", summarize(result));
+      await this.ping(jobKey, true);
       return result;
     } catch (err) {
       await this.persist(
@@ -36,7 +42,26 @@ export class JobRunService {
         undefined,
         err instanceof Error ? err.message : String(err),
       );
+      await this.ping(jobKey, false);
       throw err;
+    }
+  }
+
+  /**
+   * Healthchecks.io dead-man's-switch ping: unlike the JobRun row above
+   * (only ever written when the job actually runs), Healthchecks.io itself
+   * notices when a job *stops* pinging on schedule — a crashed scheduler or
+   * a hung job neither of us would otherwise catch. Best-effort: a
+   * monitoring hiccup must never affect the job's own outcome.
+   */
+  private async ping(jobKey: JobKey, success: boolean): Promise<void> {
+    const url = process.env[JOB_HEALTHCHECK_ENV[jobKey]];
+    if (!url) return;
+
+    try {
+      await fetch(success ? url : `${url}/fail`);
+    } catch {
+      // Ignored — see doc comment above.
     }
   }
 
