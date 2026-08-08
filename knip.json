@@ -2,7 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     "apps/api": {
-      "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"]
+      "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"],
+      "ignoreDependencies": ["pino-pretty"]
     },
     "apps/web": {},
     "packages/shared": {}

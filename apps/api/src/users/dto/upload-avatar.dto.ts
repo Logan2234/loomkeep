@@ -11,7 +11,7 @@ export const ALLOWED_AVATAR_MIME_TYPES = [
 // 3MB of base64 text decodes to ~2.2MB of bytes — comfortably above what a
 // client-side canvas resize (see ProfileSection.svelte) produces, but still
 // bounded so a user can't stash arbitrary large blobs in the database.
-export const MAX_AVATAR_BASE64_LENGTH = 3 * 1024 * 1024;
+const MAX_AVATAR_BASE64_LENGTH = 3 * 1024 * 1024;
 
 export class UploadAvatarDto implements UploadAvatarRequestDto {
   @IsIn(ALLOWED_AVATAR_MIME_TYPES)

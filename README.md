@@ -2,8 +2,13 @@
 
 **Build & quality** </br>
 [![CI](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/ci.yml?branch=main&label=CI)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/codeql.yml?branch=main&label=CodeQL)](https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
+
+**Security** </br>
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/codeql.yml?branch=main&label=CodeQL)](https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml)
+[![Trivy](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/trivy.yml?branch=main&label=Trivy)](https://github.com/Logan2234/tracklore/actions/workflows/trivy.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Logan2234/tracklore/badge)](https://scorecard.dev/viewer/?uri=github.com/Logan2234/tracklore)
+[![Security Policy](https://img.shields.io/badge/security-policy-blue)](SECURITY.md)
 
 **Status in production** </br>
 [![healthchecks.io](https://healthchecks.io/badge/e006c4d6-231b-434f-8357-4fa7ab/CWqULdZN.svg)](https://healthchecks.io/)
