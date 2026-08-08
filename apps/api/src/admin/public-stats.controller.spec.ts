@@ -1,12 +1,20 @@
+import type { AdminService } from "./admin.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { PublicStatsController } from "./public-stats.controller";
 
-function makeController(counts: {
-  userCount: number;
-  mediaCount: number;
-  openReports: number;
-  newUsers7d: number;
-}) {
+function makeController(
+  counts: {
+    userCount: number;
+    mediaCount: number;
+    openReports: number;
+    newUsers7d: number;
+  },
+  services: {
+    comingSoon?: boolean;
+    configured: boolean;
+    reachable: boolean | null;
+  }[] = [],
+) {
   const userCountMock = jest
     .fn()
     .mockResolvedValueOnce(counts.userCount)
@@ -16,7 +24,12 @@ function makeController(counts: {
     libraryEntry: { count: jest.fn().mockResolvedValue(counts.mediaCount) },
     report: { count: jest.fn().mockResolvedValue(counts.openReports) },
   } as unknown as PrismaService;
-  return new PublicStatsController(prisma);
+  const admin = {
+    getServicesStatus: jest
+      .fn()
+      .mockResolvedValue({ services, checkedAt: new Date().toISOString() }),
+  } as unknown as AdminService;
+  return new PublicStatsController(prisma, admin);
 }
 
 describe("PublicStatsController", () => {
@@ -59,6 +72,35 @@ describe("PublicStatsController", () => {
       openReports: 0,
       newUsers7d: 0,
       gitSha: "unknown",
+    });
+  });
+});
+
+describe("PublicStatsController.getServicesSummary", () => {
+  const zeroCounts = {
+    userCount: 0,
+    mediaCount: 0,
+    openReports: 0,
+    newUsers7d: 0,
+  };
+
+  it("counts configured-and-reachable-or-unprobed services, excluding comingSoon", async () => {
+    const controller = makeController(zeroCounts, [
+      { configured: true, reachable: true }, // healthy
+      { configured: true, reachable: null }, // unprobeable but configured — healthy
+      { configured: true, reachable: false }, // probed down — unhealthy
+      { configured: false, reachable: null }, // not configured — unhealthy
+      { configured: false, reachable: null, comingSoon: true }, // excluded entirely
+    ]);
+    await expect(controller.getServicesSummary()).resolves.toEqual({
+      operational: "2/4",
+    });
+  });
+
+  it("reports 0/0 when there are no live providers", async () => {
+    const controller = makeController(zeroCounts, []);
+    await expect(controller.getServicesSummary()).resolves.toEqual({
+      operational: "0/0",
     });
   });
 });
