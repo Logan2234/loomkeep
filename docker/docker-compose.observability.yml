@@ -115,7 +115,7 @@ services:
   # Reuses the app's own DB user — this is a single-user self-host, not
   # worth provisioning a separate read-only monitoring role for.
   postgres_exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.11.1
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
     restart: unless-stopped
     logging: *default-logging
     environment:
