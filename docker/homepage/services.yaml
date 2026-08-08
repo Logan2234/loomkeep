@@ -18,15 +18,19 @@
           # even on a clean HTTP 200 (confirmed against Homepage's own
           # component source) — and @nestjs/terminus's health check shape
           # always includes an `error` key (`{}` when healthy). Mapping it
-          # explicitly (even though there's nothing worth showing when it's
-          # empty) is what stops the whole tile from just saying "API Error"
-          # with no other field rendered.
+          # is required to stop that false positive, but `format: text` on
+          # an *object* value crashes the whole tile (React error #31:
+          # "Objects are not valid as a React child") — found live. `remap`
+          # with `any: true` sidesteps this: it replaces literally any value
+          # with a fixed string before React ever sees the raw object.
           mappings:
             - field: status
               label: Statut
             - field: error
               label: Erreurs
-              format: text
+              remap:
+                - any: true
+                  to: "—"
     - Admin:
         href: https://loomkeep.app/admin
         description: Panel admin (utilisateurs, backups, signalements...)
@@ -203,18 +207,22 @@
         href: https://github.com/Logan2234/tracklore/commits/main
         description: Dernier commit sur main
         icon: si-github
-        # Public GitHub API, no token — comparatively low rate limit
-        # unauthenticated (60/h, shared across every widget hitting
-        # api.github.com), hence the long refreshInterval. GitHub's API
-        # hard-rejects any request with no User-Agent header at all
-        # ("Request forbidden by administrative rules") — found live,
-        # Homepage doesn't send one by default.
+        # Reuses the same Dependabot-scoped token below, just for the higher
+        # authenticated rate limit (5000/h vs 60/h) — being authenticated at
+        # all is what raises the limit, regardless of which specific
+        # permissions the token was granted; commits/workflow-runs are
+        # public data anyway. Started unauthenticated, hit "API rate limit
+        # exceeded" live within a day of normal testing/reloading. GitHub's
+        # API also hard-rejects any request with no User-Agent header at all
+        # ("Request forbidden by administrative rules") — Homepage doesn't
+        # send one by default.
         widget:
           type: customapi
           url: https://api.github.com/repos/Logan2234/tracklore/commits/main
           refreshInterval: 300000
           headers:
             User-Agent: "loomkeep-homepage"
+            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
           mappings:
             - field: commit.author.date
               label: Mis à jour
@@ -229,6 +237,7 @@
           refreshInterval: 300000
           headers:
             User-Agent: "loomkeep-homepage"
+            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
           mappings:
             - field: workflow_runs.0.updated_at
               label: Déployé
