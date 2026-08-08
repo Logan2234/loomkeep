@@ -35,6 +35,48 @@ override — Compose doesn't merge YAML anchors across `-f` files). App-level
 logging conventions (structured JSON, redaction, exception filter) are
 documented in the root `CLAUDE.md`.
 
+## Cloudflare, real client IPs & bot protection
+
+Not a compose override — a DNS-level choice (proxy the domain through
+Cloudflare or not) plus two small pieces of app code. See root README
+"Cloudflare" and "Bot protection" for the dashboard setup.
+
+`TRUST_PROXY` (`apps/api/src/main.ts`, passed to `FastifyAdapter`) gates
+whether the API trusts `X-Forwarded-For` for `request.ip`/`@Ip()`/
+`ThrottlerGuard`'s per-IP tracking. Off by default — trusting it
+unconditionally would let anyone hitting the API directly spoof their own
+IP via that header. `docker-compose.prod.yml` sets it to `"true"` because
+Caddy is unconditionally the one hop in front of the API in that override;
+the base `docker-compose.yml` (self-host, no Caddy in front) leaves it
+off. This matters more once Cloudflare is proxying too: Caddy's own
+`X-Forwarded-For` chain already carries the real visitor IP by the time it
+reaches the API (Cloudflare sets it correctly upstream), so trusting
+Caddy's one hop is enough — no Cloudflare-specific header handling needed
+in app code.
+
+`TurnstileService` (`apps/api/src/auth/turnstile.service.ts`) verifies the
+register form's Cloudflare Turnstile token server-side via Cloudflare's
+`siteverify` API, called from `AuthService.register()` before any DB
+write. Fails closed on a network/API error (a Cloudflare hiccup shouldn't
+silently disable bot protection) but is a pure no-op — always passes —
+when `TURNSTILE_SECRET_KEY` is unset, same "empty disables the feature"
+convention as everywhere else. The widget itself
+(`apps/web/src/lib/components/Turnstile.svelte`) loads Cloudflare's script
+directly rather than an npm package (their own recommended integration
+path) and only renders when `PUBLIC_TURNSTILE_SITE_KEY` is set.
+
+## Image vulnerability scanning (Trivy)
+
+`.github/workflows/trivy.yml` — separate from `ci.yml`'s own
+`docker-build` job (which only validates the Dockerfiles still build) and
+from `codeql.yml` (static analysis of this repo's own source). Trivy scans
+the _built images_ for known CVEs in OS packages and dependencies baked
+into `node:26-alpine`, catching vulnerabilities Dependabot's
+version-bump-only Docker ecosystem support can't see. Same triggers and
+advisory-only philosophy as `codeql.yml` (push/PR to `main` + a Monday
+cron so a new CVE in an unchanged base image still gets caught; results go
+to the Security tab as SARIF, never fail the build).
+
 ## Metrics & log search (`docker-compose.observability.yml`)
 
 Optional override adding Grafana + Loki + Promtail (logs) and Prometheus +

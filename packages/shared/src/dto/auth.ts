@@ -10,6 +10,8 @@ export interface RegisterRequestDto {
   email: string;
   password: string;
   displayName: string;
+  /** Cloudflare Turnstile response token — required only when TURNSTILE_SECRET_KEY is set server-side. */
+  turnstileToken?: string;
 }
 
 export interface LoginRequestDto {

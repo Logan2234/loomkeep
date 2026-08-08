@@ -5,12 +5,13 @@ import { SecurityModule } from "../security/security.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { SessionsController } from "./sessions.controller";
+import { TurnstileService } from "./turnstile.service";
 
 @Module({
   // Secrets are provided per sign/verify call (access vs refresh), so no default here.
   imports: [JwtModule.register({ global: true }), MailModule, SecurityModule],
   controllers: [AuthController, SessionsController],
-  providers: [AuthService],
+  providers: [AuthService, TurnstileService],
   exports: [AuthService],
 })
 export class AuthModule {}

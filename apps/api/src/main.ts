@@ -19,7 +19,18 @@ async function bootstrap() {
     AppModule,
     // TV Time import posts several CSV files as a JSON body; the default 1 MB
     // Fastify limit is too small for a full watch history.
-    new FastifyAdapter({ bodyLimit: 25 * 1024 * 1024 }),
+    new FastifyAdapter({
+      bodyLimit: 25 * 1024 * 1024,
+      // Off by default: trusting X-Forwarded-For is only safe when every
+      // request truly passes through a controlled proxy first. Self-host
+      // (base docker-compose.yml, no Caddy) exposes the API directly, so a
+      // client could set X-Forwarded-For itself and spoof its IP for
+      // rate-limiting/@Ip() purposes — hence opt-in via TRUST_PROXY, set to
+      // "true" only in docker-compose.prod.yml (Caddy always sits in front
+      // there). See docker/README.md "Cloudflare" for the residual risk of
+      // the API's port still being reachable directly, bypassing Caddy.
+      trustProxy: process.env.TRUST_PROXY === "true",
+    }),
     {
       // Nest's built-in console logger is replaced by nestjs-pino below
       // (structured JSON, see common/logger.config.ts) — bufferLogs holds

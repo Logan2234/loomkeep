@@ -4,6 +4,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Ip,
   Post,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
@@ -28,8 +29,9 @@ export class AuthController {
   register(
     @Body() dto: RegisterDto,
     @Headers("user-agent") userAgent?: string,
+    @Ip() ip?: string,
   ): Promise<AuthResult> {
-    return this.authService.register(dto, userAgent);
+    return this.authService.register(dto, userAgent, ip);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })

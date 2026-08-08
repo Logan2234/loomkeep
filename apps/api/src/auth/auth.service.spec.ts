@@ -13,6 +13,7 @@ import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import { AuthService } from "./auth.service";
+import type { TurnstileService } from "./turnstile.service";
 
 const SECRETS: Record<string, string> = {
   JWT_ACCESS_SECRET: "access-secret",
@@ -94,17 +95,46 @@ function makeService(adminEmail?: string) {
     record: jest.fn(),
   } as unknown as SecurityEventService;
 
+  const turnstile = {
+    verify: jest.fn().mockResolvedValue(true),
+  } as unknown as TurnstileService;
+
   const service = new AuthService(
     prisma,
     jwtService,
     configService,
     mail,
     security,
+    turnstile,
   );
-  return { service, prisma, jwtService, configService, mail, security };
+
+  return {
+    service,
+    prisma,
+    jwtService,
+    configService,
+    mail,
+    security,
+    turnstile,
+  };
 }
 
 describe("AuthService.register", () => {
+  it("throws BadRequestException when Turnstile verification fails", async () => {
+    const { service, prisma, turnstile } = makeService();
+    (turnstile.verify as jest.Mock).mockResolvedValue(false);
+
+    await expect(
+      service.register({
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+        turnstileToken: "bad-token",
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it("throws ConflictException when the email is already taken", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());

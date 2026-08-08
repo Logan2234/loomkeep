@@ -1,11 +1,18 @@
 <script lang="ts">
+  import { env } from "$env/dynamic/public";
   import { goto } from "$app/navigation";
   import { register, ApiError } from "$lib/api/client";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import Turnstile from "$lib/components/Turnstile.svelte";
+
+  // Empty = self-host without a Cloudflare account configured — no widget,
+  // register() sends no token and the API's own check no-ops the same way.
+  const turnstileSiteKey = env.PUBLIC_TURNSTILE_SITE_KEY;
 
   let displayName = $state("");
   let email = $state("");
   let password = $state("");
+  let turnstileToken = $state("");
   let error = $state<string | null>(null);
   let loading = $state(false);
 
@@ -14,7 +21,7 @@
     error = null;
     loading = true;
     try {
-      await register({ email, password, displayName });
+      await register({ email, password, displayName, turnstileToken });
       await goto("/");
     } catch (err) {
       error = err instanceof ApiError ? err.message : "Inscription impossible";
@@ -54,8 +61,16 @@
         bind:value={password}
         minlength={8}
         required />
+      {#if turnstileSiteKey}
+        <Turnstile
+          siteKey={turnstileSiteKey}
+          onVerify={(token) => (turnstileToken = token)} />
+      {/if}
       {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-      <button type="submit" class="btn btn-primary" disabled={loading}>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        disabled={loading || (!!turnstileSiteKey && !turnstileToken)}>
         {loading ? "Création…" : "Créer le compte"}
       </button>
       <p class="text-dim text-center text-sm">

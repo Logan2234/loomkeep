@@ -23,6 +23,9 @@ services:
       NODE_ENV: production
       WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      # Safe here specifically because Caddy is always the one hop in front
+      # of the API in this override — see main.ts's FastifyAdapter comment.
+      TRUST_PROXY: "true"
       # This is the public instance — turn the social features on (the
       # web reads this back via GET /api/config).
       SOCIAL_ENABLED: "true"

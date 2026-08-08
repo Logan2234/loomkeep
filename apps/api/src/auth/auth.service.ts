@@ -19,6 +19,7 @@ import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { TurnstileService } from "./turnstile.service";
 
 const ACCESS_TOKEN_TTL = "15m";
 const REFRESH_TOKEN_TTL_DAYS = 30;
@@ -39,9 +40,18 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly mail: MailService,
     private readonly security: SecurityEventService,
+    private readonly turnstile: TurnstileService,
   ) {}
 
-  async register(dto: RegisterDto, userAgent?: string): Promise<AuthResult> {
+  async register(
+    dto: RegisterDto,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<AuthResult> {
+    if (!(await this.turnstile.verify(dto.turnstileToken, ip))) {
+      throw new BadRequestException("Anti-bot verification failed");
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
