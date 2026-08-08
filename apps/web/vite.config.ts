@@ -55,6 +55,16 @@ export default defineConfig({
             url: "/stats",
             icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
           },
+          {
+            name: "Mon profil",
+            url: "/profile",
+            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+          },
+          {
+            name: "Paramètres",
+            url: "/settings",
+            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+          },
         ],
         icons: [
           { src: "/favicon.svg", sizes: "any", type: "image/svg+xml" },
