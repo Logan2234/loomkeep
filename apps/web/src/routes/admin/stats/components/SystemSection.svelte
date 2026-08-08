@@ -36,11 +36,8 @@
 
   const opsItems = $derived([
     {
-      value:
-        stats.ops.notificationReadPercent === null
-          ? "—"
-          : `${stats.ops.notificationReadPercent} %`,
-      label: "Notifs lues",
+      value: nf.format(stats.ops.notificationsPending),
+      label: "Notifs en attente",
     },
     // A count, not a live/dead ratio: nothing tracks whether an endpoint still
     // answers, so a denominator here would be invented.

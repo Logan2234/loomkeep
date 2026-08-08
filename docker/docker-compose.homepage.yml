@@ -43,6 +43,7 @@ services:
       - ./homepage/widgets.yaml:/app/config/widgets.yaml:ro
       - ./homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
       - ./homepage/custom.css:/app/config/custom.css:ro
+      - ../apps/web/static/favicon.ico:/app/public/images/favicon.ico:ro
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml:
   # adds the Homepage site block + its domain, without redeclaring the

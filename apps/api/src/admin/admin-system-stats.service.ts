@@ -4,7 +4,7 @@ import { SecurityEventType } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
 import { startOfUtcDay } from "./admin-stats.util";
-import { providerCallRows, shareOrNull } from "./admin-system-stats.util";
+import { providerCallRows } from "./admin-system-stats.util";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,14 +50,12 @@ export class AdminSystemStatsService {
 
   private async ops(now: Date): Promise<AdminSystemSectionDto["ops"]> {
     const [
-      notifications,
-      notificationsRead,
+      notificationsPending,
       pushSubscriptions,
       failedLogins24h,
       lastBackup,
     ] = await Promise.all([
       this.prisma.notification.count(),
-      this.prisma.notification.count({ where: { readAt: { not: null } } }),
       this.prisma.pushSubscription.count(),
       this.prisma.securityEvent.count({
         where: {
@@ -72,7 +70,7 @@ export class AdminSystemStatsService {
     ]);
 
     return {
-      notificationReadPercent: shareOrNull(notificationsRead, notifications),
+      notificationsPending,
       pushSubscriptions,
       failedLogins24h,
       lastBackup: lastBackup

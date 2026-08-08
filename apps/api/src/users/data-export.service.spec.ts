@@ -174,7 +174,6 @@ describe("DataExportService.buildExport", () => {
         body: "S1E2 · Pilot",
         url: "/media/series/42",
         data: { airDate: "2026-01-05T00:00:00.000Z" },
-        readAt: null,
         createdAt: new Date("2026-01-06T00:00:00.000Z"),
       },
     ]);

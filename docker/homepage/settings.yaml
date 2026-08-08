@@ -1,31 +1,24 @@
 ---
 title: Loomkeep
+
 description:
   "Homepage for Loomkeep, regrouping all the dashboards and services in one place. Not a
   replacement for the individual dashboards, just a convenient overview."
+
+favicon: /images/favicon.ico
 theme: dark
-# Not "teal": Homepage's `color` setting doesn't just tint accents, it
-# recolors the whole page background/surfaces (theme-800/900 shades in dark
-# mode) — tried it live, produced a flat teal wash everywhere. "slate" is
-# the neutral default. A custom.css reskin (dark/mono/hairline) was also
-# tried and abandoned: Homepage's tile anatomy is fixed, so it never
-# actually matched what was being aimed for — plain native styling instead.
 color: slate
-headerStyle: clean
+headerStyle: underlined
+disableCollapse: true
+target: _blank
+hideVersion: true
+statusStyle: "dot"
+disableIndexing: true
+
 layout:
-  # Homepage stacks tiles vertically (one per line) by default — `columns`
-  # alone does nothing; it only takes effect together with `style: row`
-  # (confirmed against src/components/services/group.jsx). Alertes is
-  # deliberately left at the default (no style/columns): its three tiles are
-  # alert lists, not KPIs, and need full width for the row text, not a
-  # cramped side-by-side column.
   Loomkeep:
     icon: mdi-view-dashboard
     style: row
-    # 2, not 3: App/Statistiques/Admin are ordered so a 2-column row places
-    # Admin directly under App (row 1: App|Statistiques, row 2: Admin|—),
-    # per the "Admin under App, Statistiques on the right" request — no
-    # per-tile row-span in Homepage's grid, so ordering is the only lever.
     columns: 2
   Infrastructure:
     icon: mdi-server-network

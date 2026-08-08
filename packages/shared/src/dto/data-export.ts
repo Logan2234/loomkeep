@@ -116,7 +116,6 @@ export interface DataExportNotification {
   url: string | null;
   /** Kind-specific extras (episode airDate, social actor identity…). */
   data: Record<string, unknown>;
-  readAt: string | null;
   createdAt: string;
 }
 

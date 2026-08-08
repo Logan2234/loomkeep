@@ -219,7 +219,6 @@ export class DataExportService {
         body: n.body,
         url: n.url,
         data: (n.data ?? {}) as Record<string, unknown>,
-        readAt: n.readAt?.toISOString() ?? null,
         createdAt: n.createdAt.toISOString(),
       })),
     };

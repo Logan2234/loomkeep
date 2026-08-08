@@ -227,8 +227,12 @@ export interface AdminBackupSummaryDto {
 }
 
 export interface AdminOpsSignalsDto {
-  /** Share (0-100) of notifications ever marked read; null when none exist. */
-  notificationReadPercent: number | null;
+  /**
+   * Notification rows currently outstanding. Reading one deletes it (see the
+   * `Notification` model), so there's no read/unread split any more — a row's
+   * existence already means "unread".
+   */
+  notificationsPending: number;
   /**
    * Push subscription rows. A total, not a live/dead split: nothing tracks
    * whether an endpoint still answers.

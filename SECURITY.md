@@ -15,7 +15,7 @@ self-host from the latest `main`.
 Please **do not** open a public issue for a security vulnerability.
 
 Instead, use GitHub's private reporting: go to the
-[Security tab](https://github.com/Logan2234/tracklore/security) →
+[Security tab](https://github.com/Logan2234/loomkeep/security) →
 **Report a vulnerability**. This opens a private advisory visible only to
 the maintainer.
 

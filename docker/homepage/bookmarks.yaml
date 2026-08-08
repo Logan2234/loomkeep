@@ -1,60 +1,40 @@
-# External services this session touched or that Loomkeep depends on —
-# generic login/dashboard URLs, nothing account-specific. Add more as you go.
 ---
 - Développement:
     - GitHub (repo):
-        # No widget — GitHub's own API needs a repo-scoped token for
-        # anything beyond public rate-limited reads, not worth it just for
-        # a link tile.
-        - href: https://github.com/Logan2234/tracklore
+        - href: https://github.com/Logan2234/loomkeep
           icon: si-github
+          description: "Loomkeep's GitHub repo"
 
 - Infra:
-    # Brevo moved to services.yaml — it has a real widget now (emails
-    # sent/delivered/hard-bounced today), not just a link.
     - OVH (VPS / domaine):
         - href: https://www.ovh.com/manager/
           icon: si-ovh
+          description: "OVH's manager for VPS"
     - Cloudflare (DNS):
         - href: https://dash.cloudflare.com/f04a34f3901f9a60c905dbd07b706fa9/home
           icon: si-cloudflare
+          description: "Cloudflare's dashboard for DNS & CDN"
 
 - Raccourcis:
     - CI (runs):
-        - href: https://github.com/Logan2234/tracklore/actions/workflows/ci.yml
+        - href: https://github.com/Logan2234/loomkeep/actions/workflows/ci.yml
           icon: si-githubactions
+          description: "GitHub Actions for CI"
     - CodeQL (runs):
-        - href: https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml
+        - href: https://github.com/Logan2234/loomkeep/actions/workflows/codeql.yml
           icon: si-githubactions
+          description: "GitHub Actions for CodeQL"
     - Trivy (runs):
-        - href: https://github.com/Logan2234/tracklore/actions/workflows/trivy.yml
+        - href: https://github.com/Logan2234/loomkeep/actions/workflows/trivy.yml
           icon: si-githubactions
+          description: "GitHub Actions for Trivy"
     - Logs d'erreur (1h):
-        # Deep link into Grafana Explore, pre-filtered on the Loki
-        # datasource (see its explicit "uid: loki" in
-        # observability/grafana-datasources.yaml) for anything error-ish
-        # across every container, last hour. The most fragile link on this
-        # whole page — Grafana's Explore URL schema is version-specific and
-        # has changed before; if it opens to an empty/broken Explore view
-        # instead of a filtered log search, that's what broke. Fallback:
-        # open Grafana normally and pick Loki in Explore by hand.
         - href: "https://grafana.loomkeep.app/explore?schemaVersion=1&panes=%7B%22loki-errors%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22expr%22%3A%22%7Bjob%3D%5C%22docker%5C%22%7D%20%7C~%20%5C%22(%3Fi)error%5C%22%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-1h%22%2C%22to%22%3A%22now%22%7D%7D%7D&orgId=1"
           icon: si-grafana
+          description: "Grafana Explore, Loki datasource, last hour, error-ish logs"
 
 - Sécurité:
     - Authelia:
-        # Pas de gestion courante à faire ici — gardé comme rappel visible
-        # que l'accès aux dashboards passe par Authelia (portail SSO/2FA),
-        # pas comme un lien à cliquer souvent.
-        #
-        # Se déconnecter de Grafana/GlitchTip/Portainer individuellement ne
-        # termine QUE la session locale de cette app, pas la session
-        # Authelia elle-même — Authelia ne supporte pas encore le
-        # "RP-Initiated Logout" (propagation OIDC de la déconnexion),
-        # feature demandée mais toujours ouverte côté Authelia:
-        # https://github.com/authelia/authelia/issues/5057. Pour vraiment
-        # tout fermer, il faut se déconnecter ici (bouton logout du
-        # portail) — sinon la session expire d'elle-même au bout d'1h
-        # (session.expiration dans authelia/configuration.yml).
         - href: https://auth.loomkeep.app
           icon: si-authelia
+          description: "Authelia SSO portal"
