@@ -1,15 +1,15 @@
 # Loomkeep
 
-**Build & qualité**
+**Build & quality** </br>
 [![CI](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/ci.yml?branch=main&label=CI)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/codeql.yml?branch=main&label=CodeQL)](https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
 
-**Statut en production**
+**Status in production** </br>
 [![healthchecks.io](https://healthchecks.io/badge/e006c4d6-231b-434f-8357-4fa7ab/CWqULdZN.svg)](https://healthchecks.io/)
-[![Uptime](https://img.shields.io/uptimerobot/status/m803690521-ce3fa37e29f1160d9104e331)](https://dashboard.uptimerobot.com/monitors)
+[![Uptime](https://img.shields.io/uptimerobot/status/m803690521-ce3fa37e29f1160d9104e331)](https://stats.uptimerobot.com/3nvxkigZ8T)
 
-**Projet**
+**Project** </br>
 [![License](https://img.shields.io/github/license/Logan2234/tracklore)](LICENSE)
 [![Version](https://img.shields.io/github/package-json/v/Logan2234/tracklore)](CHANGELOG.md)
 [![Last commit](https://img.shields.io/github/last-commit/Logan2234/tracklore)](https://github.com/Logan2234/tracklore/commits/main)
@@ -113,6 +113,71 @@ being set in the VPS's own `.env` (see `.env.example`) to know which override
 files to combine — so turning an optional add-on (observability, Portainer,
 GlitchTip, ...) on or off in production is done by editing that line on the
 VPS, not by touching the workflow.
+
+### Cloudflare (optional, recommended for public hosting)
+
+If the domain's DNS is on Cloudflare (free plan is enough), proxying it
+through Cloudflare instead of pointing DNS straight at the VPS hides the
+origin IP and adds free DDoS/bot mitigation and edge caching in front of
+Caddy. None of this is required — self-hosting works identically with
+plain DNS — but for a publicly reachable instance it's a meaningful upgrade
+for zero cost. One-time dashboard setup, no code:
+
+1. **SSL/TLS mode**: **Full (Strict)**, not Flexible. Caddy already gets a
+   real Let's Encrypt certificate (see "Public hosting" above) — Flexible
+   would make Cloudflare talk to the origin over plain HTTP, defeating that.
+2. **Always Use HTTPS**: on.
+3. **Proxy status**: orange-cloud every subdomain actually served by this
+   stack (the apex, `grafana.`, `errors.`, `portainer.`, `auth.`, `home.`,
+   ...) — not just the main app. Free-tier proxying supports WebSockets
+   automatically (Grafana Live needs this), no extra config.
+4. **Bot Fight Mode**: on (Security → Bots) — free-tier automated-traffic
+   filtering, no configuration needed.
+5. Optional, one **Cache Rule** (or Page Rule on very old accounts) caching
+   `/_app/immutable/*` aggressively — SvelteKit's own hashed, cache-forever
+   build assets, safe to cache at the edge indefinitely.
+
+**Trusting the real client IP**: once Cloudflare proxies traffic, every
+request Caddy sees comes from Cloudflare's edge, not the actual visitor —
+without adjustment, rate-limiting (`ThrottlerGuard`) and `@Ip()` would see
+Cloudflare's IP for every request instead of the real one. This is already
+handled: the API only trusts `X-Forwarded-For` when `TRUST_PROXY=true`
+(set automatically by `docker-compose.prod.yml`, since Caddy is always the
+one hop in front there — see `src/main.ts`). Self-host without the prod
+override leaves it off by default, since nothing there guarantees a proxy
+sits in front of the API.
+
+**Residual risk worth locking down** (manual, outside this repo): the base
+`docker-compose.yml` still publishes the API's port directly
+(`3000:3000`), so if that port is reachable from the internet on the VPS,
+someone could bypass Cloudflare and Caddy entirely, hitting the API
+directly and forging `X-Forwarded-For` themselves — `TRUST_PROXY=true`
+alone doesn't protect against that. Two independent ways to close it: your
+cloud provider's own firewall/security group only allowing 22/80/443 in
+(not just the VPS's OS-level `ufw`/`iptables` — Docker is known to
+sometimes bypass `ufw` rules by writing to `iptables` directly), and/or a
+Caddy `remote_ip` matcher only accepting connections from
+[Cloudflare's published IP ranges](https://www.cloudflare.com/ips/),
+rejecting everything else with a 403. Not wired into this repo's Caddyfile
+since Cloudflare's ranges can change over time and hardcoding them here
+would need periodic maintenance — worth doing by hand on the actual VPS if
+you want the extra layer.
+
+### Bot protection (Cloudflare Turnstile, optional)
+
+A CAPTCHA-alternative widget on the register form, gated the same way
+every optional integration here is: empty env var = feature off, nothing
+else changes.
+
+1. Requires a Cloudflare account (see above), but not proxying — Turnstile
+   works independently of whether DNS/proxy is set up.
+2. Cloudflare dashboard → Turnstile → Add widget → **Managed** challenge
+   type, domain = your instance's domain.
+3. Copy the **Site Key** into `PUBLIC_TURNSTILE_SITE_KEY` (public, read by
+   the web app) and the **Secret Key** into `TURNSTILE_SECRET_KEY` (private,
+   read by the API — never expose this one to the browser).
+4. Leave both empty for self-host without a Cloudflare account: no widget
+   renders, and `TurnstileService.verify()` always passes server-side too.
 
 ### Logs and monitoring (optional)
 
@@ -265,6 +330,25 @@ Grafana Explore's Loki view (last hour, every container) — the single most
 fragile link on the page, since Grafana's Explore URL format is
 version-specific and has changed before; falls back to opening Grafana
 normally if it ever breaks.
+
+A "DB" tile shows total database size and row count, straight from
+Prometheus/postgres_exporter's default metrics (`pg_database_size_bytes`,
+`pg_stat_user_tables_n_live_tup`) — this deliberately isn't in the app's own
+`/admin/stats` "Système" section (moved out on purpose: it's infrastructure
+monitoring, not Loomkeep business data, and doesn't need a query running on
+every admin page load).
+
+A "CI/CD" group covers development-loop visibility that has nothing to do
+with the app itself: the deployed build's git SHA next to GitHub's latest
+`main` commit (eyeball the two — no computed diff, that'd mean the API
+calling GitHub's own API just to compare itself), the last successful
+`deploy.yml` run, and an open-Dependabot-alerts count. The GitHub-hosted
+widgets use the public, unauthenticated API where possible (commits,
+workflow runs — rate-limited to 60/h, hence their 5-minute refresh
+interval); Dependabot alerts specifically need a token even for a public
+repo (confirmed against GitHub's own docs) — a fine-grained PAT scoped to
+just this repo, "Dependabot alerts: read-only" permission, set as
+`HOMEPAGE_GITHUB_TOKEN`.
 
 ### Single sign-on (optional)
 

@@ -15,7 +15,12 @@ export class PublicStatsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get("summary")
-  async getSummary(): Promise<{ userCount: number }> {
-    return { userCount: await this.prisma.user.count() };
+  async getSummary(): Promise<{ userCount: number; gitSha: string }> {
+    return {
+      userCount: await this.prisma.user.count(),
+      // Set at build time (see apps/api/Dockerfile) — "unknown" outside a
+      // deploy.yml-built image (local dev, docker:dev/full, etc).
+      gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
+    };
   }
 }

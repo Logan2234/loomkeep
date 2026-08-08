@@ -20,6 +20,15 @@ RUN pnpm --filter @loomkeep/shared build \
   && DISABLE_ERD=true pnpm --filter @loomkeep/api exec prisma generate \
   && pnpm --filter @loomkeep/api build
 
+# Declared this late (after every expensive COPY/RUN step) on purpose: the
+# value changes on every single deploy, and an ARG/ENV pair placed earlier
+# would invalidate every layer below it — Docker's cache would never hit for
+# the slow pnpm install/build steps above. Exposed via GET
+# /api/public-stats/summary (see src/admin/public-stats.controller.ts) so
+# the Homepage "Version" widget can show what's actually running.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
+
 WORKDIR /app/apps/api
 EXPOSE 3000
 

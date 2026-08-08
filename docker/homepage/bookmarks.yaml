@@ -18,6 +18,12 @@
           icon: si-ovh
 
 - Raccourcis:
+    - CI (runs):
+        - href: https://github.com/Logan2234/tracklore/actions/workflows/ci.yml
+          icon: si-githubactions
+    - CodeQL (runs):
+        - href: https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml
+          icon: si-githubactions
     - Logs d'erreur (1h):
         # Deep link into Grafana Explore, pre-filtered on the Loki
         # datasource (see its explicit "uid: loki" in

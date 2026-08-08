@@ -15,7 +15,6 @@
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import { formatBytes } from "$lib/format";
   import type {
     AdminAccountsSectionDto,
     AdminCatalogueSectionDto,
@@ -92,11 +91,6 @@
     if (catalogue) {
       const cached = catalogue.byDomain.reduce((sum, d) => sum + d.items, 0);
       tiles.push({ value: nf.format(cached), label: "Œuvres en cache" });
-    }
-
-    if (system) {
-      const [value, unit] = formatBytes(system.databaseBytes).split(" ");
-      tiles.push({ value, unit, label: "Taille BDD" });
     }
 
     if (socialStats) {

@@ -36,6 +36,11 @@ services:
       # context to start, is one level up.
       context: ..
       dockerfile: apps/api/Dockerfile
+      # Empty locally (docker:dev etc — "unknown" in the image, harmless).
+      # deploy.yml exports the real short SHA before `docker compose up
+      # --build` on the VPS.
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     logging: *default-logging
     depends_on:
@@ -61,6 +66,9 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      # Empty = TurnstileService.verify() always passes (no Cloudflare
+      # account configured) — see root README "Bot protection".
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       BACKUP_DIR: /data/backups
       GLITCHTIP_API_DSN: ${GLITCHTIP_API_DSN:-}
       HEALTHCHECKS_NOTIFICATIONS_SCAN_URL: ${HEALTHCHECKS_NOTIFICATIONS_SCAN_URL:-}
@@ -87,6 +95,9 @@ services:
     environment:
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
       PUBLIC_GLITCHTIP_WEB_DSN: ${PUBLIC_GLITCHTIP_WEB_DSN:-}
+      # Empty = no Turnstile widget rendered, register() sends no token —
+      # see root README "Bot protection".
+      PUBLIC_TURNSTILE_SITE_KEY: ${PUBLIC_TURNSTILE_SITE_KEY:-}
     ports:
       - "8080:3000"
 

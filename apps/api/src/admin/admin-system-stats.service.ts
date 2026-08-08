@@ -1,17 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import type {
-  AdminSystemSectionDto,
-  AdminTableSizeDto,
-} from "@loomkeep/shared";
+import type { AdminSystemSectionDto } from "@loomkeep/shared";
 import { SecurityEventType } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
 import { startOfUtcDay } from "./admin-stats.util";
-import {
-  providerCallRows,
-  shareOrNull,
-  TOP_TABLES_LIMIT,
-} from "./admin-system-stats.util";
+import { providerCallRows, shareOrNull } from "./admin-system-stats.util";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -29,35 +22,16 @@ export class AdminSystemStatsService {
 
   async getStats(): Promise<AdminSystemSectionDto> {
     const now = new Date();
-    const [sizes, providerCalls, ops] = await Promise.all([
-      this.tableSizes(),
+    const [providerCalls, ops] = await Promise.all([
       this.providerCalls(now),
       this.ops(now),
     ]);
 
     return {
       generatedAt: now.toISOString(),
-      // Summed here rather than re-queried: the per-table rows already cover
-      // the whole schema, so a second SUM() would only be a chance to disagree.
-      databaseBytes: sizes.reduce((sum, t) => sum + t.bytes, 0),
-      tables: sizes.slice(0, TOP_TABLES_LIMIT),
       providerCalls,
       ops,
     };
-  }
-
-  /** Every table of the current schema with its on-disk size (data + indexes), heaviest first. */
-  private async tableSizes(): Promise<AdminTableSizeDto[]> {
-    const rows = await this.prisma.$queryRaw<
-      { table: string; bytes: bigint }[]
-    >`
-      SELECT tablename::text AS "table",
-             pg_total_relation_size(quote_ident(tablename))::bigint AS bytes
-      FROM pg_tables
-      WHERE schemaname = current_schema()
-      ORDER BY bytes DESC
-    `;
-    return rows.map((r) => ({ table: r.table, bytes: Number(r.bytes) }));
   }
 
   private async providerCalls(

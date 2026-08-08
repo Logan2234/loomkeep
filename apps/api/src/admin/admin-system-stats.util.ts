@@ -1,8 +1,5 @@
 import type { AdminProviderCallsDto } from "@loomkeep/shared";
 
-/** How many tables the "Taille BDD par table" ranking carries. */
-export const TOP_TABLES_LIMIT = 8;
-
 /** A provider as declared by the services page: its label and documented daily cap. */
 export interface ProviderQuotaSpec {
   key: string;

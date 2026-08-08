@@ -1,6 +1,8 @@
 <script lang="ts">
   // "Système": what the instance costs to run. Every figure is a live
-  // snapshot — nothing here is historised.
+  // snapshot — nothing here is historised. Database size / per-table
+  // breakdown deliberately isn't here — see the Homepage dashboard's "DB"
+  // tile (docker/homepage/services.yaml), sourced from Prometheus instead.
   import { formatBytes, formatRelative } from "$lib/format";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import type { AdminSystemSectionDto } from "@loomkeep/shared";
@@ -9,14 +11,6 @@
   let { stats }: { stats: AdminSystemSectionDto } = $props();
 
   const nf = new Intl.NumberFormat("fr-FR");
-
-  const tableItems = $derived(
-    stats.tables.map((t) => ({
-      label: t.table,
-      value: t.bytes,
-      display: formatBytes(t.bytes),
-    })),
-  );
 
   // A provider is flagged once it has burnt 80 % of its documented daily
   // quota — early enough to react before the day's calls start failing.
@@ -69,15 +63,7 @@
   ]);
 </script>
 
-<div class="grid gap-3.5 lg:grid-cols-3">
-  <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Taille BDD par table</h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Top tables (données + index) · {formatBytes(stats.databaseBytes)} au total.
-    </p>
-    <RankBars items={tableItems} />
-  </div>
-
+<div class="grid gap-3.5 lg:grid-cols-2">
   <div class="card p-4">
     <h3 class="font-display text-[15px] font-bold">Appels API / provider</h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">Aujourd’hui.</p>

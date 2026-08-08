@@ -205,12 +205,10 @@ export type AdminSocialSectionDto =
   { enabled: false } | ({ enabled: true } & AdminSocialStatsDto);
 
 /* ── Système ──────────────────────────────────────────────────────────── */
-
-export interface AdminTableSizeDto {
-  table: string;
-  /** On-disk size, data + indexes. */
-  bytes: number;
-}
+// Database size / per-table breakdown deliberately lives outside the app now
+// (Homepage dashboard, via Prometheus/postgres_exporter) — it's
+// infrastructure monitoring, not Loomkeep business data, and doesn't need a
+// query running on every /admin/stats load.
 
 export interface AdminProviderCallsDto {
   /** Human label ("TMDB", "Google Books"…). */
@@ -243,10 +241,6 @@ export interface AdminOpsSignalsDto {
 
 export interface AdminSystemSectionDto {
   generatedAt: string;
-  /** Whole-schema on-disk size (sum of `tables`, including the ones not listed). */
-  databaseBytes: number;
-  /** Heaviest tables first. */
-  tables: AdminTableSizeDto[];
   /** Descending by calls. */
   providerCalls: AdminProviderCallsDto[];
   ops: AdminOpsSignalsDto;
