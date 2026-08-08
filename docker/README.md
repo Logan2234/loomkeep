@@ -77,10 +77,22 @@ failure to its `/fail` suffix. The two mechanisms are complementary, not
 redundant: `JobRun` only gets written when the job actually runs, so it
 can't see a job that silently stopped firing at all — that's exactly the
 gap Healthchecks.io's own "no ping arrived in time" alerting covers, since
-the *absence* of a ping is itself the signal. Best-effort by design: a
+the _absence_ of a ping is itself the signal. Best-effort by design: a
 `fetch()` failure to Healthchecks.io is swallowed, never allowed to affect
 the job's own recorded outcome. See root README "Job monitoring" for the
 account setup and env vars.
+
+When the observability override is also running, `prometheus.yml` has a
+`healthchecks` scrape job pulling Healthchecks.io's own per-project metrics
+endpoint (`hc_check_up` per check) — native Grafana history/alerting on job
+health instead of only the Homepage tile. Uses the Bearer-token variant of
+their endpoint specifically so the read-only API key never sits in this
+committed file: `credentials_file` points at
+`docker/observability/healthchecks_token`, a gitignored real file (copied
+from `healthchecks_token.example`), same convention as Authelia's secrets
+below. The project UUID itself isn't secret (useless without the key) and
+is inline in `prometheus.yml`, consistent with `docker/homepage/*.yaml`
+already hardcoding this instance's own domain rather than being templated.
 
 ## Error tracking (`docker-compose.glitchtip.yml`)
 

@@ -169,6 +169,15 @@ you have the observability override above.
 3. Optional: for the Homepage tile below, a read-only API key
    (`HEALTHCHECKS_API_KEY`, Project Settings → API Access) shows an
    up/down count across every check at a glance.
+4. Optional, if you also run the observability override: Prometheus scrapes
+   Healthchecks.io's own per-project metrics endpoint (`hc_check_up` per
+   check) instead of just a Homepage tile — native Grafana history/alerting
+   on job health, no extra container. Generate a read-only API key (Project
+   Settings → API Access), write it (no trailing newline) to
+   `docker/observability/healthchecks_token` (copy from
+   `healthchecks_token.example`, gitignored — same convention as Authelia's
+   secrets), and set the project's UUID in the `healthchecks` job's
+   `metrics_path` in `docker/observability/prometheus.yml`.
 
 ### Docker management UI (optional)
 

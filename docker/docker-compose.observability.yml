@@ -148,6 +148,10 @@ services:
       - "--storage.tsdb.retention.time=30d"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Healthchecks.io read-only API key — gitignored real file, copied
+      # from healthchecks_token.example, same convention as Authelia's
+      # secrets (docker/authelia/*.yml).
+      - ./observability/healthchecks_token:/etc/prometheus/secrets/healthchecks_token:ro
       - prometheus-data:/prometheus
     depends_on:
       - node_exporter

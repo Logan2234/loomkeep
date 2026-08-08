@@ -25,3 +25,18 @@ scrape_configs:
   - job_name: caddy
     static_configs:
       - targets: ["caddy:2019"]
+
+  # Healthchecks.io's own per-project metrics endpoint (hc_check_up per
+  # check, tags as labels) — see root README "Job monitoring". The
+  # bearer-token variant of their endpoint (no trailing key in the URL) so
+  # the read-only API key stays out of this committed file; it's read at
+  # scrape time from a gitignored file instead (see docker-compose.observability.yml).
+  - job_name: healthchecks
+    scrape_interval: 60s
+    scheme: https
+    metrics_path: /projects/7ccfcfc5-06a3-4a11-8991-f6e1c3595217/metrics/
+    static_configs:
+      - targets: ["healthchecks.io"]
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/healthchecks_token
