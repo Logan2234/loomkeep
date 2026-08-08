@@ -349,17 +349,44 @@ Prometheus/postgres_exporter's default metrics (`pg_database_size_bytes`,
 monitoring, not Loomkeep business data, and doesn't need a query running on
 every admin page load).
 
-A "CI/CD" group covers development-loop visibility that has nothing to do
+A "CI/CD" tile covers development-loop visibility that has nothing to do
 with the app itself: the deployed build's git SHA next to GitHub's latest
 `main` commit (eyeball the two — no computed diff, that'd mean the API
 calling GitHub's own API just to compare itself), the last successful
-`deploy.yml` run, and an open-Dependabot-alerts count. The GitHub-hosted
-widgets use the public, unauthenticated API where possible (commits,
-workflow runs — rate-limited to 60/h, hence their 5-minute refresh
-interval); Dependabot alerts specifically need a token even for a public
-repo (confirmed against GitHub's own docs) — a fine-grained PAT scoped to
-just this repo, "Dependabot alerts: read-only" permission, set as
-`HOMEPAGE_GITHUB_TOKEN`.
+`deploy.yml` run, and open PR/issue counts (GitHub's search API,
+`?q=repo:...+is:pr+is:open` / `is:issue+is:open`, for a bare `total_count`
+instead of paginating the full list) — five API calls stacked on one tile
+via Homepage's `widgets:` (plural) key, since they're all quick numbers/
+dates worth seeing together. Dependabot alerts and CodeQL code-scanning
+alerts get their own separate tiles instead of joining that stack — each is
+a `dynamic-list` widget (a handful of alert rows, not a single number) and
+mixing list widgets into a KPI stack reads worse than keeping them apart.
+Both need a token even on a public repo (confirmed against GitHub's own
+docs) — a fine-grained PAT scoped to just this repo, with **both**
+"Dependabot alerts: read-only" and "Code scanning alerts: read-only"
+permissions (gated independently despite sharing one Security tab), set as
+`HOMEPAGE_GITHUB_TOKEN` and reused across every GitHub-hosted tile for the
+higher authenticated rate limit (5000/h vs 60/h).
+
+The Grafana tile is actually two — "Grafana · Dashboards" and
+"Grafana · Datasources" — split so each tile's click target lands on the
+page it's actually summarizing, instead of one tile linking to a generic
+Grafana homepage for two different numbers. Every tile on the page links
+somewhere by design; the only ones that don't split like Grafana did are
+tiles whose fields all share one natural destination already (VPS/DB → the
+Grafana dashboard, Brevo's four counters → the Brevo dashboard) — Homepage
+has no concept of a per-field link within one tile, only a single `href`
+per service.
+
+All of the above sits in one flat, ungrouped list (`services.yaml`'s single
+"Poste de contrôle" group, header hidden via `settings.yaml`'s `layout`
+override) styled by `docker/homepage/custom.css` — dark background,
+monospace type, hairline teal borders instead of Homepage's default rounded
+cards, `color: teal` in `settings.yaml` so the built-in accent matches
+rather than fighting it. Homepage doesn't expose per-tile grid spans, so
+every tile is the same size regardless of how much it shows — a mockup
+explored bigger panels for the list-heavy tiles, but that level of layout
+control isn't available here.
 
 ### Single sign-on (optional)
 

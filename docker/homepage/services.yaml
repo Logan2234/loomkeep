@@ -1,5 +1,10 @@
 ---
-- Loomkeep:
+# Single flat group ("Poste de contrôle" — header hidden via settings.yaml's
+# layout override, the page title above already says "Loomkeep"). Order is
+# deliberate top-to-bottom/left-to-right: Loomkeep itself, then external
+# uptime, then infra, then a row of small KPI tiles, then the big alert-list
+# tiles, in roughly descending "how often does this need a look" order.
+- Poste de contrôle:
     - App:
         href: https://loomkeep.app
         description: Series, movies, anime, games, books, music
@@ -48,57 +53,6 @@
             - field: userCount
               label: Comptes
 
-- Observability:
-    - Grafana:
-        href: https://grafana.loomkeep.app
-        description: Logs, metrics, dashboards
-        icon: si-grafana
-        widget:
-          type: grafana
-          version: 2
-          url: http://grafana:3000
-          username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
-          password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
-          # totalalerts/alertstriggered hit /api/admin/stats, which needs
-          # the "server.stats:read" RBAC permission — not granted to the
-          # admin account by default on this Grafana version (confirmed
-          # live: "Access denied" even via the real GF_SECURITY_ADMIN_*
-          # superadmin). dashboards/datasources use plain org-scoped
-          # endpoints instead, no such gate.
-          fields: ["dashboards", "datasources"]
-    - GlitchTip:
-        href: https://errors.loomkeep.app
-        description: Error tracking
-        icon: si-sentry
-        # No native GlitchTip widget in Homepage (checked, doesn't exist) —
-        # this is a hand-built call against GlitchTip's own Sentry-compatible
-        # issues API, listing the most recent unresolved issues instead of a
-        # clean count (the API returns a paginated array, no bare count
-        # field to map). More fragile than the other widgets — first thing
-        # to check if it ever shows nothing after a GlitchTip upgrade.
-        widget:
-          type: customapi
-          url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=5"
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
-          display: dynamic-list
-          mappings:
-            # Array is at the root of the response, so no "items" key
-            # (mappings is a single map here, not a list — my first attempt
-            # got this wrong, confirmed against Homepage's own docs).
-            name: title
-            label: culprit
-            target: "https://errors.loomkeep.app/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/{id}"
-    - Portainer:
-        href: https://portainer.loomkeep.app
-        description: Docker management
-        icon: si-portainer
-        widget:
-          type: portainer
-          url: http://portainer:9000
-          env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
-          key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
-          fields: ["running", "stopped", "total"]
     - Healthchecks:
         href: https://healthchecks.io/checks/
         description: Scheduled jobs dead-man's-switch (backups, scans...)
@@ -122,6 +76,16 @@
           url: https://api.uptimerobot.com
           key: "{{HOMEPAGE_VAR_UPTIMEROBOT_API_KEY}}"
           fields: ["sitesUp", "sitesDown"]
+    - Portainer:
+        href: https://portainer.loomkeep.app
+        description: Docker management
+        icon: si-portainer
+        widget:
+          type: portainer
+          url: http://portainer:9000
+          env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
+          key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
+          fields: ["running", "stopped", "total"]
     - VPS:
         href: https://grafana.loomkeep.app
         description: CPU / RAM / disque de l'hôte
@@ -155,7 +119,8 @@
                 options:
                   maximumFractionDigits: 1
               suffix: "%"
-    - DB:
+
+    - Base de données:
         href: https://grafana.loomkeep.app
         description: Taille et volumétrie Postgres
         icon: mdi-database
@@ -163,11 +128,7 @@
         # purpose — this is infra monitoring, not Loomkeep business data,
         # and doesn't need a query running on every admin page load). Same
         # pg_stat_user_tables/pg_database collectors postgres_exporter
-        # already exposes by default, no custom queries.yaml needed. A true
-        # per-table ranked breakdown (what the old admin card showed) isn't
-        # a good fit for this widget type (one scalar per metric, not a
-        # ranked vector) — that'd want an actual Grafana panel instead, not
-        # built yet.
+        # already exposes by default, no custom queries.yaml needed.
         widget:
           type: prometheusmetric
           url: http://prometheus:9090
@@ -180,86 +141,104 @@
               query: sum(pg_stat_user_tables_n_live_tup)
               format:
                 type: number
-
-- CI/CD:
-    - Version déployée:
-        # Deployed build's git SHA (see apps/api/Dockerfile + .github/workflows/deploy.yml)
-        # next to GitHub's own idea of "main" — eyeball the two, no computed
-        # diff (would mean the API calling GitHub's own API just to compare
-        # itself, not worth the extra moving part for a page only Logan reads).
-        href: https://github.com/Logan2234/tracklore/commits/main
-        description: SHA du build qui tourne actuellement
-        icon: si-git
+    - Grafana · Dashboards:
+        # Split from a single "Grafana" tile into two, one per destination —
+        # dashboards and datasources live on different pages inside Grafana,
+        # so each tile's click target now actually matches what it shows,
+        # instead of one tile linking to a generic Grafana homepage for both
+        # numbers.
+        href: https://grafana.loomkeep.app/dashboards
+        description: Dashboards configurés
+        icon: si-grafana
         widget:
-          type: customapi
-          url: http://api:3000/api/public-stats/summary
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
-          mappings:
-            - field: gitSha
-              label: Déployé
-    - Main (GitHub):
-        href: https://github.com/Logan2234/tracklore/commits/main
-        description: Dernier commit sur main
-        icon: si-github
-        # Reuses the same Dependabot-scoped token below, just for the higher
-        # authenticated rate limit (5000/h vs 60/h) — being authenticated at
-        # all is what raises the limit, regardless of which specific
-        # permissions the token was granted; commits/workflow-runs are
-        # public data anyway. Started unauthenticated, hit "API rate limit
-        # exceeded" live within a day of normal testing/reloading. GitHub's
-        # API also hard-rejects any request with no User-Agent header at all
-        # ("Request forbidden by administrative rules") — Homepage doesn't
-        # send one by default.
+          type: grafana
+          version: 2
+          url: http://grafana:3000
+          username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
+          password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
+          # totalalerts/alertstriggered hit /api/admin/stats, which needs
+          # the "server.stats:read" RBAC permission — not granted to the
+          # admin account by default on this Grafana version (confirmed
+          # live: "Access denied" even via the real GF_SECURITY_ADMIN_*
+          # superadmin). dashboards/datasources use plain org-scoped
+          # endpoints instead, no such gate.
+          fields: ["dashboards"]
+    - Grafana · Datasources:
+        href: https://grafana.loomkeep.app/connections/datasources
+        description: Sources de données connectées
+        icon: si-grafana
         widget:
-          type: customapi
-          url: https://api.github.com/repos/Logan2234/tracklore/commits/main
-          refreshInterval: 300000
-          headers:
-            User-Agent: "loomkeep-homepage"
-            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
-          mappings:
-            - field: commit.author.date
-              label: Mis à jour
-              format: relativeDate
-    - Dernier déploiement:
-        href: https://github.com/Logan2234/tracklore/actions/workflows/deploy.yml
-        description: Dernier run réussi de deploy.yml
+          type: grafana
+          version: 2
+          url: http://grafana:3000
+          username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
+          password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
+          fields: ["datasources"]
+    - CI/CD:
+        # Five stacked widgets (Homepage's `widgets:` plural — each an
+        # independent API call rendered as one more row on the same tile),
+        # because these are all just quick numbers/dates worth seeing
+        # together, unlike the alert-list tiles below which need their own
+        # dedicated space. Since a single tile only gets one href, this one
+        # points at the Actions tab as the most useful single destination;
+        # the individual GitHub-hosted widgets stay on the public API where
+        # possible (60/h unauthenticated) but are authenticated anyway for
+        # the same reason as the search queries below: shared rate-limit
+        # budget across every GitHub-hitting tile on this page.
+        href: https://github.com/Logan2234/tracklore/actions
+        description: Déploiement, pull requests, issues
         icon: mdi-rocket-launch
-        widget:
-          type: customapi
-          url: https://api.github.com/repos/Logan2234/tracklore/actions/workflows/deploy.yml/runs?status=success&per_page=1
-          refreshInterval: 300000
-          headers:
-            User-Agent: "loomkeep-homepage"
-            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
-          mappings:
-            - field: workflow_runs.0.updated_at
-              label: Déployé
-              format: relativeDate
-    - Sécurité (Dependabot):
-        href: https://github.com/Logan2234/tracklore/security/dependabot
-        description: Vulnérabilités ouvertes
-        icon: mdi-shield-alert
-        # Needs a real token even for a public repo (GitHub's own docs:
-        # Dependabot alerts aren't unauthenticated-readable) — a
-        # fine-grained PAT scoped to just this repo, "Dependabot alerts:
-        # read-only" permission, nothing else.
-        widget:
-          type: customapi
-          url: https://api.github.com/repos/Logan2234/tracklore/dependabot/alerts?state=open
-          refreshInterval: 300000
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
-            User-Agent: "loomkeep-homepage"
-          display: dynamic-list
-          mappings:
-            name: security_advisory.summary
-            label: security_advisory.severity
-            target: html_url
-
-- Développement:
-    - Codecov:
+        widgets:
+          - type: customapi
+            url: http://api:3000/api/public-stats/summary
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
+            mappings:
+              - field: gitSha
+                label: SHA déployé
+          - type: customapi
+            url: https://api.github.com/repos/Logan2234/tracklore/commits/main
+            refreshInterval: 300000
+            headers:
+              User-Agent: "loomkeep-homepage"
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+            mappings:
+              - field: commit.author.date
+                label: Main
+                format: relativeDate
+          - type: customapi
+            url: https://api.github.com/repos/Logan2234/tracklore/actions/workflows/deploy.yml/runs?status=success&per_page=1
+            refreshInterval: 300000
+            headers:
+              User-Agent: "loomkeep-homepage"
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+            mappings:
+              - field: workflow_runs.0.updated_at
+                label: Déploiement
+                format: relativeDate
+          - type: customapi
+            # GitHub's search API, not the plain PRs list endpoint — a bare
+            # count without paginating every open PR. `is:pr` since PRs are
+            # technically issues under the hood, `is:open` to exclude
+            # merged/closed.
+            url: "https://api.github.com/search/issues?q=repo:Logan2234/tracklore+is:pr+is:open"
+            refreshInterval: 300000
+            headers:
+              User-Agent: "loomkeep-homepage"
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+            mappings:
+              - field: total_count
+                label: PR ouvertes
+          - type: customapi
+            url: "https://api.github.com/search/issues?q=repo:Logan2234/tracklore+is:issue+is:open"
+            refreshInterval: 300000
+            headers:
+              User-Agent: "loomkeep-homepage"
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+            mappings:
+              - field: total_count
+                label: Issues ouvertes
+    - Qualité (Codecov):
         href: https://app.codecov.io/gh/Logan2234/tracklore
         description: Couverture de tests
         icon: si-codecov
@@ -278,8 +257,6 @@
             - field: totals.coverage
               label: Couverture
               suffix: "%"
-
-- Emails:
     - Brevo:
         href: https://app.brevo.com
         description: Envois transactionnels du jour (quota 300/jour)
@@ -308,3 +285,69 @@
               label: Échecs
             - field: error
               label: Erreurs
+
+    - GlitchTip:
+        href: https://errors.loomkeep.app
+        description: Error tracking
+        icon: si-sentry
+        # No native GlitchTip widget in Homepage (checked, doesn't exist) —
+        # this is a hand-built call against GlitchTip's own Sentry-compatible
+        # issues API, listing the most recent unresolved issues instead of a
+        # clean count (the API returns a paginated array, no bare count
+        # field to map). More fragile than the other widgets — first thing
+        # to check if it ever shows nothing after a GlitchTip upgrade.
+        widget:
+          type: customapi
+          url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=5"
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
+          display: dynamic-list
+          mappings:
+            # Array is at the root of the response, so no "items" key
+            # (mappings is a single map here, not a list — my first attempt
+            # got this wrong, confirmed against Homepage's own docs).
+            name: title
+            label: culprit
+            target: "https://errors.loomkeep.app/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/{id}"
+    - Dependabot:
+        href: https://github.com/Logan2234/tracklore/security/dependabot
+        description: Vulnérabilités de dépendances ouvertes
+        icon: mdi-shield-alert
+        # Needs a real token even for a public repo (GitHub's own docs:
+        # Dependabot alerts aren't unauthenticated-readable) — a
+        # fine-grained PAT scoped to just this repo, "Dependabot alerts:
+        # read-only" permission, nothing else.
+        widget:
+          type: customapi
+          url: https://api.github.com/repos/Logan2234/tracklore/dependabot/alerts?state=open
+          refreshInterval: 300000
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+            User-Agent: "loomkeep-homepage"
+          display: dynamic-list
+          mappings:
+            name: security_advisory.summary
+            label: security_advisory.severity
+            target: html_url
+    - Code scanning:
+        href: https://github.com/Logan2234/tracklore/security/code-scanning
+        description: Alertes CodeQL ouvertes
+        icon: si-github
+        # Same fine-grained PAT as Dependabot above, but needs its own
+        # separate "Code scanning alerts: read-only" repo permission added
+        # to it — GitHub gates the two APIs independently even though both
+        # sit under the same repo's Security tab. If this tile stays empty
+        # while https://github.com/Logan2234/tracklore/security/code-scanning
+        # shows real alerts, that permission is the first thing to check.
+        widget:
+          type: customapi
+          url: https://api.github.com/repos/Logan2234/tracklore/code-scanning/alerts?state=open
+          refreshInterval: 300000
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+            User-Agent: "loomkeep-homepage"
+          display: dynamic-list
+          mappings:
+            name: rule.description
+            label: rule.security_severity_level
+            target: html_url

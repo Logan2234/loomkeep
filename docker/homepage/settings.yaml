@@ -1,5 +1,15 @@
 ---
 title: Loomkeep
 theme: dark
-color: slate
+# "teal" is one of Homepage's built-in preset palettes (drives buttons,
+# hover/focus rings, widget accents) — picked to match custom.css's accent
+# instead of fighting it with two different teals.
+color: teal
 headerStyle: clean
+layout:
+  # Single flat group (see services.yaml) standing in for the mockup's
+  # ungrouped panel grid — the page title above already says "Loomkeep", so
+  # a second "Poste de contrôle" header would be redundant.
+  Poste de contrôle:
+    header: false
+    columns: 4
