@@ -283,7 +283,21 @@ function toIsoDate(publishedDate: string | undefined): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-/** Google descriptions sometimes carry light HTML; we render them as plain text. */
+/**
+ * Google descriptions sometimes carry light HTML; we render them as plain
+ * text. Loops the tag-stripping pass until stable — a single pass can leave
+ * a tag exposed on a crafted nested/malformed input (e.g. "<<b>script>"),
+ * which is exactly what CodeQL's "incomplete multi-character sanitization"
+ * check flags.
+ */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").trim();
+  let result = html;
+  let previous: string;
+
+  do {
+    previous = result;
+    result = previous.replace(/<[^>]*>/g, "");
+  } while (result !== previous);
+
+  return result.trim();
 }

@@ -272,11 +272,19 @@ function buildEpisodes(media: AnilistMedia): ProviderEpisode[] {
   }));
 }
 
+// Loops the tag-stripping pass until stable — a single pass can leave a tag
+// exposed on a crafted nested/malformed input (e.g. "<<b>script>"), which is
+// exactly what CodeQL's "incomplete multi-character sanitization" check flags.
 function stripHtml(text: string): string {
-  return text
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .trim();
+  let result = text.replace(/<br\s*\/?>/gi, "\n");
+  let previous: string;
+
+  do {
+    previous = result;
+    result = previous.replace(/<[^>]+>/g, "");
+  } while (result !== previous);
+
+  return result.trim();
 }
 
 function toIsoDate(date?: {

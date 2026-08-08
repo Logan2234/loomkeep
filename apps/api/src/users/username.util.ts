@@ -1,3 +1,7 @@
+import { randomInt } from "node:crypto";
+
+const SUFFIX_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
+
 /** Turns a free-form label into a username candidate: lowercase ASCII, no separators. */
 export function slugifyUsername(input: string): string {
   const slug = input
@@ -10,7 +14,11 @@ export function slugifyUsername(input: string): string {
 
 /** Short random alphanumeric suffix, for disambiguating a taken username candidate. */
 export function randomUsernameSuffix(length: number): string {
-  return Math.random()
-    .toString(36)
-    .slice(2, 2 + length);
+  let suffix = "";
+
+  for (let i = 0; i < length; i++) {
+    suffix += SUFFIX_ALPHABET[randomInt(SUFFIX_ALPHABET.length)];
+  }
+
+  return suffix;
 }
