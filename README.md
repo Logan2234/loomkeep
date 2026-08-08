@@ -211,10 +211,24 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f
 
 Adds [Homepage](https://gethomepage.dev/), reachable at `home.<DOMAIN>` — one
 page with a link tile for every dashboard above (Grafana, Portainer,
-GlitchTip, the app itself). Static config only (`docker/homepage/services.yaml`),
-no Docker socket access. **Requires the single sign-on section below too** —
+GlitchTip, the app itself, Authelia, plus a few external bookmarks) and a
+Google search bar. **Requires the single sign-on section below too** —
 Homepage has no login of its own and is gated entirely by Authelia's
 `forward_auth`.
+
+No Docker socket access — deliberately. Grafana and Portainer get live
+widgets through their own APIs (an admin password reused from
+`GRAFANA_ADMIN_USER`/`PASSWORD`, and a dedicated Portainer access token);
+GlitchTip has no native Homepage widget, so its tile calls GlitchTip's own
+Sentry-compatible issues API directly to list recent unresolved errors — the
+most fragile of the three, first thing to check if it ever goes blank.
+Per-container CPU/RAM stats on every tile were considered and skipped:
+Grafana + Prometheus + cAdvisor already cover that in more depth, so a
+second Docker-access path here would've been redundant. To wire up the
+widgets, set in `.env` (see the comments there for exactly where to
+generate each): `PORTAINER_API_KEY`, `PORTAINER_ENV_ID`,
+`GLITCHTIP_API_TOKEN`, `GLITCHTIP_ORG_SLUG`. Any left empty just means that
+tile's widget shows no data — nothing else breaks.
 
 ### Single sign-on (optional)
 

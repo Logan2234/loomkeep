@@ -3,18 +3,57 @@
     - App:
         href: https://loomkeep.app
         description: Series, movies, anime, games, books, music
-        icon: si-simpleicons
+        icon: https://loomkeep.app/apple-touch-icon.png
+    - Admin:
+        href: https://loomkeep.app/admin
+        description: Panel admin (utilisateurs, backups, signalements...)
+        icon: mdi-shield-account
 
 - Observability:
     - Grafana:
         href: https://grafana.loomkeep.app
         description: Logs, metrics, dashboards
         icon: si-grafana
+        widget:
+          type: grafana
+          version: 2
+          url: http://grafana:3000
+          username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
+          password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
+          fields: ["dashboards", "totalalerts", "alertstriggered"]
     - GlitchTip:
         href: https://errors.loomkeep.app
         description: Error tracking
         icon: si-sentry
+        # No native GlitchTip widget in Homepage (checked, doesn't exist) —
+        # this is a hand-built call against GlitchTip's own Sentry-compatible
+        # issues API, listing the most recent unresolved issues instead of a
+        # clean count (the API returns a paginated array, no bare count
+        # field to map). More fragile than the other widgets — first thing
+        # to check if it ever shows nothing after a GlitchTip upgrade.
+        widget:
+          type: customapi
+          url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=5"
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
+          display: dynamic-list
+          mappings:
+            - items: "$"
+              name: title
+              label: culprit
     - Portainer:
         href: https://portainer.loomkeep.app
         description: Docker management
         icon: si-portainer
+        widget:
+          type: portainer
+          url: http://portainer:9000
+          env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
+          key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
+          fields: ["running", "stopped", "total"]
+
+- Single sign-on:
+    - Authelia:
+        href: https://auth.loomkeep.app
+        description: Portail de connexion / gestion des sessions
+        icon: si-authelia

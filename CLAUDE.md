@@ -228,6 +228,17 @@ else in this repo. **Authelia hard-fails to start without working SMTP**
 rest of this app's SMTP integration) — reuses the same Brevo credentials as
 `SMTP_USER`/`SMTP_PASS`.
 
+**Homepage's tiles** (`docker/homepage/services.yaml`) use live widgets
+where one exists (Grafana, Portainer — both have native Homepage widgets)
+and a hand-rolled `customapi` call against GlitchTip's own Sentry-compatible
+issues API where it doesn't (no native GlitchTip widget in Homepage,
+confirmed). No Docker socket mounted for Homepage — per-container stats
+were deliberately skipped in favor of Grafana/Prometheus/cAdvisor, which
+already cover that in more depth; a second Docker-access path would've
+been redundant. Widget API keys flow in as `HOMEPAGE_VAR_*` env vars
+(Homepage's own `{{HOMEPAGE_VAR_X}}` templating mechanism), not baked into
+the committed YAML.
+
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
 `GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the

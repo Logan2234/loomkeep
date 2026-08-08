@@ -6,9 +6,14 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.homepage.yml up -d --build
 #
-# Static config only (no Docker socket mount) — just link tiles, not live
-# auto-discovery. Keeps this add-on to exactly what it needs: read-only
-# config files, nothing with container-management privileges.
+# Static config only (no Docker socket mount — deliberate, see services.yaml:
+# the Portainer tile's widget covers container counts via Portainer's own
+# API, and Grafana/Prometheus/cAdvisor already give per-container metrics
+# with history, so a second Docker-access path here would be redundant).
+# Widget API keys are passed as HOMEPAGE_VAR_* env vars, substituted into the
+# config as {{HOMEPAGE_VAR_X}} — Homepage's own mechanism for keeping
+# secrets out of the committed YAML, same intent as this repo's .env
+# convention elsewhere.
 services:
   homepage:
     image: ghcr.io/gethomepage/homepage:v1.13.2
@@ -20,9 +25,17 @@ services:
         max-file: "5"
     environment:
       HOMEPAGE_ALLOWED_HOSTS: home.${DOMAIN:?set DOMAIN in .env}
+      HOMEPAGE_VAR_PORTAINER_API_KEY: ${PORTAINER_API_KEY:-}
+      HOMEPAGE_VAR_PORTAINER_ENV_ID: ${PORTAINER_ENV_ID:-1}
+      HOMEPAGE_VAR_GRAFANA_USER: ${GRAFANA_ADMIN_USER:-admin}
+      HOMEPAGE_VAR_GRAFANA_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
+      HOMEPAGE_VAR_GLITCHTIP_API_TOKEN: ${GLITCHTIP_API_TOKEN:-}
+      HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG: ${GLITCHTIP_ORG_SLUG:-}
     volumes:
       - ./homepage/services.yaml:/app/config/services.yaml:ro
       - ./homepage/settings.yaml:/app/config/settings.yaml:ro
+      - ./homepage/widgets.yaml:/app/config/widgets.yaml:ro
+      - ./homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml
   # / docker-compose.ngrok.yml: adds the Homepage site block + its domain,

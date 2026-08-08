@@ -1,0 +1,18 @@
+# External services this session touched or that Loomkeep depends on —
+# generic login/dashboard URLs, nothing account-specific. Add more as you go.
+---
+- Développement:
+    - GitHub (repo):
+        - href: https://github.com/Logan2234/tracklore
+          icon: si-github
+    - UptimeRobot:
+        - href: https://uptimerobot.com/dashboard
+          icon: si-uptimerobot
+
+- Infra & envoi d'emails:
+    - Brevo (SMTP):
+        - href: https://app.brevo.com
+          icon: si-brevo
+    - OVH (VPS / domaine):
+        - href: https://www.ovh.com/manager/
+          icon: si-ovh
