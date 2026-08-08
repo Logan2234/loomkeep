@@ -349,24 +349,27 @@ Prometheus/postgres_exporter's default metrics (`pg_database_size_bytes`,
 monitoring, not Loomkeep business data, and doesn't need a query running on
 every admin page load).
 
-A "CI/CD" tile covers development-loop visibility that has nothing to do
-with the app itself: the deployed build's git SHA next to GitHub's latest
-`main` commit (eyeball the two — no computed diff, that'd mean the API
-calling GitHub's own API just to compare itself), the last successful
-`deploy.yml` run, and open PR/issue counts (GitHub's search API,
-`?q=repo:...+is:pr+is:open` / `is:issue+is:open`, for a bare `total_count`
-instead of paginating the full list) — five API calls stacked on one tile
-via Homepage's `widgets:` (plural) key, since they're all quick numbers/
-dates worth seeing together. Dependabot alerts and CodeQL code-scanning
-alerts get their own separate tiles instead of joining that stack — each is
-a `dynamic-list` widget (a handful of alert rows, not a single number) and
-mixing list widgets into a KPI stack reads worse than keeping them apart.
-Both need a token even on a public repo (confirmed against GitHub's own
-docs) — a fine-grained PAT scoped to just this repo, with **both**
-"Dependabot alerts: read-only" and "Code scanning alerts: read-only"
-permissions (gated independently despite sharing one Security tab), set as
-`HOMEPAGE_GITHUB_TOKEN` and reused across every GitHub-hosted tile for the
-higher authenticated rate limit (5000/h vs 60/h).
+Development-loop visibility that has nothing to do with the app itself
+lives in two tiles: "Déploiement" (the deployed build's git SHA next to
+GitHub's latest `main` commit — eyeball the two, no computed diff, that'd
+mean the API calling GitHub's own API just to compare itself — and the last
+successful `deploy.yml` run) and "Pull requests & issues" (open counts via
+GitHub's search API, `?q=repo:...+is:pr+is:open` / `is:issue+is:open`, a
+bare `total_count` instead of paginating the full list). Each stacks its
+API calls via Homepage's `widgets:` (plural) key. They used to be one
+five-row "CI/CD" tile; split in two so neither is a wall of stacked rows —
+still each its own vertical stack though, since Homepage only lays fields
+side-by-side when they share one `mappings` list on one API call, and these
+five numbers come from three different endpoints. Dependabot alerts and
+CodeQL code-scanning alerts get their own separate tiles instead of joining
+either stack — each is a `dynamic-list` widget (a handful of alert rows,
+not a single number) and mixing list widgets into a KPI stack reads worse
+than keeping them apart. Both need a token even on a public repo (confirmed
+against GitHub's own docs) — a fine-grained PAT scoped to just this repo,
+with **both** "Dependabot alerts: read-only" and "Code scanning alerts:
+read-only" permissions (gated independently despite sharing one Security
+tab), set as `HOMEPAGE_GITHUB_TOKEN` and reused across every GitHub-hosted
+tile for the higher authenticated rate limit (5000/h vs 60/h).
 
 The Grafana tile is actually two — "Grafana · Dashboards" and
 "Grafana · Datasources" — split so each tile's click target lands on the
@@ -378,14 +381,32 @@ Grafana dashboard, Brevo's four counters → the Brevo dashboard) — Homepage
 has no concept of a per-field link within one tile, only a single `href`
 per service.
 
-All of the above is split across four `services.yaml` groups (Loomkeep,
-Infrastructure, GitHub & qualité, Alertes), each rendered with Homepage's
-own default styling — no `custom.css`. A dark/monospace/hairline reskin was
-tried and reverted: Homepage's tile markup is fixed (icon + name +
-description + a stats row), so no amount of CSS made it look like a
-hand-designed page, and `color: teal` in `settings.yaml` turned out to tint
-the entire page background rather than just accents. `color: slate`
-(neutral) plus native group headers is what's actually running.
+All of the above is split across five `services.yaml` groups (Loomkeep,
+Infrastructure, GitHub & qualité, Emails, Alertes — Brevo has nothing to do
+with the repo, so it doesn't live in "GitHub & qualité" despite being
+tracked alongside it during this page's early iterations), each rendered
+with Homepage's own default styling — no `custom.css`. A dark/monospace/
+hairline reskin was tried and reverted: Homepage's tile markup is fixed
+(icon + name + description + a stats row), so no amount of CSS made it
+look like a hand-designed page, and `color: teal` in `settings.yaml` turned
+out to tint the entire page background rather than just accents. `color:
+slate` (neutral) is what's actually running. Every group except Alertes
+sets `style: row` in `settings.yaml`'s `layout` (tiles side by side instead
+of Homepage's default one-per-line stack — `columns` alone silently does
+nothing without `style: row`, confirmed against Homepage's own source);
+Alertes stays at the default stack since its three tiles are alert lists
+that need full row width, not a cramped side-by-side column. Groups also
+get an icon there (`layout.<name>.icon`, same `mdi-`/`si-`/`sh-`/URL
+resolution as a service's own `icon:` — undocumented but real, found by
+reading `group.jsx`). Homepage's block-highlighting feature (`widget.highlight`,
+colors a value red/amber/emerald past a threshold) is wired up on
+Healthchecks (down > 0), UptimeRobot (sitesDown > 0) and Portainer
+(stopped > 0) — all native widgets. It's explicitly **not** supported on
+`customapi` widgets per Homepage's own docs, which rules it out for
+Brevo/Déploiement/Pull requests & issues/GlitchTip/Dependabot/Code
+scanning/App/Statistiques. VPS's `prometheusmetric` widget isn't documented
+either way — its thresholds (70%/90% CPU/RAM/disk) are best-effort, first
+thing to verify live if they don't render.
 
 ### Single sign-on (optional)
 

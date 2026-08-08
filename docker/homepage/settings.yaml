@@ -9,3 +9,28 @@ theme: dark
 # actually matched what was being aimed for — plain native styling instead.
 color: slate
 headerStyle: clean
+layout:
+  # Homepage stacks tiles vertically (one per line) by default — `columns`
+  # alone does nothing; it only takes effect together with `style: row`
+  # (confirmed against src/components/services/group.jsx). Alertes is
+  # deliberately left at the default (no style/columns): its three tiles are
+  # alert lists, not KPIs, and need full width for the row text, not a
+  # cramped side-by-side column.
+  Loomkeep:
+    icon: mdi-view-dashboard
+    style: row
+    columns: 3
+  Infrastructure:
+    icon: mdi-server-network
+    style: row
+    columns: 4
+  GitHub & qualité:
+    icon: si-github
+    style: row
+    columns: 2
+  Emails:
+    icon: mdi-email
+    style: row
+    columns: 1
+  Alertes:
+    icon: mdi-alert

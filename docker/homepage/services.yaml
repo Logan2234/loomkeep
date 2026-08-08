@@ -68,6 +68,18 @@
           url: https://healthchecks.io
           key: "{{HOMEPAGE_VAR_HEALTHCHECKS_API_KEY}}"
           fields: ["up", "down"]
+          # Block highlighting (docs: configs/services.md#block-highlighting)
+          # — native widgets support it, customapi doesn't, hence this only
+          # appears on Healthchecks/UptimeRobot/Portainer/VPS below. Bare
+          # key ("down") auto-namespaces to "healthchecks.down" internally,
+          # matching the untranslated label the widget actually renders.
+          highlight:
+            down:
+              valueOnly: true
+              numeric:
+                - level: danger
+                  when: gt
+                  value: 0
     - UptimeRobot:
         href: https://dashboard.uptimerobot.com/monitors
         description: Disponibilité (contrôle externe, hors du VPS)
@@ -79,6 +91,13 @@
           url: https://api.uptimerobot.com
           key: "{{HOMEPAGE_VAR_UPTIMEROBOT_API_KEY}}"
           fields: ["sitesUp", "sitesDown"]
+          highlight:
+            sitesDown:
+              valueOnly: true
+              numeric:
+                - level: danger
+                  when: gt
+                  value: 0
     - Portainer:
         href: https://portainer.loomkeep.app
         description: Docker management
@@ -89,6 +108,13 @@
           env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
           key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
           fields: ["running", "stopped", "total"]
+          highlight:
+            stopped:
+              valueOnly: true
+              numeric:
+                - level: warn
+                  when: gt
+                  value: 0
     - VPS:
         href: https://grafana.loomkeep.app
         description: CPU / RAM / disque de l'hôte
@@ -100,6 +126,38 @@
         widget:
           type: prometheusmetric
           url: http://prometheus:9090
+          # Highlighting isn't documented either way for prometheusmetric
+          # (only customapi is explicitly called out as unsupported) — keys
+          # match each metric's `label` below verbatim. First thing to check
+          # live if these don't render: this may turn out unsupported too.
+          highlight:
+            CPU:
+              valueOnly: true
+              numeric:
+                - level: danger
+                  when: gte
+                  value: 90
+                - level: warn
+                  when: gte
+                  value: 70
+            RAM:
+              valueOnly: true
+              numeric:
+                - level: danger
+                  when: gte
+                  value: 90
+                - level: warn
+                  when: gte
+                  value: 70
+            Disque:
+              valueOnly: true
+              numeric:
+                - level: danger
+                  when: gte
+                  value: 90
+                - level: warn
+                  when: gte
+                  value: 70
           metrics:
             - label: CPU
               query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
@@ -178,19 +236,21 @@
           fields: ["datasources"]
 
 - GitHub & qualité:
-    - CI/CD:
-        # Five stacked widgets (Homepage's `widgets:` plural — each an
-        # independent API call rendered as one more row on the same tile),
-        # because these are all just quick numbers/dates worth seeing
-        # together, unlike the alert-list tiles below which need their own
-        # dedicated space. Since a single tile only gets one href, this one
-        # points at the Actions tab as the most useful single destination;
-        # the individual GitHub-hosted widgets stay on the public API where
-        # possible (60/h unauthenticated) but are authenticated anyway for
-        # the same reason as the search queries below: shared rate-limit
-        # budget across every GitHub-hitting tile on this page.
+    - Déploiement:
+        # Three stacked widgets (Homepage's `widgets:` plural — each an
+        # independent API call rendered as one more row). Was one "CI/CD"
+        # tile with all five GitHub-ish numbers stacked in a single column;
+        # split in two so each tile is a shorter, single-topic list instead
+        # of one wall of 5 rows. A true 3-across/2-across grid like the
+        # mockup would need all fields on one API response — these three
+        # come from three different endpoints (own API, commits, workflow
+        # runs), and Homepage only lays fields side-by-side when they share
+        # one `mappings` list on one call, so each still renders as its own
+        # stacked row here — not fully avoidable without a proxy endpoint
+        # combining them server-side, which is more machinery than this is
+        # worth.
         href: https://github.com/Logan2234/loomkeep/actions
-        description: Déploiement, pull requests, issues
+        description: Build actuellement déployé
         icon: mdi-rocket-launch
         widgets:
           - type: customapi
@@ -220,6 +280,11 @@
               - field: workflow_runs.0.updated_at
                 label: Déploiement
                 format: relativeDate
+    - Pull requests & issues:
+        href: https://github.com/Logan2234/loomkeep/pulls
+        description: Ouvertes sur GitHub
+        icon: mdi-source-pull
+        widgets:
           - type: customapi
             # GitHub's search API, not the plain PRs list endpoint — a bare
             # count without paginating every open PR. `is:pr` since PRs are
@@ -261,6 +326,10 @@
             - field: totals.coverage
               label: Couverture
               suffix: "%"
+
+# Split out of "GitHub & qualité" — Brevo has nothing to do with the repo,
+# it's about the app's own outgoing mail.
+- Emails:
     - Brevo:
         href: https://app.brevo.com
         description: Envois transactionnels du jour (quota 300/jour)
