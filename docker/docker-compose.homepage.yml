@@ -36,6 +36,7 @@ services:
       HOMEPAGE_VAR_CODECOV_API_TOKEN: ${CODECOV_API_TOKEN:-}
       HOMEPAGE_VAR_STATS_API_KEY: ${HOMEPAGE_STATS_API_KEY:-}
       HOMEPAGE_VAR_GITHUB_TOKEN: ${HOMEPAGE_GITHUB_TOKEN:-}
+      HOMEPAGE_VAR_BREVO_API_KEY: ${BREVO_API_KEY:-}
     volumes:
       - ./homepage/services.yaml:/app/config/services.yaml:ro
       - ./homepage/settings.yaml:/app/config/settings.yaml:ro

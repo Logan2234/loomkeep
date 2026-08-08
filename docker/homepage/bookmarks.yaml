@@ -10,12 +10,14 @@
           icon: si-github
 
 - Infra & envoi d'emails:
-    - Brevo (SMTP):
-        - href: https://app.brevo.com
-          icon: si-brevo
+    # Brevo moved to services.yaml — it has a real widget now (emails
+    # sent/delivered/hard-bounced today), not just a link.
     - OVH (VPS / domaine):
         - href: https://www.ovh.com/manager/
           icon: si-ovh
+    - Cloudflare (DNS):
+        - href: https://dash.cloudflare.com/f04a34f3901f9a60c905dbd07b706fa9/home
+          icon: si-cloudflare
 
 - Raccourcis:
     - CI (runs):
@@ -23,6 +25,9 @@
           icon: si-githubactions
     - CodeQL (runs):
         - href: https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml
+          icon: si-githubactions
+    - Trivy (runs):
+        - href: https://github.com/Logan2234/tracklore/actions/workflows/trivy.yml
           icon: si-githubactions
     - Logs d'erreur (1h):
         # Deep link into Grafana Explore, pre-filtered on the Loki
