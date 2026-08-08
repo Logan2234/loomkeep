@@ -72,7 +72,7 @@ services:
       - glitchtip-pg-data:/var/lib/postgresql
 
   glitchtip-valkey:
-    image: valkey/valkey:9.0.3-alpine
+    image: valkey/valkey:9.1.1-alpine
     restart: unless-stopped
     logging: *glitchtip-logging
 
