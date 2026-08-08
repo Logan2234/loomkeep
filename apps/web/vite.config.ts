@@ -39,6 +39,23 @@ export default defineConfig({
         background_color: "#0c0d10",
         display: "standalone",
         start_url: "/",
+        shortcuts: [
+          {
+            name: "Recherche",
+            url: "/search",
+            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+          },
+          {
+            name: "Calendrier",
+            url: "/calendar",
+            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+          },
+          {
+            name: "Statistiques",
+            url: "/stats",
+            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+          },
+        ],
         icons: [
           { src: "/favicon.svg", sizes: "any", type: "image/svg+xml" },
           { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
