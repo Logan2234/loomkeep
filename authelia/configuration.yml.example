@@ -125,7 +125,12 @@ identity_providers:
         scopes: ["openid", "profile", "email"]
         response_types: ["code"]
         grant_types: ["authorization_code"]
-        token_endpoint_auth_method: "client_secret_basic"
+        # GlitchTip's OIDC client (django-allauth) always sends its secret
+        # in the POST body, not an HTTP Basic Auth header — client_secret_
+        # basic (Authelia's own doc example, and what Grafana/Portainer use)
+        # rejects it with "Client authentication failed", confirmed live via
+        # Authelia's own logs. GlitchTip specifically needs this method.
+        token_endpoint_auth_method: "client_secret_post"
 
       - client_id: "portainer"
         client_name: "Portainer"
