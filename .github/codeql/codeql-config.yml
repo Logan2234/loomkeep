@@ -4,7 +4,7 @@ name: "Loomkeep CodeQL config"
 # implicit "Default" suite, without the code-quality queries from
 # security-and-quality (ESLint already covers code quality here).
 queries:
-  - uses: security-extended
+  - uses: security-and-quality
 
 # Generated/compiled output — scanning it would just duplicate alerts
 # already raised against the source it's built from.
