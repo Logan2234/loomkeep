@@ -50,9 +50,12 @@
             Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
           display: dynamic-list
           mappings:
-            - items: "$"
-              name: title
-              label: culprit
+            # Array is at the root of the response, so no "items" key
+            # (mappings is a single map here, not a list — my first attempt
+            # got this wrong, confirmed against Homepage's own docs).
+            name: title
+            label: culprit
+            target: "https://errors.loomkeep.app/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/{id}"
     - Portainer:
         href: https://portainer.loomkeep.app
         description: Docker management
