@@ -3,6 +3,11 @@
 [![CI](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml/badge.svg)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
 [![healthchecks.io](https://healthchecks.io/badge/e006c4d6-231b-434f-8357-4fa7ab/CWqULdZN.svg)](https://healthchecks.io/)
+[![CodeQL](https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml/badge.svg)](https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml)
+[![License](https://img.shields.io/github/license/Logan2234/tracklore)](LICENSE)
+[![Version](https://img.shields.io/github/package-json/v/Logan2234/tracklore)](CHANGELOG.md)
+[![Last commit](https://img.shields.io/github/last-commit/Logan2234/tracklore)](https://github.com/Logan2234/tracklore/commits/main)
+[![Uptime](https://img.shields.io/uptimerobot/status/m803690521-ce3fa37e29f1160d9104e331)](https://dashboard.uptimerobot.com/monitors)
 
 Self-hosted tracker for **series, movies, anime, games, books and music** —
 with optional friends/reviews/comments social features. Built as a TV Time

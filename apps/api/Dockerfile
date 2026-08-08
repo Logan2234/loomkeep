@@ -1,8 +1,8 @@
 FROM node:26-alpine
 
-# postgresql17-client matches the postgres:17-alpine server in docker-compose.yml
+# postgresql18-client matches the postgres:18-alpine server in docker-compose.yml
 # — pg_dump/psql (admin backup & restore) shell out to it via BackupService.
-RUN apk add --no-cache postgresql17-client \
+RUN apk add --no-cache postgresql18-client \
   && npm install -g pnpm@11.9.0
 WORKDIR /app
 
