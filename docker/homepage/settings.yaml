@@ -5,7 +5,6 @@ description:
   "Homepage for Loomkeep, regrouping all the dashboards and services in one place. Not a
   replacement for the individual dashboards, just a convenient overview."
 
-favicon: /images/favicon.ico
 theme: dark
 color: slate
 headerStyle: underlined
