@@ -6,7 +6,7 @@
         - href: https://github.com/Logan2234/tracklore
           icon: si-github
     - UptimeRobot:
-        - href: https://uptimerobot.com/dashboard
+        - href: https://dashboard.uptimerobot.com/monitors
           icon: si-uptimerobot
 
 - Infra & envoi d'emails:
@@ -16,3 +16,11 @@
     - OVH (VPS / domaine):
         - href: https://www.ovh.com/manager/
           icon: si-ovh
+
+- Sécurité:
+    - Authelia:
+        # Pas de gestion courante à faire ici — gardé comme rappel visible
+        # que l'accès aux dashboards passe par Authelia (portail SSO/2FA),
+        # pas comme un lien à cliquer souvent.
+        - href: https://auth.loomkeep.app
+          icon: si-authelia

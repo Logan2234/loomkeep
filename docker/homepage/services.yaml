@@ -20,7 +20,13 @@
           url: http://grafana:3000
           username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
           password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
-          fields: ["dashboards", "totalalerts", "alertstriggered"]
+          # totalalerts/alertstriggered hit /api/admin/stats, which needs
+          # the "server.stats:read" RBAC permission — not granted to the
+          # admin account by default on this Grafana version (confirmed
+          # live: "Access denied" even via the real GF_SECURITY_ADMIN_*
+          # superadmin). dashboards/datasources use plain org-scoped
+          # endpoints instead, no such gate.
+          fields: ["dashboards", "datasources"]
     - GlitchTip:
         href: https://errors.loomkeep.app
         description: Error tracking
@@ -51,9 +57,3 @@
           env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
           key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
           fields: ["running", "stopped", "total"]
-
-- Single sign-on:
-    - Authelia:
-        href: https://auth.loomkeep.app
-        description: Portail de connexion / gestion des sessions
-        icon: si-authelia
