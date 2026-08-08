@@ -1,73 +1,58 @@
 ---
-# Five groups, each with Homepage's native header (icon + title) — plain
-# default styling. Order within and across groups is deliberate: Loomkeep
-# itself, then infra (external uptime before anything self-hosted), then
-# GitHub/quality, then email, then the alert-list tiles last.
 - Loomkeep:
     - App:
         href: https://loomkeep.app
         description: Series, movies, anime, games, books, music
         icon: https://loomkeep.app/apple-touch-icon.png
-        # No widget: a "Statut" field added no real information (the tile
-        # already links out, and Docker's own healthcheck is what actually
-        # gates traffic) — dropped rather than kept for the sake of having
-        # one. siteMonitor instead: an HTTP HEAD/GET + response time, shown
-        # as the statusStyle "dot" (settings.yaml) — internal URL
-        # (http://web:3000, not the public domain) because siteMonitor
-        # doesn't handle auth, and going through Authelia/Caddy would just
-        # monitor the login page rather than the app.
         siteMonitor: http://web:3000
-    - Statistiques:
-        # Click goes to the real admin stats page — these are just the
-        # cheap numbers worth seeing at a glance (see
-        # apps/api/src/admin/public-stats.controller.ts — deliberately not
-        # the full /admin/stats getStats(), which computes cohorts/
-        # retention curves too heavy for a ~10s widget poll).
-        href: https://loomkeep.app/admin/stats
-        description: Vue d'ensemble de l'activité
-        icon: mdi-chart-line
-        widget:
-          type: customapi
-          url: http://api:3000/api/public-stats/summary
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
-          mappings:
-            - field: userCount
-              label: Utilisateurs
-            - field: mediaCount
-              label: Médias suivis
-            - field: openReports
-              label: Signalements
-            - field: newUsers7d
-              label: Nouveaux (7j)
     - Admin:
         href: https://loomkeep.app/admin
         description: Panel admin (utilisateurs, backups, signalements...)
         icon: mdi-shield-account
-        # Ordered App, Statistiques, Admin (not alphabetical/original order)
-        # specifically so a 2-column row places Admin directly under App —
-        # Homepage's grid has no per-tile row-span, so this is done by
-        # ordering into the grid's natural row-major fill instead: row 1 is
-        # App|Statistiques, row 2 is Admin|(empty).
+    - Backups:
+        href: https://loomkeep.app/admin/backup
+        description: Sauvegardes de la base de données
+        icon: mdi-shield-database-arrow-down
+    - Statistiques:
+        href: https://loomkeep.app/admin/stats
+        description: Vue d'ensemble de l'activité
+        icon: mdi-chart-line
+        widgets:
+          - type: customapi
+            url: http://api:3000/api/public-stats/summary
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
+            mappings:
+              - field: userCount
+                label: Utilisateurs
+              - field: newUsers7d
+                label: Nouveaux (7j)
+              - field: mediaCount
+                label: Médias suivis
+              - field: openReports
+                label: Signalements
+          - type: customapi
+            # Separate endpoint, longer refresh: live-probes every external
+            # provider (TMDB, AniList...), too expensive for the ~10s
+            # default the summary widget above uses.
+            url: http://api:3000/api/public-stats/services-summary
+            refreshInterval: 300000
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
+            mappings:
+              - field: operational
+                label: Services opérationnels
 
 - Infrastructure:
     - Healthchecks:
         href: https://healthchecks.io/projects/7ccfcfc5-06a3-4a11-8991-f6e1c3595217/checks/
         description: Scheduled jobs dead-man's-switch (backups, scans...)
         icon: mdi-heart-pulse
-        # No uuid set: native widget shows aggregate up/down across every
-        # check in the account instead of a single job — see the "Job
-        # monitoring" section in the root README for what pings into this.
         widget:
           type: healthchecks
           url: https://healthchecks.io
           key: "{{HOMEPAGE_VAR_HEALTHCHECKS_API_KEY}}"
           fields: ["up", "down"]
-          # Block highlighting (docs: configs/services.md#block-highlighting)
-          # — native widgets support it, customapi doesn't, hence this only
-          # appears on Healthchecks/UptimeRobot/Portainer/VPS below. Bare
-          # keys ("up"/"down") auto-namespace to "healthchecks.up"/".down"
-          # internally, matching the untranslated label the widget renders.
           highlight:
             up:
               valueOnly: true
@@ -85,8 +70,6 @@
         href: https://dashboard.uptimerobot.com/monitors
         description: Disponibilité (contrôle externe, hors du VPS)
         icon: si-uptimerobot
-        # Read-Only API key (UptimeRobot > My Settings) — can't modify
-        # anything, only summarize every monitor in the account.
         widget:
           type: uptimerobot
           url: https://api.uptimerobot.com
@@ -132,19 +115,9 @@
         href: https://grafana.loomkeep.app
         description: CPU / RAM / disque de l'hôte
         icon: mdi-server
-        # Same node_exporter metrics as the "Node Exporter Full" Grafana
-        # dashboard, just the top-line numbers surfaced here too. Links to
-        # Grafana (no dedicated page for this) since that's where the actual
-        # history/graphs live.
         widget:
           type: prometheusmetric
           url: http://prometheus:9090
-          # Highlighting isn't documented either way for prometheusmetric
-          # (only customapi is explicitly called out as unsupported) — keys
-          # match each metric's `label` below verbatim. First thing to check
-          # live if these don't render: this may turn out unsupported too.
-          # Thresholds match what was asked: green under 33%, amber 33-66%,
-          # red above.
           highlight:
             CPU:
               valueOnly: true
@@ -208,11 +181,6 @@
         href: https://grafana.loomkeep.app
         description: Taille et volumétrie Postgres
         icon: mdi-database
-        # Deliberately NOT in the app's own /admin/stats (moved out on
-        # purpose — this is infra monitoring, not Loomkeep business data,
-        # and doesn't need a query running on every admin page load). Same
-        # pg_stat_user_tables/pg_database collectors postgres_exporter
-        # already exposes by default, no custom queries.yaml needed.
         widget:
           type: prometheusmetric
           url: http://prometheus:9090
@@ -226,10 +194,6 @@
               format:
                 type: number
     - Grafana:
-        # Back to one tile (was briefly split into "Grafana · Dashboards" /
-        # "· Datasources" so each had its own click target — reverted since
-        # a single card reads better and the split precision wasn't worth
-        # the extra tile).
         href: https://grafana.loomkeep.app
         description: Dashboards & sources de données
         icon: si-grafana
@@ -239,27 +203,10 @@
           url: http://grafana:3000
           username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
           password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
-          # totalalerts/alertstriggered hit /api/admin/stats, which needs
-          # the "server.stats:read" RBAC permission — not granted to the
-          # admin account by default on this Grafana version (confirmed
-          # live: "Access denied" even via the real GF_SECURITY_ADMIN_*
-          # superadmin). dashboards/datasources use plain org-scoped
-          # endpoints instead, no such gate.
           fields: ["dashboards", "datasources"]
 
 - GitHub & qualité:
     - Déploiement:
-        # Three stacked widgets (Homepage's `widgets:` plural — each an
-        # independent API call rendered as one more row). A true row layout
-        # (values side by side, like a single widget's mapped fields) needs
-        # every value on ONE api response — these three come from three
-        # different endpoints (own API, commits, workflow runs), and
-        # Homepage only lays fields side-by-side within one `mappings` list
-        # on one call. Stacking separate widgets is always vertical, no
-        # config for it — confirmed against Homepage's own item.jsx source.
-        # The only way around it is a small proxy combining all three
-        # server-side into one JSON response, which is more machinery than
-        # this is worth.
         href: https://github.com/Logan2234/loomkeep/actions
         description: Build actuellement déployé
         icon: mdi-rocket-launch
@@ -292,17 +239,11 @@
                 label: Déploiement
                 format: relativeDate
     - Pull requests & issues:
-        # Same "can't lay separate widgets side by side" limitation as
-        # Déploiement above.
         href: https://github.com/Logan2234/loomkeep/pulls
         description: Ouvertes sur GitHub
         icon: mdi-source-pull
         widgets:
           - type: customapi
-            # GitHub's search API, not the plain PRs list endpoint — a bare
-            # count without paginating every open PR. `is:pr` since PRs are
-            # technically issues under the hood, `is:open` to exclude
-            # merged/closed.
             url: "https://api.github.com/search/issues?q=repo:Logan2234/loomkeep+is:pr+is:open"
             refreshInterval: 300000
             headers:
@@ -324,19 +265,8 @@
         href: https://app.codecov.io/gh/Logan2234/loomkeep
         description: Couverture de tests & score de sécurité
         icon: si-codecov
-        # Two stacked widgets: Codecov's totals, and the OpenSSF Scorecard
-        # JSON API (same source as the README badge, api.securityscorecards.dev
-        # — public, no auth). Highlighting doesn't apply to either: both are
-        # customapi.
         widgets:
           - type: customapi
-            # Codecov's own API docs declare Bearer auth as required for
-            # this endpoint's schema, but public-repo badges work
-            # token-free — real behavior for a public repo's read-only
-            # totals is unconfirmed either way. Left the token optional
-            # (empty header if unset); if this shows an auth error,
-            # generate one in Codecov > Settings > Access and set
-            # CODECOV_API_TOKEN in .env.
             url: https://api.codecov.io/api/v2/github/Logan2234/repos/loomkeep/totals/
             headers:
               Authorization: "Bearer {{HOMEPAGE_VAR_CODECOV_API_TOKEN}}"
@@ -352,24 +282,11 @@
                 label: Scorecard
                 suffix: " / 10"
 
-# Split out of "GitHub & qualité" — Brevo has nothing to do with the repo,
-# it's about the app's own outgoing mail.
 - Emails:
     - Brevo:
         href: https://app.brevo.com
         description: Envois transactionnels du jour (quota 300/jour)
         icon: si-brevo
-        # aggregatedReport?days=1 = aujourd'hui only. No single "failed"
-        # field in Brevo's response — hardBounces is the clearest signal
-        # (permanent delivery failures); soft bounces/blocked exist too but
-        # showing every failure category would be more noise than signal on
-        # a small tile. Brevo's response also carries its own "error" field
-        # (a real metric — undocumented exact meaning, presumably delivery
-        # errors distinct from bounces), which MUST be in `mappings` or
-        # Homepage's customapi treats the whole response as failed just
-        # because that key exists (confirmed against its component source —
-        # same root cause as the App tile's health-check "error" field).
-        # No highlighting: customapi doesn't support it, no workaround.
         widget:
           type: customapi
           url: https://api.brevo.com/v3/smtp/statistics/aggregatedReport?days=1
@@ -390,12 +307,6 @@
         href: https://errors.loomkeep.app
         description: Error tracking
         icon: si-sentry
-        # No native GlitchTip widget in Homepage (checked, doesn't exist) —
-        # this is a hand-built call against GlitchTip's own Sentry-compatible
-        # issues API, listing the most recent unresolved issues instead of a
-        # clean count (the API returns a paginated array, no bare count
-        # field to map). More fragile than the other widgets — first thing
-        # to check if it ever shows nothing after a GlitchTip upgrade.
         widgets:
           - type: customapi
             url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=5"
@@ -403,20 +314,10 @@
               Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
             display: dynamic-list
             mappings:
-              # Array is at the root of the response, so no "items" key
-              # (mappings is a single map here, not a list — my first
-              # attempt got this wrong, confirmed against Homepage's docs).
               name: title
               label: culprit
               target: "https://errors.loomkeep.app/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/{id}"
           - type: customapi
-            # Second call to the SAME endpoint (limit bumped to 100) just to
-            # get a "Total" count via format: size (array length, per
-            # Homepage's customapi docs) — the list above stays capped at 5
-            # rows for readability. Duplicate request is the only way:
-            # Homepage doesn't let one dynamic-list widget also expose a
-            # plain count field. Caveat: this total is itself capped at 100;
-            # if it ever reads exactly "100" there may be more.
             url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=100"
             headers:
               Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
@@ -427,10 +328,6 @@
         href: https://github.com/Logan2234/loomkeep/security/dependabot
         description: Vulnérabilités de dépendances ouvertes
         icon: mdi-shield-alert
-        # Needs a real token even for a public repo (GitHub's own docs:
-        # Dependabot alerts aren't unauthenticated-readable) — a
-        # fine-grained PAT scoped to just this repo, "Dependabot alerts:
-        # read-only" permission, nothing else.
         widgets:
           - type: customapi
             url: https://api.github.com/repos/Logan2234/loomkeep/dependabot/alerts?state=open&per_page=100
@@ -445,8 +342,6 @@
               target: html_url
               limit: 10
           - type: customapi
-            # Same caveat as GlitchTip's Total above: capped at per_page=100
-            # (GitHub's own max), not a true unbounded total.
             url: https://api.github.com/repos/Logan2234/loomkeep/dependabot/alerts?state=open&per_page=100
             refreshInterval: 300000
             headers:
@@ -459,18 +354,6 @@
         href: https://github.com/Logan2234/loomkeep/security/code-scanning
         description: Alertes CodeQL ouvertes
         icon: si-github
-        # Same fine-grained PAT as Dependabot above, but needs its own
-        # separate "Code scanning alerts: read-only" repo permission added
-        # to it — GitHub gates the two APIs independently even though both
-        # sit under the same repo's Security tab. If this tile stays empty
-        # while https://github.com/Logan2234/loomkeep/security/code-scanning
-        # shows real alerts, that permission is the first thing to check.
-        #
-        # No severity sort: GitHub's code-scanning alerts API only sorts by
-        # `created`/`updated` (confirmed against GitHub's own REST docs),
-        # and Homepage's dynamic-list widget has no client-side sort option
-        # either — listed in whatever order GitHub returns them (newest
-        # first, GitHub's default).
         widgets:
           - type: customapi
             url: https://api.github.com/repos/Logan2234/loomkeep/code-scanning/alerts?state=open&per_page=100
