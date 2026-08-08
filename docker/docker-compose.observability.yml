@@ -97,7 +97,7 @@ services:
   # Host-level metrics (CPU/RAM/disk/network) for the VPS itself. No public
   # port — Prometheus scrapes it by service name over the compose network.
   node_exporter:
-    image: prom/node-exporter:v1.10.2
+    image: prom/node-exporter:v1.12.1
     restart: unless-stopped
     logging: *default-logging
     pid: host
