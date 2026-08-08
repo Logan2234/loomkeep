@@ -36,8 +36,6 @@ export interface UserDto {
   birthDate: string | null;
   /** Opt-in to seeing 18+ titles; only effective when birthDate proves the account is 18+. */
   allowAdultContent: boolean;
-  /** In-app notifications (new episode alerts). */
-  notifyInApp: boolean;
   /** Email delivery for new episode alerts. */
   notifyEmail: boolean;
   /** Web Push delivery for new episode alerts. */
@@ -81,7 +79,6 @@ export interface UpdateUserRequestDto {
   /** ISO date (YYYY-MM-DD); pass null to clear it. */
   birthDate?: string | null;
   allowAdultContent?: boolean;
-  notifyInApp?: boolean;
   notifyEmail?: boolean;
   notifyPush?: boolean;
   /** Content domains to keep visible; must list at least one. See `Domain`. */

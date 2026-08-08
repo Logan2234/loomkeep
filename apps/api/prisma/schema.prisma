@@ -325,7 +325,6 @@ model User {
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
   allowAdultContent Boolean   @default(false)
   // Communication preferences: which channels deliver "new episode" alerts.
-  notifyInApp       Boolean   @default(true)
   notifyEmail       Boolean   @default(false)
   notifyPush        Boolean   @default(false)
   // Set once the verification email's link has been opened. Informational only
@@ -628,17 +627,22 @@ model PushSubscription {
   @@index([userId])
 }
 
-// In-app notifications (currently only "new episode out" of a tracked show).
-// Payload is denormalised so a notification survives catalogue-cache refreshes.
-// Generic in-app notification. Kinds ("NEW_EPISODE", "FOLLOW",
-// "FOLLOW_REQUEST", "FOLLOW_ACCEPTED"…) share one shape: a title, an optional
-// body/link, and a `data` bag for kind-specific display extras (episode airDate,
-// the social actor's username/avatar seed…). A string `type` means new kinds
-// need no migration.
+// In-app notifications. Payload is denormalised so a notification survives
+// catalogue-cache refreshes. Generic in-app notification. Kinds ("NEW_EPISODE",
+// "FOLLOW", "FOLLOW_REQUEST", "FOLLOW_ACCEPTED"…) share one shape: a title, an
+// optional body/link, and a `data` bag for kind-specific display extras
+// (episode airDate, the social actor's username/avatar seed…). A string `type`
+// means new kinds need no migration. There's no "read" state: reading a
+// notification (the notification bell) deletes its row, so a row's mere
+// existence means unread. NEW_EPISODE rows are kept around only as an
+// idempotency record for the hourly scan (push/email, never shown in the
+// bell) and FOLLOW_REQUEST rows are superseded by the live `Follow` table
+// (the bell shows pending requests from there, with accept/reject) — both
+// are excluded from the bell feed.
 model Notification {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
-  type      String    @default("NEW_EPISODE")
+  type      String   @default("NEW_EPISODE")
   title     String
   body      String?
   // Client-side deep link (e.g. /media/movie/42 or /u/alice).
@@ -649,9 +653,8 @@ model Notification {
   dedupeKey String?
   // Kind-specific extras. For NEW_EPISODE: { airDate }. For social kinds:
   // { actorUsername, actorDisplayName } (drives the Avatar + name in the feed).
-  data      Json      @default("{}")
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

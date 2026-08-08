@@ -3,8 +3,9 @@
   // lays out every destination as tiles — the mobile counterpart of the desktop
   // rail. In the app it groups libraries + tracking/account; inside /admin it
   // swaps to the admin sections (mirroring the rail) so admin subpages stay
-  // reachable on a phone. Notifications and Admin live here — they have no
-  // bottom-bar slot by default.
+  // reachable on a phone. Admin lives here — it has no bottom-bar slot by
+  // default. Notifications aren't a destination at all: see the fixed bell
+  // (NotificationBell.svelte) in the root layout instead.
   import { page } from "$app/state";
   import { ADMIN_NAV } from "$lib/admin-nav";
   import { auth } from "$lib/auth.svelte";
@@ -13,7 +14,6 @@
   import { appConfig } from "$lib/config.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import { resolveMenuGroups } from "$lib/navigation";
-  import { notifications } from "$lib/notifications.svelte";
   import type { ComponentProps } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];
@@ -66,15 +66,7 @@
       class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors {active
         ? 'border-accent/40 bg-accent/10 text-accent'
         : 'border-border bg-surface-2 hover:border-accent/40 text-fg'}">
-      <span class="relative">
-        <Icon name={dest.icon} class="text-accent h-6 w-6" />
-        {#if dest.href === "/notifications" && notifications.unread > 0}
-          <span
-            class="bg-accent text-accent-fg absolute -top-1.5 -right-2 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-            {notifications.unread > 9 ? "9+" : notifications.unread}
-          </span>
-        {/if}
-      </span>
+      <Icon name={dest.icon} class="text-accent h-6 w-6" />
       <span class="text-xs font-semibold">{dest.label}</span>
     </a>
   {/if}

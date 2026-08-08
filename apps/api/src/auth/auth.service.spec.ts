@@ -33,7 +33,6 @@ function makeUser(overrides: Partial<User> = {}): User {
     passwordHash: "irrelevant",
     birthDate: null,
     allowAdultContent: false,
-    notifyInApp: true,
     notifyEmail: true,
     notifyPush: true,
     entitlements: [],

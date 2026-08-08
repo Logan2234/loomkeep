@@ -214,7 +214,6 @@ export class UsersController {
         displayName: dto.displayName,
         birthDate: nextBirthDate,
         allowAdultContent: nextAllowAdultContent,
-        notifyInApp: dto.notifyInApp,
         notifyEmail: dto.notifyEmail,
         notifyPush: dto.notifyPush,
         enabledDomains: dto.enabledDomains,

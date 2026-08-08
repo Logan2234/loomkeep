@@ -17,7 +17,6 @@ export interface NotificationDto {
    * `{ actorUsername, actorDisplayName }` (drives the Avatar in the feed).
    */
   data: Record<string, unknown>;
-  read: boolean;
   /** ISO timestamp to display: the episode air date, else `createdAt`. */
   timestamp: string;
   /** ISO creation date (when the row was written). */

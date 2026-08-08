@@ -78,7 +78,7 @@ export class AdminPushController {
       body:
         dto.body?.trim() ||
         "Ceci est une notification de test envoyée depuis le panel admin.",
-      url: "/notifications",
+      url: "/",
     });
 
     return { subscriptionCount: devices.length, results };
@@ -101,7 +101,7 @@ export class AdminPushController {
           body:
             dto.body?.trim() ||
             "Message envoyé à tous les comptes depuis le panel admin.",
-          url: "/notifications",
+          url: "/",
         }),
       ),
     );

@@ -9,7 +9,6 @@
   import { appConfig } from "$lib/config.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import { NAVIGATION } from "$lib/navigation";
-  import { notifications } from "$lib/notifications.svelte";
 
   // Pinned = stays open regardless of hover, persisted. Unpinned = follows the
   // mouse (hover-only), as before.
@@ -56,12 +55,11 @@
     return () => window.removeEventListener("resize", updateScroll);
   });
 
-  // Recompute when the rendered list changes height (rail width, admin vs app
-  // navigation, or a new notification badge shifting layout).
+  // Recompute when the rendered list changes height (rail width or admin vs
+  // app navigation).
   $effect(() => {
     void expanded;
     void inAdmin;
-    void notifications.unread;
     updateScroll();
   });
 </script>
@@ -266,36 +264,6 @@
               ? 'opacity-100'
               : 'opacity-0'}">
             Admin
-          </span>
-        </a>
-      {/if}
-
-      {#if !inAdmin}
-        <a
-          href="/notifications"
-          title={expanded ? undefined : "Notifications"}
-          aria-current={page.url.pathname.startsWith("/notifications")
-            ? "page"
-            : undefined}
-          class="flex w-full items-center overflow-hidden rounded-xl transition-colors {page.url.pathname.startsWith(
-            '/notifications',
-          )
-            ? 'bg-accent/15 text-accent'
-            : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-          <span class="relative grid h-10 w-10 shrink-0 place-items-center">
-            <Icon name="bell" class="h-5 w-5" />
-            {#if notifications.unread > 0}
-              <span
-                class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                {notifications.unread > 9 ? "9+" : notifications.unread}
-              </span>
-            {/if}
-          </span>
-          <span
-            class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
-              ? 'opacity-100'
-              : 'opacity-0'}">
-            Notifications
           </span>
         </a>
       {/if}

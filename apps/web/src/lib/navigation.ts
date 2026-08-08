@@ -140,7 +140,6 @@ export type MobileNavId =
   | "stats"
   | "feed"
   | "profile"
-  | "notifications"
   | "settings"
   | "admin";
 
@@ -264,13 +263,6 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     social: true,
     match: (p) => p === "/profile",
   },
-  notifications: {
-    id: "notifications",
-    href: "/notifications",
-    label: "Notifications",
-    icon: "bell",
-    match: (p) => p.startsWith("/notifications"),
-  },
   settings: {
     id: "settings",
     href: "/settings",
@@ -296,7 +288,7 @@ const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
   },
   {
     label: "Suivi",
-    ids: ["calendar", "stats", "feed", "notifications"],
+    ids: ["calendar", "stats", "feed"],
   },
   {
     label: "Compte",
@@ -325,7 +317,6 @@ const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "music",
   "calendar",
   "stats",
-  "notifications",
   "settings",
   "admin",
 ];
