@@ -3,14 +3,11 @@
 ---
 - Développement:
     - GitHub (repo):
+        # No widget — GitHub's own API needs a repo-scoped token for
+        # anything beyond public rate-limited reads, not worth it just for
+        # a link tile.
         - href: https://github.com/Logan2234/tracklore
           icon: si-github
-    - Codecov:
-        - href: https://app.codecov.io/gh/Logan2234/tracklore
-          icon: si-codecov
-    - UptimeRobot:
-        - href: https://dashboard.uptimerobot.com/monitors
-          icon: si-uptimerobot
 
 - Infra & envoi d'emails:
     - Brevo (SMTP):

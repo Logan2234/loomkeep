@@ -31,6 +31,9 @@ services:
       HOMEPAGE_VAR_GRAFANA_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
       HOMEPAGE_VAR_GLITCHTIP_API_TOKEN: ${GLITCHTIP_API_TOKEN:-}
       HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG: ${GLITCHTIP_ORG_SLUG:-}
+      HOMEPAGE_VAR_HEALTHCHECKS_API_KEY: ${HEALTHCHECKS_API_KEY:-}
+      HOMEPAGE_VAR_UPTIMEROBOT_API_KEY: ${UPTIMEROBOT_API_KEY:-}
+      HOMEPAGE_VAR_CODECOV_API_TOKEN: ${CODECOV_API_TOKEN:-}
     volumes:
       - ./homepage/services.yaml:/app/config/services.yaml:ro
       - ./homepage/settings.yaml:/app/config/settings.yaml:ro

@@ -83,3 +83,68 @@
           url: https://healthchecks.io
           key: "{{HOMEPAGE_VAR_HEALTHCHECKS_API_KEY}}"
           fields: ["up", "down"]
+    - UptimeRobot:
+        href: https://dashboard.uptimerobot.com/monitors
+        description: Disponibilité (contrôle externe, hors du VPS)
+        icon: si-uptimerobot
+        # Read-Only API key (UptimeRobot > My Settings) — can't modify
+        # anything, only summarize every monitor in the account.
+        widget:
+          type: uptimerobot
+          url: https://api.uptimerobot.com
+          key: "{{HOMEPAGE_VAR_UPTIMEROBOT_API_KEY}}"
+          fields: ["sitesUp", "sitesDown"]
+    - VPS:
+        href: https://grafana.loomkeep.app
+        description: CPU / RAM / disque de l'hôte
+        icon: mdi-server
+        # Same node_exporter metrics as the "Node Exporter Full" Grafana
+        # dashboard, just the top-line numbers surfaced here too. Links to
+        # Grafana (no dedicated page for this) since that's where the actual
+        # history/graphs live.
+        widget:
+          type: prometheusmetric
+          url: http://prometheus:9090
+          metrics:
+            - label: CPU
+              query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+              format:
+                type: number
+                options:
+                  maximumFractionDigits: 1
+              suffix: "%"
+            - label: RAM
+              query: 100 - ((node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)
+              format:
+                type: number
+                options:
+                  maximumFractionDigits: 1
+              suffix: "%"
+            - label: Disque
+              query: 100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100)
+              format:
+                type: number
+                options:
+                  maximumFractionDigits: 1
+              suffix: "%"
+
+- Développement:
+    - Codecov:
+        href: https://app.codecov.io/gh/Logan2234/tracklore
+        description: Couverture de tests
+        icon: si-codecov
+        # Codecov's own API docs declare Bearer auth as required for this
+        # endpoint's schema, but public-repo badges work token-free — real
+        # behavior for a public repo's read-only totals is unconfirmed
+        # either way. Left the token optional (empty header if unset); if
+        # this shows an auth error, generate one in Codecov > Settings >
+        # Access and set CODECOV_API_TOKEN in .env.
+        widget:
+          type: customapi
+          url: https://api.codecov.io/api/v2/github/Logan2234/repos/tracklore/totals/
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_CODECOV_API_TOKEN}}"
+          mappings:
+            - field: totals.coverage
+              label: Couverture
+              suffix: "%"
