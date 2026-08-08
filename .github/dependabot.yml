@@ -32,11 +32,11 @@ updates:
       interval: "weekly"
       day: "monday"
 
-  # Covers docker-compose.yml + every *.yml override at the repo root
+  # Covers docker-compose.yml + every *.yml override in docker/
   # (prod/ngrok/observability) — image: tags (postgres, caddy, loki,
   # promtail, grafana-oss...), not just the two Dockerfiles above.
   - package-ecosystem: "docker-compose"
-    directory: "/"
+    directory: "/docker"
     schedule:
       interval: "weekly"
       day: "monday"

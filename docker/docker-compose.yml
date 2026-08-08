@@ -48,7 +48,10 @@ services:
 
   api:
     build:
-      context: .
+      # Relative to this file's own location (docker/), not the invocation
+      # cwd — the monorepo root, where apps/api/Dockerfile expects its build
+      # context to start, is one level up.
+      context: ..
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     logging: *default-logging
@@ -91,7 +94,7 @@ services:
 
   web:
     build:
-      context: .
+      context: ..
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     logging: *default-logging
