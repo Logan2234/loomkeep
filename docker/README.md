@@ -65,6 +65,26 @@ convention as everywhere else. The widget itself
 directly rather than an npm package (their own recommended integration
 path) and only renders when `PUBLIC_TURNSTILE_SITE_KEY` is set.
 
+## Maintenance mode
+
+Toggled by the presence of a marker file, not an env var or a Caddy
+reload/redeploy — `Caddyfile`'s `@maintenance file /flags/maintenance`
+matcher is checked live on every request. When present, every request gets
+a themed 503 page (`maintenance/index.html`) instead of hitting `api`/`web`;
+this also means it keeps working if the actual outage is the API or DB
+being down, unlike a flag stored in the app's own database. Only wired into
+`docker-compose.prod.yml` (self-host's base compose doesn't run Caddy at
+all — see "Layout" above).
+
+The flag lives at `docker/caddy-flags/maintenance`, bind-mounted (not a
+named volume) so it's a plain path on the VPS an admin can toggle over SSH,
+no Docker commands needed:
+
+```sh
+touch docker/caddy-flags/maintenance   # on
+rm docker/caddy-flags/maintenance      # off
+```
+
 ## Image vulnerability scanning (Trivy)
 
 `.github/workflows/trivy.yml` — separate from `ci.yml`'s own

@@ -49,6 +49,10 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./www-redirect.caddy:/etc/caddy/sites-enabled/www-redirect.caddy:ro
+      - ./maintenance:/srv/maintenance:ro
+      # Bind mount (not a named volume) so the maintenance flag is a plain
+      # host path an admin can touch/rm over SSH — see Caddyfile.
+      - ./caddy-flags:/flags
       - caddy-data:/data
       - caddy-config:/config
     ports:

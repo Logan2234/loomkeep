@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Loomkeep — Maintenance</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: #0c0d10;
+        color: #ececea;
+        font-family:
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          system-ui,
+          sans-serif;
+        text-align: center;
+      }
+
+      .card {
+        max-width: 26rem;
+      }
+
+      .wordmark {
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        margin: 0;
+      }
+
+      .wordmark span {
+        color: #f5b841;
+      }
+
+      .rule {
+        border: none;
+        border-top: 1px solid #2a2e38;
+        margin: 1.5rem 0;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: "Courier New", ui-monospace, monospace;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f5b841;
+        margin: 0 0 1rem;
+      }
+
+      .status::before {
+        content: "";
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 999px;
+        background: #f5b841;
+      }
+
+      p {
+        color: #a8abb4;
+        line-height: 1.6;
+        margin: 0 0 1.5rem;
+      }
+
+      a {
+        color: #f5b841;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(245, 184, 65, 0.4);
+      }
+
+      a:hover {
+        border-bottom-color: #f5b841;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <p class="wordmark">LOOM<span>KEEP</span></p>
+      <hr class="rule" />
+      <p class="status">Maintenance en cours</p>
+      <p>
+        On bricole en coulisses pour améliorer ta salle de projection.
+        De retour très bientôt.
+      </p>
+      <!-- TODO: remplacer par l'URL de la page de statut publique une fois créée -->
+      <a href="#">Suivre l'état du service</a>
+    </div>
+  </body>
+</html>

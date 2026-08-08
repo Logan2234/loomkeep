@@ -47,6 +47,26 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 
+	# Maintenance mode: toggled by the presence of a marker file, not an env
+	# var, so it flips instantly (no reload/redeploy) and still works if the
+	# outage is the api/db themselves being down. Toggle from the VPS with:
+	#   touch ./caddy-flags/maintenance   # on
+	#   rm ./caddy-flags/maintenance      # off
+	# `root` is required for the `file` matcher below to resolve absolute
+	# paths at all (unset root = it never matches); harmless for the
+	# reverse_proxy handlers further down, which ignore it.
+	root * /
+	@maintenance file /flags/maintenance
+	handle @maintenance {
+		error "maintenance" 503
+	}
+	handle_errors 503 {
+		root * /srv/maintenance
+		rewrite * /index.html
+		file_server
+		header Retry-After "3600"
+	}
+
 	# The NestJS API mounts every route under the `api` global prefix
 	# (see apps/api/src/main.ts), so forward `/api/*` untouched.
 	handle /api/* {
