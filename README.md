@@ -28,15 +28,21 @@ watches are stored **one row per viewing**, so rewatches are first-class.
 ```sh
 cp .env.example .env
 # Edit .env: set POSTGRES_PASSWORD, both JWT secrets and TMDB_API_TOKEN.
-docker compose up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
+
+Every `-f ...` combo below has a matching `pnpm docker:*` shortcut (see
+`package.json`) — `docker:dev`, `docker:ngrok`, `docker:prod`, and
+`docker:full` (every optional add-on at once, for local testing of the whole
+stack); the less common one-off combos below are still spelled out with
+their full `-f` chain since there's no script for every permutation.
 
 Then open http://localhost:8080, create an account, done.
 On a NAS, set `PUBLIC_API_URL` and `WEB_ORIGIN` to the host's address
 (e.g. `http://nas.local:3000/api` and `http://nas.local:8080`).
 
-Upgrades: `git pull && docker compose up -d --build` — database migrations
-run automatically when the API boots.
+Upgrades: `git pull && docker compose -f docker/docker-compose.yml up -d --build`
+— database migrations run automatically when the API boots.
 
 ### TMDB API key
 
@@ -77,7 +83,7 @@ provides one by tunnelling to the local proxy. Your computer must stay on.
 3. Start the stack with the ngrok override, then the tunnel:
 
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d --build
+   docker compose -f docker/docker-compose.yml -f docker/docker-compose.ngrok.yml up -d --build
    ngrok start loomkeep
    ```
 
@@ -90,7 +96,7 @@ one person, host the app publicly instead (VPS or a PaaS).
 ### Public hosting (VPS)
 
 For a stack that's always up under your own domain (e.g. an OVH VPS), use the
-`docker-compose.prod.yml` override instead of the ngrok one. It adds the same
+`docker/docker-compose.prod.yml` override instead of the ngrok one. It adds the same
 single-origin Caddy proxy, but Caddy requests and renews a real Let's Encrypt
 certificate itself and serves HTTPS on the standard ports — no tunnel, no
 warning page.
@@ -109,7 +115,7 @@ warning page.
 3. Start the stack with the prod override:
 
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --build
    ```
 
 4. Open `https://<DOMAIN>` — the first request can take a few seconds while
@@ -137,7 +143,7 @@ override on top of whichever deployment you're running:
 
 ```sh
 # set GRAFANA_ADMIN_PASSWORD in .env first
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.observability.yml up -d --build
 ```
 
 This adds:
@@ -164,7 +170,7 @@ own auth.
 ### Docker management UI (optional)
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.portainer.yml up -d --build
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.portainer.yml up -d --build
 ```
 
 Adds [Portainer](https://www.portainer.io/), reachable at
@@ -175,7 +181,7 @@ without SSH. Gated by Portainer's own admin login (set on first visit).
 
 ```sh
 # set GLITCHTIP_SECRET_KEY and GLITCHTIP_DB_PASSWORD in .env first
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.glitchtip.yml up -d --build
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.glitchtip.yml up -d --build
 ```
 
 Adds [GlitchTip](https://glitchtip.com/) (Sentry-API-compatible, self-hosted
@@ -200,12 +206,12 @@ dropped). See `apps/api/src/instrument.ts` and `apps/web/src/hooks.client.ts`.
 ### Landing page (optional)
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.homepage.yml up -d --build
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.authelia.yml -f docker/docker-compose.homepage.yml up -d --build
 ```
 
 Adds [Homepage](https://gethomepage.dev/), reachable at `home.<DOMAIN>` — one
 page with a link tile for every dashboard above (Grafana, Portainer,
-GlitchTip, the app itself). Static config only (`homepage/services.yaml`),
+GlitchTip, the app itself). Static config only (`docker/homepage/services.yaml`),
 no Docker socket access. **Requires the single sign-on section below too** —
 Homepage has no login of its own and is gated entirely by Authelia's
 `forward_auth`.
@@ -222,8 +228,8 @@ just bounces through silently, no second password).
    plaintext values in chat, including with Claude):
 
    ```sh
-   cp authelia/configuration.yml.example authelia/configuration.yml
-   cp authelia/users_database.yml.example authelia/users_database.yml
+   cp docker/authelia/configuration.yml.example docker/authelia/configuration.yml
+   cp docker/authelia/users_database.yml.example docker/authelia/users_database.yml
    ```
 
 2. Generate the secrets (run each once, paste the output where the matching
@@ -231,8 +237,8 @@ just bounces through silently, no second password).
 
    ```sh
    docker run --rm authelia/authelia:4.39.20 authelia crypto rand --length 64   # x4: reset-password jwt_secret, session secret, storage encryption_key, oidc hmac_secret
-   cd authelia && docker run --rm -v "$(pwd):/out" authelia/authelia:4.39.20 authelia crypto pair rsa generate -d /out && cd ..
-   # writes authelia/private.pem — paste its full contents (indented, including
+   cd docker/authelia && docker run --rm -v "$(pwd):/out" authelia/authelia:4.39.20 authelia crypto pair rsa generate -d /out && cd -
+   # writes docker/authelia/private.pem — paste its full contents (indented, including
    # -----BEGIN/END PRIVATE KEY-----) into the oidc.jwks key, then delete both
    # private.pem and public.pem (the -v mount is required — without it "-d ."
    # writes inside the throwaway --rm container instead of your machine)
@@ -250,7 +256,7 @@ just bounces through silently, no second password).
    accept email-as-username at the login form.
 
 3. For each of the three OIDC clients (grafana/glitchtip/portainer) in
-   `authelia/configuration.yml`: generate a random secret and its hash, keep
+   `docker/authelia/configuration.yml`: generate a random secret and its hash, keep
    the plaintext somewhere safe (you'll need it in step 5/6), paste the hash
    into `client_secret`:
 
@@ -272,7 +278,7 @@ just bounces through silently, no second password).
    through config alone:
 
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.observability.yml -f docker-compose.portainer.yml -f docker-compose.glitchtip.yml up -d --build
+   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.authelia.yml -f docker/docker-compose.observability.yml -f docker/docker-compose.portainer.yml -f docker/docker-compose.glitchtip.yml up -d --build
    ```
 
    - **GlitchTip**: on the VPS, temporarily set `GLITCHTIP_ENABLE_ADMIN=True`
@@ -300,7 +306,7 @@ just bounces through silently, no second password).
      ones.
 
 Grafana needs no manual step — it's fully wired via env vars in
-`docker-compose.observability.yml`.
+`docker/docker-compose.observability.yml`.
 
 ## Development
 

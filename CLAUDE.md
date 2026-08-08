@@ -20,13 +20,13 @@ pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after edit
 # Web
 pnpm --filter @loomkeep/web check             # svelte-check (type errors in .svelte files)
 
-# Self-host stack
-docker compose up -d --build                   # db + api + web (see .env.example)
+# Self-host stack — compose files live in docker/, not the repo root
+docker compose -f docker/docker-compose.yml up -d --build   # db + api + web (see .env.example)
 
-# Mobile access (phone testing) — docker-compose.ngrok.yml is an OVERRIDE, not
+# Mobile access (phone testing) — docker/docker-compose.ngrok.yml is an OVERRIDE, not
 # standalone: it has no build context of its own (only `environment:` blocks +
 # the Caddy service), so it ALWAYS needs the base file passed alongside it.
-docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d --build
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.ngrok.yml up -d --build
 ngrok start loomkeep --config ngrok.yml        # separate process; domain from ngrok.yml (gitignored,
                                                 # copy from the example, needs NGROK_DOMAIN in .env too)
 ```
@@ -113,7 +113,13 @@ implementation (`createInfiniteQuery`, `createMutation`,
 not another local-`$state` pattern, when a mutation needs to invalidate data
 shown in more than one component.
 
-**Docker:** both Dockerfiles copy _all_ workspace `package.json` manifests plus
+**Docker:** every `docker-compose.*.yml`, the `Caddyfile`, and the add-on
+config dirs (`observability/`, `authelia/`, `homepage/`) live under `docker/`,
+not the repo root — kept together as a unit so their relative paths to each
+other never had to change. `context: ..` in `docker/docker-compose.yml`'s
+`api`/`web` build blocks points back up at the monorepo root, since Compose
+resolves relative paths against the compose file's own location, not the
+invocation cwd. Both Dockerfiles copy _all_ workspace `package.json` manifests plus
 `tsconfig.base.json` before `pnpm install --frozen-lockfile` (a frozen install
 validates every importer in the lockfile). The api image runs
 `prisma migrate deploy` at boot; the web runtime image ships only the
@@ -122,7 +128,7 @@ auto-redeploys on every successful CI run on `main`** via a plain
 `docker compose up -d --build` (no `-f` flags) — which override files get
 combined comes from `COMPOSE_FILE` in the VPS's own `.env` (Compose reads
 this itself), not from the workflow. Adding a new optional
-`docker-compose.<addon>.yml` that should run continuously in production means
+`docker/docker-compose.<addon>.yml` that should run continuously in production means
 updating that `COMPOSE_FILE` line (see `.env.example`), not `deploy.yml`.
 
 **Logging (Observability Palier 1):** `nestjs-pino` (`main.ts` /
@@ -140,35 +146,35 @@ exception — 5xx at "error" with the stack, 4xx (`NotFoundException`,
 so real bugs aren't buried — then always delegates to
 `BaseExceptionFilter.catch()`, so the response sent to the client is
 completely unchanged. Docker log rotation (`max-size: 10m`, `max-file: 5`)
-is set per service in `docker-compose.yml`/`docker-compose.prod.yml`/
-`docker-compose.ngrok.yml` (duplicated by hand in the two overrides — Compose
+is set per service in `docker/docker-compose.yml`/`docker/docker-compose.prod.yml`/
+`docker/docker-compose.ngrok.yml` (duplicated by hand in the two overrides — Compose
 doesn't merge YAML anchors across `-f` files). **Palier 2** (searchable log
-history + metrics) is `docker-compose.observability.yml`, an optional
+history + metrics) is `docker/docker-compose.observability.yml`, an optional
 override adding Grafana + Loki + Promtail (logs) and Prometheus +
 node_exporter + postgres_exporter (host/DB metrics) — config in
-`observability/`. Promtail auto-discovers every container via the Docker
+`docker/observability/`. Promtail auto-discovers every container via the Docker
 socket and ships its already-rotated json-file logs into Loki; both Loki and
 Prometheus are pre-provisioned as Grafana data sources
-(`observability/grafana-datasources.yaml`). Grafana is reachable both
-publicly at `grafana.<DOMAIN>` via Caddy (`observability/grafana.caddy`,
+(`docker/observability/grafana-datasources.yaml`). Grafana is reachable both
+publicly at `grafana.<DOMAIN>` via Caddy (`docker/observability/grafana.caddy`,
 gated by Grafana's own login only, no basic auth — Logan's call) and via
 `127.0.0.1:3001` as an SSH-tunnel fallback — see README "Logs and
 monitoring". Promtail is deprecated upstream (merged into Grafana Alloy) and
 is planned to be replaced by it, likely taking node_exporter/postgres_exporter's
-job too at the same time. Caddy itself (`Caddyfile`) contributes to both
+job too at the same time. Caddy itself (`docker/Caddyfile`) contributes to both
 halves of Palier 2 without an extra container: `encode gzip zstd` compresses
 responses, `log { output stdout; format json }` puts its access log in the
 same json-file/Promtail pipeline as every app container, and a global
 `admin 0.0.0.0:2019` + `metrics` option exposes a Prometheus `/metrics`
-endpoint scraped as the `caddy` job in `observability/prometheus.yml` — bound
+endpoint scraped as the `caddy` job in `docker/observability/prometheus.yml` — bound
 to the compose network only, not published to the host, same trust level as
 `db`. It also sends baseline security headers (HSTS with
 `includeSubDomains`, `X-Content-Type-Options`, `X-Frame-Options`,
-`Referrer-Policy`) on the main site block. `www-redirect.caddy` (mounted only
-by `docker-compose.prod.yml`, not the ngrok override) redirects
+`Referrer-Policy`) on the main site block. `docker/www-redirect.caddy` (mounted only
+by `docker/docker-compose.prod.yml`, not the ngrok override) redirects
 `www.<DOMAIN>` to the apex; it's a dedicated site block matching only that
 one hostname so it can't shadow subdomain blocks like `grafana.<DOMAIN>`.
-**Palier 3** (`docker-compose.glitchtip.yml`) adds
+**Palier 3** (`docker/docker-compose.glitchtip.yml`) adds
 GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in
 `SERVER_ROLE: all_in_one` mode with its own dedicated Postgres + Valkey
 (deliberately not sharing the app's `db`, same reasoning as Loki/Grafana's
@@ -189,30 +195,30 @@ disables reporting, same convention as every other optional integration.
 Errors only: no tracing on the web side, no session replay (GlitchTip drops
 those events silently), no source-map upload yet (`@sentry/cli`'s postinstall
 is explicitly declined in `pnpm-workspace.yaml`'s `allowBuilds`). A separate
-optional override, `docker-compose.portainer.yml`, adds a Docker management
+optional override, `docker/docker-compose.portainer.yml`, adds a Docker management
 UI at `portainer.<DOMAIN>` (same pattern).
 
-**cAdvisor** (`docker-compose.observability.yml`) adds per-container metrics
+**cAdvisor** (`docker/docker-compose.observability.yml`) adds per-container metrics
 (node_exporter only sees the host in aggregate) — no public port, scraped by
 Prometheus like the other exporters.
 
-**Single sign-on** (`docker-compose.authelia.yml`) is
+**Single sign-on** (`docker/docker-compose.authelia.yml`) is
 [Authelia](https://www.authelia.com/) — chosen over Authentik specifically
 for its footprint (single binary + SQLite, no dedicated Postgres/Redis;
-Authentik would've meant a *fourth* dedicated Postgres instance in this
+Authentik would've meant a _fourth_ dedicated Postgres instance in this
 stack, disproportionate for a single-user setup). Two integration modes:
 Grafana/GlitchTip/Portainer use real OIDC (the app redirects to Authelia and
 back — true SSO, no re-login visiting a second app), while Homepage
-(`docker-compose.homepage.yml`, chosen over Dashy for being lighter and
+(`docker/docker-compose.homepage.yml`, chosen over Dashy for being lighter and
 matching this repo's committed-YAML-config convention rather than an
 in-UI editor) has no login of its own and is gated via Caddy `forward_auth`
-instead (`homepage/homepage.caddy`). Grafana's OIDC is fully env-var driven
-(`docker-compose.observability.yml`); GlitchTip and Portainer don't support
+instead (`docker/homepage/homepage.caddy`). Grafana's OIDC is fully env-var driven
+(`docker/docker-compose.observability.yml`); GlitchTip and Portainer don't support
 that and need a one-time manual step in their own admin UI after Authelia
 exists — see README "Single sign-on" for the exact values. Real secrets
 (session/storage/OIDC HMAC secrets, the RSA JWKS signing key, the user
-database) live in `authelia/configuration.yml` and
-`authelia/users_database.yml` — gitignored, copied from `*.example`
+database) live in `docker/authelia/configuration.yml` and
+`docker/authelia/users_database.yml` — gitignored, copied from `*.example`
 templates, same convention as `.env`; OIDC client secrets specifically
 **must** be file-based (Authelia doesn't support environment variables for
 values inside config lists, confirmed via its own docs), which is why this
@@ -225,7 +231,7 @@ rest of this app's SMTP integration) — reuses the same Brevo credentials as
 **P4 social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
 gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
 `GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the
-hosted/ngrok build turns it on (see `docker-compose.ngrok.yml`).
+hosted/ngrok build turns it on (see `docker/docker-compose.ngrok.yml`).
 `SocialFeatureGuard` 404s every social route when off (never 403 — a
 self-host install shouldn't even advertise the surface exists). Visibility is
 two layers: `User.profileAccess` (PUBLIC/PRIVATE/GHOST) acts as a cap over a
@@ -279,7 +285,7 @@ a known, not-yet-built gap.
   1.0. Add an entry to `CHANGELOG.md` for each version bump. Reserve 1.0.0 for
   when the roadmap reaches P4+ and the app is stable enough to call finished,
   not a specific commit.
-- Mobile: the app installs as a PWA. `docker-compose.ngrok.yml` + `Caddyfile`
+- Mobile: the app installs as a PWA. `docker/docker-compose.ngrok.yml` + `docker/Caddyfile`
   put web+api behind one origin and expose it via ngrok for phone access (set
   `NGROK_DOMAIN` in `.env`); see README "Mobile access". Single-user; a 2nd
   user means moving to a public host (VPS/PaaS).
