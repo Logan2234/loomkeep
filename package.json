@@ -7,7 +7,7 @@
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" dev",
     "build:package": "pnpm --filter \"./packages/*\" build",

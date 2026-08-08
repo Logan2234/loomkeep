@@ -1,6 +1,6 @@
 FROM node:26-alpine AS build
 
-RUN npm install -g pnpm@11.9.0
+RUN npm install -g pnpm@11.20.0
 WORKDIR /app
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
