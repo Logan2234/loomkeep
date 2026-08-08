@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { ApiError, login } from "$lib/api/client";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import { appConfig } from "$lib/config.svelte";
 
   let identifier = $state("");
   let password = $state("");
@@ -52,10 +53,12 @@
       <button type="submit" class="btn btn-primary" disabled={loading}>
         {loading ? "Connexion…" : "Se connecter"}
       </button>
-      <p class="text-dim text-center text-sm">
-        Pas encore de compte ?
-        <a href="/register" class="link-accent">Créer un compte</a>
-      </p>
+      {#if appConfig.registrationEnabled}
+        <p class="text-dim text-center text-sm">
+          Pas encore de compte ?
+          <a href="/register" class="link-accent">Créer un compte</a>
+        </p>
+      {/if}
     </form>
   </div>
 </div>

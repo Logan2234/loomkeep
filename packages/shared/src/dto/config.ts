@@ -11,4 +11,12 @@ export interface PublicConfigDto {
    * social endpoints.
    */
   socialEnabled: boolean;
+
+  /**
+   * Whether new sign-ups are accepted on this deployment. Driven by the
+   * API's `REGISTRATION_ENABLED` env var (on by default). When false, the
+   * web hides the sign-up link/route and the API rejects `POST
+   * /auth/register`.
+   */
+  registrationEnabled: boolean;
 }

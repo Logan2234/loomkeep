@@ -2,6 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { PublicConfigDto } from "@loomkeep/shared";
 import { Public } from "../auth/decorators/public.decorator";
+import { isRegistrationEnabled } from "../auth/registration.config";
 import { isSocialEnabled } from "../social/social.config";
 
 // Unauthenticated: the web fetches this once at startup, before login, to know
@@ -13,6 +14,9 @@ export class PublicConfigController {
 
   @Get()
   get(): PublicConfigDto {
-    return { socialEnabled: isSocialEnabled(this.config) };
+    return {
+      socialEnabled: isSocialEnabled(this.config),
+      registrationEnabled: isRegistrationEnabled(this.config),
+    };
   }
 }

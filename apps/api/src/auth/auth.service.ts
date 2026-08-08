@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -19,6 +20,7 @@ import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { isRegistrationEnabled } from "./registration.config";
 import { TurnstileService } from "./turnstile.service";
 
 const ACCESS_TOKEN_TTL = "15m";
@@ -48,6 +50,10 @@ export class AuthService {
     userAgent?: string,
     ip?: string,
   ): Promise<AuthResult> {
+    if (!isRegistrationEnabled(this.configService)) {
+      throw new ForbiddenException("Registration is disabled");
+    }
+
     if (!(await this.turnstile.verify(dto.turnstileToken, ip))) {
       throw new BadRequestException("Anti-bot verification failed");
     }

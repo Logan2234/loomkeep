@@ -2,12 +2,19 @@
   import { env } from "$env/dynamic/public";
   import { goto } from "$app/navigation";
   import { register, ApiError } from "$lib/api/client";
+  import { appConfig } from "$lib/config.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import Turnstile from "$lib/components/Turnstile.svelte";
 
   // Empty = self-host without a Cloudflare account configured — no widget,
   // register() sends no token and the API's own check no-ops the same way.
   const turnstileSiteKey = env.PUBLIC_TURNSTILE_SITE_KEY;
+
+  // Direct-URL access when registration is closed: bounce to login rather
+  // than showing a dead-end form (the API rejects the submit anyway).
+  $effect(() => {
+    if (!appConfig.registrationEnabled) void goto("/login");
+  });
 
   let displayName = $state("");
   let email = $state("");

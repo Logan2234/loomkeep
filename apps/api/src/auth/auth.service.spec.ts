@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -44,7 +45,7 @@ function makeUser(overrides: Partial<User> = {}): User {
   } as User;
 }
 
-function makeService(adminEmail?: string) {
+function makeService(adminEmail?: string, registrationEnabled?: string) {
   const prisma = {
     user: {
       findUnique: jest.fn(),
@@ -78,9 +79,11 @@ function makeService(adminEmail?: string) {
 
   const configService = {
     getOrThrow: jest.fn((key: string) => SECRETS[key]),
-    get: jest.fn((key: string) =>
-      key === "ADMIN_EMAIL" ? adminEmail : undefined,
-    ),
+    get: jest.fn((key: string) => {
+      if (key === "ADMIN_EMAIL") return adminEmail;
+      if (key === "REGISTRATION_ENABLED") return registrationEnabled;
+      return undefined;
+    }),
   } as unknown as ConfigService;
 
   const mail = {
@@ -119,6 +122,20 @@ function makeService(adminEmail?: string) {
 }
 
 describe("AuthService.register", () => {
+  it("throws ForbiddenException when registration is disabled", async () => {
+    const { service, prisma, turnstile } = makeService(undefined, "false");
+
+    await expect(
+      service.register({
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+      }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(turnstile.verify).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it("throws BadRequestException when Turnstile verification fails", async () => {
     const { service, prisma, turnstile } = makeService();
     (turnstile.verify as jest.Mock).mockResolvedValue(false);
