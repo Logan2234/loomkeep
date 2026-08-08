@@ -32,7 +32,7 @@ function makeController(
   return new PublicStatsController(prisma, admin);
 }
 
-describe("PublicStatsController", () => {
+describe("PublicStatsController.getSummary", () => {
   const ORIGINAL_ENV = process.env.GIT_SHA;
 
   afterEach(() => {
@@ -53,6 +53,7 @@ describe("PublicStatsController", () => {
       mediaCount: 12,
       openReports: 1,
       newUsers7d: 2,
+      operational: "0/0",
       gitSha: "a1b2c3d",
     });
   });
@@ -71,20 +72,18 @@ describe("PublicStatsController", () => {
       mediaCount: 0,
       openReports: 0,
       newUsers7d: 0,
+      operational: "0/0",
       gitSha: "unknown",
     });
   });
-});
-
-describe("PublicStatsController.getServicesSummary", () => {
-  const zeroCounts = {
-    userCount: 0,
-    mediaCount: 0,
-    openReports: 0,
-    newUsers7d: 0,
-  };
 
   it("counts configured-and-reachable-or-unprobed services, excluding comingSoon", async () => {
+    const zeroCounts = {
+      userCount: 0,
+      mediaCount: 0,
+      openReports: 0,
+      newUsers7d: 0,
+    };
     const controller = makeController(zeroCounts, [
       { configured: true, reachable: true }, // healthy
       { configured: true, reachable: null }, // unprobeable but configured — healthy
@@ -92,15 +91,8 @@ describe("PublicStatsController.getServicesSummary", () => {
       { configured: false, reachable: null }, // not configured — unhealthy
       { configured: false, reachable: null, comingSoon: true }, // excluded entirely
     ]);
-    await expect(controller.getServicesSummary()).resolves.toEqual({
+    await expect(controller.getSummary()).resolves.toMatchObject({
       operational: "2/4",
-    });
-  });
-
-  it("reports 0/0 when there are no live providers", async () => {
-    const controller = makeController(zeroCounts, []);
-    await expect(controller.getServicesSummary()).resolves.toEqual({
-      operational: "0/0",
     });
   });
 });

@@ -17,33 +17,23 @@
         href: https://loomkeep.app/admin/stats
         description: Vue d'ensemble de l'activité
         icon: mdi-chart-line
-        widgets:
-          - type: customapi
-            url: http://api:3000/api/public-stats/summary
-            headers:
-              Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
-            mappings:
-              - field: userCount
-                label: Utilisateurs
-              - field: newUsers7d
-                label: Nouveaux (7j)
-              - field: mediaCount
-                label: Médias suivis
-              - field: openReports
-                label: Signalements
-              - field: newUsers7d
-                label: Nouveaux (7j)
-          - type: customapi
-            # Separate endpoint, longer refresh: live-probes every external
-            # provider (TMDB, AniList...), too expensive for the ~10s
-            # default the summary widget above uses.
-            url: http://api:3000/api/public-stats/services-summary
-            refreshInterval: 300000
-            headers:
-              Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
-            mappings:
-              - field: operational
-                label: Services opérationnels
+        widget:
+          type: customapi
+          url: http://api:3000/api/public-stats/summary
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
+          columns: 5
+          mappings:
+            - field: userCount
+              label: Utilisateurs
+            - field: newUsers7d
+              label: Nouveaux (7j)
+            - field: mediaCount
+              label: Médias suivis
+            - field: openReports
+              label: Signalements
+            - field: operational
+              label: Services opérationnels
 
 - Infrastructure:
     - Healthchecks:

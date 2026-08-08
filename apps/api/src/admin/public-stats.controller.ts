@@ -25,6 +25,7 @@ export class PublicStatsController {
     mediaCount: number;
     openReports: number;
     newUsers7d: number;
+    operational: string;
     gitSha: string;
   }> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -32,12 +33,23 @@ export class PublicStatsController {
     // Four independent counts, all cheap (indexed or table-scan-on-small-
     // table) — deliberately not AdminStatsController's getStats(), which
     // computes cohorts/retention too heavy for a ~10s widget poll.
-    const [userCount, mediaCount, openReports, newUsers7d] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.libraryEntry.count(),
-      this.prisma.report.count({ where: { status: "PENDING" } }),
-      this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-    ]);
+    // getServicesStatus() is the odd one out: it live-probes every external
+    // provider (TMDB, AniList, IGDB...) with no caching, so this endpoint
+    // now costs one such probe round on every ~10s Homepage poll too.
+    const [userCount, mediaCount, openReports, newUsers7d, { services }] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.libraryEntry.count(),
+        this.prisma.report.count({ where: { status: "PENDING" } }),
+        this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+        this.admin.getServicesStatus(),
+      ]);
+
+    // Same "healthy/live" definition as apps/web's /admin/services page:
+    // planned (comingSoon) providers excluded, healthy = configured and
+    // either probed-OK or unprobeable (reachable stays null for those).
+    const live = services.filter((s) => !s.comingSoon);
+    const healthy = live.filter((s) => s.configured && s.reachable !== false);
 
     return {
       // Reaching this line means every query above already resolved — no
@@ -51,27 +63,10 @@ export class PublicStatsController {
       mediaCount,
       openReports,
       newUsers7d,
+      operational: `${healthy.length}/${live.length}`,
       // Set at build time (see apps/api/Dockerfile) — "unknown" outside a
       // deploy.yml-built image (local dev, docker:dev/full, etc).
       gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
     };
-  }
-
-  /**
-   * Separate from summary() on purpose: AdminService.getServicesStatus()
-   * live-probes every external provider (TMDB, AniList, IGDB...) with no
-   * caching — fine on an admin page a human opens occasionally, too
-   * expensive to run on summary()'s ~10s poll. Homepage hits this one on
-   * its own longer refreshInterval instead (see services.yaml).
-   */
-  @Get("services-summary")
-  async getServicesSummary(): Promise<{ operational: string }> {
-    const { services } = await this.admin.getServicesStatus();
-    // Same "healthy/live" definition as apps/web's /admin/services page:
-    // planned (comingSoon) providers excluded, healthy = configured and
-    // either probed-OK or unprobeable (reachable stays null for those).
-    const live = services.filter((s) => !s.comingSoon);
-    const healthy = live.filter((s) => s.configured && s.reachable !== false);
-    return { operational: `${healthy.length}/${live.length}` };
   }
 }
