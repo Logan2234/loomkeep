@@ -32,9 +32,13 @@ export default defineConfig({
         type: "module",
       },
       manifest: {
+        id: "/",
         name: "Loomkeep",
         short_name: "Loomkeep",
         description: "Self-hosted tracker for series, movies and anime",
+        lang: "fr",
+        dir: "ltr",
+        categories: ["entertainment"],
         theme_color: "#0c0d10",
         background_color: "#0c0d10",
         display: "standalone",
@@ -43,27 +47,37 @@ export default defineConfig({
           {
             name: "Recherche",
             url: "/search",
-            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+            icons: [
+              { src: "/shortcut-search.svg", sizes: "any", type: "image/svg+xml" },
+            ],
           },
           {
             name: "Calendrier",
             url: "/calendar",
-            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+            icons: [
+              { src: "/shortcut-calendar.svg", sizes: "any", type: "image/svg+xml" },
+            ],
           },
           {
             name: "Statistiques",
             url: "/stats",
-            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+            icons: [
+              { src: "/shortcut-stats.svg", sizes: "any", type: "image/svg+xml" },
+            ],
           },
           {
             name: "Mon profil",
             url: "/profile",
-            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+            icons: [
+              { src: "/shortcut-profile.svg", sizes: "any", type: "image/svg+xml" },
+            ],
           },
           {
             name: "Paramètres",
             url: "/settings",
-            icons: [{ src: "/pwa-192.png", sizes: "192x192" }],
+            icons: [
+              { src: "/shortcut-settings.svg", sizes: "any", type: "image/svg+xml" },
+            ],
           },
         ],
         icons: [
