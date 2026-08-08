@@ -6,7 +6,7 @@
         icon: https://loomkeep.app/apple-touch-icon.png
         widget:
           type: customapi
-          url: http://api:3000/api/health
+          url: https://loomkeep.app/api/health
           mappings:
             - field: status
               label: Statut

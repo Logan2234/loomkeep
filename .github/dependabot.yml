@@ -33,7 +33,7 @@ updates:
       day: "monday"
 
   # Covers docker-compose.yml + every *.yml override in docker/
-  # (prod/ngrok/observability) — image: tags (postgres, caddy, loki,
+  # (prod/observability) — image: tags (postgres, caddy, loki,
   # promtail, grafana-oss...), not just the two Dockerfiles above.
   - package-ecosystem: "docker-compose"
     directory: "/docker"

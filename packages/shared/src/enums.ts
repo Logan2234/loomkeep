@@ -257,8 +257,8 @@ export type MusicOwnershipStatus =
 /**
  * Kind of sensitive account action tracked on the admin "Sécurité" page.
  * LOGIN_FAILED is included alongside the account-lifecycle/credential events
- * because the instance can be exposed to the internet (ngrok) — a spike of
- * failed logins is the one signal that actually matters there.
+ * because the instance can be exposed to the internet — a spike of failed
+ * logins is the one signal that actually matters there.
  */
 export const SecurityEventType = {
   USER_REGISTERED: "USER_REGISTERED",

@@ -23,7 +23,7 @@ services:
       NODE_ENV: production
       WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      # This is the public instance — turn the P4 social features on (the
+      # This is the public instance — turn the social features on (the
       # web reads this back via GET /api/config).
       SOCIAL_ENABLED: "true"
 

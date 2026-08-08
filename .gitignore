@@ -24,7 +24,7 @@ authelia/public.pem
 docs/*
 !docs/.gitkeep
 
-# Local dev backups (admin "Sauvegarde" default BACKUP_DIR; self-host uses a Docker volume instead)
+# Local dev backups
 apps/api/backups/
 
 # Logs & caches
@@ -38,5 +38,3 @@ Thumbs.db
 
 # Claude Code worktrees (created/removed by the harness, not repo content)
 .claude/worktrees/
-
-ngrok.yml

@@ -37,9 +37,9 @@ services:
       - ./homepage/widgets.yaml:/app/config/widgets.yaml:ro
       - ./homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml
-  # / docker-compose.ngrok.yml: adds the Homepage site block + its domain,
-  # without redeclaring the whole service.
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
+  # adds the Homepage site block + its domain, without redeclaring the
+  # whole service.
   caddy:
     environment:
       HOMEPAGE_SITE_ADDRESS: home.${DOMAIN:?set DOMAIN in .env}

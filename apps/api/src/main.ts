@@ -1,3 +1,9 @@
+// Must run before any other import: logger.config.ts reads process.env.NODE_ENV
+// at module-load time (not through ConfigModule), so .env has to be loaded
+// before app.module.ts (and everything it imports) even starts resolving.
+import { config } from "dotenv";
+config();
+
 import "./instrument";
 
 import { ValidationPipe } from "@nestjs/common";
@@ -34,8 +40,7 @@ async function bootstrap() {
       rawBody: false,
       snapshot: false,
       cors: {
-        // Comma-separated so a dev box can allow both localhost and an ngrok
-        // tunnel domain at once (see README "Mobile access").
+        // Comma-separated so multiple origins can be allowed at once.
         origin: (process.env.WEB_ORIGIN ?? "http://localhost:5173")
           .split(",")
           .map((o) => o.trim()),

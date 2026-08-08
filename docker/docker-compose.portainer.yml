@@ -30,9 +30,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer-data:/data
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml
-  # / docker-compose.ngrok.yml: adds the Portainer site block + its domain,
-  # without redeclaring the whole service.
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
+  # adds the Portainer site block + its domain, without redeclaring the
+  # whole service.
   caddy:
     environment:
       PORTAINER_SITE_ADDRESS: portainer.${DOMAIN:?set DOMAIN in .env}

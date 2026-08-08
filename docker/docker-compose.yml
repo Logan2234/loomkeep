@@ -10,23 +10,6 @@ x-logging: &default-logging
 
 services:
   db:
-    # Postgres 17 -> 18: a major version bump, not just a tag swap — the
-    # on-disk format changes, so 18 can't just start against a 17 volume.
-    # `db-data-pg18` is a deliberately NEW, separate volume: the old
-    # `db-data` (still valid 17-format data) is left completely untouched as
-    # a rollback safety net until the dump/restore migration is verified
-    # working. See the step-by-step runbook (not in this repo — given
-    # directly) for the manual SSH procedure this pairs with. Don't deploy
-    # this change to a running instance that hasn't already done that
-    # migration — a fresh `db-data-pg18` volume boots empty.
-    #
-    # Mount point: 18+'s official image moved to a version-namespaced data
-    # dir (PGDATA defaults to /var/lib/postgresql/18/docker, to match
-    # pg_ctlcluster/pg_upgrade --link's layout) and now REFUSES to start if
-    # something is mounted directly at the old /var/lib/postgresql/data path
-    # ("Docker previously mounted a volume at /var/lib/postgresql/data...").
-    # The volume goes on the *parent* dir instead; the image creates the
-    # versioned subdirectory itself.
     image: postgres:18.4-alpine
     restart: unless-stopped
     logging: *default-logging
@@ -68,14 +51,10 @@ services:
       TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
       STEAM_API_KEY: ${STEAM_API_KEY:-}
       GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY:-}
-      # MusicBrainz usage-policy contact (email/URL); empty = a generic
-      # fallback is sent as the User-Agent, music search still works.
       MUSICBRAINZ_CONTACT: ${MUSICBRAINZ_CONTACT:-}
-      # Web Push (VAPID); empty = push silently disabled, in-app still works.
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@example.com}
-      # Outgoing email (SMTP); empty = email silently disabled. See "Email" in README.
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:noreply@loomkeep.app}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -83,9 +62,6 @@ services:
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       BACKUP_DIR: /data/backups
-      # Error tracking (GlitchTip, see docker-compose.glitchtip.yml). Empty =
-      # the SDK never initializes (see src/instrument.ts), same "empty
-      # disables it" convention as every other optional integration above.
       GLITCHTIP_API_DSN: ${GLITCHTIP_API_DSN:-}
     volumes:
       - backup-data:/data/backups
@@ -101,20 +77,11 @@ services:
     depends_on:
       - api
     environment:
-      # URL the *browser* uses to reach the API, so it must be reachable
-      # from outside the compose network.
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
-      # Error tracking (GlitchTip, see docker-compose.glitchtip.yml). PUBLIC_
-      # since it's read client-side; empty = the SDK never initializes.
       PUBLIC_GLITCHTIP_WEB_DSN: ${PUBLIC_GLITCHTIP_WEB_DSN:-}
     ports:
       - "8080:3000"
 
 volumes:
-  # Old Postgres 17 volume, deliberately kept (not referenced by any service
-  # below anymore) as the migration's rollback safety net — see the `db`
-  # service comment above. Safe to remove once the 18 migration is verified
-  # stable.
-  db-data:
   db-data-pg18:
   backup-data:

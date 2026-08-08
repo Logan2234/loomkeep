@@ -1,98 +1,102 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# @loomkeep/api
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS REST API for Loomkeep — Prisma/PostgreSQL persistence, JWT auth, and
+the live catalogue providers (TMDB, AniList, IGDB, Google Books,
+MusicBrainz). For the project as a whole (what Loomkeep is, self-hosting,
+Docker), see the [root README](../../README.md). For architecture
+decisions and dev conventions shared with the web app, see the root
+[CLAUDE.md](../../CLAUDE.md).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-## Description
+- **NestJS** on **Fastify** (`@nestjs/platform-fastify`), global prefix
+  `/api`, global JWT guard (`@Public()` to opt out).
+- **Prisma** + **PostgreSQL**, schema in `prisma/schema.prisma`. An `erd`
+  generator (`prisma-erd-generator`) is configured alongside the client
+  generator — run `pnpm exec prisma generate` to also emit an ERD diagram.
+- **Auth**: access JWT (15 min) + rotating refresh tokens (one row per
+  device, SHA-256 hashed).
+- **`nestjs-pino`**: structured JSON logs, pretty-printed only in
+  `NODE_ENV=development`. `Authorization`/`Cookie`/`Set-Cookie` redacted,
+  request bodies never logged.
+- **Sentry SDK** (`@sentry/node`, `src/instrument.ts`) reports 5xx
+  exceptions to GlitchTip when `GLITCHTIP_API_DSN` is set — see the
+  [Docker README](../../docker/README.md).
+- **Swagger UI** on `/docs`, dev-only (`NODE_ENV=development`) — the
+  `@nestjs/swagger` import is dynamic so it's never bundled in production.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Modules (`src/`)
 
-## Project setup
+Domain modules, one per bounded concern:
 
-```bash
-$ pnpm install
+- `catalog/` — the `CatalogProvider` interface + TMDB/AniList/IGDB/Google
+  Books/MusicBrainz providers, and `MediaItemService.upsertFromSource()`
+  (the single entry point that persists a catalogue item on-demand).
+- `library/` — a user's tracked items, watch/read/listen progress.
+- `import/` — interactive import pipelines (TV Time, Steam, StoryGraph),
+  one `sources/<name>/` folder each behind a shared analyze → review →
+  commit flow.
+- `reviews/`, `comments/`, `social/`, `reports/` — the social feature set,
+  gated behind `SOCIAL_ENABLED` (see
+  [social/README.md](src/social/README.md) for the full design).
+- `lists/` — user-curated, optionally shared collections.
+- `notifications/`, `jobs/` — in-app notifications, Web Push, and the
+  scheduled jobs (`@nestjs/schedule`) that scan tracked shows for new
+  episodes.
+- `stats/` — per-domain and admin aggregate statistics.
+- `admin/` — moderation queue, ops summaries.
+- `auth/`, `users/`, `security/` — auth flows, account management,
+  login-failure tracking.
+- `mail/` — SMTP sending (password reset, verification, alerts) via
+  `nodemailer`; silently disabled when `SMTP_*` is unset.
+- `health/` — `/health` endpoint used by Docker healthchecks and the
+  Homepage dashboard widget.
+- `common/`, `config/` — cross-cutting utilities and env/config loading.
+
+## Commands
+
+```sh
+pnpm --filter @loomkeep/api dev            # watch mode, :3000 (run `pnpm dev`
+                                            # at the repo root to start api + web together)
+pnpm --filter @loomkeep/api start          # like dev but without --watch
+pnpm --filter @loomkeep/api build          # nest build → dist/
+pnpm --filter @loomkeep/api start:prod     # node dist/main (production)
+
+pnpm --filter @loomkeep/api lint           # eslint (formatting is a lint rule, see root CLAUDE.md)
+pnpm --filter @loomkeep/api lint:fix       # eslint --fix
+
+pnpm --filter @loomkeep/api test           # unit tests (jest, provider mapping etc.)
+pnpm --filter @loomkeep/api test:cov       # unit tests with coverage
+pnpm --filter @loomkeep/api test:e2e       # full API flow; needs the dev Postgres running,
+                                            # runs in an isolated "e2e" schema
+
+pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
+pnpm --filter @loomkeep/api spelunk        # visualize this package's module dependency graph
+                                            # as Mermaid (writes ../../docs/modules.md at the
+                                            # repo root) — `graph` runs the same script
+pnpm --filter @loomkeep/api clean          # removes dist/ and tsconfig.build.tsbuildinfo
+pnpm --filter @loomkeep/api clean:dev      # clean + removes node_modules
 ```
 
-## Compile and run the project
+Unit tests stub all HTTP calls, so they run offline; `TMDB_API_TOKEN` empty
+only affects runtime search, not tests.
 
-```bash
-# development
-$ pnpm run start
+## Environment
 
-# watch mode
-$ pnpm run start:dev
+`ConfigModule` reads two files, in order (`src/app.module.ts`):
+`apps/api/.env` first, then the repo-root `.env` as a fallback — the first
+file to define a given key wins. So for local dev, copy **both**
+`.env.example` files:
 
-# production mode
-$ pnpm run start:prod
+```sh
+cp .env.example .env                 # repo root — provider API keys, SMTP, ADMIN_EMAIL, ...
+cp apps/api/.env.example apps/api/.env   # this folder — DATABASE_URL, WEB_ORIGIN, dev JWT secrets, TLS certs
 ```
 
-## Run tests
+`apps/api/.env.example` only holds values that must differ from the Docker
+deployment; everything else lives once in the root `.env.example` (also
+consumed by `docker-compose.yml`'s interpolation) instead of being
+duplicated in both files.
 
-```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+The dev database is a standalone Postgres container (`loomkeep-dev-db`, port
+**5433**) — see the root README's "Development" section to start one.

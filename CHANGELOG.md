@@ -17,8 +17,8 @@ this point beyond the roadmap phases already documented in the README.
 - **Profile picture upload**: `User.avatar` (bytes, stored in-row so it rides
   along with `pg_dump` backups rather than needing a separate volume) plus
   `avatarMimeType`/`avatarUpdatedAt`. New endpoints `PATCH`/`DELETE
-  /users/me/avatar` (size + magic-byte validated) and a public `GET
-  /users/:id/avatar` (no auth — a plain `<img src>` can't send the JWT kept
+/users/me/avatar` (size + magic-byte validated) and a public `GET
+/users/:id/avatar` (no auth — a plain `<img src>` can't send the JWT kept
   in localStorage; cuids are unguessable enough). The web client resizes to a
   square (canvas, WebP) before upload. `avatarUrl` is now carried on
   `UserDto`/`UserSummaryDto`/`SocialProfileDto`/`ActivityActorDto`/
@@ -46,8 +46,7 @@ every surface, verified by a full build, the API unit suite and
   cross-package import, plus the `--filter` invocations in both Dockerfiles,
   the CI workflow, `.husky/pre-push` and the `/admin/schema` command hints.
 - **Defaults** in `docker-compose.yml`, `docker-compose.prod.yml`,
-  `docker-compose.ngrok.yml`, both `.env.example` files, `ngrok.example.yml`
-  and the CI Postgres service: database user/name and the ngrok tunnel name
+  both `.env.example` files, and the CI Postgres service: database user/name
   are now `loomkeep`, and `SMTP_FROM` defaults to
   `Loomkeep <noreply@loomkeep.app>`. Safe to change wholesale — no
   production instance exists yet, so there is nothing to migrate. An existing
@@ -156,10 +155,7 @@ finished — this is the first release reserved for that milestone (see
   point of not being able to correlate their activity across threads. Now
   seeded on the pseudonym itself (caught by a `frontend-design` pass).
 - Dev/self-host: `WEB_ORIGIN` now accepts a comma-separated list (e.g. to
-  allow both `localhost` and an ngrok tunnel domain at once); the web dev
-  server proxies `/api` to the local API same-origin (mirroring what Caddy
-  does for the Docker build) so testing through an ngrok tunnel no longer
-  requires a cross-origin call to `localhost:3000` at all.
+  allow both `localhost`).
 
 ## 0.7.0 — P4: lists & Figurant mode
 
@@ -270,5 +266,5 @@ single Docker image serves both modes), exposed to the web via `GET /api/config`
 - P1.5: interactive TV Time import (analyze → review collection by
   collection → commit), matched through TVDB IDs, source-agnostic pipeline.
 - P2: in-app notifications, periodic scan of tracked shows, Web Push,
-  transactional/notification email via SMTP, PWA mobile access via ngrok.
+  transactional/notification email via SMTP, PWA mobile access.
   Native (Capacitor) wrapper still outstanding.

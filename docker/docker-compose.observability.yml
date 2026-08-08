@@ -22,7 +22,7 @@
 # likely also take over node_exporter/postgres_exporter's job, not just logs.
 # `x-logging` is redeclared here (not reused from docker-compose.yml) since
 # Compose doesn't merge YAML anchors across separate `-f` files — same
-# reasoning as the caddy service's own duplicate in the prod/ngrok overrides.
+# reasoning as the caddy service's own duplicate in the prod override.
 x-logging: &default-logging
   driver: json-file
   options:
@@ -154,11 +154,11 @@ services:
       - postgres_exporter
       - cadvisor
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml
-  # / docker-compose.ngrok.yml: adds the Grafana site block + its domain,
-  # without redeclaring the whole service. GRAFANA_SITE_ADDRESS mirrors the
-  # `${DOMAIN:?...}` pattern the base SITE_ADDRESS already uses — required,
-  # not defaulted, since this override is only meaningful alongside prod.yml.
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
+  # adds the Grafana site block + its domain, without redeclaring the whole
+  # service. GRAFANA_SITE_ADDRESS mirrors the `${DOMAIN:?...}` pattern the
+  # base SITE_ADDRESS already uses — required, not defaulted, since this
+  # override is only meaningful alongside prod.yml.
   caddy:
     environment:
       GRAFANA_SITE_ADDRESS: grafana.${DOMAIN:?set DOMAIN in .env}

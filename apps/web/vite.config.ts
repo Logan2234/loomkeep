@@ -5,19 +5,6 @@ import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  server: {
-    // Vite 6 rejects unrecognized Host headers by default — needed so the dev
-    // server accepts requests forwarded through the ngrok tunnel (see README
-    // "Mobile access"). Dev-only; the Docker build uses adapter-node, not this.
-    allowedHosts: ["onset-collie-twiddle.ngrok-free.dev"],
-    // Proxy API calls same-origin (like Caddy does for the Docker build) so
-    // the browser never makes a cross-origin request to localhost:3000 —
-    // avoids CORS entirely and works whether accessed via ngrok or directly.
-    // Pairs with PUBLIC_API_URL=/api in apps/web/.env.
-    // proxy: {
-    //   "/api": { target: "http://localhost:3000", changeOrigin: true },
-    // },
-  },
   plugins: [
     tailwindcss(),
     sveltekit({

@@ -1,0 +1,137 @@
+# Docker stack — architecture notes
+
+Technical reference for how the compose files, Caddy, and the optional
+add-ons fit together. For setup instructions (how to actually stand this up),
+see the root [README.md](../README.md) — this file is the "why it's built
+this way" companion for whoever edits these configs.
+
+## Layout
+
+Every `docker-compose.*.yml`, the `Caddyfile`, and the add-on config dirs
+(`observability/`, `authelia/`, `homepage/`) live under `docker/`, not the
+repo root — kept together as a unit so their relative paths to each other
+never had to change. `context: ..` in `docker-compose.yml`'s `api`/`web`
+build blocks points back up at the monorepo root, since Compose resolves
+relative paths against the compose file's own location, not the invocation
+cwd. Both Dockerfiles copy _all_ workspace `package.json` manifests plus
+`tsconfig.base.json` before `pnpm install --frozen-lockfile` (a frozen
+install validates every importer in the lockfile). The api image runs
+`prisma migrate deploy` at boot; the web runtime image ships only the
+self-contained adapter-node `build/` output.
+
+## Deploy
+
+`.github/workflows/deploy.yml` auto-redeploys on every successful CI run on
+`main` via a plain `docker compose up -d --build` (no `-f` flags) — which
+override files get combined comes from `COMPOSE_FILE` in the VPS's own
+`.env` (Compose reads this itself), not from the workflow. Adding a new
+optional `docker-compose.<addon>.yml` that should run continuously in
+production means updating that `COMPOSE_FILE` line (see `.env.example`), not
+`deploy.yml`.
+
+Docker log rotation (`max-size: 10m`, `max-file: 5`) is set per service in
+`docker-compose.yml`/`docker-compose.prod.yml` (duplicated by hand in the
+override — Compose doesn't merge YAML anchors across `-f` files). App-level
+logging conventions (structured JSON, redaction, exception filter) are
+documented in the root `CLAUDE.md`.
+
+## Metrics & log search (`docker-compose.observability.yml`)
+
+Optional override adding Grafana + Loki + Promtail (logs) and Prometheus +
+node_exporter + postgres_exporter + cAdvisor (host/DB/per-container metrics)
+— config in `docker/observability/`. Promtail auto-discovers every container
+via the Docker socket and ships its already-rotated json-file logs into
+Loki; both Loki and Prometheus are pre-provisioned as Grafana data sources
+(`docker/observability/grafana-datasources.yaml`). Grafana is reachable both
+publicly at `grafana.<DOMAIN>` via Caddy (`docker/observability/grafana.caddy`,
+gated by Grafana's own login only, no basic auth) and via `127.0.0.1:3001`
+as an SSH-tunnel fallback — see root README "Logs and monitoring". Promtail
+is deprecated upstream (merged into Grafana Alloy); a future replacement
+would likely take node_exporter/postgres_exporter's job too at the same
+time. cAdvisor has no public port, scraped by Prometheus like the other
+exporters.
+
+Caddy itself (`docker/Caddyfile`) contributes to this without an extra
+container: `encode gzip zstd` compresses responses, `log { output stdout;
+format json }` puts its access log in the same json-file/Promtail pipeline
+as every app container, and a global `admin 0.0.0.0:2019` + `metrics` option
+exposes a Prometheus `/metrics` endpoint scraped as the `caddy` job in
+`docker/observability/prometheus.yml` — bound to the compose network only,
+not published to the host, same trust level as `db`. It also sends baseline
+security headers (HSTS with `includeSubDomains`, `X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`) on the main site block.
+`docker/www-redirect.caddy` (mounted only by `docker-compose.prod.yml`)
+redirects `www.<DOMAIN>` to the apex; it's a dedicated site block matching
+only that one hostname so it can't shadow subdomain blocks like
+`grafana.<DOMAIN>`.
+
+## Error tracking (`docker-compose.glitchtip.yml`)
+
+GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in
+`SERVER_ROLE: all_in_one` mode with its own dedicated Postgres + Valkey
+(deliberately not sharing the app's `db`, same reasoning as Loki/Grafana's
+own storage). Reachable at `errors.<DOMAIN>`, same
+public-with-own-login-no-basic-auth pattern as Grafana/Portainer. Email
+alerts (new-error/regression notifications) are opt-in via
+`GLITCHTIP_EMAIL_URL` — not auto-derived from the app's own SMTP config
+because GlitchTip's `EMAIL_URL` is parsed as a plain URL and the app's Brevo
+`SMTP_USER` contains a literal `@` that breaks that unescaped.
+
+The app reports to it via the standard Sentry SDKs (GlitchTip is
+Sentry-API-compatible) — `@sentry/node` in `apps/api/src/instrument.ts`
+(imported first in `main.ts`, `Sentry.captureException` called from
+`AllExceptionsFilter` only for 5xx, matching its warn/error log split) and
+`@sentry/sveltekit` in `apps/web/src/hooks.client.ts`. Both are gated on
+their DSN env var (`GLITCHTIP_API_DSN` / `PUBLIC_GLITCHTIP_WEB_DSN`) being
+set, which only happens in the production Docker deployment — empty
+disables reporting, same convention as every other optional integration.
+Errors only: no tracing on the web side, no session replay (GlitchTip drops
+those events silently), no source-map upload yet (`@sentry/cli`'s
+postinstall is explicitly declined in `pnpm-workspace.yaml`'s
+`allowBuilds`).
+
+`docker-compose.portainer.yml` adds a Docker management UI at
+`portainer.<DOMAIN>` (same pattern, no dedicated storage needed).
+
+## Single sign-on (`docker-compose.authelia.yml`)
+
+[Authelia](https://www.authelia.com/) — chosen over Authentik specifically
+for its footprint (single binary + SQLite, no dedicated Postgres/Redis;
+Authentik would've meant a _fourth_ dedicated Postgres instance in this
+stack, disproportionate for a single-user setup).
+
+Two integration modes: Grafana/GlitchTip/Portainer use real OIDC (the app
+redirects to Authelia and back — true SSO, no re-login visiting a second
+app), while Homepage (`docker-compose.homepage.yml`, chosen over Dashy for
+being lighter and matching this repo's committed-YAML-config convention
+rather than an in-UI editor) has no login of its own and is gated via Caddy
+`forward_auth` instead (`docker/homepage/homepage.caddy`). Grafana's OIDC is
+fully env-var driven (`docker-compose.observability.yml`); GlitchTip and
+Portainer don't support that and need a one-time manual step in their own
+admin UI after Authelia exists — see root README "Single sign-on" for the
+exact values.
+
+Real secrets (session/storage/OIDC HMAC secrets, the RSA JWKS signing key,
+the user database) live in `docker/authelia/configuration.yml` and
+`docker/authelia/users_database.yml` — gitignored, copied from `*.example`
+templates, same convention as `.env`; OIDC client secrets specifically
+**must** be file-based (Authelia doesn't support environment variables for
+values inside config lists, confirmed via its own docs), which is why this
+uses gitignored real files rather than `.env` interpolation like everything
+else in this repo. **Authelia hard-fails to start without working SMTP** (a
+startup health check, not an optional degrade-gracefully feature like the
+rest of this app's SMTP integration) — reuses the same Brevo credentials as
+`SMTP_USER`/`SMTP_PASS`.
+
+## Homepage (`docker-compose.homepage.yml`)
+
+Homepage's tiles (`docker/homepage/services.yaml`) use live widgets where
+one exists (Grafana, Portainer — both have native Homepage widgets) and a
+hand-rolled `customapi` call against GlitchTip's own Sentry-compatible
+issues API where it doesn't (no native GlitchTip widget in Homepage). No
+Docker socket mounted for Homepage — per-container stats were deliberately
+skipped in favor of Grafana/Prometheus/cAdvisor, which already cover that in
+more depth; a second Docker-access path would've been redundant. Widget API
+keys flow in as `HOMEPAGE_VAR_*` env vars (Homepage's own
+`{{HOMEPAGE_VAR_X}}` templating mechanism), not baked into the committed
+YAML.

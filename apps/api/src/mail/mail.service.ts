@@ -136,7 +136,7 @@ export class MailService {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } =
       process.env;
     this.webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
-    this.from = SMTP_FROM ?? "Loomkeep <no-reply@loomkeep.app>";
+    this.from = SMTP_FROM ?? "Loomkeep <noreply@loomkeep.app>";
 
     if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
       const port = Number(SMTP_PORT ?? 587);

@@ -47,7 +47,7 @@ x-glitchtip-environment: &glitchtip-environment
   # unescaped. Not worth auto-deriving; set GLITCHTIP_EMAIL_URL yourself
   # (percent-encoded) in .env if you want real delivery — see .env.example.
   EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
-  DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@example.com}
+  DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@loomkeep.app}
   # Django admin at /admin/ exposes raw DB-level access — off by default.
   # Env-var driven (not a hardcoded "False") specifically so it can be
   # flipped on the VPS's own .env for the one-time OIDC/SSO SocialApp setup
@@ -92,9 +92,9 @@ services:
       - glitchtip-postgres
       - glitchtip-valkey
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml
-  # / docker-compose.ngrok.yml: adds the GlitchTip site block + its domain,
-  # without redeclaring the whole service.
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
+  # adds the GlitchTip site block + its domain, without redeclaring the
+  # whole service.
   caddy:
     environment:
       GLITCHTIP_SITE_ADDRESS: errors.${DOMAIN:?set DOMAIN in .env}

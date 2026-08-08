@@ -32,12 +32,12 @@ docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 Every `-f ...` combo below has a matching `pnpm docker:*` shortcut (see
-`package.json`) — `docker:dev`, `docker:ngrok`, `docker:prod`, and
-`docker:full` (every optional add-on at once, for local testing of the whole
-stack); the less common one-off combos below are still spelled out with
-their full `-f` chain since there's no script for every permutation.
+`package.json`) — `docker:dev`, `docker:prod`, and `docker:full` (every
+optional add-on at once, for local testing of the whole stack); the less
+common one-off combos below are still spelled out with their full `-f`
+chain since there's no script for every permutation.
 
-Then open http://localhost:8080, create an account, done.
+Then open <http://localhost:8080>, create an account, done.
 On a NAS, set `PUBLIC_API_URL` and `WEB_ORIGIN` to the host's address
 (e.g. `http://nas.local:3000/api` and `http://nas.local:8080`).
 
@@ -62,44 +62,14 @@ credit card): create an account (personal accounts are fine, no company or
 website required), then **SMTP & API** in the sidebar for `SMTP_HOST`,
 `SMTP_USER` and `SMTP_PASS`.
 
-### Mobile access (ngrok)
-
-Install it as a PWA on your phone while the stack keeps running on your
-computer, reachable from anywhere. A public HTTPS URL is required (the service
-worker and Web Push refuse plain HTTP on a real device); [ngrok](https://ngrok.com)
-provides one by tunnelling to the local proxy. Your computer must stay on.
-
-1. Create a free ngrok account, then claim your **one free static domain** at
-   <https://dashboard.ngrok.com/domains> (a stable URL is required for an
-   installed PWA). Copy `ngrok.example.yml` to `ngrok.yml` and fill in your
-   authtoken + domain.
-2. Set that domain **once** in `.env` — the override derives `PUBLIC_API_URL`,
-   `WEB_ORIGIN` and the ngrok header from it:
-
-   ```sh
-   NGROK_DOMAIN=your-domain.ngrok-free.app
-   ```
-
-3. Start the stack with the ngrok override, then the tunnel:
-
-   ```sh
-   docker compose -f docker/docker-compose.yml -f docker/docker-compose.ngrok.yml up -d --build
-   ngrok start loomkeep
-   ```
-
-4. Open the domain on your phone → browser menu → _Add to home screen_.
-
-On ngrok's free tier the first page load shows a one-time warning page you
-click through; API calls skip it via `PUBLIC_NGROK`. For daily use by more than
-one person, host the app publicly instead (VPS or a PaaS).
-
 ### Public hosting (VPS)
 
-For a stack that's always up under your own domain (e.g. an OVH VPS), use the
-`docker/docker-compose.prod.yml` override instead of the ngrok one. It adds the same
-single-origin Caddy proxy, but Caddy requests and renews a real Let's Encrypt
-certificate itself and serves HTTPS on the standard ports — no tunnel, no
-warning page.
+For a stack that's always up under your own domain (e.g. an OVH VPS), and
+reachable from your phone as an installed PWA (a public HTTPS URL is
+required — the service worker and Web Push refuse plain HTTP on a real
+device), use the `docker/docker-compose.prod.yml` override. It adds a
+single-origin Caddy proxy, and Caddy requests and renews a real Let's
+Encrypt certificate itself, serving HTTPS on the standard ports.
 
 1. Point the domain's **A** (and **AAAA** if you have IPv6) record at the
    VPS's public IP, and make sure ports **80** and **443** are open on the
@@ -271,8 +241,8 @@ just bounces through silently, no second password).
 
    Every `crypto hash generate`/`crypto rand` command above prints a
    labelled line, e.g. `Digest: $argon2id$v=19$...` or
-   `Random Value: xY7k...` — copy only the part **after** the `Digest: `/
-   `Random Value: ` label into the config. Pasting the label too is the
+   `Random Value: xY7k...` — copy only the part **after** the `Digest:`/
+   `Random Value:` label into the config. Pasting the label too is the
    single most common way this setup silently fails to authenticate.
 
    Log in with the **username** (the YAML key in `users_database.yml`,
@@ -305,15 +275,15 @@ just bounces through silently, no second password).
    docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.authelia.yml -f docker/docker-compose.observability.yml -f docker/docker-compose.portainer.yml -f docker/docker-compose.glitchtip.yml up -d --build
    ```
 
-   - **GlitchTip**: on the VPS, temporarily set `GLITCHTIP_ENABLE_ADMIN=True`
-     in `.env` and `docker compose up -d glitchtip` (no rebuild, no git
-     push needed — this is a runtime toggle, not a code change). Visit
-     `https://errors.<DOMAIN>/admin/socialaccount/socialapp/`, add a
+   - **GlitchTip**: on the VPS, temporarily set `ENABLE_ADMIN: true`
+     in `docker-compose.glitchtip.yml` and `docker compose up -d glitchtip`
+     (no rebuild, no git push needed — this is a runtime toggle, not a code change).
+     Visit `https://errors.<DOMAIN>/admin/socialaccount/socialapp/`, add a
      SocialApp — Provider `OpenID Connect`, Provider ID `authelia`, Client
      ID `glitchtip`, Secret Key = the plaintext from step 3 for the
      `glitchtip` client, Settings
      `{"server_url":"https://auth.<DOMAIN>/.well-known/openid-configuration"}`.
-     Then set `GLITCHTIP_ENABLE_ADMIN` back to `False` in `.env` and
+     Then set `ENABLE_ADMIN` back to `false` in `docker-compose.glitchtip.yml` and
      `docker compose up -d glitchtip` again.
    - **Portainer**: Settings → Authentication → OAuth → Provider `Custom`,
      Client ID `portainer`, Client Secret = the plaintext from step 3 for
@@ -343,13 +313,14 @@ after `session.expiration` (`authelia/configuration.yml`, `1h` by default).
 ## Development
 
 ```sh
-pnpm install
+pnpm i
 docker run -d --name loomkeep-dev-db -e POSTGRES_USER=loomkeep \
   -e POSTGRES_PASSWORD=loomkeep -e POSTGRES_DB=loomkeep \
-  -p 5433:5432 postgres:17-alpine
-cp apps/api/.env.example apps/api/.env   # then add your TMDB token
+  -p 5433:5432 postgres:18-alpine
+cp .env.example .env                     # then add your TMDB token — read by the API too, see below
+cp apps/api/.env.example apps/api/.env
 pnpm --filter @loomkeep/api exec prisma migrate dev
-pnpm --filter @loomkeep/shared build
+pnpm build:package
 pnpm dev        # api on :3000, web on :5173
 ```
 
@@ -359,36 +330,6 @@ Tests:
 pnpm --filter @loomkeep/api test        # unit (provider mapping)
 pnpm --filter @loomkeep/api test:e2e    # full API flow, isolated "e2e" schema
 ```
-
-## Roadmap
-
-- **P1 — MVP** ✓: auth, search, tracking, episode progress, PWA, Docker
-- **P1.5 — TV Time import** ✓: interactive reconciliation (analyze → review
-  collection by collection → commit), matched through TVDB IDs, with manual
-  overrides. Source-agnostic pipeline, ready for more import sources.
-- **P2** — push notifications ("new episode out") + Capacitor.
-  In-app notifications, a periodic scan/refresh of tracked shows and **Web Push**
-  (VAPID, service-worker `push` handler, per-device subscriptions) are shipped ✓.
-  **Email** is shipped ✓: password reset, email verification, account change
-  confirmations and (opt-in) new-episode alerts, via SMTP — see "Email" above.
-  **Mobile access** is shipped ✓: the app installs as a PWA, and a ready-made
-  ngrok setup (single-origin Caddy proxy) exposes the local stack to your phone
-  from anywhere — see "Mobile access" above. The native (Capacitor) wrapper is
-  still to do.
-- **P3** ✓ — games, books & music modules: games (IGDB, library + statuses +
-  playtime + Steam import), books (Google Books, library + reading progress +
-  StoryGraph import) and music (MusicBrainz, library + listen status) are
-  built, with per-domain stats and community ratings. A unified global search
-  covers all four domains, and `enabledDomains` is enforced server-side on
-  search/stats and filters notifications. Manual match-correction is
-  available on Steam and StoryGraph imports. Remaining: more import sources
-  (Goodreads, Babelio, Backloggd, Discogs), e2e coverage for games/books.
-- **P4** ✓ — social: friends (follow/block, public/private/ghost profiles),
-  reviews (mandatory rating + optional text, separate from private notes),
-  threaded comments with spoiler-masking, an activity feed, cross-domain
-  shared lists, and a "Figurant" (ghost/incognito) mode. Gated behind the
-  `SOCIAL_ENABLED` runtime flag — off by default on self-host.
-- **P5** (current) — hosted offer / entitlements (open core). Not started.
 
 ## License
 

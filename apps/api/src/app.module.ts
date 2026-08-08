@@ -30,7 +30,15 @@ import { loggerOptions } from "./common/logger.config";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    // apps/api/.env only needs to hold the values that must differ from the
+    // Docker deployment (DATABASE_URL, WEB_ORIGIN, dev JWT secrets, TLS
+    // certs...); everything else (provider API keys, SMTP, ...) is read from
+    // the repo-root .env, the same file docker-compose.yml interpolates from.
+    // First match wins, so apps/api/.env can still override a root value.
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [".env", "../../.env"],
+    }),
     LoggerModule.forRoot(loggerOptions),
     ScheduleModule.forRoot(),
     // Default: 60 req/min per IP for the whole API. Sensitive auth routes

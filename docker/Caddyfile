@@ -1,10 +1,8 @@
-# Single-origin reverse proxy used to put `web` and `api` behind one URL.
-# ngrok (and a public VPS) only need to point at this one endpoint, and the
-# browser sees a single origin, so CORS becomes same-origin.
+# Single-origin reverse proxy used to put `web` and `api` behind one URL, so
+# the browser sees a single origin and CORS becomes same-origin.
 #
-# ngrok (docker-compose.ngrok.yml): TLS is terminated upstream by ngrok, so
-# Caddy serves plain HTTP on :80 inside the compose network — SITE_ADDRESS is
-# left unset and falls back to that default.
+# Self-host / local (default): SITE_ADDRESS is left unset and falls back to
+# plain HTTP on :80.
 #
 # Public VPS (docker-compose.prod.yml): SITE_ADDRESS is set to your real
 # domain (e.g. loomkeep.app), so Caddy requests and renews a Let's Encrypt
@@ -29,9 +27,9 @@
 	# server — SvelteKit and the API's JSON bodies both benefit.
 	encode gzip zstd
 
-	# Access log as JSON on stdout so Promtail (Palier 2) picks it up the
-	# same way it already picks up every other container's json-file log
-	# driver output — no extra scrape config needed.
+	# Access log as JSON on stdout so Promtail picks it up the same way it
+	# already picks up every other container's json-file log driver output —
+	# no extra scrape config needed.
 	log {
 		output stdout
 		format json
@@ -39,9 +37,8 @@
 
 	# Baseline security headers. HSTS is safe to send unconditionally: browsers
 	# only honor it on a response actually delivered over HTTPS, which is true
-	# both in prod (Caddy terminates TLS itself) and behind ngrok (ngrok
-	# terminates TLS before forwarding plain HTTP here) — over plain local
-	# HTTP it's simply ignored. `includeSubDomains` is safe too since every
+	# in prod (Caddy terminates TLS itself) — over plain local HTTP it's
+	# simply ignored. `includeSubDomains` is safe too since every
 	# subdomain (grafana./errors.<DOMAIN>) is also served over HTTPS by Caddy.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -65,6 +62,6 @@
 # Extra site blocks, one file per service, only present when that service's
 # override is actually in use — e.g. observability/grafana.caddy, mounted
 # here only by docker-compose.observability.yml. A glob over a directory
-# that isn't mounted (plain self-host, or the ngrok override alone) matches
-# zero files and is a no-op, not an error — nothing to guard here.
+# that isn't mounted (plain self-host) matches zero files and is a no-op,
+# not an error — nothing to guard here.
 import /etc/caddy/sites-enabled/*.caddy

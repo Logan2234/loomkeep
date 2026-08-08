@@ -33,9 +33,9 @@ services:
       - ./authelia/users_database.yml:/config/users_database.yml:ro
       - authelia-data:/config/data # SQLite storage db, persisted across restarts
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml
-  # / docker-compose.ngrok.yml: adds Authelia's own site block + its domain,
-  # without redeclaring the whole service.
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
+  # adds Authelia's own site block + its domain, without redeclaring the
+  # whole service.
   caddy:
     environment:
       AUTHELIA_SITE_ADDRESS: auth.${DOMAIN:?set DOMAIN in .env}
