@@ -35,5 +35,15 @@
         # Pas de gestion courante à faire ici — gardé comme rappel visible
         # que l'accès aux dashboards passe par Authelia (portail SSO/2FA),
         # pas comme un lien à cliquer souvent.
+        #
+        # Se déconnecter de Grafana/GlitchTip/Portainer individuellement ne
+        # termine QUE la session locale de cette app, pas la session
+        # Authelia elle-même — Authelia ne supporte pas encore le
+        # "RP-Initiated Logout" (propagation OIDC de la déconnexion),
+        # feature demandée mais toujours ouverte côté Authelia:
+        # https://github.com/authelia/authelia/issues/5057. Pour vraiment
+        # tout fermer, il faut se déconnecter ici (bouton logout du
+        # portail) — sinon la session expire d'elle-même au bout d'1h
+        # (session.expiration dans authelia/configuration.yml).
         - href: https://auth.loomkeep.app
           icon: si-authelia

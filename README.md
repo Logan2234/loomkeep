@@ -332,6 +332,14 @@ just bounces through silently, no second password).
 Grafana needs no manual step — it's fully wired via env vars in
 `docker/docker-compose.observability.yml`.
 
+**Logout is one-way**: Authelia doesn't yet support RP-Initiated Logout (the
+OIDC mechanism for propagating a logout back to the identity provider —
+[open upstream issue](https://github.com/authelia/authelia/issues/5057)), so
+logging out of Grafana/GlitchTip/Portainer individually only ends that app's
+own session, not the Authelia SSO session itself. To fully log out, visit
+`auth.<DOMAIN>` directly — otherwise the session just expires on its own
+after `session.expiration` (`authelia/configuration.yml`, `1h` by default).
+
 ## Development
 
 ```sh
