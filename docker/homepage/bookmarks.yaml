@@ -5,6 +5,9 @@
     - GitHub (repo):
         - href: https://github.com/Logan2234/tracklore
           icon: si-github
+    - Codecov:
+        - href: https://app.codecov.io/gh/Logan2234/tracklore
+          icon: si-codecov
     - UptimeRobot:
         - href: https://dashboard.uptimerobot.com/monitors
           icon: si-uptimerobot

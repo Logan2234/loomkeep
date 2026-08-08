@@ -6,7 +6,12 @@
         icon: https://loomkeep.app/apple-touch-icon.png
         widget:
           type: customapi
-          url: https://loomkeep.app/api/health
+          # Internal service address, not the public domain — same pattern
+          # as the Grafana/GlitchTip/Portainer widgets. A container hitting
+          # its own VPS's public hostname from inside the Docker network can
+          # fail (hairpin NAT / depends on the host's own routing setup),
+          # where the internal service name always works.
+          url: http://api:3000/api/health
           mappings:
             - field: status
               label: Statut
@@ -66,3 +71,15 @@
           env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
           key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
           fields: ["running", "stopped", "total"]
+    - Healthchecks:
+        href: https://healthchecks.io/checks/
+        description: Scheduled jobs dead-man's-switch (backups, scans...)
+        icon: mdi-heart-pulse
+        # No uuid set: native widget shows aggregate up/down across every
+        # check in the account instead of a single job — see the "Job
+        # monitoring" section in the root README for what pings into this.
+        widget:
+          type: healthchecks
+          url: https://healthchecks.io
+          key: "{{HOMEPAGE_VAR_HEALTHCHECKS_API_KEY}}"
+          fields: ["up", "down"]
