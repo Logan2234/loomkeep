@@ -31,6 +31,8 @@
                 label: Médias suivis
               - field: openReports
                 label: Signalements
+              - field: newUsers7d
+                label: Nouveaux (7j)
           - type: customapi
             # Separate endpoint, longer refresh: live-probes every external
             # provider (TMDB, AniList...), too expensive for the ~10s
