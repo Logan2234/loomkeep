@@ -9,17 +9,24 @@
     showSearchSuggestions: true
 
 - resources:
+    # cpu/memory are the Homepage CONTAINER's own usage, not the VPS host's
+    # — a systeminformation limitation (gethomepage.dev/widgets/information/
+    # resources), no volume mount fixes that part. The real host numbers
+    # are the "VPS" tile in services.yaml (Prometheus/node_exporter). disk
+    # is different: with /:/host:ro mounted (docker-compose.homepage.yml),
+    # /host below IS the real host root filesystem.
     cpu: true
+    units: metric
     memory: true
-    disk: /disk/mount/path
-    cputemp: true
-    tempmin: 0 # optional, minimum cpu temp
-    tempmax: 100 # optional, maximum cpu temp
-    uptime: true
-    units: imperial # only used by cpu temp, options: 'imperial' or 'metric'
-    refresh: 3000 # optional, in ms
-    diskUnits: bytes # optional, bytes (default) or bbytes. Only applies to disk
-    network: true # optional, uses 'default' if true or specify a network interface name
+    disk: /host
+    expanded: true
+    diskUnits: bytes
+    refresh: 3000
+    uptime: false
+    network: false
+    cputemp: false
+    tempmin: 0
+    tempmax: 100
 
 - openmeteo:
     label: Lyon, France
