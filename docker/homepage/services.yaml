@@ -11,7 +11,12 @@
         # No widget: a "Statut" field added no real information (the tile
         # already links out, and Docker's own healthcheck is what actually
         # gates traffic) — dropped rather than kept for the sake of having
-        # one.
+        # one. siteMonitor instead: an HTTP HEAD/GET + response time, shown
+        # as the statusStyle "dot" (settings.yaml) — internal URL
+        # (http://web:3000, not the public domain) because siteMonitor
+        # doesn't handle auth, and going through Authelia/Caddy would just
+        # monitor the login page rather than the app.
+        siteMonitor: http://web:3000
     - Statistiques:
         # Click goes to the real admin stats page — these are just the
         # cheap numbers worth seeing at a glance (see
@@ -47,7 +52,7 @@
 
 - Infrastructure:
     - Healthchecks:
-        href: https://healthchecks.io/checks/
+        href: https://healthchecks.io/projects/7ccfcfc5-06a3-4a11-8991-f6e1c3595217/checks/
         description: Scheduled jobs dead-man's-switch (backups, scans...)
         icon: mdi-heart-pulse
         # No uuid set: native widget shows aggregate up/down across every
@@ -438,7 +443,7 @@
               name: security_advisory.summary
               label: security_advisory.severity
               target: html_url
-              limit: 5
+              limit: 10
           - type: customapi
             # Same caveat as GlitchTip's Total above: capped at per_page=100
             # (GitHub's own max), not a true unbounded total.
@@ -478,7 +483,7 @@
               name: rule.description
               label: rule.security_severity_level
               target: html_url
-              limit: 5
+              limit: 10
           - type: customapi
             url: https://api.github.com/repos/Logan2234/loomkeep/code-scanning/alerts?state=open&per_page=100
             refreshInterval: 300000

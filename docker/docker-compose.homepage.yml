@@ -43,7 +43,16 @@ services:
       - ./homepage/widgets.yaml:/app/config/widgets.yaml:ro
       - ./homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
       - ./homepage/custom.css:/app/config/custom.css:ro
-      - ../apps/web/static/favicon.ico:/app/public/images/favicon.ico:ro
+      - ../apps/web/static/favicon.svg:/app/public/images/favicon.svg:ro
+      # Read-only, for the top-bar "resources" widget's disk field (see
+      # widgets.yaml) to report the real host disk instead of the
+      # container's own tiny writable layer (systeminformation, which the
+      # widget is built on, only sees paths actually mounted into the
+      # container — gethomepage.dev/widgets/information/resources). Whole
+      # host root, not a narrower path, since the VPS is single-disk; this
+      # does give the Homepage container read access to the entire host
+      # filesystem, accepted knowingly for this one widget.
+      - /:/host:ro
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml:
   # adds the Homepage site block + its domain, without redeclaring the
