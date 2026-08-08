@@ -13,12 +13,20 @@ build/
 
 # Authelia — real config holds plaintext secrets + an RSA private key, same
 # "commit the .example, never the real file" convention as .env above.
-authelia/configuration.yml
-authelia/users_database.yml
+# Prefixed with docker/ (not just "authelia/"): a mid-pattern slash anchors
+# a gitignore rule to the .gitignore's own directory (repo root), it does
+# NOT match at every depth — these files live under docker/authelia/, so
+# the unprefixed form silently never matched them.
+docker/authelia/configuration.yml
+docker/authelia/users_database.yml
 # Stray keygen output if the RSA keypair command is ever run without
 # deleting its output afterwards (see README "Single sign-on").
-authelia/private.pem
-authelia/public.pem
+docker/authelia/private.pem
+docker/authelia/public.pem
+
+# Healthchecks.io read-only API key for Prometheus scraping — same
+# "commit the .example, never the real file" convention as above.
+docker/observability/healthchecks_token
 
 # Generated docs (prisma-erd-generator output; regenerated on prisma generate OR modules.md for NestJS modules)
 docs/*
