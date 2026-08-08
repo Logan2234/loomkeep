@@ -12,9 +12,21 @@
           # fail (hairpin NAT / depends on the host's own routing setup),
           # where the internal service name always works.
           url: http://api:3000/api/health
+          # Homepage's customapi component has a specific rule: a response
+          # body containing a field literally named "error" that ISN'T also
+          # referenced in `mappings` gets treated as a failed call outright,
+          # even on a clean HTTP 200 (confirmed against Homepage's own
+          # component source) — and @nestjs/terminus's health check shape
+          # always includes an `error` key (`{}` when healthy). Mapping it
+          # explicitly (even though there's nothing worth showing when it's
+          # empty) is what stops the whole tile from just saying "API Error"
+          # with no other field rendered.
           mappings:
             - field: status
               label: Statut
+            - field: error
+              label: Erreurs
+              format: text
     - Admin:
         href: https://loomkeep.app/admin
         description: Panel admin (utilisateurs, backups, signalements...)
@@ -272,7 +284,12 @@
         # field in Brevo's response — hardBounces is the clearest signal
         # (permanent delivery failures); soft bounces/blocked exist too but
         # showing every failure category would be more noise than signal on
-        # a small tile.
+        # a small tile. Brevo's response also carries its own "error" field
+        # (a real metric — undocumented exact meaning, presumably delivery
+        # errors distinct from bounces), which MUST be in `mappings` or
+        # Homepage's customapi treats the whole response as failed just
+        # because that key exists (confirmed against its component source —
+        # same root cause as the App tile's health-check "error" field).
         widget:
           type: customapi
           url: https://api.brevo.com/v3/smtp/statistics/aggregatedReport?days=1
@@ -285,3 +302,5 @@
               label: Livrés
             - field: hardBounces
               label: Échecs
+            - field: error
+              label: Erreurs
