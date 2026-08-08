@@ -54,7 +54,7 @@ x-glitchtip-environment: &glitchtip-environment
   # (see docker-compose.authelia.yml) with a `docker compose up -d`, not a
   # git commit — auto-deploy on every push to main would otherwise silently
   # revert a hardcoded value back on the next unrelated push.
-  ENABLE_ADMIN: ${GLITCHTIP_ENABLE_ADMIN:-False}
+  ENABLE_ADMIN: false
 
 services:
   glitchtip-postgres:
@@ -83,14 +83,8 @@ services:
     environment:
       <<: *glitchtip-environment
       SERVER_ROLE: all_in_one
-      # Same reasoning as ENABLE_ADMIN above: env-var driven so these can be
-      # flipped on the VPS's own .env (e.g. for the one-time SSO
-      # registration/linking step) with a plain `docker compose up -d`,
-      # not a git commit — a hardcoded value here would get silently
-      # reverted by auto-deploy on the very next unrelated push, which is
-      # exactly what happened live during the Authelia SSO setup.
-      ENABLE_ORGANIZATION_CREATION: ${GLITCHTIP_ENABLE_ORGANIZATION_CREATION:-False}
-      ENABLE_USER_REGISTRATION: ${GLITCHTIP_ENABLE_USER_REGISTRATION:-False}
+      ENABLE_ORGANIZATION_CREATION: false
+      ENABLE_USER_REGISTRATION: false
 
     volumes:
       - glitchtip-uploads:/code/uploads
