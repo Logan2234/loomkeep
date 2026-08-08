@@ -18,7 +18,7 @@ layout:
   Loomkeep:
     icon: mdi-view-dashboard
     style: row
-    columns: 2
+    columns: 3
   Infrastructure:
     icon: mdi-server-network
     style: row
