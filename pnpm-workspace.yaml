@@ -40,3 +40,9 @@ minimumReleaseAgeExclude:
   - "@typescript/typescript-win32-arm64@7.0.2"
   - "@typescript/typescript-win32-x64@7.0.2"
   - typescript@7.0.2
+  - cookie@0.7.0
+  - multer@2.2.0
+  - fast-uri@3.1.4 || 3.1.5
+  - find-my-way@9.6.1
+  - js-yaml@4.3.1 || 5.2.2
+  - brace-expansion@1.1.17 || 1.1.18

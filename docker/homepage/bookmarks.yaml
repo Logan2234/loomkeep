@@ -9,7 +9,7 @@
         - href: https://github.com/Logan2234/tracklore
           icon: si-github
 
-- Infra & envoi d'emails:
+- Infra:
     # Brevo moved to services.yaml — it has a real widget now (emails
     # sent/delivered/hard-bounced today), not just a link.
     - OVH (VPS / domaine):
