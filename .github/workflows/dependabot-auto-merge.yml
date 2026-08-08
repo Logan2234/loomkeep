@@ -2,18 +2,24 @@ name: Dependabot auto-merge
 
 on: pull_request
 
+# Workflow-level default is read-only — the actual write scopes this job
+# needs (to squash-merge and enable auto-merge) are granted at the job
+# level instead, so any job added here later doesn't inherit write access
+# by default.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   auto-merge:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v3
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       # Only minor/patch bumps — majors always need a human look. This lines
