@@ -230,6 +230,16 @@ generate each): `PORTAINER_API_KEY`, `PORTAINER_ENV_ID`,
 `GLITCHTIP_API_TOKEN`, `GLITCHTIP_ORG_SLUG`. Any left empty just means that
 tile's widget shows no data — nothing else breaks.
 
+The app's own tile shows its `/health` status (no key needed — same
+endpoint Docker's own healthcheck uses). Authelia's tile lives in
+`bookmarks.yaml`, not the main service tiles — nothing to manage there
+day-to-day, kept only as a visible reminder the dashboards sit behind SSO.
+`bookmarks.yaml` also has a "recent error logs" deep link straight into
+Grafana Explore's Loki view (last hour, every container) — the single most
+fragile link on the page, since Grafana's Explore URL format is
+version-specific and has changed before; falls back to opening Grafana
+normally if it ever breaks.
+
 ### Single sign-on (optional)
 
 One login for every dashboard above instead of a separate password each —

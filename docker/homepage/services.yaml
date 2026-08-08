@@ -4,6 +4,12 @@
         href: https://loomkeep.app
         description: Series, movies, anime, games, books, music
         icon: https://loomkeep.app/apple-touch-icon.png
+        widget:
+          type: customapi
+          url: http://api:3000/api/health
+          mappings:
+            - field: status
+              label: Statut
     - Admin:
         href: https://loomkeep.app/admin
         description: Panel admin (utilisateurs, backups, signalements...)
