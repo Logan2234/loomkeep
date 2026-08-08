@@ -454,7 +454,6 @@ export function toUserDto(user: User): UserDto {
       ? user.birthDate.toISOString().slice(0, 10)
       : null,
     allowAdultContent: user.allowAdultContent,
-    notifyInApp: user.notifyInApp,
     notifyEmail: user.notifyEmail,
     notifyPush: user.notifyPush,
     emailVerified: user.emailVerified,

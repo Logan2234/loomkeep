@@ -22,26 +22,27 @@ class Notifications {
     }
   }
 
+  // Reading a notification deletes it server-side, so "read" means "gone" —
+  // there's no dimmed/read-but-visible state.
   async markAllRead(): Promise<void> {
-    if (this.unread === 0) return;
+    if (this.items.length === 0) return;
 
     try {
       await markNotificationsRead();
+      this.items = [];
       this.unread = 0;
-      this.items = this.items.map((n) => ({ ...n, read: true }));
     } catch {
       // ignore
     }
   }
 
   async markRead(id: string): Promise<void> {
-    const target = this.items.find((n) => n.id === id);
-    if (!target || target.read) return;
+    if (!this.items.some((n) => n.id === id)) return;
 
     try {
       await markNotificationRead(id);
-      target.read = true;
-      this.unread = Math.max(0, this.unread - 1);
+      this.items = this.items.filter((n) => n.id !== id);
+      this.unread = this.items.length;
     } catch {
       // ignore
     }

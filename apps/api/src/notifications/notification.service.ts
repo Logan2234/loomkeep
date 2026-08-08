@@ -45,9 +45,10 @@ export class NotificationService {
   ) {}
 
   /**
-   * Hourly: scan every user with in-app notifications enabled, so the feed
-   * fills itself without the client having to poll. Runs are idempotent
-   * (deduped by episode), so overlapping or missed ticks are harmless.
+   * Hourly: scan every user with push or email episode alerts enabled, so
+   * those channels fire without the client having to poll. Runs are
+   * idempotent (deduped by episode), so overlapping or missed ticks are
+   * harmless.
    */
   @Cron(CronExpression.EVERY_HOUR)
   async scanAll(): Promise<number> {
@@ -61,7 +62,7 @@ export class NotificationService {
 
   private async runScanAll(): Promise<number> {
     const users = await this.prisma.user.findMany({
-      where: { notifyInApp: true },
+      where: { OR: [{ notifyPush: true }, { notifyEmail: true }] },
       select: { id: true },
     });
 
@@ -99,14 +100,15 @@ export class NotificationService {
       where: { id: userId },
       select: {
         email: true,
-        notifyInApp: true,
         notifyPush: true,
         notifyEmail: true,
         enabledDomains: true,
       },
     });
 
-    if (!user?.notifyInApp) return 0;
+    // Nothing to deliver: episode rows only ever drive push/email, never the
+    // in-app bell (see the model comment on Notification).
+    if (!user || (!user.notifyPush && !user.notifyEmail)) return 0;
     // Episode alerts belong to the MEDIA domain: a user who disabled it gets
     // none. Filtered here (not by hiding the feed) so other notification types
     // stay available.
@@ -248,29 +250,45 @@ export class NotificationService {
     });
   }
 
+  /**
+   * The bell feed: every kind except NEW_EPISODE (push/email only) and
+   * FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). A row
+   * that exists is by definition unread — reading deletes it.
+   */
   async feed(userId: string): Promise<NotificationFeedDto> {
-    const [rows, unread] = await Promise.all([
-      this.prisma.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-        take: FEED_LIMIT,
-      }),
-      this.prisma.notification.count({ where: { userId, readAt: null } }),
-    ]);
-    return { notifications: rows.map(toDto), unread };
+    const rows = await this.prisma.notification.findMany({
+      where: {
+        userId,
+        type: {
+          notIn: [
+            NotificationType.NEW_EPISODE,
+            NotificationType.FOLLOW_REQUEST,
+          ],
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FEED_LIMIT,
+    });
+    return { notifications: rows.map(toDto), unread: rows.length };
   }
 
   async markAllRead(userId: string): Promise<void> {
-    await this.prisma.notification.updateMany({
-      where: { userId, readAt: null },
-      data: { readAt: new Date() },
+    await this.prisma.notification.deleteMany({
+      where: {
+        userId,
+        type: {
+          notIn: [
+            NotificationType.NEW_EPISODE,
+            NotificationType.FOLLOW_REQUEST,
+          ],
+        },
+      },
     });
   }
 
   async markRead(userId: string, id: string): Promise<void> {
-    const { count } = await this.prisma.notification.updateMany({
+    const { count } = await this.prisma.notification.deleteMany({
       where: { id, userId },
-      data: { readAt: new Date() },
     });
 
     if (count === 0) {
@@ -290,7 +308,6 @@ function toDto(n: Notification): NotificationDto {
     body: n.body,
     url: n.url,
     data,
-    read: n.readAt !== null,
     timestamp: airDate ?? n.createdAt.toISOString(),
     createdAt: n.createdAt.toISOString(),
   };

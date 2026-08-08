@@ -8,6 +8,7 @@
   import { auth } from "$lib/auth.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
+  import NotificationBell from "$lib/components/NotificationBell.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { notifications } from "$lib/notifications.svelte";
   import { queryClient } from "$lib/queryClient";
@@ -40,9 +41,9 @@
     theme.init();
   });
 
-  // Once logged in, detect new episodes of tracked shows and load the feed.
-  // Domain filtering happens server-side (a MEDIA-disabled user gets no episode
-  // notifications), so the feed stays available for other notification types.
+  // Once logged in, trigger this user's episode scan (push/email only — see
+  // NotificationService) instead of waiting for the hourly cron, then load
+  // the bell feed (follow/comment activity).
   $effect(() => {
     if (ready && auth.isLoggedIn) void notifications.refresh(true);
     if (ready && auth.isAdmin) void adminReports.refresh();
@@ -85,6 +86,8 @@
 
 <QueryClientProvider client={queryClient}>
   {#if ready && auth.isLoggedIn}
+    <NotificationBell />
+
     <div class="hidden md:block">
       <DesktopSidebar>
         {@render children()}

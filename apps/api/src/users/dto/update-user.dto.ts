@@ -40,10 +40,6 @@ export class UpdateUserDto implements UpdateUserRequestDto {
 
   @IsOptional()
   @IsBoolean()
-  notifyInApp?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
   notifyEmail?: boolean;
 
   @IsOptional()

@@ -6,19 +6,13 @@
 
   let notifyError = $state("");
 
-  async function toggleNotify(
-    key: "notifyInApp" | "notifyEmail" | "notifyPush",
-  ) {
+  async function toggleNotify(key: "notifyEmail" | "notifyPush") {
     if (!auth.user) return;
     notifyError = "";
     const value = !auth.user[key];
     try {
       await updateMe(
-        key === "notifyInApp"
-          ? { notifyInApp: value }
-          : key === "notifyEmail"
-            ? { notifyEmail: value }
-            : { notifyPush: value },
+        key === "notifyEmail" ? { notifyEmail: value } : { notifyPush: value },
       );
     } catch (err) {
       notifyError =
@@ -62,16 +56,6 @@
     <h2 class="font-display mb-4 text-lg font-bold">Communications</h2>
     <div class="divide-border divide-y">
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
-        <div>
-          <p class="font-semibold">Notifications dans l'app</p>
-          <p class="text-dim text-sm">Alerte quand un épisode suivi sort.</p>
-        </div>
-        <Switch
-          label="Notifications dans l'app"
-          checked={auth.user.notifyInApp}
-          onChange={() => toggleNotify("notifyInApp")} />
-      </div>
-      <div class="flex items-center justify-between gap-4 py-3">
         <div>
           <p class="font-semibold">Email</p>
           <p class="text-dim text-sm">
