@@ -1,0 +1,14 @@
+/* Loaded automatically by Homepage from the config directory
+ * (gethomepage.dev/configs/custom-css-js) — needs the volume mount in
+ * docker-compose.homepage.yml, and the homepage container recreated
+ * (`up -d`, not `restart`) the first time this file's mount is added.
+ *
+ * One rule, not a reskin (a full dark/mono/hairline reskin was tried and
+ * reverted earlier — Homepage's tile markup is fixed, so it never actually
+ * matched what was being aimed for): collapsed groups sit flush against
+ * each other with no vertical gap. `.services-group` is a real Homepage
+ * class (verified against its source, src/components/services/group.jsx).
+ */
+.services-group {
+  margin-bottom: 1rem;
+}

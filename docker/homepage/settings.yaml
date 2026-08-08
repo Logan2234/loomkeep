@@ -1,5 +1,8 @@
 ---
 title: Loomkeep
+description:
+  "Homepage for Loomkeep, regrouping all the dashboards and services in one place. Not a
+  replacement for the individual dashboards, just a convenient overview."
 theme: dark
 # Not "teal": Homepage's `color` setting doesn't just tint accents, it
 # recolors the whole page background/surfaces (theme-800/900 shades in dark
@@ -19,7 +22,11 @@ layout:
   Loomkeep:
     icon: mdi-view-dashboard
     style: row
-    columns: 3
+    # 2, not 3: App/Statistiques/Admin are ordered so a 2-column row places
+    # Admin directly under App (row 1: App|Statistiques, row 2: Admin|—),
+    # per the "Admin under App, Statistiques on the right" request — no
+    # per-tile row-span in Homepage's grid, so ordering is the only lever.
+    columns: 2
   Infrastructure:
     icon: mdi-server-network
     style: row
@@ -27,7 +34,7 @@ layout:
   GitHub & qualité:
     icon: si-github
     style: row
-    columns: 2
+    columns: 3
   Emails:
     icon: mdi-email
     style: row

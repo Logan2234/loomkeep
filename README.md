@@ -317,30 +317,32 @@ generate each): `PORTAINER_API_KEY`, `PORTAINER_ENV_ID`,
 `GLITCHTIP_API_TOKEN`, `GLITCHTIP_ORG_SLUG`. Any left empty just means that
 tile's widget shows no data — nothing else breaks.
 
-The app's own tile and the "Statistiques" tile both read
-`GET /api/public-stats/summary` (`apps/api/src/admin/public-stats.controller.ts`)
-— a small dedicated endpoint, deliberately not the full `/admin/stats`
-page's `getStats()`, which computes cohorts/retention curves too heavy to
-run on every ~10s widget poll. Gated by a shared secret
-(`HOMEPAGE_STATS_API_KEY` in `.env`, sent as a bearer token) rather than the
-app's normal JWT login, since Homepage has no user session — generate any
-long random string, the endpoint fails closed (unreachable, not just
-widget-less) if it's unset. It's used here rather than `@nestjs/terminus`'s
-`/health` (still what Docker's own healthcheck uses, untouched) because
-Terminus's response always includes an `error` object field (`{}` when
-healthy), and Homepage's customapi widget crashes outright trying to render
-that as a React child (error #31) — happened live, even after mapping and
-remapping that field away. `public-stats/summary` is plain strings/numbers
-end to end, no such risk, and still doubles as an implicit health signal
-(it fails if the DB query does). Authelia's tile
-lives in
-`bookmarks.yaml`, not the main service tiles — nothing to manage there
-day-to-day, kept only as a visible reminder the dashboards sit behind SSO.
-`bookmarks.yaml` also has a "recent error logs" deep link straight into
-Grafana Explore's Loki view (last hour, every container) — the single most
-fragile link on the page, since Grafana's Explore URL format is
-version-specific and has changed before; falls back to opening Grafana
-normally if it ever breaks.
+The "Statistiques" tile reads `GET /api/public-stats/summary`
+(`apps/api/src/admin/public-stats.controller.ts`) — a small dedicated
+endpoint, deliberately not the full `/admin/stats` page's `getStats()`,
+which computes cohorts/retention curves too heavy to run on every ~10s
+widget poll. Four cheap `count()` queries in parallel: total users, total
+`LibraryEntry` rows (media tracked across every domain), open `Report`s
+(moderation queue), and new signups in the last 7 days. Gated by a shared
+secret (`HOMEPAGE_STATS_API_KEY` in `.env`, sent as a bearer token) rather
+than the app's normal JWT login, since Homepage has no user session —
+generate any long random string, the endpoint fails closed (unreachable,
+not just widget-less) if it's unset. It's used here rather than
+`@nestjs/terminus`'s `/health` (still what Docker's own healthcheck uses,
+untouched) because Terminus's response always includes an `error` object
+field (`{}` when healthy), and Homepage's customapi widget crashes outright
+trying to render that as a React child (error #31) — happened live, even
+after mapping and remapping that field away. `public-stats/summary` is
+plain strings/numbers end to end, no such risk. The App tile itself has no
+widget at all — a lone "Statut" field it had before added no information
+the tile's own link and Docker's healthcheck don't already cover. Authelia's
+tile lives in `bookmarks.yaml`, not the main service tiles — nothing to
+manage there day-to-day, kept only as a visible reminder the dashboards sit
+behind SSO. `bookmarks.yaml` also has a "recent error logs" deep link
+straight into Grafana Explore's Loki view (last hour, every container) —
+the single most fragile link on the page, since Grafana's Explore URL
+format is version-specific and has changed before; falls back to opening
+Grafana normally if it ever breaks.
 
 A "DB" tile shows total database size and row count, straight from
 Prometheus/postgres_exporter's default metrics (`pg_database_size_bytes`,
@@ -356,57 +358,79 @@ mean the API calling GitHub's own API just to compare itself — and the last
 successful `deploy.yml` run) and "Pull requests & issues" (open counts via
 GitHub's search API, `?q=repo:...+is:pr+is:open` / `is:issue+is:open`, a
 bare `total_count` instead of paginating the full list). Each stacks its
-API calls via Homepage's `widgets:` (plural) key. They used to be one
-five-row "CI/CD" tile; split in two so neither is a wall of stacked rows —
-still each its own vertical stack though, since Homepage only lays fields
-side-by-side when they share one `mappings` list on one API call, and these
-five numbers come from three different endpoints. Dependabot alerts and
-CodeQL code-scanning alerts get their own separate tiles instead of joining
-either stack — each is a `dynamic-list` widget (a handful of alert rows,
-not a single number) and mixing list widgets into a KPI stack reads worse
-than keeping them apart. Both need a token even on a public repo (confirmed
-against GitHub's own docs) — a fine-grained PAT scoped to just this repo,
-with **both** "Dependabot alerts: read-only" and "Code scanning alerts:
-read-only" permissions (gated independently despite sharing one Security
-tab), set as `HOMEPAGE_GITHUB_TOKEN` and reused across every GitHub-hosted
-tile for the higher authenticated rate limit (5000/h vs 60/h).
+API calls via Homepage's `widgets:` (plural) key, which always renders
+vertically — confirmed against Homepage's `item.jsx` source, no config
+makes separate stacked widgets sit side by side, only fields that share one
+`mappings` list on one API call do (that's why a single widget's own
+multiple fields, like VPS's CPU/RAM/Disque, do render in a row). Getting
+these five GitHub numbers on one row would need a small proxy combining
+three different endpoints server-side into one JSON response first — more
+machinery than it's worth here. "Qualité" similarly stacks two independent
+API calls (Codecov's coverage, and the public
+`api.securityscorecards.dev` JSON endpoint — same source as the README's
+OpenSSF badge — for the Scorecard number), so it's a two-row stack too, not
+a two-across row.
 
-The Grafana tile is actually two — "Grafana · Dashboards" and
-"Grafana · Datasources" — split so each tile's click target lands on the
-page it's actually summarizing, instead of one tile linking to a generic
-Grafana homepage for two different numbers. Every tile on the page links
-somewhere by design; the only ones that don't split like Grafana did are
-tiles whose fields all share one natural destination already (VPS/DB → the
-Grafana dashboard, Brevo's four counters → the Brevo dashboard) — Homepage
-has no concept of a per-field link within one tile, only a single `href`
-per service.
+Dependabot alerts and CodeQL code-scanning alerts get their own tiles —
+each a `dynamic-list` widget (a handful of alert rows) capped at 5 visible
+rows, plus a second stacked widget hitting the same URL again with
+`per_page=100` and a `format: size` mapping (no `field`, so it measures the
+root array's length) to show a "Total" count. That duplicate request is the
+only way to get a count next to a `dynamic-list` — Homepage doesn't let one
+widget be both a list and expose a plain count field — and the total is
+itself capped at 100 (GitHub's own per-page max): if it ever reads exactly
+"100" there may be more. GlitchTip's tile does the same trick against its
+own API (capped at `limit=100` there instead). No severity sort on Code
+scanning: GitHub's alerts API only sorts by `created`/`updated` (checked
+against GitHub's own REST docs), and Homepage's dynamic-list has no
+client-side sort option either — rows are in whatever order GitHub returns
+them (newest first). Both Dependabot and code-scanning need a token even on
+a public repo (confirmed against GitHub's own docs) — a fine-grained PAT
+scoped to just this repo, with **both** "Dependabot alerts: read-only" and
+"Code scanning alerts: read-only" permissions (gated independently despite
+sharing one Security tab), set as `HOMEPAGE_GITHUB_TOKEN` and reused across
+every GitHub-hosted tile for the higher authenticated rate limit (5000/h vs
+60/h).
 
 All of the above is split across five `services.yaml` groups (Loomkeep,
 Infrastructure, GitHub & qualité, Emails, Alertes — Brevo has nothing to do
 with the repo, so it doesn't live in "GitHub & qualité" despite being
 tracked alongside it during this page's early iterations), each rendered
-with Homepage's own default styling — no `custom.css`. A dark/monospace/
-hairline reskin was tried and reverted: Homepage's tile markup is fixed
-(icon + name + description + a stats row), so no amount of CSS made it
-look like a hand-designed page, and `color: teal` in `settings.yaml` turned
-out to tint the entire page background rather than just accents. `color:
-slate` (neutral) is what's actually running. Every group except Alertes
-sets `style: row` in `settings.yaml`'s `layout` (tiles side by side instead
-of Homepage's default one-per-line stack — `columns` alone silently does
-nothing without `style: row`, confirmed against Homepage's own source);
-Alertes stays at the default stack since its three tiles are alert lists
-that need full row width, not a cramped side-by-side column. Groups also
-get an icon there (`layout.<name>.icon`, same `mdi-`/`si-`/`sh-`/URL
-resolution as a service's own `icon:` — undocumented but real, found by
-reading `group.jsx`). Homepage's block-highlighting feature (`widget.highlight`,
-colors a value red/amber/emerald past a threshold) is wired up on
-Healthchecks (down > 0), UptimeRobot (sitesDown > 0) and Portainer
-(stopped > 0) — all native widgets. It's explicitly **not** supported on
-`customapi` widgets per Homepage's own docs, which rules it out for
-Brevo/Déploiement/Pull requests & issues/GlitchTip/Dependabot/Code
-scanning/App/Statistiques. VPS's `prometheusmetric` widget isn't documented
-either way — its thresholds (70%/90% CPU/RAM/disk) are best-effort, first
-thing to verify live if they don't render.
+with Homepage's own default tile styling. A dark/monospace/hairline full
+reskin was tried and reverted: Homepage's tile markup is fixed (icon + name
+
+- description + a stats row), so no amount of CSS made it look like a
+  hand-designed page, and `color: teal` in `settings.yaml` turned out to tint
+  the entire page background rather than just accents. `color: slate`
+  (neutral) is what's running; the only surviving `custom.css` rule is a
+  single `margin-bottom` on `.services-group` so collapsed groups don't sit
+  flush against each other. Every group except Alertes sets `style: row` in
+  `settings.yaml`'s `layout` (tiles side by side instead of Homepage's
+  default one-per-line stack — `columns` alone silently does nothing without
+  `style: row`, confirmed against Homepage's own source); Alertes stays at
+  the default stack since its three tiles are alert lists that need full row
+  width, not a cramped side-by-side column. Loomkeep's three tiles are
+  ordered App, Statistiques, Admin (not alphabetically) so its 2-column row
+  places Admin directly under App and Statistiques on the right — Homepage's
+  grid has no per-tile row-span, so ordering into the row-major grid fill is
+  the only lever. Groups also get an icon (`layout.<name>.icon`, same
+  `mdi-`/`si-`/`sh-`/URL resolution as a service's own `icon:` — undocumented
+  but real, found by reading `group.jsx`; a literal emoji does **not** work
+  there or on a service icon, it falls through to a broken image, confirmed
+  against `resolvedicon.jsx`). Homepage's block-highlighting feature
+  (`widget.highlight`, colors a value red/amber/emerald past a threshold) is
+  wired up on Healthchecks (up green / down red), UptimeRobot (sitesUp green
+  / sitesDown red), Portainer (running green / stopped red), and VPS's
+  CPU/RAM/Disque (green under 33%, amber 33–66%, red above) — all native or
+  `prometheusmetric` widgets. It's explicitly **not** supported on
+  `customapi` widgets per Homepage's own docs, which rules it out for
+  Brevo/Déploiement/Pull requests & issues/Qualité/GlitchTip/Dependabot/Code
+  scanning/Statistiques — no coloring, no workaround, on any of those.
+  VPS/Healthchecks/UptimeRobot/Portainer's thresholds are otherwise
+  unverified live (VPS especially: highlighting isn't documented either way
+  for `prometheusmetric`, only called out as unsupported for `customapi`).
+  There's also no group-level "total alerts across every tile" number —
+  Homepage has no group-wide computed aggregate, only per-service widgets.
 
 ### Single sign-on (optional)
 

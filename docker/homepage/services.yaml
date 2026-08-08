@@ -1,50 +1,25 @@
 ---
-# Four groups, each with Homepage's native header (icon + title) — plain
-# default styling, no custom.css: a hand-styled reskin was tried and
-# abandoned (Homepage's fixed tile anatomy meant it never actually matched
-# what was being aimed for, and a `color` other than a neutral palette tints
-# the whole page, not just accents). Order within and across groups is
-# deliberate: Loomkeep itself, then infra (external uptime before anything
-# self-hosted), then GitHub/quality, then the alert-list tiles last.
+# Five groups, each with Homepage's native header (icon + title) — plain
+# default styling. Order within and across groups is deliberate: Loomkeep
+# itself, then infra (external uptime before anything self-hosted), then
+# GitHub/quality, then email, then the alert-list tiles last.
 - Loomkeep:
     - App:
         href: https://loomkeep.app
         description: Series, movies, anime, games, books, music
         icon: https://loomkeep.app/apple-touch-icon.png
-        widget:
-          type: customapi
-          # Internal service address, not the public domain — same pattern
-          # as the Grafana/GlitchTip/Portainer widgets. A container hitting
-          # its own VPS's public hostname from inside the Docker network can
-          # fail (hairpin NAT / depends on the host's own routing setup),
-          # where the internal service name always works.
-          #
-          # Deliberately NOT @nestjs/terminus's /health (used by Docker's
-          # own healthcheck, left untouched): its response always includes
-          # an `error` key (`{}` when healthy), and Homepage's customapi
-          # component crashes outright trying to render that object as a
-          # React child (error #31) — happened live even after mapping AND
-          # remapping that field. public-stats/summary is a plain
-          # string/number shape end to end, no such risk, and doubles as an
-          # implicit health check anyway (it fails if the DB query does).
-          url: http://api:3000/api/public-stats/summary
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
-          mappings:
-            - field: status
-              label: Statut
-    - Admin:
-        href: https://loomkeep.app/admin
-        description: Panel admin (utilisateurs, backups, signalements...)
-        icon: mdi-shield-account
+        # No widget: a "Statut" field added no real information (the tile
+        # already links out, and Docker's own healthcheck is what actually
+        # gates traffic) — dropped rather than kept for the sake of having
+        # one.
     - Statistiques:
-        # Click goes to the real admin stats page — this tile is just the
-        # one cheap number worth seeing at a glance (see
+        # Click goes to the real admin stats page — these are just the
+        # cheap numbers worth seeing at a glance (see
         # apps/api/src/admin/public-stats.controller.ts — deliberately not
         # the full /admin/stats getStats(), which computes cohorts/
-        # retention curves that are too heavy for a ~10s widget poll).
+        # retention curves too heavy for a ~10s widget poll).
         href: https://loomkeep.app/admin/stats
-        description: Nombre de comptes inscrits
+        description: Vue d'ensemble de l'activité
         icon: mdi-chart-line
         widget:
           type: customapi
@@ -53,7 +28,22 @@
             Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
           mappings:
             - field: userCount
-              label: Comptes
+              label: Utilisateurs
+            - field: mediaCount
+              label: Médias suivis
+            - field: openReports
+              label: Signalements
+            - field: newUsers7d
+              label: Nouveaux (7j)
+    - Admin:
+        href: https://loomkeep.app/admin
+        description: Panel admin (utilisateurs, backups, signalements...)
+        icon: mdi-shield-account
+        # Ordered App, Statistiques, Admin (not alphabetical/original order)
+        # specifically so a 2-column row places Admin directly under App —
+        # Homepage's grid has no per-tile row-span, so this is done by
+        # ordering into the grid's natural row-major fill instead: row 1 is
+        # App|Statistiques, row 2 is Admin|(empty).
 
 - Infrastructure:
     - Healthchecks:
@@ -71,9 +61,15 @@
           # Block highlighting (docs: configs/services.md#block-highlighting)
           # — native widgets support it, customapi doesn't, hence this only
           # appears on Healthchecks/UptimeRobot/Portainer/VPS below. Bare
-          # key ("down") auto-namespaces to "healthchecks.down" internally,
-          # matching the untranslated label the widget actually renders.
+          # keys ("up"/"down") auto-namespace to "healthchecks.up"/".down"
+          # internally, matching the untranslated label the widget renders.
           highlight:
+            up:
+              valueOnly: true
+              numeric:
+                - level: good
+                  when: gt
+                  value: 0
             down:
               valueOnly: true
               numeric:
@@ -92,6 +88,12 @@
           key: "{{HOMEPAGE_VAR_UPTIMEROBOT_API_KEY}}"
           fields: ["sitesUp", "sitesDown"]
           highlight:
+            sitesUp:
+              valueOnly: true
+              numeric:
+                - level: good
+                  when: gt
+                  value: 0
             sitesDown:
               valueOnly: true
               numeric:
@@ -109,10 +111,16 @@
           key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
           fields: ["running", "stopped", "total"]
           highlight:
+            running:
+              valueOnly: true
+              numeric:
+                - level: good
+                  when: gt
+                  value: 0
             stopped:
               valueOnly: true
               numeric:
-                - level: warn
+                - level: danger
                   when: gt
                   value: 0
     - VPS:
@@ -130,34 +138,45 @@
           # (only customapi is explicitly called out as unsupported) — keys
           # match each metric's `label` below verbatim. First thing to check
           # live if these don't render: this may turn out unsupported too.
+          # Thresholds match what was asked: green under 33%, amber 33-66%,
+          # red above.
           highlight:
             CPU:
               valueOnly: true
               numeric:
                 - level: danger
                   when: gte
-                  value: 90
+                  value: 66
                 - level: warn
                   when: gte
-                  value: 70
+                  value: 33
+                - level: good
+                  when: lt
+                  value: 33
             RAM:
               valueOnly: true
               numeric:
                 - level: danger
                   when: gte
-                  value: 90
+                  value: 66
                 - level: warn
                   when: gte
-                  value: 70
+                  value: 33
+                - level: good
+                  when: lt
+                  value: 33
             Disque:
               valueOnly: true
               numeric:
                 - level: danger
                   when: gte
-                  value: 90
+                  value: 66
                 - level: warn
                   when: gte
-                  value: 70
+                  value: 33
+                - level: good
+                  when: lt
+                  value: 33
           metrics:
             - label: CPU
               query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
@@ -201,14 +220,13 @@
               query: sum(pg_stat_user_tables_n_live_tup)
               format:
                 type: number
-    - Grafana · Dashboards:
-        # Split from a single "Grafana" tile into two, one per destination —
-        # dashboards and datasources live on different pages inside Grafana,
-        # so each tile's click target now actually matches what it shows,
-        # instead of one tile linking to a generic Grafana homepage for both
-        # numbers.
-        href: https://grafana.loomkeep.app/dashboards
-        description: Dashboards configurés
+    - Grafana:
+        # Back to one tile (was briefly split into "Grafana · Dashboards" /
+        # "· Datasources" so each had its own click target — reverted since
+        # a single card reads better and the split precision wasn't worth
+        # the extra tile).
+        href: https://grafana.loomkeep.app
+        description: Dashboards & sources de données
         icon: si-grafana
         widget:
           type: grafana
@@ -222,33 +240,21 @@
           # live: "Access denied" even via the real GF_SECURITY_ADMIN_*
           # superadmin). dashboards/datasources use plain org-scoped
           # endpoints instead, no such gate.
-          fields: ["dashboards"]
-    - Grafana · Datasources:
-        href: https://grafana.loomkeep.app/connections/datasources
-        description: Sources de données connectées
-        icon: si-grafana
-        widget:
-          type: grafana
-          version: 2
-          url: http://grafana:3000
-          username: "{{HOMEPAGE_VAR_GRAFANA_USER}}"
-          password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
-          fields: ["datasources"]
+          fields: ["dashboards", "datasources"]
 
 - GitHub & qualité:
     - Déploiement:
         # Three stacked widgets (Homepage's `widgets:` plural — each an
-        # independent API call rendered as one more row). Was one "CI/CD"
-        # tile with all five GitHub-ish numbers stacked in a single column;
-        # split in two so each tile is a shorter, single-topic list instead
-        # of one wall of 5 rows. A true 3-across/2-across grid like the
-        # mockup would need all fields on one API response — these three
-        # come from three different endpoints (own API, commits, workflow
-        # runs), and Homepage only lays fields side-by-side when they share
-        # one `mappings` list on one call, so each still renders as its own
-        # stacked row here — not fully avoidable without a proxy endpoint
-        # combining them server-side, which is more machinery than this is
-        # worth.
+        # independent API call rendered as one more row). A true row layout
+        # (values side by side, like a single widget's mapped fields) needs
+        # every value on ONE api response — these three come from three
+        # different endpoints (own API, commits, workflow runs), and
+        # Homepage only lays fields side-by-side within one `mappings` list
+        # on one call. Stacking separate widgets is always vertical, no
+        # config for it — confirmed against Homepage's own item.jsx source.
+        # The only way around it is a small proxy combining all three
+        # server-side into one JSON response, which is more machinery than
+        # this is worth.
         href: https://github.com/Logan2234/loomkeep/actions
         description: Build actuellement déployé
         icon: mdi-rocket-launch
@@ -281,6 +287,8 @@
                 label: Déploiement
                 format: relativeDate
     - Pull requests & issues:
+        # Same "can't lay separate widgets side by side" limitation as
+        # Déploiement above.
         href: https://github.com/Logan2234/loomkeep/pulls
         description: Ouvertes sur GitHub
         icon: mdi-source-pull
@@ -307,25 +315,37 @@
             mappings:
               - field: total_count
                 label: Issues ouvertes
-    - Qualité (Codecov):
+    - Qualité:
         href: https://app.codecov.io/gh/Logan2234/loomkeep
-        description: Couverture de tests
+        description: Couverture de tests & score de sécurité
         icon: si-codecov
-        # Codecov's own API docs declare Bearer auth as required for this
-        # endpoint's schema, but public-repo badges work token-free — real
-        # behavior for a public repo's read-only totals is unconfirmed
-        # either way. Left the token optional (empty header if unset); if
-        # this shows an auth error, generate one in Codecov > Settings >
-        # Access and set CODECOV_API_TOKEN in .env.
-        widget:
-          type: customapi
-          url: https://api.codecov.io/api/v2/github/Logan2234/repos/loomkeep/totals/
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_CODECOV_API_TOKEN}}"
-          mappings:
-            - field: totals.coverage
-              label: Couverture
-              suffix: "%"
+        # Two stacked widgets: Codecov's totals, and the OpenSSF Scorecard
+        # JSON API (same source as the README badge, api.securityscorecards.dev
+        # — public, no auth). Highlighting doesn't apply to either: both are
+        # customapi.
+        widgets:
+          - type: customapi
+            # Codecov's own API docs declare Bearer auth as required for
+            # this endpoint's schema, but public-repo badges work
+            # token-free — real behavior for a public repo's read-only
+            # totals is unconfirmed either way. Left the token optional
+            # (empty header if unset); if this shows an auth error,
+            # generate one in Codecov > Settings > Access and set
+            # CODECOV_API_TOKEN in .env.
+            url: https://api.codecov.io/api/v2/github/Logan2234/repos/loomkeep/totals/
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_CODECOV_API_TOKEN}}"
+            mappings:
+              - field: totals.coverage
+                label: Couverture
+                suffix: "%"
+          - type: customapi
+            url: https://api.securityscorecards.dev/projects/github.com/Logan2234/loomkeep
+            refreshInterval: 3600000
+            mappings:
+              - field: score
+                label: Scorecard
+                suffix: " / 10"
 
 # Split out of "GitHub & qualité" — Brevo has nothing to do with the repo,
 # it's about the app's own outgoing mail.
@@ -344,6 +364,7 @@
         # Homepage's customapi treats the whole response as failed just
         # because that key exists (confirmed against its component source —
         # same root cause as the App tile's health-check "error" field).
+        # No highlighting: customapi doesn't support it, no workaround.
         widget:
           type: customapi
           url: https://api.brevo.com/v3/smtp/statistics/aggregatedReport?days=1
@@ -370,19 +391,33 @@
         # clean count (the API returns a paginated array, no bare count
         # field to map). More fragile than the other widgets — first thing
         # to check if it ever shows nothing after a GlitchTip upgrade.
-        widget:
-          type: customapi
-          url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=5"
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
-          display: dynamic-list
-          mappings:
-            # Array is at the root of the response, so no "items" key
-            # (mappings is a single map here, not a list — my first attempt
-            # got this wrong, confirmed against Homepage's own docs).
-            name: title
-            label: culprit
-            target: "https://errors.loomkeep.app/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/{id}"
+        widgets:
+          - type: customapi
+            url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=5"
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
+            display: dynamic-list
+            mappings:
+              # Array is at the root of the response, so no "items" key
+              # (mappings is a single map here, not a list — my first
+              # attempt got this wrong, confirmed against Homepage's docs).
+              name: title
+              label: culprit
+              target: "https://errors.loomkeep.app/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/{id}"
+          - type: customapi
+            # Second call to the SAME endpoint (limit bumped to 100) just to
+            # get a "Total" count via format: size (array length, per
+            # Homepage's customapi docs) — the list above stays capped at 5
+            # rows for readability. Duplicate request is the only way:
+            # Homepage doesn't let one dynamic-list widget also expose a
+            # plain count field. Caveat: this total is itself capped at 100;
+            # if it ever reads exactly "100" there may be more.
+            url: "http://glitchtip:8000/api/0/organizations/{{HOMEPAGE_VAR_GLITCHTIP_ORG_SLUG}}/issues/?query=is:unresolved&limit=100"
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_GLITCHTIP_API_TOKEN}}"
+            mappings:
+              - label: Total
+                format: size
     - Dependabot:
         href: https://github.com/Logan2234/loomkeep/security/dependabot
         description: Vulnérabilités de dépendances ouvertes
@@ -391,18 +426,30 @@
         # Dependabot alerts aren't unauthenticated-readable) — a
         # fine-grained PAT scoped to just this repo, "Dependabot alerts:
         # read-only" permission, nothing else.
-        widget:
-          type: customapi
-          url: https://api.github.com/repos/Logan2234/loomkeep/dependabot/alerts?state=open
-          refreshInterval: 300000
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
-            User-Agent: "loomkeep-homepage"
-          display: dynamic-list
-          mappings:
-            name: security_advisory.summary
-            label: security_advisory.severity
-            target: html_url
+        widgets:
+          - type: customapi
+            url: https://api.github.com/repos/Logan2234/loomkeep/dependabot/alerts?state=open&per_page=100
+            refreshInterval: 300000
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+              User-Agent: "loomkeep-homepage"
+            display: dynamic-list
+            mappings:
+              name: security_advisory.summary
+              label: security_advisory.severity
+              target: html_url
+              limit: 5
+          - type: customapi
+            # Same caveat as GlitchTip's Total above: capped at per_page=100
+            # (GitHub's own max), not a true unbounded total.
+            url: https://api.github.com/repos/Logan2234/loomkeep/dependabot/alerts?state=open&per_page=100
+            refreshInterval: 300000
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+              User-Agent: "loomkeep-homepage"
+            mappings:
+              - label: Total
+                format: size
     - Code scanning:
         href: https://github.com/Logan2234/loomkeep/security/code-scanning
         description: Alertes CodeQL ouvertes
@@ -413,15 +460,31 @@
         # sit under the same repo's Security tab. If this tile stays empty
         # while https://github.com/Logan2234/loomkeep/security/code-scanning
         # shows real alerts, that permission is the first thing to check.
-        widget:
-          type: customapi
-          url: https://api.github.com/repos/Logan2234/loomkeep/code-scanning/alerts?state=open
-          refreshInterval: 300000
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
-            User-Agent: "loomkeep-homepage"
-          display: dynamic-list
-          mappings:
-            name: rule.description
-            label: rule.security_severity_level
-            target: html_url
+        #
+        # No severity sort: GitHub's code-scanning alerts API only sorts by
+        # `created`/`updated` (confirmed against GitHub's own REST docs),
+        # and Homepage's dynamic-list widget has no client-side sort option
+        # either — listed in whatever order GitHub returns them (newest
+        # first, GitHub's default).
+        widgets:
+          - type: customapi
+            url: https://api.github.com/repos/Logan2234/loomkeep/code-scanning/alerts?state=open&per_page=100
+            refreshInterval: 300000
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+              User-Agent: "loomkeep-homepage"
+            display: dynamic-list
+            mappings:
+              name: rule.description
+              label: rule.security_severity_level
+              target: html_url
+              limit: 5
+          - type: customapi
+            url: https://api.github.com/repos/Logan2234/loomkeep/code-scanning/alerts?state=open&per_page=100
+            refreshInterval: 300000
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_GITHUB_TOKEN}}"
+              User-Agent: "loomkeep-homepage"
+            mappings:
+              - label: Total
+                format: size
