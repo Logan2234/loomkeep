@@ -1,18 +1,11 @@
 ---
 title: Loomkeep
 theme: dark
-# Not "teal" here: Homepage's `color` setting doesn't just tint accents, it
+# Not "teal": Homepage's `color` setting doesn't just tint accents, it
 # recolors the whole page background/surfaces (theme-800/900 shades in dark
-# mode) — tried it live, produced a flat teal wash everywhere instead of a
-# dark neutral base, nowhere near the mockup. Keep the neutral "slate" base
-# and get the teal accent entirely from custom.css's hardcoded hex instead,
-# so it stays under our control.
+# mode) — tried it live, produced a flat teal wash everywhere. "slate" is
+# the neutral default. A custom.css reskin (dark/mono/hairline) was also
+# tried and abandoned: Homepage's tile anatomy is fixed, so it never
+# actually matched what was being aimed for — plain native styling instead.
 color: slate
 headerStyle: clean
-layout:
-  # Single flat group (see services.yaml) standing in for the mockup's
-  # ungrouped panel grid — the page title above already says "Loomkeep", so
-  # a second "Poste de contrôle" header would be redundant.
-  Poste de contrôle:
-    header: false
-    columns: 4

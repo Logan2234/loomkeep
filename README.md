@@ -1,13 +1,13 @@
 # Loomkeep
 
 **Build & quality** </br>
-[![CI](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/ci.yml?branch=main&label=CI)](https://github.com/Logan2234/tracklore/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/Logan2234/tracklore/graph/badge.svg)](https://codecov.io/gh/Logan2234/tracklore)
+[![CI](https://img.shields.io/github/actions/workflow/status/Logan2234/loomkeep/ci.yml?branch=main&label=CI)](https://github.com/Logan2234/loomkeep/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Logan2234/loomkeep/graph/badge.svg)](https://codecov.io/gh/Logan2234/loomkeep)
 
 **Security** </br>
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/codeql.yml?branch=main&label=CodeQL)](https://github.com/Logan2234/tracklore/actions/workflows/codeql.yml)
-[![Trivy](https://img.shields.io/github/actions/workflow/status/Logan2234/tracklore/trivy.yml?branch=main&label=Trivy)](https://github.com/Logan2234/tracklore/actions/workflows/trivy.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Logan2234/tracklore/badge)](https://scorecard.dev/viewer/?uri=github.com/Logan2234/tracklore)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/Logan2234/loomkeep/codeql.yml?branch=main&label=CodeQL)](https://github.com/Logan2234/loomkeep/actions/workflows/codeql.yml)
+[![Trivy](https://img.shields.io/github/actions/workflow/status/Logan2234/loomkeep/trivy.yml?branch=main&label=Trivy)](https://github.com/Logan2234/loomkeep/actions/workflows/trivy.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Logan2234/loomkeep/badge)](https://scorecard.dev/viewer/?uri=github.com/Logan2234/loomkeep)
 [![Security Policy](https://img.shields.io/badge/security-policy-blue)](SECURITY.md)
 
 **Status in production** </br>
@@ -15,9 +15,9 @@
 [![Uptime](https://img.shields.io/uptimerobot/status/m803690521-ce3fa37e29f1160d9104e331)](https://stats.uptimerobot.com/3nvxkigZ8T)
 
 **Project** </br>
-[![License](https://img.shields.io/github/license/Logan2234/tracklore)](LICENSE)
-[![Version](https://img.shields.io/github/package-json/v/Logan2234/tracklore)](CHANGELOG.md)
-[![Last commit](https://img.shields.io/github/last-commit/Logan2234/tracklore)](https://github.com/Logan2234/tracklore/commits/main)
+[![License](https://img.shields.io/github/license/Logan2234/loomkeep)](LICENSE)
+[![Version](https://img.shields.io/github/package-json/v/Logan2234/loomkeep)](CHANGELOG.md)
+[![Last commit](https://img.shields.io/github/last-commit/Logan2234/loomkeep)](https://github.com/Logan2234/loomkeep/commits/main)
 
 Self-hosted tracker for **series, movies, anime, games, books and music** —
 with optional friends/reviews/comments social features. Built as a TV Time
@@ -378,15 +378,14 @@ Grafana dashboard, Brevo's four counters → the Brevo dashboard) — Homepage
 has no concept of a per-field link within one tile, only a single `href`
 per service.
 
-All of the above sits in one flat, ungrouped list (`services.yaml`'s single
-"Poste de contrôle" group, header hidden via `settings.yaml`'s `layout`
-override) styled by `docker/homepage/custom.css` — dark background,
-monospace type, hairline teal borders instead of Homepage's default rounded
-cards, `color: teal` in `settings.yaml` so the built-in accent matches
-rather than fighting it. Homepage doesn't expose per-tile grid spans, so
-every tile is the same size regardless of how much it shows — a mockup
-explored bigger panels for the list-heavy tiles, but that level of layout
-control isn't available here.
+All of the above is split across four `services.yaml` groups (Loomkeep,
+Infrastructure, GitHub & qualité, Alertes), each rendered with Homepage's
+own default styling — no `custom.css`. A dark/monospace/hairline reskin was
+tried and reverted: Homepage's tile markup is fixed (icon + name +
+description + a stats row), so no amount of CSS made it look like a
+hand-designed page, and `color: teal` in `settings.yaml` turned out to tint
+the entire page background rather than just accents. `color: slate`
+(neutral) plus native group headers is what's actually running.
 
 ### Single sign-on (optional)
 
