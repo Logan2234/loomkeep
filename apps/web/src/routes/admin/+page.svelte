@@ -300,7 +300,11 @@
 
   {#if version}
     <p class="text-dim mt-8 text-center text-xs">
-      <a href="/changelog" class="hover:text-fg">Loomkeep v{version}</a>
+      <a
+        href="/changelog"
+        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
+        Loomkeep v{version}
+      </a>
     </p>
   {/if}
 </div>

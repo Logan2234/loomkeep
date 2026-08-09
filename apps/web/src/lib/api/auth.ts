@@ -80,6 +80,12 @@ export function verifyEmail(token: string): Promise<void> {
   });
 }
 
+export function resendVerificationEmail(): Promise<void> {
+  return request("/auth/verification/resend", {
+    method: "POST",
+  });
+}
+
 export async function login(body: LoginRequestDto): Promise<void> {
   const result = await request<{ user: UserDto; tokens: AuthTokensDto }>(
     "/auth/login",

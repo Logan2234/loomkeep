@@ -155,11 +155,32 @@
     </div>
   {/if}
 
-  {#if version}
-    <p class="text-dim mt-6 text-center text-xs">
-      <a href="/changelog" class="hover:text-fg">
-        {m.settings_version({ version })}
+  <div class="mt-10 flex flex-col items-center gap-2 text-center text-xs">
+    <p class="text-dim">
+      <a
+        href="/legal/legal-notice"
+        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
+        Mentions légales
+      </a>
+      <span class="mx-1.5">·</span>
+      <a
+        href="/legal/privacy-policy"
+        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
+        Politique de confidentialité
+      </a>
+      <span class="mx-1.5">·</span>
+      <a
+        href="/legal/terms-of-service"
+        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
+        CGU
       </a>
     </p>
-  {/if}
+    {#if version}
+      <a
+        href="/changelog"
+        class="decoration-border hover:decoration-accent hover:text-fg text-dim underline underline-offset-2">
+        {m.settings_version({ version })}
+      </a>
+    {/if}
+  </div>
 </div>

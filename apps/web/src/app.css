@@ -184,3 +184,45 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Legal documents are set as programme notes: quiet, durable and easy to scan. */
+.legal-document {
+  @apply text-[15px] leading-7 md:text-base;
+}
+
+.legal-document h2 {
+  @apply font-display border-border mt-12 mb-5 border-b pb-3 text-2xl font-bold tracking-tight;
+}
+
+.legal-document h3 {
+  @apply font-display mt-8 mb-3 text-lg font-bold;
+}
+
+.legal-document p {
+  @apply mb-5;
+}
+
+.legal-document ul {
+  @apply mb-6 space-y-2 pl-5;
+  list-style: square;
+}
+
+.legal-document code {
+  @apply bg-surface-2 rounded px-1.5 py-0.5 font-mono text-[0.85em];
+}
+
+.legal-table-wrap {
+  @apply border-border mb-7 overflow-x-auto rounded-xl border;
+}
+
+.legal-document table {
+  @apply min-w-full border-collapse text-left text-sm;
+}
+
+.legal-document th {
+  @apply bg-surface-2 text-fg px-4 py-3 font-semibold;
+}
+
+.legal-document td {
+  @apply border-border text-dim border-t px-4 py-3 align-top;
+}

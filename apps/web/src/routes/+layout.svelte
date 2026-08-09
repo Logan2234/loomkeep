@@ -1,15 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { QueryClientProvider } from "@tanstack/svelte-query";
   import { adminReports } from "$lib/admin-reports.svelte";
   import { initAuth, initConfig } from "$lib/api/client";
   import favicon from "$lib/assets/favicon.svg";
   import { auth } from "$lib/auth.svelte";
-  import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
-  import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
   import PushNotificationPrompt from "$lib/components/PushNotificationPrompt.svelte";
+  import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
+  import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { notifications } from "$lib/notifications.svelte";
   import { queryClient } from "$lib/queryClient";
@@ -18,17 +17,28 @@
   import "@fontsource-variable/hanken-grotesk/wght.css";
   import "@fontsource/space-mono/400.css";
   import "@fontsource/space-mono/700.css";
+  import { QueryClientProvider } from "@tanstack/svelte-query";
   import "../app.css";
 
   let { children } = $props();
   let ready = $state(false);
 
-  const PUBLIC_ROUTES = [
+  const AUTH_ROUTES = [
     "/login",
     "/register",
     "/forgot-password",
     "/reset-password",
     "/changelog",
+  ];
+
+  const PUBLIC_ROUTES = [
+    ...AUTH_ROUTES,
+    "/verify-email",
+    "/legal/legal-notice",
+    "/legal/privacy-policy",
+    "/legal/terms-of-service",
+    "/changelog",
+    "/register/check-email",
   ];
 
   $effect(() => {
@@ -74,6 +84,12 @@
       !PUBLIC_ROUTES.includes(page.url.pathname)
     ) {
       void goto("/login");
+    } else if (
+      ready &&
+      auth.isLoggedIn &&
+      AUTH_ROUTES.includes(page.url.pathname)
+    ) {
+      void goto("/");
     }
   });
 </script>
@@ -87,7 +103,11 @@
 </svelte:head>
 
 <QueryClientProvider client={queryClient}>
-  {#if ready && auth.isLoggedIn}
+  {#if !ready}
+    <!-- wait for initAuth/initConfig to finish before rendering anything -->
+  {:else if auth.isLoggedIn && AUTH_ROUTES.includes(page.url.pathname)}
+    <!-- authenticated users visiting auth pages: don't render children (avoid "flash"), effect will redirect -->
+  {:else if auth.isLoggedIn && !PUBLIC_ROUTES.includes(page.url.pathname)}
     <NotificationBell />
     <PushNotificationPrompt />
 
@@ -102,7 +122,7 @@
         {@render children()}
       </MobileLayout>
     </div>
-  {:else if ready}
+  {:else}
     {@render children()}
   {/if}
 </QueryClientProvider>
