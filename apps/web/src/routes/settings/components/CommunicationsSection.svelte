@@ -1,8 +1,10 @@
 <script lang="ts">
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import { m } from "$lib/paraglide/messages.js";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import Switch from "$lib/components/Switch.svelte";
 
   let notifyError = $state("");
@@ -87,7 +89,12 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
         <div>
-          <p class="font-semibold">Newsletter</p>
+          <p class="flex items-center gap-2 font-semibold">
+            Newsletter
+            {#if isFeatureNew("newsletter")}
+              <NewBadge />
+            {/if}
+          </p>
           <p class="text-dim text-sm">
             Un email à chaque nouvelle version, avec les nouveautés du moment.
           </p>

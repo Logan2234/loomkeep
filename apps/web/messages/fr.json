@@ -274,7 +274,7 @@
   "auth_register_tagline": "Suis tout ce que tu regardes, au même endroit.",
   "auth_register_display_name_placeholder": "Pseudo",
   "auth_register_email_placeholder": "Email",
-  "auth_register_password_placeholder": "Mot de passe (8 caractères min.)",
+  "auth_register_password_placeholder": "Mot de passe",
   "auth_register_error_fallback": "Inscription impossible",
   "auth_register_action": "Créer le compte",
   "auth_register_action_loading": "Création…",
@@ -297,6 +297,7 @@
 
   "common_status": "Statut",
   "common_coming_soon": "Bientôt",
+  "common_new": "Nouveau",
 
   "nav_pin_panel": "Épingler le panneau ouvert",
   "nav_unpin_panel": "Désépingler le panneau",
@@ -316,9 +317,10 @@
   "auth_forgot_password_action": "Envoyer le lien",
   "auth_forgot_password_action_loading": "Envoi…",
   "auth_reset_password_title": "Nouveau mot de passe",
-  "auth_reset_password_new_placeholder": "Nouveau mot de passe (8 caractères min.)",
+  "auth_reset_password_new_placeholder": "Nouveau mot de passe",
   "auth_reset_password_confirm_placeholder": "Confirmer le mot de passe",
   "auth_reset_password_mismatch": "Les mots de passe ne correspondent pas",
+  "auth_reset_password_requirements_unmet": "Le mot de passe ne respecte pas les exigences ci-dessus",
   "auth_reset_password_invalid_link": "Lien invalide : aucun token trouvé dans l'URL.",
   "auth_reset_password_error_fallback": "Réinitialisation impossible",
   "auth_reset_password_action": "Réinitialiser",
@@ -344,6 +346,11 @@
 
   "password_show": "Afficher le mot de passe",
   "password_hide": "Masquer le mot de passe",
+  "password_requirement_length": "{min} caractères min.",
+  "password_requirement_uppercase": "1 majuscule",
+  "password_requirement_digit": "1 chiffre",
+  "password_requirement_special": "1 caractère spécial",
+  "password_requirement_progress": "{met} exigences sur {total} validées",
 
   "tracking_title": "Mon suivi",
   "tracking_remove": "Retirer de ma bibliothèque",

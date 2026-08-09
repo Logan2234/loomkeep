@@ -120,3 +120,8 @@ export interface CalendarEntryDto {
   /** ISO air date (always in the future for the calendar feed). */
   airDate: string;
 }
+
+/** The opaque token used in the public .ics subscription URL. */
+export interface CalendarTokenDto {
+  token: string;
+}

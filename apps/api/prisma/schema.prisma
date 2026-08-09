@@ -368,6 +368,10 @@ model User {
   // this is the sync-across-devices seam for when a second locale ships; no
   // settings UI writes to it yet since there's nothing to switch to.
   locale            String    @default("fr")
+  // Opaque secret for the public .ics calendar subscription URL (not hashed:
+  // looked up directly by calendar apps, which can't send an Authorization
+  // header). Null until first requested from Réglages > Export.
+  calendarToken     String?   @unique
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

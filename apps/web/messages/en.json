@@ -274,7 +274,7 @@
   "auth_register_tagline": "Track everything you watch, in one place.",
   "auth_register_display_name_placeholder": "Username",
   "auth_register_email_placeholder": "Email",
-  "auth_register_password_placeholder": "Password (8 characters min.)",
+  "auth_register_password_placeholder": "Password",
   "auth_register_error_fallback": "Couldn't sign up",
   "auth_register_action": "Create account",
   "auth_register_action_loading": "Creating…",
@@ -297,6 +297,7 @@
 
   "common_status": "Status",
   "common_coming_soon": "Coming soon",
+  "common_new": "New",
 
   "nav_pin_panel": "Pin the panel open",
   "nav_unpin_panel": "Unpin the panel",
@@ -316,9 +317,10 @@
   "auth_forgot_password_action": "Send the link",
   "auth_forgot_password_action_loading": "Sending…",
   "auth_reset_password_title": "New password",
-  "auth_reset_password_new_placeholder": "New password (8 characters min.)",
+  "auth_reset_password_new_placeholder": "New password",
   "auth_reset_password_confirm_placeholder": "Confirm the password",
   "auth_reset_password_mismatch": "Passwords don't match",
+  "auth_reset_password_requirements_unmet": "Password doesn't meet the requirements above",
   "auth_reset_password_invalid_link": "Invalid link: no token found in the URL.",
   "auth_reset_password_error_fallback": "Couldn't reset the password",
   "auth_reset_password_action": "Reset",
@@ -344,6 +346,11 @@
 
   "password_show": "Show password",
   "password_hide": "Hide password",
+  "password_requirement_length": "{min} characters min.",
+  "password_requirement_uppercase": "1 uppercase letter",
+  "password_requirement_digit": "1 digit",
+  "password_requirement_special": "1 special character",
+  "password_requirement_progress": "{met} of {total} requirements met",
 
   "tracking_title": "My tracking",
   "tracking_remove": "Remove from my library",

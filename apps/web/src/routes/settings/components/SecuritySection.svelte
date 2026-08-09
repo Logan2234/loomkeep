@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isPasswordValid } from "@loomkeep/shared";
   import {
     ApiError,
     changeEmail,
@@ -11,6 +12,7 @@
   import { auth } from "$lib/auth.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
 
@@ -184,8 +186,8 @@
 
   async function savePassword() {
     passwordError = "";
-    if (newPasswordInput.length < 8) {
-      passwordError = "8 caractères minimum.";
+    if (!isPasswordValid(newPasswordInput)) {
+      passwordError = "Le nouveau mot de passe ne respecte pas les exigences ci-dessus.";
       return;
     }
     if (newPasswordInput !== confirmPasswordInput) {
@@ -439,6 +441,9 @@
             autocomplete="new-password"
             minlength={8}
             bind:value={newPasswordInput} />
+          <div class="mt-2">
+            <PasswordRequirements value={newPasswordInput} />
+          </div>
         </label>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
@@ -460,7 +465,7 @@
             class="btn btn-primary"
             disabled={passwordSaving ||
               !currentPasswordInput ||
-              !newPasswordInput ||
+              !isPasswordValid(newPasswordInput) ||
               !confirmPasswordInput}>
             {passwordSaving ? m.common_save_loading() : m.common_save()}
           </button>

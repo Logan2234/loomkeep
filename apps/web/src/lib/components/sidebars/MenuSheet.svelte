@@ -13,6 +13,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { isDomainEnabled } from "$lib/domains";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { resolveMenuGroups } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
   import type { ComponentProps } from "svelte";
@@ -48,6 +49,7 @@
   icon: IconName;
   match: (p: string) => boolean;
   comingSoon?: boolean;
+  newBadgeKey?: string;
 })}
   {@const active = dest.match(page.url.pathname)}
   {#if dest.comingSoon}
@@ -64,9 +66,14 @@
       href={dest.href}
       onclick={close}
       aria-current={active ? "page" : undefined}
-      class="flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors {active
+      class="relative flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors {active
         ? 'border-accent/40 bg-accent/10 text-accent'
         : 'border-border bg-surface-2 hover:border-accent/40 text-fg'}">
+      {#if dest.newBadgeKey && isFeatureNew(dest.newBadgeKey)}
+        <span
+          class="bg-accent ring-surface absolute top-2 right-2 h-2 w-2 rounded-full ring-2"
+          aria-hidden="true"></span>
+      {/if}
       <Icon name={dest.icon} class="text-accent h-6 w-6" />
       <span class="text-xs font-semibold">{dest.label}</span>
     </a>

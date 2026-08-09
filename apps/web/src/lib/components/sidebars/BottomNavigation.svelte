@@ -3,6 +3,7 @@
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { isDomainEnabled } from "$lib/domains";
+  import { isFeatureNew } from "$lib/feature-badges";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
@@ -51,14 +52,21 @@
         href={item.href}
         aria-current={active ? "page" : undefined}
         class="
-          flex flex-1 flex-col items-center gap-0.5
+          relative flex flex-1 flex-col items-center gap-0.5
           py-2.5
           text-[0.62rem]
           font-semibold
           transition-colors
           {active ? 'text-accent' : 'text-dim'}
         ">
-        <Icon name={item.icon} class="h-6 w-6" />
+        <span class="relative">
+          <Icon name={item.icon} class="h-6 w-6" />
+          {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
+            <span
+              class="bg-accent ring-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2"
+              aria-hidden="true"></span>
+          {/if}
+        </span>
 
         {item.label}
       </a>

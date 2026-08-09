@@ -79,7 +79,7 @@ describe("Loomkeep API (e2e)", () => {
 
   const user = {
     email: "e2e@loomkeep.test",
-    password: "e2e-password-1",
+    password: "E2e-password-1!",
     displayName: "E2E",
   };
   let accessToken: string;
@@ -131,6 +131,13 @@ describe("Loomkeep API (e2e)", () => {
 
   it("rejects a duplicate email", () => {
     return request(http).post("/api/auth/register").send(user).expect(409);
+  });
+
+  it("rejects registration with a password missing a required character class", () => {
+    return request(http)
+      .post("/api/auth/register")
+      .send({ ...user, email: "e2e-weak-password@loomkeep.test", password: "lowercaseonly1!" })
+      .expect(400);
   });
 
   it("logs in and returns tokens", async () => {
@@ -543,7 +550,7 @@ describe("Loomkeep API (e2e)", () => {
   it("tracks device sessions and rotates them in place", async () => {
     const u = {
       email: "e2e-sessions@loomkeep.test",
-      password: "sessions-1",
+      password: "Sessions-1!",
       displayName: "Sessions",
     };
     const reg = await request(http)
@@ -623,7 +630,7 @@ describe("Loomkeep API (e2e)", () => {
     // Throwaway account so the shared suite user stays intact.
     const victim = {
       email: "e2e-delete@loomkeep.test",
-      password: "delete-me-1",
+      password: "Delete-me-1!",
       displayName: "Delete",
     };
     const registered = await request(http)

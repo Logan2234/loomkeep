@@ -26,7 +26,7 @@
     <p>
       Loomkeep est édité par Logan WILLEM. Les informations relatives à
       l'éditeur sont disponibles dans les <a
-        href="./mentions-legales.md"
+        href="/legal/legal-notice"
         class="link-accent">mentions légales</a
       >.
     </p>

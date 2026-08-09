@@ -15,6 +15,8 @@ interface NavItem {
   comingSoon?: boolean;
   /** Masqué tant que la dimension sociale (P4) n'est pas activée sur le déploiement. */
   social?: boolean;
+  /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
+  newBadgeKey?: string;
 }
 
 export interface NavSection {
@@ -97,6 +99,7 @@ export const NAVIGATION: NavSection[] = [
         icon: "calendar",
         domain: Domain.MEDIA,
         match: (p) => p.startsWith("/calendar"),
+        newBadgeKey: "calendar-subscribe",
       },
       {
         href: "/feed",
@@ -158,6 +161,8 @@ export interface MobileDestination {
   adminOnly?: boolean;
   /** Hidden until the social features (P4) are enabled on the deployment. */
   social?: boolean;
+  /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
+  newBadgeKey?: string;
 }
 
 const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
@@ -240,6 +245,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     icon: "calendar",
     domain: Domain.MEDIA,
     match: (p) => p.startsWith("/calendar"),
+    newBadgeKey: "calendar-subscribe",
   },
   stats: {
     id: "stats",

@@ -1,9 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
+  import { isPasswordValid } from "@loomkeep/shared";
   import { ApiError, register } from "$lib/api/client";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import Turnstile from "$lib/components/Turnstile.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -76,6 +78,7 @@
           bind:value={password}
           minlength={8}
           required />
+        <PasswordRequirements value={password} />
         {#if turnstileSiteKey}
           <Turnstile
             siteKey={turnstileSiteKey}
@@ -84,16 +87,25 @@
         {#if error}<p class="text-danger text-sm">{error}</p>{/if}
         <p class="text-dim text-center text-xs leading-relaxed">
           En créant un compte, vous acceptez les
-          <a href="/legal/terms-of-service" class="link-accent">CGU</a>
+          <a
+            href="/legal/terms-of-service"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link-accent">CGU</a>
           et reconnaissez avoir lu notre
-          <a href="/legal/privacy-policy" class="link-accent"
-            >politique de confidentialité</a
+          <a
+            href="/legal/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link-accent">politique de confidentialité</a
           >.
         </p>
         <button
           type="submit"
           class="btn btn-primary"
-          disabled={loading || (!!turnstileSiteKey && !turnstileToken)}>
+          disabled={loading ||
+            !isPasswordValid(password) ||
+            (!!turnstileSiteKey && !turnstileToken)}>
           {loading
             ? m.auth_register_action_loading()
             : m.auth_register_action()}

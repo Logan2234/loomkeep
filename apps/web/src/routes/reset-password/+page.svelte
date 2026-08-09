@@ -1,9 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { isPasswordValid } from "@loomkeep/shared";
   import { ApiError, resetPassword } from "$lib/api/client";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const token = $page.url.searchParams.get("token") ?? "";
@@ -16,6 +18,11 @@
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     error = null;
+
+    if (!isPasswordValid(newPassword)) {
+      error = m.auth_reset_password_requirements_unmet();
+      return;
+    }
 
     if (newPassword !== confirmPassword) {
       error = m.auth_reset_password_mismatch();
@@ -62,6 +69,7 @@
             bind:value={newPassword}
             minlength={8}
             required />
+          <PasswordRequirements value={newPassword} />
           <PasswordInput
             placeholder={m.auth_reset_password_confirm_placeholder()}
             bind:value={confirmPassword}

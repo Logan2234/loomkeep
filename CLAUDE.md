@@ -175,3 +175,10 @@ visibility model, content registers, and GHOST/Figurant behaviour.
   positioning, action bars, and text that could overflow.
 - Visual identity ("Séance" — fonts, palette, nav pattern): see
   `apps/web/DESIGN.md`.
+- When a feature significant enough for a user to notice ships, flag it with
+  the "Nouveau" badge (`apps/web/src/lib/feature-badges.ts` `isFeatureNew()` +
+  `<NewBadge />`) at its point of discovery (nav entry, settings toggle,
+  action button…) — add a `{ key: shippedISODate }` entry to `SHIPPED`. It's
+  time-based (21 days from ship date, no per-user dismissal state) so it
+  fades on its own. Skip it for internal refactors, bug fixes, or anything
+  that doesn't change what the user sees/can do.

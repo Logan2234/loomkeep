@@ -33,6 +33,7 @@ import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
+import { buildCalendarIcs } from "./ics.util";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
@@ -743,6 +744,24 @@ export class LibraryService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
+  }
+
+  /**
+   * Renders the same feed as getCalendar() as an .ics file, for the public
+   * token-based subscription URL (see LibraryController#getCalendarIcs).
+   * Returns null if the token doesn't match any account.
+   */
+  async getCalendarIcs(token: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { calendarToken: token },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return buildCalendarIcs(await this.getCalendar(user.id));
   }
 
   /**

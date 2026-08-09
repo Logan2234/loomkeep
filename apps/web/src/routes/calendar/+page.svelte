@@ -1,10 +1,14 @@
 <script lang="ts">
   import { ApiError, getCalendar } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
+  import CalendarSubscribeModal from "$lib/components/CalendarSubscribeModal.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
@@ -12,6 +16,7 @@
   let entries = $state<CalendarEntryDto[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let showSubscribeModal = $state(false);
 
   $effect(() => {
     getCalendar()
@@ -78,7 +83,19 @@
   <PageHeader
     icon="calendar"
     title="Calendrier"
-    subtitle="Les prochains épisodes de ce que tu suis." />
+    subtitle="Les prochains épisodes de ce que tu suis.">
+    {#snippet actions()}
+      <button
+        class="btn btn-ghost shrink-0"
+        onclick={() => (showSubscribeModal = true)}>
+        <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
+        Ajouter à mon agenda
+        {#if isFeatureNew("calendar-subscribe")}
+          <span class="ml-1.5 inline-flex"><NewBadge /></span>
+        {/if}
+      </button>
+    {/snippet}
+  </PageHeader>
 
   {#if error}
     <Banner variant="error">{error}</Banner>
@@ -122,3 +139,7 @@
     </div>
   {/if}
 </div>
+
+{#if showSubscribeModal}
+  <CalendarSubscribeModal onclose={() => (showSubscribeModal = false)} />
+{/if}

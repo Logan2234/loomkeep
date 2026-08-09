@@ -184,6 +184,26 @@ postinstall is explicitly declined in `pnpm-workspace.yaml`'s
 `docker-compose.portainer.yml` adds a Docker management UI at
 `portainer.<DOMAIN>` (same pattern, no dedicated storage needed).
 
+## User feedback board (`docker-compose.quackback.yml`)
+
+[Quackback](https://quackback.io) — an open-source, self-hostable
+alternative to Canny/UserVoice: feedback boards (bugs and feature ideas as
+separate boards), voting, a roadmap view and a changelog. Own dedicated
+Postgres + Valkey, same reasoning as GlitchTip's own storage — an add-on
+shouldn't share a failure domain with the app it's separate from. Uses
+Valkey (not Quackback's own docs' suggested Dragonfly) to reuse the
+Redis-compatible technology already in this stack rather than adding a
+second one for the same job. Reachable at `feedback.<DOMAIN>`, same
+public-with-own-login-no-basic-auth pattern as Grafana/Portainer/GlitchTip —
+login is email-OTP based, sent through the app's own `SMTP_*` creds
+(discrete host/user/pass fields, unlike GlitchTip's single `EMAIL_URL`, so
+Brevo's `SMTP_USER` containing a literal `@` isn't an issue here).
+
+S3/MinIO (image uploads in the rich-text editor) is deliberately left
+unconfigured — optional per Quackback's own docs, degrades to disabling
+image upload rather than failing. Not worth a fourth dedicated service for a
+single-user instance; add `S3_*` env vars later if that's ever needed.
+
 ## Single sign-on (`docker-compose.authelia.yml`)
 
 [Authelia](https://www.authelia.com/) — chosen over Authentik specifically

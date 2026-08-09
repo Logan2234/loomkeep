@@ -5,11 +5,13 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   Patch,
   Post,
   Put,
   Query,
+  Res,
 } from "@nestjs/common";
 import type {
   CalendarEntryDto,
@@ -20,8 +22,10 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import { Domain } from "@loomkeep/shared";
+import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { Public } from "../auth/decorators/public.decorator";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
@@ -70,6 +74,32 @@ export class LibraryController {
   @Get("calendar")
   getCalendar(@CurrentUser() user: JwtPayload): Promise<CalendarEntryDto[]> {
     return this.libraryService.getCalendar(user.sub);
+  }
+
+  /**
+   * Public (no auth) so Google/Apple Calendar can poll it directly by URL —
+   * subscription clients can't send an Authorization header. Gated by the
+   * unguessable per-user `calendarToken` instead (see UsersController's
+   * calendar-token endpoints), same pattern as the avatar route.
+   */
+  @Public()
+  @Get("calendar.ics")
+  async getCalendarIcs(
+    @Query("token") token: string | undefined,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const ics = token
+      ? await this.libraryService.getCalendarIcs(token)
+      : null;
+
+    if (!ics) {
+      throw new NotFoundException();
+    }
+
+    reply
+      .header("Content-Type", "text/calendar; charset=utf-8")
+      .header("Content-Disposition", 'inline; filename="loomkeep.ics"')
+      .send(ics);
   }
 
   @Get("entries/:id")

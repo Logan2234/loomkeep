@@ -5,7 +5,9 @@
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import { isDomainEnabled } from "$lib/domains";
+  import { isFeatureNew } from "$lib/feature-badges";
   import type { MobileDestination } from "$lib/navigation";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
@@ -125,7 +127,12 @@
   </div>
 
   <div>
-    <p class="mb-2 font-semibold">{m.settings_language_label()}</p>
+    <p class="mb-2 flex items-center gap-2 font-semibold">
+      {m.settings_language_label()}
+      {#if isFeatureNew("locale-english")}
+        <NewBadge />
+      {/if}
+    </p>
     <div
       class:pointer-events-none={localeSaving}
       class:opacity-50={localeSaving}>

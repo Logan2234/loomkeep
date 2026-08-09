@@ -35,7 +35,11 @@
       Pour l'instance officielle de Loomkeep, le responsable du traitement est :
     </p>
     <p>
-      <strong>Logan WILLEM</strong> Adresse : [À COMPLÉTER] E-mail :
+      <strong>Logan WILLEM</strong>, particulier n'agissant pas à titre
+      professionnel — adresse postale non communiquée publiquement, conformément
+      à l'article 6-III de la LCEN (voir les
+      <a href="/legal/legal-notice" class="link-accent">mentions légales</a>).
+      E-mail :
       <strong
         ><a href="mailto:contact@loomkeep.app" class="link-accent"
           >contact@loomkeep.app</a
@@ -92,9 +96,9 @@
       par le service.
     </p>
     <p>
-      [À vérifier avant publication : déterminer si la date de naissance
-      complète est réellement nécessaire à long terme ou si seule une
-      information d'âge suffisante peut être conservée.]
+      Il s'agit de la date de naissance complète : une simple information d'âge
+      au moment de sa saisie deviendrait obsolète et ne permettrait plus de
+      vérifier dans le temps que l'utilisateur reste éligible à ces contenus.
     </p>
     <h3>Données de suivi culturel</h3>
     <p>
@@ -161,8 +165,13 @@
       <li>informations nécessaires au diagnostic d'incidents.</li>
     </ul>
     <p>
-      [À COMPLÉTER : durée exacte de conservation des logs applicatifs, logs de
-      sécurité et données d'erreur.]
+      Les journaux techniques (accès, application) sont conservés par rotation
+      de volume sur le serveur (environ 50 Mo par service, soit quelques jours à
+      quelques semaines selon le trafic) ; lorsque le module de supervision est
+      activé, ils sont en outre conservés 30 jours glissants dans l'outil de
+      supervision (Loki). Les données d'erreur (stack traces) sont conservées
+      dans l'outil de suivi des erreurs auto-hébergé (GlitchTip), selon sa durée
+      de rétention par défaut.
     </p>
     <h2>4. Finalités et bases légales</h2>
     <p>Les données sont traitées notamment pour les finalités suivantes :</p>
@@ -291,8 +300,10 @@
       </li>
     </ul>
     <p>
-      [À VÉRIFIER : confirmer les usages exacts de Brevo et les données
-      effectivement transmises.]
+      Brevo agit uniquement comme relais d'envoi (SMTP) : les données qui lui
+      sont transmises se limitent à l'adresse e-mail du destinataire et au
+      contenu de l'e-mail (sujet, texte) — aucune autre donnée du compte ne lui
+      est communiquée.
     </p>
     <h3>Données de catalogue</h3>
     <p>
@@ -370,11 +381,19 @@
       Les mécanismes strictement nécessaires au fonctionnement du service ne
       sont pas utilisés à des fins de publicité comportementale.
     </p>
-    <p>
-      [À VÉRIFIER : effectuer l'inventaire exact des cookies, localStorage,
-      sessionStorage et autres traceurs utilisés par l'application avant
-      publication.]
-    </p>
+    <p>Concrètement, Loomkeep utilise :</p>
+    <ul>
+      <li>
+        un cookie <code>PARAGLIDE_LOCALE</code> (durée de vie : 400 jours), pour mémoriser
+        la langue choisie ;
+      </li>
+      <li>
+        un stockage local (<code>localStorage</code>) contenant les jetons de
+        connexion, le thème choisi (clair/sombre) et l'état replié/déplié de la
+        barre latérale.
+      </li>
+    </ul>
+    <p>Aucun de ces éléments n'est utilisé à des fins de suivi publicitaire.</p>
     <p>
       Loomkeep n'utilise pas, à sa connaissance, de traceurs publicitaires
       destinés à établir un profil publicitaire des utilisateurs.
@@ -434,9 +453,21 @@
               >Selon leur statut et les paramètres de visibilité, jusqu'à leur
               suppression ou celle du compte</td
             ></tr>
-          <tr><td>Données de sécurité</td><td>[À COMPLÉTER]</td></tr>
-          <tr><td>Logs applicatifs</td><td>[À COMPLÉTER]</td></tr>
-          <tr><td>Données d'erreur</td><td>[À COMPLÉTER]</td></tr>
+          <tr
+            ><td>Données de sécurité</td><td
+              >Rotation de volume sur le serveur (~50 Mo/service) ; 30 jours
+              glissants si la supervision est activée</td
+            ></tr>
+          <tr
+            ><td>Logs applicatifs</td><td
+              >Rotation de volume sur le serveur (~50 Mo/service) ; 30 jours
+              glissants si la supervision est activée</td
+            ></tr>
+          <tr
+            ><td>Données d'erreur</td><td
+              >Durée de rétention par défaut de l'outil de suivi des erreurs
+              (GlitchTip)</td
+            ></tr>
           <tr
             ><td>Sauvegardes</td><td
               >Selon le cycle de rotation des sauvegardes</td
@@ -530,8 +561,13 @@
       transferts.
     </p>
     <p>
-      [À COMPLÉTER : vérifier les lieux de traitement et les mécanismes de
-      transfert applicables pour chaque prestataire réellement utilisé.]
+      L'hébergement applicatif (OVHcloud), l'envoi d'e-mails (Brevo) et le suivi
+      des erreurs (GlitchTip, auto-hébergé) sont opérés depuis l'Union
+      européenne. Certains fournisseurs de données de catalogue interrogés pour
+      rechercher et enrichir les fiches d'œuvres (notamment TMDB, IGDB et
+      MusicBrainz) sont basés hors de l'Union européenne, notamment aux
+      États-Unis ; ces échanges ne concernent toutefois pas de données
+      personnelles identifiant le compte de l'utilisateur (voir section 10).
     </p>
     <h2>16. Vos droits</h2>
     <p>

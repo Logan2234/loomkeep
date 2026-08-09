@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Param,
   Patch,
+  Post,
   Query,
   Res,
   UnauthorizedException,
@@ -18,6 +19,7 @@ import {
 import type { User } from "@prisma/client";
 import {
   Domain,
+  type CalendarTokenDto,
   type CsvExportDto,
   type UserDataExportDto,
   type UserDto,
@@ -25,7 +27,7 @@ import {
 } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import type { FastifyReply } from "fastify";
-import { randomInt } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -160,6 +162,45 @@ export class UsersController {
   ): Promise<CsvExportDto> {
     const domain = parseEnumParam(domainParam, Object.values(Domain), "domain");
     return { csv: await this.csvExport.buildCsv(payload.sub, domain) };
+  }
+
+  /**
+   * Returns the token for the user's public .ics calendar subscription URL,
+   * generating one on first call. Stable across calls — use the regenerate
+   * endpoint below to revoke a previously shared link.
+   */
+  @Get("me/calendar-token")
+  async getCalendarToken(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<CalendarTokenDto> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: payload.sub },
+      select: { calendarToken: true },
+    });
+
+    if (user.calendarToken) {
+      return { token: user.calendarToken };
+    }
+
+    const { calendarToken } = await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: { calendarToken: randomBytes(24).toString("base64url") },
+      select: { calendarToken: true },
+    });
+    return { token: calendarToken! };
+  }
+
+  /** Issues a new token, invalidating any previously shared .ics link. */
+  @Post("me/calendar-token/regenerate")
+  async regenerateCalendarToken(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<CalendarTokenDto> {
+    const { calendarToken } = await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: { calendarToken: randomBytes(24).toString("base64url") },
+      select: { calendarToken: true },
+    });
+    return { token: calendarToken! };
   }
 
   @Patch("me")

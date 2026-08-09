@@ -1,5 +1,6 @@
 import type {
   AuthTokensDto,
+  CalendarTokenDto,
   ChangeEmailRequestDto,
   ChangePasswordRequestDto,
   ConfirmEmailChangeRequestDto,
@@ -171,6 +172,16 @@ export function exportMyData(): Promise<UserDataExportDto> {
 export function exportMyDataCsv(domain: Domain): Promise<CsvExportDto> {
   const params = new URLSearchParams({ domain });
   return request(`/users/me/export.csv?${params}`);
+}
+
+/** Fetches (creating on first call) the token for the .ics calendar subscription URL. */
+export function getCalendarToken(): Promise<CalendarTokenDto> {
+  return request("/users/me/calendar-token");
+}
+
+/** Issues a new calendar token, revoking any previously shared .ics link. */
+export function regenerateCalendarToken(): Promise<CalendarTokenDto> {
+  return request("/users/me/calendar-token/regenerate", { method: "POST" });
 }
 
 /** Permanently deletes the account and clears local auth state. */

@@ -24,7 +24,13 @@
     <ul>
       <li><strong>Nom :</strong> Logan WILLEM</li>
       <li><strong>Statut :</strong> particulier</li>
-      <li><strong>Adresse :</strong> [À COMPLÉTER]</li>
+      <li>
+        <strong>Adresse postale :</strong> non communiquée publiquement, conformément
+        à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance
+        dans l'économie numérique (LCEN), applicable aux éditeurs personnes physiques
+        n'agissant pas à titre professionnel. Ces informations sont conservées par
+        l'hébergeur et peuvent être communiquées sur réquisition de l'autorité judiciaire.
+      </li>
       <li>
         <strong>Adresse e-mail :</strong>
         <a href="mailto:contact@loomkeep.app" class="link-accent"

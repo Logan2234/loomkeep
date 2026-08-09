@@ -134,8 +134,8 @@ for zero cost. One-time dashboard setup, no code:
 2. **Always Use HTTPS**: on.
 3. **Proxy status**: orange-cloud every subdomain actually served by this
    stack (the apex, `grafana.`, `errors.`, `portainer.`, `auth.`, `home.`,
-   ...) — not just the main app. Free-tier proxying supports WebSockets
-   automatically (Grafana Live needs this), no extra config.
+   `feedback.`, ...) — not just the main app. Free-tier proxying supports
+   WebSockets automatically (Grafana Live needs this), no extra config.
 4. **Bot Fight Mode**: on (Security → Bots) — free-tier automated-traffic
    filtering, no configuration needed.
 5. Optional, one **Cache Rule** (or Page Rule on very old accounts) caching

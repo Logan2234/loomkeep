@@ -21,3 +21,4 @@ export * from "./dto/import";
 export * from "./dto/notification";
 export * from "./dto/pagination";
 export * from "./dto/push";
+export * from "./password";
