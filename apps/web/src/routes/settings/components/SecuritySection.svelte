@@ -187,7 +187,8 @@
   async function savePassword() {
     passwordError = "";
     if (!isPasswordValid(newPasswordInput)) {
-      passwordError = "Le nouveau mot de passe ne respecte pas les exigences ci-dessus.";
+      passwordError =
+        "Le nouveau mot de passe ne respecte pas les exigences ci-dessus.";
       return;
     }
     if (newPasswordInput !== confirmPasswordInput) {

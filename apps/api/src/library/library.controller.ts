@@ -88,9 +88,7 @@ export class LibraryController {
     @Query("token") token: string | undefined,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const ics = token
-      ? await this.libraryService.getCalendarIcs(token)
-      : null;
+    const ics = token ? await this.libraryService.getCalendarIcs(token) : null;
 
     if (!ics) {
       throw new NotFoundException();

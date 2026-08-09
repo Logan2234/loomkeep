@@ -3,84 +3,40 @@
 # changelog). Add on top of the base compose + whichever deployment override
 # you're using:
 #
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.quackback.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.quackback.yml up -d
 #
-# Own dedicated Postgres + Valkey, same reasoning as GlitchTip's: an add-on
-# shouldn't share a failure domain with the app it's separate from. Valkey
-# (not Quackback's own docs' suggested Dragonfly) to stay consistent with the
-# Redis-compatible store already used for GlitchTip in this stack, rather
-# than adding a second caching technology for the same job.
+# Deliberately NOT reimplemented as Loomkeep-managed services (a translated
+# Postgres/Dragonfly/MinIO/app stack) — that's a parallel copy of
+# Quackback's own docker-compose.prod.yml that would silently drift out of
+# sync the moment they add or change a service upstream, with no signal that
+# it happened. Instead this override only wires Caddy to Quackback's own,
+# completely separate, unmodified deployment:
 #
-# S3/MinIO (image uploads in the rich-text editor) is deliberately left
-# unconfigured — optional per Quackback's own docs (falls back to disabling
-# image upload), not worth a fourth dedicated service for a single-user
-# instance. Add S3_* env vars later if that's ever actually needed.
+#   1. Run docker/quackback-bootstrap.sh once (clones their repo as a
+#      sibling checkout — see that script for the manual .env/deploy steps,
+#      same "review before you run it" bar as everything else here).
+#   2. Their own docker-compose.prod.yml runs independently, publishing the
+#      app on the host at APP_PORT (default 3000, see their .env).
+#   3. This override's only job: Caddy reverse-proxies
+#      feedback.<DOMAIN> -> that published host port, reachable from inside
+#      Caddy's container via `host.docker.internal` (requires the
+#      extra_hosts entry below — a separate compose project's published
+#      port isn't otherwise reachable by container name).
 #
-# Reachable at QUACKBACK_SITE_ADDRESS (e.g. feedback.loomkeep.app) via Caddy
-# — see feedback/quackback.caddy, imported by the base Caddyfile only when
-# this override is in use. Gated by Quackback's own login only (email OTP —
-# see EMAIL_SMTP_* below), no basic auth in front, same call as
-# Grafana/Portainer/GlitchTip.
-x-quackback-logging: &quackback-logging
-  driver: json-file
-  options:
-    max-size: "10m"
-    max-file: "5"
-
+# Upgrading Quackback is a `cd ../quackback && git pull && docker compose
+# -f docker-compose.prod.yml up -d --build` in their own checkout — nothing
+# to touch in this repo unless QUACKBACK_APP_PORT itself changes.
 services:
-  quackback-postgres:
-    image: postgres:18.4-alpine
-    restart: unless-stopped
-    logging: *quackback-logging
-    environment:
-      POSTGRES_USER: quackback
-      POSTGRES_PASSWORD: ${QUACKBACK_DB_PASSWORD:?set QUACKBACK_DB_PASSWORD in .env}
-      POSTGRES_DB: quackback
-    volumes:
-      # Parent-dir mount, same reasoning as the app's own `db` service in
-      # docker-compose.yml: postgres 18+'s image refuses a volume mounted
-      # directly at .../data.
-      - quackback-pg-data:/var/lib/postgresql
-
-  quackback-valkey:
-    image: valkey/valkey:9.1.1-alpine
-    restart: unless-stopped
-    logging: *quackback-logging
-
-  quackback:
-    image: ghcr.io/quackbackio/quackback:latest
-    restart: unless-stopped
-    logging: *quackback-logging
-    environment:
-      DATABASE_URL: postgres://quackback:${QUACKBACK_DB_PASSWORD:?set QUACKBACK_DB_PASSWORD in .env}@quackback-postgres:5432/quackback
-      REDIS_URL: redis://quackback-valkey:6379
-      SECRET_KEY: ${QUACKBACK_SECRET_KEY:?set QUACKBACK_SECRET_KEY in .env}
-      BASE_URL: https://feedback.${DOMAIN:?set DOMAIN in .env}
-      # Login is email-OTP based — without SMTP the code is only visible via
-      # `docker compose logs quackback`, fine to start but not for real use.
-      # Reuses the app's own Brevo SMTP creds (discrete host/user/pass
-      # fields here, unlike GlitchTip's single EMAIL_URL, so the "@" in
-      # SMTP_USER doesn't need escaping).
-      EMAIL_SMTP_HOST: ${SMTP_HOST}
-      EMAIL_SMTP_PORT: ${SMTP_PORT}
-      EMAIL_SMTP_USER: ${SMTP_USER}
-      EMAIL_SMTP_PASS: ${SMTP_PASS}
-      EMAIL_FROM: ${QUACKBACK_FROM_EMAIL:-feedback@loomkeep.app}
-      DISABLE_TELEMETRY: "true"
-    depends_on:
-      - quackback-postgres
-      - quackback-valkey
-
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds the Quackback site block + its domain, without redeclaring the
-  # whole service.
   caddy:
     environment:
       QUACKBACK_SITE_ADDRESS: feedback.${DOMAIN:?set DOMAIN in .env}
+      # Only needed if Quackback's own .env overrides APP_PORT away from
+      # its default of 3000.
+      QUACKBACK_APP_PORT: ${QUACKBACK_APP_PORT:-3000}
+    # Lets the Caddy container reach a port Quackback's own (separate)
+    # compose project published on the VPS host — works regardless of which
+    # compose project started that service, no shared Docker network needed.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./feedback/quackback.caddy:/etc/caddy/sites-enabled/quackback.caddy:ro
-    depends_on:
-      - quackback
-
-volumes:
-  quackback-pg-data:

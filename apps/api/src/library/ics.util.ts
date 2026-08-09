@@ -9,10 +9,12 @@ function foldLine(line: string): string {
   if (line.length <= FOLD_WIDTH) return line;
   const parts: string[] = [];
   let rest = line;
+
   while (rest.length > FOLD_WIDTH) {
     parts.push(rest.slice(0, FOLD_WIDTH));
     rest = rest.slice(FOLD_WIDTH);
   }
+
   parts.push(rest);
   return parts.join(CRLF + " ");
 }
@@ -33,7 +35,10 @@ function formatDateOnly(date: Date): string {
 }
 
 function formatTimestampUtc(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 /** Renders a user's upcoming-episode calendar as an RFC 5545 .ics feed. */
@@ -61,9 +66,11 @@ export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
       `DTSTART;VALUE=DATE:${formatDateOnly(new Date(entry.airDate))}`,
       `SUMMARY:${escapeText(summary)}`,
     );
+
     if (entry.episodeTitle) {
       lines.push(`DESCRIPTION:${escapeText(entry.episodeTitle)}`);
     }
+
     lines.push("END:VEVENT");
   }
 

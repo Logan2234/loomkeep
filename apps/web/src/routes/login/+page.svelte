@@ -30,41 +30,41 @@
 <div class="flex min-h-screen flex-col">
   <div class="flex flex-1 items-center justify-center px-4 py-12">
     <div class="w-full max-w-sm">
-    <div class="mb-8 text-center">
-      <p class="font-display text-3xl font-extrabold tracking-tight">
-        LOOM<span class="text-accent">KEEP</span>
-      </p>
-      <p class="text-dim mt-2 text-sm">{m.auth_login_tagline()}</p>
-    </div>
-
-    <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">{m.auth_login_title()}</h1>
-      <input
-        type="text"
-        placeholder={m.auth_login_identifier_placeholder()}
-        bind:value={identifier}
-        required
-        class="input" />
-      <PasswordInput
-        placeholder={m.auth_login_password_placeholder()}
-        bind:value={password}
-        required />
-      <a
-        href="/forgot-password"
-        class="text-dim hover:text-accent -mt-2 text-right text-sm hover:underline"
-        >{m.auth_forgot_password()}</a>
-      {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-      <button type="submit" class="btn btn-primary" disabled={loading}>
-        {loading ? m.auth_login_action_loading() : m.auth_login_action()}
-      </button>
-      {#if appConfig.registrationEnabled}
-        <p class="text-dim text-center text-sm">
-          {m.auth_no_account()}
-          <a href="/register" class="link-accent"
-            >{m.auth_create_account_link()}</a>
+      <div class="mb-8 text-center">
+        <p class="font-display text-3xl font-extrabold tracking-tight">
+          LOOM<span class="text-accent">KEEP</span>
         </p>
-      {/if}
-    </form>
+        <p class="text-dim mt-2 text-sm">{m.auth_login_tagline()}</p>
+      </div>
+
+      <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
+        <h1 class="font-display text-xl font-bold">{m.auth_login_title()}</h1>
+        <input
+          type="text"
+          placeholder={m.auth_login_identifier_placeholder()}
+          bind:value={identifier}
+          required
+          class="input" />
+        <PasswordInput
+          placeholder={m.auth_login_password_placeholder()}
+          bind:value={password}
+          required />
+        <a
+          href="/forgot-password"
+          class="text-dim hover:text-accent -mt-2 text-right text-sm hover:underline"
+          >{m.auth_forgot_password()}</a>
+        {#if error}<p class="text-danger text-sm">{error}</p>{/if}
+        <button type="submit" class="btn btn-primary" disabled={loading}>
+          {loading ? m.auth_login_action_loading() : m.auth_login_action()}
+        </button>
+        {#if appConfig.registrationEnabled}
+          <p class="text-dim text-center text-sm">
+            {m.auth_no_account()}
+            <a href="/register" class="link-accent"
+              >{m.auth_create_account_link()}</a>
+          </p>
+        {/if}
+      </form>
     </div>
   </div>
   <LegalLinks />

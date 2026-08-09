@@ -29,46 +29,46 @@
 <div class="flex min-h-screen flex-col">
   <div class="flex flex-1 items-center justify-center px-4 py-12">
     <div class="w-full max-w-sm">
-    <div class="mb-8 text-center">
-      <p class="font-display text-3xl font-extrabold tracking-tight">
-        LOOM<span class="text-accent">KEEP</span>
-      </p>
-      <p class="text-dim mt-2 text-sm">{m.auth_forgot_password_tagline()}</p>
-    </div>
-
-    <div class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">
-        {m.auth_forgot_password_title()}
-      </h1>
-
-      {#if !submitted}
-        <p class="text-dim text-sm">
-          {m.auth_forgot_password_body()}
+      <div class="mb-8 text-center">
+        <p class="font-display text-3xl font-extrabold tracking-tight">
+          LOOM<span class="text-accent">KEEP</span>
         </p>
-        <form onsubmit={submit} class="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder={m.auth_register_email_placeholder()}
-            bind:value={email}
-            required
-            class="input" />
-          {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-          <button type="submit" class="btn btn-primary" disabled={loading}>
-            {loading
-              ? m.auth_forgot_password_action_loading()
-              : m.auth_forgot_password_action()}
-          </button>
-        </form>
-      {:else}
-        <p class="text-dim text-sm">
-          {m.auth_forgot_password_sent()}
-        </p>
-      {/if}
+        <p class="text-dim mt-2 text-sm">{m.auth_forgot_password_tagline()}</p>
+      </div>
 
-      <p class="text-dim text-center text-sm">
-        <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
-      </p>
-    </div>
+      <div class="card flex flex-col gap-4 p-7">
+        <h1 class="font-display text-xl font-bold">
+          {m.auth_forgot_password_title()}
+        </h1>
+
+        {#if !submitted}
+          <p class="text-dim text-sm">
+            {m.auth_forgot_password_body()}
+          </p>
+          <form onsubmit={submit} class="flex flex-col gap-4">
+            <input
+              type="email"
+              placeholder={m.auth_register_email_placeholder()}
+              bind:value={email}
+              required
+              class="input" />
+            {#if error}<p class="text-danger text-sm">{error}</p>{/if}
+            <button type="submit" class="btn btn-primary" disabled={loading}>
+              {loading
+                ? m.auth_forgot_password_action_loading()
+                : m.auth_forgot_password_action()}
+            </button>
+          </form>
+        {:else}
+          <p class="text-dim text-sm">
+            {m.auth_forgot_password_sent()}
+          </p>
+        {/if}
+
+        <p class="text-dim text-center text-sm">
+          <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
+        </p>
+      </div>
     </div>
   </div>
   <LegalLinks />

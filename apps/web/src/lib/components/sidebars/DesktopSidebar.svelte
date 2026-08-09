@@ -214,7 +214,8 @@
                     ? 'bg-accent/15 text-accent'
                     : 'text-dim hover:bg-surface-2 hover:text-fg'}
                 ">
-                  <span class="relative grid h-10 w-10 shrink-0 place-items-center">
+                  <span
+                    class="relative grid h-10 w-10 shrink-0 place-items-center">
                     <Icon name={item.icon} class="h-5 w-5" />
                     {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
                       <span

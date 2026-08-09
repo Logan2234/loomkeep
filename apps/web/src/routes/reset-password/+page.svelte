@@ -47,45 +47,47 @@
 <div class="flex min-h-screen flex-col">
   <div class="flex flex-1 items-center justify-center px-4 py-12">
     <div class="w-full max-w-sm">
-    <div class="mb-8 text-center">
-      <p class="font-display text-3xl font-extrabold tracking-tight">
-        LOOM<span class="text-accent">KEEP</span>
-      </p>
-    </div>
-
-    <div class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">
-        {m.auth_reset_password_title()}
-      </h1>
-
-      {#if !token}
-        <p class="text-danger text-sm">
-          {m.auth_reset_password_invalid_link()}
+      <div class="mb-8 text-center">
+        <p class="font-display text-3xl font-extrabold tracking-tight">
+          LOOM<span class="text-accent">KEEP</span>
         </p>
-      {:else}
-        <form onsubmit={submit} class="flex flex-col gap-4">
-          <PasswordInput
-            placeholder={m.auth_reset_password_new_placeholder()}
-            bind:value={newPassword}
-            minlength={8}
-            required />
-          <PasswordRequirements value={newPassword} />
-          <PasswordInput
-            placeholder={m.auth_reset_password_confirm_placeholder()}
-            bind:value={confirmPassword}
-            minlength={8}
-            required />
-          {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-          <button type="submit" class="btn btn-primary" disabled={loading}>
-            {loading ? m.common_save_loading() : m.auth_reset_password_action()}
-          </button>
-        </form>
-      {/if}
+      </div>
 
-      <p class="text-dim text-center text-sm">
-        <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
-      </p>
-    </div>
+      <div class="card flex flex-col gap-4 p-7">
+        <h1 class="font-display text-xl font-bold">
+          {m.auth_reset_password_title()}
+        </h1>
+
+        {#if !token}
+          <p class="text-danger text-sm">
+            {m.auth_reset_password_invalid_link()}
+          </p>
+        {:else}
+          <form onsubmit={submit} class="flex flex-col gap-4">
+            <PasswordInput
+              placeholder={m.auth_reset_password_new_placeholder()}
+              bind:value={newPassword}
+              minlength={8}
+              required />
+            <PasswordRequirements value={newPassword} />
+            <PasswordInput
+              placeholder={m.auth_reset_password_confirm_placeholder()}
+              bind:value={confirmPassword}
+              minlength={8}
+              required />
+            {#if error}<p class="text-danger text-sm">{error}</p>{/if}
+            <button type="submit" class="btn btn-primary" disabled={loading}>
+              {loading
+                ? m.common_save_loading()
+                : m.auth_reset_password_action()}
+            </button>
+          </form>
+        {/if}
+
+        <p class="text-dim text-center text-sm">
+          <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
+        </p>
+      </div>
     </div>
   </div>
   <LegalLinks />

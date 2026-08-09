@@ -188,21 +188,32 @@ postinstall is explicitly declined in `pnpm-workspace.yaml`'s
 
 [Quackback](https://quackback.io) — an open-source, self-hostable
 alternative to Canny/UserVoice: feedback boards (bugs and feature ideas as
-separate boards), voting, a roadmap view and a changelog. Own dedicated
-Postgres + Valkey, same reasoning as GlitchTip's own storage — an add-on
-shouldn't share a failure domain with the app it's separate from. Uses
-Valkey (not Quackback's own docs' suggested Dragonfly) to reuse the
-Redis-compatible technology already in this stack rather than adding a
-second one for the same job. Reachable at `feedback.<DOMAIN>`, same
-public-with-own-login-no-basic-auth pattern as Grafana/Portainer/GlitchTip —
-login is email-OTP based, sent through the app's own `SMTP_*` creds
-(discrete host/user/pass fields, unlike GlitchTip's single `EMAIL_URL`, so
-Brevo's `SMTP_USER` containing a literal `@` isn't an issue here).
+separate boards), voting, a roadmap view and a changelog. Unlike every other
+add-on in this file, it is **not** reimplemented as Loomkeep-managed
+services. An earlier version of this override tried to translate their
+`docker-compose.prod.yml` (custom Postgres build with pg_cron/pgvector,
+Dragonfly with specific BullMQ-required flags, MinIO + a bucket-init
+service) into Loomkeep-prefixed services — a parallel copy that would
+silently drift the moment Quackback's own stack changes upstream, with
+nothing here to signal it happened.
 
-S3/MinIO (image uploads in the rich-text editor) is deliberately left
-unconfigured — optional per Quackback's own docs, degrades to disabling
-image upload rather than failing. Not worth a fourth dedicated service for a
-single-user instance; add `S3_*` env vars later if that's ever needed.
+Instead, Quackback runs as its own completely separate, unmodified
+deployment, bootstrapped with `docker/quackback-bootstrap.sh` (clones their
+repo as a sibling checkout — `~/quackback` next to `~/loomkeep` on the VPS —
+and prints the manual `.env`/`docker compose up` steps from their own
+self-hosting docs; never runs `docker compose` itself). This override's only
+job is wiring Caddy to it: `feedback.<DOMAIN>` reverse-proxies to
+`host.docker.internal:${QUACKBACK_APP_PORT}` — the port Quackback's own
+compose project published on the VPS host, reachable via `extra_hosts:
+host.docker.internal:host-gateway` regardless of which compose project
+started it, no shared Docker network required. Same
+public-with-own-login-no-basic-auth pattern as Grafana/Portainer/GlitchTip —
+login is Quackback's own email-OTP, sent through whatever SMTP creds you put
+in *its* `.env` (separate from Loomkeep's `SMTP_*`).
+
+Upgrading Quackback is entirely on their side: `cd ~/quackback && git pull
+&& docker compose -f docker-compose.prod.yml up -d --build`. Nothing to
+touch in this repo unless `QUACKBACK_APP_PORT` itself changes.
 
 ## Single sign-on (`docker-compose.authelia.yml`)
 

@@ -1,12 +1,17 @@
 # Public site block for Quackback, imported by the base Caddyfile — only
 # mounted when docker-compose.quackback.yml is in use (it sets
-# QUACKBACK_SITE_ADDRESS on the caddy service and mounts this file into
-# /etc/caddy/sites-enabled/). Same automatic Let's Encrypt handling as the
-# main site: Caddy requests and renews its own certificate for this domain
-# too, independently.
+# QUACKBACK_SITE_ADDRESS/QUACKBACK_APP_PORT on the caddy service and mounts
+# this file into /etc/caddy/sites-enabled/). Same automatic Let's Encrypt
+# handling as the main site: Caddy requests and renews its own certificate
+# for this domain too, independently.
+#
+# Quackback itself runs as a completely separate, unmodified deployment
+# (see docker-compose.quackback.yml's top comment + quackback-bootstrap.sh)
+# — `host.docker.internal` reaches the port their own compose project
+# published on the VPS host, not a container in this compose project.
 #
 # No basic auth in front of this on purpose — Quackback's own login (email
 # OTP) is the only gate, same call as Grafana/Portainer/GlitchTip.
 {$QUACKBACK_SITE_ADDRESS} {
-	reverse_proxy quackback:3000
+	reverse_proxy host.docker.internal:{$QUACKBACK_APP_PORT}
 }

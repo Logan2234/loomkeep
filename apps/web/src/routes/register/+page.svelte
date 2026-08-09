@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
-  import { isPasswordValid } from "@loomkeep/shared";
   import { ApiError, register } from "$lib/api/client";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -9,6 +8,7 @@
   import Turnstile from "$lib/components/Turnstile.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { isPasswordValid } from "@loomkeep/shared";
 
   // Empty = self-host without a Cloudflare account configured — no widget,
   // register() sends no token and the API's own check no-ops the same way.
@@ -104,6 +104,8 @@
           type="submit"
           class="btn btn-primary"
           disabled={loading ||
+            !displayName ||
+            !email ||
             !isPasswordValid(password) ||
             (!!turnstileSiteKey && !turnstileToken)}>
           {loading

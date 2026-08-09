@@ -136,7 +136,11 @@ describe("Loomkeep API (e2e)", () => {
   it("rejects registration with a password missing a required character class", () => {
     return request(http)
       .post("/api/auth/register")
-      .send({ ...user, email: "e2e-weak-password@loomkeep.test", password: "lowercaseonly1!" })
+      .send({
+        ...user,
+        email: "e2e-weak-password@loomkeep.test",
+        password: "lowercaseonly1!",
+      })
       .expect(400);
   });
 

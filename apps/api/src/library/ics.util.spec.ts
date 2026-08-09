@@ -57,8 +57,8 @@ describe("buildCalendarIcs", () => {
   it("uses CRLF line endings", () => {
     const ics = buildCalendarIcs([entry()]);
     expect(ics.includes("\r\n")).toBe(true);
-    expect(ics.split("\n").every((line) => line === "" || line.endsWith("\r"))).toBe(
-      true,
-    );
+    expect(
+      ics.split("\n").every((line) => line === "" || line.endsWith("\r")),
+    ).toBe(true);
   });
 });
