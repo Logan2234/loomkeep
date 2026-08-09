@@ -4,28 +4,18 @@
   // Always cross-domain, not affected by the DomainFilter.
   import type { SocialStatsDto } from "@loomkeep/shared";
   import { getSocialStats } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
   import LineChart from "./LineChart.svelte";
+  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
   import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
-  let social = $state<SocialStatsDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  $effect(() => {
-    loading = true;
-    error = null;
-    getSocialStats()
-      .then((s) => (social = s))
-      .catch((e) => {
-        error =
-          e instanceof ApiError
-            ? e.message
-            : "Statistiques sociales indisponibles";
-      })
-      .finally(() => (loading = false));
-  });
+  const socialStats = statsResource<SocialStatsDto>(
+    getSocialStats,
+    "Statistiques sociales indisponibles",
+  );
+  const social = $derived(socialStats.data);
+  const loading = $derived(socialStats.loading);
+  const error = $derived(socialStats.error);
 
   const pf = new Intl.NumberFormat("fr-FR", {
     style: "percent",

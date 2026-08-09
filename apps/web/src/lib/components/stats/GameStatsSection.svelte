@@ -8,8 +8,8 @@
     GameStatsDto,
   } from "@loomkeep/shared";
   import { getGameStats } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";
+  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
   import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
@@ -17,21 +17,13 @@
     gameBreakdown,
   }: { gameBreakdown: DomainStatusBreakdownDto | undefined } = $props();
 
-  let games = $state<GameStatsDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  $effect(() => {
-    loading = true;
-    error = null;
-    getGameStats()
-      .then((g) => (games = g))
-      .catch((e) => {
-        error =
-          e instanceof ApiError ? e.message : "Statistiques jeux indisponibles";
-      })
-      .finally(() => (loading = false));
-  });
+  const gameStats = statsResource<GameStatsDto>(
+    getGameStats,
+    "Statistiques jeux indisponibles",
+  );
+  const games = $derived(gameStats.data);
+  const loading = $derived(gameStats.loading);
+  const error = $derived(gameStats.error);
 
   const completedCount = $derived(
     gameBreakdown?.byStatus.find((s) => s.bucket === "DONE")?.count ?? 0,

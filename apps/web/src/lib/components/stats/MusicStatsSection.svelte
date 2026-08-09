@@ -7,9 +7,9 @@
     MusicStatsDto,
   } from "@loomkeep/shared";
   import { getMusicStats } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
+  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
   import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
@@ -17,23 +17,13 @@
     musicBreakdown,
   }: { musicBreakdown: DomainStatusBreakdownDto | undefined } = $props();
 
-  let music = $state<MusicStatsDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  $effect(() => {
-    loading = true;
-    error = null;
-    getMusicStats()
-      .then((m) => (music = m))
-      .catch((e) => {
-        error =
-          e instanceof ApiError
-            ? e.message
-            : "Statistiques musique indisponibles";
-      })
-      .finally(() => (loading = false));
-  });
+  const musicStats = statsResource<MusicStatsDto>(
+    getMusicStats,
+    "Statistiques musique indisponibles",
+  );
+  const music = $derived(musicStats.data);
+  const loading = $derived(musicStats.loading);
+  const error = $derived(musicStats.error);
 
   const listenedCount = $derived(
     musicBreakdown?.byStatus.find((s) => s.bucket === "DONE")?.count ?? 0,
