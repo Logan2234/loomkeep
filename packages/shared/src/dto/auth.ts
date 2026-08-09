@@ -64,6 +64,11 @@ export interface UserDto {
   defaultListVisibility: ListVisibility;
   /** Profile access mode (social): PUBLIC/PRIVATE/GHOST ("Figurant"). */
   profileAccess: ProfileAccess;
+  /**
+   * UI language (Paraglide locale code, e.g. "fr"). Only "fr" ships today —
+   * this is the sync-across-devices seam for a future second locale.
+   */
+  locale: string;
   /** ISO datetime the account was created — shown as "member since". */
   createdAt: string;
   /**

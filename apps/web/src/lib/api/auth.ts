@@ -17,6 +17,7 @@ import type {
   UsernameAvailabilityDto,
 } from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
+import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
 import { request } from "./core";
 
 export async function initAuth(): Promise<void> {
@@ -25,6 +26,14 @@ export async function initAuth(): Promise<void> {
 
   try {
     auth.user = await request<UserDto>("/users/me");
+
+    // Sync-across-devices seam: only "fr" exists today (isLocale guards
+    // against a stale/foreign value), so this never actually fires yet —
+    // wired ahead of a second locale shipping, no reload needed since we're
+    // already mid-startup.
+    if (isLocale(auth.user.locale) && auth.user.locale !== getLocale()) {
+      setLocale(auth.user.locale, { reload: false });
+    }
   } catch {
     auth.clear();
   }

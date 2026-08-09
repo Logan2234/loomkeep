@@ -1,4 +1,5 @@
 import { Domain } from "@loomkeep/shared";
+import { m } from "./paraglide/messages.js";
 import type { IconName } from "./types/icon-name";
 
 interface NavItem {
@@ -26,52 +27,52 @@ export const NAVIGATION: NavSection[] = [
     items: [
       {
         href: "/",
-        label: "Accueil",
+        label: m.nav_home(),
         icon: "home",
         match: (p) => p === "/",
       },
       {
         href: "/search",
-        label: "Recherche",
+        label: m.nav_search(),
         icon: "search",
         match: (p) => p.startsWith("/search"),
       },
     ],
   },
   {
-    label: "Ma bibliothèque",
+    label: m.nav_section_library(),
     items: [
       {
         href: "/media",
-        label: "Vidéo",
+        label: m.nav_media(),
         icon: "tv",
         domain: Domain.MEDIA,
         match: (p) => p.startsWith("/media"),
       },
       {
         href: "/games",
-        label: "Jeux",
+        label: m.nav_games(),
         icon: "gamepad",
         domain: Domain.GAMES,
         match: (p) => p.startsWith("/games"),
       },
       {
         href: "/books",
-        label: "Livres",
+        label: m.nav_books(),
         icon: "book",
         domain: Domain.BOOKS,
         match: (p) => p.startsWith("/books"),
       },
       {
         href: "/music",
-        label: "Musique",
+        label: m.nav_music(),
         icon: "music",
         domain: Domain.MUSIC,
         match: (p) => p.startsWith("/music"),
       },
       {
         href: "/podcasts",
-        label: "Podcasts",
+        label: m.nav_podcasts(),
         icon: "podcast",
         domain: Domain.PODCASTS,
         comingSoon: true,
@@ -79,7 +80,7 @@ export const NAVIGATION: NavSection[] = [
       },
       {
         href: "/boardgames",
-        label: "Jeux de société",
+        label: m.nav_boardgames(),
         icon: "boardgame",
         domain: Domain.BOARDGAMES,
         comingSoon: true,
@@ -88,25 +89,25 @@ export const NAVIGATION: NavSection[] = [
     ],
   },
   {
-    label: "Suivi",
+    label: m.nav_section_tracking(),
     items: [
       {
         href: "/calendar",
-        label: "Calendrier",
+        label: m.nav_calendar(),
         icon: "calendar",
         domain: Domain.MEDIA,
         match: (p) => p.startsWith("/calendar"),
       },
       {
         href: "/feed",
-        label: "Fil",
+        label: m.nav_feed(),
         icon: "activity",
         social: true,
         match: (p) => p.startsWith("/feed"),
       },
       {
         href: "/stats",
-        label: "Statistiques",
+        label: m.nav_stats(),
         icon: "stats",
         match: (p) => p.startsWith("/stats"),
       },
@@ -163,14 +164,14 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   home: {
     id: "home",
     href: "/",
-    label: "Accueil",
+    label: m.nav_home(),
     icon: "home",
     match: (p) => p === "/",
   },
   search: {
     id: "search",
     href: "/search",
-    label: "Recherche",
+    label: m.nav_search(),
     icon: "search",
     match: (p) => p.startsWith("/search"),
   },
@@ -178,14 +179,14 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   menu: {
     id: "menu",
     href: "#menu",
-    label: "Menu",
+    label: m.nav_menu(),
     icon: "library",
     match: () => false,
   },
   media: {
     id: "media",
     href: "/media",
-    label: "Vidéo",
+    label: m.nav_media(),
     icon: "tv",
     domain: Domain.MEDIA,
     match: (p) => p.startsWith("/media"),
@@ -193,7 +194,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   games: {
     id: "games",
     href: "/games",
-    label: "Jeux",
+    label: m.nav_games(),
     icon: "gamepad",
     domain: Domain.GAMES,
     match: (p) => p.startsWith("/games"),
@@ -201,7 +202,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   books: {
     id: "books",
     href: "/books",
-    label: "Livres",
+    label: m.nav_books(),
     icon: "book",
     domain: Domain.BOOKS,
     match: (p) => p.startsWith("/books"),
@@ -209,7 +210,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   music: {
     id: "music",
     href: "/music",
-    label: "Musique",
+    label: m.nav_music(),
     icon: "music",
     domain: Domain.MUSIC,
     match: (p) => p.startsWith("/music"),
@@ -217,7 +218,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   podcasts: {
     id: "podcasts",
     href: "/podcasts",
-    label: "Podcasts",
+    label: m.nav_podcasts(),
     icon: "podcast",
     domain: Domain.PODCASTS,
     comingSoon: true,
@@ -226,7 +227,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   boardgames: {
     id: "boardgames",
     href: "/boardgames",
-    label: "Jeux de société",
+    label: m.nav_boardgames(),
     icon: "boardgame",
     domain: Domain.BOARDGAMES,
     comingSoon: true,
@@ -235,7 +236,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   calendar: {
     id: "calendar",
     href: "/calendar",
-    label: "Calendrier",
+    label: m.nav_calendar(),
     icon: "calendar",
     domain: Domain.MEDIA,
     match: (p) => p.startsWith("/calendar"),
@@ -243,14 +244,14 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   stats: {
     id: "stats",
     href: "/stats",
-    label: "Statistiques",
+    label: m.nav_stats(),
     icon: "stats",
     match: (p) => p.startsWith("/stats"),
   },
   feed: {
     id: "feed",
     href: "/feed",
-    label: "Fil",
+    label: m.nav_feed(),
     icon: "activity",
     social: true,
     match: (p) => p.startsWith("/feed"),
@@ -258,7 +259,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   profile: {
     id: "profile",
     href: "/profile",
-    label: "Mon profil",
+    label: m.nav_profile(),
     icon: "user",
     social: true,
     match: (p) => p === "/profile",
@@ -266,14 +267,14 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   settings: {
     id: "settings",
     href: "/settings",
-    label: "Paramètres",
+    label: m.nav_settings(),
     icon: "gear",
     match: (p) => p.startsWith("/settings"),
   },
   admin: {
     id: "admin",
     href: "/admin",
-    label: "Admin",
+    label: m.nav_admin(),
     icon: "shield",
     adminOnly: true,
     match: (p) => p.startsWith("/admin"),
@@ -283,15 +284,15 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
 /** How the launcher sheet groups every destination. */
 const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
   {
-    label: "Bibliothèques",
+    label: m.nav_menu_section_libraries(),
     ids: ["media", "games", "books", "music", "podcasts", "boardgames"],
   },
   {
-    label: "Suivi",
+    label: m.nav_section_tracking(),
     ids: ["calendar", "stats", "feed"],
   },
   {
-    label: "Compte",
+    label: m.nav_menu_section_account(),
     ids: ["profile", "admin", "settings"],
   },
 ];

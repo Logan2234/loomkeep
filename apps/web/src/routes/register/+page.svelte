@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { register, ApiError } from "$lib/api/client";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import Turnstile from "$lib/components/Turnstile.svelte";
 
@@ -31,7 +32,10 @@
       await register({ email, password, displayName, turnstileToken });
       await goto("/");
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Inscription impossible";
+      error =
+        err instanceof ApiError
+          ? err.message
+          : m.auth_register_error_fallback();
     } finally {
       loading = false;
     }
@@ -45,26 +49,26 @@
         LOOM<span class="text-accent">KEEP</span>
       </p>
       <p class="text-dim mt-2 text-sm">
-        Suis tout ce que tu regardes, au même endroit.
+        {m.auth_register_tagline()}
       </p>
     </div>
 
     <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">Créer un compte</h1>
+      <h1 class="font-display text-xl font-bold">{m.auth_register_title()}</h1>
       <input
         type="text"
-        placeholder="Pseudo"
+        placeholder={m.auth_register_display_name_placeholder()}
         bind:value={displayName}
         required
         class="input" />
       <input
         type="email"
-        placeholder="Email"
+        placeholder={m.auth_register_email_placeholder()}
         bind:value={email}
         required
         class="input" />
       <PasswordInput
-        placeholder="Mot de passe (8 caractères min.)"
+        placeholder={m.auth_register_password_placeholder()}
         bind:value={password}
         minlength={8}
         required />
@@ -78,11 +82,11 @@
         type="submit"
         class="btn btn-primary"
         disabled={loading || (!!turnstileSiteKey && !turnstileToken)}>
-        {loading ? "Création…" : "Créer le compte"}
+        {loading ? m.auth_register_action_loading() : m.auth_register_action()}
       </button>
       <p class="text-dim text-center text-sm">
-        Déjà inscrit ?
-        <a href="/login" class="link-accent">Se connecter</a>
+        {m.auth_already_registered()}
+        <a href="/login" class="link-accent">{m.auth_login_action()}</a>
       </p>
     </form>
   </div>

@@ -472,6 +472,7 @@ export function toUserDto(user: User): UserDto {
     defaultListVisibility:
       user.defaultListVisibility as UserDto["defaultListVisibility"],
     profileAccess: user.profileAccess as UserDto["profileAccess"],
+    locale: user.locale,
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
   };

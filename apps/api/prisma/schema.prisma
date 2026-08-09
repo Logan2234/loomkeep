@@ -361,6 +361,10 @@ model User {
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
   mobileNavShortcuts String[] @default(["home", "search", "menu", "calendar", "account"])
+  // UI language (Paraglide locale code, e.g. "fr"). Only "fr" exists today —
+  // this is the sync-across-devices seam for when a second locale ships; no
+  // settings UI writes to it yet since there's nothing to switch to.
+  locale            String    @default("fr")
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

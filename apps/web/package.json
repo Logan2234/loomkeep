@@ -28,6 +28,7 @@
     "svelte-dnd-action": "^0.9.78"
   },
   "devDependencies": {
+    "@inlang/paraglide-js": "^2.23.2",
     "@sveltejs/adapter-node": "^5.5.7",
     "@sveltejs/kit": "^2.70.2",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",

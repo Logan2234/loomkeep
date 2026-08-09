@@ -3,6 +3,7 @@
   import { ApiError, login } from "$lib/api/client";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 
   let identifier = $state("");
   let password = $state("");
@@ -17,7 +18,8 @@
       await login({ identifier, password });
       await goto("/");
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Connexion impossible";
+      error =
+        err instanceof ApiError ? err.message : m.auth_login_error_fallback();
     } finally {
       loading = false;
     }
@@ -30,33 +32,34 @@
       <p class="font-display text-3xl font-extrabold tracking-tight">
         LOOM<span class="text-accent">KEEP</span>
       </p>
-      <p class="text-dim mt-2 text-sm">Ta salle de projection privée.</p>
+      <p class="text-dim mt-2 text-sm">{m.auth_login_tagline()}</p>
     </div>
 
     <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">Connexion</h1>
+      <h1 class="font-display text-xl font-bold">{m.auth_login_title()}</h1>
       <input
         type="text"
-        placeholder="Email ou nom d'utilisateur"
+        placeholder={m.auth_login_identifier_placeholder()}
         bind:value={identifier}
         required
         class="input" />
       <PasswordInput
-        placeholder="Mot de passe"
+        placeholder={m.auth_login_password_placeholder()}
         bind:value={password}
         required />
       <a
         href="/forgot-password"
         class="text-dim hover:text-accent -mt-2 text-right text-sm hover:underline"
-        >Mot de passe oublié ?</a>
+        >{m.auth_forgot_password()}</a>
       {#if error}<p class="text-danger text-sm">{error}</p>{/if}
       <button type="submit" class="btn btn-primary" disabled={loading}>
-        {loading ? "Connexion…" : "Se connecter"}
+        {loading ? m.auth_login_action_loading() : m.auth_login_action()}
       </button>
       {#if appConfig.registrationEnabled}
         <p class="text-dim text-center text-sm">
-          Pas encore de compte ?
-          <a href="/register" class="link-accent">Créer un compte</a>
+          {m.auth_no_account()}
+          <a href="/register" class="link-accent"
+            >{m.auth_create_account_link()}</a>
         </p>
       {/if}
     </form>
