@@ -1,5 +1,6 @@
 <script lang="ts">
   import QRCode from "qrcode";
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
   import { profileUrl, shareProfile } from "$lib/share-profile";
@@ -37,7 +38,7 @@
   }
 </script>
 
-<Modal title="Partager le profil" {onclose}>
+<Modal title={m.share_profile_title()} {onclose}>
   <div class="flex flex-col items-center gap-4">
     {#if qrSvg}
       <!-- Fixed white backing regardless of theme — the QR needs strong
@@ -53,18 +54,17 @@
     {/if}
 
     <p class="text-dim max-w-xs text-center text-sm">
-      À scanner avec l'appareil photo d'un téléphone pour ouvrir directement ce
-      profil.
+      {m.share_profile_hint()}
     </p>
 
     <div class="flex w-full flex-col gap-2">
       <button class="btn btn-primary w-full" onclick={shareWith}>
         <Icon name="share" class="h-4 w-4" />
-        Partager avec…
+        {m.share_profile_share_with()}
       </button>
       <button class="btn btn-ghost w-full" onclick={copyLink}>
         <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
-        {copied ? "Lien copié" : "Copier le lien"}
+        {copied ? m.share_profile_copied() : m.share_profile_copy_link()}
       </button>
     </div>
   </div>

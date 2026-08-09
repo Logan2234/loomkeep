@@ -8,6 +8,7 @@
   import QrScanner from "qr-scanner";
   import WorkerPath from "qr-scanner/qr-scanner-worker.min.js?url";
   import { onDestroy, onMount, tick } from "svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
@@ -38,7 +39,7 @@
   async function onDecode(result: QrScanner.ScanResult) {
     const username = resolveUsername(result.data);
     if (!username) {
-      notice = "Ce code ne correspond pas à un profil Loomkeep.";
+      notice = m.scan_profile_invalid_code();
       return;
     }
     notice = "";
@@ -74,7 +75,7 @@
   });
 </script>
 
-<Modal title="Scanner un profil" {onclose}>
+<Modal title={m.scan_profile_title()} {onclose}>
   <div class="flex flex-col items-center gap-3">
     <div
       class="bg-surface-2 relative aspect-square w-full overflow-hidden rounded-xl">
@@ -99,13 +100,13 @@
         <div
           class="bg-surface-2 text-dim absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm">
           <Icon name="camera" class="h-8 w-8" />
-          Accès à la caméra refusé ou indisponible.
+          {m.scan_profile_camera_denied()}
         </div>
       {/if}
     </div>
 
     <p class="text-dim max-w-xs text-center text-sm">
-      Pointez la caméra vers le QR code du profil de quelqu'un d'autre.
+      {m.scan_profile_hint()}
     </p>
 
     {#if notice}

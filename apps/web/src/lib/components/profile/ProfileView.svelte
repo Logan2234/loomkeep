@@ -24,6 +24,7 @@
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
@@ -50,12 +51,12 @@
   }: { username: string; publicView?: boolean } = $props();
 
   const DOMAIN_LABEL: Record<string, string> = {
-    MEDIA: "Vidéo",
-    GAMES: "Jeux",
-    BOOKS: "Livres",
-    MUSIC: "Musique",
-    PODCASTS: "Podcasts",
-    BOARDGAMES: "Jeux de société",
+    MEDIA: m.nav_media(),
+    GAMES: m.nav_games(),
+    BOOKS: m.nav_books(),
+    MUSIC: m.nav_music(),
+    PODCASTS: m.nav_podcasts(),
+    BOARDGAMES: m.nav_boardgames(),
   };
 
   const DOMAIN_HREF: Record<string, string> = {
@@ -158,9 +159,11 @@
   // The primary action label reflects the relationship + the target's access.
   let followLabel = $derived.by(() => {
     if (!rel || !profile) return "";
-    if (rel.following) return "Suivi";
-    if (rel.requested) return "Demande envoyée";
-    return profile.profileAccess === "PRIVATE" ? "Demander à suivre" : "Suivre";
+    if (rel.following) return m.profile_follow_following();
+    if (rel.requested) return m.profile_follow_requested();
+    return profile.profileAccess === "PRIVATE"
+      ? m.profile_follow_request()
+      : m.profile_follow_follow();
   });
 
   // A Figurant can only follow public profiles — hide the affordance rather
@@ -286,11 +289,14 @@
     </div>
   {:else if notFound || !profile}
     <div class="card flex flex-col items-center gap-3 p-10 text-center">
-      <p class="font-display text-xl font-bold">Profil introuvable</p>
-      <p class="text-dim max-w-sm text-sm">
-        Ce profil n'existe pas, ou il n'est pas visible pour vous.
+      <p class="font-display text-xl font-bold">
+        {m.profile_not_found_title()}
       </p>
-      <a href="/" class="btn btn-ghost mt-2">Retour à l'accueil</a>
+      <p class="text-dim max-w-sm text-sm">
+        {m.profile_not_found_body()}
+      </p>
+      <a href="/" class="btn btn-ghost mt-2"
+        >{m.profile_not_found_back_home()}</a>
     </div>
   {:else if profile.locked}
     <!-- Private profile the viewer can't see yet: identity only, under embargo.
@@ -323,22 +329,23 @@
         <p class="timecode mt-0.5 text-sm">@{profile.username}</p>
       </div>
       <p class="text-dim max-w-sm text-sm leading-relaxed">
-        Ce profil est privé. Demandez à suivre {profile.displayName} pour voir sa
-        bibliothèque et son activité.
+        {m.profile_locked_message({ name: profile.displayName })}
       </p>
       {#if rel && !rel.isSelf}
         <button
           class="btn {rel.requested ? 'btn-ghost' : 'btn-primary'}"
           disabled={busy}
           onclick={toggleFollow}>
-          {rel.requested ? "Annuler la demande" : "Demander à suivre"}
+          {rel.requested
+            ? m.profile_follow_cancel_request()
+            : m.profile_follow_request()}
         </button>
       {/if}
     </section>
   {:else}
     {#if rel?.isSelf && publicView}
       <Banner variant="info" class="mb-4">
-        Vue publique de votre profil — c'est ce que les autres voient.
+        {m.profile_public_view_banner()}
       </Banner>
     {/if}
 
@@ -355,7 +362,7 @@
           <button
             type="button"
             class="cursor-zoom-in"
-            aria-label="Agrandir l'avatar"
+            aria-label={m.profile_avatar_zoom()}
             onclick={() => (avatarZoomed = true)}>
             <Avatar seed={profile.username} url={profile.avatarUrl} size={80} />
           </button>
@@ -363,7 +370,7 @@
             <button
               type="button"
               class="bg-accent text-accent-fg border-surface absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full border-2"
-              aria-label="Changer la photo de profil"
+              aria-label={m.profile_avatar_change()}
               onclick={() => (avatarModalOpen = true)}>
               <Icon name="camera" class="h-3.5 w-3.5" />
             </button>
@@ -383,14 +390,15 @@
               <button
                 type="button"
                 class="text-dim hover:text-fg hover:bg-surface-2 rounded-full p-1"
-                aria-label="Modifier le profil"
+                aria-label={m.profile_edit()}
                 onclick={() => (editProfileModalOpen = true)}>
                 <Icon name="edit" class="h-3.5 w-3.5" />
               </button>
             {:else if rel?.isFriend}
-              <span class="chip chip-on !py-1 text-xs">Amis</span>
+              <span class="chip chip-on !py-1 text-xs"
+                >{m.profile_friends_badge()}</span>
             {:else if rel?.followsYou}
-              <span class="chip !py-1 text-xs">Vous suit</span>
+              <span class="chip !py-1 text-xs">{m.profile_follows_you()}</span>
             {/if}
           </div>
           <p
@@ -404,12 +412,12 @@
           <p class="text-dim mt-1 flex flex-wrap items-center gap-x-2 text-sm">
             <span
               >{profile.profileAccess === "PUBLIC"
-                ? "Profil public"
+                ? m.profile_status_public()
                 : profile.profileAccess === "PRIVATE"
-                  ? "Profil privé"
-                  : "Figurant"}</span>
+                  ? m.profile_status_private()
+                  : m.common_ghost()}</span>
             <span aria-hidden="true">·</span>
-            <span>Membre depuis {memberSince}</span>
+            <span>{m.profile_member_since({ date: memberSince })}</span>
           </p>
           {#if profile.bio}
             <p class="mt-3 text-sm leading-relaxed">{profile.bio}</p>
@@ -425,7 +433,9 @@
               <span class="timecode text-fg text-lg font-bold"
                 >{profile.followerCount}</span>
               <span class="text-dim ml-1 text-xs tracking-wide uppercase"
-                >{profile.followerCount > 1 ? "abonnés" : "abonné"}</span>
+                >{profile.followerCount > 1
+                  ? m.profile_followers_plural()
+                  : m.profile_followers_singular()}</span>
             </button>
             <button
               type="button"
@@ -435,8 +445,8 @@
                 >{profile.followingCount}</span>
               <span class="text-dim ml-1 text-xs tracking-wide uppercase"
                 >{profile.followingCount > 1
-                  ? "abonnements"
-                  : "abonnement"}</span>
+                  ? m.profile_following_plural()
+                  : m.profile_following_singular()}</span>
             </button>
           </div>
         </div>
@@ -450,7 +460,7 @@
         <div class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5">
           {#if rel.blocking}
             <button class="btn btn-ghost" disabled={busy} onclick={toggleBlock}>
-              Débloquer
+              {m.profile_unblock()}
             </button>
           {:else}
             {#if !ghostCantFollow}
@@ -466,10 +476,10 @@
             <button
               class="btn btn-ghost"
               disabled={busy}
-              title="Bloquer"
-              aria-label="Bloquer"
+              title={m.profile_block()}
+              aria-label={m.profile_block()}
               onclick={toggleBlock}>
-              Bloquer
+              {m.profile_block()}
             </button>
           {/if}
         </div>
@@ -480,7 +490,7 @@
           href="/profile"
           class="border-border text-dim hover:bg-surface-2 hover:text-fg absolute top-5 right-5 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold md:top-6 md:right-6">
           <Icon name="chevron-left" class="h-3.5 w-3.5" />
-          Revenir à mon profil
+          {m.profile_back_to_own()}
         </a>
       {:else if selfManage}
         <!-- Icon-only, top-right of the card, flush with its own padding —
@@ -491,31 +501,31 @@
           <button
             type="button"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
-            title="Partager le profil"
-            aria-label="Partager le profil"
+            title={m.share_profile_title()}
+            aria-label={m.share_profile_title()}
             onclick={() => (shareModalOpen = true)}>
             <Icon name="share" class="h-4 w-4" />
           </button>
           <button
             type="button"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border sm:hidden"
-            title="Scanner un profil"
-            aria-label="Scanner un profil"
+            title={m.scan_profile_title()}
+            aria-label={m.scan_profile_title()}
             onclick={() => (scanModalOpen = true)}>
             <Icon name="camera" class="h-4 w-4" />
           </button>
           <a
             href="/settings"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
-            title="Paramètres"
-            aria-label="Paramètres">
+            title={m.nav_settings()}
+            aria-label={m.nav_settings()}>
             <Icon name="gear" class="h-4 w-4" />
           </a>
           <button
             type="button"
             class="border-danger/40 text-danger hover:bg-danger/10 grid h-9 w-9 place-items-center rounded-full border"
-            title="Se déconnecter"
-            aria-label="Se déconnecter"
+            title={m.profile_logout()}
+            aria-label={m.profile_logout()}
             onclick={signOut}>
             <Icon name="logout" class="h-4 w-4" />
           </button>
@@ -524,7 +534,7 @@
     </section>
 
     <!-- Per-domain library, gated by the viewer's visibility. -->
-    <SectionLabel label="Bibliothèque" class="mt-8 mb-3" />
+    <SectionLabel label={m.profile_library_section()} class="mt-8 mb-3" />
     <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {#each profile.domains as d (d.domain)}
         {@const href = selfManage ? DOMAIN_HREF[d.domain] : undefined}
@@ -540,16 +550,21 @@
           {#if d.visible}
             <p class="timecode text-fg mt-1 text-2xl font-bold">{d.count}</p>
             <p class="text-dim text-xs">
-              {d.count > 1 ? "titres" : "titre"}
+              {d.count > 1
+                ? m.profile_titles_plural()
+                : m.profile_titles_singular()}
             </p>
             {#if d.favorites > 0}
               <p
                 class="text-accent mt-1.5 flex items-center gap-1 text-xs font-bold">
-                ♥ {d.favorites} favori{d.favorites > 1 ? "s" : ""}
+                ♥ {d.favorites}
+                {d.favorites > 1
+                  ? m.profile_favorite_many()
+                  : m.profile_favorite_one()}
               </p>
             {/if}
           {:else}
-            <p class="text-dim mt-1 text-sm">Privé</p>
+            <p class="text-dim mt-1 text-sm">{m.common_private()}</p>
           {/if}
         </svelte:element>
       {/each}
@@ -559,7 +574,7 @@
          the streak above (activityStats: MEDIA Activité facet; social counts:
          each type's own visibility rule). -->
     {#if (profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null || profile.activityStats.topGenres.length > 0)) || profile.reviewsCount > 0 || profile.commentsCount > 0 || profile.listsCount > 0}
-      <SectionLabel label="En chiffres" class="mt-8 mb-3" />
+      <SectionLabel label={m.profile_stats_section()} class="mt-8 mb-3" />
 
       {#if profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null)}
         <div
@@ -570,7 +585,9 @@
               <p class="font-display text-xl font-extrabold tracking-tight">
                 {watchDays}<span class="text-dim text-xs font-bold"> j</span>
               </p>
-              <p class="text-dim mt-0.5 text-xs">Temps cumulé</p>
+              <p class="text-dim mt-0.5 text-xs">
+                {m.profile_watch_time_cumulative()}
+              </p>
             </div>
           {/if}
           {#if profile.activityStats.mostActiveYear !== null}
@@ -578,7 +595,9 @@
               <p class="font-display text-xl font-extrabold tracking-tight">
                 {profile.activityStats.mostActiveYear}
               </p>
-              <p class="text-dim mt-0.5 text-xs">Année la plus active</p>
+              <p class="text-dim mt-0.5 text-xs">
+                {m.profile_most_active_year()}
+              </p>
             </div>
           {/if}
         </div>
@@ -603,14 +622,17 @@
               <span class="timecode text-fg font-bold"
                 >{profile.reviewsCount}</span>
               <span class="text-dim ml-1 text-xs"
-                >{profile.reviewsCount > 1 ? "critiques" : "critique"}</span>
+                >{profile.reviewsCount > 1
+                  ? m.profile_reviews_count_plural()
+                  : m.profile_reviews_count_singular()}</span>
             </div>
           {/if}
           {#if profile.commentsCount > 0}
             <div>
               <span class="timecode text-fg font-bold"
                 >{profile.commentsCount}</span>
-              <span class="text-dim ml-1 text-xs">commentaires</span>
+              <span class="text-dim ml-1 text-xs"
+                >{m.profile_comments_count()}</span>
             </div>
           {/if}
           {#if profile.listsCount > 0}
@@ -618,7 +640,9 @@
               <span class="timecode text-fg font-bold"
                 >{profile.listsCount}</span>
               <span class="text-dim ml-1 text-xs"
-                >{profile.listsCount > 1 ? "listes" : "liste"}</span>
+                >{profile.listsCount > 1
+                  ? m.profile_lists_count_plural()
+                  : m.profile_lists_count_singular()}</span>
             </div>
           {/if}
         </div>
@@ -628,7 +652,7 @@
     <!-- Mini activity heatmap teaser (video-only) — the card itself isn't a
          link, only the "voir tout" line is, matching the mockup. -->
     {#if profile.activityStats.visible && profile.activityStats.heatmap.some((d) => d.count > 0)}
-      <SectionLabel label="Activité" class="mt-8 mb-3" />
+      <SectionLabel label={m.profile_activity_section()} class="mt-8 mb-3" />
       <div class="card flex flex-wrap items-center gap-3.5 p-4">
         <CalendarHeatmap
           days={profile.activityStats.heatmap}
@@ -636,14 +660,16 @@
           compact />
         <div class="text-sm">
           <p>
-            Actif <b class="font-bold">{activeRecentDays} jours</b> ces 3
-            derniers mois{#if firstActivity}
-              · première trace le {firstActivity}{/if}
+            {m.profile_activity_summary_prefix()}
+            <b class="font-bold"
+              >{m.profile_activity_days({ days: activeRecentDays })}</b>
+            {m.profile_activity_summary_suffix()}{#if firstActivity}
+              {m.profile_activity_first_trace({ date: firstActivity })}{/if}
           </p>
           <a
             href="/stats"
             class="text-accent mt-0.5 inline-block text-xs font-bold hover:underline">
-            Voir toute l’activité dans les statistiques →
+            {m.profile_activity_view_stats()}
           </a>
         </div>
       </div>
@@ -652,12 +678,14 @@
     {#if appConfig.socialEnabled && listTiles.length > 0}
       <section class="mt-10">
         <div class="mb-3 flex items-center justify-between">
-          <h2 class="font-display text-xl font-bold">Listes</h2>
+          <h2 class="font-display text-xl font-bold">
+            {m.profile_lists_title()}
+          </h2>
           {#if selfManage && lists.length > 0}
             <a
               href="/lists"
               class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold md:hidden">
-              Gérer
+              {m.profile_reviews_manage()}
               <Icon name="chevron-right" class="h-4 w-4" />
             </a>
           {/if}
@@ -668,7 +696,8 @@
               <div
                 class="card hover:border-accent text-dim hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 transition-colors">
                 <Icon name="list" class="h-6 w-6" />
-                <span class="text-xs font-semibold">Tout voir</span>
+                <span class="text-xs font-semibold"
+                  >{m.profile_lists_view_all()}</span>
               </div>
             </a>
           {/if}
@@ -683,7 +712,8 @@
                     <div
                       class="card text-dim hover:border-accent hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 border-dashed transition-colors">
                       <Icon name="plus" class="h-6 w-6" />
-                      <span class="text-xs font-semibold">Créer</span>
+                      <span class="text-xs font-semibold"
+                        >{m.profile_lists_create()}</span>
                     </div>
                   </button>
                 {:else}
@@ -719,7 +749,9 @@
 
 {#if connectionsKind}
   <Modal
-    title={connectionsKind === "followers" ? "Abonnés" : "Abonnements"}
+    title={connectionsKind === "followers"
+      ? m.profile_connections_followers_title()
+      : m.profile_connections_following_title()}
     onclose={() => (connectionsKind = null)}>
     {#if connectionsLoading}
       <div class="space-y-3">
@@ -733,8 +765,8 @@
     {:else if connections.length === 0}
       <p class="text-dim text-sm">
         {connectionsKind === "followers"
-          ? "Personne ne suit ce profil pour l'instant."
-          : "Ce profil ne suit personne pour l'instant."}
+          ? m.profile_connections_empty_followers()
+          : m.profile_connections_empty_following()}
       </p>
     {:else}
       <ul class="max-h-96 space-y-1 overflow-y-auto">
@@ -761,9 +793,9 @@
 
 {#if confirmBlock && profile}
   <ConfirmationModal
-    title="Bloquer {profile.displayName}"
-    message="{profile.displayName} ne pourra plus vous suivre ni voir votre contenu, et vous ne verrez plus le sien. Vous pourrez débloquer à tout moment."
-    confirmLabel="Bloquer"
+    title={m.profile_block_confirm_title({ name: profile.displayName })}
+    message={m.profile_block_confirm_message({ name: profile.displayName })}
+    confirmLabel={m.profile_block()}
     danger
     {busy}
     onConfirm={confirmBlockUser}

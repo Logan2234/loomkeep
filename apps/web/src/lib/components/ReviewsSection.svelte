@@ -7,6 +7,7 @@
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
@@ -110,16 +111,16 @@
   <div class="mb-3 flex items-center justify-between gap-2">
     <h2 class="font-display mb-3 text-xl font-bold">
       {#if appConfig.socialEnabled}
-        Critiques de la communauté ({othersReviews.length})
+        {m.reviews_section_community_title({ count: othersReviews.length })}
       {:else}
-        Ma critique
+        {m.reviews_section_my_review_title()}
       {/if}
     </h2>
     {#if myReviewLoaded}
       <button
         class="btn btn-ghost btn-sm shrink-0"
         onclick={() => (editing = true)}>
-        {myReview ? "Éditer" : "Ajouter"}
+        {myReview ? m.reviews_section_edit() : m.reviews_section_add()}
       </button>
     {/if}
   </div>
@@ -134,13 +135,17 @@
             size={32} />
         {/if}
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-semibold">Votre critique</p>
+          <p class="truncate text-sm font-semibold">
+            {m.reviews_section_your_review()}
+          </p>
           {#if appConfig.socialEnabled}
             <p class="timecode flex items-center gap-2 text-xs">
               <span
-                >{myReview.visibility === "PUBLIC" ? "Public" : "Amis"}</span>
+                >{myReview.visibility === "PUBLIC"
+                  ? m.profile_reviews_public()
+                  : m.profile_reviews_friends()}</span>
               {#if myReview.voteScore !== 0}
-                <span aria-label="Score des votes reçus"
+                <span aria-label={m.reviews_section_vote_score_label()}
                   >{myReview.voteScore > 0
                     ? `+${myReview.voteScore}`
                     : myReview.voteScore}</span>
@@ -162,7 +167,7 @@
   {#if appConfig.socialEnabled}
     {#if communityLoaded && othersReviews.length === 0}
       <p class="text-dim text-sm">
-        Aucune critique de la communauté pour l'instant.
+        {m.reviews_section_empty_community()}
       </p>
     {:else if othersReviews.length > 0}
       <ul class="flex flex-col gap-2">
@@ -176,7 +181,7 @@
                   'UP'
                     ? 'text-accent'
                     : 'text-dim'}"
-                  aria-label="Voter pour"
+                  aria-label={m.reviews_section_vote_up()}
                   aria-pressed={review.myVote === "UP"}
                   disabled={votingId === review.id}
                   onclick={() => castVote(review, "UP")}>
@@ -191,7 +196,7 @@
                   'DOWN'
                     ? 'text-accent'
                     : 'text-dim'}"
-                  aria-label="Voter contre"
+                  aria-label={m.reviews_section_vote_down()}
                   aria-pressed={review.myVote === "DOWN"}
                   disabled={votingId === review.id}
                   onclick={() => castVote(review, "DOWN")}>
