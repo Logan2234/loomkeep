@@ -22,7 +22,6 @@ export class PublicStatsController {
   async getSummary(): Promise<{
     status: "ok";
     userCount: number;
-    mediaCount: number;
     openReports: number;
     newUsers7d: number;
     operational: string;
@@ -36,10 +35,9 @@ export class PublicStatsController {
     // getServicesStatus() is the odd one out: it live-probes every external
     // provider (TMDB, AniList, IGDB...) with no caching, so this endpoint
     // now costs one such probe round on every ~10s Homepage poll too.
-    const [userCount, mediaCount, openReports, newUsers7d, { services }] =
+    const [userCount, openReports, newUsers7d, { services }] =
       await Promise.all([
         this.prisma.user.count(),
-        this.prisma.libraryEntry.count(),
         this.prisma.report.count({ where: { status: "PENDING" } }),
         this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
         this.admin.getServicesStatus(),
@@ -60,7 +58,6 @@ export class PublicStatsController {
       // mapping+remapping it — found live, twice.
       status: "ok",
       userCount,
-      mediaCount,
       openReports,
       newUsers7d,
       operational: `${healthy.length}/${live.length}`,

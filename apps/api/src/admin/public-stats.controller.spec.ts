@@ -5,7 +5,6 @@ import { PublicStatsController } from "./public-stats.controller";
 function makeController(
   counts: {
     userCount: number;
-    mediaCount: number;
     openReports: number;
     newUsers7d: number;
   },
@@ -21,7 +20,6 @@ function makeController(
     .mockResolvedValueOnce(counts.newUsers7d);
   const prisma = {
     user: { count: userCountMock },
-    libraryEntry: { count: jest.fn().mockResolvedValue(counts.mediaCount) },
     report: { count: jest.fn().mockResolvedValue(counts.openReports) },
   } as unknown as PrismaService;
   const admin = {
@@ -43,14 +41,12 @@ describe("PublicStatsController.getSummary", () => {
     process.env.GIT_SHA = "a1b2c3d4e5f6";
     const controller = makeController({
       userCount: 3,
-      mediaCount: 12,
       openReports: 1,
       newUsers7d: 2,
     });
     await expect(controller.getSummary()).resolves.toEqual({
       status: "ok",
       userCount: 3,
-      mediaCount: 12,
       openReports: 1,
       newUsers7d: 2,
       operational: "0/0",
@@ -62,14 +58,12 @@ describe("PublicStatsController.getSummary", () => {
     delete process.env.GIT_SHA;
     const controller = makeController({
       userCount: 0,
-      mediaCount: 0,
       openReports: 0,
       newUsers7d: 0,
     });
     await expect(controller.getSummary()).resolves.toEqual({
       status: "ok",
       userCount: 0,
-      mediaCount: 0,
       openReports: 0,
       newUsers7d: 0,
       operational: "0/0",
@@ -80,7 +74,6 @@ describe("PublicStatsController.getSummary", () => {
   it("counts configured-and-reachable-or-unprobed services, excluding comingSoon", async () => {
     const zeroCounts = {
       userCount: 0,
-      mediaCount: 0,
       openReports: 0,
       newUsers7d: 0,
     };

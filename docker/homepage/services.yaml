@@ -12,7 +12,7 @@
     - Backups:
         href: https://loomkeep.app/admin/backup
         description: Sauvegardes de la base de données
-        icon: mdi-shield-database-arrow-down
+        icon: mdi-database-arrow-down
     - Statistiques:
         href: https://loomkeep.app/admin/stats
         description: Vue d'ensemble de l'activité
@@ -22,14 +22,11 @@
           url: http://api:3000/api/public-stats/summary
           headers:
             Authorization: "Bearer {{HOMEPAGE_VAR_STATS_API_KEY}}"
-          columns: 5
           mappings:
             - field: userCount
               label: Utilisateurs
             - field: newUsers7d
               label: Nouveaux (7j)
-            - field: mediaCount
-              label: Médias suivis
             - field: openReports
               label: Signalements
             - field: operational
