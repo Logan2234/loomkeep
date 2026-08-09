@@ -2,6 +2,7 @@
   import { getFeedPreview } from "$lib/api/client";
   import { appConfig } from "$lib/config.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
   // Home-page teaser of the activity feed. Social-gated, best-effort, and hides
@@ -29,9 +30,9 @@
 {#if appConfig.socialEnabled && loaded && events.length > 0}
   <section class="card p-4">
     <div class="mb-4 flex items-baseline justify-between">
-      <p class="timecode text-xs uppercase">Dernières activités</p>
+      <p class="timecode text-xs uppercase">{m.home_activity_title()}</p>
       <a href="/feed" class="text-dim hover:text-fg text-sm font-semibold">
-        Voir le fil →
+        {m.home_activity_view_feed()}
       </a>
     </div>
     <ul class="flex flex-col gap-2">

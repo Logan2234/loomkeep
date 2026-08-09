@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ListItemTargetType } from "@loomkeep/shared";
+  import { m } from "$lib/paraglide/messages.js";
   import AddToListModal from "./AddToListModal.svelte";
   import Icon from "./Icon.svelte";
 
@@ -16,7 +17,8 @@
 </script>
 
 <button class="btn btn-ghost" onclick={() => (open = true)}>
-  <Icon name="list" class="h-4 w-4" /> Ajouter à une liste
+  <Icon name="list" class="h-4 w-4" />
+  {m.add_to_list_button()}
 </button>
 
 {#if open}

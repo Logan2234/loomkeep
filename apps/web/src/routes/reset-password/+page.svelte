@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import { ApiError, resetPassword } from "$lib/api/client";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 
   const token = $page.url.searchParams.get("token") ?? "";
 
@@ -16,7 +17,7 @@
     error = null;
 
     if (newPassword !== confirmPassword) {
-      error = "Les mots de passe ne correspondent pas";
+      error = m.auth_reset_password_mismatch();
       return;
     }
 
@@ -26,7 +27,9 @@
       await goto("/login");
     } catch (err) {
       error =
-        err instanceof ApiError ? err.message : "Réinitialisation impossible";
+        err instanceof ApiError
+          ? err.message
+          : m.auth_reset_password_error_fallback();
     } finally {
       loading = false;
     }
@@ -42,33 +45,35 @@
     </div>
 
     <div class="card flex flex-col gap-4 p-7">
-      <h1 class="font-display text-xl font-bold">Nouveau mot de passe</h1>
+      <h1 class="font-display text-xl font-bold">
+        {m.auth_reset_password_title()}
+      </h1>
 
       {#if !token}
         <p class="text-danger text-sm">
-          Lien invalide : aucun token trouvé dans l'URL.
+          {m.auth_reset_password_invalid_link()}
         </p>
       {:else}
         <form onsubmit={submit} class="flex flex-col gap-4">
           <PasswordInput
-            placeholder="Nouveau mot de passe (8 caractères min.)"
+            placeholder={m.auth_reset_password_new_placeholder()}
             bind:value={newPassword}
             minlength={8}
             required />
           <PasswordInput
-            placeholder="Confirmer le mot de passe"
+            placeholder={m.auth_reset_password_confirm_placeholder()}
             bind:value={confirmPassword}
             minlength={8}
             required />
           {#if error}<p class="text-danger text-sm">{error}</p>{/if}
           <button type="submit" class="btn btn-primary" disabled={loading}>
-            {loading ? "Enregistrement…" : "Réinitialiser"}
+            {loading ? m.common_save_loading() : m.auth_reset_password_action()}
           </button>
         </form>
       {/if}
 
       <p class="text-dim text-center text-sm">
-        <a href="/login" class="link-accent">Retour à la connexion</a>
+        <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
       </p>
     </div>
   </div>

@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
+
   let {
     value = null,
-    placeholder = "Notes personnelles…",
+    placeholder = m.notefield_placeholder(),
     onChange,
   }: {
     value?: string | null;
@@ -12,7 +14,7 @@
 
 <div class="flex flex-col gap-1.5">
   <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-    >Prise de note</span>
+    >{m.notefield_label()}</span>
 
   <textarea
     rows="3"

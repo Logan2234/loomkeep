@@ -3,6 +3,7 @@
   import { updateMe } from "$lib/api/auth";
   import { ApiError } from "$lib/api/core";
   import { auth } from "$lib/auth.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import type { MobileDestination } from "$lib/navigation";
@@ -17,6 +18,11 @@
 
   const MIN = 3;
   const MAX = 7;
+
+  const LOCALE_OPTIONS = [
+    { label: m.settings_language_fr(), value: "fr" },
+    { label: m.settings_language_en(), value: "en" },
+  ];
 
   let error = $state("");
   let saving = $state(false);
@@ -120,21 +126,14 @@
 
   <div>
     <p class="mb-2 font-semibold">{m.settings_language_label()}</p>
-    <div class="flex gap-2">
-      <button
-        class="chip inline-flex items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
-        class:chip-on={(auth.user?.locale ?? "fr") === "fr"}
-        disabled={localeSaving}
-        onclick={() => saveLocale("fr")}>
-        {m.settings_language_fr()}
-      </button>
-      <button
-        class="chip inline-flex items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
-        class:chip-on={auth.user?.locale === "en"}
-        disabled={localeSaving}
-        onclick={() => saveLocale("en")}>
-        {m.settings_language_en()}
-      </button>
+    <div
+      class:pointer-events-none={localeSaving}
+      class:opacity-50={localeSaving}>
+      <Combobox
+        label={m.settings_language_label()}
+        options={LOCALE_OPTIONS}
+        values={[auth.user?.locale ?? "fr"]}
+        onChange={(v) => saveLocale(v[0] as "fr" | "en")} />
     </div>
   </div>
 

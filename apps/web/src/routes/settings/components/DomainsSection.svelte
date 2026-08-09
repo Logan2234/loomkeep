@@ -1,8 +1,9 @@
 <script lang="ts">
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
-  import Switch from "$lib/components/Switch.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import type { IconName } from "$lib/types/icon-name";
   import { Domain } from "@loomkeep/shared";
 
   // Content domains the user composes the app from. Podcasts and board games
@@ -11,35 +12,23 @@
   const DOMAINS: {
     id: Domain;
     label: string;
-    desc: string;
+    icon: IconName;
     comingSoon?: boolean;
   }[] = [
-    {
-      id: Domain.MEDIA,
-      label: "Vidéo",
-      desc: "Films, séries et anime.",
-    },
-    { id: Domain.GAMES, label: "Jeux", desc: "Jeux vidéo." },
-    {
-      id: Domain.BOOKS,
-      label: "Livres",
-      desc: "Romans, BD, mangas.",
-    },
-    {
-      id: Domain.MUSIC,
-      label: "Musique",
-      desc: "Albums.",
-    },
+    { id: Domain.MEDIA, label: "Vidéo", icon: "tv" },
+    { id: Domain.GAMES, label: "Jeux", icon: "gamepad" },
+    { id: Domain.BOOKS, label: "Livres", icon: "book" },
+    { id: Domain.MUSIC, label: "Musique", icon: "music" },
     {
       id: Domain.PODCASTS,
       label: "Podcasts",
-      desc: "Émissions et épisodes.",
+      icon: "podcast",
       comingSoon: true,
     },
     {
       id: Domain.BOARDGAMES,
       label: "Jeux de société",
-      desc: "Jeux de plateau.",
+      icon: "boardgame",
       comingSoon: true,
     },
   ];
@@ -72,36 +61,27 @@
       Choisis les univers présents dans ton app. Ce que tu masques disparaît de
       la navigation.
     </p>
-    <div class="divide-border divide-y">
+    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
       {#each DOMAINS as d (d.id)}
         {@const on = auth.user.enabledDomains.includes(d.id)}
         {@const isLast = on && auth.user.enabledDomains.length === 1}
-        <div
-          class="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-          <div>
-            <p class="flex items-center gap-2 font-semibold">
-              {d.label}
-              {#if d.comingSoon}
-                <span
-                  class="bg-surface-2 text-dim rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
-                  Bientôt
-                </span>
-              {/if}
-            </p>
-            <p class="text-dim text-sm">{d.desc}</p>
-          </div>
-          <span
-            class="shrink-0"
-            title={isLast
-              ? "Au moins un domaine doit rester actif."
-              : undefined}>
-            <Switch
-              label={d.label}
-              checked={on}
-              disabled={isLast}
-              onChange={() => toggleDomain(d.id)} />
-          </span>
-        </div>
+        <button
+          type="button"
+          class="border-border relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors disabled:pointer-events-none disabled:opacity-50 {on
+            ? 'border-accent bg-accent/10 text-fg'
+            : 'text-dim hover:bg-surface-2'}"
+          disabled={isLast}
+          title={isLast ? "Au moins un domaine doit rester actif." : undefined}
+          onclick={() => toggleDomain(d.id)}>
+          {#if d.comingSoon}
+            <span
+              class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
+              {m.common_coming_soon()}
+            </span>
+          {/if}
+          <Icon name={d.icon} class="h-5 w-5 {on ? 'text-accent' : ''}" />
+          <span class="text-xs font-semibold">{d.label}</span>
+        </button>
       {/each}
     </div>
     {#if domainsError}

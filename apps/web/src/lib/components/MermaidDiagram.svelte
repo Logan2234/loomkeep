@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import { theme } from "$lib/theme.svelte";
 
   let { code }: { code: string } = $props();
@@ -46,7 +47,7 @@
           error = null;
         }
       } catch {
-        if (!cancelled) error = "Diagramme invalide.";
+        if (!cancelled) error = m.mermaid_invalid();
       }
     })();
 
@@ -105,7 +106,7 @@
   <div class="mb-2 flex items-center justify-end gap-1.5">
     <button
       onclick={zoomOut}
-      aria-label="Réduire"
+      aria-label={m.mermaid_zoom_out()}
       class="border-border text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-md border text-sm">
       −
     </button>
@@ -114,19 +115,19 @@
     </span>
     <button
       onclick={zoomIn}
-      aria-label="Agrandir"
+      aria-label={m.mermaid_zoom_in()}
       class="border-border text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-md border text-sm">
       +
     </button>
     <button
       onclick={reset}
       class="border-border text-dim hover:text-fg ml-1 rounded-md border px-2 py-1 text-xs">
-      Réinitialiser
+      {m.mermaid_reset()}
     </button>
   </div>
   <div
     role="application"
-    aria-label="Diagramme déplaçable au clic-glisser"
+    aria-label={m.mermaid_pan_hint()}
     class="border-border bg-surface h-[75vh] touch-none overflow-hidden rounded-lg border {dragging
       ? 'cursor-grabbing'
       : 'cursor-grab'}"

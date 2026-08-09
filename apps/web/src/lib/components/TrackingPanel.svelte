@@ -3,6 +3,7 @@
   // header with the favourite toggle, domain-specific body via `children`,
   // footer with the "remove from library" action.
   import type { Snippet } from "svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
 
   let {
@@ -25,13 +26,17 @@
   <!-- Block header: label + favourite pinned top-right. -->
   <div class="flex items-center justify-between gap-2">
     <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-      >Mon suivi</span>
+      >{m.tracking_title()}</span>
     <button
       type="button"
       aria-pressed={favorite}
       disabled={saving}
-      title={favorite ? "Retirer des coups de cœur" : "Coup de cœur"}
-      aria-label={favorite ? "Retirer des coups de cœur" : "Coup de cœur"}
+      title={favorite
+        ? m.tracking_favorite_remove()
+        : m.tracking_favorite_add()}
+      aria-label={favorite
+        ? m.tracking_favorite_remove()
+        : m.tracking_favorite_add()}
       onclick={onToggleFavorite}
       class="rounded-full p-1.5 transition-colors disabled:opacity-50 {favorite
         ? 'text-accent'
@@ -48,7 +53,7 @@
       class="text-dim hover:text-danger text-sm font-medium underline-offset-4 transition-colors hover:underline disabled:opacity-50"
       disabled={saving}
       onclick={onRemove}>
-      Retirer de ma bibliothèque
+      {m.tracking_remove()}
     </button>
   </div>
 </div>
