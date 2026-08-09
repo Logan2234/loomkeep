@@ -360,18 +360,30 @@
           {#if selectedTemplate && selectedTemplate.fields.length > 0}
             <div class="card grid gap-3 p-4 sm:grid-cols-2">
               {#each selectedTemplate.fields as f (f.key)}
-                <div>
+                <div class={f.multiline ? "sm:col-span-2" : ""}>
                   <label
                     for="field-{f.key}"
                     class="text-dim mb-1 block text-xs font-semibold">
                     {f.label}
                   </label>
-                  <input
-                    id="field-{f.key}"
-                    type="text"
-                    value={fieldValues[f.key] ?? f.default}
-                    oninput={(e) => onFieldInput(f.key, e.currentTarget.value)}
-                    class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+                  {#if f.multiline}
+                    <textarea
+                      id="field-{f.key}"
+                      value={fieldValues[f.key] ?? f.default}
+                      oninput={(e) =>
+                        onFieldInput(f.key, e.currentTarget.value)}
+                      rows="4"
+                      class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm"
+                    ></textarea>
+                  {:else}
+                    <input
+                      id="field-{f.key}"
+                      type="text"
+                      value={fieldValues[f.key] ?? f.default}
+                      oninput={(e) =>
+                        onFieldInput(f.key, e.currentTarget.value)}
+                      class="border-border bg-surface w-full rounded-lg border px-3 py-2 text-sm" />
+                  {/if}
                 </div>
               {/each}
             </div>

@@ -8,6 +8,7 @@ export * from "./dto/stats";
 export * from "./dto/review";
 export * from "./dto/comment";
 export * from "./dto/report";
+export * from "./dto/changelog";
 export * from "./dto/auth";
 export * from "./dto/book";
 export * from "./dto/catalog";

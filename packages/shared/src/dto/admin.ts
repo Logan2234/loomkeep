@@ -64,6 +64,8 @@ export interface MailTemplateFieldDto {
   key: string;
   label: string;
   default: string;
+  /** Renders as a `<textarea>` in the admin gallery instead of a single-line input. */
+  multiline?: boolean;
 }
 
 /** One entry in the admin email-template gallery. */

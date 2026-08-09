@@ -216,6 +216,7 @@ export class UsersController {
         allowAdultContent: nextAllowAdultContent,
         notifyEmail: dto.notifyEmail,
         notifyPush: dto.notifyPush,
+        notifyNewsletter: dto.notifyNewsletter,
         enabledDomains: dto.enabledDomains,
         mobileNavShortcuts: dto.mobileNavShortcuts,
         // Empty string clears the bio back to null.

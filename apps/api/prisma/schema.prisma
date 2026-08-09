@@ -327,6 +327,9 @@ model User {
   // Communication preferences: which channels deliver "new episode" alerts.
   notifyEmail       Boolean   @default(false)
   notifyPush        Boolean   @default(false)
+  // Opt-in to the release newsletter (ChangelogEntry email) — separate from
+  // notifyEmail, which is scoped to "new episode" alerts, not marketing.
+  notifyNewsletter  Boolean   @default(false)
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
   emailVerified     Boolean   @default(false)
@@ -837,6 +840,25 @@ model BackupFile {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// User-facing release notes (curated French summary), distinct from
+// CHANGELOG.md (technical, English, git history) — one entry per minor/major
+// version bump, authored by hand via /admin/changelog. Feeds the public
+// /changelog page and, once explicitly sent, the newsletter email.
+model ChangelogEntry {
+  id          String    @id @default(cuid())
+  version     String    @unique
+  title       String
+  highlights  String[]
+  publishedAt DateTime  @default(now())
+  // Null until an admin explicitly sends the newsletter for this entry (see
+  // ChangelogService.send) — resendable, so this is "last sent at", not a flag.
+  emailSentAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([publishedAt])
 }
 
 // One row per external provider per UTC day — the raw series the /admin/services

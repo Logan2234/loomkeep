@@ -203,6 +203,7 @@ export class TvTimeImportSource implements ImportSource<ParsedImport> {
 
     for (const show of includedShows) {
       const match = this.resolvedMatch(showKey(show), decisions, matchByKey);
+
       if (match) {
         try {
           await this.writeShow(userId, show, match, tally);
@@ -210,11 +211,13 @@ export class TvTimeImportSource implements ImportSource<ParsedImport> {
           throw this.contextualize(error, show.title);
         }
       }
+
       progress.tick();
     }
 
     for (const movie of includedMovies) {
       const match = this.resolvedMatch(movieKey(movie), decisions, matchByKey);
+
       if (match) {
         try {
           await this.writeMovie(userId, movie, match, tally);
@@ -222,6 +225,7 @@ export class TvTimeImportSource implements ImportSource<ParsedImport> {
           throw this.contextualize(error, movie.title);
         }
       }
+
       progress.tick();
     }
 

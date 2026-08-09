@@ -87,6 +87,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     match: (p) => p.startsWith("/admin/security"),
   },
   {
+    href: "/admin/changelog",
+    label: "Changelog",
+    description: "Notes de version publiques et envoi de la newsletter.",
+    icon: "sparkles",
+    match: (p) => p.startsWith("/admin/changelog"),
+  },
+  {
     href: "/admin/reports",
     label: "Signalements",
     description: "File de modération des commentaires signalés.",

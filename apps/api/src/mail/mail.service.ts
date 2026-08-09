@@ -16,6 +16,16 @@ export interface MailTemplateField {
   key: string;
   label: string;
   default: string;
+  /** Renders as a `<textarea>` in the admin gallery instead of a single-line input. */
+  multiline?: boolean;
+}
+
+/** Splits an admin-edited multiline field into non-empty, trimmed lines. */
+function splitLines(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 export interface MailTemplateInfo {
@@ -118,6 +128,26 @@ export class MailService {
         { key: "path", label: "Chemin", default: "/media/series/12345" },
       ],
       build: (v) => this.buildNewEpisode(v.mediaTitle, v.body, v.path),
+    },
+    newsletter: {
+      label: "Newsletter (nouveautés)",
+      fields: [
+        { key: "version", label: "Version", default: "1.2.0" },
+        {
+          key: "title",
+          label: "Titre",
+          default: "Photos de profil & partage",
+        },
+        {
+          key: "highlights",
+          label: "Nouveautés (une par ligne)",
+          default:
+            "Upload de photo de profil, recadrage inclus\nPartage de profil : lien direct ou QR code",
+          multiline: true,
+        },
+      ],
+      build: (v) =>
+        this.buildNewsletter(v.version, v.title, splitLines(v.highlights)),
     },
     reportsDigest: {
       label: "Digest des signalements",
@@ -272,6 +302,19 @@ export class MailService {
     await this.send({ to, ...this.buildReportsDigest(pendingCount) });
   }
 
+  /** Release newsletter — explicitly triggered from a ChangelogEntry, never automatic. */
+  async sendNewsletter(
+    to: string,
+    version: string,
+    title: string,
+    highlights: string[],
+  ): Promise<void> {
+    await this.send({
+      to,
+      ...this.buildNewsletter(version, title, highlights),
+    });
+  }
+
   private buildReportsDigest(pendingCount: number): TemplateBody {
     const url = `${this.webOrigin}/admin/reports`;
     const label = pendingCount > 1 ? "signalements" : "signalement";
@@ -390,8 +433,43 @@ export class MailService {
     };
   }
 
-  /** Wraps mail body HTML in the shared Loomkeep header/footer. Inline CSS only — mail clients don't load stylesheets. */
-  private wrapEmail(title: string, bodyHtml: string): string {
+  private buildNewsletter(
+    version: string,
+    title: string,
+    highlights: string[],
+  ): TemplateBody {
+    const entryUrl = `${this.webOrigin}/changelog#v${version}`;
+    const prefsUrl = `${this.webOrigin}/settings#communications`;
+    const listHtml = highlights
+      .map(
+        (h) =>
+          `<li style="border-left:2px solid ${COLOR_ACCENT};padding:2px 0 2px 12px;margin-bottom:10px;list-style:none;">${h}</li>`,
+      )
+      .join("");
+    const listText = highlights.map((h) => `• ${h}`).join("\n");
+
+    return {
+      subject: `Loomkeep ${version} — ${title}`,
+      text: `Nouvelle version · v${version}\n${title}\n\n${listText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}`,
+      html: this.wrapEmail(
+        title,
+        `<ul style="margin:0 0 24px;padding:0;">${listHtml}</ul>
+         ${this.button(entryUrl, "Voir la nouveauté")}
+         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">Tu reçois cet email car tu es abonné aux nouveautés · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes préférences</a></p>`,
+        `Nouvelle version · v${version}`,
+      ),
+    };
+  }
+
+  /**
+   * Wraps mail body HTML in the shared Loomkeep header/footer. Inline CSS
+   * only — mail clients don't load stylesheets. `eyebrow` is a small label
+   * above the title (e.g. a release stamp) — the mono stack matches the
+   * "timecode" convention used for version/episode numbers across the app
+   * (see DESIGN.md), degrading to a generic monospace font in mail clients
+   * that don't ship Space Mono.
+   */
+  private wrapEmail(title: string, bodyHtml: string, eyebrow?: string): string {
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOR_BG};padding:32px 0;font-family:Arial,Helvetica,sans-serif;">
   <tr>
     <td align="center">
@@ -403,6 +481,11 @@ export class MailService {
         </tr>
         <tr>
           <td style="padding:32px;color:${COLOR_TEXT};font-size:15px;line-height:1.6;">
+            ${
+              eyebrow
+                ? `<p style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${COLOR_ACCENT};margin:0 0 8px;">${eyebrow}</p>`
+                : ""
+            }
             <h1 style="font-size:19px;margin:0 0 16px;color:${COLOR_ACCENT};">${title}</h1>
             ${bodyHtml}
           </td>
