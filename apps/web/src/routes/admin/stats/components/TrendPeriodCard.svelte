@@ -7,6 +7,7 @@
   // overrides it locally, and remounting the section drops the override.
   import { ApiError } from "$lib/api/client";
   import TrendChart from "$lib/components/TrendChart.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
 
@@ -29,16 +30,16 @@
   } = $props();
 
   const PERIODS: { value: TrendPeriod; label: string }[] = [
-    { value: "day", label: "Jour" },
-    { value: "week", label: "Semaine" },
-    { value: "month", label: "Mois" },
-    { value: "year", label: "Année" },
+    { value: "day", label: m.admin_trend_period_day() },
+    { value: "week", label: m.admin_trend_period_week() },
+    { value: "month", label: m.admin_trend_period_month() },
+    { value: "year", label: m.admin_trend_period_year() },
   ];
   const CADENCE: Record<TrendPeriod, string> = {
-    day: "Par jour · 30 derniers.",
-    week: "Par semaine · 12 dernières.",
-    month: "Par mois · 12 derniers.",
-    year: "Par année · 5 dernières.",
+    day: m.admin_trend_cadence_day(),
+    week: m.admin_trend_cadence_week(),
+    month: m.admin_trend_cadence_month(),
+    year: m.admin_trend_cadence_year(),
   };
 
   let picked = $state<T | null>(null);

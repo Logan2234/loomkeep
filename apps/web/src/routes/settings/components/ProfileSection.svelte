@@ -6,6 +6,7 @@
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 
   let birthDate = $state(auth.user?.birthDate ?? "");
   let birthDateStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
@@ -26,7 +27,7 @@
     } catch (err) {
       birthDateStatus = "error";
       birthDateError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     }
   }
 
@@ -53,7 +54,7 @@
       await updateMe({ allowAdultContent: !auth.user.allowAdultContent });
     } catch (err) {
       adultContentError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     }
   }
 </script>

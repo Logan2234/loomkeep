@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import Modal from "./Modal.svelte";
 
   // Confirm a consequential action (e.g. removing a library entry) in-place,
@@ -7,8 +8,8 @@
   let {
     title,
     message,
-    confirmLabel = "Confirmer",
-    cancelLabel = "Annuler",
+    confirmLabel = m.common_confirm(),
+    cancelLabel = m.common_cancel(),
     danger = false,
     busy = false,
     onConfirm,

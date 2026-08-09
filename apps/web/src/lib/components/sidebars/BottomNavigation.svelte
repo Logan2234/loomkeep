@@ -7,6 +7,7 @@
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
   } from "$lib/navigation";
+  import { m } from "$lib/paraglide/messages.js";
 
   // The user's stored order (falls back to the default set), gated by enabled
   // domains / admin role at render time — a shortcut for a since-disabled domain
@@ -39,7 +40,7 @@
     {#if item.id === "menu"}
       <button
         onclick={openMenu}
-        aria-label="Ouvrir le menu"
+        aria-label={m.nav_open_menu()}
         class="text-dim relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[0.62rem] font-semibold">
         <Icon name={item.icon} class="h-6 w-6" />
         {item.label}

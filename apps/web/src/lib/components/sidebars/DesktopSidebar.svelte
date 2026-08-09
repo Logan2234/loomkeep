@@ -9,6 +9,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import { NAVIGATION } from "$lib/navigation";
+  import { m } from "$lib/paraglide/messages.js";
 
   // Pinned = stays open regardless of hover, persisted. Unpinned = follows the
   // mouse (hover-only), as before.
@@ -88,12 +89,8 @@
         <button
           type="button"
           onclick={togglePinned}
-          title={pinned
-            ? "Désépingler le panneau"
-            : "Épingler le panneau ouvert"}
-          aria-label={pinned
-            ? "Désépingler le panneau"
-            : "Épingler le panneau ouvert"}
+          title={pinned ? m.nav_unpin_panel() : m.nav_pin_panel()}
+          aria-label={pinned ? m.nav_unpin_panel() : m.nav_pin_panel()}
           aria-pressed={pinned}
           class="hover:bg-surface-2 text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors">
           <Icon name={pinned ? "pin-filled" : "pin"} class="h-4 w-4" />
@@ -110,7 +107,7 @@
           <a
             href="/admin"
             aria-current={page.url.pathname === "/admin" ? "page" : undefined}
-            title={expanded ? undefined : "Vue d’ensemble"}
+            title={expanded ? undefined : m.nav_overview()}
             class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {page
               .url.pathname === '/admin'
               ? 'bg-accent/15 text-accent'
@@ -122,14 +119,14 @@
               class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
                 ? 'opacity-100'
                 : 'opacity-0'}">
-              Vue d’ensemble
+              {m.nav_overview()}
             </span>
           </a>
 
           {#if expanded}
             <div
               class="text-dim sticky top-0 px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-[0.13em] uppercase">
-              Administration
+              {m.nav_administration()}
             </div>
           {:else}
             <div
@@ -182,7 +179,9 @@
               {#if item.comingSoon}
                 <!-- Planned domain: non-clickable, with a "Bientôt" badge. -->
                 <div
-                  title={expanded ? undefined : `${item.label} — bientôt`}
+                  title={expanded
+                    ? undefined
+                    : m.nav_coming_soon_title({ label: item.label })}
                   class="text-dim/70 flex shrink-0 cursor-default items-center overflow-hidden rounded-xl">
                   <span class="grid h-10 w-10 shrink-0 place-items-center">
                     <Icon name={item.icon} class="h-5 w-5" />
@@ -195,7 +194,7 @@
                     </span>
                     <span
                       class="bg-surface-2 text-dim ml-auto rounded-full px-2 py-0.5 text-[0.6rem] font-bold whitespace-nowrap">
-                      Bientôt
+                      {m.common_coming_soon()}
                     </span>
                   </span>
                 </div>
@@ -247,7 +246,7 @@
       {#if auth.isAdmin && !inAdmin}
         <a
           href="/admin"
-          title={expanded ? undefined : "Admin"}
+          title={expanded ? undefined : m.nav_admin()}
           aria-current={page.url.pathname.startsWith("/admin")
             ? "page"
             : undefined}
@@ -263,7 +262,7 @@
             class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
               ? 'opacity-100'
               : 'opacity-0'}">
-            Admin
+            {m.nav_admin()}
           </span>
         </a>
       {/if}
@@ -295,7 +294,7 @@
       {:else}
         <a
           href="/"
-          title={expanded ? undefined : "Retour à l’application"}
+          title={expanded ? undefined : m.nav_back_to_app()}
           class="hover:bg-surface-2 hover:text-fg my-1 flex w-full items-center overflow-hidden rounded-xl transition-colors">
           <span class="grid h-10 w-10 shrink-0 place-items-center">
             <Icon name="chevron-left" class="h-5 w-5" />
@@ -304,7 +303,7 @@
             class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
               ? 'opacity-100'
               : 'opacity-0'}">
-            Application
+            {m.nav_app_label()}
           </span>
         </a>
       {/if}

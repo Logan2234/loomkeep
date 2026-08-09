@@ -27,6 +27,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { formatDate } from "$lib/format";
   import { createLibraryEntryActions } from "$lib/library-entry";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
@@ -74,7 +75,10 @@
     getBookDetail(SOURCE, i)
       .then((result) => (detail = result))
       .catch((err) => {
-        error = err instanceof ApiError ? err.message : "Chargement impossible";
+        error =
+          err instanceof ApiError
+            ? err.message
+            : m.common_fetch_error_fallback();
       });
   });
 

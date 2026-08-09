@@ -23,6 +23,10 @@ import {
   ReviewVisibility as ReviewVisibilityValues,
 } from "@loomkeep/shared";
 
+// Mirrors `locales` in apps/web/project.inlang/settings.json — the set of
+// locales Paraglide actually has translations for.
+const ALLOWED_LOCALES = ["fr", "en"];
+
 export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsString()
@@ -75,4 +79,8 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsIn(Object.values(ListVisibilityValues))
   defaultListVisibility?: ListVisibility;
+
+  @IsOptional()
+  @IsIn(ALLOWED_LOCALES)
+  locale?: string;
 }

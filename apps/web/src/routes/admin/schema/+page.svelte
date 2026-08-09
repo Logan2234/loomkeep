@@ -4,6 +4,7 @@
   import Banner from "$lib/components/Banner.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { SchemaGraphResponseDto } from "@loomkeep/shared";
 
   type Tab = "erd" | "modules";
@@ -19,7 +20,8 @@
     try {
       data = await getAdminSchema();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Schéma indisponible";
+      error =
+        err instanceof ApiError ? err.message : m.admin_schema_fetch_error();
     } finally {
       loading = false;
     }
@@ -32,12 +34,12 @@
   const TABS: { value: Tab; label: string; regenerate: string }[] = [
     {
       value: "erd",
-      label: "Base de données",
+      label: m.admin_schema_tab_database(),
       regenerate: "pnpm --filter @loomkeep/api exec prisma generate",
     },
     {
       value: "modules",
-      label: "Modules",
+      label: m.admin_schema_tab_modules(),
       regenerate: "pnpm --filter @loomkeep/api run graph",
     },
   ];
@@ -49,8 +51,8 @@
 <div class="px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="library"
-    title="Schéma"
-    subtitle="Graphe de la base de données et des modules de l'app, générés localement."
+    title={m.admin_schema_title()}
+    subtitle={m.admin_schema_subtitle()}
     class="mb-6" />
 
   <div class="mb-5 flex flex-wrap gap-2">
@@ -73,14 +75,12 @@
   {:else}
     <div class="card text-dim p-6 text-sm">
       <p>
-        Pas encore généré pour cette session de développement (fichier absent de <code
-          class="text-fg">docs/</code
-        >, ignoré par git).
+        {m.admin_schema_not_generated()}
       </p>
-      <p class="mt-3">Génère-le avec :</p>
+      <p class="mt-3">{m.admin_schema_regenerate_hint()}</p>
       <pre
         class="border-border bg-surface-2 text-fg mt-2 overflow-x-auto rounded-lg border p-3 text-xs">{active.regenerate}</pre>
-      <p class="mt-3">Puis rafraîchis cette page.</p>
+      <p class="mt-3">{m.admin_schema_refresh_hint()}</p>
     </div>
   {/if}
 </div>

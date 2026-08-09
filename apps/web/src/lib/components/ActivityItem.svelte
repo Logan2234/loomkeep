@@ -1,39 +1,43 @@
 <script lang="ts">
   import Avatar from "$lib/components/Avatar.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
   let { event }: { event: ActivityEventDto } = $props();
 
-  // French action phrase for an event. PROGRESS uses its aggregated count.
+  // Localized action phrase for an event. PROGRESS/LIST_ITEM_ADDED use their
+  // aggregated count.
   function phrase(e: ActivityEventDto): string {
     switch (e.type) {
       case "ADDED":
-        return "a ajouté";
+        return m.activity_added();
       case "STARTED":
-        return "a commencé";
+        return m.activity_started();
       case "FINISHED":
-        return "a terminé";
+        return m.activity_finished();
       case "DROPPED":
-        return "a abandonné";
+        return m.activity_dropped();
       case "REWATCHED":
-        return "a relancé";
+        return m.activity_rewatched();
       case "FAVORITED":
-        return "a mis en favori";
+        return m.activity_favorited();
       case "REVIEWED":
-        return "a noté";
+        return m.activity_reviewed();
       case "PROGRESS":
-        return e.count > 1 ? `a avancé (${e.count})` : "a avancé dans";
+        return e.count > 1
+          ? m.activity_progress_count({ count: e.count })
+          : m.activity_progress();
       case "LIST_CREATED":
-        return "a créé une liste";
+        return m.activity_list_created();
       case "LIST_ITEM_ADDED":
         return e.count > 1
-          ? `a ajouté ${e.count} œuvres à une liste`
-          : "a ajouté une œuvre à une liste";
+          ? m.activity_list_item_added_count({ count: e.count })
+          : m.activity_list_item_added();
       case "LIST_SHARED":
-        return "a partagé une liste";
+        return m.activity_list_shared();
       default:
-        return "a mis à jour";
+        return m.activity_updated();
     }
   }
 

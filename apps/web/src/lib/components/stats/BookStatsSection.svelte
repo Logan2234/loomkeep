@@ -7,8 +7,8 @@
     DomainStatusBreakdownDto,
   } from "@loomkeep/shared";
   import { getBookStats } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";
+  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
   import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
@@ -16,23 +16,13 @@
     bookBreakdown,
   }: { bookBreakdown: DomainStatusBreakdownDto | undefined } = $props();
 
-  let books = $state<BookStatsDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  $effect(() => {
-    loading = true;
-    error = null;
-    getBookStats()
-      .then((b) => (books = b))
-      .catch((e) => {
-        error =
-          e instanceof ApiError
-            ? e.message
-            : "Statistiques livres indisponibles";
-      })
-      .finally(() => (loading = false));
-  });
+  const bookStats = statsResource<BookStatsDto>(
+    getBookStats,
+    "Statistiques livres indisponibles",
+  );
+  const books = $derived(bookStats.data);
+  const loading = $derived(bookStats.loading);
+  const error = $derived(bookStats.error);
 
   const readCount = $derived(
     bookBreakdown?.byStatus.find((s) => s.bucket === "DONE")?.count ?? 0,

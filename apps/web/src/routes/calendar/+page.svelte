@@ -5,6 +5,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
 
@@ -16,7 +17,10 @@
     getCalendar()
       .then((result) => (entries = result))
       .catch((err) => {
-        error = err instanceof ApiError ? err.message : "Chargement impossible";
+        error =
+          err instanceof ApiError
+            ? err.message
+            : m.common_fetch_error_fallback();
       })
       .finally(() => (loading = false));
   });

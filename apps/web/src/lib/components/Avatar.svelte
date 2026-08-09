@@ -1,5 +1,6 @@
 <script lang="ts">
   import { API_URL } from "$lib/api/core";
+  import { m } from "$lib/paraglide/messages.js";
 
   // Falls back to a deterministic identicon generated from a username when
   // no `url` (uploaded profile picture) is given. Séance-restrained: a single
@@ -54,7 +55,7 @@
   class="bg-surface-2 border-border/60 inline-block shrink-0 overflow-hidden rounded-md border {cls}"
   style="width:{size}px;height:{size}px"
   role="img"
-  aria-label="Avatar de {seed}">
+  aria-label={m.avatar_alt({ seed })}>
   {#if url}
     <img
       src="{API_URL}{url}"

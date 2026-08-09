@@ -4,6 +4,7 @@
   // `toast.success(...)` / `toast.error(...)` without prop-drilling.
   import { fly } from "svelte/transition";
   import Icon from "./Icon.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast, type ToastVariant } from "$lib/toast.svelte";
 
   const VARIANT_CLASSES: Record<ToastVariant, string> = {
@@ -25,7 +26,7 @@
       <span class="flex-1">{t.message}</span>
       <button
         type="button"
-        aria-label="Fermer"
+        aria-label={m.common_close()}
         class="shrink-0 opacity-70 hover:opacity-100"
         onclick={() => toast.dismiss(t.id)}>
         <Icon name="x" class="h-3.5 w-3.5" />

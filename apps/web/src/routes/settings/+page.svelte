@@ -3,6 +3,7 @@
   import { auth } from "$lib/auth.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import AppearanceSection from "./components/AppearanceSection.svelte";
   import CommunicationsSection from "./components/CommunicationsSection.svelte";
   import DangerZoneSection from "./components/DangerZoneSection.svelte";
@@ -27,15 +28,19 @@
   // Section table of contents (desktop only) — id must match the wrapper
   // below each section component. `social` entries hide when the flag is off.
   const SECTIONS: { id: string; label: string; social?: boolean }[] = [
-    { id: "securite", label: "Sécurité" },
-    { id: "contenu", label: "Contenu" },
-    { id: "confidentialite", label: "Confidentialité", social: true },
-    { id: "domaines", label: "Domaines" },
-    { id: "communications", label: "Communications" },
-    { id: "apparence", label: "Apparence" },
-    { id: "import", label: "Import" },
-    { id: "export", label: "Export" },
-    { id: "danger", label: "Zone de danger" },
+    { id: "securite", label: m.settings_section_security() },
+    { id: "contenu", label: m.settings_section_content() },
+    {
+      id: "confidentialite",
+      label: m.settings_section_privacy(),
+      social: true,
+    },
+    { id: "domaines", label: m.settings_section_domains() },
+    { id: "communications", label: m.settings_section_communications() },
+    { id: "apparence", label: m.settings_section_appearance() },
+    { id: "import", label: m.settings_section_import() },
+    { id: "export", label: m.settings_section_export() },
+    { id: "danger", label: m.settings_section_danger_zone() },
   ];
   const visibleSections = $derived(
     SECTIONS.filter((s) => !s.social || appConfig.socialEnabled),
@@ -93,7 +98,7 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10 lg:max-w-5xl">
-  <PageHeader icon="gear" title="Paramètres" class="mb-6" />
+  <PageHeader icon="gear" title={m.settings_title()} class="mb-6" />
 
   {#if auth.user}
     <div class="lg:grid lg:grid-cols-[180px_1fr] lg:gap-10">
@@ -151,6 +156,8 @@
   {/if}
 
   {#if version}
-    <p class="text-dim mt-6 text-center text-xs">Loomkeep v{version}</p>
+    <p class="text-dim mt-6 text-center text-xs">
+      {m.settings_version({ version })}
+    </p>
   {/if}
 </div>

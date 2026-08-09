@@ -3,6 +3,7 @@
   import { updateMe } from "$lib/api/auth";
   import { ApiError } from "$lib/api/core";
   import { auth } from "$lib/auth.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import type { MobileDestination } from "$lib/navigation";
@@ -11,13 +12,21 @@
     resolveBottomShortcuts,
     resolveShortcutChoices,
   } from "$lib/navigation";
+  import { m } from "$lib/paraglide/messages.js";
+  import { setLocale } from "$lib/paraglide/runtime.js";
   import { theme } from "$lib/theme.svelte";
 
   const MIN = 3;
   const MAX = 7;
 
+  const LOCALE_OPTIONS = [
+    { label: m.settings_language_fr(), value: "fr" },
+    { label: m.settings_language_en(), value: "en" },
+  ];
+
   let error = $state("");
   let saving = $state(false);
+  let localeSaving = $state(false);
 
   const gate = $derived({ isDomainEnabled, isAdmin: auth.isAdmin });
 
@@ -53,9 +62,23 @@
       await updateMe({ mobileNavShortcuts: next });
     } catch (err) {
       error =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       saving = false;
+    }
+  }
+
+  // No error UI here: reload on success (setLocale's default) makes an
+  // inline error dead on arrival anyway, and a failed save just leaves the
+  // toggle showing the still-current (unsaved) locale.
+  async function saveLocale(next: "fr" | "en") {
+    if (localeSaving || auth.user?.locale === next) return;
+    localeSaving = true;
+    try {
+      await updateMe({ locale: next });
+      setLocale(next);
+    } catch {
+      localeSaving = false;
     }
   }
 
@@ -98,6 +121,19 @@
         onclick={() => theme.mode !== "dark" && theme.toggle()}>
         <Icon name="moon" class="h-4 w-4" /> Sombre
       </button>
+    </div>
+  </div>
+
+  <div>
+    <p class="mb-2 font-semibold">{m.settings_language_label()}</p>
+    <div
+      class:pointer-events-none={localeSaving}
+      class:opacity-50={localeSaving}>
+      <Combobox
+        label={m.settings_language_label()}
+        options={LOCALE_OPTIONS}
+        values={[auth.user?.locale ?? "fr"]}
+        onChange={(v) => saveLocale(v[0] as "fr" | "en")} />
     </div>
   </div>
 

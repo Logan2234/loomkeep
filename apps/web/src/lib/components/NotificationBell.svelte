@@ -24,6 +24,7 @@
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
   import { notifications } from "$lib/notifications.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 
   let open = $state(false);
   let requests = $state<FollowRequestDto[]>([]);
@@ -116,7 +117,7 @@
     bind:this={buttonEl}
     type="button"
     onclick={toggle}
-    aria-label="Notifications"
+    aria-label={m.notif_title()}
     aria-expanded={open}
     class="border-border bg-surface/90 hover:border-accent/40 relative grid h-11 w-11 place-items-center rounded-full border shadow-lg backdrop-blur transition-colors md:shadow-sm">
     <Icon
@@ -136,7 +137,7 @@
       bind:this={panelEl}
       transition:fade={{ duration: 120 }}
       role="dialog"
-      aria-label="Notifications"
+      aria-label={m.notif_title()}
       class="border-border bg-surface absolute top-[calc(100%+0.5rem)] right-0 hidden max-h-[min(32rem,80vh)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border shadow-xl md:flex">
       {@render content()}
     </div>
@@ -158,14 +159,14 @@
   <header
     class="border-border flex items-center justify-between border-b px-4 py-3">
     <h2 id="notif-drawer-title" class="font-display text-base font-bold">
-      Notifications
+      {m.notif_title()}
     </h2>
     {#if notifications.items.length > 0}
       <button
         type="button"
         class="link-accent text-xs font-semibold"
         onclick={() => notifications.markAllRead()}>
-        Tout effacer
+        {m.notif_clear_all()}
       </button>
     {/if}
   </header>
@@ -175,7 +176,7 @@
       <div class="px-4 pt-3 pb-1">
         <span
           class="timecode text-[0.65rem] font-bold tracking-[0.14em] uppercase">
-          Demandes de suivi
+          {m.notif_follow_requests()}
         </span>
       </div>
       <ul>
@@ -200,7 +201,7 @@
             </div>
             <button
               type="button"
-              aria-label="Accepter"
+              aria-label={m.notif_accept()}
               disabled={busy === req.id}
               onclick={() => accept(req)}
               class="bg-accent text-accent-fg grid h-8 w-8 shrink-0 place-items-center rounded-full transition-opacity disabled:opacity-50">
@@ -208,7 +209,7 @@
             </button>
             <button
               type="button"
-              aria-label="Refuser"
+              aria-label={m.notif_reject()}
               disabled={busy === req.id}
               onclick={() => reject(req)}
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-50">
@@ -222,8 +223,7 @@
 
     {#if notifications.items.length === 0 && requests.length === 0}
       <p class="text-dim px-4 py-10 text-center text-sm">
-        Rien à signaler. Les demandes de suivi et l’activité de ta communauté
-        s’affichent ici.
+        {m.notif_empty()}
       </p>
     {:else if notifications.items.length > 0}
       <ul>

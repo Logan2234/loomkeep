@@ -14,6 +14,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import { resolveMenuGroups } from "$lib/navigation";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ComponentProps } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];
@@ -55,7 +56,7 @@
       <Icon name={dest.icon} class="h-6 w-6" />
       <span class="text-xs font-semibold">{dest.label}</span>
       <span class="text-dim/60 text-[0.6rem] font-bold tracking-wide uppercase">
-        Bientôt
+        {m.common_coming_soon()}
       </span>
     </div>
   {:else}
@@ -78,7 +79,7 @@
       <h2
         id="menu-sheet-title"
         class="font-display text-xl font-extrabold tracking-tight">
-        {inAdmin ? "Administration" : "Menu"}
+        {inAdmin ? m.nav_administration() : m.nav_menu()}
       </h2>
     </div>
 
@@ -97,7 +98,7 @@
           onclick={close}
           class="border-border bg-surface-2 hover:border-accent/40 text-fg mt-4 flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold">
           <Icon name="chevron-left" class="h-4 w-4" />
-          Retour à l’application
+          {m.nav_back_to_app()}
         </a>
       {:else}
         {#each groups as group (group.label)}

@@ -26,6 +26,7 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/ownership-sources";
+  import { m } from "$lib/paraglide/messages.js";
   import type {
     EntryStatus,
     MediaDetailDto,
@@ -142,7 +143,9 @@
             "Ce titre est réservé aux comptes ayant activé le contenu pour adultes (réglages).";
         } else {
           error =
-            err instanceof ApiError ? err.message : "Chargement impossible";
+            err instanceof ApiError
+              ? err.message
+              : m.common_fetch_error_fallback();
         }
       });
   });

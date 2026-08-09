@@ -4,6 +4,7 @@
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import type { JobDto } from "@loomkeep/shared";
 
@@ -18,7 +19,8 @@
     try {
       jobs = (await getAdminJobs()).jobs;
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Jobs indisponibles";
+      error =
+        err instanceof ApiError ? err.message : m.admin_jobs_fetch_error();
     } finally {
       loading = false;
     }
@@ -31,7 +33,7 @@
       await runAdminJob(key);
       await load();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Échec du déclenchement";
+      error = err instanceof ApiError ? err.message : m.admin_jobs_run_error();
     } finally {
       running = null;
     }
@@ -81,14 +83,14 @@
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="calendar"
-    title="Jobs & tâches"
-    subtitle="Historique des scans/rafraîchissements planifiés, déclenchables à la demande.">
+    title={m.admin_jobs_title()}
+    subtitle={m.admin_jobs_subtitle()}>
     {#snippet actions()}
       <button
         onclick={load}
         disabled={loading}
         class="btn btn-ghost shrink-0 disabled:opacity-50">
-        {loading ? "…" : "Rafraîchir"}
+        {loading ? "…" : m.admin_refresh()}
       </button>
     {/snippet}
   </PageHeader>
@@ -118,7 +120,9 @@
               onclick={() => runJob(job.key)}
               disabled={running === job.key}
               class="btn btn-primary shrink-0 text-xs disabled:opacity-50">
-              {running === job.key ? "En cours…" : "Lancer maintenant"}
+              {running === job.key
+                ? m.admin_jobs_running()
+                : m.admin_jobs_run_now()}
             </button>
           </div>
 
@@ -126,12 +130,14 @@
             <div class="card mb-2 grid grid-cols-3 gap-3 px-4 py-3">
               <StatFigure
                 value="{stats.failurePercent} %"
-                label="Taux d'échec"
+                label={m.admin_jobs_failure_rate()}
                 alert={stats.failurePercent > 0} />
               <StatFigure
                 value={durationLabel(stats.averageMs)}
-                label="Durée moyenne" />
-              <StatFigure value={stats.count} label="Runs analysés" />
+                label={m.admin_jobs_avg_duration()} />
+              <StatFigure
+                value={stats.count}
+                label={m.admin_jobs_runs_analyzed()} />
             </div>
           {/if}
 
@@ -143,10 +149,14 @@
                 'SUCCESS'
                   ? 'border-success/40 bg-success/10 text-success'
                   : 'border-danger/40 bg-danger/10 text-danger'}">
-                {last.status === "SUCCESS" ? "OK" : "Échec"}
+                {last.status === "SUCCESS"
+                  ? m.admin_status_ok()
+                  : m.admin_status_failure()}
               </span>
               <span
-                >Dernier run : {dateFmt.format(new Date(last.startedAt))}</span>
+                >{m.admin_jobs_last_run({
+                  date: dateFmt.format(new Date(last.startedAt)),
+                })}</span>
               {#if last.summary}<span>· {last.summary}</span>{/if}
             </div>
           {/if}
@@ -154,7 +164,7 @@
           {#if job.runs.length === 0}
             <p
               class="border-border bg-surface text-dim rounded-lg border p-4 text-sm">
-              Aucun run enregistré pour l'instant.
+              {m.admin_jobs_no_runs()}
             </p>
           {:else}
             <details class="card group">
@@ -163,7 +173,7 @@
                 <Icon
                   name="chevron-right"
                   class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
-                Historique ({job.runs.length})
+                {m.admin_jobs_history({ count: job.runs.length })}
               </summary>
               <div class="overflow-hidden rounded-b-[inherit]">
                 {#each job.runs as run, i (run.id)}

@@ -7,6 +7,7 @@
     STATS_DOMAIN_LABEL,
   } from "$lib/components/stats/stats-domain";
   import type { AdminCatalogueSectionDto } from "@loomkeep/shared";
+  import { m } from "$lib/paraglide/messages.js";
   import Sparkline from "./Sparkline.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
 
@@ -32,19 +33,25 @@
 
 <div class="grid gap-3.5 lg:grid-cols-2">
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Cache par domaine</h3>
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_catalogue_cache_title()}
+    </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Éléments cachés, part périmée (&gt; 24 h), croissance sur 12 semaines.
+      {m.admin_catalogue_cache_desc()}
     </p>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr
             class="border-border text-dim border-b font-mono text-[10px] uppercase">
-            <th class="px-2 py-1.5 text-left font-normal">Domaine</th>
-            <th class="px-2 py-1.5 text-right font-normal">Éléments</th>
-            <th class="px-2 py-1.5 text-right font-normal">Périmés</th>
-            <th class="px-2 py-1.5 text-left font-normal">Tendance</th>
+            <th class="px-2 py-1.5 text-left font-normal"
+              >{m.admin_catalogue_table_domain()}</th>
+            <th class="px-2 py-1.5 text-right font-normal"
+              >{m.admin_catalogue_table_items()}</th>
+            <th class="px-2 py-1.5 text-right font-normal"
+              >{m.admin_catalogue_table_stale()}</th>
+            <th class="px-2 py-1.5 text-left font-normal"
+              >{m.admin_catalogue_table_trend()}</th>
           </tr>
         </thead>
         <tbody>
@@ -76,27 +83,29 @@
       </table>
     </div>
     <p class="text-dim mt-2.5 text-[11px] italic">
-      Détail orphelins &amp; fraîcheur → page
-      <a href="/admin/cache" class="link-accent not-italic">Cache</a>.
+      {m.admin_catalogue_detail_hint()}
+      <a href="/admin/cache" class="link-accent not-italic"
+        >{m.admin_catalogue_cache_link()}</a
+      >.
     </p>
   </div>
 
   <div class="card p-4">
     <h3 class="font-display text-[15px] font-bold">
-      Œuvres les plus populaires
+      {m.admin_catalogue_popular_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Tous domaines confondus, par nombre de bibliothèques la référençant.
+      {m.admin_catalogue_popular_desc()}
     </p>
     <RankBars items={popularItems} />
 
     <div class="mt-3.5 grid grid-cols-2 gap-3">
       <StatFigure
         value="{stats.sharedPercent} %"
-        label="Cache mutualisé (≥ 2 comptes)" />
+        label={m.admin_catalogue_shared_cache()} />
       <StatFigure
         value={nf.format(stats.orphanCount)}
-        label="Items orphelins" />
+        label={m.admin_catalogue_orphans()} />
     </div>
   </div>
 </div>

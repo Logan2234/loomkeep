@@ -4,6 +4,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
   let events = $state<ActivityEventDto[]>([]);
@@ -62,7 +63,7 @@
     {#if cursor}
       <div class="mt-4 flex justify-center">
         <button class="btn btn-ghost" disabled={loadingMore} onclick={loadMore}>
-          {loadingMore ? "Chargement…" : "Voir plus"}
+          {loadingMore ? m.common_loading() : "Voir plus"}
         </button>
       </div>
     {/if}

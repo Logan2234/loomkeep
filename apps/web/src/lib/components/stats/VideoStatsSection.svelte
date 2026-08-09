@@ -10,9 +10,9 @@
     WatchStaleness,
   } from "@loomkeep/shared";
   import { getVideoSeries, getVideoStats } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
+  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
   import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
   import StatsWorksModal from "./StatsWorksModal.svelte";
@@ -21,23 +21,13 @@
     mediaBreakdown,
   }: { mediaBreakdown: DomainStatusBreakdownDto | undefined } = $props();
 
-  let video = $state<VideoStatsDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  $effect(() => {
-    loading = true;
-    error = null;
-    getVideoStats()
-      .then((v) => (video = v))
-      .catch((e) => {
-        error =
-          e instanceof ApiError
-            ? e.message
-            : "Statistiques vidéo indisponibles";
-      })
-      .finally(() => (loading = false));
-  });
+  const videoStats = statsResource<VideoStatsDto>(
+    getVideoStats,
+    "Statistiques vidéo indisponibles",
+  );
+  const video = $derived(videoStats.data);
+  const loading = $derived(videoStats.loading);
+  const error = $derived(videoStats.error);
 
   const inProgressCount = $derived(
     mediaBreakdown?.byStatus.find((s) => s.bucket === "IN_PROGRESS")?.count ??

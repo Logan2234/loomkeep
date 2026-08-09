@@ -14,6 +14,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type {
     AdminCacheItemDetailDto,
@@ -213,7 +214,10 @@
           : `${res.deleted} orphelin(s) supprimé(s) du cache.`,
       );
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Suppression impossible";
+      error =
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback();
       showDeleteOrphansConfirm = false;
     } finally {
       bulkDeleting = false;
@@ -272,7 +276,9 @@
       toast.success(`« ${title} » supprimé du cache.`);
     } catch (err) {
       detailError =
-        err instanceof ApiError ? err.message : "Suppression impossible";
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback();
       showDeleteConfirm = false;
     } finally {
       deleting = false;
@@ -455,7 +461,7 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={loading}
         onclick={() => load(false)}>
-        {loading ? "Chargement…" : "Charger plus"}
+        {loading ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}
@@ -465,7 +471,7 @@
   <div class="fixed inset-0 z-50 flex justify-end">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={closeDrawer}></button>
     <div
       role="dialog"
@@ -483,7 +489,7 @@
           <span class="font-display font-bold">Détail</span>
           <button
             class="text-dim hover:bg-surface-2 hover:text-fg rounded-full p-1.5"
-            aria-label="Fermer"
+            aria-label={m.common_close()}
             onclick={closeDrawer}>
             <Icon name="x" class="h-5 w-5" />
           </button>
@@ -526,7 +532,7 @@
           </div>
           <button
             class="text-dim hover:bg-surface-2 hover:text-fg shrink-0 rounded-full p-1.5"
-            aria-label="Fermer"
+            aria-label={m.common_close()}
             onclick={closeDrawer}>
             <Icon name="x" class="h-5 w-5" />
           </button>
@@ -639,7 +645,7 @@
   <ConfirmationModal
     title="Supprimer du cache ?"
     message={`« ${detail.title} » sera retiré du cache. Aucun compte ne le référence, donc rien n'est perdu — il sera re-téléchargé si un utilisateur le rajoute.`}
-    confirmLabel="Supprimer"
+    confirmLabel={m.common_delete()}
     danger
     busy={deleting}
     onConfirm={confirmDelete}

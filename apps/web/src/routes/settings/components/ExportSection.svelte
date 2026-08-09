@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ApiError, exportMyData, exportMyDataCsv } from "$lib/api/client";
   import Icon from "$lib/components/Icon.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { Domain } from "@loomkeep/shared";
 
@@ -27,9 +28,12 @@
         "application/json",
         `loomkeep-export-${new Date().toISOString().slice(0, 10)}.json`,
       );
-      toast.success("Export terminé.");
+      toast.success(m.settings_export_success());
     } catch (err) {
-      exportError = err instanceof ApiError ? err.message : "Export impossible";
+      exportError =
+        err instanceof ApiError
+          ? err.message
+          : m.settings_export_error_fallback();
     } finally {
       exporting = false;
     }
@@ -41,19 +45,23 @@
     slug: string;
     comingSoon?: boolean;
   }[] = [
-    { domain: Domain.MEDIA, label: "Films, séries et animés", slug: "media" },
-    { domain: Domain.BOOKS, label: "Livres", slug: "books" },
-    { domain: Domain.GAMES, label: "Jeux", slug: "games" },
-    { domain: Domain.MUSIC, label: "Musique", slug: "music" },
+    {
+      domain: Domain.MEDIA,
+      label: m.settings_export_media_label(),
+      slug: "media",
+    },
+    { domain: Domain.BOOKS, label: m.nav_books(), slug: "books" },
+    { domain: Domain.GAMES, label: m.nav_games(), slug: "games" },
+    { domain: Domain.MUSIC, label: m.nav_music(), slug: "music" },
     {
       domain: Domain.PODCASTS,
-      label: "Podcasts",
+      label: m.nav_podcasts(),
       slug: "podcasts",
       comingSoon: true,
     },
     {
       domain: Domain.BOARDGAMES,
-      label: "Jeux de société",
+      label: m.nav_boardgames(),
       slug: "boardgames",
       comingSoon: true,
     },
@@ -72,9 +80,12 @@
         "text/csv",
         `loomkeep-${slug}-${new Date().toISOString().slice(0, 10)}.csv`,
       );
-      toast.success("Export terminé.");
+      toast.success(m.settings_export_success());
     } catch (err) {
-      csvError = err instanceof ApiError ? err.message : "Export impossible";
+      csvError =
+        err instanceof ApiError
+          ? err.message
+          : m.settings_export_error_fallback();
     } finally {
       csvExporting = null;
     }
@@ -82,14 +93,17 @@
 </script>
 
 <section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">Export</h2>
+  <h2 class="font-display mb-1 text-lg font-bold">
+    {m.settings_export_title()}
+  </h2>
   <p class="text-dim mb-4 text-sm">
-    Télécharge une copie complète de tes données — profil, bibliothèque et
-    historique de visionnage — au format JSON.
+    {m.settings_export_body()}
   </p>
   <button class="btn btn-primary" disabled={exporting} onclick={downloadExport}>
     <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-    {exporting ? "Préparation…" : "Télécharger mes données (JSON)"}
+    {exporting
+      ? m.settings_export_action_loading()
+      : m.settings_export_action()}
   </button>
   {#if exportError}
     <p class="text-danger mt-2 text-sm">{exportError}</p>
@@ -97,7 +111,7 @@
 
   <div class="border-border mt-5 border-t pt-5">
     <p class="text-dim mb-3 text-sm">
-      Ou exporte une bibliothèque en CSV, à plat, pour l'importer ailleurs.
+      {m.settings_export_csv_body()}
     </p>
     <div class="flex flex-wrap gap-2">
       {#each CSV_DOMAINS as d (d.domain)}
@@ -106,9 +120,9 @@
           <button
             class="btn btn-ghost disabled:pointer-events-none disabled:opacity-40"
             disabled
-            title="Disponible prochainement">
+            title={m.settings_export_csv_coming_soon_hint()}>
             <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-            {d.label} (CSV) · Bientôt
+            {d.label} (CSV) · {m.common_coming_soon()}
           </button>
         {:else}
           <button
@@ -116,7 +130,9 @@
             disabled={csvExporting !== null}
             onclick={() => downloadCsv(d.domain, d.slug)}>
             <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-            {csvExporting === d.domain ? "Préparation…" : `${d.label} (CSV)`}
+            {csvExporting === d.domain
+              ? m.settings_export_action_loading()
+              : `${d.label} (CSV)`}
           </button>
         {/if}
       {/each}

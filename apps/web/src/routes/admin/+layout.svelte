@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 
   let { children } = $props();
 
@@ -20,6 +21,6 @@
     href="/admin"
     class="border-accent/40 bg-accent/15 text-accent fixed right-4 bottom-20 z-30 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm backdrop-blur md:bottom-4">
     <Icon name="shield" class="h-3.5 w-3.5" />
-    Admin
+    {m.nav_admin()}
   </a>
 {/if}

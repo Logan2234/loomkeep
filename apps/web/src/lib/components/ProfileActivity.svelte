@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getUserActivity } from "$lib/api/client";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
   // A user's recent activity timeline, shown under their profile stats. Loads
@@ -55,7 +56,7 @@
           class="btn btn-ghost btn-sm"
           disabled={loadingMore}
           onclick={loadMore}>
-          {loadingMore ? "Chargement…" : "Voir plus"}
+          {loadingMore ? m.common_loading() : "Voir plus"}
         </button>
       </div>
     {/if}

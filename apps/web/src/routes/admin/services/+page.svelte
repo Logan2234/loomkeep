@@ -6,6 +6,7 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
 
   let services = $state<ServiceStatusDto[] | null>(null);
@@ -21,7 +22,8 @@
       services = res.services;
       checkedAt = res.checkedAt;
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Statut indisponible";
+      error =
+        err instanceof ApiError ? err.message : m.admin_services_fetch_error();
     } finally {
       loading = false;
     }
@@ -84,12 +86,15 @@
   );
 
   const kpis = $derived([
-    { value: `${healthy}/${live.length}`, label: "Services opérationnels" },
-    { value: nf.format(callsToday), label: "Appels aujourd'hui" },
+    {
+      value: `${healthy}/${live.length}`,
+      label: m.admin_services_kpi_operational(),
+    },
+    { value: nf.format(callsToday), label: m.admin_services_kpi_calls_today() },
     {
       value: String(busiestQuota),
       unit: "%",
-      label: "Quota le plus chargé",
+      label: m.admin_services_kpi_busiest_quota(),
       alert: busiestQuota >= 80,
     },
   ]);
@@ -120,8 +125,8 @@
       .map((s) => ({
         label: s.label,
         value: s.today ?? 0,
-        display: `${nf.format(s.today ?? 0)} auj.`,
-        badge: { text: "sans limite" },
+        display: `${nf.format(s.today ?? 0)} ${m.admin_period_today()}`,
+        badge: { text: m.admin_services_no_limit_badge() },
       })),
   );
 
@@ -131,36 +136,36 @@
   function health(s: ServiceStatusDto): Health {
     if (s.comingSoon) {
       return {
-        label: "Bientôt",
+        label: m.common_coming_soon(),
         cls: "border-border bg-surface-2 text-dim",
       };
     }
     if (!s.configured) {
       return s.required
         ? {
-            label: "Non configuré",
+            label: m.admin_services_not_configured(),
             cls: "border-danger/40 bg-danger/10 text-danger",
           }
         : {
-            label: "Non configuré",
+            label: m.admin_services_not_configured(),
             cls: "border-border bg-surface-2 text-dim",
           };
     }
     if (s.reachable === true) {
       return {
-        label: "OK",
+        label: m.admin_status_ok(),
         cls: "border-success/40 bg-success/10 text-success",
       };
     }
     if (s.reachable === false) {
       return {
-        label: "En panne",
+        label: m.admin_services_down(),
         cls: "border-danger/40 bg-danger/10 text-danger",
       };
     }
     // Configured but not probed (no cheap ping, e.g. VAPID).
     return {
-      label: "Configuré",
+      label: m.admin_services_configured_badge(),
       cls: "border-accent/40 bg-accent/10 text-accent",
     };
   }
@@ -174,14 +179,14 @@
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="monitor"
-    title="Services"
-    subtitle="Santé et usage des dépendances externes dont dépend l’application.">
+    title={m.admin_services_title()}
+    subtitle={m.admin_services_subtitle()}>
     {#snippet actions()}
       <button
         onclick={load}
         disabled={loading}
         class="btn btn-ghost shrink-0 disabled:opacity-50">
-        {loading ? "…" : "Rafraîchir"}
+        {loading ? "…" : m.admin_refresh()}
       </button>
     {/snippet}
   </PageHeader>
@@ -202,11 +207,13 @@
          list below free of that distinction. -->
     <div class="mb-6 grid gap-3.5 lg:grid-cols-2">
       <div class="card p-4">
-        <SectionLabel label="Sous quota documenté" class="mb-3" />
+        <SectionLabel label={m.admin_services_metered_section()} class="mb-3" />
         <RankBars items={meteredBars} />
       </div>
       <div class="card p-4">
-        <SectionLabel label="Sans limite connue" class="mb-3" />
+        <SectionLabel
+          label={m.admin_services_unmetered_section()}
+          class="mb-3" />
         <RankBars items={unmeteredBars} />
       </div>
     </div>
@@ -231,7 +238,7 @@
                       {#if s.required}
                         <span
                           class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
-                          Requis
+                          {m.admin_services_required_badge()}
                         </span>
                       {/if}
                     </div>
@@ -244,7 +251,7 @@
                             target="_blank"
                             rel="noopener noreferrer"
                             class="text-accent decoration-accent/40 hover:decoration-accent underline underline-offset-2">
-                            Obtenir une clé
+                            {m.admin_services_get_key()}
                           </a>
                         {/if}
                       </p>
@@ -271,15 +278,16 @@
                       </div>
                       <p class="timecode mt-1.5 text-xs">
                         {nf.format(s.today)} / {nf.format(s.limit.max)}
-                        {s.limit.window === "day" ? "auj." : "ce mois-ci"}
+                        {s.limit.window === "day"
+                          ? m.admin_period_today()
+                          : m.admin_period_this_month()}
                         ({s.percentUsed}%)
                       </p>
                     {:else}
                       <p class="timecode text-xs">
-                        {nf.format(s.today)} auj. · {nf.format(
-                          s.thisMonth ?? 0,
-                        )}
-                        ce mois-ci
+                        {nf.format(s.today)}
+                        {m.admin_period_today()} · {nf.format(s.thisMonth ?? 0)}
+                        {m.admin_period_this_month()}
                       </p>
                     {/if}
                   </div>
@@ -293,7 +301,9 @@
 
     {#if checkedAt}
       <p class="text-dim mt-6 text-xs">
-        Vérifié à {timeFmt.format(new Date(checkedAt))}.
+        {m.admin_services_checked_at({
+          time: timeFmt.format(new Date(checkedAt)),
+        })}
       </p>
     {/if}
   {/if}

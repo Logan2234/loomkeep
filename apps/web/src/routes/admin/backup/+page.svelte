@@ -14,6 +14,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import { formatBytes } from "$lib/format";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { AdminBackupFileDto } from "@loomkeep/shared";
 
@@ -165,7 +166,9 @@
       pendingDelete = null;
     } catch (err) {
       toast.error(
-        err instanceof ApiError ? err.message : "Suppression impossible",
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback(),
       );
     } finally {
       deletingId = null;
@@ -307,7 +310,7 @@
   <ConfirmationModal
     title="Supprimer cette sauvegarde ?"
     message={`${pendingDelete.filename} sera définitivement supprimée du disque.`}
-    confirmLabel="Supprimer"
+    confirmLabel={m.common_delete()}
     danger
     busy={deletingId === pendingDelete.id}
     onConfirm={confirmDeleteFile}
@@ -354,7 +357,7 @@
           class="btn btn-ghost"
           disabled={restoring}
           onclick={closeRestoreModal}>
-          Annuler
+          {m.common_cancel()}
         </button>
         <button
           type="button"

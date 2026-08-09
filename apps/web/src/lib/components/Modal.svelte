@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
 
@@ -39,7 +40,7 @@
   {#if showClose}
     <button
       class="text-dim hover:bg-surface-2 hover:text-fg absolute top-3 right-3 rounded-full p-1.5"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={onclose}>
       <Icon name="x" class="h-5 w-5" />
     </button>
@@ -54,7 +55,7 @@
   <div class="fixed inset-0 z-[60] flex items-center justify-center">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={onclose}></button>
     <div
       role="dialog"

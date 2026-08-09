@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends string">
   // Segmented status picker shared by books and games (media's status is
   // server-derived, not user-selectable this way).
+  import { m } from "$lib/paraglide/messages.js";
   let {
     statuses,
     current,
@@ -28,7 +29,7 @@
   class="border-border bg-surface-2 grid gap-1 rounded-xl border p-1"
   style="grid-template-columns: repeat({statuses.length}, minmax(0, 1fr));"
   role="group"
-  aria-label="Statut">
+  aria-label={m.common_status()}>
   {#each statuses as status (status)}
     <button
       type="button"

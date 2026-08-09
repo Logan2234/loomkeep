@@ -4,13 +4,14 @@
   // filter by account. Loads the
   // account list itself and emits the selected user id (null once cleared).
   import { getAdminUserOptions } from "$lib/api/client";
+  import { m } from "$lib/paraglide/messages.js";
   import type { AdminUserOptionDto } from "@loomkeep/shared";
   import Combobox from "./Combobox.svelte";
 
   let {
     value = null,
-    label = "Tous les comptes",
-    searchPlaceholder = "Rechercher par nom ou email…",
+    label = m.user_selector_all_accounts(),
+    searchPlaceholder = m.user_selector_search_placeholder(),
     onChange,
   }: {
     /** Selected user id, or null for "no account filter". */

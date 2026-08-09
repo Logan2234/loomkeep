@@ -30,6 +30,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
   import { debounce } from "$lib/debounce";
+  import { m } from "$lib/paraglide/messages.js";
   import type { Domain, PagedResult } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
 
@@ -143,7 +144,8 @@
       done = !result.hasMore;
     } catch (err) {
       if (mine !== loadId) return;
-      error = err instanceof ApiError ? err.message : "Chargement impossible";
+      error =
+        err instanceof ApiError ? err.message : m.common_fetch_error_fallback();
     } finally {
       if (mine === loadId) {
         loading = false;

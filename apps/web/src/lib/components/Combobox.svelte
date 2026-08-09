@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
 
   // A styled dropdown used across the library filter bars. Works in two modes:
@@ -111,7 +112,7 @@
     <!-- Click-away backdrop (fixed so it covers the viewport). -->
     <button
       class="fixed inset-0 z-30 cursor-default"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={() => (open = false)}></button>
     <div
       role="listbox"

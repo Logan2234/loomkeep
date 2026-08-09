@@ -2,6 +2,7 @@
   // Chart-less trend hint for a table cell: a bare polyline, no axis, no
   // labels, no tooltip. Distinct from LineChart/TrendChart on purpose — inside
   // a row there is no space for anything but the shape.
+  import { m } from "$lib/paraglide/messages.js";
   import type { TrendPointDto } from "@loomkeep/shared";
 
   let {
@@ -34,6 +35,6 @@
   class="block h-5 w-full"
   preserveAspectRatio="none"
   role="img"
-  aria-label="Croissance sur 12 semaines">
+  aria-label={m.admin_sparkline_growth()}>
   <polyline fill="none" stroke={color} stroke-width="1.5" points={path} />
 </svg>

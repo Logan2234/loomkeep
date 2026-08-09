@@ -11,6 +11,7 @@
     type TrendPeriod,
   } from "@loomkeep/shared";
   import CohortTable from "./CohortTable.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
@@ -19,15 +20,18 @@
   const nf = new Intl.NumberFormat("fr-FR");
 
   const DELTA_LABEL: Record<TrendPeriod, string> = {
-    day: "aujourd’hui",
-    week: "cette semaine",
-    month: "ce mois-ci",
-    year: "cette année",
+    day: m.admin_accounts_delta_today(),
+    week: m.admin_accounts_delta_week(),
+    month: m.admin_period_this_month(),
+    year: m.admin_accounts_delta_year(),
   };
 
   const domainItems = $derived(
     stats.byEnabledDomainCount.map((b) => ({
-      label: b.domains > 1 ? `${b.domains} domaines` : "1 domaine",
+      label:
+        b.domains > 1
+          ? m.admin_accounts_domains_many({ count: b.domains })
+          : m.admin_accounts_domain_one(),
       value: b.accounts,
     })),
   );
@@ -35,9 +39,9 @@
   // Labels mirror the privacy settings page; colours are tied to the meaning,
   // not to the rank, so the reading stays stable as counts move.
   const ACCESS_LABEL: Record<ProfileAccess, string> = {
-    [ProfileAccess.PUBLIC]: "Public",
-    [ProfileAccess.PRIVATE]: "Privé",
-    [ProfileAccess.GHOST]: "Figurant",
+    [ProfileAccess.PUBLIC]: m.common_public(),
+    [ProfileAccess.PRIVATE]: m.common_private(),
+    [ProfileAccess.GHOST]: m.common_ghost(),
   };
   const ACCESS_COLOR: Record<ProfileAccess, string> = {
     [ProfileAccess.PUBLIC]: "var(--stat-media)",
@@ -55,34 +59,43 @@
   const healthItems = $derived([
     {
       value: stats.health.dormant,
-      label: `Dormants > ${DORMANT_AFTER_DAYS} j`,
+      label: m.admin_accounts_health_dormant({ days: DORMANT_AFTER_DAYS }),
     },
-    { value: stats.health.activeSessions, label: "Sessions actives" },
-    { value: stats.health.emailVerified, label: "Email vérifié" },
-    { value: stats.health.withPush, label: "Avec push" },
+    {
+      value: stats.health.activeSessions,
+      label: m.admin_accounts_health_sessions(),
+    },
+    {
+      value: stats.health.emailVerified,
+      label: m.admin_accounts_health_email_verified(),
+    },
+    { value: stats.health.withPush, label: m.admin_accounts_health_push() },
   ]);
 </script>
 
 <div class="grid gap-3.5 lg:grid-cols-2">
   <TrendPeriodCard
-    title="Nouveaux comptes"
+    title={m.admin_accounts_new_title()}
     initial={stats.newAccounts}
     load={getAdminNewAccountsTrend}
-    errorMessage="Évolution indisponible">
+    errorMessage={m.admin_accounts_trend_error()}>
     {#snippet footer(trend)}
       <p class="timecode mt-1.5 text-xs">
-        total cumulé {nf.format(trend.totalAccounts)} · +{nf.format(
-          trend.delta,
-        )}
-        {DELTA_LABEL[trend.period]}
+        {m.admin_accounts_trend_summary({
+          total: nf.format(trend.totalAccounts),
+          delta: nf.format(trend.delta),
+          period: DELTA_LABEL[trend.period],
+        })}
       </p>
     {/snippet}
   </TrendPeriodCard>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Rétention par cohorte</h3>
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_accounts_retention_title()}
+    </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      % encore actif N mois après inscription (intensité = %).
+      {m.admin_accounts_retention_desc()}
     </p>
     <CohortTable cohorts={stats.cohorts} />
   </div>
@@ -90,26 +103,32 @@
 
 <div class="mt-3.5 grid gap-3.5 lg:grid-cols-3">
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Domaines activés</h3>
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_accounts_domains_title()}
+    </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Combien de comptes activent N domaines (max 6).
+      {m.admin_accounts_domains_desc()}
     </p>
     <RankBars items={domainItems} initialCount={6} />
   </div>
 
   <div class="card p-4">
     <h3 class="font-display text-[15px] font-bold">
-      Confidentialité des profils
+      {m.admin_accounts_privacy_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Public · privé · figurant.
+      {m.admin_accounts_privacy_desc()}
     </p>
     <RankBars items={accessItems} />
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Santé des comptes</h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">Engagement brut.</p>
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_accounts_health_title()}
+    </h3>
+    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+      {m.admin_accounts_health_desc()}
+    </p>
     <div class="grid grid-cols-2 gap-3">
       {#each healthItems as item (item.label)}
         <StatFigure value={nf.format(item.value)} label={item.label} />

@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import adapter from "@sveltejs/adapter-node";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
@@ -7,6 +8,16 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [
     tailwindcss(),
+    // Only "fr" ships today (see project.inlang/settings.json) — the point
+    // of adding this now is the message-extraction convention, not a second
+    // language yet. No "url" strategy: this is a CSR SPA (ssr=false below)
+    // with its own existing routes, not locale-prefixed ones — locale is
+    // resolved client-side only (cookie, then the base locale).
+    paraglideVitePlugin({
+      project: "./project.inlang",
+      outdir: "./src/lib/paraglide",
+      strategy: ["cookie", "baseLocale"],
+    }),
     sveltekit({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.

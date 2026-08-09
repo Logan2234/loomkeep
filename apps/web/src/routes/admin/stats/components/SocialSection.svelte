@@ -5,6 +5,7 @@
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import { REPORT_CATEGORY_LABELS } from "$lib/report-labels";
+  import { m } from "$lib/paraglide/messages.js";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
@@ -14,16 +15,34 @@
   const nf = new Intl.NumberFormat("fr-FR");
 
   const totals = $derived([
-    { value: nf.format(stats.totals.reviews), label: "Critiques" },
-    { value: nf.format(stats.totals.comments), label: "Commentaires" },
-    { value: nf.format(stats.totals.lists), label: "Listes" },
-    { value: nf.format(stats.totals.follows), label: "Follows actifs" },
-    { value: nf.format(stats.totals.reactions), label: "Réactions" },
-    { value: nf.format(stats.totals.helpfulVotes), label: "Votes utiles" },
-    { value: nf.format(stats.totals.blocks), label: "Blocks" },
+    {
+      value: nf.format(stats.totals.reviews),
+      label: m.profile_reviews_count_plural(),
+    },
+    {
+      value: nf.format(stats.totals.comments),
+      label: m.admin_social_total_comments(),
+    },
+    { value: nf.format(stats.totals.lists), label: m.profile_lists_title() },
+    {
+      value: nf.format(stats.totals.follows),
+      label: m.admin_social_total_follows(),
+    },
+    {
+      value: nf.format(stats.totals.reactions),
+      label: m.admin_social_total_reactions(),
+    },
+    {
+      value: nf.format(stats.totals.helpfulVotes),
+      label: m.admin_social_total_helpful_votes(),
+    },
+    {
+      value: nf.format(stats.totals.blocks),
+      label: m.admin_social_total_blocks(),
+    },
     {
       value: `${stats.totals.deletedCommentPercent} %`,
-      label: "Commentaires supprimés",
+      label: m.admin_social_total_deleted_comments(),
     },
   ]);
 
@@ -61,14 +80,14 @@
 <!-- The mockup showed static totals only; the curve is the addition that tells
      an admin whether the social surface went quiet, so it leads the section. -->
 <TrendPeriodCard
-  title="Activité sociale"
-  description="Critiques + commentaires écrits."
+  title={m.admin_social_activity_title()}
+  description={m.admin_social_activity_desc()}
   initial={stats.activity}
   load={getAdminSocialActivityTrend}
-  errorMessage="Activité indisponible">
+  errorMessage={m.admin_social_activity_error()}>
   {#snippet footer(trend)}
     <p class="timecode mt-1.5 text-xs">
-      {nf.format(trend.total)} sur la période
+      {m.admin_social_activity_footer({ count: nf.format(trend.total) })}
     </p>
   {/snippet}
 </TrendPeriodCard>
@@ -87,56 +106,73 @@
 <div class="mt-3.5 grid gap-3.5 lg:grid-cols-3">
   <div class="card border-danger/40 p-4">
     <div class="flex items-baseline gap-2">
-      <h3 class="font-display text-[15px] font-bold">Signalements</h3>
+      <h3 class="font-display text-[15px] font-bold">
+        {m.admin_social_reports_title()}
+      </h3>
       <a
         href="/admin/reports"
         class="link-accent ml-auto text-[11px] font-bold">
-        file → Reports
+        {m.admin_social_reports_queue_link()}
       </a>
     </div>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">Modération.</p>
+    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+      {m.admin_social_moderation()}
+    </p>
     <div class="grid grid-cols-2 gap-3">
       <StatFigure
         value={nf.format(stats.reports.pending)}
-        label="En attente"
+        label={m.admin_social_reports_pending()}
         alert={stats.reports.pending > 0} />
-      <StatFigure value={nf.format(stats.reports.resolved)} label="Résolus" />
+      <StatFigure
+        value={nf.format(stats.reports.resolved)}
+        label={m.admin_social_reports_resolved()} />
       <StatFigure
         value={stats.reports.medianResolutionHours === null
           ? "—"
           : `${nf.format(stats.reports.medianResolutionHours)} h`}
-        label="Délai médian" />
+        label={m.admin_social_reports_median_delay()} />
       <StatFigure
         value={stats.reports.foundedPercent === null
           ? "—"
           : `${stats.reports.foundedPercent} %`}
-        label="Taux fondé" />
+        label={m.admin_social_reports_founded_rate()} />
     </div>
     {#if categoryItems.length > 0}
       <p class="text-dim mt-3.5 mb-2 text-[11px] font-bold uppercase">
-        Par catégorie
+        {m.admin_social_by_category()}
       </p>
       <RankBars items={categoryItems} />
     {/if}
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Notes de l’instance</h3>
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_social_ratings_title()}
+    </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Distribution globale{stats.ratings.average === null
-        ? ""
-        : ` · moyenne ${nf.format(stats.ratings.average)}`} ·
-      {nf.format(stats.ratings.total)} critique{stats.ratings.total > 1
-        ? "s"
-        : ""}.
+      {m.admin_social_ratings_desc({
+        avgPart:
+          stats.ratings.average === null
+            ? ""
+            : m.admin_social_ratings_avg_suffix({
+                avg: nf.format(stats.ratings.average),
+              }),
+        total: nf.format(stats.ratings.total),
+        reviewWord:
+          stats.ratings.total > 1
+            ? m.profile_reviews_count_plural()
+            : m.profile_reviews_count_singular(),
+      })}
     </p>
     <HistogramBars bars={ratingBars} />
   </div>
 
   <div class="card p-4">
-    <h3 class="font-display text-[15px] font-bold">Top contributeurs</h3>
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_social_top_contributors_title()}
+    </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      Critiques + commentaires.
+      {m.admin_social_top_contributors_desc()}
     </p>
     <RankBars items={contributorItems} />
     <div class="mt-3">
@@ -144,9 +180,10 @@
         value={contributorShare === null
           ? "—"
           : `${contributorShare} % / ${100 - contributorShare} %`}
-        label="Contributeurs / lecteurs ({nf.format(
-          stats.contributors,
-        )} sur {nf.format(totalAccounts)} comptes)" />
+        label={m.admin_social_contributors_readers({
+          contributors: nf.format(stats.contributors),
+          total: nf.format(totalAccounts),
+        })} />
     </div>
   </div>
 </div>

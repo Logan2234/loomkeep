@@ -2,6 +2,7 @@
   import { getMyReviews } from "$lib/api/client";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { MyReviewDto } from "@loomkeep/shared";
 
   // Preview of the current user's own reviews, shown on their profile (own
@@ -11,12 +12,12 @@
   const PREVIEW_COUNT = 3;
 
   const TYPE_LABEL: Record<string, string> = {
-    MEDIA: "Vidéo",
-    GAME: "Jeux",
-    BOOK: "Livres",
-    MUSIC: "Musique",
-    SEASON: "Saison",
-    EPISODE: "Épisode",
+    MEDIA: m.nav_media(),
+    GAME: m.nav_games(),
+    BOOK: m.nav_books(),
+    MUSIC: m.nav_music(),
+    SEASON: m.profile_reviews_season(),
+    EPISODE: m.profile_reviews_episode(),
   };
 
   let reviews = $state<MyReviewDto[]>([]);
@@ -33,11 +34,13 @@
 {#if loaded && reviews.length > 0}
   <section class="mt-10">
     <div class="mb-3 flex items-center justify-between">
-      <h2 class="font-display text-xl font-bold">Mes reviews</h2>
+      <h2 class="font-display text-xl font-bold">
+        {m.profile_reviews_title()}
+      </h2>
       <a
         href="/reviews"
         class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold">
-        Gérer
+        {m.profile_reviews_manage()}
         <Icon name="chevron-right" class="h-4 w-4" />
       </a>
     </div>
@@ -67,7 +70,7 @@
                 class="truncate font-semibold {review.target?.href
                   ? 'group-hover:text-accent transition-colors'
                   : ''}">
-                {review.target?.title ?? "Œuvre"}
+                {review.target?.title ?? m.profile_reviews_untitled_work()}
               </p>
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
                 <span class="timecode uppercase"
@@ -75,7 +78,9 @@
                 {#if appConfig.socialEnabled}
                   <span aria-hidden="true">·</span>
                   <span
-                    >{review.visibility === "PUBLIC" ? "Public" : "Amis"}</span>
+                    >{review.visibility === "PUBLIC"
+                      ? m.profile_reviews_public()
+                      : m.profile_reviews_friends()}</span>
                 {/if}
               </p>
               {#if review.text}

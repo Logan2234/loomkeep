@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
 
   // Fullscreen zoom over one or more images, with a carousel when there's
@@ -63,14 +64,14 @@
   <button
     type="button"
     class="absolute inset-0"
-    aria-label="Fermer"
+    aria-label={m.common_close()}
     onclick={onClose}>
   </button>
 
   <button
     type="button"
     class="absolute top-4 right-4 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60"
-    aria-label="Fermer"
+    aria-label={m.common_close()}
     onclick={onClose}>
     <Icon name="x" class="h-5 w-5" />
   </button>

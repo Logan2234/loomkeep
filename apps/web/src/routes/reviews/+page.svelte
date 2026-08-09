@@ -8,6 +8,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import ReviewFormModal from "$lib/components/ReviewFormModal.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { MyReviewDto, ReviewVisibility } from "@loomkeep/shared";
 
   const TYPE_LABEL: Record<string, string> = {
@@ -178,7 +179,7 @@
               class="btn btn-ghost btn-sm"
               disabled={batchBusy}
               onclick={() => (confirmingBatchDelete = true)}>
-              Supprimer
+              {m.common_delete()}
             </button>
           {/if}
         </div>

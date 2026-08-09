@@ -5,27 +5,19 @@
   // natural full range (see VideoTemporalDto).
   import type { StatsWindow, VideoTemporalDto } from "@loomkeep/shared";
   import { getVideoTemporal } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
   import CalendarHeatmap from "./CalendarHeatmap.svelte";
   import LineChart from "./LineChart.svelte";
+  import { statsResource } from "./stats-resource.svelte";
 
   let { period }: { period: StatsWindow } = $props();
 
-  let temporal = $state<VideoTemporalDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-
-  $effect(() => {
-    const p = period;
-    loading = true;
-    error = null;
-    getVideoTemporal(p)
-      .then((t) => (temporal = t))
-      .catch((e) => {
-        error = e instanceof ApiError ? e.message : "Activité indisponible";
-      })
-      .finally(() => (loading = false));
-  });
+  const temporalStats = statsResource<VideoTemporalDto>(
+    () => getVideoTemporal(period),
+    "Activité indisponible",
+  );
+  const temporal = $derived(temporalStats.data);
+  const loading = $derived(temporalStats.loading);
+  const error = $derived(temporalStats.error);
 
   const WEEKDAY_LABEL = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 

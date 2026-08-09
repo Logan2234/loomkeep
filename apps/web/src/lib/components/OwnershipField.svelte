@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import Combobox from "./Combobox.svelte";
 
   // Possession status (physique/numérique/abonnement…/emprunté) plus an
@@ -63,20 +64,20 @@
 
 <div class="flex flex-col gap-2">
   <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-    Possession
+    {m.ownership_title()}
   </span>
   <div class="flex flex-wrap items-center gap-2">
     <Combobox
-      label="Statut"
+      label={m.common_status()}
       options={statusOptions}
       values={[status]}
       onChange={pickStatus} />
     {#if presets}
       <Combobox
-        label="Détail"
+        label={m.ownership_detail_label()}
         options={[
           ...presets.map((p) => ({ label: p, value: p })),
-          { label: "Autre…", value: CUSTOM },
+          { label: m.ownership_other(), value: CUSTOM },
         ]}
         values={[showCustomInput ? CUSTOM : (source ?? "")]}
         onChange={pickSource} />
@@ -86,7 +87,7 @@
     <input
       type="text"
       class="input"
-      placeholder="Précise la source…"
+      placeholder={m.ownership_source_placeholder()}
       value={customText}
       onchange={commitCustom} />
   {/if}
