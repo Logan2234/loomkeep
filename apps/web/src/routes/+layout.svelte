@@ -9,6 +9,7 @@
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
+  import PushNotificationPrompt from "$lib/components/PushNotificationPrompt.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { notifications } from "$lib/notifications.svelte";
   import { queryClient } from "$lib/queryClient";
@@ -87,6 +88,7 @@
 <QueryClientProvider client={queryClient}>
   {#if ready && auth.isLoggedIn}
     <NotificationBell />
+    <PushNotificationPrompt />
 
     <div class="hidden md:block">
       <DesktopSidebar>
