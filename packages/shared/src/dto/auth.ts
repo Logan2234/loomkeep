@@ -40,6 +40,8 @@ export interface UserDto {
   notifyEmail: boolean;
   /** Web Push delivery for new episode alerts. */
   notifyPush: boolean;
+  /** Opt-in to the release newsletter (separate from notifyEmail's "new episode" alerts). */
+  notifyNewsletter: boolean;
   /** Whether the account's email has been confirmed via the verification link (informational only). */
   emailVerified: boolean;
   /** Operational permission level (gates /admin). See `Role`. */
@@ -86,6 +88,7 @@ export interface UpdateUserRequestDto {
   allowAdultContent?: boolean;
   notifyEmail?: boolean;
   notifyPush?: boolean;
+  notifyNewsletter?: boolean;
   /** Content domains to keep visible; must list at least one. See `Domain`. */
   enabledDomains?: Domain[];
   /** Ordered mobile bottom-bar shortcut ids (3–7 entries, must include "menu"). */

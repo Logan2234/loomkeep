@@ -51,4 +51,5 @@ export type IconName =
   | "qr-code"
   | "camera"
   | "link"
-  | "logout";
+  | "logout"
+  | "sparkles";

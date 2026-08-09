@@ -7,14 +7,14 @@
 
   let notifyError = $state("");
 
-  async function toggleNotify(key: "notifyEmail" | "notifyPush") {
+  async function toggleNotify(
+    key: "notifyEmail" | "notifyPush" | "notifyNewsletter",
+  ) {
     if (!auth.user) return;
     notifyError = "";
     const value = !auth.user[key];
     try {
-      await updateMe(
-        key === "notifyEmail" ? { notifyEmail: value } : { notifyPush: value },
-      );
+      await updateMe({ [key]: value });
     } catch (err) {
       notifyError =
         err instanceof ApiError ? err.message : m.common_save_error_fallback();
@@ -68,7 +68,7 @@
           checked={auth.user.notifyEmail}
           onChange={() => toggleNotify("notifyEmail")} />
       </div>
-      <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
+      <div class="flex items-center justify-between gap-4 py-3">
         <div>
           <p class="font-semibold">Notifications push</p>
           <p class="text-dim text-sm">
@@ -84,6 +84,18 @@
           checked={auth.user.notifyPush}
           disabled={!pushSupported || pushBusy}
           onChange={togglePush} />
+      </div>
+      <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
+        <div>
+          <p class="font-semibold">Newsletter</p>
+          <p class="text-dim text-sm">
+            Un email à chaque nouvelle version, avec les nouveautés du moment.
+          </p>
+        </div>
+        <Switch
+          label="Newsletter des nouveautés"
+          checked={auth.user.notifyNewsletter}
+          onChange={() => toggleNotify("notifyNewsletter")} />
       </div>
     </div>
     {#if notifyError}

@@ -126,7 +126,7 @@
     },
     {
       label: "Utilisateurs & communication",
-      hrefs: ["/admin/users", "/admin/communications"],
+      hrefs: ["/admin/users", "/admin/communications", "/admin/changelog"],
     },
     {
       label: "Système & exploitation",
@@ -299,6 +299,8 @@
   </div>
 
   {#if version}
-    <p class="text-dim mt-8 text-center text-xs">Loomkeep v{version}</p>
+    <p class="text-dim mt-8 text-center text-xs">
+      <a href="/changelog" class="hover:text-fg">Loomkeep v{version}</a>
+    </p>
   {/if}
 </div>

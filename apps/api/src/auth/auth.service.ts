@@ -462,6 +462,7 @@ export function toUserDto(user: User): UserDto {
     allowAdultContent: user.allowAdultContent,
     notifyEmail: user.notifyEmail,
     notifyPush: user.notifyPush,
+    notifyNewsletter: user.notifyNewsletter,
     emailVerified: user.emailVerified,
     role: user.role,
     enabledDomains: user.enabledDomains,

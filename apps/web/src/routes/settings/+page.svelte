@@ -157,7 +157,9 @@
 
   {#if version}
     <p class="text-dim mt-6 text-center text-xs">
-      {m.settings_version({ version })}
+      <a href="/changelog" class="hover:text-fg">
+        {m.settings_version({ version })}
+      </a>
     </p>
   {/if}
 </div>

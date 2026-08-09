@@ -12,6 +12,35 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.2.0 — Multilingual, release changelog & push onboarding
+
+- **Paraglide i18n**: the web app is now translatable — English ships as the
+  second locale alongside French, `User.locale` persists the choice across
+  devices, and a language picker lives in Réglages → Apparence. Migrated
+  component by component (transverse/nav/auth, settings, profile/social,
+  admin layout/jobs/schema/services, admin stats) rather than in one pass,
+  extracting shared `common_*` keys along the way.
+- **Release changelog & newsletter**: a new `ChangelogEntry` model (version/
+  title/highlights, admin-authored via `/admin/changelog`) feeds a public
+  `/changelog` page — linked from the `Loomkeep vX.Y.Z` footer on `/settings`
+  and `/admin` — and an opt-in `notifyNewsletter` email. `MailService` gained
+  a `newsletter` template (admin gallery, new `multiline` field support for
+  the highlights textarea) and `sendNewsletter()`; sending is a deliberate
+  per-entry admin action (`POST /admin/changelog/:id/send`, resendable), never
+  automatic on entry creation.
+- **Push notification onboarding**: a one-time explanation prompt on app open
+  (root layout), gated on `Notification.permission === "default"` plus a
+  per-device localStorage flag — the two together distinguish "never asked"
+  from "our own intro already shown and answered", since the browser
+  permission alone can't tell those apart.
+- **Notification bell popover**: `/notifications` is gone, replaced by a
+  global bell popover reachable from anywhere (bottom-right on mobile); the
+  last `readAt`/`notifyInApp` remnants from the old page were removed.
+- **Self-host**: a file-toggled maintenance mode in Caddy, a
+  `REGISTRATION_ENABLED` flag to close signups on an instance, and Cloudflare
+  Turnstile bot protection on registration (installs without a Turnstile key
+  see no widget, and the API no-ops the check the same way).
+
 ## 1.1.0 — Profile pictures & profile sharing
 
 - **Profile picture upload**: `User.avatar` (bytes, stored in-row so it rides

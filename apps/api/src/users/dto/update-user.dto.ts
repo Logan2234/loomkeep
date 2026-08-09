@@ -50,6 +50,10 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsBoolean()
   notifyPush?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  notifyNewsletter?: boolean;
+
   // At least one domain must stay visible; each must be a known Domain.
   @IsOptional()
   @ArrayNotEmpty()
