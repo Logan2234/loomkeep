@@ -11,6 +11,8 @@
     resolveBottomShortcuts,
     resolveShortcutChoices,
   } from "$lib/navigation";
+  import { m } from "$lib/paraglide/messages.js";
+  import { setLocale } from "$lib/paraglide/runtime.js";
   import { theme } from "$lib/theme.svelte";
 
   const MIN = 3;
@@ -18,6 +20,7 @@
 
   let error = $state("");
   let saving = $state(false);
+  let localeSaving = $state(false);
 
   const gate = $derived({ isDomainEnabled, isAdmin: auth.isAdmin });
 
@@ -53,9 +56,23 @@
       await updateMe({ mobileNavShortcuts: next });
     } catch (err) {
       error =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       saving = false;
+    }
+  }
+
+  // No error UI here: reload on success (setLocale's default) makes an
+  // inline error dead on arrival anyway, and a failed save just leaves the
+  // toggle showing the still-current (unsaved) locale.
+  async function saveLocale(next: "fr" | "en") {
+    if (localeSaving || auth.user?.locale === next) return;
+    localeSaving = true;
+    try {
+      await updateMe({ locale: next });
+      setLocale(next);
+    } catch {
+      localeSaving = false;
     }
   }
 
@@ -97,6 +114,26 @@
         class:chip-on={theme.mode === "dark"}
         onclick={() => theme.mode !== "dark" && theme.toggle()}>
         <Icon name="moon" class="h-4 w-4" /> Sombre
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <p class="mb-2 font-semibold">{m.settings_language_label()}</p>
+    <div class="flex gap-2">
+      <button
+        class="chip inline-flex items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
+        class:chip-on={(auth.user?.locale ?? "fr") === "fr"}
+        disabled={localeSaving}
+        onclick={() => saveLocale("fr")}>
+        {m.settings_language_fr()}
+      </button>
+      <button
+        class="chip inline-flex items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
+        class:chip-on={auth.user?.locale === "en"}
+        disabled={localeSaving}
+        onclick={() => saveLocale("en")}>
+        {m.settings_language_en()}
       </button>
     </div>
   </div>

@@ -3,6 +3,7 @@
   import Carousel from "$lib/components/Carousel.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { CastDetailDto, CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
@@ -85,7 +86,7 @@
   <div class="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={closeCast}></button>
     <div
       role="dialog"
@@ -93,7 +94,7 @@
       class="card relative z-10 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl p-5 sm:rounded-2xl">
       <button
         class="text-dim hover:bg-surface-2 hover:text-fg absolute top-3 right-3 rounded-full p-1.5"
-        aria-label="Fermer"
+        aria-label={m.common_close()}
         onclick={closeCast}>
         <Icon name="x" class="h-5 w-5" />
       </button>

@@ -6,6 +6,7 @@
     removeListItem,
   } from "$lib/api/client";
   import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import ListFormModal from "./ListFormModal.svelte";
   import Modal from "./Modal.svelte";
@@ -73,7 +74,7 @@
 
 <Modal title="Ajouter à une liste" onclose={onClose}>
   {#if loading}
-    <p class="text-dim text-sm">Chargement…</p>
+    <p class="text-dim text-sm">{m.common_loading()}</p>
   {:else if lists.length === 0}
     <p class="text-dim text-sm">Tu n'as pas encore de liste.</p>
   {:else}

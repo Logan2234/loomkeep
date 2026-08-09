@@ -5,6 +5,7 @@
   // edges reveal prev/next arrows; on coarse/touch pointers native swipe drives
   // it and a row of tappable page dots gives the affordance arrows can't.
   // Callers supply their own per-item markup via the `card` snippet.
+  import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import type { Snippet } from "svelte";
 
@@ -163,7 +164,7 @@
     {#if !coarse && canScrollLeft}
       <button
         type="button"
-        aria-label="Précédent"
+        aria-label={m.common_previous()}
         class="border-border bg-bg/90 hover:bg-surface-2 absolute top-1/2 left-2 -translate-y-1/2 rounded-full border p-1.5 opacity-0 shadow-md backdrop-blur transition-opacity group-hover:opacity-100"
         onclick={() => scrollByPage(-1)}>
         <Icon name="chevron-left" class="h-4 w-4" />
@@ -172,7 +173,7 @@
     {#if !coarse && canScrollRight}
       <button
         type="button"
-        aria-label="Suivant"
+        aria-label={m.common_next()}
         class="border-border bg-bg/90 hover:bg-surface-2 absolute top-1/2 right-2 -translate-y-1/2 rounded-full border p-1.5 opacity-0 shadow-md backdrop-blur transition-opacity group-hover:opacity-100"
         onclick={() => scrollByPage(1)}>
         <Icon name="chevron-right" class="h-4 w-4" />

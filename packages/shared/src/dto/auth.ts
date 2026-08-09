@@ -96,6 +96,8 @@ export interface UpdateUserRequestDto {
   defaultReviewVisibility?: ReviewVisibility;
   /** Default audience for new lists (social). */
   defaultListVisibility?: ListVisibility;
+  /** UI language (Paraglide locale code). Currently "fr" or "en". */
+  locale?: string;
 }
 
 export interface UpdateUsernameRequestDto {

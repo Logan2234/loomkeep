@@ -12,6 +12,7 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     BOOK_STATUS_LABELS,
     BOOK_STATUS_ORDER,
@@ -374,7 +375,7 @@
     <a
       href="/settings/import"
       class="text-dim hover:text-fg"
-      aria-label="Retour">
+      aria-label={m.common_back()}>
       <Icon name="chevron-left" class="h-5 w-5" />
     </a>
     <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">

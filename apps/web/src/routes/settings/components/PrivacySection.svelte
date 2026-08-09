@@ -9,6 +9,7 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     Domain,
     type GhostSwitchImpactDto,
@@ -364,7 +365,7 @@
         class="btn btn-ghost"
         disabled={switchingToGhost}
         onclick={() => (confirmingGhost = false)}>
-        Annuler
+        {m.common_cancel()}
       </button>
       <button
         type="button"

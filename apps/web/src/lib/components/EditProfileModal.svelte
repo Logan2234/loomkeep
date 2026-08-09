@@ -2,6 +2,7 @@
   import { updateMe } from "$lib/api/client";
   import { ApiError } from "$lib/api/core";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { UserDto } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
 
@@ -36,7 +37,7 @@
       onclose();
     } catch (err) {
       error =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       busy = false;
     }
@@ -73,7 +74,7 @@
       class="btn btn-primary w-full"
       disabled={busy || !displayName.trim()}
       onclick={save}>
-      Enregistrer
+      {m.common_save()}
     </button>
   </div>
 </Modal>

@@ -2,6 +2,7 @@
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
+  import { m } from "$lib/paraglide/messages.js";
   import Switch from "$lib/components/Switch.svelte";
 
   let notifyError = $state("");
@@ -16,7 +17,7 @@
       );
     } catch (err) {
       notifyError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     }
   }
 
@@ -44,7 +45,7 @@
       }
     } catch (err) {
       notifyError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       pushBusy = false;
     }

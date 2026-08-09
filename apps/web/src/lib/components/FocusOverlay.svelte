@@ -13,6 +13,7 @@
   import { onMount } from "svelte";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
+  import { m } from "$lib/paraglide/messages.js";
 
   let {
     onclose,
@@ -54,7 +55,7 @@
       ? 'opacity-100'
       : 'pointer-events-none opacity-0'}"
     style="transition-duration: {dur}ms"
-    aria-label="Fermer"
+    aria-label={m.common_close()}
     onclick={requestClose}></button>
 
   <div

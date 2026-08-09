@@ -2,6 +2,7 @@
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared";
 
   // Content domains the user composes the app from. Podcasts and board games
@@ -59,7 +60,7 @@
       await updateMe({ enabledDomains: next });
     } catch (err) {
       domainsError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     }
   }
 </script>

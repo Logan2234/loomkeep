@@ -2,6 +2,7 @@
   import { deleteAvatar, uploadAvatar } from "$lib/api/client";
   import { ApiError } from "$lib/api/core";
   import type { UploadAvatarRequestDto } from "@loomkeep/shared";
+  import { m } from "$lib/paraglide/messages.js";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -162,7 +163,10 @@
       onclose();
     } catch (err) {
       status = "error";
-      error = err instanceof ApiError ? err.message : "Suppression impossible";
+      error =
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback();
     }
   }
 </script>
@@ -211,13 +215,13 @@
           disabled={status === "saving"}
           onclick={save}>
           <Icon name="check" class="h-4 w-4" />
-          Enregistrer
+          {m.common_save()}
         </button>
         <button
           class="btn btn-ghost w-full"
           disabled={status === "saving"}
           onclick={cancelEdit}>
-          Annuler
+          {m.common_cancel()}
         </button>
       {:else}
         <button

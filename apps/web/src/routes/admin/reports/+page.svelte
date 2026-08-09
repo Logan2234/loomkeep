@@ -16,6 +16,7 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
@@ -303,7 +304,7 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={loading}
         onclick={() => load(false)}>
-        {loading ? "Chargement…" : "Charger plus"}
+        {loading ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}

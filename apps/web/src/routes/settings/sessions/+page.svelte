@@ -9,6 +9,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { SessionDto } from "@loomkeep/shared";
   import { onMount } from "svelte";
 
@@ -25,7 +26,8 @@
     try {
       sessions = await getSessions();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Chargement impossible";
+      error =
+        err instanceof ApiError ? err.message : m.common_fetch_error_fallback();
     } finally {
       loading = false;
     }
@@ -110,7 +112,10 @@
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <div class="mb-6 flex items-center gap-3">
-    <a href="/settings" class="text-dim hover:text-fg" aria-label="Retour">
+    <a
+      href="/settings"
+      class="text-dim hover:text-fg"
+      aria-label={m.common_back()}>
       <Icon name="chevron-left" class="h-5 w-5" />
     </a>
     <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
@@ -192,7 +197,7 @@
             type="button"
             class="btn btn-ghost"
             onclick={() => (confirmTarget = null)}>
-            Annuler
+            {m.common_cancel()}
           </button>
           <button
             type="button"

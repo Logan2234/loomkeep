@@ -16,6 +16,7 @@
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ListDetailDto, ListDto, ListItemDto } from "@loomkeep/shared";
 
   const KIND_LABEL: Record<string, string> = {
@@ -69,7 +70,10 @@
               error = "Liste introuvable ou non accessible.";
             });
         }
-        error = err instanceof ApiError ? err.message : "Chargement impossible";
+        error =
+          err instanceof ApiError
+            ? err.message
+            : m.common_fetch_error_fallback();
       })
       .finally(() => (loading = false));
   });

@@ -37,6 +37,7 @@
     GAME_STATUS_META as STATUS_META,
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/status-labels";
+  import { m } from "$lib/paraglide/messages.js";
   import type { GameDetailDto } from "@loomkeep/shared";
 
   // IGDB is the only game source today; the web route carries just the id.
@@ -99,7 +100,9 @@
             "Ce jeu est réservé aux comptes ayant activé le contenu pour adultes (réglages).";
         } else {
           error =
-            err instanceof ApiError ? err.message : "Chargement impossible";
+            err instanceof ApiError
+              ? err.message
+              : m.common_fetch_error_fallback();
         }
       });
   });

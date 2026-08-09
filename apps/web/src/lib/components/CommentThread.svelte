@@ -21,6 +21,7 @@
   import { auth } from "$lib/auth.svelte";
   import FocusOverlay from "$lib/components/FocusOverlay.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import {
     COMMENT_EMOTE_DISPLAY,
@@ -374,8 +375,8 @@
           </button>
           <button
             class="hover:text-danger hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full"
-            title="Supprimer"
-            aria-label="Supprimer"
+            title={m.common_delete()}
+            aria-label={m.common_delete()}
             onclick={() => (confirmDeleteId = c.id)}>
             <Icon name="trash" class="h-4 w-4" />
           </button>
@@ -488,12 +489,12 @@
               <button
                 class="btn btn-primary btn-sm shrink-0"
                 onclick={() => submitEdit(c.id)}>
-                Enregistrer
+                {m.common_save()}
               </button>
               <button
                 class="btn btn-ghost btn-sm shrink-0"
                 onclick={() => (editingId = null)}>
-                Annuler
+                {m.common_cancel()}
               </button>
             </div>
           {:else}
@@ -533,7 +534,7 @@
               <button
                 class="btn btn-ghost btn-sm shrink-0"
                 onclick={() => (replyToId = null)}>
-                Annuler
+                {m.common_cancel()}
               </button>
             </div>
           {/if}
@@ -615,7 +616,7 @@
       </div>
 
       {#if query.isPending}
-        <p class="text-dim text-sm">Chargement…</p>
+        <p class="text-dim text-sm">{m.common_loading()}</p>
       {:else if visibleComments.length === 0}
         <p class="text-dim text-sm">Aucun commentaire pour l'instant.</p>
       {:else}
@@ -677,7 +678,7 @@
   <ConfirmationModal
     title="Supprimer le commentaire"
     message="Le texte sera retiré ; les réponses éventuelles resteront visibles."
-    confirmLabel="Supprimer"
+    confirmLabel={m.common_delete()}
     danger
     busy={deleteMut.isPending}
     onConfirm={confirmRemove}
@@ -740,7 +741,7 @@
 
     <div class="mt-3 flex justify-end gap-2">
       <button class="btn btn-ghost" onclick={() => (reportingId = null)}>
-        Annuler
+        {m.common_cancel()}
       </button>
       <button
         class="btn btn-primary"

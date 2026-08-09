@@ -52,5 +52,22 @@
   "settings_section_import": "Import",
   "settings_section_export": "Export",
   "settings_section_danger_zone": "Zone de danger",
-  "settings_version": "Loomkeep v{version}"
+  "settings_version": "Loomkeep v{version}",
+  "settings_language_label": "Langue",
+  "settings_language_fr": "Français",
+  "settings_language_en": "English",
+
+  "common_cancel": "Annuler",
+  "common_save": "Enregistrer",
+  "common_save_loading": "Enregistrement…",
+  "common_delete": "Supprimer",
+  "common_confirm": "Confirmer",
+  "common_close": "Fermer",
+  "common_back": "Retour",
+  "common_next": "Suivant",
+  "common_previous": "Précédent",
+  "common_loading": "Chargement…",
+  "common_fetch_error_fallback": "Chargement impossible",
+  "common_save_error_fallback": "Enregistrement impossible",
+  "common_delete_error_fallback": "Suppression impossible"
 }

@@ -3,6 +3,7 @@
   import { ApiError, deleteAccount } from "$lib/api/client";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
 
   let showModal = $state(false);
@@ -29,7 +30,9 @@
       await goto("/login");
     } catch (err) {
       deleteError =
-        err instanceof ApiError ? err.message : "Suppression impossible";
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback();
     } finally {
       deleteSaving = false;
     }
@@ -76,7 +79,7 @@
       {/if}
       <div class="mt-2 flex justify-end gap-2">
         <button type="button" class="btn btn-ghost" onclick={closeModal}>
-          Annuler
+          {m.common_cancel()}
         </button>
         <button
           type="submit"

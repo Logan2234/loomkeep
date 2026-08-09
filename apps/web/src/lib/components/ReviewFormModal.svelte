@@ -5,6 +5,7 @@
     upsertReview,
   } from "$lib/api/client";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     REVIEW_TEXT_MAX_LENGTH,
     type ReviewDto,
@@ -166,19 +167,19 @@
         class="btn btn-primary flex-1"
         disabled={busy || formRating === null}
         onclick={save}>
-        Enregistrer
+        {m.common_save()}
       </button>
       {#if review}
         {#if confirmingDelete}
           <button class="btn btn-danger" disabled={busy} onclick={doDelete}>
-            Confirmer
+            {m.common_confirm()}
           </button>
         {:else}
           <button
             class="btn btn-ghost"
             disabled={busy}
             onclick={() => (confirmingDelete = true)}>
-            Supprimer
+            {m.common_delete()}
           </button>
         {/if}
       {/if}

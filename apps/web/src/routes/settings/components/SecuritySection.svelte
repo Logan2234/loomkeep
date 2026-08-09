@@ -10,6 +10,7 @@
   import { auth } from "$lib/auth.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
 
   type SecurityModal = "username" | "email" | "password" | null;
@@ -67,7 +68,7 @@
       toast.success("Nom d'utilisateur mis à jour.");
     } catch (err) {
       usernameError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       usernameSaving = false;
     }
@@ -103,7 +104,7 @@
       emailStep = "code";
     } catch (err) {
       emailError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       emailSaving = false;
     }
@@ -158,7 +159,7 @@
       toast.success("Mot de passe mis à jour.");
     } catch (err) {
       passwordError =
-        err instanceof ApiError ? err.message : "Enregistrement impossible";
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
     } finally {
       passwordSaving = false;
     }
@@ -239,13 +240,13 @@
         {/if}
         <div class="mt-2 flex justify-end gap-2">
           <button type="button" class="btn btn-ghost" onclick={closeModal}>
-            Annuler
+            {m.common_cancel()}
           </button>
           <button
             type="submit"
             class="btn btn-primary"
             disabled={usernameSaving || usernameCheck !== "available"}>
-            {usernameSaving ? "Enregistrement…" : "Enregistrer"}
+            {usernameSaving ? m.common_save_loading() : m.common_save()}
           </button>
         </div>
       </form>
@@ -282,7 +283,7 @@
           {/if}
           <div class="mt-2 flex justify-end gap-2">
             <button type="button" class="btn btn-ghost" onclick={closeModal}>
-              Annuler
+              {m.common_cancel()}
             </button>
             <button
               type="submit"
@@ -290,7 +291,7 @@
               disabled={emailSaving ||
                 !emailInput.trim() ||
                 !emailPasswordInput}>
-              {emailSaving ? "Enregistrement…" : "Enregistrer"}
+              {emailSaving ? m.common_save_loading() : m.common_save()}
             </button>
           </div>
         </form>
@@ -323,13 +324,13 @@
               type="button"
               class="btn btn-ghost"
               onclick={() => (emailStep = "form")}>
-              Retour
+              {m.common_back()}
             </button>
             <button
               type="submit"
               class="btn btn-primary"
               disabled={emailConfirming || emailCodeInput.trim().length !== 6}>
-              {emailConfirming ? "Vérification…" : "Confirmer"}
+              {emailConfirming ? "Vérification…" : m.common_confirm()}
             </button>
           </div>
         </form>
@@ -375,7 +376,7 @@
         {/if}
         <div class="mt-2 flex justify-end gap-2">
           <button type="button" class="btn btn-ghost" onclick={closeModal}>
-            Annuler
+            {m.common_cancel()}
           </button>
           <button
             type="submit"
@@ -384,7 +385,7 @@
               !currentPasswordInput ||
               !newPasswordInput ||
               !confirmPasswordInput}>
-            {passwordSaving ? "Enregistrement…" : "Enregistrer"}
+            {passwordSaving ? m.common_save_loading() : m.common_save()}
           </button>
         </div>
       </form>

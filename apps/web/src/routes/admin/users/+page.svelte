@@ -27,6 +27,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
@@ -315,7 +316,9 @@
       toast.success(`Compte de ${deletedName} supprimé.`);
     } catch (err) {
       deleteError =
-        err instanceof ApiError ? err.message : "Suppression impossible";
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback();
     } finally {
       deleting = false;
     }
@@ -460,7 +463,7 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={loading}
         onclick={() => load(false)}>
-        {loading ? "Chargement…" : "Charger plus"}
+        {loading ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}
@@ -470,7 +473,7 @@
   <div class="fixed inset-0 z-50 flex justify-end">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={closeDrawer}></button>
     <div
       role="dialog"
@@ -507,7 +510,7 @@
         </div>
         <button
           class="text-dim hover:bg-surface-2 hover:text-fg shrink-0 rounded-full p-1.5"
-          aria-label="Fermer"
+          aria-label={m.common_close()}
           onclick={closeDrawer}>
           <Icon name="x" class="h-5 w-5" />
         </button>
@@ -827,7 +830,7 @@
     class="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
-      aria-label="Fermer"
+      aria-label={m.common_close()}
       onclick={closeDeleteModal}></button>
     <div
       role="dialog"
@@ -863,7 +866,7 @@
           class="btn btn-ghost"
           disabled={deleting}
           onclick={closeDeleteModal}>
-          Annuler
+          {m.common_cancel()}
         </button>
         <button
           type="button"
