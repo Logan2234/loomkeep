@@ -28,6 +28,7 @@
     "/register",
     "/forgot-password",
     "/reset-password",
+    "/changelog",
   ];
 
   const PUBLIC_ROUTES = [
