@@ -1,3 +1,4 @@
+import type { AuthTokensDto } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -8,7 +9,6 @@ import {
   Post,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import type { AuthTokensDto } from "@loomkeep/shared";
 import { AuthResult, AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";

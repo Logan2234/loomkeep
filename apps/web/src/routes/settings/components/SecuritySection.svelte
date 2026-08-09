@@ -5,6 +5,7 @@
     changePassword,
     checkUsernameAvailable,
     confirmEmailChange,
+    resendVerificationEmail,
     updateUsername,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
@@ -16,6 +17,10 @@
   type SecurityModal = "username" | "email" | "password" | null;
 
   let openModal = $state<SecurityModal>(null);
+  let verificationSending = $state(false);
+  let verificationSent = $state(false);
+  let verificationCooldown = $state(0);
+  let verificationCooldownTimer: ReturnType<typeof setInterval> | undefined;
 
   function closeModal() {
     clearTimeout(usernameCheckTimer);
@@ -125,6 +130,44 @@
     }
   }
 
+  async function resendVerification() {
+    if (
+      verificationSending ||
+      verificationCooldown > 0 ||
+      auth.user?.emailVerified
+    ) {
+      return;
+    }
+
+    verificationSending = true;
+    verificationSent = false;
+
+    try {
+      await resendVerificationEmail();
+
+      verificationSent = true;
+      verificationCooldown = 60;
+
+      clearInterval(verificationCooldownTimer);
+
+      verificationCooldownTimer = setInterval(() => {
+        verificationCooldown -= 1;
+
+        if (verificationCooldown <= 0) {
+          clearInterval(verificationCooldownTimer);
+          verificationCooldownTimer = undefined;
+        }
+      }, 1000);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Impossible d'envoyer l'email de vérification.",
+      );
+    } finally {
+      verificationSending = false;
+    }
+  }
   let currentPasswordInput = $state("");
   let newPasswordInput = $state("");
   let confirmPasswordInput = $state("");
@@ -180,11 +223,45 @@
         </button>
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
-        <div>
+        <div class="min-w-0">
           <p class="text-dim text-sm">Email</p>
-          <p class="font-semibold">{auth.user.email}</p>
+          <p class="truncate font-semibold">{auth.user.email}</p>
+
+          {#if auth.user.emailVerified}
+            <p class="text-success mt-1 flex items-center gap-1 text-xs">
+              <span aria-hidden="true">✓</span>
+              Adresse email vérifiée
+            </p>
+          {:else}
+            <div
+              class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span class="text-warning flex items-center gap-1">
+                <span aria-hidden="true">⚠</span>
+                Adresse email non vérifiée
+              </span>
+
+              <button
+                type="button"
+                class="link-accent"
+                onclick={resendVerification}
+                disabled={verificationSending || verificationCooldown > 0}>
+                {#if verificationSending}
+                  Envoi…
+                {:else if verificationCooldown > 0}
+                  Renvoyer dans {verificationCooldown}s
+                {:else}
+                  Renvoyer l'email
+                {/if}
+              </button>
+            </div>
+
+            {#if verificationSent}
+              <p class="text-success mt-1 text-xs">✓ Email envoyé</p>
+            {/if}
+          {/if}
         </div>
-        <button class="link-accent text-sm" onclick={openEmailModal}>
+
+        <button class="link-accent shrink-0 text-sm" onclick={openEmailModal}>
           Modifier
         </button>
       </div>

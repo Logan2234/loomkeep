@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { ApiError, login } from "$lib/api/client";
+  import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -26,8 +27,9 @@
   }
 </script>
 
-<div class="flex min-h-screen items-center justify-center px-4 py-12">
-  <div class="w-full max-w-sm">
+<div class="flex min-h-screen flex-col">
+  <div class="flex flex-1 items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
     <div class="mb-8 text-center">
       <p class="font-display text-3xl font-extrabold tracking-tight">
         LOOM<span class="text-accent">KEEP</span>
@@ -63,5 +65,7 @@
         </p>
       {/if}
     </form>
+    </div>
   </div>
+  <LegalLinks />
 </div>
