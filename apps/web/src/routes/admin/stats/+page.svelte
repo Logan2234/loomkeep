@@ -24,6 +24,7 @@
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import SocialSection from "./components/SocialSection.svelte";
   import SystemSection from "./components/SystemSection.svelte";
 
@@ -46,7 +47,7 @@
       ]);
     } catch (err) {
       error =
-        err instanceof ApiError ? err.message : "Statistiques indisponibles";
+        err instanceof ApiError ? err.message : m.admin_stats_fetch_error();
     } finally {
       loading = false;
     }
@@ -76,27 +77,33 @@
 
     if (accounts) {
       tiles.push(
-        { value: nf.format(accounts.total), label: "Comptes" },
+        {
+          value: nf.format(accounts.total),
+          label: m.admin_stats_kpi_accounts(),
+        },
         {
           value: nf.format(accounts.health.active24h),
-          label: "Actifs · 24 h",
+          label: m.admin_stats_kpi_active_24h(),
         },
         {
           value: nf.format(accounts.health.active30d),
-          label: "Actifs · 30 j",
+          label: m.admin_stats_kpi_active_30d(),
         },
       );
     }
 
     if (catalogue) {
       const cached = catalogue.byDomain.reduce((sum, d) => sum + d.items, 0);
-      tiles.push({ value: nf.format(cached), label: "Œuvres en cache" });
+      tiles.push({
+        value: nf.format(cached),
+        label: m.admin_stats_kpi_cached_works(),
+      });
     }
 
     if (socialStats) {
       tiles.push({
         value: nf.format(socialStats.reports.pending),
-        label: "Signalements en attente",
+        label: m.admin_stats_kpi_pending_reports(),
         alert: socialStats.reports.pending > 0,
       });
     }
@@ -113,14 +120,14 @@
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="stats"
-    title="Statistiques d’instance"
-    subtitle="Vue d’ensemble transverse, tous comptes confondus.">
+    title={m.admin_stats_title()}
+    subtitle={m.admin_stats_subtitle()}>
     {#snippet actions()}
       <button
         onclick={load}
         disabled={loading}
         class="btn btn-ghost shrink-0 disabled:opacity-50">
-        {loading ? "…" : "Rafraîchir"}
+        {loading ? "…" : m.admin_refresh()}
       </button>
     {/snippet}
   </PageHeader>
@@ -145,7 +152,7 @@
 
     {#if accounts}
       <section class="border-border border-t py-6">
-        <SectionLabel label="Comptes & engagement" />
+        <SectionLabel label={m.admin_stats_section_accounts()} />
         <!-- Remount on refresh so the cards' own local pickers reset with it. -->
         {#key accounts.generatedAt}
           <AccountsSection stats={accounts} />
@@ -155,7 +162,7 @@
 
     {#if catalogue}
       <section class="border-border border-t py-6">
-        <SectionLabel label="Catalogue & cache" />
+        <SectionLabel label={m.admin_stats_section_catalogue()} />
         <CatalogueSection stats={catalogue} />
       </section>
     {/if}
@@ -164,7 +171,9 @@
          no social surface to report on. -->
     {#if socialStats}
       <section class="border-border border-t py-6">
-        <SectionLabel label="Social" badge="SOCIAL_ENABLED" />
+        <SectionLabel
+          label={m.admin_stats_section_social()}
+          badge="SOCIAL_ENABLED" />
         {#key socialStats.generatedAt}
           <SocialSection stats={socialStats} />
         {/key}
@@ -173,16 +182,16 @@
 
     {#if system}
       <section class="border-border border-t py-6">
-        <SectionLabel label="Système" />
+        <SectionLabel label={m.admin_area_system()} />
         <SystemSection stats={system} />
       </section>
     {/if}
 
     {#if accounts}
       <p class="text-dim mt-6 text-xs">
-        Dernier rafraîchissement : {dateTimeFmt.format(
-          new Date(accounts.generatedAt),
-        )}
+        {m.admin_stats_last_refresh({
+          date: dateTimeFmt.format(new Date(accounts.generatedAt)),
+        })}
       </p>
     {/if}
   {/if}

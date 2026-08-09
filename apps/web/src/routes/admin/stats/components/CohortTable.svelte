@@ -2,6 +2,7 @@
   // Monthly retention grid: one row per signup month, one column per month
   // elapsed since, cell intensity = retention %. Rows shorten as cohorts get
   // more recent (no future months), which draws the staircase.
+  import { m } from "$lib/paraglide/messages.js";
   import type { AdminCohortRowDto } from "@loomkeep/shared";
 
   let { cohorts }: { cohorts: AdminCohortRowDto[] } = $props();
@@ -21,7 +22,7 @@
 </script>
 
 {#if cohorts.length === 0}
-  <p class="text-dim text-sm">Pas encore de cohorte.</p>
+  <p class="text-dim text-sm">{m.admin_cohort_empty()}</p>
 {:else}
   <div class="overflow-x-auto">
     <table
@@ -29,7 +30,8 @@
       <thead>
         <tr>
           <th class="text-dim p-0.5 font-normal"
-            ><span class="sr-only">Mois d’inscription</span></th>
+            ><span class="sr-only">{m.admin_cohort_signup_month_sr()}</span
+            ></th>
           {#each columns as c (c)}
             <th class="text-dim p-0.5 font-normal">+{c}</th>
           {/each}
