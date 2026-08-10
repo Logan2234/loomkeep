@@ -11,5 +11,11 @@
   "singleQuote": false,
   "tabWidth": 2,
   "trailingComma": "all",
-  "useTabs": false
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": ["**/*"],
+      "excludeFiles": "./apps/web/src/lib/paraglide/**"
+    }
+  ]
 }
