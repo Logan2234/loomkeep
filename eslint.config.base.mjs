@@ -7,6 +7,7 @@ import path from "path";
 import ts from "typescript-eslint";
 
 const gitignorePath = path.resolve(import.meta.dirname, ".gitignore");
+const typeAware = process.env.ESLINT_TYPE_AWARE === "true";
 
 /**
  * Shared flat-config base for every workspace package: JS/TS recommended
@@ -33,7 +34,7 @@ export function baseConfig(dirname, { browser = false } = {}) {
         },
         sourceType: "commonjs",
         parserOptions: {
-          projectService: true,
+          projectService: typeAware,
           tsconfigRootDir: dirname,
         },
       },
