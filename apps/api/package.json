@@ -1,6 +1,6 @@
 {
   "name": "@loomkeep/api",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Loomkeep REST API (NestJS)",
   "private": true,
   "license": "AGPL-3.0-only",

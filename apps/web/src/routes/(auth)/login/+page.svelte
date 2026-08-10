@@ -16,7 +16,7 @@
   // be an open-redirect vector (e.g. redirectTo=https://evil.example).
   function safeRedirect(target: string | null): string {
     if (target?.startsWith("/") && !target.startsWith("//")) return target;
-    return "/";
+    return "/app";
   }
 
   async function submit(event: SubmitEvent) {

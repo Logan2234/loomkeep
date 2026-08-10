@@ -12,6 +12,8 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.4.0 — Public landing page & app routing overhaul
+
 - **Public landing page** at `/`: a prerendered marketing page (hero, the six
   libraries, feature grid, hosted-instance vs self-hosting) replacing the
   redirect-to-login that used to greet anonymous visitors. Copy lives in
@@ -39,6 +41,9 @@ this point beyond the roadmap phases already documented in the README.
 - Fixed a pre-existing type error in `SupportSection.svelte` (`recommended`
   was missing from three of the four support tiles, so the union type didn't
   expose it).
+- Fixed a deep link being lost on login: the redirect to `/login` now carries
+  the original path as `redirectTo`, and a successful login sends the user
+  back there instead of always landing on `/app`.
 
 ## 1.3.0 — Calendar sync, feedback board & legal pages
 
