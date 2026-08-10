@@ -16,6 +16,7 @@ import type {
   UserDataExportDto,
   UserDto,
   UsernameAvailabilityDto,
+  WidgetTokenDto,
 } from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
@@ -182,6 +183,11 @@ export function getCalendarToken(): Promise<CalendarTokenDto> {
 /** Issues a new calendar token, revoking any previously shared .ics link. */
 export function regenerateCalendarToken(): Promise<CalendarTokenDto> {
   return request("/users/me/calendar-token/regenerate", { method: "POST" });
+}
+
+/** Short-lived SSO token for the feedback widget's "Verified identity only" mode. */
+export function getWidgetToken(): Promise<WidgetTokenDto> {
+  return request("/users/me/widget-token");
 }
 
 /** Permanently deletes the account and clears local auth state. */

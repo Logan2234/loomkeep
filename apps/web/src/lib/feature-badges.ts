@@ -11,6 +11,7 @@ const SHIPPED: Record<string, string> = {
   "calendar-subscribe": "2026-08-09",
   "locale-english": "2026-08-09",
   newsletter: "2026-08-09",
+  "help-feedback": "2026-08-10",
 };
 
 export function isFeatureNew(key: keyof typeof SHIPPED): boolean {
