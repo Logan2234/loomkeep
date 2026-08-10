@@ -48,7 +48,9 @@ async function bootstrap() {
       moduleIdGeneratorAlgorithm: "reference",
       forceConsole: false,
       preview: false,
-      rawBody: false,
+      // Needed so QuackbackWebhookGuard can verify the HMAC signature over
+      // the exact bytes Quackback sent (populates request.rawBody).
+      rawBody: true,
       snapshot: false,
       cors: {
         // Comma-separated so multiple origins can be allowed at once.

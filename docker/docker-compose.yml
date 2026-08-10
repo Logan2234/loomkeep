@@ -85,6 +85,9 @@ services:
       # WidgetIdentify.svelte swallows that, so an unconfigured secret just
       # means the widget stays anonymous rather than breaking the app.
       QUACKBACK_WIDGET_SECRET: ${QUACKBACK_WIDGET_SECRET:-}
+      # Signing secret for Quackback's "Changelog Published" webhook — see
+      # .env.example. Empty = the webhook guard rejects every delivery.
+      QUACKBACK_CHANGELOG_WEBHOOK_SECRET: ${QUACKBACK_CHANGELOG_WEBHOOK_SECRET:-}
     volumes:
       - backup-data:/data/backups
     ports:

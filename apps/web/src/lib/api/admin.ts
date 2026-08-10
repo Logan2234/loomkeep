@@ -28,13 +28,12 @@ import type {
   AdminUserOptionDto,
   AdminUserRoleDto,
   AdminVersionDto,
-  ChangelogEntryDto,
-  CreateChangelogEntryRequestDto,
   Domain,
   JobListResponseDto,
   JobStatus,
   MyListDto,
   MyReviewDto,
+  NewsletterSendDto,
   ReportDto,
   ReportPageDto,
   MailTemplateListResponseDto,
@@ -45,12 +44,10 @@ import type {
   SecurityEventType,
   SendAdminBroadcastPushRequestDto,
   SendAdminTestPushRequestDto,
-  SendChangelogNewsletterResponseDto,
   SendTestEmailRequestDto,
   ServiceStatusResponseDto,
   SessionDto,
   TrendPeriod,
-  UpdateChangelogEntryRequestDto,
   UserDataExportDto,
   UserSummaryDto,
 } from "@loomkeep/shared";
@@ -279,33 +276,9 @@ export function getAdminVersion(): Promise<AdminVersionDto> {
   return request("/admin/version");
 }
 
-/** Every release note entry, newest first — for the admin management table. */
-export function getAdminChangelog(): Promise<ChangelogEntryDto[]> {
-  return request("/admin/changelog");
-}
-
-export function createAdminChangelogEntry(
-  body: CreateChangelogEntryRequestDto,
-): Promise<ChangelogEntryDto> {
-  return request("/admin/changelog", { method: "POST", body });
-}
-
-export function updateAdminChangelogEntry(
-  id: string,
-  body: UpdateChangelogEntryRequestDto,
-): Promise<ChangelogEntryDto> {
-  return request(`/admin/changelog/${id}`, { method: "PUT", body });
-}
-
-export function deleteAdminChangelogEntry(id: string): Promise<void> {
-  return request(`/admin/changelog/${id}`, { method: "DELETE" });
-}
-
-/** Sends (or resends) the release newsletter for one entry to every opted-in account. */
-export function sendAdminChangelogNewsletter(
-  id: string,
-): Promise<SendChangelogNewsletterResponseDto> {
-  return request(`/admin/changelog/${id}/send`, { method: "POST" });
+/** Newsletter send history, newest first — sending itself is automatic (Quackback webhook). */
+export function getAdminNewsletterSends(): Promise<NewsletterSendDto[]> {
+  return request("/admin/newsletter");
 }
 
 /** Persisted backup dumps on disk, most recent first — up to 7, pruned by the daily job. */

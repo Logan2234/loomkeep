@@ -29,7 +29,6 @@
     "/register",
     "/forgot-password",
     "/reset-password",
-    "/changelog",
   ];
 
   const PUBLIC_ROUTES = [
@@ -38,7 +37,6 @@
     "/legal/legal-notice",
     "/legal/privacy-policy",
     "/legal/terms-of-service",
-    "/changelog",
     "/register/check-email",
   ];
 

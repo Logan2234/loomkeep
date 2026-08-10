@@ -3,6 +3,7 @@
   import { auth } from "$lib/auth.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import AppearanceSection from "./components/AppearanceSection.svelte";
   import CommunicationsSection from "./components/CommunicationsSection.svelte";
@@ -14,6 +15,7 @@
   import PrivacySection from "./components/PrivacySection.svelte";
   import ProfileSection from "./components/ProfileSection.svelte";
   import SecuritySection from "./components/SecuritySection.svelte";
+  import SupportSection from "./components/SupportSection.svelte";
 
   // AdminOnly on the backend — only fetched (and shown) for the admin account.
   let version = $state<string | null>(null);
@@ -28,7 +30,12 @@
 
   // Section table of contents (desktop only) — id must match the wrapper
   // below each section component. `social` entries hide when the flag is off.
-  const SECTIONS: { id: string; label: string; social?: boolean }[] = [
+  const SECTIONS: {
+    id: string;
+    label: string;
+    social?: boolean;
+    newBadgeKey?: Parameters<typeof isFeatureNew>[0];
+  }[] = [
     { id: "securite", label: m.settings_section_security() },
     { id: "contenu", label: m.settings_section_content() },
     {
@@ -41,7 +48,16 @@
     { id: "apparence", label: m.settings_section_appearance() },
     { id: "import", label: m.settings_section_import() },
     { id: "export", label: m.settings_section_export() },
-    { id: "aide", label: m.settings_section_help() },
+    {
+      id: "aide",
+      label: m.settings_section_help(),
+      newBadgeKey: "help-feedback",
+    },
+    {
+      id: "soutien",
+      label: m.settings_section_support(),
+      newBadgeKey: "support",
+    },
     { id: "danger", label: m.settings_section_danger_zone() },
   ];
   const visibleSections = $derived(
@@ -119,6 +135,11 @@
                   ? 'border-accent text-fg'
                   : 'text-dim hover:text-fg border-transparent'}">
                 {s.label}
+                {#if s.newBadgeKey && isFeatureNew(s.newBadgeKey)}
+                  <span
+                    class="bg-accent ml-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+                    aria-hidden="true"></span>
+                {/if}
               </a>
             </li>
           {/each}
@@ -153,6 +174,9 @@
         <div id="aide" data-section-id="aide">
           <HelpFeedbackSection />
         </div>
+        <div id="soutien" data-section-id="soutien">
+          <SupportSection />
+        </div>
         <div id="danger" data-section-id="danger">
           <DangerZoneSection />
         </div>
@@ -182,7 +206,9 @@
     </p>
     {#if version}
       <a
-        href="/changelog"
+        href="https://feedback.loomkeep.app/changelog"
+        target="_blank"
+        rel="noopener noreferrer"
         class="decoration-border hover:decoration-accent hover:text-fg text-dim underline underline-offset-2">
         {m.settings_version({ version })}
       </a>

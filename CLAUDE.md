@@ -59,9 +59,9 @@ so they never touch dev data.
 
 ## Architecture
 
-**Product model:** loomkeep has two destinations, not one — the public
+**Product model:** Loomkeep has two destinations, not one — the public
 instance Logan runs on his own VPS (`deploy.yml`, no setup required), and
-self-hosting via the `docker/` compose stack. Don't describe loomkeep as
+self-hosting via the `docker/` compose stack. Don't describe Loomkeep as
 "self-hosted" without also mentioning the hosted option. A premium plan is
 planned for the future on **both**: extra features gated behind it on the
 hosted instance, and — undecided — possibly some features gated behind it
@@ -176,13 +176,21 @@ visibility model, content registers, and GHOST/Figurant behaviour.
   `apps/*`/`packages/*` package.json, kept in lockstep) is the only record of
   where the app stands — currently past 1.0. Bump the minor version when a
   feature domain ships (a new module, a significant capability), patch for
-  smaller fixes/polish. Bumping a version is a 3-step ritual, each step owned
+  smaller fixes/polish. Bumping a version is a 2-step ritual, each step owned
   by a different actor — don't skip one: (1) an entry in `CHANGELOG.md`
-  (technical, git-facing, written by Claude); (2) a matching entry in
-  `/admin/changelog` → public `/changelog` page (user-facing, written by
-  Logan by hand, not automated); (3) a matching entry on the Quackback
-  changelog (feedback.loomkeep.app, user-facing, written by Claude — see
-  "Feedback board (Quackback)" below for the template).
+  (technical, git-facing, written by Claude); (2) a matching entry on the
+  Quackback changelog (feedback.loomkeep.app, user-facing, written by
+  Claude — see "Feedback board (Quackback)" below for the template). There is
+  no separate local changelog anymore — Quackback's changelog is the only
+  user-facing release notes page (linked from the app footer and Help &
+  Feedback), and **publishing an entry there automatically sends the release
+  newsletter**: Quackback's "Changelog Published" webhook hits
+  `POST /api/webhook/changelog-published` (`apps/api/src/newsletter/`,
+  HMAC-verified via `QUACKBACK_CHANGELOG_WEBHOOK_SECRET`), which mails every
+  `notifyNewsletter` account with that entry's title + content. Sending is
+  fully automatic — there is nothing to trigger by hand, and no way to
+  preview before it goes out, so get the entry right before publishing.
+  `/admin/newsletter` is a read-only send history, not a compose screen.
 - **Feedback board (Quackback)**: user feedback lives at
   feedback.loomkeep.app (self-hosted, MCP tools
   `mcp__quackback__*`/REST API), not in this repo or in Claude's memory —

@@ -20,12 +20,21 @@ export interface MailTemplateField {
   multiline?: boolean;
 }
 
-/** Splits an admin-edited multiline field into non-empty, trimmed lines. */
-function splitLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+/** Escapes text pulled from Quackback content before it's placed in HTML. */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Bold/italic/link inline spans within a line — the rest is passed through as-is. */
+function renderInline(text: string): string {
+  return escapeHtml(text)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
 }
 
 export interface MailTemplateInfo {
@@ -132,22 +141,20 @@ export class MailService {
     newsletter: {
       label: "Newsletter (nouveautés)",
       fields: [
-        { key: "version", label: "Version", default: "1.2.0" },
         {
           key: "title",
           label: "Titre",
-          default: "Photos de profil & partage",
+          default: "Loomkeep 1.3.0",
         },
         {
-          key: "highlights",
-          label: "Nouveautés (une par ligne)",
+          key: "content",
+          label: "Contenu (Markdown, comme sur Quackback)",
           default:
-            "Upload de photo de profil, recadrage inclus\nPartage de profil : lien direct ou QR code",
+            "Here's what's changing in this version.\n\n## New\n\n- Calendar subscription: subscribe to your Loomkeep release calendar from Google/Apple Calendar.\n- A feedback board! Suggest ideas and report bugs.\n\n## Improvements\n\n- Password strength requirements are now shown live while you type.",
           multiline: true,
         },
       ],
-      build: (v) =>
-        this.buildNewsletter(v.version, v.title, splitLines(v.highlights)),
+      build: (v) => this.buildNewsletter(v.title, v.content),
     },
     reportsDigest: {
       label: "Digest des signalements",
@@ -302,17 +309,13 @@ export class MailService {
     await this.send({ to, ...this.buildReportsDigest(pendingCount) });
   }
 
-  /** Release newsletter — explicitly triggered from a ChangelogEntry, never automatic. */
+  /** Release newsletter — sent automatically when a changelog entry is published on Quackback (see NewsletterService). */
   async sendNewsletter(
     to: string,
-    version: string,
     title: string,
-    highlights: string[],
+    content: string,
   ): Promise<void> {
-    await this.send({
-      to,
-      ...this.buildNewsletter(version, title, highlights),
-    });
+    await this.send({ to, ...this.buildNewsletter(title, content) });
   }
 
   private buildReportsDigest(pendingCount: number): TemplateBody {
@@ -433,32 +436,81 @@ export class MailService {
     };
   }
 
-  private buildNewsletter(
-    version: string,
-    title: string,
-    highlights: string[],
-  ): TemplateBody {
-    const entryUrl = `${this.webOrigin}/changelog#v${version}`;
+  private buildNewsletter(title: string, content: string): TemplateBody {
+    const entryUrl = "https://feedback.loomkeep.app/changelog";
     const prefsUrl = `${this.webOrigin}/settings#communications`;
-    const listHtml = highlights
-      .map(
-        (h) =>
-          `<li style="border-left:2px solid ${COLOR_ACCENT};padding:2px 0 2px 12px;margin-bottom:10px;list-style:none;">${h}</li>`,
-      )
-      .join("");
-    const listText = highlights.map((h) => `• ${h}`).join("\n");
+    const { html: contentHtml, text: contentText } =
+      this.renderChangelogMarkdown(content);
 
     return {
-      subject: `Loomkeep ${version} — ${title}`,
-      text: `Nouvelle version · v${version}\n${title}\n\n${listText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}`,
+      subject: `Loomkeep — ${title}`,
+      text: `${title}\n\n${contentText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}`,
       html: this.wrapEmail(
         title,
-        `<ul style="margin:0 0 24px;padding:0;">${listHtml}</ul>
-         ${this.button(entryUrl, "Voir la nouveauté")}
+        `${contentHtml}
+         ${this.button(entryUrl, "Voir sur le changelog")}
          <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">Tu reçois cet email car tu es abonné aux nouveautés · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes préférences</a></p>`,
-        `Nouvelle version · v${version}`,
+        "Nouvelle version",
       ),
     };
+  }
+
+  /**
+   * Renders the subset of Markdown Quackback's changelog template actually
+   * produces (intro paragraph, `## ` section headings, `- `/`* ` bullet
+   * lists, inline bold/italic/link spans) — not a general Markdown parser.
+   * Anything outside that subset (tables, code blocks, nested lists…) falls
+   * through as a plain paragraph rather than being dropped.
+   */
+  private renderChangelogMarkdown(markdown: string): {
+    html: string;
+    text: string;
+  } {
+    const htmlBlocks: string[] = [];
+    const textLines: string[] = [];
+    let listItems: string[] = [];
+
+    const flushList = () => {
+      if (listItems.length === 0) return;
+      const items = listItems
+        .map(
+          (item) =>
+            `<li style="border-left:2px solid ${COLOR_ACCENT};padding:2px 0 2px 12px;margin-bottom:10px;list-style:none;">${renderInline(item)}</li>`,
+        )
+        .join("");
+      htmlBlocks.push(`<ul style="margin:0 0 20px;padding:0;">${items}</ul>`);
+      listItems = [];
+    };
+
+    for (const rawLine of markdown.split("\n")) {
+      const line = rawLine.trim();
+
+      if (line.length === 0) continue;
+
+      const heading = /^##\s+(.+)/.exec(line);
+      const bullet = /^[-*]\s+(.+)/.exec(line);
+
+      if (heading) {
+        flushList();
+        htmlBlocks.push(
+          `<h2 style="font-size:15px;font-weight:700;color:${COLOR_TEXT};margin:24px 0 10px;">${renderInline(heading[1])}</h2>`,
+        );
+        textLines.push(`\n${heading[1]}`);
+      } else if (bullet) {
+        listItems.push(bullet[1]);
+        textLines.push(`• ${bullet[1]}`);
+      } else {
+        flushList();
+        htmlBlocks.push(
+          `<p style="margin:0 0 16px;">${renderInline(line)}</p>`,
+        );
+        textLines.push(line);
+      }
+    }
+
+    flushList();
+
+    return { html: htmlBlocks.join("\n"), text: textLines.join("\n").trim() };
   }
 
   /**

@@ -87,11 +87,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     match: (p) => p.startsWith("/admin/security"),
   },
   {
-    href: "/admin/changelog",
-    label: "Changelog",
-    description: "Notes de version publiques et envoi de la newsletter.",
+    href: "/admin/newsletter",
+    label: "Newsletter",
+    description:
+      "Historique des envois — déclenchés automatiquement à la publication d'une note de version sur Quackback.",
     icon: "sparkles",
-    match: (p) => p.startsWith("/admin/changelog"),
+    match: (p) => p.startsWith("/admin/newsletter"),
   },
   {
     href: "/admin/reports",

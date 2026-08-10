@@ -126,7 +126,7 @@
     },
     {
       label: "Utilisateurs & communication",
-      hrefs: ["/admin/users", "/admin/communications", "/admin/changelog"],
+      hrefs: ["/admin/users", "/admin/communications", "/admin/newsletter"],
     },
     {
       label: "Système & exploitation",
@@ -301,7 +301,9 @@
   {#if version}
     <p class="text-dim mt-8 text-center text-xs">
       <a
-        href="/changelog"
+        href="https://feedback.loomkeep.app/changelog"
+        target="_blank"
+        rel="noopener noreferrer"
         class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
         Loomkeep v{version}
       </a>
