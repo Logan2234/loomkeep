@@ -259,7 +259,7 @@ export class ReportService {
       if (!user) return null;
       return {
         label: "Profil utilisateur",
-        href: `/u/${user.username}`,
+        href: `/app/u/${user.username}`,
         targetOwnerUsername: user.username,
       };
     }
@@ -272,7 +272,7 @@ export class ReportService {
       if (!list) return null;
       return {
         label: list.title,
-        href: `/lists/${targetId}`,
+        href: `/app/lists/${targetId}`,
         targetOwnerUsername: list.user.username,
       };
     }

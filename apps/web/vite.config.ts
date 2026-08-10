@@ -53,11 +53,11 @@ export default defineConfig({
         theme_color: "#0c0d10",
         background_color: "#0c0d10",
         display: "standalone",
-        start_url: "/",
+        start_url: "/app",
         shortcuts: [
           {
             name: "Recherche",
-            url: "/search",
+            url: "/app/search",
             icons: [
               {
                 src: "/shortcut-search.svg",
@@ -68,7 +68,7 @@ export default defineConfig({
           },
           {
             name: "Calendrier",
-            url: "/calendar",
+            url: "/app/calendar",
             icons: [
               {
                 src: "/shortcut-calendar.svg",
@@ -79,7 +79,7 @@ export default defineConfig({
           },
           {
             name: "Statistiques",
-            url: "/stats",
+            url: "/app/stats",
             icons: [
               {
                 src: "/shortcut-stats.svg",
@@ -90,7 +90,7 @@ export default defineConfig({
           },
           {
             name: "Mon profil",
-            url: "/profile",
+            url: "/app/profile",
             icons: [
               {
                 src: "/shortcut-profile.svg",
@@ -101,7 +101,7 @@ export default defineConfig({
           },
           {
             name: "Paramètres",
-            url: "/settings",
+            url: "/app/settings",
             icons: [
               {
                 src: "/shortcut-settings.svg",

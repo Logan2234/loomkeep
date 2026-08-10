@@ -2,38 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## Commands you will need sometimes
 
 ```sh
-pnpm i                                         # workspace-wide
 pnpm dev                                       # api on :3000 + web on :5173 (parallel)
-pnpm build                                     # builds packages/* first, then apps/*
 pnpm test                                      # runs all tests
 pnpm build:package                             # REQUIRED after any change in packages/shared
                                                # (api and web consume its dist/, not its sources)
 
 # API
-pnpm --filter @loomkeep/api test               # unit tests (jest)
-pnpm --filter @loomkeep/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # single file
+pnpm --filter @loomkeep/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # test single file
 pnpm --filter @loomkeep/api test:e2e           # full API flow; needs the dev Postgres running
 pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
-
-# Web
-pnpm --filter @loomkeep/web check              # svelte-check (type errors in .svelte files)
-
-# Self-host stack — compose files live in docker/, not the repo root.
-# pnpm wraps the common combos (see root package.json "scripts"):
-# docker:dev, docker:prod, docker:full (all optional add-ons).
-pnpm docker:dev                                # db + api + web (see .env.example)
 
 # Tools
 pnpm lint                                      # global eslint + prettier
 pnpm lint:fix                                  # global auto-fix lintable issues (js/ts/svelte)
-pnpm format                                    # global prettier formatting
 pnpm knip                                      # global dead code / unused dependency detection
-pnpm spelunk                                   # visualize the dependency graph of the api package
-pnpm clean                                     # removes all dist/ and tsbuildinfo files, but keeps node_modules
-pnpm clean:dev                                 # like pnpm clean + remove node_modules
 ```
 
 **Git hooks (husky, `.husky/`):** `pre-commit` runs `lint-staged`, which
@@ -52,25 +37,23 @@ and lint/typecheck (pre-push). When a change spans several planned edits,
 implement the whole batch first, then run one check pass — including tests,
 which no hook runs — at the end, rather than validating after each step.
 
+## Architecture
+
+**Product model:** Loomkeep has two destinations — the public
+instance Logan runs on his own VPS (`deploy.yml`, no setup required), and
+self-hosting via the `docker/` compose stack. A premium plan is
+planned for the future on **both**: extra features gated behind it on the
+hosted instance, and — undecided — possibly some features gated behind it
+for self-hosters too. This is the reason `User.entitlements` exists (see
+below).
+
+pnpm monorepo, 100% TypeScript: `apps/api` (NestJS + Prisma + PostgreSQL),
+`apps/web` (SvelteKit, PWA), `packages/shared` (DTOs/enums used by both).
+
 Dev database: Docker container `loomkeep-dev-db`, Postgres 18 on port **5433**.
 Connection string lives in `apps/api/.env` (copy from `.env.example`).
 e2e tests reuse that server but run in an isolated `e2e` schema (see `apps/api/test/global-setup.js`),
 so they never touch dev data.
-
-## Architecture
-
-**Product model:** Loomkeep has two destinations, not one — the public
-instance Logan runs on his own VPS (`deploy.yml`, no setup required), and
-self-hosting via the `docker/` compose stack. Don't describe Loomkeep as
-"self-hosted" without also mentioning the hosted option. A premium plan is
-planned for the future on **both**: extra features gated behind it on the
-hosted instance, and — undecided — possibly some features gated behind it
-for self-hosters too. This is the reason `User.entitlements` exists (see
-below) and is tracked in Quackback's Internal Roadmap board (monetization
-brainstorm).
-
-pnpm monorepo, 100% TypeScript: `apps/api` (NestJS + Prisma + PostgreSQL),
-`apps/web` (SvelteKit PWA), `packages/shared` (DTOs/enums used by both).
 
 **The database is an on-demand cache, not a catalogue mirror.** Searching hits
 TMDB/AniList live and persists nothing. A `MediaItem` (with its `Season`s,
@@ -108,12 +91,33 @@ TS enums, and Prisma declares parallel enums with identical values in
 `schema.prisma`. They must stay in sync; boundaries cast (`source as
 DbExternalSource`) rather than map.
 
-**Web app runs as SPA** (`export const ssr = false` in `+layout.ts`): tokens in
+**Route layout — the app lives under `/app`, the public site at the root.**
+`routes/+page.svelte` is the marketing landing page and `routes/legal/*` the
+legal documents; both are **prerendered** (`prerender = true`) so they're
+indexable and paint without the bundle. Everything a signed-in user touches
+sits under `routes/app/` (`/app`, `/app/media`, `/app/settings`, `/app/admin`,
+`/app/u/:username`…). Auth is enforced by **layout nesting, not a route
+allowlist**: `app/+layout.svelte` redirects to `/login` when there's no
+session and owns the app chrome (sidebars, notification bell, polling), while
+`(auth)/+layout.svelte` (login/register/forgot/reset — URLs stay at the root)
+does the mirror redirect to `/app`. `(verification)/` holds the two
+email-verification screens, reachable signed in _or_ out. Adding a screen
+under `app/` gates it automatically — never reintroduce a `PUBLIC_ROUTES`
+array. The one-shot session+config bootstrap lives in
+`src/lib/bootstrap.svelte.ts`; the three nested layouts gate their render on
+its `ready` flag, which is why the root layout must stay SSR-safe.
+
+**Signed-in routes run as SPA** (`export const ssr = false` in
+`app/+layout.ts`, `(auth)/+layout.ts` and `(verification)/+layout.ts` — _not_
+the root layout, which would kill the landing page's prerender): tokens in
 localStorage, auto-refresh-and-retry on 401 in `src/lib/api/client.ts`, auth
 state via Svelte 5 runes in `src/lib/auth.svelte.ts` (runes mode is forced in
 `vite.config.ts`, which also holds the SvelteKit + PWA config — there is no
 `svelte.config.js`). API base URL comes from `PUBLIC_API_URL`
-(`$env/dynamic/public`, resolved at server start, Docker-friendly).
+(`$env/dynamic/public`, resolved at server start, Docker-friendly). The API
+also emits web paths (push/notification `url`, `href` on activity and report
+rows, email links) — those carry the `/app` prefix, so grep `/app/` in
+`apps/api/src` before changing a client route.
 
 **Data fetching**: most of the app still calls the domain-specific `request()`
 wrappers under `src/lib/api/*` directly from a component's own `$effect` and
@@ -166,7 +170,9 @@ visibility model, content registers, and GHOST/Figurant behaviour.
 
 ## Conventions
 
-- UI strings are French; code, comments and commit messages are English.
+- Code, comments and commit messages are English.
+- UI is French-first, but i18n-ready with `paraglide`, so don't hardcode French
+  strings in the code — use `m()` instead.
 - New runtime deps: prefer none — HTTP calls use global `fetch` (Node ≥22).
   pnpm blocks dependency build scripts by default: allow-list them in
   `pnpm-workspace.yaml` (`allowBuilds`) when a package needs a postinstall.
@@ -174,41 +180,30 @@ visibility model, content registers, and GHOST/Figurant behaviour.
   fetching" above. Ask before adding another.
 - Versioning: no tagged releases, so the `version` field (root + every
   `apps/*`/`packages/*` package.json, kept in lockstep) is the only record of
-  where the app stands — currently past 1.0. Bump the minor version when a
-  feature domain ships (a new module, a significant capability), patch for
+  where the app stands — currently past 1.0. Always bump the minor version when a
+  feature domain ships (a new module, a significant capability), or patch for
   smaller fixes/polish. Bumping a version is a 2-step ritual, each step owned
   by a different actor — don't skip one: (1) an entry in `CHANGELOG.md`
   (technical, git-facing, written by Claude); (2) a matching entry on the
   Quackback changelog (feedback.loomkeep.app, user-facing, written by
-  Claude — see "Feedback board (Quackback)" below for the template). There is
-  no separate local changelog anymore — Quackback's changelog is the only
-  user-facing release notes page (linked from the app footer and Help &
-  Feedback), and **publishing an entry there automatically sends the release
-  newsletter**: Quackback's "Changelog Published" webhook hits
-  `POST /api/webhook/changelog-published` (`apps/api/src/newsletter/`,
-  HMAC-verified via `QUACKBACK_CHANGELOG_WEBHOOK_SECRET`), which mails every
-  `notifyNewsletter` account with that entry's title + content. Sending is
-  fully automatic — there is nothing to trigger by hand, and no way to
-  preview before it goes out, so get the entry right before publishing.
-  `/admin/newsletter` is a read-only send history, not a compose screen.
+  Claude — see "Feedback board (Quackback)" below for the template).
+  Quackback's changelog is the only user-facing release notes page, and
+  **publishing an entry there automatically sends the release
+  newsletter**.
 - **Feedback board (Quackback)**: user feedback lives at
   feedback.loomkeep.app (self-hosted, MCP tools
-  `mcp__quackback__*`/REST API), not in this repo or in Claude's memory —
-  see the widget wired in `apps/web/src/app.html` +
-  `WidgetIdentify.svelte`. Three boards: **Feature Requests** and
+  `mcp__quackback__*`/REST API). Three boards: **Feature Requests** and
   **Bug Reports** (both public) for user-facing asks, **Internal Roadmap**
   (team-only) for business-sensitive backlog (monetization, ops, security
   rationale) that must never land on a public board. Two matching roadmaps
   (**Roadmap**, public; **Internal Roadmap**, private) group posts by
-  board — when creating a post, add it to the roadmap matching its board in
-  the same pass (no server-side automation for this, it's a manual step
-  every time). **All Quackback content is English** (deliberately
-  international, unlike the rest of the app's French-first UI — don't
-  default to French here). Changelog entries follow the "user-facing"
+  board — when creating a post, always add it to the roadmap matching its board
+  in the same pass (no server-side automation for this, it's a manual step
+  every time). Changelog entries follow the "user-facing"
   template (title `Loomkeep X.Y.Z`, body: 1-sentence intro +
   New/Improvements/Fixes sections in plain user language, not the technical
-  `CHANGELOG.md` wording) — a draft entry titled `Template — Loomkeep
-X.Y.Z` sits permanently in draft status for reuse. `linked posts` should
+  `CHANGELOG.md` wording) — a draft entry titled `Template — Loomkeep X.Y.Z`
+  sits permanently in draft status for reuse. `linked posts` should
   be backfilled with the relevant Complete-status posts once any exist for
   that release.
   Note: the REST API silently ignores `audience`/`isPublic` on board/roadmap
@@ -220,15 +215,14 @@ X.Y.Z` sits permanently in draft status for reuse. `linked posts` should
   (shared) and any route-local `components/` folder for one that already
   covers the need — extend or reuse it rather than writing a new one from
   scratch.
-- The app installs as a PWA — check the mobile viewport (not just desktop)
-  on every `apps/web` UI change, especially sticky headers, dropdown/menu
-  positioning, action bars, and text that could overflow.
+- The app can be installed as a PWA — check the mobile viewport (not just desktop)
+  on every `apps/web` UI change.
 - Visual identity ("Séance" — fonts, palette, nav pattern): see
   `apps/web/DESIGN.md`.
 - When a feature significant enough for a user to notice ships, flag it with
   the "Nouveau" badge (`apps/web/src/lib/feature-badges.ts` `isFeatureNew()` +
   `<NewBadge />`) at its point of discovery (nav entry, settings toggle,
   action button…) — add a `{ key: shippedISODate }` entry to `SHIPPED`. It's
-  time-based (21 days from ship date, no per-user dismissal state) so it
-  fades on its own. Skip it for internal refactors, bug fixes, or anything
-  that doesn't change what the user sees/can do.
+  time-based (21 days from ship date) so it fades on its own.
+  Skip it for internal refactors, bug fixes, or anything that doesn't change
+  what the user sees/can do.

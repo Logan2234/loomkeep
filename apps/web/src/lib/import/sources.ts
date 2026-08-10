@@ -18,7 +18,7 @@ export const IMPORT_SOURCES: Record<string, ImportSourceDescriptor> = {
     hasManualMatch: true,
     collapsibleGroups: true,
     noun: { one: "titre", many: "titres" },
-    libraryHref: "/media",
+    libraryHref: "/app/media",
     options: [
       { key: "importMovies", label: "Inclure les films", default: true },
     ],
@@ -32,7 +32,7 @@ export const IMPORT_SOURCES: Record<string, ImportSourceDescriptor> = {
     hasManualMatch: true,
     collapsibleGroups: true,
     noun: { one: "livre", many: "livres" },
-    libraryHref: "/books",
+    libraryHref: "/app/books",
   },
   goodreads: {
     id: "goodreads",
@@ -43,7 +43,7 @@ export const IMPORT_SOURCES: Record<string, ImportSourceDescriptor> = {
     hasManualMatch: true,
     collapsibleGroups: true,
     noun: { one: "livre", many: "livres" },
-    libraryHref: "/books",
+    libraryHref: "/app/books",
   },
   steam: {
     id: "steam",
@@ -54,6 +54,6 @@ export const IMPORT_SOURCES: Record<string, ImportSourceDescriptor> = {
     hasManualMatch: true,
     collapsibleGroups: true,
     noun: { one: "jeu", many: "jeux" },
-    libraryHref: "/games",
+    libraryHref: "/app/games",
   },
 };

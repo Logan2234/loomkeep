@@ -1019,7 +1019,7 @@ export class LibraryService {
   }
 
   /**
-   * Unified media page (`/media/{type}/{id}`): metadata + the current user's
+   * Unified media page (`/app/media/{type}/{id}`): metadata + the current user's
    * library state in one call. Served from the cache when the media is already
    * persisted, otherwise fetched live (persisting nothing — an unreferenced
    * media must not enter the on-demand cache just because it was previewed).

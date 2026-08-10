@@ -428,7 +428,7 @@
             <Avatar seed={c.author.displayName} size={28} />
           </span>
         {:else}
-          <a href="/u/{c.author.username}" class="shrink-0">
+          <a href="/app/u/{c.author.username}" class="shrink-0">
             <Avatar
               seed={c.author.username}
               url={c.author.avatarUrl}
@@ -443,7 +443,7 @@
               </span>
             {:else}
               <a
-                href="/u/{c.author.username}"
+                href="/app/u/{c.author.username}"
                 class="truncate text-sm font-semibold hover:underline">
                 {c.author.displayName}
               </a>

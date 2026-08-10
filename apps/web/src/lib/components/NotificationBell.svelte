@@ -184,7 +184,7 @@
           <li
             transition:slide={{ duration: 150 }}
             class="flex items-center gap-3 px-4 py-2.5">
-            <a href="/u/{req.user.username}" onclick={close}>
+            <a href="/app/u/{req.user.username}" onclick={close}>
               <Avatar
                 seed={req.user.username}
                 url={req.user.avatarUrl}
@@ -192,7 +192,7 @@
             </a>
             <div class="min-w-0 flex-1">
               <a
-                href="/u/{req.user.username}"
+                href="/app/u/{req.user.username}"
                 onclick={close}
                 class="block truncate text-sm font-semibold hover:underline">
                 {req.user.displayName}

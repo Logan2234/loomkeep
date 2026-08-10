@@ -187,7 +187,7 @@ export class FollowService {
       type: opts.type,
       title: actor.displayName,
       body: opts.body,
-      url: opts.urlToActor ? `/u/${actor.username}` : (opts.url ?? null),
+      url: opts.urlToActor ? `/app/u/${actor.username}` : (opts.url ?? null),
       dedupeKey: opts.dedupeKey,
       data: {
         actorUsername: actor.username,

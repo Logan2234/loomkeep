@@ -355,7 +355,7 @@ export class ActivityService {
         return {
           title: i.title,
           imageUrl: i.posterUrl,
-          href: src ? `/media/${i.type.toLowerCase()}/${src}` : null,
+          href: src ? `/app/media/${i.type.toLowerCase()}/${src}` : null,
         };
       }
 
@@ -369,7 +369,7 @@ export class ActivityService {
         return {
           title: i.title,
           imageUrl: i.coverUrl,
-          href: src ? `/games/${src}` : null,
+          href: src ? `/app/games/${src}` : null,
         };
       }
 
@@ -383,7 +383,7 @@ export class ActivityService {
         return {
           title: i.title,
           imageUrl: i.coverUrl,
-          href: src ? `/books/${src}` : null,
+          href: src ? `/app/books/${src}` : null,
         };
       }
 
@@ -397,7 +397,7 @@ export class ActivityService {
         return {
           title: i.title,
           imageUrl: i.coverUrl,
-          href: src ? `/music/${src}` : null,
+          href: src ? `/app/music/${src}` : null,
         };
       }
 
@@ -410,7 +410,11 @@ export class ActivityService {
         // No cover resolution here (would need a cross-domain item lookup) —
         // list previews elsewhere (ListService.listMine/listForUser) resolve
         // their own cover; the feed row just needs the title + link.
-        return { title: i.title, imageUrl: null, href: `/lists/${targetId}` };
+        return {
+          title: i.title,
+          imageUrl: null,
+          href: `/app/lists/${targetId}`,
+        };
       }
 
       default:

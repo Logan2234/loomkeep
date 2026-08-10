@@ -21,7 +21,7 @@
   let status = $state<"starting" | "scanning" | "denied" | "error">("starting");
   let notice = $state("");
 
-  // Only a same-origin `/u/:username` link resolves in-app — a QR scanned
+  // Only a same-origin `/app/u/:username` link resolves in-app — a QR scanned
   // from anything else (a random URL, another site's code) is rejected
   // rather than silently opened, since this modal's whole point is a fast
   // path straight to a profile, not a general-purpose QR reader.
@@ -29,7 +29,7 @@
     try {
       const url = new URL(data);
       if (url.origin !== window.location.origin) return null;
-      const match = url.pathname.match(/^\/u\/([^/]+)\/?$/);
+      const match = url.pathname.match(/^\/app\/u\/([^/]+)\/?$/);
       return match ? decodeURIComponent(match[1]) : null;
     } catch {
       return null;
@@ -45,13 +45,13 @@
     notice = "";
     // Stop the camera and let the modal actually unmount (`onclose` just
     // flips a flag in the parent — without waiting a tick, `goto()` could
-    // start the same-route navigation to /u/[username] before Svelte has
+    // start the same-route navigation to /app/u/[username] before Svelte has
     // applied that DOM removal, leaving the drawer/dialog visibly stuck).
     await scanner?.stop();
     scanner?.destroy();
     onclose();
     await tick();
-    await goto(`/u/${username}`);
+    await goto(`/app/u/${username}`);
   }
 
   onMount(async () => {

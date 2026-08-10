@@ -216,7 +216,7 @@ export class AdminCacheController {
         return this.toDetailDto("MEDIA", item, item.posterUrl, {
           externalIds: item.externalIds,
           referenceCount: item._count.entries,
-          detailPath: `/media/${item.type.toLowerCase()}/${sourceId}`,
+          detailPath: `/app/media/${item.type.toLowerCase()}/${sourceId}`,
           seasons: item.seasons.map((s) => ({
             number: s.number,
             title: s.title,
@@ -241,7 +241,7 @@ export class AdminCacheController {
         return this.toDetailDto("GAMES", item, item.coverUrl, {
           externalIds: item.externalIds,
           referenceCount: item._count.entries,
-          detailPath: `/games/${sourceId}`,
+          detailPath: `/app/games/${sourceId}`,
           seasons: [],
         });
       }
@@ -262,7 +262,7 @@ export class AdminCacheController {
         return this.toDetailDto("BOOKS", item, item.coverUrl, {
           externalIds: item.externalIds,
           referenceCount: item._count.entries,
-          detailPath: `/books/${sourceId}`,
+          detailPath: `/app/books/${sourceId}`,
           seasons: [],
         });
       }
@@ -283,7 +283,7 @@ export class AdminCacheController {
         return this.toDetailDto("MUSIC", item, item.coverUrl, {
           externalIds: item.externalIds,
           referenceCount: item._count.entries,
-          detailPath: `/music/${sourceId}`,
+          detailPath: `/app/music/${sourceId}`,
           seasons: [],
         });
       }

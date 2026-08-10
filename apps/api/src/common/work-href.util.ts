@@ -26,7 +26,9 @@ export async function resolveWorkHref(
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
-      return sourceId ? `/media/${item.type.toLowerCase()}/${sourceId}` : null;
+      return sourceId
+        ? `/app/media/${item.type.toLowerCase()}/${sourceId}`
+        : null;
     }
 
     case "GAME": {
@@ -36,7 +38,7 @@ export async function resolveWorkHref(
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
-      return sourceId ? `/games/${sourceId}` : null;
+      return sourceId ? `/app/games/${sourceId}` : null;
     }
 
     case "BOOK": {
@@ -46,7 +48,7 @@ export async function resolveWorkHref(
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
-      return sourceId ? `/books/${sourceId}` : null;
+      return sourceId ? `/app/books/${sourceId}` : null;
     }
 
     case "MUSIC": {
@@ -56,7 +58,7 @@ export async function resolveWorkHref(
       });
       if (!item) return null;
       const sourceId = canonicalExternalId(item, item.externalIds);
-      return sourceId ? `/music/${sourceId}` : null;
+      return sourceId ? `/app/music/${sourceId}` : null;
     }
 
     default:

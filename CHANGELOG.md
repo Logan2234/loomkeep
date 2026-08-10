@@ -12,6 +12,34 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+- **Public landing page** at `/`: a prerendered marketing page (hero, the six
+  libraries, feature grid, hosted-instance vs self-hosting) replacing the
+  redirect-to-login that used to greet anonymous visitors. Copy lives in
+  `messages/{fr,en}.json` under `landing_*`; the only session-dependent part
+  is the CTA, which becomes "Ouvrir l'app" once bootstrap resolves.
+- **Routes restructured around an `/app` prefix**: every signed-in screen
+  moved under `routes/app/` (`/app`, `/app/media/…`, `/app/settings`,
+  `/app/admin/…`, `/app/u/:username`). Auth is now enforced by layout
+  nesting instead of the hand-maintained `PUBLIC_ROUTES`/`AUTH_ROUTES`
+  arrays in the root layout — `app/+layout.svelte` guards the app and owns
+  its chrome, `(auth)/+layout.svelte` does the mirror redirect for
+  already-signed-in visitors, and `(verification)/` holds the two
+  email-verification screens that are reachable in either state. Auth URLs
+  (`/login`, `/register`, `/forgot-password`, `/reset-password`,
+  `/verify-email`) and `/legal/*` deliberately stay at the root.
+- `ssr = false` moved off the root layout onto the three signed-in groups, so
+  the landing page and the legal documents are prerendered (indexable, no
+  blank frame) while the app itself stays a pure SPA. The one-shot
+  session+config bootstrap moved out of the root layout into
+  `src/lib/bootstrap.svelte.ts`, which the nested layouts gate on.
+- API-emitted web paths (`Notification.url`, activity/report `href`, admin
+  digest and preference links in emails), the PWA manifest `start_url` and
+  shortcuts, and the service worker's notification-click fallback all carry
+  the `/app` prefix now.
+- Fixed a pre-existing type error in `SupportSection.svelte` (`recommended`
+  was missing from three of the four support tiles, so the union type didn't
+  expose it).
+
 ## 1.3.0 — Calendar sync, feedback board & legal pages
 
 - **Calendar subscription (.ics)**: `CalendarSubscribeModal` plus new API

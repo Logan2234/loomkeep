@@ -38,7 +38,7 @@
         {m.profile_reviews_title()}
       </h2>
       <a
-        href="/reviews"
+        href="/app/reviews"
         class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold">
         {m.profile_reviews_manage()}
         <Icon name="chevron-right" class="h-4 w-4" />

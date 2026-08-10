@@ -134,7 +134,7 @@ export class MailService {
           label: "Message",
           default: "L'épisode 1089 est disponible.",
         },
-        { key: "path", label: "Chemin", default: "/media/series/12345" },
+        { key: "path", label: "Chemin", default: "/app/media/series/12345" },
       ],
       build: (v) => this.buildNewEpisode(v.mediaTitle, v.body, v.path),
     },
@@ -319,7 +319,7 @@ export class MailService {
   }
 
   private buildReportsDigest(pendingCount: number): TemplateBody {
-    const url = `${this.webOrigin}/admin/reports`;
+    const url = `${this.webOrigin}/app/admin/reports`;
     const label = pendingCount > 1 ? "signalements" : "signalement";
     return {
       subject: `${pendingCount} ${label} en attente de modération`,
@@ -438,7 +438,7 @@ export class MailService {
 
   private buildNewsletter(title: string, content: string): TemplateBody {
     const entryUrl = "https://feedback.loomkeep.app/changelog";
-    const prefsUrl = `${this.webOrigin}/settings#communications`;
+    const prefsUrl = `${this.webOrigin}/app/settings#communications`;
     const { html: contentHtml, text: contentText } =
       this.renderChangelogMarkdown(content);
 

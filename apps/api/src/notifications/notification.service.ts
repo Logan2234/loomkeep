@@ -30,7 +30,7 @@ function notificationBody(n: NewEpisodeNotification): string {
 
 /** Deep link to the media detail page for a notification. */
 function notificationUrl(n: NewEpisodeNotification): string {
-  return `/media/${n.mediaType.toLowerCase()}/${n.sourceId}`;
+  return `/app/media/${n.mediaType.toLowerCase()}/${n.sourceId}`;
 }
 
 @Injectable()

@@ -22,7 +22,7 @@
 
   let open = $state(false);
 
-  const inAdmin = $derived(page.url.pathname.startsWith("/admin"));
+  const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
 
   const groups = $derived(
     resolveMenuGroups({
@@ -101,7 +101,7 @@
         </div>
 
         <a
-          href="/"
+          href="/app"
           onclick={close}
           class="border-border bg-surface-2 hover:border-accent/40 text-fg mt-4 flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold">
           <Icon name="chevron-left" class="h-4 w-4" />
