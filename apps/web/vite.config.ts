@@ -59,35 +59,55 @@ export default defineConfig({
             name: "Recherche",
             url: "/search",
             icons: [
-              { src: "/shortcut-search.svg", sizes: "any", type: "image/svg+xml" },
+              {
+                src: "/shortcut-search.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+              },
             ],
           },
           {
             name: "Calendrier",
             url: "/calendar",
             icons: [
-              { src: "/shortcut-calendar.svg", sizes: "any", type: "image/svg+xml" },
+              {
+                src: "/shortcut-calendar.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+              },
             ],
           },
           {
             name: "Statistiques",
             url: "/stats",
             icons: [
-              { src: "/shortcut-stats.svg", sizes: "any", type: "image/svg+xml" },
+              {
+                src: "/shortcut-stats.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+              },
             ],
           },
           {
             name: "Mon profil",
             url: "/profile",
             icons: [
-              { src: "/shortcut-profile.svg", sizes: "any", type: "image/svg+xml" },
+              {
+                src: "/shortcut-profile.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+              },
             ],
           },
           {
             name: "Paramètres",
             url: "/settings",
             icons: [
-              { src: "/shortcut-settings.svg", sizes: "any", type: "image/svg+xml" },
+              {
+                src: "/shortcut-settings.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+              },
             ],
           },
         ],

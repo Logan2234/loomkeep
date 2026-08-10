@@ -10,6 +10,7 @@
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
   import { notifications } from "$lib/notifications.svelte";
   import { queryClient } from "$lib/queryClient";
   import { theme } from "$lib/theme.svelte";
@@ -110,6 +111,7 @@
   {:else if auth.isLoggedIn && !PUBLIC_ROUTES.includes(page.url.pathname)}
     <NotificationBell />
     <PushNotificationPrompt />
+    <WidgetIdentify />
 
     <div class="hidden md:block">
       <DesktopSidebar>

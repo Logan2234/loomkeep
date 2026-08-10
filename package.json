@@ -1,6 +1,6 @@
 {
   "name": "loomkeep",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Self-hosted tracker for series, movies, anime — and later games, books and more.",
   "license": "AGPL-3.0-only",
@@ -15,6 +15,7 @@
     "test": "pnpm --filter \"./apps/*\" test",
     "lint": "pnpm --recursive --no-bail lint",
     "lint:fix": "pnpm --recursive --no-bail lint:fix",
+    "format": "pnpx prettier --write .",
     "spelunk": "pnpm --filter \"./apps/api\" spelunk",
     "clean": "pnpm --recursive --no-bail run clean",
     "clean:dev": "pnpm --recursive --no-bail clean:dev && rm -rf node_modules docs/*",

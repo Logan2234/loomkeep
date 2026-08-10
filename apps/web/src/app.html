@@ -22,5 +22,22 @@
   </head>
   <body data-sveltekit-preload-data="hover">
     <div style="display: contents">%sveltekit.body%</div>
+
+    <script>
+      // Only defines window.Quackback and loads the SDK — does NOT call
+      // "init"/"showLauncher" itself. Those are triggered from
+      // WidgetIdentify.svelte, mounted only on authenticated, non-public
+      // routes, so the widget never appears on login/register/legal pages.
+      (function (w, d) {
+        if (w.Quackback) return;
+        w.Quackback = function () {
+          (w.Quackback.q = w.Quackback.q || []).push(arguments);
+        };
+        var s = d.createElement("script");
+        s.async = true;
+        s.src = "https://feedback.loomkeep.app/api/widget/sdk.js";
+        d.head.appendChild(s);
+      })(window, document);
+    </script>
   </body>
 </html>
