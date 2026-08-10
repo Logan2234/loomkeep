@@ -209,7 +209,7 @@ host.docker.internal:host-gateway` regardless of which compose project
 started it, no shared Docker network required. Same
 public-with-own-login-no-basic-auth pattern as Grafana/Portainer/GlitchTip —
 login is Quackback's own email-OTP, sent through whatever SMTP creds you put
-in *its* `.env` (separate from Loomkeep's `SMTP_*`).
+in _its_ `.env` (separate from Loomkeep's `SMTP_*`).
 
 Upgrading Quackback is entirely on their side: `cd ~/quackback && git pull
 && docker compose -f docker-compose.prod.yml up -d --build`. Nothing to

@@ -13,11 +13,23 @@
   import { ApiError, getWidgetToken } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
 
+  // Desktop-only: the launcher button (bottom-right, fixed) has no clean
+  // position on mobile that doesn't collide with the fixed bottom tab bar
+  // (BottomNavigation.svelte). Same md: breakpoint as Modal.svelte/
+  // DesktopSidebar's own desktop/mobile split.
+  const DESKTOP_QUERY = "(min-width: 768px)";
+
   $effect(() => {
     if (!browser || !auth.isLoggedIn || !window.Quackback) return;
 
     window.Quackback("init");
-    window.Quackback("showLauncher");
+
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const syncLauncher = () => {
+      window.Quackback?.(mq.matches ? "showLauncher" : "hideLauncher");
+    };
+    syncLauncher();
+    mq.addEventListener("change", syncLauncher);
 
     getWidgetToken()
       .then(({ ssoToken }) => window.Quackback?.("identify", { ssoToken }))
@@ -28,6 +40,9 @@
         );
       });
 
-    return () => window.Quackback?.("hideLauncher");
+    return () => {
+      mq.removeEventListener("change", syncLauncher);
+      window.Quackback?.("hideLauncher");
+    };
   });
 </script>
