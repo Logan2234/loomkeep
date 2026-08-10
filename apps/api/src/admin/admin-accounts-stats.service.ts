@@ -8,6 +8,7 @@ import type {
 import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
+  ageDistributionBuckets,
   cohortMonthStarts,
   cohortRetention,
   enabledDomainCountBuckets,
@@ -43,6 +44,8 @@ export class AdminAccountsStatsService {
       byEnabledDomainCount,
       byProfileAccess,
       health,
+      age,
+      byLocale,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.getNewAccountsTrend(DEFAULT_PERIOD, now),
@@ -50,6 +53,8 @@ export class AdminAccountsStatsService {
       this.enabledDomains(),
       this.profileAccess(),
       this.health(now),
+      this.ageStats(now),
+      this.localeStats(),
     ]);
 
     return {
@@ -60,6 +65,8 @@ export class AdminAccountsStatsService {
       byEnabledDomainCount,
       byProfileAccess,
       health,
+      age,
+      byLocale,
     };
   }
 
@@ -158,6 +165,8 @@ export class AdminAccountsStatsService {
       activeSessions,
       emailVerified,
       withPush,
+      withNewsletter,
+      withEpisodeEmail,
     ] = await Promise.all([
       activeSince(DAY_MS),
       activeSince(30 * DAY_MS),
@@ -170,6 +179,8 @@ export class AdminAccountsStatsService {
       this.prisma.refreshToken.count({ where: { expiresAt: { gt: now } } }),
       this.prisma.user.count({ where: { emailVerified: true } }),
       this.prisma.user.count({ where: { pushSubscriptions: { some: {} } } }),
+      this.prisma.user.count({ where: { notifyNewsletter: true } }),
+      this.prisma.user.count({ where: { notifyEmail: true } }),
     ]);
 
     return {
@@ -179,6 +190,38 @@ export class AdminAccountsStatsService {
       activeSessions,
       emailVerified,
       withPush,
+      withNewsletter,
+      withEpisodeEmail,
     };
+  }
+
+  private async ageStats(now: Date): Promise<AdminAccountsSectionDto["age"]> {
+    const users = await this.prisma.user.findMany({
+      select: { birthDate: true, allowAdultContent: true },
+    });
+    const total = users.length;
+    const withBirthDate = users
+      .map((u) => u.birthDate)
+      .filter((d): d is Date => d !== null);
+    const percent = (count: number) =>
+      total === 0 ? 0 : Math.round((count / total) * 100);
+
+    return {
+      distribution: ageDistributionBuckets(withBirthDate, now),
+      birthDateSetPercent: percent(withBirthDate.length),
+      adultContentPercent: percent(
+        users.filter((u) => u.allowAdultContent).length,
+      ),
+    };
+  }
+
+  private async localeStats(): Promise<AdminAccountsSectionDto["byLocale"]> {
+    const rows = await this.prisma.user.groupBy({
+      by: ["locale"],
+      _count: { _all: true },
+    });
+    return rows
+      .map((r) => ({ locale: r.locale, count: r._count._all }))
+      .sort((a, b) => b.count - a.count);
   }
 }

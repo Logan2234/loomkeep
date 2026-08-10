@@ -1,4 +1,5 @@
 import type {
+  AdminAgeBucketDto,
   AdminCohortRowDto,
   AdminEnabledDomainsBucketDto,
 } from "@loomkeep/shared";
@@ -81,4 +82,51 @@ export function enabledDomainCountBuckets(
   return [...counts.entries()]
     .map(([domains, accounts]) => ({ domains, accounts }))
     .sort((a, b) => b.accounts - a.accounts || b.domains - a.domains);
+}
+
+/** Fixed age brackets for the "Âge des utilisateurs" histogram — always shown zero-filled. */
+const AGE_BUCKETS: { label: string; min: number; max: number | null }[] = [
+  { label: "<18", min: 0, max: 17 },
+  { label: "18-24", min: 18, max: 24 },
+  { label: "25-34", min: 25, max: 34 },
+  { label: "35-44", min: 35, max: 44 },
+  { label: "45-54", min: 45, max: 54 },
+  { label: "55-64", min: 55, max: 64 },
+  { label: "65+", min: 65, max: null },
+];
+
+/** Age in whole years at `now`, accounting for whether this year's birthday has passed yet. */
+export function ageInYears(birthDate: Date, now: Date): number {
+  let age = now.getUTCFullYear() - birthDate.getUTCFullYear();
+  const hadBirthdayThisYear =
+    now.getUTCMonth() > birthDate.getUTCMonth() ||
+    (now.getUTCMonth() === birthDate.getUTCMonth() &&
+      now.getUTCDate() >= birthDate.getUTCDate());
+  if (!hadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+/**
+ * Age histogram over accounts with a birthDate set — always the full set of
+ * brackets, zero-filled, same convention as the ratings distribution (a
+ * bracket missing from the chart would read as "no data" rather than "zero").
+ */
+export function ageDistributionBuckets(
+  birthDates: Date[],
+  now: Date,
+): AdminAgeBucketDto[] {
+  const counts = new Map(AGE_BUCKETS.map((b) => [b.label, 0]));
+
+  for (const birthDate of birthDates) {
+    const age = ageInYears(birthDate, now);
+    const bucket = AGE_BUCKETS.find(
+      (b) => age >= b.min && (b.max === null || age <= b.max),
+    );
+    if (bucket) counts.set(bucket.label, (counts.get(bucket.label) ?? 0) + 1);
+  }
+
+  return AGE_BUCKETS.map((b) => ({
+    label: b.label,
+    count: counts.get(b.label) ?? 0,
+  }));
 }

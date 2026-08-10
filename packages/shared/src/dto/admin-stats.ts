@@ -58,6 +58,31 @@ export interface AdminAccountHealthDto {
   activeSessions: number;
   emailVerified: number;
   withPush: number;
+  /** Opted into the release newsletter (User.notifyNewsletter). */
+  withNewsletter: number;
+  /** Opted into "new episode" email alerts (User.notifyEmail) — distinct from the newsletter. */
+  withEpisodeEmail: number;
+}
+
+/** One age bracket in years, e.g. "25-34"; the last bracket ("65+") has no upper bound. */
+export interface AdminAgeBucketDto {
+  label: string;
+  count: number;
+}
+
+export interface AdminAgeStatsDto {
+  /** Always the same brackets, zero-filled — only accounts with a birthDate are counted. */
+  distribution: AdminAgeBucketDto[];
+  /** Share (0-100) of all accounts with a birthDate set. */
+  birthDateSetPercent: number;
+  /** Share (0-100) of all accounts with 18+ content enabled. */
+  adultContentPercent: number;
+}
+
+export interface AdminLocaleCountDto {
+  /** Paraglide locale code, e.g. "fr". */
+  locale: string;
+  count: number;
 }
 
 export interface AdminAccountsSectionDto {
@@ -71,6 +96,9 @@ export interface AdminAccountsSectionDto {
   /** Descending by count. */
   byProfileAccess: AdminProfileAccessCountDto[];
   health: AdminAccountHealthDto;
+  age: AdminAgeStatsDto;
+  /** Descending by count. */
+  byLocale: AdminLocaleCountDto[];
 }
 
 /* ── Catalogue & cache ────────────────────────────────────────────────── */

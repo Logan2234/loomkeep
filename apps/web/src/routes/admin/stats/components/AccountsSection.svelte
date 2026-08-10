@@ -3,6 +3,7 @@
   // Everything activity-related comes from refresh-token usage (see the API
   // service) — ActivityEvent only exists since P4 and would bury old accounts.
   import { getAdminNewAccountsTrend } from "$lib/api/client";
+  import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import {
     DORMANT_AFTER_DAYS,
@@ -70,7 +71,28 @@
       label: m.admin_accounts_health_email_verified(),
     },
     { value: stats.health.withPush, label: m.admin_accounts_health_push() },
+    {
+      value: stats.health.withNewsletter,
+      label: m.admin_accounts_health_newsletter(),
+    },
+    {
+      value: stats.health.withEpisodeEmail,
+      label: m.admin_accounts_health_episode_email(),
+    },
   ]);
+
+  const ageBars = $derived(
+    stats.age.distribution.map((b) => ({ label: b.label, value: b.count })),
+  );
+
+  // Friendly language name from the locale code ("fr" → "Français").
+  const localeDisplay = new Intl.DisplayNames(["fr"], { type: "language" });
+  const localeItems = $derived(
+    stats.byLocale.map((l) => ({
+      label: localeDisplay.of(l.locale) ?? l.locale,
+      value: l.count,
+    })),
+  );
 </script>
 
 <div class="grid gap-3.5 lg:grid-cols-2">
@@ -134,5 +156,35 @@
         <StatFigure value={nf.format(item.value)} label={item.label} />
       {/each}
     </div>
+  </div>
+</div>
+
+<div class="mt-3.5 grid gap-3.5 lg:grid-cols-2">
+  <div class="card p-4">
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_accounts_age_title()}
+    </h3>
+    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+      {m.admin_accounts_age_desc()}
+    </p>
+    <HistogramBars bars={ageBars} />
+    <div class="border-border mt-3.5 grid grid-cols-2 gap-3 border-t pt-3.5">
+      <StatFigure
+        value="{stats.age.birthDateSetPercent} %"
+        label={m.admin_accounts_age_birthdate_percent()} />
+      <StatFigure
+        value="{stats.age.adultContentPercent} %"
+        label={m.admin_accounts_age_adult_percent()} />
+    </div>
+  </div>
+
+  <div class="card p-4">
+    <h3 class="font-display text-[15px] font-bold">
+      {m.admin_accounts_locale_title()}
+    </h3>
+    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+      {m.admin_accounts_locale_desc()}
+    </p>
+    <RankBars items={localeItems} />
   </div>
 </div>

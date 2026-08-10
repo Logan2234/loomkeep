@@ -1,4 +1,6 @@
 import {
+  ageDistributionBuckets,
+  ageInYears,
   COHORT_MONTHS,
   cohortMonthStarts,
   cohortRetention,
@@ -117,5 +119,51 @@ describe("enabledDomainCountBuckets", () => {
 
   it("returns nothing when there is no account", () => {
     expect(enabledDomainCountBuckets([])).toEqual([]);
+  });
+});
+
+describe("ageInYears", () => {
+  const now = new Date("2026-06-15T00:00:00.000Z");
+
+  it("counts a full year once the birthday has passed this year", () => {
+    expect(ageInYears(new Date("2000-06-15T00:00:00.000Z"), now)).toBe(26);
+    expect(ageInYears(new Date("2000-01-01T00:00:00.000Z"), now)).toBe(26);
+  });
+
+  it("doesn't count this year until the birthday has passed", () => {
+    expect(ageInYears(new Date("2000-06-16T00:00:00.000Z"), now)).toBe(25);
+    expect(ageInYears(new Date("2000-12-31T00:00:00.000Z"), now)).toBe(25);
+  });
+});
+
+describe("ageDistributionBuckets", () => {
+  const now = new Date("2026-06-15T00:00:00.000Z");
+
+  it("buckets accounts into fixed, zero-filled brackets", () => {
+    const out = ageDistributionBuckets(
+      [
+        new Date("2015-01-01T00:00:00.000Z"), // 11 → <18
+        new Date("2007-01-01T00:00:00.000Z"), // 19 → 18-24
+        new Date("1996-01-01T00:00:00.000Z"), // 30 → 25-34
+        new Date("1950-01-01T00:00:00.000Z"), // 76 → 65+
+      ],
+      now,
+    );
+
+    expect(out).toEqual([
+      { label: "<18", count: 1 },
+      { label: "18-24", count: 1 },
+      { label: "25-34", count: 1 },
+      { label: "35-44", count: 0 },
+      { label: "45-54", count: 0 },
+      { label: "55-64", count: 0 },
+      { label: "65+", count: 1 },
+    ]);
+  });
+
+  it("returns every bracket zero-filled when there is no account", () => {
+    const out = ageDistributionBuckets([], now);
+    expect(out.every((b) => b.count === 0)).toBe(true);
+    expect(out).toHaveLength(7);
   });
 });
