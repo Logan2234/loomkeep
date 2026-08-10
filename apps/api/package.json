@@ -45,7 +45,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@fastify/static": "^10.1.2",
+    "@fastify/static": "^10.1.3",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/swagger": "^11.4.6",
