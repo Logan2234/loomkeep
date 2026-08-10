@@ -1,4 +1,5 @@
 import { BadRequestException, UnauthorizedException } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
@@ -48,6 +49,7 @@ describe("UsersController — email change", () => {
       security as unknown as SecurityEventService,
       dataExport as unknown as DataExportService,
       csvExport as unknown as CsvExportService,
+      {} as unknown as ConfigService,
     );
   });
 
@@ -248,6 +250,7 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
       { record: jest.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
     );
   });
 
@@ -319,6 +322,7 @@ describe("UsersController — uploadAvatar", () => {
       { record: jest.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
     );
   });
 

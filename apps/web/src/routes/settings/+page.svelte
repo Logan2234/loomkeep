@@ -9,6 +9,7 @@
   import DangerZoneSection from "./components/DangerZoneSection.svelte";
   import DomainsSection from "./components/DomainsSection.svelte";
   import ExportSection from "./components/ExportSection.svelte";
+  import HelpFeedbackSection from "./components/HelpFeedbackSection.svelte";
   import ImportSection from "./components/ImportSection.svelte";
   import PrivacySection from "./components/PrivacySection.svelte";
   import ProfileSection from "./components/ProfileSection.svelte";
@@ -40,6 +41,7 @@
     { id: "apparence", label: m.settings_section_appearance() },
     { id: "import", label: m.settings_section_import() },
     { id: "export", label: m.settings_section_export() },
+    { id: "aide", label: m.settings_section_help() },
     { id: "danger", label: m.settings_section_danger_zone() },
   ];
   const visibleSections = $derived(
@@ -147,6 +149,9 @@
         </div>
         <div id="export" data-section-id="export">
           <ExportSection />
+        </div>
+        <div id="aide" data-section-id="aide">
+          <HelpFeedbackSection />
         </div>
         <div id="danger" data-section-id="danger">
           <DangerZoneSection />

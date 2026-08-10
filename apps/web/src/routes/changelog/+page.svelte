@@ -42,7 +42,7 @@
     <p class="text-danger">{error}</p>
   {:else if loading}
     <div class="space-y-8">
-      {#each { length: 3 } as _}
+      {#each { length: 3 } as i (i)}
         <div class="skeleton h-28 w-full rounded-xl"></div>
       {/each}
     </div>
@@ -75,7 +75,7 @@
               {/if}
             </div>
             <ul class="space-y-3.5">
-              {#each entry.highlights as highlight}
+              {#each entry.highlights as highlight, i (i)}
                 <li class="flex gap-2.5 text-[15px] leading-relaxed">
                   <span class="text-accent shrink-0" aria-hidden="true">▸</span>
                   <span>{highlight}</span>
