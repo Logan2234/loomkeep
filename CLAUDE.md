@@ -165,7 +165,38 @@ visibility model, content registers, and GHOST/Figurant behaviour.
   `apps/*`/`packages/*` package.json, kept in lockstep) is the only record of
   where the app stands — currently past 1.0. Bump the minor version when a
   feature domain ships (a new module, a significant capability), patch for
-  smaller fixes/polish. Add an entry to `CHANGELOG.md` for each version bump.
+  smaller fixes/polish. Bumping a version is a 3-step ritual, each step owned
+  by a different actor — don't skip one: (1) an entry in `CHANGELOG.md`
+  (technical, git-facing, written by Claude); (2) a matching entry in
+  `/admin/changelog` → public `/changelog` page (user-facing, written by
+  Logan by hand, not automated); (3) a matching entry on the Quackback
+  changelog (feedback.loomkeep.app, user-facing, written by Claude — see
+  "Feedback board (Quackback)" below for the template).
+- **Feedback board (Quackback)**: user feedback lives at
+  feedback.loomkeep.app (self-hosted, MCP tools
+  `mcp__quackback__*`/REST API), not in this repo or in Claude's memory —
+  see the widget wired in `apps/web/src/app.html` +
+  `WidgetIdentify.svelte`. Three boards: **Feature Requests** and
+  **Bug Reports** (both public) for user-facing asks, **Internal Roadmap**
+  (team-only) for business-sensitive backlog (monetization, ops, security
+  rationale) that must never land on a public board. Two matching roadmaps
+  (**Roadmap**, public; **Internal Roadmap**, private) group posts by
+  board — when creating a post, add it to the roadmap matching its board in
+  the same pass (no server-side automation for this, it's a manual step
+  every time). **All Quackback content is English** (deliberately
+  international, unlike the rest of the app's French-first UI — don't
+  default to French here). Changelog entries follow the "user-facing"
+  template (title `Loomkeep X.Y.Z`, body: 1-sentence intro +
+  New/Improvements/Fixes sections in plain user language, not the technical
+  `CHANGELOG.md` wording) — a draft entry titled `Template — Loomkeep
+X.Y.Z` sits permanently in draft status for reuse. `linked posts` should
+  be backfilled with the relevant Complete-status posts once any exist for
+  that release.
+  Note: the REST API silently ignores `audience`/`isPublic` on board/roadmap
+  **creation** (always defaults public) — set it via a follow-up `PATCH`
+  instead. Also: Cloudflare blocks Python's default `urllib` User-Agent on
+  this domain (opaque "error code: 1010") — pass an explicit `User-Agent`
+  header, or use `curl`.
 - Before adding a new Svelte component, check `apps/web/src/lib/components/`
   (shared) and any route-local `components/` folder for one that already
   covers the need — extend or reuse it rather than writing a new one from

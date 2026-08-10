@@ -16,6 +16,7 @@ import {
   Res,
   UnauthorizedException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
 import {
   Domain,
@@ -24,6 +25,7 @@ import {
   type UserDataExportDto,
   type UserDto,
   type UsernameAvailabilityDto,
+  type WidgetTokenDto,
 } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import type { FastifyReply } from "fastify";
@@ -47,6 +49,7 @@ import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
 import { UploadAvatarDto } from "./dto/upload-avatar.dto";
+import { signWidgetToken } from "./widget-token.util";
 
 // Decoded byte ceiling for an uploaded avatar — base64 for this is checked by
 // UploadAvatarDto's MaxLength, this is the belt-and-suspenders check on the
@@ -64,6 +67,7 @@ export class UsersController {
     private readonly security: SecurityEventService,
     private readonly dataExport: DataExportService,
     private readonly csvExport: CsvExportService,
+    private readonly config: ConfigService,
   ) {}
 
   @Get("me")
@@ -77,6 +81,34 @@ export class UsersController {
     }
 
     return toUserDto(user);
+  }
+
+  /**
+   * Signs a short-lived (5 min) SSO token for Quackback's feedback widget
+   * "Verified identity only" mode — the widget trusts this signature
+   * instead of asking the visitor to type in their own email. Re-signed on
+   * every call rather than cached, since it always expires quickly anyway.
+   */
+  @Get("me/widget-token")
+  async getWidgetToken(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<WidgetTokenDto> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: payload.sub },
+      select: { displayName: true },
+    });
+
+    const ssoToken = signWidgetToken(
+      {
+        sub: payload.sub,
+        email: payload.email,
+        name: user.displayName,
+        exp: Math.floor(Date.now() / 1000) + 300,
+      },
+      this.config.getOrThrow<string>("QUACKBACK_WIDGET_SECRET"),
+    );
+
+    return { ssoToken };
   }
 
   /**

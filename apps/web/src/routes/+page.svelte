@@ -11,9 +11,11 @@
   import Carousel from "$lib/components/Carousel.svelte";
   import HomeActivityPreview from "$lib/components/HomeActivityPreview.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { isDomainEnabled } from "$lib/domains";
+  import { isFeatureNew } from "$lib/feature-badges";
   import type {
     BookEntryDto,
     CalendarEntryDto,
@@ -457,7 +459,7 @@
         <HomeActivityPreview limit={6} />
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 lg:col-span-12">
+      <div class="grid gap-3 sm:grid-cols-2 lg:col-span-12 lg:grid-cols-3">
         <a
           href="/stats"
           class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
@@ -467,6 +469,26 @@
               <p class="font-display font-bold">Tes statistiques</p>
               <p class="text-dim text-sm">
                 Vidéo, jeux et livres en un coup d’œil.
+              </p>
+            </div>
+          </div>
+          <span class="text-dim">→</span>
+        </a>
+
+        <a
+          href="/settings#aide"
+          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
+          <div class="flex items-center gap-3">
+            <Icon name="message" class="text-accent h-6 w-6" />
+            <div>
+              <p class="font-display flex items-center gap-2 font-bold">
+                Aide & Feedback
+                {#if isFeatureNew("help-feedback")}
+                  <NewBadge />
+                {/if}
+              </p>
+              <p class="text-dim text-sm">
+                Propose une idée, signale un bug, discute avec le dev.
               </p>
             </div>
           </div>

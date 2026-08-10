@@ -12,6 +12,35 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.3.0 — Calendar sync, feedback board & legal pages
+
+- **Calendar subscription (.ics)**: `CalendarSubscribeModal` plus new API
+  endpoints to fetch and regenerate a per-user calendar token — subscribe to
+  your Loomkeep release calendar from Google/Apple Calendar rather than
+  checking the in-app one.
+- **Feedback board (Quackback)**: self-hosted Quackback instance
+  (feedback.loomkeep.app) wired into the app — `WidgetIdentify.svelte`
+  authenticates the visitor via a signed SSO token so the widget knows who's
+  asking. Three boards (Feature Requests, Bug Reports, both public;
+  Internal Roadmap, team-only for business-sensitive backlog), two roadmaps
+  and a changelog feed mirroring this file in user-facing language — see
+  "Feedback board (Quackback)" in `CLAUDE.md` for the full setup and
+  conventions.
+- **Help & Feedback**: a new `/settings` section and home page card
+  surfacing the feedback board (suggest an idea, report a bug, view the
+  roadmap, see what's new) plus a button to open the support chat directly
+  — the always-available entry point now that the floating launcher is
+  hidden on mobile (see below).
+- **Legal pages**: CGU (terms of service) and privacy policy documents
+  added, legal links updated to open in a new tab.
+- **Password requirements**: a new `PasswordRequirements` component and
+  centralized password-validation module show live strength feedback on
+  signup/change forms instead of a plain reject-after-submit.
+- `NewBadge` component: a reusable "New" badge (paired with
+  `feature-badges.ts`'s time-based `isFeatureNew()`) now used consistently
+  across nav items, settings toggles and home cards instead of one-off
+  markup per feature.
+
 ## 1.2.0 — Multilingual, release changelog & push onboarding
 
 - **Paraglide i18n**: the web app is now translatable — English ships as the
