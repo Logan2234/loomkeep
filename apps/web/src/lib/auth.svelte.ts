@@ -9,14 +9,16 @@ class AuthState {
   accessToken = $state<string | null>(null);
   refreshToken = $state<string | null>(null);
 
-  get isLoggedIn(): boolean {
-    return this.user !== null;
-  }
+  // $derived (not a plain getter) so effects that read these only re-run when
+  // the boolean itself flips — not on every `user` reassignment (e.g. every
+  // settings mutation re-sets `auth.user` to a fresh object with the same
+  // login/role status). A plain getter re-reads the `user` signal on every
+  // access, so an effect depending on it would rerun on those reassignments
+  // too, even though its own dependency (this boolean) never changed.
+  isLoggedIn = $derived(this.user !== null);
 
   /** Whether the current user has the ADMIN role (gates /admin). */
-  get isAdmin(): boolean {
-    return this.user?.role === "ADMIN";
-  }
+  isAdmin = $derived(this.user?.role === "ADMIN");
 
   /**
    * The `jti` of the current refresh token, read from its (unverified) payload.

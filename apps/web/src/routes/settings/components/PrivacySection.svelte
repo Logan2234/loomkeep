@@ -190,6 +190,34 @@
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
 </script>
 
+{#snippet audienceSegmented(
+  domain: Domain,
+  facet: VisibilityFacet,
+  current: VisibilityAudience,
+)}
+  <div
+    class="border-border bg-surface-2 inline-flex gap-0.5 rounded-full border p-0.5">
+    {#each AUDIENCES as a (a.id)}
+      {@const disabled = isPrivate && a.id === VisibilityAudience.PUBLIC}
+      {@const on = current === a.id}
+      <button
+        type="button"
+        class="rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40"
+        class:bg-accent={on}
+        class:text-accent-fg={on}
+        class:text-dim={!on}
+        class:hover:text-fg={!on}
+        {disabled}
+        title={disabled
+          ? "Un profil privé ne peut pas exposer au public."
+          : undefined}
+        onclick={() => setAudience(domain, facet, a.id)}>
+        {a.label}
+      </button>
+    {/each}
+  </div>
+{/snippet}
+
 {#if appConfig.socialEnabled && settings}
   <section class="card mb-5 p-5 md:p-6">
     <h2 class="font-display mb-1 text-lg font-bold">Confidentialité</h2>
@@ -215,34 +243,53 @@
     </div>
 
     {#if settings.profileAccess !== ProfileAccess.GHOST}
-      <!-- Visibility matrix: the authZ layer, per domain × facet. -->
-      <div class="divide-border divide-y">
+      <!-- Visibility matrix: the authZ layer, per domain × facet. A table on
+           desktop (12 cells scannable at once) doesn't fit a phone screen —
+           the segmented control alone is wider than the "Activité" column —
+           so under md it drops to one stacked block per domain instead,
+           same control, same data. -->
+      <div class="divide-border divide-y md:hidden">
         {#each DOMAINS as d (d.id)}
-          <div class="py-4 first:pt-0">
+          <div class="py-3 first:pt-0">
             <p class="mb-2 font-semibold">{d.label}</p>
             <div class="space-y-2">
               {#each FACETS as f (f.id)}
                 {@const current = audienceOf(d.id, f.id)}
-                <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-2">
                   <span class="text-dim text-sm">{f.label}</span>
-                  <Combobox
-                    label={f.label}
-                    options={AUDIENCES.map((a) => ({
-                      label: a.label,
-                      value: a.id,
-                    }))}
-                    values={[current]}
-                    disabledValues={isPrivate
-                      ? [VisibilityAudience.PUBLIC]
-                      : []}
-                    disabledHint="Un profil privé ne peut pas exposer au public."
-                    onChange={(v) =>
-                      setAudience(d.id, f.id, v[0] as VisibilityAudience)} />
+                  {@render audienceSegmented(d.id, f.id, current)}
                 </div>
               {/each}
             </div>
           </div>
         {/each}
+      </div>
+
+      <div class="hidden overflow-x-auto md:block">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-border border-b">
+              <th class="pr-3 pb-2 font-semibold">Catégorie</th>
+              {#each FACETS as f (f.id)}
+                <th class="px-3 pb-2 text-center font-semibold">{f.label}</th>
+              {/each}
+            </tr>
+          </thead>
+          <tbody class="divide-border divide-y">
+            {#each DOMAINS as d (d.id)}
+              <tr>
+                <td class="py-2.5 pr-3 font-semibold whitespace-nowrap"
+                  >{d.label}</td>
+                {#each FACETS as f (f.id)}
+                  {@const current = audienceOf(d.id, f.id)}
+                  <td class="px-3 py-2.5 text-center">
+                    {@render audienceSegmented(d.id, f.id, current)}
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
       </div>
 
       {#if auth.user}
