@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import { ApiError, login } from "$lib/api/client";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -11,13 +12,20 @@
   let error = $state<string | null>(null);
   let loading = $state(false);
 
+  // Only follow redirectTo when it's an internal path — anything else could
+  // be an open-redirect vector (e.g. redirectTo=https://evil.example).
+  function safeRedirect(target: string | null): string {
+    if (target?.startsWith("/") && !target.startsWith("//")) return target;
+    return "/";
+  }
+
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     error = null;
     loading = true;
     try {
       await login({ identifier, password });
-      await goto("/app");
+      await goto(safeRedirect(page.url.searchParams.get("redirectTo")));
     } catch (err) {
       error =
         err instanceof ApiError ? err.message : m.auth_login_error_fallback();

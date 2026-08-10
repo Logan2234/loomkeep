@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import { adminReports } from "$lib/admin-reports.svelte";
   import { auth } from "$lib/auth.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
@@ -16,7 +17,10 @@
   // the gate, so there's no route allowlist to keep in sync when a screen is
   // added. Public surfaces live outside /app (landing, (auth)/, legal/).
   $effect(() => {
-    if (bootstrap.ready && !auth.isLoggedIn) void goto("/login");
+    if (bootstrap.ready && !auth.isLoggedIn)
+      void goto(
+        `/login?redirectTo=${encodeURIComponent(page.url.pathname + page.url.search)}`,
+      );
   });
 
   // Once logged in, trigger this user's episode scan (push/email only — see
