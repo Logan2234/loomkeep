@@ -1,0 +1,28 @@
+name: PR Labeler
+description: Automatically labels PRs based on the files changed.
+run-name: Label PR #${{ github.event.pull_request.number }} based on changed files
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+# pull_request_target (not pull_request) so the labeler has write access even
+# on PRs from forks — safe here because actions/labeler only reads the diff's
+# file paths via the API, it never checks out or executes the PR's code.
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7
+        with:
+          sync-labels: true

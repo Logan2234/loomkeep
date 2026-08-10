@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "⚡"
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -19,18 +23,39 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "⚡"
+    groups:
+      actions:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "docker"
     directory: "/apps/api"
     schedule:
       interval: "weekly"
       day: "monday"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "⚡"
+    groups:
+      api-image:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "docker"
     directory: "/apps/web"
     schedule:
       interval: "weekly"
       day: "monday"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "⚡"
+    groups:
+      web-image:
+        update-types: ["minor", "patch"]
 
   # Covers docker-compose.yml + every *.yml override in docker/
   # (prod/observability) — image: tags (postgres, caddy, loki,
@@ -40,3 +65,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "⚡"
+    groups:
+      compose-images:
+        update-types: ["minor", "patch"]

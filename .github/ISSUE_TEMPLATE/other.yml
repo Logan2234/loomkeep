@@ -1,0 +1,18 @@
+name: ❓ Other
+description: Contribution question, docs issue, or anything not covered by the other templates.
+labels: ["question"]
+assignees: [Logan2234]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Product bugs and feature ideas belong on
+        [feedback.loomkeep.app](https://feedback.loomkeep.app) — use this template for
+        anything else related to the codebase or the project (contributing, docs, CI, etc.).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What's this about?
+    validations:
+      required: true

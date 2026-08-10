@@ -271,6 +271,45 @@
                 label: Scorecard
                 suffix: " / 10"
 
+- Feedback:
+    - Quackback:
+        href: https://feedback.loomkeep.app
+        description: User feedback board, roadmap & changelog
+        icon: mdi-message-star
+        widgets:
+          - type: customapi
+            url: "https://feedback.loomkeep.app/api/v1/posts?boardId=board_01kzmg900wfetr9r4z0rqarnne&status=planned&limit=100"
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_QUACKBACK_API_KEY}}"
+            mappings:
+              - field: data
+                label: Planned (Features)
+                format: size
+          - type: customapi
+            url: "https://feedback.loomkeep.app/api/v1/posts?boardId=board_01kzmg9011fetr9r55mtzj0s3p&status=planned&limit=100"
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_QUACKBACK_API_KEY}}"
+            mappings:
+              - field: data
+                label: Planned (Bugs)
+                format: size
+          - type: customapi
+            url: "https://feedback.loomkeep.app/api/v1/conversations?status=open&limit=100"
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_QUACKBACK_API_KEY}}"
+            mappings:
+              - field: data
+                label: Support ouvert
+                format: size
+          - type: customapi
+            url: "https://feedback.loomkeep.app/api/v1/changelog?published=true&limit=1"
+            headers:
+              Authorization: "Bearer {{HOMEPAGE_VAR_QUACKBACK_API_KEY}}"
+            mappings:
+              - field: data.0.publishedAt
+                label: Dernier changelog
+                format: relativeDate
+
 - Emails:
     - Brevo:
         href: https://app.brevo.com

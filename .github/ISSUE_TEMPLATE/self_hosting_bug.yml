@@ -1,0 +1,53 @@
+name: 🐳 Self-hosting / deployment bug
+description: Docker setup, migrations, reverse proxy, or other issues running loomkeep yourself.
+labels: ["bug", "docker"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For bugs *inside* the app itself (a feature not working as expected), use the
+        [Bug Reports board](https://feedback.loomkeep.app/board/bug-reports) instead — this
+        template is for issues running/deploying your own instance.
+
+  - type: input
+    id: version
+    attributes:
+      label: loomkeep version
+      description: Shown in the Homepage "Version" widget, or `git rev-parse --short HEAD` on the VPS.
+      placeholder: "1.3.0 / a1b2c3d"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: setup
+    attributes:
+      label: Setup
+      options:
+        - docker:dev (dev stack)
+        - docker:prod
+        - docker:full (with add-ons)
+        - Other / custom compose override
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you expected vs. what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Output of `docker compose logs api` / `docker compose logs web` (redact secrets first).
+      render: shell
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true

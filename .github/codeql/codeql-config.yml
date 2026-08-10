@@ -1,13 +1,8 @@
 name: "Loomkeep CodeQL config"
 
-# security-extended adds less common/subtler security queries on top of the
-# implicit "Default" suite, without the code-quality queries from
-# security-and-quality (ESLint already covers code quality here).
 queries:
   - uses: security-and-quality
 
-# Generated/compiled output — scanning it would just duplicate alerts
-# already raised against the source it's built from.
 paths-ignore:
   - apps/api/dist
   - apps/api/coverage

@@ -1,0 +1,26 @@
+api:
+  - changed-files:
+      - any-glob-to-any-file: apps/api/**
+
+web:
+  - changed-files:
+      - any-glob-to-any-file: apps/web/**
+
+shared:
+  - changed-files:
+      - any-glob-to-any-file: packages/shared/**
+
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/api/Dockerfile
+          - apps/web/Dockerfile
+          - docker/**
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: .github/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.md"

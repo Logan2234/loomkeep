@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: "23 4 * * 1"
 
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
 # Workflow-level default, in case a future job here doesn't declare its own
 # block — the analyze job below still sets the elevated scopes it needs.
 permissions:
@@ -18,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write
-      packages: read
       actions: read
       contents: read
     steps:

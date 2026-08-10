@@ -29,6 +29,7 @@ pnpm docker:dev                                # db + api + web (see .env.exampl
 # Tools
 pnpm lint                                      # global eslint + prettier
 pnpm lint:fix                                  # global auto-fix lintable issues (js/ts/svelte)
+pnpm format                                    # global prettier formatting
 pnpm knip                                      # global dead code / unused dependency detection
 pnpm spelunk                                   # visualize the dependency graph of the api package
 pnpm clean                                     # removes all dist/ and tsbuildinfo files, but keeps node_modules
@@ -57,6 +58,16 @@ e2e tests reuse that server but run in an isolated `e2e` schema (see `apps/api/t
 so they never touch dev data.
 
 ## Architecture
+
+**Product model:** loomkeep has two destinations, not one — the public
+instance Logan runs on his own VPS (`deploy.yml`, no setup required), and
+self-hosting via the `docker/` compose stack. Don't describe loomkeep as
+"self-hosted" without also mentioning the hosted option. A premium plan is
+planned for the future on **both**: extra features gated behind it on the
+hosted instance, and — undecided — possibly some features gated behind it
+for self-hosters too. This is the reason `User.entitlements` exists (see
+below) and is tracked in Quackback's Internal Roadmap board (monetization
+brainstorm).
 
 pnpm monorepo, 100% TypeScript: `apps/api` (NestJS + Prisma + PostgreSQL),
 `apps/web` (SvelteKit PWA), `packages/shared` (DTOs/enums used by both).
