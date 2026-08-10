@@ -135,12 +135,12 @@
     {#each shown as album (album.sourceId)}
       {@const entry = tracked.get(album.sourceId)}
       <div class="card group flex flex-col">
-        <a href={`/music/${album.sourceId}`} class="block">
+        <a href={`/app/music/${album.sourceId}`} class="block">
           <Poster src={album.coverUrl} title={album.title} />
         </a>
         <div class="flex flex-1 flex-col gap-2 p-3">
           <a
-            href={`/music/${album.sourceId}`}
+            href={`/app/music/${album.sourceId}`}
             class="font-display group-hover:text-accent text-sm leading-tight font-semibold">
             {album.title}
           </a>

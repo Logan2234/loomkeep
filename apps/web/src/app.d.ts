@@ -25,8 +25,11 @@ declare global {
       remove(widgetId: string): void;
     };
     // Quackback's feedback widget loader (queue-based stub replaced by the
-    // real SDK once it loads) — see app.html and WidgetIdentify.svelte.
-    Quackback?: (...args: unknown[]) => void;
+    // real SDK once it loads) — see WidgetIdentify.svelte.
+    Quackback?: {
+      (...args: unknown[]): void;
+      q?: unknown[][];
+    };
   }
 }
 

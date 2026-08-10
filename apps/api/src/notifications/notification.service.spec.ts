@@ -117,7 +117,7 @@ describe("NotificationService.scan (push)", () => {
     expect(push.sendToUser).toHaveBeenCalledWith("u1", {
       title: "Severance",
       body: "S2E5 · The One With The Finale",
-      url: "/media/series/42",
+      url: "/app/media/series/42",
     });
   });
 
@@ -134,7 +134,7 @@ describe("NotificationService.scan (push)", () => {
       "alice@example.com",
       "Severance",
       "S2E5 · The One With The Finale",
-      "/media/series/42",
+      "/app/media/series/42",
     );
   });
 

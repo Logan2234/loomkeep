@@ -15,7 +15,7 @@ export interface CarouselItem {
 
 /**
  * Builds RelatedCarousel items from summaries sharing a source id, linking each
- * to `${hrefPrefix}/${sourceId}` (e.g. "/games", "/books").
+ * to `${hrefPrefix}/${sourceId}` (e.g. "/app/games", "/app/books").
  */
 export function toCarouselItems(
   list: CarouselSource[],

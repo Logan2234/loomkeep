@@ -60,10 +60,10 @@
   };
 
   const DOMAIN_HREF: Record<string, string> = {
-    MEDIA: "/media",
-    GAMES: "/games",
-    BOOKS: "/books",
-    MUSIC: "/music",
+    MEDIA: "/app/media",
+    GAMES: "/app/games",
+    BOOKS: "/app/books",
+    MUSIC: "/app/music",
   };
 
   let profile = $state<SocialProfileDto | null>(null);
@@ -295,7 +295,7 @@
       <p class="text-dim max-w-sm text-sm">
         {m.profile_not_found_body()}
       </p>
-      <a href="/" class="btn btn-ghost mt-2"
+      <a href="/app" class="btn btn-ghost mt-2"
         >{m.profile_not_found_back_home()}</a>
     </div>
   {:else if profile.locked}
@@ -487,7 +487,7 @@
         <!-- Your own profile, viewed the way anyone else sees it — no
              self-management here, just a way back to the real thing. -->
         <a
-          href="/profile"
+          href="/app/profile"
           class="border-border text-dim hover:bg-surface-2 hover:text-fg absolute top-5 right-5 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold md:top-6 md:right-6">
           <Icon name="chevron-left" class="h-3.5 w-3.5" />
           {m.profile_back_to_own()}
@@ -515,7 +515,7 @@
             <Icon name="camera" class="h-4 w-4" />
           </button>
           <a
-            href="/settings"
+            href="/app/settings"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
             title={m.nav_settings()}
             aria-label={m.nav_settings()}>
@@ -667,7 +667,7 @@
               {m.profile_activity_first_trace({ date: firstActivity })}{/if}
           </p>
           <a
-            href="/stats"
+            href="/app/stats"
             class="text-accent mt-0.5 inline-block text-xs font-bold hover:underline">
             {m.profile_activity_view_stats()}
           </a>
@@ -683,7 +683,7 @@
           </h2>
           {#if selfManage && lists.length > 0}
             <a
-              href="/lists"
+              href="/app/lists"
               class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold md:hidden">
               {m.profile_reviews_manage()}
               <Icon name="chevron-right" class="h-4 w-4" />
@@ -692,7 +692,9 @@
         </div>
         <div class="flex items-stretch gap-4">
           {#if selfManage && lists.length > 0}
-            <a href="/lists" class="mt-2 hidden w-28 shrink-0 sm:w-32 md:block">
+            <a
+              href="/app/lists"
+              class="mt-2 hidden w-28 shrink-0 sm:w-32 md:block">
               <div
                 class="card hover:border-accent text-dim hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 transition-colors">
                 <Icon name="list" class="h-6 w-6" />
@@ -718,7 +720,7 @@
                   </button>
                 {:else}
                   <a
-                    href="/lists/{item.list.id}"
+                    href="/app/lists/{item.list.id}"
                     class="w-28 shrink-0 snap-start sm:w-32">
                     <div
                       class="card hover:border-accent overflow-hidden transition-colors">
@@ -773,7 +775,7 @@
         {#each connections as u (u.id)}
           <li>
             <a
-              href={`/u/${u.username}`}
+              href={`/app/u/${u.username}`}
               class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2"
               onclick={() => (connectionsKind = null)}>
               <Avatar seed={u.username} url={u.avatarUrl} size={36} />

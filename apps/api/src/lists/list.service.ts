@@ -585,7 +585,7 @@ export class ListService {
   ): string | null {
     if (!sourceId) return null;
     return domain === "media"
-      ? `/media/${mediaType}/${sourceId}`
+      ? `/app/media/${mediaType}/${sourceId}`
       : `/${domain}/${sourceId}`;
   }
 }

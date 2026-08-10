@@ -1,515 +1,330 @@
 <script lang="ts">
-  import {
-    getCalendar,
-    listBooks,
-    listGames,
-    listLibrary,
-    listMusic,
-    watchEpisode,
-  } from "$lib/api/client";
+  import { bootstrap } from "$lib/bootstrap.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Carousel from "$lib/components/Carousel.svelte";
-  import HomeActivityPreview from "$lib/components/HomeActivityPreview.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
-  import Poster from "$lib/components/Poster.svelte";
-  import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import type {
-    BookEntryDto,
-    CalendarEntryDto,
-    GameEntryDto,
-    LibraryEntryDto,
-    MusicEntryDto,
-    NextEpisodeDto,
-  } from "@loomkeep/shared";
-  import { Domain } from "@loomkeep/shared";
-  import { tick } from "svelte";
+  import LegalLinks from "$lib/components/LegalLinks.svelte";
+  import { page } from "$app/state";
+  import { m } from "$lib/paraglide/messages.js";
+  import { theme } from "$lib/theme.svelte";
+  import type { IconName } from "$lib/types/icon-name";
 
-  const mediaOn = $derived(isDomainEnabled(Domain.MEDIA));
-  const gamesOn = $derived(isDomainEnabled(Domain.GAMES));
-  const booksOn = $derived(isDomainEnabled(Domain.BOOKS));
-  const musicOn = $derived(isDomainEnabled(Domain.MUSIC));
-  // Podcasts/Jeux de société have no screens yet — surfaced as a dimmed
-  // "Bientôt" teaser here for consistency with the nav rail/menu sheet, but
-  // only once the user has actually opted into one of the two (they're
-  // off by default, unlike the other 4 domains).
-  const soonOn = $derived(
-    isDomainEnabled(Domain.PODCASTS) || isDomainEnabled(Domain.BOARDGAMES),
-  );
+  const REPO_URL = "https://github.com/Logan2234/loomkeep";
+  const FEEDBACK_URL = "https://feedback.loomkeep.app";
 
-  let watching = $state<LibraryEntryDto[]>([]);
-  let upcoming = $state<CalendarEntryDto[]>([]);
-  let playingGames = $state<GameEntryDto[]>([]);
-  let readingBooks = $state<BookEntryDto[]>([]);
-  let toListenAlbums = $state<MusicEntryDto[]>([]);
-  let loading = $state(true);
-  let resuming = $state<string | null>(null); // entry id being resumed
-  let resumeCarousel = $state<{ scrollToStart: () => void }>();
+  // Resolved per request (this page is server-rendered, not prerendered) so
+  // the same code emits correct absolute URLs on loomkeep.app, on a
+  // self-hoster's own domain and on localhost. See +page.ts.
+  const canonical = $derived(`${page.url.origin}/`);
 
-  // Fetch only the enabled domains' "in progress" content — the dashboard is
-  // best-effort, so a failing call just leaves its section empty. Reads the
-  // domain flags synchronously so the effect reloads when one is toggled.
-  async function load() {
-    if (!auth.user) return;
-    loading = true;
-    const jobs: Promise<unknown>[] = [];
-
-    if (mediaOn) {
-      jobs.push(
-        listLibrary({ statuses: ["WATCHING"] }).then(
-          (r) => (watching = r.items),
-        ),
-      );
-      jobs.push(getCalendar().then((c) => (upcoming = c)));
-    } else {
-      watching = [];
-      upcoming = [];
-    }
-    if (gamesOn)
-      jobs.push(
-        listGames({ statuses: ["PLAYING"] }).then(
-          (r) => (playingGames = r.items),
-        ),
-      );
-    else playingGames = [];
-    if (booksOn)
-      jobs.push(
-        listBooks({ statuses: ["READING"] }).then(
-          (r) => (readingBooks = r.items),
-        ),
-      );
-    else readingBooks = [];
-    if (musicOn)
-      jobs.push(
-        listMusic({ statuses: ["TO_LISTEN"] }).then(
-          (r) => (toListenAlbums = r.items),
-        ),
-      );
-    else toListenAlbums = [];
-
-    try {
-      await Promise.all(jobs);
-    } catch {
-      // Dashboard is best-effort; leave sections empty on error.
-    } finally {
-      loading = false;
-    }
+  // The six libraries, in the fixed domain order of the stats palette (see
+  // app.css) so the colours read the same here as inside the app. Planned
+  // domains have no hue of their own yet — they render dimmed instead.
+  interface Library {
+    label: string;
+    icon: IconName;
+    color?: string;
+    soon?: boolean;
   }
 
-  $effect(() => {
-    void load();
-  });
+  const LIBRARIES: Library[] = [
+    { label: m.nav_media(), icon: "tv", color: "var(--stat-media)" },
+    { label: m.nav_games(), icon: "gamepad", color: "var(--stat-games)" },
+    { label: m.nav_books(), icon: "book", color: "var(--stat-books)" },
+    { label: m.nav_music(), icon: "music", color: "var(--stat-music)" },
+    { label: m.nav_podcasts(), icon: "podcast", soon: true },
+    { label: m.nav_boardgames(), icon: "boardgame", soon: true },
+  ];
 
-  const epCodeOf = (n: NextEpisodeDto) =>
-    `S${String(n.seasonNumber).padStart(2, "0")}E${String(n.episodeNumber).padStart(2, "0")}`;
-
-  /**
-   * One-click resume: mark the entry's next unwatched episode as watched.
-   * Re-fetches just the watching list (not the whole dashboard, so no
-   * `loading` skeleton flash) and swaps it in — the entry now sorts first
-   * in `watchingRecent`, so the carousel is scrolled back to its start to
-   * keep it in view.
-   */
-  async function resume(entry: LibraryEntryDto) {
-    const next = entry.progress?.nextEpisode;
-    if (!next) return;
-    resuming = entry.id;
-    try {
-      await watchEpisode(next.episodeId);
-      watching = (await listLibrary({ statuses: ["WATCHING"] })).items;
-      await tick();
-      resumeCarousel?.scrollToStart();
-    } catch {
-      // ignore; the card stays as-is
-    } finally {
-      resuming = null;
-    }
-  }
-
-  const greeting = $derived.by(() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Bonjour";
-    if (h < 18) return "Bon après-midi";
-    return "Bonsoir";
-  });
-
-  function pct(e: LibraryEntryDto): number {
-    if (!e.progress || e.progress.totalEpisodes === 0) return 0;
-    return Math.round(
-      (e.progress.watchedEpisodes / e.progress.totalEpisodes) * 100,
-    );
-  }
-
-  function bookPct(e: BookEntryDto): number | null {
-    if (!e.book.pageCount) return null;
-    return Math.round((e.currentPage / e.book.pageCount) * 100);
-  }
-
-  const weekdayShort = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
-  function dayShort(iso: string): string {
-    const d = new Date(iso);
-    d.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-    if (diff === 0) return "Auj.";
-    if (diff === 1) return "Demain";
-    return weekdayShort.format(new Date(iso));
-  }
-  const epCode = (e: CalendarEntryDto) =>
-    `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;
-  const mediaHref = (e: CalendarEntryDto) =>
-    `/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`;
-  const week = $derived(upcoming.slice(0, 3));
-
-  // Surface the most recently watched shows first; capped so "reprendre"
-  // stays a quick strip rather than the whole watching list.
-  const time = (iso: string | null) => (iso ? new Date(iso).getTime() : 0);
-  const RESUME_LIMIT = 20;
-  const watchingRecent = $derived(
-    [...watching]
-      .sort((a, b) => time(b.lastWatchedAt) - time(a.lastWatchedAt))
-      .slice(0, RESUME_LIMIT),
-  );
+  const FEATURES = [
+    {
+      icon: "calendar",
+      title: m.landing_feature_calendar_title(),
+      body: m.landing_feature_calendar_body(),
+    },
+    {
+      icon: "refresh",
+      title: m.landing_feature_rewatch_title(),
+      body: m.landing_feature_rewatch_body(),
+    },
+    {
+      icon: "download",
+      title: m.landing_feature_import_title(),
+      body: m.landing_feature_import_body(),
+    },
+    {
+      icon: "users",
+      title: m.landing_feature_social_title(),
+      body: m.landing_feature_social_body(),
+    },
+    {
+      icon: "stats",
+      title: m.landing_feature_stats_title(),
+      body: m.landing_feature_stats_body(),
+    },
+    {
+      icon: "shield",
+      title: m.landing_feature_ownership_title(),
+      body: m.landing_feature_ownership_body(),
+    },
+  ] as const;
 </script>
 
-<div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
-  <PageHeader
-    icon="home"
-    title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
-    subtitle="Reprends là où tu t’es arrêté." />
+<svelte:head>
+  <title>Loomkeep — {m.landing_meta_tagline()}</title>
+  <meta name="description" content={m.landing_meta_description()} />
+  <link rel="canonical" href={canonical} />
 
-  {#if loading}
-    <div class="mb-10 flex flex-col gap-10">
-      <div>
-        <div class="skeleton mb-4 h-3 w-20 rounded"></div>
-        <div class="skeleton mb-3 h-6 w-32 rounded"></div>
-        <div class="flex gap-4 overflow-hidden">
-          {#each { length: 4 } as _, j (j)}
-            <div class="w-32 shrink-0 sm:w-36">
-              <div class="skeleton aspect-2/3 w-full rounded-xl"></div>
-              <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
-            </div>
+  <!-- Absolute URLs: link-preview scrapers (Slack, Discord, WhatsApp…) don't
+       resolve relative ones, unlike browsers. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Loomkeep" />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:title" content="Loomkeep — {m.landing_meta_tagline()}" />
+  <meta property="og:description" content={m.landing_meta_description()} />
+  <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta name="twitter:card" content="summary" />
+</svelte:head>
+
+<div class="flex min-h-screen flex-col">
+  <header
+    class="border-border bg-bg/85 sticky top-0 z-10 border-b backdrop-blur">
+    <div
+      class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3">
+      <a href="/" class="font-display text-xl font-extrabold tracking-tight">
+        LOOM<span class="text-accent">KEEP</span>
+      </a>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick={() => theme.toggle()}
+          aria-label={m.landing_theme_toggle()}
+          title={m.landing_theme_toggle()}
+          class="hover:bg-surface-2 text-dim hover:text-fg grid h-9 w-9 place-items-center rounded-lg transition-colors">
+          <Icon name={theme.mode === "dark" ? "sun" : "moon"} class="h-4 w-4" />
+        </button>
+
+        <!-- Rendered only once bootstrap resolved: before that we don't know
+             whether to offer "sign in" or "open the app", and flipping the
+             primary CTA after paint is worse than showing it a beat late. -->
+        {#if bootstrap.ready}
+          {#if auth.isLoggedIn}
+            <a href="/app" class="btn btn-primary">{m.landing_open_app()}</a>
+          {:else}
+            <a href="/login" class="btn btn-ghost">{m.landing_login()}</a>
+            {#if appConfig.registrationEnabled}
+              <a href="/register" class="btn btn-primary hidden sm:inline-flex">
+                {m.landing_register()}
+              </a>
+            {/if}
+          {/if}
+        {/if}
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <!-- Hero — letterbox hairlines above and below, timecode kicker. -->
+    <section class="mx-auto max-w-5xl px-5 py-14 md:py-24">
+      <div
+        class="grid items-center gap-12 md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
+        <div>
+          <p class="timecode mb-5 text-xs tracking-[0.18em] uppercase">
+            {m.landing_hero_kicker()}
+          </p>
+          <h1
+            class="font-display text-4xl leading-[1.05] font-extrabold tracking-tight md:text-6xl">
+            {m.landing_hero_title_lead()}<br class="hidden sm:block" />
+            <span class="text-accent">{m.landing_hero_title_accent()}</span>
+          </h1>
+          <p class="text-dim mt-6 max-w-xl text-base md:text-lg">
+            {m.landing_hero_body()}
+          </p>
+
+          <div class="mt-9 flex flex-wrap items-center gap-3">
+            {#if bootstrap.ready && auth.isLoggedIn}
+              <a href="/app" class="btn btn-primary px-5 py-2.5">
+                {m.landing_open_app()}
+              </a>
+            {:else}
+              {#if appConfig.registrationEnabled}
+                <a href="/register" class="btn btn-primary px-5 py-2.5">
+                  {m.landing_hero_cta_primary()}
+                </a>
+              {/if}
+              <a href="/login" class="btn btn-ghost px-5 py-2.5">
+                {m.landing_login()}
+              </a>
+            {/if}
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-ghost px-5 py-2.5">
+              {m.landing_hero_cta_selfhost()}
+            </a>
+          </div>
+
+          <p class="text-dim mt-5 text-sm">{m.landing_hero_note()}</p>
+        </div>
+
+        <!-- Decorative "programme" panel: poster placeholders and timecodes,
+             the two signature devices of the Séance identity. Deliberately
+             abstract rather than a screenshot — no invented catalogue data. -->
+        <div
+          aria-hidden="true"
+          class="card mx-auto hidden w-72 shrink-0 p-5 md:block">
+          <p class="timecode mb-4 text-[0.65rem] tracking-[0.16em] uppercase">
+            {m.landing_panel_label()}
+          </p>
+          <ul class="space-y-3">
+            {#each [{ w: "72%", tc: "S02E07" }, { w: "58%", tc: "2:46:00" }, { w: "80%", tc: "12 / 24" }, { w: "45%", tc: "1994" }] as row (row.tc)}
+              <li class="flex items-center gap-3">
+                <span class="skeleton h-11 w-8 shrink-0 rounded"></span>
+                <span class="min-w-0 flex-1">
+                  <span
+                    class="skeleton block h-2.5 rounded"
+                    style="width: {row.w}"></span>
+                  <span class="timecode mt-1.5 block text-[0.7rem]"
+                    >{row.tc}</span>
+                </span>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Libraries -->
+    <section class="border-border border-t">
+      <div class="mx-auto max-w-5xl px-5 py-14 md:py-20">
+        <h2 class="font-display text-2xl font-bold tracking-tight md:text-3xl">
+          {m.landing_libraries_title()}
+        </h2>
+        <p class="text-dim mt-3 max-w-2xl">{m.landing_libraries_body()}</p>
+
+        <ul class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {#each LIBRARIES as lib (lib.label)}
+            <li
+              class="card flex flex-col items-start gap-2 p-4"
+              class:opacity-60={lib.soon}>
+              <span
+                class="grid h-9 w-9 place-items-center rounded-lg"
+                style={lib.soon
+                  ? undefined
+                  : `color: ${lib.color}; background: color-mix(in srgb, ${lib.color} 14%, transparent)`}>
+                <Icon name={lib.icon} class="h-5 w-5" />
+              </span>
+              <span class="text-sm font-semibold">{lib.label}</span>
+              {#if lib.soon}
+                <span
+                  class="timecode text-[0.65rem] tracking-[0.12em] uppercase"
+                  >{m.landing_libraries_soon()}</span>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="border-border bg-surface/40 border-t">
+      <div class="mx-auto max-w-5xl px-5 py-14 md:py-20">
+        <h2 class="font-display text-2xl font-bold tracking-tight md:text-3xl">
+          {m.landing_features_title()}
+        </h2>
+
+        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {#each FEATURES as feature (feature.title)}
+            <article class="card p-5">
+              <span
+                class="text-accent bg-accent/12 mb-4 grid h-10 w-10 place-items-center rounded-lg">
+                <Icon name={feature.icon} class="h-5 w-5" />
+              </span>
+              <h3 class="font-display mb-2 text-base font-bold">
+                {feature.title}
+              </h3>
+              <p class="text-dim text-sm">{feature.body}</p>
+            </article>
           {/each}
         </div>
       </div>
-    </div>
-  {:else}
-    <!-- Every domain allowed by enabledDomains gets a card — even with
-         nothing in progress, it shows a short empty message plus its own
-         "voir plus" shortcut, so the layout never silently drops a section. -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12">
-      {#if mediaOn}
-        <section class="card lg:col-span-8">
-          <div class="flex items-center justify-between p-4 pb-0">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="tv" class="text-accent h-4 w-4" /> Vidéo · à reprendre
-            </h2>
-            <a
-              href="/media"
-              class="text-dim hover:text-fg text-xs font-semibold"
-              >Voir plus →</a>
-          </div>
-          <div class="p-4">
-            {#if watchingRecent.length > 0}
-              <Carousel
-                bind:this={resumeCarousel}
-                items={watchingRecent}
-                keyOf={(e) => e.id}>
-                {#snippet card(e)}
-                  <div class="w-28 shrink-0 snap-start">
-                    <a
-                      href={`/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
-                      class="block">
-                      <div
-                        class="card hover:border-accent overflow-hidden transition-[border-color]">
-                        <Poster
-                          src={e.mediaItem.posterUrl}
-                          title={e.mediaItem.title} />
-                      </div>
-                      <p
-                        class="font-display mt-1.5 truncate text-xs font-semibold">
-                        {e.mediaItem.title}
-                      </p>
-                    </a>
-                    {#if e.progress}
-                      <div
-                        class="bg-surface-2 mt-1 h-1 overflow-hidden rounded-full">
-                        <div
-                          class="bg-accent h-full"
-                          style={`width: ${pct(e)}%`}>
-                        </div>
-                      </div>
-                      <p class="timecode mt-1 text-[0.65rem]">
-                        {e.progress.watchedEpisodes} / {e.progress
-                          .totalEpisodes}
-                      </p>
-                      {#if e.progress.nextEpisode}
-                        <button
-                          class="btn btn-primary mt-1 w-full px-2 py-1 text-[0.65rem]"
-                          disabled={resuming === e.id}
-                          onclick={() => resume(e)}>
-                          ▶ {epCodeOf(e.progress.nextEpisode)}
-                        </button>
-                      {/if}
-                    {/if}
-                  </div>
-                {/snippet}
-              </Carousel>
+    </section>
+
+    <!-- Hosted instance vs self-hosting -->
+    <section class="border-border border-t">
+      <div class="mx-auto max-w-5xl px-5 py-14 md:py-20">
+        <h2 class="font-display text-2xl font-bold tracking-tight md:text-3xl">
+          {m.landing_hosting_title()}
+        </h2>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <article class="card flex flex-col p-6">
+            <p class="timecode mb-3 text-[0.65rem] tracking-[0.16em] uppercase">
+              {m.landing_hosting_hosted_label()}
+            </p>
+            <h3 class="font-display mb-2 text-lg font-bold">
+              {m.landing_hosting_hosted_title()}
+            </h3>
+            <p class="text-dim mb-6 flex-1 text-sm">
+              {m.landing_hosting_hosted_body()}
+            </p>
+            {#if bootstrap.ready && auth.isLoggedIn}
+              <a href="/app" class="btn btn-primary self-start"
+                >{m.landing_open_app()}</a>
+            {:else if appConfig.registrationEnabled}
+              <a href="/register" class="btn btn-primary self-start"
+                >{m.landing_hero_cta_primary()}</a>
             {:else}
-              <p class="text-dim py-6 text-center text-sm">
-                Rien en cours de visionnage.
-              </p>
+              <a href="/login" class="btn btn-ghost self-start"
+                >{m.landing_login()}</a>
             {/if}
-          </div>
-        </section>
+          </article>
 
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="calendar" class="text-accent h-4 w-4" /> Cette semaine
-            </h2>
-            <a
-              href="/calendar"
-              class="text-dim hover:text-fg text-xs font-semibold"
-              >Calendrier →</a>
-          </div>
-          {#if week.length > 0}
-            <ul class="divide-border divide-y">
-              {#each week as e (e.mediaItem.id + epCode(e))}
-                <li>
-                  <a href={mediaHref(e)} class="flex items-center gap-3 py-2">
-                    <div class="w-8 shrink-0 overflow-hidden rounded-md">
-                      <Poster
-                        src={e.mediaItem.posterUrl}
-                        title={e.mediaItem.title} />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-display truncate text-sm font-semibold">
-                        {e.mediaItem.title}
-                      </p>
-                      <p class="timecode text-xs">
-                        {epCode(e)}
-                      </p>
-                    </div>
-                    <span
-                      class="border-accent/40 text-accent timecode rounded-md border px-1.5 py-0.5 text-[0.65rem]">
-                      {dayShort(e.airDate)}
-                    </span>
-                  </a>
-                </li>
-              {/each}
-            </ul>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien de prévu cette semaine.
+          <article class="card flex flex-col p-6">
+            <p class="timecode mb-3 text-[0.65rem] tracking-[0.16em] uppercase">
+              {m.landing_hosting_selfhost_label()}
             </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if gamesOn}
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="gamepad" class="text-accent h-4 w-4" /> Jeux · en cours
-            </h2>
-            <a
-              href="/games"
-              class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
-          </div>
-          {#if playingGames.length > 0}
-            <Carousel items={playingGames} keyOf={(e) => e.id}>
-              {#snippet card(e)}
-                <a
-                  href={`/games/${e.game.sourceId}`}
-                  class="w-24 shrink-0 snap-start">
-                  <div
-                    class="card hover:border-accent overflow-hidden transition-[border-color]">
-                    <Poster src={e.game.coverUrl} title={e.game.title} />
-                  </div>
-                  <p class="font-display mt-1.5 truncate text-xs font-semibold">
-                    {e.game.title}
-                  </p>
-                  {#if e.playtimeMinutes > 0}
-                    <p class="timecode text-[0.65rem]">
-                      {Math.round(e.playtimeMinutes / 60)} h jouées
-                    </p>
-                  {/if}
-                </a>
-              {/snippet}
-            </Carousel>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien en cours de partie.
+            <h3 class="font-display mb-2 text-lg font-bold">
+              {m.landing_hosting_selfhost_title()}
+            </h3>
+            <p class="text-dim mb-6 flex-1 text-sm">
+              {m.landing_hosting_selfhost_body()}
             </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if booksOn}
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="book" class="text-accent h-4 w-4" /> Livres · en lecture
-            </h2>
             <a
-              href="/books"
-              class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
-          </div>
-          {#if readingBooks.length > 0}
-            <ul class="divide-border divide-y">
-              {#each readingBooks as e (e.id)}
-                {@const p = bookPct(e)}
-                <li>
-                  <a
-                    href={`/books/${e.book.sourceId}`}
-                    class="flex items-center gap-3 py-2">
-                    <div class="w-8 shrink-0 overflow-hidden rounded-md">
-                      <Poster src={e.book.coverUrl} title={e.book.title} />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-display truncate text-sm font-semibold">
-                        {e.book.title}
-                      </p>
-                      {#if p !== null}
-                        <div
-                          class="bg-surface-2 mt-1 h-1 max-w-32 overflow-hidden rounded-full">
-                          <div class="bg-accent h-full" style={`width: ${p}%`}>
-                          </div>
-                        </div>
-                      {/if}
-                      <p class="timecode text-xs">
-                        {#if e.book.pageCount}
-                          p. {e.currentPage} / {e.book.pageCount}
-                        {:else}
-                          p. {e.currentPage}
-                        {/if}
-                      </p>
-                    </div>
-                  </a>
-                </li>
-              {/each}
-            </ul>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien en cours de lecture.
-            </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if musicOn}
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="music" class="text-accent h-4 w-4" /> Musique · à écouter
-            </h2>
-            <a
-              href="/music"
-              class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
-          </div>
-          {#if toListenAlbums.length > 0}
-            <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
-              {#snippet card(e)}
-                <a
-                  href={`/music/${e.album.sourceId}`}
-                  class="w-24 shrink-0 snap-start">
-                  <div
-                    class="card hover:border-accent overflow-hidden transition-[border-color]">
-                    <Poster src={e.album.coverUrl} title={e.album.title} />
-                  </div>
-                  <p class="font-display mt-1.5 truncate text-xs font-semibold">
-                    {e.album.title}
-                  </p>
-                </a>
-              {/snippet}
-            </Carousel>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien à écouter pour l’instant.
-            </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if soonOn}
-        <section
-          class="border-border flex flex-col justify-center gap-1 rounded-xl border border-dashed p-4 opacity-70 lg:col-span-4">
-          <p class="font-display text-sm font-bold">
-            🎧 Podcasts &amp; 🎲 Jeux de société
-          </p>
-          <p class="text-dim text-xs">Bientôt disponible dans Loomkeep.</p>
-          <span
-            class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
-            Bientôt
-          </span>
-        </section>
-      {/if}
-
-      <!-- Activité (Fil) : en dernier bloc de contenu, juste avant les raccourcis. -->
-      <div class="lg:col-span-12">
-        <HomeActivityPreview limit={6} />
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-ghost self-start">
+              {m.landing_hosting_selfhost_cta()}
+            </a>
+          </article>
+        </div>
       </div>
+    </section>
+  </main>
 
-      <div class="grid gap-3 sm:grid-cols-2 lg:col-span-12 lg:grid-cols-3">
-        <a
-          href="/stats"
-          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
-          <div class="flex items-center gap-3">
-            <Icon name="stats" class="text-accent h-6 w-6" />
-            <div>
-              <p class="font-display font-bold">Tes statistiques</p>
-              <p class="text-dim text-sm">
-                Vidéo, jeux et livres en un coup d’œil.
-              </p>
-            </div>
-          </div>
-          <span class="text-dim">→</span>
-        </a>
-
-        <a
-          href="/settings#aide"
-          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
-          <div class="flex items-center gap-3">
-            <Icon name="message" class="text-accent h-6 w-6" />
-            <div>
-              <p class="font-display flex items-center gap-2 font-bold">
-                Aide & Feedback
-                {#if isFeatureNew("help-feedback")}
-                  <NewBadge />
-                {/if}
-              </p>
-              <p class="text-dim text-sm">
-                Propose une idée, signale un bug, discute avec le dev.
-              </p>
-            </div>
-          </div>
-          <span class="text-dim">→</span>
-        </a>
-
-        <a
-          href="/settings"
-          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
-          <div class="flex items-center gap-3">
-            <Icon name="gear" class="text-accent h-6 w-6" />
-            <div>
-              <p class="font-display font-bold">Paramètres</p>
-              <p class="text-dim text-sm">
-                Profil, préférences et notifications.
-              </p>
-            </div>
-          </div>
-          <span class="text-dim">→</span>
-        </a>
-      </div>
+  <footer class="border-border border-t">
+    <div
+      class="text-dim mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-5 pt-6 text-xs">
+      <a
+        href={REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-fg hover:underline">GitHub</a>
+      <a
+        href={FEEDBACK_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-fg hover:underline">{m.landing_footer_feedback()}</a>
+      <a
+        href="{FEEDBACK_URL}/changelog"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-fg hover:underline">{m.landing_footer_changelog()}</a>
     </div>
-  {/if}
+    <LegalLinks />
+  </footer>
 </div>

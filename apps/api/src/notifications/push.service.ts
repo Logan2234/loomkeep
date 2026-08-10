@@ -5,7 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 export interface PushPayload {
   title: string;
   body: string;
-  /** Path to open in the app when the notification is clicked (e.g. "/media/…"). */
+  /** Path to open in the app when the notification is clicked (e.g. "/app/media/…"). */
   url: string;
 }
 

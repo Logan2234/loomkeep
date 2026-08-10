@@ -475,7 +475,7 @@ export class ReviewService {
 
   /**
    * Builds the client route to a work's detail page from its canonical source
-   * id. Media nests the type (`/media/movie/42`); the others are flat. Returns
+   * id. Media nests the type (`/app/media/movie/42`); the others are flat. Returns
    * null when the source id is missing (no browsable target).
    */
   private detailHref(
@@ -485,7 +485,7 @@ export class ReviewService {
   ): string | null {
     if (!sourceId) return null;
     return domain === "media"
-      ? `/media/${mediaType}/${sourceId}`
+      ? `/app/media/${mediaType}/${sourceId}`
       : `/${domain}/${sourceId}`;
   }
 

@@ -236,7 +236,7 @@
     {#each shown as media (keyOf(media))}
       <a
         in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
-        href={`/media/${media.type.toLowerCase()}/${media.sourceId}`}
+        href={`/app/media/${media.type.toLowerCase()}/${media.sourceId}`}
         class="card group hover:border-accent flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
         <div class="relative">
           <Poster

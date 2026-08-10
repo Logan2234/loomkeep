@@ -40,7 +40,7 @@ self.addEventListener("push", (event) => {
 // Focus an existing tab if the app is already open, otherwise open the link.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data as { url?: string })?.url ?? "/";
+  const url = (event.notification.data as { url?: string })?.url ?? "/app";
 
   event.waitUntil(
     self.clients

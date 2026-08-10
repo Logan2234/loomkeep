@@ -6,15 +6,15 @@
         icon: https://loomkeep.app/apple-touch-icon.png
         siteMonitor: http://web:3000
     - Admin:
-        href: https://loomkeep.app/admin
+        href: https://loomkeep.app/app/admin
         description: Panel admin (utilisateurs, backups, signalements...)
         icon: mdi-shield-account
     - Backups:
-        href: https://loomkeep.app/admin/backup
+        href: https://loomkeep.app/app/admin/backup
         description: Sauvegardes de la base de données
         icon: mdi-database-arrow-down
     - Statistiques:
-        href: https://loomkeep.app/admin/stats
+        href: https://loomkeep.app/app/admin/stats
         description: Vue d'ensemble de l'activité
         icon: mdi-chart-line
         widget:

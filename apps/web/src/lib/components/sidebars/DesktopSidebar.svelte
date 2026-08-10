@@ -23,12 +23,12 @@
 
   let { children } = $props();
 
-  const inAdmin = $derived(page.url.pathname.startsWith("/admin"));
+  const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
 
   // "Mon profil" only exists when social is enabled — self-host without it
   // still needs a way to the account settings from the sidebar footer.
   const profileHref = $derived(
-    appConfig.socialEnabled ? "/profile" : "/settings",
+    appConfig.socialEnabled ? "/app/profile" : "/app/settings",
   );
 
   function togglePinned() {
@@ -74,7 +74,7 @@
     onmouseenter={() => (hovered = true)}
     onmouseleave={() => (hovered = false)}>
     <div class="mb-2 flex items-center justify-between overflow-hidden">
-      <a href="/" class="flex min-w-0 items-center overflow-hidden">
+      <a href="/app" class="flex min-w-0 items-center overflow-hidden">
         <span
           class="font-display text-accent grid h-10 w-10 shrink-0 place-items-center text-xl font-extrabold">
           L
@@ -107,11 +107,13 @@
         class="tl-rail-scroll flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {#if inAdmin}
           <a
-            href="/admin"
-            aria-current={page.url.pathname === "/admin" ? "page" : undefined}
+            href="/app/admin"
+            aria-current={page.url.pathname === "/app/admin"
+              ? "page"
+              : undefined}
             title={expanded ? undefined : m.nav_overview()}
             class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {page
-              .url.pathname === '/admin'
+              .url.pathname === '/app/admin'
               ? 'bg-accent/15 text-accent'
               : 'text-dim hover:bg-surface-2 hover:text-fg'}">
             <span class="grid h-10 w-10 shrink-0 place-items-center">
@@ -148,7 +150,7 @@
                 : 'text-dim hover:bg-surface-2 hover:text-fg'}">
               <span class="relative grid h-10 w-10 shrink-0 place-items-center">
                 <Icon name={item.icon} class="h-5 w-5" />
-                {#if item.href === "/admin/reports" && adminReports.pending > 0}
+                {#if item.href === "/app/admin/reports" && adminReports.pending > 0}
                   <span
                     class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
                     {adminReports.pending > 9 ? "9+" : adminReports.pending}
@@ -256,13 +258,13 @@
     <div class="border-border mt-2 flex flex-col gap-1 border-t pt-2">
       {#if auth.isAdmin && !inAdmin}
         <a
-          href="/admin"
+          href="/app/admin"
           title={expanded ? undefined : m.nav_admin()}
-          aria-current={page.url.pathname.startsWith("/admin")
+          aria-current={page.url.pathname.startsWith("/app/admin")
             ? "page"
             : undefined}
           class="flex w-full items-center overflow-hidden rounded-xl transition-colors {page.url.pathname.startsWith(
-            '/admin',
+            '/app/admin',
           )
             ? 'bg-accent/15 text-accent'
             : 'text-dim hover:bg-surface-2 hover:text-fg'}">
@@ -304,7 +306,7 @@
         </a>
       {:else}
         <a
-          href="/"
+          href="/app"
           title={expanded ? undefined : m.nav_back_to_app()}
           class="hover:bg-surface-2 hover:text-fg my-1 flex w-full items-center overflow-hidden rounded-xl transition-colors">
           <span class="grid h-10 w-10 shrink-0 place-items-center">

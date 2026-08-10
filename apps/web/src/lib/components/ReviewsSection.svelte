@@ -216,13 +216,15 @@
                   </p>
                 </div>
               {:else}
-                <a href="/u/{review.author.username}" class="shrink-0">
+                <a href="/app/u/{review.author.username}" class="shrink-0">
                   <Avatar
                     seed={review.author.username}
                     url={review.author.avatarUrl}
                     size={32} />
                 </a>
-                <a href="/u/{review.author.username}" class="min-w-0 flex-1">
+                <a
+                  href="/app/u/{review.author.username}"
+                  class="min-w-0 flex-1">
                   <p
                     class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
                     {review.author.displayName}
