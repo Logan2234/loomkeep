@@ -1,5 +1,5 @@
 name: 🐳 Self-hosting / deployment bug
-description: Docker setup, migrations, reverse proxy, or other issues running loomkeep yourself.
+description: Docker setup, migrations, reverse proxy, or other issues running Loomkeep yourself.
 labels: ["bug", "docker"]
 assignees: Logan2234
 body:
@@ -13,7 +13,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: loomkeep version
+      label: Loomkeep version
       description: Shown in the Homepage "Version" widget, or `git rev-parse --short HEAD` on the VPS.
       placeholder: "1.3.0 / a1b2c3d"
     validations:

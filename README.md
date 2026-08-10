@@ -19,6 +19,12 @@
 [![Version](https://img.shields.io/github/package-json/v/Logan2234/loomkeep)](CHANGELOG.md)
 [![Last commit](https://img.shields.io/github/last-commit/Logan2234/loomkeep)](https://github.com/Logan2234/loomkeep/commits/main)
 
+**Support** </br>
+[![Buy Me a Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=loomkeep&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/loomkeep)
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/loomkeep)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/Logan2234?logo=github&style=for-the-badge)](https://github.com/sponsors/Logan2234)
+[![Liberapay](https://img.shields.io/liberapay/patrons/loomkeep.svg?logo=liberapay&style=for-the-badge)](https://liberapay.com/loomkeep/donate)
+
 Self-hosted tracker for **series, movies, anime, games, books and music** —
 with optional friends/reviews/comments social features. Built as a TV Time
 replacement you fully own: your data lives in your own PostgreSQL, catalogues

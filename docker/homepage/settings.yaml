@@ -30,6 +30,7 @@ layout:
   Emails:
     icon: mdi-email
     style: row
-    columns: 1
+    columns: 3
   Alertes:
     icon: mdi-alert
+    columns: 3

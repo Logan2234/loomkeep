@@ -1,5 +1,5 @@
 # Auto-discovers every running container via the Docker socket (no need to
-# list loomkeep's services by hand — any container on the host gets picked
+# list Loomkeep's services by hand — any container on the host gets picked
 # up, including ones added later) and tails its json-file logs from
 # /var/lib/docker/containers, which docker-compose.yml's `x-logging` already
 # rotates. `container`/`stream` labels let Grafana filter by service.
