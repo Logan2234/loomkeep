@@ -79,6 +79,12 @@ services:
       # (GET /api/public-stats/summary) — see docker/docker-compose.homepage.yml.
       # Empty = the guard fails closed, endpoint stays unreachable.
       HOMEPAGE_STATS_API_KEY: ${HOMEPAGE_STATS_API_KEY:-}
+      # Signs the SSO token for Quackback's feedback widget "Verified
+      # identity only" mode — must match the secret entered in Quackback's
+      # own widget settings. Empty = GET /users/me/widget-token 500s;
+      # WidgetIdentify.svelte swallows that, so an unconfigured secret just
+      # means the widget stays anonymous rather than breaking the app.
+      QUACKBACK_WIDGET_SECRET: ${QUACKBACK_WIDGET_SECRET:-}
     volumes:
       - backup-data:/data/backups
     ports:
