@@ -1,7 +1,7 @@
 name: ❓ Other
 description: Contribution question, docs issue, or anything not covered by the other templates.
 labels: ["question"]
-assignees: [Logan2234]
+assignees: Logan2234
 body:
   - type: markdown
     attributes:

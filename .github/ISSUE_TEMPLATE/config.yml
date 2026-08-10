@@ -1,11 +1,9 @@
 blank_issues_enabled: false
+
 contact_links:
-  - name: 🐛 Bug report (app behavior)
-    url: https://feedback.loomkeep.app/board/bug-reports
-    about: A bug in the app itself (UI, sync, watch tracking...)? Report it on the public board.
   - name: 💡 Feature request
     url: https://feedback.loomkeep.app/board/feature-requests
     about: An idea for a new feature? Propose and vote on it on the public board.
-  - name: 🔒 Report a security vulnerability
-    url: https://github.com/Logan2234/loomkeep/security/advisories/new
-    about: Please report vulnerabilities privately, not as a public issue.
+  - name: 🐛 Bug report (app behavior)
+    url: https://feedback.loomkeep.app/board/bug-reports
+    about: A bug in the app itself (UI, sync, watch tracking...)? Report it on the public board.
