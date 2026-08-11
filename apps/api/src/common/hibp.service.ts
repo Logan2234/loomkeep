@@ -16,7 +16,7 @@ export class HibpService {
 
   async isPasswordPwned(password: string): Promise<boolean> {
     const sha1 = createHash("sha1")
-      .update(password) // codeql[js/insufficient-password-hash]: SHA-1 is the HIBP range API's own lookup key format (k-anonymity), not used for credential storage.
+      .update(password)
       .digest("hex")
       .toUpperCase();
     const prefix = sha1.slice(0, 5);
