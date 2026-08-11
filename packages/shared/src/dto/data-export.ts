@@ -15,7 +15,7 @@ import type {
 import type { UserDto } from "./auth";
 
 /** One library entry in a data export: the media plus the user's tracking. */
-export interface DataExportEntry {
+interface DataExportEntry {
   media: {
     type: MediaType;
     title: string;
@@ -35,7 +35,7 @@ export interface DataExportEntry {
 }
 
 /** One episode viewing in a data export (rewatches appear as separate rows). */
-export interface DataExportWatch {
+interface DataExportWatch {
   media: { type: MediaType; title: string; sourceId: string };
   seasonNumber: number;
   episodeNumber: number;
@@ -44,7 +44,7 @@ export interface DataExportWatch {
 }
 
 /** One game library entry in a data export. */
-export interface DataExportGameEntry {
+interface DataExportGameEntry {
   game: {
     title: string;
     canonicalSource: GameSource;
@@ -66,7 +66,7 @@ export interface DataExportGameEntry {
 }
 
 /** One book library entry in a data export. */
-export interface DataExportBookEntry {
+interface DataExportBookEntry {
   book: {
     title: string;
     authors: string[];
@@ -89,7 +89,7 @@ export interface DataExportBookEntry {
 }
 
 /** One album library entry in a data export. */
-export interface DataExportMusicEntry {
+interface DataExportMusicEntry {
   album: {
     title: string;
     artists: string[];
@@ -109,7 +109,7 @@ export interface DataExportMusicEntry {
 }
 
 /** One in-app notification in a data export. */
-export interface DataExportNotification {
+interface DataExportNotification {
   type: string;
   title: string;
   body: string | null;

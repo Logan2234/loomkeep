@@ -10,7 +10,7 @@
     class="text-accent inline-flex items-center gap-0.5 align-middle text-xs font-bold"
     title="{days} prise{days > 1
       ? 's'
-      : ''} d’affilée — jours de suite avec un épisode ou un film vu">
+      : ''} d'affilée — jours de suite avec un épisode ou un film vu">
     <span aria-hidden="true">🎬</span>{days}
   </span>
 {/if}

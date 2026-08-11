@@ -55,7 +55,7 @@
 {#if open}
   <Modal title="Active les notifications" onclose={dismiss}>
     <p class="text-dim">
-      Reçois une alerte dès qu’un nouvel épisode suivi sort, même appli fermée.
+      Reçois une alerte dès qu'un nouvel épisode suivi sort, même appli fermée.
       Modifiable à tout moment depuis Réglages.
     </p>
     {#if error}

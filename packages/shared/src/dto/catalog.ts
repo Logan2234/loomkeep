@@ -30,7 +30,7 @@ export interface WatchProviderDto {
 }
 
 /** Where to watch, split by offer type, for one region. */
-export interface WatchProvidersDto {
+interface WatchProvidersDto {
   flatrate: WatchProviderDto[];
   rent: WatchProviderDto[];
   buy: WatchProviderDto[];
@@ -96,7 +96,7 @@ export interface MediaExtrasDto {
   images: string[];
 }
 
-export interface EpisodeDto {
+interface EpisodeDto {
   /** Internal ID, only present once the media is persisted. */
   id: string | null;
   number: number;
@@ -104,7 +104,7 @@ export interface EpisodeDto {
   airDate: string | null;
 }
 
-export interface SeasonDto {
+interface SeasonDto {
   id: string | null;
   number: number;
   title: string | null;
@@ -122,7 +122,7 @@ export interface MediaDetailsDto extends MediaSummaryDto {
 }
 
 /** One episode on the unified media page, carrying the user's watch history. */
-export interface MediaDetailEpisodeDto {
+interface MediaDetailEpisodeDto {
   /** null until the media is persisted (i.e. not yet in anyone's library). */
   id: string | null;
   number: number;

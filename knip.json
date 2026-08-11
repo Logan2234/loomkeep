@@ -6,6 +6,8 @@
       "ignoreDependencies": ["pino-pretty"]
     },
     "apps/web": {},
-    "packages/shared": {}
+    "packages/shared": {
+      "includeEntryExports": true
+    }
   }
 }

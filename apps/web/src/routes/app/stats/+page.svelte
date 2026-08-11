@@ -1,18 +1,10 @@
 <script lang="ts">
-  import type {
-    StatsDomain,
-    StatsOverviewDto,
-    StatsWindow,
-    StatsWorkDto,
-  } from "@loomkeep/shared";
-  import { STATS_DOMAINS } from "@loomkeep/shared";
+  import { ApiError } from "$lib/api/core";
   import {
     getStatsOverview,
     getStatsWorksByDecade,
     getStatsWorksByRating,
   } from "$lib/api/stats";
-  import { ApiError } from "$lib/api/core";
-  import { appConfig } from "$lib/config.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -33,6 +25,7 @@
   import StatsWorksModal from "$lib/components/stats/StatsWorksModal.svelte";
   import VideoStatsSection from "$lib/components/stats/VideoStatsSection.svelte";
   import VideoTemporalSection from "$lib/components/stats/VideoTemporalSection.svelte";
+  import { POSSESSION_STATUS_LABEL } from "$lib/components/stats/possession-labels";
   import {
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
@@ -40,7 +33,14 @@
     STATUS_BUCKET_LABEL,
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
-  import { POSSESSION_STATUS_LABEL } from "$lib/components/stats/possession-labels";
+  import { appConfig } from "$lib/config.svelte";
+  import type {
+    StatsDomain,
+    StatsOverviewDto,
+    StatsWindow,
+    StatsWorkDto,
+  } from "@loomkeep/shared";
+  import { STATS_DOMAINS } from "@loomkeep/shared";
 
   type Choice = "ALL" | StatsDomain;
 
@@ -180,7 +180,7 @@
   <PageHeader
     icon="stats"
     title="Statistiques"
-    subtitle="Ton activité en un coup d’œil." />
+    subtitle="Ton activité en un coup d'œil." />
 
   {#if error}
     <Banner variant="error">{error}</Banner>
@@ -188,11 +188,11 @@
     <StatTilesSkeleton />
   {:else if isEmpty}
     <EmptyState>
-      Rien à afficher pour l’instant. Marque des œuvres pour voir tes
+      Rien à afficher pour l'instant. Marque des œuvres pour voir tes
       statistiques.
     </EmptyState>
   {:else if overview}
-    <SectionLabel label="Vue d’ensemble" />
+    <SectionLabel label="Vue d'ensemble" />
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatTile value={nf.format(overview.total)} label="Œuvres" />
       <StatTile
@@ -200,7 +200,7 @@
         label="Taux de complétion" />
       <StatTile
         value={pf.format(overview.abandonRate)}
-        label="Taux d’abandon" />
+        label="Taux d'abandon" />
       <StatTile
         value={overview.averageRating ?? "—"}
         unit="/10"
@@ -222,7 +222,7 @@
         {#if overview.ratedCount > 0}
           <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
         {:else}
-          <p class="text-dim text-sm">Aucune œuvre notée pour l’instant.</p>
+          <p class="text-dim text-sm">Aucune œuvre notée pour l'instant.</p>
         {/if}
       </section>
     </div>

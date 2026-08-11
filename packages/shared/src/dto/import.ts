@@ -31,15 +31,6 @@ export type ImportSource =
   | "spotify"
   | "boardgamegeek";
 
-/** How the raw export payload is carried in {@link ImportAnalyzeRequest.input}. */
-export type ImportInputType =
-  /** Raw CSV text (StoryGraph, Goodreads). */
-  | "csv"
-  /** A base64-encoded ZIP archive (TV Time). */
-  | "zip"
-  /** A Steam identifier / vanity name / profile URL. */
-  | "steamId";
-
 /** A catalogue title a source item resolved to (auto or via manual search). */
 export interface ImportMatch {
   /** Catalogue source enum value (TMDB / ANILIST / GOOGLE_BOOKS / IGDB). */
@@ -160,35 +151,6 @@ export interface ImportCommitRequest {
   overrides?: Record<string, ImportCommitOverride>;
   /** Wipe the domain's library before writing (destructive replace). */
   overwrite?: boolean;
-}
-
-/**
- * A source's UI-facing configuration — the single dictionary that parameterises
- * the generic wizard per source, so a new source is (mostly) a new entry here.
- * Backend resolution/write logic is the only per-source code that stays as an
- * `ImportSource` implementation.
- */
-export interface ImportSourceDescriptor {
-  /** Matches the backend source id and the `/import/:id` route segment. */
-  id: string;
-  /** Display name ("StoryGraph", "TV Time"). */
-  label: string;
-  domain: Domain;
-  input: {
-    type: ImportInputType;
-    /** File `accept` attribute, for csv/zip inputs. */
-    accept?: string;
-  };
-  /** Singular/plural noun for counts ("livre"/"livres", "jeu"/"jeux"). */
-  noun: { one: string; many: string };
-  /** Where the "voir ma bibliothèque" CTA links after a successful import. */
-  libraryHref: string;
-  /**
-   * Source-specific boolean toggles offered on the input step, surfaced as
-   * checkboxes and sent as {@link ImportAnalyzeRequest.options} (e.g. TV Time's
-   * "Inclure les films").
-   */
-  options?: { key: string; label: string; default: boolean }[];
 }
 
 // ---------------------------------------------------------------------------

@@ -41,13 +41,13 @@ export interface AdminEnabledDomainsBucketDto {
   accounts: number;
 }
 
-export interface AdminProfileAccessCountDto {
+interface AdminProfileAccessCountDto {
   access: ProfileAccess;
   count: number;
 }
 
 /** Raw engagement counters, no time window beyond the dormancy threshold. */
-export interface AdminAccountHealthDto {
+interface AdminAccountHealthDto {
   /** Accounts with a session used in the last 24 hours — feeds the KPI strip, not the health card. */
   active24h: number;
   /** Accounts with a session used in the last 30 days — same, KPI strip only. */
@@ -70,7 +70,7 @@ export interface AdminAgeBucketDto {
   count: number;
 }
 
-export interface AdminAgeStatsDto {
+interface AdminAgeStatsDto {
   /** Always the same brackets, zero-filled — only accounts with a birthDate are counted. */
   distribution: AdminAgeBucketDto[];
   /** Share (0-100) of all accounts with a birthDate set. */
@@ -79,7 +79,7 @@ export interface AdminAgeStatsDto {
   adultContentPercent: number;
 }
 
-export interface AdminLocaleCountDto {
+interface AdminLocaleCountDto {
   /** Paraglide locale code, e.g. "fr". */
   locale: string;
   count: number;
@@ -138,7 +138,7 @@ export interface AdminCatalogueSectionDto {
 /* ── Social ───────────────────────────────────────────────────────────── */
 
 /** Instance-wide social counters, all time. */
-export interface AdminSocialTotalsDto {
+interface AdminSocialTotalsDto {
   reviews: number;
   /** Comments still standing (tombstones excluded). */
   comments: number;
@@ -175,7 +175,7 @@ export interface AdminReportCategoryCountDto {
   count: number;
 }
 
-export interface AdminReportsStatsDto {
+interface AdminReportsStatsDto {
   pending: number;
   resolved: number;
   /** Median `resolvedAt - createdAt` over closed reports, in hours; null when none are closed. */
@@ -202,7 +202,7 @@ export interface AdminTopContributorDto {
   contributions: number;
 }
 
-export interface AdminInstanceRatingsDto {
+interface AdminInstanceRatingsDto {
   /** Always the 10 buckets, zero-filled. */
   distribution: RatingBucketDto[];
   average: number | null;
@@ -249,12 +249,12 @@ export interface AdminProviderCallsDto {
   percentUsed: number | null;
 }
 
-export interface AdminBackupSummaryDto {
+interface AdminBackupSummaryDto {
   createdAt: string;
   sizeBytes: number;
 }
 
-export interface AdminOpsSignalsDto {
+interface AdminOpsSignalsDto {
   /**
    * Notification rows currently outstanding. Reading one deletes it (see the
    * `Notification` model), so there's no read/unread split any more — a row's

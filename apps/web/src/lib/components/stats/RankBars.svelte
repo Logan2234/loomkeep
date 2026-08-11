@@ -29,7 +29,7 @@
 </script>
 
 {#if items.length === 0}
-  <p class="text-dim text-sm">Rien pour l’instant.</p>
+  <p class="text-dim text-sm">Rien pour l'instant.</p>
 {:else}
   <ul class="flex flex-col gap-3">
     {#each visible as item (item.label)}

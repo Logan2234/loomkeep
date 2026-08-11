@@ -1,11 +1,11 @@
 <script lang="ts">
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
-  import { disablePush, enablePush, isPushSupported } from "$lib/push";
-  import { m } from "$lib/paraglide/messages.js";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
+  import { m } from "$lib/paraglide/messages.js";
+  import { disablePush, enablePush, isPushSupported } from "$lib/push";
 
   let notifyError = $state("");
 
@@ -75,7 +75,7 @@
           <p class="font-semibold">Notifications push</p>
           <p class="text-dim text-sm">
             {#if pushSupported}
-              Pour être alerté d’un nouvel épisode même appli fermée.
+              Pour être alerté d'un nouvel épisode même appli fermée.
             {:else}
               Non disponible sur cet appareil ou ce navigateur.
             {/if}
