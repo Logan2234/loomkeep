@@ -1,4 +1,5 @@
 import type {
+  AccountDeletionSummaryDto,
   AuthTokensDto,
   CalendarTokenDto,
   ChangeEmailRequestDto,
@@ -188,6 +189,11 @@ export function regenerateCalendarToken(): Promise<CalendarTokenDto> {
 /** Short-lived SSO token for the feedback widget's "Verified identity only" mode. */
 export function getWidgetToken(): Promise<WidgetTokenDto> {
   return request("/users/me/widget-token");
+}
+
+/** Live preview of what deleting the account would delete/anonymize, for the confirmation modal. */
+export function getAccountDeletionSummary(): Promise<AccountDeletionSummaryDto> {
+  return request("/users/me/deletion-summary");
 }
 
 /** Permanently deletes the account and clears local auth state. */
