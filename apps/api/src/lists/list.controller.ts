@@ -16,6 +16,7 @@ import type {
   ListDto,
   ListItemDto,
   ListItemTargetType,
+  ListMemberDto,
   ListMembershipDto,
   MyListDto,
 } from "@loomkeep/shared";
@@ -25,6 +26,7 @@ import {
 } from "../auth/decorators/current-user.decorator";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { AddListItemBody } from "./dto/add-list-item.dto";
+import { AddListMemberBody } from "./dto/add-list-member.dto";
 import { CreateListBody } from "./dto/create-list.dto";
 import { ReorderListItemsBody } from "./dto/reorder-list-items.dto";
 import { UpdateListBody } from "./dto/update-list.dto";
@@ -41,6 +43,13 @@ export class ListController {
   @Get("me")
   listMine(@CurrentUser() user: JwtPayload): Promise<MyListDto[]> {
     return this.lists.listMine(user.sub);
+  }
+
+  // Owned + editor lists — feeds "Ajouter à une liste" on a work's page, so an
+  // editor can add to a shared list, not just their own.
+  @Get("editable")
+  listEditable(@CurrentUser() user: JwtPayload): Promise<MyListDto[]> {
+    return this.lists.listEditable(user.sub);
   }
 
   @Post()
@@ -68,12 +77,14 @@ export class ListController {
     );
   }
 
+  // Owner or editor (ListMember) — "me" as in "a list I can edit", not
+  // strictly "a list I own".
   @Get("me/:id")
   getMine(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
   ): Promise<ListDetailDto> {
-    return this.lists.getOwn(user.sub, id);
+    return this.lists.getEditable(user.sub, id);
   }
 
   @Put(":id")
@@ -117,7 +128,45 @@ export class ListController {
     @Param("id") id: string,
     @Body() body: ReorderListItemsBody,
   ): Promise<void> {
-    return this.lists.reorder(user.sub, id, body.orderedItemIds);
+    return this.lists.reorder(
+      user.sub,
+      id,
+      body.orderedItemIds,
+      body.expectedUpdatedAt,
+    );
+  }
+
+  // --- Collaborators: social-gated (granting/revoking edit access to
+  // another user is itself a social feature). Listing/adding are owner-only;
+  // removing is owner-only except an editor can remove themselves (leave). ---
+
+  @Get(":id/members")
+  @UseGuards(SocialFeatureGuard)
+  listMembers(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<ListMemberDto[]> {
+    return this.lists.listMembers(user.sub, id);
+  }
+
+  @Post(":id/members")
+  @UseGuards(SocialFeatureGuard)
+  addMember(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: AddListMemberBody,
+  ): Promise<ListMemberDto> {
+    return this.lists.addMember(user.sub, id, body.username);
+  }
+
+  @Delete(":id/members/:memberUserId")
+  @UseGuards(SocialFeatureGuard)
+  removeMember(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("memberUserId") memberUserId: string,
+  ): Promise<void> {
+    return this.lists.removeMember(user.sub, id, memberUserId);
   }
 
   // --- A list of a viewer's choosing: social-gated + visibility-filtered. ---

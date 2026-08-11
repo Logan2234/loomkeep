@@ -1,9 +1,11 @@
 import type {
+  AddListMemberDto,
   CreateListDto,
   ListDetailDto,
   ListDto,
   ListItemDto,
   ListItemTargetType,
+  ListMemberDto,
   ListMembershipDto,
   MyListDto,
   UpdateListDto,
@@ -12,6 +14,11 @@ import { request } from "./core";
 
 export function getMyLists(): Promise<MyListDto[]> {
   return request("/lists/me");
+}
+
+/** Lists the user can add items to — owned, or edit access via a collaborator grant. */
+export function getEditableLists(): Promise<MyListDto[]> {
+  return request("/lists/editable");
 }
 
 export function getMyList(id: string): Promise<ListDetailDto> {
@@ -58,10 +65,31 @@ export function removeListItem(listId: string, itemId: string): Promise<void> {
 export function reorderListItems(
   listId: string,
   orderedItemIds: string[],
+  expectedUpdatedAt: string,
 ): Promise<void> {
   return request(`/lists/${listId}/items/order`, {
     method: "PUT",
-    body: { orderedItemIds },
+    body: { orderedItemIds, expectedUpdatedAt },
+  });
+}
+
+export function getListMembers(listId: string): Promise<ListMemberDto[]> {
+  return request(`/lists/${listId}/members`);
+}
+
+export function addListMember(
+  listId: string,
+  body: AddListMemberDto,
+): Promise<ListMemberDto> {
+  return request(`/lists/${listId}/members`, { method: "POST", body });
+}
+
+export function removeListMember(
+  listId: string,
+  memberUserId: string,
+): Promise<void> {
+  return request(`/lists/${listId}/members/${memberUserId}`, {
+    method: "DELETE",
   });
 }
 

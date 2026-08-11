@@ -402,6 +402,7 @@ model User {
   reportsFiled        Report[]             @relation("ReportsFiled")
   reportsResolved     Report[]             @relation("ReportsResolved")
   lists               List[]
+  listMemberships     ListMember[]
 }
 
 // Social (P4): per-user, per-domain, per-facet audience. One row overrides the
@@ -596,7 +597,10 @@ model Report {
 // an unordered COLLECTION). Own explicit visibility, like Review — never
 // inherited from the per-domain VisibilitySetting facets. Managing your own
 // lists works even with social off (mirrors Review's own-CRUD-ungated split);
-// only reading someone else's shared list is social-gated.
+// only reading someone else's shared list is social-gated. Editors
+// (ListMember) can mutate title/description/items but not delete the list,
+// change visibility, or manage members — those stay owner-only. Editors
+// bypass `visibility` for reads (membership itself is the grant).
 model List {
   id          String         @id @default(cuid())
   userId      String
@@ -607,17 +611,36 @@ model List {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items ListItem[]
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   ListItem[]
+  members ListMember[]
 
+  @@index([userId])
+}
+
+// Social (P4): grants a user edit access to another user's list (add/remove/
+// reorder items, edit title/description) — added directly by the owner via
+// username, no invite/accept step. Mirrors Follow/Block's directed
+// join-table shape, but for write access rather than visibility.
+model ListMember {
+  id        String   @id @default(cuid())
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
   @@index([userId])
 }
 
 // One work in a list, work-level only (no season/episode — narrower than
 // ReviewTargetType/CommentTargetType, whose enum is reused as-is; SEASON/
 // EPISODE values are rejected at the DTO layer). `position` is a dense
-// 0..n-1 index rewritten wholesale on reorder (solo-owned lists, no
-// concurrent-edit concern).
+// 0..n-1 index rewritten wholesale on reorder. Concurrent editors are
+// possible now (ListMember): reorder/update take an optimistic lock on
+// List.updatedAt (see ListService) rather than real-time sync.
 model ListItem {
   id         String           @id @default(cuid())
   listId     String

@@ -202,10 +202,14 @@ export class AdminUsersController {
     return this.reports.listAgainstUser(userId);
   }
 
-  /** Every list the account owns, regardless of visibility (admin view). */
+  /**
+   * Every list the account can access — owned or granted via ListMember —
+   * regardless of visibility (admin view). `role` on each row tells owned
+   * apart from invited-as-editor.
+   */
   @Get("users/:userId/lists")
   getUserLists(@Param("userId") userId: string): Promise<MyListDto[]> {
-    return this.lists.listMine(userId);
+    return this.lists.listEditable(userId);
   }
 
   /** Compact library breakdown for the account drawer. */

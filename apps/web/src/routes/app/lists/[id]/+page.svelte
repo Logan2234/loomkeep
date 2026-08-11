@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { dndzone } from "svelte-dnd-action";
   import { page } from "$app/state";
   import {
     ApiError,
     getList,
     getMyList,
     removeListItem,
+    removeListMember,
     reorderListItems,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
@@ -14,10 +14,19 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
+  import ListMembersModal from "$lib/components/ListMembersModal.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ListDetailDto, ListDto, ListItemDto } from "@loomkeep/shared";
+  import type {
+    ListDetailDto,
+    ListDto,
+    ListItemDto,
+    ListViewerRole,
+  } from "@loomkeep/shared";
+  import { dndzone } from "svelte-dnd-action";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: "Classement",
@@ -32,19 +41,21 @@
   const id = $derived(page.params.id ?? "");
 
   let list = $state<ListDetailDto | null>(null);
-  let isMine = $state(false);
+  let role = $state<ListViewerRole>("VIEWER");
+  const canEditList = $derived(role === "OWNER" || role === "EDITOR");
+  const isOwner = $derived(role === "OWNER");
   let error = $state<string | null>(null);
   let loading = $state(true);
   let editing = $state(false);
+  let managingMembers = $state(false);
   let removingId = $state<string | null>(null);
+  let conflictNotice = $state(false);
 
   // Local, reorderable copy of the items — svelte-dnd-action mutates this
   // directly during a drag; `list.items` stays the source of truth otherwise.
   let dragItems = $state<ListItemDto[]>([]);
 
-  $effect(() => {
-    const listId = id;
-    if (!listId) return;
+  function load(listId: string) {
     loading = true;
     error = null;
     list = null;
@@ -52,7 +63,7 @@
     getMyList(listId)
       .then((d) => {
         list = d;
-        isMine = true;
+        role = d.viewerRole;
         dragItems = d.items;
       })
       .catch((err) => {
@@ -63,7 +74,7 @@
           return getList(listId)
             .then((d) => {
               list = d;
-              isMine = false;
+              role = d.viewerRole;
               dragItems = d.items;
             })
             .catch(() => {
@@ -76,6 +87,12 @@
             : m.common_fetch_error_fallback();
       })
       .finally(() => (loading = false));
+  }
+
+  $effect(() => {
+    const listId = id;
+    conflictNotice = false;
+    if (listId) load(listId);
   });
 
   function handleSaved(updated: ListDto) {
@@ -85,6 +102,19 @@
 
   function handleDeleted() {
     window.location.href = "/app/lists";
+  }
+
+  let leaving = $state(false);
+
+  async function leaveList() {
+    if (!list || leaving || !auth.user) return;
+    leaving = true;
+    try {
+      await removeListMember(list.id, auth.user.id);
+      window.location.href = "/app/lists";
+    } finally {
+      leaving = false;
+    }
   }
 
   async function removeItem(itemId: string) {
@@ -106,13 +136,31 @@
   async function handleDndFinalize(e: CustomEvent<{ items: ListItemDto[] }>) {
     dragItems = e.detail.items;
     if (!list) return;
+    const listId = list.id;
+    const expectedUpdatedAt = list.updatedAt;
     list = { ...list, items: dragItems };
-    await reorderListItems(
-      list.id,
-      dragItems.map((i) => i.id),
-    );
+    try {
+      await reorderListItems(
+        listId,
+        dragItems.map((i) => i.id),
+        expectedUpdatedAt,
+      );
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        conflictNotice = true;
+        load(listId);
+        return;
+      }
+      throw err;
+    }
   }
 </script>
+
+{#if conflictNotice}
+  <div class="mx-auto max-w-3xl px-4 pt-6 md:pt-8">
+    <Banner variant="error">{m.list_reorder_conflict()}</Banner>
+  </div>
+{/if}
 
 {#if error}
   <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
@@ -129,7 +177,7 @@
   </div>
 {:else if list}
   <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
-    <div class="flex items-start justify-between gap-4">
+    <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
         <h1 class="font-display text-3xl font-extrabold tracking-tight">
           {list.title}
@@ -140,7 +188,7 @@
             <span aria-hidden="true">·</span>
             <span>{VISIBILITY_LABEL[list.visibility]}</span>
           {/if}
-          {#if !isMine}
+          {#if role !== "OWNER"}
             <span aria-hidden="true">·</span>
             <a
               href="/app/u/{list.author.username}"
@@ -149,7 +197,9 @@
                 seed={list.author.username}
                 url={list.author.avatarUrl}
                 size={18} />
-              @{list.author.username}
+              {role === "EDITOR"
+                ? m.list_owned_by_editor({ name: list.author.displayName })
+                : list.author.displayName}
             </a>
           {/if}
         </p>
@@ -157,11 +207,28 @@
           <p class="mt-3 max-w-xl">{list.description}</p>
         {/if}
       </div>
-      {#if isMine}
-        <button class="btn btn-ghost shrink-0" onclick={() => (editing = true)}>
-          Modifier
-        </button>
-      {/if}
+      <div class="flex shrink-0 gap-2">
+        {#if isOwner && appConfig.socialEnabled}
+          <button
+            class="btn btn-ghost"
+            onclick={() => (managingMembers = true)}>
+            {m.list_members_manage()}
+            {#if isFeatureNew("collaborative-lists")}
+              <NewBadge />
+            {/if}
+          </button>
+        {/if}
+        {#if canEditList}
+          <button class="btn btn-ghost" onclick={() => (editing = true)}>
+            Modifier
+          </button>
+        {/if}
+        {#if role === "EDITOR"}
+          <button class="btn btn-ghost" disabled={leaving} onclick={leaveList}>
+            {m.list_leave()}
+          </button>
+        {/if}
+      </div>
     </div>
 
     <hr class="border-border mt-5" />
@@ -169,9 +236,9 @@
     {#if dragItems.length === 0}
       <EmptyState class="mt-6">
         <p class="font-display text-lg font-bold">
-          {isMine ? "Liste vide" : "Cette liste est vide"}
+          {canEditList ? "Liste vide" : "Cette liste est vide"}
         </p>
-        {#if isMine}
+        {#if canEditList}
           <p class="mt-1 text-sm">
             Ajoute une œuvre depuis sa page avec « Ajouter à une liste ».
           </p>
@@ -182,14 +249,14 @@
         class="mt-6 flex flex-col gap-2"
         use:dndzone={{
           items: dragItems,
-          dragDisabled: !isMine,
+          dragDisabled: !canEditList,
           flipDurationMs: 150,
         }}
         onconsider={handleDndConsider}
         onfinalize={handleDndFinalize}>
         {#each dragItems as item, i (item.id)}
           <li class="card flex items-center gap-3 p-3">
-            {#if isMine}
+            {#if canEditList}
               <Icon name="grip" class="text-dim h-4 w-4 shrink-0 cursor-grab" />
             {/if}
             <span class="timecode text-accent w-7 shrink-0 text-lg font-bold">
@@ -208,7 +275,7 @@
                 {item.target?.title ?? "Œuvre"}
               </p>
             </svelte:element>
-            {#if isMine}
+            {#if canEditList}
               <button
                 class="text-dim hover:text-danger hover:bg-danger/10 mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
                 aria-label="Retirer de la liste"
@@ -238,9 +305,9 @@
                 {item.target?.title ?? "Œuvre"}
               </p>
             </svelte:element>
-            {#if isMine}
+            {#if canEditList}
               <button
-                class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-colors hover:text-white"
+                class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md opacity-0 backdrop-blur transition-all group-hover:opacity-100 group-hover:shadow-md hover:text-white"
                 aria-label="Retirer de la liste"
                 title="Retirer de la liste"
                 disabled={removingId === item.id}
@@ -259,7 +326,14 @@
   <ListFormModal
     {list}
     defaultVisibility={auth.user?.defaultListVisibility ?? "PRIVATE"}
+    canManage={isOwner}
     onClose={() => (editing = false)}
     onSaved={handleSaved}
     onDeleted={handleDeleted} />
+{/if}
+
+{#if managingMembers && list}
+  <ListMembersModal
+    listId={list.id}
+    onClose={() => (managingMembers = false)} />
 {/if}

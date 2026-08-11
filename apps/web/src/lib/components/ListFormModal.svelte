@@ -11,12 +11,16 @@
   let {
     list = null,
     defaultVisibility = "PRIVATE",
+    canManage = true,
     onClose,
     onSaved,
     onDeleted,
   }: {
     list?: ListDto | null;
     defaultVisibility?: ListVisibility;
+    /** False for an editor: can rename/describe the list, but not change its
+     * visibility, delete it, or manage collaborators (owner-only). */
+    canManage?: boolean;
     onClose: () => void;
     onSaved: (list: ListDto) => void;
     onDeleted?: () => void;
@@ -39,7 +43,7 @@
         ? await updateList(list.id, {
             title: title.trim(),
             description: description.trim() || null,
-            visibility,
+            visibility: canManage ? visibility : undefined,
             kind,
           })
         : await createList({
@@ -126,7 +130,7 @@
       </p>
     </div>
 
-    {#if appConfig.socialEnabled}
+    {#if appConfig.socialEnabled && canManage}
       <div>
         <span
           class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
@@ -165,7 +169,7 @@
         onclick={save}>
         {m.common_save()}
       </button>
-      {#if list}
+      {#if list && canManage}
         {#if confirmingDelete}
           <button class="btn btn-danger" disabled={busy} onclick={doDelete}>
             {m.common_confirm()}

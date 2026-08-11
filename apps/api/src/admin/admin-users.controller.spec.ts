@@ -46,7 +46,10 @@ function makeController() {
     listFollowing: jest.fn(),
   } as unknown as FollowService;
   const reports = { listAgainstUser: jest.fn() } as unknown as ReportService;
-  const lists = { listMine: jest.fn() } as unknown as ListService;
+  const lists = {
+    listMine: jest.fn(),
+    listEditable: jest.fn(),
+  } as unknown as ListService;
 
   const controller = new AdminUsersController(
     prisma,

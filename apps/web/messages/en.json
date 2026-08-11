@@ -433,6 +433,18 @@
   "activity_list_shared": "shared a list",
   "activity_updated": "updated",
 
+  "list_members_manage": "Collaborators",
+  "list_members_title": "Collaborators",
+  "list_members_description": "People added here can edit this list (add, remove, reorder works) but can't delete it, change its visibility, or manage collaborators.",
+  "list_members_username_placeholder": "Username",
+  "list_members_add": "Add",
+  "list_members_add_error_fallback": "Couldn't add this collaborator",
+  "list_members_empty": "No collaborators yet.",
+  "list_members_remove": "Remove",
+  "list_owned_by_editor": "{name}'s list",
+  "list_leave": "Leave list",
+  "list_reorder_conflict": "This list was changed by someone else in the meantime — it's just been reloaded.",
+
   "mermaid_invalid": "Invalid diagram.",
   "mermaid_zoom_out": "Zoom out",
   "mermaid_zoom_in": "Zoom in",
