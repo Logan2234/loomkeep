@@ -34,6 +34,7 @@ import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -68,6 +69,7 @@ export class UsersController {
     private readonly dataExport: DataExportService,
     private readonly csvExport: CsvExportService,
     private readonly config: ConfigService,
+    private readonly hibp: HibpService,
   ) {}
 
   @Get("me")
@@ -417,6 +419,12 @@ export class UsersController {
     if (await bcrypt.compare(dto.newPassword, current.passwordHash)) {
       throw new BadRequestException(
         "New password must be different from the current password",
+      );
+    }
+
+    if (await this.hibp.isPasswordPwned(dto.newPassword)) {
+      throw new BadRequestException(
+        "This password has appeared in a known data breach — please choose a different one",
       );
     }
 

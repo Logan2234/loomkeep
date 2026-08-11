@@ -3,6 +3,7 @@ import type { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import type { HibpService } from "../common/hibp.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -50,6 +51,9 @@ describe("UsersController — email change", () => {
       dataExport as unknown as DataExportService,
       csvExport as unknown as CsvExportService,
       {} as unknown as ConfigService,
+      {
+        isPasswordPwned: jest.fn().mockResolvedValue(false),
+      } as unknown as HibpService,
     );
   });
 
@@ -251,6 +255,9 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
+      {
+        isPasswordPwned: jest.fn().mockResolvedValue(false),
+      } as unknown as HibpService,
     );
   });
 
@@ -323,6 +330,9 @@ describe("UsersController — uploadAvatar", () => {
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
+      {
+        isPasswordPwned: jest.fn().mockResolvedValue(false),
+      } as unknown as HibpService,
     );
   });
 
@@ -365,5 +375,92 @@ describe("UsersController — uploadAvatar", () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("UsersController — changePassword", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let mail: MailService;
+  let hibp: HibpService;
+  let controller: UsersController;
+  let passwordHash: string;
+
+  beforeEach(async () => {
+    passwordHash = await bcrypt.hash("correct-password", 4);
+    prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: userId,
+          email: "alice@example.com",
+          passwordHash,
+        }),
+        update: jest.fn(),
+      },
+    } as unknown as PrismaService;
+    mail = { sendPasswordChanged: jest.fn() } as unknown as MailService;
+    hibp = {
+      isPasswordPwned: jest.fn().mockResolvedValue(false),
+    } as unknown as HibpService;
+    controller = new UsersController(
+      prisma,
+      mail,
+      { record: jest.fn() } as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      hibp,
+    );
+  });
+
+  it("rejects an incorrect current password without checking HIBP", async () => {
+    await expect(
+      controller.changePassword(jwtPayload(userId), {
+        currentPassword: "wrong",
+        newPassword: "Brand-new-pass1",
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(hibp.isPasswordPwned).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a new password identical to the current one without checking HIBP", async () => {
+    await expect(
+      controller.changePassword(jwtPayload(userId), {
+        currentPassword: "correct-password",
+        newPassword: "correct-password",
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(hibp.isPasswordPwned).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a new password that has appeared in a known data breach", async () => {
+    (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
+
+    await expect(
+      controller.changePassword(jwtPayload(userId), {
+        currentPassword: "correct-password",
+        newPassword: "Brand-new-pass1",
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("updates the password hash and notifies the user on success", async () => {
+    await controller.changePassword(jwtPayload(userId), {
+      currentPassword: "correct-password",
+      newPassword: "Brand-new-pass1",
+    });
+
+    const updateArgs = (prisma.user.update as jest.Mock).mock.calls[0][0];
+    expect(updateArgs.where).toEqual({ id: userId });
+    expect(
+      await bcrypt.compare("Brand-new-pass1", updateArgs.data.passwordHash),
+    ).toBe(true);
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith("alice@example.com");
   });
 });
