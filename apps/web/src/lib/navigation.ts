@@ -102,17 +102,17 @@ export const NAVIGATION: NavSection[] = [
         newBadgeKey: "calendar-subscribe",
       },
       {
+        href: "/app/stats",
+        label: m.nav_stats(),
+        icon: "stats",
+        match: (p) => p.startsWith("/app/stats"),
+      },
+      {
         href: "/app/feed",
         label: m.nav_feed(),
         icon: "activity",
         social: true,
         match: (p) => p.startsWith("/app/feed"),
-      },
-      {
-        href: "/app/stats",
-        label: m.nav_stats(),
-        icon: "stats",
-        match: (p) => p.startsWith("/app/stats"),
       },
     ],
   },

@@ -60,7 +60,7 @@ export interface ServiceStatusResponseDto {
 }
 
 /** One editable sample-data field for a gallery template (e.g. a recipient's display name). */
-export interface MailTemplateFieldDto {
+interface MailTemplateFieldDto {
   key: string;
   label: string;
   default: string;
@@ -103,7 +103,7 @@ export interface SendAdminTestPushRequestDto {
 }
 
 /** Outcome of the push send to one of the account's subscribed devices. */
-export interface AdminPushSendOutcomeDto {
+interface AdminPushSendOutcomeDto {
   userAgent: string | null;
   ok: boolean;
   /** Present when `ok` is false (rejected/expired subscription, send error…). */
@@ -238,7 +238,7 @@ export interface AdminCacheListResponseDto {
 }
 
 /** One external identifier a cached item carries (its source + id in that source). */
-export interface AdminCacheExternalIdDto {
+interface AdminCacheExternalIdDto {
   source: string;
   externalId: string;
 }

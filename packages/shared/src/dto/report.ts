@@ -39,13 +39,3 @@ export interface ReportPageDto {
   reports: ReportDto[];
   page: number;
 }
-
-export interface CreateReportDto {
-  targetType: ReportTargetType;
-  targetId: string;
-  category: ReportCategory;
-  /** Required unless category is OTHER, which relies on `reason` instead. */
-  motif?: ReportMotif;
-  /** Optional detail for any category; the primary input for OTHER. */
-  reason?: string;
-}

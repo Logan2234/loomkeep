@@ -2,8 +2,8 @@
   // Time-window filter for /stats all-time aggregates (Tout/Année/Mois/
   // Semaine). Distinct from the trend-curve period pickers (bucket size) —
   // this narrows *which* entries count, not how a curve is bucketed.
-  import type { StatsWindow } from "@loomkeep/shared";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
+  import type { StatsWindow } from "@loomkeep/shared";
 
   const WINDOWS: StatsWindow[] = ["ALL", "YEAR", "MONTH", "WEEK"];
   const LABEL: Record<StatsWindow, string> = {
@@ -17,7 +17,7 @@
   // sections stay all-time, and the heatmap/monthly bars always show their
   // own natural full range regardless of this filter.
   const DESC: Record<StatsWindow, string> = {
-    ALL: "Tout l’historique",
+    ALL: "Tout l'historique",
     YEAR: `${LABEL.YEAR} — 365 derniers jours`,
     MONTH: `${LABEL.MONTH} — 30 derniers jours`,
     WEEK: `${LABEL.WEEK} — 7 derniers jours`,

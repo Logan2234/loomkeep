@@ -85,21 +85,5 @@ export interface UpdateListDto {
   kind?: ListKind;
 }
 
-export interface AddListItemDto {
-  targetType: ListItemTargetType;
-  targetId: string;
-}
-
-/**
- * Full replacement order — the whole list's item ids, new order first.
- * `expectedUpdatedAt` is the `List.updatedAt` the client last saw (optimistic
- * lock): the server rejects with 409 if the list changed since, so two
- * concurrent editors reordering at once don't silently clobber each other.
- */
-export interface ReorderListItemsDto {
-  orderedItemIds: string[];
-  expectedUpdatedAt: string;
-}
-
 /** Which of the user's own lists already contain a target, keyed by list id (value = item id). */
 export type ListMembershipDto = Record<string, string>;

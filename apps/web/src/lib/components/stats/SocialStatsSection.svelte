@@ -2,8 +2,8 @@
   // "Social" section of /stats — gated by SOCIAL_ENABLED (see the page,
   // this component is only mounted when appConfig.socialEnabled is true).
   // Always cross-domain, not affected by the DomainFilter.
-  import type { SocialStatsDto } from "@loomkeep/shared";
   import { getSocialStats } from "$lib/api/stats";
+  import type { SocialStatsDto } from "@loomkeep/shared";
   import LineChart from "./LineChart.svelte";
   import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
@@ -149,8 +149,8 @@
       </p>
     {:else}
       <p class="text-dim text-sm">
-        Pas assez d’œuvres notées en commun avec d’autres membres pour comparer
-        ({social.ratingVsCommunity.sampleSize} pour l’instant).
+        Pas assez d'œuvres notées en commun avec d'autres membres pour comparer
+        ({social.ratingVsCommunity.sampleSize} pour l'instant).
       </p>
     {/if}
   </section>

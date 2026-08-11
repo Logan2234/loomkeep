@@ -15,7 +15,7 @@ export type AccountDeletionDeletedCategory =
 export type AccountDeletionAnonymizedCategory =
   "REVIEWS" | "COMMENTS" | "REPORTS";
 
-export interface AccountDeletionCategoryCount<T extends string> {
+interface AccountDeletionCategoryCount<T extends string> {
   category: T;
   count: number;
 }

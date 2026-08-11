@@ -19,7 +19,7 @@
   <p class="text-dim text-xs">
     {message}
     {#if pct > 0}
-      ({pct}&nbsp;% renseigné pour l’instant.)
+      ({pct}&nbsp;% renseigné pour l'instant.)
     {/if}
   </p>
 </div>

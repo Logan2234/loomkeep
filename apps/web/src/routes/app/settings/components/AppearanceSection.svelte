@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { dndzone } from "svelte-dnd-action";
   import { updateMe } from "$lib/api/auth";
   import { ApiError } from "$lib/api/core";
   import { auth } from "$lib/auth.svelte";
@@ -17,6 +16,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { setLocale } from "$lib/paraglide/runtime.js";
   import { theme } from "$lib/theme.svelte";
+  import { dndzone } from "svelte-dnd-action";
 
   const MIN = 3;
   const MAX = 7;
@@ -106,7 +106,7 @@
 
 <section class="card mb-5 space-y-4 p-5 md:p-6">
   <h2 class="font-display mb-1 text-lg font-bold">Apparence</h2>
-  <p class="text-dim text-sm">Configure l’apparence de l’application.</p>
+  <p class="text-dim text-sm">Configure l'apparence de l'application.</p>
 
   <div>
     <p class="mb-2 font-semibold">Thème</p>
@@ -147,8 +147,8 @@
   <div>
     <p class="mb-2 font-semibold">Barre de navigation mobile</p>
     <p class="text-dim text-sm">
-      Choisis les raccourcis du bas de l’écran sur téléphone ({MIN} à {MAX}) et
-      leur ordre. « Menu » reste toujours présent — c’est lui qui ouvre toutes
+      Choisis les raccourcis du bas de l'écran sur téléphone ({MIN} à {MAX}) et
+      leur ordre. « Menu » reste toujours présent — c'est lui qui ouvre toutes
       les pages.
     </p>
 

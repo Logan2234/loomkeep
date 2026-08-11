@@ -2,11 +2,11 @@
   // "Musique — en détail" section of /stats. Self-contained: fetches on
   // mount, reuses the MUSIC status breakdown already loaded by the overview
   // for "Écoutés", same pattern as the other domain sections.
+  import { getMusicStats } from "$lib/api/stats";
   import type {
     DomainStatusBreakdownDto,
     MusicStatsDto,
   } from "@loomkeep/shared";
-  import { getMusicStats } from "$lib/api/stats";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
   import { statsResource } from "./stats-resource.svelte";
@@ -60,7 +60,7 @@
   <StatTilesSkeleton />
 {:else if music}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-    <StatTile value={hours} unit="h" label="Durée d’écoute" />
+    <StatTile value={hours} unit="h" label="Durée d'écoute" />
     <StatTile value={listenedCount} label="Écoutés" />
     <StatTile value={music.distinctArtistsCount} label="Artistes distincts" />
     <StatTile value={music.totalTracks} label="Titres au total" />
@@ -74,7 +74,7 @@
       {#if artistItems.length > 0}
         <RankBars items={artistItems} />
       {:else}
-        <p class="text-dim text-sm">Pas encore d’artiste.</p>
+        <p class="text-dim text-sm">Pas encore d'artiste.</p>
       {/if}
     </section>
     <section class="card p-5">
@@ -82,7 +82,7 @@
       {#if typeSegments.length > 0}
         <StackedBar segments={typeSegments} />
       {:else}
-        <p class="text-dim text-sm">Pas encore d’album.</p>
+        <p class="text-dim text-sm">Pas encore d'album.</p>
       {/if}
     </section>
   </div>

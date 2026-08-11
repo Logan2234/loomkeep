@@ -4,8 +4,10 @@ import type {
   CommentEmote,
   CommentPageDto,
   CommentTargetType,
+  CreateCommentDto,
   ReportCategory,
   ReportMotif,
+  UpdateCommentDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
 
@@ -29,19 +31,13 @@ export function getComments(
   );
 }
 
-export function createComment(body: {
-  targetType: CommentTargetType;
-  targetId: string;
-  parentId?: string;
-  text: string;
-  spoilerTag?: boolean;
-}): Promise<CommentDto> {
+export function createComment(body: CreateCommentDto): Promise<CommentDto> {
   return request("/comments", { method: "POST", body });
 }
 
 export function updateComment(
   id: string,
-  body: { text: string; spoilerTag?: boolean },
+  body: UpdateCommentDto,
 ): Promise<CommentDto> {
   return request(`/comments/${id}`, { method: "PUT", body });
 }

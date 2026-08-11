@@ -180,7 +180,7 @@
   <PageHeader
     icon="home"
     title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
-    subtitle="Reprends là où tu t’es arrêté." />
+    subtitle="Reprends là où tu t'es arrêté." />
 
   {#if loading}
     <div class="mb-10 flex flex-col gap-10">
@@ -265,7 +265,7 @@
                   {/snippet}
                 </Carousel>
               {:else}
-                <p class="text-dim py-6 text-center text-sm">
+                <p class="text-dim py-10 text-center text-sm">
                   Rien en cours de visionnage.
                 </p>
               {/if}
@@ -307,7 +307,7 @@
                 {/snippet}
               </Carousel>
             {:else}
-              <p class="text-dim py-6 text-center text-sm">
+              <p class="text-dim py-10 text-center text-sm">
                 Rien en cours de partie.
               </p>
             {/if}
@@ -398,8 +398,8 @@
                 {/snippet}
               </Carousel>
             {:else}
-              <p class="text-dim py-6 text-center text-sm">
-                Rien à écouter pour l’instant.
+              <p class="text-dim py-10 text-center text-sm">
+                Rien à écouter pour l'instant.
               </p>
             {/if}
           </section>
@@ -424,9 +424,7 @@
         </div>
       </div>
 
-      <!-- Sidebar: its own stack, entirely separate from the main grid
-           above — Cette semaine, Objectif de lecture, Raccourcis. -->
-      <div class="flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
+      <div class="sticky top-4 flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
         {#if mediaOn}
           <section class="card p-4">
             <div class="mb-3 flex items-center justify-between">
@@ -477,14 +475,40 @@
           <ReadingGoalDashboardCard />
         {/if}
 
-        <!-- Raccourcis : liste compacte plutôt que 3 grandes cartes, pour
-             tenir dans la colonne étroite avec Cette semaine / Objectif. -->
         <section class="card p-2">
+          <a
+            href="/app/profile"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="user" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex-1 text-sm font-semibold">Mon compte</span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
           <a
             href="/app/stats"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="stats" class="text-accent h-5 w-5 shrink-0" />
             <span class="flex-1 text-sm font-semibold">Statistiques</span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
+          <a
+            href="/app/lists"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="list" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex-1 text-sm font-semibold">Mes listes</span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
+          <a
+            href="/app/reviews"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="star" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex-1 text-sm font-semibold">Mes critiques</span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
+          <a
+            href="/app/feed"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex-1 text-sm font-semibold">Fil d'activité</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a

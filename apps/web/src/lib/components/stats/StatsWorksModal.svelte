@@ -1,8 +1,8 @@
 <script lang="ts">
   // Drill-down for a clicked rating/decade bar: the works behind that count.
-  import type { StatsWorkDto } from "@loomkeep/shared";
   import Modal from "$lib/components/Modal.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import type { StatsWorkDto } from "@loomkeep/shared";
   import { STATS_DOMAIN_LABEL } from "./stats-domain";
 
   let {
@@ -32,7 +32,7 @@
       {/each}
     </ul>
   {:else if works.length === 0}
-    <p class="text-dim text-sm">Rien pour l’instant.</p>
+    <p class="text-dim text-sm">Rien pour l'instant.</p>
   {:else}
     <ul class="flex max-h-96 flex-col gap-1 overflow-y-auto">
       {#each works as w (w.href)}

@@ -83,12 +83,6 @@ export interface GameEntryDto {
   ownershipSource: string | null;
 }
 
-/** Body for logging a completed replay. */
-export interface AddGameReplayDto {
-  /** ISO date; defaults to now. */
-  finishedAt?: string;
-}
-
 /** Body for creating/updating a library entry from a catalogue game. */
 export interface UpsertGameEntryDto {
   source: GameSource;
