@@ -296,6 +296,17 @@ export interface AdminUserListResponseDto {
   page: number;
 }
 
+/** Compact breakdown of the works saved in one account's libraries. */
+export interface AdminUserLibraryStatsDto {
+  movies: number;
+  series: number;
+  anime: number;
+  games: number;
+  books: number;
+  music: number;
+  total: number;
+}
+
 /**
  * Minimal, unpaginated account list for a picker (UserSelector, the
  * communications broadcast target field) — distinct from `AdminUserDto`,

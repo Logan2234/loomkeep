@@ -24,6 +24,7 @@ import type {
   AdminSystemSectionDto,
   AdminUserCommentDto,
   AdminUserFilter,
+  AdminUserLibraryStatsDto,
   AdminUserListResponseDto,
   AdminUserOptionDto,
   AdminUserRoleDto,
@@ -178,6 +179,13 @@ export function getAdminUsers(
 /** Minimal, unpaginated account list for a picker (UserSelector, communications broadcast target). */
 export function getAdminUserOptions(): Promise<AdminUserOptionDto[]> {
   return request("/admin/users/options");
+}
+
+/** Compact per-domain library breakdown for an account drawer. */
+export function getAdminUserLibraryStats(
+  userId: string,
+): Promise<AdminUserLibraryStatsDto> {
+  return request(`/admin/users/${userId}/library-stats`);
 }
 
 export function getAdminUserSessions(userId: string): Promise<SessionDto[]> {

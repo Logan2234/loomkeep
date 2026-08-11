@@ -7,6 +7,7 @@
     getAdminUserExport,
     getAdminUserFollowers,
     getAdminUserFollowing,
+    getAdminUserLibraryStats,
     getAdminUserLists,
     getAdminUserReportsAgainst,
     getAdminUserReviews,
@@ -39,6 +40,7 @@
     AdminUserCommentDto,
     AdminUserDto,
     AdminUserFilter,
+    AdminUserLibraryStatsDto,
     MyListDto,
     MyReviewDto,
     ReportDto,
@@ -64,6 +66,8 @@
   let selected = $state<AdminUserDto | null>(null);
   let sessions = $state<SessionDto[] | null>(null);
   let sessionsLoading = $state(false);
+  let libraryStats = $state<AdminUserLibraryStatsDto | null>(null);
+  let libraryStatsLoading = $state(false);
   let revoking = $state<string | null>(null);
 
   let showRevokeAllConfirm = $state(false);
@@ -152,6 +156,8 @@
     selected = user;
     sessions = null;
     sessionsLoading = true;
+    libraryStats = null;
+    libraryStatsLoading = true;
     verifyMessage = "";
     resetMessage = "";
     roleError = "";
@@ -169,6 +175,13 @@
       sessions = [];
     } finally {
       sessionsLoading = false;
+    }
+    try {
+      libraryStats = await getAdminUserLibraryStats(user.id);
+    } catch {
+      libraryStats = null;
+    } finally {
+      libraryStatsLoading = false;
     }
     try {
       const [r, c, fers, fing, l, rep] = await Promise.all([
@@ -627,6 +640,33 @@
               </li>
             {/each}
           </ul>
+        {/if}
+      </section>
+
+      <!-- Bibliothèque -->
+      <section class="mb-5">
+        <h3
+          class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+          Bibliothèque
+          <span class="bg-border h-px flex-1"></span>
+        </h3>
+        {#if libraryStatsLoading}
+          <div class="skeleton h-28 rounded-lg"></div>
+        {:else if libraryStats}
+          <div class="grid grid-cols-3 gap-2">
+            {#each [{ label: "Films", value: libraryStats.movies }, { label: "Séries", value: libraryStats.series }, { label: "Anime", value: libraryStats.anime }, { label: "Jeux", value: libraryStats.games }, { label: "Livres", value: libraryStats.books }, { label: "Albums", value: libraryStats.music }] as stat (stat.label)}
+              <div
+                class="border-border rounded-lg border px-2 py-2 text-center">
+                <p class="font-display text-base font-bold">{stat.value}</p>
+                <p class="text-dim text-[0.65rem]">{stat.label}</p>
+              </div>
+            {/each}
+          </div>
+          <p class="text-dim mt-2 text-right text-xs">
+            {libraryStats.total} élément{libraryStats.total !== 1 ? "s" : ""}
+          </p>
+        {:else}
+          <p class="text-dim text-sm">Statistiques indisponibles.</p>
         {/if}
       </section>
 

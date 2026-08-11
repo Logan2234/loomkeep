@@ -24,6 +24,10 @@ function makeController() {
       delete: jest.fn(),
     },
     refreshToken: { groupBy: jest.fn().mockResolvedValue([]) },
+    libraryEntry: { count: jest.fn() },
+    gameEntry: { count: jest.fn() },
+    bookEntry: { count: jest.fn() },
+    musicEntry: { count: jest.fn() },
   } as unknown as PrismaService;
   const authService = {
     resendVerificationEmail: jest.fn(),
@@ -124,6 +128,39 @@ describe("AdminUsersController.listUsers", () => {
         },
       }),
     );
+  });
+});
+
+describe("AdminUsersController.getUserLibraryStats", () => {
+  it("counts every persisted library domain, splitting media by type", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.libraryEntry.count as jest.Mock)
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(5)
+      .mockResolvedValueOnce(2);
+    (prisma.gameEntry.count as jest.Mock).mockResolvedValue(4);
+    (prisma.bookEntry.count as jest.Mock).mockResolvedValue(6);
+    (prisma.musicEntry.count as jest.Mock).mockResolvedValue(1);
+
+    await expect(controller.getUserLibraryStats("user-2")).resolves.toEqual({
+      movies: 3,
+      series: 5,
+      anime: 2,
+      games: 4,
+      books: 6,
+      music: 1,
+      total: 21,
+    });
+
+    expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
+      where: { userId: "user-2", mediaItem: { type: "MOVIE" } },
+    });
+    expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
+      where: { userId: "user-2", mediaItem: { type: "SERIES" } },
+    });
+    expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
+      where: { userId: "user-2", mediaItem: { type: "ANIME" } },
+    });
   });
 });
 
