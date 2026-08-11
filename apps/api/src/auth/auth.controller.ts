@@ -40,8 +40,9 @@ export class AuthController {
   login(
     @Body() dto: LoginDto,
     @Headers("user-agent") userAgent?: string,
+    @Ip() ip?: string,
   ): Promise<AuthResult> {
-    return this.authService.login(dto, userAgent);
+    return this.authService.login(dto, userAgent, ip);
   }
 
   @HttpCode(HttpStatus.OK)

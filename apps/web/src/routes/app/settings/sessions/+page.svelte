@@ -10,7 +10,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { SessionDto } from "@loomkeep/shared";
+  import { deviceLabel, type SessionDto } from "@loomkeep/shared";
   import { onMount } from "svelte";
 
   let sessions = $state<SessionDto[]>([]);
@@ -34,35 +34,6 @@
   }
 
   onMount(load);
-
-  // Best-effort, dependency-free label from the raw User-Agent.
-  function deviceLabel(ua: string | null): string {
-    if (!ua) return "Appareil inconnu";
-    const os = /iPhone/.test(ua)
-      ? "iPhone"
-      : /iPad/.test(ua)
-        ? "iPad"
-        : /Android/.test(ua)
-          ? "Android"
-          : /Windows/.test(ua)
-            ? "Windows"
-            : /Mac OS X|Macintosh/.test(ua)
-              ? "macOS"
-              : /Linux/.test(ua)
-                ? "Linux"
-                : null;
-    // Order matters: Edge/Chrome UAs also contain "Safari"/"Chrome".
-    const browser = /Edg\//.test(ua)
-      ? "Edge"
-      : /Firefox\//.test(ua)
-        ? "Firefox"
-        : /Chrome\//.test(ua)
-          ? "Chrome"
-          : /Safari\//.test(ua)
-            ? "Safari"
-            : null;
-    return [browser, os].filter(Boolean).join(" · ") || "Appareil inconnu";
-  }
 
   const relativeFormat = new Intl.RelativeTimeFormat("fr-FR", {
     numeric: "auto",
@@ -106,7 +77,7 @@
       revoking = false;
     }
   }
-
+  console.log(loading);
   let hasOthers = $derived(sessions.some((s) => s.jti !== currentJti));
 </script>
 
@@ -139,7 +110,8 @@
           <Icon name="monitor" class="text-dim h-6 w-6 shrink-0" />
           <div class="min-w-0 flex-1">
             <p class="flex items-center gap-2 font-semibold">
-              <span class="truncate">{deviceLabel(session.userAgent)}</span>
+              <span class="truncate"
+                >{deviceLabel(session.userAgent) ?? "Appareil inconnu"}</span>
               {#if isCurrent}
                 <span
                   class="bg-accent/15 text-accent rounded-full px-2.5 py-0.5 text-xs font-semibold">

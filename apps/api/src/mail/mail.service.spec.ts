@@ -85,6 +85,27 @@ describe("MailService", () => {
     expect(html).toContain("Confirme ton adresse email");
   });
 
+  it("escapes the device label and IP in the new-device alert", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewDeviceLogin(
+      "alice@example.com",
+      "<script>alert(1)</script>",
+      "1.2.3.4",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("1.2.3.4");
+  });
+
   it("swallows send failures instead of throwing", async () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_USER = "user";
@@ -126,6 +147,7 @@ describe("MailService template gallery", () => {
         "emailChangedNew",
         "emailChangeCode",
         "newEpisode",
+        "newDeviceLogin",
       ]),
     );
   });

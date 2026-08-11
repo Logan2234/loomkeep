@@ -379,6 +379,7 @@ model User {
   entries             LibraryEntry[]
   episodeWatches      EpisodeWatch[]
   refreshTokens       RefreshToken[]
+  devices             UserDevice[]
   notifications       Notification[]
   pushSubscriptions   PushSubscription[]
   gameEntries         GameEntry[]
@@ -764,6 +765,27 @@ model RefreshToken {
   @@index([userId])
 }
 
+// Durable record of every device a user has ever logged in from, independent
+// of RefreshToken (which is pruned on logout/revoke/expiry/password-reset and
+// would otherwise misreport a familiar browser as "new" on the next login).
+// deviceKey is the normalized browser+OS label (see shared deviceLabel()),
+// not the raw User-Agent — a browser version bump shouldn't read as a new
+// device. Seeded (without an alert) on register, upserted on every login;
+// AuthService.login() emails+logs a SecurityEvent only when the row is created.
+model UserDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceKey  String
+  userAgent  String?
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceKey])
+  @@index([userId])
+}
+
 enum UserTokenType {
   PASSWORD_RESET
   EMAIL_VERIFICATION
@@ -794,6 +816,7 @@ enum SecurityEventType {
   PASSWORD_CHANGED
   PASSWORD_RESET
   LOGIN_FAILED
+  NEW_DEVICE_LOGIN
 }
 
 // One sensitive account action, for the admin "Sécurité" page. userId is

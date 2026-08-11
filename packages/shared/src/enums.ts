@@ -267,6 +267,7 @@ export const SecurityEventType = {
   PASSWORD_CHANGED: "PASSWORD_CHANGED",
   PASSWORD_RESET: "PASSWORD_RESET",
   LOGIN_FAILED: "LOGIN_FAILED",
+  NEW_DEVICE_LOGIN: "NEW_DEVICE_LOGIN",
 } as const;
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];
