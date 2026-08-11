@@ -10,6 +10,7 @@ import type { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
+import type { HibpService } from "../common/hibp.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -102,6 +103,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     verify: jest.fn().mockResolvedValue(true),
   } as unknown as TurnstileService;
 
+  const hibp = {
+    isPasswordPwned: jest.fn().mockResolvedValue(false),
+  } as unknown as HibpService;
+
   const service = new AuthService(
     prisma,
     jwtService,
@@ -109,6 +114,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     mail,
     security,
     turnstile,
+    hibp,
   );
 
   return {
@@ -119,6 +125,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     mail,
     security,
     turnstile,
+    hibp,
   };
 }
 
@@ -163,6 +170,21 @@ describe("AuthService.register", () => {
         displayName: "Alice",
       }),
     ).rejects.toThrow(ConflictException);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("throws BadRequestException when the password has appeared in a data breach", async () => {
+    const { service, prisma, hibp } = makeService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
+
+    await expect(
+      service.register({
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+      }),
+    ).rejects.toThrow(BadRequestException);
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
@@ -547,6 +569,22 @@ describe("AuthService.resetPassword", () => {
     await expect(
       service.resetPassword("verify-token", "new-password"),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it("throws BadRequestException when the new password has appeared in a data breach", async () => {
+    const { service, prisma, hibp } = makeService();
+    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+      userId: "user-1",
+      type: "PASSWORD_RESET",
+      expiresAt: new Date(Date.now() + 1000),
+      user: makeUser(),
+    });
+    (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
+
+    await expect(
+      service.resetPassword("good-token", "pwned-password"),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it("updates the password, revokes every session and reset token, and emails a confirmation", async () => {
