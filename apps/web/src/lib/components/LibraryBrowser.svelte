@@ -58,6 +58,7 @@
     extra,
     onClearExtra,
     catalogPreview,
+    headerActions,
   }: {
     icon: IconName;
     title: string;
@@ -87,6 +88,8 @@
      * library search comes up empty (no filters). Receives the trimmed query
      * and a callback to report back how many catalogue results it found. */
     catalogPreview?: Snippet<[string, (count: number) => void]>;
+    /** Rendered beside the title, e.g. books' reading-goal chip. */
+    headerActions?: Snippet;
   } = $props();
 
   // Result count reported by `catalogPreview`, reset whenever the query
@@ -189,7 +192,12 @@
 </script>
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
-  <PageHeader {icon} {title} subtitle={subtitle(total)} class="mb-6" />
+  <PageHeader
+    {icon}
+    {title}
+    subtitle={subtitle(total)}
+    actions={headerActions}
+    class="mb-6" />
 
   <div class="relative mb-4">
     <span

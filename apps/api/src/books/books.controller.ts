@@ -18,6 +18,7 @@ import {
   BookSearchResponseDto,
   BookSource,
   Domain,
+  ReadingGoalDto,
 } from "@loomkeep/shared";
 import type { PagedResult } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -32,6 +33,7 @@ import { BookLibraryService } from "./book-library.service";
 import { AddBookReplayDto } from "./dto/add-book-replay.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
+import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
 @Controller("books")
 export class BooksController {
@@ -135,6 +137,26 @@ export class BooksController {
     @Param("id") replayId: string,
   ): Promise<void> {
     await this.bookLibraryService.deleteReplay(user.sub, replayId);
+  }
+
+  /** The current user's reading goal for `year` (defaults to this year) + progress. */
+  @Get("reading-goal")
+  getReadingGoal(
+    @CurrentUser() user: JwtPayload,
+    @Query("year") year?: string,
+  ): Promise<ReadingGoalDto> {
+    return this.bookLibraryService.getReadingGoal(
+      user.sub,
+      year ? Number(year) : new Date().getFullYear(),
+    );
+  }
+
+  @Put("reading-goal")
+  upsertReadingGoal(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpsertReadingGoalDto,
+  ): Promise<ReadingGoalDto> {
+    return this.bookLibraryService.upsertReadingGoal(user.sub, dto);
   }
 
   /** Book detail page: catalogue metadata + the user's library state. */

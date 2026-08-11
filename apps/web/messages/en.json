@@ -490,5 +490,17 @@
   "landing_hosting_selfhost_body": "A complete Docker stack, your own PostgreSQL database, and the same feature set. All you need is a free TMDB API key.",
   "landing_hosting_selfhost_cta": "Read the docs",
   "landing_footer_feedback": "Feedback & bugs",
-  "landing_footer_changelog": "Release notes"
+  "landing_footer_changelog": "Release notes",
+
+  "reading_goal_modal_title": "{year} reading goal",
+  "reading_goal_label": "Number of books",
+  "reading_goal_title": "Reading goal",
+  "reading_goal_edit": "Edit",
+  "reading_goal_invalid": "Enter a valid number of books.",
+  "reading_goal_cta": "How many books do you want to read in {year}?",
+  "reading_goal_cta_action": "Set a goal",
+  "reading_goal_remaining": "{count} {noun} to go before the end of {year}.",
+  "reading_goal_book_singular": "book",
+  "reading_goal_book_plural": "books",
+  "reading_goal_reached": "Goal reached — nice work!"
 }
