@@ -15,6 +15,7 @@ import {
 import type {
   AdminUserCommentDto,
   AdminUserFilter,
+  AdminUserLibraryStatsDto,
   AdminUserListResponseDto,
   AdminUserOptionDto,
   AdminUserRoleDto,
@@ -205,6 +206,37 @@ export class AdminUsersController {
   @Get("users/:userId/lists")
   getUserLists(@Param("userId") userId: string): Promise<MyListDto[]> {
     return this.lists.listMine(userId);
+  }
+
+  /** Compact library breakdown for the account drawer. */
+  @Get("users/:userId/library-stats")
+  async getUserLibraryStats(
+    @Param("userId") userId: string,
+  ): Promise<AdminUserLibraryStatsDto> {
+    const [movies, series, anime, games, books, music] = await Promise.all([
+      this.prisma.libraryEntry.count({
+        where: { userId, mediaItem: { type: "MOVIE" } },
+      }),
+      this.prisma.libraryEntry.count({
+        where: { userId, mediaItem: { type: "SERIES" } },
+      }),
+      this.prisma.libraryEntry.count({
+        where: { userId, mediaItem: { type: "ANIME" } },
+      }),
+      this.prisma.gameEntry.count({ where: { userId } }),
+      this.prisma.bookEntry.count({ where: { userId } }),
+      this.prisma.musicEntry.count({ where: { userId } }),
+    ]);
+
+    return {
+      movies,
+      series,
+      anime,
+      games,
+      books,
+      music,
+      total: movies + series + anime + games + books + music,
+    };
   }
 
   /** Signed-in devices for one account, most recently active first. */
