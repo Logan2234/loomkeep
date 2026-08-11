@@ -52,6 +52,7 @@ export class AuthService {
     dto: RegisterDto,
     userAgent?: string,
     ip?: string,
+    acceptLanguage?: string,
   ): Promise<AuthResult> {
     if (!isRegistrationEnabled(this.configService)) {
       throw new ForbiddenException("Registration is disabled");
@@ -81,6 +82,7 @@ export class AuthService {
         passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
         displayName: dto.displayName,
         username: await this.generateUniqueUsername(dto.displayName),
+        locale: detectLocale(acceptLanguage),
       },
     });
 
@@ -516,6 +518,12 @@ export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+/** First tag of the Accept-Language header, "fr" if it starts with "fr", "en" otherwise (covers "no header" too). */
+function detectLocale(acceptLanguage?: string): string {
+  const first = acceptLanguage?.split(",")[0]?.trim().toLowerCase();
+  return first?.startsWith("fr") ? "fr" : "en";
+}
+
 export function toUserDto(user: User): UserDto {
   return {
     id: user.id,
@@ -542,5 +550,6 @@ export function toUserDto(user: User): UserDto {
     locale: user.locale,
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
+    onboardedAt: user.onboardedAt?.toISOString() ?? null,
   };
 }

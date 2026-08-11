@@ -10,6 +10,7 @@
   "common_back": "Back",
   "common_next": "Next",
   "common_previous": "Previous",
+  "common_finish": "Finish",
   "common_loading": "Loading…",
   "common_fetch_error_fallback": "Couldn't load",
   "common_save_error_fallback": "Couldn't save",
@@ -504,5 +505,47 @@
   "reading_goal_remaining": "{count} {noun} to go before the end of {year}.",
   "reading_goal_book_singular": "book",
   "reading_goal_book_plural": "books",
-  "reading_goal_reached": "Goal reached — nice work!"
+  "reading_goal_reached": "Goal reached — nice work!",
+
+  "wizard_step_progress": "Step {current}/{total} — {label}",
+
+  "onboarding_modal_title": "Welcome",
+  "onboarding_step_welcome": "Welcome",
+  "onboarding_step_domains": "Domains",
+  "onboarding_step_settings": "Settings",
+  "onboarding_step_done": "All set",
+
+  "onboarding_welcome_title": "Welcome to Loomkeep 👋",
+  "onboarding_welcome_intro": "Loomkeep keeps track of what you watch, play, read and listen to — movies, shows, anime, games, books and music, all in one place. In short, you can:",
+  "onboarding_welcome_feature_progress": "Track your progress (episodes watched, books finished, games in progress…)",
+  "onboarding_welcome_feature_lists": "Build lists and follow a release calendar",
+  "onboarding_welcome_feature_stats": "Check your stats and goals (time spent, yearly reading goal…)",
+  "onboarding_welcome_feature_social": "Follow friends, share reviews, and see what they're watching",
+  "onboarding_welcome_young_project": "Loomkeep is a young project, still moving fast: something might be missing, or a bug might be lurking somewhere. Every bit of feedback counts, so don't hold back 🙂.",
+  "onboarding_welcome_help_hint": "Feedback, ideas or bugs: Settings → Help & Support, where you can also message me directly 😉.",
+
+  "onboarding_domains_title": "What do you want to track?",
+  "onboarding_domains_intro": "Pick at least one domain — Loomkeep will only show what you're into, nothing else. Changeable any time from Settings → Domains.",
+
+  "onboarding_settings_title": "A few settings to get started.",
+  "onboarding_settings_intro": "Nothing here is final — everything can be changed later in Settings.",
+  "onboarding_settings_theme": "Theme",
+  "onboarding_settings_theme_light": "Light",
+  "onboarding_settings_theme_dark": "Dark",
+  "onboarding_settings_push_label": "Push notifications",
+  "onboarding_settings_push_desc": "They let you know as soon as a new episode airs, or something new shows up, for what you follow.",
+  "onboarding_settings_push_desc_iphone": "On iPhone, install Loomkeep to your home screen first (Share → Add to Home Screen) to receive these. They let you know as soon as a new episode airs, or something new shows up, for what you follow.",
+  "onboarding_settings_push_unsupported": "Not available on this device or browser.",
+  "onboarding_settings_push_error": "Notifications were denied or aren't available on this device.",
+  "onboarding_settings_email_label": "Email notifications",
+  "onboarding_settings_email_desc": "An email when a new episode of something you follow airs.",
+  "onboarding_settings_newsletter_label": "Newsletter",
+  "onboarding_settings_newsletter_desc": "An occasional email, only to keep you posted on new features.",
+
+  "onboarding_done_title": "All set — nice work! 🎉",
+  "onboarding_done_intro": "You're all ready to go — welcome aboard. You'll find (and can change) all these settings any time in Settings.",
+  "onboarding_done_import_title": "Already have data elsewhere?",
+  "onboarding_done_import_domain_media": "Movies, shows & anime",
+  "onboarding_done_import_via": "import from {source}",
+  "onboarding_done_import_cta": "Go to import"
 }

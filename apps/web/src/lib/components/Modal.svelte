@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import type { Snippet } from "svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
 
@@ -9,12 +9,21 @@
     onclose,
     children,
     wide = false,
+    blur = false,
+    dismissable = true,
+    overflowVisible = false,
   }: {
     title: string;
     onclose: () => void;
     children: Snippet;
     /** Wider variant (max-w-2xl instead of max-w-md), for content like tables. */
     wide?: boolean;
+    blur?: boolean;
+    /** When false: no close-X, Escape and backdrop click do nothing. */
+    dismissable?: boolean;
+    /** Lets content (e.g. a decorative marker) poke outside the card's rounded
+     * corners instead of being clipped by `.card`'s `overflow-hidden`. */
+    overflowVisible?: boolean;
   } = $props();
 
   // Only one of Drawer/dialog is ever mounted, picked by the same breakpoint
@@ -38,7 +47,8 @@
 
 <!-- Mobile's Drawer already closes on Escape via its own listener. -->
 <svelte:window
-  onkeydown={(e) => isDesktop && e.key === "Escape" && onclose()} />
+  onkeydown={(e) =>
+    isDesktop && dismissable && e.key === "Escape" && onclose()} />
 
 {#snippet header(showClose: boolean)}
   {#if showClose}
@@ -56,19 +66,22 @@
 
 {#if isDesktop}
   <!-- Desktop: a centered dialog. Mobile's Drawer already closes on Escape. -->
-  <div class="fixed inset-0 z-[60] flex items-center justify-center">
+  <div
+    class={`fixed inset-0 z-60 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}>
     <button
       class="absolute inset-0 cursor-default bg-black/60"
       aria-label={m.common_close()}
-      onclick={onclose}></button>
+      onclick={() => dismissable && onclose()}></button>
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       class="card relative z-10 w-full {wide
         ? 'max-w-2xl'
-        : 'max-w-md'} rounded-2xl p-5">
-      {@render header(true)}
+        : 'max-w-md'} rounded-2xl p-5 {overflowVisible
+        ? 'overflow-visible'
+        : ''}">
+      {@render header(dismissable)}
       {@render children()}
     </div>
   </div>
@@ -77,7 +90,7 @@
        drawer (MenuSheet) — no close cross, the swipe/backdrop tap covers it.
        Stacked above FocusOverlay (z-50) since a Modal can be opened from
        within a focused comment on touch. -->
-  <Drawer {onclose} labelledby="modal-title" zIndex={60}>
+  <Drawer {onclose} {dismissable} labelledby="modal-title" zIndex={60}>
     <div
       data-drawer-scroll
       class="relative touch-pan-y overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">

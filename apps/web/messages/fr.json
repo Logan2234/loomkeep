@@ -10,6 +10,7 @@
   "common_back": "Retour",
   "common_next": "Suivant",
   "common_previous": "Précédent",
+  "common_finish": "Terminé",
   "common_loading": "Chargement…",
   "common_fetch_error_fallback": "Chargement impossible",
   "common_save_error_fallback": "Enregistrement impossible",
@@ -504,5 +505,47 @@
   "reading_goal_remaining": "Encore {count} {noun} d'ici fin {year}.",
   "reading_goal_book_singular": "livre",
   "reading_goal_book_plural": "livres",
-  "reading_goal_reached": "Objectif atteint — bravo !"
+  "reading_goal_reached": "Objectif atteint — bravo !",
+
+  "wizard_step_progress": "Étape {current}/{total} — {label}",
+
+  "onboarding_modal_title": "Bienvenue",
+  "onboarding_step_welcome": "Bienvenue",
+  "onboarding_step_domains": "Domaines",
+  "onboarding_step_settings": "Réglages",
+  "onboarding_step_done": "C'est prêt",
+
+  "onboarding_welcome_title": "Bienvenue chez Loomkeep 👋",
+  "onboarding_welcome_intro": "Loomkeep garde une trace de ce que tu regardes, joues, lis et écoutes — films, séries, animés, jeux vidéo, livres et musique, au même endroit. En quelques mots, tu peux :",
+  "onboarding_welcome_feature_progress": "Suivre ta progression (épisodes vus, livres finis, parties en cours…)",
+  "onboarding_welcome_feature_lists": "Créer des listes et suivre un calendrier des sorties à venir",
+  "onboarding_welcome_feature_stats": "Consulter tes statistiques et objectifs (temps passé, lecture annuelle…)",
+  "onboarding_welcome_feature_social": "Suivre tes amis, partager tes avis et voir ce qu'ils regardent",
+  "onboarding_welcome_young_project": "Loomkeep est un projet jeune, encore en mouvement : il peut manquer un truc, ou traîner un bug quelque part. Chaque retour compte, alors n'hésite pas 🙂.",
+  "onboarding_welcome_help_hint": "Feedback, idée ou bug : Paramètres → Aide & Support, où tu peux aussi m'écrire directement 😉.",
+
+  "onboarding_domains_title": "Qu'est-ce que tu veux suivre ?",
+  "onboarding_domains_intro": "Choisis au moins un domaine — Loomkeep n'affichera que ce qui t'intéresse, pas le reste. Modifiable à tout moment depuis Paramètres → Domaines.",
+
+  "onboarding_settings_title": "Quelques réglages, pour commencer.",
+  "onboarding_settings_intro": "Rien n'est définitif — tout se retrouve et se change dans Paramètres.",
+  "onboarding_settings_theme": "Thème",
+  "onboarding_settings_theme_light": "Clair",
+  "onboarding_settings_theme_dark": "Sombre",
+  "onboarding_settings_push_label": "Notifications push",
+  "onboarding_settings_push_desc": "Elles te préviennent dès la sortie d'un nouvel épisode ou d'une nouveauté sur ce que tu suis.",
+  "onboarding_settings_push_desc_iphone": "Sur iPhone, installe d'abord Loomkeep sur l'écran d'accueil (Partager → Sur l'écran d'accueil) pour pouvoir les recevoir. Elles te préviennent dès la sortie d'un nouvel épisode ou d'une nouveauté sur ce que tu suis.",
+  "onboarding_settings_push_unsupported": "Non disponible sur cet appareil ou ce navigateur.",
+  "onboarding_settings_push_error": "Notifications refusées ou indisponibles sur cet appareil.",
+  "onboarding_settings_email_label": "Notifications par e-mail",
+  "onboarding_settings_email_desc": "Un e-mail à la sortie d'un nouvel épisode de ce que tu suis.",
+  "onboarding_settings_newsletter_label": "Newsletter",
+  "onboarding_settings_newsletter_desc": "Un e-mail occasionnel, uniquement pour être tenu·e au courant des nouvelles fonctionnalités de l'app.",
+
+  "onboarding_done_title": "Bravo, tout est prêt ! 🎉",
+  "onboarding_done_intro": "Te voilà fin prêt·e — bienvenue à bord. Tu retrouveras (et pourras changer) tous ces réglages à tout moment dans Paramètres.",
+  "onboarding_done_import_title": "Tu as déjà des données ailleurs ?",
+  "onboarding_done_import_domain_media": "Films, séries & animés",
+  "onboarding_done_import_via": "importe depuis {source}",
+  "onboarding_done_import_cta": "Vers l'import"
 }

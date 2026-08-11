@@ -4,12 +4,14 @@
   import { adminReports } from "$lib/admin-reports.svelte";
   import { auth } from "$lib/auth.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import Modal from "$lib/components/Modal.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
-  import PushNotificationPrompt from "$lib/components/PushNotificationPrompt.svelte";
+  import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
   import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
   import { notifications } from "$lib/notifications.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 
   let { children } = $props();
 
@@ -49,7 +51,6 @@
 
 {#if bootstrap.ready && auth.isLoggedIn}
   <NotificationBell />
-  <PushNotificationPrompt />
   <WidgetIdentify />
 
   <div class="hidden md:block">
@@ -63,4 +64,16 @@
       {@render children()}
     </MobileLayout>
   </div>
+
+  {#if !auth.user?.onboardedAt}
+    <Modal
+      dismissable={false}
+      title={m.onboarding_modal_title()}
+      onclose={() => {}}
+      wide
+      blur
+      overflowVisible>
+      <OnboardingWizard />
+    </Modal>
+  {/if}
 {/if}

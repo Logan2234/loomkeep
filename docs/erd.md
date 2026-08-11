@@ -333,6 +333,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     String calendarToken "❓"
     DateTime createdAt
     DateTime updatedAt
+    DateTime onboardedAt "❓"
     }
 
 
