@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { ApiError, login } from "$lib/api/client";
+  import Banner from "$lib/components/Banner.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -61,7 +62,7 @@
           href="/forgot-password"
           class="text-dim hover:text-accent -mt-2 text-right text-sm hover:underline"
           >{m.auth_forgot_password()}</a>
-        {#if error}<p class="text-danger text-sm">{error}</p>{/if}
+        {#if error}<Banner variant="error">{error}</Banner>{/if}
         <button type="submit" class="btn btn-primary" disabled={loading}>
           {loading ? m.auth_login_action_loading() : m.auth_login_action()}
         </button>

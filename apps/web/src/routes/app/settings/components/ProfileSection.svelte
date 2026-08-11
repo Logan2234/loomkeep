@@ -85,29 +85,25 @@
       <p class="text-danger mt-2 text-sm">{birthDateError}</p>
     {/if}
 
-    <div class="border-border mt-5 border-t pt-5">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="font-semibold">Contenu pour adultes</p>
-          <p class="text-dim text-sm">
-            {#if isAdultEligible}
+    {#if isAdultEligible}
+      <div class="border-border mt-5 border-t pt-5">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="font-semibold">Contenu pour adultes</p>
+            <p class="text-dim text-sm">
               Inclut les titres 18+ (hentai, films pornographiques) dans les
               recherches.
-            {:else}
-              Réservé aux comptes de 18 ans ou plus, date de naissance
-              renseignée.
-            {/if}
-          </p>
+            </p>
+          </div>
+          <Switch
+            label="Contenu pour adultes"
+            checked={auth.user.allowAdultContent}
+            onChange={toggleAdultContent} />
         </div>
-        <Switch
-          label="Contenu pour adultes"
-          checked={auth.user.allowAdultContent}
-          disabled={!isAdultEligible}
-          onChange={toggleAdultContent} />
+        {#if adultContentError}
+          <p class="text-danger mt-2 text-sm">{adultContentError}</p>
+        {/if}
       </div>
-      {#if adultContentError}
-        <p class="text-danger mt-2 text-sm">{adultContentError}</p>
-      {/if}
-    </div>
+    {/if}
   </section>
 {/if}

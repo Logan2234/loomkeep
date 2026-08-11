@@ -63,7 +63,7 @@ export class ReviewService {
 
   private toDto(
     row: ReviewRow,
-    author: UserSummaryDto,
+    author: UserSummaryDto | null,
     votes: { score: number; myVote: ReviewVoteValue | null },
   ): ReviewDto {
     return {
@@ -507,12 +507,15 @@ export class ReviewService {
       include: { user: { select: AUTHOR_SELECT } },
     });
 
+    const authorIds = rows
+      .map((r) => r.user?.id)
+      .filter((id): id is string => !!id);
     const [voteMap, streakMap] = await Promise.all([
       this.voteInfoBatch(
         rows.map((r) => r.id),
         viewerId,
       ),
-      fetchStreaksByUser(this.prisma, [...new Set(rows.map((r) => r.user.id))]),
+      fetchStreaksByUser(this.prisma, [...new Set(authorIds)]),
     ]);
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };
@@ -522,6 +525,13 @@ export class ReviewService {
     const visible: ReviewDto[] = [];
 
     for (const row of rows) {
+      if (!row.user) {
+        // Deleted author: the review stays as anonymous content — no
+        // privacy relationship left to gate visibility on.
+        visible.push(this.toDto(row, null, votesFor(row.id)));
+        continue;
+      }
+
       const author = toUserSummaryDto(row.user);
 
       if (author.id === viewerId) {

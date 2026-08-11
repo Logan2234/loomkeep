@@ -194,7 +194,6 @@
       });
       await loadDevices();
       await refreshCounts();
-      toast.success("Notification de test envoyée.");
     } catch (err) {
       pushSendError =
         err instanceof ApiError ? err.message : "Échec de l'envoi";
@@ -279,7 +278,6 @@
         body: broadcastBody.trim() || undefined,
       });
       showBroadcastConfirm = false;
-      toast.success("Diffusion envoyée.");
     } catch (err) {
       broadcastError =
         err instanceof ApiError ? err.message : "Échec de la diffusion";

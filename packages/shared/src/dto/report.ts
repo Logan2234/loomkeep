@@ -28,7 +28,8 @@ export interface ReportDto {
   status: ReportStatus;
   createdAt: string;
   resolvedAt: string | null;
-  reporter: UserSummaryDto;
+  /** Null once the reporter's account has been deleted — the moderation record stays. */
+  reporter: UserSummaryDto | null;
   /** Null if the underlying target was since deleted. */
   target: ReportTargetSummaryDto | null;
 }

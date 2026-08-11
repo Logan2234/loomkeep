@@ -20,6 +20,7 @@ import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
 import {
   Domain,
+  type AccountDeletionSummaryDto,
   type CalendarTokenDto,
   type CsvExportDto,
   type UserDataExportDto,
@@ -315,7 +316,14 @@ export class UsersController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: ChangeEmailDto,
   ): Promise<void> {
-    await this.requireVerifiedUser(payload.sub, dto.currentPassword);
+    const current = await this.requireVerifiedUser(
+      payload.sub,
+      dto.currentPassword,
+    );
+
+    if (dto.newEmail === current.email) {
+      throw new ConflictException("This is already your current email address");
+    }
 
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.newEmail },
@@ -442,10 +450,78 @@ export class UsersController {
   }
 
   /**
+   * Live preview of what deleting the account would do, for the confirmation
+   * modal — every category is always present, even at 0 rows, so the summary
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma:
+   * most owned rows cascade away, Review/Comment/Report are detached
+   * (SetNull) instead since their content is visible to other users.
+   */
+  @Get("me/deletion-summary")
+  async deletionSummary(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<AccountDeletionSummaryDto> {
+    const userId = payload.sub;
+    const [
+      library,
+      watchHistory,
+      games,
+      books,
+      music,
+      lists,
+      notifications,
+      followers,
+      following,
+      blocks,
+      activity,
+      reviews,
+      comments,
+      reports,
+    ] = await Promise.all([
+      this.prisma.libraryEntry.count({ where: { userId } }),
+      this.prisma.episodeWatch.count({ where: { userId } }),
+      this.prisma.gameEntry.count({ where: { userId } }),
+      this.prisma.bookEntry.count({ where: { userId } }),
+      this.prisma.musicEntry.count({ where: { userId } }),
+      this.prisma.list.count({ where: { userId } }),
+      this.prisma.notification.count({ where: { userId } }),
+      this.prisma.follow.count({ where: { followeeId: userId } }),
+      this.prisma.follow.count({ where: { followerId: userId } }),
+      this.prisma.block.count({
+        where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+      }),
+      this.prisma.activityEvent.count({ where: { userId } }),
+      this.prisma.review.count({ where: { userId } }),
+      this.prisma.comment.count({ where: { authorId: userId } }),
+      this.prisma.report.count({ where: { reporterId: userId } }),
+    ]);
+
+    return {
+      deleted: [
+        { category: "LIBRARY", count: library },
+        { category: "WATCH_HISTORY", count: watchHistory },
+        { category: "GAMES", count: games },
+        { category: "BOOKS", count: books },
+        { category: "MUSIC", count: music },
+        { category: "LISTS", count: lists },
+        { category: "NOTIFICATIONS", count: notifications },
+        { category: "FOLLOWS", count: followers + following },
+        { category: "BLOCKS", count: blocks },
+        { category: "ACTIVITY", count: activity },
+      ],
+      anonymized: [
+        { category: "REVIEWS", count: reviews },
+        { category: "COMMENTS", count: comments },
+        { category: "REPORTS", count: reports },
+      ],
+    };
+  }
+
+  /**
    * Permanently deletes the account. The current password is re-confirmed since
    * this is irreversible. All owned rows (library entries, watches, refresh
-   * tokens, notifications) go with it via `onDelete: Cascade`; the shared
-   * MediaItem cache is untouched.
+   * tokens, notifications) go with it via `onDelete: Cascade`; Review/Comment/
+   * Report are detached (SetNull) instead of deleted — see deletionSummary()
+   * above — and the shared MediaItem cache is untouched.
    */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("me")

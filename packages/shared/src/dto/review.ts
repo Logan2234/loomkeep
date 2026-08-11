@@ -15,7 +15,8 @@ export interface ReviewDto {
   visibility: ReviewVisibility;
   createdAt: string;
   updatedAt: string;
-  author: UserSummaryDto;
+  /** Null once the author's account has been deleted — rating/text stay, identity doesn't. */
+  author: UserSummaryDto | null;
   /** Upvotes minus downvotes — never negative-only display, just the net. */
   voteScore: number;
   /** The viewer's own vote on this review, or null if they haven't voted. */

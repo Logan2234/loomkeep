@@ -1,4 +1,8 @@
-import { BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
@@ -70,6 +74,23 @@ describe("UsersController — email change", () => {
           currentPassword: "wrong",
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+
+      expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects submitting the current email unchanged", async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: userId,
+        email: "current@example.com",
+        passwordHash,
+      });
+
+      await expect(
+        controller.changeEmail(jwtPayload(userId), {
+          newEmail: "current@example.com",
+          currentPassword: "correct-password",
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
 
       expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
     });
@@ -462,5 +483,76 @@ describe("UsersController — changePassword", () => {
       await bcrypt.compare("Brand-new-pass1", updateArgs.data.passwordHash),
     ).toBe(true);
     expect(mail.sendPasswordChanged).toHaveBeenCalledWith("alice@example.com");
+  });
+});
+
+describe("UsersController — deletionSummary", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let controller: UsersController;
+
+  beforeEach(() => {
+    prisma = {
+      libraryEntry: { count: jest.fn().mockResolvedValue(0) },
+      episodeWatch: { count: jest.fn().mockResolvedValue(0) },
+      gameEntry: { count: jest.fn().mockResolvedValue(0) },
+      bookEntry: { count: jest.fn().mockResolvedValue(0) },
+      musicEntry: { count: jest.fn().mockResolvedValue(0) },
+      list: { count: jest.fn().mockResolvedValue(0) },
+      notification: { count: jest.fn().mockResolvedValue(0) },
+      follow: { count: jest.fn().mockResolvedValue(0) },
+      block: { count: jest.fn().mockResolvedValue(0) },
+      activityEvent: { count: jest.fn().mockResolvedValue(0) },
+      review: { count: jest.fn().mockResolvedValue(0) },
+      comment: { count: jest.fn().mockResolvedValue(0) },
+      report: { count: jest.fn().mockResolvedValue(0) },
+    } as unknown as PrismaService;
+    controller = new UsersController(
+      prisma,
+      {} as unknown as MailService,
+      { record: jest.fn() } as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      {
+        isPasswordPwned: jest.fn().mockResolvedValue(false),
+      } as unknown as HibpService,
+    );
+  });
+
+  it("returns every category, even at zero, split between deleted and anonymized", async () => {
+    const summary = await controller.deletionSummary(jwtPayload(userId));
+
+    expect(summary.deleted.map((r) => r.category)).toEqual([
+      "LIBRARY",
+      "WATCH_HISTORY",
+      "GAMES",
+      "BOOKS",
+      "MUSIC",
+      "LISTS",
+      "NOTIFICATIONS",
+      "FOLLOWS",
+      "BLOCKS",
+      "ACTIVITY",
+    ]);
+    expect(summary.anonymized.map((r) => r.category)).toEqual([
+      "REVIEWS",
+      "COMMENTS",
+      "REPORTS",
+    ]);
+    expect(summary.deleted.every((r) => r.count === 0)).toBe(true);
+    expect(summary.anonymized.every((r) => r.count === 0)).toBe(true);
+  });
+
+  it("sums both follow directions into a single FOLLOWS count", async () => {
+    (prisma.follow.count as jest.Mock)
+      .mockResolvedValueOnce(3) // followers
+      .mockResolvedValueOnce(5); // following
+
+    const summary = await controller.deletionSummary(jwtPayload(userId));
+
+    expect(summary.deleted.find((r) => r.category === "FOLLOWS")?.count).toBe(
+      8,
+    );
   });
 });

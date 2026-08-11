@@ -6,7 +6,7 @@ import { HibpService } from "./hibp.service";
 const originalFetch = global.fetch;
 
 function sha1(password: string): { prefix: string; suffix: string } {
-  const hash = createHash("sha1").update(password).digest("hex").toUpperCase();
+  const hash = createHash("sha1").update(password).digest("hex").toUpperCase(); // codeql[js/insufficient-password-hash]: SHA-1 is the HIBP range API's own lookup key format (k-anonymity), not used for credential storage.
   return { prefix: hash.slice(0, 5), suffix: hash.slice(5) };
 }
 

@@ -77,9 +77,9 @@ describe("ReviewService.listForTarget", () => {
     );
     const out = await svc.listForTarget(VIEWER, "MEDIA" as never, "m1");
     expect(out).toHaveLength(1);
-    expect(out[0].author.anonymized).toBe(true);
-    expect(out[0].author.username).toBe("");
-    expect(out[0].author.displayName).toMatch(/^Figurant n°\d{6}$/u);
+    expect(out[0].author!.anonymized).toBe(true);
+    expect(out[0].author!.username).toBe("");
+    expect(out[0].author!.displayName).toMatch(/^Figurant n°\d{6}$/u);
   });
 
   it("still hides a GHOST author's review from someone they blocked", async () => {

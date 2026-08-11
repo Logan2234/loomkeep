@@ -102,6 +102,10 @@
 
   async function saveEmail() {
     emailError = "";
+    if (emailInput.trim() === auth.user?.email) {
+      emailError = "C'est déjà ton adresse email actuelle.";
+      return;
+    }
     emailSaving = true;
     try {
       await changeEmail({
@@ -228,21 +232,30 @@
       <div class="flex items-center justify-between gap-4 py-3">
         <div class="min-w-0">
           <p class="text-dim text-sm">Email</p>
-          <p class="truncate font-semibold">{auth.user.email}</p>
+          <p class="flex items-center gap-1.5 font-semibold">
+            <span class="truncate">{auth.user.email}</span>
+            {#if auth.user.emailVerified}
+              <span
+                class="text-success shrink-0"
+                aria-hidden="true"
+                title="Adresse email vérifiée">
+                ✓
+              </span>
+              <span class="sr-only">Adresse email vérifiée</span>
+            {:else}
+              <span
+                class="text-warning shrink-0"
+                aria-hidden="true"
+                title="Adresse email non vérifiée">
+                ⚠
+              </span>
+              <span class="sr-only">Adresse email non vérifiée</span>
+            {/if}
+          </p>
 
-          {#if auth.user.emailVerified}
-            <p class="text-success mt-1 flex items-center gap-1 text-xs">
-              <span aria-hidden="true">✓</span>
-              Adresse email vérifiée
-            </p>
-          {:else}
+          {#if !auth.user.emailVerified}
             <div
               class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-              <span class="text-warning flex items-center gap-1">
-                <span aria-hidden="true">⚠</span>
-                Adresse email non vérifiée
-              </span>
-
               <button
                 type="button"
                 class="link-accent"
@@ -253,7 +266,7 @@
                 {:else if verificationCooldown > 0}
                   Renvoyer dans {verificationCooldown}s
                 {:else}
-                  Renvoyer l'email
+                  Renvoyer l'email de vérification
                 {/if}
               </button>
             </div>
@@ -309,11 +322,20 @@
         {#if usernameCheck === "checking"}
           <p class="text-dim text-sm">Vérification…</p>
         {:else if usernameCheck === "available"}
-          <p class="text-success text-sm">Disponible.</p>
+          <p class="text-success flex items-center gap-1.5 text-sm">
+            <span aria-hidden="true">✓</span>
+            Ce nom d'utilisateur est disponible.
+          </p>
         {:else if usernameCheck === "taken"}
-          <p class="text-danger text-sm">Déjà pris.</p>
+          <p class="text-danger flex items-center gap-1.5 text-sm">
+            <span aria-hidden="true">✗</span>
+            Ce nom d'utilisateur est déjà utilisé par quelqu'un d'autre.
+          </p>
         {:else if usernameCheck === "error"}
-          <p class="text-danger text-sm">Vérification impossible.</p>
+          <p class="text-danger flex items-center gap-1.5 text-sm">
+            <span aria-hidden="true">✗</span>
+            Impossible de vérifier la disponibilité, réessaie.
+          </p>
         {/if}
         {#if usernameError}
           <p class="text-danger text-sm">{usernameError}</p>
@@ -349,6 +371,9 @@
               class="input"
               placeholder={auth.user?.email}
               bind:value={emailInput} />
+            <p class="text-dim mt-1.5 text-xs">
+              Un email de vérification te sera envoyé à l'adresse renseignée.
+            </p>
           </label>
           <label class="block">
             <span class="mb-1.5 block text-sm font-semibold">
@@ -370,6 +395,7 @@
               class="btn btn-primary"
               disabled={emailSaving ||
                 !emailInput.trim() ||
+                emailInput.trim() === auth.user?.email ||
                 !emailPasswordInput}>
               {emailSaving ? m.common_save_loading() : m.common_save()}
             </button>

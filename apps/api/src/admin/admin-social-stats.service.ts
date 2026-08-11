@@ -210,9 +210,20 @@ export class AdminSocialStatsService {
       }),
     ]);
 
+    // Reviews/comments from a deleted account (userId/authorId SetNull)
+    // aren't attributable to anyone, so they're excluded from contribution
+    // rankings.
     const counts: ContributionCounts = {
-      reviews: new Map(reviewRows.map((r) => [r.userId, r._count._all])),
-      comments: new Map(commentRows.map((c) => [c.authorId, c._count._all])),
+      reviews: new Map(
+        reviewRows
+          .filter((r) => r.userId !== null)
+          .map((r) => [r.userId as string, r._count._all]),
+      ),
+      comments: new Map(
+        commentRows
+          .filter((c) => c.authorId !== null)
+          .map((c) => [c.authorId as string, c._count._all]),
+      ),
     };
 
     const contributors = contributorIds(counts);
