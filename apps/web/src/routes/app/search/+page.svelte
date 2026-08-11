@@ -6,35 +6,9 @@
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
+  import { DOMAINS } from "$lib/constants/domains";
   import { isDomainEnabled } from "$lib/domains";
   import { Domain } from "@loomkeep/shared";
-
-  type DomainIcon =
-    "tv" | "gamepad" | "book" | "music" | "podcast" | "boardgame";
-
-  const DOMAIN_TABS: {
-    label: string;
-    value: Domain;
-    icon: DomainIcon;
-    comingSoon?: boolean;
-  }[] = [
-    { label: "Vidéo", value: Domain.MEDIA, icon: "tv" },
-    { label: "Jeux", value: Domain.GAMES, icon: "gamepad" },
-    { label: "Livres", value: Domain.BOOKS, icon: "book" },
-    { label: "Musique", value: Domain.MUSIC, icon: "music" },
-    {
-      label: "Podcasts",
-      value: Domain.PODCASTS,
-      icon: "podcast",
-      comingSoon: true,
-    },
-    {
-      label: "Jeux de société",
-      value: Domain.BOARDGAMES,
-      icon: "boardgame",
-      comingSoon: true,
-    },
-  ];
 
   // Search-box placeholder fragment, named after the active domain tab.
   const DOMAIN_HINT: Record<Domain, string> = {
@@ -49,7 +23,7 @@
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
   // the API enforces the same gate on the search endpoints).
   const enabledTabs = $derived(
-    DOMAIN_TABS.filter((t) => isDomainEnabled(t.value)),
+    Object.entries(DOMAINS).filter(([d, _]) => isDomainEnabled(d as Domain)),
   );
 
   // `type` preselects the domain tab (e.g. linked from a library page's
@@ -57,7 +31,7 @@
   // `query` prefilling the search box.
   const typeParam = page.url.searchParams.get("type");
   const initialDomain =
-    typeParam && DOMAIN_TABS.some((t) => t.value === typeParam)
+    typeParam && Object.keys(DOMAINS).some((t) => t === typeParam)
       ? (typeParam as Domain)
       : Domain.MEDIA;
 
@@ -67,15 +41,13 @@
   const placeholder = $derived(`Chercher ${DOMAIN_HINT[domain]}…`);
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
-  const comingSoon = $derived(
-    DOMAIN_TABS.find((t) => t.value === domain)?.comingSoon ?? false,
-  );
+  const comingSoon = $derived(DOMAINS[domain]?.comingSoon ?? false);
 
   // If the active domain gets disabled (or was never enabled), fall back to the
   // first enabled one so the panel below always matches a visible tab.
   $effect(() => {
     if (!isDomainEnabled(domain) && enabledTabs.length > 0) {
-      domain = enabledTabs[0].value;
+      domain = enabledTabs[0][0] as Domain;
     }
   });
 </script>
@@ -97,14 +69,14 @@
 
   {#if enabledTabs.length > 1}
     <div class="mb-5 flex flex-wrap gap-2">
-      {#each enabledTabs as tab (tab.value)}
+      {#each enabledTabs as tab (tab[0])}
         <button
           class="chip"
-          class:chip-on={domain === tab.value}
-          onclick={() => (domain = tab.value)}>
-          <Icon name={tab.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-          {tab.label}
-          {#if tab.comingSoon}
+          class:chip-on={domain === tab[0]}
+          onclick={() => (domain = tab[0] as Domain)}>
+          <Icon name={tab[1].icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
+          {tab[1].label}
+          {#if tab[1].comingSoon}
             <span
               class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
               Bientôt

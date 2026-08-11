@@ -1,10 +1,9 @@
 <script lang="ts">
   import {
+    ApiError,
     getAdminImportRuns,
     getAdminImportSummary,
-    ApiError,
   } from "$lib/api/client";
-  import { IMPORT_SOURCES } from "$lib/import/sources";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -13,6 +12,7 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
+  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,
@@ -20,15 +20,17 @@
     JobStatus,
   } from "@loomkeep/shared";
 
-  const sourceLabel = (id: string) => IMPORT_SOURCES[id]?.label ?? id;
+  const sourceLabel = (id: string) =>
+    Object.entries(IMPORTS_DEFINITION).find(([source, _]) => source === id)?.[1]
+      .label ?? id;
 
   // Combobox options carry an empty-value "all" entry so a single-select clears
   // back to unfiltered.
   const SOURCE_OPTIONS = [
     { label: "Toutes les sources", value: "" },
-    ...Object.keys(IMPORT_SOURCES).map((id) => ({
-      label: sourceLabel(id),
-      value: id,
+    ...Object.entries(IMPORTS_DEFINITION).map(([source, description]) => ({
+      label: description.label,
+      value: source,
     })),
   ];
   const STATUS_OPTIONS = [

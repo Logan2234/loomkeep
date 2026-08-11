@@ -1,14 +1,12 @@
-import type { ComponentProps } from "svelte";
 import type Icon from "$lib/components/Icon.svelte";
-
-type IconName = ComponentProps<typeof Icon>["name"];
+import type { ComponentProps } from "svelte";
 
 /** One admin destination, shared by the admin rail and the /admin home cards. */
-export type AdminNavItem = {
+type AdminNavItem = {
   href: string;
   label: string;
   description: string;
-  icon: IconName;
+  icon: ComponentProps<typeof Icon>["name"];
   match: (path: string) => boolean;
 };
 

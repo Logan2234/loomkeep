@@ -1,9 +1,8 @@
 <script lang="ts">
   import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { IMPORT_SOURCES } from "$lib/import/sources";
 </script>
 
-<ImportWizard descriptor={IMPORT_SOURCES.tvtime}>
+<ImportWizard source="tvtime">
   {#snippet intro()}
     Dépose l’archive <code class="bg-bg rounded px-1.5 py-0.5 font-mono text-xs"
       >.zip</code>

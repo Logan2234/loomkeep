@@ -12,10 +12,6 @@ import type {
 } from "@loomkeep/shared";
 import { request } from "./core";
 
-export function getMyLists(): Promise<MyListDto[]> {
-  return request("/lists/me");
-}
-
 /** Lists the user can add items to — owned, or edit access via a collaborator grant. */
 export function getEditableLists(): Promise<MyListDto[]> {
   return request("/lists/editable");

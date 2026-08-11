@@ -28,13 +28,13 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
-  } from "$lib/report-labels";
+  } from "$lib/constants/report-labels";
+  import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type {
     AdminUserCommentDto,

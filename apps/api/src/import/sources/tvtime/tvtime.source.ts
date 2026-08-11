@@ -1,5 +1,3 @@
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import type {
   CatalogSource,
   EntryStatus,
@@ -12,13 +10,15 @@ import type {
   MediaType,
   TvTimeImportFilesDto,
 } from "@loomkeep/shared";
-import { entryStatusFromProgress } from "@loomkeep/shared";
+import { Domain, entryStatusFromProgress } from "@loomkeep/shared";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
 import type {
   CommitDecisions,
-  ImportSource,
+  ImportReq,
   ProgressReporter,
 } from "../../import-source";
 import type {
@@ -67,14 +67,14 @@ interface CommitTally {
 
 /**
  * TV Time GDPR export (`.zip` of CSVs), reconciled through TVDB ids. The
- * reference {@link ImportSource}: shows/movies parsed into the media model,
+ * reference {@link ImportReq}: shows/movies parsed into the media model,
  * resolved against TMDB, then written as library entries + episode watches.
  */
 @Injectable()
-export class TvTimeImportSource implements ImportSource<ParsedImport> {
+export class TvTimeImportSource implements ImportReq<ParsedImport> {
   private readonly logger = new Logger(TvTimeImportSource.name);
   readonly id = "tvtime";
-  readonly searchDomain = "media" as const;
+  readonly searchDomain = Domain.MEDIA;
   readonly supportsOverwrite = true;
 
   constructor(
@@ -166,7 +166,7 @@ export class TvTimeImportSource implements ImportSource<ParsedImport> {
     return {
       groups,
       counts: { total, matched: total - unresolved, unresolved, apiErrors: 0 },
-      searchDomain: "media",
+      searchDomain: Domain.MEDIA,
     };
   }
 

@@ -1,9 +1,8 @@
 <script lang="ts">
   import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { IMPORT_SOURCES } from "$lib/import/sources";
 </script>
 
-<ImportWizard descriptor={IMPORT_SOURCES.goodreads}>
+<ImportWizard source="goodreads">
   {#snippet intro()}
     <a
       href="https://help.goodreads.com/s/article/How-do-I-import-or-export-my-books-1553870934590"

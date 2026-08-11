@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { adminReports } from "$lib/admin-reports.svelte";
   import {
     ApiError,
     getAdminReports,
@@ -6,7 +7,6 @@
     resolveAdminReport,
     takeDownAdminReport,
   } from "$lib/api/client";
-  import { adminReports } from "$lib/admin-reports.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -16,13 +16,13 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
-  } from "$lib/report-labels";
+  } from "$lib/constants/report-labels";
+  import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminReportsSummaryDto,
     ReportDto,

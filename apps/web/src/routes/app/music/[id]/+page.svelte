@@ -8,6 +8,7 @@
     upsertMusicEntry,
   } from "$lib/api/client";
   import { toCarouselItems } from "$lib/carousel";
+  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -18,24 +19,23 @@
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "$lib/components/TrackingPanel.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { formatDate } from "$lib/format";
-  import { createLibraryEntryActions } from "$lib/library-entry";
-  import { m } from "$lib/paraglide/messages.js";
   import {
     MUSIC_OWNERSHIP_SOURCES,
     MUSIC_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/ownership-sources";
+  } from "$lib/constants/ownership-sources";
   import {
     MUSIC_STATUS_SEG_ACTIVE as SEG_ACTIVE,
     MUSIC_STATUS_DESC as STATUS_DESC,
     MUSIC_STATUS_META as STATUS_META,
     MUSIC_STATUS_ORDER as STATUS_ORDER,
-  } from "$lib/status-labels";
+  } from "$lib/constants/status-labels";
+  import { formatDate } from "$lib/format";
+  import { createLibraryEntryActions } from "$lib/library-entry";
+  import { m } from "$lib/paraglide/messages.js";
   import type { MusicDetailDto } from "@loomkeep/shared";
 
   // MusicBrainz is the only music source today; the web route carries just the id.

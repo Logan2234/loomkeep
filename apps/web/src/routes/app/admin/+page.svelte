@@ -3,18 +3,20 @@
   // checks at a glance (each a real link to its page), then every ADMIN_NAV
   // destination grouped by concern instead of one flat grid of identical
   // cards — see apps/web/DESIGN.md for the palette/type tokens this reuses.
-  import { ADMIN_NAV } from "$lib/admin-nav";
   import { adminReports } from "$lib/admin-reports.svelte";
   import {
     getAdminBackupFiles,
     getAdminJobs,
-    getAdminServices,
     getAdminOverview,
+    getAdminServices,
     getAdminVersion,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { CHANGELOG_URL } from "$lib/constants/external-links";
+  import { m } from "$lib/paraglide/messages";
   import type {
     AdminBackupFileDto,
     AdminOverviewDto,
@@ -306,11 +308,11 @@
   {#if version}
     <p class="text-dim mt-8 text-center text-xs">
       <a
-        href="https://feedback.loomkeep.app/changelog"
+        href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
-        Loomkeep v{version}
+        class="hover:text-fg transition-colors hover:underline">
+        {m.settings_version({ version })}
       </a>
     </p>
   {/if}

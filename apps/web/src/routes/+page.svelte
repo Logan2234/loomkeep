@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { bootstrap } from "$lib/bootstrap.svelte";
+  import { page } from "$app/state";
   import { auth } from "$lib/auth.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  import { bootstrap } from "$lib/bootstrap.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
-  import { page } from "$app/state";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { theme } from "$lib/theme.svelte";
   import type { IconName } from "$lib/types/icon-name";
-
-  const REPO_URL = "https://github.com/Logan2234/loomkeep";
-  const FEEDBACK_URL = "https://feedback.loomkeep.app";
+  import {
+    CHANGELOG_URL,
+    FEEDBACK_URL,
+    GITHUB_REPO_URL,
+  } from "../lib/constants/external-links";
 
   // Resolved per request (this page is server-rendered, not prerendered) so
   // the same code emits correct absolute URLs on loomkeep.app, on a
@@ -159,7 +161,7 @@
               </a>
             {/if}
             <a
-              href={REPO_URL}
+              href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               class="btn btn-ghost px-5 py-2.5">
@@ -294,7 +296,7 @@
               {m.landing_hosting_selfhost_body()}
             </p>
             <a
-              href={REPO_URL}
+              href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               class="btn btn-ghost self-start">
@@ -310,20 +312,22 @@
     <div
       class="text-dim mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-5 pt-6 text-xs">
       <a
-        href={REPO_URL}
+        href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg hover:underline">GitHub</a>
+        class="hover:text-fg transition-colors hover:underline">GitHub</a>
       <a
         href={FEEDBACK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg hover:underline">{m.landing_footer_feedback()}</a>
+        class="hover:text-fg transition-colors hover:underline"
+        >{m.landing_footer_feedback()}</a>
       <a
-        href="{FEEDBACK_URL}/changelog"
+        href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg hover:underline">{m.landing_footer_changelog()}</a>
+        class="hover:text-fg transition-colors hover:underline"
+        >{m.landing_footer_changelog()}</a>
     </div>
     <LegalLinks />
   </footer>

@@ -193,30 +193,6 @@ export class ListService {
     if (count === 0) throw new NotFoundException();
   }
 
-  /** Every list the current user owns (newest-updated first), with a preview. */
-  async listMine(userId: string): Promise<MyListDto[]> {
-    const rows = await this.prisma.list.findMany({
-      where: { userId },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        items: { orderBy: { position: "asc" }, take: PREVIEW_ITEM_COUNT },
-        _count: { select: { items: true } },
-      },
-    });
-
-    const [author, previews] = await Promise.all([
-      this.author(userId),
-      this.buildPreviews(rows),
-    ]);
-
-    return rows.map((r) => ({
-      ...this.toDto(r, author),
-      itemCount: r._count.items,
-      previewImageUrls: previews.get(r.id) ?? [],
-      role: "OWNER" as const,
-    }));
-  }
-
   /**
    * Every list the user can edit — owned or granted via ListMember — newest-
    * updated first, with a preview. Feeds "Ajouter à une liste": an editor

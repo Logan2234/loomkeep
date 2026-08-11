@@ -2,6 +2,7 @@
   import { getAdminVersion } from "$lib/api/admin";
   import { auth } from "$lib/auth.svelte";
   import { m } from "$lib/paraglide/messages";
+  import { CHANGELOG_URL } from "../constants/external-links";
 
   // AdminOnly on the backend — only fetched (and shown) for the admin account.
   let version = $state<string | null>(null);
@@ -47,7 +48,7 @@
 
   {#if version}
     <a
-      href="https://feedback.loomkeep.app/changelog"
+      href={CHANGELOG_URL}
       target="_blank"
       rel="noopener noreferrer"
       class="hover:text-fg transition-colors hover:underline">

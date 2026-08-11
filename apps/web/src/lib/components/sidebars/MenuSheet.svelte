@@ -7,11 +7,11 @@
   // default. Notifications aren't a destination at all: see the fixed bell
   // (NotificationBell.svelte) in the root layout instead.
   import { page } from "$app/state";
-  import { ADMIN_NAV } from "$lib/admin-nav";
   import { auth } from "$lib/auth.svelte";
   import Drawer from "$lib/components/Drawer.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { resolveMenuGroups } from "$lib/navigation";

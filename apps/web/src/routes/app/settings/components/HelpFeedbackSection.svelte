@@ -1,27 +1,33 @@
 <script lang="ts">
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
+  import {
+    CHANGELOG_URL,
+    FEEDBACK_BUG_REPORTS_URL,
+    FEEDBACK_FEATURE_REQUESTS_URL,
+    ROADMAP_URL,
+  } from "$lib/constants/external-links";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
 
   const LINKS = [
     {
-      href: "https://feedback.loomkeep.app/?board=feature-requests",
+      href: FEEDBACK_FEATURE_REQUESTS_URL,
       icon: "sparkles" as const,
       label: m.settings_help_feature_request(),
     },
     {
-      href: "https://feedback.loomkeep.app/?board=bug-reports",
+      href: FEEDBACK_BUG_REPORTS_URL,
       icon: "flag" as const,
       label: m.settings_help_bug_report(),
     },
     {
-      href: "https://feedback.loomkeep.app/roadmap",
+      href: ROADMAP_URL,
       icon: "gauge" as const,
       label: m.settings_help_roadmap(),
     },
     {
-      href: "https://feedback.loomkeep.app/changelog",
+      href: CHANGELOG_URL,
       icon: "list" as const,
       label: m.settings_help_changelog(),
     },

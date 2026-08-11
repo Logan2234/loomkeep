@@ -12,32 +12,31 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    Domain,
+    type BookSummaryDto,
+    type GameSummaryDto,
+    type ImportJobDto,
+    type ImportMatch,
+    type ImportPlan,
+    type ImportPlanItem,
+    type ImportSource,
+    type MediaSummaryDto,
+  } from "@loomkeep/shared";
+  import type { Snippet } from "svelte";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import {
     BOOK_STATUS_LABELS,
     BOOK_STATUS_ORDER,
     GAME_STATUS_LABELS,
     GAME_STATUS_ORDER,
-  } from "$lib/status-labels";
-  import type {
-    BookSummaryDto,
-    GameSummaryDto,
-    ImportJobDto,
-    ImportMatch,
-    ImportPlan,
-    ImportPlanItem,
-    ImportSourceDescriptor,
-    MediaSummaryDto,
-  } from "@loomkeep/shared";
-  import type { Snippet } from "svelte";
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
+  } from "../constants/status-labels";
 
   // `intro` holds the source-specific export instructions (markup, hence a
-  // snippet rather than a config field); everything else comes from `descriptor`.
-  let {
-    descriptor,
-    intro,
-  }: { descriptor: ImportSourceDescriptor; intro?: Snippet } = $props();
+  // snippet rather than a config field); everything else comes from `source`.
+  let { source, intro }: { source: ImportSource; intro?: Snippet } = $props();
 
   type Phase = "input" | "analyzing" | "review" | "committing" | "done";
   let phase = $state<Phase>("input");
@@ -50,6 +49,8 @@
   let fileName = $state("");
   let fileError = $state<string | null>(null);
   let dragOver = $state(false);
+
+  const descriptor = IMPORTS_DEFINITION[source];
   const optionState = new SvelteMap<string, boolean>(
     (descriptor.options ?? []).map((o) => [o.key, o.default]),
   );
@@ -77,12 +78,12 @@
 
   // Per-item status options (books/games); media derives status server-side.
   const statusOptions = $derived(
-    descriptor.domain === "books"
+    descriptor.domain === Domain.BOOKS
       ? BOOK_STATUS_ORDER.map((s) => ({
           value: s,
           label: BOOK_STATUS_LABELS[s],
         }))
-      : descriptor.domain === "games"
+      : descriptor.domain === Domain.GAMES
         ? GAME_STATUS_ORDER.map((s) => ({
             value: s,
             label: GAME_STATUS_LABELS[s],
@@ -180,7 +181,7 @@
     const options: Record<string, boolean> = {};
     for (const [k, v] of optionState) options[k] = v;
     try {
-      const started = await analyzeImport(descriptor.id, {
+      const started = await analyzeImport(source, {
         input: inputValue,
         options,
       });
@@ -194,7 +195,7 @@
   }
 
   function pollJob(jobId: string, next: "review" | "done") {
-    getImportJob(descriptor.id, jobId)
+    getImportJob(source, jobId)
       .then((j) => {
         job = j;
         if (j.status === "running") {
@@ -287,10 +288,10 @@
     searching = true;
     try {
       const q = searchQuery.trim();
-      const domain = plan?.searchDomain ?? "media";
-      if (domain === "books") {
+      const domain = plan?.searchDomain ?? Domain.MEDIA;
+      if (domain === Domain.BOOKS) {
         searchResults = (await searchBooks(q)).results.map(bookToMatch);
-      } else if (domain === "games") {
+      } else if (domain === Domain.GAMES) {
         searchResults = (await searchGames(q)).results.map(gameToMatch);
       } else {
         searchResults = (await searchCatalog(q)).results.map(mediaToMatch);
@@ -331,7 +332,7 @@
     for (const [k, m] of picked) if (included.has(k)) overrides[k] = m;
 
     try {
-      const started = await commitImport(descriptor.id, analyzeJobId, {
+      const started = await commitImport(source, analyzeJobId, {
         include: [...included],
         statuses: statusesObj,
         overrides: Object.fromEntries(
@@ -438,7 +439,7 @@
               checked={optionState.get(opt.key)}
               onchange={(e) =>
                 optionState.set(opt.key, e.currentTarget.checked)}
-              class="accent-[var(--accent)]" />
+              class="accent-accent" />
             {opt.label}
           </label>
         {/each}
@@ -491,51 +492,29 @@
             ? g.items.filter((it) => !matchOf(it))
             : g.items}
           {#if visibleItems.length > 0}
-            {#if descriptor.collapsibleGroups}
-              <details
-                class="card mb-3 p-4"
-                open={filterUnresolved || gi === 0}>
-                <summary
-                  class="font-display flex cursor-pointer items-center justify-between font-bold">
-                  <span
-                    >{g.label} ({visibleItems.length}{#if filterUnresolved}
-                      / {g.items.length}{/if})</span>
-                  <span class="flex gap-2 text-xs font-normal">
-                    <button
-                      class="chip"
-                      onclick={(e) => {
-                        e.preventDefault();
-                        setAll(visibleItems, true);
-                      }}>Tout</button>
-                    <button
-                      class="chip"
-                      onclick={(e) => {
-                        e.preventDefault();
-                        setAll(visibleItems, false);
-                      }}>Rien</button>
-                  </span>
-                </summary>
-                {@render groupBody(visibleItems)}
-              </details>
-            {:else}
-              <section class="card mb-3 p-4">
-                <div
-                  class="font-display flex items-center justify-between font-bold">
-                  <span
-                    >{g.label} ({visibleItems.length}{#if filterUnresolved}
-                      / {g.items.length}{/if})</span>
-                  <span class="flex gap-2 text-xs font-normal">
-                    <button
-                      class="chip"
-                      onclick={() => setAll(visibleItems, true)}>Tout</button>
-                    <button
-                      class="chip"
-                      onclick={() => setAll(visibleItems, false)}>Rien</button>
-                  </span>
-                </div>
-                {@render groupBody(visibleItems)}
-              </section>
-            {/if}
+            <details class="card mb-3 p-4" open={filterUnresolved || gi === 0}>
+              <summary
+                class="font-display flex cursor-pointer items-center justify-between font-bold">
+                <span
+                  >{g.label} ({visibleItems.length}{#if filterUnresolved}
+                    / {g.items.length}{/if})</span>
+                <span class="flex gap-2 text-xs font-normal">
+                  <button
+                    class="chip"
+                    onclick={(e) => {
+                      e.preventDefault();
+                      setAll(visibleItems, true);
+                    }}>Tout</button>
+                  <button
+                    class="chip"
+                    onclick={(e) => {
+                      e.preventDefault();
+                      setAll(visibleItems, false);
+                    }}>Rien</button>
+                </span>
+              </summary>
+              {@render groupBody(visibleItems)}
+            </details>
           {/if}
         {/each}
       </div>
@@ -561,16 +540,14 @@
         </span>
       </p>
       <div class="flex items-center gap-3">
-        {#if descriptor.canOverrideData}
-          <label
-            class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
-            <input
-              type="checkbox"
-              bind:checked={overwrite}
-              class="accent-[var(--danger)]" />
-            Écraser mes données
-          </label>
-        {/if}
+        <label
+          class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
+          <input
+            type="checkbox"
+            bind:checked={overwrite}
+            class="accent-danger" />
+          Écraser mes données
+        </label>
         <button
           class="btn btn-primary"
           disabled={selectedCount === 0}
@@ -658,18 +635,16 @@
               {/if}
             </p>
           </div>
-          {#if descriptor.hasManualMatch}
-            {#if match}
-              <button class="chip text-xs" onclick={() => openSearch(item)}>
-                Changer
-              </button>
-            {:else}
-              <button
-                class="chip text-danger text-xs"
-                onclick={() => openSearch(item)}>
-                Associer…
-              </button>
-            {/if}
+          {#if match}
+            <button class="chip text-xs" onclick={() => openSearch(item)}>
+              Changer
+            </button>
+          {:else}
+            <button
+              class="chip text-danger text-xs"
+              onclick={() => openSearch(item)}>
+              Associer…
+            </button>
           {/if}
           {#if statusOptions.length > 0}
             <select

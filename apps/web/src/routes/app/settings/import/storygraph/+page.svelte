@@ -1,9 +1,8 @@
 <script lang="ts">
   import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { IMPORT_SOURCES } from "$lib/import/sources";
 </script>
 
-<ImportWizard descriptor={IMPORT_SOURCES.storygraph}>
+<ImportWizard source="storygraph">
   {#snippet intro()}
     <a
       href="https://app.thestorygraph.com/user-export"

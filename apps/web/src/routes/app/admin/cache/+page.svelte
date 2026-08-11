@@ -1,12 +1,12 @@
 <script lang="ts">
   import {
+    ApiError,
+    deleteAdminCacheItem,
+    deleteAdminCacheOrphans,
     getAdminCache,
     getAdminCacheItem,
     resyncAdminCacheItem,
     resyncAdminCacheStale,
-    deleteAdminCacheItem,
-    deleteAdminCacheOrphans,
-    ApiError,
   } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
@@ -14,8 +14,10 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
+  import type { IconName } from "$lib/types/icon-name";
   import type {
     AdminCacheItemDetailDto,
     AdminCacheItemDto,
@@ -23,36 +25,13 @@
     Domain,
   } from "@loomkeep/shared";
 
-  type DomainIcon =
-    "tv" | "gamepad" | "book" | "music" | "podcast" | "boardgame";
-
-  const DOMAINS: {
-    id: Domain;
-    label: string;
-    icon: DomainIcon;
-    comingSoon?: boolean;
-  }[] = [
-    { id: "MEDIA", label: "Vidéo", icon: "tv" },
-    { id: "GAMES", label: "Jeux", icon: "gamepad" },
-    { id: "BOOKS", label: "Livres", icon: "book" },
-    { id: "MUSIC", label: "Musique", icon: "music" },
-    { id: "PODCASTS", label: "Podcasts", icon: "podcast", comingSoon: true },
-    {
-      id: "BOARDGAMES",
-      label: "Jeux de société",
-      icon: "boardgame",
-      comingSoon: true,
-    },
-  ];
-
   const SORT_OPTIONS: { label: string; value: AdminCacheSort }[] = [
     { label: "Obsolètes d'abord", value: "stale" },
     { label: "Récents", value: "recent" },
     { label: "Titre", value: "title" },
   ];
 
-  const domainIcon = (d: Domain): DomainIcon =>
-    DOMAINS.find((x) => x.id === d)?.icon ?? "tv";
+  const domainIcon = (d: Domain): IconName => DOMAINS[d]?.icon ?? "tv";
 
   let activeDomain = $state<Domain>("MEDIA");
   let sort = $state<AdminCacheSort>("stale");
@@ -298,7 +277,7 @@
     subtitle="Le cache à la demande : chaque titre n'existe ici qu'une fois référencé par un compte. Inspecte, re-synchronise ou purge les entrées orphelines." />
 
   <div class="mb-3 flex flex-wrap items-center gap-2">
-    {#each DOMAINS as d (d.id)}
+    {#each Object.entries(DOMAINS) as [id, d] (id)}
       {#if d.comingSoon}
         <!-- Planned domain: nothing in cache yet, tab is non-clickable. -->
         <button
@@ -315,8 +294,8 @@
       {:else}
         <button
           class="chip"
-          class:chip-on={activeDomain === d.id}
-          onclick={() => selectDomain(d.id)}>
+          class:chip-on={activeDomain === id}
+          onclick={() => selectDomain(id as Domain)}>
           <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
           {d.label}
         </button>

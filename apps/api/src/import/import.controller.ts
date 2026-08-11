@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-import type { ImportJobDto } from "@loomkeep/shared";
+import type { ImportJobDto, ImportSource } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { AnalyzeImportDto } from "./dto/analyze-import.dto";
@@ -19,7 +19,7 @@ export class ImportController {
   @Post(":source/analyze")
   analyze(
     @CurrentUser() user: JwtPayload,
-    @Param("source") source: string,
+    @Param("source") source: ImportSource,
     @Body() dto: AnalyzeImportDto,
   ): ImportJobDto {
     return this.jobs.startAnalyze(user.sub, source, dto);
@@ -29,7 +29,7 @@ export class ImportController {
   @Post(":source/:jobId/commit")
   commit(
     @CurrentUser() user: JwtPayload,
-    @Param("source") source: string,
+    @Param("source") source: ImportSource,
     @Param("jobId") jobId: string,
     @Body() dto: CommitImportDto,
   ): ImportJobDto {

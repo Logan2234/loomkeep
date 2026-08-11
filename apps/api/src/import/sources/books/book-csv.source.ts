@@ -9,16 +9,17 @@ import type {
   ImportPlanItem,
   ImportReport,
   ImportReportTile,
+  ImportSource,
 } from "@loomkeep/shared";
-import { ReviewTargetType } from "@loomkeep/shared";
+import { Domain, ReviewTargetType } from "@loomkeep/shared";
+import { BookItemService } from "../../../books/book-item.service";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
-import { BookItemService } from "../../../books/book-item.service";
 import type {
   CommitDecisions,
-  ImportSource,
+  ImportReq,
   ProgressReporter,
 } from "../../import-source";
 
@@ -63,9 +64,9 @@ interface ResolvedRow<TRow> {
 
 /**
  * Shared mechanics of a CSV book import (Goodreads, StoryGraph, and future
- * sources) as an {@link ImportSource}: parse → resolve every row against Google
+ * sources) as an {@link ImportReq}: parse → resolve every row against Google
  * Books (writing nothing) → persist the chosen books on commit. A concrete
- * source only supplies its {@link ImportSource.id} and {@link parseCsv}; the
+ * source only supplies its {@link ImportReq.id} and {@link parseCsv}; the
  * resolve/plan/commit flow lives here so a new source never re-implements it.
  *
  * Generic over `TRow` (the source's parsed row); the parse model carried on the
@@ -73,9 +74,9 @@ interface ResolvedRow<TRow> {
  */
 export abstract class BookCsvSource<
   TRow extends ParsedCsvBookRow,
-> implements ImportSource<TRow[]> {
-  abstract readonly id: string;
-  readonly searchDomain = "books" as const;
+> implements ImportReq<TRow[]> {
+  abstract readonly id: ImportSource;
+  readonly searchDomain = Domain.BOOKS;
   readonly supportsOverwrite = true;
 
   constructor(
@@ -154,7 +155,7 @@ export abstract class BookCsvSource<
     return {
       groups,
       counts: { total: matched + unresolved, matched, unresolved, apiErrors },
-      searchDomain: "books",
+      searchDomain: Domain.BOOKS,
     };
   }
 

@@ -1,3 +1,11 @@
+import type {
+  ImportAnalyzeRequest,
+  ImportCommitRequest,
+  ImportJobDto,
+  ImportPlan,
+  ImportReport,
+  ImportSource,
+} from "@loomkeep/shared";
 import {
   BadRequestException,
   ForbiddenException,
@@ -6,19 +14,12 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import type {
-  ImportAnalyzeRequest,
-  ImportCommitRequest,
-  ImportJobDto,
-  ImportPlan,
-  ImportReport,
-} from "@loomkeep/shared";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   IMPORT_SOURCES,
   type CommitDecisions,
-  type ImportSource,
+  type ImportReq,
   type ProgressReporter,
 } from "./import-source";
 
@@ -28,7 +29,7 @@ const JOB_RETENTION_MS = 60 * 60 * 1000;
 interface JobRecord {
   id: string;
   userId: string;
-  sourceId: string;
+  sourceId: ImportSource;
   kind: "analyze" | "commit";
   status: "running" | "completed" | "failed";
   progress: { done: number; total: number };
@@ -44,7 +45,7 @@ interface JobRecord {
 /**
  * The one async job engine behind every import. It owns the in-memory job
  * store, the analyze → poll → commit → poll lifecycle, progress and ownership
- * guards; each {@link ImportSource} plugs in its own parse/resolve/write. Jobs
+ * guards; each {@link ImportReq} plugs in its own parse/resolve/write. Jobs
  * live in memory (single-instance self-host) and are pruned an hour after they
  * finish.
  */
@@ -52,10 +53,10 @@ interface JobRecord {
 export class ImportJobService {
   private readonly logger = new Logger(ImportJobService.name);
   private readonly jobs = new Map<string, JobRecord>();
-  private readonly sources: Map<string, ImportSource>;
+  private readonly sources: Map<ImportSource, ImportReq>;
 
   constructor(
-    @Inject(IMPORT_SOURCES) sources: ImportSource[],
+    @Inject(IMPORT_SOURCES) sources: ImportReq[],
     private readonly prisma: PrismaService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
@@ -67,7 +68,7 @@ export class ImportJobService {
    */
   startAnalyze(
     userId: string,
-    sourceId: string,
+    sourceId: ImportSource,
     dto: ImportAnalyzeRequest,
   ): ImportJobDto {
     this.pruneOldJobs();
@@ -98,7 +99,7 @@ export class ImportJobService {
   /** Commit a previously analysed import with the user's decisions. */
   commit(
     userId: string,
-    sourceId: string,
+    sourceId: ImportSource,
     jobId: string,
     dto: ImportCommitRequest,
   ): ImportJobDto {
@@ -166,7 +167,7 @@ export class ImportJobService {
     return toDto(job);
   }
 
-  private sourceOrThrow(sourceId: string): ImportSource {
+  private sourceOrThrow(sourceId: ImportSource): ImportReq {
     const source = this.sources.get(sourceId);
     if (!source)
       throw new NotFoundException(`Unknown import source: ${sourceId}`);
@@ -175,7 +176,7 @@ export class ImportJobService {
 
   private newJob(
     userId: string,
-    sourceId: string,
+    sourceId: ImportSource,
     kind: "analyze" | "commit",
     parsed: unknown,
   ): JobRecord {

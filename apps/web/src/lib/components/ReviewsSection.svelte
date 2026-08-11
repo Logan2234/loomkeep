@@ -8,15 +8,15 @@
   import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import Avatar from "./Avatar.svelte";
-  import Icon from "./Icon.svelte";
-  import ReviewFormModal from "./ReviewFormModal.svelte";
-  import StreakBadge from "./StreakBadge.svelte";
   import type {
     ReviewDto,
     ReviewTargetType,
     ReviewVoteValue,
   } from "@loomkeep/shared";
+  import Avatar from "./Avatar.svelte";
+  import Icon from "./Icon.svelte";
+  import ReviewFormModal from "./ReviewFormModal.svelte";
+  import StreakBadge from "./StreakBadge.svelte";
 
   // Always-visible review section for a work's detail page: the viewer's own
   // review (add/edit via the shared modal) + everyone else's, visibility-
@@ -159,7 +159,9 @@
         </span>
       </div>
       {#if myReview.text}
-        <p class="mt-2 text-sm leading-relaxed break-words">{myReview.text}</p>
+        <p class="mt-2 text-sm leading-relaxed wrap-break-word">
+          {myReview.text}
+        </p>
       {/if}
     </div>
   {/if}
@@ -182,6 +184,7 @@
                     ? 'text-accent'
                     : 'text-dim'}"
                   aria-label={m.reviews_section_vote_up()}
+                  title={m.reviews_section_vote_up()}
                   aria-pressed={review.myVote === "UP"}
                   disabled={votingId === review.id}
                   onclick={() => castVote(review, "UP")}>
@@ -197,60 +200,59 @@
                     ? 'text-accent'
                     : 'text-dim'}"
                   aria-label={m.reviews_section_vote_down()}
+                  title={m.reviews_section_vote_down()}
                   aria-pressed={review.myVote === "DOWN"}
                   disabled={votingId === review.id}
                   onclick={() => castVote(review, "DOWN")}>
                   <Icon name="chevron-down" class="h-4 w-4" />
                 </button>
               </div>
-              {#if !review.author}
-                <span class="shrink-0">
-                  <Avatar seed="utilisateur-supprime" size={32} />
-                </span>
-                <div class="min-w-0 flex-1">
+              <div class="flex min-w-0 flex-1 gap-2">
+                {#if !review.author}
+                  <span class="shrink-0">
+                    <Avatar seed="utilisateur-supprime" size={32} />
+                  </span>
                   <p class="text-dim truncate text-sm font-semibold italic">
                     Utilisateur supprimé
                   </p>
-                </div>
-              {:else if review.author.anonymized}
-                <!-- Seeded on the derived pseudonym, never the real id — a
+                {:else if review.author.anonymized}
+                  <!-- Seeded on the derived pseudonym, never the real id — a
                      stable seed would let the same identicon resurface across
                      unrelated works and quietly de-anonymize the author. -->
-                <span class="shrink-0">
-                  <Avatar seed={review.author.displayName} size={32} />
-                </span>
-                <div class="min-w-0 flex-1">
+                  <span class="shrink-0">
+                    <Avatar seed={review.author.displayName} size={32} />
+                  </span>
                   <p class="timecode truncate text-sm font-semibold">
                     {review.author.displayName}
                   </p>
-                </div>
-              {:else}
-                <a href="/app/u/{review.author.username}" class="shrink-0">
-                  <Avatar
-                    seed={review.author.username}
-                    url={review.author.avatarUrl}
-                    size={32} />
-                </a>
-                <a
-                  href="/app/u/{review.author.username}"
-                  class="min-w-0 flex-1">
-                  <p
-                    class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
-                    {review.author.displayName}
-                    <StreakBadge days={review.author.streakDays} />
-                  </p>
-                  <p class="timecode truncate text-xs">
-                    @{review.author.username}
-                  </p>
-                </a>
-              {/if}
+                {:else}
+                  <a
+                    href="/app/u/{review.author.username}"
+                    class="flex shrink-0 items-center">
+                    <Avatar
+                      seed={review.author.username}
+                      url={review.author.avatarUrl}
+                      size={32} />
+                  </a>
+                  <a href="/app/u/{review.author.username}">
+                    <p
+                      class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
+                      {review.author.displayName}
+                      <StreakBadge days={review.author.streakDays} />
+                    </p>
+                    <p class="timecode truncate text-xs">
+                      @{review.author.username}
+                    </p>
+                  </a>
+                {/if}
+              </div>
               <span
                 class="bg-accent/15 text-accent shrink-0 rounded-md px-2.5 py-1 font-mono font-bold tabular-nums">
                 {review.rating}<span class="text-accent/60 text-xs">/10</span>
               </span>
             </div>
             {#if review.text}
-              <p class="mt-2 text-sm leading-relaxed break-words">
+              <p class="mt-2 text-sm leading-relaxed wrap-break-word">
                 {review.text}
               </p>
             {/if}

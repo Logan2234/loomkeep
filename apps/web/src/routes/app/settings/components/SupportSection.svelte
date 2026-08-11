@@ -90,6 +90,7 @@
       {@const Tag = tile.key === "kofi" ? "button" : "a"}
       <svelte:element
         this={Tag}
+        role={tile.key === "kofi" ? "button" : undefined}
         type={tile.key === "kofi" ? "button" : undefined}
         href={tile.key === "kofi" ? undefined : tile.href}
         target={tile.key === "kofi" ? undefined : "_blank"}

@@ -4,7 +4,10 @@
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
-  import { GAME_STATUS_LABELS, GAME_STATUS_ORDER } from "$lib/status-labels";
+  import {
+    GAME_STATUS_LABELS,
+    GAME_STATUS_ORDER,
+  } from "$lib/constants/status-labels";
   import { Domain, type GameEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = GAME_STATUS_ORDER.map((value) => ({

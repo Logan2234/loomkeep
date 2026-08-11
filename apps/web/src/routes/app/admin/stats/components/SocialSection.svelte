@@ -4,10 +4,10 @@
   import { getAdminSocialActivityTrend } from "$lib/api/client";
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
-  import { REPORT_CATEGORY_LABELS } from "$lib/report-labels";
+  import StatFigure from "$lib/components/stats/StatFigure.svelte";
+  import { REPORT_CATEGORY_LABELS } from "$lib/constants/report-labels";
   import { m } from "$lib/paraglide/messages.js";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminSocialStatsDto } = $props();

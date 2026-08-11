@@ -1,4 +1,4 @@
-import type { EntryStatus, MediaType } from "../enums";
+import type { Domain, EntryStatus, MediaType } from "../enums";
 
 // ============================================================================
 // Generic, source-agnostic import model.
@@ -13,8 +13,23 @@ import type { EntryStatus, MediaType } from "../enums";
 // new source only supplies its own parse/resolve/write, never its own DTOs.
 // ============================================================================
 
-/** Which catalogue a source resolves against (also drives the manual search). */
-export type ImportSearchDomain = "media" | "books" | "games";
+export type ImportSource =
+  | "tvtime"
+  | "trakt"
+  | "letterboxd"
+  | "myanimelist"
+  | "simkl"
+  | "kitsu"
+  | "steam"
+  | "backloggd"
+  | "storygraph"
+  | "goodreads"
+  | "babelio"
+  | "librarything"
+  | "bookwyrm"
+  | "opml"
+  | "spotify"
+  | "boardgamegeek";
 
 /** How the raw export payload is carried in {@link ImportAnalyzeRequest.input}. */
 export type ImportInputType =
@@ -85,7 +100,7 @@ export interface ImportPlan {
     apiErrors: number;
   };
   /** Which catalogue the manual-match search hits. */
-  searchDomain: ImportSearchDomain;
+  searchDomain: Domain;
 }
 
 /** One headline number in the completion report (rendered as a stat tile). */
@@ -158,18 +173,12 @@ export interface ImportSourceDescriptor {
   id: string;
   /** Display name ("StoryGraph", "TV Time"). */
   label: string;
-  domain: ImportSearchDomain;
+  domain: Domain;
   input: {
     type: ImportInputType;
     /** File `accept` attribute, for csv/zip inputs. */
     accept?: string;
   };
-  /** Offer the destructive "écraser mes données" toggle (default true). */
-  canOverrideData: boolean;
-  /** Offer the per-item manual catalogue search to fix/associate matches. */
-  hasManualMatch: boolean;
-  /** Render groups as collapsible `<details>` (true) or one flat list (false). */
-  collapsibleGroups: boolean;
   /** Singular/plural noun for counts ("livre"/"livres", "jeu"/"jeux"). */
   noun: { one: string; many: string };
   /** Where the "voir ma bibliothèque" CTA links after a successful import. */

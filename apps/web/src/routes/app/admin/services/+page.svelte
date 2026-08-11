@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { getAdminServices, ApiError } from "$lib/api/client";
+  import { ApiError, getAdminServices } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
 
@@ -36,12 +37,7 @@
   // Ordered areas so groups render in a stable, sensible order. Must match the
   // ServiceArea values the API emits (see admin.service.ts).
   const AREAS = [
-    "Vidéo",
-    "Jeux",
-    "Livres",
-    "Musique",
-    "Podcasts",
-    "Jeux de société",
+    ...Object.values(DOMAINS).map((d) => d.label),
     "Système",
   ] as const;
 

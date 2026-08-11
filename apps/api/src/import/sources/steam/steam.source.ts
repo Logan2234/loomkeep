@@ -1,10 +1,3 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  Injectable,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { GameOwnershipStatus, GameSource } from "@loomkeep/shared";
 import type {
   GameStatus,
   ImportMatch,
@@ -14,14 +7,21 @@ import type {
   ImportReport,
   ImportReportTile,
 } from "@loomkeep/shared";
-import { PrismaService } from "../../../prisma/prisma.service";
+import { Domain, GameOwnershipStatus, GameSource } from "@loomkeep/shared";
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
-import { AgeGateService } from "../../../users/age-gate.service";
 import { GameItemService } from "../../../games/game-item.service";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
+import { PrismaService } from "../../../prisma/prisma.service";
+import { AgeGateService } from "../../../users/age-gate.service";
 import type {
   CommitDecisions,
-  ImportSource,
+  ImportReq,
   ProgressReporter,
 } from "../../import-source";
 
@@ -55,9 +55,9 @@ interface SteamParsed {
 
 /** Steam library + playtime, matched against IGDB. */
 @Injectable()
-export class SteamImportSource implements ImportSource<SteamParsed> {
+export class SteamImportSource implements ImportReq<SteamParsed> {
   readonly id = "steam";
-  readonly searchDomain = "games" as const;
+  readonly searchDomain = Domain.GAMES;
   readonly supportsOverwrite = true;
 
   constructor(
@@ -86,7 +86,7 @@ export class SteamImportSource implements ImportSource<SteamParsed> {
       return {
         groups: [],
         counts: { total: 0, matched: 0, unresolved: 0, apiErrors: 0 },
-        searchDomain: "games",
+        searchDomain: Domain.GAMES,
       };
     }
 
@@ -191,7 +191,7 @@ export class SteamImportSource implements ImportSource<SteamParsed> {
         unresolved,
         apiErrors: 0,
       },
-      searchDomain: "games",
+      searchDomain: Domain.GAMES,
     };
   }
 

@@ -47,7 +47,6 @@ function makeController() {
   } as unknown as FollowService;
   const reports = { listAgainstUser: jest.fn() } as unknown as ReportService;
   const lists = {
-    listMine: jest.fn(),
     listEditable: jest.fn(),
   } as unknown as ListService;
 

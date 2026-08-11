@@ -21,11 +21,11 @@
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { createLibraryEntryActions } from "$lib/library-entry";
   import {
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/ownership-sources";
+  } from "$lib/constants/ownership-sources";
+  import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     EntryStatus,

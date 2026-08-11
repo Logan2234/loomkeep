@@ -1,12 +1,13 @@
 import type {
+  Domain,
   ImportCommitOverride,
   ImportPlan,
   ImportReport,
-  ImportSearchDomain,
+  ImportSource,
 } from "@loomkeep/shared";
 
 /**
- * DI token collecting every {@link ImportSource} provider into an array, so the
+ * DI token collecting every {@link ImportReq} provider into an array, so the
  * generic {@link ImportJobService} can dispatch by id without importing each
  * source concretely. Register sources with `{ provide: IMPORT_SOURCES, ... }`.
  */
@@ -40,11 +41,11 @@ export interface CommitDecisions {
  * Generic over `TParsed` — the source's own parse model, kept on the job
  * between `analyze` and a later `commit`.
  */
-export interface ImportSource<TParsed = unknown> {
+export interface ImportReq<TParsed = unknown> {
   /** Stable id, matching the `/import/:id` route segment and the UI descriptor. */
-  readonly id: string;
+  readonly id: ImportSource;
   /** Which catalogue the manual-match search hits (surfaced in the plan). */
-  readonly searchDomain: ImportSearchDomain;
+  readonly searchDomain: Domain;
   /** Whether `commit` honours the destructive overwrite flag. */
   readonly supportsOverwrite: boolean;
 

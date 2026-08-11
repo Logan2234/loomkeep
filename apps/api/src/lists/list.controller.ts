@@ -38,13 +38,6 @@ const LIST_ITEM_TARGET_TYPES: string[] = ["MEDIA", "GAME", "BOOK", "MUSIC"];
 export class ListController {
   constructor(private readonly lists: ListService) {}
 
-  // --- Own lists: NOT social-gated (managing your own lists always works). ---
-
-  @Get("me")
-  listMine(@CurrentUser() user: JwtPayload): Promise<MyListDto[]> {
-    return this.lists.listMine(user.sub);
-  }
-
   // Owned + editor lists — feeds "Ajouter à une liste" on a work's page, so an
   // editor can add to a shared list, not just their own.
   @Get("editable")

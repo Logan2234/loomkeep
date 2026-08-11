@@ -10,8 +10,8 @@
     upsertBookEntry,
   } from "$lib/api/client";
   import { toCarouselItems } from "$lib/carousel";
-  import Banner from "$lib/components/Banner.svelte";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
+  import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
@@ -25,19 +25,19 @@
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "$lib/components/TrackingPanel.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { formatDate } from "$lib/format";
-  import { createLibraryEntryActions } from "$lib/library-entry";
-  import { m } from "$lib/paraglide/messages.js";
   import {
     BOOK_OWNERSHIP_SOURCES,
     BOOK_OWNERSHIP_STATUS_OPTIONS,
-  } from "$lib/ownership-sources";
+  } from "$lib/constants/ownership-sources";
   import {
     BOOK_STATUS_SEG_ACTIVE as SEG_ACTIVE,
     BOOK_STATUS_DESC as STATUS_DESC,
     BOOK_STATUS_META as STATUS_META,
     BOOK_STATUS_ORDER as STATUS_ORDER,
-  } from "$lib/status-labels";
+  } from "$lib/constants/status-labels";
+  import { formatDate } from "$lib/format";
+  import { createLibraryEntryActions } from "$lib/library-entry";
+  import { m } from "$lib/paraglide/messages.js";
   import type { BookDetailDto } from "@loomkeep/shared";
 
   // Google Books is the only book source today; the web route carries just the id.

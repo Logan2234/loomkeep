@@ -1,11 +1,5 @@
 <script lang="ts">
-  import {
-    createInfiniteQuery,
-    createMutation,
-    createQuery,
-    useQueryClient,
-    type InfiniteData,
-  } from "@tanstack/svelte-query";
+  import { longpress } from "$lib/actions/longpress";
   import {
     createComment,
     deleteComment,
@@ -16,12 +10,16 @@
     unreactToComment,
     updateComment,
   } from "$lib/api/client";
-  import { scale } from "svelte/transition";
-  import { longpress } from "$lib/actions/longpress";
   import { auth } from "$lib/auth.svelte";
   import FocusOverlay from "$lib/components/FocusOverlay.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    REPORT_CATEGORY_HINTS,
+    REPORT_CATEGORY_LABELS,
+    REPORT_CATEGORY_ORDER,
+    REPORT_MOTIF_LABELS,
+  } from "../constants/report-labels";
   import { toast } from "$lib/toast.svelte";
   import {
     COMMENT_EMOTE_DISPLAY,
@@ -35,11 +33,13 @@
     type ReportMotif,
   } from "@loomkeep/shared";
   import {
-    REPORT_CATEGORY_HINTS,
-    REPORT_CATEGORY_LABELS,
-    REPORT_CATEGORY_ORDER,
-    REPORT_MOTIF_LABELS,
-  } from "$lib/report-labels";
+    createInfiniteQuery,
+    createMutation,
+    createQuery,
+    useQueryClient,
+    type InfiniteData,
+  } from "@tanstack/svelte-query";
+  import { scale } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
   import Combobox from "./Combobox.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
@@ -326,10 +326,10 @@
          there's no hover, they're reachable via the long-press focus view
          instead (see FocusOverlay below). -->
     <div
-      class="ml-auto flex items-center gap-1 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 {forceShow ||
+      class="ml-auto items-center gap-1 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 {forceShow ||
       reactingId === c.id
-        ? 'opacity-100'
-        : 'opacity-0'}">
+        ? 'flex opacity-100'
+        : 'hidden opacity-0 md:flex'}">
       <div class="relative">
         <button
           class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full"
@@ -507,7 +507,7 @@
             </div>
           {:else}
             <p
-              class="mt-0.5 text-sm leading-relaxed break-words whitespace-pre-wrap">
+              class="mt-0.5 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap">
               {c.text}
             </p>
           {/if}

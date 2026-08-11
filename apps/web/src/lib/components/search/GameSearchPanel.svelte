@@ -11,8 +11,8 @@
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
+  import { GAME_STATUS_LABELS } from "$lib/constants/status-labels";
   import { debounce } from "$lib/debounce";
-  import { GAME_STATUS_LABELS as STATUS_LABELS } from "$lib/status-labels";
   import type { GameEntryDto, GameSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -152,7 +152,7 @@
             <span
               class="text-accent mt-auto inline-flex items-center gap-1 text-xs font-semibold">
               <Icon name="check" class="h-3.5 w-3.5" />
-              {STATUS_LABELS[entry.status]}
+              {GAME_STATUS_LABELS[entry.status]}
             </span>
           {:else}
             <button

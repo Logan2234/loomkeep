@@ -4,7 +4,10 @@
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
-  import { MUSIC_STATUS_LABELS, MUSIC_STATUS_ORDER } from "$lib/status-labels";
+  import {
+    MUSIC_STATUS_LABELS,
+    MUSIC_STATUS_ORDER,
+  } from "$lib/constants/status-labels";
   import { Domain, type MusicEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = MUSIC_STATUS_ORDER.map((value) => ({

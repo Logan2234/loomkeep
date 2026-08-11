@@ -9,6 +9,7 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
   import {
     Domain,
@@ -39,15 +40,6 @@
   ];
 
   const ACCESS_OPTIONS = ACCESS.map((a) => ({ id: a.id, label: a.label }));
-
-  const DOMAINS: { id: Domain; label: string }[] = [
-    { id: Domain.MEDIA, label: "Vidéo" },
-    { id: Domain.GAMES, label: "Jeux" },
-    { id: Domain.BOOKS, label: "Livres" },
-    { id: Domain.MUSIC, label: "Musique" },
-    { id: Domain.PODCASTS, label: "Podcasts" },
-    { id: Domain.BOARDGAMES, label: "Jeux de société" },
-  ];
 
   const FACETS: { id: VisibilityFacet; label: string }[] = [
     { id: VisibilityFacet.LIBRARY, label: "Bibliothèque" },
@@ -249,15 +241,15 @@
            so under md it drops to one stacked block per domain instead,
            same control, same data. -->
       <div class="divide-border divide-y md:hidden">
-        {#each DOMAINS as d (d.id)}
+        {#each Object.entries(DOMAINS) as [domainId, domainInfo] (domainId)}
           <div class="py-3 first:pt-0">
-            <p class="mb-2 font-semibold">{d.label}</p>
+            <p class="mb-2 font-semibold">{domainInfo.label}</p>
             <div class="space-y-2">
               {#each FACETS as f (f.id)}
-                {@const current = audienceOf(d.id, f.id)}
+                {@const current = audienceOf(domainId as Domain, f.id)}
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-dim text-sm">{f.label}</span>
-                  {@render audienceSegmented(d.id, f.id, current)}
+                  {@render audienceSegmented(domainId as Domain, f.id, current)}
                 </div>
               {/each}
             </div>
@@ -276,14 +268,18 @@
             </tr>
           </thead>
           <tbody class="divide-border divide-y">
-            {#each DOMAINS as d (d.id)}
+            {#each Object.entries(DOMAINS) as [domainId, domainInfo] (domainId)}
               <tr>
                 <td class="py-2.5 pr-3 font-semibold whitespace-nowrap"
-                  >{d.label}</td>
+                  >{domainInfo.label}</td>
                 {#each FACETS as f (f.id)}
-                  {@const current = audienceOf(d.id, f.id)}
+                  {@const current = audienceOf(domainId as Domain, f.id)}
                   <td class="px-3 py-2.5 text-center">
-                    {@render audienceSegmented(d.id, f.id, current)}
+                    {@render audienceSegmented(
+                      domainId as Domain,
+                      f.id,
+                      current,
+                    )}
                   </td>
                 {/each}
               </tr>

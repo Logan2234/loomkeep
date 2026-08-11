@@ -408,7 +408,7 @@ export class ActivityService {
         });
         if (!i) return null;
         // No cover resolution here (would need a cross-domain item lookup) —
-        // list previews elsewhere (ListService.listMine/listForUser) resolve
+        // list previews elsewhere (ListService.listEditable/listForUser) resolve
         // their own cover; the feed row just needs the title + link.
         return {
           title: i.title,

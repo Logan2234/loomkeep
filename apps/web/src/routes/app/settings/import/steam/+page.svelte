@@ -1,9 +1,8 @@
 <script lang="ts">
   import ImportWizard from "$lib/components/ImportWizard.svelte";
-  import { IMPORT_SOURCES } from "$lib/import/sources";
 </script>
 
-<ImportWizard descriptor={IMPORT_SOURCES.steam}>
+<ImportWizard source="steam">
   {#snippet intro()}
     Récupère ta bibliothèque et ton temps de jeu Steam. Ton profil et les
     détails des jeux doivent être <strong class="text-fg">publics</strong> le
