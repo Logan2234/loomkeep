@@ -167,6 +167,18 @@ export class MailService {
       ],
       build: (v) => this.buildReportsDigest(Number(v.pendingCount) || 0),
     },
+    newDeviceLogin: {
+      label: "Nouvelle connexion (appareil inconnu)",
+      fields: [
+        {
+          key: "deviceLabel",
+          label: "Appareil",
+          default: "Chrome · Windows",
+        },
+        { key: "ip", label: "Adresse IP", default: "203.0.113.42" },
+      ],
+      build: (v) => this.buildNewDeviceLogin(v.deviceLabel, v.ip || null),
+    },
   };
 
   constructor(private readonly quota: QuotaTrackerService) {
@@ -273,6 +285,14 @@ export class MailService {
     await this.send({ to, ...this.buildPasswordChanged() });
   }
 
+  async sendNewDeviceLogin(
+    to: string,
+    deviceLabel: string,
+    ip: string | null,
+  ): Promise<void> {
+    await this.send({ to, ...this.buildNewDeviceLogin(deviceLabel, ip) });
+  }
+
   async sendEmailChanged(oldEmail: string, newEmail: string): Promise<void> {
     await Promise.all([
       this.send({ to: oldEmail, ...this.buildEmailChangedOld(newEmail) }),
@@ -354,6 +374,23 @@ export class MailService {
         "Mot de passe modifié",
         `<p>Le mot de passe de ton compte Loomkeep vient d'être changé.</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.</p>`,
+      ),
+    };
+  }
+
+  private buildNewDeviceLogin(
+    deviceLabel: string,
+    ip: string | null,
+  ): TemplateBody {
+    const ipSuffix = ip ? ` (IP ${escapeHtml(ip)})` : "";
+    const ipTextSuffix = ip ? ` (IP ${ip})` : "";
+    return {
+      subject: "Nouvelle connexion à ton compte Loomkeep",
+      text: `Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : ${deviceLabel}${ipTextSuffix}. Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.`,
+      html: this.wrapEmail(
+        "Nouvelle connexion détectée",
+        `<p>Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : <strong>${escapeHtml(deviceLabel)}</strong>${ipSuffix}.</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.</p>`,
       ),
     };
   }

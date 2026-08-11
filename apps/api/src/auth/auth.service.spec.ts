@@ -62,6 +62,11 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
       update: jest.fn(),
       deleteMany: jest.fn(),
     },
+    userDevice: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     userToken: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -93,6 +98,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sendVerifyEmail: jest.fn(),
     sendPasswordResetLink: jest.fn(),
     sendPasswordChanged: jest.fn(),
+    sendNewDeviceLogin: jest.fn(),
   } as unknown as MailService;
 
   const security = {
@@ -315,6 +321,68 @@ describe("AuthService.login", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: user.id, userAgent: "some-user-agent" },
     });
+  });
+
+  it("alerts by email and logs a security event when the device has never been seen", async () => {
+    const { service, prisma, mail, security } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash });
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.userDevice.findUnique as jest.Mock).mockResolvedValue(null);
+
+    await service.login(
+      { identifier: "alice@example.com", password: "correct-password" },
+      "Mozilla/5.0 (Windows NT 10.0) Chrome/140.0 Safari/537.36",
+      "203.0.113.42",
+    );
+
+    expect(prisma.userDevice.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: user.id,
+          deviceKey: "Chrome · Windows",
+        }),
+      }),
+    );
+    expect(mail.sendNewDeviceLogin).toHaveBeenCalledWith(
+      user.email,
+      "Chrome · Windows",
+      "203.0.113.42",
+    );
+    expect(security.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "NEW_DEVICE_LOGIN",
+        userId: user.id,
+        identifier: user.email,
+      }),
+    );
+  });
+
+  it("does not alert when logging in again from an already-known device", async () => {
+    const { service, prisma, mail, security } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash });
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.userDevice.findUnique as jest.Mock).mockResolvedValue({
+      id: "device-1",
+      userId: user.id,
+      deviceKey: "Chrome · Windows",
+      userAgent: "some-old-ua",
+    });
+
+    await service.login(
+      { identifier: "alice@example.com", password: "correct-password" },
+      "Mozilla/5.0 (Windows NT 10.0) Chrome/140.0 Safari/537.36",
+    );
+
+    expect(prisma.userDevice.create).not.toHaveBeenCalled();
+    expect(prisma.userDevice.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "device-1" } }),
+    );
+    expect(mail.sendNewDeviceLogin).not.toHaveBeenCalled();
+    expect(security.record).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "NEW_DEVICE_LOGIN" }),
+    );
   });
 });
 

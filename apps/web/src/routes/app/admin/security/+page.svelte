@@ -25,6 +25,7 @@
     PASSWORD_CHANGED: "Changement de mot de passe",
     PASSWORD_RESET: "Réinitialisation de mot de passe",
     LOGIN_FAILED: "Échec de connexion",
+    NEW_DEVICE_LOGIN: "Connexion depuis un nouvel appareil",
   };
 
   const TYPE_COLORS: Record<SecurityEventType, string> = {
@@ -34,6 +35,7 @@
     PASSWORD_CHANGED: "border-accent/40 bg-accent/10 text-accent",
     PASSWORD_RESET: "border-accent/40 bg-accent/10 text-accent",
     LOGIN_FAILED: "border-danger/40 bg-danger/10 text-danger",
+    NEW_DEVICE_LOGIN: "border-accent/40 bg-accent/10 text-accent",
   };
 
   const TYPE_OPTIONS = [

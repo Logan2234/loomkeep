@@ -10,6 +10,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
 import type { AuthTokensDto, SessionDto, UserDto } from "@loomkeep/shared";
+import { deviceLabel } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { HibpService } from "../common/hibp.service";
@@ -100,6 +101,8 @@ export class AuthService {
       identifier: user.email,
       userAgent,
     });
+    // Seed this device so it isn't flagged as "new" on the user's next login.
+    await this.recordDevice(user.id, userAgent);
 
     const promoted = await this.ensureAdminRole(user);
     return {
@@ -170,7 +173,11 @@ export class AuthService {
   }
 
   /** Accepts either the email or the username as the login identifier. */
-  async login(dto: LoginDto, userAgent?: string): Promise<AuthResult> {
+  async login(
+    dto: LoginDto,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<AuthResult> {
     const user = await this.prisma.user.findFirst({
       where: { OR: [{ email: dto.identifier }, { username: dto.identifier }] },
     });
@@ -186,10 +193,22 @@ export class AuthService {
     }
 
     const promoted = await this.ensureAdminRole(user);
-    return {
-      user: toUserDto(promoted),
-      tokens: await this.startSession(promoted, userAgent),
-    };
+    const isNewDevice = await this.recordDevice(promoted.id, userAgent);
+    const tokens = await this.startSession(promoted, userAgent);
+
+    if (isNewDevice) {
+      const label = deviceLabel(userAgent) ?? "Appareil inconnu";
+      await this.mail.sendNewDeviceLogin(promoted.email, label, ip ?? null);
+      await this.security.record({
+        type: "NEW_DEVICE_LOGIN",
+        userId: promoted.id,
+        identifier: promoted.email,
+        detail: ip ? `IP: ${ip}` : undefined,
+        userAgent,
+      });
+    }
+
+    return { user: toUserDto(promoted), tokens };
   }
 
   /**
@@ -427,6 +446,39 @@ export class AuthService {
       Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
     );
     return { accessToken, refreshToken, jti, expiresAt };
+  }
+
+  /**
+   * Upserts the (userId, deviceKey) row for this browser, where deviceKey is
+   * the normalized browser+OS label rather than the raw User-Agent — a
+   * version bump (Chrome 139 -> 140) shouldn't read as a new device. Returns
+   * whether this is the first time this device has been seen, so the caller
+   * can decide whether to raise a new-device alert.
+   */
+  private async recordDevice(
+    userId: string,
+    userAgent?: string,
+  ): Promise<boolean> {
+    const deviceKey = deviceLabel(userAgent) ?? "unknown";
+    const existing = await this.prisma.userDevice.findUnique({
+      where: { userId_deviceKey: { userId, deviceKey } },
+    });
+
+    if (existing) {
+      await this.prisma.userDevice.update({
+        where: { id: existing.id },
+        data: {
+          userAgent: userAgent ?? existing.userAgent,
+          lastSeenAt: new Date(),
+        },
+      });
+      return false;
+    }
+
+    await this.prisma.userDevice.create({
+      data: { userId, deviceKey, userAgent: userAgent ?? null },
+    });
+    return true;
   }
 
   /**
