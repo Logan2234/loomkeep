@@ -30,9 +30,26 @@ export interface ListDto {
   author: UserSummaryDto;
 }
 
+/**
+ * The current user's relationship to a list: full control (OWNER), granted
+ * edit access via ListMember (EDITOR), or read-only (VIEWER).
+ */
+export type ListViewerRole = "OWNER" | "EDITOR" | "VIEWER";
+
 /** A list plus its items, ordered by `position` — the single-list view. */
 export interface ListDetailDto extends ListDto {
   items: ListItemDto[];
+  viewerRole: ListViewerRole;
+}
+
+/** A user granted edit access to someone else's list. */
+export interface ListMemberDto {
+  user: UserSummaryDto;
+  createdAt: string;
+}
+
+export interface AddListMemberDto {
+  username: string;
 }
 
 /** A list plus a lightweight preview, for "Mes listes" and profile carousels. */
@@ -66,9 +83,15 @@ export interface AddListItemDto {
   targetId: string;
 }
 
-/** Full replacement order — the whole list's item ids, new order first. */
+/**
+ * Full replacement order — the whole list's item ids, new order first.
+ * `expectedUpdatedAt` is the `List.updatedAt` the client last saw (optimistic
+ * lock): the server rejects with 409 if the list changed since, so two
+ * concurrent editors reordering at once don't silently clobber each other.
+ */
 export interface ReorderListItemsDto {
   orderedItemIds: string[];
+  expectedUpdatedAt: string;
 }
 
 /** Which of the user's own lists already contain a target, keyed by list id (value = item id). */

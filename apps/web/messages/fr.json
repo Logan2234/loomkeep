@@ -433,6 +433,17 @@
   "activity_list_shared": "a partagé une liste",
   "activity_updated": "a mis à jour",
 
+  "list_members_manage": "Collaborateurs",
+  "list_members_title": "Collaborateurs",
+  "list_members_description": "Les personnes ajoutées ici peuvent modifier cette liste (ajouter, retirer, réordonner les œuvres) mais ne peuvent pas la supprimer, changer sa visibilité ni gérer les collaborateurs.",
+  "list_members_username_placeholder": "Nom d'utilisateur",
+  "list_members_add": "Ajouter",
+  "list_members_add_error_fallback": "Impossible d'ajouter ce collaborateur",
+  "list_members_empty": "Aucun collaborateur pour l'instant.",
+  "list_members_remove": "Retirer",
+  "list_editor_badge": "Éditeur",
+  "list_reorder_conflict": "Cette liste a été modifiée entre-temps par quelqu'un d'autre — elle vient d'être rechargée.",
+
   "mermaid_invalid": "Diagramme invalide.",
   "mermaid_zoom_out": "Réduire",
   "mermaid_zoom_in": "Agrandir",

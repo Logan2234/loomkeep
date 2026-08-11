@@ -5,12 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   ActivityType,
   type ListDetailDto,
   type ListDto,
   type ListItemDto,
   type ListItemTargetType,
+  type ListMemberDto,
+  type ListViewerRole,
   type ListVisibility,
   type MyListDto,
   type ReviewTargetSummaryDto,
@@ -19,6 +22,7 @@ import {
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
+import { isSocialEnabled } from "../social/social.config";
 import { resolveOwnVisibility } from "../social/visibility.util";
 import { VisibilityService } from "../social/visibility.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -62,6 +66,7 @@ export class ListService {
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
+    private readonly config: ConfigService,
   ) {}
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
@@ -118,13 +123,22 @@ export class ListService {
     return this.toDto(row, await this.author(userId));
   }
 
-  /** Updates the user's own list. Emits LIST_SHARED on a PRIVATE→shared transition. */
+  /**
+   * Updates a list's title/description/kind/items — owner or editor
+   * (ListMember). Visibility changes are owner-only: an editor could
+   * otherwise expose a private list. Emits LIST_SHARED on a PRIVATE→shared
+   * transition.
+   */
   async update(
     userId: string,
     id: string,
     dto: UpdateListBody,
   ): Promise<ListDto> {
-    const existing = await this.ownList(userId, id);
+    const { row: existing, role } = await this.canEdit(userId, id);
+
+    if (dto.visibility && role !== "OWNER") {
+      throw new ForbiddenException("Only the owner can change visibility");
+    }
 
     let visibility = dto.visibility;
 
@@ -166,7 +180,7 @@ export class ListService {
       });
     }
 
-    return this.toDto(row, await this.author(userId));
+    return this.toDto(row, await this.author(existing.userId));
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -199,10 +213,41 @@ export class ListService {
     }));
   }
 
-  /** The user's own list with its items, ordered — for the edit screen. */
-  async getOwn(userId: string, id: string): Promise<ListDetailDto> {
-    await this.ownList(userId, id);
-    return this.detail(id);
+  /**
+   * Every list the user can edit — owned or granted via ListMember — newest-
+   * updated first, with a preview. Feeds "Ajouter à une liste": an editor
+   * needs to see the lists they can add items to, not just their own.
+   */
+  async listEditable(userId: string): Promise<MyListDto[]> {
+    const rows = await this.prisma.list.findMany({
+      where: { OR: [{ userId }, { members: { some: { userId } } }] },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        items: { orderBy: { position: "asc" }, take: PREVIEW_ITEM_COUNT },
+        _count: { select: { items: true } },
+      },
+    });
+
+    const authorIds = [...new Set(rows.map((r) => r.userId))];
+    const authors = await Promise.all(authorIds.map((id) => this.author(id)));
+    const authorById = new Map(authorIds.map((id, i) => [id, authors[i]]));
+    const previews = await this.buildPreviews(rows);
+
+    return rows.map((r) => ({
+      ...this.toDto(r, authorById.get(r.userId)!),
+      itemCount: r._count.items,
+      previewImageUrls: previews.get(r.id) ?? [],
+    }));
+  }
+
+  /**
+   * The list for its owner or an editor (ListMember) — for the edit screen.
+   * Editors bypass `visibility` entirely: the membership grant is itself the
+   * access decision, independent of the read-audience setting.
+   */
+  async getEditable(userId: string, id: string): Promise<ListDetailDto> {
+    const { role } = await this.canEdit(userId, id);
+    return this.detail(id, role);
   }
 
   /**
@@ -231,7 +276,7 @@ export class ListService {
       if (!ok) return null;
     }
 
-    return this.detail(id);
+    return this.detail(id, row.userId === viewerId ? "OWNER" : "VIEWER");
   }
 
   /** A user's lists visible to the viewer (their shared/public ones only). */
@@ -274,14 +319,18 @@ export class ListService {
     }));
   }
 
-  /** Which of the user's own lists already contain this target, keyed by list id. */
+  /** Which of the user's editable lists already contain this target, keyed by list id. */
   async membershipFor(
     userId: string,
     targetType: ListItemTargetType,
     targetId: string,
   ): Promise<Record<string, string>> {
     const rows = await this.prisma.listItem.findMany({
-      where: { targetType, targetId, list: { userId } },
+      where: {
+        targetType,
+        targetId,
+        list: { OR: [{ userId }, { members: { some: { userId } } }] },
+      },
       select: { id: true, listId: true },
     });
     return Object.fromEntries(rows.map((r) => [r.listId, r.id]));
@@ -292,7 +341,7 @@ export class ListService {
     listId: string,
     dto: AddListItemBody,
   ): Promise<ListItemDto> {
-    await this.ownList(userId, listId);
+    await this.canEdit(userId, listId);
 
     const dup = await this.prisma.listItem.findUnique({
       where: {
@@ -338,7 +387,7 @@ export class ListService {
     listId: string,
     itemId: string,
   ): Promise<void> {
-    await this.ownList(userId, listId);
+    await this.canEdit(userId, listId);
     const { count } = await this.prisma.listItem.deleteMany({
       where: { id: itemId, listId },
     });
@@ -347,15 +396,18 @@ export class ListService {
 
   /**
    * Full reorder: `orderedItemIds` must be exactly the list's current item
-   * ids (in the new order) — solo-owned lists, no concurrent-edit concern, so
-   * a wholesale replace is simplest and safest against a stale client.
+   * ids (in the new order) — a wholesale replace is simplest. Now that
+   * editors can reorder concurrently, `expectedUpdatedAt` is an optimistic
+   * lock on `List.updatedAt`: a stale caller gets 409 and must refetch,
+   * rather than silently clobbering another editor's reorder.
    */
   async reorder(
     userId: string,
     listId: string,
     orderedItemIds: string[],
+    expectedUpdatedAt: string,
   ): Promise<void> {
-    await this.ownList(userId, listId);
+    await this.canEdit(userId, listId);
 
     const existing = await this.prisma.listItem.findMany({
       where: { listId },
@@ -372,11 +424,82 @@ export class ListService {
       );
     }
 
-    await this.prisma.$transaction(
-      orderedItemIds.map((id, position) =>
-        this.prisma.listItem.update({ where: { id }, data: { position } }),
-      ),
-    );
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.list.updateMany({
+        where: { id: listId, updatedAt: new Date(expectedUpdatedAt) },
+        data: { updatedAt: new Date() },
+      });
+
+      if (count === 0) {
+        throw new ConflictException(
+          "This list changed since you loaded it — refresh and try again",
+        );
+      }
+
+      for (const [position, id] of orderedItemIds.entries()) {
+        await tx.listItem.update({ where: { id }, data: { position } });
+      }
+    });
+  }
+
+  /** Everyone with edit access to `id`, besides the owner — owner only. */
+  async listMembers(userId: string, id: string): Promise<ListMemberDto[]> {
+    await this.ownList(userId, id);
+    const rows = await this.prisma.listMember.findMany({
+      where: { listId: id },
+      orderBy: { createdAt: "asc" },
+      include: { user: { select: AUTHOR_SELECT } },
+    });
+    return rows.map((r) => ({
+      user: toUserSummaryDto(r.user),
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  /** Grants `username` edit access to the list — owner only, social-gated. */
+  async addMember(
+    userId: string,
+    id: string,
+    username: string,
+  ): Promise<ListMemberDto> {
+    await this.ownList(userId, id);
+
+    const target = await this.prisma.user.findUnique({
+      where: { username },
+      select: AUTHOR_SELECT,
+    });
+    if (!target) throw new NotFoundException("User not found");
+
+    if (target.id === userId) {
+      throw new BadRequestException("You already own this list");
+    }
+
+    const existing = await this.prisma.listMember.findUnique({
+      where: { listId_userId: { listId: id, userId: target.id } },
+    });
+    if (existing) throw new ConflictException("Already an editor");
+
+    const row = await this.prisma.listMember.create({
+      data: { listId: id, userId: target.id },
+    });
+
+    return {
+      user: toUserSummaryDto(target),
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  /** Revokes edit access — owner only, social-gated. */
+  async removeMember(
+    userId: string,
+    id: string,
+    memberUserId: string,
+  ): Promise<void> {
+    await this.ownList(userId, id);
+    const { count } = await this.prisma.listMember.deleteMany({
+      where: { listId: id, userId: memberUserId },
+    });
+    if (count === 0) throw new NotFoundException();
   }
 
   // --- internals -------------------------------------------------------
@@ -388,7 +511,36 @@ export class ListService {
     return row;
   }
 
-  private async detail(id: string): Promise<ListDetailDto> {
+  /**
+   * Owner or editor. Membership only grants access while Social is on —
+   * ListMember rows can only be created through the social-gated add-member
+   * endpoint, so this is a defensive check, not an active feature gate.
+   */
+  private async canEdit(
+    userId: string,
+    id: string,
+  ): Promise<{
+    row: ListRow;
+    role: Extract<ListViewerRole, "OWNER" | "EDITOR">;
+  }> {
+    const row = await this.prisma.list.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException();
+    if (row.userId === userId) return { row, role: "OWNER" };
+
+    if (isSocialEnabled(this.config)) {
+      const member = await this.prisma.listMember.findUnique({
+        where: { listId_userId: { listId: id, userId } },
+      });
+      if (member) return { row, role: "EDITOR" };
+    }
+
+    throw new ForbiddenException();
+  }
+
+  private async detail(
+    id: string,
+    viewerRole: ListViewerRole,
+  ): Promise<ListDetailDto> {
     const row = await this.prisma.list.findUniqueOrThrow({
       where: { id },
       include: { items: { orderBy: { position: "asc" } } },
@@ -400,6 +552,7 @@ export class ListService {
     return {
       ...this.toDto(row, author),
       items: row.items.map((i) => this.toItemDto(i, targets)),
+      viewerRole,
     };
   }
 

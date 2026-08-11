@@ -1,8 +1,8 @@
 <script lang="ts">
   import {
     addListItem,
+    getEditableLists,
     getListMembership,
-    getMyLists,
     removeListItem,
   } from "$lib/api/client";
   import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
@@ -31,7 +31,7 @@
 
   function load() {
     loading = true;
-    Promise.all([getMyLists(), getListMembership(targetType, targetId)])
+    Promise.all([getEditableLists(), getListMembership(targetType, targetId)])
       .then(([r, membership]) => {
         lists = r;
         itemIdByList = membership;
