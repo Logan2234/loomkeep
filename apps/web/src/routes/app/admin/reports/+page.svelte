@@ -265,9 +265,13 @@
 
           <p class="text-dim mt-1 text-xs">
             Signalé par
-            <a
-              href="/app/admin/users?q={r.reporter.username}"
-              class="hover:underline">@{r.reporter.username}</a>
+            {#if r.reporter}
+              <a
+                href="/app/admin/users?q={r.reporter.username}"
+                class="hover:underline">@{r.reporter.username}</a>
+            {:else}
+              <span class="italic">un utilisateur supprimé</span>
+            {/if}
             {#if r.reason}· « {r.reason} »{/if}
           </p>
 

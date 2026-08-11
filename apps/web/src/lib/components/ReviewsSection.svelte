@@ -45,7 +45,7 @@
   // `listForTarget` always includes the viewer's own review — keep the
   // community list to everyone else so it isn't shown twice.
   const othersReviews = $derived(
-    allReviews.filter((r) => r.author.id !== auth.user?.id),
+    allReviews.filter((r) => r.author?.id !== auth.user?.id),
   );
 
   $effect(() => {
@@ -203,7 +203,16 @@
                   <Icon name="chevron-down" class="h-4 w-4" />
                 </button>
               </div>
-              {#if review.author.anonymized}
+              {#if !review.author}
+                <span class="shrink-0">
+                  <Avatar seed="utilisateur-supprime" size={32} />
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-dim truncate text-sm font-semibold italic">
+                    Utilisateur supprimé
+                  </p>
+                </div>
+              {:else if review.author.anonymized}
                 <!-- Seeded on the derived pseudonym, never the real id — a
                      stable seed would let the same identicon resurface across
                      unrelated works and quietly de-anonymize the author. -->
