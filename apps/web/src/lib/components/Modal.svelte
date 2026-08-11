@@ -36,6 +36,10 @@
   });
 </script>
 
+<!-- Mobile's Drawer already closes on Escape via its own listener. -->
+<svelte:window
+  onkeydown={(e) => isDesktop && e.key === "Escape" && onclose()} />
+
 {#snippet header(showClose: boolean)}
   {#if showClose}
     <button
@@ -51,7 +55,7 @@
 {/snippet}
 
 {#if isDesktop}
-  <!-- Desktop: a centered dialog. -->
+  <!-- Desktop: a centered dialog. Mobile's Drawer already closes on Escape. -->
   <div class="fixed inset-0 z-[60] flex items-center justify-center">
     <button
       class="absolute inset-0 cursor-default bg-black/60"

@@ -3,6 +3,7 @@
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
+  import ReadingGoalChip from "$lib/components/ReadingGoalChip.svelte";
   import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
   import {
     BOOK_STATUS_LABELS,
@@ -50,6 +51,9 @@
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}
   defaultSort="added">
+  {#snippet headerActions()}
+    <ReadingGoalChip showBadge />
+  {/snippet}
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <BookSearchPanel {query} limit={10} {onResults} />
   {/snippet}

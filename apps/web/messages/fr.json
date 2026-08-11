@@ -490,5 +490,17 @@
   "landing_hosting_selfhost_body": "Une pile Docker complète, ta propre base PostgreSQL, et les mêmes fonctionnalités. Il te faut juste une clé d’API TMDB gratuite.",
   "landing_hosting_selfhost_cta": "Voir la documentation",
   "landing_footer_feedback": "Suggestions & bugs",
-  "landing_footer_changelog": "Notes de version"
+  "landing_footer_changelog": "Notes de version",
+
+  "reading_goal_modal_title": "Objectif de lecture {year}",
+  "reading_goal_label": "Nombre de livres",
+  "reading_goal_title": "Objectif de lecture",
+  "reading_goal_edit": "Modifier",
+  "reading_goal_invalid": "Indique un nombre de livres valide.",
+  "reading_goal_cta": "Combien de livres veux-tu lire en {year} ?",
+  "reading_goal_cta_action": "Fixer un objectif",
+  "reading_goal_remaining": "Encore {count} {noun} d'ici fin {year}.",
+  "reading_goal_book_singular": "livre",
+  "reading_goal_book_plural": "livres",
+  "reading_goal_reached": "Objectif atteint — bravo !"
 }

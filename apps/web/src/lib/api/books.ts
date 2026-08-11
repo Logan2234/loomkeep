@@ -3,8 +3,10 @@ import type {
   BookEntryDto,
   BookSearchResponseDto,
   PagedResult,
+  ReadingGoalDto,
   UpdateBookEntryDto,
   UpsertBookEntryDto,
+  UpsertReadingGoalDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
 
@@ -72,4 +74,14 @@ export function addBookReplay(entryId: string): Promise<BookEntryDto> {
 
 export function deleteBookReplay(replayId: string): Promise<void> {
   return request(`/books/replays/${replayId}`, { method: "DELETE" });
+}
+
+export function getReadingGoal(year: number): Promise<ReadingGoalDto> {
+  return request(`/books/reading-goal?year=${year}`);
+}
+
+export function upsertReadingGoal(
+  body: UpsertReadingGoalDto,
+): Promise<ReadingGoalDto> {
+  return request("/books/reading-goal", { method: "PUT", body });
 }

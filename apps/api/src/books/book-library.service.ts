@@ -18,6 +18,7 @@ import type {
   BookReplayDto,
   BookSource,
   PagedResult,
+  ReadingGoalDto,
 } from "@loomkeep/shared";
 import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
@@ -31,6 +32,7 @@ import { BookItemService } from "./book-item.service";
 import { AddBookReplayDto } from "./dto/add-book-replay.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
+import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
 // Entries always need the book + its external IDs (canonical sourceId), plus
 // its replay history, most recent first.
@@ -201,6 +203,8 @@ export class BookLibraryService {
       include: ENTRY_INCLUDE,
     });
 
+    entry.finishedAt = await this.syncFinishedAt(userId, bookItem.id);
+
     await this.emitEntryActivity(userId, bookItem.id, {
       prevStatus: before?.status ?? null,
       nextStatus: entry.status,
@@ -319,6 +323,12 @@ export class BookLibraryService {
       },
       include: ENTRY_INCLUDE,
     });
+
+    // Only auto-derive when the caller didn't explicitly set finishedAt
+    // themselves (e.g. a future manual-date editor).
+    if (dto.finishedAt === undefined) {
+      entry.finishedAt = await this.syncFinishedAt(userId, entry.bookItemId);
+    }
 
     await this.emitEntryActivity(userId, entry.bookItemId, {
       prevStatus: before?.status ?? null,
@@ -491,6 +501,85 @@ export class BookLibraryService {
     }
 
     return entry;
+  }
+
+  /**
+   * Keeps `finishedAt` in sync with "has the reader finished this book" —
+   * nothing in the UI sets it directly. Mirrors LibraryService.syncFinishedAt
+   * for MEDIA; books have no progress model beyond the raw status, so a
+   * finished book is simply one marked READ.
+   */
+  private async syncFinishedAt(
+    userId: string,
+    bookItemId: string,
+  ): Promise<Date | null> {
+    const entry = await this.prisma.bookEntry.findUnique({
+      where: { userId_bookItemId: { userId, bookItemId } },
+      select: { status: true, finishedAt: true },
+    });
+    if (!entry) return null;
+
+    const finished = entry.status === "READ";
+    if (finished === !!entry.finishedAt) return entry.finishedAt;
+
+    const finishedAt = finished ? new Date() : null;
+    await this.prisma.bookEntry.update({
+      where: { userId_bookItemId: { userId, bookItemId } },
+      data: { finishedAt },
+    });
+    return finishedAt;
+  }
+
+  /**
+   * The user's reading goal for `year` plus their progress: books finished
+   * that year (finishedAt-based, regardless of current status — a book
+   * reread and put back to READING should stay counted) plus rereads
+   * (BookReplay) completed that year. `target` is 0 with no goal set.
+   */
+  async getReadingGoal(userId: string, year: number): Promise<ReadingGoalDto> {
+    const [goal, completed] = await Promise.all([
+      this.prisma.readingGoal.findUnique({
+        where: { userId_year: { userId, year } },
+      }),
+      this.countBooksFinishedInYear(userId, year),
+    ]);
+
+    return { year, target: goal?.target ?? 0, completed };
+  }
+
+  async upsertReadingGoal(
+    userId: string,
+    dto: UpsertReadingGoalDto,
+  ): Promise<ReadingGoalDto> {
+    await this.prisma.readingGoal.upsert({
+      where: { userId_year: { userId, year: dto.year } },
+      update: { target: dto.target },
+      create: { userId, year: dto.year, target: dto.target },
+    });
+
+    const completed = await this.countBooksFinishedInYear(userId, dto.year);
+    return { year: dto.year, target: dto.target, completed };
+  }
+
+  private async countBooksFinishedInYear(
+    userId: string,
+    year: number,
+  ): Promise<number> {
+    const range = {
+      gte: new Date(Date.UTC(year, 0, 1)),
+      lt: new Date(Date.UTC(year + 1, 0, 1)),
+    };
+
+    const [entries, replays] = await Promise.all([
+      this.prisma.bookEntry.count({
+        where: { userId, finishedAt: range },
+      }),
+      this.prisma.bookReplay.count({
+        where: { finishedAt: range, bookEntry: { userId } },
+      }),
+    ]);
+
+    return entries + replays;
   }
 }
 

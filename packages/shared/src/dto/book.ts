@@ -117,3 +117,17 @@ export interface UpdateBookEntryDto {
 export interface BookDetailDto extends BookDetailsDto {
   entry: BookEntryDto | null;
 }
+
+/** A user's yearly reading target and their progress towards it. */
+export interface ReadingGoalDto {
+  year: number;
+  target: number;
+  /** Books finished during `year`, counting rereads. */
+  completed: number;
+}
+
+/** Body for setting/updating the reading goal for a given year. */
+export interface UpsertReadingGoalDto {
+  year: number;
+  target: number;
+}

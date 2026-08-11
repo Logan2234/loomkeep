@@ -14,6 +14,7 @@
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import type {
@@ -197,318 +198,313 @@
       </div>
     </div>
   {:else}
-    <!-- Every domain allowed by enabledDomains gets a card — even with
-         nothing in progress, it shows a short empty message plus its own
-         "voir plus" shortcut, so the layout never silently drops a section. -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12">
-      {#if mediaOn}
-        <section class="card lg:col-span-8">
-          <div class="flex items-center justify-between p-4 pb-0">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="tv" class="text-accent h-4 w-4" /> Vidéo · à reprendre
-            </h2>
-            <a
-              href="/app/media"
-              class="text-dim hover:text-fg text-xs font-semibold"
-              >Voir plus →</a>
-          </div>
-          <div class="p-4">
-            {#if watchingRecent.length > 0}
-              <Carousel
-                bind:this={resumeCarousel}
-                items={watchingRecent}
-                keyOf={(e) => e.id}>
-                {#snippet card(e)}
-                  <div class="w-28 shrink-0 snap-start">
-                    <a
-                      href={`/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
-                      class="block">
-                      <div
-                        class="card hover:border-accent overflow-hidden transition-[border-color]">
-                        <Poster
-                          src={e.mediaItem.posterUrl}
-                          title={e.mediaItem.title} />
-                      </div>
-                      <p
-                        class="font-display mt-1.5 truncate text-xs font-semibold">
-                        {e.mediaItem.title}
-                      </p>
-                    </a>
-                    {#if e.progress}
-                      <div
-                        class="bg-surface-2 mt-1 h-1 overflow-hidden rounded-full">
+    <!-- Two independent grids side by side on desktop, not one shared
+         12-col grid sliced with col-span: a wide "main" grid (Vidéo, the
+         3 domain carousels, Activité) and a narrow "sidebar" stack (Cette
+         semaine, Objectif de lecture, Raccourcis) that never interleave
+         with each other's rows. On mobile they just stack, main first. -->
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <!-- Main grid. -->
+      <div class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {#if mediaOn}
+          <section class="card sm:col-span-2 lg:col-span-3">
+            <div class="flex items-center justify-between p-4 pb-0">
+              <h2
+                class="font-display flex items-center gap-2 text-base font-bold">
+                <Icon name="tv" class="text-accent h-4 w-4" /> Vidéo · à reprendre
+              </h2>
+              <a
+                href="/app/media"
+                class="text-dim hover:text-fg text-xs font-semibold"
+                >Voir plus →</a>
+            </div>
+            <div class="p-4">
+              {#if watchingRecent.length > 0}
+                <Carousel
+                  bind:this={resumeCarousel}
+                  items={watchingRecent}
+                  keyOf={(e) => e.id}>
+                  {#snippet card(e)}
+                    <div class="w-28 shrink-0 snap-start">
+                      <a
+                        href={`/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
+                        class="block">
                         <div
-                          class="bg-accent h-full"
-                          style={`width: ${pct(e)}%`}>
+                          class="card hover:border-accent overflow-hidden transition-[border-color]">
+                          <Poster
+                            src={e.mediaItem.posterUrl}
+                            title={e.mediaItem.title} />
                         </div>
-                      </div>
-                      <p class="timecode mt-1 text-[0.65rem]">
-                        {e.progress.watchedEpisodes} / {e.progress
-                          .totalEpisodes}
-                      </p>
-                      {#if e.progress.nextEpisode}
-                        <button
-                          class="btn btn-primary mt-1 w-full px-2 py-1 text-[0.65rem]"
-                          disabled={resuming === e.id}
-                          onclick={() => resume(e)}>
-                          ▶ {epCodeOf(e.progress.nextEpisode)}
-                        </button>
+                        <p
+                          class="font-display mt-1.5 truncate text-xs font-semibold">
+                          {e.mediaItem.title}
+                        </p>
+                      </a>
+                      {#if e.progress}
+                        <div
+                          class="bg-surface-2 mt-1 h-1 overflow-hidden rounded-full">
+                          <div
+                            class="bg-accent h-full"
+                            style={`width: ${pct(e)}%`}>
+                          </div>
+                        </div>
+                        <p class="timecode mt-1 text-[0.65rem]">
+                          {e.progress.watchedEpisodes} / {e.progress
+                            .totalEpisodes}
+                        </p>
+                        {#if e.progress.nextEpisode}
+                          <button
+                            class="btn btn-primary mt-1 w-full px-2 py-1 text-[0.65rem]"
+                            disabled={resuming === e.id}
+                            onclick={() => resume(e)}>
+                            ▶ {epCodeOf(e.progress.nextEpisode)}
+                          </button>
+                        {/if}
                       {/if}
+                    </div>
+                  {/snippet}
+                </Carousel>
+              {:else}
+                <p class="text-dim py-6 text-center text-sm">
+                  Rien en cours de visionnage.
+                </p>
+              {/if}
+            </div>
+          </section>
+        {/if}
+
+        {#if gamesOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <h2
+                class="font-display flex items-center gap-2 text-base font-bold">
+                <Icon name="gamepad" class="text-accent h-4 w-4" /> Jeux · en cours
+              </h2>
+              <a
+                href="/app/games"
+                class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
+            </div>
+            {#if playingGames.length > 0}
+              <Carousel items={playingGames} keyOf={(e) => e.id}>
+                {#snippet card(e)}
+                  <a
+                    href={`/app/games/${e.game.sourceId}`}
+                    class="w-24 shrink-0 snap-start">
+                    <div
+                      class="card hover:border-accent overflow-hidden transition-[border-color]">
+                      <Poster src={e.game.coverUrl} title={e.game.title} />
+                    </div>
+                    <p
+                      class="font-display mt-1.5 truncate text-xs font-semibold">
+                      {e.game.title}
+                    </p>
+                    {#if e.playtimeMinutes > 0}
+                      <p class="timecode text-[0.65rem]">
+                        {Math.round(e.playtimeMinutes / 60)} h jouées
+                      </p>
                     {/if}
-                  </div>
+                  </a>
                 {/snippet}
               </Carousel>
             {:else}
               <p class="text-dim py-6 text-center text-sm">
-                Rien en cours de visionnage.
+                Rien en cours de partie.
               </p>
             {/if}
-          </div>
-        </section>
+          </section>
+        {/if}
 
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="calendar" class="text-accent h-4 w-4" /> Cette semaine
-            </h2>
-            <a
-              href="/app/calendar"
-              class="text-dim hover:text-fg text-xs font-semibold"
-              >Calendrier →</a>
-          </div>
-          {#if week.length > 0}
-            <ul class="divide-border divide-y">
-              {#each week as e (e.mediaItem.id + epCode(e))}
-                <li>
-                  <a href={mediaHref(e)} class="flex items-center gap-3 py-2">
-                    <div class="w-8 shrink-0 overflow-hidden rounded-md">
-                      <Poster
-                        src={e.mediaItem.posterUrl}
-                        title={e.mediaItem.title} />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-display truncate text-sm font-semibold">
-                        {e.mediaItem.title}
-                      </p>
-                      <p class="timecode text-xs">
-                        {epCode(e)}
-                      </p>
-                    </div>
-                    <span
-                      class="border-accent/40 text-accent timecode rounded-md border px-1.5 py-0.5 text-[0.65rem]">
-                      {dayShort(e.airDate)}
-                    </span>
-                  </a>
-                </li>
-              {/each}
-            </ul>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien de prévu cette semaine.
-            </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if gamesOn}
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="gamepad" class="text-accent h-4 w-4" /> Jeux · en cours
-            </h2>
-            <a
-              href="/app/games"
-              class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
-          </div>
-          {#if playingGames.length > 0}
-            <Carousel items={playingGames} keyOf={(e) => e.id}>
-              {#snippet card(e)}
-                <a
-                  href={`/app/games/${e.game.sourceId}`}
-                  class="w-24 shrink-0 snap-start">
-                  <div
-                    class="card hover:border-accent overflow-hidden transition-[border-color]">
-                    <Poster src={e.game.coverUrl} title={e.game.title} />
-                  </div>
-                  <p class="font-display mt-1.5 truncate text-xs font-semibold">
-                    {e.game.title}
-                  </p>
-                  {#if e.playtimeMinutes > 0}
-                    <p class="timecode text-[0.65rem]">
-                      {Math.round(e.playtimeMinutes / 60)} h jouées
-                    </p>
-                  {/if}
-                </a>
-              {/snippet}
-            </Carousel>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien en cours de partie.
-            </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if booksOn}
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="book" class="text-accent h-4 w-4" /> Livres · en lecture
-            </h2>
-            <a
-              href="/app/books"
-              class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
-          </div>
-          {#if readingBooks.length > 0}
-            <ul class="divide-border divide-y">
-              {#each readingBooks as e (e.id)}
-                {@const p = bookPct(e)}
-                <li>
-                  <a
-                    href={`/app/books/${e.book.sourceId}`}
-                    class="flex items-center gap-3 py-2">
-                    <div class="w-8 shrink-0 overflow-hidden rounded-md">
-                      <Poster src={e.book.coverUrl} title={e.book.title} />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p class="font-display truncate text-sm font-semibold">
-                        {e.book.title}
-                      </p>
-                      {#if p !== null}
-                        <div
-                          class="bg-surface-2 mt-1 h-1 max-w-32 overflow-hidden rounded-full">
-                          <div class="bg-accent h-full" style={`width: ${p}%`}>
+        {#if booksOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between gap-2">
+              <h2
+                class="font-display flex items-center gap-2 text-base font-bold">
+                <Icon name="book" class="text-accent h-4 w-4" /> Livres · en lecture
+              </h2>
+              <a
+                href="/app/books"
+                class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
+            </div>
+            {#if readingBooks.length > 0}
+              <ul class="divide-border divide-y">
+                {#each readingBooks as e (e.id)}
+                  {@const p = bookPct(e)}
+                  <li>
+                    <a
+                      href={`/app/books/${e.book.sourceId}`}
+                      class="flex items-center gap-3 py-2">
+                      <div class="w-8 shrink-0 overflow-hidden rounded-md">
+                        <Poster src={e.book.coverUrl} title={e.book.title} />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-display truncate text-sm font-semibold">
+                          {e.book.title}
+                        </p>
+                        {#if p !== null}
+                          <div
+                            class="bg-surface-2 mt-1 h-1 max-w-32 overflow-hidden rounded-full">
+                            <div
+                              class="bg-accent h-full"
+                              style={`width: ${p}%`}>
+                            </div>
                           </div>
-                        </div>
-                      {/if}
-                      <p class="timecode text-xs">
-                        {#if e.book.pageCount}
-                          p. {e.currentPage} / {e.book.pageCount}
-                        {:else}
-                          p. {e.currentPage}
                         {/if}
-                      </p>
+                        <p class="timecode text-xs">
+                          {#if e.book.pageCount}
+                            p. {e.currentPage} / {e.book.pageCount}
+                          {:else}
+                            p. {e.currentPage}
+                          {/if}
+                        </p>
+                      </div>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <p class="text-dim py-6 text-center text-sm">
+                Rien en cours de lecture.
+              </p>
+            {/if}
+          </section>
+        {/if}
+
+        {#if musicOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <h2
+                class="font-display flex items-center gap-2 text-base font-bold">
+                <Icon name="music" class="text-accent h-4 w-4" /> Musique · à écouter
+              </h2>
+              <a
+                href="/app/music"
+                class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
+            </div>
+            {#if toListenAlbums.length > 0}
+              <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
+                {#snippet card(e)}
+                  <a
+                    href={`/app/music/${e.album.sourceId}`}
+                    class="w-24 shrink-0 snap-start">
+                    <div
+                      class="card hover:border-accent overflow-hidden transition-[border-color]">
+                      <Poster src={e.album.coverUrl} title={e.album.title} />
                     </div>
+                    <p
+                      class="font-display mt-1.5 truncate text-xs font-semibold">
+                      {e.album.title}
+                    </p>
                   </a>
-                </li>
-              {/each}
-            </ul>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien en cours de lecture.
+                {/snippet}
+              </Carousel>
+            {:else}
+              <p class="text-dim py-6 text-center text-sm">
+                Rien à écouter pour l’instant.
+              </p>
+            {/if}
+          </section>
+        {/if}
+
+        {#if soonOn}
+          <section
+            class="border-border flex flex-col justify-center gap-1 rounded-xl border border-dashed p-4 opacity-70">
+            <p class="font-display text-sm font-bold">
+              🎧 Podcasts &amp; 🎲 Jeux de société
             </p>
-          {/if}
-        </section>
-      {/if}
+            <p class="text-dim text-xs">Bientôt disponible dans Loomkeep.</p>
+            <span
+              class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
+              Bientôt
+            </span>
+          </section>
+        {/if}
 
-      {#if musicOn}
-        <section class="card p-4 lg:col-span-4">
-          <div class="mb-3 flex items-center justify-between">
-            <h2
-              class="font-display flex items-center gap-2 text-base font-bold">
-              <Icon name="music" class="text-accent h-4 w-4" /> Musique · à écouter
-            </h2>
-            <a
-              href="/app/music"
-              class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
-          </div>
-          {#if toListenAlbums.length > 0}
-            <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
-              {#snippet card(e)}
-                <a
-                  href={`/app/music/${e.album.sourceId}`}
-                  class="w-24 shrink-0 snap-start">
-                  <div
-                    class="card hover:border-accent overflow-hidden transition-[border-color]">
-                    <Poster src={e.album.coverUrl} title={e.album.title} />
-                  </div>
-                  <p class="font-display mt-1.5 truncate text-xs font-semibold">
-                    {e.album.title}
-                  </p>
-                </a>
-              {/snippet}
-            </Carousel>
-          {:else}
-            <p class="text-dim py-6 text-center text-sm">
-              Rien à écouter pour l’instant.
-            </p>
-          {/if}
-        </section>
-      {/if}
-
-      {#if soonOn}
-        <section
-          class="border-border flex flex-col justify-center gap-1 rounded-xl border border-dashed p-4 opacity-70 lg:col-span-4">
-          <p class="font-display text-sm font-bold">
-            🎧 Podcasts &amp; 🎲 Jeux de société
-          </p>
-          <p class="text-dim text-xs">Bientôt disponible dans Loomkeep.</p>
-          <span
-            class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
-            Bientôt
-          </span>
-        </section>
-      {/if}
-
-      <!-- Activité (Fil) : en dernier bloc de contenu, juste avant les raccourcis. -->
-      <div class="lg:col-span-12">
-        <HomeActivityPreview limit={6} />
+        <div class="sm:col-span-2 lg:col-span-3">
+          <HomeActivityPreview limit={6} />
+        </div>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 lg:col-span-12 lg:grid-cols-3">
-        <a
-          href="/app/stats"
-          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
-          <div class="flex items-center gap-3">
-            <Icon name="stats" class="text-accent h-6 w-6" />
-            <div>
-              <p class="font-display font-bold">Tes statistiques</p>
-              <p class="text-dim text-sm">
-                Vidéo, jeux et livres en un coup d’œil.
-              </p>
+      <!-- Sidebar: its own stack, entirely separate from the main grid
+           above — Cette semaine, Objectif de lecture, Raccourcis. -->
+      <div class="flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
+        {#if mediaOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <h2
+                class="font-display flex items-center gap-2 text-base font-bold">
+                <Icon name="calendar" class="text-accent h-4 w-4" /> Cette semaine
+              </h2>
+              <a
+                href="/app/calendar"
+                class="text-dim hover:text-fg text-xs font-semibold"
+                >Calendrier →</a>
             </div>
-          </div>
-          <span class="text-dim">→</span>
-        </a>
+            {#if week.length > 0}
+              <ul class="divide-border divide-y">
+                {#each week as e (e.mediaItem.id + epCode(e))}
+                  <li>
+                    <a href={mediaHref(e)} class="flex items-center gap-3 py-2">
+                      <div class="w-8 shrink-0 overflow-hidden rounded-md">
+                        <Poster
+                          src={e.mediaItem.posterUrl}
+                          title={e.mediaItem.title} />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-display truncate text-sm font-semibold">
+                          {e.mediaItem.title}
+                        </p>
+                        <p class="timecode text-xs">
+                          {epCode(e)}
+                        </p>
+                      </div>
+                      <span
+                        class="border-accent/40 text-accent timecode rounded-md border px-1.5 py-0.5 text-[0.65rem]">
+                        {dayShort(e.airDate)}
+                      </span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <p class="text-dim py-6 text-center text-sm">
+                Rien de prévu cette semaine.
+              </p>
+            {/if}
+          </section>
+        {/if}
 
-        <a
-          href="/app/settings#aide"
-          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
-          <div class="flex items-center gap-3">
-            <Icon name="message" class="text-accent h-6 w-6" />
-            <div>
-              <p class="font-display flex items-center gap-2 font-bold">
-                Aide & Feedback
-                {#if isFeatureNew("help-feedback")}
-                  <NewBadge />
-                {/if}
-              </p>
-              <p class="text-dim text-sm">
-                Propose une idée, signale un bug, discute avec le dev.
-              </p>
-            </div>
-          </div>
-          <span class="text-dim">→</span>
-        </a>
+        {#if booksOn}
+          <ReadingGoalDashboardCard />
+        {/if}
 
-        <a
-          href="/app/settings"
-          class="card hover:border-accent flex items-center justify-between p-5 transition-[border-color]">
-          <div class="flex items-center gap-3">
-            <Icon name="gear" class="text-accent h-6 w-6" />
-            <div>
-              <p class="font-display font-bold">Paramètres</p>
-              <p class="text-dim text-sm">
-                Profil, préférences et notifications.
-              </p>
-            </div>
-          </div>
-          <span class="text-dim">→</span>
-        </a>
+        <!-- Raccourcis : liste compacte plutôt que 3 grandes cartes, pour
+             tenir dans la colonne étroite avec Cette semaine / Objectif. -->
+        <section class="card p-2">
+          <a
+            href="/app/stats"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="stats" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex-1 text-sm font-semibold">Statistiques</span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
+          <a
+            href="/app/settings#aide"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="message" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex flex-1 items-center gap-2 text-sm font-semibold">
+              Aide & Feedback
+              {#if isFeatureNew("help-feedback")}<NewBadge />{/if}
+            </span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
+          <a
+            href="/app/settings"
+            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+            <Icon name="gear" class="text-accent h-5 w-5 shrink-0" />
+            <span class="flex-1 text-sm font-semibold">Paramètres</span>
+            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+          </a>
+        </section>
       </div>
     </div>
   {/if}
