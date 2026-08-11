@@ -441,7 +441,8 @@
   "list_members_add_error_fallback": "Couldn't add this collaborator",
   "list_members_empty": "No collaborators yet.",
   "list_members_remove": "Remove",
-  "list_editor_badge": "Editor",
+  "list_owned_by_editor": "{name}'s list",
+  "list_leave": "Leave list",
   "list_reorder_conflict": "This list was changed by someone else in the meantime — it's just been reloaded.",
 
   "mermaid_invalid": "Invalid diagram.",

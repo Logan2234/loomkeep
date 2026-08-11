@@ -136,8 +136,9 @@ export class ListController {
     );
   }
 
-  // --- Collaborators: owner-only, social-gated (granting/revoking edit
-  // access to another user is itself a social feature). ---
+  // --- Collaborators: social-gated (granting/revoking edit access to
+  // another user is itself a social feature). Listing/adding are owner-only;
+  // removing is owner-only except an editor can remove themselves (leave). ---
 
   @Get(":id/members")
   @UseGuards(SocialFeatureGuard)

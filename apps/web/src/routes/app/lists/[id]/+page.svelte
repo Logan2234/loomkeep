@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { dndzone } from "svelte-dnd-action";
   import { page } from "$app/state";
   import {
     ApiError,
     getList,
     getMyList,
     removeListItem,
+    removeListMember,
     reorderListItems,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
@@ -26,6 +26,7 @@
     ListItemDto,
     ListViewerRole,
   } from "@loomkeep/shared";
+  import { dndzone } from "svelte-dnd-action";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: "Classement",
@@ -103,6 +104,19 @@
     window.location.href = "/app/lists";
   }
 
+  let leaving = $state(false);
+
+  async function leaveList() {
+    if (!list || leaving || !auth.user) return;
+    leaving = true;
+    try {
+      await removeListMember(list.id, auth.user.id);
+      window.location.href = "/app/lists";
+    } finally {
+      leaving = false;
+    }
+  }
+
   async function removeItem(itemId: string) {
     if (!list || removingId) return;
     removingId = itemId;
@@ -163,7 +177,7 @@
   </div>
 {:else if list}
   <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
-    <div class="flex items-start justify-between gap-4">
+    <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
         <h1 class="font-display text-3xl font-extrabold tracking-tight">
           {list.title}
@@ -174,10 +188,6 @@
             <span aria-hidden="true">·</span>
             <span>{VISIBILITY_LABEL[list.visibility]}</span>
           {/if}
-          {#if role === "EDITOR"}
-            <span aria-hidden="true">·</span>
-            <span class="chip chip-on">{m.list_editor_badge()}</span>
-          {/if}
           {#if role !== "OWNER"}
             <span aria-hidden="true">·</span>
             <a
@@ -187,7 +197,9 @@
                 seed={list.author.username}
                 url={list.author.avatarUrl}
                 size={18} />
-              @{list.author.username}
+              {role === "EDITOR"
+                ? m.list_owned_by_editor({ name: list.author.displayName })
+                : list.author.displayName}
             </a>
           {/if}
         </p>
@@ -209,6 +221,11 @@
         {#if canEditList}
           <button class="btn btn-ghost" onclick={() => (editing = true)}>
             Modifier
+          </button>
+        {/if}
+        {#if role === "EDITOR"}
+          <button class="btn btn-ghost" disabled={leaving} onclick={leaveList}>
+            {m.list_leave()}
           </button>
         {/if}
       </div>
@@ -290,7 +307,7 @@
             </svelte:element>
             {#if canEditList}
               <button
-                class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md backdrop-blur transition-colors hover:text-white"
+                class="bg-bg/80 text-dim hover:bg-danger absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-md opacity-0 backdrop-blur transition-all group-hover:opacity-100 group-hover:shadow-md hover:text-white"
                 aria-label="Retirer de la liste"
                 title="Retirer de la liste"
                 disabled={removingId === item.id}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMyLists } from "$lib/api/client";
+  import { getEditableLists } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -7,6 +7,7 @@
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { ListDto, MyListDto } from "@loomkeep/shared";
 
   const KIND_LABEL: Record<string, string> = {
@@ -45,7 +46,7 @@
   let sort = $state<SortKey>("updatedAt");
 
   $effect(() => {
-    getMyLists()
+    getEditableLists()
       .then((r) => (lists = r))
       .finally(() => (loading = false));
   });
@@ -75,7 +76,10 @@
 
   function handleCreated(list: ListDto) {
     // Newest-updated first, matches the server order for a fresh list.
-    lists = [{ ...list, itemCount: 0, previewImageUrls: [] }, ...lists];
+    lists = [
+      { ...list, itemCount: 0, previewImageUrls: [], role: "OWNER" },
+      ...lists,
+    ];
   }
 </script>
 
@@ -159,6 +163,13 @@
             {#if appConfig.socialEnabled}
               <span aria-hidden="true">·</span>
               <span>{VISIBILITY_LABEL[list.visibility]}</span>
+            {/if}
+            {#if list.role === "EDITOR"}
+              <span aria-hidden="true">·</span>
+              <span
+                >{m.list_owned_by_editor({
+                  name: list.author.displayName,
+                })}</span>
             {/if}
           </p>
         </a>

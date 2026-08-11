@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SecurityModule } from "../security/security.module";
@@ -9,7 +10,7 @@ import { DomainGateService } from "./domain-gate.service";
 import { UsersController } from "./users.controller";
 
 @Module({
-  imports: [MailModule, SecurityModule, ReviewsModule],
+  imports: [MailModule, SecurityModule, ReviewsModule, ListsModule],
   controllers: [UsersController],
   providers: [
     AgeGateService,

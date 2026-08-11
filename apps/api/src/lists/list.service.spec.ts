@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
@@ -12,6 +13,10 @@ function fakeConfig(socialEnabled = true): ConfigService {
   return {
     get: jest.fn(() => (socialEnabled ? "true" : "false")),
   } as unknown as ConfigService;
+}
+
+function fakeNotifications(): NotificationService {
+  return { create: jest.fn() } as unknown as NotificationService;
 }
 
 function relation(over: Partial<ViewerRelation> = {}): ViewerRelation {
@@ -63,7 +68,13 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       getRelation: jest.fn().mockResolvedValue(rel),
     } as unknown as VisibilityService;
     const activity = { emit: jest.fn() } as unknown as ActivityService;
-    return new ListService(prisma, visibility, activity, fakeConfig());
+    return new ListService(
+      prisma,
+      visibility,
+      activity,
+      fakeConfig(),
+      fakeNotifications(),
+    );
   }
 
   it("always shows the owner their own list, even PRIVATE", async () => {
@@ -122,6 +133,78 @@ describe("ListService.getForViewer — own-visibility gate", () => {
   });
 });
 
+describe("ListService.listForUser — editor lists on a profile", () => {
+  function userSummary(id: string) {
+    return {
+      id,
+      username: id,
+      displayName: id,
+      profileAccess: "PUBLIC",
+      avatarUpdatedAt: null,
+    };
+  }
+
+  function make(relationByOwnerId: Record<string, ViewerRelation>) {
+    const ownRows = [
+      listRow({
+        id: "own-1",
+        userId: "profile-user",
+        visibility: "PUBLIC",
+        _count: { items: 0 },
+      }),
+    ];
+    const editorRows = [
+      listRow({
+        id: "shared-1",
+        userId: "real-owner",
+        visibility: "PRIVATE",
+        user: { id: "real-owner", profileAccess: "PUBLIC" },
+        _count: { items: 0 },
+      }),
+    ];
+    const listFindMany = jest
+      .fn()
+      .mockResolvedValueOnce(ownRows)
+      .mockResolvedValueOnce(editorRows);
+    const prisma = {
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: "profile-user", profileAccess: "PUBLIC" }),
+        findUniqueOrThrow: jest.fn((args: { where: { id: string } }) =>
+          Promise.resolve(userSummary(args.where.id)),
+        ),
+      },
+      list: { findMany: listFindMany },
+    } as unknown as PrismaService;
+    const visibility = {
+      getRelation: jest.fn((_viewerId: string, target: { id: string }) =>
+        Promise.resolve(relationByOwnerId[target.id] ?? relation()),
+      ),
+    } as unknown as VisibilityService;
+    const svc = new ListService(
+      prisma,
+      visibility,
+      {} as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+    );
+    return { svc };
+  }
+
+  it("shows both owned and editor lists on the profile owner's own view, ignoring visibility", async () => {
+    const { svc } = make({});
+    const out = await svc.listForUser("profile-user", "profile-user");
+    expect(out.map((l) => l.id).sort()).toEqual(["own-1", "shared-1"]);
+  });
+
+  it("gates an editor list by the real owner's visibility, not the profile's", async () => {
+    const { svc } = make({ "real-owner": relation() }); // stranger, not a friend
+    const out = await svc.listForUser("stranger", "profile-user");
+    expect(out.map((l) => l.id)).toEqual(["own-1"]);
+  });
+});
+
 describe("ListService.addItem", () => {
   function make(dup: boolean) {
     const create = jest.fn().mockResolvedValue({
@@ -150,6 +233,7 @@ describe("ListService.addItem", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
+      fakeNotifications(),
     );
     return { svc, create, activity };
   }
@@ -205,6 +289,7 @@ describe("ListService.reorder", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
+      fakeNotifications(),
     );
     return { svc, listItemUpdate, listUpdateMany };
   }
@@ -274,6 +359,7 @@ describe("ListService.canEdit (via getEditable)", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(opts.socialEnabled ?? true),
+      fakeNotifications(),
     );
   }
 
@@ -317,6 +403,13 @@ describe("ListService member management — owner only", () => {
           profileAccess: "PUBLIC",
           avatarUpdatedAt: null,
         }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: ownerId,
+          username: ownerId,
+          displayName: ownerId,
+          profileAccess: "PUBLIC",
+          avatarUpdatedAt: null,
+        }),
       },
       listMember: {
         findUnique: jest.fn().mockResolvedValue(null),
@@ -324,22 +417,30 @@ describe("ListService member management — owner only", () => {
         deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
+    const notifications = fakeNotifications();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
+      notifications,
     );
-    return { svc, create };
+    return { svc, create, notifications };
   }
 
   it("lets the owner add a member by username", async () => {
-    const { svc, create } = make("owner");
+    const { svc, create, notifications } = make("owner");
     const member = await svc.addMember("owner", "l1", "friend");
     expect(member.user.username).toBe("friend");
     expect(create).toHaveBeenCalledWith({
       data: { listId: "l1", userId: "friend" },
     });
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "friend",
+        type: "LIST_MEMBER_ADDED",
+      }),
+    );
   });
 
   it("rejects a non-owner adding a member", async () => {
@@ -347,6 +448,66 @@ describe("ListService member management — owner only", () => {
     await expect(
       svc.addMember("someone-else", "l1", "friend"),
     ).rejects.toThrow();
+  });
+
+  it("lets an editor remove themselves (leave)", async () => {
+    const { svc } = make("owner");
+    await expect(
+      svc.removeMember("friend", "l1", "friend"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects an editor removing someone else", async () => {
+    const { svc } = make("owner");
+    await expect(
+      svc.removeMember("friend", "l1", "someone-else"),
+    ).rejects.toThrow();
+  });
+});
+
+describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
+  function make(rows: { id: string; members: { userId: string }[] }[]) {
+    const listUpdate = jest.fn();
+    const listMemberDelete = jest.fn();
+    const prisma = {
+      list: {
+        findMany: jest.fn().mockResolvedValue(rows),
+        update: listUpdate,
+      },
+      listMember: { delete: listMemberDelete },
+      $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
+    } as unknown as PrismaService;
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      {} as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+    );
+    return { svc, listUpdate, listMemberDelete };
+  }
+
+  it("leaves an editor-less list alone (the FK cascade handles it)", async () => {
+    const { svc, listUpdate, listMemberDelete } = make([
+      { id: "l1", members: [] },
+    ]);
+    await svc.reassignOwnedListsOnAccountDeletion("owner");
+    expect(listUpdate).not.toHaveBeenCalled();
+    expect(listMemberDelete).not.toHaveBeenCalled();
+  });
+
+  it("transfers a shared list to its earliest-added editor", async () => {
+    const { svc, listUpdate, listMemberDelete } = make([
+      { id: "l1", members: [{ userId: "editor-1" }] },
+    ]);
+    await svc.reassignOwnedListsOnAccountDeletion("owner");
+    expect(listUpdate).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { userId: "editor-1" },
+    });
+    expect(listMemberDelete).toHaveBeenCalledWith({
+      where: { listId_userId: { listId: "l1", userId: "editor-1" } },
+    });
   });
 });
 
@@ -371,6 +532,7 @@ describe("ListService — activity emission on create/share", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
+      fakeNotifications(),
     );
     return { svc, activity };
   }
@@ -422,6 +584,7 @@ describe("ListService — Figurant can't share a list", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
+      fakeNotifications(),
     );
     return { svc, create, update };
   }

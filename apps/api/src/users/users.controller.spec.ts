@@ -8,6 +8,7 @@ import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { HibpService } from "../common/hibp.service";
+import type { ListService } from "../lists/list.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -58,6 +59,9 @@ describe("UsersController — email change", () => {
       {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
+      {
+        reassignOwnedListsOnAccountDeletion: jest.fn(),
+      } as unknown as ListService,
     );
   });
 
@@ -279,6 +283,9 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
       {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
+      {
+        reassignOwnedListsOnAccountDeletion: jest.fn(),
+      } as unknown as ListService,
     );
   });
 
@@ -354,6 +361,9 @@ describe("UsersController — uploadAvatar", () => {
       {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
+      {
+        reassignOwnedListsOnAccountDeletion: jest.fn(),
+      } as unknown as ListService,
     );
   });
 
@@ -431,6 +441,9 @@ describe("UsersController — changePassword", () => {
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       hibp,
+      {
+        reassignOwnedListsOnAccountDeletion: jest.fn(),
+      } as unknown as ListService,
     );
   });
 
@@ -486,6 +499,73 @@ describe("UsersController — changePassword", () => {
   });
 });
 
+describe("UsersController — deleteAccount", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let lists: ListService;
+  let controller: UsersController;
+
+  beforeEach(async () => {
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: userId,
+          email: "alice@example.com",
+          passwordHash,
+        }),
+        delete: jest.fn(),
+      },
+    } as unknown as PrismaService;
+    lists = {
+      reassignOwnedListsOnAccountDeletion: jest.fn(),
+    } as unknown as ListService;
+    controller = new UsersController(
+      prisma,
+      {} as unknown as MailService,
+      { record: jest.fn() } as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      { isPasswordPwned: jest.fn() } as unknown as HibpService,
+      lists,
+    );
+  });
+
+  it("rejects an incorrect current password without deleting anything", async () => {
+    await expect(
+      controller.deleteAccount(jwtPayload(userId), {
+        currentPassword: "wrong",
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(lists.reassignOwnedListsOnAccountDeletion).not.toHaveBeenCalled();
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it("reassigns owned lists with editors before deleting the account", async () => {
+    const calls: string[] = [];
+    (lists.reassignOwnedListsOnAccountDeletion as jest.Mock).mockImplementation(
+      async () => {
+        calls.push("reassign");
+      },
+    );
+    (prisma.user.delete as jest.Mock).mockImplementation(async () => {
+      calls.push("delete");
+    });
+
+    await controller.deleteAccount(jwtPayload(userId), {
+      currentPassword: "correct-password",
+    });
+
+    expect(lists.reassignOwnedListsOnAccountDeletion).toHaveBeenCalledWith(
+      userId,
+    );
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: userId } });
+    expect(calls).toEqual(["reassign", "delete"]);
+  });
+});
+
 describe("UsersController — deletionSummary", () => {
   const userId = "user-1";
   let prisma: PrismaService;
@@ -517,6 +597,9 @@ describe("UsersController — deletionSummary", () => {
       {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
+      {
+        reassignOwnedListsOnAccountDeletion: jest.fn(),
+      } as unknown as ListService,
     );
   });
 

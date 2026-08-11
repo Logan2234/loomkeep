@@ -770,6 +770,10 @@
           <div class="flex items-center gap-2">
             <span class="text-fg font-semibold">{l.title}</span>
             <span class="text-dim text-xs">· {l.itemCount} élément(s)</span>
+            {#if l.role === "EDITOR"}
+              <span class="text-dim text-xs"
+                >· Invité par {l.author.displayName}</span>
+            {/if}
           </div>
           <p class="text-dim mt-0.5 text-xs">
             {l.kind} · {l.visibility}

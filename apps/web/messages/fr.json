@@ -441,7 +441,8 @@
   "list_members_add_error_fallback": "Impossible d'ajouter ce collaborateur",
   "list_members_empty": "Aucun collaborateur pour l'instant.",
   "list_members_remove": "Retirer",
-  "list_editor_badge": "Éditeur",
+  "list_owned_by_editor": "Liste de {name}",
+  "list_leave": "Quitter la liste",
   "list_reorder_conflict": "Cette liste a été modifiée entre-temps par quelqu'un d'autre — elle vient d'être rechargée.",
 
   "mermaid_invalid": "Diagramme invalide.",

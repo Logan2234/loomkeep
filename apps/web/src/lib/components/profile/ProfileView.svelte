@@ -122,7 +122,10 @@
 
   let creatingList = $state(false);
   function handleListCreated(list: ListDto) {
-    lists = [{ ...list, itemCount: 0, previewImageUrls: [] }, ...lists];
+    lists = [
+      { ...list, itemCount: 0, previewImageUrls: [], role: "OWNER" },
+      ...lists,
+    ];
   }
 
   let memberSince = $derived(
@@ -731,6 +734,13 @@
                     <p class="mt-1.5 truncate text-xs font-semibold">
                       {item.list.title}
                     </p>
+                    {#if item.list.role === "EDITOR"}
+                      <p class="text-dim truncate text-[0.65rem]">
+                        {m.list_owned_by_editor({
+                          name: item.list.author.displayName,
+                        })}
+                      </p>
+                    {/if}
                   </a>
                 {/if}
               {/snippet}

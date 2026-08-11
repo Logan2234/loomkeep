@@ -90,13 +90,17 @@
       <ul class="space-y-2">
         {#each members as member (member.user.id)}
           <li class="flex items-center gap-3">
-            <Avatar
-              seed={member.user.username}
-              url={member.user.avatarUrl}
-              size={32} />
-            <span class="min-w-0 flex-1 truncate font-semibold">
-              @{member.user.username}
-            </span>
+            <a
+              href="/app/u/{member.user.username}"
+              class="hover:text-fg flex min-w-0 flex-1 items-center gap-3">
+              <Avatar
+                seed={member.user.username}
+                url={member.user.avatarUrl}
+                size={32} />
+              <span class="min-w-0 flex-1 truncate font-semibold">
+                {member.user.displayName}
+              </span>
+            </a>
             <button
               class="text-dim hover:text-danger hover:bg-danger/10 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
               aria-label={m.list_members_remove()}

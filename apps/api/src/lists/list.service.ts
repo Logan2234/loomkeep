@@ -16,10 +16,12 @@ import {
   type ListViewerRole,
   type ListVisibility,
   type MyListDto,
+  NotificationType,
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { isSocialEnabled } from "../social/social.config";
@@ -67,6 +69,7 @@ export class ListService {
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationService,
   ) {}
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
@@ -210,6 +213,7 @@ export class ListService {
       ...this.toDto(r, author),
       itemCount: r._count.items,
       previewImageUrls: previews.get(r.id) ?? [],
+      role: "OWNER" as const,
     }));
   }
 
@@ -237,6 +241,7 @@ export class ListService {
       ...this.toDto(r, authorById.get(r.userId)!),
       itemCount: r._count.items,
       previewImageUrls: previews.get(r.id) ?? [],
+      role: r.userId === userId ? ("OWNER" as const) : ("EDITOR" as const),
     }));
   }
 
@@ -279,7 +284,14 @@ export class ListService {
     return this.detail(id, row.userId === viewerId ? "OWNER" : "VIEWER");
   }
 
-  /** A user's lists visible to the viewer (their shared/public ones only). */
+  /**
+   * A user's lists visible to the viewer — their own, plus ones they edit
+   * for someone else. On the profile owner's own view (`isOwnProfile`),
+   * everything shows, same as "own scope" elsewhere. Otherwise each list is
+   * gated by *its actual owner's* visibility/audience, not the profile being
+   * viewed — being an editor never leaks a PRIVATE/FRIENDS list of someone
+   * else's to a stranger just because they're browsing the editor's profile.
+   */
   async listForUser(viewerId: string, username: string): Promise<MyListDto[]> {
     const user = await this.prisma.user.findUnique({
       where: { username },
@@ -287,35 +299,80 @@ export class ListService {
     });
     if (!user) return [];
 
-    const relation = await this.visibility.getRelation(viewerId, user);
-    const rows = await this.prisma.list.findMany({
-      where: { userId: user.id },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        items: { orderBy: { position: "asc" }, take: PREVIEW_ITEM_COUNT },
-        _count: { select: { items: true } },
+    const listInclude = {
+      items: {
+        orderBy: { position: "asc" as const },
+        take: PREVIEW_ITEM_COUNT,
       },
-    });
+      _count: { select: { items: true } },
+    };
 
-    const visible = rows.filter((r) =>
-      user.id === viewerId
-        ? true
-        : resolveOwnVisibility(
-            r.visibility as ListVisibility,
-            user.profileAccess,
-            relation,
-          ),
-    );
-
-    const [author, previews] = await Promise.all([
-      this.author(user.id),
-      this.buildPreviews(visible),
+    const [ownRows, editorRows] = await Promise.all([
+      this.prisma.list.findMany({
+        where: { userId: user.id },
+        orderBy: { updatedAt: "desc" },
+        include: listInclude,
+      }),
+      this.prisma.list.findMany({
+        where: { members: { some: { userId: user.id } } },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          ...listInclude,
+          user: { select: { id: true, profileAccess: true } },
+        },
+      }),
     ]);
 
-    return visible.map((r) => ({
-      ...this.toDto(r, author),
+    const isOwnProfile = user.id === viewerId;
+    let visibleOwn = ownRows;
+    let visibleEditor = editorRows;
+
+    if (!isOwnProfile) {
+      const relation = await this.visibility.getRelation(viewerId, user);
+      visibleOwn = ownRows.filter((r) =>
+        resolveOwnVisibility(
+          r.visibility as ListVisibility,
+          user.profileAccess,
+          relation,
+        ),
+      );
+
+      const ownerRelations = new Map(
+        await Promise.all(
+          [...new Map(editorRows.map((r) => [r.userId, r.user])).entries()].map(
+            async ([ownerId, owner]) =>
+              [
+                ownerId,
+                await this.visibility.getRelation(viewerId, owner),
+              ] as const,
+          ),
+        ),
+      );
+      visibleEditor = editorRows.filter((r) =>
+        resolveOwnVisibility(
+          r.visibility as ListVisibility,
+          r.user.profileAccess,
+          ownerRelations.get(r.userId)!,
+        ),
+      );
+    }
+
+    const rows = [...visibleOwn, ...visibleEditor].sort(
+      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+    );
+
+    const authorIds = [...new Set(rows.map((r) => r.userId))];
+    const [authors, previews] = await Promise.all([
+      Promise.all(authorIds.map((id) => this.author(id))),
+      this.buildPreviews(rows),
+    ]);
+    const authorById = new Map(authorIds.map((id, i) => [id, authors[i]]));
+
+    return rows.map((r) => ({
+      ...this.toDto(r, authorById.get(r.userId)!),
       itemCount: r._count.items,
       previewImageUrls: previews.get(r.id) ?? [],
+      role: r.userId === user.id ? ("OWNER" as const) : ("EDITOR" as const),
     }));
   }
 
@@ -456,13 +513,16 @@ export class ListService {
     }));
   }
 
-  /** Grants `username` edit access to the list — owner only, social-gated. */
+  /**
+   * Grants `username` edit access to the list — owner only, social-gated.
+   * Notifies the invited user in-app.
+   */
   async addMember(
     userId: string,
     id: string,
     username: string,
   ): Promise<ListMemberDto> {
-    await this.ownList(userId, id);
+    const list = await this.ownList(userId, id);
 
     const target = await this.prisma.user.findUnique({
       where: { username },
@@ -483,23 +543,81 @@ export class ListService {
       data: { listId: id, userId: target.id },
     });
 
+    const owner = await this.author(userId);
+    await this.notifications.create({
+      userId: target.id,
+      type: NotificationType.LIST_MEMBER_ADDED,
+      title: owner.displayName,
+      body: `vous a ajouté comme éditeur sur « ${list.title} »`,
+      url: `/app/lists/${id}`,
+      dedupeKey: `list-member:${id}:${target.id}`,
+      data: {
+        actorUsername: owner.username,
+        actorDisplayName: owner.displayName,
+      },
+    });
+
     return {
       user: toUserSummaryDto(target),
       createdAt: row.createdAt.toISOString(),
     };
   }
 
-  /** Revokes edit access — owner only, social-gated. */
+  /**
+   * Revokes edit access — the owner can remove anyone; an editor can only
+   * remove themselves (leave the list). Social-gated either way, since it
+   * only ever acts on a ListMember row.
+   */
   async removeMember(
     userId: string,
     id: string,
     memberUserId: string,
   ): Promise<void> {
-    await this.ownList(userId, id);
+    if (userId !== memberUserId) await this.ownList(userId, id);
     const { count } = await this.prisma.listMember.deleteMany({
       where: { listId: id, userId: memberUserId },
     });
     if (count === 0) throw new NotFoundException();
+  }
+
+  /**
+   * Called by account deletion, right before the `User` row is removed. A
+   * list with no editors just cascades away via the FK as before — but a
+   * list with at least one editor now survives: ownership passes to the
+   * earliest-added editor rather than silently destroying shared work the
+   * group built together. (Doesn't re-clamp visibility for a GHOST new
+   * owner — same as any other transfer, that only happens on an explicit
+   * `update()` call.)
+   */
+  async reassignOwnedListsOnAccountDeletion(userId: string): Promise<void> {
+    const rows = await this.prisma.list.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        members: {
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: { userId: true },
+        },
+      },
+    });
+
+    for (const row of rows) {
+      const newOwner = row.members[0];
+      if (!newOwner) continue;
+
+      await this.prisma.$transaction([
+        this.prisma.list.update({
+          where: { id: row.id },
+          data: { userId: newOwner.userId },
+        }),
+        this.prisma.listMember.delete({
+          where: {
+            listId_userId: { listId: row.id, userId: newOwner.userId },
+          },
+        }),
+      ]);
+    }
   }
 
   // --- internals -------------------------------------------------------

@@ -61,6 +61,13 @@ export interface MyListDto extends ListDto {
    * when the list has no items yet.
    */
   previewImageUrls: string[];
+  /**
+   * OWNER or EDITOR relative to the list this array is scoped to (the caller
+   * for "my lists"/"editable lists", or the profile being viewed for a
+   * user's lists) — never VIEWER, a list wouldn't appear in these arrays
+   * otherwise. Drives the "you're invited on this one" indicator.
+   */
+  role: Extract<ListViewerRole, "OWNER" | "EDITOR">;
 }
 
 export interface CreateListDto {

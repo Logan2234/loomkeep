@@ -37,6 +37,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { ListService } from "../lists/list.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -71,6 +72,7 @@ export class UsersController {
     private readonly csvExport: CsvExportService,
     private readonly config: ConfigService,
     private readonly hibp: HibpService,
+    private readonly lists: ListService,
   ) {}
 
   @Get("me")
@@ -482,7 +484,9 @@ export class UsersController {
       this.prisma.gameEntry.count({ where: { userId } }),
       this.prisma.bookEntry.count({ where: { userId } }),
       this.prisma.musicEntry.count({ where: { userId } }),
-      this.prisma.list.count({ where: { userId } }),
+      // A list with editors isn't deleted, ownership is transferred instead
+      // (see deleteAccount) — only count lists that will actually cascade.
+      this.prisma.list.count({ where: { userId, members: { none: {} } } }),
       this.prisma.notification.count({ where: { userId } }),
       this.prisma.follow.count({ where: { followeeId: userId } }),
       this.prisma.follow.count({ where: { followerId: userId } }),
@@ -521,7 +525,10 @@ export class UsersController {
    * this is irreversible. All owned rows (library entries, watches, refresh
    * tokens, notifications) go with it via `onDelete: Cascade`; Review/Comment/
    * Report are detached (SetNull) instead of deleted — see deletionSummary()
-   * above — and the shared MediaItem cache is untouched.
+   * above — and the shared MediaItem cache is untouched. A list with editors
+   * is the one exception to the cascade: ownership passes to the earliest
+   * editor first (see ListService.reassignOwnedListsOnAccountDeletion), so
+   * shared work doesn't vanish because one collaborator left.
    */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("me")
@@ -543,6 +550,7 @@ export class UsersController {
       identifier: current.email,
       userAgent,
     });
+    await this.lists.reassignOwnedListsOnAccountDeletion(payload.sub);
     await this.prisma.user.delete({ where: { id: payload.sub } });
   }
 

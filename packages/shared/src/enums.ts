@@ -54,6 +54,8 @@ export const NotificationType = {
   COMMENT_MENTION: "COMMENT_MENTION",
   /** Your comment crossed the reaction notification threshold. */
   COMMENT_REACTIONS: "COMMENT_REACTIONS",
+  /** Someone added you as an editor on one of their lists. */
+  LIST_MEMBER_ADDED: "LIST_MEMBER_ADDED",
 } as const;
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
