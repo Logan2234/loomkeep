@@ -13,6 +13,7 @@ import type { AuthTokensDto, SessionDto, UserDto } from "@loomkeep/shared";
 import { deviceLabel } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { HibpService } from "../common/hibp.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -44,6 +45,7 @@ export class AuthService {
     private readonly mail: MailService,
     private readonly security: SecurityEventService,
     private readonly turnstile: TurnstileService,
+    private readonly hibp: HibpService,
   ) {}
 
   async register(
@@ -65,6 +67,12 @@ export class AuthService {
 
     if (existing) {
       throw new ConflictException("An account with this email already exists");
+    }
+
+    if (await this.hibp.isPasswordPwned(dto.password)) {
+      throw new BadRequestException(
+        "This password has appeared in a known data breach — please choose a different one",
+      );
     }
 
     const user = await this.prisma.user.create({
@@ -340,6 +348,12 @@ export class AuthService {
       stored.expiresAt < new Date()
     ) {
       throw new UnauthorizedException("Invalid or expired reset token");
+    }
+
+    if (await this.hibp.isPasswordPwned(newPassword)) {
+      throw new BadRequestException(
+        "This password has appeared in a known data breach — please choose a different one",
+      );
     }
 
     await this.prisma.$transaction([

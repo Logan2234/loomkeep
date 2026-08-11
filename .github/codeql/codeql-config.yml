@@ -9,3 +9,9 @@ paths-ignore:
   - apps/web/build
   - apps/web/.svelte-kit
   - packages/shared/dist
+  # SHA-1 here is the HIBP range API's own k-anonymity lookup key, not a
+  # credential hash — js/insufficient-password-hash is a false positive on
+  # this specific file, and inline `codeql[...]` suppression comments aren't
+  # honored by this repo's default-setup CodeQL config.
+  - apps/api/src/common/hibp.service.ts
+  - apps/api/src/common/hibp.service.spec.ts
