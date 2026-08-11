@@ -58,10 +58,12 @@
           placeholder={m.auth_login_password_placeholder()}
           bind:value={password}
           required />
-        <a
-          href="/forgot-password"
-          class="text-dim hover:text-accent -mt-2 text-right text-sm hover:underline"
-          >{m.auth_forgot_password()}</a>
+        <p class="text-dim -mt-2 text-right text-sm">
+          <a
+            href="/forgot-password"
+            class="hover:text-accent transition-colors hover:underline"
+            >{m.auth_forgot_password()}</a>
+        </p>
         {#if error}<Banner variant="error">{error}</Banner>{/if}
         <button type="submit" class="btn btn-primary" disabled={loading}>
           {loading ? m.auth_login_action_loading() : m.auth_login_action()}
