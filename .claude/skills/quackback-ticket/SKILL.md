@@ -34,7 +34,8 @@ cycle end to end in this one session — do not spawn scheduled tasks or backgro
 
 ## 4. Open the PR
 
-- Push the branch and `gh pr create`. Reference the ticket in the PR description (link to
+- Commit and push the branch. Never add "Co-Authored-By Claude" in then commit description.
+- Then `gh pr create`. Reference the ticket in the PR description (link to
   `https://feedback.loomkeep.app/...` or just the post id) so the connection is traceable from GitHub too.
 - Tell Logan the PR is up and give him the link. He merges it himself (or uses the desktop app's own
   Auto-fix/Auto-merge CI toggles) — do not merge it yourself.

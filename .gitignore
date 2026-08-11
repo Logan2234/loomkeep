@@ -29,8 +29,7 @@ docker/authelia/public.pem
 docker/observability/healthchecks_token
 
 # Generated docs (prisma-erd-generator output; regenerated on prisma generate OR modules.md for NestJS modules)
-docs/*
-!docs/.gitkeep
+docs/modules.md
 
 # Local dev backups
 apps/api/backups/

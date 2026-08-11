@@ -8,6 +8,8 @@ type AdminNavItem = {
   description: string;
   icon: ComponentProps<typeof Icon>["name"];
   match: (path: string) => boolean;
+  /** Only shown when `appConfig.erdEnabled` (dev-only content, see config.svelte.ts). */
+  devOnly?: boolean;
 };
 
 export const ADMIN_NAV: AdminNavItem[] = [
@@ -75,6 +77,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     description: "Graphe du schéma DB et des modules de l'app.",
     icon: "library",
     match: (p) => p.startsWith("/app/admin/schema"),
+    devOnly: true,
   },
   {
     href: "/app/admin/security",

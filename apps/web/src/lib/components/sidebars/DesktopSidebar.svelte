@@ -139,7 +139,7 @@
             </div>
           {/if}
 
-          {#each ADMIN_NAV as item (item.href)}
+          {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
             {@const active = item.match(page.url.pathname)}
             <a
               href={item.href}

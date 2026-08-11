@@ -15,8 +15,10 @@ export async function initConfig(): Promise<void> {
     const config = await getPublicConfig();
     appConfig.socialEnabled = config.socialEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
+    appConfig.erdEnabled = config.erdEnabled;
   } catch {
     appConfig.socialEnabled = false;
     appConfig.registrationEnabled = false;
+    appConfig.erdEnabled = false;
   }
 }

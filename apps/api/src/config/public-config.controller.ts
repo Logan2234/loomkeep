@@ -17,6 +17,7 @@ export class PublicConfigController {
     return {
       socialEnabled: isSocialEnabled(this.config),
       registrationEnabled: isRegistrationEnabled(this.config),
+      erdEnabled: this.config.get<string>("NODE_ENV") === "development",
     };
   }
 }

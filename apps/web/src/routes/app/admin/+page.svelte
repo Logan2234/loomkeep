@@ -14,6 +14,7 @@
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { CHANGELOG_URL } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages";
@@ -150,7 +151,8 @@
       label: cat.label,
       items: cat.hrefs
         .map((href) => ADMIN_NAV.find((i) => i.href === href))
-        .filter((i) => i !== undefined),
+        .filter((i) => i !== undefined)
+        .filter((i) => !i.devOnly || appConfig.erdEnabled),
     })),
   );
 </script>

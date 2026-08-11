@@ -95,7 +95,7 @@
       class="flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {#if inAdmin}
         <div class="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {#each ADMIN_NAV as item (item.href)}
+          {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
             {@render tile(item)}
           {/each}
         </div>

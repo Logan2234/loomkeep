@@ -1,11 +1,20 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { getAdminSchema, ApiError } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { SchemaGraphResponseDto } from "@loomkeep/shared";
+
+  // Direct-URL access outside dev: the underlying docs/erd.md and
+  // docs/modules.md are never generated in the Docker build (DISABLE_ERD),
+  // so there's nothing to show — bounce to the admin home instead.
+  $effect(() => {
+    if (!appConfig.erdEnabled) void goto("/app/admin");
+  });
 
   type Tab = "erd" | "modules";
 
