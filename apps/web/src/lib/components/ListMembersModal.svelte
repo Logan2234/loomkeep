@@ -74,7 +74,7 @@
         class="btn btn-primary shrink-0"
         disabled={busy || !username.trim()}
         onclick={add}>
-        {m.list_members_add()}
+        {m.common_add()}
       </button>
     </div>
 

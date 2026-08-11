@@ -120,7 +120,7 @@
       <button
         class="btn btn-ghost btn-sm shrink-0"
         onclick={() => (editing = true)}>
-        {myReview ? m.reviews_section_edit() : m.reviews_section_add()}
+        {myReview ? m.common_edit() : m.common_add()}
       </button>
     {/if}
   </div>

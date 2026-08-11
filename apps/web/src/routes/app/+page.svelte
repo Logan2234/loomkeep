@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    getAdminVersion,
     getCalendar,
     listBooks,
     listGames,
@@ -15,8 +16,10 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
+  import { CHANGELOG_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { m } from "$lib/paraglide/messages";
   import type {
     BookEntryDto,
     CalendarEntryDto,
@@ -98,6 +101,17 @@
       loading = false;
     }
   }
+
+  // AdminOnly on the backend — only fetched (and shown) for the admin account.
+  let version = $state<string | null>(null);
+
+  $effect(() => {
+    if (auth.isAdmin) {
+      getAdminVersion()
+        .then((v) => (version = v.version))
+        .catch(() => {});
+    }
+  });
 
   $effect(() => {
     void load();
@@ -215,7 +229,7 @@
               </h2>
               <a
                 href="/app/media"
-                class="text-dim hover:text-fg text-xs font-semibold"
+                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
                 >Voir plus →</a>
             </div>
             <div class="p-4">
@@ -282,7 +296,8 @@
               </h2>
               <a
                 href="/app/games"
-                class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
+                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
+                >Voir →</a>
             </div>
             {#if playingGames.length > 0}
               <Carousel items={playingGames} keyOf={(e) => e.id}>
@@ -323,7 +338,8 @@
               </h2>
               <a
                 href="/app/books"
-                class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
+                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
+                >Voir →</a>
             </div>
             {#if readingBooks.length > 0}
               <ul class="divide-border divide-y">
@@ -378,7 +394,8 @@
               </h2>
               <a
                 href="/app/music"
-                class="text-dim hover:text-fg text-xs font-semibold">Voir →</a>
+                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
+                >Voir →</a>
             </div>
             {#if toListenAlbums.length > 0}
               <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
@@ -434,7 +451,7 @@
               </h2>
               <a
                 href="/app/calendar"
-                class="text-dim hover:text-fg text-xs font-semibold"
+                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
                 >Calendrier →</a>
             </div>
             {#if week.length > 0}
@@ -529,6 +546,18 @@
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
         </section>
+
+        {#if version}
+          <p class="text-dim mt-2 text-center text-xs">
+            <a
+              href={CHANGELOG_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="hover:text-fg transition-colors hover:underline">
+              {m.common_version({ version })}
+            </a>
+          </p>
+        {/if}
       </div>
     </div>
   {/if}

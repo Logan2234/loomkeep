@@ -314,7 +314,7 @@
         target="_blank"
         rel="noopener noreferrer"
         class="hover:text-fg transition-colors hover:underline">
-        {m.settings_version({ version })}
+        {m.common_version({ version })}
       </a>
     </p>
   {/if}
