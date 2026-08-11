@@ -30,7 +30,8 @@ export interface CommentDto {
   masked: boolean;
   createdAt: string;
   updatedAt: string;
-  author: UserSummaryDto;
+  /** Null once the author's account has been deleted — content stays, identity doesn't. */
+  author: UserSummaryDto | null;
   reactions: CommentReactionSummaryDto[];
   /** The viewer's own active reaction, or null. */
   myReaction: CommentEmote | null;
