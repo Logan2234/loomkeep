@@ -1,21 +1,57 @@
-<footer class="border-border px-4 py-5 text-center">
+<script lang="ts">
+  import { getAdminVersion } from "$lib/api/admin";
+  import { auth } from "$lib/auth.svelte";
+  import { m } from "$lib/paraglide/messages";
+
+  // AdminOnly on the backend — only fetched (and shown) for the admin account.
+  let version = $state<string | null>(null);
+
+  $effect(() => {
+    if (auth.isAdmin) {
+      getAdminVersion()
+        .then((v) => (version = v.version))
+        .catch(() => {});
+    }
+  });
+</script>
+
+<footer
+  class="border-border text-dim flex flex-col items-center gap-4 px-4 py-5 text-center text-xs">
   <nav
     aria-label="Informations légales"
-    class="text-dim flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+    class="flex flex-wrap justify-center gap-y-1">
     <a
       href="/legal/legal-notice"
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg hover:underline">Mentions légales</a>
+      class="hover:text-fg transition-colors hover:underline"
+      >Mentions légales</a>
+
+    <span class="mx-1.5">·</span>
+
     <a
       href="/legal/privacy-policy"
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg hover:underline">Confidentialité</a>
+      class="hover:text-fg transition-colors hover:underline"
+      >Confidentialité</a>
+
+    <span class="mx-1.5">·</span>
+
     <a
       href="/legal/terms-of-service"
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg hover:underline">CGU</a>
+      class="hover:text-fg transition-colors hover:underline">CGU</a>
   </nav>
+
+  {#if version}
+    <a
+      href="https://feedback.loomkeep.app/changelog"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="hover:text-fg transition-colors hover:underline">
+      {m.settings_version({ version })}
+    </a>
+  {/if}
 </footer>
