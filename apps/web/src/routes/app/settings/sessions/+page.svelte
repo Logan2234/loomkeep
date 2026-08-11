@@ -77,7 +77,7 @@
       revoking = false;
     }
   }
-  console.log(loading);
+
   let hasOthers = $derived(sessions.some((s) => s.jti !== currentJti));
 </script>
 
