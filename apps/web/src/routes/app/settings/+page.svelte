@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getAdminVersion } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
+  import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
@@ -16,17 +16,6 @@
   import ProfileSection from "./components/ProfileSection.svelte";
   import SecuritySection from "./components/SecuritySection.svelte";
   import SupportSection from "./components/SupportSection.svelte";
-
-  // AdminOnly on the backend — only fetched (and shown) for the admin account.
-  let version = $state<string | null>(null);
-
-  $effect(() => {
-    if (auth.isAdmin) {
-      getAdminVersion()
-        .then((v) => (version = v.version))
-        .catch(() => {});
-    }
-  });
 
   // Section table of contents (desktop only) — id must match the wrapper
   // below each section component. `social` entries hide when the flag is off.
@@ -119,7 +108,7 @@
   <PageHeader icon="gear" title={m.settings_title()} class="mb-6" />
 
   {#if auth.user}
-    <div class="lg:grid lg:grid-cols-[180px_1fr] lg:gap-10">
+    <div class="mb-6 lg:grid lg:grid-cols-[180px_1fr] lg:gap-10">
       <nav class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
         <ul class="border-border space-y-1 border-l">
           {#each visibleSections as s (s.id)}
@@ -184,34 +173,5 @@
     </div>
   {/if}
 
-  <div class="mt-10 flex flex-col items-center gap-2 text-center text-xs">
-    <p class="text-dim">
-      <a
-        href="/legal/legal-notice"
-        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
-        Mentions légales
-      </a>
-      <span class="mx-1.5">·</span>
-      <a
-        href="/legal/privacy-policy"
-        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
-        Politique de confidentialité
-      </a>
-      <span class="mx-1.5">·</span>
-      <a
-        href="/legal/terms-of-service"
-        class="decoration-border hover:decoration-accent hover:text-fg underline underline-offset-2">
-        CGU
-      </a>
-    </p>
-    {#if version}
-      <a
-        href="https://feedback.loomkeep.app/changelog"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="decoration-border hover:decoration-accent hover:text-fg text-dim underline underline-offset-2">
-        {m.settings_version({ version })}
-      </a>
-    {/if}
-  </div>
+  <LegalLinks />
 </div>

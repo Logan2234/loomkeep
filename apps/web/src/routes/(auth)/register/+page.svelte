@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
   import { ApiError, register } from "$lib/api/client";
+  import Banner from "$lib/components/Banner.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
@@ -13,6 +14,16 @@
   // Empty = self-host without a Cloudflare account configured — no widget,
   // register() sends no token and the API's own check no-ops the same way.
   const turnstileSiteKey = env.PUBLIC_TURNSTILE_SITE_KEY;
+
+  // The API returns terse, English, machine-oriented error strings — map the
+  // ones registration can actually raise to something clearer for this form.
+  const REGISTER_ERROR_MESSAGES: Record<string, string> = {
+    "Registration is disabled": "Les inscriptions sont actuellement fermées.",
+    "Anti-bot verification failed":
+      "La vérification anti-robot a échoué. Réessaie.",
+    "An account with this email already exists":
+      "Un compte existe déjà avec cette adresse email.",
+  };
 
   // Direct-URL access when registration is closed: bounce to login rather
   // than showing a dead-end form (the API rejects the submit anyway).
@@ -37,7 +48,7 @@
     } catch (err) {
       error =
         err instanceof ApiError
-          ? err.message
+          ? (REGISTER_ERROR_MESSAGES[err.message] ?? err.message)
           : m.auth_register_error_fallback();
     } finally {
       loading = false;
@@ -84,7 +95,7 @@
             siteKey={turnstileSiteKey}
             onVerify={(token) => (turnstileToken = token)} />
         {/if}
-        {#if error}<p class="text-danger text-sm">{error}</p>{/if}
+        {#if error}<Banner variant="error">{error}</Banner>{/if}
         <p class="text-dim text-center text-xs leading-relaxed">
           En créant un compte, vous acceptez les
           <a

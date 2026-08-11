@@ -49,7 +49,7 @@ type CommentRow = {
   targetType: string;
   targetId: string;
   parentId: string | null;
-  authorId: string;
+  authorId: string | null;
   text: string | null;
   spoilerTag: boolean;
   edited: boolean;
@@ -57,7 +57,9 @@ type CommentRow = {
   deletedByAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
-  author: CommentAuthor;
+  // Null once the author's account has been deleted (authorId SetNull) —
+  // the content stays, the client renders "Utilisateur supprimé".
+  author: CommentAuthor | null;
 };
 
 @Injectable()
@@ -108,11 +110,12 @@ export class CommentService {
 
     const allComments = [...visible, ...visibleReplies];
     const allIds = allComments.map((c) => c.id);
+    const authorIds = allComments
+      .map((c) => c.author?.id)
+      .filter((id): id is string => !!id);
     const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
       this.loadReactions(viewerId, allIds),
-      fetchStreaksByUser(this.prisma, [
-        ...new Set(allComments.map((c) => c.author.id)),
-      ]),
+      fetchStreaksByUser(this.prisma, [...new Set(authorIds)]),
     ]);
 
     const toDtoWithMask = async (row: CommentRow): Promise<CommentDto> =>
@@ -180,7 +183,7 @@ export class CommentService {
   async create(authorId: string, body: CreateCommentBody): Promise<CommentDto> {
     let parent: {
       id: string;
-      authorId: string;
+      authorId: string | null;
       targetType: CommentTargetType;
       targetId: string;
     } | null = null;
@@ -225,7 +228,7 @@ export class CommentService {
       include: { author: { select: AUTHOR_SELECT } },
     });
 
-    await this.notifyOnCreate(row, parent);
+    await this.notifyOnCreate(authorId, row, parent);
 
     const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
@@ -335,7 +338,7 @@ export class CommentService {
     const visible: CommentRow[] = [];
 
     for (const row of rows) {
-      if (row.authorId === viewerId) {
+      if (row.authorId === viewerId || !row.author) {
         visible.push(row);
         continue;
       }
@@ -409,15 +412,17 @@ export class CommentService {
       masked,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
-      author: withStreakDays(
-        anonymizeAuthor(
-          toUserSummaryDto(row.author),
-          viewerId,
-          row.targetType,
-          row.targetId,
-        ),
-        streakMap,
-      ),
+      author: row.author
+        ? withStreakDays(
+            anonymizeAuthor(
+              toUserSummaryDto(row.author),
+              viewerId,
+              row.targetType,
+              row.targetId,
+            ),
+            streakMap,
+          )
+        : null,
       reactions: reactionMap.get(row.id) ?? [],
       myReaction: myReactionMap.get(row.id) ?? null,
       replies: [],
@@ -438,13 +443,14 @@ export class CommentService {
   }
 
   private async notifyOnCreate(
+    authorId: string,
     row: CommentRow,
-    parent: { id: string; authorId: string } | null,
+    parent: { id: string; authorId: string | null } | null,
   ): Promise<void> {
-    const notifiedIds = new Set<string>([row.authorId]);
+    const notifiedIds = new Set<string>([authorId]);
 
-    if (parent && !notifiedIds.has(parent.authorId)) {
-      if (await this.mayNotify(row.authorId, parent.authorId)) {
+    if (parent?.authorId && !notifiedIds.has(parent.authorId)) {
+      if (await this.mayNotify(authorId, parent.authorId)) {
         await this.notify(parent.authorId, row, NotificationType.COMMENT_REPLY);
         notifiedIds.add(parent.authorId);
       }
@@ -465,7 +471,7 @@ export class CommentService {
     for (const { id: userId } of mentioned) {
       if (notifiedIds.has(userId)) continue;
 
-      if (await this.mayNotify(row.authorId, userId)) {
+      if (await this.mayNotify(authorId, userId)) {
         await this.notify(userId, row, NotificationType.COMMENT_MENTION);
         notifiedIds.add(userId);
       }
@@ -496,6 +502,10 @@ export class CommentService {
       | typeof NotificationType.COMMENT_REPLY
       | typeof NotificationType.COMMENT_MENTION,
   ): Promise<void> {
+    // Guard only — a freshly created comment always has its author attached
+    // (the acting, authenticated user), so this never actually fires.
+    if (!row.author) return;
+
     const url = await resolveWorkHref(
       this.prisma,
       row.targetType,
@@ -519,8 +529,11 @@ export class CommentService {
 
   private async maybeNotifyReactionThreshold(
     commentId: string,
-    authorId: string,
+    authorId: string | null,
   ): Promise<void> {
+    // A deleted author can't receive notifications.
+    if (!authorId) return;
+
     const count = await this.prisma.commentReaction.count({
       where: { commentId },
     });

@@ -122,7 +122,7 @@ export class ReportService {
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
-        reporter: toUserSummaryDto(r.reporter),
+        reporter: r.reporter ? toUserSummaryDto(r.reporter) : null,
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,
@@ -183,7 +183,7 @@ export class ReportService {
         status: r.status as ReportDto["status"],
         createdAt: r.createdAt.toISOString(),
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
-        reporter: toUserSummaryDto(r.reporter),
+        reporter: r.reporter ? toUserSummaryDto(r.reporter) : null,
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,
@@ -247,7 +247,7 @@ export class ReportService {
           comment.targetType,
           comment.targetId,
         ),
-        targetOwnerUsername: comment.author.username,
+        targetOwnerUsername: comment.author?.username ?? null,
       };
     }
 

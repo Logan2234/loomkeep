@@ -365,7 +365,7 @@
             <Icon name="reply" class="h-4 w-4" />
           </button>
         {/if}
-        {#if c.author.id === auth.user?.id}
+        {#if c.author?.id === auth.user?.id}
           <button
             class="hover:text-fg hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full"
             title="Modifier"
@@ -420,7 +420,11 @@
       </button>
     {:else}
       <div class="flex items-start gap-3">
-        {#if c.author.anonymized}
+        {#if !c.author}
+          <span class="shrink-0">
+            <Avatar seed="utilisateur-supprime" size={28} />
+          </span>
+        {:else if c.author.anonymized}
           <!-- Seeded on the derived pseudonym, never the real id — a stable
                seed would let the same identicon resurface across unrelated
                threads and quietly de-anonymize the author. -->
@@ -437,7 +441,11 @@
         {/if}
         <div class="min-w-0 flex-1">
           <div class="flex items-baseline gap-2">
-            {#if c.author.anonymized}
+            {#if !c.author}
+              <span class="text-dim truncate text-sm font-semibold italic">
+                Utilisateur supprimé
+              </span>
+            {:else if c.author.anonymized}
               <span class="timecode truncate text-sm font-semibold">
                 {c.author.displayName}
               </span>
@@ -512,9 +520,11 @@
                 <input
                   type="text"
                   class="input pr-14 text-sm"
-                  placeholder={c.author.anonymized
-                    ? `Répondre à ${c.author.displayName}…`
-                    : `Répondre à @${c.author.username}…`}
+                  placeholder={!c.author
+                    ? "Répondre…"
+                    : c.author.anonymized
+                      ? `Répondre à ${c.author.displayName}…`
+                      : `Répondre à @${c.author.username}…`}
                   maxlength={COMMENT_TEXT_MAX_LENGTH}
                   bind:value={replyText}
                   onkeydown={(e) => e.key === "Enter" && submitReply(c.id)} />

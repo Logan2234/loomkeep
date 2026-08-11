@@ -462,7 +462,10 @@ model Block {
 // targetId is not a FK (polymorphic across item/season/episode tables).
 model Review {
   id         String           @id @default(cuid())
-  userId     String
+  // Nullable: account deletion detaches the author (SetNull) instead of
+  // deleting the review — other users' votes/replies stay meaningful, the
+  // front renders a "Utilisateur supprimé" placeholder.
+  userId     String?
   targetType ReviewTargetType
   targetId   String
   rating     Float
@@ -470,7 +473,7 @@ model Review {
   visibility ReviewVisibility @default(FRIENDS)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   revisions  ReviewRevision[]
   votes      ReviewVote[]
 
@@ -517,7 +520,10 @@ model Comment {
   id         String            @id @default(cuid())
   targetType CommentTargetType
   targetId   String
-  authorId   String
+  // Nullable: account deletion detaches the author (SetNull) rather than
+  // cascading, for the same reason as the soft-delete above — a hard delete
+  // would orphan replies other users posted under this comment.
+  authorId   String?
   parentId   String?
   text       String?
   // Author-set manual spoiler tag. Combined at read time with the auto
@@ -533,7 +539,7 @@ model Comment {
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
-  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
   parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[]         @relation("CommentReplies")
   reactions CommentReaction[]
@@ -565,7 +571,9 @@ model Report {
   id           String           @id @default(cuid())
   targetType   ReportTargetType
   targetId     String
-  reporterId   String
+  // Nullable: account deletion detaches the reporter (SetNull) — same
+  // pattern as resolvedById below — so the moderation record survives.
+  reporterId   String?
   // Nullable: reports filed before the category/motif picker existed have
   // neither. New submissions always set category (motif too, except OTHER).
   category     ReportCategory?
@@ -576,7 +584,7 @@ model Report {
   resolvedAt   DateTime?
   resolvedById String?
 
-  reporter   User  @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter   User? @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
   resolvedBy User? @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])

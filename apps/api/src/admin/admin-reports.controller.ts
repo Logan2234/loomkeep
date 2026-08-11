@@ -76,8 +76,12 @@ export class AdminReportsController {
         }),
       ]);
 
+    // Reports from a deleted reporter (reporterId SetNull) aren't attributable
+    // to anyone, so they're excluded from the per-reporter ranking below.
     const counts = new Map(
-      byReporter.map((r) => [r.reporterId, r._count._all] as const),
+      byReporter
+        .filter((r) => r.reporterId !== null)
+        .map((r) => [r.reporterId as string, r._count._all] as const),
     );
     const users = await this.prisma.user.findMany({
       where: { id: { in: [...counts.keys()] } },
