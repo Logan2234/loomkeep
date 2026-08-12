@@ -15,6 +15,7 @@ describe("PublicConfigController", () => {
     expect(controller.get()).toEqual({
       socialEnabled: true,
       registrationEnabled: true,
+      erdEnabled: false,
     });
   });
 
@@ -23,6 +24,7 @@ describe("PublicConfigController", () => {
     expect(controller.get()).toEqual({
       socialEnabled: false,
       registrationEnabled: true,
+      erdEnabled: false,
     });
   });
 
@@ -31,6 +33,7 @@ describe("PublicConfigController", () => {
     expect(controller.get()).toEqual({
       socialEnabled: false,
       registrationEnabled: true,
+      erdEnabled: false,
     });
   });
 
@@ -39,6 +42,7 @@ describe("PublicConfigController", () => {
     expect(controller.get()).toEqual({
       socialEnabled: false,
       registrationEnabled: false,
+      erdEnabled: false,
     });
   });
 
@@ -47,6 +51,16 @@ describe("PublicConfigController", () => {
     expect(controller.get()).toEqual({
       socialEnabled: false,
       registrationEnabled: true,
+      erdEnabled: false,
+    });
+  });
+
+  it("reports erdEnabled=true only when NODE_ENV is exactly development", () => {
+    const { controller } = makeController({ NODE_ENV: "development" });
+    expect(controller.get()).toEqual({
+      socialEnabled: false,
+      registrationEnabled: true,
+      erdEnabled: true,
     });
   });
 });
