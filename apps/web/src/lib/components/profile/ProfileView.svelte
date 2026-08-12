@@ -670,7 +670,7 @@
           </p>
           <a
             href="/app/stats"
-            class="btn-text text-accent hover:text-accent mt-0.5 text-xs">
+            class="btn-text text-accent hover:text-accent mt-0.5">
             {m.profile_activity_view_stats()}
           </a>
         </div>

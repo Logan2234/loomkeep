@@ -313,7 +313,7 @@
         href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="btn-text text-xs font-normal decoration-1">
+        class="btn-text font-normal">
         {m.common_version({ version })}
       </a>
     </p>

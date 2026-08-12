@@ -178,10 +178,7 @@
     title={m.admin_services_title()}
     subtitle={m.admin_services_subtitle()}>
     {#snippet actions()}
-      <button
-        onclick={load}
-        disabled={loading}
-        class="btn btn-ghost shrink-0 disabled:opacity-50">
+      <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
         {loading ? "…" : m.admin_refresh()}
       </button>
     {/snippet}

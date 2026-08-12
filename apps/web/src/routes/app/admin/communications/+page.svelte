@@ -446,7 +446,7 @@
             <button
               onclick={sendTestEmail}
               disabled={!smtpConfigured || !testTo || sendingEmail}
-              class="btn btn-primary shrink-0 disabled:opacity-50">
+              class="btn btn-primary shrink-0">
               {sendingEmail ? "Envoi…" : "Envoyer un test"}
             </button>
           </div>
@@ -548,7 +548,7 @@
         <button
           onclick={sendPush}
           disabled={!email || sendingPush}
-          class="btn btn-primary disabled:opacity-50">
+          class="btn btn-primary">
           {sendingPush ? "Envoi…" : "Envoyer un test"}
         </button>
 
@@ -624,7 +624,7 @@
         <button
           onclick={openBroadcastConfirm}
           disabled={!accountCount}
-          class="btn btn-primary disabled:opacity-50">
+          class="btn btn-primary">
           Diffuser à tous les comptes
         </button>
 

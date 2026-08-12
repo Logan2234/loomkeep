@@ -402,7 +402,7 @@
                   </div>
                 {:else}
                   <button
-                    class="btn btn-primary shrink-0 px-2.5 py-1 text-xs"
+                    class="btn btn-primary btn-sm shrink-0"
                     disabled={busyEpisodeId === episode.id}
                     onclick={() =>
                       requestMarkWatched(

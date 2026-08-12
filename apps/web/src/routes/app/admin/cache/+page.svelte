@@ -332,7 +332,7 @@
       <button
         onclick={bulkResync}
         disabled={bulkResyncing || staleTotal === 0}
-        class="btn btn-ghost text-xs disabled:opacity-50">
+        class="btn btn-ghost btn-sm">
         <Icon
           name="refresh"
           class="h-3.5 w-3.5 {bulkResyncing ? 'animate-spin' : ''}" />
@@ -341,7 +341,7 @@
       <button
         onclick={() => (showDeleteOrphansConfirm = true)}
         disabled={bulkDeleting || orphanTotal === 0}
-        class="btn btn-danger text-xs disabled:opacity-50">
+        class="btn btn-danger btn-sm">
         <Icon name="trash" class="h-3.5 w-3.5" />
         Supprimer orphelins ({orphanTotal})
       </button>
@@ -423,7 +423,7 @@
             onclick={(e) => resync(item, e)}
             disabled={resyncing === item.id}
             aria-label="Re-synchroniser {item.title}"
-            class="btn btn-ghost shrink-0 text-xs disabled:opacity-50">
+            class="btn btn-ghost btn-sm shrink-0">
             <Icon
               name="refresh"
               class="h-3.5 w-3.5 {resyncing === item.id
@@ -596,7 +596,7 @@
           <button
             onclick={drawerResync}
             disabled={drawerResyncing}
-            class="btn btn-primary w-full disabled:opacity-50">
+            class="btn btn-primary w-full">
             <Icon
               name="refresh"
               class="h-4 w-4 {drawerResyncing ? 'animate-spin' : ''}" />

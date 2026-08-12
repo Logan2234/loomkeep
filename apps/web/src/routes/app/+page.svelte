@@ -265,7 +265,7 @@
                         </p>
                         {#if e.progress.nextEpisode}
                           <button
-                            class="btn btn-primary mt-1 w-full px-2 py-1 text-[0.65rem]"
+                            class="btn btn-primary btn-sm mt-1 w-full"
                             disabled={resuming === e.id}
                             onclick={() => resume(e)}>
                             ▶ {epCodeOf(e.progress.nextEpisode)}
@@ -325,7 +325,7 @@
 
         {#if booksOn}
           <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between gap-2">
+            <div class="mb-3 flex items-center justify-between">
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="book" class="text-accent h-4 w-4" /> Livres · en lecture
@@ -538,7 +538,7 @@
               href={CHANGELOG_URL}
               target="_blank"
               rel="noopener noreferrer"
-              class="btn-text text-xs font-normal decoration-1">
+              class="btn-text">
               {m.common_version({ version })}
             </a>
           </p>

@@ -149,18 +149,18 @@
             {#if bootstrap.ready && auth.isLoggedIn}
               <a
                 href="/app"
-                class="btn btn-primary btn-primary-cartouche px-5 py-2.5">
+                class="btn btn-primary btn-primary-cartouche btn-lg">
                 {m.landing_open_app()}
               </a>
             {:else}
               {#if appConfig.registrationEnabled}
                 <a
                   href="/register"
-                  class="btn btn-primary btn-primary-cartouche px-5 py-2.5">
+                  class="btn btn-primary btn-primary-cartouche btn-lg">
                   {m.landing_hero_cta_primary()}
                 </a>
               {/if}
-              <a href="/login" class="btn btn-ghost px-5 py-2.5">
+              <a href="/login" class="btn btn-ghost btn-lg">
                 {m.landing_login()}
               </a>
             {/if}
@@ -168,7 +168,7 @@
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              class="btn btn-ghost px-5 py-2.5">
+              class="btn btn-ghost btn-lg">
               {m.landing_hero_cta_selfhost()}
             </a>
           </div>
@@ -319,19 +319,17 @@
         href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="btn-text text-xs font-normal decoration-1">GitHub</a>
+        class="btn-text font-normal">GitHub</a>
       <a
         href={FEEDBACK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="btn-text text-xs font-normal decoration-1"
-        >{m.landing_footer_feedback()}</a>
+        class="btn-text font-normal">{m.landing_footer_feedback()}</a>
       <a
         href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="btn-text text-xs font-normal decoration-1"
-        >{m.landing_footer_changelog()}</a>
+        class="btn-text font-normal">{m.landing_footer_changelog()}</a>
     </div>
     <LegalLinks />
   </footer>

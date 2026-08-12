@@ -286,7 +286,7 @@
         <div class="mt-4 text-center">
           <a
             href={`/app/search?query=${encodeURIComponent(query.trim())}&type=${domain}`}
-            class="btn btn-ghost inline-flex">
+            class="btn btn-ghost">
             Voir plus dans le catalogue <Icon
               name="chevron-right"
               class="h-4 w-4" />
@@ -302,9 +302,7 @@
     <EmptyState>
       {#if !hasFilters && !hasQuery}
         <p>Tu n'as encore aucun {noun} dans ta bibliothèque.</p>
-        <a
-          href={`/app/search?type=${domain}`}
-          class="btn btn-primary mt-4 inline-flex">
+        <a href={`/app/search?type=${domain}`} class="btn btn-primary mt-4">
           <Icon name="search" class="h-4 w-4" /> Chercher un {noun}
         </a>
       {:else}

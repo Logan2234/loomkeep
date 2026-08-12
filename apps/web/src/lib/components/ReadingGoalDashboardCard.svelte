@@ -67,7 +67,7 @@
       <p class="text-dim mb-3 text-sm">{m.reading_goal_cta({ year })}</p>
       <button
         type="button"
-        class="btn btn-ghost inline-flex items-center gap-1.5"
+        class="btn btn-ghost gap-1.5"
         onclick={() => (editing = true)}>
         {m.reading_goal_cta_action()}
         {#if isFeatureNew("reading-goal")}<NewBadge />{/if}
