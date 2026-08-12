@@ -31,6 +31,17 @@
               label: Signalements
             - field: operational
               label: Services opérationnels
+    - Umami:
+        href: https://stats.loomkeep.app
+        description: Audience de la landing page
+        icon: si-umami
+        # No live stats widget: self-hosted Umami's REST API only accepts a
+        # short-lived login token (POST /api/auth/login), not a static
+        # personal API key like every other tile above — Homepage's
+        # `customapi` widget can only send static headers, it can't do that
+        # login round-trip. Link-only until/unless that's worth building a
+        # small proxy for (e.g. an endpoint on the app's own API, same
+        # pattern as the "Statistiques" tile above).
 
 - Infrastructure:
     - Healthchecks:

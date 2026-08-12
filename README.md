@@ -296,6 +296,43 @@ only — no performance tracing on the web side, no session replay (GlitchTip
 doesn't implement the replay protocol, so those events would just be
 dropped). See `apps/api/src/instrument.ts` and `apps/web/src/hooks.client.ts`.
 
+### Analytics (optional)
+
+```sh
+# set UMAMI_APP_SECRET in .env first (openssl rand -hex 32)
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.umami.yml up -d --build
+```
+
+Adds [Umami](https://umami.is/), a lightweight self-hosted analytics tool for
+the public landing page, reachable at `stats.<DOMAIN>` via Caddy. Cookie-less
+and anonymous by design (no persistent visitor ID) — tracks page views,
+referrers, and clicks on the main CTA buttons and every external link
+(`data-umami-event` attributes in `apps/web/src/routes/+page.svelte`), never
+anything under `/app`. Shares the app's own Postgres instance rather than
+running a dedicated database container — see the top comment in
+`docker-compose.umami.yml` for the one-time manual step required on an
+already-running instance. Gated by Umami's own login only (default
+`admin`/`umami` on first visit — change it immediately); not behind
+Authelia, since Umami has no OIDC support and gating the whole subdomain
+would also block the tracker script for anonymous visitors.
+
+After first login, register the site under Settings > Websites > Add
+website, then set `PUBLIC_UMAMI_WEBSITE_ID` (the UUID shown there) and
+`PUBLIC_UMAMI_SCRIPT_URL` (`https://stats.<DOMAIN>/loom.js`) in `.env` and
+redeploy the `web` service — both empty by default, meaning no tracking
+script loads at all until configured.
+
+`TRACKER_SCRIPT_NAME`/`COLLECT_API_ENDPOINT` (set in
+`docker-compose.umami.yml`) already apply Umami's own documented ad-blocker
+mitigation for self-hosted instances (renaming `script.js`/`/api/send` off
+their defaults, which generic filter lists block by name even for
+cookie-less tools). If using the Cloudflare setup above, add one more
+one-time dashboard step so Umami's location stats reflect real visitors
+instead of Cloudflare's edge: **Rules > Settings > Managed Transforms**,
+enable **Add visitor location headers** — Caddy's `reverse_proxy` in
+`umami/umami.caddy` already forwards every header untouched, so no compose
+or Caddy change is needed on this side.
+
 ### Landing page (optional)
 
 ```sh

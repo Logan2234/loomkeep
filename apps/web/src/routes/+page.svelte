@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { env } from "$env/dynamic/public";
   import { auth } from "$lib/auth.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -70,6 +71,30 @@
       body: m.landing_feature_ownership_body(),
     },
   ] as const;
+
+  // Umami's own recommended "track outbound links" script (see root README
+  // "Analytics"): auto-tags every external link with a generic event,
+  // skipping links already carrying a data-umami-event attribute — so the
+  // CTAs tagged by hand above keep their descriptive names, while any link
+  // added later (or one behind {#if bootstrap.ready}/{#if
+  // appConfig.registrationEnabled}, mounted after the first pass) gets
+  // caught without anyone remembering to tag it. Reading those two here
+  // makes the effect re-run when such a CTA enters the DOM. $effect never
+  // runs during SSR, only after hydration in the browser.
+  $effect(() => {
+    void bootstrap.ready;
+    void appConfig.registrationEnabled;
+    if (!env.PUBLIC_UMAMI_WEBSITE_ID) return;
+    document.querySelectorAll<HTMLAnchorElement>("a").forEach((a) => {
+      if (
+        a.host !== window.location.host &&
+        !a.hasAttribute("data-umami-event")
+      ) {
+        a.setAttribute("data-umami-event", "outbound-link-click");
+        a.setAttribute("data-umami-event-url", a.href);
+      }
+    });
+  });
 </script>
 
 <svelte:head>
@@ -87,6 +112,16 @@
   <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary" />
+
+  <!-- Umami analytics — landing page only, never loaded under /app. Empty
+       env = no script, matching the "empty disables the feature" convention
+       used everywhere else in this app. See root README "Analytics". -->
+  {#if env.PUBLIC_UMAMI_WEBSITE_ID && env.PUBLIC_UMAMI_SCRIPT_URL}
+    <script
+      defer
+      src={env.PUBLIC_UMAMI_SCRIPT_URL}
+      data-website-id={env.PUBLIC_UMAMI_WEBSITE_ID}></script>
+  {/if}
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
@@ -117,7 +152,10 @@
           {:else}
             <a href="/login" class="btn btn-ghost">{m.landing_login()}</a>
             {#if appConfig.registrationEnabled}
-              <a href="/register" class="btn btn-primary hidden sm:inline-flex">
+              <a
+                href="/register"
+                data-umami-event="cta-nav-register"
+                class="btn btn-primary hidden sm:inline-flex">
                 {m.landing_register()}
               </a>
             {/if}
@@ -156,11 +194,15 @@
               {#if appConfig.registrationEnabled}
                 <a
                   href="/register"
+                  data-umami-event="cta-hero-register"
                   class="btn btn-primary btn-primary-cartouche btn-lg">
                   {m.landing_hero_cta_primary()}
                 </a>
               {/if}
-              <a href="/login" class="btn btn-ghost btn-lg">
+              <a
+                href="/login"
+                data-umami-event="cta-hero-login"
+                class="btn btn-ghost btn-lg">
                 {m.landing_login()}
               </a>
             {/if}
@@ -168,6 +210,7 @@
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
+              data-umami-event="cta-hero-selfhost"
               class="btn btn-ghost btn-lg">
               {m.landing_hero_cta_selfhost()}
             </a>
@@ -303,6 +346,7 @@
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
+              data-umami-event="cta-hosting-selfhost"
               class="btn btn-ghost self-start">
               {m.landing_hosting_selfhost_cta()}
             </a>
@@ -319,16 +363,19 @@
         href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
+        data-umami-event="footer-github"
         class="btn-text font-normal">GitHub</a>
       <a
         href={FEEDBACK_URL}
         target="_blank"
         rel="noopener noreferrer"
+        data-umami-event="footer-feedback"
         class="btn-text font-normal">{m.landing_footer_feedback()}</a>
       <a
         href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
+        data-umami-event="footer-changelog"
         class="btn-text font-normal">{m.landing_footer_changelog()}</a>
     </div>
     <LegalLinks />

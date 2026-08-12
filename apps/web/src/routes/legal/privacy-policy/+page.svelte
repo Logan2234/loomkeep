@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 09/08/2026</em></p>
+    <p><em>Dernière mise à jour : 12/08/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -327,6 +327,16 @@
       nécessaires à leurs propres services, conformément à leurs propres
       politiques de confidentialité.
     </p>
+    <h3>Mesure d'audience</h3>
+    <p>
+      La page d'accueil publique de Loomkeep utilise <strong>Umami</strong>, un
+      outil de mesure d'audience auto-hébergé, sans cookie ni identifiant
+      persistant : le visiteur n'est pas suivi individuellement d'une visite à
+      l'autre, seules des statistiques agrégées et anonymes sont produites
+      (nombre de visites, pages consultées, clics sur certains boutons,
+      provenance approximative). Umami est hébergé sur la même infrastructure
+      que Loomkeep ; aucune donnée n'est transmise à un tiers.
+    </p>
     <h3>Services techniques supplémentaires</h3>
     <p>
       Loomkeep peut utiliser d'autres prestataires techniques nécessaires
@@ -394,6 +404,10 @@
       </li>
     </ul>
     <p>Aucun de ces éléments n'est utilisé à des fins de suivi publicitaire.</p>
+    <p>
+      La mesure d'audience de la page d'accueil (voir section 6, « Mesure
+      d'audience ») n'utilise ni cookie ni stockage local.
+    </p>
     <p>
       Loomkeep n'utilise pas, à sa connaissance, de traceurs publicitaires
       destinés à établir un profil publicitaire des utilisateurs.

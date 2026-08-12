@@ -8,7 +8,7 @@ this way" companion for whoever edits these configs.
 ## Layout
 
 Every `docker-compose.*.yml`, the `Caddyfile`, and the add-on config dirs
-(`observability/`, `authelia/`, `homepage/`) live under `docker/`, not the
+(`observability/`, `authelia/`, `homepage/`, `umami/`) live under `docker/`, not the
 repo root — kept together as a unit so their relative paths to each other
 never had to change. `context: ..` in `docker-compose.yml`'s `api`/`web`
 build blocks points back up at the monorepo root, since Compose resolves

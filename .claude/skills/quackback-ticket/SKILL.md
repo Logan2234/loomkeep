@@ -5,9 +5,10 @@ description: Pick up a Quackback feedback/bug ticket, implement it, open a PR, a
 
 # Quackback ticket workflow
 
-Triggered manually by Logan with a ticket id (`post_...`) or a feedback.loomkeep.app link. Do the whole
-cycle end to end in this one session — do not spawn scheduled tasks or background polling outside
-`ScheduleWakeup` (see step 6).
+Triggered manually by Logan with a ticket id (`post_...`) or a feedback.loomkeep.app link. Implement,
+open the PR, and stop there (step 4) — closing the loop once the PR merges is handled by a separate
+claude.ai routine (`Quackback — close ticket on PR merge`, webhook-triggered on GitHub `pull_request`
+closed/merged events), not by this session waiting around. Don't `ScheduleWakeup` to poll for the merge.
 
 ## 1. Fetch the ticket
 
@@ -38,18 +39,14 @@ cycle end to end in this one session — do not spawn scheduled tasks or backgro
 - Then `gh pr create`. Reference the ticket in the PR description (link to
   `https://feedback.loomkeep.app/...` or just the post id) so the connection is traceable from GitHub too.
 - Tell Logan the PR is up and give him the link. He merges it himself (or uses the desktop app's own
-  Auto-fix/Auto-merge CI toggles) — do not merge it yourself.
+  Auto-fix/Auto-merge CI toggles) — do not merge it yourself. This session's job ends here.
 
-## 5. Wait for the merge
+## 5. Closing the loop (handled elsewhere)
 
-- Use `ScheduleWakeup` to check back periodically (20-30 min is reasonable — this is external GitHub state
-  the harness can't push-notify you about) with `gh pr view <number> --json state,mergedAt,url`.
-- If the PR closes without merging, stop and ask Logan what to do — don't touch the Quackback status.
-
-## 6. Close the loop on Quackback
-
-- Once merged: `add_comment({ postId, content: "<PR URL>" })` on the ticket, then look up the "Completed"
-  status TypeID the same way as step 2 and `triage_post({ postId, statusId })` to mark it done.
-- Only do this if the change genuinely resolves the ticket — if it's a partial fix, say so instead of
-  completing it and ask Logan.
-- Stop the `ScheduleWakeup` loop once this is done.
+- The `Quackback — close ticket on PR merge` routine picks up the merge event automatically: it adds
+  the PR link as a comment on the ticket and moves it to "Completed" if the change genuinely resolves
+  it. That's why step 4's PR description must reference the ticket (link or post id) — the routine
+  reads it from there.
+- If that routine doesn't exist yet or misfires, fall back to the manual version: once merged,
+  `add_comment({ postId, content: "<PR URL>" })`, then look up the "Completed" status TypeID the same
+  way as step 2 and `triage_post({ postId, statusId })`.
