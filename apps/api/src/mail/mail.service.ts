@@ -53,6 +53,18 @@ const COLOR_TEXT = "#17181C";
 const COLOR_ACCENT = "#A56A15";
 const COLOR_MUTED = "#8A8880";
 
+// Umami Link slugs (see root README "Analytics") — fixed naming, created
+// once in the Umami dashboard, not per-deployment config. "Voir" (new
+// episode) and "Se désinscrire" (newsletter) have no slug here: both carry a
+// per-notification/per-recipient value in their destination, and a Link is
+// always one fixed URL.
+const UMAMI_LINK_SLUG_PASSWORD_CHANGED = "secu-motdepasse";
+const UMAMI_LINK_SLUG_NEW_DEVICE_LOGIN = "secu-connexion";
+const UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS = "episode-notifs";
+const UMAMI_LINK_SLUG_WELCOME = "bienvenue-app";
+const UMAMI_LINK_SLUG_NEWSLETTER_CHANGELOG = "newsletter-changelog";
+const UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS = "newsletter-notifs";
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -60,6 +72,19 @@ export class MailService {
   private readonly from: string;
   /** Public web app origin, for links inside emails (reset, verify…). */
   private readonly webOrigin: string;
+  /**
+   * Base URL for Umami Link short-URLs (see docker-compose.umami.yml) —
+   * undefined whenever unset (no Umami deployed, or a self-hoster's own
+   * Umami without these Links configured), in which case each build*
+   * method below falls back to the direct destination URL. Never hardcode
+   * a *.loomkeep.app URL here directly: this code also runs for
+   * self-hosters, who don't have (or want) their visitors routed through
+   * the official instance's analytics. The slugs themselves (below) are
+   * fixed naming, not per-deployment config — adding a Link for a future
+   * email is a code change (a new slug constant) plus creating the
+   * matching Link in Umami, not a new env var.
+   */
+  private readonly umamiLinksBaseUrl: string | undefined;
 
   /**
    * Every template, keyed for the admin preview/test-send gallery. `fields`
@@ -154,7 +179,9 @@ export class MailService {
           multiline: true,
         },
       ],
-      build: (v) => this.buildNewsletter(v.title, v.content),
+      // Sample token — the gallery renders out of band, with no real
+      // recipient/subscription to mint one for.
+      build: (v) => this.buildNewsletter(v.title, v.content, "preview-token"),
     },
     reportsDigest: {
       label: "Digest des signalements",
@@ -186,6 +213,7 @@ export class MailService {
       process.env;
     this.webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
     this.from = SMTP_FROM ?? "Loomkeep <noreply@loomkeep.app>";
+    this.umamiLinksBaseUrl = process.env.UMAMI_LINKS_BASE_URL || undefined;
 
     if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
       const port = Number(SMTP_PORT ?? 587);
@@ -334,8 +362,12 @@ export class MailService {
     to: string,
     title: string,
     content: string,
+    unsubscribeToken: string,
   ): Promise<void> {
-    await this.send({ to, ...this.buildNewsletter(title, content) });
+    await this.send({
+      to,
+      ...this.buildNewsletter(title, content, unsubscribeToken),
+    });
   }
 
   private buildReportsDigest(pendingCount: number): TemplateBody {
@@ -367,13 +399,21 @@ export class MailService {
   }
 
   private buildPasswordChanged(): TemplateBody {
+    // The old password no longer works, so a link into the app (which needs
+    // a session) would be a dead end for the "it wasn't me" case — the
+    // account may already be compromised. The reset flow works regardless,
+    // since it's requested by email, not by an existing session.
+    const url =
+      this.umamiLink(UMAMI_LINK_SLUG_PASSWORD_CHANGED) ??
+      `${this.webOrigin}/forgot-password`;
     return {
       subject: "Ton mot de passe Loomkeep a été modifié",
-      text: "Le mot de passe de ton compte Loomkeep vient d'être changé. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.",
+      text: `Le mot de passe de ton compte Loomkeep vient d'être changé. Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : réinitialise immédiatement ton mot de passe.\n\n${url}`,
       html: this.wrapEmail(
         "Mot de passe modifié",
         `<p>Le mot de passe de ton compte Loomkeep vient d'être changé.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.</p>`,
+         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : réinitialise immédiatement ton mot de passe.</p>
+         ${this.button(url, "Réinitialiser mon mot de passe")}`,
       ),
     };
   }
@@ -384,25 +424,39 @@ export class MailService {
   ): TemplateBody {
     const ipSuffix = ip ? ` (IP ${escapeHtml(ip)})` : "";
     const ipTextSuffix = ip ? ` (IP ${ip})` : "";
+    // Unlike password-changed/email-changed, the account likely isn't
+    // compromised yet here — just an unrecognized device gained access — so
+    // the reader is probably still logged in on their own trusted device and
+    // can reach in-app settings directly.
+    const url =
+      this.umamiLink(UMAMI_LINK_SLUG_NEW_DEVICE_LOGIN) ??
+      `${this.webOrigin}/app/settings#securite`;
     return {
       subject: "Nouvelle connexion à ton compte Loomkeep",
-      text: `Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : ${deviceLabel}${ipTextSuffix}. Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.`,
+      text: `Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : ${deviceLabel}${ipTextSuffix}. Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.\n\n${url}`,
       html: this.wrapEmail(
         "Nouvelle connexion détectée",
         `<p>Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : <strong>${escapeHtml(deviceLabel)}</strong>${ipSuffix}.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.</p>`,
+         <p style="color:${COLOR_MUTED};font-size:13px;">Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.</p>
+         ${this.button(url, "Ouvrir mes réglages de sécurité")}`,
       ),
     };
   }
 
   private buildEmailChangedOld(newEmail: string): TemplateBody {
+    // The account's login email has already changed (and possibly the
+    // password too, if compromised), so a link into the app or a reset flow
+    // tied to either address can't be assumed to reach the real owner —
+    // direct contact is the only reliable path here.
+    const url = "mailto:contact@loomkeep.app";
     return {
       subject: "L'email de ton compte Loomkeep a changé",
-      text: `L'adresse email de ton compte Loomkeep a été changée pour ${newEmail}. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.`,
+      text: `L'adresse email de ton compte Loomkeep a été changée pour ${newEmail}. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement : ${url}`,
       html: this.wrapEmail(
         "Adresse email modifiée",
         `<p>L'adresse email de ton compte Loomkeep a été changée pour <strong>${newEmail}</strong>.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement.</p>`,
+         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : contacte-nous immédiatement.</p>
+         ${this.button(url, "Nous contacter")}`,
       ),
     };
   }
@@ -432,12 +486,15 @@ export class MailService {
   }
 
   private buildWelcome(displayName: string): TemplateBody {
+    const url =
+      this.umamiLink(UMAMI_LINK_SLUG_WELCOME) ?? `${this.webOrigin}/app`;
     return {
       subject: "Bienvenue sur Loomkeep",
-      text: `Bienvenue ${displayName} ! Ton compte Loomkeep a été créé avec succès.`,
+      text: `Bienvenue ${displayName} ! Ton compte Loomkeep a été créé avec succès.\n\n${url}`,
       html: this.wrapEmail(
         "Bienvenue sur Loomkeep",
-        `<p>Bienvenue <strong>${displayName}</strong> ! Ton compte Loomkeep a été créé avec succès.</p>`,
+        `<p>Bienvenue <strong>${displayName}</strong> ! Ton compte Loomkeep a été créé avec succès.</p>
+         ${this.button(url, "Ouvrir Loomkeep")}`,
       ),
     };
   }
@@ -461,32 +518,56 @@ export class MailService {
     body: string,
     path: string,
   ): TemplateBody {
+    // "Voir" can't go through a Link: its destination is a different
+    // episode/series page on every send, and a Link is one fixed URL — only
+    // the notification-management link below (same destination every time)
+    // qualifies.
     const url = `${this.webOrigin}${path}`;
+    const prefsUrl =
+      this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
+      `${this.webOrigin}/app/settings#communications`;
     return {
       subject: `Nouvel épisode : ${mediaTitle}`,
-      text: `${mediaTitle} — ${body}\n\n${url}`,
+      text: `${mediaTitle} — ${body}\n\n${url}\n\nGérer mes notifications : ${prefsUrl}`,
       html: this.wrapEmail(
         mediaTitle,
         `<p>${body}</p>
-         ${this.button(url, "Voir")}`,
+         ${this.button(url, "Voir")}
+         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;"><a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes notifications</a></p>`,
       ),
     };
   }
 
-  private buildNewsletter(title: string, content: string): TemplateBody {
-    const entryUrl = "https://feedback.loomkeep.app/changelog";
-    const prefsUrl = `${this.webOrigin}/app/settings#communications`;
+  private buildNewsletter(
+    title: string,
+    content: string,
+    unsubscribeToken: string,
+  ): TemplateBody {
+    const entryUrl =
+      this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_CHANGELOG) ??
+      "https://feedback.loomkeep.app/changelog";
+    const prefsUrl =
+      this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS) ??
+      `${this.webOrigin}/app/settings#communications`;
+    // Carries a per-recipient token in its query string, so — like "Voir"
+    // above — it can't go through a Link (one fixed URL per Link, this one
+    // is different for every recipient). Works without being logged in
+    // (RGPD art. 7-3: withdrawing consent must be as easy as giving it) — a
+    // single click, no session required. The settings link above stays for
+    // anyone who wants finer-grained control instead of unsubscribing
+    // outright.
+    const unsubscribeUrl = `${this.webOrigin}/unsubscribe?token=${unsubscribeToken}`;
     const { html: contentHtml, text: contentText } =
       this.renderChangelogMarkdown(content);
 
     return {
       subject: `Loomkeep — ${title}`,
-      text: `${title}\n\n${contentText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}`,
+      text: `${title}\n\n${contentText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}\nSe désinscrire : ${unsubscribeUrl}`,
       html: this.wrapEmail(
         title,
         `${contentHtml}
          ${this.button(entryUrl, "Voir sur le changelog")}
-         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">Tu reçois cet email car tu es abonné aux nouveautés · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes préférences</a></p>`,
+         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">Tu reçois cet email car tu es abonné aux nouveautés · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes préférences</a> · <a href="${unsubscribeUrl}" style="color:${COLOR_MUTED};">Se désinscrire</a></p>`,
         "Nouvelle version",
       ),
     };
@@ -588,6 +669,13 @@ export class MailService {
     </td>
   </tr>
 </table>`;
+  }
+
+  /** The Umami Link short-URL for a slug, or undefined when no base URL is configured. */
+  private umamiLink(slug: string): string | undefined {
+    return this.umamiLinksBaseUrl
+      ? `${this.umamiLinksBaseUrl}/${slug}`
+      : undefined;
   }
 
   /** Email-safe button: a styled `<a>`, since `<button>` is unreliable across mail clients. */

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { randomBytes } from "node:crypto";
+import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import type { NewsletterSend } from "@prisma/client";
 import type { NewsletterSendDto } from "@loomkeep/shared";
@@ -72,16 +73,58 @@ export class NewsletterService {
   ): Promise<void> {
     const recipients = await this.prisma.user.findMany({
       where: { notifyNewsletter: true },
-      select: { email: true },
+      select: { id: true, email: true, newsletterUnsubscribeToken: true },
     });
 
     await Promise.all(
-      recipients.map((r) => this.mail.sendNewsletter(r.email, title, content)),
+      recipients.map(async (r) => {
+        const token = await this.getOrCreateUnsubscribeToken(
+          r.id,
+          r.newsletterUnsubscribeToken,
+        );
+        await this.mail.sendNewsletter(r.email, title, content, token);
+      }),
     );
 
     await this.prisma.newsletterSend.update({
       where: { id },
       data: { recipientCount: recipients.length },
+    });
+  }
+
+  /**
+   * Stable per-user unsubscribe token, generated once and reused in every
+   * newsletter this account ever receives — not one token per send, which
+   * would grow the table without bound as the newsletter goes out
+   * repeatedly (see User.newsletterUnsubscribeToken doc comment).
+   */
+  private async getOrCreateUnsubscribeToken(
+    userId: string,
+    existing: string | null,
+  ): Promise<string> {
+    if (existing) return existing;
+
+    const token = randomBytes(32).toString("hex");
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { newsletterUnsubscribeToken: token },
+    });
+    return token;
+  }
+
+  /** Consumes a one-click unsubscribe link from a newsletter email footer — no login required. */
+  async unsubscribe(token: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { newsletterUnsubscribeToken: token },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid unsubscribe link");
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { notifyNewsletter: false },
     });
   }
 }

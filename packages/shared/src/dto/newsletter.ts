@@ -6,3 +6,8 @@ export interface NewsletterSendDto {
   recipientCount: number;
   sentAt: string;
 }
+
+/** One-click, no-login-required unsubscribe from the release newsletter — token comes from the email footer link. */
+export interface UnsubscribeNewsletterRequestDto {
+  token: string;
+}

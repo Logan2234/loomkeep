@@ -119,6 +119,121 @@ describe("MailService", () => {
       service.sendPasswordChanged("alice@example.com"),
     ).resolves.toBeUndefined();
   });
+
+  it("links password-changed to the reset flow, not a settings page it may not be able to reach", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendPasswordChanged("alice@example.com");
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("https://loomkeep.example/forgot-password");
+  });
+
+  it("links new-device-login to in-app security settings", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewDeviceLogin("alice@example.com", "Chrome", null);
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("https://loomkeep.example/app/settings#securite");
+  });
+
+  it("links email-changed (old address) to a mailto contact, not the app", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendEmailChanged("old@example.com", "new@example.com");
+
+    const oldAddressCall = sendMail.mock.calls.find(
+      (call) => call[0].to === "old@example.com",
+    );
+    expect(oldAddressCall[0].html).toContain("mailto:contact@loomkeep.app");
+  });
+
+  it("links welcome to the app", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendWelcome("alice@example.com", "Alice");
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("https://loomkeep.example/app");
+  });
+
+  it("links new-episode's notification-management footer to communications settings", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewEpisode(
+      "alice@example.com",
+      "Show",
+      "New episode",
+      "/app/media/123",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("https://loomkeep.example/app/media/123");
+    expect(html).toContain(
+      "https://loomkeep.example/app/settings#communications",
+    );
+  });
+
+  it("includes a no-login unsubscribe link in the newsletter, alongside the settings link", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      "alice@example.com",
+      "Loomkeep 1.4.0",
+      "content",
+      "unsub-token-123",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain(
+      "https://loomkeep.example/unsubscribe?token=unsub-token-123",
+    );
+    expect(html).toContain(
+      "https://loomkeep.example/app/settings#communications",
+    );
+  });
 });
 
 describe("MailService template gallery", () => {

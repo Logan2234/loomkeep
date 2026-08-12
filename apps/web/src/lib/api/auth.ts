@@ -89,6 +89,15 @@ export function resendVerificationEmail(): Promise<void> {
   });
 }
 
+/** One-click, no-login-required newsletter unsubscribe — token from the email footer link. */
+export function unsubscribeNewsletter(token: string): Promise<void> {
+  return request("/newsletter/unsubscribe", {
+    method: "POST",
+    body: { token },
+    withAuth: false,
+  });
+}
+
 export async function login(body: LoginRequestDto): Promise<void> {
   const result = await request<{ user: UserDto; tokens: AuthTokensDto }>(
     "/auth/login",

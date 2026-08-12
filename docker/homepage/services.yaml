@@ -289,7 +289,7 @@
         icon: mdi-message-star
         widgets:
           - type: customapi
-            url: "https://feedback.loomkeep.app/api/v1/posts?boardId=board_01kzmg900wfetr9r4z0rqarnne&status=planned&limit=100"
+            url: "https://feedback.loomkeep.app/api/v1/posts?boardId=board_01kzmg900wfetr9r4z0rqarnne&status=open&limit=100"
             headers:
               Authorization: "Bearer {{HOMEPAGE_VAR_QUACKBACK_API_KEY}}"
               User-Agent: "loomkeep-homepage"
@@ -298,7 +298,7 @@
                 label: Planned (Features)
                 format: size
           - type: customapi
-            url: "https://feedback.loomkeep.app/api/v1/posts?boardId=board_01kzmg9011fetr9r55mtzj0s3p&status=planned&limit=100"
+            url: "https://feedback.loomkeep.app/api/v1/posts?boardId=board_01kzmg9011fetr9r55mtzj0s3p&status=open&limit=100"
             headers:
               Authorization: "Bearer {{HOMEPAGE_VAR_QUACKBACK_API_KEY}}"
               User-Agent: "loomkeep-homepage"
