@@ -10,21 +10,35 @@ this way" companion for whoever edits these configs.
 Every `docker-compose.*.yml`, the `Caddyfile`, and the add-on config dirs
 (`observability/`, `authelia/`, `homepage/`, `umami/`) live under `docker/`, not the
 repo root — kept together as a unit so their relative paths to each other
-never had to change. `context: ..` in `docker-compose.yml`'s `api`/`web`
-build blocks points back up at the monorepo root, since Compose resolves
-relative paths against the compose file's own location, not the invocation
-cwd. Both Dockerfiles copy _all_ workspace `package.json` manifests plus
+never had to change. `docker-compose.yml`'s `api`/`web` services reference
+pre-built `image:`s rather than building — see "Images" below. Both
+Dockerfiles copy _all_ workspace `package.json` manifests plus
 `tsconfig.base.json` before `pnpm install --frozen-lockfile` (a frozen
 install validates every importer in the lockfile). The api image runs
 `prisma migrate deploy` at boot; the web runtime image ships only the
 self-contained adapter-node `build/` output.
 
+## Images
+
+`apps/api/Dockerfile` and `apps/web/Dockerfile` are built and pushed to
+GHCR (`ghcr.io/logan2234/loomkeep-{api,web}`) by the `docker-push` job in
+`.github/workflows/ci.yml`, on every push to `main` — tagged both `latest`
+and the commit's short SHA (the api build also gets `GIT_SHA` as a build
+arg there, baked into the image for the Homepage "Version" widget).
+`docker-compose.yml` pulls those images via `${IMAGE_TAG:-latest}` instead
+of building locally; nothing under `docker/` runs `docker build`/`docker
+compose build` anymore. `context: ..` still shows up in `ci.yml`'s
+`build-push-action` steps and points back up at the monorepo root, since
+both Dockerfiles expect their build context to start there.
+
 ## Deploy
 
 `.github/workflows/deploy.yml` auto-redeploys on every successful CI run on
-`main` via a plain `docker compose up -d --build` (no `-f` flags) — which
-override files get combined comes from `COMPOSE_FILE` in the VPS's own
-`.env` (Compose reads this itself), not from the workflow. Adding a new
+`main` via `docker compose pull && docker compose up -d` (no `-f` flags),
+with `IMAGE_TAG` pinned to that commit's short SHA so it pulls the exact
+images CI just built rather than whatever `latest` happens to point at —
+which override files get combined comes from `COMPOSE_FILE` in the VPS's
+own `.env` (Compose reads this itself), not from the workflow. Adding a new
 optional `docker-compose.<addon>.yml` that should run continuously in
 production means updating that `COMPOSE_FILE` line (see `.env.example`), not
 `deploy.yml`.

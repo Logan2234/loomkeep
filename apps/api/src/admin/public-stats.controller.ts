@@ -62,7 +62,8 @@ export class PublicStatsController {
       newUsers7d,
       operational: `${healthy.length}/${live.length}`,
       // Set at build time (see apps/api/Dockerfile) — "unknown" outside a
-      // deploy.yml-built image (local dev, docker:dev/full, etc).
+      // CI-built image (pnpm dev, or any docker compose run against a
+      // locally-tagged image rather than one pulled from GHCR).
       gitSha: (process.env.GIT_SHA ?? "unknown").slice(0, 7),
     };
   }

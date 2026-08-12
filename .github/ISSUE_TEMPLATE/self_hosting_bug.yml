@@ -19,15 +19,12 @@ body:
     validations:
       required: true
 
-  - type: dropdown
+  - type: input
     id: setup
     attributes:
       label: Setup
-      options:
-        - docker:dev (dev stack)
-        - docker:prod
-        - docker:full (with add-ons)
-        - Other / custom compose override
+      description: Your `COMPOSE_FILE` line in `.env` (or the `-f` flags you pass), so we know exactly which overrides are active.
+      placeholder: "docker/docker-compose.yml:docker/docker-compose.prod.yml:docker/docker-compose.observability.yml"
     validations:
       required: true
 

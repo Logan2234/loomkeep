@@ -50,21 +50,43 @@ watches are stored **one row per viewing**, so rewatches are first-class.
 ```sh
 cp .env.example .env
 # Edit .env: set POSTGRES_PASSWORD, both JWT secrets and TMDB_API_TOKEN.
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose -f docker/docker-compose.yml pull
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-Every `-f ...` combo below has a matching `pnpm docker:*` shortcut (see
-`package.json`) — `docker:dev`, `docker:prod`, and `docker:full` (every
-optional add-on at once, for local testing of the whole stack); the less
-common one-off combos below are still spelled out with their full `-f`
-chain since there's no script for every permutation.
+Images are pre-built by CI and pulled from GHCR (`ghcr.io/logan2234/loomkeep-{api,web}`)
+— no local build needed.
 
 Then open <http://localhost:8080>, create an account, done.
 On a NAS, set `PUBLIC_API_URL` and `WEB_ORIGIN` to the host's address
 (e.g. `http://nas.local:3000/api` and `http://nas.local:8080`).
 
-Upgrades: `git pull && docker compose -f docker/docker-compose.yml up -d --build`
+Upgrades: `docker compose -f docker/docker-compose.yml pull && docker compose -f docker/docker-compose.yml up -d`
 — database migrations run automatically when the API boots.
+
+### Combining add-ons
+
+Every section below (public hosting, logs/monitoring, Portainer, ...) adds
+one more optional `docker-compose.<name>.yml` override on top of the base
+file. Past the first override, don't chain `-f` flags by hand — set
+`COMPOSE_FILE` in `.env` instead (Compose reads it automatically,
+colon-separated; see the commented-out example in `.env.example`):
+
+```sh
+COMPOSE_FILE=docker/docker-compose.yml:docker/docker-compose.prod.yml:docker/docker-compose.observability.yml
+```
+
+then always run the same two commands, no `-f` needed — every section below
+just tells you which file(s) to add to that line:
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+This is the same mechanism the VPS auto-deploy uses (see "Auto-deploy from
+CI" below) — turning an add-on on or off in production is editing that one
+line, nothing else.
 
 ### TMDB API key
 
@@ -104,10 +126,12 @@ Encrypt certificate itself, serving HTTPS on the standard ports.
    DOMAIN=loomkeep.app
    ```
 
-3. Start the stack with the prod override:
+3. Add `docker/docker-compose.prod.yml` to `COMPOSE_FILE` in `.env` (see
+   "Combining add-ons" above), then start the stack:
 
    ```sh
-   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --build
+   docker compose pull
+   docker compose up -d
    ```
 
 4. Open `https://<DOMAIN>` — the first request can take a few seconds while
@@ -119,7 +143,8 @@ Encrypt certificate itself, serving HTTPS on the standard ports.
 
 **Auto-deploy from CI**: `.github/workflows/deploy.yml` redeploys automatically
 on every successful CI run on `main` (`git reset --hard origin/main` +
-`docker compose up -d --build`, no `-f` flags). It relies on `COMPOSE_FILE`
+`docker compose pull && docker compose up -d`, no `-f` flags, pinned to the
+images CI built and pushed to GHCR for that exact commit). It relies on `COMPOSE_FILE`
 being set in the VPS's own `.env` (see `.env.example`) to know which override
 files to combine — so turning an optional add-on (observability, Portainer,
 GlitchTip, ...) on or off in production is done by editing that line on the
@@ -198,9 +223,12 @@ capped at 10MB × 5 files so they can't slowly fill the disk. For a
 searchable log history, dashboards, and metrics, add the observability
 override on top of whichever deployment you're running:
 
+Set `GRAFANA_ADMIN_PASSWORD` in `.env`, add `docker/docker-compose.observability.yml`
+to `COMPOSE_FILE` (see "Combining add-ons" above), then:
+
 ```sh
-# set GRAFANA_ADMIN_PASSWORD in .env first
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.observability.yml up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 This adds:
@@ -262,8 +290,12 @@ you have the observability override above.
 
 ### Docker management UI (optional)
 
+Add `docker/docker-compose.portainer.yml` to `COMPOSE_FILE` (see "Combining
+add-ons" above), then:
+
 ```sh
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.portainer.yml up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Adds [Portainer](https://www.portainer.io/), reachable at
@@ -272,9 +304,13 @@ without SSH. Gated by Portainer's own admin login (set on first visit).
 
 ### Error tracking (optional)
 
+Set `GLITCHTIP_SECRET_KEY` and `GLITCHTIP_DB_PASSWORD` in `.env`, add
+`docker/docker-compose.glitchtip.yml` to `COMPOSE_FILE` (see "Combining
+add-ons" above), then:
+
 ```sh
-# set GLITCHTIP_SECRET_KEY and GLITCHTIP_DB_PASSWORD in .env first
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.glitchtip.yml up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Adds [GlitchTip](https://glitchtip.com/) (Sentry-API-compatible, self-hosted
@@ -298,9 +334,13 @@ dropped). See `apps/api/src/instrument.ts` and `apps/web/src/hooks.client.ts`.
 
 ### Analytics (optional)
 
+Set `UMAMI_APP_SECRET` in `.env` (`openssl rand -hex 32`), add
+`docker/docker-compose.umami.yml` to `COMPOSE_FILE` (see "Combining add-ons"
+above), then:
+
 ```sh
-# set UMAMI_APP_SECRET in .env first (openssl rand -hex 32)
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.umami.yml up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Adds [Umami](https://umami.is/), a lightweight self-hosted analytics tool for
@@ -318,7 +358,7 @@ would also block the tracker script for anonymous visitors.
 
 After first login, register the site under Settings > Websites > Add
 website, then set `PUBLIC_UMAMI_WEBSITE_ID` (the UUID shown there) and
-`PUBLIC_UMAMI_SCRIPT_URL` (`https://stats.<DOMAIN>/loom.js`) in `.env` and
+`PUBLIC_UMAMI_SCRIPT_URL` (`https://stats.<DOMAIN>/loomkeep.js`) in `.env` and
 redeploy the `web` service — both empty by default, meaning no tracking
 script loads at all until configured.
 
@@ -335,8 +375,12 @@ or Caddy change is needed on this side.
 
 ### Landing page (optional)
 
+Add `docker/docker-compose.authelia.yml` and `docker/docker-compose.homepage.yml`
+to `COMPOSE_FILE` (see "Combining add-ons" above), then:
+
 ```sh
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.authelia.yml -f docker/docker-compose.homepage.yml up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Adds [Homepage](https://gethomepage.dev/), reachable at `home.<DOMAIN>` — one
@@ -533,11 +577,14 @@ just bounces through silently, no second password).
 5. Set `GRAFANA_OIDC_CLIENT_SECRET` in `.env` to the **plaintext** secret
    from step 3 for the `grafana` client.
 
-6. Bring the stack up, then do the two integrations that can't be done
-   through config alone:
+6. With `docker/docker-compose.authelia.yml` (and whichever of observability/
+   Portainer/GlitchTip you use) already in `COMPOSE_FILE` (see "Combining
+   add-ons" above), bring the stack up, then do the two integrations that
+   can't be done through config alone:
 
    ```sh
-   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml -f docker/docker-compose.authelia.yml -f docker/docker-compose.observability.yml -f docker/docker-compose.portainer.yml -f docker/docker-compose.glitchtip.yml up -d --build
+   docker compose pull
+   docker compose up -d
    ```
 
    - **GlitchTip**: on the VPS, temporarily set `ENABLE_ADMIN: true`
