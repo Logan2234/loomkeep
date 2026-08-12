@@ -147,7 +147,7 @@
           <span class="timecode text-xs">
             {#if album.artists.length > 0}
               {album.artists[0]}{#if album.year}
-                · {album.year}{/if}
+                &nbsp;· {album.year}{/if}
             {:else if album.year}
               {album.year}
             {:else}

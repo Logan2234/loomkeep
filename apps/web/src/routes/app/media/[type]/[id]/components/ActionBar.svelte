@@ -104,10 +104,8 @@
         type="button"
         aria-pressed={entry.favorite}
         disabled={saving}
-        title={entry.favorite ? "Retirer des coups de cœur" : "Coup de cœur"}
-        aria-label={entry.favorite
-          ? "Retirer des coups de cœur"
-          : "Coup de cœur"}
+        title={entry.favorite ? "Retirer des favoris" : "Favori"}
+        aria-label={entry.favorite ? "Retirer des favoris" : "Favori"}
         onclick={onToggleFavorite}
         class="grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors disabled:opacity-50 {entry.favorite
           ? 'border-accent text-accent'

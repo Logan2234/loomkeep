@@ -1,6 +1,5 @@
 <script lang="ts">
   import { listLibrary } from "$lib/api/client";
-  import Combobox from "$lib/components/Combobox.svelte";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
@@ -12,16 +11,8 @@
     { label: "En cours", value: "WATCHING" },
     { label: "À voir", value: "PLANNED" },
     { label: "Terminé", value: "COMPLETED" },
-    // "DORMANT" is not a real status: it's a server-side refinement over
-    // WATCHING (nothing watched for a while) — see isDormant.
     { label: "En pause", value: "DORMANT" },
     { label: "Abandonné", value: "DROPPED" },
-  ];
-
-  const TYPE_OPTIONS: { label: string; value: MediaType }[] = [
-    { label: "Films", value: "MOVIE" },
-    { label: "Séries", value: "SERIES" },
-    { label: "Animés", value: "ANIME" },
   ];
 
   const TYPE_LABELS: Record<MediaType, string> = {
@@ -40,9 +31,6 @@
     { label: "Commencé récemment", value: "started" },
     { label: "Statut", value: "status" },
   ];
-
-  // Extra "type" filter, owned by the page and passed to LibraryBrowser.
-  let types = $state<MediaType[]>([]);
 
   function pct(entry: LibraryEntryDto): number {
     if (!entry.progress || entry.progress.totalEpisodes === 0) return 0;
@@ -74,18 +62,7 @@
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}
-  defaultSort="recent"
-  extraActive={types.length > 0}
-  extra={types}
-  onClearExtra={() => (types = [])}>
-  {#snippet extraFilters()}
-    <Combobox
-      label="Type"
-      multiselect
-      options={TYPE_OPTIONS}
-      values={types}
-      onChange={(v) => (types = v as MediaType[])} />
-  {/snippet}
+  defaultSort="recent">
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MediaSearchPanel {query} limit={10} {onResults} />
   {/snippet}

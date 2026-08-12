@@ -31,7 +31,7 @@
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { Domain, PagedResult } from "@loomkeep/shared";
+  import type { Domain, MediaType, PagedResult } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];
@@ -53,10 +53,6 @@
     sorts,
     defaultSort,
     card,
-    extraFilters,
-    extraActive = false,
-    extra,
-    onClearExtra,
     catalogPreview,
     headerActions,
   }: {
@@ -75,15 +71,6 @@
     sorts: Option[];
     defaultSort: string;
     card: Snippet<[T]>;
-    /** Extra filter controls (media's "type"), rendered after the status one. */
-    extraFilters?: Snippet;
-    /** Whether the extra filter is active (contributes to "has filters"). */
-    extraActive?: boolean;
-    /** Current value of the extra filter, owned by the page — watched so a
-     * change there triggers a reset+reload here. */
-    extra?: unknown;
-    /** Reset the extra filter when clearing all filters. */
-    onClearExtra?: () => void;
     /** Renders a capped catalogue-search preview for the current query, when a
      * library search comes up empty (no filters). Receives the trimmed query
      * and a callback to report back how many catalogue results it found. */
@@ -110,10 +97,19 @@
 
   let sentinel = $state<HTMLElement | null>(null);
 
+  // Extra "type" filter, owned by the page and passed to LibraryBrowser.
+  let types = $state<MediaType[]>([]);
+
   // Non-reactive bookkeeping.
   let lastPage = 0;
   let loadId = 0; // bumped on every reset; stale responses are discarded
   const debouncedRun = debounce(() => run(true), 300);
+
+  const TYPE_OPTIONS: { label: string; value: MediaType }[] = [
+    { label: "Films", value: "MOVIE" },
+    { label: "Séries", value: "SERIES" },
+    { label: "Animés", value: "ANIME" },
+  ];
 
   async function run(reset: boolean): Promise<void> {
     if (!reset && (loading || loadingMore || done)) return;
@@ -135,7 +131,7 @@
         query: query.trim(),
         statuses,
         favoritesOnly,
-        extra,
+        extra: types,
         sort,
         order: reversed ? "asc" : "desc",
         page: next,
@@ -160,7 +156,7 @@
   // The only filter not driven by a local handler below: media's "type" list
   // lives on the page, not here. Also doubles as the initial load on mount.
   $effect(() => {
-    void extra;
+    void types;
     void run(true);
   });
 
@@ -180,13 +176,13 @@
 
   const hasQuery = $derived(query.trim() !== "");
   const hasFilters = $derived(
-    statuses.length > 0 || favoritesOnly || extraActive,
+    statuses.length > 0 || favoritesOnly || types.length > 0,
   );
 
   function clearFilters() {
     statuses = [];
     favoritesOnly = false;
-    onClearExtra?.();
+    types = [];
     void run(true);
   }
 </script>
@@ -219,6 +215,14 @@
   <div
     class="mb-7 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
     <div class="flex flex-wrap items-center gap-2">
+      {#if domain === "MEDIA"}
+        <Combobox
+          label="Type"
+          multiselect
+          options={TYPE_OPTIONS}
+          values={types}
+          onChange={(v) => (types = v as MediaType[])} />
+      {/if}
       <Combobox
         label="Statut"
         multiselect
@@ -228,7 +232,6 @@
           statuses = v;
           void run(true);
         }} />
-      {@render extraFilters?.()}
       <button
         class="chip inline-flex items-center gap-1"
         class:chip-on={favoritesOnly}

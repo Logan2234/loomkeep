@@ -128,7 +128,7 @@
                   </p>
                   <p class="timecode text-sm">
                     {code(e)}{#if e.episodeTitle}
-                      · {e.episodeTitle}{/if}
+                      &nbsp;· {e.episodeTitle}{/if}
                   </p>
                 </div>
               </a>

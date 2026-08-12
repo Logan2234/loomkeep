@@ -256,7 +256,7 @@
             >{media.title}</span>
           <span class="timecode text-xs">
             {TYPE_LABELS[media.type]}{#if media.year}
-              · {media.year}{/if}
+              &nbsp;· {media.year}{/if}
           </span>
         </div>
       </a>

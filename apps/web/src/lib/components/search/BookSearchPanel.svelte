@@ -161,7 +161,7 @@
           <span class="timecode text-xs">
             {#if book.authors.length > 0}
               {book.authors[0]}{#if book.year}
-                · {book.year}{/if}
+                &nbsp;· {book.year}{/if}
             {:else if book.year}
               {book.year}
             {:else}

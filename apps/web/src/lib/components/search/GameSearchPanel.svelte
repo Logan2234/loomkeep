@@ -146,7 +146,7 @@
           </a>
           <span class="timecode text-xs">
             Jeu{#if game.year}
-              · {game.year}{/if}
+              &nbsp;· {game.year}{/if}
           </span>
           {#if entry}
             <span

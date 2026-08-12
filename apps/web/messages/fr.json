@@ -390,8 +390,8 @@
 
   "tracking_title": "Mon suivi",
   "tracking_remove": "Retirer de ma bibliothèque",
-  "tracking_favorite_add": "Coup de cœur",
-  "tracking_favorite_remove": "Retirer des coups de cœur",
+  "tracking_favorite_add": "Favori",
+  "tracking_favorite_remove": "Retirer des favoris",
 
   "notefield_label": "Prise de note",
   "notefield_placeholder": "Notes personnelles…",
