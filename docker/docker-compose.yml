@@ -82,6 +82,11 @@ services:
       # Signing secret for Quackback's "Changelog Published" webhook — see
       # .env.example. Empty = the webhook guard rejects every delivery.
       QUACKBACK_CHANGELOG_WEBHOOK_SECRET: ${QUACKBACK_CHANGELOG_WEBHOOK_SECRET:-}
+      # Umami Link base URL for trackable email CTAs (slugs are fixed in
+      # mail.service.ts, not per-deployment config) — empty means every
+      # email links straight to its destination, no click tracking. See
+      # root README "Analytics".
+      UMAMI_LINKS_BASE_URL: ${UMAMI_LINKS_BASE_URL:-}
     volumes:
       - backup-data:/data/backups
     ports:

@@ -331,6 +331,13 @@ model User {
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
   notifyNewsletter  Boolean   @default(false)
+  // Stable per-user unsubscribe link target, lazily generated on first
+  // newsletter send and reused in every subsequent one — not a
+  // single-use/expiring UserToken, since minting one per recipient per send
+  // would grow the token table without bound as the newsletter goes out
+  // repeatedly. Low-stakes if it ever leaked (only lets someone toggle this
+  // one preference off), so it's a plain unguessable string, not hashed.
+  newsletterUnsubscribeToken String?  @unique
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
   emailVerified     Boolean   @default(false)

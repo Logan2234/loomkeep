@@ -11,14 +11,28 @@ function uniqueConstraintError(): Prisma.PrismaClientKnownRequestError {
 }
 
 describe("NewsletterService.handleChangelogPublished", () => {
-  function makeService() {
+  function makeService(
+    recipients: {
+      id: string;
+      email: string;
+      newsletterUnsubscribeToken: string | null;
+    }[] = [
+      {
+        id: "user_1",
+        email: "a@example.com",
+        newsletterUnsubscribeToken: null,
+      },
+    ],
+  ) {
     const prisma = {
       newsletterSend: {
         create: jest.fn(),
         update: jest.fn(),
       },
       user: {
-        findMany: jest.fn().mockResolvedValue([{ email: "a@example.com" }]),
+        findMany: jest.fn().mockResolvedValue(recipients),
+        update: jest.fn(),
+        findUnique: jest.fn(),
       },
     } as unknown as PrismaService;
     const mail = { sendNewsletter: jest.fn() } as unknown as MailService;
@@ -26,7 +40,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
     return { service, prisma, mail };
   }
 
-  it("reserves the send, then sends and finalizes it", async () => {
+  it("reserves the send, then sends and finalizes it, minting an unsubscribe token for a recipient who doesn't have one yet", async () => {
     const { service, prisma, mail } = makeService();
     (prisma.newsletterSend.create as jest.Mock).mockResolvedValue({
       id: "send_1",
@@ -43,15 +57,48 @@ describe("NewsletterService.handleChangelogPublished", () => {
     expect(prisma.newsletterSend.create).toHaveBeenCalledWith({
       data: { quackbackChangelogId: "changelog_1", title: "Loomkeep 1.3.0" },
     });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user_1" },
+      data: { newsletterUnsubscribeToken: expect.any(String) },
+    });
     expect(mail.sendNewsletter).toHaveBeenCalledWith(
       "a@example.com",
       "Loomkeep 1.3.0",
       "content",
+      expect.any(String),
     );
     expect(prisma.newsletterSend.update).toHaveBeenCalledWith({
       where: { id: "send_1" },
       data: { recipientCount: 1 },
     });
+  });
+
+  it("reuses an existing unsubscribe token instead of minting a new one", async () => {
+    const { service, prisma, mail } = makeService([
+      {
+        id: "user_1",
+        email: "a@example.com",
+        newsletterUnsubscribeToken: "existing-token",
+      },
+    ]);
+    (prisma.newsletterSend.create as jest.Mock).mockResolvedValue({
+      id: "send_1",
+    });
+
+    await service.handleChangelogPublished(
+      "changelog_1",
+      "Loomkeep 1.3.0",
+      "content",
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(mail.sendNewsletter).toHaveBeenCalledWith(
+      "a@example.com",
+      "Loomkeep 1.3.0",
+      "content",
+      "existing-token",
+    );
   });
 
   it("is a no-op when the changelog entry was already reserved (retried webhook delivery)", async () => {
@@ -84,5 +131,46 @@ describe("NewsletterService.handleChangelogPublished", () => {
         "content",
       ),
     ).rejects.toThrow("db down");
+  });
+});
+
+describe("NewsletterService.unsubscribe", () => {
+  function makeService() {
+    const prisma = {
+      user: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+    } as unknown as PrismaService;
+    const mail = {} as unknown as MailService;
+    const service = new NewsletterService(prisma, mail);
+    return { service, prisma };
+  }
+
+  it("flips notifyNewsletter off for the user matching the token", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user_1",
+    });
+
+    await service.unsubscribe("stable-token");
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { newsletterUnsubscribeToken: "stable-token" },
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user_1" },
+      data: { notifyNewsletter: false },
+    });
+  });
+
+  it("rejects an unknown token", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.unsubscribe("bogus")).rejects.toThrow(
+      "Invalid unsubscribe link",
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

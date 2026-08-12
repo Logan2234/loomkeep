@@ -360,6 +360,12 @@
   "auth_verify_email_invalid_link": "Invalid link: no token found in the URL.",
   "auth_verify_email_error_fallback": "Verification failed",
 
+  "newsletter_unsubscribe_title": "Unsubscribe",
+  "newsletter_unsubscribe_pending": "Unsubscribing…",
+  "newsletter_unsubscribe_done": "You're unsubscribed from the Loomkeep newsletter.",
+  "newsletter_unsubscribe_invalid_link": "Invalid link: no token found in the URL.",
+  "newsletter_unsubscribe_error_fallback": "Unsubscribe failed — the link may have expired.",
+
   "settings_export_title": "Export",
   "settings_export_body": "Download a full copy of your data — profile, library and watch history — as JSON.",
   "settings_export_action": "Download my data (JSON)",

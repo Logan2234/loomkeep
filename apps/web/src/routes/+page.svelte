@@ -115,12 +115,20 @@
 
   <!-- Umami analytics — landing page only, never loaded under /app. Empty
        env = no script, matching the "empty disables the feature" convention
-       used everywhere else in this app. See root README "Analytics". -->
+       used everywhere else in this app. See root README "Analytics".
+       data-domains: derived from the actual request host (not hardcoded),
+       so this stays correct on any deployment (official VPS or a
+       self-hoster's own domain) — the tracker no-ops if this exact HTML is
+       ever copied and served from elsewhere, instead of polluting stats
+       with someone else's traffic. data-performance: also collects Core
+       Web Vitals (LCP/CLS/INP) from real visitors. -->
   {#if env.PUBLIC_UMAMI_WEBSITE_ID && env.PUBLIC_UMAMI_SCRIPT_URL}
     <script
       defer
       src={env.PUBLIC_UMAMI_SCRIPT_URL}
-      data-website-id={env.PUBLIC_UMAMI_WEBSITE_ID}></script>
+      data-website-id={env.PUBLIC_UMAMI_WEBSITE_ID}
+      data-domains={page.url.hostname}
+      data-performance="true"></script>
   {/if}
 </svelte:head>
 

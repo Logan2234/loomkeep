@@ -360,6 +360,12 @@
   "auth_verify_email_invalid_link": "Lien invalide : aucun token trouvé dans l'URL.",
   "auth_verify_email_error_fallback": "Vérification impossible",
 
+  "newsletter_unsubscribe_title": "Désinscription",
+  "newsletter_unsubscribe_pending": "Désinscription en cours…",
+  "newsletter_unsubscribe_done": "Tu es désinscrit de la newsletter Loomkeep.",
+  "newsletter_unsubscribe_invalid_link": "Lien invalide : aucun token trouvé dans l'URL.",
+  "newsletter_unsubscribe_error_fallback": "Désinscription impossible — le lien a peut-être expiré.",
+
   "settings_export_title": "Export",
   "settings_export_body": "Télécharge une copie complète de tes données — profil, bibliothèque et historique de visionnage — au format JSON.",
   "settings_export_action": "Télécharger mes données (JSON)",
