@@ -147,12 +147,16 @@
 
           <div class="mt-9 flex flex-wrap items-center gap-3">
             {#if bootstrap.ready && auth.isLoggedIn}
-              <a href="/app" class="btn btn-primary px-5 py-2.5">
+              <a
+                href="/app"
+                class="btn btn-primary btn-primary-cartouche px-5 py-2.5">
                 {m.landing_open_app()}
               </a>
             {:else}
               {#if appConfig.registrationEnabled}
-                <a href="/register" class="btn btn-primary px-5 py-2.5">
+                <a
+                  href="/register"
+                  class="btn btn-primary btn-primary-cartouche px-5 py-2.5">
                   {m.landing_hero_cta_primary()}
                 </a>
               {/if}
