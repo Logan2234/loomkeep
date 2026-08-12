@@ -126,28 +126,83 @@ jobs:
       - run: pnpm --filter @loomkeep/web generate:paraglide
       - run: pnpm knip
 
+  # PR/manual-dispatch validation only — build without pushing, to catch a
+  # broken Dockerfile before merge. Skipped on a push to main: docker-push
+  # below builds the same images there (and pushes), so running this too
+  # would just build api/web a second time for nothing.
   docker-build:
     needs: changes
-    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    if: |
+      (needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true') &&
+      !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+          - name: web
+            dockerfile: apps/web/Dockerfile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
-      - name: build api image
-        if: needs.changes.outputs.api == 'true'
+      - name: build ${{ matrix.name }} image
+        if: needs.changes.outputs[matrix.name] == 'true'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
-          file: apps/api/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: false
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
-      - name: build web image
-        if: needs.changes.outputs.web == 'true'
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # Pushes to GHCR so deploy.yml (and self-hosters) can `pull` a pre-built
+  # image instead of building on the target machine. Runs unconditionally
+  # on every push to main (not gated on the `changes` filter like
+  # docker-build above) so a SHA-tagged pair of images always exists for
+  # whatever commit deploy.yml is about to check out — a push that only
+  # touched apps/api must still produce a web image at that SHA, otherwise
+  # `docker compose pull` on the VPS would have nothing to fetch. api/web
+  # build on separate runners (matrix) rather than sequentially in one job.
+  docker-push:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+          - name: web
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+      - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: vars
+        # GHCR image paths must be lowercase; github.repository_owner
+        # preserves the account's actual casing (Logan2234).
+        run: |
+          echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - name: build and push ${{ matrix.name }} image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
-          file: apps/web/Dockerfile
-          push: false
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+          file: ${{ matrix.dockerfile }}
+          push: true
+          # Only the api Dockerfile declares a GIT_SHA ARG (see its
+          # ARG GIT_SHA=unknown) — passing it for web too would just be an
+          # unused build-arg warning.
+          build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
+          tags: |
+            ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:latest
+            ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }}:${{ steps.vars.outputs.short }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

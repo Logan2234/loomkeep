@@ -30,17 +30,11 @@ services:
       retries: 10
 
   api:
-    build:
-      # Relative to this file's own location (docker/), not the invocation
-      # cwd — the monorepo root, where apps/api/Dockerfile expects its build
-      # context to start, is one level up.
-      context: ..
-      dockerfile: apps/api/Dockerfile
-      # Empty locally (docker:dev etc — "unknown" in the image, harmless).
-      # deploy.yml exports the real short SHA before `docker compose up
-      # --build` on the VPS.
-      args:
-        GIT_SHA: ${GIT_SHA:-unknown}
+    # Pre-built by CI and pushed to GHCR (see .github/workflows/ci.yml's
+    # docker-push job) — GIT_SHA is baked in at that point, not here.
+    # IMAGE_TAG defaults to the floating `latest` tag; deploy.yml pins it
+    # to the exact SHA CI validated.
+    image: ghcr.io/logan2234/loomkeep-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *default-logging
     depends_on:
@@ -94,9 +88,7 @@ services:
       - "3000:3000"
 
   web:
-    build:
-      context: ..
-      dockerfile: apps/web/Dockerfile
+    image: ghcr.io/logan2234/loomkeep-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *default-logging
     depends_on:

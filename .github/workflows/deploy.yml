@@ -42,8 +42,12 @@ jobs:
             # new optional add-on later means editing .env on the VPS, not this
             # workflow. See .env.example / README "Self-hosting" for the format.
             #
-            # GIT_SHA feeds the api image's build arg (see apps/api/Dockerfile
-            # and docker/docker-compose.yml) so the Homepage "Version" widget
-            # can show what's actually running, not just what's in the repo.
-            export GIT_SHA=$(git rev-parse --short HEAD)
-            docker compose up -d --build
+            # IMAGE_TAG pins docker-compose.yml's api/web `image:` to the
+            # exact images the CI docker-push job built and pushed to GHCR
+            # for this SHA (see .github/workflows/ci.yml), instead of the
+            # floating `latest` tag — same "exact commit CI validated"
+            # guarantee as the git reset above. Also feeds the Homepage
+            # "Version" widget, which reads GIT_SHA baked into the api image.
+            export IMAGE_TAG=$(git rev-parse --short HEAD)
+            docker compose pull
+            docker compose up -d

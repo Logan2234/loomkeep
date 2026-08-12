@@ -49,7 +49,7 @@ services:
       # Umami. The script stays fully declared in the privacy policy either
       # way — this only avoids false-positive blocking, not detection by a
       # user who's actually looking.
-      TRACKER_SCRIPT_NAME: loom.js
+      TRACKER_SCRIPT_NAME: loomkeep.js
       COLLECT_API_ENDPOINT: /api/loom
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/heartbeat"]
