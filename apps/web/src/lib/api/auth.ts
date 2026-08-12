@@ -108,6 +108,15 @@ export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {
   return user;
 }
 
+/** Marks the mandatory first-run onboarding wizard as done. */
+export async function completeOnboarding(): Promise<UserDto> {
+  const user = await request<UserDto>("/users/me/complete-onboarding", {
+    method: "POST",
+  });
+  auth.user = user;
+  return user;
+}
+
 export async function uploadAvatar(
   body: UploadAvatarRequestDto,
 ): Promise<UserDto> {

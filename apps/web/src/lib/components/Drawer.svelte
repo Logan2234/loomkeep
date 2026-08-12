@@ -16,17 +16,18 @@
   // setTimeout, only after the local closing animation has finished, makes
   // the parent's unmount instant and unconditional — nothing left for Svelte
   // to defer.
-  import type { Snippet } from "svelte";
-  import { onMount } from "svelte";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
   import { m } from "$lib/paraglide/messages.js";
+  import type { Snippet } from "svelte";
+  import { onMount } from "svelte";
 
   let {
     onclose,
     children,
     labelledby,
     zIndex = 40,
+    dismissable = true,
   }: {
     onclose: () => void;
     children: Snippet;
@@ -36,6 +37,8 @@
      * stack above another fixed overlay (e.g. Modal opened from within
      * FocusOverlay's focused-comment view). */
     zIndex?: number;
+    /** When false: no Escape/backdrop/swipe-down dismissal, no drag grabber. */
+    dismissable?: boolean;
   } = $props();
 
   // JS transitions ignore prefers-reduced-motion, so gate duration manually.
@@ -100,7 +103,7 @@
   const CLOSE_FRACTION = 0.3;
 
   function onPointerDown(e: PointerEvent) {
-    if (closing) return;
+    if (closing || !dismissable) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (!panelEl) return;
     // A drag that starts over a scrollable descendant that isn't itself
@@ -132,7 +135,8 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === "Escape" && requestClose()} />
+<svelte:window
+  onkeydown={(e) => dismissable && e.key === "Escape" && requestClose()} />
 
 <div use:portal use:scrollLock class="contents md:hidden">
   <button
@@ -141,7 +145,7 @@
       : 'pointer-events-none opacity-0'}"
     style="z-index: {zIndex}; transition-duration: {dur}ms"
     aria-label={m.common_close()}
-    onclick={requestClose}></button>
+    onclick={() => dismissable && requestClose()}></button>
 
   <div
     bind:this={panelEl}
@@ -160,7 +164,9 @@
     onpointerup={onPointerUp}
     onpointercancel={onPointerUp}>
     <div class="shrink-0 pt-3 pb-1 select-none">
-      <div class="bg-border mx-auto h-1 w-9 rounded-full"></div>
+      {#if dismissable}
+        <div class="bg-border mx-auto h-1 w-9 rounded-full"></div>
+      {/if}
     </div>
     {@render children()}
   </div>

@@ -240,6 +240,18 @@ export class UsersController {
     return { token: calendarToken! };
   }
 
+  /** Marks the mandatory first-run onboarding wizard as done. Idempotent. */
+  @Post("me/complete-onboarding")
+  async completeOnboarding(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<UserDto> {
+    const user = await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: { onboardedAt: new Date() },
+    });
+    return toUserDto(user);
+  }
+
   @Patch("me")
   async updateMe(
     @CurrentUser() payload: JwtPayload,

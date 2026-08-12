@@ -30,8 +30,9 @@ export class AuthController {
     @Body() dto: RegisterDto,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
+    @Headers("accept-language") acceptLanguage?: string,
   ): Promise<AuthResult> {
-    return this.authService.register(dto, userAgent, ip);
+    return this.authService.register(dto, userAgent, ip, acceptLanguage);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })

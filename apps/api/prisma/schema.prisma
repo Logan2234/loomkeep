@@ -358,16 +358,18 @@ model User {
   // `entitlements` (paid tier): an admin isn't "the highest tier".
   role              Role      @default(USER)
   // Composition seam: content domains the user enabled. Drives the nav today;
-  // search/notif filtering follow at P3. Default = every domain visible.
-  enabledDomains    Domain[]  @default([MEDIA, BOOKS, GAMES, MUSIC])
+  // search/notif filtering follow at P3. Empty by default — the onboarding
+  // wizard's domain step is what actually turns these on for a new account.
+  enabledDomains    Domain[]  @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
   mobileNavShortcuts String[] @default(["home", "search", "menu", "calendar", "account"])
-  // UI language (Paraglide locale code, e.g. "fr"). Only "fr" exists today —
-  // this is the sync-across-devices seam for when a second locale ships; no
-  // settings UI writes to it yet since there's nothing to switch to.
+  // UI language (Paraglide locale code, "fr" or "en"). Set from the
+  // Accept-Language header at registration (see AuthService.register), and
+  // editable from Réglages > Apparence — this is also the sync-across-devices
+  // seam.
   locale            String    @default("fr")
   // Opaque secret for the public .ics calendar subscription URL (not hashed:
   // looked up directly by calendar apps, which can't send an Authorization
@@ -375,6 +377,11 @@ model User {
   calendarToken     String?   @unique
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  // Set once the mandatory first-run onboarding wizard is completed (see
+  // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
+  // showing the wizard instead of the app chrome — including for accounts
+  // that existed before this field shipped.
+  onboardedAt       DateTime?
 
   entries             LibraryEntry[]
   episodeWatches      EpisodeWatch[]

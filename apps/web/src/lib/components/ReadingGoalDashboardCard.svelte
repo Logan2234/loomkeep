@@ -37,9 +37,9 @@
       {#if hasGoal}
         <button
           type="button"
-          class="text-dim hover:text-fg text-xs font-semibold"
+          class="text-dim hover:text-fg text-xs font-semibold transition-colors"
           onclick={() => (editing = true)}>
-          {m.reading_goal_edit()}
+          {m.common_edit()}
         </button>
       {/if}
     </div>

@@ -167,9 +167,9 @@ describe("Loomkeep API (e2e)", () => {
 
     expect(response.body).toMatchObject({
       email: user.email,
-      // New accounts get every shipped content domain enabled by default
-      // (PODCASTS/BOARDGAMES are opt-in "coming soon" placeholders).
-      enabledDomains: ["MEDIA", "BOOKS", "GAMES", "MUSIC"],
+      // Empty until the onboarding wizard (or the settings "Domaines"
+      // section) sets at least one — see User.enabledDomains in schema.prisma.
+      enabledDomains: [],
     });
   });
 

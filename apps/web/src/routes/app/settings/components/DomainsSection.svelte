@@ -3,6 +3,7 @@
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { DOMAINS } from "$lib/constants/domains";
+  import { toggleDomainSelection } from "$lib/domains";
   import { m } from "$lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared";
 
@@ -10,13 +11,8 @@
 
   async function toggleDomain(id: Domain) {
     if (!auth.user) return;
-    const current = auth.user.enabledDomains;
-    const has = current.includes(id);
-    if (has && current.length === 1) return; // keep at least one domain visible
-    // Rebuild in canonical order so the stored list stays tidy.
-    const next = Object.keys(DOMAINS).filter((d) =>
-      d === id ? !has : current.includes(d as Domain),
-    ) as Domain[];
+    const next = toggleDomainSelection(auth.user.enabledDomains, id);
+    if (next === auth.user.enabledDomains) return; // last domain, refused
     domainsError = "";
     try {
       await updateMe({ enabledDomains: next });

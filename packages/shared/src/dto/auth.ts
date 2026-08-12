@@ -47,8 +47,9 @@ export interface UserDto {
   /** Operational permission level (gates /admin). See `Role`. */
   role: Role;
   /**
-   * Content domains the user keeps visible (defaults to all). Drives the nav
-   * today; edited from the settings "Domaines" section. See `Domain`.
+   * Content domains the user keeps visible (empty until the onboarding
+   * wizard or the settings "Domaines" section sets at least one). Drives the
+   * nav today. See `Domain`.
    */
   enabledDomains: Domain[];
   /**
@@ -66,13 +67,16 @@ export interface UserDto {
   defaultListVisibility: ListVisibility;
   /** Profile access mode (social): PUBLIC/PRIVATE/GHOST ("Figurant"). */
   profileAccess: ProfileAccess;
-  /**
-   * UI language (Paraglide locale code, e.g. "fr"). Only "fr" ships today —
-   * this is the sync-across-devices seam for a future second locale.
-   */
+  /** UI language (Paraglide locale code). Currently "fr" or "en". */
   locale: string;
   /** ISO datetime the account was created — shown as "member since". */
   createdAt: string;
+  /**
+   * ISO datetime the mandatory first-run onboarding wizard was completed,
+   * null until then. Gates whether app/+layout.svelte shows the wizard
+   * instead of the app chrome.
+   */
+  onboardedAt: string | null;
   /**
    * Path (relative to the API base) to the uploaded profile picture, or null
    * if the user hasn't set one — the client falls back to the generated

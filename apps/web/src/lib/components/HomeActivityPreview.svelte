@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getFeedPreview } from "$lib/api/client";
-  import { appConfig } from "$lib/config.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
@@ -31,7 +31,9 @@
   <section class="card p-4">
     <div class="mb-4 flex items-baseline justify-between">
       <p class="timecode text-xs uppercase">{m.home_activity_title()}</p>
-      <a href="/app/feed" class="text-dim hover:text-fg text-sm font-semibold">
+      <a
+        href="/app/feed"
+        class="text-dim hover:text-fg text-sm font-semibold transition-colors">
         {m.home_activity_view_feed()}
       </a>
     </div>
