@@ -1,6 +1,6 @@
 {
   "name": "@loomkeep/shared",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Types, enums and DTOs shared between the Loomkeep API and web app",
   "private": true,
   "license": "AGPL-3.0-only",

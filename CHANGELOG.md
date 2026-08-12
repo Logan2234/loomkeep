@@ -12,6 +12,61 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.5.0 — Onboarding wizard, collaborative lists & account security
+
+- **Mandatory first-run onboarding wizard**: guides new (and existing,
+  pre-feature) users through picking their content domains, appearance and
+  notification settings, and a domain-conditional import CTA, gated behind a
+  new `User.onboardedAt` field. Introduces a reusable Wizard/Stepper shell
+  and a `dismissable` escape hatch on Modal/Drawer for the one-shot,
+  non-closable flow. Accounts now start with `enabledDomains=[]` (previously
+  all domains enabled by default), set by the wizard itself.
+- **Collaborative lists**: adds `ListMember`, a directed grant mirroring
+  Follow/Block — the owner can add editors by username, who can add/remove/
+  reorder items and edit title/description, but never delete the list,
+  change its visibility, or manage members. Reorder takes an optimistic lock
+  on `List.updatedAt` so concurrent editors get a 409 instead of clobbering
+  each other's order. Ownership transfers to the earliest-added editor if
+  the owner deletes their account, editors can leave a list themselves, and
+  the invited user gets a notification.
+- **Annual reading goal**: users can set a yearly target ("30 books in
+  2026") and track progress via a gauge chip beside the `/books` title and a
+  card on the home dashboard, computed on read from books finished that
+  year (rereads included). `BookEntry.finishedAt` is now synced when a book
+  is marked READ, which it previously wasn't — the goal would otherwise
+  have silently undercounted.
+- **New-device login alerts**: a durable per-user `UserDevice` table
+  (independent of `RefreshToken`, which gets pruned) keyed on a normalized
+  browser+OS label emails the account and logs a `NEW_DEVICE_LOGIN`
+  `SecurityEvent` the first time a device is seen.
+- **Breached-password check**: new passwords are checked against Have I
+  Been Pwned's range API (k-anonymity, only a 5-char SHA-1 prefix ever
+  leaves the server) on register, password reset and password change; fails
+  open on any network error so an HIBP outage or offline self-host never
+  blocks auth.
+- **Account deletion made non-destructive for shared content**:
+  `Review.userId`, `Comment.authorId` and `Report.reporterId` are now
+  nullable with `onDelete: SetNull` instead of `Cascade`, so deleting an
+  account detaches authorship instead of destroying content other users can
+  still see or reply to — the UI falls back to a "Utilisateur supprimé"
+  placeholder. A new `GET /users/me/deletion-summary` endpoint powers a
+  collapsible per-category breakdown (deleted vs. anonymized) in the danger
+  zone's confirmation modal.
+- Settings/auth UX polish: login/register errors render in a `Banner` with
+  clearer French copy, username availability check gets fuller messages and
+  a check/cross glyph, email verified/unverified status moves to a small
+  icon, and the adult-content toggle is fully hidden (not just disabled)
+  when the account isn't eligible.
+- Admin: per-domain library stats added to the users section.
+- Fixed the Collection grid's delete button being hover-only, leaving touch
+  users no way to remove an item — long-press now opens a focus overlay
+  (same pattern as comment threads) with a confirmation step.
+- Button styles refactored across components for consistency, with a new
+  compact modifier.
+- Dead-code cleanup: unused shared DTOs, an unused `getMyLists` helper,
+  `knip` config, and various imports/constants consolidated across
+  components and routes.
+
 ## 1.4.0 — Public landing page & app routing overhaul
 
 - **Public landing page** at `/`: a prerendered marketing page (hero, the six
