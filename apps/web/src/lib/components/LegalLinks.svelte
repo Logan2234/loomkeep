@@ -25,8 +25,7 @@
       href="/legal/legal-notice"
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg transition-colors hover:underline"
-      >Mentions légales</a>
+      class="btn-text text-xs font-normal decoration-1">Mentions légales</a>
 
     <span class="mx-1.5">·</span>
 
@@ -34,8 +33,7 @@
       href="/legal/privacy-policy"
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg transition-colors hover:underline"
-      >Confidentialité</a>
+      class="btn-text text-xs font-normal decoration-1">Confidentialité</a>
 
     <span class="mx-1.5">·</span>
 
@@ -43,7 +41,7 @@
       href="/legal/terms-of-service"
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg transition-colors hover:underline">CGU</a>
+      class="btn-text text-xs font-normal decoration-1">CGU</a>
   </nav>
 
   {#if version}
@@ -51,7 +49,7 @@
       href={CHANGELOG_URL}
       target="_blank"
       rel="noopener noreferrer"
-      class="hover:text-fg transition-colors hover:underline">
+      class="btn-text text-xs font-normal decoration-1">
       {m.common_version({ version })}
     </a>
   {/if}

@@ -35,10 +35,7 @@
         {m.reading_goal_title()}
       </h2>
       {#if hasGoal}
-        <button
-          type="button"
-          class="text-dim hover:text-fg text-xs font-semibold transition-colors"
-          onclick={() => (editing = true)}>
+        <button type="button" class="btn-text" onclick={() => (editing = true)}>
           {m.common_edit()}
         </button>
       {/if}

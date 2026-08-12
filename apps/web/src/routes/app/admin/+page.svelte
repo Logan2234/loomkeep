@@ -313,7 +313,7 @@
         href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg transition-colors hover:underline">
+        class="btn-text text-xs font-normal decoration-1">
         {m.common_version({ version })}
       </a>
     </p>

@@ -358,7 +358,7 @@
       <div class="text-dim flex items-center gap-0.5">
         {#if !isReply}
           <button
-            class="hover:text-fg hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full"
+            class="btn-icon"
             title="Répondre"
             aria-label="Répondre"
             onclick={() => (replyToId = replyToId === c.id ? null : c.id)}>
@@ -367,14 +367,14 @@
         {/if}
         {#if c.author?.id === auth.user?.id}
           <button
-            class="hover:text-fg hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full"
+            class="btn-icon"
             title="Modifier"
             aria-label="Modifier"
             onclick={() => startEdit(c)}>
             <Icon name="edit" class="h-4 w-4" />
           </button>
           <button
-            class="hover:text-danger hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full"
+            class="btn-icon hover:text-danger"
             title={m.common_delete()}
             aria-label={m.common_delete()}
             onclick={() => (confirmDeleteId = c.id)}>
@@ -382,7 +382,7 @@
           </button>
         {:else}
           <button
-            class="hover:text-fg hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full"
+            class="btn-icon"
             title="Signaler"
             aria-label="Signaler"
             onclick={() => openReport(c.id)}>

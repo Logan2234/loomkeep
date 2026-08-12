@@ -50,7 +50,7 @@
   <div class="flex justify-end">
     <button
       type="button"
-      class="text-dim hover:text-danger text-sm font-medium underline-offset-4 transition-colors hover:underline disabled:opacity-50"
+      class="btn-text hover:text-danger"
       disabled={saving}
       onclick={onRemove}>
       {m.tracking_remove()}

@@ -319,18 +319,18 @@
         href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg transition-colors hover:underline">GitHub</a>
+        class="btn-text text-xs font-normal decoration-1">GitHub</a>
       <a
         href={FEEDBACK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg transition-colors hover:underline"
+        class="btn-text text-xs font-normal decoration-1"
         >{m.landing_footer_feedback()}</a>
       <a
         href={CHANGELOG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-fg transition-colors hover:underline"
+        class="btn-text text-xs font-normal decoration-1"
         >{m.landing_footer_changelog()}</a>
     </div>
     <LegalLinks />

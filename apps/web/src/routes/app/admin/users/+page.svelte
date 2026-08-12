@@ -516,7 +516,7 @@
             </p>
             <a
               href="/app/u/{selected.username}"
-              class="text-accent mt-0.5 inline-block text-xs hover:underline">
+              class="btn-text text-accent hover:text-accent mt-0.5 text-xs">
               Voir le profil public →
             </a>
           </div>
@@ -870,8 +870,7 @@
 {/if}
 
 {#if showDeleteModal && selected}
-  <div
-    class="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+  <div class="fixed inset-0 z-60 flex items-end justify-center sm:items-center">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
       aria-label={m.common_close()}

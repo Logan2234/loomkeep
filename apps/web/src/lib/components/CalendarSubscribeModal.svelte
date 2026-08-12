@@ -103,7 +103,7 @@
     <div class="mt-5 flex flex-wrap items-center justify-between gap-2">
       <button
         type="button"
-        class="text-dim hover:text-fg text-xs underline"
+        class="btn-text text-xs"
         onclick={() => (confirmingRegenerate = true)}>
         Régénérer le lien
       </button>

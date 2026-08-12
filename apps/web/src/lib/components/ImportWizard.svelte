@@ -480,7 +480,7 @@
         Tout est associé.
         <button
           type="button"
-          class="text-accent font-medium hover:underline"
+          class="btn-text text-accent hover:text-accent"
           onclick={() => (filterUnresolved = false)}>
           Afficher tout
         </button>

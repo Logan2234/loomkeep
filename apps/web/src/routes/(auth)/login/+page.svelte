@@ -59,9 +59,7 @@
           bind:value={password}
           required />
         <p class="text-dim -mt-2 text-right text-sm">
-          <a
-            href="/forgot-password"
-            class="hover:text-accent transition-colors hover:underline"
+          <a href="/forgot-password" class="btn-text hover:text-accent"
             >{m.auth_forgot_password()}</a>
         </p>
         {#if error}<Banner variant="error">{error}</Banner>{/if}

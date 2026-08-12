@@ -139,6 +139,11 @@ body {
   .btn-icon {
     @apply text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
   }
+  /* Compact modifier for `.btn`, used in dense rows (table actions, batch
+     toolbars). Was referenced across the app but never defined. */
+  .btn-sm {
+    @apply px-2.5 py-1 text-xs;
+  }
   .input {
     @apply border-border bg-surface text-fg placeholder:text-dim w-full rounded-lg border px-3 py-2;
   }
