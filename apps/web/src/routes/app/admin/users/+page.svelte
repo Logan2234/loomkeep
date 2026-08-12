@@ -516,7 +516,7 @@
             </p>
             <a
               href="/app/u/{selected.username}"
-              class="text-accent mt-0.5 inline-block text-xs hover:underline">
+              class="btn-text text-accent mt-0.5">
               Voir le profil public →
             </a>
           </div>
@@ -681,7 +681,7 @@
           <button
             onclick={downloadExport}
             disabled={exporting}
-            class="btn btn-ghost btn-sm flex-1 disabled:opacity-50">
+            class="btn btn-ghost btn-sm flex-1">
             <Icon name="download" class="mr-1 inline h-3.5 w-3.5" />
             Exporter
           </button>
@@ -711,13 +711,13 @@
           <button
             onclick={resendVerification}
             disabled={verifySending || selected.emailVerified}
-            class="btn btn-ghost btn-sm w-full disabled:opacity-50">
+            class="btn btn-ghost btn-sm w-full">
             {verifySending ? "Envoi…" : "Renvoyer l'email de vérification"}
           </button>
           <button
             onclick={sendPasswordReset}
             disabled={resetSending}
-            class="btn btn-ghost btn-sm w-full disabled:opacity-50">
+            class="btn btn-ghost btn-sm w-full">
             {resetSending ? "Envoi…" : "Envoyer un lien de réinitialisation"}
           </button>
           {#if verifyMessage}
@@ -870,8 +870,7 @@
 {/if}
 
 {#if showDeleteModal && selected}
-  <div
-    class="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+  <div class="fixed inset-0 z-60 flex items-end justify-center sm:items-center">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
       aria-label={m.common_close()}

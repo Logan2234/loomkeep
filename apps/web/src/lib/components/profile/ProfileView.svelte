@@ -24,7 +24,6 @@
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Modal from "$lib/components/Modal.svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
@@ -33,6 +32,7 @@
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type {
     ListDto,
     MyListDto,
@@ -398,10 +398,10 @@
                 <Icon name="edit" class="h-3.5 w-3.5" />
               </button>
             {:else if rel?.isFriend}
-              <span class="chip chip-on !py-1 text-xs"
+              <span class="chip chip-on py-1! text-xs"
                 >{m.profile_friends_badge()}</span>
             {:else if rel?.followsYou}
-              <span class="chip !py-1 text-xs">{m.profile_follows_you()}</span>
+              <span class="chip py-1! text-xs">{m.profile_follows_you()}</span>
             {/if}
           </div>
           <p
@@ -583,8 +583,7 @@
         <div
           class="border-border flex flex-wrap overflow-hidden rounded-xl border">
           {#if watchDays > 0}
-            <div
-              class="border-border min-w-[140px] flex-1 border-r border-b p-3.5">
+            <div class="border-border min-w-35 flex-1 border-r border-b p-3.5">
               <p class="font-display text-xl font-extrabold tracking-tight">
                 {watchDays}<span class="text-dim text-xs font-bold"> j</span>
               </p>
@@ -594,7 +593,7 @@
             </div>
           {/if}
           {#if profile.activityStats.mostActiveYear !== null}
-            <div class="min-w-[140px] flex-1 border-b p-3.5">
+            <div class="min-w-35 flex-1 border-b p-3.5">
               <p class="font-display text-xl font-extrabold tracking-tight">
                 {profile.activityStats.mostActiveYear}
               </p>
@@ -671,7 +670,7 @@
           </p>
           <a
             href="/app/stats"
-            class="text-accent mt-0.5 inline-block text-xs font-bold hover:underline">
+            class="btn-text text-accent hover:text-accent mt-0.5">
             {m.profile_activity_view_stats()}
           </a>
         </div>

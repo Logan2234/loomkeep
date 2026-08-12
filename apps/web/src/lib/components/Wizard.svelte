@@ -146,7 +146,7 @@
       {/if}
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-primary {isLast ? 'btn-primary-cartouche' : ''}"
         disabled={!canAdvance}
         onclick={isLast ? onFinish : onNext}>
         {isLast ? m.common_finish() : m.common_next()}

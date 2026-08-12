@@ -384,7 +384,7 @@
                        two quiet icon buttons rather than a hidden menu. -->
                   <div class="flex shrink-0 items-center gap-1">
                     <button
-                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full disabled:opacity-50"
+                      class="btn-icon"
                       title="Revoir"
                       aria-label="Revoir"
                       disabled={busyEpisodeId === episode.id}
@@ -392,7 +392,7 @@
                       <Icon name="refresh" class="h-4 w-4" />
                     </button>
                     <button
-                      class="text-dim hover:text-danger hover:bg-surface-2 grid h-7 w-7 place-items-center rounded-full disabled:opacity-50"
+                      class="btn-icon hover:text-danger"
                       title="Annuler ce visionnage"
                       aria-label="Annuler ce visionnage"
                       disabled={busyEpisodeId === episode.id}
@@ -402,7 +402,7 @@
                   </div>
                 {:else}
                   <button
-                    class="btn btn-primary shrink-0 px-2.5 py-1 text-xs"
+                    class="btn btn-primary btn-sm shrink-0"
                     disabled={busyEpisodeId === episode.id}
                     onclick={() =>
                       requestMarkWatched(

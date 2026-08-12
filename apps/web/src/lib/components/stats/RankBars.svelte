@@ -63,7 +63,7 @@
   {#if hasMore}
     <button
       type="button"
-      class="btn btn-ghost mt-3.5 w-full !py-1.5 text-xs"
+      class="btn btn-ghost btn-sm mt-3.5 w-full"
       onclick={() => (expanded = !expanded)}>
       {expanded ? "Voir moins" : `Tout voir — ${items.length}`}
     </button>

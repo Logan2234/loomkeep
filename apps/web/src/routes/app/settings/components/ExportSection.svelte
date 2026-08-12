@@ -118,7 +118,7 @@
         {#if d.comingSoon}
           <!-- Planned domain: no data to export yet. -->
           <button
-            class="btn btn-ghost disabled:pointer-events-none disabled:opacity-40"
+            class="btn btn-ghost"
             disabled
             title={m.settings_export_csv_coming_soon_hint()}>
             <Icon name="download" class="mr-1.5 inline h-4 w-4" />

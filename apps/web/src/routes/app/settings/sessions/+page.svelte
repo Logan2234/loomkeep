@@ -125,7 +125,7 @@
           </div>
           {#if !isCurrent}
             <button
-              class="text-danger shrink-0 text-sm font-semibold hover:underline"
+              class="btn-text btn-text-underline text-danger shrink-0 text-sm"
               onclick={() => (confirmTarget = { kind: "one", session })}>
               Déconnecter
             </button>

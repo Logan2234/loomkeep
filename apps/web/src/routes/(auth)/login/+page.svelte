@@ -61,7 +61,7 @@
         <p class="text-dim -mt-2 text-right text-sm">
           <a
             href="/forgot-password"
-            class="hover:text-accent transition-colors hover:underline"
+            class="btn-text btn-text-underline hover:text-accent text-sm"
             >{m.auth_forgot_password()}</a>
         </p>
         {#if error}<Banner variant="error">{error}</Banner>{/if}

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* stylelint-disable at-rule-no-unknown */
 
 /* Loomkeep — "Séance" design system.
    Semantic tokens flip between light ("le programme") and dark ("la salle").
@@ -93,16 +94,68 @@ body {
    Keyboard focus is handled globally by the :focus-visible rule below. */
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-[filter,background-color,color] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-[filter,background-color,color,transform] active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
     @apply bg-btn text-btn-fg hover:brightness-95;
   }
+  /* Hero-only modifier: pill shape + a faint inner top highlight, like the
+     amber "marquee" cartouche. Not for everyday primary buttons — pair with
+     `.btn .btn-primary` and reserve for the one CTA per screen that should
+     feel like a lit-up ticket booth window. */
+  .btn-primary-cartouche {
+    @apply rounded-full font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.25)];
+  }
   .btn-ghost {
-    @apply border-border text-dim hover:bg-surface-2 hover:text-fg border;
+    @apply border-border text-dim hover:text-fg relative overflow-hidden border;
+  }
+  /* Projector-beam hover: a soft radial glow in the accent color instead of
+     a flat fill — nods to "la salle" rather than a generic hover state. */
+  .btn-ghost::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle, var(--accent) 0%, transparent 65%);
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+  }
+  .btn-ghost:hover::before {
+    opacity: 0.12;
   }
   .btn-danger {
-    @apply border-danger text-danger hover:bg-danger/10 border;
+    /* text-btn-fg reads oddly by name but is the correct contrast pair here
+       too: light theme's off-white on the (dark-ish) danger red, dark
+       theme's ink on the (light) danger pink — same relationship .btn-primary
+       already relies on. */
+    @apply border-danger text-danger hover:bg-danger hover:text-btn-fg border;
+  }
+  /* Quiet tertiary action: no fill, no border — a color shift on hover is
+     enough, since these mostly sit in a recognizable slot (section-header
+     "Voir plus →"). */
+  .btn-text {
+    @apply text-dim hover:text-fg inline-flex items-center gap-1 text-xs font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50;
+  }
+  /* Pair with `.btn-text` for the handful of cases needing a stronger
+     affordance: a link standing alone in running text, or a consequential
+     action (delete, sign out) that shouldn't read as quiet navigation. */
+  .btn-text-underline {
+    @apply underline decoration-transparent decoration-2 underline-offset-4 hover:decoration-current;
+  }
+  /* Icon-only round action button (rewatch, follow, dismiss…) — the icon
+     equivalent of `.btn-ghost`, sized for a touch target rather than text. */
+  .btn-icon {
+    @apply text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
+  }
+  /* Compact modifier for `.btn`, used in dense rows (table actions, batch
+     toolbars). Was referenced across the app but never defined. */
+  .btn-sm {
+    @apply px-2.5 py-1 text-xs;
+  }
+  /* Larger modifier for `.btn`, for the one or two CTAs per screen that
+     should read as more prominent (marketing hero row). */
+  .btn-lg {
+    @apply px-5 py-2.5;
   }
   .input {
     @apply border-border bg-surface text-fg placeholder:text-dim w-full rounded-lg border px-3 py-2;

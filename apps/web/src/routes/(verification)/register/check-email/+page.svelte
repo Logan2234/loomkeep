@@ -95,7 +95,7 @@
         <div class="flex flex-col gap-2">
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-ghost"
             onclick={resend}
             disabled={status === "loading" || cooldown > 0}>
             {#if status === "loading"}
@@ -107,7 +107,10 @@
             {/if}
           </button>
 
-          <button type="button" class="btn btn-primary" onclick={continueToApp}>
+          <button
+            type="button"
+            class="btn btn-primary btn-primary-cartouche"
+            onclick={continueToApp}>
             Continuer vers Loomkeep
           </button>
         </div>

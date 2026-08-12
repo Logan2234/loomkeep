@@ -227,10 +227,7 @@
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="tv" class="text-accent h-4 w-4" /> Vidéo · à reprendre
               </h2>
-              <a
-                href="/app/media"
-                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
-                >Voir plus →</a>
+              <a href="/app/media" class="btn-text">Voir plus →</a>
             </div>
             <div class="p-4">
               {#if watchingRecent.length > 0}
@@ -268,7 +265,7 @@
                         </p>
                         {#if e.progress.nextEpisode}
                           <button
-                            class="btn btn-primary mt-1 w-full px-2 py-1 text-[0.65rem]"
+                            class="btn btn-primary btn-sm mt-1 w-full"
                             disabled={resuming === e.id}
                             onclick={() => resume(e)}>
                             ▶ {epCodeOf(e.progress.nextEpisode)}
@@ -294,10 +291,7 @@
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="gamepad" class="text-accent h-4 w-4" /> Jeux · en cours
               </h2>
-              <a
-                href="/app/games"
-                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
-                >Voir →</a>
+              <a href="/app/games" class="btn-text">Voir →</a>
             </div>
             {#if playingGames.length > 0}
               <Carousel items={playingGames} keyOf={(e) => e.id}>
@@ -331,15 +325,12 @@
 
         {#if booksOn}
           <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between gap-2">
+            <div class="mb-3 flex items-center justify-between">
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="book" class="text-accent h-4 w-4" /> Livres · en lecture
               </h2>
-              <a
-                href="/app/books"
-                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
-                >Voir →</a>
+              <a href="/app/books" class="btn-text">Voir →</a>
             </div>
             {#if readingBooks.length > 0}
               <ul class="divide-border divide-y">
@@ -392,10 +383,7 @@
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="music" class="text-accent h-4 w-4" /> Musique · à écouter
               </h2>
-              <a
-                href="/app/music"
-                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
-                >Voir →</a>
+              <a href="/app/music" class="btn-text">Voir →</a>
             </div>
             {#if toListenAlbums.length > 0}
               <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
@@ -449,10 +437,7 @@
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="calendar" class="text-accent h-4 w-4" /> Cette semaine
               </h2>
-              <a
-                href="/app/calendar"
-                class="text-dim hover:text-fg text-xs font-semibold transition-colors"
-                >Calendrier →</a>
+              <a href="/app/calendar" class="btn-text">Calendrier →</a>
             </div>
             {#if week.length > 0}
               <ul class="divide-border divide-y">
@@ -553,7 +538,7 @@
               href={CHANGELOG_URL}
               target="_blank"
               rel="noopener noreferrer"
-              class="hover:text-fg transition-colors hover:underline">
+              class="btn-text">
               {m.common_version({ version })}
             </a>
           </p>

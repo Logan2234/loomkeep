@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { getAdminJobs, runAdminJob, ApiError } from "$lib/api/client";
+  import { ApiError, getAdminJobs, runAdminJob } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { JobDto } from "@loomkeep/shared";
 
   let jobs = $state<JobDto[] | null>(null);
@@ -86,10 +86,7 @@
     title={m.admin_jobs_title()}
     subtitle={m.admin_jobs_subtitle()}>
     {#snippet actions()}
-      <button
-        onclick={load}
-        disabled={loading}
-        class="btn btn-ghost shrink-0 disabled:opacity-50">
+      <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
         {loading ? "…" : m.admin_refresh()}
       </button>
     {/snippet}
@@ -119,7 +116,7 @@
             <button
               onclick={() => runJob(job.key)}
               disabled={running === job.key}
-              class="btn btn-primary shrink-0 text-xs disabled:opacity-50">
+              class="btn btn-primary btn-sm shrink-0">
               {running === job.key
                 ? m.admin_jobs_running()
                 : m.admin_jobs_run_now()}

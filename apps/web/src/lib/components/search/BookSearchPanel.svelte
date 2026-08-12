@@ -176,7 +176,7 @@
             </span>
           {:else}
             <button
-              class="btn btn-primary mt-auto h-8 text-xs"
+              class="btn btn-primary btn-sm mt-auto"
               onclick={() => addBook(book)}>
               <Icon name="plus" class="h-4 w-4" /> Ajouter
             </button>

@@ -31,9 +31,7 @@
   <section class="card p-4">
     <div class="mb-4 flex items-baseline justify-between">
       <p class="timecode text-xs uppercase">{m.home_activity_title()}</p>
-      <a
-        href="/app/feed"
-        class="text-dim hover:text-fg text-sm font-semibold transition-colors">
+      <a href="/app/feed" class="btn-text">
         {m.home_activity_view_feed()}
       </a>
     </div>
