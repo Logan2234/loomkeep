@@ -72,8 +72,9 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Swagger UI on /docs, dev-only. Dynamically imported so @nestjs/swagger
-  // stays a devDependency and is never loaded in production.
+  // Swagger UI on /docs, dev-only. @nestjs/swagger is a production dependency
+  // regardless (the nest-cli swagger plugin injects it into every compiled
+  // file using @Api* decorators), but the UI itself is still gated to dev.
   if (isDev) {
     const { SwaggerModule, DocumentBuilder } = await import("@nestjs/swagger");
     const config = new DocumentBuilder()
