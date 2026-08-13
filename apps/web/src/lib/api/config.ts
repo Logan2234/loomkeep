@@ -16,9 +16,13 @@ export async function initConfig(): Promise<void> {
     appConfig.socialEnabled = config.socialEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
     appConfig.erdEnabled = config.erdEnabled;
+    appConfig.version = config.version;
+    appConfig.gitSha = config.gitSha;
   } catch {
     appConfig.socialEnabled = false;
     appConfig.registrationEnabled = false;
     appConfig.erdEnabled = false;
+    appConfig.version = "";
+    appConfig.gitSha = "";
   }
 }

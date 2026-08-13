@@ -28,4 +28,15 @@ export interface PublicConfigDto {
    * mirrors that by reading the API's own `NODE_ENV`.
    */
   erdEnabled: boolean;
+
+  /** The running app's version (monorepo root package.json). */
+  version: string;
+
+  /**
+   * Short (7-char) commit SHA of the running build, set at build time (see
+   * `GIT_SHA` in `apps/api/Dockerfile`) — "unknown" outside a CI-built image.
+   * Exposed publicly (alongside `version`) so the app can point users at the
+   * exact deployed source, per AGPL §13.
+   */
+  gitSha: string;
 }

@@ -1,19 +1,7 @@
 <script lang="ts">
-  import { getAdminVersion } from "$lib/api/admin";
-  import { auth } from "$lib/auth.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages";
-  import { CHANGELOG_URL } from "../constants/external-links";
-
-  // AdminOnly on the backend — only fetched (and shown) for the admin account.
-  let version = $state<string | null>(null);
-
-  $effect(() => {
-    if (auth.isAdmin) {
-      getAdminVersion()
-        .then((v) => (version = v.version))
-        .catch(() => {});
-    }
-  });
+  import { GITHUB_REPO_URL } from "../constants/external-links";
 </script>
 
 <footer
@@ -44,13 +32,16 @@
       class="btn-text font-normal">CGU</a>
   </nav>
 
-  {#if version}
+  {#if appConfig.version}
     <a
-      href={CHANGELOG_URL}
+      href={GITHUB_REPO_URL}
       target="_blank"
       rel="noopener noreferrer"
       class="btn-text font-normal">
-      {m.common_version({ version })}
+      {m.common_version({ version: appConfig.version })}
+      {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+        <span class="opacity-60">({appConfig.gitSha})</span>
+      {/if}
     </a>
   {/if}
 </footer>

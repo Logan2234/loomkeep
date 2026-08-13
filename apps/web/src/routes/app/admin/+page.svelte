@@ -9,14 +9,13 @@
     getAdminJobs,
     getAdminOverview,
     getAdminServices,
-    getAdminVersion,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
-  import { CHANGELOG_URL } from "$lib/constants/external-links";
+  import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages";
   import type {
     AdminBackupFileDto,
@@ -25,16 +24,12 @@
     ServiceStatusDto,
   } from "@loomkeep/shared";
 
-  let version = $state<string | null>(null);
   let overview = $state<AdminOverviewDto | null>(null);
   let services = $state<ServiceStatusDto[] | null>(null);
   let jobs = $state<JobDto[] | null>(null);
   let backups = $state<AdminBackupFileDto[] | null>(null);
 
   $effect(() => {
-    getAdminVersion()
-      .then((v) => (version = v.version))
-      .catch(() => {});
     void adminReports.refresh();
     getAdminOverview()
       .then((o) => (overview = o))
@@ -307,14 +302,17 @@
     {/each}
   </div>
 
-  {#if version}
+  {#if appConfig.version}
     <p class="text-dim mt-8 text-center text-xs">
       <a
-        href={CHANGELOG_URL}
+        href={GITHUB_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
         class="btn-text font-normal">
-        {m.common_version({ version })}
+        {m.common_version({ version: appConfig.version })}
+        {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+          <span class="opacity-60">({appConfig.gitSha})</span>
+        {/if}
       </a>
     </p>
   {/if}
