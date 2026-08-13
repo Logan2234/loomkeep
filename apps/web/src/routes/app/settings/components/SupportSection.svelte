@@ -1,10 +1,7 @@
 <script lang="ts">
-  import Modal from "$lib/components/Modal.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
-
-  let showKofiModal = $state(false);
 
   // Official brand marks (simple-icons), kept local to this section rather
   // than in the shared Icon component — these are flat colored logos, not
@@ -32,9 +29,10 @@
     {
       key: "kofi",
       name: "Ko-fi",
+      href: "https://ko-fi.com/loomkeep",
       accountRequired: false,
       recommended: true,
-      note: m.settings_support_kofi_note(),
+      note: m.settings_support_new_tab_note(),
     },
     {
       key: "liberapay",
@@ -87,15 +85,10 @@
 
   <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
     {#each TILES as tile (tile.key)}
-      {@const Tag = tile.key === "kofi" ? "button" : "a"}
-      <svelte:element
-        this={Tag}
-        role={tile.key === "kofi" ? "button" : undefined}
-        type={tile.key === "kofi" ? "button" : undefined}
-        href={tile.key === "kofi" ? undefined : tile.href}
-        target={tile.key === "kofi" ? undefined : "_blank"}
-        rel={tile.key === "kofi" ? undefined : "noopener noreferrer"}
-        onclick={tile.key === "kofi" ? () => (showKofiModal = true) : undefined}
+      <a
+        href={tile.href}
+        target="_blank"
+        rel="noopener noreferrer"
         class="card hover:border-accent flex items-start gap-2.5 p-3 text-left text-sm font-semibold transition-[border-color]">
         <svg
           viewBox="0 0 24 24"
@@ -125,20 +118,7 @@
             {tile.note}
           </span>
         </span>
-      </svelte:element>
+      </a>
     {/each}
   </div>
 </section>
-
-{#if showKofiModal}
-  <Modal
-    title={m.settings_support_kofi_action()}
-    onclose={() => (showKofiModal = false)}
-    wide>
-    <iframe
-      title="Ko-fi"
-      src="https://ko-fi.com/loomkeep/?hidefeed=true&widget=true&embed=true&preview=true"
-      style="border:none;width:100%;background:transparent;"
-      height="650"></iframe>
-  </Modal>
-{/if}
