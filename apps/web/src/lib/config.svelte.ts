@@ -8,6 +8,8 @@ class AppConfig {
   socialEnabled = $state(false);
   registrationEnabled = $state(false);
   erdEnabled = $state(false);
+  version = $state("");
+  gitSha = $state("");
 }
 
 export const appConfig = new AppConfig();

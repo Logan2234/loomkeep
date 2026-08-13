@@ -317,6 +317,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     Boolean notifyEmail
     Boolean notifyPush
     Boolean notifyNewsletter
+    DateTime newsletterOptInAt "❓"
     String newsletterUnsubscribeToken "❓"
     Boolean emailVerified
     String bio "❓"

@@ -331,6 +331,10 @@ model User {
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
   notifyNewsletter  Boolean   @default(false)
+  // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
+  // notifyNewsletter flips false → true, left untouched afterwards — including
+  // across a later opt-out — so it always records when consent was last given.
+  newsletterOptInAt DateTime?
   // Stable per-user unsubscribe link target, lazily generated on first
   // newsletter send and reused in every subsequent one — not a
   // single-use/expiring UserToken, since minting one per recipient per send

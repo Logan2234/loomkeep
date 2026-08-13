@@ -319,6 +319,91 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
   });
 });
 
+describe("UsersController — updateMe newsletter opt-in timestamp", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let controller: UsersController;
+
+  function makeController(currentNotifyNewsletter: boolean) {
+    prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          birthDate: null,
+          allowAdultContent: false,
+          notifyNewsletter: currentNotifyNewsletter,
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: userId,
+          email: "alice@example.com",
+          username: "alice",
+          displayName: "Alice",
+          birthDate: null,
+          allowAdultContent: false,
+          notifyEmail: false,
+          notifyPush: false,
+          emailVerified: false,
+          role: "USER",
+          enabledDomains: ["MEDIA"],
+          mobileNavShortcuts: [],
+          createdAt: new Date(),
+        }),
+      },
+    } as unknown as PrismaService;
+    controller = new UsersController(
+      prisma,
+      {} as unknown as MailService,
+      { record: jest.fn() } as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      {
+        isPasswordPwned: jest.fn().mockResolvedValue(false),
+      } as unknown as HibpService,
+      {
+        reassignOwnedListsOnAccountDeletion: jest.fn(),
+      } as unknown as ListService,
+    );
+  }
+
+  it("stamps newsletterOptInAt on the false → true transition", async () => {
+    makeController(false);
+
+    await controller.updateMe(jwtPayload(userId), { notifyNewsletter: true });
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ newsletterOptInAt: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it("leaves newsletterOptInAt untouched when already opted in", async () => {
+    makeController(true);
+
+    await controller.updateMe(jwtPayload(userId), { notifyNewsletter: true });
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ newsletterOptInAt: undefined }),
+      }),
+    );
+  });
+
+  it("leaves newsletterOptInAt untouched on opt-out", async () => {
+    makeController(true);
+
+    await controller.updateMe(jwtPayload(userId), {
+      notifyNewsletter: false,
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ newsletterOptInAt: undefined }),
+      }),
+    );
+  });
+});
+
 describe("UsersController — uploadAvatar", () => {
   const userId = "user-1";
   let prisma: PrismaService;

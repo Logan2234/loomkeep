@@ -369,6 +369,12 @@
       provenance approximative). Umami est hébergé sur la même infrastructure
       que Loomkeep ; aucune donnée n'est transmise à un tiers.
     </p>
+    <p>
+      Les liens présents dans les e-mails envoyés par Loomkeep passent par un
+      raccourcisseur de liens auto-hébergé (Umami Link), qui comptabilise les
+      clics de manière agrégée par type de message, sans les rattacher au compte
+      de l'utilisateur.
+    </p>
     <h3>Distribution et protection du site (CDN)</h3>
     <p>
       Le site <strong>loomkeep.app</strong> est distribué via l'infrastructure
