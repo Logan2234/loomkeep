@@ -6,6 +6,7 @@
     listGames,
     listLibrary,
     listMusic,
+    updateLibraryEntry,
     watchEpisode,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
@@ -44,12 +45,14 @@
   );
 
   let watching = $state<LibraryEntryDto[]>([]);
+  let plannedMovies = $state<LibraryEntryDto[]>([]);
   let upcoming = $state<CalendarEntryDto[]>([]);
   let playingGames = $state<GameEntryDto[]>([]);
   let readingBooks = $state<BookEntryDto[]>([]);
   let toListenAlbums = $state<MusicEntryDto[]>([]);
   let loading = $state(true);
   let resuming = $state<string | null>(null); // entry id being resumed
+  let markingMovieSeen = $state<string | null>(null);
   let resumeCarousel = $state<{ scrollToStart: () => void }>();
 
   // Fetch only the enabled domains' "in progress" content — the dashboard is
@@ -62,13 +65,20 @@
 
     if (mediaOn) {
       jobs.push(
-        listLibrary({ statuses: ["WATCHING"] }).then(
-          (r) => (watching = r.items),
+        listLibrary({
+          statuses: ["WATCHING"],
+          types: ["SERIES", "ANIME"],
+        }).then((r) => (watching = r.items)),
+      );
+      jobs.push(
+        listLibrary({ statuses: ["PLANNED"], types: ["MOVIE"] }).then(
+          (r) => (plannedMovies = r.items),
         ),
       );
       jobs.push(getCalendar().then((c) => (upcoming = c)));
     } else {
       watching = [];
+      plannedMovies = [];
       upcoming = [];
     }
     if (gamesOn)
@@ -133,13 +143,30 @@
     resuming = entry.id;
     try {
       await watchEpisode(next.episodeId);
-      watching = (await listLibrary({ statuses: ["WATCHING"] })).items;
+      watching = (
+        await listLibrary({
+          statuses: ["WATCHING"],
+          types: ["SERIES", "ANIME"],
+        })
+      ).items;
       await tick();
       resumeCarousel?.scrollToStart();
     } catch {
       // ignore; the card stays as-is
     } finally {
       resuming = null;
+    }
+  }
+
+  async function markMovieSeen(entry: LibraryEntryDto) {
+    markingMovieSeen = entry.id;
+    try {
+      await updateLibraryEntry(entry.id, { status: "COMPLETED" });
+      plannedMovies = plannedMovies.filter((movie) => movie.id !== entry.id);
+    } catch {
+      // Ignore; the card stays as-is.
+    } finally {
+      markingMovieSeen = null;
     }
   }
 
@@ -179,13 +206,18 @@
     `/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`;
   const week = $derived(upcoming.slice(0, 3));
 
-  // Surface the most recently watched shows first; capped so "reprendre"
-  // stays a quick strip rather than the whole watching list.
-  const time = (iso: string | null) => (iso ? new Date(iso).getTime() : 0);
+  // Surface the most recently updated entries first; keep the card compact.
+  const updatedTime = (entry: LibraryEntryDto) =>
+    new Date(entry.lastWatchedAt || entry.updatedAt).getTime();
   const RESUME_LIMIT = 20;
   const watchingRecent = $derived(
     [...watching]
-      .sort((a, b) => time(b.lastWatchedAt) - time(a.lastWatchedAt))
+      .sort((a, b) => updatedTime(b) - updatedTime(a))
+      .slice(0, RESUME_LIMIT),
+  );
+  const toWatch = $derived(
+    [...watchingRecent, ...plannedMovies]
+      .sort((a, b) => updatedTime(b) - updatedTime(a))
       .slice(0, RESUME_LIMIT),
   );
 </script>
@@ -225,15 +257,15 @@
             <div class="flex items-center justify-between p-4 pb-0">
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="tv" class="text-accent h-4 w-4" /> Vidéo · à reprendre
+                <Icon name="tv" class="text-accent h-4 w-4" /> Vidéo · à voir
               </h2>
               <a href="/app/media" class="btn-text">Voir plus →</a>
             </div>
             <div class="p-4">
-              {#if watchingRecent.length > 0}
+              {#if toWatch.length > 0}
                 <Carousel
                   bind:this={resumeCarousel}
-                  items={watchingRecent}
+                  items={toWatch}
                   keyOf={(e) => e.id}>
                   {#snippet card(e)}
                     <div class="w-28 shrink-0 snap-start">
@@ -256,28 +288,33 @@
                           class="bg-surface-2 mt-1 h-1 overflow-hidden rounded-full">
                           <div
                             class="bg-accent h-full"
-                            style={`width: ${pct(e)}%`}>
+                            style={`width: ${pct(e)}%`}
+                            title="{e.progress.watchedEpisodes} / {e.progress
+                              .totalEpisodes}">
                           </div>
                         </div>
-                        <p class="timecode mt-1 text-[0.65rem]">
-                          {e.progress.watchedEpisodes} / {e.progress
-                            .totalEpisodes}
-                        </p>
                         {#if e.progress.nextEpisode}
                           <button
-                            class="btn btn-primary btn-sm mt-1 w-full"
+                            class="btn btn-primary btn-sm mt-2 w-full"
                             disabled={resuming === e.id}
                             onclick={() => resume(e)}>
                             ▶ {epCodeOf(e.progress.nextEpisode)}
                           </button>
                         {/if}
+                      {:else if e.mediaItem.type === "MOVIE"}
+                        <button
+                          class="btn btn-primary btn-sm mt-4 w-full"
+                          disabled={markingMovieSeen === e.id}
+                          onclick={() => markMovieSeen(e)}>
+                          Vu
+                        </button>
                       {/if}
                     </div>
                   {/snippet}
                 </Carousel>
               {:else}
                 <p class="text-dim py-10 text-center text-sm">
-                  Rien en cours de visionnage.
+                  Rien à voir pour le moment.
                 </p>
               {/if}
             </div>

@@ -31,6 +31,8 @@ export interface LibraryEntryDto {
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
   createdAt: string;
+  /** When the entry was last updated (ISO). */
+  updatedAt: string;
   /** Most recent viewing (max episode watch, else the movie's finishedAt); null if never. */
   lastWatchedAt: string | null;
   /** Episode progress, only for series/anime. */
