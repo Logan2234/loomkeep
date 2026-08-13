@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 12/08/2026</em></p>
+    <p><em>Dernière mise à jour : 13/08/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -327,6 +327,38 @@
       nécessaires à leurs propres services, conformément à leurs propres
       politiques de confidentialité.
     </p>
+    <p>
+      Par ailleurs, les jaquettes et visuels des œuvres affichées dans Loomkeep
+      sont chargés directement par le navigateur de l'utilisateur depuis les
+      serveurs (CDN) de ces fournisseurs (notamment TMDB et Google Books), et
+      non via les serveurs de Loomkeep. Ces fournisseurs reçoivent donc
+      l'adresse IP du visiteur à chaque affichage d'une fiche, y compris en
+      dehors de toute recherche active.
+    </p>
+    <h3>Protection contre les inscriptions automatisées</h3>
+    <p>
+      Loomkeep utilise <strong>Cloudflare Turnstile</strong>, un service de
+      vérification anti-bot édité par Cloudflare Inc. (États-Unis), affiché lors
+      de la création de compte. Ce service transmet à Cloudflare l'adresse IP et
+      certains signaux techniques du navigateur de l'utilisateur.
+    </p>
+    <p>
+      Finalité : prévention des inscriptions automatisées et des abus. Base
+      légale : intérêt légitime.
+    </p>
+    <h3>Dons et soutien financier</h3>
+    <p>
+      Loomkeep propose, dans les paramètres du compte, plusieurs moyens
+      facultatifs de soutenir financièrement le projet : Ko-fi, Liberapay, Buy
+      Me a Coffee et GitHub Sponsors.
+    </p>
+    <p>
+      Selon la plateforme choisie, cela ouvre un widget intégré au sein de
+      Loomkeep (Ko-fi) ou redirige l'utilisateur vers le site du prestataire
+      concerné. Ce prestataire devient alors responsable des données que
+      l'utilisateur lui communique directement (informations de paiement,
+      compte, etc.) ; Loomkeep n'y a pas accès et ne les reçoit pas.
+    </p>
     <h3>Mesure d'audience</h3>
     <p>
       La page d'accueil publique de Loomkeep utilise <strong>Umami</strong>, un
@@ -337,6 +369,17 @@
       provenance approximative). Umami est hébergé sur la même infrastructure
       que Loomkeep ; aucune donnée n'est transmise à un tiers.
     </p>
+    <h3>Distribution et protection du site (CDN)</h3>
+    <p>
+      Le site <strong>loomkeep.app</strong> est distribué via l'infrastructure
+      de <strong>Cloudflare Inc.</strong> (États-Unis), qui agit comme CDN et pare-feu
+      applicatif entre le visiteur et les serveurs de Loomkeep. Cloudflare reçoit
+      à ce titre l'adresse IP de chaque visiteur du site.
+    </p>
+    <p>
+      Finalité : sécurité, disponibilité et performance du service. Base légale
+      : intérêt légitime.
+    </p>
     <h3>Services techniques supplémentaires</h3>
     <p>
       Loomkeep peut utiliser d'autres prestataires techniques nécessaires
@@ -345,7 +388,6 @@
     <ul>
       <li>la supervision ;</li>
       <li>la gestion des erreurs ;</li>
-      <li>la protection réseau ;</li>
       <li>l'envoi de notifications ;</li>
       <li>l'hébergement ou la sauvegarde.</li>
     </ul>
@@ -358,6 +400,15 @@
       Lorsque l'utilisateur active les notifications push, Loomkeep traite les
       informations techniques nécessaires à l'envoi des notifications vers son
       appareil ou navigateur.
+    </p>
+    <p>
+      Techniquement, cet envoi transite par le service de notification propre au
+      navigateur ou à l'appareil de l'utilisateur — notamment Firebase Cloud
+      Messaging (Google) pour Chrome et la plupart des navigateurs Android, le
+      service Push de Mozilla pour Firefox, ou le service de notifications
+      d'Apple pour Safari/iOS — qui reçoit à cette fin l'adresse technique de
+      l'abonnement (endpoint). Le contenu de la notification est chiffré de bout
+      en bout : ce service ne peut pas le lire en clair.
     </p>
     <p>
       L'utilisateur peut désactiver ces notifications depuis Loomkeep ou depuis
@@ -551,12 +602,23 @@
     <ul>
       <li>l'éditeur de Loomkeep ;</li>
       <li>les prestataires techniques utilisés pour fournir le service ;</li>
+      <li>
+        Cloudflare, pour la distribution et la protection du site ainsi que la
+        vérification anti-bot à l'inscription (Turnstile) ;
+      </li>
       <li>les fournisseurs de services d'envoi d'e-mails ;</li>
-      <li>les fournisseurs techniques nécessaires aux notifications ;</li>
+      <li>
+        les fournisseurs techniques nécessaires aux notifications, y compris les
+        services de notification push des navigateurs ;
+      </li>
       <li>les fournisseurs d'hébergement et de sauvegarde ;</li>
       <li>
         les fournisseurs de données de catalogue, uniquement pour les
         informations nécessaires à leurs fonctionnalités ;
+      </li>
+      <li>
+        les plateformes de dons choisies par l'utilisateur, pour les données
+        qu'il leur communique directement ;
       </li>
       <li>les autorités compétentes lorsque la loi l'exige.</li>
     </ul>
@@ -567,21 +629,45 @@
     <h2>15. Transferts internationaux</h2>
     <p>
       Certains prestataires utilisés par Loomkeep peuvent traiter des données
-      depuis des pays situés en dehors de l'Espace économique européen.
-    </p>
-    <p>
-      Lorsque cela est applicable, Loomkeep s'efforce de mettre en place les
-      garanties prévues par la réglementation applicable concernant ces
-      transferts.
+      depuis des pays situés en dehors de l'Espace économique européen,
+      notamment les États-Unis.
     </p>
     <p>
       L'hébergement applicatif (OVHcloud), l'envoi d'e-mails (Brevo) et le suivi
       des erreurs (GlitchTip, auto-hébergé) sont opérés depuis l'Union
-      européenne. Certains fournisseurs de données de catalogue interrogés pour
-      rechercher et enrichir les fiches d'œuvres (notamment TMDB, IGDB et
-      MusicBrainz) sont basés hors de l'Union européenne, notamment aux
-      États-Unis ; ces échanges ne concernent toutefois pas de données
-      personnelles identifiant le compte de l'utilisateur (voir section 10).
+      européenne.
+    </p>
+    <p>Sont notamment concernés par un traitement hors UE :</p>
+    <ul>
+      <li>
+        Cloudflare, pour la vérification anti-bot à l'inscription (Turnstile),
+        qui reçoit l'IP et des signaux navigateur de l'utilisateur concerné ;
+      </li>
+      <li>
+        Cloudflare, pour la distribution et la protection du site (CDN /
+        pare-feu applicatif), qui reçoit l'IP de chaque visiteur ;
+      </li>
+      <li>
+        les fournisseurs de données et d'images de catalogue basés hors UE
+        (notamment TMDB, IGDB, Google Books et MusicBrainz), qui reçoivent l'IP
+        du visiteur lors des recherches et de l'affichage des jaquettes (voir
+        section 6) ;
+      </li>
+      <li>
+        les services de notification push des navigateurs (notamment Google via
+        Firebase Cloud Messaging, Mozilla et Apple) ;
+      </li>
+      <li>
+        les plateformes de dons choisies par l'utilisateur (Ko-fi, Liberapay,
+        Buy Me a Coffee, GitHub Sponsors), pour les données qu'il leur
+        communique directement.
+      </li>
+    </ul>
+    <p>
+      Ces transferts s'appuient, selon le prestataire, sur les garanties prévues
+      par la réglementation applicable : certification au Data Privacy Framework
+      (UE/Suisse–États-Unis) lorsque le prestataire y adhère, ou clauses
+      contractuelles types de la Commission européenne à défaut.
     </p>
     <h2>16. Vos droits</h2>
     <p>
