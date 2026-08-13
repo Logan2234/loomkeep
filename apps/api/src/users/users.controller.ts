@@ -263,12 +263,24 @@ export class UsersController {
 
     const current = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { birthDate: true, allowAdultContent: true },
+      select: {
+        birthDate: true,
+        allowAdultContent: true,
+        notifyNewsletter: true,
+      },
     });
 
     if (!current) {
       throw new NotFoundException("User not found");
     }
+
+    // Proof-of-consent timestamp (GDPR art. 7(1)): only stamped on the
+    // false → true transition, never overwritten afterwards (a later opt-out
+    // leaves it as the historical record of when consent was last given).
+    const newsletterOptInAt =
+      dto.notifyNewsletter === true && !current.notifyNewsletter
+        ? new Date()
+        : undefined;
 
     const nextBirthDate =
       dto.birthDate === undefined
@@ -307,6 +319,7 @@ export class UsersController {
         notifyEmail: dto.notifyEmail,
         notifyPush: dto.notifyPush,
         notifyNewsletter: dto.notifyNewsletter,
+        newsletterOptInAt,
         enabledDomains: dto.enabledDomains,
         mobileNavShortcuts: dto.mobileNavShortcuts,
         // Empty string clears the bio back to null.
