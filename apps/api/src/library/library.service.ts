@@ -1011,6 +1011,7 @@ export class LibraryService {
       startedAt: entry.startedAt?.toISOString() ?? null,
       finishedAt: entry.finishedAt?.toISOString() ?? null,
       createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
       lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
       progress,
       ownershipStatus: entry.ownershipStatus,

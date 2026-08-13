@@ -20,7 +20,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     ownershipStatus: "NONE",
     ownershipSource: null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
-    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: overrides.updatedAt ?? new Date("2026-01-01T00:00:00.000Z"),
     mediaItem: {
       id: `media-${id}`,
       type: overrides.type ?? "MOVIE",
@@ -154,6 +154,15 @@ describe("LibraryService.listEntries", () => {
 
     const result = await service.listEntries("user-1", { q: "arr" });
     expect(result.items.map((i) => i.id)).toEqual(["a"]);
+  });
+
+  it("includes the entry update timestamp", async () => {
+    const updatedAt = new Date("2026-02-03T04:05:06.000Z");
+    const { service } = makeService([makeRow({ updatedAt })]);
+
+    const result = await service.listEntries("user-1", {});
+
+    expect(result.items[0].updatedAt).toBe(updatedAt.toISOString());
   });
 
   it("filters the synthetic DORMANT status (WATCHING with no recent activity)", async () => {
