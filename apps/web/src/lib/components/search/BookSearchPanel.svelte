@@ -11,8 +11,10 @@
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
+  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import { BOOK_STATUS_LABELS } from "$lib/constants/status-labels";
   import { debounce } from "$lib/debounce";
+  import { m } from "$lib/paraglide/messages.js";
   import type { BookEntryDto, BookSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -145,6 +147,12 @@
     {/each}
   </PosterGrid>
 {:else if results.length > 0}
+  <!-- Required by the Google Books API branding guidelines: the "powered by
+       Google" mark must appear adjacent to search results. -->
+  <p class="text-dim mb-2 flex items-center gap-1.5 text-[0.6rem]">
+    <ProviderMark brand="googleBooks" class="h-3 w-3 shrink-0 opacity-70" />
+    {m.book_google_notice()}
+  </p>
   <PosterGrid>
     {#each shown as book (book.sourceId)}
       {@const entry = tracked.get(book.sourceId)}

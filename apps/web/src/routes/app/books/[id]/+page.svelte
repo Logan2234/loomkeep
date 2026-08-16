@@ -20,6 +20,7 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
@@ -244,6 +245,15 @@
             Voir sur Google Books ↗
           </a>
         {/if}
+
+        <!-- Required by the Google Books API branding guidelines: the "powered
+             by Google" mark adjacent to any displayed result. -->
+        <p class="text-dim mt-2 flex items-center gap-1.5 text-[0.6rem]">
+          <ProviderMark
+            brand="googleBooks"
+            class="h-3 w-3 shrink-0 opacity-70" />
+          {m.book_google_notice()}
+        </p>
 
         <!-- Actions -->
         {#if !entry}
