@@ -12,6 +12,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { ModerationMeasure, ReportTargetType } from "@loomkeep/shared";
 import type {
   AdminUserCommentDto,
   AdminUserFilter,
@@ -32,6 +33,8 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
+import { ModerationDecisionService } from "../reports/moderation-decision.service";
 import { ReportService } from "../reports/report.service";
 import { ReviewService } from "../reviews/review.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -58,6 +61,7 @@ export class AdminUsersController {
     private readonly follows: FollowService,
     private readonly reports: ReportService,
     private readonly lists: ListService,
+    private readonly moderationDecisions: ModerationDecisionService,
   ) {}
 
   /**
@@ -292,13 +296,16 @@ export class AdminUsersController {
   /**
    * Permanently deletes an account and all its data. An admin can't delete
    * their own account this way (no lockout escape hatch) — self-deletion
-   * stays on the password-confirmed /settings flow.
+   * stays on the password-confirmed /settings flow. Sends the DSA art. 17
+   * notice (email only — there's no account left for an in-app one) before
+   * the row is gone.
    */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("users/:userId")
   async deleteUser(
     @Param("userId") userId: string,
     @CurrentUser() admin: JwtPayload,
+    @Body() body: ModerationReasonBody,
   ): Promise<void> {
     if (userId === admin.sub) {
       throw new BadRequestException(
@@ -320,6 +327,20 @@ export class AdminUsersController {
       identifier: user.email,
       detail: "Supprimé depuis le panel admin",
     });
+
+    await this.moderationDecisions.record({
+      measure: ModerationMeasure.ACCOUNT_DELETED,
+      targetType: ReportTargetType.USER,
+      targetId: userId,
+      subjectUserId: userId,
+      subjectEmail: user.email,
+      subjectUsername: user.username,
+      legalBasis: body.legalBasis,
+      reasonText: body.reasonText,
+      tosClause: body.tosClause,
+      decidedById: admin.sub,
+    });
+
     await this.prisma.user.delete({ where: { id: userId } });
   }
 }

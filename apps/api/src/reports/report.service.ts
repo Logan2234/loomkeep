@@ -80,17 +80,22 @@ export class ReportService {
     return this.prisma.report.count({ where: { status: "PENDING" } });
   }
 
-  async findOne(
-    id: string,
-  ): Promise<{ targetType: ReportTargetType; targetId: string } | null> {
+  async findOne(id: string): Promise<{
+    targetType: ReportTargetType;
+    targetId: string;
+    category: ReportCategory | null;
+    motif: ReportMotif | null;
+  } | null> {
     const report = await this.prisma.report.findUnique({
       where: { id },
-      select: { targetType: true, targetId: true },
+      select: { targetType: true, targetId: true, category: true, motif: true },
     });
     return report
       ? {
           targetType: report.targetType as ReportTargetType,
           targetId: report.targetId,
+          category: report.category as ReportCategory | null,
+          motif: report.motif as ReportMotif | null,
         }
       : null;
   }

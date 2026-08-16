@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 09/08/2026</em></p>
+    <p><em>Dernière mise à jour : 16/08/2026</em></p>
     <p>
       Les présentes conditions générales d'utilisation (« CGU ») régissent
       l'accès et l'utilisation de l'instance officielle du service Loomkeep
@@ -236,11 +236,8 @@
     </p>
     <ul>
       <li>laisser le contenu en ligne ;</li>
-      <li>limiter sa visibilité ;</li>
-      <li>supprimer le contenu ;</li>
-      <li>limiter certaines fonctionnalités du compte ;</li>
-      <li>suspendre temporairement un compte ;</li>
-      <li>supprimer un compte.</li>
+      <li>retirer le contenu concerné ;</li>
+      <li>supprimer le compte à l'origine du contenu ou du comportement.</li>
     </ul>
     <p>
       Les mesures prises peuvent être immédiates lorsqu'elles sont nécessaires
@@ -248,9 +245,36 @@
       en présence d'un contenu manifestement illicite.
     </p>
     <p>
-      Loomkeep peut conserver certaines informations relatives aux signalements
-      et aux mesures de modération afin d'assurer la sécurité du service,
-      prévenir les abus et respecter ses obligations légales.
+      Lorsqu'une mesure de retrait de contenu ou de suppression de compte est
+      prise, l'utilisateur concerné en est informé par email et, lorsque son
+      compte existe encore, par notification dans l'application. Cette
+      notification précise :
+    </p>
+    <ul>
+      <li>la nature de la mesure prise ;</li>
+      <li>les faits et éléments retenus pour la justifier ;</li>
+      <li>
+        son fondement, contractuel (clause des présentes CGU) ou légal (contenu
+        manifestement illégal) ;
+      </li>
+      <li>
+        le caractère non automatisé de la décision — la modération sur Loomkeep
+        est effectuée par une personne, jamais par un système automatisé ;
+      </li>
+      <li>les voies de contestation disponibles.</li>
+    </ul>
+    <p>
+      L'utilisateur peut contester une mesure de modération en répondant
+      directement à l'email de notification ou en écrivant à
+      <a href="mailto:contact@loomkeep.app" class="link-accent"
+        >contact@loomkeep.app</a
+      >. Chaque contestation est examinée individuellement.
+    </p>
+    <p>
+      Loomkeep conserve les informations relatives aux signalements et aux
+      mesures de modération (y compris, le cas échéant, une copie du contenu
+      retiré) afin d'assurer la sécurité du service, de prévenir les abus, de
+      répondre aux contestations et de respecter ses obligations légales.
     </p>
     <h2>10. Manipulation et abus du service</h2>
     <p>

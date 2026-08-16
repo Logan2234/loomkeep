@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { ModerationMeasure } from "@loomkeep/shared";
 import type {
   AdminReportsSummaryDto,
   ReportPageDto,
@@ -18,6 +19,8 @@ import {
 } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { ModerationDecisionService } from "../reports/moderation-decision.service";
+import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
 import { ReportService } from "../reports/report.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -37,6 +40,7 @@ export class AdminReportsController {
     private readonly reports: ReportService,
     private readonly comments: CommentService,
     private readonly prisma: PrismaService,
+    private readonly moderationDecisions: ModerationDecisionService,
   ) {}
 
   @Get()
@@ -121,17 +125,50 @@ export class AdminReportsController {
     return this.reports.resolve(user.sub, id, body.status);
   }
 
-  /** Removes the reported content itself (comment tombstone today), then resolves the report. */
+  /**
+   * Removes the reported content itself (comment tombstone today), notifies
+   * its author with the DSA art. 17 statement of reasons, then resolves the
+   * report.
+   */
   @Post(":id/take-down")
   async takeDown(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
+    @Body() body: ModerationReasonBody,
   ): Promise<void> {
     const report = await this.reports.findOne(id);
     if (!report) throw new NotFoundException();
 
     if (report.targetType === "COMMENT") {
-      await this.comments.adminRemove(report.targetId);
+      const { authorId, text } = await this.comments.adminRemove(
+        report.targetId,
+      );
+
+      if (authorId) {
+        const author = await this.prisma.user.findUnique({
+          where: { id: authorId },
+          select: { email: true, username: true },
+        });
+
+        if (author) {
+          await this.moderationDecisions.record({
+            measure: ModerationMeasure.COMMENT_REMOVED,
+            targetType: report.targetType,
+            targetId: report.targetId,
+            subjectUserId: authorId,
+            subjectEmail: author.email,
+            subjectUsername: author.username,
+            legalBasis: body.legalBasis,
+            reasonCategory: report.category,
+            reasonMotif: report.motif,
+            reasonText: body.reasonText,
+            tosClause: body.tosClause,
+            contentSnapshot: text,
+            decidedById: user.sub,
+            reportId: id,
+          });
+        }
+      }
     }
 
     await this.reports.resolve(user.sub, id, "RESOLVED");

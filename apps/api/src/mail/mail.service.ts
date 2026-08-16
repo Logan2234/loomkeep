@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
+import { ModerationLegalBasis, ModerationMeasure } from "@loomkeep/shared";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 
 interface SendArgs {
@@ -7,9 +8,11 @@ interface SendArgs {
   subject: string;
   text: string;
   html: string;
+  /** Overrides the default no-reply `from` for replies — see sendModerationDecision. */
+  replyTo?: string;
 }
 
-type TemplateBody = Omit<SendArgs, "to">;
+type TemplateBody = Omit<SendArgs, "to" | "replyTo">;
 
 /** One editable sample-data field for a gallery template (e.g. the recipient's display name). */
 export interface MailTemplateField {
@@ -206,6 +209,45 @@ export class MailService {
       ],
       build: (v) => this.buildNewDeviceLogin(v.deviceLabel, v.ip || null),
     },
+    moderationDecision: {
+      label: "Décision de modération (DSA art. 17)",
+      fields: [
+        {
+          key: "measure",
+          label: "Mesure (COMMENT_REMOVED ou ACCOUNT_DELETED)",
+          default: "COMMENT_REMOVED",
+        },
+        {
+          key: "legalBasis",
+          label: "Base (ILLEGAL_CONTENT ou TOS_BREACH)",
+          default: "TOS_BREACH",
+        },
+        {
+          key: "reasonText",
+          label: "Faits retenus",
+          default: "Propos insultants répétés envers un autre utilisateur.",
+          multiline: true,
+        },
+        {
+          key: "tosClause",
+          label: "Clause CGU / fondement",
+          default: "§7 — Règles de conduite",
+        },
+      ],
+      build: (v) =>
+        this.buildModerationDecision({
+          measure:
+            v.measure === ModerationMeasure.ACCOUNT_DELETED
+              ? ModerationMeasure.ACCOUNT_DELETED
+              : ModerationMeasure.COMMENT_REMOVED,
+          legalBasis:
+            v.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
+              ? ModerationLegalBasis.ILLEGAL_CONTENT
+              : ModerationLegalBasis.TOS_BREACH,
+          reasonText: v.reasonText,
+          tosClause: v.tosClause,
+        }),
+    },
   };
 
   constructor(private readonly quota: QuotaTrackerService) {
@@ -357,6 +399,27 @@ export class MailService {
     await this.send({ to, ...this.buildReportsDigest(pendingCount) });
   }
 
+  /**
+   * DSA art. 17 statement of reasons for a restrictive measure. `replyTo`
+   * lets the sanctioned user contest by replying directly, per the notice's
+   * own text — the default `from` is a no-reply address.
+   */
+  async sendModerationDecision(
+    to: string,
+    input: {
+      measure: ModerationMeasure;
+      reasonText: string;
+      legalBasis: ModerationLegalBasis;
+      tosClause: string;
+    },
+  ): Promise<void> {
+    await this.send({
+      to,
+      replyTo: "contact@loomkeep.app",
+      ...this.buildModerationDecision(input),
+    });
+  }
+
   /** Release newsletter — sent automatically when a changelog entry is published on Quackback (see NewsletterService). */
   async sendNewsletter(
     to: string,
@@ -380,6 +443,45 @@ export class MailService {
         "Signalements en attente",
         `<p><strong>${pendingCount}</strong> ${label} en attente de modération.</p>
          ${this.button(url, "Voir la file de modération")}`,
+      ),
+    };
+  }
+
+  /**
+   * The five DSA art. 17 mentions: nature of the measure, facts invoked,
+   * legal/contractual basis, non-automated character, redress. `tosClause`
+   * is only meaningful when legalBasis is TOS_BREACH — ILLEGAL_CONTENT states
+   * the illegality ground instead.
+   */
+  private buildModerationDecision(input: {
+    measure: ModerationMeasure;
+    reasonText: string;
+    legalBasis: ModerationLegalBasis;
+    tosClause: string;
+  }): TemplateBody {
+    const measureLabel =
+      input.measure === ModerationMeasure.COMMENT_REMOVED
+        ? "le retrait d'un de tes commentaires"
+        : "la suppression de ton compte Loomkeep";
+    const subject =
+      input.measure === ModerationMeasure.COMMENT_REMOVED
+        ? "Un de tes commentaires a été retiré"
+        : "Ton compte Loomkeep a été supprimé";
+    const basisText =
+      input.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
+        ? "ce contenu nous paraît manifestement illégal"
+        : `ce contenu ou ce comportement enfreint nos Conditions Générales d'Utilisation (${input.tosClause})`;
+
+    return {
+      subject,
+      text: `Nous avons pris une mesure de modération concernant ton compte : ${measureLabel}.\n\nFaits retenus : ${input.reasonText}\n\nFondement : ${basisText}.\n\nCette décision a été prise par un modérateur, pas par un système automatisé.\n\nTu peux la contester en répondant directement à cet e-mail ou en écrivant à contact@loomkeep.app.`,
+      html: this.wrapEmail(
+        subject,
+        `<p>Nous avons pris une mesure de modération concernant ton compte : <strong>${escapeHtml(measureLabel)}</strong>.</p>
+         <p><strong>Faits retenus :</strong> ${escapeHtml(input.reasonText)}</p>
+         <p><strong>Fondement :</strong> ${escapeHtml(basisText)}.</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">Cette décision a été prise par un modérateur, pas par un système automatisé.</p>
+         <p>Tu peux la contester en répondant directement à cet e-mail ou en écrivant à <a href="mailto:contact@loomkeep.app">contact@loomkeep.app</a>.</p>`,
       ),
     };
   }
@@ -685,7 +787,13 @@ export class MailService {
     </p>`;
   }
 
-  private async send({ to, subject, text, html }: SendArgs): Promise<void> {
+  private async send({
+    to,
+    subject,
+    text,
+    html,
+    replyTo,
+  }: SendArgs): Promise<void> {
     if (!this.transporter) return;
 
     try {
@@ -696,6 +804,7 @@ export class MailService {
         subject,
         text,
         html,
+        ...(replyTo ? { replyTo } : {}),
       });
     } catch (err) {
       this.logger.error(`Failed to send email to ${to}`, err);

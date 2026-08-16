@@ -449,6 +449,22 @@ describe("CommentService.adminRemove", () => {
     );
   });
 
+  it("returns the pre-tombstone author/text for the moderation notice", async () => {
+    const { svc } = make({
+      comment: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            commentRow({ authorId: "someone-else", text: "insulte gratuite" }),
+          ),
+      },
+    });
+    await expect(svc.adminRemove("c1")).resolves.toEqual({
+      authorId: "someone-else",
+      text: "insulte gratuite",
+    });
+  });
+
   it("404s on an already-deleted comment", async () => {
     const { svc } = make({
       comment: {

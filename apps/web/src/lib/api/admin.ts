@@ -39,6 +39,7 @@ import type {
   ReportPageDto,
   MailTemplateListResponseDto,
   MailTemplatePreviewDto,
+  ModerationLegalBasis,
   Role,
   SchemaGraphResponseDto,
   SecurityEventListResponseDto,
@@ -53,6 +54,13 @@ import type {
   UserSummaryDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
+
+/** The DSA art. 17 facts/basis an admin supplies when taking a restrictive measure. */
+export interface ModerationReasonBody {
+  reasonText: string;
+  legalBasis: ModerationLegalBasis;
+  tosClause: string;
+}
 
 /** Health and quota usage of every external dependency (config presence, live probe, call counters). */
 export function getAdminServices(): Promise<ServiceStatusResponseDto> {
@@ -275,8 +283,11 @@ export function sendAdminUserPasswordReset(userId: string): Promise<void> {
 }
 
 /** Permanently deletes an account and all its data. Irreversible. */
-export function deleteAdminUser(userId: string): Promise<void> {
-  return request(`/admin/users/${userId}`, { method: "DELETE" });
+export function deleteAdminUser(
+  userId: string,
+  reason: ModerationReasonBody,
+): Promise<void> {
+  return request(`/admin/users/${userId}`, { method: "DELETE", body: reason });
 }
 
 /** The running app's version, shown in the admin/settings footer. */
@@ -449,7 +460,13 @@ export function resolveAdminReport(
   });
 }
 
-/** Removes the reported content (comment tombstone) and resolves the report. */
-export function takeDownAdminReport(id: string): Promise<void> {
-  return request(`/admin/reports/${id}/take-down`, { method: "POST" });
+/** Removes the reported content (comment tombstone), notifies its author (DSA art. 17), and resolves the report. */
+export function takeDownAdminReport(
+  id: string,
+  reason: ModerationReasonBody,
+): Promise<void> {
+  return request(`/admin/reports/${id}/take-down`, {
+    method: "POST",
+    body: reason,
+  });
 }

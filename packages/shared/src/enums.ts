@@ -56,6 +56,8 @@ export const NotificationType = {
   COMMENT_REACTIONS: "COMMENT_REACTIONS",
   /** Someone added you as an editor on one of their lists. */
   LIST_MEMBER_ADDED: "LIST_MEMBER_ADDED",
+  /** A moderation decision (content removal) was taken against you — see ModerationDecision. */
+  MODERATION_ACTION: "MODERATION_ACTION",
 } as const;
 export type NotificationType =
   (typeof NotificationType)[keyof typeof NotificationType];
@@ -440,6 +442,30 @@ export const ReportStatus = {
   DISMISSED: "DISMISSED",
 } as const;
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
+
+/**
+ * The two restrictive measures actually implemented (see ModerationDecision
+ * and CGU §9) — comment removal and admin account deletion. Keep this in
+ * lockstep with what the CGU list: DSA art. 14 requires the CGU to describe
+ * exactly what the code can do, not more.
+ */
+export const ModerationMeasure = {
+  COMMENT_REMOVED: "COMMENT_REMOVED",
+  ACCOUNT_DELETED: "ACCOUNT_DELETED",
+} as const;
+export type ModerationMeasure =
+  (typeof ModerationMeasure)[keyof typeof ModerationMeasure];
+
+/**
+ * DSA art. 17(3)(d): whether the measure is grounded in the content's
+ * alleged illegality (point a) or in a breach of the CGU (point b).
+ */
+export const ModerationLegalBasis = {
+  ILLEGAL_CONTENT: "ILLEGAL_CONTENT",
+  TOS_BREACH: "TOS_BREACH",
+} as const;
+export type ModerationLegalBasis =
+  (typeof ModerationLegalBasis)[keyof typeof ModerationLegalBasis];
 
 /**
  * Top-level reason bucket for a report, chosen before a precise ReportMotif.

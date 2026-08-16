@@ -9,14 +9,16 @@
   } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
   import {
+    defaultModerationBasis,
+    MODERATION_LEGAL_BASIS_LABELS,
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_STATUS_COLORS,
@@ -25,6 +27,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminReportsSummaryDto,
+    ModerationLegalBasis,
     ReportDto,
     ReportStatus,
   } from "@loomkeep/shared";
@@ -97,14 +100,37 @@
     }
   }
 
-  let confirmTakeDownId = $state<string | null>(null);
+  // DSA art. 17: the admin must state the facts and legal basis before a
+  // takedown fires the notice — prefilled from the report, editable.
+  let takeDownTarget = $state<ReportDto | null>(null);
+  let takeDownReasonText = $state("");
+  let takeDownLegalBasis = $state<ModerationLegalBasis>("TOS_BREACH");
+  let takeDownTosClause = $state("");
+
+  function openTakeDown(r: ReportDto) {
+    takeDownTarget = r;
+    takeDownReasonText =
+      r.reason ??
+      (r.motif
+        ? REPORT_MOTIF_LABELS[r.motif]
+        : r.category
+          ? REPORT_CATEGORY_LABELS[r.category]
+          : "");
+    const defaults = defaultModerationBasis(r.category);
+    takeDownLegalBasis = defaults.legalBasis;
+    takeDownTosClause = defaults.tosClause;
+  }
 
   async function confirmTakeDown() {
-    if (!confirmTakeDownId) return;
-    const id = confirmTakeDownId;
+    if (!takeDownTarget) return;
+    const id = takeDownTarget.id;
     resolvingId = id;
     try {
-      await takeDownAdminReport(id);
+      await takeDownAdminReport(id, {
+        reasonText: takeDownReasonText,
+        legalBasis: takeDownLegalBasis,
+        tosClause: takeDownTosClause,
+      });
       reports = reports.filter((r) => r.id !== id);
       void adminReports.refresh();
       void loadSummary();
@@ -112,7 +138,7 @@
       error = err instanceof ApiError ? err.message : "L'action a échoué";
     } finally {
       resolvingId = null;
-      confirmTakeDownId = null;
+      takeDownTarget = null;
     }
   }
 
@@ -281,7 +307,7 @@
                 <button
                   class="btn btn-danger btn-sm"
                   disabled={resolvingId === r.id}
-                  onclick={() => (confirmTakeDownId = r.id)}>
+                  onclick={() => openTakeDown(r)}>
                   Retirer le contenu
                 </button>
               {/if}
@@ -314,13 +340,67 @@
   {/if}
 </div>
 
-{#if confirmTakeDownId}
-  <ConfirmationModal
+{#if takeDownTarget}
+  <Modal
     title="Retirer le contenu signalé"
-    message="Le commentaire est retiré (tombstone, les réponses restent visibles) et le signalement passe à Résolu."
-    confirmLabel="Retirer"
-    danger
-    busy={resolvingId === confirmTakeDownId}
-    onConfirm={confirmTakeDown}
-    onCancel={() => (confirmTakeDownId = null)} />
+    onclose={() => (takeDownTarget = null)}>
+    <p class="text-dim text-sm">
+      Le commentaire est retiré (tombstone, les réponses restent visibles) et
+      son auteur reçoit l'exposé des motifs (email + notification), comme
+      l'exige l'art. 17 du DSA.
+    </p>
+
+    <label class="mt-4 block text-sm font-semibold" for="takedown-reason">
+      Faits retenus
+    </label>
+    <textarea
+      id="takedown-reason"
+      bind:value={takeDownReasonText}
+      rows="3"
+      class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+      placeholder="Ce qui justifie la mesure, en clair pour l'auteur."
+    ></textarea>
+
+    <label class="mt-3 block text-sm font-semibold" for="takedown-basis">
+      Fondement
+    </label>
+    <select
+      id="takedown-basis"
+      bind:value={takeDownLegalBasis}
+      class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm">
+      {#each Object.entries(MODERATION_LEGAL_BASIS_LABELS) as [value, label] (value)}
+        <option {value}>{label}</option>
+      {/each}
+    </select>
+
+    {#if takeDownLegalBasis === "TOS_BREACH"}
+      <label class="mt-3 block text-sm font-semibold" for="takedown-clause">
+        Clause CGU
+      </label>
+      <input
+        id="takedown-clause"
+        type="text"
+        bind:value={takeDownTosClause}
+        class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+        placeholder="§7 — Règles de conduite" />
+    {/if}
+
+    <div class="mt-5 flex justify-end gap-2">
+      <button
+        type="button"
+        class="btn btn-ghost"
+        disabled={resolvingId === takeDownTarget.id}
+        onclick={() => (takeDownTarget = null)}>
+        {m.common_cancel()}
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        disabled={resolvingId === takeDownTarget.id ||
+          !takeDownReasonText.trim()}
+        onclick={confirmTakeDown}>
+        {resolvingId === takeDownTarget.id ? "Retrait…" : "Retirer"}
+      </button>
+    </div>
+  </Modal>
 {/if}
