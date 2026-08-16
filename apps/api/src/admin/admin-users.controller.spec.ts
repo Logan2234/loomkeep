@@ -4,6 +4,8 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { CommentService } from "../comments/comment.service";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
+import type { ModerationDecisionService } from "../reports/moderation-decision.service";
 import type { ReportService } from "../reports/report.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -14,6 +16,12 @@ import { AdminUsersController } from "./admin-users.controller";
 function jwtPayload(sub: string): JwtPayload {
   return { sub, email: `${sub}@example.com` };
 }
+
+const REASON_BODY: ModerationReasonBody = {
+  reasonText: "Comptes multiples créés pour contourner une sanction.",
+  legalBasis: "TOS_BREACH",
+  tosClause: "§10 — Manipulation et abus du service",
+};
 
 function makeController() {
   const prisma = {
@@ -49,6 +57,9 @@ function makeController() {
   const lists = {
     listEditable: jest.fn(),
   } as unknown as ListService;
+  const moderationDecisions = {
+    record: jest.fn(),
+  } as unknown as ModerationDecisionService;
 
   const controller = new AdminUsersController(
     prisma,
@@ -60,8 +71,16 @@ function makeController() {
     follows,
     reports,
     lists,
+    moderationDecisions,
   );
-  return { controller, prisma, authService, dataExport, securityEvents };
+  return {
+    controller,
+    prisma,
+    authService,
+    dataExport,
+    securityEvents,
+    moderationDecisions,
+  };
 }
 
 describe("AdminUsersController.listUsers", () => {
@@ -267,7 +286,7 @@ describe("AdminUsersController.deleteUser", () => {
     const { controller } = makeController();
 
     await expect(
-      controller.deleteUser("user-1", jwtPayload("user-1")),
+      controller.deleteUser("user-1", jwtPayload("user-1"), REASON_BODY),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -276,24 +295,38 @@ describe("AdminUsersController.deleteUser", () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      controller.deleteUser("nobody", jwtPayload("user-1")),
+      controller.deleteUser("nobody", jwtPayload("user-1"), REASON_BODY),
     ).rejects.toThrow(NotFoundException);
   });
 
-  it("records USER_DELETED before deleting the account", async () => {
-    const { controller, prisma, securityEvents } = makeController();
+  it("records USER_DELETED and the DSA art. 17 moderation decision before deleting the account", async () => {
+    const { controller, prisma, securityEvents, moderationDecisions } =
+      makeController();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({
       id: "user-2",
       email: "bob@example.com",
+      username: "bob",
     });
 
-    await controller.deleteUser("user-2", jwtPayload("user-1"));
+    await controller.deleteUser("user-2", jwtPayload("user-1"), REASON_BODY);
 
     expect(securityEvents.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "USER_DELETED",
         userId: "user-2",
         identifier: "bob@example.com",
+      }),
+    );
+    expect(moderationDecisions.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        measure: "ACCOUNT_DELETED",
+        targetType: "USER",
+        targetId: "user-2",
+        subjectUserId: "user-2",
+        subjectEmail: "bob@example.com",
+        subjectUsername: "bob",
+        reasonText: REASON_BODY.reasonText,
+        decidedById: "user-1",
       }),
     );
     expect(prisma.user.delete).toHaveBeenCalledWith({

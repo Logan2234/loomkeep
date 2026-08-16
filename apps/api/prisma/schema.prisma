@@ -199,6 +199,22 @@ enum ReportStatus {
   DISMISSED
 }
 
+// The two restrictive measures actually implemented (see ModerationDecision) —
+// keep in lockstep with the CGU §9 sanctions list: the CGU must describe
+// exactly what the code can do, not more (DSA art. 14).
+enum ModerationMeasure {
+  COMMENT_REMOVED
+  ACCOUNT_DELETED
+}
+
+// DSA art. 17(3)(d): whether the measure is grounded in the content's alleged
+// illegality (point a) or in a breach of the CGU (point b, tosClause names
+// the clause).
+enum ModerationLegalBasis {
+  ILLEGAL_CONTENT
+  TOS_BREACH
+}
+
 // Sources we actually fetch from (canonical).
 enum CatalogSource {
   TMDB
@@ -422,6 +438,8 @@ model User {
   reportsResolved     Report[]             @relation("ReportsResolved")
   lists               List[]
   listMemberships     ListMember[]
+  moderationDecisionsAgainst ModerationDecision[] @relation("ModerationDecisionSubject")
+  moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
 }
 
 // Social (P4): per-user, per-domain, per-facet audience. One row overrides the
@@ -610,6 +628,56 @@ model Report {
 
   @@index([status, createdAt])
   @@index([category])
+  moderationDecisions ModerationDecision[]
+}
+
+// DSA art. 17 "statement of reasons" record — one row per restrictive measure
+// actually applied (not per report: DISMISSED/no-op reports never create one,
+// and admin account deletions can happen with no report at all, see
+// admin-users.controller.ts deleteUser). Deliberately its own table rather
+// than extra columns on Report: it has its own lifecycle (a legal notice,
+// never revised) and must survive the subject's account being deleted, which
+// Report's reporterId/resolvedById pattern already establishes (SetNull).
+// subjectEmail/subjectUsername are snapshotted (not read through the relation)
+// because ACCOUNT_DELETED rows outlive the user row itself.
+model ModerationDecision {
+  id         String            @id @default(cuid())
+  measure    ModerationMeasure
+  targetType ReportTargetType
+  // Comment id for COMMENT_REMOVED; equals subjectUserId for ACCOUNT_DELETED.
+  targetId   String
+
+  subjectUserId   String?
+  subjectEmail    String
+  subjectUsername String
+
+  legalBasis     ModerationLegalBasis
+  // Prefilled from the originating report's category/motif when there is
+  // one, editable by the admin before the notice is sent.
+  reasonCategory ReportCategory?
+  reasonMotif    ReportMotif?
+  reasonText     String
+  // Free-text CGU clause reference shown in the notice (e.g. "§7 — Règles de
+  // conduite"), or the legal ground when legalBasis is ILLEGAL_CONTENT.
+  tosClause      String
+  // COMMENT_REMOVED only: the comment's text before the tombstone nulled it,
+  // kept for evidence — admin-only, never re-exposed publicly.
+  contentSnapshot String?
+
+  // Always false: moderation here is human-only. Column exists so the notice
+  // (and any future audit) states it explicitly, per DSA art. 17(3)(c).
+  automated Boolean @default(false)
+
+  decidedById String?
+  decidedAt   DateTime @default(now())
+  reportId    String?
+
+  subject   User?   @relation("ModerationDecisionSubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
+  decidedBy User?   @relation("ModerationDecisionAdmin", fields: [decidedById], references: [id], onDelete: SetNull)
+  report    Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([subjectUserId])
+  @@index([decidedAt])
 }
 
 // Social (P4): a cross-domain, user-curated list of works (RANKED "top 10" or

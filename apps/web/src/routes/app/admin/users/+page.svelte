@@ -29,6 +29,7 @@
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import {
+    MODERATION_LEGAL_BASIS_LABELS,
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_STATUS_COLORS,
@@ -41,6 +42,7 @@
     AdminUserDto,
     AdminUserFilter,
     AdminUserLibraryStatsDto,
+    ModerationLegalBasis,
     MyListDto,
     MyReviewDto,
     ReportDto,
@@ -88,6 +90,10 @@
   let deleteConfirmText = $state("");
   let deleting = $state(false);
   let deleteError = $state("");
+  // DSA art. 17: sent as the statement of reasons in the deletion notice.
+  let deleteReasonText = $state("");
+  let deleteLegalBasis = $state<ModerationLegalBasis>("TOS_BREACH");
+  let deleteTosClause = $state("");
 
   // --- social activity shortcuts ---
   type ActivityKind =
@@ -308,6 +314,9 @@
   function openDeleteModal() {
     deleteConfirmText = "";
     deleteError = "";
+    deleteReasonText = "";
+    deleteLegalBasis = "TOS_BREACH";
+    deleteTosClause = "";
     showDeleteModal = true;
   }
 
@@ -317,12 +326,21 @@
   }
 
   async function confirmDelete() {
-    if (!selected || deleteConfirmText !== selected.username) return;
+    if (
+      !selected ||
+      deleteConfirmText !== selected.username ||
+      !deleteReasonText.trim()
+    )
+      return;
     deleting = true;
     deleteError = "";
     try {
       const deletedName = selected.displayName;
-      await deleteAdminUser(selected.id);
+      await deleteAdminUser(selected.id, {
+        reasonText: deleteReasonText,
+        legalBasis: deleteLegalBasis,
+        tosClause: deleteTosClause,
+      });
       users = users.filter((u) => u.id !== selected!.id);
       showDeleteModal = false;
       selected = null;
@@ -900,6 +918,48 @@
         disabled={deleting}
         placeholder={selected.username}
         class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
+
+      <p class="text-dim mt-4 text-xs">
+        L'exposé des motifs suivant est envoyé par email au compte (art. 17 DSA)
+        — aucune notification in-app n'est possible, le compte n'existe plus
+        après suppression.
+      </p>
+      <label class="mt-2 block text-sm font-semibold" for="delete-reason">
+        Faits retenus
+      </label>
+      <textarea
+        id="delete-reason"
+        bind:value={deleteReasonText}
+        disabled={deleting}
+        rows="3"
+        class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+        placeholder="Ce qui justifie la suppression, en clair pour l'utilisateur."
+      ></textarea>
+      <label class="mt-3 block text-sm font-semibold" for="delete-basis">
+        Fondement
+      </label>
+      <select
+        id="delete-basis"
+        bind:value={deleteLegalBasis}
+        disabled={deleting}
+        class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm">
+        {#each Object.entries(MODERATION_LEGAL_BASIS_LABELS) as [value, label] (value)}
+          <option {value}>{label}</option>
+        {/each}
+      </select>
+      {#if deleteLegalBasis === "TOS_BREACH"}
+        <label class="mt-3 block text-sm font-semibold" for="delete-clause">
+          Clause CGU
+        </label>
+        <input
+          id="delete-clause"
+          type="text"
+          bind:value={deleteTosClause}
+          disabled={deleting}
+          class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+          placeholder="§9 — Signalement et modération" />
+      {/if}
+
       {#if deleteError}
         <Banner variant="error" class="mt-3">{deleteError}</Banner>
       {/if}
@@ -914,7 +974,9 @@
         <button
           type="button"
           class="btn btn-danger"
-          disabled={deleting || deleteConfirmText !== selected.username}
+          disabled={deleting ||
+            deleteConfirmText !== selected.username ||
+            !deleteReasonText.trim()}
           onclick={confirmDelete}>
           {deleting ? "Suppression…" : "Supprimer définitivement"}
         </button>

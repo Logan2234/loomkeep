@@ -2,6 +2,7 @@
 // today; any future REVIEW/USER/LIST report button reuses the same picker).
 
 import type {
+  ModerationLegalBasis,
   ReportCategory,
   ReportMotif,
   ReportStatus,
@@ -94,3 +95,28 @@ export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
   STOLEN_CONTENT_PLAGIARIZED: "Texte copié d'ailleurs sans attribution",
   MISLEADING_REVIEW_MANIPULATION: "Faux avis ou manipulation de la note",
 };
+
+export const MODERATION_LEGAL_BASIS_LABELS: Record<
+  ModerationLegalBasis,
+  string
+> = {
+  ILLEGAL_CONTENT: "Contenu manifestement illégal",
+  TOS_BREACH: "Violation des CGU",
+};
+
+/**
+ * Prefills the DSA art. 17 notice fields (§9 CGU) from a report's category,
+ * so an admin taking down a comment doesn't retype the same thing every
+ * time — still editable before sending. §7 "Règles de conduite" lists every
+ * forbidden content type these categories map to.
+ */
+export function defaultModerationBasis(category: ReportCategory | null): {
+  legalBasis: ModerationLegalBasis;
+  tosClause: string;
+} {
+  if (category === "ILLEGAL_CONTENT" || category === "MINOR_ENDANGERMENT") {
+    return { legalBasis: "ILLEGAL_CONTENT", tosClause: "" };
+  }
+
+  return { legalBasis: "TOS_BREACH", tosClause: "§7 — Règles de conduite" };
+}

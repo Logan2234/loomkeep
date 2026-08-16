@@ -287,12 +287,19 @@ export class CommentService {
     await this.softDelete(id, false);
   }
 
-  /** Admin takedown (moderation): same tombstone, no ownership check. */
-  async adminRemove(id: string): Promise<void> {
+  /**
+   * Admin takedown (moderation): same tombstone, no ownership check. Returns
+   * the pre-tombstone author/text so the caller can build the DSA art. 17
+   * notice (and keep an evidence snapshot) before the public text is nulled.
+   */
+  async adminRemove(
+    id: string,
+  ): Promise<{ authorId: string | null; text: string | null }> {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) throw new NotFoundException();
 
     await this.softDelete(id, true);
+    return { authorId: existing.authorId, text: existing.text };
   }
 
   private async softDelete(id: string, byAdmin: boolean): Promise<void> {
