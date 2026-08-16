@@ -313,6 +313,7 @@
     <ul>
       <li>TMDB ;</li>
       <li>AniList ;</li>
+      <li>OMDb ;</li>
       <li>IGDB ;</li>
       <li>Google Books ;</li>
       <li>MusicBrainz.</li>

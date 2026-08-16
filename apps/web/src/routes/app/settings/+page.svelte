@@ -8,6 +8,7 @@
   import AppearanceSection from "./components/AppearanceSection.svelte";
   import CommunicationsSection from "./components/CommunicationsSection.svelte";
   import DangerZoneSection from "./components/DangerZoneSection.svelte";
+  import DataSourcesSection from "./components/DataSourcesSection.svelte";
   import DomainsSection from "./components/DomainsSection.svelte";
   import ExportSection from "./components/ExportSection.svelte";
   import HelpFeedbackSection from "./components/HelpFeedbackSection.svelte";
@@ -47,6 +48,7 @@
       label: m.settings_section_support(),
       newBadgeKey: "support",
     },
+    { id: "sources-donnees", label: m.settings_section_datasources() },
     { id: "danger", label: m.settings_section_danger_zone() },
   ];
   const visibleSections = $derived(
@@ -165,6 +167,9 @@
         </div>
         <div id="soutien" data-section-id="soutien">
           <SupportSection />
+        </div>
+        <div id="sources-donnees" data-section-id="sources-donnees">
+          <DataSourcesSection />
         </div>
         <div id="danger" data-section-id="danger">
           <DangerZoneSection />

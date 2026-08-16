@@ -18,6 +18,7 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
@@ -220,6 +221,14 @@
         extras.watchProviders.buy.length > 0),
   );
 
+  // IMDb/RT/Metacritic scores are fetched through OMDb, whose CC BY-NC 4.0
+  // license requires attribution wherever that content is displayed.
+  const hasOmdbRatings = $derived(
+    (extras?.ratings ?? []).some((r) =>
+      ["IMDb", "RT", "Metacritic"].includes(r.source),
+    ),
+  );
+
   const entry = $derived(detail?.entry ?? null);
   const isMovie = $derived(detail?.type === "MOVIE");
   const dormant = $derived(entry ? isDormant(entry) : false);
@@ -387,6 +396,15 @@
               </svelte:element>
             {/each}
           </div>
+          {#if hasOmdbRatings}
+            <a
+              href="https://www.omdbapi.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-dim mt-1 block text-[0.6rem] hover:underline">
+              {m.media_omdb_notice()}
+            </a>
+          {/if}
         {/if}
       </div>
     </div>
@@ -500,6 +518,16 @@
         {/if}
       </section>
     {/if}
+
+    <!-- Provider attribution: required for TMDB (logo + non-endorsement
+         notice, less prominent than Loomkeep's own branding), courtesy for
+         AniList. -->
+    <p class="text-dim mt-4 flex items-center gap-1.5 text-[0.6rem]">
+      <ProviderMark
+        brand={type === "ANIME" ? "anilist" : "tmdb"}
+        class="h-3 w-3 shrink-0 opacity-70" />
+      {type === "ANIME" ? m.media_anilist_notice() : m.media_tmdb_notice()}
+    </p>
 
     <!-- Episodes (series/anime). Watch actions only once the media is tracked. -->
     {#if !isMovie && detail.seasons.length > 0}
