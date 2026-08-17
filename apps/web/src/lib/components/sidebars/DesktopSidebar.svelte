@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { page } from "$app/state";
   import { adminReports } from "$lib/admin-reports.svelte";
+  import { logout } from "$lib/api/auth";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -30,6 +32,11 @@
   const profileHref = $derived(
     appConfig.socialEnabled ? "/app/profile" : "/app/settings",
   );
+
+  async function signOut() {
+    await logout();
+    await goto("/login");
+  }
 
   function togglePinned() {
     pinned = !pinned;
@@ -281,29 +288,42 @@
       {/if}
 
       {#if !inAdmin}
-        <a
-          href={profileHref}
-          title={expanded ? undefined : auth.user?.displayName}
-          class="hover:bg-surface-2 my-1 flex w-full items-center overflow-hidden rounded-xl transition-colors {page.url.pathname.startsWith(
-            profileHref,
-          )
-            ? 'bg-surface-2'
-            : ''}">
-          <span class="grid h-10 w-10 shrink-0 place-items-center">
-            {#if auth.user}
-              <Avatar
-                seed={auth.user.username}
-                url={auth.user.avatarUrl}
-                size={32} />
-            {/if}
-          </span>
-          <span
-            class="text-fg truncate text-sm font-semibold transition-opacity duration-150 {expanded
-              ? 'opacity-100'
-              : 'opacity-0'}">
-            {auth.user?.displayName}
-          </span>
-        </a>
+        <div class="my-1 flex w-full items-center gap-1 overflow-hidden">
+          <a
+            href={profileHref}
+            title={expanded ? undefined : auth.user?.displayName}
+            class="hover:bg-surface-2 flex min-w-0 flex-1 items-center overflow-hidden rounded-xl transition-colors {page.url.pathname.startsWith(
+              profileHref,
+            )
+              ? 'bg-surface-2'
+              : ''}">
+            <span class="grid h-10 w-10 shrink-0 place-items-center">
+              {#if auth.user}
+                <Avatar
+                  seed={auth.user.username}
+                  url={auth.user.avatarUrl}
+                  size={32} />
+              {/if}
+            </span>
+            <span
+              class="text-fg truncate text-sm font-semibold transition-opacity duration-150 {expanded
+                ? 'opacity-100'
+                : 'opacity-0'}">
+              {auth.user?.displayName}
+            </span>
+          </a>
+
+          {#if expanded}
+            <button
+              type="button"
+              onclick={signOut}
+              title={m.profile_logout()}
+              aria-label={m.profile_logout()}
+              class="hover:bg-surface-2 text-dim hover:text-danger grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors">
+              <Icon name="logout" class="h-4 w-4" />
+            </button>
+          {/if}
+        </div>
       {:else}
         <a
           href="/app"
