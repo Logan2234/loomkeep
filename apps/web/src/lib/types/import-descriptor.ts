@@ -9,7 +9,7 @@ export type ImportSourceDescriptor = {
     // "oauth" sources never render the wizard's own input step: their own
     // page drives an external consent redirect and feeds the resulting code
     // into the wizard via `autoInput` — see SimklImportSource.
-    type: "csv" | "zip" | "steamId" | "traktUsername" | "oauth";
+    type: "csv" | "zip" | "steamId" | "oauth";
     /** File `accept` attribute, for csv/zip inputs. */
     accept?: string;
     /** Placeholder for non-file inputs; falls back to a generic hint. */

@@ -14,7 +14,7 @@ import {
   type ParsedMovie,
   type ParsedShow,
 } from "./parse-export";
-import { readZipEntries } from "./zip";
+import { readZipEntries } from "../../zip";
 
 /** Each import field → its file name in the TV Time GDPR export. */
 const FILE_NAMES: Record<keyof TvTimeImportFilesDto, string> = {

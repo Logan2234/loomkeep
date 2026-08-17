@@ -1,34 +1,32 @@
-import { ConfigService } from "@nestjs/config";
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
-import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
-import { MediaItemService } from "../../../catalog/media-item.service";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
-import { PrismaService } from "../../../prisma/prisma.service";
+import { makeZip } from "../../make-zip";
 import { ImportJobService } from "../../import-job.service";
 import { TraktImportSource } from "./trakt.source";
 
-const originalFetch = global.fetch;
+const HISTORY = JSON.stringify([
+  {
+    watched_at: "2026-07-01T20:49:00.000Z",
+    type: "episode",
+    episode: { title: "Good vs. Evil", season: 2, number: 1 },
+    show: {
+      title: "Record of Ragnarok",
+      year: 2021,
+      ids: { trakt: 171086, tmdb: 114868 },
+    },
+  },
+  {
+    watched_at: "2026-06-27T17:46:00.000Z",
+    type: "movie",
+    movie: {
+      title: "Backrooms",
+      year: 2026,
+      ids: { trakt: 870815, tmdb: 1083381 },
+    },
+  },
+]);
 
-function mockFetchByUrl(routes: Record<string, unknown>): jest.Mock {
-  const fn = jest.fn((input: RequestInfo | URL) => {
-    const url = String(input);
-    const match = Object.entries(routes).find(([part]) => url.includes(part));
-    if (!match) throw new Error(`Unexpected fetch call in test: ${url}`);
-    const [, body] = match;
-
-    if (typeof body === "number") {
-      return Promise.resolve(new Response(null, { status: body }));
-    }
-
-    return Promise.resolve(
-      new Response(JSON.stringify(body), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-  });
-  global.fetch = fn as unknown as typeof fetch;
-  return fn;
+function zipBase64(files: { name: string; content: string }[]): string {
+  return makeZip(files).toString("base64");
 }
 
 function makeService() {
@@ -61,20 +59,12 @@ function makeService() {
     findMovieSummaryByImdbId: jest.fn().mockResolvedValue(null),
     search: jest.fn().mockResolvedValue([]),
   };
-  const config = { getOrThrow: jest.fn().mockReturnValue("trakt-client-id") };
-  const quota = { record: jest.fn() };
   const source = new TraktImportSource(
     prisma as never,
-    mediaItemService as unknown as MediaItemService,
-    tmdb as unknown as TmdbProvider,
-    config as unknown as ConfigService,
-    quota as unknown as QuotaTrackerService,
+    mediaItemService as never,
+    tmdb as never,
   );
-  const service = new ImportJobService(
-    [source],
-    prisma as unknown as PrismaService,
-    {} as never,
-  );
+  const service = new ImportJobService([source], prisma as never, {} as never);
   return { prisma, mediaItemService, tmdb, service };
 }
 
@@ -100,65 +90,29 @@ function byKey(plan: ImportPlan, key: string): ImportPlanItem | undefined {
 }
 
 describe("TraktImportSource (via ImportJobService)", () => {
-  afterEach(() => {
-    global.fetch = originalFetch;
-  });
-
-  it("resolves watched shows and movies directly via their TMDB id", async () => {
+  it("reads a single unsplit watched-history.json and resolves via TMDB", async () => {
     const { service, tmdb } = makeService();
     tmdb.getSeriesSummaryByTmdbId.mockResolvedValue({
       source: "TMDB",
-      sourceId: "1396",
+      sourceId: "114868",
       type: "SERIES",
-      title: "Breaking Bad",
-      year: 2008,
+      title: "Record of Ragnarok",
+      year: 2021,
       posterUrl: null,
     });
     tmdb.getMovieSummaryByTmdbId.mockResolvedValue({
       source: "TMDB",
-      sourceId: "118340",
+      sourceId: "1083381",
       type: "MOVIE",
-      title: "Guardians of the Galaxy",
-      year: 2014,
+      title: "Backrooms",
+      year: 2026,
       posterUrl: null,
     });
 
-    mockFetchByUrl({
-      "watched/shows": [
-        {
-          show: {
-            title: "Breaking Bad",
-            year: 2008,
-            ids: { trakt: 1, tmdb: 1396 },
-          },
-          seasons: [
-            {
-              number: 1,
-              episodes: [
-                {
-                  number: 1,
-                  plays: 1,
-                  last_watched_at: "2014-10-15T22:24:29.000Z",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-      "watched/movies": [
-        {
-          movie: {
-            title: "Guardians of the Galaxy",
-            year: 2014,
-            ids: { trakt: 28, tmdb: 118340 },
-          },
-        },
-      ],
-      "watchlist/shows": [],
-      "watchlist/movies": [],
-    });
-
-    const started = service.startAnalyze("u1", "trakt", { input: "someuser" });
+    const input = zipBase64([
+      { name: "watched-history.json", content: HISTORY },
+    ]);
+    const started = service.startAnalyze("u1", "trakt", { input });
     const job = await runToEnd(service, "u1", started.id);
 
     expect(job.status).toBe("completed");
@@ -168,91 +122,83 @@ describe("TraktImportSource (via ImportJobService)", () => {
       unresolved: 0,
       apiErrors: 0,
     });
-    expect(byKey(job.plan!, "tmdb:1396")).toMatchObject({
-      title: "Breaking Bad",
+    expect(byKey(job.plan!, "tmdb:114868")).toMatchObject({
+      title: "Record of Ragnarok",
       subtitle: "1 épisode vu",
-      include: true,
     });
-    expect(byKey(job.plan!, "tmdb:118340")).toMatchObject({
-      title: "Guardians of the Galaxy",
-      include: true,
+    expect(byKey(job.plan!, "tmdb:1083381")).toMatchObject({
+      title: "Backrooms",
     });
-    expect(tmdb.getSeriesSummaryByTmdbId).toHaveBeenCalledWith("1396");
-    expect(tmdb.getMovieSummaryByTmdbId).toHaveBeenCalledWith("118340");
   });
 
-  it("fails the job with a clear error when the profile is private", async () => {
-    const { service } = makeService();
-    mockFetchByUrl({
-      "watched/shows": 404,
-      "watched/movies": 404,
-      "watchlist/shows": 404,
-      "watchlist/movies": 404,
+  it("concatenates paginated watched-history-N.json parts", async () => {
+    const { service, tmdb } = makeService();
+    tmdb.getMovieSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "1083381",
+      type: "MOVIE",
+      title: "Backrooms",
+      year: 2026,
+      posterUrl: null,
     });
 
-    const started = service.startAnalyze("u1", "trakt", { input: "ghost" });
+    const movieOnly = JSON.stringify([JSON.parse(HISTORY)[1]]);
+    const episodeOnly = JSON.stringify([JSON.parse(HISTORY)[0]]);
+    const input = zipBase64([
+      { name: "watched-history-1.json", content: movieOnly },
+      { name: "watched-history-2.json", content: episodeOnly },
+    ]);
+
+    const started = service.startAnalyze("u1", "trakt", { input });
     const job = await runToEnd(service, "u1", started.id);
 
-    expect(job.status).toBe("failed");
-    expect(job.error).toMatch(/priv/i);
+    expect(job.status).toBe("completed");
+    expect(job.plan!.counts.total).toBe(2);
+  });
+
+  it("throws immediately when the archive has no history file", () => {
+    const { service } = makeService();
+    const input = zipBase64([{ name: "user-profile.json", content: "{}" }]);
+
+    expect(() => service.startAnalyze("u1", "trakt", { input })).toThrow(
+      /watched-history/i,
+    );
   });
 
   it("commit writes episode watches and library entries", async () => {
     const { service, prisma, mediaItemService, tmdb } = makeService();
     tmdb.getSeriesSummaryByTmdbId.mockResolvedValue({
       source: "TMDB",
-      sourceId: "1396",
+      sourceId: "114868",
       type: "SERIES",
-      title: "Breaking Bad",
-      year: 2008,
+      title: "Record of Ragnarok",
+      year: 2021,
       posterUrl: null,
     });
     prisma.season.findMany.mockResolvedValue([
-      { number: 1, episodes: [{ id: "ep-1", number: 1 }] },
+      { number: 2, episodes: [{ id: "ep-1", number: 1 }] },
     ]);
     prisma.mediaExternalId.findUnique.mockResolvedValue({
       mediaItemId: "media-1",
     });
 
-    mockFetchByUrl({
-      "watched/shows": [
-        {
-          show: {
-            title: "Breaking Bad",
-            year: 2008,
-            ids: { trakt: 1, tmdb: 1396 },
-          },
-          seasons: [
-            {
-              number: 1,
-              episodes: [
-                {
-                  number: 1,
-                  plays: 1,
-                  last_watched_at: "2014-10-15T22:24:29.000Z",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-      "watched/movies": [],
-      "watchlist/shows": [],
-      "watchlist/movies": [],
-    });
+    const episodeOnly = JSON.stringify([JSON.parse(HISTORY)[0]]);
+    const input = zipBase64([
+      { name: "watched-history.json", content: episodeOnly },
+    ]);
 
-    const analyzed = service.startAnalyze("u1", "trakt", { input: "someuser" });
+    const analyzed = service.startAnalyze("u1", "trakt", { input });
     await runToEnd(service, "u1", analyzed.id);
 
     const committed = service.commit("u1", "trakt", analyzed.id, {
-      include: ["tmdb:1396"],
+      include: ["tmdb:114868"],
     });
     const job = await runToEnd(service, "u1", committed.id);
 
     expect(job.status).toBe("completed");
     expect(mediaItemService.upsertFromSource).toHaveBeenCalledWith(
       "TMDB",
-      "1396",
+      "114868",
       "SERIES",
     );
     expect(prisma.episodeWatch.createMany).toHaveBeenCalledWith({
@@ -260,10 +206,9 @@ describe("TraktImportSource (via ImportJobService)", () => {
         {
           userId: "u1",
           episodeId: "ep-1",
-          watchedAt: new Date("2014-10-15T22:24:29.000Z"),
+          watchedAt: new Date("2026-07-01T20:49:00.000Z"),
         },
       ],
     });
-    expect(job.report!.tiles[0]).toMatchObject({ label: "Séries", value: 1 });
   });
 });

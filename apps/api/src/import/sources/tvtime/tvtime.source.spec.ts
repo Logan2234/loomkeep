@@ -6,7 +6,7 @@ import type {
 } from "@loomkeep/shared";
 import { ImportJobService } from "../../import-job.service";
 import { TvTimeImportSource } from "./tvtime.source";
-import { makeZip } from "./make-zip";
+import { makeZip } from "../../make-zip";
 
 // Two watched episodes of one show (TVDB 100), plus a never-started show (200).
 const EPISODES_CSV = [
