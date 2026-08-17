@@ -111,10 +111,11 @@ function build(over: Partial<Mocks> = {}): {
     mocks.ageGate as unknown as AgeGateService,
     quota as unknown as QuotaTrackerService,
   );
-  const service = new ImportJobService([source], {
-    ...mocks.prisma,
-    ...prismaExtras,
-  } as unknown as PrismaService);
+  const service = new ImportJobService(
+    [source],
+    { ...mocks.prisma, ...prismaExtras } as unknown as PrismaService,
+    {} as never,
+  );
   return { service, mocks };
 }
 

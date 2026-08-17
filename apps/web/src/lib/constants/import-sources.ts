@@ -20,8 +20,15 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     trakt: {
       domain: Domain.MEDIA,
       label: "Trakt",
-      description: "Films et séries.",
-    } as ImportSourceDescriptor,
+      description: "Films et séries (historique et watchlist).",
+      href: "/app/settings/import/trakt",
+      input: {
+        type: "traktUsername",
+        placeholder: "Pseudo Trakt (trakt.tv/users/…)",
+      },
+      noun: { one: "titre", many: "titres" },
+      libraryHref: "/app/media",
+    },
     letterboxd: {
       domain: Domain.MEDIA,
       label: "Letterboxd",
@@ -35,8 +42,12 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     simkl: {
       domain: Domain.MEDIA,
       label: "Simkl",
-      description: "Films, séries et anime.",
-    } as ImportSourceDescriptor,
+      description: "Films, séries et anime (via connexion à ton compte).",
+      href: "/app/settings/import/simkl",
+      input: { type: "oauth" },
+      noun: { one: "titre", many: "titres" },
+      libraryHref: "/app/media",
+    },
     kitsu: {
       domain: Domain.MEDIA,
       label: "Kitsu",
@@ -47,7 +58,10 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       label: "Steam",
       description: "Bibliothèque et temps de jeu.",
       href: "/app/settings/import/steam",
-      input: { type: "steamId" },
+      input: {
+        type: "steamId",
+        placeholder: "76561198… ou steamcommunity.com/id/pseudo",
+      },
       noun: { one: "jeu", many: "jeux" },
       libraryHref: "/app/games",
     },

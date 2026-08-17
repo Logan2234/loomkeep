@@ -36,7 +36,14 @@
 
   // `intro` holds the source-specific export instructions (markup, hence a
   // snippet rather than a config field); everything else comes from `source`.
-  let { source, intro }: { source: ImportSource; intro?: Snippet } = $props();
+  // `autoInput`, when set, skips the input step entirely and analyzes it
+  // immediately — for an "oauth" source, whose own page already obtained the
+  // raw input (an authorization code) via an external consent redirect.
+  let {
+    source,
+    intro,
+    autoInput,
+  }: { source: ImportSource; intro?: Snippet; autoInput?: string } = $props();
 
   type Phase = "input" | "analyzing" | "review" | "committing" | "done";
   let phase = $state<Phase>("input");
@@ -91,7 +98,9 @@
         : [],
   );
 
-  const isFileInput = $derived(descriptor.input.type !== "steamId");
+  const isFileInput = $derived(
+    descriptor.input.type === "csv" || descriptor.input.type === "zip",
+  );
   const inputReady = $derived(inputValue.trim().length > 0);
   const selectedCount = $derived(included.size);
 
@@ -192,6 +201,11 @@
       error = msg(err, "Analyse impossible.");
       phase = "input";
     }
+  }
+
+  if (autoInput) {
+    inputValue = autoInput;
+    void analyze();
   }
 
   function pollJob(jobId: string, next: "review" | "done") {
@@ -424,7 +438,7 @@
     {:else}
       <input
         type="text"
-        placeholder="76561198… ou steamcommunity.com/id/pseudo"
+        placeholder={descriptor.input.placeholder ?? "Identifiant"}
         bind:value={inputValue}
         onkeydown={(e) => e.key === "Enter" && analyze()}
         class="input w-full" />

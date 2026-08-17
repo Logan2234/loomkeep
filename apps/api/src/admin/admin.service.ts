@@ -157,6 +157,41 @@ export class AdminService {
         quotaLimit: { max: 100_000, window: "day" },
       },
       {
+        key: "trakt",
+        label: "Trakt (import)",
+        area: "Vidéo",
+        required: false,
+        envKeys: ["TRAKT_CLIENT_ID"],
+        keyUrl: "https://trakt.tv/oauth/applications",
+        // Every Trakt endpoint requires the api-key header, so the probe
+        // doubles as a validity check of the configured client id.
+        probe: (signal) =>
+          this.ping("https://api.trakt.tv/movies/trending?limit=1", {
+            signal,
+            headers: {
+              "trakt-api-version": "2",
+              "trakt-api-key": this.env("TRAKT_CLIENT_ID"),
+            },
+          }),
+      },
+      {
+        key: "simkl",
+        label: "Simkl (import)",
+        area: "Vidéo",
+        required: false,
+        envKeys: ["SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET"],
+        keyUrl: "https://simkl.com/settings/developer/",
+        // Only checks the client id (reachability + key validity) — the
+        // secret is only ever used in the OAuth token exchange itself, which
+        // needs an interactive user consent and can't be probed in the
+        // background.
+        probe: (signal) =>
+          this.ping(
+            `https://api.simkl.com/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
+            { signal },
+          ),
+      },
+      {
         key: "googleBooks",
         label: "Google Books",
         area: "Livres",

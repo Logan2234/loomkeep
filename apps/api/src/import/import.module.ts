@@ -9,7 +9,10 @@ import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
+import { SimklOAuthController } from "./sources/simkl/simkl-oauth.controller";
+import { SimklImportSource } from "./sources/simkl/simkl.source";
 import { SteamImportSource } from "./sources/steam/steam.source";
+import { TraktImportSource } from "./sources/trakt/trakt.source";
 import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
 
 /**
@@ -28,10 +31,12 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     UsersModule,
     ReviewsModule,
   ],
-  controllers: [ImportController],
+  controllers: [ImportController, SimklOAuthController],
   providers: [
     ImportJobService,
     TvTimeImportSource,
+    TraktImportSource,
+    SimklImportSource,
     StoryGraphImportSource,
     GoodreadsImportSource,
     SteamImportSource,
@@ -40,6 +45,8 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
       useFactory: (...sources: ImportReq[]) => sources,
       inject: [
         TvTimeImportSource,
+        TraktImportSource,
+        SimklImportSource,
         StoryGraphImportSource,
         GoodreadsImportSource,
         SteamImportSource,

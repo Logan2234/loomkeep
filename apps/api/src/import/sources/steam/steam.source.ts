@@ -59,6 +59,7 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
   readonly id = "steam";
   readonly searchDomain = Domain.GAMES;
   readonly supportsOverwrite = true;
+  readonly requiredEnvKeys = ["STEAM_API_KEY"];
 
   constructor(
     private readonly configService: ConfigService,
