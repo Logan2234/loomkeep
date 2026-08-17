@@ -175,6 +175,23 @@ export class AdminService {
           }),
       },
       {
+        key: "simkl",
+        label: "Simkl (import)",
+        area: "Vidéo",
+        required: false,
+        envKeys: ["SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET"],
+        keyUrl: "https://simkl.com/settings/developer/",
+        // Only checks the client id (reachability + key validity) — the
+        // secret is only ever used in the OAuth token exchange itself, which
+        // needs an interactive user consent and can't be probed in the
+        // background.
+        probe: (signal) =>
+          this.ping(
+            `https://api.simkl.com/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
+            { signal },
+          ),
+      },
+      {
         key: "googleBooks",
         label: "Google Books",
         area: "Livres",
