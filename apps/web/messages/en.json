@@ -317,8 +317,6 @@
   "settings_support_recommended_reason": "no account needed",
   "settings_support_account_required": "Account required",
   "settings_support_no_account": "No account",
-  "settings_support_liberapay_note": "Opens a new tab. Built for recurring giving: simulate a one-time gift by cancelling right after the first payment, or pick manual renewal.",
-  "settings_support_new_tab_note": "Opens a new tab.",
 
   "settings_section_datasources": "Data sources",
   "settings_datasources_title": "Data sources",

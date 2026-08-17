@@ -180,6 +180,20 @@ DISMISSED DISMISSED
 
 
 
+        ModerationMeasure {
+            COMMENT_REMOVED COMMENT_REMOVED
+ACCOUNT_DELETED ACCOUNT_DELETED
+        }
+
+
+
+        ModerationLegalBasis {
+            ILLEGAL_CONTENT ILLEGAL_CONTENT
+TOS_BREACH TOS_BREACH
+        }
+
+
+
         CatalogSource {
             TMDB TMDB
 ANILIST ANILIST
@@ -419,6 +433,24 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     ReportStatus status
     DateTime createdAt
     DateTime resolvedAt "❓"
+    }
+
+
+  "ModerationDecision" {
+    String id "🗝️"
+    ModerationMeasure measure
+    ReportTargetType targetType
+    String targetId
+    String subjectEmail
+    String subjectUsername
+    ModerationLegalBasis legalBasis
+    ReportCategory reasonCategory "❓"
+    ReportMotif reasonMotif "❓"
+    String reasonText
+    String tosClause
+    String contentSnapshot "❓"
+    Boolean automated
+    DateTime decidedAt
     }
 
 
@@ -820,6 +852,14 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "Report" |o--|| "ReportStatus" : "enum:status"
     "Report" }o--|o "User" : "reporter"
     "Report" }o--|o "User" : "resolvedBy"
+    "ModerationDecision" |o--|| "ModerationMeasure" : "enum:measure"
+    "ModerationDecision" |o--|| "ReportTargetType" : "enum:targetType"
+    "ModerationDecision" |o--|| "ModerationLegalBasis" : "enum:legalBasis"
+    "ModerationDecision" |o--|o "ReportCategory" : "enum:reasonCategory"
+    "ModerationDecision" |o--|o "ReportMotif" : "enum:reasonMotif"
+    "ModerationDecision" }o--|o "User" : "subject"
+    "ModerationDecision" }o--|o "User" : "decidedBy"
+    "ModerationDecision" }o--|o "Report" : "report"
     "List" |o--|| "ListKind" : "enum:kind"
     "List" |o--|| "ListVisibility" : "enum:visibility"
     "List" }o--|| "User" : "user"
