@@ -9,13 +9,13 @@ import type {
   ImportShow,
   ParsedImport,
 } from "../../media-import-model";
+import { readZipEntries } from "../../zip";
 import { MediaImportSource } from "../media/media-import.source";
 import {
   parseTvTimeExport,
   type ParsedMovie,
   type ParsedShow,
 } from "./parse-export";
-import { readZipEntries } from "../../zip";
 
 /** Each import field → its file name in the TV Time GDPR export. */
 const FILE_NAMES: Record<keyof TvTimeImportFilesDto, string> = {
@@ -43,14 +43,13 @@ export class TvTimeImportSource extends MediaImportSource<ParsedImport> {
     super(prisma, mediaItemService, tmdb, reviews);
   }
 
-  parseInput(input: string, options: Record<string, boolean>): ParsedImport {
-    const importMovies = options.importMovies ?? true;
+  parseInput(input: string): ParsedImport {
     const files = extractFiles(Buffer.from(input, "base64"));
     const { shows, movies } = parseTvTimeExport(files);
     return {
       source: this.id,
       shows: shows.map(toImportShow),
-      movies: importMovies ? movies.map(toImportMovie) : [],
+      movies: movies.map(toImportMovie),
     };
   }
 }

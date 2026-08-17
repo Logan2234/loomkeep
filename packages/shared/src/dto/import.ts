@@ -139,8 +139,6 @@ export interface ImportAnalyzeRequest {
    * ZIP. base64 keeps the JSON transport (no multipart, no new dependency).
    */
   input: string;
-  /** Source-specific toggles (e.g. TV Time's `importMovies`). */
-  options?: Record<string, boolean>;
 }
 
 /** A catalogue target chosen manually for an unresolved item, at commit time. */

@@ -12,10 +12,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/tvtime",
       input: { type: "zip", accept: ".zip" },
       noun: { one: "titre", many: "titres" },
-      libraryHref: "/app/media",
-      options: [
-        { key: "importMovies", label: "Inclure les films", default: true },
-      ],
     },
     trakt: {
       domain: Domain.MEDIA,
@@ -24,7 +20,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/trakt",
       input: { type: "zip", accept: ".zip" },
       noun: { one: "titre", many: "titres" },
-      libraryHref: "/app/media",
       newBadgeKey: "import-trakt",
     },
     letterboxd: {
@@ -44,7 +39,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/simkl",
       input: { type: "oauth" },
       noun: { one: "titre", many: "titres" },
-      libraryHref: "/app/media",
       newBadgeKey: "import-simkl",
     },
     kitsu: {
@@ -62,7 +56,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
         placeholder: "76561198… ou steamcommunity.com/id/pseudo",
       },
       noun: { one: "jeu", many: "jeux" },
-      libraryHref: "/app/games",
     },
     backloggd: {
       domain: Domain.GAMES,
@@ -76,7 +69,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/storygraph",
       input: { type: "csv", accept: ".csv,text/csv" },
       noun: { one: "livre", many: "livres" },
-      libraryHref: "/app/books",
     },
     goodreads: {
       domain: Domain.BOOKS,
@@ -85,7 +77,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/goodreads",
       input: { type: "csv", accept: ".csv,text/csv" },
       noun: { one: "livre", many: "livres" },
-      libraryHref: "/app/books",
     },
     babelio: {
       domain: Domain.BOOKS,

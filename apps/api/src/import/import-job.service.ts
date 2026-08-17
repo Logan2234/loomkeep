@@ -100,7 +100,7 @@ export class ImportJobService {
     let parsed: unknown;
 
     try {
-      parsed = source.parseInput(dto.input, dto.options ?? {});
+      parsed = source.parseInput(dto.input);
     } catch (error) {
       // A malformed export is a client error, not a failed job.
       throw new BadRequestException(

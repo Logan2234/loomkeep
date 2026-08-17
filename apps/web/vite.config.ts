@@ -24,7 +24,9 @@ export default defineConfig({
         runes: ({ filename }) =>
           filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
       },
-
+      env: {
+        dir: '../..'
+      },
       // adapter-node: the web app ships as a plain Node server, self-hostable in Docker.
       adapter: adapter(),
     }),

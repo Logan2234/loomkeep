@@ -62,7 +62,7 @@ export interface ImportReq<TParsed = unknown> {
    * source's input type) into its parse model. Throws on a malformed export so
    * the caller gets an immediate 400.
    */
-  parseInput(input: string, options: Record<string, boolean>): TParsed;
+  parseInput(input: string): TParsed;
 
   /**
    * Resolve the parsed export against the catalogue and build the review plan.

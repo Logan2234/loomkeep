@@ -290,7 +290,8 @@
                 <p class="text-dim mt-0.5 text-sm">{item.description}</p>
               </div>
               {#if metricByHref[item.href]}
-                <span class="timecode shrink-0 text-xs whitespace-nowrap">
+                <span
+                  class="timecode hidden shrink-0 text-xs whitespace-nowrap sm:block">
                   {metricByHref[item.href]}
                 </span>
               {/if}

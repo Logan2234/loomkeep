@@ -12,6 +12,8 @@
   const clientId = env.PUBLIC_SIMKL_CLIENT_ID ?? "";
   const redirectUri = `${window.location.origin}/app/settings/import/simkl/callback`;
   const authorizeUrl = `https://simkl.com/oauth/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+  console.log(env);
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">

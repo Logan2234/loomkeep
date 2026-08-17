@@ -82,11 +82,11 @@ export abstract class MediaImportSource<
     protected readonly reviews: ReviewService,
   ) {}
 
-  abstract parseInput(input: string, options: Record<string, boolean>): TParsed;
+  abstract parseInput(input: string): TParsed;
 
   /**
    * Hook for sources whose export can only be fetched over the network
-   * (Trakt's own API) rather than parsed synchronously in {@link parseInput}:
+   * rather than parsed synchronously in {@link parseInput}:
    * mutate `parsed.shows`/`parsed.movies` in place. No-op by default — a
    * source that already parses everything in `parseInput` (TV Time's CSVs)
    * never needs to override it.

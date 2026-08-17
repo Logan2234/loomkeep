@@ -58,9 +58,15 @@
   let dragOver = $state(false);
 
   const descriptor = IMPORTS_DEFINITION[source];
-  const optionState = new SvelteMap<string, boolean>(
-    (descriptor.options ?? []).map((o) => [o.key, o.default]),
-  );
+
+  const DOMAIN_TO_HREF = {
+    [Domain.MEDIA]: "/app/media",
+    [Domain.GAMES]: "/app/games",
+    [Domain.BOOKS]: "/app/books",
+    [Domain.MUSIC]: "/app/music",
+    [Domain.BOARDGAMES]: "/app/boardgames",
+    [Domain.PODCASTS]: "/app/podcasts",
+  };
 
   // --- Job / plan ---
   let analyzeJobId = $state<string | null>(null);
@@ -187,12 +193,10 @@
     job = null;
     plan = null;
     phase = "analyzing";
-    const options: Record<string, boolean> = {};
-    for (const [k, v] of optionState) options[k] = v;
+
     try {
       const started = await analyzeImport(source, {
         input: inputValue,
-        options,
       });
       analyzeJobId = started.id;
       job = started;
@@ -444,22 +448,6 @@
         class="input w-full" />
     {/if}
 
-    {#if descriptor.options}
-      <div class="mt-4 flex flex-col gap-2">
-        {#each descriptor.options as opt (opt.key)}
-          <label class="flex items-center gap-2.5 text-sm">
-            <input
-              type="checkbox"
-              checked={optionState.get(opt.key)}
-              onchange={(e) =>
-                optionState.set(opt.key, e.currentTarget.checked)}
-              class="accent-accent" />
-            {opt.label}
-          </label>
-        {/each}
-      </div>
-    {/if}
-
     <div class="mt-5">
       <button class="btn btn-primary" disabled={!inputReady} onclick={analyze}>
         Analyser
@@ -485,7 +473,7 @@
   {:else if phase === "review" && plan}
     {#if plan.groups.length === 0}
       <div
-        class="border-border text-dim mt-6 rounded-xl border border-dashed px-6 py-12 text-center">
+        class="border-border text-dim mt-6 mb-24 rounded-xl border border-dashed px-6 py-12 text-center">
         Rien à importer dans cet export.
       </div>
     {:else if filterUnresolved && unresolvedRemaining === 0}
@@ -595,7 +583,7 @@
         {/each}
       </div>
       <div class="mt-5 flex gap-2">
-        <a href={descriptor.libraryHref} class="btn btn-primary"
+        <a href={DOMAIN_TO_HREF[descriptor.domain]} class="btn btn-primary"
           >Voir ma bibliothèque</a>
         <button class="btn btn-ghost" onclick={reset}>Nouvel import</button>
       </div>
@@ -615,7 +603,7 @@
 
 {#snippet groupBody(items: ImportPlanItem[])}
   <ul class="divide-border mt-3 flex flex-col divide-y">
-    {#each items as item (item.key)}
+    {#each items as item, i (i)}
       {@const match = matchOf(item)}
       {@const on = included.has(item.key)}
       <li class="flex flex-col gap-2 py-2.5">

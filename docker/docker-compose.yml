@@ -110,8 +110,7 @@ services:
       # Empty = no Turnstile widget rendered, register() sends no token —
       # see root README "Bot protection".
       PUBLIC_TURNSTILE_SITE_KEY: ${PUBLIC_TURNSTILE_SITE_KEY:-}
-      # Empty = no Umami tracking script loaded on the landing page — see
-      # root README "Analytics".
+      # Empty = no Umami tracking script loaded — see root README "Analytics".
       PUBLIC_UMAMI_WEBSITE_ID: ${PUBLIC_UMAMI_WEBSITE_ID:-}
       PUBLIC_UMAMI_SCRIPT_URL: ${PUBLIC_UMAMI_SCRIPT_URL:-}
     ports:

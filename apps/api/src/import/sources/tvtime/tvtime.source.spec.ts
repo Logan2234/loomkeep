@@ -5,8 +5,8 @@ import type {
   ImportPlanItem,
 } from "@loomkeep/shared";
 import { ImportJobService } from "../../import-job.service";
-import { TvTimeImportSource } from "./tvtime.source";
 import { makeZip } from "../../make-zip";
+import { TvTimeImportSource } from "./tvtime.source";
 
 // Two watched episodes of one show (TVDB 100), plus a never-started show (200).
 const EPISODES_CSV = [
@@ -44,9 +44,8 @@ function zipBase64(files: {
 
 function analyzeDto(
   files: Parameters<typeof zipBase64>[0],
-  importMovies = true,
 ): ImportAnalyzeRequest {
-  return { input: zipBase64(files), options: { importMovies } };
+  return { input: zipBase64(files) };
 }
 
 function makeService() {
@@ -126,7 +125,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     const { id } = service.startAnalyze(
       "u1",
       "tvtime",
-      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }, false),
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
     );
     const job = await runToEnd(service, "u1", id);
 
@@ -243,7 +242,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     const analyze = service.startAnalyze(
       "u1",
       "tvtime",
-      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }, false),
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
     );
     await runToEnd(service, "u1", analyze.id);
 
@@ -322,7 +321,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     const analyze = service.startAnalyze(
       "u1",
       "tvtime",
-      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }, false),
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
     );
     await runToEnd(service, "u1", analyze.id);
 
@@ -349,7 +348,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       service.startAnalyze(
         "u1",
         "tvtime",
-        analyzeDto({ episodesCsv: EPISODES_CSV }, false),
+        analyzeDto({ episodesCsv: EPISODES_CSV }),
       ),
     ).toThrow(/user_tv_show_data\.csv/);
   });
