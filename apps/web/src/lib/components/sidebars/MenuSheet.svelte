@@ -6,7 +6,9 @@
   // reachable on a phone. Admin lives here — it has no bottom-bar slot by
   // default. Notifications aren't a destination at all: see the fixed bell
   // (NotificationBell.svelte) in the root layout instead.
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { logout } from "$lib/api/auth";
   import { auth } from "$lib/auth.svelte";
   import Drawer from "$lib/components/Drawer.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -34,6 +36,12 @@
 
   function close() {
     open = false;
+  }
+
+  async function signOut() {
+    close();
+    await logout();
+    await goto("/login");
   }
 
   $effect(() => {
@@ -122,6 +130,16 @@
               {#each group.items as item (item.id)}
                 {@render tile(item)}
               {/each}
+              {#if group.label === m.nav_menu_section_account()}
+                <button
+                  type="button"
+                  onclick={signOut}
+                  class="border-border bg-surface-2 hover:border-danger/40 text-danger flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors">
+                  <Icon name="logout" class="h-6 w-6" />
+                  <span class="text-xs font-semibold"
+                    >{m.profile_logout()}</span>
+                </button>
+              {/if}
             </div>
           </div>
         {/each}
