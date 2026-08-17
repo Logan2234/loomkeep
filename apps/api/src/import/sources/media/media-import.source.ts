@@ -19,6 +19,7 @@ import { Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import { mapWithConcurrency } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type {
@@ -46,6 +47,10 @@ interface EpisodeIndex {
   /** Total episodes outside season 0 — the denominator for completion. */
   totalRegular: number;
 }
+
+// Shows/movies are resolved against the catalogue a few at a time — fast
+// enough for a typical export while staying polite to the TMDB API.
+const RESOLVE_CONCURRENCY = 5;
 
 /** Running tallies a commit turns into the report tiles. */
 interface CommitTally {
@@ -109,8 +114,18 @@ export abstract class MediaImportSource<
     const moviesWatchlist: ImportPlanItem[] = [];
     let unresolved = 0;
 
-    for (const show of parsed.shows) {
-      const match = await this.resolveShowMatch(show);
+    const showMatches = await mapWithConcurrency(
+      parsed.shows,
+      RESOLVE_CONCURRENCY,
+      async (show) => {
+        const match = await this.resolveShowMatch(show);
+        progress.tick();
+        return match;
+      },
+    );
+
+    parsed.shows.forEach((show, i) => {
+      const match = showMatches[i];
       if (!match) unresolved++;
       const n = show.episodes.length;
       const subtitle = [
@@ -131,11 +146,20 @@ export abstract class MediaImportSource<
         defaultStatus: null,
       };
       (n === 0 ? seriesWatchlist : seriesTracked).push(item);
-      progress.tick();
-    }
+    });
 
-    for (const movie of parsed.movies) {
-      const match = await this.resolveMovieMatch(movie);
+    const movieMatches = await mapWithConcurrency(
+      parsed.movies,
+      RESOLVE_CONCURRENCY,
+      async (movie) => {
+        const match = await this.resolveMovieMatch(movie);
+        progress.tick();
+        return match;
+      },
+    );
+
+    parsed.movies.forEach((movie, i) => {
+      const match = movieMatches[i];
       if (!match) unresolved++;
       const subtitleParts = [
         movie.year ? String(movie.year) : null,
@@ -153,8 +177,7 @@ export abstract class MediaImportSource<
         defaultStatus: null,
       };
       (movie.watched ? moviesWatched : moviesWatchlist).push(item);
-      progress.tick();
-    }
+    });
 
     const groups: ImportPlanGroup[] = [
       { id: "seriesTracked", label: "Séries suivies", items: seriesTracked },
