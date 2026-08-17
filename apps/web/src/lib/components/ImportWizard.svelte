@@ -606,7 +606,7 @@
 {#if showOverwriteConfirm}
   <ConfirmationModal
     title="Écraser tes données ?"
-    message="Écraser supprimera définitivement ta bibliothèque et ton historique de ce domaine avant l’import. Cette action est irréversible."
+    message="Écraser supprimera définitivement ta bibliothèque et ton historique de ce domaine avant l'import. Cette action est irréversible."
     confirmLabel="Écraser et importer"
     danger
     onConfirm={doCommit}

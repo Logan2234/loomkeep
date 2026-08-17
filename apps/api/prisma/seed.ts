@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // Dev-only seeder. Meant to run against an empty (freshly `migrate reset`)
 // database — it does not clean up existing rows, so re-running it against a
 // populated DB will fail on unique constraints (email, username, ...).

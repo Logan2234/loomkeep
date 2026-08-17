@@ -20,11 +20,11 @@
     disabled={false}
     meta={{
       public: { label: "Pseudo public" },
-      file: { label: "Fichier d’export" },
+      file: { label: "Fichier d'export" },
     }}
     desc={{
-      public: "Importer via l’API Trakt (profil public)",
-      file: "Importer depuis l’archive téléchargée sur trakt.tv",
+      public: "Importer via l'API Trakt (profil public)",
+      file: "Importer depuis l'archive téléchargée sur trakt.tv",
     }}
     activeClass={{ public: "bg-accent text-bg", file: "bg-accent text-bg" }}
     onSelect={(next) => (method = next)} />

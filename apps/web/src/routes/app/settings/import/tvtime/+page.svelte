@@ -4,7 +4,7 @@
 
 <ImportWizard source="tvtime">
   {#snippet intro()}
-    Dépose l’archive <code class="bg-bg rounded px-1.5 py-0.5 font-mono text-xs"
+    Dépose l'archive <code class="bg-bg rounded px-1.5 py-0.5 font-mono text-xs"
       >.zip</code>
     de ton
     <a
@@ -12,7 +12,7 @@
       target="_blank"
       rel="noopener noreferrer"
       class="link-accent">export GDPR TV Time ↗</a
-    >. On l’analyse pour te laisser trier collection par collection avant
-    d’écrire quoi que ce soit.
+    >. On l'analyse pour te laisser trier collection par collection avant
+    d'écrire quoi que ce soit.
   {/snippet}
 </ImportWizard>

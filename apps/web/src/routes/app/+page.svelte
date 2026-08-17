@@ -17,7 +17,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { CHANGELOG_URL } from "$lib/constants/external-links";
+  import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages";
@@ -560,10 +560,10 @@
 
         <p class="text-dim mt-2 text-center text-xs">
           <a
-            href={CHANGELOG_URL}
+            href={GITHUB_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            class="btn-text">
+            class="btn-text font-normal">
             {m.common_version({ version: appConfig.version })}
           </a>
         </p>
