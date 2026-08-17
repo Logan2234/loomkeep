@@ -25,6 +25,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       input: { type: "zip", accept: ".zip" },
       noun: { one: "titre", many: "titres" },
       libraryHref: "/app/media",
+      newBadgeKey: "import-trakt",
     },
     letterboxd: {
       domain: Domain.MEDIA,
@@ -44,6 +45,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       input: { type: "oauth" },
       noun: { one: "titre", many: "titres" },
       libraryHref: "/app/media",
+      newBadgeKey: "import-simkl",
     },
     kitsu: {
       domain: Domain.MEDIA,

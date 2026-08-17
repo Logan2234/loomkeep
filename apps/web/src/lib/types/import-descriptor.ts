@@ -25,4 +25,6 @@ export type ImportSourceDescriptor = {
     label: string;
     default: boolean;
   }[];
+  /** Key into `SHIPPED` (feature-badges.ts) for the "Nouveau" badge; omit once it's not recent anymore. */
+  newBadgeKey?: string;
 };

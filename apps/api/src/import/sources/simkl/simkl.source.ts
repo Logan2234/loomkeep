@@ -26,9 +26,10 @@ interface SimklParsed extends ParsedImport {
  * plan (verified directly on simkl.com/apps/backup/, not just its docs), so —
  * unlike Trakt/Steam — there is no "public profile" shortcut here either.
  * Every user's data requires a per-user OAuth `access_token`, obtained via the
- * authorization-code flow kicked off by {@link SimklOAuthController}. This
- * source only ever sees the resulting `code` (as the ordinary `input` string)
- * and exchanges it for a token itself, once, during {@link load}.
+ * authorization-code flow the web kicks off itself (building the
+ * `simkl.com/oauth/authorize` link client-side — see the Simkl import page).
+ * This source only ever sees the resulting `code` (as the ordinary `input`
+ * string) and exchanges it for a token itself, once, during {@link load}.
  */
 @Injectable()
 export class SimklImportSource extends MediaImportSource<SimklParsed> {

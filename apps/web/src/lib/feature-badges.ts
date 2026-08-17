@@ -15,6 +15,8 @@ const SHIPPED: Record<string, string> = {
   support: "2026-08-10",
   "collaborative-lists": "2026-08-11",
   "reading-goal": "2026-08-11",
+  "import-trakt": "2026-08-17",
+  "import-simkl": "2026-08-17",
 };
 
 export function isFeatureNew(key: keyof typeof SHIPPED): boolean {
