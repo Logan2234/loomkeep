@@ -44,7 +44,7 @@ describe("AnilistProvider", () => {
     expect(frieren).toMatchObject({
       source: "ANILIST",
       type: MediaType.ANIME,
-      title: "Frieren: Beyond Journey’s End",
+      title: "Frieren: Beyond Journey's End",
       year: 2023,
     });
     expect(frieren?.posterUrl).toMatch(/^https:\/\//);
@@ -55,7 +55,7 @@ describe("AnilistProvider", () => {
 
     const details = await provider.getDetails("154587");
 
-    expect(details.summary.title).toBe("Frieren: Beyond Journey’s End");
+    expect(details.summary.title).toBe("Frieren: Beyond Journey's End");
     expect(details.genres).toEqual(["Adventure", "Drama", "Fantasy"]);
     expect(details.status).toBe("FINISHED");
     expect(details.releaseDate).toBe("2023-09-29");

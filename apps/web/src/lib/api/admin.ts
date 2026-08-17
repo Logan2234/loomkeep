@@ -12,11 +12,11 @@ import type {
   AdminImportRunListResponseDto,
   AdminImportSummaryDto,
   AdminNewAccountsTrendDto,
+  AdminOverviewDto,
   AdminPushBroadcastResponseDto,
   AdminPushDeviceDto,
   AdminPushSendResponseDto,
   AdminPushSummaryDto,
-  AdminOverviewDto,
   AdminReportsSummaryDto,
   AdminSecuritySummaryDto,
   AdminSocialActivityTrendDto,
@@ -28,18 +28,17 @@ import type {
   AdminUserListResponseDto,
   AdminUserOptionDto,
   AdminUserRoleDto,
-  AdminVersionDto,
   Domain,
   JobListResponseDto,
   JobStatus,
+  MailTemplateListResponseDto,
+  MailTemplatePreviewDto,
+  ModerationLegalBasis,
   MyListDto,
   MyReviewDto,
   NewsletterSendDto,
   ReportDto,
   ReportPageDto,
-  MailTemplateListResponseDto,
-  MailTemplatePreviewDto,
-  ModerationLegalBasis,
   Role,
   SchemaGraphResponseDto,
   SecurityEventListResponseDto,
@@ -288,11 +287,6 @@ export function deleteAdminUser(
   reason: ModerationReasonBody,
 ): Promise<void> {
   return request(`/admin/users/${userId}`, { method: "DELETE", body: reason });
-}
-
-/** The running app's version, shown in the admin/settings footer. */
-export function getAdminVersion(): Promise<AdminVersionDto> {
-  return request("/admin/version");
 }
 
 /** Newsletter send history, newest first — sending itself is automatic (Quackback webhook). */

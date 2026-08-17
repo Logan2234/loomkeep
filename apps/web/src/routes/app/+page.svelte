@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    getAdminVersion,
     getCalendar,
     listBooks,
     listGames,
@@ -17,7 +16,8 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
-  import { CHANGELOG_URL } from "$lib/constants/external-links";
+  import { appConfig } from "$lib/config.svelte";
+  import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages";
@@ -111,17 +111,6 @@
       loading = false;
     }
   }
-
-  // AdminOnly on the backend — only fetched (and shown) for the admin account.
-  let version = $state<string | null>(null);
-
-  $effect(() => {
-    if (auth.isAdmin) {
-      getAdminVersion()
-        .then((v) => (version = v.version))
-        .catch(() => {});
-    }
-  });
 
   $effect(() => {
     void load();
@@ -569,17 +558,15 @@
           </a>
         </section>
 
-        {#if version}
-          <p class="text-dim mt-2 text-center text-xs">
-            <a
-              href={CHANGELOG_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn-text">
-              {m.common_version({ version })}
-            </a>
-          </p>
-        {/if}
+        <p class="text-dim mt-2 text-center text-xs">
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-text font-normal">
+            {m.common_version({ version: appConfig.version })}
+          </a>
+        </p>
       </div>
     </div>
   {/if}

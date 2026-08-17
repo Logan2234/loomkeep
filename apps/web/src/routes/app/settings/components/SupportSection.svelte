@@ -32,15 +32,6 @@
       href: "https://ko-fi.com/loomkeep",
       accountRequired: false,
       recommended: true,
-      note: m.settings_support_new_tab_note(),
-    },
-    {
-      key: "liberapay",
-      name: "Liberapay",
-      href: "https://liberapay.com/loomkeep/donate",
-      accountRequired: true,
-      recommended: false,
-      note: m.settings_support_liberapay_note(),
     },
     {
       key: "bmc",
@@ -48,7 +39,13 @@
       href: "https://buymeacoffee.com/loomkeep",
       accountRequired: false,
       recommended: false,
-      note: m.settings_support_new_tab_note(),
+    },
+    {
+      key: "liberapay",
+      name: "Liberapay",
+      href: "https://liberapay.com/loomkeep/donate",
+      accountRequired: true,
+      recommended: false,
     },
     {
       key: "github",
@@ -56,7 +53,6 @@
       href: "https://github.com/sponsors/Logan2234",
       accountRequired: true,
       recommended: false,
-      note: m.settings_support_new_tab_note(),
     },
   ] as const;
 </script>
@@ -95,9 +91,9 @@
           class="mt-0.5 h-4 w-4 shrink-0"
           fill={BRAND_ICONS[tile.key].color}
           aria-hidden="true"><path d={BRAND_ICONS[tile.key].path} /></svg>
-        <span class="min-w-0">
-          <span class="flex flex-wrap items-center gap-1.5">
-            {tile.name}
+        <span class="flex w-full flex-wrap items-center justify-between gap-4">
+          <span class="flex flex-row items-center gap-1.5"
+            >{tile.name}
             {#if tile.recommended}
               <svg
                 viewBox="0 0 24 24"
@@ -111,12 +107,7 @@
               </svg>
             {/if}
           </span>
-          <span class="mt-1 flex flex-wrap gap-1">
-            {@render accountBadge(tile.accountRequired)}
-          </span>
-          <span class="text-dim mt-1 block text-xs font-normal">
-            {tile.note}
-          </span>
+          {@render accountBadge(tile.accountRequired)}
         </span>
       </a>
     {/each}

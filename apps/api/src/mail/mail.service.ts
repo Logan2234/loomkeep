@@ -764,7 +764,7 @@ export class MailService {
         </tr>
         <tr>
           <td style="padding:16px 32px;background:${COLOR_BG};color:${COLOR_MUTED};font-size:12px;text-align:center;">
-            Loomkeep — géré par toi-même
+            Loomkeep
           </td>
         </tr>
       </table>

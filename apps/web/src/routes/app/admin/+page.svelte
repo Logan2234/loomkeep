@@ -302,18 +302,16 @@
     {/each}
   </div>
 
-  {#if appConfig.version}
-    <p class="text-dim mt-8 text-center text-xs">
-      <a
-        href={GITHUB_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="btn-text font-normal">
-        {m.common_version({ version: appConfig.version })}
-        {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
-          <span class="opacity-60">({appConfig.gitSha})</span>
-        {/if}
-      </a>
-    </p>
-  {/if}
+  <p class="text-dim mt-8 text-center text-xs">
+    <a
+      href={GITHUB_REPO_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.common_version({ version: appConfig.version })}
+      {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+        <span class="opacity-60">({appConfig.gitSha})</span>
+      {/if}
+    </a>
+  </p>
 </div>

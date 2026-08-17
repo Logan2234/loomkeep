@@ -1,3 +1,10 @@
+import type {
+  AdminBackupFileContentDto,
+  AdminBackupFileDto,
+  AdminOverviewDto,
+  SchemaGraphResponseDto,
+  ServiceStatusResponseDto,
+} from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -8,27 +15,13 @@ import {
   Param,
   Post,
 } from "@nestjs/common";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import type {
-  AdminBackupFileContentDto,
-  AdminBackupFileDto,
-  AdminOverviewDto,
-  AdminVersionDto,
-  SchemaGraphResponseDto,
-  ServiceStatusResponseDto,
-} from "@loomkeep/shared";
 import { AdminOnly } from "./admin-only.decorator";
-import { AdminService } from "./admin.service";
 import { AdminOverviewService } from "./admin-overview.service";
+import { AdminService } from "./admin.service";
 import { BackupService } from "./backup.service";
 import { RestoreBackupDto } from "./dto/restore-backup.dto";
 
-// process.cwd() is apps/api in both dev (pnpm --filter) and the Docker image
-// (WORKDIR) — same trick as admin.service.ts's DOCS_DIR.
-const ROOT_PACKAGE_JSON = join(process.cwd(), "..", "..", "package.json");
-
-/** Instance-wide system info: version, backup, dependency health, schema, overview. */
+/** Instance-wide system info: backup, dependency health, schema, overview. */
 @AdminOnly()
 @Controller("admin")
 export class AdminSystemController {
@@ -37,14 +30,6 @@ export class AdminSystemController {
     private readonly overview: AdminOverviewService,
     private readonly backup: BackupService,
   ) {}
-
-  /** The running app's version (monorepo root package.json), for the admin/settings footer. */
-  @Get("version")
-  async getVersion(): Promise<AdminVersionDto> {
-    const raw = await readFile(ROOT_PACKAGE_JSON, "utf-8");
-    const { version } = JSON.parse(raw) as { version: string };
-    return { version };
-  }
 
   /** Persisted backup dumps on disk (BACKUP_DIR), most recent first — up to 7, pruned by the daily job. */
   @Get("backup/files")
