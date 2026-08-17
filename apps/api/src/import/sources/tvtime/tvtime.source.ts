@@ -72,6 +72,7 @@ function toImportMovie(movie: ParsedMovie): ImportMovie {
     title: movie.title,
     year: movie.year,
     watched: movie.watched,
+    watchedAt: movie.watchedAt,
     externalIds: {},
   };
 }

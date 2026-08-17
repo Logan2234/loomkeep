@@ -42,12 +42,14 @@ function toImportShow(entry: SimklShowEntry): ImportShow {
 }
 
 function toImportMovie(entry: SimklMovieEntry): ImportMovie {
+  const watched = entry.status !== "plantowatch";
   return {
     title: entry.movie.title,
     year: entry.movie.year,
     // Movies only ever carry plantowatch/completed/dropped — anything but
     // "still on the watchlist" counts as watched.
-    watched: entry.status !== "plantowatch",
+    watched,
+    watchedAt: watched ? toDateOrNull(entry.last_watched_at) : null,
     externalIds: toExternalIds(entry.movie.ids),
   };
 }

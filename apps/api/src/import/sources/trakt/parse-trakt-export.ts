@@ -97,11 +97,17 @@ export function buildImportMovies(
   for (const entry of history) {
     if (entry.type !== "movie" || !entry.movie) continue;
 
-    if (!byTraktId.has(entry.movie.ids.trakt)) {
+    const watchedAt = toDateOrNull(entry.watched_at);
+    const existing = byTraktId.get(entry.movie.ids.trakt);
+
+    if (existing) {
+      existing.watchedAt = earliest(existing.watchedAt, watchedAt);
+    } else {
       byTraktId.set(entry.movie.ids.trakt, {
         title: entry.movie.title,
         year: entry.movie.year,
         watched: true,
+        watchedAt,
         externalIds: toExternalIds(entry.movie.ids),
       });
     }
@@ -115,6 +121,7 @@ export function buildImportMovies(
         title: entry.movie.title,
         year: entry.movie.year,
         watched: false,
+        watchedAt: null,
         externalIds: toExternalIds(entry.movie.ids),
       });
     }

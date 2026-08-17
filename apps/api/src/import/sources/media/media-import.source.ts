@@ -412,6 +412,8 @@ export abstract class MediaImportSource<
     tally: CommitTally,
   ): Promise<void> {
     const status: EntryStatus = movie.watched ? "COMPLETED" : "PLANNED";
+    // A movie is a single sitting — start and finish share the same instant.
+    const watchedAt = movie.watched ? movie.watchedAt : null;
     const media = await this.mediaItemService.upsertFromSource(
       match.source,
       match.sourceId,
@@ -419,8 +421,14 @@ export abstract class MediaImportSource<
     );
     await this.prisma.libraryEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
-      update: { status },
-      create: { userId, mediaItemId: media.id, status },
+      update: { status, startedAt: watchedAt, finishedAt: watchedAt },
+      create: {
+        userId,
+        mediaItemId: media.id,
+        status,
+        startedAt: watchedAt,
+        finishedAt: watchedAt,
+      },
     });
     if (status === "PLANNED") tally.moviesWatchlist++;
     else tally.moviesImported++;

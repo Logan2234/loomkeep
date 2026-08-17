@@ -26,6 +26,8 @@ export interface ParsedMovie {
   year: number | null;
   /** true → watched (COMPLETED); false → watchlist (PLANNED). */
   watched: boolean;
+  /** Approximate — TV Time stores record-creation time, not real watch time. */
+  watchedAt: Date | null;
 }
 
 export interface ParsedExport {
@@ -157,6 +159,13 @@ function parseShowNames(csv?: string): Map<string, ShowNameEntry> {
  * Deduplicated by title only — the same movie shows up under several `type`
  * rows, sometimes with an empty `release_date`, so keying on title+year would
  * split it and let a later PLANNED row overwrite an earlier COMPLETED one.
+ *
+ * `watch_date` is never populated for movies (only for the episode-summary
+ * rows this same file also carries) — `created_at` on the `watch` row is the
+ * only usable date, same record-creation-time approximation as episodes. The
+ * file also carries a `rewatch_count` per movie, but Loomkeep has nowhere to
+ * put a movie-level rewatch count yet (unlike `EpisodeWatch`, there's no
+ * per-viewing record for movies) — not parsed until that exists.
  */
 function parseMovies(csv?: string): ParsedMovie[] {
   if (!csv) return [];
@@ -170,14 +179,16 @@ function parseMovies(csv?: string): ParsedMovie[] {
     if (!title) continue;
     const year = toYear(row.release_date);
     const watched = row.type?.trim() === "watch";
+    const watchedAt = watched ? toDateOrNull(row.created_at) : null;
 
     const existing = byTitle.get(title.toLowerCase());
 
     if (existing) {
       existing.watched ||= watched;
       if (existing.year === null && year !== null) existing.year = year;
+      existing.watchedAt = earliest(existing.watchedAt, watchedAt);
     } else {
-      byTitle.set(title.toLowerCase(), { title, year, watched });
+      byTitle.set(title.toLowerCase(), { title, year, watched, watchedAt });
     }
   }
 

@@ -157,12 +157,14 @@ describe("buildImportMovies", () => {
         title: "Backrooms",
         year: 2026,
         watched: true,
+        // Earliest of the two watch events, not the last one seen.
+        watchedAt: new Date("2026-06-27T17:46:00.000Z"),
         externalIds: { tmdb: "1083381", tvdb: undefined, imdb: "tt26657236" },
       },
     ]);
   });
 
-  it("adds a watchlist-only movie as not watched", () => {
+  it("adds a watchlist-only movie as not watched, with no watch date", () => {
     const watchlist: TraktWatchlistEntry[] = [
       {
         type: "movie",
@@ -172,6 +174,10 @@ describe("buildImportMovies", () => {
 
     const movies = buildImportMovies([], watchlist);
 
-    expect(movies[0]).toMatchObject({ title: "Dune", watched: false });
+    expect(movies[0]).toMatchObject({
+      title: "Dune",
+      watched: false,
+      watchedAt: null,
+    });
   });
 });

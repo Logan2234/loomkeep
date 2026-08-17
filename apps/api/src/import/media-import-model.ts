@@ -37,6 +37,8 @@ export interface ImportMovie {
   year: number | null;
   /** true → watched (COMPLETED); false → watchlist (PLANNED). */
   watched: boolean;
+  /** Null when unwatched, or when the source has no per-movie watch date. */
+  watchedAt: Date | null;
   externalIds: ExternalIdMap;
 }
 

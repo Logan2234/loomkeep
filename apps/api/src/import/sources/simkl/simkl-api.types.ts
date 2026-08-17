@@ -53,6 +53,7 @@ export interface SimklShowEntry {
 /** One movie entry. */
 export interface SimklMovieEntry {
   status: SimklWatchlistStatus;
+  last_watched_at?: string;
   movie: SimklMovieRef;
 }
 
