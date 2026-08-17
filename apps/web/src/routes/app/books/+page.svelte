@@ -1,5 +1,6 @@
 <script lang="ts">
   import { listBooks } from "$lib/api/client";
+  import { updateBookEntry } from "$lib/api/books";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
@@ -9,6 +10,7 @@
     BOOK_STATUS_LABELS,
     BOOK_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { toast } from "$lib/toast.svelte";
   import { Domain, type BookEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = BOOK_STATUS_ORDER.map((value) => ({
@@ -27,6 +29,16 @@
     { label: "Commencé récemment", value: "started" },
     { label: "Statut", value: "status" },
   ];
+
+  async function toggleFavorite(entry: BookEntryDto, next: boolean) {
+    entry.favorite = next; // optimistic
+    try {
+      await updateBookEntry(entry.id, { favorite: next });
+    } catch {
+      entry.favorite = !next;
+      toast.error("Mise à jour impossible");
+    }
+  }
 
   function load(params: LibraryLoadParams) {
     return listBooks({
@@ -62,7 +74,8 @@
       href={`/app/books/${entry.book.sourceId}`}
       src={entry.book.coverUrl}
       title={entry.book.title}
-      favorite={entry.favorite}>
+      favorite={entry.favorite}
+      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
       {#snippet meta()}
         <span class="timecode text-xs">
           {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}

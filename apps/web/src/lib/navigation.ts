@@ -267,7 +267,6 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     href: "/app/profile",
     label: m.nav_profile(),
     icon: "user",
-    social: true,
     match: (p) => p === "/app/profile",
   },
   settings: {
