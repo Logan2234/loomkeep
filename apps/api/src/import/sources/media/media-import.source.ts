@@ -10,12 +10,17 @@ import type {
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
-import { Domain, entryStatusFromProgress } from "@loomkeep/shared";
+import {
+  Domain,
+  entryStatusFromProgress,
+  ReviewTargetType,
+} from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import type {
   CommitDecisions,
   ImportReq,
@@ -74,6 +79,7 @@ export abstract class MediaImportSource<
     protected readonly prisma: PrismaService,
     protected readonly mediaItemService: MediaItemService,
     protected readonly tmdb: TmdbProvider,
+    protected readonly reviews: ReviewService,
   ) {}
 
   abstract parseInput(input: string, options: Record<string, boolean>): TParsed;
@@ -107,14 +113,17 @@ export abstract class MediaImportSource<
       const match = await this.resolveShowMatch(show);
       if (!match) unresolved++;
       const n = show.episodes.length;
+      const subtitle = [
+        n > 0
+          ? `${n} épisode${n > 1 ? "s" : ""} vu${n > 1 ? "s" : ""}`
+          : "Watchlist",
+        ...extraParts(show.rating, show.favorite, 0),
+      ].join(" · ");
       const item: ImportPlanItem = {
         key: showKey(show),
         title: match?.title ?? show.title,
         sourceTitle: show.title,
-        subtitle:
-          n > 0
-            ? `${n} épisode${n > 1 ? "s" : ""} vu${n > 1 ? "s" : ""}`
-            : "Watchlist",
+        subtitle,
         coverUrl: match?.coverUrl ?? null,
         match,
         include: match !== null,
@@ -128,11 +137,15 @@ export abstract class MediaImportSource<
     for (const movie of parsed.movies) {
       const match = await this.resolveMovieMatch(movie);
       if (!match) unresolved++;
+      const subtitleParts = [
+        movie.year ? String(movie.year) : null,
+        ...extraParts(movie.rating, movie.favorite, movie.rewatchedAt.length),
+      ].filter((p): p is string => p !== null);
       const item: ImportPlanItem = {
         key: movieKey(movie),
         title: match?.title ?? movie.title,
         sourceTitle: movie.title,
-        subtitle: movie.year ? String(movie.year) : null,
+        subtitle: subtitleParts.length > 0 ? subtitleParts.join(" · ") : null,
         coverUrl: match?.coverUrl ?? null,
         match,
         include: match !== null,
@@ -419,19 +432,57 @@ export abstract class MediaImportSource<
       match.sourceId,
       match.type,
     );
-    await this.prisma.libraryEntry.upsert({
+    // Only ever turns favorite ON — an importer never has grounds to unset
+    // something the user set manually in the app.
+    const favorite = movie.favorite === true;
+    const entry = await this.prisma.libraryEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
-      update: { status, startedAt: watchedAt, finishedAt: watchedAt },
+      update: {
+        status,
+        startedAt: watchedAt,
+        finishedAt: watchedAt,
+        favorite: favorite ? true : undefined,
+      },
       create: {
         userId,
         mediaItemId: media.id,
         status,
         startedAt: watchedAt,
         finishedAt: watchedAt,
+        favorite,
       },
     });
+
+    if (movie.watched && movie.rewatchedAt.length > 0) {
+      await this.recordMovieReplays(entry.id, movie.rewatchedAt);
+    }
+
+    if (movie.rating !== null && movie.rating !== undefined) {
+      await this.reviews.setRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        media.id,
+        movie.rating,
+      );
+    }
+
     if (status === "PLANNED") tally.moviesWatchlist++;
     else tally.moviesImported++;
+  }
+
+  /** Create the missing replay rows for a movie; skip if already imported. */
+  private async recordMovieReplays(
+    libraryEntryId: string,
+    dates: Date[],
+  ): Promise<void> {
+    const existing = await this.prisma.movieReplay.count({
+      where: { libraryEntryId },
+    });
+    if (existing > 0) return; // Idempotent re-run.
+
+    await this.prisma.movieReplay.createMany({
+      data: dates.map((finishedAt) => ({ libraryEntryId, finishedAt })),
+    });
   }
 
   /** Persist the series (on-demand cache) and index its stored episodes. */
@@ -505,18 +556,49 @@ export abstract class MediaImportSource<
     if (!ref) return; // upsertFromSource ran just before, so this always exists.
 
     const { startedAt, finishedAt } = watchWindow(show, status === "COMPLETED");
+    // Only ever turns favorite ON — an importer never has grounds to unset
+    // something the user set manually in the app.
+    const favorite = show.favorite === true;
     await this.prisma.libraryEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
-      update: { status, startedAt, finishedAt },
+      update: {
+        status,
+        startedAt,
+        finishedAt,
+        favorite: favorite ? true : undefined,
+      },
       create: {
         userId,
         mediaItemId: ref.mediaItemId,
         status,
         startedAt,
         finishedAt,
+        favorite,
       },
     });
+
+    if (show.rating !== null && show.rating !== undefined) {
+      await this.reviews.setRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        ref.mediaItemId,
+        show.rating,
+      );
+    }
   }
+}
+
+/** Extra badges surfaced in the plan preview: rewatch count, rating, favorite. */
+function extraParts(
+  rating: number | null | undefined,
+  favorite: boolean | undefined,
+  rewatchCount: number,
+): string[] {
+  const parts: string[] = [];
+  if (rewatchCount > 0) parts.push(`revu ${rewatchCount + 1}×`);
+  if (rating !== null && rating !== undefined) parts.push(`★ ${rating}/10`);
+  if (favorite) parts.push("♥ favori");
+  return parts;
 }
 
 /** Stable per-item id carried through analyze → review → commit. */

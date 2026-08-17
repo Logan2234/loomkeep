@@ -30,6 +30,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
       status: overrides.airingStatus ?? "Ended",
       externalIds: [{ source: "TMDB", externalId: `tmdb-${id}` }],
     },
+    replays: overrides.replays ?? [],
   };
 }
 

@@ -60,3 +60,36 @@ export interface TraktWatchlistEntry {
   movie?: TraktMovieRef;
   show?: TraktShowRef;
 }
+
+/**
+ * One row of `lists-favorites.json` — Trakt implements "favorites" as just
+ * another system list, so it's the same shape as {@link TraktWatchlistEntry}.
+ * Also unconfirmed against real data (empty in every sample export seen).
+ */
+export type TraktFavoriteEntry = TraktWatchlistEntry;
+
+/**
+ * One row of `ratings-movies.json` — confirmed against a real export
+ * (`{rated_at, rating, type: "movie", movie: {...}}`, rating 1-10).
+ */
+export interface TraktMovieRatingEntry {
+  rated_at: string;
+  rating: number;
+  type: "movie";
+  movie: TraktMovieRef;
+}
+
+/**
+ * One row of `ratings-shows.json` — **not** confirmed against real data
+ * (empty in every sample export seen so far); inferred from the same
+ * `{rated_at, rating, type, ...ref}` shape {@link TraktMovieRatingEntry} was
+ * confirmed with, and from Trakt's live API. Treat as best-effort until
+ * verified. `ratings-seasons.json`/`ratings-episodes.json` aren't modeled
+ * yet — season/episode-level ratings need a further increment.
+ */
+export interface TraktShowRatingEntry {
+  rated_at: string;
+  rating: number;
+  type: "show";
+  show: TraktShowRef;
+}

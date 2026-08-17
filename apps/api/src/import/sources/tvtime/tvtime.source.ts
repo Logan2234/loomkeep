@@ -3,6 +3,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import type {
   ImportMovie,
   ImportShow,
@@ -37,8 +38,9 @@ export class TvTimeImportSource extends MediaImportSource<ParsedImport> {
     prisma: PrismaService,
     mediaItemService: MediaItemService,
     tmdb: TmdbProvider,
+    reviews: ReviewService,
   ) {
-    super(prisma, mediaItemService, tmdb);
+    super(prisma, mediaItemService, tmdb, reviews);
   }
 
   parseInput(input: string, options: Record<string, boolean>): ParsedImport {
@@ -73,6 +75,7 @@ function toImportMovie(movie: ParsedMovie): ImportMovie {
     year: movie.year,
     watched: movie.watched,
     watchedAt: movie.watchedAt,
+    rewatchedAt: movie.rewatchedAt,
     externalIds: {},
   };
 }

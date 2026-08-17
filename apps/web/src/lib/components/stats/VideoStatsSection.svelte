@@ -85,7 +85,7 @@
 {:else if loading}
   <StatTilesSkeleton />
 {:else if video}
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
     <StatTile
       value={hours}
       unit="h"
@@ -103,6 +103,7 @@
       value={video.avgEpisodeRuntimeMin ?? "—"}
       unit="min"
       label="Durée moy. / épisode" />
+    <StatTile value={video.moviesRewatchedCount} label="Films revus" />
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">

@@ -61,6 +61,8 @@ describe("buildImportShows", () => {
       {
         title: "Record of Ragnarok",
         externalIds: { tmdb: "114868", tvdb: "393810", imdb: "tt13676344" },
+        favorite: false,
+        rating: null,
         episodes: [
           {
             season: 2,
@@ -102,6 +104,8 @@ describe("buildImportShows", () => {
       {
         title: "Planned Show",
         externalIds: { tmdb: undefined, tvdb: undefined, imdb: undefined },
+        favorite: false,
+        rating: null,
         episodes: [],
       },
     ]);
@@ -128,7 +132,7 @@ describe("buildImportShows", () => {
 });
 
 describe("buildImportMovies", () => {
-  it("marks a movie with a history entry as watched, deduping repeat watches", () => {
+  it("marks a movie with a history entry as watched, folding repeat watches into rewatchedAt", () => {
     const history: TraktHistoryEntry[] = [
       {
         watched_at: "2026-06-27T17:46:00.000Z",
@@ -157,9 +161,13 @@ describe("buildImportMovies", () => {
         title: "Backrooms",
         year: 2026,
         watched: true,
-        // Earliest of the two watch events, not the last one seen.
+        // Earliest of the two watch events becomes watchedAt, the later one
+        // a rewatch — not deduped away, unlike the show/episode case above.
         watchedAt: new Date("2026-06-27T17:46:00.000Z"),
+        rewatchedAt: [new Date("2026-07-10T00:00:00.000Z")],
         externalIds: { tmdb: "1083381", tvdb: undefined, imdb: "tt26657236" },
+        favorite: false,
+        rating: null,
       },
     ]);
   });
@@ -178,6 +186,38 @@ describe("buildImportMovies", () => {
       title: "Dune",
       watched: false,
       watchedAt: null,
+      rewatchedAt: [],
     });
+  });
+
+  it("marks a movie as favorited and carries its rating", () => {
+    const history: TraktHistoryEntry[] = [
+      {
+        watched_at: "2026-06-27T17:46:00.000Z",
+        type: "movie",
+        movie: { title: "Dune", year: 2021, ids: { trakt: 99 } },
+      },
+    ];
+
+    const movies = buildImportMovies(
+      history,
+      [],
+      [
+        {
+          type: "movie",
+          movie: { title: "Dune", year: 2021, ids: { trakt: 99 } },
+        },
+      ],
+      [
+        {
+          rated_at: "2026-08-01T00:00:00.000Z",
+          rating: 9,
+          type: "movie",
+          movie: { title: "Dune", year: 2021, ids: { trakt: 99 } },
+        },
+      ],
+    );
+
+    expect(movies[0]).toMatchObject({ favorite: true, rating: 9 });
   });
 });

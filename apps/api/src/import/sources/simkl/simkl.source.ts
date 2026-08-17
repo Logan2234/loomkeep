@@ -8,6 +8,7 @@ import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
 import { MediaImportSource } from "../media/media-import.source";
 import { buildImportMovies, buildImportShows } from "./parse-simkl";
@@ -40,10 +41,11 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     prisma: PrismaService,
     mediaItemService: MediaItemService,
     tmdb: TmdbProvider,
+    reviews: ReviewService,
     private readonly configService: ConfigService,
     private readonly quota: QuotaTrackerService,
   ) {
-    super(prisma, mediaItemService, tmdb);
+    super(prisma, mediaItemService, tmdb, reviews);
   }
 
   parseInput(input: string): SimklParsed {

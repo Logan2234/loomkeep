@@ -26,8 +26,10 @@ export interface ParsedMovie {
   year: number | null;
   /** true → watched (COMPLETED); false → watchlist (PLANNED). */
   watched: boolean;
-  /** Approximate — TV Time stores record-creation time, not real watch time. */
+  /** Earliest watch. Approximate — TV Time stores record-creation time, not real watch time. */
   watchedAt: Date | null;
+  /** Extra watch dates beyond `watchedAt` (rewatches), oldest first. */
+  rewatchedAt: Date[];
 }
 
 export interface ParsedExport {
@@ -154,45 +156,73 @@ function parseShowNames(csv?: string): Map<string, ShowNameEntry> {
   return map;
 }
 
+/** Movie accumulator while scanning tracking-prod-records.csv, before dates are sorted. */
+interface MutableMovie {
+  title: string;
+  year: number | null;
+  watched: boolean;
+  dates: Date[];
+}
+
 /**
- * Movies from tracking-prod-records.csv: watched (a `watch` row) vs watchlist.
- * Deduplicated by title only — the same movie shows up under several `type`
- * rows, sometimes with an empty `release_date`, so keying on title+year would
- * split it and let a later PLANNED row overwrite an earlier COMPLETED one.
+ * Movies from tracking-prod-records.csv: watched (`watch`/`rewatch` rows) vs
+ * watchlist. Deduplicated by title only — the same movie shows up under
+ * several `type` rows, sometimes with an empty `release_date`, so keying on
+ * title+year would split it and let a later PLANNED row overwrite an earlier
+ * COMPLETED one.
  *
  * `watch_date` is never populated for movies (only for the episode-summary
- * rows this same file also carries) — `created_at` on the `watch` row is the
- * only usable date, same record-creation-time approximation as episodes. The
- * file also carries a `rewatch_count` per movie, but Loomkeep has nowhere to
- * put a movie-level rewatch count yet (unlike `EpisodeWatch`, there's no
- * per-viewing record for movies) — not parsed until that exists.
+ * rows this same file also carries) — `created_at` is the only usable date,
+ * same record-creation-time approximation as episodes. `type` disambiguates:
+ * `watch` is the first watch, `rewatch` is one row per subsequent rewatch
+ * (its own `created_at`, `rewatch_count` incrementing 1, 2, 3…), and
+ * `rewatch_count` duplicates the latest `rewatch` row as a summary — not a
+ * new event, skipped. `follow`/`towatch` carry no watch date.
  */
 function parseMovies(csv?: string): ParsedMovie[] {
   if (!csv) return [];
 
-  const byTitle = new Map<string, ParsedMovie>();
+  const byTitle = new Map<string, MutableMovie>();
 
   for (const row of parseCsv(csv)) {
     if (row.entity_type?.trim() !== "movie") continue;
 
     const title = row.movie_name?.trim();
     if (!title) continue;
+    const type = row.type?.trim();
+    if (type === "rewatch_count") continue; // Duplicate summary row.
+
     const year = toYear(row.release_date);
-    const watched = row.type?.trim() === "watch";
+    const watched = type === "watch" || type === "rewatch";
     const watchedAt = watched ? toDateOrNull(row.created_at) : null;
 
-    const existing = byTitle.get(title.toLowerCase());
+    const key = title.toLowerCase();
+    const existing = byTitle.get(key);
 
     if (existing) {
       existing.watched ||= watched;
       if (existing.year === null && year !== null) existing.year = year;
-      existing.watchedAt = earliest(existing.watchedAt, watchedAt);
+      if (watchedAt) existing.dates.push(watchedAt);
     } else {
-      byTitle.set(title.toLowerCase(), { title, year, watched, watchedAt });
+      byTitle.set(key, {
+        title,
+        year,
+        watched,
+        dates: watchedAt ? [watchedAt] : [],
+      });
     }
   }
 
-  return [...byTitle.values()];
+  return [...byTitle.values()].map((m) => {
+    const sorted = [...m.dates].sort((a, b) => a.getTime() - b.getTime());
+    return {
+      title: m.title,
+      year: m.year,
+      watched: m.watched,
+      watchedAt: sorted[0] ?? null,
+      rewatchedAt: sorted.slice(1),
+    };
+  });
 }
 
 function toInt(value: string | undefined): number | null {

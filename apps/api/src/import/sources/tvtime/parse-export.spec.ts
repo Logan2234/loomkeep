@@ -111,6 +111,7 @@ describe("parseTvTimeExport", () => {
       year: 2022,
       watched: true,
       watchedAt: new Date("2022-04-10T12:00:00.000Z"),
+      rewatchedAt: [],
     });
     const dune = movies.find((m) => m.title === "Dune")!;
     expect(dune).toEqual({
@@ -118,6 +119,35 @@ describe("parseTvTimeExport", () => {
       year: 2021,
       watched: false,
       watchedAt: null,
+      rewatchedAt: [],
     });
+  });
+
+  it("folds `rewatch` rows into rewatchedAt and ignores the `rewatch_count` summary row", () => {
+    // Mirrors a real export: follow → watch → rewatch(1) → rewatch(2) →
+    // rewatch_count (a duplicate of the latest rewatch row, not a new event).
+    const recordsCsv = [
+      RECORDS_HEADER,
+      "follow,movie,Coherence,2013-09-19 00:00:00,2020-04-13 15:43:02",
+      "watch,movie,Coherence,,2020-04-13 15:43:08",
+      "rewatch,movie,Coherence,,2023-06-25 11:35:29",
+      "rewatch,movie,Coherence,,2024-06-30 09:37:30",
+      "rewatch_count,movie,Coherence,,2024-06-30 09:37:30",
+    ].join("\n");
+
+    const { movies } = parseTvTimeExport({ recordsCsv });
+
+    expect(movies).toEqual([
+      {
+        title: "Coherence",
+        year: 2013,
+        watched: true,
+        watchedAt: new Date("2020-04-13T15:43:08.000Z"),
+        rewatchedAt: [
+          new Date("2023-06-25T11:35:29.000Z"),
+          new Date("2024-06-30T09:37:30.000Z"),
+        ],
+      },
+    ]);
   });
 });

@@ -9,6 +9,7 @@ import type {
   LibraryEntry,
   MediaExternalId,
   MediaItem,
+  MovieReplay,
   Prisma,
 } from "@prisma/client";
 import type {
@@ -21,6 +22,7 @@ import type {
   MediaDetailDto,
   MediaItemDto,
   MediaType,
+  MovieReplayDto,
   PagedResult,
   ProgressDto,
 } from "@loomkeep/shared";
@@ -32,17 +34,18 @@ import { ReviewService } from "../reviews/review.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
+import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { buildCalendarIcs } from "./ics.util";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
-// Reused include: entries always need the media + its external IDs (sourceId).
-// `satisfies` (not a type annotation) keeps the literal shape so Prisma can
-// still infer the joined payload type from it.
+// Reused include: entries always need the media + its external IDs (sourceId),
+// plus their replay history (movies only in practice), most recent first.
 const ENTRY_INCLUDE = {
   mediaItem: { include: { externalIds: true } },
+  replays: { orderBy: { finishedAt: "desc" } },
 } satisfies Prisma.LibraryEntryInclude;
 
 /** LibraryEntry joined with its media and the media's external IDs. */
@@ -1016,7 +1019,66 @@ export class LibraryService {
       progress,
       ownershipStatus: entry.ownershipStatus,
       ownershipSource: entry.ownershipSource,
+      replays: entry.replays.map(toReplayDto),
     };
+  }
+
+  /**
+   * Log a completed rewatch (a completion beyond the entry's first one).
+   * Movies only — series/anime rewatches are tracked per-episode via
+   * EpisodeWatch instead.
+   */
+  async addReplay(
+    userId: string,
+    entryId: string,
+    dto: AddMovieReplayDto,
+  ): Promise<LibraryEntryDto> {
+    const entry = await this.assertEntryOwnership(userId, entryId);
+    const media = await this.prisma.mediaItem.findUniqueOrThrow({
+      where: { id: entry.mediaItemId },
+      select: { type: true },
+    });
+
+    if (media.type !== "MOVIE") {
+      throw new BadRequestException(
+        "Only movies can have replays — series/anime rewatches are tracked per-episode",
+      );
+    }
+
+    await this.prisma.movieReplay.create({
+      data: {
+        libraryEntryId: entryId,
+        finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
+      },
+    });
+
+    await this.activity.emit({
+      userId,
+      type: ActivityType.REWATCHED,
+      domain: "MEDIA",
+      targetType: ReviewTargetType.MEDIA,
+      targetId: entry.mediaItemId,
+      homeFeed: true,
+    });
+
+    return this.getEntry(userId, entryId);
+  }
+
+  async deleteReplay(userId: string, replayId: string): Promise<void> {
+    const replay = await this.prisma.movieReplay.findUnique({
+      where: { id: replayId },
+      include: { libraryEntry: true },
+    });
+
+    if (!replay) {
+      throw new NotFoundException("Replay not found");
+    }
+
+    if (replay.libraryEntry.userId !== userId) {
+      throw new ForbiddenException("This replay belongs to another user");
+    }
+
+    await this.prisma.movieReplay.delete({ where: { id: replayId } });
   }
 
   /**
@@ -1185,4 +1247,8 @@ function toMediaItemDto(
 
 function toDateOrNull(value: string | null): Date | null {
   return value === null ? null : new Date(value);
+}
+
+function toReplayDto(replay: MovieReplay): MovieReplayDto {
+  return { id: replay.id, finishedAt: replay.finishedAt.toISOString() };
 }

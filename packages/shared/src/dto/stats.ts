@@ -144,6 +144,8 @@ export interface VideoStatsDto {
   ghostCount: number;
   /** Most episode-watch events within any rolling 24h window. */
   longestBingeCount: number;
+  /** Completed movie rewatches beyond each movie's first completion. */
+  moviesRewatchedCount: number;
 }
 
 /** Staleness bucket for a WATCHING series/anime — mutually exclusive. */

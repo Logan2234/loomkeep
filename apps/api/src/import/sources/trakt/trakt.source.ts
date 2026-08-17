@@ -2,16 +2,23 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
 import { readZipEntriesMatching } from "../../zip";
 import { MediaImportSource } from "../media/media-import.source";
 import { buildImportMovies, buildImportShows } from "./parse-trakt-export";
 import type {
+  TraktFavoriteEntry,
   TraktHistoryEntry,
+  TraktMovieRatingEntry,
+  TraktShowRatingEntry,
   TraktWatchlistEntry,
 } from "./trakt-export.types";
 
 const WATCHLIST_FILE = "lists-watchlist.json";
+const FAVORITES_FILE = "lists-favorites.json";
+const MOVIE_RATINGS_FILE = "ratings-movies.json";
+const SHOW_RATINGS_FILE = "ratings-shows.json";
 
 /**
  * Trakt's own account data export (`.zip` of many small JSON files, from
@@ -28,28 +35,33 @@ export class TraktImportSource extends MediaImportSource<ParsedImport> {
     prisma: PrismaService,
     mediaItemService: MediaItemService,
     tmdb: TmdbProvider,
+    reviews: ReviewService,
   ) {
-    super(prisma, mediaItemService, tmdb);
+    super(prisma, mediaItemService, tmdb, reviews);
   }
 
   parseInput(input: string): ParsedImport {
-    const { history, watchlist } = extractFiles(Buffer.from(input, "base64"));
+    const { history, watchlist, favorites, movieRatings, showRatings } =
+      extractFiles(Buffer.from(input, "base64"));
     return {
       source: this.id,
-      shows: buildImportShows(history, watchlist),
-      movies: buildImportMovies(history, watchlist),
+      shows: buildImportShows(history, watchlist, favorites, showRatings),
+      movies: buildImportMovies(history, watchlist, favorites, movieRatings),
     };
   }
 }
 
 /**
  * Decode + validate the archive and extract the watch-history parts + the
- * (optional) watchlist. Throws {@link BadRequestException} on a bad or
- * incomplete archive.
+ * (optional) watchlist/favorites/ratings. Throws {@link BadRequestException}
+ * on a bad or incomplete archive.
  */
 function extractFiles(input: Buffer): {
   history: TraktHistoryEntry[];
   watchlist: TraktWatchlistEntry[];
+  favorites: TraktFavoriteEntry[];
+  movieRatings: TraktMovieRatingEntry[];
+  showRatings: TraktShowRatingEntry[];
 } {
   if (input.length === 0) {
     throw new BadRequestException("The uploaded archive is empty");
@@ -60,7 +72,12 @@ function extractFiles(input: Buffer): {
   try {
     entries = readZipEntriesMatching(
       input,
-      (name) => name.startsWith("watched-history") || name === WATCHLIST_FILE,
+      (name) =>
+        name.startsWith("watched-history") ||
+        name === WATCHLIST_FILE ||
+        name === FAVORITES_FILE ||
+        name === MOVIE_RATINGS_FILE ||
+        name === SHOW_RATINGS_FILE,
     );
   } catch (error) {
     throw new BadRequestException(
@@ -81,22 +98,32 @@ function extractFiles(input: Buffer): {
     );
   }
 
-  let history: TraktHistoryEntry[];
-  let watchlist: TraktWatchlistEntry[];
-
   try {
-    history = historyFiles.flatMap(
+    const history = historyFiles.flatMap(
       ([, content]) => JSON.parse(content) as TraktHistoryEntry[],
     );
-    const watchlistJson = entries.get(WATCHLIST_FILE);
-    watchlist = watchlistJson
-      ? (JSON.parse(watchlistJson) as TraktWatchlistEntry[])
-      : [];
+    return {
+      history,
+      watchlist: parseJsonEntry<TraktWatchlistEntry[]>(entries, WATCHLIST_FILE),
+      favorites: parseJsonEntry<TraktFavoriteEntry[]>(entries, FAVORITES_FILE),
+      movieRatings: parseJsonEntry<TraktMovieRatingEntry[]>(
+        entries,
+        MOVIE_RATINGS_FILE,
+      ),
+      showRatings: parseJsonEntry<TraktShowRatingEntry[]>(
+        entries,
+        SHOW_RATINGS_FILE,
+      ),
+    };
   } catch {
     throw new BadRequestException(
       "Could not read the archive — one of its JSON files is malformed",
     );
   }
+}
 
-  return { history, watchlist };
+/** Parses an optional JSON entry from the archive; `[]` when absent. */
+function parseJsonEntry<T>(entries: Map<string, string>, name: string): T {
+  const json = entries.get(name);
+  return json ? (JSON.parse(json) as T) : ([] as T);
 }

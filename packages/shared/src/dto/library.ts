@@ -41,6 +41,15 @@ export interface LibraryEntryDto {
   ownershipStatus: MediaOwnershipStatus;
   /** Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise. */
   ownershipSource: string | null;
+  /** Completed rewatches beyond the first, movies only, most recent first. */
+  replays: MovieReplayDto[];
+}
+
+/** One completed rewatch of a movie, beyond the entry's own (first) completion. */
+export interface MovieReplayDto {
+  id: string;
+  /** ISO date the rewatch was completed. */
+  finishedAt: string;
 }
 
 /**

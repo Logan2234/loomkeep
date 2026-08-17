@@ -125,6 +125,7 @@ describe("buildImportMovies", () => {
         year: 1972,
         watched: true,
         watchedAt: new Date("1994-09-01T16:00:00Z"),
+        rewatchedAt: [],
         externalIds: { tmdb: "238", tvdb: undefined, imdb: "tt0068646" },
       },
     ]);

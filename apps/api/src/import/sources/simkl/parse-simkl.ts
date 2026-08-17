@@ -50,6 +50,9 @@ function toImportMovie(entry: SimklMovieEntry): ImportMovie {
     // "still on the watchlist" counts as watched.
     watched,
     watchedAt: watched ? toDateOrNull(entry.last_watched_at) : null,
+    // Simkl's free tier has no per-movie rewatch signal (that needs the
+    // Pro/VIP-only `allow_rewatch` flag) — every watched movie counts once.
+    rewatchedAt: [],
     externalIds: toExternalIds(entry.movie.ids),
   };
 }

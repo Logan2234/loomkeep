@@ -80,6 +80,7 @@ function makeService() {
     prisma as never,
     mediaItemService as never,
     tmdb as never,
+    {} as never,
   );
   const service = new ImportJobService([source], prisma as never, {} as never);
   return { prisma, mediaItemService, tmdb, service };
