@@ -33,6 +33,7 @@ interface SimklParsed extends ParsedImport {
 @Injectable()
 export class SimklImportSource extends MediaImportSource<SimklParsed> {
   readonly id = "simkl";
+  readonly requiredEnvKeys = ["SIMKL_CLIENT_ID", "SIMKL_CLIENT_SECRET"];
 
   constructor(
     prisma: PrismaService,

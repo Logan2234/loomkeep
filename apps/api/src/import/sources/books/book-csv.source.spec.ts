@@ -84,6 +84,7 @@ function setup(
   const service = new ImportJobService(
     [source],
     prisma as unknown as PrismaService,
+    {} as never,
   );
   return { service, bookItemService, upsert, createMany, deleteMany, reviews };
 }

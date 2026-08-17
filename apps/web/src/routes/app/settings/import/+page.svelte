@@ -1,11 +1,16 @@
 <script lang="ts">
+  import { getImportAvailability } from "$lib/api/client";
   import Icon from "$lib/components/Icon.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isDomainEnabled } from "$lib/domains";
   import { m } from "$lib/paraglide/messages.js";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
-  import { Domain, type ImportSource } from "@loomkeep/shared";
+  import {
+    Domain,
+    type ImportAvailabilityDto,
+    type ImportSource,
+  } from "@loomkeep/shared";
 
   const groups = Object.entries(IMPORTS_DEFINITION).reduce(
     (prev, [importType, descriptor]) => {
@@ -22,6 +27,17 @@
     },
     {} as Record<Domain, (ImportSourceDescriptor & { type: ImportSource })[]>,
   );
+
+  // A source absent from this map needs no server config of its own, so it
+  // reads as available until proven otherwise — avoids flashing every
+  // configured source as unavailable while the check is in flight.
+  let availability = $state<ImportAvailabilityDto>({});
+
+  $effect(() => {
+    getImportAvailability()
+      .then((a) => (availability = a))
+      .catch(() => {});
+  });
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
@@ -49,7 +65,9 @@
           </p>
           <div class="flex flex-col gap-3">
             {#each sources as source (source.label)}
-              {#if source.href}
+              {@const available =
+                !!source.href && availability[source.type] !== false}
+              {#if available}
                 <a
                   href={source.href}
                   class="border-border bg-bg hover:border-accent hover:bg-surface-2 flex items-center gap-3 rounded-lg border p-4 transition-colors">
@@ -74,7 +92,7 @@
                   </span>
                   <span
                     class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                    Bientôt
+                    {source.href ? "Indisponible" : "Bientôt"}
                   </span>
                 </div>
               {/if}

@@ -122,6 +122,15 @@ export interface ImportJobDto {
   error: string | null;
 }
 
+/**
+ * `GET /import/availability` response — whether each source that depends on
+ * its own optional server config (a provider API key/OAuth app, distinct
+ * from the app's core catalogue keys) is actually usable on this deployment.
+ * A source absent from the map needs no config of its own and is always
+ * available; `false` means the admin hasn't set the required env var(s) yet.
+ */
+export type ImportAvailabilityDto = Partial<Record<ImportSource, boolean>>;
+
 /** Body of `POST /import/:source/analyze`. */
 export interface ImportAnalyzeRequest {
   /**

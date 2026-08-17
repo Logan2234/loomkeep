@@ -37,6 +37,7 @@ interface TraktParsed extends ParsedImport {
 @Injectable()
 export class TraktImportSource extends MediaImportSource<TraktParsed> {
   readonly id = "trakt";
+  readonly requiredEnvKeys = ["TRAKT_CLIENT_ID"];
 
   constructor(
     prisma: PrismaService,

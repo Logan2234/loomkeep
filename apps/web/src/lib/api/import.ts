@@ -1,10 +1,16 @@
 import type {
   ImportAnalyzeRequest,
+  ImportAvailabilityDto,
   ImportCommitRequest,
   ImportJobDto,
   ImportSource,
 } from "@loomkeep/shared";
 import { request } from "./core";
+
+/** Which config-dependent sources are actually usable on this deployment. */
+export function getImportAvailability(): Promise<ImportAvailabilityDto> {
+  return request("/import/availability");
+}
 
 /** Analyse an export → reconciliation plan (writes nothing). Poll the job. */
 export function analyzeImport(

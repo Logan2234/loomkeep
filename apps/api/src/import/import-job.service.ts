@@ -1,5 +1,6 @@
 import type {
   ImportAnalyzeRequest,
+  ImportAvailabilityDto,
   ImportCommitRequest,
   ImportJobDto,
   ImportPlan,
@@ -14,6 +15,7 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -58,8 +60,29 @@ export class ImportJobService {
   constructor(
     @Inject(IMPORT_SOURCES) sources: ImportReq[],
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
+  }
+
+  /**
+   * Which sources depending on their own optional server config
+   * ({@link ImportReq.requiredEnvKeys}) are actually usable right now — a
+   * source with none of its own is simply absent from the map (always
+   * available). Cheap enough to compute on every call; nothing here changes
+   * without a server restart.
+   */
+  getAvailability(): ImportAvailabilityDto {
+    const availability: ImportAvailabilityDto = {};
+
+    for (const source of this.sources.values()) {
+      if (!source.requiredEnvKeys) continue;
+      availability[source.id] = source.requiredEnvKeys.every((key) =>
+        Boolean(this.config.get<string>(key)),
+      );
+    }
+
+    return availability;
   }
 
   /**

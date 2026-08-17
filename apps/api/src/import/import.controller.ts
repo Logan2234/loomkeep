@@ -1,5 +1,9 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-import type { ImportJobDto, ImportSource } from "@loomkeep/shared";
+import type {
+  ImportAvailabilityDto,
+  ImportJobDto,
+  ImportSource,
+} from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { AnalyzeImportDto } from "./dto/analyze-import.dto";
@@ -14,6 +18,17 @@ import { ImportJobService } from "./import-job.service";
 @Controller("import")
 export class ImportController {
   constructor(private readonly jobs: ImportJobService) {}
+
+  /**
+   * Which config-dependent sources (their own provider key/OAuth app, not the
+   * app's core catalogue keys) are actually usable on this deployment — lets
+   * the import list grey out a built-but-unconfigured source instead of
+   * sending the user into a wizard that can only fail.
+   */
+  @Get("availability")
+  availability(): ImportAvailabilityDto {
+    return this.jobs.getAvailability();
+  }
 
   /** Analyse an export and build a reconciliation plan (writes nothing). */
   @Post(":source/analyze")

@@ -48,6 +48,14 @@ export interface ImportReq<TParsed = unknown> {
   readonly searchDomain: Domain;
   /** Whether `commit` honours the destructive overwrite flag. */
   readonly supportsOverwrite: boolean;
+  /**
+   * Env var(s) that must all be set for this source to work at all — its own
+   * provider API key/OAuth app, distinct from the app's core catalogue keys
+   * (TMDB, Google Books…) every source already depends on implicitly.
+   * Omitted when the source needs no config of its own (e.g. TV Time's CSV
+   * parsing); {@link ImportJobService.getAvailability} reports it available.
+   */
+  readonly requiredEnvKeys?: string[];
 
   /**
    * Parse the raw string input (CSV text, a Steam id, or a base64 ZIP — per the
