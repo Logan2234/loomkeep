@@ -10,6 +10,7 @@ import { ImportController } from "./import.controller";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
 import { SteamImportSource } from "./sources/steam/steam.source";
+import { TraktImportSource } from "./sources/trakt/trakt.source";
 import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
 
 /**
@@ -32,6 +33,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
   providers: [
     ImportJobService,
     TvTimeImportSource,
+    TraktImportSource,
     StoryGraphImportSource,
     GoodreadsImportSource,
     SteamImportSource,
@@ -40,6 +42,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
       useFactory: (...sources: ImportReq[]) => sources,
       inject: [
         TvTimeImportSource,
+        TraktImportSource,
         StoryGraphImportSource,
         GoodreadsImportSource,
         SteamImportSource,

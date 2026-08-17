@@ -6,9 +6,11 @@ export type ImportSourceDescriptor = {
   description: string;
   href: string;
   input: {
-    type: "csv" | "zip" | "steamId";
+    type: "csv" | "zip" | "steamId" | "traktUsername";
     /** File `accept` attribute, for csv/zip inputs. */
     accept?: string;
+    /** Placeholder for non-file inputs; falls back to a generic hint. */
+    placeholder?: string;
   };
   noun: {
     one: string;

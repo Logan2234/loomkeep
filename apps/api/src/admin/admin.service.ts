@@ -157,6 +157,24 @@ export class AdminService {
         quotaLimit: { max: 100_000, window: "day" },
       },
       {
+        key: "trakt",
+        label: "Trakt (import)",
+        area: "Vidéo",
+        required: false,
+        envKeys: ["TRAKT_CLIENT_ID"],
+        keyUrl: "https://trakt.tv/oauth/applications",
+        // Every Trakt endpoint requires the api-key header, so the probe
+        // doubles as a validity check of the configured client id.
+        probe: (signal) =>
+          this.ping("https://api.trakt.tv/movies/trending?limit=1", {
+            signal,
+            headers: {
+              "trakt-api-version": "2",
+              "trakt-api-key": this.env("TRAKT_CLIENT_ID"),
+            },
+          }),
+      },
+      {
         key: "googleBooks",
         label: "Google Books",
         area: "Livres",

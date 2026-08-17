@@ -91,7 +91,9 @@
         : [],
   );
 
-  const isFileInput = $derived(descriptor.input.type !== "steamId");
+  const isFileInput = $derived(
+    descriptor.input.type === "csv" || descriptor.input.type === "zip",
+  );
   const inputReady = $derived(inputValue.trim().length > 0);
   const selectedCount = $derived(included.size);
 
@@ -424,7 +426,7 @@
     {:else}
       <input
         type="text"
-        placeholder="76561198… ou steamcommunity.com/id/pseudo"
+        placeholder={descriptor.input.placeholder ?? "Identifiant"}
         bind:value={inputValue}
         onkeydown={(e) => e.key === "Enter" && analyze()}
         class="input w-full" />

@@ -123,10 +123,10 @@ interface TmdbPersonDetails {
 }
 
 interface TmdbFindResult {
-  // `/find` returns full objects, so a TVDB lookup already carries the metadata
-  // needed to display the match — no extra details call.
+  // `/find` returns full objects, so an external-id lookup already carries the
+  // metadata needed to display the match — no extra details call.
   tv_results?: TmdbTvResult[];
-  movie_results?: { id: number }[];
+  movie_results?: TmdbMovieResult[];
 }
 
 /** Films and (western) series, from The Movie Database. */
@@ -185,6 +185,45 @@ export class TmdbProvider implements CatalogProvider {
   ): Promise<MediaSummaryDto | null> {
     const found = await this.get<TmdbFindResult>(`/find/${tvdbId}`, {
       external_source: "tvdb_id",
+    });
+    const tv = found.tv_results?.[0];
+    return tv ? this.toTvSummary(tv) : null;
+  }
+
+  /**
+   * Resolve a TMDB movie id straight to its summary (title, year, poster) —
+   * one cheap call, no `append_to_response`. Used by importers that already
+   * carry a TMDB id (Trakt) instead of TV Time's TVDB-only reconciliation.
+   * Throws {@link NotFoundException} (via `get`) when TMDB has no such id.
+   */
+  async getMovieSummaryByTmdbId(tmdbId: string): Promise<MediaSummaryDto> {
+    const movie = await this.get<TmdbMovieResult>(`/movie/${tmdbId}`, {});
+    return this.toMovieSummary(movie);
+  }
+
+  /** Series counterpart of {@link getMovieSummaryByTmdbId}. */
+  async getSeriesSummaryByTmdbId(tmdbId: string): Promise<MediaSummaryDto> {
+    const tv = await this.get<TmdbTvResult>(`/tv/${tmdbId}`, {});
+    return this.toTvSummary(tv);
+  }
+
+  /** IMDb counterpart of {@link findSeriesSummaryByTvdbId}, for movies. */
+  async findMovieSummaryByImdbId(
+    imdbId: string,
+  ): Promise<MediaSummaryDto | null> {
+    const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
+      external_source: "imdb_id",
+    });
+    const movie = found.movie_results?.[0];
+    return movie ? this.toMovieSummary(movie) : null;
+  }
+
+  /** IMDb counterpart of {@link findSeriesSummaryByTvdbId}. */
+  async findSeriesSummaryByImdbId(
+    imdbId: string,
+  ): Promise<MediaSummaryDto | null> {
+    const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
+      external_source: "imdb_id",
     });
     const tv = found.tv_results?.[0];
     return tv ? this.toTvSummary(tv) : null;
