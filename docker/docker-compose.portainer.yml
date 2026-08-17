@@ -14,7 +14,7 @@
 # across separate -f files).
 services:
   portainer:
-    image: portainer/portainer-ce:2.39.5
+    image: portainer/portainer-ce:2.39.6
     restart: unless-stopped
     logging:
       driver: json-file
