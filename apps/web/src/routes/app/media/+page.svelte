@@ -1,9 +1,11 @@
 <script lang="ts">
   import { listLibrary } from "$lib/api/client";
+  import { updateLibraryEntry } from "$lib/api/library";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  import { toast } from "$lib/toast.svelte";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
   import { Domain, isDormant } from "@loomkeep/shared";
 
@@ -39,6 +41,16 @@
     );
   }
 
+  async function toggleFavorite(entry: LibraryEntryDto, next: boolean) {
+    entry.favorite = next; // optimistic
+    try {
+      await updateLibraryEntry(entry.id, { favorite: next });
+    } catch {
+      entry.favorite = !next;
+      toast.error("Mise à jour impossible");
+    }
+  }
+
   function load(params: LibraryLoadParams) {
     return listLibrary({
       query: params.query,
@@ -71,7 +83,8 @@
       href={`/app/media/${entry.mediaItem.type.toLowerCase()}/${entry.mediaItem.sourceId}`}
       src={entry.mediaItem.posterUrl}
       title={entry.mediaItem.title}
-      favorite={entry.favorite}>
+      favorite={entry.favorite}
+      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
       {#snippet meta()}
         {#if entry.progress}
           <div class="bg-surface-2 h-1.5 overflow-hidden rounded-full">

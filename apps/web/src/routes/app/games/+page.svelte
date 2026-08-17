@@ -1,5 +1,6 @@
 <script lang="ts">
   import { listGames } from "$lib/api/client";
+  import { updateGameEntry } from "$lib/api/games";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
@@ -8,6 +9,7 @@
     GAME_STATUS_LABELS,
     GAME_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { toast } from "$lib/toast.svelte";
   import { Domain, type GameEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = GAME_STATUS_ORDER.map((value) => ({
@@ -24,6 +26,16 @@
     { label: "Commencé récemment", value: "started" },
     { label: "Statut", value: "status" },
   ];
+
+  async function toggleFavorite(entry: GameEntryDto, next: boolean) {
+    entry.favorite = next; // optimistic
+    try {
+      await updateGameEntry(entry.id, { favorite: next });
+    } catch {
+      entry.favorite = !next;
+      toast.error("Mise à jour impossible");
+    }
+  }
 
   function load(params: LibraryLoadParams) {
     return listGames({
@@ -56,7 +68,8 @@
       href={`/app/games/${entry.game.sourceId}`}
       src={entry.game.coverUrl}
       title={entry.game.title}
-      favorite={entry.favorite}>
+      favorite={entry.favorite}
+      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
       {#snippet meta()}
         <span class="timecode text-xs">
           {GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
