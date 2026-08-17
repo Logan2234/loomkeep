@@ -8,6 +8,7 @@ import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
 import { MediaImportSource } from "../media/media-import.source";
 import { buildImportMovies, buildImportShows } from "./parse-simkl";
@@ -26,9 +27,10 @@ interface SimklParsed extends ParsedImport {
  * plan (verified directly on simkl.com/apps/backup/, not just its docs), so —
  * unlike Trakt/Steam — there is no "public profile" shortcut here either.
  * Every user's data requires a per-user OAuth `access_token`, obtained via the
- * authorization-code flow kicked off by {@link SimklOAuthController}. This
- * source only ever sees the resulting `code` (as the ordinary `input` string)
- * and exchanges it for a token itself, once, during {@link load}.
+ * authorization-code flow the web kicks off itself (building the
+ * `simkl.com/oauth/authorize` link client-side — see the Simkl import page).
+ * This source only ever sees the resulting `code` (as the ordinary `input`
+ * string) and exchanges it for a token itself, once, during {@link load}.
  */
 @Injectable()
 export class SimklImportSource extends MediaImportSource<SimklParsed> {
@@ -39,10 +41,11 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     prisma: PrismaService,
     mediaItemService: MediaItemService,
     tmdb: TmdbProvider,
+    reviews: ReviewService,
     private readonly configService: ConfigService,
     private readonly quota: QuotaTrackerService,
   ) {
-    super(prisma, mediaItemService, tmdb);
+    super(prisma, mediaItemService, tmdb, reviews);
   }
 
   parseInput(input: string): SimklParsed {

@@ -109,6 +109,7 @@ describe("buildImportMovies", () => {
       movies: [
         {
           status: "completed",
+          last_watched_at: "1994-09-01T16:00:00Z",
           movie: {
             title: "The Godfather",
             year: 1972,
@@ -123,6 +124,8 @@ describe("buildImportMovies", () => {
         title: "The Godfather",
         year: 1972,
         watched: true,
+        watchedAt: new Date("1994-09-01T16:00:00Z"),
+        rewatchedAt: [],
         externalIds: { tmdb: "238", tvdb: undefined, imdb: "tt0068646" },
       },
     ]);

@@ -6,7 +6,7 @@ const EPISODES_HEADER =
   "series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at";
 const REWATCHED_HEADER = "episode_id,cpt";
 const SHOWS_HEADER = "tv_show_name,tv_show_id,nb_episodes_seen";
-const RECORDS_HEADER = "type,entity_type,movie_name,release_date";
+const RECORDS_HEADER = "type,entity_type,movie_name,release_date,created_at";
 
 describe("parseTvTimeExport", () => {
   it("groups watched episodes per show and dedups the repeated rows", () => {
@@ -90,21 +90,64 @@ describe("parseTvTimeExport", () => {
     expect(shows[0].name).toBe("Doctor Who (2005)");
   });
 
-  it("classifies movies as watched or watchlist and parses the year", () => {
+  it("classifies movies as watched or watchlist, parsing the year and watch date", () => {
     const recordsCsv = [
       RECORDS_HEADER,
-      "follow,movie,The Batman,2022-03-02 00:00:00",
-      "watch,movie,The Batman,2022-03-02 00:00:00", // same movie, now watched
-      "towatch,movie,Dune,2021-09-15 00:00:00",
-      "follow,episode,Not A Movie,", // ignored (wrong entity_type)
+      "follow,movie,The Batman,2022-03-02 00:00:00,2022-01-01 00:00:00",
+      // Same movie, now watched — release_date unchanged, created_at is the
+      // approximate watch-date signal (watch_date itself is never populated
+      // for movies in the real export).
+      "watch,movie,The Batman,2022-03-02 00:00:00,2022-04-10 12:00:00",
+      "towatch,movie,Dune,2021-09-15 00:00:00,",
+      "follow,episode,Not A Movie,,", // ignored (wrong entity_type)
     ].join("\n");
 
     const { movies } = parseTvTimeExport({ recordsCsv });
 
     expect(movies).toHaveLength(2);
     const batman = movies.find((m) => m.title === "The Batman")!;
-    expect(batman).toEqual({ title: "The Batman", year: 2022, watched: true });
+    expect(batman).toEqual({
+      title: "The Batman",
+      year: 2022,
+      watched: true,
+      watchedAt: new Date("2022-04-10T12:00:00.000Z"),
+      rewatchedAt: [],
+    });
     const dune = movies.find((m) => m.title === "Dune")!;
-    expect(dune).toEqual({ title: "Dune", year: 2021, watched: false });
+    expect(dune).toEqual({
+      title: "Dune",
+      year: 2021,
+      watched: false,
+      watchedAt: null,
+      rewatchedAt: [],
+    });
+  });
+
+  it("folds `rewatch` rows into rewatchedAt and ignores the `rewatch_count` summary row", () => {
+    // Mirrors a real export: follow → watch → rewatch(1) → rewatch(2) →
+    // rewatch_count (a duplicate of the latest rewatch row, not a new event).
+    const recordsCsv = [
+      RECORDS_HEADER,
+      "follow,movie,Coherence,2013-09-19 00:00:00,2020-04-13 15:43:02",
+      "watch,movie,Coherence,,2020-04-13 15:43:08",
+      "rewatch,movie,Coherence,,2023-06-25 11:35:29",
+      "rewatch,movie,Coherence,,2024-06-30 09:37:30",
+      "rewatch_count,movie,Coherence,,2024-06-30 09:37:30",
+    ].join("\n");
+
+    const { movies } = parseTvTimeExport({ recordsCsv });
+
+    expect(movies).toEqual([
+      {
+        title: "Coherence",
+        year: 2013,
+        watched: true,
+        watchedAt: new Date("2020-04-13T15:43:08.000Z"),
+        rewatchedAt: [
+          new Date("2023-06-25T11:35:29.000Z"),
+          new Date("2024-06-30T09:37:30.000Z"),
+        ],
+      },
+    ]);
   });
 });

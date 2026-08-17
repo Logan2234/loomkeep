@@ -1,101 +1,129 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  Injectable,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { QuotaTrackerService } from "../../../common/quota-tracker.service";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
+import { readZipEntriesMatching } from "../../zip";
 import { MediaImportSource } from "../media/media-import.source";
-import { buildImportMovies, buildImportShows } from "./parse-trakt";
+import { buildImportMovies, buildImportShows } from "./parse-trakt-export";
 import type {
-  TraktWatchedMovie,
-  TraktWatchedShow,
-  TraktWatchlistMovieItem,
-  TraktWatchlistShowItem,
-} from "./trakt-api.types";
+  TraktFavoriteEntry,
+  TraktHistoryEntry,
+  TraktMovieRatingEntry,
+  TraktShowRatingEntry,
+  TraktWatchlistEntry,
+} from "./trakt-export.types";
 
-const TRAKT_API = "https://api.trakt.tv";
-
-/** Parse model: the raw username, filled in with the fetched export by {@link load}. */
-interface TraktParsed extends ParsedImport {
-  username: string;
-}
+const WATCHLIST_FILE = "lists-watchlist.json";
+const FAVORITES_FILE = "lists-favorites.json";
+const MOVIE_RATINGS_FILE = "ratings-movies.json";
+const SHOW_RATINGS_FILE = "ratings-shows.json";
 
 /**
- * Trakt import: unlike TV Time's file export, Trakt exposes a public REST API
- * per user — `GET /users/{id}/watched|watchlist/{shows,movies}` — so there is
- * nothing to upload, only a username. Those endpoints are OAuth-optional:
- * they work with just the app's `trakt-api-key` as long as the target
- * profile's history/watchlist are public, exactly like the Steam import only
- * works against a public profile. Movies and (crucially) shows already carry
- * a TMDB id, so reconciliation is direct rather than TV Time's TVDB lookup.
+ * Trakt's own account data export (`.zip` of many small JSON files, from
+ * Settings → Data → Export on trakt.tv) — free-tier, unlike the live API
+ * (whose Client ID now requires Trakt VIP to create, so that path isn't
+ * viable). The export is fully parsed synchronously in {@link parseInput};
+ * the shared resolve/plan/commit mechanics live in {@link MediaImportSource}.
  */
 @Injectable()
-export class TraktImportSource extends MediaImportSource<TraktParsed> {
+export class TraktImportSource extends MediaImportSource<ParsedImport> {
   readonly id = "trakt";
-  readonly requiredEnvKeys = ["TRAKT_CLIENT_ID"];
 
   constructor(
     prisma: PrismaService,
     mediaItemService: MediaItemService,
     tmdb: TmdbProvider,
-    private readonly configService: ConfigService,
-    private readonly quota: QuotaTrackerService,
+    reviews: ReviewService,
   ) {
-    super(prisma, mediaItemService, tmdb);
+    super(prisma, mediaItemService, tmdb, reviews);
   }
 
-  parseInput(input: string): TraktParsed {
-    return { source: this.id, username: input.trim(), shows: [], movies: [] };
+  parseInput(input: string): ParsedImport {
+    const { history, watchlist, favorites, movieRatings, showRatings } =
+      extractFiles(Buffer.from(input, "base64"));
+    return {
+      source: this.id,
+      shows: buildImportShows(history, watchlist, favorites, showRatings),
+      movies: buildImportMovies(history, watchlist, favorites, movieRatings),
+    };
+  }
+}
+
+/**
+ * Decode + validate the archive and extract the watch-history parts + the
+ * (optional) watchlist/favorites/ratings. Throws {@link BadRequestException}
+ * on a bad or incomplete archive.
+ */
+function extractFiles(input: Buffer): {
+  history: TraktHistoryEntry[];
+  watchlist: TraktWatchlistEntry[];
+  favorites: TraktFavoriteEntry[];
+  movieRatings: TraktMovieRatingEntry[];
+  showRatings: TraktShowRatingEntry[];
+} {
+  if (input.length === 0) {
+    throw new BadRequestException("The uploaded archive is empty");
   }
 
-  protected async load(parsed: TraktParsed): Promise<void> {
-    const user = encodeURIComponent(parsed.username);
-    const [watchedShows, watchedMovies, watchlistShows, watchlistMovies] =
-      await Promise.all([
-        this.getJson<TraktWatchedShow[]>(`/users/${user}/watched/shows`),
-        this.getJson<TraktWatchedMovie[]>(`/users/${user}/watched/movies`),
-        this.getJson<TraktWatchlistShowItem[]>(
-          `/users/${user}/watchlist/shows`,
-        ),
-        this.getJson<TraktWatchlistMovieItem[]>(
-          `/users/${user}/watchlist/movies`,
-        ),
-      ]);
+  let entries: Map<string, string>;
 
-    parsed.shows = buildImportShows(watchedShows, watchlistShows);
-    parsed.movies = buildImportMovies(watchedMovies, watchlistMovies);
+  try {
+    entries = readZipEntriesMatching(
+      input,
+      (name) =>
+        name.startsWith("watched-history") ||
+        name === WATCHLIST_FILE ||
+        name === FAVORITES_FILE ||
+        name === MOVIE_RATINGS_FILE ||
+        name === SHOW_RATINGS_FILE,
+    );
+  } catch (error) {
+    throw new BadRequestException(
+      error instanceof Error ? error.message : "Could not read the archive",
+    );
   }
 
-  private async getJson<T>(path: string): Promise<T> {
-    this.quota.record("trakt");
-    const response = await fetch(`${TRAKT_API}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        "trakt-api-version": "2",
-        "trakt-api-key":
-          this.configService.getOrThrow<string>("TRAKT_CLIENT_ID"),
-      },
-    });
+  // A small library gets the unsplit `watched-history.json`; a larger one is
+  // paginated into `watched-history-1.json`, `-2.json`, etc. — either way,
+  // every part starts with the same prefix.
+  const historyFiles = [...entries.entries()].filter(([name]) =>
+    name.startsWith("watched-history"),
+  );
 
-    // A nonexistent user and a private profile both come back as 404 — Trakt
-    // never distinguishes them for an unauthenticated caller.
-    if (response.status === 404 || response.status === 401) {
-      throw new BadRequestException(
-        "Profil Trakt introuvable ou privé — ton historique et ta watchlist doivent être publics (Réglages > Vie privée sur trakt.tv).",
-      );
-    }
-
-    if (!response.ok) {
-      throw new BadGatewayException(
-        `Trakt request failed with status ${response.status}`,
-      );
-    }
-
-    return (await response.json()) as T;
+  if (historyFiles.length === 0) {
+    throw new BadRequestException(
+      "Missing required file(s) in the archive: watched-history.json (or watched-history-N.json)",
+    );
   }
+
+  try {
+    const history = historyFiles.flatMap(
+      ([, content]) => JSON.parse(content) as TraktHistoryEntry[],
+    );
+    return {
+      history,
+      watchlist: parseJsonEntry<TraktWatchlistEntry[]>(entries, WATCHLIST_FILE),
+      favorites: parseJsonEntry<TraktFavoriteEntry[]>(entries, FAVORITES_FILE),
+      movieRatings: parseJsonEntry<TraktMovieRatingEntry[]>(
+        entries,
+        MOVIE_RATINGS_FILE,
+      ),
+      showRatings: parseJsonEntry<TraktShowRatingEntry[]>(
+        entries,
+        SHOW_RATINGS_FILE,
+      ),
+    };
+  } catch {
+    throw new BadRequestException(
+      "Could not read the archive — one of its JSON files is malformed",
+    );
+  }
+}
+
+/** Parses an optional JSON entry from the archive; `[]` when absent. */
+function parseJsonEntry<T>(entries: Map<string, string>, name: string): T {
+  const json = entries.get(name);
+  return json ? (JSON.parse(json) as T) : ([] as T);
 }

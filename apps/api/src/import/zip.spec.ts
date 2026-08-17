@@ -1,5 +1,5 @@
 import { makeZip } from "./make-zip";
-import { readZipEntries } from "./zip";
+import { readZipEntries, readZipEntriesMatching } from "./zip";
 
 describe("readZipEntries", () => {
   it("extracts wanted entries, decoding both STORED and DEFLATE", () => {
@@ -38,5 +38,26 @@ describe("readZipEntries", () => {
     expect(() => readZipEntries(Buffer.from("not a zip"), new Set())).toThrow(
       /not a zip/i,
     );
+  });
+});
+
+describe("readZipEntriesMatching", () => {
+  it("extracts every entry whose lowercased base name satisfies the predicate", () => {
+    const zip = makeZip([
+      { name: "watched-history-1.json", content: "[1]" },
+      { name: "watched-history-2.json", content: "[2]" },
+      { name: "Watched-History-10.json", content: "[10]" },
+      { name: "watched-movies.json", content: "[]" },
+    ]);
+
+    const out = readZipEntriesMatching(zip, (name) =>
+      name.startsWith("watched-history-"),
+    );
+
+    expect(out.size).toBe(3);
+    expect(out.get("watched-history-1.json")).toBe("[1]");
+    expect(out.get("watched-history-2.json")).toBe("[2]");
+    expect(out.get("watched-history-10.json")).toBe("[10]");
+    expect(out.has("watched-movies.json")).toBe(false);
   });
 });

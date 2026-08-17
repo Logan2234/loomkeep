@@ -30,6 +30,10 @@ export interface ImportShow {
   externalIds: ExternalIdMap;
   /** Distinct watched episodes; empty means the show is only on the watchlist. */
   episodes: ImportWatchedEpisode[];
+  /** The source's own 1-10 rating, when it has one. */
+  rating?: number | null;
+  /** Marked as a favorite on the source. */
+  favorite?: boolean;
 }
 
 export interface ImportMovie {
@@ -37,6 +41,14 @@ export interface ImportMovie {
   year: number | null;
   /** true → watched (COMPLETED); false → watchlist (PLANNED). */
   watched: boolean;
+  /** Earliest watch, null when unwatched or the source has no per-movie watch date. */
+  watchedAt: Date | null;
+  /** Extra watch dates beyond `watchedAt` (rewatches), oldest first. Empty when the source has no rewatch signal. */
+  rewatchedAt: Date[];
+  /** The source's own 1-10 rating, when it has one. */
+  rating?: number | null;
+  /** Marked as a favorite on the source. */
+  favorite?: boolean;
   externalIds: ExternalIdMap;
 }
 

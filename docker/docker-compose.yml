@@ -49,7 +49,6 @@ services:
       TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
       TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
       STEAM_API_KEY: ${STEAM_API_KEY:-}
-      TRAKT_CLIENT_ID: ${TRAKT_CLIENT_ID:-}
       SIMKL_CLIENT_ID: ${SIMKL_CLIENT_ID:-}
       SIMKL_CLIENT_SECRET: ${SIMKL_CLIENT_SECRET:-}
       GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY:-}
@@ -103,6 +102,10 @@ services:
       - api
     environment:
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
+      # Same value as the api service's SIMKL_CLIENT_ID (a client id is
+      # non-secret by OAuth design) — the web builds the authorize link
+      # itself, see the Simkl import page.
+      PUBLIC_SIMKL_CLIENT_ID: ${SIMKL_CLIENT_ID:-}
       PUBLIC_GLITCHTIP_WEB_DSN: ${PUBLIC_GLITCHTIP_WEB_DSN:-}
       # Empty = no Turnstile widget rendered, register() sends no token —
       # see root README "Bot protection".

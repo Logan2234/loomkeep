@@ -328,116 +328,116 @@ enum MusicOwnershipStatus {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  passwordHash      String
+  id                         String           @id @default(cuid())
+  email                      String           @unique
+  passwordHash               String
   // Free-form label shown around the app; not unique. See `username` for the
   // unique, login-capable handle.
-  displayName       String
+  displayName                String
   // Unique login handle (alongside email). Assigned at registration, editable
   // in Sécurité.
-  username          String    @unique
-  birthDate         DateTime?
+  username                   String           @unique
+  birthDate                  DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
-  allowAdultContent Boolean   @default(false)
+  allowAdultContent          Boolean          @default(false)
   // Communication preferences: which channels deliver "new episode" alerts.
-  notifyEmail       Boolean   @default(false)
-  notifyPush        Boolean   @default(false)
+  notifyEmail                Boolean          @default(false)
+  notifyPush                 Boolean          @default(false)
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
-  notifyNewsletter  Boolean   @default(false)
+  notifyNewsletter           Boolean          @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including
   // across a later opt-out — so it always records when consent was last given.
-  newsletterOptInAt DateTime?
+  newsletterOptInAt          DateTime?
   // Stable per-user unsubscribe link target, lazily generated on first
   // newsletter send and reused in every subsequent one — not a
   // single-use/expiring UserToken, since minting one per recipient per send
   // would grow the token table without bound as the newsletter goes out
   // repeatedly. Low-stakes if it ever leaked (only lets someone toggle this
   // one preference off), so it's a plain unguessable string, not hashed.
-  newsletterUnsubscribeToken String?  @unique
+  newsletterUnsubscribeToken String?          @unique
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
-  emailVerified     Boolean   @default(false)
+  emailVerified              Boolean          @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
-  bio               String?
+  bio                        String?
   // Profile picture, stored in-row (not on disk) so it rides along with
   // pg_dump backups like everything else. avatarMimeType/avatarUpdatedAt are
   // null together with avatar; avatarUpdatedAt also cache-busts the public
   // GET /users/:id/avatar URL.
-  avatar            Bytes?
-  avatarMimeType    String?
-  avatarUpdatedAt   DateTime?
+  avatar                     Bytes?
+  avatarMimeType             String?
+  avatarUpdatedAt            DateTime?
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.
-  profileAccess     ProfileAccess @default(PRIVATE)
+  profileAccess              ProfileAccess    @default(PRIVATE)
   // Default audience applied to a new review unless overridden at publication.
-  defaultReviewVisibility ReviewVisibility @default(FRIENDS)
+  defaultReviewVisibility    ReviewVisibility @default(FRIENDS)
   // Default audience applied to a new list unless overridden at creation.
-  defaultListVisibility ListVisibility @default(PRIVATE)
+  defaultListVisibility      ListVisibility   @default(PRIVATE)
   // Open-core seam: feature flags granted to this user (empty in self-host MVP).
   // NOT used for admin permission — see `role` below.
-  entitlements      Json      @default("[]")
+  entitlements               Json             @default("[]")
   // Operational permission level (gates /admin). Separate axis from
   // `entitlements` (paid tier): an admin isn't "the highest tier".
-  role              Role      @default(USER)
+  role                       Role             @default(USER)
   // Composition seam: content domains the user enabled. Drives the nav today;
   // search/notif filtering follow at P3. Empty by default — the onboarding
   // wizard's domain step is what actually turns these on for a new account.
-  enabledDomains    Domain[]  @default([])
+  enabledDomains             Domain[]         @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
-  mobileNavShortcuts String[] @default(["home", "search", "menu", "calendar", "account"])
+  mobileNavShortcuts         String[]         @default(["home", "search", "menu", "calendar", "account"])
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
   // seam.
-  locale            String    @default("fr")
+  locale                     String           @default("fr")
   // Opaque secret for the public .ics calendar subscription URL (not hashed:
   // looked up directly by calendar apps, which can't send an Authorization
   // header). Null until first requested from Réglages > Export.
-  calendarToken     String?   @unique
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  calendarToken              String?          @unique
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
   // Set once the mandatory first-run onboarding wizard is completed (see
   // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
   // showing the wizard instead of the app chrome — including for accounts
   // that existed before this field shipped.
-  onboardedAt       DateTime?
+  onboardedAt                DateTime?
 
-  entries             LibraryEntry[]
-  episodeWatches      EpisodeWatch[]
-  refreshTokens       RefreshToken[]
-  devices             UserDevice[]
-  notifications       Notification[]
-  pushSubscriptions   PushSubscription[]
-  gameEntries         GameEntry[]
-  bookEntries         BookEntry[]
-  readingGoals        ReadingGoal[]
-  musicEntries        MusicEntry[]
-  tokens              UserToken[]
-  emailChangeRequests EmailChangeRequest[]
-  securityEvents      SecurityEvent[]
-  importRuns          ImportRun[]
-  visibilitySettings  VisibilitySetting[]
-  following           Follow[]             @relation("UserFollowing")
-  followers           Follow[]             @relation("UserFollowers")
-  blocking            Block[]              @relation("UserBlocking")
-  blockedBy           Block[]              @relation("UserBlockedBy")
-  reviews             Review[]
-  reviewVotes         ReviewVote[]
-  activityEvents      ActivityEvent[]
-  comments            Comment[]
-  commentReactions    CommentReaction[]
-  reportsFiled        Report[]             @relation("ReportsFiled")
-  reportsResolved     Report[]             @relation("ReportsResolved")
-  lists               List[]
-  listMemberships     ListMember[]
+  entries                    LibraryEntry[]
+  episodeWatches             EpisodeWatch[]
+  refreshTokens              RefreshToken[]
+  devices                    UserDevice[]
+  notifications              Notification[]
+  pushSubscriptions          PushSubscription[]
+  gameEntries                GameEntry[]
+  bookEntries                BookEntry[]
+  readingGoals               ReadingGoal[]
+  musicEntries               MusicEntry[]
+  tokens                     UserToken[]
+  emailChangeRequests        EmailChangeRequest[]
+  securityEvents             SecurityEvent[]
+  importRuns                 ImportRun[]
+  visibilitySettings         VisibilitySetting[]
+  following                  Follow[]             @relation("UserFollowing")
+  followers                  Follow[]             @relation("UserFollowers")
+  blocking                   Block[]              @relation("UserBlocking")
+  blockedBy                  Block[]              @relation("UserBlockedBy")
+  reviews                    Review[]
+  reviewVotes                ReviewVote[]
+  activityEvents             ActivityEvent[]
+  comments                   Comment[]
+  commentReactions           CommentReaction[]
+  reportsFiled               Report[]             @relation("ReportsFiled")
+  reportsResolved            Report[]             @relation("ReportsResolved")
+  lists                      List[]
+  listMemberships            ListMember[]
   moderationDecisionsAgainst ModerationDecision[] @relation("ModerationDecisionSubject")
   moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
 }
@@ -556,27 +556,27 @@ model ReviewRevision {
 // soft (text cleared, deletedAt set) so replies stay attached and readable —
 // hard-deleting a parent would orphan or lose the whole sub-thread.
 model Comment {
-  id         String            @id @default(cuid())
-  targetType CommentTargetType
-  targetId   String
+  id             String            @id @default(cuid())
+  targetType     CommentTargetType
+  targetId       String
   // Nullable: account deletion detaches the author (SetNull) rather than
   // cascading, for the same reason as the soft-delete above — a hard delete
   // would orphan replies other users posted under this comment.
-  authorId   String?
-  parentId   String?
-  text       String?
+  authorId       String?
+  parentId       String?
+  text           String?
   // Author-set manual spoiler tag. Combined at read time with the auto
   // progression-based gate (see CommentService) into a per-viewer "masked"
   // hint — the raw tag itself is what the edit form prefills.
-  spoilerTag Boolean           @default(false)
-  edited     Boolean           @default(false)
-  deletedAt  DateTime?
+  spoilerTag     Boolean           @default(false)
+  edited         Boolean           @default(false)
+  deletedAt      DateTime?
   // Set only by admin takedown (adminRemove) — distinguishes the tombstone
   // shown to readers ("supprimé par un administrateur" vs the author's own
   // "supprimé").
-  deletedByAdmin Boolean       @default(false)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  deletedByAdmin Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   author    User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
   parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
@@ -623,12 +623,12 @@ model Report {
   resolvedAt   DateTime?
   resolvedById String?
 
-  reporter   User? @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
-  resolvedBy User? @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+  reporter            User?                @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
+  resolvedBy          User?                @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+  moderationDecisions ModerationDecision[]
 
   @@index([status, createdAt])
   @@index([category])
-  moderationDecisions ModerationDecision[]
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure
@@ -651,15 +651,15 @@ model ModerationDecision {
   subjectEmail    String
   subjectUsername String
 
-  legalBasis     ModerationLegalBasis
+  legalBasis      ModerationLegalBasis
   // Prefilled from the originating report's category/motif when there is
   // one, editable by the admin before the notice is sent.
-  reasonCategory ReportCategory?
-  reasonMotif    ReportMotif?
-  reasonText     String
+  reasonCategory  ReportCategory?
+  reasonMotif     ReportMotif?
+  reasonText      String
   // Free-text CGU clause reference shown in the notice (e.g. "§7 — Règles de
   // conduite"), or the legal ground when legalBasis is ILLEGAL_CONTENT.
-  tosClause      String
+  tosClause       String
   // COMMENT_REMOVED only: the comment's text before the tombstone nulled it,
   // kept for evidence — admin-only, never re-exposed publicly.
   contentSnapshot String?
@@ -883,10 +883,10 @@ model RefreshToken {
 // device. Seeded (without an alert) on register, upserted on every login;
 // AuthService.login() emails+logs a SecurityEvent only when the row is created.
 model UserDevice {
-  id         String   @id @default(cuid())
-  userId     String
-  deviceKey  String
-  userAgent  String?
+  id          String   @id @default(cuid())
+  userId      String
+  deviceKey   String
+  userAgent   String?
   firstSeenAt DateTime @default(now())
   lastSeenAt  DateTime @default(now())
 
@@ -995,11 +995,11 @@ model BackupFile {
 // quackbackChangelogId, reserved before the emails go out — see
 // NewsletterService).
 model NewsletterSend {
-  id                    String   @id @default(cuid())
-  quackbackChangelogId  String   @unique
-  title                 String
-  recipientCount        Int      @default(0)
-  sentAt                DateTime @default(now())
+  id                   String   @id @default(cuid())
+  quackbackChangelogId String   @unique
+  title                String
+  recipientCount       Int      @default(0)
+  sentAt               DateTime @default(now())
 
   @@index([sentAt])
 }
@@ -1125,10 +1125,24 @@ model LibraryEntry {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaItem MediaItem     @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  replays   MovieReplay[]
 
   @@unique([userId, mediaItemId])
+}
+
+// One row per completed replay, beyond the entry's own first completion —
+// same shape as GameReplay/BookReplay. Movies only: series/anime rewatches
+// are tracked per-episode via EpisodeWatch instead.
+model MovieReplay {
+  id             String   @id @default(cuid())
+  libraryEntryId String
+  finishedAt     DateTime @default(now())
+
+  libraryEntry LibraryEntry @relation(fields: [libraryEntryId], references: [id], onDelete: Cascade)
+
+  @@index([libraryEntryId])
 }
 
 // One row per viewing: watching the same episode twice = two rows (rewatch).

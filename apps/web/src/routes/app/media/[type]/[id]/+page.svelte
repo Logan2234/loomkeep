@@ -1,8 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
+    addLibraryReplay,
     ApiError,
     deleteLibraryEntry,
+    deleteLibraryReplay,
     getMediaDetail,
     getMediaExtras,
     updateLibraryEntry,
@@ -26,6 +28,7 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
+  import { formatDate } from "$lib/format";
   import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
   import type {
@@ -151,53 +154,56 @@
       });
   });
 
-  const { reload, add, patch, doRemove } = createLibraryEntryActions(
-    {
-      get detail() {
-        return detail;
+  const { reload, add, patch, doRemove, addReplay, removeReplay } =
+    createLibraryEntryActions(
+      {
+        get detail() {
+          return detail;
+        },
+        set detail(v) {
+          detail = v;
+        },
+        get error() {
+          return error;
+        },
+        set error(v) {
+          error = v;
+        },
+        get saving() {
+          return saving;
+        },
+        set saving(v) {
+          saving = v;
+        },
+        get confirmRemove() {
+          return confirmRemove;
+        },
+        set confirmRemove(v) {
+          confirmRemove = v;
+        },
+        get removing() {
+          return removing;
+        },
+        set removing(v) {
+          removing = v;
+        },
       },
-      set detail(v) {
-        detail = v;
+      {
+        load: () => getMediaDetail(type, id),
+        add: (d) =>
+          upsertLibraryEntry({
+            source: d.source,
+            sourceId: d.sourceId,
+            type: d.type,
+            status: "PLANNED",
+          }),
+        update: updateLibraryEntry,
+        remove: deleteLibraryEntry,
+        addReplay: addLibraryReplay,
+        removeReplay: deleteLibraryReplay,
+        addErrorMessage: "Impossible d'ajouter cet élément à ta bibliothèque",
       },
-      get error() {
-        return error;
-      },
-      set error(v) {
-        error = v;
-      },
-      get saving() {
-        return saving;
-      },
-      set saving(v) {
-        saving = v;
-      },
-      get confirmRemove() {
-        return confirmRemove;
-      },
-      set confirmRemove(v) {
-        confirmRemove = v;
-      },
-      get removing() {
-        return removing;
-      },
-      set removing(v) {
-        removing = v;
-      },
-    },
-    {
-      load: () => getMediaDetail(type, id),
-      add: (d) =>
-        upsertLibraryEntry({
-          source: d.source,
-          sourceId: d.sourceId,
-          type: d.type,
-          status: "PLANNED",
-        }),
-      update: updateLibraryEntry,
-      remove: deleteLibraryEntry,
-      addErrorMessage: "Impossible d'ajouter cet élément à ta bibliothèque",
-    },
-  );
+    );
 
   // Live extras (where to watch, cast, similar). Loaded once per media (keyed on
   // the route), independent of watch-state reloads. Best-effort: errors are
@@ -474,6 +480,47 @@
             value={entry.notes}
             placeholder="Une réplique, un souvenir…"
             onChange={(v) => patch({ notes: v })} />
+
+          {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
+            <hr class="border-border" />
+
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+                  Revisionnages{#if entry.replays.length > 0}
+                    &nbsp;· {entry.replays.length}{/if}
+                </span>
+                {#if entry.status === "COMPLETED"}
+                  <button
+                    type="button"
+                    class="link-accent text-xs disabled:opacity-50"
+                    disabled={saving}
+                    onclick={addReplay}>
+                    + J'ai revu ce film
+                  </button>
+                {/if}
+              </div>
+              {#if entry.replays.length > 0}
+                <ul class="flex flex-col gap-1">
+                  {#each entry.replays as replay (replay.id)}
+                    <li class="text-dim flex items-center gap-2 text-xs">
+                      <span class="flex-1"
+                        >{formatDate(replay.finishedAt)}</span>
+                      <button
+                        type="button"
+                        class="hover:text-danger"
+                        aria-label="Supprimer ce revisionnage"
+                        disabled={saving}
+                        onclick={() => removeReplay(replay.id)}>
+                        Supprimer
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          {/if}
         </div>
       </details>
     {/if}

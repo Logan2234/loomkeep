@@ -51,6 +51,27 @@ export function readZipEntries(
   return result;
 }
 
+/**
+ * Extract, decoded as UTF-8 text, every entry whose base name (lowercased)
+ * satisfies `predicate` — for an export that splits one logical file across
+ * an unpredictable number of numbered parts (Trakt's `watched-history-N.json`
+ * pagination), rather than the fixed set {@link readZipEntries} expects.
+ */
+export function readZipEntriesMatching(
+  buf: Buffer,
+  predicate: (baseNameLower: string) => boolean,
+): Map<string, string> {
+  const result = new Map<string, string>();
+
+  for (const entry of readCentralDirectory(buf)) {
+    const base = baseName(entry.name).toLowerCase();
+    if (!predicate(base)) continue;
+    result.set(base, decodeEntry(buf, entry));
+  }
+
+  return result;
+}
+
 /** Walk the central directory, yielding one descriptor per stored file. */
 function readCentralDirectory(buf: Buffer): CentralEntry[] {
   const eocd = findEocd(buf);

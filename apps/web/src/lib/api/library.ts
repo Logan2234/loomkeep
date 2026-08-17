@@ -62,6 +62,18 @@ export function deleteLibraryEntry(entryId: string): Promise<void> {
   return request(`/library/entries/${entryId}`, { method: "DELETE" });
 }
 
+/** Log a completed rewatch (a completion beyond the entry's first one). Movies only. */
+export function addLibraryReplay(entryId: string): Promise<LibraryEntryDto> {
+  return request(`/library/entries/${entryId}/replays`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export function deleteLibraryReplay(replayId: string): Promise<void> {
+  return request(`/library/replays/${replayId}`, { method: "DELETE" });
+}
+
 export function watchEpisode(episodeId: string): Promise<EpisodeWatchDto> {
   return request(`/library/episodes/${episodeId}/watches`, {
     method: "POST",

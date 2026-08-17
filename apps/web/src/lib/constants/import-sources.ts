@@ -20,14 +20,12 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     trakt: {
       domain: Domain.MEDIA,
       label: "Trakt",
-      description: "Films et séries (historique et watchlist).",
+      description: "Films et séries (historique et watchlist, export .zip).",
       href: "/app/settings/import/trakt",
-      input: {
-        type: "traktUsername",
-        placeholder: "Pseudo Trakt (trakt.tv/users/…)",
-      },
+      input: { type: "zip", accept: ".zip" },
       noun: { one: "titre", many: "titres" },
       libraryHref: "/app/media",
+      newBadgeKey: "import-trakt",
     },
     letterboxd: {
       domain: Domain.MEDIA,
@@ -47,6 +45,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       input: { type: "oauth" },
       noun: { one: "titre", many: "titres" },
       libraryHref: "/app/media",
+      newBadgeKey: "import-simkl",
     },
     kitsu: {
       domain: Domain.MEDIA,

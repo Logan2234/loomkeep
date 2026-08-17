@@ -406,47 +406,52 @@ export class StatsService {
   //     already cover (statuses/favorites live in getOverview's breakdowns). ---
 
   async getVideoStats(userId: string): Promise<VideoStatsDto> {
-    const [entries, watches, staleness] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
-        where: { userId },
-        select: {
-          status: true,
-          mediaItem: {
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              runtimeMin: true,
-              genres: true,
-              canonicalSource: true,
-              externalIds: { select: { source: true, externalId: true } },
+    const [entries, watches, staleness, moviesRewatchedCount] =
+      await Promise.all([
+        this.prisma.libraryEntry.findMany({
+          where: { userId },
+          select: {
+            status: true,
+            mediaItem: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                runtimeMin: true,
+                genres: true,
+                canonicalSource: true,
+                externalIds: { select: { source: true, externalId: true } },
+              },
             },
+            _count: { select: { replays: true } },
           },
-        },
-      }),
-      this.prisma.episodeWatch.findMany({
-        where: { userId },
-        select: {
-          watchedAt: true,
-          episode: {
-            select: {
-              id: true,
-              seasonId: true,
-              season: {
-                select: {
-                  number: true,
-                  mediaItemId: true,
-                  mediaItem: {
-                    select: { type: true, genres: true, runtimeMin: true },
+        }),
+        this.prisma.episodeWatch.findMany({
+          where: { userId },
+          select: {
+            watchedAt: true,
+            episode: {
+              select: {
+                id: true,
+                seasonId: true,
+                season: {
+                  select: {
+                    number: true,
+                    mediaItemId: true,
+                    mediaItem: {
+                      select: { type: true, genres: true, runtimeMin: true },
+                    },
                   },
                 },
               },
             },
           },
-        },
-      }),
-      this.fetchInProgressStaleness(userId),
-    ]);
+        }),
+        this.fetchInProgressStaleness(userId),
+        this.prisma.movieReplay.count({
+          where: { libraryEntry: { userId } },
+        }),
+      ]);
 
     const regularWatches = watches.filter((w) => w.episode.season.number !== 0);
     const genreCounts = new Map<string, number>();
@@ -469,11 +474,16 @@ export class StatsService {
 
     for (const m of completedMovies) {
       const minutes = runtimeFor("MOVIE", m.mediaItem.runtimeMin);
-      movieMinutes += minutes;
-      typeSplitRows.push({ type: "MOVIE", minutes });
+      // Rewatches count too, same as episodes' regularWatches above.
+      const instances = 1 + m._count.replays;
+      movieMinutes += minutes * instances;
+
+      for (let i = 0; i < instances; i++) {
+        typeSplitRows.push({ type: "MOVIE", minutes });
+      }
 
       for (const g of m.mediaItem.genres) {
-        genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
+        genreCounts.set(g, (genreCounts.get(g) ?? 0) + instances);
       }
     }
 
@@ -550,6 +560,7 @@ export class StatsService {
         .sort((a, b) => b.count - a.count),
       pausedCount: staleness.filter((s) => s.staleness === "PAUSED").length,
       ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
+      moviesRewatchedCount,
       longestBingeCount: computeLongestBinge(
         regularWatches.map((w) => w.watchedAt),
       ),

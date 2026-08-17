@@ -28,6 +28,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
+import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
@@ -124,6 +125,25 @@ export class LibraryController {
     @Param("id") entryId: string,
   ): Promise<void> {
     await this.libraryService.deleteEntry(user.sub, entryId);
+  }
+
+  /** Log a completed rewatch (a completion beyond the entry's first one). */
+  @Post("entries/:id/replays")
+  addReplay(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Body() dto: AddMovieReplayDto,
+  ): Promise<LibraryEntryDto> {
+    return this.libraryService.addReplay(user.sub, entryId, dto);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("replays/:id")
+  async deleteReplay(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") replayId: string,
+  ): Promise<void> {
+    await this.libraryService.deleteReplay(user.sub, replayId);
   }
 
   @Get("entries/:id/episodes")

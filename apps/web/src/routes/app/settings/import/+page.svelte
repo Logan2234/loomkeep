@@ -1,9 +1,11 @@
 <script lang="ts">
   import { getImportAvailability } from "$lib/api/client";
   import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isDomainEnabled } from "$lib/domains";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import {
@@ -75,7 +77,12 @@
                     name={DOMAINS[domain as Domain].icon}
                     class="text-accent h-6 w-6" />
                   <span class="flex-1">
-                    <span class="block font-semibold">{source.label}</span>
+                    <span class="flex items-center gap-2 font-semibold">
+                      {source.label}
+                      {#if source.newBadgeKey && isFeatureNew(source.newBadgeKey)}
+                        <NewBadge />
+                      {/if}
+                    </span>
                     <span class="text-dim text-sm">{source.description}</span>
                   </span>
                   <Icon name="chevron-right" class="text-dim h-5 w-5" />
@@ -87,7 +94,12 @@
                     name={DOMAINS[domain as Domain].icon}
                     class="text-dim h-6 w-6" />
                   <span class="flex-1">
-                    <span class="block font-semibold">{source.label}</span>
+                    <span class="flex items-center gap-2 font-semibold">
+                      {source.label}
+                      {#if source.newBadgeKey && isFeatureNew(source.newBadgeKey)}
+                        <NewBadge />
+                      {/if}
+                    </span>
                     <span class="text-dim text-sm">{source.description}</span>
                   </span>
                   <span

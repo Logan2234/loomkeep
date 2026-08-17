@@ -157,24 +157,6 @@ export class AdminService {
         quotaLimit: { max: 100_000, window: "day" },
       },
       {
-        key: "trakt",
-        label: "Trakt (import)",
-        area: "Vidéo",
-        required: false,
-        envKeys: ["TRAKT_CLIENT_ID"],
-        keyUrl: "https://trakt.tv/oauth/applications",
-        // Every Trakt endpoint requires the api-key header, so the probe
-        // doubles as a validity check of the configured client id.
-        probe: (signal) =>
-          this.ping("https://api.trakt.tv/movies/trending?limit=1", {
-            signal,
-            headers: {
-              "trakt-api-version": "2",
-              "trakt-api-key": this.env("TRAKT_CLIENT_ID"),
-            },
-          }),
-      },
-      {
         key: "simkl",
         label: "Simkl (import)",
         area: "Vidéo",
@@ -190,6 +172,8 @@ export class AdminService {
             `https://api.simkl.com/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
             { signal },
           ),
+        // Limited to 1,000 requests/day.
+        quotaLimit: { max: 1000, window: "day" },
       },
       {
         key: "googleBooks",

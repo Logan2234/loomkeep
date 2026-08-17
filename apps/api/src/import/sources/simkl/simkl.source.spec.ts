@@ -70,6 +70,7 @@ function makeService() {
     prisma as never,
     mediaItemService as unknown as MediaItemService,
     tmdb as unknown as TmdbProvider,
+    {} as never,
     config as unknown as ConfigService,
     quota as unknown as QuotaTrackerService,
   );
