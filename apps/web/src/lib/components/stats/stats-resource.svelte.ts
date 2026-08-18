@@ -10,26 +10,20 @@ export function statsResource<T>(
   fallbackError: string,
 ) {
   let data = $state<T | null>(null);
-  let loading = $state(true);
   let error = $state<string | null>(null);
 
   $effect(() => {
-    loading = true;
     error = null;
     fetcher()
       .then((v) => (data = v))
       .catch((e) => {
         error = e instanceof ApiError ? e.message : fallbackError;
-      })
-      .finally(() => (loading = false));
+      });
   });
 
   return {
     get data() {
       return data;
-    },
-    get loading() {
-      return loading;
     },
     get error() {
       return error;

@@ -32,7 +32,7 @@
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
   import type { Domain, MediaType, PagedResult } from "@loomkeep/shared";
-  import type { ComponentProps, Snippet } from "svelte";
+  import { onMount, type ComponentProps, type Snippet } from "svelte";
 
   type IconName = ComponentProps<typeof Icon>["name"];
 
@@ -153,12 +153,7 @@
     }
   }
 
-  // The only filter not driven by a local handler below: media's "type" list
-  // lives on the page, not here. Also doubles as the initial load on mount.
-  $effect(() => {
-    void types;
-    void run(true);
-  });
+  onMount(() => void run(true));
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
   $effect(() => {
@@ -221,7 +216,10 @@
           multiselect
           options={TYPE_OPTIONS}
           values={types}
-          onChange={(v) => (types = v as MediaType[])} />
+          onChange={(v) => {
+            types = v as MediaType[];
+            void run(true);
+          }} />
       {/if}
       <Combobox
         label="Statut"

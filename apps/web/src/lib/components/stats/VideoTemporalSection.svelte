@@ -16,7 +16,6 @@
     "Activité indisponible",
   );
   const temporal = $derived(temporalStats.data);
-  const loading = $derived(temporalStats.loading);
   const error = $derived(temporalStats.error);
 
   const WEEKDAY_LABEL = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
@@ -55,10 +54,6 @@
 
 {#if error}
   <p class="text-danger text-sm">{error}</p>
-{:else if loading}
-  <div class="card p-5">
-    <div class="skeleton h-24 w-full rounded"></div>
-  </div>
 {:else if temporal}
   <div class="card p-5">
     <h3 class="font-display mb-1 text-lg font-bold">

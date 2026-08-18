@@ -22,7 +22,7 @@
   } = $props();
 </script>
 
-<header class="flex items-start justify-between gap-4 {cls}">
+<header class="flex flex-wrap items-start justify-between gap-4 {cls}">
   <div>
     <h1
       class="font-display flex items-center gap-2 text-3xl font-extrabold tracking-tight md:text-4xl">
