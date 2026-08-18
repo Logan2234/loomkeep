@@ -2,6 +2,7 @@
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { toggleDomainSelection } from "$lib/domains";
   import { m } from "$lib/paraglide/messages.js";
@@ -34,15 +35,27 @@
       {#each Object.entries(DOMAINS) as [id, d] (id)}
         {@const on = auth.user.enabledDomains.includes(id as Domain)}
         {@const isLast = on && auth.user.enabledDomains.length === 1}
+        {@const inMaintenance = appConfig.maintenanceDomains.includes(
+          id as Domain,
+        )}
         <button
           type="button"
           class="border-border relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors disabled:pointer-events-none disabled:opacity-50 {on
             ? 'border-accent bg-accent/10 text-fg'
             : 'text-dim hover:bg-surface-2'}"
-          disabled={isLast}
-          title={isLast ? "Au moins un domaine doit rester actif." : undefined}
+          disabled={isLast || inMaintenance}
+          title={inMaintenance
+            ? "Temporairement indisponible."
+            : isLast
+              ? "Au moins un domaine doit rester actif."
+              : undefined}
           onclick={() => toggleDomain(id as Domain)}>
-          {#if d.comingSoon}
+          {#if inMaintenance}
+            <span
+              class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 rounded-full p-1">
+              <Icon name="lock" class="h-3 w-3" />
+            </span>
+          {:else if d.comingSoon}
             <span
               class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
               {m.common_coming_soon()}

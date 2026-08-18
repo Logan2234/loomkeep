@@ -14,6 +14,7 @@ import { deviceLabel } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { HibpService } from "../common/hibp.service";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly security: SecurityEventService,
     private readonly turnstile: TurnstileService,
     private readonly hibp: HibpService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   async register(
@@ -54,7 +56,7 @@ export class AuthService {
     ip?: string,
     acceptLanguage?: string,
   ): Promise<AuthResult> {
-    if (!isRegistrationEnabled(this.configService)) {
+    if (!isRegistrationEnabled(this.configService, this.flags)) {
       throw new ForbiddenException("Registration is disabled");
     }
 

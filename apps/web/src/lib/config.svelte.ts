@@ -1,3 +1,5 @@
+import type { Domain } from "@loomkeep/shared";
+
 /**
  * Global runtime config (Svelte 5 runes), loaded once at startup from
  * `GET /api/config` (see initConfig in api/config.ts). Drives which optional
@@ -7,6 +9,7 @@
 class AppConfig {
   socialEnabled = $state(false);
   registrationEnabled = $state(false);
+  maintenanceDomains: Domain[] = $state([]);
   erdEnabled = $state(false);
   version = $state("");
   gitSha = $state("");

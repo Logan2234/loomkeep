@@ -11,6 +11,7 @@ import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import type { HibpService } from "../common/hibp.service";
+import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -113,6 +114,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     isPasswordPwned: jest.fn().mockResolvedValue(false),
   } as unknown as HibpService;
 
+  const flags = {
+    isEnabled: jest.fn((_name: string, fallback: boolean) => fallback),
+  } as unknown as FeatureFlagsService;
+
   const service = new AuthService(
     prisma,
     jwtService,
@@ -121,6 +126,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     security,
     turnstile,
     hibp,
+    flags,
   );
 
   return {
@@ -132,6 +138,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     security,
     turnstile,
     hibp,
+    flags,
   };
 }
 

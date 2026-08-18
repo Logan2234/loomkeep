@@ -1,10 +1,14 @@
 import { ForbiddenException } from "@nestjs/common";
 import { Domain } from "@loomkeep/shared";
+import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DomainGateService } from "./domain-gate.service";
 
 describe("DomainGateService", () => {
-  function makeService(enabledDomains: Domain[] | null) {
+  function makeService(
+    enabledDomains: Domain[] | null,
+    maintenanceDomains: Domain[] = [],
+  ) {
     const prisma = {
       user: {
         findUnique: jest
@@ -14,7 +18,14 @@ describe("DomainGateService", () => {
           ),
       },
     } as unknown as PrismaService;
-    return new DomainGateService(prisma);
+    const flags = {
+      isEnabled: jest.fn(
+        (name: string, fallback: boolean) =>
+          maintenanceDomains.some((d) => name === `MAINTENANCE_${d}`) ||
+          fallback,
+      ),
+    } as unknown as FeatureFlagsService;
+    return new DomainGateService(prisma, flags);
   }
 
   it("resolves when the domain is enabled", async () => {
@@ -51,5 +62,19 @@ describe("DomainGateService", () => {
       const service = makeService(null);
       await expect(service.getEnabledDomains("nope")).resolves.toEqual([]);
     });
+
+    it("excludes a domain under MAINTENANCE_<DOMAIN>, even if the user enabled it", async () => {
+      const service = makeService([Domain.MEDIA, Domain.BOOKS], [Domain.BOOKS]);
+      await expect(service.getEnabledDomains("u1")).resolves.toEqual([
+        Domain.MEDIA,
+      ]);
+    });
+  });
+
+  it("throws 403 for a domain under maintenance, even if the user enabled it", async () => {
+    const service = makeService([Domain.BOOKS], [Domain.BOOKS]);
+    await expect(
+      service.assertEnabled("u1", Domain.BOOKS),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

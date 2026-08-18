@@ -1,0 +1,81 @@
+# Optional add-on: Unleash (self-hosted, open-source feature flag service).
+# Backs the deployment-wide flags read by the api at runtime instead of a
+# baked-in env var (SOCIAL_ENABLED, REGISTRATION_ENABLED, and per-domain
+# MAINTENANCE_<DOMAIN> flags) so an admin can flip them without a redeploy.
+# Add on top of the base compose + whichever deployment override you're
+# using:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.unleash.yml up -d
+#
+# Shares the app's own Postgres instance (a separate `unleash` database, not
+# a dedicated container) — same reasoning as Umami: avoids a second Postgres
+# process on a single-VPS deployment. Unlike GlitchTip/Loki this isn't an
+# observability tool watching the app from outside, so there's no
+# failure-domain reason to keep it isolated either. The `unleash` database is
+# created automatically only on a brand-new `db` volume (see
+# flags/init-unleash-db.sql); on an already-initialized volume, create it
+# once by hand — see that file's own comment for the exact command.
+#
+# Reachable at UNLEASH_SITE_ADDRESS (e.g. flags.loomkeep.app) via Caddy — see
+# flags/unleash.caddy. The api talks to Unleash over the internal
+# Docker network (UNLEASH_API_URL), never through that public subdomain.
+x-unleash-logging: &unleash-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  unleash:
+    image: unleashorg/unleash-server:6
+    restart: unless-stopped
+    logging: *unleash-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/unleash
+      # Comma-separated backend tokens created on first startup — the api
+      # authenticates to Unleash's client API with this one. Format is
+      # `<project>:<environment>.<64-hex-chars>`, e.g.
+      # `default:production.<output of openssl rand -hex 32>` — see
+      # .env.example.
+      INIT_BACKEND_API_TOKENS: ${UNLEASH_API_TOKEN:?set UNLEASH_API_TOKEN in .env}
+      UNLEASH_DEFAULT_ADMIN_PASSWORD: ${UNLEASH_ADMIN_PASSWORD:?set UNLEASH_ADMIN_PASSWORD in .env}
+      # No outbound calls to Unleash's own version-check endpoint —
+      # consistent with the self-host philosophy of the rest of this stack
+      # (same call as Umami's DISABLE_TELEMETRY).
+      CHECK_VERSION: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4242/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Partial override of the `db` service defined in docker-compose.yml: adds
+  # the init script that creates the `unleash` database on a brand-new
+  # volume, without redeclaring the whole service.
+  db:
+    volumes:
+      - ./flags/init-unleash-db.sql:/docker-entrypoint-initdb.d/init-unleash-db.sql:ro
+
+  # Partial override of the `api` service defined in docker-compose.yml: adds
+  # the two env vars the api needs to reach Unleash over the internal Docker
+  # network, without redeclaring the whole service.
+  api:
+    environment:
+      UNLEASH_API_URL: http://unleash:4242/api
+      UNLEASH_API_TOKEN: ${UNLEASH_API_TOKEN:?set UNLEASH_API_TOKEN in .env}
+    depends_on:
+      - unleash
+
+  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
+  # adds the Unleash site block + its domain, without redeclaring the whole
+  # service.
+  caddy:
+    environment:
+      UNLEASH_SITE_ADDRESS: flags.${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./flags/unleash.caddy:/etc/caddy/sites-enabled/unleash.caddy:ro
+    depends_on:
+      - unleash

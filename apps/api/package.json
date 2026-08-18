@@ -44,6 +44,7 @@
     "prisma": "^7.9.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "unleash-client": "^6.12.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

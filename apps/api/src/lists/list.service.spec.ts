@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
@@ -17,6 +18,12 @@ function fakeConfig(socialEnabled = true): ConfigService {
 
 function fakeNotifications(): NotificationService {
   return { create: jest.fn() } as unknown as NotificationService;
+}
+
+function fakeFlags(): FeatureFlagsService {
+  return {
+    isEnabled: jest.fn((_name: string, fallback: boolean) => fallback),
+  } as unknown as FeatureFlagsService;
 }
 
 function relation(over: Partial<ViewerRelation> = {}): ViewerRelation {
@@ -73,6 +80,7 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       visibility,
       activity,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
   }
@@ -187,6 +195,7 @@ describe("ListService.listForUser — editor lists on a profile", () => {
       visibility,
       {} as ActivityService,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
     return { svc };
@@ -233,6 +242,7 @@ describe("ListService.addItem", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
     return { svc, create, activity };
@@ -289,6 +299,7 @@ describe("ListService.reorder", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
     return { svc, listItemUpdate, listUpdateMany };
@@ -359,6 +370,7 @@ describe("ListService.canEdit (via getEditable)", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(opts.socialEnabled ?? true),
+      fakeFlags(),
       fakeNotifications(),
     );
   }
@@ -423,6 +435,7 @@ describe("ListService member management — owner only", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
+      fakeFlags(),
       notifications,
     );
     return { svc, create, notifications };
@@ -482,6 +495,7 @@ describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
       {} as VisibilityService,
       {} as ActivityService,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
     return { svc, listUpdate, listMemberDelete };
@@ -532,6 +546,7 @@ describe("ListService — activity emission on create/share", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
     return { svc, activity };
@@ -584,6 +599,7 @@ describe("ListService — Figurant can't share a list", () => {
       {} as VisibilityService,
       activity,
       fakeConfig(),
+      fakeFlags(),
       fakeNotifications(),
     );
     return { svc, create, update };

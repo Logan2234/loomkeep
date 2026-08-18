@@ -52,4 +52,5 @@ export type IconName =
   | "camera"
   | "link"
   | "logout"
-  | "sparkles";
+  | "sparkles"
+  | "lock";

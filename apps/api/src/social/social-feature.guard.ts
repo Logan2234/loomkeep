@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { isSocialEnabled } from "./social.config";
 
 /**
@@ -13,10 +14,13 @@ import { isSocialEnabled } from "./social.config";
  */
 @Injectable()
 export class SocialFeatureGuard implements CanActivate {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly flags: FeatureFlagsService,
+  ) {}
 
   canActivate(): boolean {
-    if (!isSocialEnabled(this.config)) {
+    if (!isSocialEnabled(this.config, this.flags)) {
       throw new NotFoundException();
     }
 

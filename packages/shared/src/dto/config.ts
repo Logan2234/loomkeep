@@ -1,3 +1,5 @@
+import type { Domain } from "../enums";
+
 /**
  * Public runtime configuration the web reads once at startup (no auth), served
  * by `GET /api/config`. Lets a single Docker image behave differently per
@@ -19,6 +21,16 @@ export interface PublicConfigDto {
    * /auth/register`.
    */
   registrationEnabled: boolean;
+
+  /**
+   * Domains an admin put in maintenance deployment-wide (Unleash
+   * `MAINTENANCE_<DOMAIN>` flags — see FeatureFlagsService), on top of
+   * whatever the signed-in user set in their own `enabledDomains`. The web
+   * treats these exactly like a domain the user turned off themselves:
+   * hidden from the nav, its routes redirect to `/app`. Empty when Unleash
+   * isn't configured on this deployment.
+   */
+  maintenanceDomains: Domain[];
 
   /**
    * Whether the admin "Schéma" page (DB ERD + module graph) has content to

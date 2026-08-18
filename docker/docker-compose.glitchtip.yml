@@ -7,9 +7,17 @@
 # Runs GlitchTip in `SERVER_ROLE: all_in_one` mode (web + Celery worker +
 # beat in one container) rather than splitting them into separate services —
 # this is a low-traffic single/few-user instance, not worth the extra
-# moving parts. Gets its own dedicated postgres+valkey rather than sharing
-# the app's `db`, same reasoning as Loki/Grafana getting their own storage:
-# an add-on shouldn't share a failure domain with the app it's watching.
+# moving parts. Shares the app's own Postgres instance (a separate
+# `glitchtip` database, not a dedicated container) rather than running its
+# own — same reasoning as Umami: avoids a second Postgres process on a
+# single-VPS deployment. Accepted trade-off versus the original
+# fully-isolated setup: a Postgres outage now also takes down GlitchTip,
+# which is exactly the moment you'd most want it to still record/alert —
+# still keeps its own dedicated Valkey though, unrelated technology, nothing
+# to gain by trying to share that. The `glitchtip` database is created
+# automatically only on a brand-new `db` volume (see
+# observability/init-glitchtip-db.sql); on an already-initialized volume,
+# create it once by hand — see that file's own comment for the exact command.
 #
 # Reachable at GLITCHTIP_SITE_ADDRESS (e.g. errors.loomkeep.app) via
 # Caddy — see observability/glitchtip.caddy, imported by the base Caddyfile
@@ -26,7 +34,7 @@ x-glitchtip-logging: &glitchtip-logging
     max-file: "5"
 
 x-glitchtip-environment: &glitchtip-environment
-  DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:?set GLITCHTIP_DB_PASSWORD in .env}@glitchtip-postgres:5432/glitchtip
+  DATABASE_URL: postgres://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/glitchtip
   VALKEY_URL: redis://glitchtip-valkey:6379
   SECRET_KEY: ${GLITCHTIP_SECRET_KEY:?set GLITCHTIP_SECRET_KEY in .env}
   GLITCHTIP_DOMAIN: https://errors.${DOMAIN:?set DOMAIN in .env}
@@ -57,20 +65,6 @@ x-glitchtip-environment: &glitchtip-environment
   ENABLE_ADMIN: false
 
 services:
-  glitchtip-postgres:
-    image: postgres:18.6-alpine
-    restart: unless-stopped
-    logging: *glitchtip-logging
-    environment:
-      POSTGRES_USER: glitchtip
-      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:?set GLITCHTIP_DB_PASSWORD in .env}
-      POSTGRES_DB: glitchtip
-    volumes:
-      # Parent-dir mount, same reasoning as the app's own `db` service in
-      # docker-compose.yml: postgres 18+'s image refuses a volume mounted
-      # directly at .../data.
-      - glitchtip-pg-data:/var/lib/postgresql
-
   glitchtip-valkey:
     image: valkey/valkey:9.1.1-alpine
     restart: unless-stopped
@@ -89,8 +83,17 @@ services:
     volumes:
       - glitchtip-uploads:/code/uploads
     depends_on:
-      - glitchtip-postgres
-      - glitchtip-valkey
+      db:
+        condition: service_healthy
+      glitchtip-valkey:
+        condition: service_started
+
+  # Partial override of the `db` service defined in docker-compose.yml: adds
+  # the init script that creates the `glitchtip` database on a brand-new
+  # volume, without redeclaring the whole service.
+  db:
+    volumes:
+      - ./observability/init-glitchtip-db.sql:/docker-entrypoint-initdb.d/init-glitchtip-db.sql:ro
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml:
   # adds the GlitchTip site block + its domain, without redeclaring the
@@ -104,5 +107,4 @@ services:
       - glitchtip
 
 volumes:
-  glitchtip-pg-data:
   glitchtip-uploads:

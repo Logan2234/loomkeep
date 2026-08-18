@@ -21,6 +21,7 @@ import {
   type UserSummaryDto,
 } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
@@ -69,6 +70,7 @@ export class ListService {
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
     private readonly config: ConfigService,
+    private readonly flags: FeatureFlagsService,
     private readonly notifications: NotificationService,
   ) {}
 
@@ -621,7 +623,7 @@ export class ListService {
     if (!row) throw new NotFoundException();
     if (row.userId === userId) return { row, role: "OWNER" };
 
-    if (isSocialEnabled(this.config)) {
+    if (isSocialEnabled(this.config, this.flags)) {
       const member = await this.prisma.listMember.findUnique({
         where: { listId_userId: { listId: id, userId } },
       });

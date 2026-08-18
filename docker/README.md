@@ -8,7 +8,7 @@ this way" companion for whoever edits these configs.
 ## Layout
 
 Every `docker-compose.*.yml`, the `Caddyfile`, and the add-on config dirs
-(`observability/`, `authelia/`, `homepage/`, `umami/`) live under `docker/`, not the
+(`observability/`, `authelia/`, `homepage/`, `umami/`, `flags/`) live under `docker/`, not the
 repo root — kept together as a unit so their relative paths to each other
 never had to change. `docker-compose.yml`'s `api`/`web` services reference
 pre-built `image:`s rather than building — see "Images" below. Both
@@ -173,9 +173,13 @@ already hardcoding this instance's own domain rather than being templated.
 ## Error tracking (`docker-compose.glitchtip.yml`)
 
 GlitchTip — a self-hosted, Sentry-API-compatible error tracker, run in
-`SERVER_ROLE: all_in_one` mode with its own dedicated Postgres + Valkey
-(deliberately not sharing the app's `db`, same reasoning as Loki/Grafana's
-own storage). Reachable at `errors.<DOMAIN>`, same
+`SERVER_ROLE: all_in_one` mode. Shares the app's own Postgres instance (a
+separate `glitchtip` database, see `observability/init-glitchtip-db.sql`)
+rather than running a dedicated container — accepted trade-off versus full
+isolation from Loki/Grafana's own storage: a Postgres outage now also takes
+GlitchTip down with it, right when you'd most want it to still alert. Still
+keeps its own dedicated Valkey (different technology, nothing to gain by
+sharing that). Reachable at `errors.<DOMAIN>`, same
 public-with-own-login-no-basic-auth pattern as Grafana/Portainer. Email
 alerts (new-error/regression notifications) are opt-in via
 `GLITCHTIP_EMAIL_URL` — not auto-derived from the app's own SMTP config
@@ -197,6 +201,24 @@ postinstall is explicitly declined in `pnpm-workspace.yaml`'s
 
 `docker-compose.portainer.yml` adds a Docker management UI at
 `portainer.<DOMAIN>` (same pattern, no dedicated storage needed).
+
+## Feature flags (`docker-compose.unleash.yml`)
+
+[Unleash](https://www.getunleash.io/) — a self-hosted, open-source feature
+flag service. Shares the app's own Postgres instance (a separate `unleash`
+database, see `flags/init-unleash-db.sql`), same reasoning as Umami:
+avoids a second Postgres process on a single-VPS deployment, and unlike
+GlitchTip/Loki this isn't watching the app from outside, so there's no
+failure-domain reason to isolate it either. Reachable at `flags.<DOMAIN>`,
+same public-with-own-login-no-basic-auth pattern as Grafana/Portainer/
+GlitchTip — except Unleash's open-source edition has no OIDC support
+(enterprise-only), so it can't go behind Authelia as true SSO the way those
+three do.
+
+The api authenticates to Unleash's client API over the internal Docker
+network (`UNLEASH_API_URL`/`UNLEASH_API_TOKEN`, this override's partial
+override of the `api` service), never through the public subdomain — that
+subdomain only serves the admin UI.
 
 ## User feedback board (`docker-compose.quackback.yml`)
 

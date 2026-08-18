@@ -13,6 +13,7 @@ import { CommentsModule } from "./comments/comments.module";
 import { CommonModule } from "./common/common.module";
 import { RuntimeConfigModule } from "./config/config.module";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
+import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
 import { HealthModule } from "./health/health.module";
 import { ImportModule } from "./import/import.module";
@@ -47,6 +48,7 @@ import { loggerOptions } from "./common/logger.config";
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     PrismaModule,
     CommonModule,
+    FeatureFlagsModule,
     RuntimeConfigModule,
     MailModule,
     AuthModule,

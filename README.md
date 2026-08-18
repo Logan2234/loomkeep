@@ -304,9 +304,8 @@ without SSH. Gated by Portainer's own admin login (set on first visit).
 
 ### Error tracking (optional)
 
-Set `GLITCHTIP_SECRET_KEY` and `GLITCHTIP_DB_PASSWORD` in `.env`, add
-`docker/docker-compose.glitchtip.yml` to `COMPOSE_FILE` (see "Combining
-add-ons" above), then:
+Set `GLITCHTIP_SECRET_KEY` in `.env`, add `docker/docker-compose.glitchtip.yml`
+to `COMPOSE_FILE` (see "Combining add-ons" above), then:
 
 ```sh
 docker compose pull
@@ -319,9 +318,11 @@ search above shows every log line, GlitchTip groups exceptions by
 fingerprint into a single "issue" with an occurrence count, and can email
 you the moment a _new_ error type first appears rather than waiting for you
 to go looking. Gated by GlitchTip's own login (the first visitor sets up the
-org). Runs its own dedicated Postgres + Valkey, separate from the app's
-database. Email alerts are off out of the box — see the
-`GLITCHTIP_EMAIL_URL` comment in `.env.example` to enable them.
+org). Shares the app's own Postgres instance rather than running a dedicated
+database container (still keeps its own dedicated Valkey) — see the top
+comment in `docker-compose.glitchtip.yml` for the one-time manual step
+required on an already-running instance. Email alerts are off out of the
+box — see the `GLITCHTIP_EMAIL_URL` comment in `.env.example` to enable them.
 
 The app itself only _reports_ to GlitchTip once you create a project there
 (one for the API, platform "Node"; one for the web app, platform
@@ -372,6 +373,38 @@ instead of Cloudflare's edge: **Rules > Settings > Managed Transforms**,
 enable **Add visitor location headers** — Caddy's `reverse_proxy` in
 `umami/umami.caddy` already forwards every header untouched, so no compose
 or Caddy change is needed on this side.
+
+### Feature flags (optional)
+
+Set `UNLEASH_ADMIN_PASSWORD` and `UNLEASH_API_TOKEN` in `.env`, add
+`docker/docker-compose.unleash.yml` to `COMPOSE_FILE` (see "Combining
+add-ons" above), then:
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+Adds [Unleash](https://www.getunleash.io/) (open-source feature flag
+service), reachable at `flags.<DOMAIN>` via Caddy. Backs the deployment-wide
+flags the api reads at runtime (`SOCIAL_ENABLED`, `REGISTRATION_ENABLED`, and
+the per-domain `MAINTENANCE_<DOMAIN>` flags) instead of a baked-in env var, so
+they can be flipped from Unleash's UI without a redeploy. Shares the app's
+own Postgres instance rather than running a dedicated database container —
+see the top comment in `docker-compose.unleash.yml` for the one-time manual
+step required on an already-running instance. Gated by Unleash's own login
+only (default `admin`/`unleash4all` on first visit — change it immediately);
+its open-source edition has no OIDC support, so unlike Grafana/GlitchTip/
+Portainer this can't sit behind Authelia as true SSO.
+
+**Migrating `SOCIAL_ENABLED`/`REGISTRATION_ENABLED` onto Unleash on an
+already-running instance**: Unleash creates a new flag **disabled** by
+default. Before that flag exists and is turned on in Unleash, `isEnabled()`
+still falls back to the env var (see `FeatureFlagsService`) — safe. But once
+you create `SOCIAL_ENABLED` (or `REGISTRATION_ENABLED`) in Unleash's UI, it
+becomes authoritative immediately, even OFF by default — so create it and
+flip it on in Unleash _before_ removing the env var from `.env`, not after,
+or the feature goes dark for however long that gap lasts.
 
 ### Landing page (optional)
 
