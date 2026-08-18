@@ -4,6 +4,7 @@
     fetchAllPages,
     listLibrary,
     searchCatalog,
+    upsertLibraryEntry,
   } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -11,6 +12,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
+  import { m } from "$lib/paraglide/messages.js";
   import type {
     EntryStatus,
     MediaSummaryDto,
@@ -48,14 +50,6 @@
     ANIME: "Animé",
   };
 
-  const STATUS_LABELS: Record<EntryStatus, string> = {
-    PLANNED: "À voir",
-    WATCHING: "En cours",
-    UP_TO_DATE: "À jour",
-    COMPLETED: "Terminé",
-    DROPPED: "Abandonné",
-  };
-
   const DEBOUNCE_MS = 300;
 
   let type = $state<MediaType | undefined>(undefined);
@@ -89,18 +83,37 @@
   const trackedStatus = (m: MediaSummaryDto) =>
     tracked.get(trackKey(m.type, m.sourceId));
 
+  async function loadTracked() {
+    try {
+      const entries = await fetchAllPages((page) => listLibrary({ page }));
+      tracked = new SvelteMap(
+        entries.map((e) => [
+          trackKey(e.mediaItem.type, e.mediaItem.sourceId),
+          e.status,
+        ]),
+      );
+    } catch {
+      // A failed library load only costs the "already added" flag; ignore.
+    }
+  }
+
   $effect(() => {
-    fetchAllPages((page) => listLibrary({ page }))
-      .then((entries) => {
-        tracked = new SvelteMap(
-          entries.map((e) => [
-            trackKey(e.mediaItem.type, e.mediaItem.sourceId),
-            e.status,
-          ]),
-        );
-      })
-      .catch(() => {});
+    void loadTracked();
   });
+
+  async function addMedia(media: MediaSummaryDto) {
+    try {
+      await upsertLibraryEntry({
+        source: media.source,
+        sourceId: media.sourceId,
+        type: media.type,
+        status: "PLANNED",
+      });
+      await loadTracked();
+    } catch (err) {
+      error = err instanceof ApiError ? err.message : "Ajout impossible";
+    }
+  }
 
   onMount(() => {
     reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -234,23 +247,18 @@
 {:else if results.length > 0}
   <PosterGrid>
     {#each shown as media (keyOf(media))}
-      <a
+      {@const status = trackedStatus(media)}
+      <div
         in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
-        href={`/app/media/${media.type.toLowerCase()}/${media.sourceId}`}
-        class="card group hover:border-accent flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
-        <div class="relative">
-          <Poster
-            src={media.posterUrl}
-            title={media.title}
-            adult={media.isAdult} />
-          {#if trackedStatus(media)}
-            <span
-              class="bg-accent text-accent-fg absolute top-2 left-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.6rem] font-bold shadow">
-              <Icon name="check" class="h-3 w-3" />
-              {STATUS_LABELS[trackedStatus(media)!]}
-            </span>
-          {/if}
-        </div>
+        class="card group hover:border-accent relative flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
+        <a
+          href={`/app/media/${media.type.toLowerCase()}/${media.sourceId}`}
+          class="absolute inset-0 z-1"
+          aria-label={media.title}></a>
+        <Poster
+          src={media.posterUrl}
+          title={media.title}
+          adult={media.isAdult} />
         <div class="flex flex-1 flex-col gap-1.5 p-3">
           <span class="font-display text-sm leading-tight font-semibold"
             >{media.title}</span>
@@ -259,7 +267,24 @@
               &nbsp;· {media.year}{/if}
           </span>
         </div>
-      </a>
+        {#if status}
+          <span
+            title={m.search_result_already_added()}
+            aria-label={m.search_result_already_added()}
+            class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
+            <Icon name="check" class="h-4 w-4" />
+          </span>
+        {:else}
+          <button
+            type="button"
+            onclick={() => addMedia(media)}
+            title={m.search_result_add()}
+            aria-label={m.search_result_add()}
+            class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
+            <Icon name="plus" class="h-4 w-4" />
+          </button>
+        {/if}
+      </div>
     {/each}
   </PosterGrid>
 

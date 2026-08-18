@@ -7,14 +7,12 @@
   import LineChart from "./LineChart.svelte";
   import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
-  import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
   const socialStats = statsResource<SocialStatsDto>(
     getSocialStats,
     "Statistiques sociales indisponibles",
   );
   const social = $derived(socialStats.data);
-  const loading = $derived(socialStats.loading);
   const error = $derived(socialStats.error);
 
   const pf = new Intl.NumberFormat("fr-FR", {
@@ -39,8 +37,6 @@
 
 {#if error}
   <p class="text-danger text-sm">{error}</p>
-{:else if loading}
-  <StatTilesSkeleton />
 {:else if social}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile

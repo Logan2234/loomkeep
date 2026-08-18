@@ -29,6 +29,7 @@
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
   import { formatDate } from "$lib/format";
+  import { goBack } from "$lib/backNav.svelte";
   import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
   import type {
@@ -324,6 +325,7 @@
     </div>
     <a
       href="/app/media"
+      onclick={goBack}
       class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-black/55">
       ← Vidéo
     </a>

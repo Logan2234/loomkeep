@@ -11,7 +11,6 @@
   import StackedBar from "./StackedBar.svelte";
   import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
-  import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
   let {
     musicBreakdown,
@@ -22,7 +21,6 @@
     "Statistiques musique indisponibles",
   );
   const music = $derived(musicStats.data);
-  const loading = $derived(musicStats.loading);
   const error = $derived(musicStats.error);
 
   const listenedCount = $derived(
@@ -56,8 +54,6 @@
 
 {#if error}
   <p class="text-danger text-sm">{error}</p>
-{:else if loading}
-  <StatTilesSkeleton />
 {:else if music}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile value={hours} unit="h" label="Durée d'écoute" />

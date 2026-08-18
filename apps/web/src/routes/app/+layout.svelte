@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { adminReports } from "$lib/admin-reports.svelte";
   import { auth } from "$lib/auth.svelte";
+  import { trackBackHistory } from "$lib/backNav.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
@@ -14,6 +15,8 @@
   import { m } from "$lib/paraglide/messages.js";
 
   let { children } = $props();
+
+  trackBackHistory();
 
   // Every route under /app requires a session: belonging to this layout *is*
   // the gate, so there's no route allowlist to keep in sync when a screen is

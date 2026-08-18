@@ -17,11 +17,9 @@
     { label: "Abandonné", value: "DROPPED" },
   ];
 
-  const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: "Film",
-    SERIES: "Série",
-    ANIME: "Animé",
-  };
+  const STATUS_LABELS = Object.fromEntries(
+    STATUS_OPTIONS.map((o) => [o.value, o.label]),
+  ) as Record<string, string>;
 
   const SORTS = [
     { label: "Vu récemment", value: "recent" },
@@ -98,7 +96,7 @@
           </span>
         {:else}
           <span class="timecode text-xs">
-            {TYPE_LABELS[entry.mediaItem.type]}{#if entry.rating !== null}
+            {STATUS_LABELS[entry.status]}{#if entry.rating !== null}
               · ★ {entry.rating}{/if}
           </span>
         {/if}

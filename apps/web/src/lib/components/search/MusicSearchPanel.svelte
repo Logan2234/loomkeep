@@ -11,8 +11,8 @@
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import { MUSIC_STATUS_LABELS } from "$lib/constants/status-labels";
   import { debounce } from "$lib/debounce";
+  import { m } from "$lib/paraglide/messages.js";
   import type { MusicEntryDto, MusicSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -134,16 +134,17 @@
   <PosterGrid>
     {#each shown as album (album.sourceId)}
       {@const entry = tracked.get(album.sourceId)}
-      <div class="card group flex flex-col">
-        <a href={`/app/music/${album.sourceId}`} class="block">
-          <Poster src={album.coverUrl} title={album.title} />
-        </a>
+      <div
+        class="card group hover:border-accent relative flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
+        <a
+          href={`/app/music/${album.sourceId}`}
+          class="absolute inset-0 z-1"
+          aria-label={album.title}></a>
+        <Poster src={album.coverUrl} title={album.title} />
         <div class="flex flex-1 flex-col gap-2 p-3">
-          <a
-            href={`/app/music/${album.sourceId}`}
-            class="font-display group-hover:text-accent text-sm leading-tight font-semibold">
+          <span class="font-display text-sm leading-tight font-semibold">
             {album.title}
-          </a>
+          </span>
           <span class="timecode text-xs">
             {#if album.artists.length > 0}
               {album.artists[0]}{#if album.year}
@@ -154,20 +155,24 @@
               Album
             {/if}
           </span>
-          {#if entry}
-            <span
-              class="text-accent mt-auto inline-flex items-center gap-1 text-xs font-semibold">
-              <Icon name="check" class="h-3.5 w-3.5" />
-              {MUSIC_STATUS_LABELS[entry.status]}
-            </span>
-          {:else}
-            <button
-              class="btn btn-primary btn-sm mt-auto"
-              onclick={() => addAlbum(album)}>
-              <Icon name="plus" class="h-4 w-4" /> Ajouter
-            </button>
-          {/if}
         </div>
+        {#if entry}
+          <span
+            title={m.search_result_already_added()}
+            aria-label={m.search_result_already_added()}
+            class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
+            <Icon name="check" class="h-4 w-4" />
+          </span>
+        {:else}
+          <button
+            type="button"
+            onclick={() => addAlbum(album)}
+            title={m.search_result_add()}
+            aria-label={m.search_result_add()}
+            class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
+            <Icon name="plus" class="h-4 w-4" />
+          </button>
+        {/if}
       </div>
     {/each}
   </PosterGrid>

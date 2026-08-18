@@ -403,6 +403,9 @@
   "tracking_favorite_add": "Favori",
   "tracking_favorite_remove": "Retirer des favoris",
 
+  "search_result_add": "Ajouter à la bibliothèque",
+  "search_result_already_added": "Déjà dans ta bibliothèque",
+
   "notefield_label": "Prise de note",
   "notefield_placeholder": "Notes personnelles…",
 
