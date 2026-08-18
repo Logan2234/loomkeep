@@ -34,13 +34,14 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/unleash
+      DATABASE_URL: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/unleash?sslmode=disable
       # Comma-separated backend tokens created on first startup — the api
       # authenticates to Unleash's client API with this one. Format is
       # `<project>:<environment>.<64-hex-chars>`, e.g.
       # `default:production.<output of openssl rand -hex 32>` — see
       # .env.example.
       INIT_BACKEND_API_TOKENS: ${UNLEASH_API_TOKEN:?set UNLEASH_API_TOKEN in .env}
+      UNLEASH_DEFAULT_ADMIN_USERNAME: ${UNLEASH_ADMIN_USERNAME:-admin}
       UNLEASH_DEFAULT_ADMIN_PASSWORD: ${UNLEASH_ADMIN_PASSWORD:?set UNLEASH_ADMIN_PASSWORD in .env}
       # No outbound calls to Unleash's own version-check endpoint —
       # consistent with the self-host philosophy of the rest of this stack
