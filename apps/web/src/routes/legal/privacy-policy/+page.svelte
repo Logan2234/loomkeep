@@ -315,7 +315,7 @@
       <li>AniList ;</li>
       <li>OMDb ;</li>
       <li>IGDB ;</li>
-      <li>Google Books ;</li>
+      <li>Open Library ;</li>
       <li>MusicBrainz.</li>
     </ul>
     <p>
@@ -331,7 +331,7 @@
     <p>
       Par ailleurs, les jaquettes et visuels des œuvres affichées dans Loomkeep
       sont chargés directement par le navigateur de l'utilisateur depuis les
-      serveurs (CDN) de ces fournisseurs (notamment TMDB et Google Books), et
+      serveurs (CDN) de ces fournisseurs (notamment TMDB et Open Library), et
       non via les serveurs de Loomkeep. Ces fournisseurs reçoivent donc
       l'adresse IP du visiteur à chaque affichage d'une fiche, y compris en
       dehors de toute recherche active.
@@ -656,7 +656,7 @@
       </li>
       <li>
         les fournisseurs de données et d'images de catalogue basés hors UE
-        (notamment TMDB, IGDB, Google Books et MusicBrainz), qui reçoivent l'IP
+        (notamment TMDB, IGDB, Open Library et MusicBrainz), qui reçoivent l'IP
         du visiteur lors des recherches et de l'affichage des jaquettes (voir
         section 6) ;
       </li>

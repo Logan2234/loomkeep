@@ -55,7 +55,7 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 | Table            | Description                                                                      |
 | ---------------- | -------------------------------------------------------------------------------- |
 | `BookItem`       | Livre mis en cache localement dès qu'un `User` le référence.                     |
-| `BookExternalId` | ID externe (Google Books) rattaché à un `BookItem`.                              |
+| `BookExternalId` | ID externe (Open Library) rattaché à un `BookItem`.                              |
 | `BookEntry`      | Entrée de bibliothèque reliant un `User` à un `BookItem`.                        |
 | `BookReplay`     | Une relecture complétée au-delà de la première lecture d'un `BookEntry`.         |
 | `ReadingGoal`    | Objectif annuel de lecture (nombre de livres) d'un `User` pour une année donnée. |

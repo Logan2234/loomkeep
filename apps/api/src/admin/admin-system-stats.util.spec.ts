@@ -7,14 +7,15 @@ import {
 describe("providerCallRows", () => {
   const specs: ProviderQuotaSpec[] = [
     { key: "tmdb", label: "TMDB", dailyLimit: null },
-    { key: "googleBooks", label: "Google Books", dailyLimit: 1000 },
+    { key: "openLibrary", label: "Open Library", dailyLimit: null },
     { key: "omdb", label: "OMDb (notes)", dailyLimit: 1000 },
   ];
 
   it("labels, sorts by calls and computes the quota share when there is a limit", () => {
     const rows = providerCallRows(
       new Map([
-        ["googleBooks", 820],
+        ["omdb", 820],
+        ["openLibrary", 140],
         ["tmdb", 3420],
       ]),
       specs,
@@ -23,10 +24,16 @@ describe("providerCallRows", () => {
     expect(rows).toEqual([
       { provider: "TMDB", calls: 3420, dailyLimit: null, percentUsed: null },
       {
-        provider: "Google Books",
+        provider: "OMDb (notes)",
         calls: 820,
         dailyLimit: 1000,
         percentUsed: 82,
+      },
+      {
+        provider: "Open Library",
+        calls: 140,
+        dailyLimit: null,
+        percentUsed: null,
       },
     ]);
   });

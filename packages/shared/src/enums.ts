@@ -156,9 +156,9 @@ export const GameOwnershipStatus = {
 export type GameOwnershipStatus =
   (typeof GameOwnershipStatus)[keyof typeof GameOwnershipStatus];
 
-/** Source a book's catalogue data comes from. Google Books only. */
+/** Source a book's catalogue data comes from. Open Library only. */
 export const BookSource = {
-  GOOGLE_BOOKS: "GOOGLE_BOOKS",
+  OPEN_LIBRARY: "OPEN_LIBRARY",
 } as const;
 export type BookSource = (typeof BookSource)[keyof typeof BookSource];
 

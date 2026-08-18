@@ -30,7 +30,7 @@ with optional friends/reviews/comments social features. Built as a TV Time
 replacement you fully own: your data lives in your own PostgreSQL, catalogues
 come live from [TMDB](https://www.themoviedb.org/) (movies & series),
 [AniList](https://anilist.co/) (anime), [IGDB](https://www.igdb.com/) (games),
-[Google Books](https://books.google.com/) (books) and
+[Open Library](https://openlibrary.org/) (books) and
 [MusicBrainz](https://musicbrainz.org/) (music).
 
 ## Stack

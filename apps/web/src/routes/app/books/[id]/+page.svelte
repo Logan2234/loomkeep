@@ -20,7 +20,6 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
@@ -41,12 +40,14 @@
   import { m } from "$lib/paraglide/messages.js";
   import type { BookDetailDto } from "@loomkeep/shared";
 
-  // Google Books is the only book source today; the web route carries just the id.
-  const SOURCE = "google_books";
+  // Open Library is the only book source today; the web route carries just
+  // the work id (e.g. "OL893414W").
+  const SOURCE = "open_library";
 
-  // Brand-ish color for the rating source (no official logo — trademarked).
+  // Brand-ish color for the rating source (Open Library has no icon in
+  // simple-icons, so the chip carries the name alone).
   const RATING_STYLES: Record<string, string> = {
-    "Google Books": "bg-[#4285f4] text-white",
+    "Open Library": "bg-[#e1dcc5] text-black",
   };
 
   let detail = $state<BookDetailDto | null>(null);
@@ -242,17 +243,14 @@
             target="_blank"
             rel="noopener noreferrer"
             class="link-accent mt-4 inline-flex items-center gap-1 text-sm">
-            Voir sur Google Books ↗
+            Voir sur Open Library ↗
           </a>
         {/if}
 
-        <!-- Required by the Google Books API branding guidelines: the "powered
-             by Google" mark adjacent to any displayed result. -->
-        <p class="text-dim mt-2 flex items-center gap-1.5 text-[0.6rem]">
-          <ProviderMark
-            brand="googleBooks"
-            class="h-3 w-3 shrink-0 opacity-70" />
-          {m.book_google_notice()}
+        <!-- Courtesy attribution: Open Library asks for none, but naming the
+             source keeps the fiche honest about where its data comes from. -->
+        <p class="text-dim mt-2 text-[0.6rem]">
+          {m.book_openlibrary_notice()}
         </p>
 
         <!-- Actions -->

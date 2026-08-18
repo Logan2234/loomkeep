@@ -27,8 +27,8 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
       authors: overrides.authors ?? ["Frank Herbert"],
       coverUrl: null,
       pageCount: overrides.pageCount ?? null,
-      canonicalSource: "GOOGLE_BOOKS",
-      externalIds: [{ source: "GOOGLE_BOOKS", externalId: `gb-${id}` }],
+      canonicalSource: "OPEN_LIBRARY",
+      externalIds: [{ source: "OPEN_LIBRARY", externalId: `ol-${id}` }],
     },
   };
 }

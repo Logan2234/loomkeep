@@ -271,7 +271,7 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
    */
   private async get<T>(path: string): Promise<T> {
     const contact =
-      this.configService.get<string>("MUSICBRAINZ_CONTACT") ??
+      this.configService.get<string>("API_CONTACT") ??
       "self-hosted, no contact provided";
     const url = `${API_URL}${path}`;
 

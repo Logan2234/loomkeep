@@ -423,25 +423,23 @@ async function main() {
 
   const dune = await prisma.bookItem.create({
     data: {
-      canonicalSource: BookSource.GOOGLE_BOOKS,
+      canonicalSource: BookSource.OPEN_LIBRARY,
       title: "Dune",
       authors: ["Frank Herbert"],
-      coverUrl: "https://books.google.com/books/content?id=B1hSG45JCX4C",
+      coverUrl: "https://covers.openlibrary.org/b/id/11481354-L.jpg",
       overview: "L'épopée de Paul Atréides sur la planète désertique Arrakis.",
       releaseDate: new Date("1965-08-01"),
       genres: ["Science-Fiction"],
       pageCount: 688,
       externalIds: {
-        create: [
-          { source: BookSource.GOOGLE_BOOKS, externalId: "B1hSG45JCX4C" },
-        ],
+        create: [{ source: BookSource.OPEN_LIBRARY, externalId: "OL893414W" }],
       },
     },
   });
 
   const projectHailMary = await prisma.bookItem.create({
     data: {
-      canonicalSource: BookSource.GOOGLE_BOOKS,
+      canonicalSource: BookSource.OPEN_LIBRARY,
       title: "Projet Hail Mary",
       authors: ["Andy Weir"],
       overview:
@@ -451,7 +449,7 @@ async function main() {
       pageCount: 496,
       externalIds: {
         create: [
-          { source: BookSource.GOOGLE_BOOKS, externalId: "s1926EAAQBAJ" },
+          { source: BookSource.OPEN_LIBRARY, externalId: "OL21745884W" },
         ],
       },
     },
@@ -1144,7 +1142,9 @@ async function main() {
       { provider: "anilist", day: new Date("2026-08-17T00:00:00Z"), count: 37 },
       { provider: "igdb", day: new Date("2026-08-17T00:00:00Z"), count: 19 },
       {
-        provider: "google_books",
+        // Key must match what QuotaTrackerService writes, or the /admin/stats
+        // row falls back to the raw provider string instead of its label.
+        provider: "openLibrary",
         day: new Date("2026-08-17T00:00:00Z"),
         count: 8,
       },

@@ -33,7 +33,7 @@ export type ImportSource =
 
 /** A catalogue title a source item resolved to (auto or via manual search). */
 export interface ImportMatch {
-  /** Catalogue source enum value (TMDB / ANILIST / GOOGLE_BOOKS / IGDB). */
+  /** Catalogue source enum value (TMDB / ANILIST / OPEN_LIBRARY / IGDB). */
   source: string;
   sourceId: string;
   /** Media only (MOVIE/SERIES/ANIME): TMDB namespaces ids by type. */

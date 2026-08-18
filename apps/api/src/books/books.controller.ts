@@ -44,7 +44,7 @@ export class BooksController {
     private readonly ageGate: AgeGateService,
   ) {}
 
-  /** Live catalogue search (Google Books). */
+  /** Live catalogue search (Open Library). */
   @Get("search")
   async search(
     @CurrentUser() user: JwtPayload,
@@ -175,5 +175,5 @@ export class BooksController {
 }
 
 function parseBookSource(value: string): BookSource {
-  return parseEnumParam(value, [BookSource.GOOGLE_BOOKS], "book source");
+  return parseEnumParam(value, [BookSource.OPEN_LIBRARY], "book source");
 }

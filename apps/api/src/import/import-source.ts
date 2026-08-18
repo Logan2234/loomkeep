@@ -51,7 +51,7 @@ export interface ImportReq<TParsed = unknown> {
   /**
    * Env var(s) that must all be set for this source to work at all — its own
    * provider API key/OAuth app, distinct from the app's core catalogue keys
-   * (TMDB, Google Books…) every source already depends on implicitly.
+   * (TMDB, IGDB…) every source already depends on implicitly.
    * Omitted when the source needs no config of its own (e.g. TV Time's CSV
    * parsing); {@link ImportJobService.getAvailability} reports it available.
    */

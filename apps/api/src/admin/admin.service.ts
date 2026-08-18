@@ -176,21 +176,20 @@ export class AdminService {
         quotaLimit: { max: 1000, window: "day" },
       },
       {
-        key: "googleBooks",
-        label: "Google Books",
+        // Keyless (like AniList), but the sole book source — so it's required
+        // for the Livres area even though there's no key to be missing.
+        key: "openLibrary",
+        label: "Open Library",
         area: "Livres",
         required: true,
-        envKeys: ["GOOGLE_BOOKS_API_KEY"],
-        keyUrl:
-          "https://console.cloud.google.com/apis/library/books.googleapis.com",
+        envKeys: [],
         probe: (signal) =>
-          this.ping(
-            "https://www.googleapis.com/books/v1/volumes?q=isbn:9780262033848" +
-              `&key=${this.env("GOOGLE_BOOKS_API_KEY")}`,
-            { signal },
-          ),
-        // https://developers.google.com/books/pricing — free tier: 1,000 requests/day.
-        quotaLimit: { max: 1000, window: "day" },
+          this.ping("https://openlibrary.org/search.json?q=dune&limit=1", {
+            signal,
+            headers: { "User-Agent": this.userAgent() },
+          }),
+        // No published quota — Open Library asks for an identifying
+        // User-Agent and reasonable batching instead of enforcing a ceiling.
       },
       {
         // Keyless (like AniList), but the sole music source — so it's required
@@ -205,9 +204,7 @@ export class AdminService {
             "https://musicbrainz.org/ws/2/release-group/?query=test&fmt=json&limit=1",
             {
               signal,
-              headers: {
-                "User-Agent": `Loomkeep/1.0 (${this.env("MUSICBRAINZ_CONTACT") || "self-hosted, no contact provided"})`,
-              },
+              headers: { "User-Agent": this.userAgent() },
             },
           ),
       },
@@ -412,6 +409,15 @@ export class AdminService {
 
   private env(key: string): string {
     return this.config.get<string>(key) ?? "";
+  }
+
+  /**
+   * Identifying `User-Agent`, required by the keyless providers' usage
+   * policies (Open Library, MusicBrainz) — same shape as the one their own
+   * providers send.
+   */
+  private userAgent(): string {
+    return `Loomkeep/1.0 (${this.env("API_CONTACT") || "self-hosted, no contact provided"})`;
   }
 
   /** Runs a probe under an abort-timeout, so no single service stalls the page. */
