@@ -160,6 +160,28 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
+  # Single stable status for the matrix above, for branch protection to require.
+  # A matrix job reports one check per combination ("docker-build (api,
+  # apps/api/Dockerfile)"), never one under the bare job name — except when the
+  # whole job is skipped, which is the only case GitHub reports as plain
+  # "docker-build". So a required check named `docker-build` is satisfied on a
+  # push to main (job skipped) but waits forever on any PR where it actually
+  # runs. This job always reports, under a name the matrix can't change.
+  docker-build-ok:
+    needs: docker-build
+    # always(), not !cancelled(): a cancelled docker-build must still report
+    # here (as a failure) rather than leave the status unreported.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # `skipped` passes — a PR touching neither apps/api nor apps/web has no
+      # image to build. Result is read through an `if:` rather than
+      # interpolated into a shell script.
+      - if: |
+          needs.docker-build.result != 'success' &&
+          needs.docker-build.result != 'skipped'
+        run: exit 1
+
   # Pushes to GHCR so deploy.yml (and self-hosters) can `pull` a pre-built
   # image instead of building on the target machine. Runs unconditionally
   # on every push to main (not gated on the `changes` filter like
