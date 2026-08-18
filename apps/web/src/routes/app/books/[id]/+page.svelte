@@ -11,6 +11,7 @@
   } from "$lib/api/client";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
+  import { goBack } from "$lib/backNav.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -138,7 +139,8 @@
 {#if error}
   <div class="mx-auto max-w-4xl px-5 py-6 md:px-8">
     <Banner variant="error">{error}</Banner>
-    <a href="/app/books" class="btn btn-ghost mt-4">← Livres</a>
+    <a href="/app/books" onclick={goBack} class="btn btn-ghost mt-4"
+      >← Livres</a>
   </div>
 {/if}
 
@@ -152,6 +154,7 @@
     </div>
     <a
       href="/app/books"
+      onclick={goBack}
       class="border-border bg-bg/60 hover:bg-bg absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold backdrop-blur">
       ← Livres
     </a>

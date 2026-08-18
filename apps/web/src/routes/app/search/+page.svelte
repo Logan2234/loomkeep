@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -7,6 +8,7 @@
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
   import { DOMAINS } from "$lib/constants/domains";
+  import { debounce } from "$lib/debounce";
   import { isDomainEnabled } from "$lib/domains";
   import { Domain } from "@loomkeep/shared";
 
@@ -49,6 +51,22 @@
     if (!isDomainEnabled(domain) && enabledTabs.length > 0) {
       domain = enabledTabs[0][0] as Domain;
     }
+  });
+
+  // Mirror query + domain into the URL (replaceState, no new history entry) so
+  // navigating back here from a result's detail page restores this search
+  // instead of resetting it.
+  const debouncedSyncUrl = debounce(() => {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("query", query.trim());
+    if (domain !== Domain.MEDIA) params.set("type", domain);
+    const qs = params.toString();
+    replaceState(qs ? `?${qs}` : page.url.pathname, {});
+  }, 300);
+  $effect(() => {
+    void query;
+    void domain;
+    debouncedSyncUrl.call();
   });
 </script>
 

@@ -21,6 +21,8 @@
   // domain's `listEntries`); everything domain-specific (labels, card markup,
   // the actual `load` call, and media's extra "type" filter) is injected via
   // props/snippets.
+  import { replaceState } from "$app/navigation";
+  import { page } from "$app/state";
   import { ApiError } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
@@ -83,13 +85,20 @@
   // changes so a stale count never lingers across searches.
   let previewCount = $state<number | null>(null);
 
+  // Seeded from the URL so a filtered/sorted view survives a real browser
+  // back navigation (the page that navigated away last kept the URL in sync
+  // via `replaceState`, see `syncUrl` below).
+  const initialParams = page.url.searchParams;
+
   let items = $state<T[]>([]);
   let total = $state(0);
-  let statuses = $state<string[]>([]);
-  let favoritesOnly = $state(false);
-  let sort = $state<string>(defaultSort);
-  let reversed = $state(false);
-  let query = $state("");
+  let statuses = $state<string[]>(
+    initialParams.get("status")?.split(",").filter(Boolean) ?? [],
+  );
+  let favoritesOnly = $state(initialParams.get("fav") === "1");
+  let sort = $state<string>(initialParams.get("sort") ?? defaultSort);
+  let reversed = $state(initialParams.get("order") === "asc");
+  let query = $state(initialParams.get("q") ?? "");
   let loading = $state(true); // fetching the first page for the current filters
   let loadingMore = $state(false); // fetching a follow-up page (infinite scroll)
   let done = $state(false); // no more pages for the current filters
@@ -98,7 +107,10 @@
   let sentinel = $state<HTMLElement | null>(null);
 
   // Extra "type" filter, owned by the page and passed to LibraryBrowser.
-  let types = $state<MediaType[]>([]);
+  let types = $state<MediaType[]>(
+    (initialParams.get("type")?.split(",").filter(Boolean) as MediaType[]) ??
+      [],
+  );
 
   // Non-reactive bookkeeping.
   let lastPage = 0;
@@ -111,10 +123,27 @@
     { label: "Animés", value: "ANIME" },
   ];
 
+  // Mirrors the current filters/sort/query into the URL (via replaceState, so
+  // it never grows the history stack) so navigating back here — either the
+  // browser's back button or a page's "← retour" link — restores this view
+  // instead of resetting to defaults.
+  function syncUrl() {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (statuses.length) params.set("status", statuses.join(","));
+    if (favoritesOnly) params.set("fav", "1");
+    if (types.length) params.set("type", types.join(","));
+    if (sort !== defaultSort) params.set("sort", sort);
+    if (reversed) params.set("order", "asc");
+    const qs = params.toString();
+    replaceState(qs ? `?${qs}` : page.url.pathname, {});
+  }
+
   async function run(reset: boolean): Promise<void> {
     if (!reset && (loading || loadingMore || done)) return;
 
     if (reset) {
+      syncUrl();
       loadId++;
       lastPage = 0;
       done = false;
