@@ -27,7 +27,7 @@ x-unleash-logging: &unleash-logging
 
 services:
   unleash:
-    image: unleashorg/unleash-server:6
+    image: unleashorg/unleash-server:8.1.0
     restart: unless-stopped
     logging: *unleash-logging
     depends_on:
@@ -45,7 +45,7 @@ services:
       # No outbound calls to Unleash's own version-check endpoint —
       # consistent with the self-host philosophy of the rest of this stack
       # (same call as Umami's DISABLE_TELEMETRY).
-      CHECK_VERSION: "false"
+      CHECK_VERSION: true
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:4242/health"]
       interval: 10s

@@ -26,7 +26,7 @@ export class PublicConfigController {
       socialEnabled: isSocialEnabled(this.config, this.flags),
       registrationEnabled: isRegistrationEnabled(this.config, this.flags),
       maintenanceDomains: Object.values(Domain).filter((domain) =>
-        this.flags.isEnabled(`MAINTENANCE_${domain}`, false),
+        this.flags.isEnabled(`MAINTENANCE_${domain}`, true),
       ),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
       version,

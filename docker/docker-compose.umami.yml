@@ -43,7 +43,7 @@ services:
       # check) — consistent with the self-host philosophy of the rest of
       # this stack.
       DISABLE_TELEMETRY: "1"
-      DISABLE_UPDATES: "1"
+      DISABLE_UPDATES: "0"
       # Renamed off the defaults (script.js, /api/send): generic ad-blocker
       # filter lists block those exact names even for cookie-less tools like
       # Umami. The script stays fully declared in the privacy policy either
