@@ -5,7 +5,7 @@
  */
 
 /** `GET /sync/all-items/all/all` — one status bucket a movie can sit in. */
-export type SimklWatchlistStatus =
+type SimklWatchlistStatus =
   "watching" | "plantowatch" | "hold" | "completed" | "dropped";
 
 export interface SimklIds {
@@ -31,13 +31,13 @@ interface SimklMovieRef {
   ids: SimklIds;
 }
 
-export interface SimklEpisode {
+interface SimklEpisode {
   number: number;
   /** Present with `episode_watched_at=yes` (requires `extended=full`). */
   watched_at?: string;
 }
 
-export interface SimklSeason {
+interface SimklSeason {
   number: number;
   episodes: SimklEpisode[];
 }

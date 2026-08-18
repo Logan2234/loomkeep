@@ -83,12 +83,6 @@ export interface BookEntryDto {
   ownershipSource: string | null;
 }
 
-/** Body for logging a completed reread. */
-export interface AddBookReplayDto {
-  /** ISO date; defaults to now. */
-  finishedAt?: string;
-}
-
 /** Body for creating/updating a library entry from a catalogue book. */
 export interface UpsertBookEntryDto {
   source: BookSource;

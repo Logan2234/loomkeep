@@ -123,6 +123,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # api/web import the shared package through its dist/, so without this
+      # knip can't resolve those imports and reports every exported DTO in
+      # packages/shared as unused.
+      - run: pnpm build:package
       - run: pnpm --filter @loomkeep/web generate:paraglide
       - run: pnpm knip
 
