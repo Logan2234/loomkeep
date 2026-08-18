@@ -21,7 +21,7 @@
   // domain's `listEntries`); everything domain-specific (labels, card markup,
   // the actual `load` call, and media's extra "type" filter) is injected via
   // props/snippets.
-  import { replaceState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { ApiError } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
@@ -123,10 +123,13 @@
     { label: "Animés", value: "ANIME" },
   ];
 
-  // Mirrors the current filters/sort/query into the URL (via replaceState, so
-  // it never grows the history stack) so navigating back here — either the
-  // browser's back button or a page's "← retour" link — restores this view
-  // instead of resetting to defaults.
+  // Mirrors the current filters/sort/query into the URL so navigating back
+  // here — either the browser's back button or a page's "← retour" link —
+  // restores this view instead of resetting to defaults. Uses `goto` rather
+  // than the shallow-routing `replaceState` from $app/navigation: the latter
+  // only patches the raw history entry without updating SvelteKit's own
+  // router state, so `page.url` (and therefore the filters read back from it)
+  // stays stale when the browser later navigates back to that entry.
   function syncUrl() {
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
@@ -136,7 +139,11 @@
     if (sort !== defaultSort) params.set("sort", sort);
     if (reversed) params.set("order", "asc");
     const qs = params.toString();
-    replaceState(qs ? `?${qs}` : page.url.pathname, {});
+    void goto(qs ? `?${qs}` : page.url.pathname, {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
   }
 
   async function run(reset: boolean): Promise<void> {

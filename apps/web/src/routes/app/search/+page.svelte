@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { replaceState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -53,15 +53,20 @@
     }
   });
 
-  // Mirror query + domain into the URL (replaceState, no new history entry) so
-  // navigating back here from a result's detail page restores this search
-  // instead of resetting it.
+  // Mirror query + domain into the URL (via `goto`, replacing the current
+  // history entry — see LibraryBrowser's `syncUrl` for why `replaceState`
+  // from $app/navigation doesn't work for this) so navigating back here from
+  // a result's detail page restores this search instead of resetting it.
   const debouncedSyncUrl = debounce(() => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("query", query.trim());
     if (domain !== Domain.MEDIA) params.set("type", domain);
     const qs = params.toString();
-    replaceState(qs ? `?${qs}` : page.url.pathname, {});
+    void goto(qs ? `?${qs}` : page.url.pathname, {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
   }, 300);
   $effect(() => {
     void query;
