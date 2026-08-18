@@ -21,7 +21,6 @@
   import SocialStatsSection from "$lib/components/stats/SocialStatsSection.svelte";
   import StackedBar from "$lib/components/stats/StackedBar.svelte";
   import StatTile from "$lib/components/stats/StatTile.svelte";
-  import StatTilesSkeleton from "$lib/components/stats/StatTilesSkeleton.svelte";
   import StatsWorksModal from "$lib/components/stats/StatsWorksModal.svelte";
   import VideoStatsSection from "$lib/components/stats/VideoStatsSection.svelte";
   import VideoTemporalSection from "$lib/components/stats/VideoTemporalSection.svelte";
@@ -53,20 +52,17 @@
   // PeriodFilter.
   let period = $state<StatsWindow>("ALL");
   let overview = $state<StatsOverviewDto | null>(null);
-  let loading = $state(true);
   let error = $state<string | null>(null);
 
   $effect(() => {
     const domain = selected;
-    loading = true;
     error = null;
     getStatsOverview(domain)
       .then((o) => (overview = o))
       .catch((e) => {
         error =
           e instanceof ApiError ? e.message : "Statistiques indisponibles";
-      })
-      .finally(() => (loading = false));
+      });
   });
 
   const nf = new Intl.NumberFormat("fr-FR");
@@ -184,8 +180,6 @@
 
   {#if error}
     <Banner variant="error">{error}</Banner>
-  {:else if loading}
-    <StatTilesSkeleton />
   {:else if isEmpty}
     <EmptyState>
       Rien à afficher pour l'instant. Marque des œuvres pour voir tes

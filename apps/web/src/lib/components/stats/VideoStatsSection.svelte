@@ -3,19 +3,18 @@
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
   // re-deriving "en cours" from scratch) and StatsWorksModal for the
   // ghost/paused drill-down, same pattern as the ratings/decades modal.
+  import { getVideoSeries, getVideoStats } from "$lib/api/stats";
   import type {
     DomainStatusBreakdownDto,
     StatsWorkDto,
     VideoStatsDto,
     WatchStaleness,
   } from "@loomkeep/shared";
-  import { getVideoSeries, getVideoStats } from "$lib/api/stats";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
   import { statsResource } from "./stats-resource.svelte";
-  import StatTile from "./StatTile.svelte";
-  import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
   import StatsWorksModal from "./StatsWorksModal.svelte";
+  import StatTile from "./StatTile.svelte";
 
   let {
     mediaBreakdown,
@@ -26,7 +25,6 @@
     "Statistiques vidéo indisponibles",
   );
   const video = $derived(videoStats.data);
-  const loading = $derived(videoStats.loading);
   const error = $derived(videoStats.error);
 
   const inProgressCount = $derived(
@@ -82,8 +80,6 @@
 
 {#if error}
   <p class="text-danger text-sm">{error}</p>
-{:else if loading}
-  <StatTilesSkeleton />
 {:else if video}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
     <StatTile

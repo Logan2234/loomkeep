@@ -3,15 +3,14 @@
   // reuses the GAMES status breakdown already loaded by the overview for
   // "Terminés" (avoids re-deriving it from scratch), same pattern as the
   // Vidéo section.
+  import { getGameStats } from "$lib/api/stats";
   import type {
     DomainStatusBreakdownDto,
     GameStatsDto,
   } from "@loomkeep/shared";
-  import { getGameStats } from "$lib/api/stats";
   import RankBars from "./RankBars.svelte";
   import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
-  import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
   let {
     gameBreakdown,
@@ -22,7 +21,6 @@
     "Statistiques jeux indisponibles",
   );
   const games = $derived(gameStats.data);
-  const loading = $derived(gameStats.loading);
   const error = $derived(gameStats.error);
 
   const completedCount = $derived(
@@ -79,8 +77,6 @@
 
 {#if error}
   <p class="text-danger text-sm">{error}</p>
-{:else if loading}
-  <StatTilesSkeleton />
 {:else if games}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile

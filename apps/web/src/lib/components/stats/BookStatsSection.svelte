@@ -2,15 +2,14 @@
   // "Livres — en détail" section of /stats. Self-contained: fetches on
   // mount, reuses the BOOKS status breakdown already loaded by the overview
   // for "Lus", same pattern as the Vidéo/Jeux sections.
+  import { getBookStats } from "$lib/api/stats";
   import type {
     BookStatsDto,
     DomainStatusBreakdownDto,
   } from "@loomkeep/shared";
-  import { getBookStats } from "$lib/api/stats";
   import RankBars from "./RankBars.svelte";
   import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
-  import StatTilesSkeleton from "./StatTilesSkeleton.svelte";
 
   let {
     bookBreakdown,
@@ -21,7 +20,6 @@
     "Statistiques livres indisponibles",
   );
   const books = $derived(bookStats.data);
-  const loading = $derived(bookStats.loading);
   const error = $derived(bookStats.error);
 
   const readCount = $derived(
@@ -42,8 +40,6 @@
 
 {#if error}
   <p class="text-danger text-sm">{error}</p>
-{:else if loading}
-  <StatTilesSkeleton />
 {:else if books}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile value={nf.format(books.pagesRead)} label="Pages lues" />
