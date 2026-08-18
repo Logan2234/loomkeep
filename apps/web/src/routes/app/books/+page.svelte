@@ -18,6 +18,15 @@
     value,
   }));
 
+  function pct(entry: BookEntryDto): number {
+    if (!entry.book.pageCount) return 0;
+    if (entry.status === "READ") return 100;
+    return Math.min(
+      100,
+      Math.round((entry.currentPage / entry.book.pageCount) * 100),
+    );
+  }
+
   const SORTS = [
     { label: "Ajout récent", value: "added" },
     { label: "Titre", value: "title" },
@@ -77,10 +86,19 @@
       favorite={entry.favorite}
       onToggleFavorite={(next) => toggleFavorite(entry, next)}>
       {#snippet meta()}
-        <span class="timecode text-xs">
-          {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-            · ★ {entry.rating}{/if}
-        </span>
+        {#if entry.book.pageCount}
+          <div class="bg-surface-2 h-1.5 overflow-hidden rounded-full">
+            <div class="bg-accent h-full" style={`width: ${pct(entry)}%`}></div>
+          </div>
+          <span class="timecode text-xs">
+            {entry.currentPage} / {entry.book.pageCount} pages
+          </span>
+        {:else}
+          <span class="timecode text-xs">
+            {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
+              · ★ {entry.rating}{/if}
+          </span>
+        {/if}
       {/snippet}
     </PosterCard>
   {/snippet}
