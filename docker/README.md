@@ -102,7 +102,7 @@ rm docker/caddy-flags/maintenance      # off
 ## Image vulnerability scanning (Trivy)
 
 `.github/workflows/trivy.yml` — separate from `ci.yml`'s own
-`docker-build` job (which only validates the Dockerfiles still build) and
+`docker-build-images` job (which only validates the Dockerfiles still build) and
 from `codeql.yml` (static analysis of this repo's own source). Trivy scans
 the _built images_ for known CVEs in OS packages and dependencies baked
 into `node:26-alpine`, catching vulnerabilities Dependabot's

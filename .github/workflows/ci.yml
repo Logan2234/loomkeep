@@ -134,7 +134,7 @@ jobs:
   # broken Dockerfile before merge. Skipped on a push to main: docker-push
   # below builds the same images there (and pushes), so running this too
   # would just build api/web a second time for nothing.
-  docker-build:
+  docker-build-images:
     needs: changes
     if: |
       (needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true') &&
@@ -160,17 +160,19 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
-  # Single stable status for the matrix above, for branch protection to require.
-  # A matrix job reports one check per combination ("docker-build (api,
-  # apps/api/Dockerfile)"), never one under the bare job name — except when the
-  # whole job is skipped, which is the only case GitHub reports as plain
-  # "docker-build". So a required check named `docker-build` is satisfied on a
-  # push to main (job skipped) but waits forever on any PR where it actually
-  # runs. This job always reports, under a name the matrix can't change.
-  docker-build-ok:
-    needs: docker-build
-    # always(), not !cancelled(): a cancelled docker-build must still report
-    # here (as a failure) rather than leave the status unreported.
+  # The status branch protection requires, and the reason the matrix above is
+  # named `docker-build-images` rather than `docker-build`: a matrix job
+  # reports one check per combination ("docker-build-images (api,
+  # apps/api/Dockerfile)") and never one under its bare job name, except when
+  # the whole job is skipped. A rule on the matrix job's own name is therefore
+  # satisfied on a push to main (job skipped) but waits forever on any PR
+  # where it actually runs, blocking auto-merge. This job carries the stable
+  # `docker-build` name, always reports, and goes red when a leg does — the
+  # failing leg stays individually visible as its own check.
+  docker-build:
+    needs: docker-build-images
+    # always(), not !cancelled(): a cancelled build must still report here (as
+    # a failure) rather than leave the status unreported.
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -178,14 +180,14 @@ jobs:
       # image to build. Result is read through an `if:` rather than
       # interpolated into a shell script.
       - if: |
-          needs.docker-build.result != 'success' &&
-          needs.docker-build.result != 'skipped'
+          needs.docker-build-images.result != 'success' &&
+          needs.docker-build-images.result != 'skipped'
         run: exit 1
 
   # Pushes to GHCR so deploy.yml (and self-hosters) can `pull` a pre-built
   # image instead of building on the target machine. Runs unconditionally
   # on every push to main (not gated on the `changes` filter like
-  # docker-build above) so a SHA-tagged pair of images always exists for
+  # docker-build-images above) so a SHA-tagged pair of images always exists for
   # whatever commit deploy.yml is about to check out — a push that only
   # touched apps/api must still produce a web image at that SHA, otherwise
   # `docker compose pull` on the VPS would have nothing to fetch. api/web
