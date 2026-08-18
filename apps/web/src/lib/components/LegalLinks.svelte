@@ -1,6 +1,8 @@
 <script lang="ts">
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages";
+  import BetaBadge from "./BetaBadge.svelte";
+  import { IS_BETA } from "../constants/app-status";
   import { GITHUB_REPO_URL } from "../constants/external-links";
 </script>
 
@@ -42,4 +44,5 @@
       <span class="opacity-60">({appConfig.gitSha})</span>
     {/if}
   </a>
+  {#if IS_BETA}<BetaBadge />{/if}
 </footer>

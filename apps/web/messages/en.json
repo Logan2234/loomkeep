@@ -19,6 +19,7 @@
   "common_private": "Private",
   "common_ghost": "Ghost",
   "common_version": "Loomkeep v{version}",
+  "common_beta": "Beta",
   "common_edit": "Edit",
   "common_add": "Add",
 

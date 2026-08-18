@@ -9,6 +9,7 @@
     watchEpisode,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
+  import BetaBadge from "$lib/components/BetaBadge.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
   import HomeActivityPreview from "$lib/components/HomeActivityPreview.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -17,6 +18,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { IS_BETA } from "$lib/constants/app-status";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
@@ -569,6 +571,7 @@
               <span class="opacity-60">({appConfig.gitSha})</span>
             {/if}
           </a>
+          {#if IS_BETA}<BetaBadge />{/if}
         </p>
       </div>
     </div>
