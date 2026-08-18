@@ -305,7 +305,7 @@
     {/each}
   </div>
 
-  <p class="text-dim mt-8 text-center text-xs">
+  <p class="text-dim mt-8 flex items-center justify-center gap-2 text-xs">
     <a
       href={GITHUB_REPO_URL}
       target="_blank"

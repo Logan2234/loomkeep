@@ -1,9 +1,9 @@
 <script lang="ts">
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages";
-  import BetaBadge from "./BetaBadge.svelte";
   import { IS_BETA } from "../constants/app-status";
   import { GITHUB_REPO_URL } from "../constants/external-links";
+  import BetaBadge from "./BetaBadge.svelte";
 </script>
 
 <footer
@@ -34,15 +34,17 @@
       class="btn-text font-normal">CGU</a>
   </nav>
 
-  <a
-    href={GITHUB_REPO_URL}
-    target="_blank"
-    rel="noopener noreferrer"
-    class="btn-text font-normal">
-    {m.common_version({ version: appConfig.version })}
-    {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
-      <span class="opacity-60">({appConfig.gitSha})</span>
-    {/if}
-  </a>
-  {#if IS_BETA}<BetaBadge />{/if}
+  <p class="flex gap-2">
+    <a
+      href={GITHUB_REPO_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.common_version({ version: appConfig.version })}
+      {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+        <span class="opacity-60">({appConfig.gitSha})</span>
+      {/if}
+    </a>
+    {#if IS_BETA}<BetaBadge />{/if}
+  </p>
 </footer>

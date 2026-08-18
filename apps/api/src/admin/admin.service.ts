@@ -96,7 +96,7 @@ export class AdminService {
         key: "anilist",
         label: "AniList",
         area: "Vidéo",
-        required: false,
+        required: true,
         envKeys: [],
         probe: (signal) =>
           this.ping("https://graphql.anilist.co", {
@@ -184,7 +184,7 @@ export class AdminService {
         required: true,
         envKeys: [],
         probe: (signal) =>
-          this.ping("https://openlibrary.org/search.json?q=dune&limit=1", {
+          this.ping("https://openlibrary.org/search.json?q=1984&limit=1", {
             signal,
             headers: { "User-Agent": this.userAgent() },
           }),

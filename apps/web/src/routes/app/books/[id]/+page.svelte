@@ -247,12 +247,6 @@
           </a>
         {/if}
 
-        <!-- Courtesy attribution: Open Library asks for none, but naming the
-             source keeps the fiche honest about where its data comes from. -->
-        <p class="text-dim mt-2 text-[0.6rem]">
-          {m.book_openlibrary_notice()}
-        </p>
-
         <!-- Actions -->
         {#if !entry}
           <div class="mt-6">

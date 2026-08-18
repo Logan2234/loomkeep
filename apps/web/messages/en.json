@@ -331,7 +331,6 @@
   "media_tmdb_notice": "This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
   "media_anilist_notice": "Anime data provided by AniList — not affiliated with AniList.",
   "media_omdb_notice": "Ratings via OMDb, under a CC BY-NC 4.0 license.",
-  "book_openlibrary_notice": "Data provided by Open Library",
   "settings_language_label": "Language",
   "settings_language_fr": "Français",
   "settings_language_en": "English",

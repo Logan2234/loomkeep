@@ -13,7 +13,6 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { BOOK_STATUS_LABELS } from "$lib/constants/status-labels";
   import { debounce } from "$lib/debounce";
-  import { m } from "$lib/paraglide/messages.js";
   import type { BookEntryDto, BookSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -146,11 +145,6 @@
     {/each}
   </PosterGrid>
 {:else if results.length > 0}
-  <!-- Courtesy attribution: Open Library asks for none, but naming the source
-       keeps the results honest about where they come from. -->
-  <p class="text-dim mb-2 text-[0.6rem]">
-    {m.book_openlibrary_notice()}
-  </p>
   <PosterGrid>
     {#each shown as book (book.sourceId)}
       {@const entry = tracked.get(book.sourceId)}

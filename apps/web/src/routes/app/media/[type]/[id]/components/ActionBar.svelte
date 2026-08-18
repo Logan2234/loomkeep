@@ -1,6 +1,7 @@
 <script lang="ts">
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { formatDate } from "$lib/format";
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
 
   // Sticky action bar for the media detail page ("Cinéma minimal"). Kept to a
@@ -94,7 +95,14 @@
           <Icon name="check" class="h-5 w-5" />
         </button>
         <div class="min-w-0 flex-1 text-sm">
-          {isWatched ? "Vu" : "Pas encore vu"}
+          {#if isWatched}
+            Vu <span class="text-dim"
+              >{entry.finishedAt
+                ? `(${formatDate(entry.finishedAt)})`
+                : ""}</span>
+          {:else}
+            Pas encore vu
+          {/if}
         </div>
       {:else}
         <div class="min-w-0 flex-1"></div>

@@ -2,7 +2,7 @@
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", {
   day: "numeric",
-  month: "short",
+  month: "numeric",
   year: "numeric",
 });
 

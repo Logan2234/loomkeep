@@ -26,7 +26,7 @@
 
 <div
   class="card group hover:border-accent relative transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
-  <a {href} class="absolute inset-0 z-0" aria-label={title}></a>
+  <a {href} class="absolute inset-0 z-1" aria-label={title}></a>
   <Poster {src} {title} />
   <div class="flex flex-col gap-1.5 p-3">
     <span class="font-display text-sm leading-tight font-semibold">
