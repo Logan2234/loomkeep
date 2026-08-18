@@ -15,14 +15,12 @@ export async function initConfig(): Promise<void> {
     const config = await getPublicConfig();
     appConfig.socialEnabled = config.socialEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
-    appConfig.maintenanceDomains = config.maintenanceDomains;
     appConfig.erdEnabled = config.erdEnabled;
     appConfig.version = config.version;
     appConfig.gitSha = config.gitSha;
   } catch {
     appConfig.socialEnabled = false;
     appConfig.registrationEnabled = false;
-    appConfig.maintenanceDomains = [];
     appConfig.erdEnabled = false;
     appConfig.version = "";
     appConfig.gitSha = "";

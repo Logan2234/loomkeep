@@ -37,7 +37,7 @@ export class DomainGateService {
     });
 
     return (user?.enabledDomains ?? []).filter(
-      (domain) => !this.flags.isEnabled(`MAINTENANCE_${domain}`, false),
+      (domain) => !this.flags.isEnabled(`MAINTENANCE_${domain}`),
     );
   }
 }

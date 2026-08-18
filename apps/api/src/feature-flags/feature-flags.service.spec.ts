@@ -27,7 +27,7 @@ describe("FeatureFlagsService", () => {
     service.onModuleInit();
 
     expect(service.isEnabled("SOCIAL_ENABLED", true)).toBe(true);
-    expect(service.isEnabled("SOCIAL_ENABLED", false)).toBe(false);
+    expect(service.isEnabled("SOCIAL_ENABLED")).toBe(false);
     expect(fakeClient.isEnabled).not.toHaveBeenCalled();
   });
 
@@ -41,7 +41,7 @@ describe("FeatureFlagsService", () => {
     service.onModuleInit();
     fakeClient.isEnabled.mockReturnValue(true);
 
-    expect(service.isEnabled("MAINTENANCE_BOOKS", false)).toBe(true);
+    expect(service.isEnabled("MAINTENANCE_BOOKS")).toBe(true);
     expect(fakeClient.isEnabled).toHaveBeenCalledWith(
       "MAINTENANCE_BOOKS",
       undefined,

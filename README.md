@@ -376,9 +376,9 @@ or Caddy change is needed on this side.
 
 ### Feature flags (optional)
 
-Set `UNLEASH_ADMIN_PASSWORD` and `UNLEASH_API_TOKEN` in `.env`, add
-`docker/docker-compose.unleash.yml` to `COMPOSE_FILE` (see "Combining
-add-ons" above), then:
+Set `UNLEASH_ADMIN_USERNAME`, `UNLEASH_ADMIN_PASSWORD`, `UNLEASH_API_TOKEN` and
+`PUBLIC_UNLEASH_FRONTEND_TOKEN` in `.env`, add `docker/docker-compose.unleash.yml` to
+`COMPOSE_FILE` (see "Combining add-ons" above), then:
 
 ```sh
 docker compose pull
@@ -395,7 +395,33 @@ see the top comment in `docker-compose.unleash.yml` for the one-time manual
 step required on an already-running instance. Gated by Unleash's own login
 only (default `admin`/`unleash4all` on first visit — change it immediately);
 its open-source edition has no OIDC support, so unlike Grafana/GlitchTip/
-Portainer this can't sit behind Authelia as true SSO.
+Portainer this can't sit behind Authelia as true SSO (nor Authelia's
+`forward_auth`, unlike Umami/Homepage — see the top comment in
+`flags/unleash.caddy`).
+
+The web additionally polls Unleash's built-in Frontend API directly from the
+browser (`unleash-proxy-client`,
+`apps/web/src/lib/feature-flags-live.svelte.ts`'s `liveFlags`) — no separate
+Unleash Proxy/Edge needed, the Frontend API ships in `unleash-server` itself.
+This is the **default way to gate a new feature** on the web: call
+`liveFlags.isEnabled("MY_FLAG")` from a reactive context and it updates
+without a page reload, no wiring needed anywhere else — that's how
+`MAINTENANCE_<DOMAIN>` works (see `isDomainEnabled` in `domains.ts`). Requires
+the web's origin to be allowed in Unleash's **Admin settings > Access control
+
+> CORS origins** (your production domain, plus `http://localhost:5173` if you
+> also want this working against the hosted instance from local dev — see
+> `UNLEASH_API_URL`/`PUBLIC_UNLEASH_FRONTEND_URL` in `.env.example` for pointing
+> `apps/api/.env` at a remote Unleash instead of running one locally).
+
+One limitation to design around: the Frontend API only reports _enabled_
+flags, so it can't tell "flag not created yet in Unleash" apart from
+"explicitly off" — fine for a kill-switch-style flag (off by default), not
+for one that should default to _on_ until disabled. `SOCIAL_ENABLED`/
+`REGISTRATION_ENABLED` need that on-by-default fallback, so they stay
+relayed through `GET /api/config` instead (bootstrap-only, refreshed on the
+next page load) — see `isSocialEnabled`/`isRegistrationEnabled` for that
+pattern if a future flag needs the same.
 
 **Migrating `SOCIAL_ENABLED`/`REGISTRATION_ENABLED` onto Unleash on an
 already-running instance**: Unleash creates a new flag **disabled** by

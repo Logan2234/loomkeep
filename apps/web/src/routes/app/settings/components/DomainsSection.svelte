@@ -2,9 +2,9 @@
   import { ApiError, updateMe } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { toggleDomainSelection } from "$lib/domains";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared";
 
@@ -35,9 +35,7 @@
       {#each Object.entries(DOMAINS) as [id, d] (id)}
         {@const on = auth.user.enabledDomains.includes(id as Domain)}
         {@const isLast = on && auth.user.enabledDomains.length === 1}
-        {@const inMaintenance = appConfig.maintenanceDomains.includes(
-          id as Domain,
-        )}
+        {@const inMaintenance = liveFlags.isEnabled(`MAINTENANCE_${id}`)}
         <button
           type="button"
           class="border-border relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors disabled:pointer-events-none disabled:opacity-50 {on

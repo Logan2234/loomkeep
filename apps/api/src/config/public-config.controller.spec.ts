@@ -36,7 +36,6 @@ describe("PublicConfigController", () => {
       socialEnabled: true,
       registrationEnabled: true,
       erdEnabled: false,
-      maintenanceDomains: [],
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -49,7 +48,6 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
-      maintenanceDomains: [],
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -62,7 +60,6 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
-      maintenanceDomains: [],
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -75,7 +72,6 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: false,
       erdEnabled: false,
-      maintenanceDomains: [],
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -88,7 +84,6 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
-      maintenanceDomains: [],
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -101,24 +96,6 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: true,
-      maintenanceDomains: [],
-      version: "9.9.9",
-      gitSha: "unknown",
-    });
-  });
-
-  it("lists domains whose MAINTENANCE_<DOMAIN> flag is enabled", async () => {
-    delete process.env.GIT_SHA;
-    const { controller, flags } = makeController({});
-    (flags.isEnabled as jest.Mock).mockImplementation(
-      (name: string, fallback: boolean) =>
-        name === "MAINTENANCE_BOOKS" || fallback,
-    );
-    await expect(controller.get()).resolves.toEqual({
-      socialEnabled: false,
-      registrationEnabled: true,
-      maintenanceDomains: ["BOOKS"],
-      erdEnabled: false,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -131,7 +108,6 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
-      maintenanceDomains: [],
       version: "9.9.9",
       gitSha: "a1b2c3d",
     });

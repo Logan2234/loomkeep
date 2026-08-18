@@ -46,7 +46,7 @@ export class FeatureFlagsService implements OnModuleInit, OnModuleDestroy {
    * `fallback` applies while `name` doesn't exist yet in Unleash, or this
    * deployment doesn't run Unleash at all.
    */
-  isEnabled(name: string, fallback: boolean): boolean {
+  isEnabled(name: string, fallback: boolean = false): boolean {
     if (!this.client) return fallback;
     return this.client.isEnabled(name, undefined, fallback);
   }

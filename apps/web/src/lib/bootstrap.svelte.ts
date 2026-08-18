@@ -1,4 +1,5 @@
 import { initAuth, initConfig } from "./api/client";
+import { liveFlags } from "./feature-flags-live.svelte";
 
 /**
  * One-shot client bootstrap: restore the session from localStorage and load
@@ -19,6 +20,7 @@ class Bootstrap {
     if (this.#started) return;
     this.#started = true;
 
+    liveFlags.start();
     void Promise.all([initAuth(), initConfig()]).finally(() => {
       this.ready = true;
     });

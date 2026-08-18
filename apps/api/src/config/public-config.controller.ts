@@ -1,4 +1,4 @@
-import { Domain, type PublicConfigDto } from "@loomkeep/shared";
+import type { PublicConfigDto } from "@loomkeep/shared";
 import { Controller, Get } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";
@@ -25,9 +25,6 @@ export class PublicConfigController {
     return {
       socialEnabled: isSocialEnabled(this.config, this.flags),
       registrationEnabled: isRegistrationEnabled(this.config, this.flags),
-      maintenanceDomains: Object.values(Domain).filter((domain) =>
-        this.flags.isEnabled(`MAINTENANCE_${domain}`, false),
-      ),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
       version,
       // Set at build time (see apps/api/Dockerfile) — "unknown" outside a

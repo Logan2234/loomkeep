@@ -17,8 +17,16 @@
 # once by hand — see that file's own comment for the exact command.
 #
 # Reachable at UNLEASH_SITE_ADDRESS (e.g. flags.loomkeep.app) via Caddy — see
-# flags/unleash.caddy. The api talks to Unleash over the internal
-# Docker network (UNLEASH_API_URL), never through that public subdomain.
+# flags/unleash.caddy. The api talks to Unleash over the internal Docker
+# network (UNLEASH_API_URL). The web additionally talks to Unleash's
+# Frontend API (built into unleash-server, no separate Proxy/Edge needed)
+# straight from the browser, over that same public subdomain, to refresh
+# MAINTENANCE_<DOMAIN> flags live without a page reload — see
+# apps/web/src/lib/feature-flags-live.ts. That means CORS for the web
+# origin must be allowed in Unleash's own admin UI (Admin settings > Access
+# control > CORS origins), and this subdomain can never be put behind
+# Authelia forward_auth (unlike Grafana/GlitchTip/Portainer) — every
+# visitor's browser needs to reach /api/frontend unauthenticated.
 x-unleash-logging: &unleash-logging
   driver: json-file
   options:
@@ -41,11 +49,12 @@ services:
       # `default:production.<output of openssl rand -hex 32>` — see
       # .env.example.
       INIT_BACKEND_API_TOKENS: ${UNLEASH_API_TOKEN:?set UNLEASH_API_TOKEN in .env}
+      # Frontend token, safe to expose in the browser (read-only, no admin
+      # access) — created on first startup, same format as the backend
+      # token above.
+      INIT_FRONTEND_API_TOKENS: ${PUBLIC_UNLEASH_FRONTEND_TOKEN:?set PUBLIC_UNLEASH_FRONTEND_TOKEN in .env}
       UNLEASH_DEFAULT_ADMIN_USERNAME: ${UNLEASH_ADMIN_USERNAME:-admin}
       UNLEASH_DEFAULT_ADMIN_PASSWORD: ${UNLEASH_ADMIN_PASSWORD:?set UNLEASH_ADMIN_PASSWORD in .env}
-      # No outbound calls to Unleash's own version-check endpoint —
-      # consistent with the self-host philosophy of the rest of this stack
-      # (same call as Umami's DISABLE_TELEMETRY).
       CHECK_VERSION: true
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:4242/health"]
@@ -69,6 +78,15 @@ services:
       UNLEASH_API_TOKEN: ${UNLEASH_API_TOKEN:?set UNLEASH_API_TOKEN in .env}
     depends_on:
       - unleash
+
+  # Partial override of the `web` service defined in docker-compose.yml: adds
+  # the two PUBLIC_ vars the browser needs to reach Unleash's Frontend API
+  # directly (see feature-flags-live.ts) — a real public URL, not the
+  # internal Docker network address the api uses above.
+  web:
+    environment:
+      PUBLIC_UNLEASH_FRONTEND_URL: https://flags.${DOMAIN:?set DOMAIN in .env}/api/frontend
+      PUBLIC_UNLEASH_FRONTEND_TOKEN: ${PUBLIC_UNLEASH_FRONTEND_TOKEN:?set PUBLIC_UNLEASH_FRONTEND_TOKEN in .env}
 
   # Partial override of the `caddy` service defined in docker-compose.prod.yml:
   # adds the Unleash site block + its domain, without redeclaring the whole
