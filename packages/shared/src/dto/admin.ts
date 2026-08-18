@@ -350,11 +350,6 @@ export interface AdminBackupRestoreRequestDto {
   sql: string;
 }
 
-/** Running app version, for the admin/settings footer. */
-export interface AdminVersionDto {
-  version: string;
-}
-
 /** One sensitive account action, as listed on the admin "Sécurité" page. */
 export interface SecurityEventDto {
   id: string;

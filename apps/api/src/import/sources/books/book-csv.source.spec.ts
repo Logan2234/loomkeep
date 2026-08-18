@@ -14,7 +14,7 @@ const HEADER =
 
 function summary(over: Partial<BookSummaryDto> = {}): BookSummaryDto {
   return {
-    source: "GOOGLE_BOOKS",
+    source: "OPEN_LIBRARY",
     sourceId: "G1W",
     title: "A Book",
     authors: ["Someone"],
@@ -119,7 +119,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   it("resolves rows, groups by status and reports the unmatched", async () => {
     const resolveByIsbns = jest.fn().mockResolvedValue({
       matches: new Map([
-        ["9782228937597", summary({ sourceId: "G-1", title: "First" })],
+        ["9782228937597", summary({ sourceId: "OL1W", title: "First" })],
       ]),
       failedIsbns: [],
     });
@@ -154,7 +154,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       subtitle: "★ 8/10",
       defaultStatus: "READ",
       include: true,
-      match: { source: "GOOGLE_BOOKS", sourceId: "G-1" },
+      match: { source: "OPEN_LIBRARY", sourceId: "OL1W" },
     });
     expect(byKey(job.plan!, "b2")).toMatchObject({
       sourceTitle: "Nowhere",
@@ -166,7 +166,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   it("counts API failures separately from genuine non-matches", async () => {
     const resolve = jest
       .fn()
-      .mockResolvedValueOnce(summary({ sourceId: "G-1" }))
+      .mockResolvedValueOnce(summary({ sourceId: "OL1W" }))
       .mockRejectedValueOnce(new Error("rate limited"))
       .mockResolvedValueOnce(null);
     const { service } = setup({ resolve });
@@ -189,11 +189,15 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   it("flags books already in the user's library by (source, id)", async () => {
     const { service } = setup({
       resolveByIsbns: jest.fn().mockResolvedValue({
-        matches: new Map([["9782228937597", summary({ sourceId: "G-DUP" })]]),
+        matches: new Map([["9782228937597", summary({ sourceId: "OL-DUPW" })]]),
         failedIsbns: [],
       }),
       inLibraryRefs: [
-        { source: "GOOGLE_BOOKS", externalId: "G-DUP", bookItemId: "item-dup" },
+        {
+          source: "OPEN_LIBRARY",
+          externalId: "OL-DUPW",
+          bookItemId: "item-dup",
+        },
       ],
       ownedEntries: [{ bookItemId: "item-dup" }],
     });
@@ -232,17 +236,17 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
 
   it("commit persists metadata, marks finished books fully read, backfills replays", async () => {
     const getDetails = jest.fn().mockResolvedValue({
-      summary: summary({ sourceId: "G-1" }),
+      summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
       pageCount: 320,
       releaseDate: null,
-      externalIds: [{ source: "GOOGLE_BOOKS", externalId: "G-1" }],
+      externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     const { service, bookItemService, upsert, createMany, reviews } = setup({
       getDetails,
       resolveByIsbns: jest.fn().mockResolvedValue({
-        matches: new Map([["9782228937597", summary({ sourceId: "G-1" })]]),
+        matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
     });
@@ -295,18 +299,18 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
 
   it("commit does not backfill replays when the entry already exists", async () => {
     const getDetails = jest.fn().mockResolvedValue({
-      summary: summary({ sourceId: "G-1" }),
+      summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
       pageCount: 320,
       releaseDate: null,
-      externalIds: [{ source: "GOOGLE_BOOKS", externalId: "G-1" }],
+      externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     const { service, createMany } = setup({
       getDetails,
       existingEntry: { id: "entry-1" },
       resolveByIsbns: jest.fn().mockResolvedValue({
-        matches: new Map([["9782228937597", summary({ sourceId: "G-1" })]]),
+        matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
     });
@@ -329,12 +333,12 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
 
   it("commit skips adult titles even if their key is included", async () => {
     const getDetails = jest.fn().mockResolvedValue({
-      summary: summary({ sourceId: "G-1", isAdult: true }),
+      summary: summary({ sourceId: "OL1W", isAdult: true }),
       overview: null,
       genres: [],
       pageCount: 320,
       releaseDate: null,
-      externalIds: [{ source: "GOOGLE_BOOKS", externalId: "G-1" }],
+      externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     // The plan resolves it (opted-in during analyze), but commit re-checks with
     // adult disabled → skipped.
@@ -342,7 +346,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       getDetails,
       allowAdult: false,
       resolveByIsbns: jest.fn().mockResolvedValue({
-        matches: new Map([["9782228937597", summary({ sourceId: "G-1" })]]),
+        matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
     });
@@ -367,17 +371,17 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
 
   it("commit with overwrite wipes the book library first", async () => {
     const getDetails = jest.fn().mockResolvedValue({
-      summary: summary({ sourceId: "G-1" }),
+      summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
       pageCount: 100,
       releaseDate: null,
-      externalIds: [{ source: "GOOGLE_BOOKS", externalId: "G-1" }],
+      externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
     });
     const { service, deleteMany } = setup({
       getDetails,
       resolveByIsbns: jest.fn().mockResolvedValue({
-        matches: new Map([["9782228937597", summary({ sourceId: "G-1" })]]),
+        matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
     });

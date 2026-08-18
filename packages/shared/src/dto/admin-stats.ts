@@ -239,7 +239,7 @@ export type AdminSocialSectionDto =
 // query running on every /admin/stats load.
 
 export interface AdminProviderCallsDto {
-  /** Human label ("TMDB", "Google Books"…). */
+  /** Human label ("TMDB", "Open Library"…). */
   provider: string;
   /** Calls recorded today (UTC day). */
   calls: number;

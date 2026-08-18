@@ -11,7 +11,11 @@ export interface BookSummaryDto {
   /** First publication year, when known. */
   year: number | null;
   coverUrl: string | null;
-  /** 18+ title (Google Books "MATURE"). Restricted per-account, like media. */
+  /**
+   * 18+ title. Restricted per-account like media, but Open Library carries no
+   * maturity rating, so it is always false today — the plumbing stays in place
+   * for the day a source exposes one.
+   */
   isAdult: boolean;
 }
 
@@ -30,11 +34,11 @@ export interface BookDetailsDto extends BookSummaryDto {
   pageCount: number | null;
   /** ISO first-publication date; null when the source has none. */
   releaseDate: string | null;
-  /** Permalink to the volume's Google Books page, when known. */
+  /** Permalink to the work's Open Library page, when known. */
   website: string | null;
   /** Other books by the primary author — stands in for "similar titles". */
   sameAuthorBooks: BookSummaryDto[];
-  /** Google Books' own average rating, when known. */
+  /** Open Library's own average rating, when known. */
   ratings: RatingDto[];
 }
 
@@ -77,12 +81,6 @@ export interface BookEntryDto {
   ownershipStatus: BookOwnershipStatus;
   /** Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise. */
   ownershipSource: string | null;
-}
-
-/** Body for logging a completed reread. */
-export interface AddBookReplayDto {
-  /** ISO date; defaults to now. */
-  finishedAt?: string;
 }
 
 /** Body for creating/updating a library entry from a catalogue book. */

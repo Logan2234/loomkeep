@@ -12,6 +12,41 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.6.0 — Open Library replaces the Google Books API
+
+- **Books now come from [Open Library](https://openlibrary.org/)** instead of
+  the Google Books API. The new `OpenLibraryProvider` uses `/search.json`
+  (Solr) for both search and a work's aggregate metadata — page count,
+  publishers, subjects, rating — and `/works/{id}.json` for the description
+  Solr doesn't carry. Merged works are served as redirect stubs, so details
+  follow them and key off the canonical work id rather than the alias that was
+  requested. Same-author suggestions now resolve through `author_key` instead
+  of matching a display name, and crowd-sourced subjects are filtered down to
+  genre-shaped ones (machine tags, sentence-long entries and case variants are
+  dropped).
+- **No API key, no quota, no branding requirement.** `GOOGLE_BOOKS_API_KEY` is
+  gone — one less mandatory key for self-hosters — along with the free tier's
+  1,000 requests/day ceiling and the "Powered by Google" marks the Google
+  Books API terms required next to every result; plain courtesy attribution
+  takes their place. `MUSICBRAINZ_CONTACT` becomes `API_CONTACT`, shared by
+  both keyless providers (Open Library and MusicBrainz) for the identifying
+  `User-Agent` their usage policies ask for.
+- `BookSource.GOOGLE_BOOKS` → `OPEN_LIBRARY`, addressed by work id
+  ("OL893414W") rather than a Google volume id. Since `BookItem` is an
+  on-demand cache, the migration drops every cached book instead of converting
+  it, together with everything referencing one through a polymorphic (FK-less)
+  target — book reviews, comments, list items, activity events and the
+  moderation rows resolved through them. **Breaking for self-hosters**: book
+  library entries do not survive the upgrade (they hang off the cache through
+  `BookEntry.bookItemId`); the other domains are untouched.
+- **Books lose their adult signal**: Open Library exposes no equivalent of
+  Google's `MATURE` maturity rating, so `BookItem.isAdult` is always false for
+  now. The column and its per-account gate stay in place for the day a source
+  provides one.
+- Fixes the seed writing its book call counter under `google_books` while
+  `QuotaTrackerService` wrote `googleBooks`, which left the row unlabelled on
+  /admin/stats.
+
 ## 1.5.0 — Onboarding wizard, collaborative lists & account security
 
 - **Mandatory first-run onboarding wizard**: guides new (and existing,

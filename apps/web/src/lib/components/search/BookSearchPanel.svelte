@@ -11,7 +11,6 @@
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
-  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import { BOOK_STATUS_LABELS } from "$lib/constants/status-labels";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
@@ -34,8 +33,8 @@
 
   const DEBOUNCE_MS = 300;
 
-  // Google Books parses `inauthor:"…"` as a field-scoped query; toggling this
-  // wraps the free-text query instead of adding a separate API param.
+  // Open Library's Solr parses `author:"…"` as a field-scoped query; toggling
+  // this wraps the free-text query instead of adding a separate API param.
   let byAuthor = $state(false);
 
   let results = $state<BookSummaryDto[]>([]);
@@ -85,7 +84,7 @@
       searching = false;
       return;
     }
-    debouncedSearch.call(byAuthor ? `inauthor:"${q.replace(/"/g, "")}"` : q);
+    debouncedSearch.call(byAuthor ? `author:"${q.replace(/"/g, "")}"` : q);
     return () => debouncedSearch.cancel();
   });
 
@@ -147,11 +146,10 @@
     {/each}
   </PosterGrid>
 {:else if results.length > 0}
-  <!-- Required by the Google Books API branding guidelines: the "powered by
-       Google" mark must appear adjacent to search results. -->
-  <p class="text-dim mb-2 flex items-center gap-1.5 text-[0.6rem]">
-    <ProviderMark brand="googleBooks" class="h-3 w-3 shrink-0 opacity-70" />
-    {m.book_google_notice()}
+  <!-- Courtesy attribution: Open Library asks for none, but naming the source
+       keeps the results honest about where they come from. -->
+  <p class="text-dim mb-2 text-[0.6rem]">
+    {m.book_openlibrary_notice()}
   </p>
   <PosterGrid>
     {#each shown as book (book.sourceId)}

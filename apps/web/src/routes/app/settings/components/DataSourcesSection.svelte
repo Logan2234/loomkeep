@@ -18,10 +18,9 @@
       notice: m.settings_datasources_tmdb_notice(),
     },
     {
-      brand: "googleBooks",
-      name: "Google Books",
-      href: "https://books.google.com/",
-      notice: m.settings_datasources_googlebooks_notice(),
+      name: "Open Library",
+      href: "https://openlibrary.org/",
+      notice: m.settings_datasources_openlibrary_notice(),
     },
     {
       name: "OMDb",

@@ -277,10 +277,10 @@ enum GameOwnershipStatus {
   BORROWED
 }
 
-// Source a book's catalogue data comes from. Google Books only — Open Library
-// was dropped in favour of a single, more reliable data source.
+// Source a book's catalogue data comes from. Open Library only — keyless and
+// unmetered, unlike the Google Books API it replaced.
 enum BookSource {
-  GOOGLE_BOOKS
+  OPEN_LIBRARY
 }
 
 // A book's library status. Like GameStatus it is entirely user-set; page
@@ -1245,8 +1245,9 @@ model BookItem {
   genres          String[]
   // Number of pages, when the source knows it.
   pageCount       Int?
-  // 18+ title (Google Books "MATURE" maturityRating). Restricted per-account,
-  // like MediaItem/GameItem.
+  // 18+ title, restricted per-account like MediaItem/GameItem. Open Library
+  // exposes no maturity rating, so this stays false for now — kept so the
+  // per-account restriction still has a hook the day a source provides one.
   isAdult         Boolean    @default(false)
   metadata        Json       @default("{}")
   lastSyncedAt    DateTime   @default(now())

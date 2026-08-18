@@ -1,7 +1,7 @@
 # @loomkeep/api
 
 NestJS REST API for Loomkeep — Prisma/PostgreSQL persistence, JWT auth, and
-the live catalogue providers (TMDB, AniList, IGDB, Google Books,
+the live catalogue providers (TMDB, AniList, IGDB, Open Library,
 MusicBrainz). For the project as a whole (what Loomkeep is, self-hosting,
 Docker), see the [root README](../../README.md). For architecture
 decisions and dev conventions shared with the web app, see the root
@@ -29,8 +29,8 @@ decisions and dev conventions shared with the web app, see the root
 
 Domain modules, one per bounded concern:
 
-- `catalog/` — the `CatalogProvider` interface + TMDB/AniList/IGDB/Google
-  Books/MusicBrainz providers, and `MediaItemService.upsertFromSource()`
+- `catalog/` — the `CatalogProvider` interface + TMDB/AniList/IGDB/Open
+  Library/MusicBrainz providers, and `MediaItemService.upsertFromSource()`
   (the single entry point that persists a catalogue item on-demand).
 - `library/` — a user's tracked items, watch/read/listen progress.
 - `import/` — interactive import pipelines (TV Time, Steam, StoryGraph),

@@ -106,8 +106,8 @@ describe("DataExportService.buildExport", () => {
         bookItem: {
           title: "Dune",
           authors: ["Frank Herbert"],
-          canonicalSource: "GOOGLE_BOOKS",
-          externalIds: [{ source: "GOOGLE_BOOKS", externalId: "abc" }],
+          canonicalSource: "OPEN_LIBRARY",
+          externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
         },
         replays: [],
       },
@@ -120,7 +120,7 @@ describe("DataExportService.buildExport", () => {
         book: expect.objectContaining({
           title: "Dune",
           authors: ["Frank Herbert"],
-          sourceId: "abc",
+          sourceId: "OL1W",
         }),
         currentPage: 320,
       }),

@@ -6,7 +6,7 @@ import type {
   BookSummaryDto,
 } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
-import { GoogleBooksProvider } from "./providers/google-books.provider";
+import { OpenLibraryProvider } from "./providers/open-library.provider";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
@@ -19,17 +19,17 @@ const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 export class BookItemService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly googleBooksProvider: GoogleBooksProvider,
+    private readonly openLibraryProvider: OpenLibraryProvider,
   ) {}
 
-  /** Google Books is the only source today. */
+  /** Open Library is the only source today. */
   providerFor(): BookCatalogProvider {
-    return this.googleBooksProvider;
+    return this.openLibraryProvider;
   }
 
   /** Free-text catalogue search. */
   async search(query: string): Promise<BookSummaryDto[]> {
-    return this.googleBooksProvider.search(query).catch(() => []);
+    return this.openLibraryProvider.search(query).catch(() => []);
   }
 
   /**
@@ -43,24 +43,24 @@ export class BookItemService {
     query: string,
   ): Promise<BookSummaryDto | null> {
     if (isbn) {
-      const byIsbn = await this.googleBooksProvider.searchByIsbn(isbn);
+      const byIsbn = await this.openLibraryProvider.searchByIsbn(isbn);
       if (byIsbn) return byIsbn;
     }
 
-    const results = await this.googleBooksProvider.search(query);
+    const results = await this.openLibraryProvider.search(query);
     return results[0] ?? null;
   }
 
   /**
    * Bulk-resolve many ISBNs in as few calls as possible — see
-   * `GoogleBooksProvider.searchByIsbns()`. No fallback: an ISBN reported in
+   * `OpenLibraryProvider.searchByIsbns()`. No fallback: an ISBN reported in
    * `failedIsbns` is not retried individually.
    */
   resolveByIsbns(isbns: string[]): Promise<{
     matches: Map<string, BookSummaryDto>;
     failedIsbns: string[];
   }> {
-    return this.googleBooksProvider.searchByIsbns(isbns);
+    return this.openLibraryProvider.searchByIsbns(isbns);
   }
 
   /** Live details straight from the provider — nothing is persisted. */

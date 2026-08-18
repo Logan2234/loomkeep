@@ -91,7 +91,7 @@
       <li>AniList ;</li>
       <li>OMDb ;</li>
       <li>IGDB ;</li>
-      <li>Google Books ;</li>
+      <li>Open Library ;</li>
       <li>MusicBrainz.</li>
     </ul>
     <p>

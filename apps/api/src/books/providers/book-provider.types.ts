@@ -14,11 +14,11 @@ export interface ProviderBookDetails {
   genres: string[];
   pageCount: number | null;
   releaseDate: string | null;
-  /** Permalink to the volume's page on the source, when it exposes one. */
+  /** Permalink to the work's page on the source, when it exposes one. */
   website: string | null;
   /** Other books by the primary author, standing in for "similar titles". */
   sameAuthorBooks: BookSummaryDto[];
-  /** Google Books' own average rating, when known. */
+  /** The source's own average rating, when known. */
   ratings: RatingDto[];
   externalIds: ProviderBookExternalId[];
 }

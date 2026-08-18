@@ -24,7 +24,7 @@ import type {
 } from "../../import-source";
 
 // Rows are resolved against the catalogue a few at a time — fast enough for a
-// typical export while staying polite to the Google Books API.
+// typical export while staying polite to the Open Library API.
 const RESOLVE_CONCURRENCY = 5;
 
 /** Review sections, in display order, with their French headings. */
@@ -64,8 +64,8 @@ interface ResolvedRow<TRow> {
 
 /**
  * Shared mechanics of a CSV book import (Goodreads, StoryGraph, and future
- * sources) as an {@link ImportReq}: parse → resolve every row against Google
- * Books (writing nothing) → persist the chosen books on commit. A concrete
+ * sources) as an {@link ImportReq}: parse → resolve every row against Open
+ * Library (writing nothing) → persist the chosen books on commit. A concrete
  * source only supplies its {@link ImportReq.id} and {@link parseCsv}; the
  * resolve/plan/commit flow lives here so a new source never re-implements it.
  *
@@ -277,9 +277,9 @@ export abstract class BookCsvSource<
   }
 
   /**
-   * Resolve every row against Google Books — writing nothing. Rows with an ISBN
-   * are resolved together in a handful of batched calls; the rest fall back to
-   * an individual title+author search. Progress ticks once per row.
+   * Resolve every row against Open Library — writing nothing. Rows with an
+   * ISBN are resolved together in a handful of batched calls; the rest fall
+   * back to an individual title+author search. Progress ticks once per row.
    */
   private async resolveRows(
     rows: TRow[],
