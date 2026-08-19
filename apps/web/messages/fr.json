@@ -566,5 +566,15 @@
   "onboarding_done_import_title": "Tu as déjà des données ailleurs ?",
   "onboarding_done_import_domain_media": "Films, séries & animés",
   "onboarding_done_import_via": "importe depuis {source}",
-  "onboarding_done_import_cta": "Vers l'import"
+  "onboarding_done_import_cta": "Vers l'import",
+
+  "error_404_eyebrow": "Erreur 404 · pellicule manquante",
+  "error_404_title": "Cette scène n'est pas au catalogue",
+  "error_404_body": "L'adresse demandée a été coupée au montage — ou n'a jamais existé. On vous remet le film sur les rails.",
+  "error_404_cta_home": "Retour à l'affiche",
+  "error_404_cta_search": "Chercher un titre",
+  "error_generic_eyebrow": "Erreur {status} · incident de projection",
+  "error_generic_title": "La séance a été interrompue",
+  "error_generic_body": "Un problème technique a coupé la projection. Réessayez, ou revenez à l'accueil en attendant que ça reparte.",
+  "error_generic_cta_home": "Retour à l'accueil"
 }

@@ -566,5 +566,15 @@
   "onboarding_done_import_title": "Already have data elsewhere?",
   "onboarding_done_import_domain_media": "Movies, shows & anime",
   "onboarding_done_import_via": "import from {source}",
-  "onboarding_done_import_cta": "Go to import"
+  "onboarding_done_import_cta": "Go to import",
+
+  "error_404_eyebrow": "Error 404 · missing reel",
+  "error_404_title": "This scene isn't in the catalogue",
+  "error_404_body": "The page you asked for was cut in the edit — or never existed. Let's get the film back on track.",
+  "error_404_cta_home": "Back to the marquee",
+  "error_404_cta_search": "Search for a title",
+  "error_generic_eyebrow": "Error {status} · screening interrupted",
+  "error_generic_title": "The screening was interrupted",
+  "error_generic_body": "A technical issue cut the projection. Try again, or head back home while it gets sorted.",
+  "error_generic_cta_home": "Back to home"
 }
