@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Loading placeholder for the detail pages (media/games/books/music):
-  // mirrors their shared hero shape (backdrop, overlapping poster, title
-  // block, tracking panel) instead of a bare "Chargement…" line.
   let { wide = true }: { wide?: boolean } = $props();
 </script>
 

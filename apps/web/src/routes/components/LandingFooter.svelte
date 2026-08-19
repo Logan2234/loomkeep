@@ -2,8 +2,8 @@
   import Icon from "$lib/components/Icon.svelte";
   import {
     CHANGELOG_URL,
-    FEEDBACK_URL,
     FEEDBACK_BUG_REPORTS_URL,
+    FEEDBACK_URL,
     GITHUB_REPO_URL,
     ROADMAP_URL,
   } from "$lib/constants/external-links";
@@ -18,7 +18,7 @@
       title: m.landing_footer_col_product(),
       links: [
         {
-          label: m.landing_register(),
+          label: m.common_register(),
           href: "/register",
           event: "footer-register",
         },
@@ -70,17 +70,17 @@
       title: m.landing_footer_col_legal(),
       links: [
         {
-          label: m.landing_footer_link_legal_notice(),
+          label: m.common_legal_notice(),
           href: "/legal/legal-notice",
           event: "footer-legal-notice",
         },
         {
-          label: m.landing_footer_link_privacy(),
+          label: m.common_privacy(),
           href: "/legal/privacy-policy",
           event: "footer-privacy",
         },
         {
-          label: m.landing_footer_link_terms(),
+          label: m.common_terms(),
           href: "/legal/terms-of-service",
           event: "footer-terms",
         },
@@ -92,7 +92,7 @@
 </script>
 
 <footer class="border-border border-t">
-  <div class="mx-auto max-w-5xl px-5 py-12 md:px-8">
+  <div class="mx-auto max-w-5xl px-5 pt-12 md:px-8">
     <div class="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
       <div>
         <span class="font-display text-xl font-extrabold tracking-tight">
@@ -136,15 +136,13 @@
       {/each}
     </div>
 
-    <p class="text-dim mt-8 text-xs">{m.landing_footer_tmdb_attribution()}</p>
-
     <div
-      class="border-border text-dim mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-6 text-xs">
+      class="border-border text-dim mt-6 flex flex-wrap items-center justify-between gap-4 border-t py-3 text-xs">
       <p>{m.landing_footer_signature()}</p>
       <div
         class="border-border flex items-center gap-1 rounded-lg border p-0.5"
         role="group"
-        aria-label={m.landing_footer_lang_label()}>
+        aria-label={m.common_language()}>
         {#each LOCALES as locale (locale)}
           <button
             type="button"

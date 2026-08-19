@@ -50,18 +50,18 @@
       label: m.settings_export_media_label(),
       slug: "media",
     },
-    { domain: Domain.BOOKS, label: m.nav_books(), slug: "books" },
-    { domain: Domain.GAMES, label: m.nav_games(), slug: "games" },
-    { domain: Domain.MUSIC, label: m.nav_music(), slug: "music" },
+    { domain: Domain.BOOKS, label: m.common_Books(), slug: "books" },
+    { domain: Domain.GAMES, label: m.common_Games(), slug: "games" },
+    { domain: Domain.MUSIC, label: m.common_Music(), slug: "music" },
     {
       domain: Domain.PODCASTS,
-      label: m.nav_podcasts(),
+      label: m.common_Podcasts(),
       slug: "podcasts",
       comingSoon: true,
     },
     {
       domain: Domain.BOARDGAMES,
-      label: m.nav_boardgames(),
+      label: m.common_Boardgames(),
       slug: "boardgames",
       comingSoon: true,
     },
@@ -94,7 +94,7 @@
 
 <section class="card mb-5 p-5 md:p-6">
   <h2 class="font-display mb-1 text-lg font-bold">
-    {m.settings_export_title()}
+    {m.common_export()}
   </h2>
   <p class="text-dim mb-4 text-sm">
     {m.settings_export_body()}

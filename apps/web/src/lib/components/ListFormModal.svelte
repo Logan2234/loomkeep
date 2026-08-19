@@ -142,21 +142,21 @@
             class="chip"
             class:chip-on={visibility === "PRIVATE"}
             onclick={() => (visibility = "PRIVATE")}>
-            Privé
+            {m.common_private()}
           </button>
           <button
             type="button"
             class="chip"
             class:chip-on={visibility === "FRIENDS"}
             onclick={() => (visibility = "FRIENDS")}>
-            Amis
+            {m.common_friends()}
           </button>
           <button
             type="button"
             class="chip"
             class:chip-on={visibility === "PUBLIC"}
             onclick={() => (visibility = "PUBLIC")}>
-            Public
+            {m.common_public()}
           </button>
         </div>
       </div>

@@ -56,7 +56,7 @@
           class="btn btn-ghost btn-sm"
           disabled={loadingMore}
           onclick={loadMore}>
-          {loadingMore ? m.common_loading() : "Voir plus"}
+          {loadingMore ? m.common_loading() : m.common_see_more()}
         </button>
       </div>
     {/if}

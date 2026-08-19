@@ -5,16 +5,18 @@
   // that belong to an operational page link out to it instead of being
   // duplicated here — this page stays the cross-cutting overview.
   import {
+    ApiError,
     getAdminAccountsStats,
     getAdminCatalogueStats,
     getAdminSocialStats,
     getAdminSystemStats,
-    ApiError,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminAccountsSectionDto,
     AdminCatalogueSectionDto,
@@ -23,8 +25,6 @@
   } from "@loomkeep/shared";
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
-  import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import SocialSection from "./components/SocialSection.svelte";
   import SystemSection from "./components/SystemSection.svelte";
 
@@ -124,7 +124,7 @@
     subtitle={m.admin_stats_subtitle()}>
     {#snippet actions()}
       <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.admin_refresh()}
+        {loading ? "…" : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
@@ -179,7 +179,7 @@
 
     {#if system}
       <section class="border-border border-t py-6">
-        <SectionLabel label={m.admin_area_system()} />
+        <SectionLabel label={m.common_system()} />
         <SystemSection stats={system} />
       </section>
     {/if}

@@ -71,8 +71,10 @@
         {#if appConfig.registrationEnabled}
           <p class="text-dim text-center text-sm">
             {m.auth_no_account()}
-            <a href="/register" class="link-accent"
-              >{m.auth_create_account_link()}</a>
+            <a
+              href="/register"
+              class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+              >{m.common_register()}</a>
           </p>
         {/if}
       </form>

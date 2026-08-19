@@ -30,14 +30,14 @@
     { id: "contenu", label: m.settings_section_content() },
     {
       id: "confidentialite",
-      label: m.settings_section_privacy(),
+      label: m.common_privacy(),
       social: true,
     },
     { id: "domaines", label: m.settings_section_domains() },
     { id: "communications", label: m.settings_section_communications() },
     { id: "apparence", label: m.settings_section_appearance() },
     { id: "import", label: m.settings_section_import() },
-    { id: "export", label: m.settings_section_export() },
+    { id: "export", label: m.common_export() },
     {
       id: "aide",
       label: m.settings_section_help(),
@@ -107,7 +107,7 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10 lg:max-w-5xl">
-  <PageHeader icon="gear" title={m.settings_title()} class="mb-6" />
+  <PageHeader icon="gear" title={m.common_settings()} class="mb-6" />
 
   {#if auth.user}
     <div class="mb-6 lg:grid lg:grid-cols-[180px_1fr] lg:gap-10">

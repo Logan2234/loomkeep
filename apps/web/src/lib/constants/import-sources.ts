@@ -1,3 +1,4 @@
+import { m } from "$lib/paraglide/messages";
 import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
 import { Domain, type ImportSource } from "@loomkeep/shared";
 
@@ -55,7 +56,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
         type: "steamId",
         placeholder: "76561198… ou steamcommunity.com/id/pseudo",
       },
-      noun: { one: "jeu", many: "jeux" },
+      noun: { one: m.common_game(), many: m.common_games() },
     },
     backloggd: {
       domain: Domain.GAMES,
@@ -68,7 +69,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       description: "Bibliothèque, statuts et notes (export CSV).",
       href: "/app/settings/import/storygraph",
       input: { type: "csv", accept: ".csv,text/csv" },
-      noun: { one: "livre", many: "livres" },
+      noun: { one: m.common_book(), many: m.common_books() },
     },
     goodreads: {
       domain: Domain.BOOKS,
@@ -76,7 +77,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       description: "Bibliothèque, statuts et notes (export CSV).",
       href: "/app/settings/import/goodreads",
       input: { type: "csv", accept: ".csv,text/csv" },
-      noun: { one: "livre", many: "livres" },
+      noun: { one: m.common_book(), many: m.common_books() },
     },
     babelio: {
       domain: Domain.BOOKS,

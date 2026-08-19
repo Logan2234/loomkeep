@@ -12,9 +12,6 @@
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";
 
-  // Resolved per request (this page is server-rendered, not prerendered) so
-  // the same code emits correct absolute URLs on loomkeep.app, on a
-  // self-hoster's own domain and on localhost. See +page.ts.
   const canonical = $derived(`${page.url.origin}/`);
 
   type Salle =
@@ -26,7 +23,6 @@
     detail: () => string;
     catalog: string;
     color: string | null;
-    /** false = announced in the settings, no screens behind it yet. */
     shipped: boolean;
   }[] = [
     {
@@ -39,7 +35,7 @@
     },
     {
       id: "games",
-      label: m.landing_salle_games_label,
+      label: m.common_Games,
       detail: m.landing_salle_games_detail,
       catalog: "IGDB",
       color: "var(--stat-games)",
@@ -47,7 +43,7 @@
     },
     {
       id: "books",
-      label: m.landing_salle_books_label,
+      label: m.common_Books,
       detail: m.landing_salle_books_detail,
       catalog: "Open Library",
       color: "var(--stat-books)",
@@ -63,7 +59,7 @@
     },
     {
       id: "podcasts",
-      label: m.landing_salle_podcasts_label,
+      label: m.common_Podcasts,
       detail: m.landing_salle_podcasts_detail,
       catalog: m.landing_libraries_soon(),
       color: null,
@@ -71,7 +67,7 @@
     },
     {
       id: "boardgames",
-      label: m.landing_salle_boardgames_label,
+      label: m.common_Boardgames,
       detail: m.landing_salle_boardgames_detail,
       catalog: m.landing_libraries_soon(),
       color: null,
@@ -79,20 +75,13 @@
     },
   ];
 
-  // Competing services, including the two domains Loomkeep hasn't shipped —
-  // pretending nobody covers podcasts or board games would be dishonest.
-  // `full` counts towards the app tally, `partial` only shows in the table.
   const RIVALS: {
     name: string;
     full: Salle[];
     partial?: { salle: Salle; what: () => string };
     price: () => string;
     note: () => string;
-    /** Self-hosted only, no managed free instance — excluded from the tally
-     * below, since "sign up" and "run your own server" aren't the same ask. */
     selfHost?: boolean;
-    /** No longer operating — excluded from the tally, kept in the table as
-     * a data point of its own. */
     closed?: boolean;
   }[] = [
     {
@@ -238,12 +227,6 @@
       : [...picked, id];
   }
 
-  // Greedy set cover: how many existing services it takes to cover the
-  // selection. Partial coverage doesn't count — half a domain isn't a tracker.
-  // Self-hosted-only and closed rivals are excluded from the count: "sign up
-  // for an app" and "provision your own server" aren't the same ask, and a
-  // shut-down service can't replace anything today. Both stay in the detail
-  // table below — they're real data points, just not comparable ones here.
   const eligibleRivals = RIVALS.filter((r) => !r.selfHost && !r.closed);
 
   const stack = $derived.by(() => {
@@ -270,8 +253,6 @@
     SALLES.filter((s) => picked.includes(s.id) && !s.shipped),
   );
 
-  // Wires the closing headline to the comparator: "4 onglets" only makes
-  // sense once the count is actually above one.
   const tabsLabel = $derived(
     stack.apps.length > 1
       ? m.landing_final_tabs_count({ count: stack.apps.length })
@@ -295,8 +276,6 @@
     { name: "StoryGraph", what: m.landing_import_done_storygraph_what },
   ];
 
-  // Not built. Listed anyway, because hiding the gaps is how a landing page
-  // starts lying.
   const IMPORTS_TODO: { name: string; what: () => string }[] = [
     { name: "Letterboxd", what: m.landing_import_todo_letterboxd_what },
     { name: "Serializd", what: m.landing_import_todo_serializd_what },
@@ -329,14 +308,6 @@
     return () => hero.removeEventListener("pointermove", move);
   });
 
-  // Umami's own recommended "track outbound links" script (see root README
-  // "Analytics"): auto-tags every external link with a generic event,
-  // skipping links already carrying a data-umami-event attribute — so the
-  // CTAs tagged by hand keep their descriptive names, while any link added
-  // later (or one behind {#if bootstrap.ready}, mounted after the first
-  // pass) gets caught without anyone remembering to tag it. Reading those
-  // two here makes the effect re-run when such a CTA enters the DOM.
-  // $effect never runs during SSR, only after hydration in the browser.
   $effect(() => {
     void bootstrap.ready;
     void appConfig.registrationEnabled;
@@ -353,10 +324,6 @@
   });
 </script>
 
-<!-- Single primary CTA, adapted to auth state: "open the app" once signed
-     in, "create account" once bootstrap resolved and registration is on,
-     "sign in" otherwise (self-host with registration off, or between
-     accounts) — never nothing, and never a flash of the wrong option. -->
 {#snippet primaryCta(label: string, event: string, cls: string)}
   {#if bootstrap.ready}
     {#if auth.isLoggedIn}
@@ -374,30 +341,21 @@
 {/snippet}
 
 <svelte:head>
-  <title>Loomkeep — {m.landing_meta_tagline()}</title>
+  <title>{m.common_loomkeep()} — {m.landing_meta_tagline()}</title>
   <meta name="description" content={m.landing_meta_description()} />
   <link rel="canonical" href={canonical} />
 
-  <!-- Absolute URLs: link-preview scrapers (Slack, Discord, WhatsApp…) don't
-       resolve relative ones, unlike browsers. -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Loomkeep" />
+  <meta property="og:site_name" content={m.common_loomkeep()} />
   <meta property="og:url" content={canonical} />
-  <meta property="og:title" content="Loomkeep — {m.landing_meta_tagline()}" />
+  <meta
+    property="og:title"
+    content="{m.common_loomkeep()} — {m.landing_meta_tagline()}" />
   <meta property="og:description" content={m.landing_meta_description()} />
   <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary" />
 
-  <!-- Umami analytics — landing page only, never loaded under /app. Empty
-       env = no script, matching the "empty disables the feature" convention
-       used everywhere else in this app. See root README "Analytics".
-       data-domains: derived from the actual request host (not hardcoded),
-       so this stays correct on any deployment (official VPS or a
-       self-hoster's own domain) — the tracker no-ops if this exact HTML is
-       ever copied and served from elsewhere, instead of polluting stats
-       with someone else's traffic. data-performance: also collects Core
-       Web Vitals (LCP/CLS/INP) from real visitors. -->
   {#if env.PUBLIC_UMAMI_WEBSITE_ID && env.PUBLIC_UMAMI_SCRIPT_URL}
     <script
       defer
@@ -408,7 +366,7 @@
   {/if}
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
+<div class="min-h-screen">
   <header
     class="border-border bg-bg/85 sticky top-0 z-30 border-b backdrop-blur">
     <div
@@ -447,15 +405,14 @@
                 href="/register"
                 data-umami-event="cta-nav-register"
                 class="btn btn-primary hidden sm:inline-flex">
-                {m.landing_register()}
+                {m.common_register()}
               </a>
             {/if}
           {/if}
         {/if}
       </div>
     </div>
-    <!-- Reflects the salles picked below: the strip is the selection, seen
-         from the top of the page. -->
+
     <div class="flex h-0.75" aria-hidden="true">
       {#each SALLES as salle (salle.id)}
         <span
@@ -466,7 +423,7 @@
     </div>
   </header>
 
-  <main class="flex-1">
+  <main>
     <!-- ── Hero ────────────────────────────────────────────────────────── -->
     <section
       bind:this={heroEl}
@@ -478,33 +435,14 @@
           <Poster src={work.cover} title={work.title} class="rounded" />
         {/each}
       </div>
-      <!-- Pointer-following spotlight: brightens the poster wall near the
-           cursor for atmosphere. -->
+
       <div
         class="pointer-events-none absolute inset-0"
         aria-hidden="true"
-        style={`background: radial-gradient(circle 380px at ${beamX}% ${beamY}%, color-mix(in srgb, var(--bg) 65%, transparent) 0%, color-mix(in srgb, var(--bg) 84%, transparent) 44%, var(--bg) 82%)`}>
+        style={`background: radial-gradient(circle 280px at ${beamX}% ${beamY}%, color-mix(in srgb, var(--bg) 84%, transparent) 0%, color-mix(in srgb, var(--bg) 84%, transparent) 44%, var(--bg) 82%)`}>
       </div>
 
-      <!-- `isolate` scopes the vignette's -z-10 to this wrapper, so it
-           stacks between the poster wall and the text instead of sinking
-           behind everything. The vignette itself doesn't track the
-           pointer — the beam above can brighten the wall right behind the
-           text, and without a fixed dark base underneath, dim grey copy
-           loses all contrast whenever the cursor happens to be over it.
-           A linear (not radial) gradient, anchored at the wrapper's own
-           top-left corner: an off-centre radial ellipse fades out at
-           different rates in each direction, so the box clipped it before
-           the far side ever reached transparent — visible as a hard seam
-           top-left. A corner-to-corner linear gradient can't do that; its
-           0%/100% stops always land exactly on the box's own edges. -->
       <div class="relative isolate mx-auto w-full max-w-5xl px-5">
-        <div
-          class="pointer-events-none absolute -inset-x-10 -inset-y-14 -z-10"
-          aria-hidden="true"
-          style="background: linear-gradient(125deg, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 45%, transparent 80%)">
-        </div>
-
         <p class="timecode text-xs tracking-[0.22em] uppercase">
           {m.landing_hero_kicker()}
         </p>
@@ -523,7 +461,7 @@
         </p>
         <div class="mt-10 flex flex-wrap gap-3">
           {@render primaryCta(
-            m.landing_register(),
+            m.common_register(),
             "cta-hero-register",
             "btn btn-primary btn-primary-cartouche btn-lg",
           )}
@@ -556,7 +494,7 @@
                 type="button"
                 aria-pressed={on}
                 onclick={() => toggle(salle.id)}
-                class="group grid w-full items-baseline gap-x-6 gap-y-1 py-6 text-left transition-[padding,background] duration-200 hover:pl-3 md:grid-cols-[1.5rem_1fr_16rem_auto]"
+                class="group grid w-full items-baseline gap-x-6 gap-y-1 py-6 text-left duration-200 hover:pl-3 md:grid-cols-[1.5rem_2fr_3fr_1fr]"
                 class:opacity-45={!on}>
                 <span
                   class="row-span-2 grid h-5 w-5 shrink-0 place-items-center self-center rounded-md border transition-colors md:row-span-1"
@@ -570,12 +508,12 @@
                   {/if}
                 </span>
                 <span
-                  class="font-display text-xl font-extrabold tracking-tight md:text-2xl">
+                  class="font-display text-xl font-extrabold tracking-tight text-nowrap md:text-2xl">
                   {salle.label()}
                 </span>
                 <span class="text-dim text-sm">{salle.detail()}</span>
                 <span
-                  class="timecode text-[0.65rem] tracking-[0.16em] uppercase md:justify-self-end"
+                  class="timecode text-[0.65rem] tracking-[0.16em] text-nowrap uppercase md:justify-self-end"
                   style={salle.color ? `color: ${salle.color}` : undefined}>
                   {salle.catalog}
                 </span>
@@ -660,8 +598,6 @@
           </div>
         </div>
 
-        <!-- Replaces the poster strip: the detail is one click away rather
-             than always unfolded. -->
         <button
           type="button"
           aria-expanded={showDetail}
@@ -689,7 +625,7 @@
                 {@const partialHit =
                   rival.partial && picked.includes(rival.partial.salle)}
                 <li
-                  class="border-border grid gap-x-6 gap-y-2 border-b py-4 md:grid-cols-[11rem_1fr_auto] md:items-center"
+                  class="border-border grid gap-x-6 gap-y-2 border-b px-4 py-4 md:grid-cols-[11rem_1fr_auto] md:items-center"
                   class:opacity-40={picked.length > 0 &&
                     hits.length === 0 &&
                     !partialHit}>
@@ -731,10 +667,10 @@
               {/each}
 
               <li
-                class="border-accent bg-accent/5 grid gap-x-6 gap-y-2 border-b py-4 md:grid-cols-[11rem_1fr_auto] md:items-center">
+                class="border-accent bg-accent/5 grid gap-x-6 gap-y-2 border-b px-4 py-4 md:grid-cols-[11rem_1fr_auto] md:items-center">
                 <span
                   class="font-display text-accent flex items-center gap-2 font-bold">
-                  Loomkeep
+                  {m.common_loomkeep()}
                   <Icon name="shield" class="h-3.5 w-3.5" />
                 </span>
                 <span class="flex flex-wrap items-center gap-1.5">
@@ -791,7 +727,7 @@
                 rel="noopener noreferrer"
                 class="link-accent">
                 {m.landing_import_missing_link()}
-              </a>{m.landing_import_missing_trail()}
+              </a>.
             </p>
           </div>
 
@@ -864,10 +800,11 @@
           </div>
         </div>
 
-        <dl class="border-border flex flex-col gap-7 rounded-2xl border p-7">
+        <dl
+          class="border-border flex h-fit flex-col gap-7 self-center rounded-2xl border p-7">
           <div>
             <dt class="font-display text-accent text-2xl font-extrabold">
-              {m.landing_name_loom_term()}
+              {m.common_loom()}
             </dt>
             <dd class="text-dim mt-2 text-sm">
               {m.landing_name_loom_body()}
@@ -875,7 +812,7 @@
           </div>
           <div>
             <dt class="font-display text-accent text-2xl font-extrabold">
-              {m.landing_name_keep_term()}
+              {m.common_keep()}
             </dt>
             <dd class="text-dim mt-2 text-sm">
               {m.landing_name_keep_body()}

@@ -11,6 +11,7 @@
     upsertLibraryEntry,
     watchEpisode,
   } from "$lib/api/client";
+  import { goBack } from "$lib/backNav.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -29,7 +30,6 @@
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
   import { formatDate } from "$lib/format";
-  import { goBack } from "$lib/backNav.svelte";
   import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
   import type {
@@ -313,7 +313,7 @@
   <!-- Hero: full-bleed backdrop, title/meta/ratings overlaid, poster tucked
        in the corner. Text stays white regardless of theme — it sits on a
        photo, not on the page background. -->
-  <div class="relative h-[64vh] max-h-[620px] min-h-[420px]">
+  <div class="relative h-[64vh] max-h-155 min-h-105">
     {#if detail.backdropUrl}
       <img src={detail.backdropUrl} alt="" class="h-full w-full object-cover" />
     {:else}
@@ -327,7 +327,7 @@
       href="/app/media"
       onclick={goBack}
       class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-black/55">
-      ← Vidéo
+      ← {m.common_Media()}
     </a>
 
     {#if detail.posterUrl}
@@ -515,7 +515,7 @@
                         aria-label="Supprimer ce revisionnage"
                         disabled={saving}
                         onclick={() => removeReplay(replay.id)}>
-                        Supprimer
+                        {m.common_delete()}
                       </button>
                     </li>
                   {/each}
@@ -622,7 +622,7 @@
     <ConfirmationModal
       title="Retirer de ma bibliothèque"
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, tes visionnages, ta critique, tes commentaires et ta note seront supprimés.`}
-      confirmLabel="Retirer"
+      confirmLabel={m.common_remove()}
       danger
       busy={removing}
       onConfirm={doRemove}

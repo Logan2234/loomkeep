@@ -71,7 +71,7 @@
   {#if !auth.user?.onboardedAt}
     <Modal
       dismissable={false}
-      title={m.onboarding_modal_title()}
+      title={m.common_welcome()}
       onclose={() => {}}
       wide
       blur

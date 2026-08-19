@@ -70,7 +70,7 @@
 
       <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
         <h1 class="font-display text-xl font-bold">
-          {m.auth_register_title()}
+          {m.common_register()}
         </h1>
         <input
           type="text"
@@ -102,13 +102,15 @@
             href="/legal/terms-of-service"
             target="_blank"
             rel="noopener noreferrer"
-            class="link-accent">CGU</a>
+            class="btn-text btn-text-underline text-accent hover:text-accent"
+            >CGU</a>
           et reconnaissez avoir lu notre
           <a
             href="/legal/privacy-policy"
             target="_blank"
             rel="noopener noreferrer"
-            class="link-accent">politique de confidentialité</a
+            class="btn-text btn-text-underline text-accent hover:text-accent"
+            >politique de confidentialité</a
           >.
         </p>
         <button
@@ -125,7 +127,10 @@
         </button>
         <p class="text-dim text-center text-sm">
           {m.auth_already_registered()}
-          <a href="/login" class="link-accent">{m.auth_login_action()}</a>
+          <a
+            href="/login"
+            class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+            >{m.auth_login_action()}</a>
         </p>
       </form>
     </div>

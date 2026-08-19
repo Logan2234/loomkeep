@@ -24,17 +24,17 @@
   const ACCESS: { id: ProfileAccess; label: string; desc: string }[] = [
     {
       id: ProfileAccess.PUBLIC,
-      label: "Public",
+      label: m.common_public(),
       desc: "Tout le monde peut vous trouver et vous suivre librement.",
     },
     {
       id: ProfileAccess.PRIVATE,
-      label: "Privé",
+      label: m.common_private(),
       desc: "Vous validez chaque demande ; seuls vos amis voient votre contenu.",
     },
     {
       id: ProfileAccess.GHOST,
-      label: "Figurant",
+      label: m.common_ghost(),
       desc: "Invisible : personne ne peut vous trouver, vous suivre, ni voir votre activité. Vous pouvez suivre et commenter de façon anonyme.",
     },
   ];
@@ -42,13 +42,13 @@
   const ACCESS_OPTIONS = ACCESS.map((a) => ({ id: a.id, label: a.label }));
 
   const FACETS: { id: VisibilityFacet; label: string }[] = [
-    { id: VisibilityFacet.LIBRARY, label: "Bibliothèque" },
-    { id: VisibilityFacet.ACTIVITY, label: "Activité" },
+    { id: VisibilityFacet.LIBRARY, label: m.common_library() },
+    { id: VisibilityFacet.ACTIVITY, label: m.common_activity() },
   ];
 
   const AUDIENCES: { id: VisibilityAudience; label: string }[] = [
-    { id: VisibilityAudience.PUBLIC, label: "Public" },
-    { id: VisibilityAudience.FRIENDS, label: "Amis" },
+    { id: VisibilityAudience.PUBLIC, label: m.common_public() },
+    { id: VisibilityAudience.FRIENDS, label: m.common_friends() },
     { id: VisibilityAudience.NONE, label: "Personne" },
   ];
 
@@ -60,7 +60,12 @@
     ghost: string;
   }[] = [
     { action: "Trouvable en recherche", public: "✓", private: "✓", ghost: "✗" },
-    { action: "Profil consultable", public: "✓", private: "Amis", ghost: "✗" },
+    {
+      action: "Profil consultable",
+      public: "✓",
+      private: m.common_friends(),
+      ghost: "✗",
+    },
     {
       action: "Peut être suivi",
       public: "Librement",
@@ -95,7 +100,7 @@
     {
       action: "Apparaître dans le fil d'autrui",
       public: "✓",
-      private: "Amis",
+      private: m.common_friends(),
       ghost: "✗",
     },
     {
@@ -212,7 +217,7 @@
 
 {#if appConfig.socialEnabled && settings}
   <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-1 text-lg font-bold">Confidentialité</h2>
+    <h2 class="font-display mb-1 text-lg font-bold">{m.common_privacy()}</h2>
     <p class="text-dim text-sm">
       Qui peut vous trouver, et ce que les autres voient de vous.
     </p>
@@ -302,8 +307,8 @@
             <Combobox
               label="Portée"
               options={[
-                { label: "Amis", value: "FRIENDS" },
-                { label: "Public", value: "PUBLIC" },
+                { label: m.common_friends(), value: "FRIENDS" },
+                { label: m.common_public(), value: "PUBLIC" },
               ]}
               values={[auth.user.defaultReviewVisibility]}
               onChange={(v) =>
@@ -338,9 +343,9 @@
         <thead>
           <tr class="border-border border-b">
             <th class="py-2 pr-3 font-semibold">Action</th>
-            <th class="px-3 py-2 font-semibold">Public</th>
-            <th class="px-3 py-2 font-semibold">Privé</th>
-            <th class="py-2 pl-3 font-semibold">Figurant</th>
+            <th class="px-3 py-2 font-semibold">{m.common_public()}</th>
+            <th class="px-3 py-2 font-semibold">{m.common_private()}</th>
+            <th class="py-2 pl-3 font-semibold">{m.common_ghost()}</th>
           </tr>
         </thead>
         <tbody class="divide-border divide-y">

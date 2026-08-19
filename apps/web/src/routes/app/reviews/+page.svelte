@@ -12,10 +12,10 @@
   import type { MyReviewDto, ReviewVisibility } from "@loomkeep/shared";
 
   const TYPE_LABEL: Record<string, string> = {
-    MEDIA: "Vidéo",
-    GAME: "Jeux",
-    BOOK: "Livres",
-    MUSIC: "Musique",
+    MEDIA: m.common_Media(),
+    GAME: m.common_Games(),
+    BOOK: m.common_Books(),
+    MUSIC: m.common_Music(),
     SEASON: "Saison",
     EPISODE: "Épisode",
   };
@@ -158,13 +158,13 @@
               class="chip"
               disabled={batchBusy}
               onclick={() => batchVisibility("FRIENDS")}>
-              Amis
+              {m.common_friends()}
             </button>
             <button
               class="chip"
               disabled={batchBusy}
               onclick={() => batchVisibility("PUBLIC")}>
-              Public
+              {m.common_public()}
             </button>
           {/if}
           {#if confirmingBatchDelete}
@@ -228,7 +228,9 @@
                 {#if appConfig.socialEnabled}
                   <span aria-hidden="true">·</span>
                   <span
-                    >{review.visibility === "PUBLIC" ? "Public" : "Amis"}</span>
+                    >{review.visibility === "PUBLIC"
+                      ? m.common_public()
+                      : m.common_friends()}</span>
                 {/if}
               </p>
               {#if review.text}

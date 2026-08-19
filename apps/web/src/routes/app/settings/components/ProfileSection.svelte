@@ -78,7 +78,9 @@
       Utilisée pour adapter certaines recommandations à ton âge.
     </p>
     {#if birthDateStatus === "saving"}
-      <p class="text-dim mt-2 text-sm">Enregistrement…</p>
+      <p class="text-dim mt-2 text-sm">
+        {m.common_save_loading()}
+      </p>
     {:else if birthDateStatus === "saved"}
       <p class="text-success mt-2 text-sm">Enregistré.</p>
     {:else if birthDateStatus === "error"}

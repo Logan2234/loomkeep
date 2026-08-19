@@ -130,14 +130,13 @@
               {#each group.items as item (item.id)}
                 {@render tile(item)}
               {/each}
-              {#if group.label === m.nav_menu_section_account()}
+              {#if group.label === m.common_account()}
                 <button
                   type="button"
                   onclick={signOut}
                   class="border-border bg-surface-2 hover:border-danger/40 text-danger flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors">
                   <Icon name="logout" class="h-6 w-6" />
-                  <span class="text-xs font-semibold"
-                    >{m.profile_logout()}</span>
+                  <span class="text-xs font-semibold">{m.common_logout()}</span>
                 </button>
               {/if}
             </div>

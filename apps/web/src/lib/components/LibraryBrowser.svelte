@@ -258,7 +258,7 @@
           }} />
       {/if}
       <Combobox
-        label="Statut"
+        label={m.common_status()}
         multiselect
         options={statusOptions}
         values={statuses}

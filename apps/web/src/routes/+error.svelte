@@ -12,7 +12,8 @@
 </script>
 
 <svelte:head>
-  <title>{isNotFound ? "Page introuvable" : "Erreur"} · Loomkeep</title>
+  <title
+    >{isNotFound ? "Page introuvable" : "Erreur"} · {m.common_loomkeep()}</title>
 </svelte:head>
 
 <div

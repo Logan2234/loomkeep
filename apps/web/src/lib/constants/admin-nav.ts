@@ -1,4 +1,5 @@
 import type Icon from "$lib/components/Icon.svelte";
+import { m } from "$lib/paraglide/messages";
 import type { ComponentProps } from "svelte";
 
 /** One admin destination, shared by the admin rail and the /admin home cards. */
@@ -38,7 +39,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
   {
     href: "/app/admin/stats",
-    label: "Statistiques",
+    label: m.common_stats(),
     description: "Usage global et tailles des bibliothèques.",
     icon: "stats",
     match: (p) => p.startsWith("/app/admin/stats"),

@@ -21,6 +21,6 @@
     href="/app/admin"
     class="border-accent/40 bg-accent/15 text-accent fixed right-4 bottom-20 z-30 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm backdrop-blur md:bottom-4">
     <Icon name="shield" class="h-3.5 w-3.5" />
-    {m.nav_admin()}
+    {m.common_admin()}
   </a>
 {/if}

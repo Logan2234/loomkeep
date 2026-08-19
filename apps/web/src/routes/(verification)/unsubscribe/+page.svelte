@@ -51,7 +51,7 @@
       {/if}
 
       <p class="text-dim text-center text-sm">
-        <a href="/" class="link-accent">Loomkeep</a>
+        <a href="/" class="link-accent">{m.common_loomkeep()}</a>
       </p>
     </div>
   </div>

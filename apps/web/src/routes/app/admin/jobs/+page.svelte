@@ -87,7 +87,7 @@
     subtitle={m.admin_jobs_subtitle()}>
     {#snippet actions()}
       <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.admin_refresh()}
+        {loading ? "…" : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>
@@ -146,9 +146,7 @@
                 'SUCCESS'
                   ? 'border-success/40 bg-success/10 text-success'
                   : 'border-danger/40 bg-danger/10 text-danger'}">
-                {last.status === "SUCCESS"
-                  ? m.admin_status_ok()
-                  : m.admin_status_failure()}
+                {last.status === "SUCCESS" ? m.common_ok() : m.common_failure()}
               </span>
               <span
                 >{m.admin_jobs_last_run({

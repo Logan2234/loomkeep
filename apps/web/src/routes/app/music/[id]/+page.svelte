@@ -178,7 +178,7 @@
   <div class="mx-auto max-w-4xl px-5 py-6 md:px-8">
     <Banner variant="error">{error}</Banner>
     <a href="/app/music" onclick={goBack} class="btn btn-ghost mt-4"
-      >← Musique</a>
+      >← {m.common_Music()}</a>
   </div>
 {/if}
 
@@ -194,7 +194,7 @@
       href="/app/music"
       onclick={goBack}
       class="border-border bg-bg/60 hover:bg-bg absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold backdrop-blur">
-      ← Musique
+      ← {m.common_Music()}
     </a>
   </div>
 
@@ -433,7 +433,7 @@
     <ConfirmationModal
       title="Retirer de ma bibliothèque"
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
-      confirmLabel="Retirer"
+      confirmLabel={m.common_remove()}
       danger
       busy={removing}
       onConfirm={doRemove}

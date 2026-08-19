@@ -5,6 +5,8 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
+  import ThemePreview from "$lib/components/ThemePreview.svelte";
+  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import type { MobileDestination } from "$lib/navigation";
@@ -15,7 +17,6 @@
   } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
   import { setLocale } from "$lib/paraglide/runtime.js";
-  import { theme } from "$lib/theme.svelte";
   import { dndzone } from "svelte-dnd-action";
 
   const MIN = 3;
@@ -111,24 +112,15 @@
   <div>
     <p class="mb-2 font-semibold">Thème</p>
     <div class="flex gap-2">
-      <button
-        class="chip inline-flex items-center gap-2"
-        class:chip-on={theme.mode === "light"}
-        onclick={() => theme.mode !== "light" && theme.toggle()}>
-        <Icon name="sun" class="h-4 w-4" /> Clair
-      </button>
-      <button
-        class="chip inline-flex items-center gap-2"
-        class:chip-on={theme.mode === "dark"}
-        onclick={() => theme.mode !== "dark" && theme.toggle()}>
-        <Icon name="moon" class="h-4 w-4" /> Sombre
-      </button>
+      {#each THEME_DEFINITIONS as theme (theme.mode)}
+        <ThemePreview {theme} />
+      {/each}
     </div>
   </div>
 
   <div>
     <p class="mb-2 flex items-center gap-2 font-semibold">
-      {m.settings_language_label()}
+      {m.common_language()}
       {#if isFeatureNew("locale-english")}
         <NewBadge />
       {/if}
@@ -137,7 +129,7 @@
       class:pointer-events-none={localeSaving}
       class:opacity-50={localeSaving}>
       <Combobox
-        label={m.settings_language_label()}
+        label={m.common_language()}
         options={LOCALE_OPTIONS}
         values={[auth.user?.locale ?? "fr"]}
         onChange={(v) => saveLocale(v[0] as "fr" | "en")} />
@@ -177,7 +169,7 @@
           <button
             type="button"
             class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
-            aria-label="Retirer"
+            aria-label={m.common_remove()}
             disabled={saving || locked || !canRemove}
             title={locked
               ? "« Menu » ne peut pas être retiré."

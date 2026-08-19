@@ -36,11 +36,11 @@
   const STATUS_OPTIONS = [
     { label: "Tous les statuts", value: "" },
     { label: "Réussi", value: "SUCCESS" },
-    { label: "Échec", value: "FAILURE" },
+    { label: m.common_failure(), value: "FAILURE" },
   ];
   const STATUS_LABELS: Record<JobStatus, string> = {
     SUCCESS: "Réussi",
-    FAILURE: "Échec",
+    FAILURE: m.common_failure(),
   };
 
   let activeSource = $state("");

@@ -53,7 +53,7 @@
 </script>
 
 <svelte:head>
-  <title>Vérifiez votre email · Loomkeep</title>
+  <title>Vérifiez votre email · {m.common_loomkeep()}</title>
 </svelte:head>
 
 {#if pageReady}

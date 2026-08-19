@@ -166,7 +166,7 @@
             {:else if book.year}
               {book.year}
             {:else}
-              Livre
+              {m.common_Book()}
             {/if}
           </span>
         </div>

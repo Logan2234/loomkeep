@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { listBooks } from "$lib/api/client";
   import { updateBookEntry } from "$lib/api/books";
+  import { listBooks } from "$lib/api/client";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
@@ -10,6 +10,7 @@
     BOOK_STATUS_LABELS,
     BOOK_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import { Domain, type BookEntryDto } from "@loomkeep/shared";
 
@@ -36,7 +37,7 @@
     { label: "Progression de lecture", value: "progress" },
     { label: "Terminé récemment", value: "finished" },
     { label: "Commencé récemment", value: "started" },
-    { label: "Statut", value: "status" },
+    { label: m.common_status(), value: "status" },
   ];
 
   async function toggleFavorite(entry: BookEntryDto, next: boolean) {
@@ -63,9 +64,9 @@
 
 <LibraryBrowser
   icon="book"
-  title="Livres"
+  title={m.common_Books()}
   subtitle={(n) => `${n} livre${n > 1 ? "s" : ""}`}
-  noun="livre"
+  noun={m.common_book()}
   domain={Domain.BOOKS}
   {load}
   keyOf={(e) => e.id}

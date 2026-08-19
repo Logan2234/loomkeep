@@ -112,7 +112,7 @@
         </summary>
         <div class="border-border space-y-3 border-t px-3 py-3 text-sm">
           {#if summaryLoading}
-            <p class="text-dim">Chargement…</p>
+            <p class="text-dim">{m.common_loading()}</p>
           {:else if !summary}
             <p class="text-dim">Détail indisponible pour le moment.</p>
           {:else}

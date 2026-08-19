@@ -5,6 +5,7 @@
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
   import { Domain, isDormant } from "@loomkeep/shared";
@@ -29,7 +30,7 @@
     { label: "Progression", value: "progress" },
     { label: "Terminé récemment", value: "finished" },
     { label: "Commencé récemment", value: "started" },
-    { label: "Statut", value: "status" },
+    { label: m.common_status(), value: "status" },
   ];
 
   function pct(entry: LibraryEntryDto): number {
@@ -64,7 +65,7 @@
 
 <LibraryBrowser
   icon="tv"
-  title="Vidéo"
+  title={m.common_Media()}
   subtitle={(n) => `${n} titre${n > 1 ? "s" : ""}`}
   noun="titre"
   domain={Domain.MEDIA}
