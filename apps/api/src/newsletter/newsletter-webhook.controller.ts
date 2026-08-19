@@ -33,15 +33,28 @@ export class NewsletterWebhookController {
   @Post("changelog-published")
   @HttpCode(HttpStatus.OK)
   async changelogPublished(
-    @Body() body: { id: string; data?: { changelog?: unknown } } | null,
+    @Body()
+    body: {
+      id: string;
+      type: "changelog_published";
+      createdAt: Date;
+      data: {
+        changelog: {
+          id: string;
+          title: string;
+          contentPreview: string;
+          publishedAt: Date;
+          linkedPostCount: number;
+        };
+      };
+    },
   ): Promise<{ ok: true }> {
-    console.log(body);
-    const data = body?.data?.changelog as Record<string, unknown> | undefined;
-    const id = typeof data?.id === "string" ? data?.id : null;
-    const title = typeof data?.title === "string" ? data.title : null;
-    const content = typeof data?.content === "string" ? data.content : null;
+    const data = body.data.changelog;
+    const id = data.id;
+    const title = data.title;
+    const content = data.contentPreview;
 
-    if (!id?.startsWith("changelog_") || !title || !content) {
+    if (!id.startsWith("changelog_") || !title || !content) {
       this.logger.warn(
         `Unexpected changelog-published payload: ${JSON.stringify(body)}`,
       );
