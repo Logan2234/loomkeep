@@ -9,6 +9,7 @@
   } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
+  import { Locale } from "@loomkeep/shared";
 
   const COLUMNS: {
     title: string;

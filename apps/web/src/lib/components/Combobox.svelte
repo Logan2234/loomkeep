@@ -38,8 +38,10 @@
 
   let open = $state(false);
   let query = $state("");
-  let searchInput: HTMLInputElement | undefined;
+  let searchInput: HTMLInputElement | undefined = $state();
+
   let triggerEl: HTMLButtonElement | undefined;
+
   // Positioned `fixed` (viewport coords) rather than `absolute`, so the panel
   // never gets clipped by an ancestor `.card`'s `overflow-hidden`.
   let panelPos = $state({ top: 0, left: 0 });
