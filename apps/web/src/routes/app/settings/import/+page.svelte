@@ -104,7 +104,7 @@
                   </span>
                   <span
                     class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                    {source.href ? "Indisponible" : "Bientôt"}
+                    {source.href ? "Indisponible" : m.landing_libraries_soon()}
                   </span>
                 </div>
               {/if}

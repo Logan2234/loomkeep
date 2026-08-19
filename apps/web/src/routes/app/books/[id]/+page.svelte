@@ -140,7 +140,7 @@
   <div class="mx-auto max-w-4xl px-5 py-6 md:px-8">
     <Banner variant="error">{error}</Banner>
     <a href="/app/books" onclick={goBack} class="btn btn-ghost mt-4"
-      >← Livres</a>
+      >← {m.common_Books()}</a>
   </div>
 {/if}
 
@@ -156,7 +156,7 @@
       href="/app/books"
       onclick={goBack}
       class="border-border bg-bg/60 hover:bg-bg absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold backdrop-blur">
-      ← Livres
+      ← {m.common_Books()}
     </a>
   </div>
 
@@ -181,7 +181,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <span
                 class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                Livre
+                {m.common_Book()}
               </span>
               {#if detail.isAdult}
                 <span
@@ -360,7 +360,7 @@
                           aria-label="Supprimer cette relecture"
                           disabled={saving}
                           onclick={() => removeReplay(replay.id)}>
-                          Supprimer
+                          {m.common_delete()}
                         </button>
                       </li>
                     {/each}
@@ -425,7 +425,7 @@
     <ConfirmationModal
       title="Retirer de ma bibliothèque"
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
-      confirmLabel="Retirer"
+      confirmLabel={m.common_remove()}
       danger
       busy={removing}
       onConfirm={doRemove}

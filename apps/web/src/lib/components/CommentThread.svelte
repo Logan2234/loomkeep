@@ -368,8 +368,8 @@
         {#if c.author?.id === auth.user?.id}
           <button
             class="btn-icon"
-            title="Modifier"
-            aria-label="Modifier"
+            title={m.common_edit()}
+            aria-label={m.common_edit()}
             onclick={() => startEdit(c)}>
             <Icon name="edit" class="h-4 w-4" />
           </button>

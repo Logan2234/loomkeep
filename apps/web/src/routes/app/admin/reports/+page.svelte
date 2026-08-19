@@ -220,7 +220,7 @@
 
   <div class="mb-5 flex flex-wrap items-center gap-2">
     <Combobox
-      label="Statut"
+      label={m.common_status()}
       options={STATUS_OPTIONS}
       values={[activeStatus]}
       onChange={(v) => selectStatus((v[0] as ReportStatus) || "PENDING")} />
@@ -399,7 +399,7 @@
         disabled={resolvingId === takeDownTarget.id ||
           !takeDownReasonText.trim()}
         onclick={confirmTakeDown}>
-        {resolvingId === takeDownTarget.id ? "Retrait…" : "Retirer"}
+        {resolvingId === takeDownTarget.id ? "Retrait…" : m.common_remove()}
       </button>
     </div>
   </Modal>

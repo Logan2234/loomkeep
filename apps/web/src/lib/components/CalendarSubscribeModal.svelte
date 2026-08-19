@@ -5,6 +5,7 @@
     getCalendarToken,
     regenerateCalendarToken,
   } from "$lib/api/client";
+  import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -80,7 +81,7 @@
         class="btn btn-ghost"
         disabled={busy}
         onclick={() => (confirmingRegenerate = false)}>
-        Annuler
+        {m.common_cancel()}
       </button>
       <button
         type="button"

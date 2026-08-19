@@ -55,10 +55,7 @@
         {remaining > 0
           ? m.reading_goal_remaining({
               count: remaining,
-              noun:
-                remaining > 1
-                  ? m.reading_goal_book_plural()
-                  : m.reading_goal_book_singular(),
+              noun: remaining > 1 ? m.common_books() : m.common_book(),
               year,
             })
           : m.reading_goal_reached()}

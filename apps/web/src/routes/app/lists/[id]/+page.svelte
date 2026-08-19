@@ -36,9 +36,9 @@
     COLLECTION: "Collection",
   };
   const VISIBILITY_LABEL: Record<string, string> = {
-    PRIVATE: "Privé",
-    FRIENDS: "Amis",
-    PUBLIC: "Public",
+    PRIVATE: m.common_private(),
+    FRIENDS: m.common_friends(),
+    PUBLIC: m.common_public(),
   };
 
   const id = $derived(page.params.id ?? "");
@@ -270,7 +270,7 @@
         {/if}
         {#if canEditList}
           <button class="btn btn-ghost" onclick={() => (editing = true)}>
-            Modifier
+            {m.common_edit()}
           </button>
         {/if}
         {#if role === "EDITOR"}

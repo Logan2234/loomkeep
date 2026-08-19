@@ -38,7 +38,7 @@
   // ServiceArea values the API emits (see admin.service.ts).
   const AREAS = [
     ...Object.values(DOMAINS).map((d) => d.label),
-    "Système",
+    m.common_system(),
   ] as const;
 
   const grouped = $derived(
@@ -149,7 +149,7 @@
     }
     if (s.reachable === true) {
       return {
-        label: m.admin_status_ok(),
+        label: m.common_ok(),
         cls: "border-success/40 bg-success/10 text-success",
       };
     }
@@ -179,7 +179,7 @@
     subtitle={m.admin_services_subtitle()}>
     {#snippet actions()}
       <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
-        {loading ? "…" : m.admin_refresh()}
+        {loading ? "…" : m.common_refresh()}
       </button>
     {/snippet}
   </PageHeader>

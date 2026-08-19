@@ -13,18 +13,18 @@
   // Menu launcher sheet), and it keeps the button in thumb reach. Opening it
   // there rises a Drawer bottom sheet instead of a dropdown, matching the
   // Menu launcher's own pattern.
-  import { fade, slide } from "svelte/transition";
   import {
     acceptFollowRequest,
     getFollowRequests,
     rejectFollowRequest,
   } from "$lib/api/social";
+  import { notifications } from "$lib/notifications.svelte";
+  import { m } from "$lib/paraglide/messages.js";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
+  import { fade, slide } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
-  import { notifications } from "$lib/notifications.svelte";
-  import { m } from "$lib/paraglide/messages.js";
 
   let open = $state(false);
   let requests = $state<FollowRequestDto[]>([]);
@@ -201,7 +201,7 @@
             </div>
             <button
               type="button"
-              aria-label={m.notif_accept()}
+              aria-label={m.common_accept()}
               disabled={busy === req.id}
               onclick={() => accept(req)}
               class="bg-accent text-accent-fg grid h-8 w-8 shrink-0 place-items-center rounded-full transition-opacity disabled:opacity-50">
@@ -209,7 +209,7 @@
             </button>
             <button
               type="button"
-              aria-label={m.notif_reject()}
+              aria-label={m.common_reject()}
               disabled={busy === req.id}
               onclick={() => reject(req)}
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-50">

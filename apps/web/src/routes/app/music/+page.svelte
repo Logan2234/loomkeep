@@ -9,6 +9,7 @@
     MUSIC_STATUS_LABELS,
     MUSIC_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import { Domain, type MusicEntryDto } from "@loomkeep/shared";
 
@@ -23,7 +24,7 @@
     { label: "Artiste", value: "artist" },
     { label: "Note", value: "rating" },
     { label: "Écouté récemment", value: "finished" },
-    { label: "Statut", value: "status" },
+    { label: m.common_status(), value: "status" },
   ];
 
   async function toggleFavorite(entry: MusicEntryDto, next: boolean) {
@@ -50,7 +51,7 @@
 
 <LibraryBrowser
   icon="music"
-  title="Musique"
+  title={m.common_Music()}
   subtitle={(n) => `${n} album${n > 1 ? "s" : ""}`}
   noun="album"
   domain={Domain.MUSIC}

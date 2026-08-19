@@ -226,7 +226,7 @@
           <p class="font-semibold">{auth.user.username}</p>
         </div>
         <button class="link-accent text-sm" onclick={openUsernameModal}>
-          Modifier
+          {m.common_edit()}
         </button>
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
@@ -278,7 +278,7 @@
         </div>
 
         <button class="link-accent shrink-0 text-sm" onclick={openEmailModal}>
-          Modifier
+          {m.common_edit()}
         </button>
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
@@ -287,7 +287,7 @@
           <p class="font-semibold tracking-widest">••••••••</p>
         </div>
         <button class="link-accent text-sm" onclick={openPasswordModal}>
-          Modifier
+          {m.common_edit()}
         </button>
       </div>
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">

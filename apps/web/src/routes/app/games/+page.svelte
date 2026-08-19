@@ -9,6 +9,7 @@
     GAME_STATUS_LABELS,
     GAME_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import { Domain, type GameEntryDto } from "@loomkeep/shared";
 
@@ -24,7 +25,7 @@
     { label: "Temps de jeu", value: "playtime" },
     { label: "Terminé récemment", value: "finished" },
     { label: "Commencé récemment", value: "started" },
-    { label: "Statut", value: "status" },
+    { label: m.common_status(), value: "status" },
   ];
 
   async function toggleFavorite(entry: GameEntryDto, next: boolean) {
@@ -51,7 +52,7 @@
 
 <LibraryBrowser
   icon="gamepad"
-  title="Jeux"
+  title={m.common_Games()}
   subtitle={(n) => `${n} jeu${n > 1 ? "x" : ""}`}
   noun="jeu"
   domain={Domain.GAMES}

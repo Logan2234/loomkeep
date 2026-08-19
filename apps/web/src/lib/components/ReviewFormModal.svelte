@@ -126,13 +126,13 @@
             class="chip"
             class:chip-on={formVisibility === "FRIENDS"}
             onclick={() => (formVisibility = "FRIENDS")}>
-            Amis
+            {m.common_friends()}
           </button>
           <button
             class="chip"
             class:chip-on={formVisibility === "PUBLIC"}
             onclick={() => (formVisibility = "PUBLIC")}>
-            Public
+            {m.common_public()}
           </button>
         </div>
       </div>

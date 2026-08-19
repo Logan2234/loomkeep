@@ -12,10 +12,10 @@
   const PREVIEW_COUNT = 3;
 
   const TYPE_LABEL: Record<string, string> = {
-    MEDIA: m.nav_media(),
-    GAME: m.nav_games(),
-    BOOK: m.nav_books(),
-    MUSIC: m.nav_music(),
+    MEDIA: m.common_Media(),
+    GAME: m.common_Games(),
+    BOOK: m.common_Books(),
+    MUSIC: m.common_Music(),
     SEASON: m.profile_reviews_season(),
     EPISODE: m.profile_reviews_episode(),
   };
@@ -80,7 +80,7 @@
                   <span
                     >{review.visibility === "PUBLIC"
                       ? m.profile_reviews_public()
-                      : m.profile_reviews_friends()}</span>
+                      : m.common_friends()}</span>
                 {/if}
               </p>
               {#if review.text}

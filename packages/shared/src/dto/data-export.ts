@@ -12,7 +12,7 @@ import type {
   MusicSource,
   MusicStatus,
 } from "../enums";
-import type { UserDto } from "./auth";
+import { UserDto } from "./user";
 
 /** One library entry in a data export: the media plus the user's tracking. */
 interface DataExportEntry {

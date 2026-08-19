@@ -63,7 +63,7 @@
     {#if cursor}
       <div class="mt-4 flex justify-center">
         <button class="btn btn-ghost" disabled={loadingMore} onclick={loadMore}>
-          {loadingMore ? m.common_loading() : "Voir plus"}
+          {loadingMore ? m.common_loading() : m.common_see_more()}
         </button>
       </div>
     {/if}

@@ -33,6 +33,7 @@
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
+  import { m } from "$lib/paraglide/messages";
   import type {
     StatsDomain,
     StatsOverviewDto,
@@ -175,7 +176,7 @@
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="stats"
-    title="Statistiques"
+    title={m.common_stats()}
     subtitle="Ton activité en un coup d'œil." />
 
   {#if error}
@@ -246,22 +247,22 @@
       <SectionLabel label="Activité dans le temps" class="mt-10" />
       <VideoTemporalSection {period} />
 
-      <SectionLabel label="Vidéo — en détail" class="mt-10" />
+      <SectionLabel label="{m.common_Media()} — en détail" class="mt-10" />
       <VideoStatsSection mediaBreakdown={breakdownOf("MEDIA")} />
     {/if}
 
     {#if showSection("GAMES")}
-      <SectionLabel label="Jeux — en détail" class="mt-10" />
+      <SectionLabel label="{m.common_Games()} — en détail" class="mt-10" />
       <GameStatsSection gameBreakdown={breakdownOf("GAMES")} />
     {/if}
 
     {#if showSection("BOOKS")}
-      <SectionLabel label="Livres — en détail" class="mt-10" />
+      <SectionLabel label="{m.common_Books()} — en détail" class="mt-10" />
       <BookStatsSection bookBreakdown={breakdownOf("BOOKS")} />
     {/if}
 
     {#if showSection("MUSIC")}
-      <SectionLabel label="Musique — en détail" class="mt-10" />
+      <SectionLabel label="{m.common_Music()} — en détail" class="mt-10" />
       <MusicStatsSection musicBreakdown={breakdownOf("MUSIC")} />
     {/if}
 

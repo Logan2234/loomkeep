@@ -1,5 +1,6 @@
 import { ApiError } from "$lib/api/client";
 import { toast } from "$lib/toast.svelte";
+import { m } from "./paraglide/messages";
 
 /**
  * Shared plumbing for the three detail pages (media, games, books): the
@@ -111,7 +112,9 @@ export function createLibraryEntryActions<
       await reload(); // Entry becomes null → the page returns to the "add" state.
     } catch (err) {
       state.error =
-        err instanceof ApiError ? err.message : "Suppression impossible";
+        err instanceof ApiError
+          ? err.message
+          : m.common_delete_error_fallback();
     } finally {
       state.removing = false;
     }

@@ -50,8 +50,11 @@
         <p class="text-danger text-sm">{error}</p>
       {/if}
 
-      <p class="text-dim text-center text-sm">
-        <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
+      <p class="text-center">
+        <a
+          href="/login"
+          class="btn-text btn-text-underline hover:text-accent text-sm"
+          >{m.auth_back_to_login()}</a>
       </p>
     </div>
   </div>

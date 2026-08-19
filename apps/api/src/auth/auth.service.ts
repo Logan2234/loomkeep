@@ -1,3 +1,5 @@
+import type { AuthTokensDto, SessionDto, UserDto } from "@loomkeep/shared";
+import { deviceLabel } from "@loomkeep/shared";
 import {
   BadRequestException,
   ConflictException,
@@ -9,8 +11,6 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
-import type { AuthTokensDto, SessionDto, UserDto } from "@loomkeep/shared";
-import { deviceLabel } from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { HibpService } from "../common/hibp.service";
@@ -549,7 +549,7 @@ export function toUserDto(user: User): UserDto {
     defaultListVisibility:
       user.defaultListVisibility as UserDto["defaultListVisibility"],
     profileAccess: user.profileAccess as UserDto["profileAccess"],
-    locale: user.locale,
+    locale: user.locale as "fr" | "en",
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
     onboardedAt: user.onboardedAt?.toISOString() ?? null,

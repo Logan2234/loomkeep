@@ -15,7 +15,7 @@
       href="/legal/legal-notice"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">Mentions légales</a>
+      class="btn-text font-normal">{m.common_legal_notice()}</a>
 
     <span class="mx-1.5">·</span>
 
@@ -23,7 +23,7 @@
       href="/legal/privacy-policy"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">Confidentialité</a>
+      class="btn-text font-normal">{m.common_privacy()}</a>
 
     <span class="mx-1.5">·</span>
 
@@ -31,7 +31,7 @@
       href="/legal/terms-of-service"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">CGU</a>
+      class="btn-text font-normal">{m.common_terms()}</a>
   </nav>
 
   <p class="flex gap-2">

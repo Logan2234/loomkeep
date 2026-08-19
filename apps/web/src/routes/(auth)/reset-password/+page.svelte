@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { isPasswordValid } from "@loomkeep/shared";
   import { ApiError, resetPassword } from "$lib/api/client";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { isPasswordValid } from "@loomkeep/shared";
 
   const token = $page.url.searchParams.get("token") ?? "";
 
@@ -84,8 +84,11 @@
           </form>
         {/if}
 
-        <p class="text-dim text-center text-sm">
-          <a href="/login" class="link-accent">{m.auth_back_to_login()}</a>
+        <p class="text-center">
+          <a
+            href="/login"
+            class="btn-text btn-text-underline hover:text-accent text-sm"
+            >{m.auth_back_to_login()}</a>
         </p>
       </div>
     </div>

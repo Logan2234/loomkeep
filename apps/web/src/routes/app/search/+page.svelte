@@ -10,6 +10,7 @@
   import { DOMAINS } from "$lib/constants/domains";
   import { debounce } from "$lib/debounce";
   import { isDomainEnabled } from "$lib/domains";
+  import { m } from "$lib/paraglide/messages";
   import { Domain } from "@loomkeep/shared";
 
   // Search-box placeholder fragment, named after the active domain tab.
@@ -78,7 +79,7 @@
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="search"
-    title="Recherche"
+    title={m.common_search()}
     subtitle="Trouve un titre et ajoute-le à ta bibliothèque."
     class="mb-6" />
 
@@ -102,7 +103,7 @@
           {#if tab[1].comingSoon}
             <span
               class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
-              Bientôt
+              {m.landing_libraries_soon()}
             </span>
           {/if}
         </button>

@@ -32,6 +32,7 @@
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { toIntlLocale } from "$lib/constants/language-to-locale";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     ListDto,
@@ -51,12 +52,12 @@
   }: { username: string; publicView?: boolean } = $props();
 
   const DOMAIN_LABEL: Record<string, string> = {
-    MEDIA: m.nav_media(),
-    GAMES: m.nav_games(),
-    BOOKS: m.nav_books(),
-    MUSIC: m.nav_music(),
-    PODCASTS: m.nav_podcasts(),
-    BOARDGAMES: m.nav_boardgames(),
+    MEDIA: m.common_Media(),
+    GAMES: m.common_Games(),
+    BOOKS: m.common_Books(),
+    MUSIC: m.common_Music(),
+    PODCASTS: m.common_Podcasts(),
+    BOARDGAMES: m.common_Boardgames(),
   };
 
   const DOMAIN_HREF: Record<string, string> = {
@@ -130,18 +131,19 @@
 
   let memberSince = $derived(
     profile
-      ? new Intl.DateTimeFormat("fr-FR", {
+      ? new Intl.DateTimeFormat(toIntlLocale(auth.user?.locale), {
           month: "long",
           year: "numeric",
         }).format(new Date(profile.createdAt))
       : "",
   );
 
-  const shortDate = new Intl.DateTimeFormat("fr-FR", {
+  const shortDate = new Intl.DateTimeFormat(toIntlLocale(auth.user?.locale), {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+
   let firstActivity = $derived(
     profile?.activityStats.firstActivityAt
       ? shortDate.format(new Date(profile.activityStats.firstActivityAt))
@@ -399,7 +401,7 @@
               </button>
             {:else if rel?.isFriend}
               <span class="chip chip-on py-1! text-xs"
-                >{m.profile_friends_badge()}</span>
+                >{m.common_friends()}</span>
             {:else if rel?.followsYou}
               <span class="chip py-1! text-xs">{m.profile_follows_you()}</span>
             {/if}
@@ -463,7 +465,7 @@
         <div class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5">
           {#if rel.blocking}
             <button class="btn btn-ghost" disabled={busy} onclick={toggleBlock}>
-              {m.profile_unblock()}
+              {m.common_unblock()}
             </button>
           {:else}
             {#if !ghostCantFollow}
@@ -479,10 +481,10 @@
             <button
               class="btn btn-ghost"
               disabled={busy}
-              title={m.profile_block()}
-              aria-label={m.profile_block()}
+              title={m.common_block()}
+              aria-label={m.common_block()}
               onclick={toggleBlock}>
-              {m.profile_block()}
+              {m.common_block()}
             </button>
           {/if}
         </div>
@@ -520,15 +522,15 @@
           <a
             href="/app/settings"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
-            title={m.nav_settings()}
-            aria-label={m.nav_settings()}>
+            title={m.common_settings()}
+            aria-label={m.common_settings()}>
             <Icon name="gear" class="h-4 w-4" />
           </a>
           <button
             type="button"
             class="border-danger/40 text-danger hover:bg-danger/10 grid h-9 w-9 place-items-center rounded-full border"
-            title={m.profile_logout()}
-            aria-label={m.profile_logout()}
+            title={m.common_logout()}
+            aria-label={m.common_logout()}
             onclick={signOut}>
             <Icon name="logout" class="h-4 w-4" />
           </button>
@@ -537,7 +539,7 @@
     </section>
 
     <!-- Per-domain library, gated by the viewer's visibility. -->
-    <SectionLabel label={m.profile_library_section()} class="mt-8 mb-3" />
+    <SectionLabel label={m.common_library()} class="mt-8 mb-3" />
     <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {#each profile.domains as d (d.domain)}
         {@const href = selfManage ? DOMAIN_HREF[d.domain] : undefined}
@@ -654,7 +656,7 @@
     <!-- Mini activity heatmap teaser (video-only) — the card itself isn't a
          link, only the "voir tout" line is, matching the mockup. -->
     {#if profile.activityStats.visible && profile.activityStats.heatmap.some((d) => d.count > 0)}
-      <SectionLabel label={m.profile_activity_section()} class="mt-8 mb-3" />
+      <SectionLabel label={m.common_activity()} class="mt-8 mb-3" />
       <div class="card flex flex-wrap items-center gap-3.5 p-4">
         <CalendarHeatmap
           days={profile.activityStats.heatmap}
@@ -717,7 +719,7 @@
                       class="card text-dim hover:border-accent hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 border-dashed transition-colors">
                       <Icon name="plus" class="h-6 w-6" />
                       <span class="text-xs font-semibold"
-                        >{m.profile_lists_create()}</span>
+                        >{m.common_create()}</span>
                     </div>
                   </button>
                 {:else}
@@ -806,7 +808,7 @@
   <ConfirmationModal
     title={m.profile_block_confirm_title({ name: profile.displayName })}
     message={m.profile_block_confirm_message({ name: profile.displayName })}
-    confirmLabel={m.profile_block()}
+    confirmLabel={m.common_block()}
     danger
     {busy}
     onConfirm={confirmBlockUser}

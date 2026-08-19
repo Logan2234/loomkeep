@@ -143,7 +143,7 @@
               <span
                 >{myReview.visibility === "PUBLIC"
                   ? m.profile_reviews_public()
-                  : m.profile_reviews_friends()}</span>
+                  : m.common_friends()}</span>
               {#if myReview.voteScore !== 0}
                 <span aria-label={m.reviews_section_vote_score_label()}
                   >{myReview.voteScore > 0

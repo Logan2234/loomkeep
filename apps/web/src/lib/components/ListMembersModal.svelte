@@ -103,8 +103,8 @@
             </a>
             <button
               class="text-dim hover:text-danger hover:bg-danger/10 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
-              aria-label={m.list_members_remove()}
-              title={m.list_members_remove()}
+              aria-label={m.common_remove()}
+              title={m.common_remove()}
               disabled={busy}
               onclick={() => remove(member.user.id)}>
               <Icon name="trash" class="h-4 w-4" />

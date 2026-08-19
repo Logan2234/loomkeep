@@ -288,7 +288,7 @@
           {d.label}
           <span
             class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
-            Bientôt
+            {m.landing_libraries_soon()}
           </span>
         </button>
       {:else}

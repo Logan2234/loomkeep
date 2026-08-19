@@ -176,7 +176,7 @@
       <span class="text-dim text-xs">
         {usersDeltaWeek !== null
           ? `+${nf.format(usersDeltaWeek)} cette semaine`
-          : " "}
+          : " "}
       </span>
     </a>
 
@@ -203,7 +203,7 @@
           ? servicesDegraded > 0
             ? `${servicesDegraded} dégradé${servicesDegraded > 1 ? "s" : ""}`
             : "tous opérationnels"
-          : " "}
+          : " "}
       </span>
     </a>
 
@@ -226,7 +226,7 @@
         class="text-xs {jobsFailedRecent
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {jobsLastRunAt ? `dernier run ${relative(jobsLastRunAt)}` : " "}
+        {jobsLastRunAt ? `dernier run ${relative(jobsLastRunAt)}` : " "}
       </span>
     </a>
 

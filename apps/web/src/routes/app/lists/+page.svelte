@@ -15,18 +15,18 @@
     COLLECTION: "Collection",
   };
   const VISIBILITY_LABEL: Record<string, string> = {
-    PRIVATE: "Privé",
-    FRIENDS: "Amis",
-    PUBLIC: "Public",
+    PRIVATE: m.common_private(),
+    FRIENDS: m.common_friends(),
+    PUBLIC: m.common_public(),
   };
   const KIND_OPTIONS = [
     { label: "Classement", value: "RANKED" },
     { label: "Collection", value: "COLLECTION" },
   ];
   const VISIBILITY_OPTIONS = [
-    { label: "Privé", value: "PRIVATE" },
-    { label: "Amis", value: "FRIENDS" },
-    { label: "Public", value: "PUBLIC" },
+    { label: m.common_private(), value: "PRIVATE" },
+    { label: m.common_friends(), value: "FRIENDS" },
+    { label: m.common_public(), value: "PUBLIC" },
   ];
   const SORT_OPTIONS = [
     { label: "Dernière modification", value: "updatedAt" },

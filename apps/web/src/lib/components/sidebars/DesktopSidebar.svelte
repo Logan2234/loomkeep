@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { adminReports } from "$lib/admin-reports.svelte";
   import { logout } from "$lib/api/auth";
@@ -90,7 +90,7 @@
         <span
           class="font-display text-lg font-extrabold whitespace-nowrap transition-opacity
           {expanded ? 'opacity-100' : 'opacity-0'}">
-          Loomkeep
+          {m.common_loomkeep()}
         </span>
       </a>
 
@@ -266,7 +266,7 @@
       {#if auth.isAdmin && !inAdmin}
         <a
           href="/app/admin"
-          title={expanded ? undefined : m.nav_admin()}
+          title={expanded ? undefined : m.common_admin()}
           aria-current={page.url.pathname.startsWith("/app/admin")
             ? "page"
             : undefined}
@@ -282,7 +282,7 @@
             class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
               ? 'opacity-100'
               : 'opacity-0'}">
-            {m.nav_admin()}
+            {m.common_admin()}
           </span>
         </a>
       {/if}
@@ -317,8 +317,8 @@
             <button
               type="button"
               onclick={signOut}
-              title={m.profile_logout()}
-              aria-label={m.profile_logout()}
+              title={m.common_logout()}
+              aria-label={m.common_logout()}
               class="hover:bg-surface-2 text-dim hover:text-danger grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors">
               <Icon name="logout" class="h-4 w-4" />
             </button>

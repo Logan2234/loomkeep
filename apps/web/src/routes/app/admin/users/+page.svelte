@@ -386,7 +386,7 @@
 
   const FILTERS: { value: AdminUserFilter; label: string }[] = [
     { value: "all", label: "Tous" },
-    { value: "admin", label: "Admin" },
+    { value: "admin", label: m.common_admin() },
     { value: "unverified", label: "Non vérifié" },
     { value: "never", label: "Jamais connecté" },
   ];
@@ -427,7 +427,7 @@
         <thead>
           <tr
             class="border-border text-dim border-b text-left text-xs font-semibold uppercase">
-            <th class="px-4 py-2.5">Compte</th>
+            <th class="px-4 py-2.5">{m.common_account()}</th>
             <th class="hidden px-4 py-2.5 sm:table-cell">Actif</th>
             <th class="hidden px-4 py-2.5 md:table-cell">Créé</th>
           </tr>
@@ -450,7 +450,7 @@
                       {#if u.role === "ADMIN"}
                         <span
                           class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
-                          Admin
+                          {m.common_admin()}
                         </span>
                       {/if}
                       {#if !u.emailVerified}
@@ -665,14 +665,14 @@
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Bibliothèque
+          {m.common_library()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
         {#if libraryStatsLoading}
           <div class="skeleton h-28 rounded-lg"></div>
         {:else if libraryStats}
           <div class="grid grid-cols-3 gap-2">
-            {#each [{ label: "Films", value: libraryStats.movies }, { label: "Séries", value: libraryStats.series }, { label: "Anime", value: libraryStats.anime }, { label: "Jeux", value: libraryStats.games }, { label: "Livres", value: libraryStats.books }, { label: "Albums", value: libraryStats.music }] as stat (stat.label)}
+            {#each [{ label: "Films", value: libraryStats.movies }, { label: "Séries", value: libraryStats.series }, { label: "Anime", value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: "Albums", value: libraryStats.music }] as stat (stat.label)}
               <div
                 class="border-border rounded-lg border px-2 py-2 text-center">
                 <p class="font-display text-base font-bold">{stat.value}</p>

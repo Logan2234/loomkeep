@@ -4,6 +4,7 @@
   // now two tabs of one page instead of two nav entries.
   import { page } from "$app/state";
   import {
+    ApiError,
     getAdminEmailPreview,
     getAdminEmailTemplates,
     getAdminPushDevices,
@@ -12,7 +13,6 @@
     sendAdminBroadcastPush,
     sendAdminTestEmail,
     sendAdminTestPush,
-    ApiError,
   } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
@@ -21,6 +21,7 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import type {
     AdminPushBroadcastResponseDto,
@@ -481,7 +482,8 @@
       <section class="card mb-6 space-y-4 p-4 md:p-5">
         <h2 class="font-display text-lg font-bold">Test individuel</h2>
         <div>
-          <span class="text-dim mb-1 block text-xs font-semibold">Compte</span>
+          <span class="text-dim mb-1 block text-xs font-semibold"
+            >{m.common_account()}</span>
           <Combobox
             label="Choisir un compte"
             options={userOptions}

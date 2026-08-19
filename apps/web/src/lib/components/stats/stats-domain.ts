@@ -7,10 +7,10 @@ import { m } from "$lib/paraglide/messages.js";
 import type { StatsDomain, StatsStatusBucket } from "@loomkeep/shared";
 
 export const STATS_DOMAIN_LABEL: Record<StatsDomain, string> = {
-  MEDIA: m.nav_media(),
-  GAMES: m.nav_games(),
-  BOOKS: m.nav_books(),
-  MUSIC: m.nav_music(),
+  MEDIA: m.common_Media(),
+  GAMES: m.common_Games(),
+  BOOKS: m.common_Books(),
+  MUSIC: m.common_Music(),
 };
 
 // CSS var name (see app.css) carrying this domain's validated stat hue.

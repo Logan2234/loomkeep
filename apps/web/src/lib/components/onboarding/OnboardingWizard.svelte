@@ -10,12 +10,13 @@
   import { m } from "$lib/paraglide/messages.js";
   import { setLocale } from "$lib/paraglide/runtime.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
-  import { theme } from "$lib/theme.svelte";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import { Domain } from "@loomkeep/shared";
   import Icon from "../Icon.svelte";
   import Switch from "../Switch.svelte";
+  import ThemePreview from "../ThemePreview.svelte";
   import Wizard from "../Wizard.svelte";
+  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
 
   const PICKABLE_DOMAINS = [
     Domain.MEDIA,
@@ -25,9 +26,9 @@
   ];
 
   const STEPS = [
-    { id: "welcome", label: m.onboarding_step_welcome() },
+    { id: "welcome", label: m.common_welcome() },
     { id: "domains", label: m.onboarding_step_domains() },
-    { id: "settings", label: m.onboarding_step_settings() },
+    { id: "settings", label: m.common_settings() },
     { id: "done", label: m.onboarding_step_done() },
   ];
 
@@ -69,25 +70,6 @@
     await updateMe({ locale: next });
     setLocale(next);
   }
-
-  const THEME_PREVIEWS = [
-    {
-      mode: "dark" as const,
-      label: m.onboarding_settings_theme_dark(),
-      bg: "#0c0d10",
-      surface: "#15171c",
-      line: "#2a2e38",
-      accent: "#f5b841",
-    },
-    {
-      mode: "light" as const,
-      label: m.onboarding_settings_theme_light(),
-      bg: "#edece8",
-      surface: "#fbfaf7",
-      line: "#dad8d0",
-      accent: "#a56a15",
-    },
-  ];
 
   let notifyError = $state("");
   let pushBusy = $state(false);
@@ -217,52 +199,21 @@
     </div>
   {:else if stepId === "settings"}
     <h2 class="font-display mb-3 text-xl font-bold">
-      {m.onboarding_settings_title()}
+      {m.common_settings()}
     </h2>
     <p class="text-dim mb-4 text-sm">{m.onboarding_settings_intro()}</p>
 
     <div class="mb-5">
       <p class="mb-2 text-sm font-semibold">{m.onboarding_settings_theme()}</p>
       <div class="flex gap-2">
-        {#each THEME_PREVIEWS as t (t.mode)}
-          {@const active = theme.mode === t.mode}
-          <button
-            type="button"
-            class="w-28 rounded-lg border p-2 text-center transition-colors {active
-              ? 'border-accent'
-              : 'border-border'}"
-            onclick={() => theme.mode !== t.mode && theme.toggle()}>
-            <div class="mb-2 overflow-hidden rounded" style="background:{t.bg}">
-              <div
-                class="flex h-3 items-center gap-1 px-1.5"
-                style="background:{t.surface}">
-                <span class="h-1 w-1 rounded-full" style="background:{t.accent}"
-                ></span>
-                <span class="h-0.5 w-3 rounded-full" style="background:{t.line}"
-                ></span>
-              </div>
-              <div class="flex flex-col gap-1 p-1.5">
-                <span
-                  class="h-0.5 rounded-full"
-                  style="width:55%;background:{t.line}"></span>
-                <span
-                  class="h-0.5 rounded-full"
-                  style="width:35%;background:{t.accent}"></span>
-              </div>
-            </div>
-            <span
-              class="text-xs font-semibold {active
-                ? 'text-accent'
-                : 'text-dim'}">
-              {t.label}
-            </span>
-          </button>
+        {#each THEME_DEFINITIONS as theme (theme.mode)}
+          <ThemePreview {theme} />
         {/each}
       </div>
     </div>
 
     <div class="mb-5">
-      <p class="mb-2 text-sm font-semibold">{m.settings_language_label()}</p>
+      <p class="mb-2 text-sm font-semibold">{m.common_language()}</p>
       <div class="flex gap-2">
         <button
           type="button"
