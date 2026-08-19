@@ -456,7 +456,7 @@
     </div>
     <!-- Reflects the salles picked below: the strip is the selection, seen
          from the top of the page. -->
-    <div class="flex h-[3px]" aria-hidden="true">
+    <div class="flex h-0.75" aria-hidden="true">
       {#each SALLES as salle (salle.id)}
         <span
           class="flex-1 transition-opacity duration-300"
@@ -491,12 +491,18 @@
            behind everything. The vignette itself doesn't track the
            pointer — the beam above can brighten the wall right behind the
            text, and without a fixed dark base underneath, dim grey copy
-           loses all contrast whenever the cursor happens to be over it. -->
+           loses all contrast whenever the cursor happens to be over it.
+           A linear (not radial) gradient, anchored at the wrapper's own
+           top-left corner: an off-centre radial ellipse fades out at
+           different rates in each direction, so the box clipped it before
+           the far side ever reached transparent — visible as a hard seam
+           top-left. A corner-to-corner linear gradient can't do that; its
+           0%/100% stops always land exactly on the box's own edges. -->
       <div class="relative isolate mx-auto w-full max-w-5xl px-5">
         <div
-          class="pointer-events-none absolute -inset-x-8 -inset-y-12 -z-10"
+          class="pointer-events-none absolute -inset-x-10 -inset-y-14 -z-10"
           aria-hidden="true"
-          style="background: radial-gradient(ellipse 70% 65% at 30% 38%, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent 85%)">
+          style="background: linear-gradient(125deg, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 45%, transparent 80%)">
         </div>
 
         <p class="timecode text-xs tracking-[0.22em] uppercase">
