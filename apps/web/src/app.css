@@ -35,17 +35,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Light — "le programme" (warm manila paper, deliberately not cream cliché). */
-  --bg: #edece8;
-  --surface: #fbfaf7;
-  --surface-2: #f3f2ee;
-  --border: #dad8d0;
-  --fg: #17181c;
-  --dim: #6b6e78;
-  --accent: #a56a15;
+  /* Light — "le programme" (warm manila paper). Cards are pure white so they
+     lift cleanly off the cream shell; the border carries the separation,
+     not background saturation — a saturated bg read as dirty/kraft. */
+  --bg: #f2ebdc;
+  --surface: #ffffff;
+  --surface-2: #ece3ce;
+  --border: #d9cba9;
+  --fg: #1c1712;
+  --dim: #6b6354;
+  --accent: #96570a;
   --accent-fg: #ffffff;
-  --btn: #17181c;
-  --btn-fg: #fbfaf7;
+  --btn: #1c1712;
+  --btn-fg: #ffffff;
   --success: #2fa070;
   --danger: #c9445e;
   /* Stats: one hue per domain, fixed order, CVD-validated — never cycled,
@@ -78,6 +80,10 @@
   --stat-books: #d866a0;
   --stat-music: #6e97e0;
   color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -229,6 +235,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {

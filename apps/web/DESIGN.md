@@ -15,13 +15,13 @@ a **timecode in a mono font** (year, `S01E04`, `2:46:00`, `12 / 24`), thin
 
 **Palette** — single ownable accent = **projector amber**.
 
-|         | Dark ("la salle") | Light ("le programme")                                     |
-| ------- | ----------------- | ---------------------------------------------------------- |
-| bg      | `#0C0D10`         | `#EDECE8` (warm manila, deliberately not the cream cliché) |
-| surface | `#15171C`         | `#FBFAF7`                                                  |
-| border  | `#2A2E38`         | `#DAD8D0`                                                  |
-| text    | `#ECECEA`         | `#17181C`                                                  |
-| accent  | `#F5B841`         | `#A56A15` (deeper, for contrast on light)                  |
+|         | Dark ("la salle") | Light ("le programme")                                    |
+| ------- | ----------------- | --------------------------------------------------------- |
+| bg      | `#0C0D10`         | `#F2EBDC` (warm manila, kept light — cards carry the pop) |
+| surface | `#15171C`         | `#FFFFFF` (pure white, so cards lift off the cream bg)    |
+| border  | `#2A2E38`         | `#D9CBA9`                                                 |
+| text    | `#ECECEA`         | `#1C1712`                                                 |
+| accent  | `#F5B841`         | `#96570A` (deep gold, AA-compliant as both text and fill) |
 
 Primary button is asymmetric: amber fill in dark, ink fill in light.
 Green/red are semantic only (success/danger), never decoration.
