@@ -326,7 +326,7 @@ export class UsersController {
         bio: dto.bio === undefined ? undefined : dto.bio || null,
         defaultReviewVisibility: dto.defaultReviewVisibility,
         defaultListVisibility: dto.defaultListVisibility,
-        locale: dto.locale,
+        locale: dto.locale as string,
       },
     });
     return toUserDto(user);

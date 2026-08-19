@@ -1,6 +1,8 @@
 <script lang="ts">
   // GitHub-style calendar heatmap: 7 rows (weekdays) × N columns (weeks).
   // Days are pre-zero-filled by the caller, oldest first, chronological.
+  import { formatDate } from "$lib/format";
+
   let {
     days,
     legend = true,
@@ -46,7 +48,9 @@
     "var(--accent)",
   ];
 
-  const df = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
+  const DATESTYLE_MEDIUM_OPTIONS: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+  };
   const cellClass = $derived(compact ? "h-[9px] w-[9px]" : "h-3 w-3");
   const gapClass = $derived(compact ? "gap-[2.5px]" : "gap-[3px]");
 </script>
@@ -62,8 +66,9 @@
           <div
             class="{cellClass} rounded-sm"
             style="background:{LEVEL_BG[level(day.count)]}"
-            title="{df.format(
-              new Date(`${day.date}T00:00:00Z`),
+            title="{formatDate(
+              `${day.date}T00:00:00Z`,
+              DATESTYLE_MEDIUM_OPTIONS,
             )} — {day.count}">
           </div>
         {:else}

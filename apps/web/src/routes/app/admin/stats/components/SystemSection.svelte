@@ -3,15 +3,13 @@
   // snapshot — nothing here is historised. Database size / per-table
   // breakdown deliberately isn't here — see the Homepage dashboard's "DB"
   // tile (docker/homepage/services.yaml), sourced from Prometheus instead.
-  import { formatBytes, formatRelative } from "$lib/format";
+  import { formatBytes, formatNumber, formatRelative } from "$lib/format";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { AdminSystemSectionDto } from "@loomkeep/shared";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminSystemSectionDto } = $props();
-
-  const nf = new Intl.NumberFormat("fr-FR");
 
   // A provider is flagged once it has burnt 80 % of its documented daily
   // quota — early enough to react before the day's calls start failing.
@@ -21,7 +19,7 @@
     stats.providerCalls.map((p) => ({
       label: p.provider,
       value: p.calls,
-      display: nf.format(p.calls),
+      display: formatNumber(p.calls),
       badge:
         p.percentUsed === null
           ? { text: m.admin_services_no_limit_badge() }
@@ -37,17 +35,17 @@
 
   const opsItems = $derived([
     {
-      value: nf.format(stats.ops.notificationsPending),
+      value: formatNumber(stats.ops.notificationsPending),
       label: m.admin_system_notifs_pending(),
     },
     // A count, not a live/dead ratio: nothing tracks whether an endpoint still
     // answers, so a denominator here would be invented.
     {
-      value: nf.format(stats.ops.pushSubscriptions),
+      value: formatNumber(stats.ops.pushSubscriptions),
       label: m.admin_system_push_subscriptions(),
     },
     {
-      value: nf.format(stats.ops.failedLogins24h),
+      value: formatNumber(stats.ops.failedLogins24h),
       label: m.admin_system_failed_logins(),
     },
     {

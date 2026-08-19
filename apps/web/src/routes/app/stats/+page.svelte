@@ -33,6 +33,7 @@
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
+  import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
     StatsDomain,
@@ -64,12 +65,6 @@
         error =
           e instanceof ApiError ? e.message : "Statistiques indisponibles";
       });
-  });
-
-  const nf = new Intl.NumberFormat("fr-FR");
-  const pf = new Intl.NumberFormat("fr-FR", {
-    style: "percent",
-    maximumFractionDigits: 0,
   });
 
   // "Tous" shows the domain split; a single domain shows its status funnel.
@@ -189,17 +184,20 @@
   {:else if overview}
     <SectionLabel label="Vue d'ensemble" />
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile value={nf.format(overview.total)} label="Œuvres" />
+      <StatTile value={formatNumber(overview.total)} label="Œuvres" />
       <StatTile
-        value={pf.format(overview.completionRate)}
+        value={formatNumber(overview.completionRate, PERCENT_OPTIONS)}
         label="Taux de complétion" />
       <StatTile
-        value={pf.format(overview.abandonRate)}
+        value={formatNumber(overview.abandonRate, PERCENT_OPTIONS)}
         label="Taux d'abandon" />
       <StatTile
         value={overview.averageRating ?? "—"}
         unit="/10"
-        label="Note moyenne · {pf.format(overview.ratingRate)} noté" />
+        label="Note moyenne · {formatNumber(
+          overview.ratingRate,
+          PERCENT_OPTIONS,
+        )} noté" />
     </div>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">

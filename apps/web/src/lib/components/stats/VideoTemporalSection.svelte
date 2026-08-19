@@ -5,6 +5,7 @@
   // natural full range (see VideoTemporalDto).
   import type { StatsWindow, VideoTemporalDto } from "@loomkeep/shared";
   import { getVideoTemporal } from "$lib/api/stats";
+  import { MONTH_SHORT_OPTIONS, formatDate } from "$lib/format";
   import CalendarHeatmap from "./CalendarHeatmap.svelte";
   import LineChart from "./LineChart.svelte";
   import { statsResource } from "./stats-resource.svelte";
@@ -34,11 +35,10 @@
       : [],
   );
 
-  const monthFmt = new Intl.DateTimeFormat("fr-FR", { month: "short" });
   const monthlyPoints = $derived(
     temporal
       ? temporal.monthlyMinutes.map((m) => ({
-          label: monthFmt.format(new Date(`${m.month}-01T00:00:00Z`)),
+          label: formatDate(`${m.month}-01T00:00:00Z`, MONTH_SHORT_OPTIONS),
           value: Math.round(m.minutes / 60),
         }))
       : [],

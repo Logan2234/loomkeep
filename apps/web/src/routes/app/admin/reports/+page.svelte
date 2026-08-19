@@ -24,6 +24,7 @@
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
   } from "$lib/constants/report-labels";
+  import { formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminReportsSummaryDto,
@@ -50,11 +51,6 @@
   let loading = $state(false);
   let error = $state("");
   let resolvingId = $state<string | null>(null);
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   async function load(reset: boolean) {
     loading = true;
@@ -162,18 +158,16 @@
     void loadSummary();
   });
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const kpis = $derived(
     summary
       ? [
           {
-            value: nf.format(summary.pending),
+            value: formatNumber(summary.pending),
             label: "En attente",
             alert: summary.pending > 0,
           },
-          { value: nf.format(summary.resolved), label: "Résolus" },
-          { value: nf.format(summary.dismissed), label: "Rejetés" },
+          { value: formatNumber(summary.resolved), label: "Résolus" },
+          { value: formatNumber(summary.dismissed), label: "Rejetés" },
           {
             value:
               summary.medianResolutionHours === null
@@ -262,7 +256,7 @@
               </span>
             {/if}
             <span class="text-dim ml-auto text-xs">
-              {dateFmt.format(new Date(r.createdAt))}
+              {formatDateTime(r.createdAt)}
             </span>
           </div>
 

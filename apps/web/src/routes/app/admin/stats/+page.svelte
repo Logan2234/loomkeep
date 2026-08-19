@@ -16,6 +16,11 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import {
+    DATETIME_LONG_OPTIONS,
+    formatDateTime,
+    formatNumber,
+  } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminAccountsSectionDto,
@@ -57,8 +62,6 @@
     if (auth.isAdmin) void load();
   });
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const socialStats = $derived(social && social.enabled ? social : null);
 
   /**
@@ -78,15 +81,15 @@
     if (accounts) {
       tiles.push(
         {
-          value: nf.format(accounts.total),
+          value: formatNumber(accounts.total),
           label: m.admin_stats_kpi_accounts(),
         },
         {
-          value: nf.format(accounts.health.active24h),
+          value: formatNumber(accounts.health.active24h),
           label: m.admin_stats_kpi_active_24h(),
         },
         {
-          value: nf.format(accounts.health.active30d),
+          value: formatNumber(accounts.health.active30d),
           label: m.admin_stats_kpi_active_30d(),
         },
       );
@@ -95,25 +98,20 @@
     if (catalogue) {
       const cached = catalogue.byDomain.reduce((sum, d) => sum + d.items, 0);
       tiles.push({
-        value: nf.format(cached),
+        value: formatNumber(cached),
         label: m.admin_stats_kpi_cached_works(),
       });
     }
 
     if (socialStats) {
       tiles.push({
-        value: nf.format(socialStats.reports.pending),
+        value: formatNumber(socialStats.reports.pending),
         label: m.admin_stats_kpi_pending_reports(),
         alert: socialStats.reports.pending > 0,
       });
     }
 
     return tiles;
-  });
-
-  const dateTimeFmt = new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "long",
-    timeStyle: "short",
   });
 </script>
 
@@ -187,7 +185,7 @@
     {#if accounts}
       <p class="text-dim mt-6 text-xs">
         {m.admin_stats_last_refresh({
-          date: dateTimeFmt.format(new Date(accounts.generatedAt)),
+          date: formatDateTime(accounts.generatedAt, DATETIME_LONG_OPTIONS),
         })}
       </p>
     {/if}

@@ -3,6 +3,7 @@
   // mount, reuses the BOOKS status breakdown already loaded by the overview
   // for "Lus", same pattern as the Vidéo/Jeux sections.
   import { getBookStats } from "$lib/api/stats";
+  import { formatNumber } from "$lib/format";
   import type {
     BookStatsDto,
     DomainStatusBreakdownDto,
@@ -26,8 +27,6 @@
     bookBreakdown?.byStatus.find((s) => s.bucket === "DONE")?.count ?? 0,
   );
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const authorItems = $derived(
     books
       ? books.topAuthorsByPages.map((a) => ({
@@ -42,7 +41,7 @@
   <p class="text-danger text-sm">{error}</p>
 {:else if books}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-    <StatTile value={nf.format(books.pagesRead)} label="Pages lues" />
+    <StatTile value={formatNumber(books.pagesRead)} label="Pages lues" />
     <StatTile
       value={readCount}
       label="Lus"

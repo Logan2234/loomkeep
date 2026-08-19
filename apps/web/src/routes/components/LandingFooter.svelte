@@ -9,6 +9,7 @@
   } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
+  import { Locale } from "@loomkeep/shared";
 
   const COLUMNS: {
     title: string;
@@ -87,8 +88,6 @@
       ],
     },
   ];
-
-  const LOCALES: ("fr" | "en")[] = ["fr", "en"];
 </script>
 
 <footer class="border-border border-t">
@@ -143,7 +142,7 @@
         class="border-border flex items-center gap-1 rounded-lg border p-0.5"
         role="group"
         aria-label={m.common_language()}>
-        {#each LOCALES as locale (locale)}
+        {#each Locale as locale (locale)}
           <button
             type="button"
             onclick={() => setLocale(locale)}

@@ -13,6 +13,7 @@
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
+  import { formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,
@@ -52,11 +53,6 @@
   let loading = $state(false);
   let error = $state("");
 
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
   async function load(reset: boolean) {
     loading = true;
     error = "";
@@ -92,15 +88,13 @@
       .catch(() => (summary = null));
   });
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const kpis = $derived(
     summary
       ? [
-          { value: nf.format(summary.total), label: "Imports" },
-          { value: nf.format(summary.success), label: "Réussis" },
+          { value: formatNumber(summary.total), label: "Imports" },
+          { value: formatNumber(summary.success), label: "Réussis" },
           {
-            value: nf.format(summary.failure),
+            value: formatNumber(summary.failure),
             label: "Échecs",
             alert: summary.failure > 0,
           },
@@ -120,7 +114,7 @@
     (summary?.bySource ?? []).map((s) => ({
       label: sourceLabel(s.sourceId),
       value: s.items,
-      display: `${nf.format(s.items)} élém.`,
+      display: `${formatNumber(s.items)} élém.`,
       badge: { text: `${s.runs} import${s.runs > 1 ? "s" : ""}` },
     })),
   );
@@ -218,7 +212,7 @@
               </span>
             {/if}
             <span class="timecode ml-auto text-xs">
-              {dateFmt.format(new Date(run.startedAt))}
+              {formatDateTime(run.startedAt)}
             </span>
           </div>
           <p class="text-dim mt-1.5 text-sm">

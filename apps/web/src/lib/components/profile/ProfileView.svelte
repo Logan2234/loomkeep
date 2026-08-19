@@ -32,7 +32,7 @@
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { toIntlLocale } from "$lib/constants/language-to-locale";
+  import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     ListDto,
@@ -130,23 +130,18 @@
   }
 
   let memberSince = $derived(
-    profile
-      ? new Intl.DateTimeFormat(toIntlLocale(auth.user?.locale), {
-          month: "long",
-          year: "numeric",
-        }).format(new Date(profile.createdAt))
-      : "",
+    profile ? formatDate(profile.createdAt, MONTH_YEAR_OPTIONS) : "",
   );
 
-  const shortDate = new Intl.DateTimeFormat(toIntlLocale(auth.user?.locale), {
+  const FULL_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "numeric",
     month: "long",
     year: "numeric",
-  });
+  };
 
   let firstActivity = $derived(
     profile?.activityStats.firstActivityAt
-      ? shortDate.format(new Date(profile.activityStats.firstActivityAt))
+      ? formatDate(profile.activityStats.firstActivityAt, FULL_DATE_OPTIONS)
       : null,
   );
   let watchDays = $derived(

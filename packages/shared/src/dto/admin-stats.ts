@@ -6,7 +6,7 @@
 // the handful of counters the /admin dashboard and /admin/communications read
 // survive, as `AdminOverviewDto` (dto/admin.ts).
 
-import type { ProfileAccess, ReportCategory } from "../enums";
+import type { Locale, ProfileAccess, ReportCategory } from "../enums";
 import type { TrendPeriod, TrendPointDto } from "./admin";
 import type { RatingBucketDto, StatsDomain } from "./stats";
 
@@ -80,8 +80,8 @@ interface AdminAgeStatsDto {
 }
 
 interface AdminLocaleCountDto {
-  /** Paraglide locale code, e.g. "fr". */
-  locale: string;
+  /** Paraglide locale code. */
+  locale: Locale;
   count: number;
 }
 

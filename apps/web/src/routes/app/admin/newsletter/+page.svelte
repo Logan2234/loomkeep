@@ -2,19 +2,12 @@
   import { ApiError, getAdminNewsletterSends } from "$lib/api/client";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import { DATETIME_NUMERIC_OPTIONS, formatDateTime } from "$lib/format";
   import type { NewsletterSendDto } from "@loomkeep/shared";
 
   let sends = $state<NewsletterSendDto[] | null>(null);
   let loading = $state(true);
   let loadError = $state("");
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
   async function load() {
     loading = true;
@@ -61,7 +54,8 @@
                 {send.title}
               </p>
               <p class="timecode text-xs">
-                {dateFmt.format(new Date(send.sentAt))} · {send.recipientCount}
+                {formatDateTime(send.sentAt, DATETIME_NUMERIC_OPTIONS)} ·
+                {send.recipientCount}
                 destinataire{send.recipientCount > 1 ? "s" : ""}
               </p>
             </div>

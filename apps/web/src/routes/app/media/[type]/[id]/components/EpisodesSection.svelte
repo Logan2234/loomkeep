@@ -13,6 +13,7 @@
   import Modal from "$lib/components/Modal.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import type {
     CommentTargetType,
     LibraryEntryDto,
@@ -32,12 +33,6 @@
     reload: () => Promise<void>;
     onError: (message: string) => void;
   } = $props();
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 
   let busyEpisodeId = $state<string | null>(null);
   let busySeasonId = $state<string | null>(null);
@@ -340,7 +335,10 @@
                 <span
                   class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
                   <Icon name="check" class="h-4 w-4" />
-                  {dateFmt.format(new Date(episode.watches[0].watchedAt))}
+                  {formatDate(
+                    episode.watches[0].watchedAt,
+                    DATE_MEDIUM_OPTIONS,
+                  )}
                 </span>
               {/if}
               {#if entry && episode.id}

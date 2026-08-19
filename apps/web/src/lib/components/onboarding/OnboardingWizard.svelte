@@ -11,7 +11,7 @@
   import { setLocale } from "$lib/paraglide/runtime.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
-  import { Domain } from "@loomkeep/shared";
+  import { Domain, type Locale } from "@loomkeep/shared";
   import Icon from "../Icon.svelte";
   import Switch from "../Switch.svelte";
   import ThemePreview from "../ThemePreview.svelte";
@@ -65,7 +65,7 @@
     await updateMe({ enabledDomains: next }).catch(() => undefined);
   }
 
-  async function saveLocale(next: "fr" | "en") {
+  async function saveLocale(next: Locale) {
     if (auth.user?.locale === next) return;
     await updateMe({ locale: next });
     setLocale(next);

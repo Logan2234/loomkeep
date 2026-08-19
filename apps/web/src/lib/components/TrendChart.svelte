@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { MONTH_YEAR_OPTIONS, formatDate, formatNumber } from "$lib/format";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
 
   let { points, period }: { points: TrendPointDto[]; period: TrendPeriod } =
@@ -54,23 +55,17 @@
     );
   }
 
-  const dayFmt = new Intl.DateTimeFormat("fr-FR", {
+  const DAY_MONTH_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "2-digit",
     month: "2-digit",
-  });
-  const monthFmt = new Intl.DateTimeFormat("fr-FR", {
-    month: "long",
-    year: "numeric",
-  });
-  const yearFmt = new Intl.DateTimeFormat("fr-FR", { year: "numeric" });
-  const nf = new Intl.NumberFormat("fr-FR");
+  };
+  const YEAR_OPTIONS: Intl.DateTimeFormatOptions = { year: "numeric" };
 
   function bucketLabel(iso: string): string {
-    const d = new Date(iso);
-    if (period === "day") return dayFmt.format(d);
-    if (period === "week") return `sem. ${dayFmt.format(d)}`;
-    if (period === "month") return monthFmt.format(d);
-    return yearFmt.format(d);
+    if (period === "day") return formatDate(iso, DAY_MONTH_OPTIONS);
+    if (period === "week") return `sem. ${formatDate(iso, DAY_MONTH_OPTIONS)}`;
+    if (period === "month") return formatDate(iso, MONTH_YEAR_OPTIONS);
+    return formatDate(iso, YEAR_OPTIONS);
   }
 
   // Anchor the tooltip so it never overflows the (overflow-hidden) card: pinned
@@ -161,7 +156,7 @@
         h.x,
       )} translateY(calc(-100% - 6px));">
       <span class="text-fg font-semibold tabular-nums"
-        >{nf.format(h.point.count)}</span>
+        >{formatNumber(h.point.count)}</span>
       <span class="text-dim"> · {bucketLabel(h.point.periodStart)}</span>
     </div>
   {/if}

@@ -6,14 +6,13 @@
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
   } from "$lib/components/stats/stats-domain";
+  import { formatNumber } from "$lib/format";
   import type { AdminCatalogueSectionDto } from "@loomkeep/shared";
   import { m } from "$lib/paraglide/messages.js";
   import Sparkline from "./Sparkline.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminCatalogueSectionDto } = $props();
-
-  const nf = new Intl.NumberFormat("fr-FR");
 
   // Titles can collide across domains ("Dune" the film and the book), so the
   // domain disambiguates the duplicates rather than every row.
@@ -65,7 +64,7 @@
                 </span>
               </td>
               <td class="px-2 py-2 text-right font-mono tabular-nums">
-                {nf.format(row.items)}
+                {formatNumber(row.items)}
               </td>
               <!-- Only MEDIA has a refresh cron; the others have no notion of
                    staleness yet, hence the em dash rather than a fake 0 %. -->
@@ -104,7 +103,7 @@
         value="{stats.sharedPercent} %"
         label={m.admin_catalogue_shared_cache()} />
       <StatFigure
-        value={nf.format(stats.orphanCount)}
+        value={formatNumber(stats.orphanCount)}
         label={m.admin_catalogue_orphans()} />
     </div>
   </div>

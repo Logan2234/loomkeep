@@ -35,6 +35,7 @@
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
   } from "$lib/constants/report-labels";
+  import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type {
@@ -359,21 +360,16 @@
     void load(true);
   });
 
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  const dateTimeFmt = new Intl.DateTimeFormat("fr-FR", {
+  const DAY_MONTH_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  };
 
   function activityLabel(u: AdminUserDto): string {
     return u.lastActiveAt
-      ? dateTimeFmt.format(new Date(u.lastActiveAt))
+      ? formatDate(u.lastActiveAt, DAY_MONTH_TIME_OPTIONS)
       : "Jamais connecté";
   }
 
@@ -474,7 +470,7 @@
                 </div>
               </td>
               <td class="text-dim hidden px-4 py-3 text-xs md:table-cell">
-                {dateFmt.format(new Date(u.createdAt))}
+                {formatDate(u.createdAt)}
               </td>
             </tr>
           {/each}
@@ -607,7 +603,7 @@
                     {s.userAgent ?? "Appareil inconnu"}
                   </p>
                   <p class="text-dim text-[0.65rem]">
-                    Actif {dateTimeFmt.format(new Date(s.lastUsedAt))}
+                    Actif {formatDate(s.lastUsedAt, DAY_MONTH_TIME_OPTIONS)}
                   </p>
                 </div>
                 <button
@@ -793,7 +789,7 @@
             <p>{c.excerpt}</p>
           {/if}
           <p class="text-dim mt-1 text-xs">
-            {dateFmt.format(new Date(c.createdAt))}
+            {formatDate(c.createdAt)}
           </p>
         </li>
       {/each}
@@ -851,7 +847,7 @@
                 r.status
               ]}">{REPORT_STATUS_LABELS[r.status]}</span>
             <span class="text-dim ml-auto text-xs"
-              >{dateFmt.format(new Date(r.createdAt))}</span>
+              >{formatDate(r.createdAt)}</span>
           </div>
           {#if r.target}
             {#if r.target.href}
