@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type {
   AdminAccountsSectionDto,
   AdminNewAccountsTrendDto,
+  Locale,
   ProfileAccess,
   TrendPeriod,
 } from "@loomkeep/shared";
@@ -221,7 +222,7 @@ export class AdminAccountsStatsService {
       _count: { _all: true },
     });
     return rows
-      .map((r) => ({ locale: r.locale, count: r._count._all }))
+      .map((r) => ({ locale: r.locale as Locale, count: r._count._all }))
       .sort((a, b) => b.count - a.count);
   }
 }
