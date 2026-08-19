@@ -32,11 +32,12 @@ export class NewsletterWebhookController {
 
   @Post("changelog-published")
   @HttpCode(HttpStatus.OK)
-  async changelogPublished(@Body() body: unknown): Promise<{ ok: true }> {
-    const data = (body as { data?: unknown } | null)?.data as
-      Record<string, unknown> | undefined;
-
-    const id = typeof data?.id === "string" ? data.id : null;
+  async changelogPublished(
+    @Body() body: { id: string; data?: { changelog?: unknown } } | null,
+  ): Promise<{ ok: true }> {
+    console.log(body);
+    const data = body?.data?.changelog as Record<string, unknown> | undefined;
+    const id = typeof data?.id === "string" ? data?.id : null;
     const title = typeof data?.title === "string" ? data.title : null;
     const content = typeof data?.content === "string" ? data.content : null;
 

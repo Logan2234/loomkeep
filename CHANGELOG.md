@@ -12,7 +12,69 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
-## 1.6.0 — Open Library replaces the Google Books API
+## 1.6.0 — Trakt & Simkl import, Open Library, and the new landing page
+
+- **Trakt and Simkl join TV Time as import sources.** Trakt started out as an
+  API-based import, but Trakt now gates creating an API application behind
+  VIP (confirmed live, contradicting the docs) — a dead end for a self-hosted
+  app, so it was replaced with a file-based import off Trakt's own account
+  data export, reverse-engineered against a real populated export (no docs
+  exist for that ZIP shape). Simkl has no such export in its free tier, so it
+  goes through a real OAuth authorization-code flow instead — the
+  `simkl.com/oauth/authorize` link is now built and followed client-side
+  after a same-origin `/api/simkl/connect` redirect turned out to be silently
+  swallowed by the browser (SvelteKit's link handling or the PWA service
+  worker are the prime suspects). Shared analyze/resolve/commit mechanics
+  were extracted into `MediaImportSource` (TvTimeImportSource now only
+  supplies CSV parsing), and `GET /import/availability` greys out
+  Steam/Trakt/Simkl with an "Indisponible" badge when their required env key
+  isn't set, instead of leading into a wizard that can only fail.
+- **Movie rewatches, favorites and ratings now import too.** A new
+  `MovieReplay` model (mirrors `GameReplay`/`BookReplay`) lets a movie be
+  rewatched more than once; `ImportMovie` gains a required `watchedAt: Date |
+null` so every parser makes a real decision instead of silently omitting
+  it, and `lists-favorites.json`/`ratings-*.json` feed `LibraryEntry.favorite`
+  and `Review` from Trakt's export.
+- **Reworked Séance landing page shipped to production**, replacing the
+  marketing homepage assembled from several `/home-test` prototypes: full
+  paraglide i18n (fr/en), auth-aware CTAs, SEO/OG head and Umami event
+  tracking matching the page it replaces. Also adds a themed `+error.svelte`
+  so unmatched routes stop falling back to SvelteKit's bare default page.
+- **Library and search cards uniformized across all four domains** (movies/
+  shows, books, games, music): a hover-to-favorite star replaces the
+  always-static one, movies get a watched-status label and books a
+  reading-progress bar (both previously tracked but never surfaced), and
+  search result cards share one top-right +/check affordance. Filters, sort
+  and search state now persist across back navigation — first attempted via
+  `replaceState` from `$app/navigation`, which patches the raw history entry
+  but not SvelteKit's own router state, so `page.url` stayed stale; fixed by
+  switching to `goto(url, { replaceState: true, noScroll, keepFocus })`.
+- **Provider attribution (LK-P01)**: a new `provider-brands.ts` +
+  `ProviderMark.svelte` render official logo marks for TMDB, Open Library,
+  OMDb, AniList, IGDB and MusicBrainz, plus a new Settings → "Sources de
+  données" section centralizing their full legal notices — TMDB and Open
+  Library require a logo/notice wherever their data shows, OMDb's CC BY-NC
+  4.0 license requires attribution next to the scores it feeds.
+- Added an Unleash feature-flag service (backend + frontend) for gradually
+  rolling out future features.
+- Adds trackable CTAs to previously link-less transactional emails
+  (password-changed, new-device-login, email-changed, welcome) via
+  configurable Umami Link short-URLs, and replaces per-send newsletter
+  unsubscribe tokens with a stable per-user one plus a public `/unsubscribe`
+  page reachable without logging in. Also adds Umami analytics to the app
+  itself.
+- Docker images now pull pre-built GHCR images instead of building on the
+  VPS, and were shrunk further on top of that.
+- DSA art. 17: comment takedowns and admin account deletions now persist a
+  `ModerationDecision` record and notify the sanctioned user by email (+
+  in-app when the account still exists); CGU §9 now only lists the two
+  sanctions actually implemented.
+- Smaller items: a logout button on the desktop nav rail and mobile menu, a
+  hover bookmark shortcut on library poster cards, a beta badge next to the
+  app version, the Ko-fi donation modal switched from an iframe embed to a
+  plain outbound link (the iframe let Ko-fi deposit cookies before consent),
+  and several privacy-policy disclosure updates (Cloudflare/CDN/push/
+  donation flows, email tracking, a newsletter-consent timestamp).
 
 - **Books now come from [Open Library](https://openlibrary.org/)** instead of
   the Google Books API. The new `OpenLibraryProvider` uses `/search.json`

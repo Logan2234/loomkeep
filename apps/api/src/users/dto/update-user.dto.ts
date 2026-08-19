@@ -1,6 +1,7 @@
 import type {
   Domain,
   ListVisibility,
+  Locale,
   ReviewVisibility,
   UpdateUserRequestDto,
 } from "@loomkeep/shared";
@@ -9,7 +10,6 @@ import {
   ListVisibility as ListVisibilityValues,
   ReviewVisibility as ReviewVisibilityValues,
 } from "@loomkeep/shared";
-import { Locale } from "@loomkeep/shared/src/enums";
 import {
   ArrayMaxSize,
   ArrayMinSize,
