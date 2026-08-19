@@ -20,7 +20,7 @@ class Bootstrap {
     if (this.#started) return;
     this.#started = true;
 
-    liveFlags.start();
+    void liveFlags.start();
     void Promise.all([initAuth(), initConfig()]).finally(() => {
       this.ready = true;
     });

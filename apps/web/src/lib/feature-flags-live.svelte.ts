@@ -1,5 +1,5 @@
 import { env } from "$env/dynamic/public";
-import { EVENTS, UnleashClient } from "unleash-proxy-client";
+import type { UnleashClient } from "unleash-proxy-client";
 
 /**
  * Generic, reactive live feature flags — the default way to gate a new
@@ -21,12 +21,21 @@ class LiveFlags {
   #client?: UnleashClient;
   #version = $state(0);
 
-  /** Called once from bootstrap.svelte.ts. No-op if Unleash isn't configured. */
-  start(): void {
+  /**
+   * Called once from bootstrap.svelte.ts. No-op if Unleash isn't configured.
+   *
+   * The SDK is pulled in with a dynamic import on purpose: a static one puts
+   * `unleash-proxy-client` in the root layout's *server* chunk as an external
+   * bare import, and the runtime image ships `build/` without node_modules —
+   * every server-rendered route then 500s on ERR_MODULE_NOT_FOUND. Loading it
+   * here keeps it in a browser-only chunk, where it belongs anyway.
+   */
+  async start(): Promise<void> {
     const url = env.PUBLIC_UNLEASH_FRONTEND_URL;
     const clientKey = env.PUBLIC_UNLEASH_FRONTEND_TOKEN;
     if (!url || !clientKey) return;
 
+    const { EVENTS, UnleashClient } = await import("unleash-proxy-client");
     this.#client = new UnleashClient({
       url,
       clientKey,
