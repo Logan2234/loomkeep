@@ -13,7 +13,11 @@
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
-  import { formatBytes } from "$lib/format";
+  import {
+    DATETIME_NUMERIC_OPTIONS,
+    formatBytes,
+    formatDateTime,
+  } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { AdminBackupFileDto } from "@loomkeep/shared";
@@ -40,14 +44,6 @@
   let restoring = $state(false);
   let restoreError = $state("");
   let restoreDone = $state(false);
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
   async function load() {
     loading = true;
@@ -108,7 +104,7 @@
     const [size, unit] = formatBytes(summary.last.sizeBytes).split(" ");
     return [
       {
-        value: dateFmt.format(new Date(summary.last.createdAt)),
+        value: formatDateTime(summary.last.createdAt, DATETIME_NUMERIC_OPTIONS),
         label: "Dernière sauvegarde",
       },
       { value: size, unit, label: "Taille" },
@@ -255,9 +251,8 @@
                 {f.filename}
               </p>
               <p class="timecode text-xs">
-                {dateFmt.format(new Date(f.createdAt))} · {formatBytes(
-                  f.sizeBytes,
-                )}
+                {formatDateTime(f.createdAt, DATETIME_NUMERIC_OPTIONS)} ·
+                {formatBytes(f.sizeBytes)}
               </p>
             </div>
             <button

@@ -22,6 +22,7 @@
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
     BookEntryDto,
@@ -180,7 +181,9 @@
     return Math.round((e.currentPage / e.book.pageCount) * 100);
   }
 
-  const weekdayShort = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
+  const WEEKDAY_SHORT_OPTIONS: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+  };
   function dayShort(iso: string): string {
     const d = new Date(iso);
     d.setHours(0, 0, 0, 0);
@@ -189,7 +192,7 @@
     const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
     if (diff === 0) return "Auj.";
     if (diff === 1) return "Demain";
-    return weekdayShort.format(new Date(iso));
+    return formatDate(iso, WEEKDAY_SHORT_OPTIONS);
   }
   const epCode = (e: CalendarEntryDto) =>
     `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;

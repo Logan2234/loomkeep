@@ -9,6 +9,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import { formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
   import { onMount } from "svelte";
@@ -34,22 +35,6 @@
   }
 
   onMount(load);
-
-  const relativeFormat = new Intl.RelativeTimeFormat("fr-FR", {
-    numeric: "auto",
-  });
-
-  // "il y a 3 heures" from an ISO timestamp, picking the coarsest sensible unit.
-  function lastActive(iso: string): string {
-    const diffMs = Date.now() - new Date(iso).getTime();
-    const minutes = Math.round(diffMs / 60000);
-    if (minutes < 1) return "à l'instant";
-    if (minutes < 60) return relativeFormat.format(-minutes, "minute");
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return relativeFormat.format(-hours, "hour");
-    const days = Math.round(hours / 24);
-    return relativeFormat.format(-days, "day");
-  }
 
   // Confirmation modal, either for one session or for "all other devices".
   type Target =
@@ -120,7 +105,7 @@
               {/if}
             </p>
             <p class="text-dim text-sm">
-              Actif {lastActive(session.lastUsedAt)}
+              Actif {formatRelative(session.lastUsedAt)}
             </p>
           </div>
           {#if !isCurrent}

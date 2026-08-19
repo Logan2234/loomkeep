@@ -7,6 +7,7 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { DOMAINS } from "$lib/constants/domains";
+  import { formatNumber, formatTime } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
 
@@ -48,13 +49,11 @@
     })).filter((g) => g.items.length > 0),
   );
 
-  const timeFmt = new Intl.DateTimeFormat("fr-FR", {
+  const TIME_SECONDS_OPTIONS: Intl.DateTimeFormatOptions = {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  });
-
-  const nf = new Intl.NumberFormat("fr-FR");
+  };
 
   // --- page header summary ---------------------------------------------------
   // Everything below is derived from the payload the list already renders: the
@@ -86,7 +85,10 @@
       value: `${healthy}/${live.length}`,
       label: m.admin_services_kpi_operational(),
     },
-    { value: nf.format(callsToday), label: m.admin_services_kpi_calls_today() },
+    {
+      value: formatNumber(callsToday),
+      label: m.admin_services_kpi_calls_today(),
+    },
     {
       value: String(busiestQuota),
       unit: "%",
@@ -106,7 +108,7 @@
       .map((s) => ({
         label: s.label,
         value: quotaUsage(s),
-        display: `${nf.format(quotaUsage(s))} / ${nf.format(s.limit?.max ?? 0)}`,
+        display: `${formatNumber(quotaUsage(s))} / ${formatNumber(s.limit?.max ?? 0)}`,
         badge: {
           text: `${s.percentUsed ?? 0} %`,
           tone: ((s.percentUsed ?? 0) >= 80 ? "warn" : "neutral") as
@@ -121,7 +123,7 @@
       .map((s) => ({
         label: s.label,
         value: s.today ?? 0,
-        display: `${nf.format(s.today ?? 0)} ${m.admin_period_today()}`,
+        display: `${formatNumber(s.today ?? 0)} ${m.admin_period_today()}`,
         badge: { text: m.admin_services_no_limit_badge() },
       })),
   );
@@ -270,7 +272,7 @@
                         </div>
                       </div>
                       <p class="timecode mt-1.5 text-xs">
-                        {nf.format(s.today)} / {nf.format(s.limit.max)}
+                        {formatNumber(s.today)} / {formatNumber(s.limit.max)}
                         {s.limit.window === "day"
                           ? m.admin_period_today()
                           : m.admin_period_this_month()}
@@ -278,8 +280,10 @@
                       </p>
                     {:else}
                       <p class="timecode text-xs">
-                        {nf.format(s.today)}
-                        {m.admin_period_today()} · {nf.format(s.thisMonth ?? 0)}
+                        {formatNumber(s.today)}
+                        {m.admin_period_today()} · {formatNumber(
+                          s.thisMonth ?? 0,
+                        )}
                         {m.admin_period_this_month()}
                       </p>
                     {/if}
@@ -295,7 +299,7 @@
     {#if checkedAt}
       <p class="text-dim mt-6 text-xs">
         {m.admin_services_checked_at({
-          time: timeFmt.format(new Date(checkedAt)),
+          time: formatTime(checkedAt, TIME_SECONDS_OPTIONS),
         })}
       </p>
     {/if}

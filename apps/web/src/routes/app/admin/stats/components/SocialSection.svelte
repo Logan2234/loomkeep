@@ -6,38 +6,37 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import { REPORT_CATEGORY_LABELS } from "$lib/constants/report-labels";
+  import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { AdminSocialStatsDto } from "@loomkeep/shared";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminSocialStatsDto } = $props();
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const totals = $derived([
     {
-      value: nf.format(stats.totals.reviews),
+      value: formatNumber(stats.totals.reviews),
       label: m.profile_reviews_count_plural(),
     },
     {
-      value: nf.format(stats.totals.comments),
+      value: formatNumber(stats.totals.comments),
       label: m.admin_social_total_comments(),
     },
-    { value: nf.format(stats.totals.lists), label: m.profile_lists_title() },
+    { value: formatNumber(stats.totals.lists), label: m.profile_lists_title() },
     {
-      value: nf.format(stats.totals.follows),
+      value: formatNumber(stats.totals.follows),
       label: m.admin_social_total_follows(),
     },
     {
-      value: nf.format(stats.totals.reactions),
+      value: formatNumber(stats.totals.reactions),
       label: m.admin_social_total_reactions(),
     },
     {
-      value: nf.format(stats.totals.helpfulVotes),
+      value: formatNumber(stats.totals.helpfulVotes),
       label: m.admin_social_total_helpful_votes(),
     },
     {
-      value: nf.format(stats.totals.blocks),
+      value: formatNumber(stats.totals.blocks),
       label: m.admin_social_total_blocks(),
     },
     {
@@ -87,7 +86,7 @@
   errorMessage={m.admin_social_activity_error()}>
   {#snippet footer(trend)}
     <p class="timecode mt-1.5 text-xs">
-      {m.admin_social_activity_footer({ count: nf.format(trend.total) })}
+      {m.admin_social_activity_footer({ count: formatNumber(trend.total) })}
     </p>
   {/snippet}
 </TrendPeriodCard>
@@ -120,16 +119,16 @@
     </p>
     <div class="grid grid-cols-2 gap-3">
       <StatFigure
-        value={nf.format(stats.reports.pending)}
+        value={formatNumber(stats.reports.pending)}
         label={m.admin_social_reports_pending()}
         alert={stats.reports.pending > 0} />
       <StatFigure
-        value={nf.format(stats.reports.resolved)}
+        value={formatNumber(stats.reports.resolved)}
         label={m.admin_social_reports_resolved()} />
       <StatFigure
         value={stats.reports.medianResolutionHours === null
           ? "—"
-          : `${nf.format(stats.reports.medianResolutionHours)} h`}
+          : `${formatNumber(stats.reports.medianResolutionHours)} h`}
         label={m.admin_social_reports_median_delay()} />
       <StatFigure
         value={stats.reports.foundedPercent === null
@@ -155,9 +154,9 @@
           stats.ratings.average === null
             ? ""
             : m.admin_social_ratings_avg_suffix({
-                avg: nf.format(stats.ratings.average),
+                avg: formatNumber(stats.ratings.average),
               }),
-        total: nf.format(stats.ratings.total),
+        total: formatNumber(stats.ratings.total),
         reviewWord:
           stats.ratings.total > 1
             ? m.profile_reviews_count_plural()
@@ -181,8 +180,8 @@
           ? "—"
           : `${contributorShare} % / ${100 - contributorShare} %`}
         label={m.admin_social_contributors_readers({
-          contributors: nf.format(stats.contributors),
-          total: nf.format(totalAccounts),
+          contributors: formatNumber(stats.contributors),
+          total: formatNumber(totalAccounts),
         })} />
     </div>
   </div>

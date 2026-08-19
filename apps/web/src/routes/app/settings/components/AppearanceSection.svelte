@@ -17,6 +17,7 @@
   } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
   import { setLocale } from "$lib/paraglide/runtime.js";
+  import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
 
   const MIN = 3;
@@ -74,7 +75,7 @@
   // No error UI here: reload on success (setLocale's default) makes an
   // inline error dead on arrival anyway, and a failed save just leaves the
   // toggle showing the still-current (unsaved) locale.
-  async function saveLocale(next: "fr" | "en") {
+  async function saveLocale(next: Locale) {
     if (localeSaving || auth.user?.locale === next) return;
     localeSaving = true;
     try {
@@ -132,7 +133,7 @@
         label={m.common_language()}
         options={LOCALE_OPTIONS}
         values={[auth.user?.locale ?? "fr"]}
-        onChange={(v) => saveLocale(v[0] as "fr" | "en")} />
+        onChange={(v) => saveLocale(v[0] as Locale)} />
     </div>
   </div>
 

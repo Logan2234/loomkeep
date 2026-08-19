@@ -1,12 +1,11 @@
 import {
   Domain,
   ListVisibility,
+  Locale,
   ProfileAccess,
   ReviewVisibility,
   Role,
 } from "../enums";
-
-export type Locale = "fr" | "en";
 
 export interface UserDto {
   id: string;
@@ -50,7 +49,7 @@ export interface UserDto {
   defaultListVisibility: ListVisibility;
   /** Profile access mode (social): PUBLIC/PRIVATE/GHOST ("Figurant"). */
   profileAccess: ProfileAccess;
-  /** UI language (Paraglide locale code). Currently "fr" or "en". */
+  /** UI language (Paraglide locale code). */
   locale: Locale;
   /** ISO datetime the account was created — shown as "member since". */
   createdAt: string;
@@ -86,8 +85,8 @@ export interface UpdateUserRequestDto {
   defaultReviewVisibility?: ReviewVisibility;
   /** Default audience for new lists (social). */
   defaultListVisibility?: ListVisibility;
-  /** UI language (Paraglide locale code). Currently "fr" or "en". */
-  locale?: string;
+  /** UI language (Paraglide locale code). */
+  locale?: Locale;
 }
 
 export interface UpdateUsernameRequestDto {

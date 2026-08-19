@@ -1,4 +1,9 @@
-import type { AuthTokensDto, SessionDto, UserDto } from "@loomkeep/shared";
+import type {
+  AuthTokensDto,
+  Locale,
+  SessionDto,
+  UserDto,
+} from "@loomkeep/shared";
 import { deviceLabel } from "@loomkeep/shared";
 import {
   BadRequestException,
@@ -549,7 +554,7 @@ export function toUserDto(user: User): UserDto {
     defaultListVisibility:
       user.defaultListVisibility as UserDto["defaultListVisibility"],
     profileAccess: user.profileAccess as UserDto["profileAccess"],
-    locale: user.locale as "fr" | "en",
+    locale: user.locale as Locale,
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
     onboardedAt: user.onboardedAt?.toISOString() ?? null,

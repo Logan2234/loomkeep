@@ -87,8 +87,6 @@
       ],
     },
   ];
-
-  const LOCALES: ("fr" | "en")[] = ["fr", "en"];
 </script>
 
 <footer class="border-border border-t">
@@ -143,7 +141,7 @@
         class="border-border flex items-center gap-1 rounded-lg border p-0.5"
         role="group"
         aria-label={m.common_language()}>
-        {#each LOCALES as locale (locale)}
+        {#each Locale as locale (locale)}
           <button
             type="button"
             onclick={() => setLocale(locale)}

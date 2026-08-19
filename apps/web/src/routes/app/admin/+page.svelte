@@ -18,6 +18,7 @@
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { IS_BETA } from "$lib/constants/app-status";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
+  import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
     AdminBackupFileDto,
@@ -76,38 +77,29 @@
 
   const cacheTotal = $derived(overview?.cachedItems ?? null);
 
-  const relTime = new Intl.RelativeTimeFormat("fr-FR", { numeric: "auto" });
-  function relative(iso: string): string {
-    const diffMs = new Date(iso).getTime() - Date.now();
-    const hours = Math.round(diffMs / 3_600_000);
-    if (Math.abs(hours) < 1) return "à l'instant";
-    if (Math.abs(hours) < 24) return relTime.format(hours, "hour");
-    return relTime.format(Math.round(hours / 24), "day");
-  }
-
-  const nf = new Intl.NumberFormat("fr-FR");
-
   /** Per-row metric, only shown when a cheap real number backs it — no invented data. */
   const metricByHref = $derived.by((): Record<string, string | undefined> => {
     return {
       "/app/admin/users":
-        usersTotal !== null ? nf.format(usersTotal) : undefined,
+        usersTotal !== null ? formatNumber(usersTotal) : undefined,
       "/app/admin/communications":
         overview !== null
-          ? `${nf.format(overview.accountsWithPush)} abonné${overview.accountsWithPush > 1 ? "s" : ""} push`
+          ? `${formatNumber(overview.accountsWithPush)} abonné${overview.accountsWithPush > 1 ? "s" : ""} push`
           : undefined,
       "/app/admin/services": services
         ? `${servicesLive.length - servicesDegraded}/${servicesLive.length}`
         : undefined,
-      "/app/admin/jobs": jobsLastRunAt ? relative(jobsLastRunAt) : undefined,
+      "/app/admin/jobs": jobsLastRunAt
+        ? formatRelative(jobsLastRunAt)
+        : undefined,
       "/app/admin/backup":
         backups && backups.length > 0
-          ? `${backups.length} · dernière ${relative(backups[0].createdAt)}`
+          ? `${backups.length} · dernière ${formatRelative(backups[0].createdAt)}`
           : backups
             ? "aucune"
             : undefined,
       "/app/admin/cache":
-        cacheTotal !== null ? `${nf.format(cacheTotal)} items` : undefined,
+        cacheTotal !== null ? `${formatNumber(cacheTotal)} items` : undefined,
       "/app/admin/reports":
         adminReports.pending > 0
           ? `${adminReports.pending} en attente`
@@ -171,11 +163,11 @@
         Utilisateurs
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {usersTotal !== null ? nf.format(usersTotal) : "—"}
+        {usersTotal !== null ? formatNumber(usersTotal) : "—"}
       </span>
       <span class="text-dim text-xs">
         {usersDeltaWeek !== null
-          ? `+${nf.format(usersDeltaWeek)} cette semaine`
+          ? `+${formatNumber(usersDeltaWeek)} cette semaine`
           : " "}
       </span>
     </a>
@@ -226,7 +218,7 @@
         class="text-xs {jobsFailedRecent
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {jobsLastRunAt ? `dernier run ${relative(jobsLastRunAt)}` : " "}
+        {jobsLastRunAt ? `dernier run ${formatRelative(jobsLastRunAt)}` : " "}
       </span>
     </a>
 
@@ -241,7 +233,7 @@
         Signalements
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {nf.format(adminReports.pending)}
+        {formatNumber(adminReports.pending)}
       </span>
       <span
         class="text-xs {adminReports.pending > 0

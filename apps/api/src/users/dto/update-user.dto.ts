@@ -1,3 +1,15 @@
+import type {
+  Domain,
+  ListVisibility,
+  ReviewVisibility,
+  UpdateUserRequestDto,
+} from "@loomkeep/shared";
+import {
+  Domain as DomainValues,
+  ListVisibility as ListVisibilityValues,
+  ReviewVisibility as ReviewVisibilityValues,
+} from "@loomkeep/shared";
+import { Locale } from "@loomkeep/shared/src/enums";
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -11,17 +23,6 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import type {
-  Domain,
-  ListVisibility,
-  ReviewVisibility,
-  UpdateUserRequestDto,
-} from "@loomkeep/shared";
-import {
-  Domain as DomainValues,
-  ListVisibility as ListVisibilityValues,
-  ReviewVisibility as ReviewVisibilityValues,
-} from "@loomkeep/shared";
 
 // Mirrors `locales` in apps/web/project.inlang/settings.json — the set of
 // locales Paraglide actually has translations for.
@@ -86,5 +87,5 @@ export class UpdateUserDto implements UpdateUserRequestDto {
 
   @IsOptional()
   @IsIn(ALLOWED_LOCALES)
-  locale?: string;
+  locale?: Locale;
 }

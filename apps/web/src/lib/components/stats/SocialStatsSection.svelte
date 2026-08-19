@@ -3,6 +3,12 @@
   // this component is only mounted when appConfig.socialEnabled is true).
   // Always cross-domain, not affected by the DomainFilter.
   import { getSocialStats } from "$lib/api/stats";
+  import {
+    MONTH_SHORT_OPTIONS,
+    PERCENT_OPTIONS,
+    formatDate,
+    formatNumber,
+  } from "$lib/format";
   import type { SocialStatsDto } from "@loomkeep/shared";
   import LineChart from "./LineChart.svelte";
   import { statsResource } from "./stats-resource.svelte";
@@ -15,11 +21,6 @@
   const social = $derived(socialStats.data);
   const error = $derived(socialStats.error);
 
-  const pf = new Intl.NumberFormat("fr-FR", {
-    style: "percent",
-    maximumFractionDigits: 0,
-  });
-
   /** How the viewer's average reads against the community's. */
   function verdict(delta: number): string {
     if (delta < 0) return "plus sévère";
@@ -27,10 +28,9 @@
     return "aligné";
   }
 
-  const monthFmt = new Intl.DateTimeFormat("fr-FR", { month: "short" });
   const toPoints = (rows: { month: string; count: number }[]) =>
     rows.map((r) => ({
-      label: monthFmt.format(new Date(`${r.month}-01T00:00:00Z`)),
+      label: formatDate(`${r.month}-01T00:00:00Z`, MONTH_SHORT_OPTIONS),
       value: r.count,
     }));
 </script>
@@ -48,7 +48,10 @@
     <StatTile
       value={social.commentsWritten}
       label="Commentaires"
-      hint="{pf.format(social.spoilerCommentRatio)} marqués spoiler" />
+      hint="{formatNumber(
+        social.spoilerCommentRatio,
+        PERCENT_OPTIONS,
+      )} marqués spoiler" />
     <StatTile
       value={social.helpfulVotesReceived}
       label="Votes « utile » reçus"
@@ -157,7 +160,10 @@
         Nouveaux abonnés par mois
       </h3>
       <p class="text-dim mb-3 text-xs">
-        Réciprocité : {pf.format(social.followerReciprocityRate)} suivis en retour
+        Réciprocité : {formatNumber(
+          social.followerReciprocityRate,
+          PERCENT_OPTIONS,
+        )} suivis en retour
       </p>
       <LineChart
         points={toPoints(social.newFollowersByMonth)}

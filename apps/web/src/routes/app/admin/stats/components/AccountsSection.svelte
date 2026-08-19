@@ -3,6 +3,7 @@
   // Everything activity-related comes from refresh-token usage (see the API
   // service) — ActivityEvent only exists since P4 and would bury old accounts.
   import { getAdminNewAccountsTrend } from "$lib/api/client";
+  import { formatNumber } from "$lib/format";
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import {
@@ -17,8 +18,6 @@
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminAccountsSectionDto } = $props();
-
-  const nf = new Intl.NumberFormat("fr-FR");
 
   const DELTA_LABEL: Record<TrendPeriod, string> = {
     day: m.admin_accounts_delta_today(),
@@ -104,8 +103,8 @@
     {#snippet footer(trend)}
       <p class="timecode mt-1.5 text-xs">
         {m.admin_accounts_trend_summary({
-          total: nf.format(trend.totalAccounts),
-          delta: nf.format(trend.delta),
+          total: formatNumber(trend.totalAccounts),
+          delta: formatNumber(trend.delta),
           period: DELTA_LABEL[trend.period],
         })}
       </p>
@@ -153,7 +152,7 @@
     </p>
     <div class="grid grid-cols-2 gap-3">
       {#each healthItems as item (item.label)}
-        <StatFigure value={nf.format(item.value)} label={item.label} />
+        <StatFigure value={formatNumber(item.value)} label={item.label} />
       {/each}
     </div>
   </div>

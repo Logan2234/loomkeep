@@ -11,6 +11,7 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import { formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminSecuritySummaryDto,
@@ -54,11 +55,6 @@
   let hasMore = $state(true);
   let loading = $state(false);
   let error = $state("");
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   async function load(reset: boolean) {
     loading = true;
@@ -108,20 +104,21 @@
       .catch(() => (summary = null));
   });
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const kpis = $derived(
     summary
       ? [
           {
-            value: nf.format(summary.loginFailed24h),
+            value: formatNumber(summary.loginFailed24h),
             label: "Échecs · 24 h",
             alert: summary.loginFailed24h > 0,
           },
-          { value: nf.format(summary.loginFailed7d), label: "Échecs · 7 j" },
-          { value: nf.format(summary.loginFailed30d), label: "Échecs · 30 j" },
+          { value: formatNumber(summary.loginFailed7d), label: "Échecs · 7 j" },
           {
-            value: nf.format(summary.loginFailedTotal),
+            value: formatNumber(summary.loginFailed30d),
+            label: "Échecs · 30 j",
+          },
+          {
+            value: formatNumber(summary.loginFailedTotal),
             label: "Échecs · total",
           },
         ]
@@ -195,7 +192,7 @@
             </span>
             <span class="text-fg font-semibold">{e.identifier}</span>
             <span class="text-dim ml-auto text-xs">
-              {dateFmt.format(new Date(e.createdAt))}
+              {formatDateTime(e.createdAt)}
             </span>
           </div>
           {#if e.detail || e.userAgent}

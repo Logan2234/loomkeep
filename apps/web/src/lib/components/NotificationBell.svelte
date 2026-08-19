@@ -18,6 +18,7 @@
     getFollowRequests,
     rejectFollowRequest,
   } from "$lib/api/social";
+  import { formatDate } from "$lib/format";
   import { notifications } from "$lib/notifications.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
@@ -73,10 +74,10 @@
     if (!n.url) close();
   }
 
-  const relFmt = new Intl.DateTimeFormat("fr-FR", {
+  const DAY_MONTH_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "numeric",
     month: "long",
-  });
+  };
 
   const isSocial = (n: NotificationDto) => n.type.startsWith("FOLLOW");
   const actorSeed = (n: NotificationDto) =>
@@ -266,6 +267,6 @@
     </p>
   </div>
   <span class="timecode shrink-0 text-[0.65rem]">
-    {relFmt.format(new Date(n.timestamp))}
+    {formatDate(n.timestamp, DAY_MONTH_OPTIONS)}
   </span>
 {/snippet}

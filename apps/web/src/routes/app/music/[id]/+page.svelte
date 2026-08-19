@@ -34,18 +34,13 @@
     MUSIC_STATUS_META as STATUS_META,
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
-  import { formatDate } from "$lib/format";
+  import { MONTH_YEAR_OPTIONS, formatDate } from "$lib/format";
   import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
   import type { MusicDetailDto } from "@loomkeep/shared";
 
   // MusicBrainz is the only music source today; the web route carries just the id.
   const SOURCE = "musicbrainz";
-
-  const monthYearFmt = new Intl.DateTimeFormat("fr-FR", {
-    month: "long",
-    year: "numeric",
-  });
 
   let detail = $state<MusicDetailDto | null>(null);
   let error = $state<string | null>(null);
@@ -66,7 +61,7 @@
       return formatDate(detail.releaseDate);
     }
     if (detail.releaseDatePrecision === "month") {
-      return monthYearFmt.format(new Date(detail.releaseDate));
+      return formatDate(detail.releaseDate, MONTH_YEAR_OPTIONS);
     }
     return null;
   });

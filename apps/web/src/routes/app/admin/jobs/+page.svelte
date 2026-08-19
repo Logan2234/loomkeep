@@ -5,6 +5,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
+  import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { JobDto } from "@loomkeep/shared";
 
@@ -43,12 +44,12 @@
     if (auth.isAdmin) void load();
   });
 
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
+  const DAY_MONTH_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  };
 
   function durationMs(run: JobDto["runs"][number]): number {
     return (
@@ -150,7 +151,7 @@
               </span>
               <span
                 >{m.admin_jobs_last_run({
-                  date: dateFmt.format(new Date(last.startedAt)),
+                  date: formatDate(last.startedAt, DAY_MONTH_TIME_OPTIONS),
                 })}</span>
               {#if last.summary}<span>· {last.summary}</span>{/if}
             </div>
@@ -184,7 +185,7 @@
                         : 'bg-danger'}"
                       aria-hidden="true"></span>
                     <span class="text-dim w-32 shrink-0 tabular-nums">
-                      {dateFmt.format(new Date(run.startedAt))}
+                      {formatDate(run.startedAt, DAY_MONTH_TIME_OPTIONS)}
                     </span>
                     <span class="text-fg min-w-0 flex-1 truncate">
                       {run.status === "FAILURE" ? run.error : run.summary}

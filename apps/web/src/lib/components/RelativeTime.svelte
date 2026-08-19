@@ -2,7 +2,11 @@
   // A timestamp shown relative ("il y a 2 h") with the absolute date/time as
   // a hover title on desktop. On mobile there's no hover, so a tap toggles
   // this instance between relative and absolute display instead.
-  import { formatFullDateTime, formatRelative } from "$lib/format";
+  import {
+    DATETIME_LONG_OPTIONS,
+    formatDateTime,
+    formatRelative,
+  } from "$lib/format";
 
   let { iso, class: className = "" }: { iso: string; class?: string } =
     $props();
@@ -18,7 +22,9 @@
   }
 
   const text = $derived(
-    showAbsolute ? formatFullDateTime(iso) : formatRelative(iso),
+    showAbsolute
+      ? formatDateTime(iso, DATETIME_LONG_OPTIONS)
+      : formatRelative(iso),
   );
 </script>
 
@@ -26,10 +32,11 @@
   <button
     type="button"
     class={className}
-    title={formatFullDateTime(iso)}
+    title={formatDateTime(iso, DATETIME_LONG_OPTIONS)}
     onclick={toggle}>
     {text}
   </button>
 {:else}
-  <span class={className} title={formatFullDateTime(iso)}>{text}</span>
+  <span class={className} title={formatDateTime(iso, DATETIME_LONG_OPTIONS)}
+    >{text}</span>
 {/if}

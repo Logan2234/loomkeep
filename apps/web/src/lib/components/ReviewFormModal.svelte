@@ -5,6 +5,7 @@
     upsertReview,
   } from "$lib/api/client";
   import { appConfig } from "$lib/config.svelte";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
     REVIEW_TEXT_MAX_LENGTH,
@@ -57,12 +58,6 @@
   $effect(() => {
     if (!review) return;
     void getReviewRevisions(targetType, targetId).then((r) => (revisions = r));
-  });
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
   });
 
   async function save() {
@@ -149,7 +144,7 @@
               <div class="flex items-center gap-2">
                 <span class="timecode text-fg"
                   >V{revisions.length - i} · {rev.rating}/10</span>
-                <span>{dateFmt.format(new Date(rev.createdAt))}</span>
+                <span>{formatDate(rev.createdAt, DATE_MEDIUM_OPTIONS)}</span>
               </div>
               {#if rev.text}
                 <p class="mt-0.5 text-sm italic">« {rev.text} »</p>

@@ -9,6 +9,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
@@ -30,12 +31,12 @@
       .finally(() => (loading = false));
   });
 
-  const weekday = new Intl.DateTimeFormat("fr-FR", { weekday: "long" });
-  const dayLabel = new Intl.DateTimeFormat("fr-FR", {
+  const WEEKDAY_LONG_OPTIONS: Intl.DateTimeFormatOptions = { weekday: "long" };
+  const DAY_LABEL_OPTIONS: Intl.DateTimeFormatOptions = {
     weekday: "short",
     day: "numeric",
     month: "short",
-  });
+  };
 
   function relativeLabel(date: Date): string {
     const today = new SvelteDate();
@@ -43,7 +44,7 @@
     const diff = Math.round((date.getTime() - today.getTime()) / 86_400_000);
     if (diff === 0) return "Aujourd'hui";
     if (diff === 1) return "Demain";
-    const w = weekday.format(date);
+    const w = formatDate(date, WEEKDAY_LONG_OPTIONS);
     return w.charAt(0).toUpperCase() + w.slice(1);
   }
 
@@ -68,7 +69,7 @@
         group = {
           key,
           label: relativeLabel(d),
-          date: dayLabel.format(d),
+          date: formatDate(d, DAY_LABEL_OPTIONS),
           items: [],
         };
         groups.push(group);

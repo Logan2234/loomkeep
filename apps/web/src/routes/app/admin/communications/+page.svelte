@@ -21,6 +21,7 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import type {
@@ -236,16 +237,17 @@
   const accountCount = $derived(pushSummary?.accounts ?? null);
   const deviceCount = $derived(pushSummary?.subscriptions ?? null);
 
-  const nf = new Intl.NumberFormat("fr-FR");
-
   const pushKpis = $derived(
     pushSummary
       ? [
           {
-            value: nf.format(pushSummary.subscriptions),
+            value: formatNumber(pushSummary.subscriptions),
             label: "Abonnements actifs",
           },
-          { value: nf.format(pushSummary.accounts), label: "Comptes abonnés" },
+          {
+            value: formatNumber(pushSummary.accounts),
+            label: "Comptes abonnés",
+          },
         ]
       : [],
   );

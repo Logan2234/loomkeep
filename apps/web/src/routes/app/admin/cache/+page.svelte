@@ -15,6 +15,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { DOMAINS } from "$lib/constants/domains";
+  import { formatDateTime } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { IconName } from "$lib/types/icon-name";
@@ -61,11 +62,6 @@
   // --- single delete ---
   let showDeleteConfirm = $state(false);
   let deleting = $state(false);
-
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   const hasMore = $derived(items.length < total);
 
@@ -413,7 +409,7 @@
                 {/if}
               </div>
               <p class="timecode mt-0.5 text-xs">
-                Sync {dateFmt.format(new Date(item.lastSyncedAt))}
+                Sync {formatDateTime(item.lastSyncedAt)}
                 · {item.referenceCount} compte(s)
               </p>
             </div>
@@ -528,19 +524,19 @@
             <div class="flex justify-between gap-3">
               <dt class="text-dim">Dernière sync</dt>
               <dd class="timecode text-fg text-right">
-                {dateFmt.format(new Date(detail.lastSyncedAt))}
+                {formatDateTime(detail.lastSyncedAt)}
               </dd>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-dim">Ajouté au cache</dt>
               <dd class="timecode text-right">
-                {dateFmt.format(new Date(detail.createdAt))}
+                {formatDateTime(detail.createdAt)}
               </dd>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-dim">Dernière modif.</dt>
               <dd class="timecode text-right">
-                {dateFmt.format(new Date(detail.updatedAt))}
+                {formatDateTime(detail.updatedAt)}
               </dd>
             </div>
           </dl>
