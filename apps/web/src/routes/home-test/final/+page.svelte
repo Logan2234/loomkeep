@@ -89,52 +89,58 @@
     partial?: { salle: Salle; what: string };
     price: string;
     note: string;
+    /** Self-hosted only, no managed free instance — excluded from the tally
+     * below, since "sign up" and "run your own server" aren't the same ask. */
     selfHost?: boolean;
+    /** No longer operating — excluded from the tally, kept in the table as
+     * a data point of its own. */
+    closed?: boolean;
   }[] = [
     {
       name: "Trakt",
       full: ["video"],
-      price: "gratuit limité, VIP payant",
-      note: "Séries, films et animes. Une partie des fonctions est réservée aux abonnés.",
+      price: "VIP à 60 $/an (+100 % mi-2025)",
+      note: "Séries, films et animes. Depuis 2025 le compte gratuit est plafonné à deux listes de 100 œuvres.",
     },
     {
       name: "Simkl",
       full: ["video"],
-      price: "gratuit avec publicité",
-      note: "Les trois formats vidéo, et rien d'autre.",
+      price: "gratuit, Premium à 4,49 $/mois sans pub",
+      note: "Suivi illimité gratuit ; son vrai atout est le pointage automatique depuis Netflix, Crunchyroll ou Hulu.",
     },
     {
       name: "TV Time",
       full: ["video"],
-      price: "gratuit avec publicité",
-      note: "Mobile avant tout, financé par la publicité.",
+      price: "fermé le 15 juillet 2026",
+      note: "Racheté puis arrêté par sa maison mère, partie faire de l'IA. 26 millions de comptes perdus d'un coup — l'argument le plus concret pour un export qui marche vraiment.",
+      closed: true,
     },
     {
       name: "Letterboxd",
       full: [],
       partial: { salle: "video", what: "films uniquement" },
-      price: "gratuit, Pro payant",
+      price: "gratuit, Pro/Patron payants",
       note: "La référence sur le cinéma. Ni séries ni animes.",
     },
     {
       name: "Serializd",
       full: [],
       partial: { salle: "video", what: "séries uniquement" },
-      price: "gratuit",
-      note: "Le pendant de Letterboxd pour les séries.",
+      price: "gratuit, sans palier payant",
+      note: "Le pendant de Letterboxd pour les séries. Aucune fonction derrière un abonnement.",
     },
     {
       name: "Backloggd",
       full: ["games"],
-      price: "gratuit",
+      price: "gratuit (soutien optionnel à 3 $/mois)",
       note: "Jeux vidéo uniquement, orienté critique et notation.",
     },
     {
       name: "HowLongToBeat",
       full: [],
-      partial: { salle: "games", what: "temps de jeu" },
-      price: "gratuit avec publicité",
-      note: "Excellent pour estimer une durée, léger comme suivi.",
+      partial: { salle: "games", what: "durée de vie" },
+      price: "gratuit",
+      note: "Sert à savoir combien d'heures un jeu prend avant de l'acheter, pas à tenir une bibliothèque.",
     },
     {
       name: "Goodreads",
@@ -145,32 +151,32 @@
     {
       name: "StoryGraph",
       full: ["books"],
-      price: "gratuit, Plus payant",
+      price: "gratuit, Plus à 4,99 $/mois",
       note: "Livres uniquement, mais soigné et indépendant.",
     },
     {
       name: "Babelio",
       full: ["books"],
-      price: "gratuit avec publicité",
-      note: "Livres, avec une communauté francophone active.",
+      price: "gratuit sous 300 livres, puis ~10 €/an",
+      note: "Livres, avec une communauté francophone active et de la publicité.",
     },
     {
       name: "BookWyrm",
       full: ["books"],
       price: "gratuit",
-      note: "Livres, fédéré et auto-hébergeable — la même philosophie, un seul domaine.",
+      note: "Livres, fédéré, auto-hébergeable et sans aucune publicité — la même philosophie, un seul domaine.",
       selfHost: true,
     },
     {
       name: "Last.fm",
       full: ["music"],
-      price: "gratuit, Pro payant",
-      note: "Scrobbling automatique, mais pas de bibliothèque à toi.",
+      price: "gratuit, Pro à 4,99 $/mois",
+      note: "Pointage automatique de ce que tu écoutes, pas une bibliothèque que tu tiens toi-même.",
     },
     {
       name: "RateYourMusic",
       full: ["music"],
-      price: "gratuit",
+      price: "gratuit avec publicité, 60 $/an sans",
       note: "Notation et listes, catalogue très complet.",
     },
     {
@@ -178,18 +184,18 @@
       full: [],
       partial: { salle: "music", what: "collection physique" },
       price: "gratuit",
-      note: "Fait pour les vinyles et le marché de l'occasion, pas pour l'écoute.",
+      note: "Fait pour les vinyles et le marché de l'occasion, pas pour le suivi d'écoute.",
     },
     {
       name: "AntennaPod",
       full: ["podcasts"],
-      price: "gratuit",
+      price: "gratuit, open source, sans publicité",
       note: "Lecteur de podcasts libre, qui garde ta progression par épisode.",
     },
     {
       name: "Podcast Addict",
       full: ["podcasts"],
-      price: "gratuit avec publicité",
+      price: "gratuit avec publicité, Premium ~11 $/an",
       note: "Lecteur de podcasts, Android seulement.",
     },
     {
@@ -201,8 +207,15 @@
     {
       name: "BG Stats",
       full: ["boardgames"],
-      price: "payant",
-      note: "Suivi de parties, se synchronise avec BoardGameGeek.",
+      price: "achat unique ~6 $",
+      note: "Suivi de parties, se synchronise avec BoardGameGeek. Pas d'abonnement.",
+    },
+    {
+      name: "Ryot",
+      full: ["video", "games", "books", "music", "podcasts"],
+      price: "démo instable, Pro payant même en self-host",
+      note: "Le concurrent le plus proche en ambition : vidéo, jeux, livres, musique et podcasts dans un seul outil auto-hébergé. Mais il n'a pas d'instance gratuite prête à l'emploi — seule une démo dont les données sont effacées au hasard — et le partage ou les recommandations restent payants même sur ton propre serveur.",
+      selfHost: true,
     },
   ];
 
@@ -228,13 +241,19 @@
 
   // Greedy set cover: how many existing services it takes to cover the
   // selection. Partial coverage doesn't count — half a domain isn't a tracker.
+  // Self-hosted-only and closed rivals are excluded from the count: "sign up
+  // for an app" and "provision your own server" aren't the same ask, and a
+  // shut-down service can't replace anything today. Both stay in the detail
+  // table below — they're real data points, just not comparable ones here.
+  const eligibleRivals = RIVALS.filter((r) => !r.selfHost && !r.closed);
+
   const stack = $derived.by(() => {
     const remaining = new Set(picked);
     const chosen: string[] = [];
     while (remaining.size > 0) {
       let best: (typeof RIVALS)[number] | null = null;
       let bestGain = 0;
-      for (const rival of RIVALS) {
+      for (const rival of eligibleRivals) {
         const gain = rival.full.filter((s) => remaining.has(s)).length;
         if (gain > bestGain) {
           best = rival;
@@ -524,8 +543,10 @@
           <div class="mt-8">
             <p class="text-dim max-w-2xl text-sm">
               Ce que chaque service couvre, pour la sélection que tu viens de
-              faire. Les couvertures partielles ne comptent pas dans le total
-              ci-dessus : une moitié de domaine ne remplace pas un suivi.
+              faire. Les couvertures partielles, les services auto-hébergés
+              (icône bouclier) et TV Time (fermé) ne comptent pas dans le total
+              ci-dessus — une inscription, un serveur à gérer et un service qui
+              n'existe plus ne se comparent pas au même titre.
             </p>
 
             <ul class="border-border mt-6 border-t">
@@ -539,9 +560,15 @@
                     hits.length === 0 &&
                     !partialHit}>
                   <span class="font-display flex items-center gap-2 font-bold">
-                    {rival.name}
+                    <span class:line-through={rival.closed}>{rival.name}</span>
                     {#if rival.selfHost}
                       <Icon name="shield" class="text-dim h-3.5 w-3.5" />
+                    {/if}
+                    {#if rival.closed}
+                      <span
+                        class="border-danger text-danger rounded-full border px-1.5 py-0.5 text-[0.62rem] font-bold uppercase">
+                        Fermé
+                      </span>
                     {/if}
                   </span>
                   <span class="flex flex-wrap items-center gap-1.5">
@@ -593,9 +620,10 @@
                   gratuit, sans publicité
                 </span>
                 <span class="text-dim col-span-full text-sm">
-                  Quatre salles ouvertes, deux annoncées. L'icône
-                  <Icon name="shield" class="mx-0.5 inline h-3 w-3" /> marque les
-                  services que tu peux héberger toi-même.
+                  Quatre salles ouvertes, deux annoncées. Sans abonnement, sans
+                  serveur à gérer si tu ne veux pas — et si tu veux, l'icône
+                  <Icon name="shield" class="mx-0.5 inline h-3 w-3" /> est aussi la
+                  tienne.
                 </span>
               </li>
             </ul>
