@@ -4,6 +4,12 @@
   // a number always refers to the same prototype in conversation.
   const PROTOTYPES = [
     {
+      n: "final",
+      name: "Version assemblée",
+      pitch:
+        "Le mélange demandé : hero du 3, salles sélectionnables fusionnées avec le comparateur du 6, import du 7 retitré, le nom du 3, CTA du 7. L'annexe des sections écartées suit le footer.",
+    },
+    {
       n: 1,
       name: "Navette",
       pitch:
