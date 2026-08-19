@@ -41,7 +41,7 @@ function getNumberFormat(
 }
 
 /** Default `formatDate` shape, e.g. "03/01/2026". */
-export const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
@@ -63,18 +63,6 @@ export const MONTH_YEAR_OPTIONS: Intl.DateTimeFormatOptions = {
 /** e.g. "janv." — for chart axis labels / table headers. */
 export const MONTH_SHORT_OPTIONS: Intl.DateTimeFormatOptions = {
   month: "short",
-};
-
-/** Default `formatTime` shape, e.g. "14:32". */
-export const TIME_OPTIONS: Intl.DateTimeFormatOptions = {
-  hour: "2-digit",
-  minute: "2-digit",
-};
-
-/** Default `formatDateTime` shape, e.g. "3 janv. 2026, 14:32". */
-export const DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
-  dateStyle: "medium",
-  timeStyle: "short",
 };
 
 /** e.g. "3 janvier 2026 à 14:32" — for a relative-time hover tooltip. */
@@ -106,7 +94,7 @@ export function formatDate(
 /** Formats a date as a time, e.g. "14:32" by default. Accepts an ISO string or a `Date`. */
 export function formatTime(
   date: string | Date,
-  options: Intl.DateTimeFormatOptions = TIME_OPTIONS,
+  options: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" },
   locale?: string,
 ): string {
   return getDateTimeFormat(resolveLocale(locale), options).format(
@@ -117,7 +105,10 @@ export function formatTime(
 /** Formats a date as a date + time, e.g. "3 janv. 2026, 14:32" by default. Accepts an ISO string or a `Date`. */
 export function formatDateTime(
   date: string | Date,
-  options: Intl.DateTimeFormatOptions = DATETIME_OPTIONS,
+  options: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
+  },
   locale?: string,
 ): string {
   return getDateTimeFormat(resolveLocale(locale), options).format(
