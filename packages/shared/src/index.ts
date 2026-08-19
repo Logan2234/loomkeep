@@ -22,6 +22,7 @@ export * from "./dto/import";
 export * from "./dto/notification";
 export * from "./dto/pagination";
 export * from "./dto/push";
+export * from "./dto/user";
 export * from "./dto/widget";
 export * from "./password";
 export * from "./device-label";

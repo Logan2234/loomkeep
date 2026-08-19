@@ -1,4 +1,14 @@
 import {
+  Domain,
+  UserDto,
+  UsernameAvailabilityDto,
+  type AccountDeletionSummaryDto,
+  type CalendarTokenDto,
+  type CsvExportDto,
+  type UserDataExportDto,
+  type WidgetTokenDto,
+} from "@loomkeep/shared";
+import {
   BadRequestException,
   Body,
   ConflictException,
@@ -18,16 +28,6 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
-import {
-  Domain,
-  type AccountDeletionSummaryDto,
-  type CalendarTokenDto,
-  type CsvExportDto,
-  type UserDataExportDto,
-  type UserDto,
-  type UsernameAvailabilityDto,
-  type WidgetTokenDto,
-} from "@loomkeep/shared";
 import * as bcrypt from "bcryptjs";
 import type { FastifyReply } from "fastify";
 import { randomBytes, randomInt } from "node:crypto";
