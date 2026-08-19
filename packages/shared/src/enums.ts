@@ -583,5 +583,5 @@ export const ListVisibility = {
 export type ListVisibility =
   (typeof ListVisibility)[keyof typeof ListVisibility];
 
-export const Locale = ["fr", "en"];
-export type Locale = (typeof Locale)[keyof typeof Locale];
+export const Locale = ["fr", "en"] as const;
+export type Locale = (typeof Locale)[number];
