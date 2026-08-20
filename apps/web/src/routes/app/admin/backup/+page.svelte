@@ -135,8 +135,8 @@
   async function downloadFile(file: AdminBackupFileDto) {
     downloadingId = file.id;
     try {
-      const { sql, filename } = await getAdminBackupFile(file.id);
-      const blob = new Blob([sql], { type: "application/sql" });
+      const { content, filename } = await getAdminBackupFile(file.id);
+      const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -214,7 +214,7 @@
   <PageHeader
     icon="archive"
     title="Sauvegarde"
-    subtitle="Sauvegarde automatique quotidienne (3h) de la base de données — les 7 dernières sont conservées.">
+    subtitle="Sauvegarde automatique quotidienne (3h) de la base de données — les 7 dernières sont conservées, chiffrées.">
     {#snippet actions()}
       <button
         class="btn btn-primary shrink-0"
@@ -284,8 +284,15 @@
   <section class="card border-danger/40 p-5 md:p-6">
     <h2 class="font-display text-danger mb-1 text-lg font-bold">Restaurer</h2>
     <p class="text-dim mb-4 text-sm">
-      Remplace <strong>l'intégralité</strong> de la base de données par le contenu
-      d'un fichier de sauvegarde (téléchargé ci-dessus, ou tout autre dump .sql).
+      Remplace <strong>l'intégralité</strong> de la base de données par le
+      contenu d'un fichier de sauvegarde. Les fichiers téléchargés ci-dessus
+      sont chiffrés (<code class="bg-surface-2 rounded px-1 py-0.5 text-xs"
+        >.sql.age</code
+      >) — déchiffre-les d'abord en local (<code
+        class="bg-surface-2 rounded px-1 py-0.5 text-xs"
+        >age -d -o dump.sql fichier.sql.age</code
+      >) avant de sélectionner le
+      <code class="bg-surface-2 rounded px-1 py-0.5 text-xs">.sql</code> obtenu ici.
       Toute donnée créée depuis cette sauvegarde sera définitivement perdue. Cette
       action est irréversible.
     </p>
