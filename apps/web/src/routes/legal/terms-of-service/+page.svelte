@@ -228,6 +228,32 @@
       mineurs.
     </p>
     <h2>9. Signalement et modération</h2>
+    <h3>Notification d'un contenu illicite</h3>
+    <p>
+      Toute personne, notamment un ayant droit ou un tiers concerné par un
+      contenu qu'il estime illicite sur Loomkeep, peut le notifier à
+      <a href="mailto:contact@loomkeep.app" class="link-accent"
+        >contact@loomkeep.app</a
+      >.
+    </p>
+    <p>
+      Pour être valablement prise en compte, la notification doit préciser :
+    </p>
+    <ul>
+      <li>l'identité et les coordonnées du notifiant ;</li>
+      <li>l'URL précise du contenu concerné ;</li>
+      <li>
+        le motif juridique invoqué, c'est-à-dire la loi ou le droit que le
+        contenu méconnaît ;
+      </li>
+      <li>une déclaration attestant de la bonne foi du notifiant.</li>
+    </ul>
+    <p>
+      Une notification incomplète ne permet pas à Loomkeep d'apprécier utilement
+      le caractère illicite du contenu signalé et ne saurait, à elle seule,
+      faire courir un délai de retrait. Une notification manifestement infondée
+      ou de mauvaise foi peut engager la responsabilité de son auteur.
+    </p>
     <p>
       Loomkeep peut proposer une fonctionnalité permettant de signaler certains
       contenus ou comportements.
