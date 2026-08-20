@@ -6,6 +6,7 @@ import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
   plugins: [
     tailwindcss(),
     // Only "fr" ships today (see project.inlang/settings.json) — the point
@@ -25,7 +26,7 @@ export default defineConfig({
           filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
       },
       env: {
-        dir: '../..'
+        dir: "../..",
       },
       // adapter-node: the web app ships as a plain Node server, self-hostable in Docker.
       adapter: adapter(),

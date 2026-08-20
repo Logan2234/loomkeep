@@ -61,6 +61,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      LOG_LEVEL: ${LOG_LEVEL:-}
       # Empty = TurnstileService.verify() always passes (no Cloudflare
       # account configured) — see root README "Bot protection".
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}

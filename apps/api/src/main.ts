@@ -14,6 +14,14 @@ import { AppModule } from "./app.module";
 
 const isDev = process.env.NODE_ENV === "development";
 
+if (!process.env.WEB_ORIGIN) {
+  throw new Error(
+    "WEB_ORIGIN must be set — see .env.example (root or apps/api).",
+  );
+}
+
+const webOrigin: string = process.env.WEB_ORIGIN;
+
 async function bootstrap() {
   const app = await NestFactory.create(
     AppModule,
@@ -54,9 +62,7 @@ async function bootstrap() {
       snapshot: false,
       cors: {
         // Comma-separated so multiple origins can be allowed at once.
-        origin: (process.env.WEB_ORIGIN ?? "http://localhost:5173")
-          .split(",")
-          .map((o) => o.trim()),
+        origin: webOrigin.split(",").map((o) => o.trim()),
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         optionsSuccessStatus: 204,
