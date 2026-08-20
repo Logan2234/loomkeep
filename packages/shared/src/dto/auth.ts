@@ -2,6 +2,8 @@ export interface RegisterRequestDto {
   email: string;
   password: string;
   displayName: string;
+  /** Must be `true` — the account isn't created otherwise. */
+  acceptedTerms: boolean;
   /** Cloudflare Turnstile response token — required only when TURNSTILE_SECRET_KEY is set server-side. */
   turnstileToken?: string;
 }

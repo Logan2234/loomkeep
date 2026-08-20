@@ -350,6 +350,8 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime createdAt
     DateTime updatedAt
     DateTime onboardedAt "❓"
+    DateTime acceptedTermsAt "❓"
+    String acceptedTermsVersion "❓"
     }
 
 

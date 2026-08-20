@@ -145,4 +145,12 @@ export default defineConfig({
       include: [/@loomkeep\/shared/, /node_modules/],
     },
   },
+  // SSR has its own module resolution, separate from the client optimizeDeps
+  // above: left to Vite's default, a linked workspace package gets inlined
+  // and evaluated as ESM, which crashes on this CJS dist/ build ("exports is
+  // not defined"). external forces SSR to load it the normal Node way
+  // (require()), which handles CJS correctly.
+  ssr: {
+    external: ["@loomkeep/shared"],
+  },
 });

@@ -10,9 +10,15 @@
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
+  import TermsReacceptance from "$lib/components/TermsReacceptance.svelte";
   import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
   import { notifications } from "$lib/notifications.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { LEGAL_VERSION } from "@loomkeep/shared";
+
+  const needsTermsReacceptance = $derived(
+    !!auth.user && auth.user.acceptedTermsVersion !== LEGAL_VERSION,
+  );
 
   let { children } = $props();
 
@@ -68,7 +74,9 @@
     </MobileLayout>
   </div>
 
-  {#if !auth.user?.onboardedAt}
+  {#if needsTermsReacceptance}
+    <TermsReacceptance />
+  {:else if !auth.user?.onboardedAt}
     <Modal
       dismissable={false}
       title={m.common_welcome()}

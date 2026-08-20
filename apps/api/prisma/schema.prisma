@@ -409,6 +409,14 @@ model User {
   // showing the wizard instead of the app chrome — including for accounts
   // that existed before this field shipped.
   onboardedAt                DateTime?
+  // Proof-of-consent for the CGU (LK-C03): the LEGAL_VERSION in effect when
+  // the user last accepted, and when. Null for accounts predating this field
+  // (backfilled by migration to the version in effect at that time — see
+  // 20260820000000_add_accepted_terms). app/+layout.svelte blocks with a
+  // re-acceptance prompt when acceptedTermsVersion no longer matches the
+  // current LEGAL_VERSION.
+  acceptedTermsAt             DateTime?
+  acceptedTermsVersion        String?
 
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]

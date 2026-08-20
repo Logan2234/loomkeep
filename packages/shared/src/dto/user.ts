@@ -65,6 +65,13 @@ export interface UserDto {
    * identicon. Includes a `?v=` cache-buster tied to the last upload.
    */
   avatarUrl: string | null;
+  /**
+   * `LEGAL_VERSION` in effect when the user last accepted the CGU, null for
+   * an account created before this field existed. When it no longer matches
+   * the current `LEGAL_VERSION`, app/+layout.svelte blocks with a
+   * re-acceptance prompt.
+   */
+  acceptedTermsVersion: string | null;
 }
 
 export interface UpdateUserRequestDto {

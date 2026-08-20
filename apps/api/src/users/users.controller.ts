@@ -1,5 +1,6 @@
 import {
   Domain,
+  LEGAL_VERSION,
   UserDto,
   UsernameAvailabilityDto,
   type AccountDeletionSummaryDto,
@@ -248,6 +249,23 @@ export class UsersController {
     const user = await this.prisma.user.update({
       where: { id: payload.sub },
       data: { onboardedAt: new Date() },
+    });
+    return toUserDto(user);
+  }
+
+  /**
+   * Records re-acceptance of the current CGU (LK-C03) — the blocking
+   * app/+layout.svelte prompt shown when acceptedTermsVersion no longer
+   * matches LEGAL_VERSION.
+   */
+  @Post("me/accept-terms")
+  async acceptTerms(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
+    const user = await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: {
+        acceptedTermsAt: new Date(),
+        acceptedTermsVersion: LEGAL_VERSION,
+      },
     });
     return toUserDto(user);
   }

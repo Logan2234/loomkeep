@@ -81,6 +81,7 @@ describe("Loomkeep API (e2e)", () => {
     email: "e2e@loomkeep.test",
     password: "E2e-password-1!",
     displayName: "E2E",
+    acceptedTerms: true,
   };
   let accessToken: string;
   let refreshToken: string;
@@ -144,6 +145,17 @@ describe("Loomkeep API (e2e)", () => {
       .expect(400);
   });
 
+  it("rejects registration without accepting the terms of service", () => {
+    return request(http)
+      .post("/api/auth/register")
+      .send({
+        ...user,
+        email: "e2e-no-terms@loomkeep.test",
+        acceptedTerms: false,
+      })
+      .expect(400);
+  });
+
   it("logs in and returns tokens", async () => {
     const response = await request(http)
       .post("/api/auth/login")
@@ -170,7 +182,18 @@ describe("Loomkeep API (e2e)", () => {
       // Empty until the onboarding wizard (or the settings "Domaines"
       // section) sets at least one — see User.enabledDomains in schema.prisma.
       enabledDomains: [],
+      // Set at registration — see AuthService.register (LK-C03).
+      acceptedTermsVersion: expect.any(String),
     });
+  });
+
+  it("records re-acceptance of the CGU", async () => {
+    const response = await request(http)
+      .post("/api/users/me/accept-terms")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(201);
+
+    expect(response.body.acceptedTermsVersion).toEqual(expect.any(String));
   });
 
   it("updates enabled domains and rejects an empty list", async () => {
@@ -556,6 +579,7 @@ describe("Loomkeep API (e2e)", () => {
       email: "e2e-sessions@loomkeep.test",
       password: "Sessions-1!",
       displayName: "Sessions",
+      acceptedTerms: true,
     };
     const reg = await request(http)
       .post("/api/auth/register")
@@ -636,6 +660,7 @@ describe("Loomkeep API (e2e)", () => {
       email: "e2e-delete@loomkeep.test",
       password: "Delete-me-1!",
       displayName: "Delete",
+      acceptedTerms: true,
     };
     const registered = await request(http)
       .post("/api/auth/register")

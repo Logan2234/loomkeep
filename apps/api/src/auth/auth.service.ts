@@ -4,7 +4,7 @@ import type {
   SessionDto,
   UserDto,
 } from "@loomkeep/shared";
-import { deviceLabel } from "@loomkeep/shared";
+import { deviceLabel, LEGAL_VERSION } from "@loomkeep/shared";
 import {
   BadRequestException,
   ConflictException,
@@ -90,6 +90,8 @@ export class AuthService {
         displayName: dto.displayName,
         username: await this.generateUniqueUsername(dto.displayName),
         locale: detectLocale(acceptLanguage),
+        acceptedTermsAt: new Date(),
+        acceptedTermsVersion: LEGAL_VERSION,
       },
     });
 
@@ -558,5 +560,6 @@ export function toUserDto(user: User): UserDto {
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
     onboardedAt: user.onboardedAt?.toISOString() ?? null,
+    acceptedTermsVersion: user.acceptedTermsVersion,
   };
 }

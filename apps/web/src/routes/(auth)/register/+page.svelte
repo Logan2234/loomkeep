@@ -35,6 +35,7 @@
   let email = $state("");
   let password = $state("");
   let turnstileToken = $state("");
+  let acceptedTerms = $state(false);
   let error = $state<string | null>(null);
   let loading = $state(false);
 
@@ -43,7 +44,13 @@
     error = null;
     loading = true;
     try {
-      await register({ email, password, displayName, turnstileToken });
+      await register({
+        email,
+        password,
+        displayName,
+        acceptedTerms,
+        turnstileToken,
+      });
       await goto("/register/check-email");
     } catch (err) {
       error =
@@ -96,23 +103,30 @@
             onVerify={(token) => (turnstileToken = token)} />
         {/if}
         {#if error}<Banner variant="error">{error}</Banner>{/if}
-        <p class="text-dim text-center text-xs leading-relaxed">
-          En créant un compte, vous acceptez les
-          <a
-            href="/legal/terms-of-service"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn-text btn-text-underline text-accent hover:text-accent"
-            >CGU</a>
-          et reconnaissez avoir lu notre
-          <a
-            href="/legal/privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn-text btn-text-underline text-accent hover:text-accent"
-            >politique de confidentialité</a
-          >.
-        </p>
+        <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
+          <input
+            type="checkbox"
+            bind:checked={acceptedTerms}
+            required
+            class="mt-0.5" />
+          <span>
+            {m.auth_register_accept_terms_prefix()}
+            <a
+              href="/legal/terms-of-service"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-text btn-text-underline text-accent hover:text-accent"
+              >{m.common_terms()}</a>
+            {m.auth_register_accept_terms_and()}
+            <a
+              href="/legal/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-text btn-text-underline text-accent hover:text-accent"
+              >{m.common_privacy()}</a
+            >.
+          </span>
+        </label>
         <button
           type="submit"
           class="btn btn-primary"
@@ -120,6 +134,7 @@
             !displayName ||
             !email ||
             !isPasswordValid(password) ||
+            !acceptedTerms ||
             (!!turnstileSiteKey && !turnstileToken)}>
           {loading
             ? m.auth_register_action_loading()
