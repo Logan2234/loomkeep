@@ -317,6 +317,14 @@
   "auth_register_action": "Créer le compte",
   "auth_register_action_loading": "Création…",
   "auth_already_registered": "Déjà inscrit ?",
+  "auth_register_accept_terms_prefix": "J'accepte les",
+  "auth_register_accept_terms_and": "et reconnais avoir lu la",
+
+  "terms_reacceptance_title": "Mise à jour des CGU",
+  "terms_reacceptance_body": "Nos conditions générales d'utilisation ont été mises à jour. Merci de les relire et de les accepter pour continuer à utiliser Loomkeep.",
+  "terms_reacceptance_action": "Continuer",
+  "terms_reacceptance_action_loading": "Enregistrement…",
+  "terms_reacceptance_error": "Une erreur est survenue. Réessaie.",
 
   "settings_section_security": "Sécurité",
   "settings_section_content": "Contenu",

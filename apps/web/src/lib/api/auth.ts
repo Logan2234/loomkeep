@@ -126,6 +126,15 @@ export async function completeOnboarding(): Promise<UserDto> {
   return user;
 }
 
+/** Records re-acceptance of the current CGU (LEGAL_VERSION). */
+export async function acceptTerms(): Promise<UserDto> {
+  const user = await request<UserDto>("/users/me/accept-terms", {
+    method: "POST",
+  });
+  auth.user = user;
+  return user;
+}
+
 export async function uploadAvatar(
   body: UploadAvatarRequestDto,
 ): Promise<UserDto> {

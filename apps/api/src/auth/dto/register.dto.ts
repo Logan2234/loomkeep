@@ -1,4 +1,5 @@
 import {
+  Equals,
   IsEmail,
   IsOptional,
   IsString,
@@ -36,6 +37,9 @@ export class RegisterDto implements RegisterRequestDto {
   @MinLength(1)
   @MaxLength(50)
   displayName!: string;
+
+  @Equals(true, { message: "terms of service must be accepted" })
+  acceptedTerms!: boolean;
 
   // Required only when TURNSTILE_SECRET_KEY is set — TurnstileService.verify
   // treats a missing token as a failed check in that case.

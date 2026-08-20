@@ -1,3 +1,8 @@
+<script lang="ts">
+  import { formatDate } from "$lib/format";
+  import { LEGAL_VERSION } from "@loomkeep/shared";
+</script>
+
 <svelte:head>
   <title>Conditions générales d'utilisation - Loomkeep</title>
 </svelte:head>
@@ -13,7 +18,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 16/08/2026</em></p>
+    <p><em>Dernière mise à jour : {formatDate(LEGAL_VERSION)}</em></p>
     <p>
       Les présentes conditions générales d'utilisation (« CGU ») régissent
       l'accès et l'utilisation de l'instance officielle du service Loomkeep

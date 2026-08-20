@@ -26,3 +26,4 @@ export * from "./dto/user";
 export * from "./dto/widget";
 export * from "./password";
 export * from "./device-label";
+export * from "./legal";
