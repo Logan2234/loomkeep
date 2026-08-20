@@ -99,6 +99,84 @@ touch docker/caddy-flags/maintenance   # on
 rm docker/caddy-flags/maintenance      # off
 ```
 
+## Backups
+
+Two layers, both encrypted for the same key (see below), neither depends on
+the other:
+
+**Local, in-app** — `apps/api/src/admin/backup.service.ts` dumps the
+`loomkeep` database daily at 3:00 (also triggerable on demand from
+`/admin/backup`), keeps the 7 most recent on `BACKUP_DIR` (a dedicated
+volume, separate from Postgres's own so a corrupt DB doesn't take its
+backups down with it). Every dump is age-encrypted before it touches disk
+(LK-C20) — the admin page can only offer the encrypted file for download,
+never plaintext; restoring means decrypting it yourself first (see below),
+then uploading the resulting `.sql`.
+
+**Offsite, host-level** — `docker/backup-offsite.sh`, run via VPS cron (not
+a container), covers everything the in-app one doesn't: `unleash` and
+`glitchtip` (separate databases on the same shared Postgres instance —
+`umami` is deliberately excluded, see `docker-compose.umami.yml`'s own
+comment, its data is low-stakes and re-collectable) and Quackback's entire
+separate stack (its own Postgres + MinIO uploads). Ships everything,
+encrypted, to Cloudflare R2 via `rclone`. Read the script's own header
+comment for exactly what it does — this section only covers one-time setup.
+
+### The encryption key
+
+Both layers encrypt for the same [age](https://github.com/FiloSottile/age)
+public key (`BACKUP_ENCRYPTION_PUBLIC_KEY` in `.env`) — asymmetric on
+purpose: this VPS only ever needs the _public_ key to produce backups, and
+can never decrypt one back. The private key must live somewhere that isn't
+this VPS (a password manager, an offline copy) — generate it on your own
+machine, **not** on the server:
+
+```sh
+age-keygen -o loomkeep-backup-key.txt
+# Public key: age1... — paste this into BACKUP_ENCRYPTION_PUBLIC_KEY in .env
+```
+
+Save `loomkeep-backup-key.txt` (the private key) somewhere durable and
+secret, then delete it from wherever you ran this command. Losing it makes
+every backup taken with the matching public key permanently unrecoverable
+— there's no recovery path around that, by design.
+
+To restore: `age -d -o dump.sql backup-file.sql.age` (age prompts for the
+private key file), then feed `dump.sql` into `/admin/backup`'s restore flow
+(in-app dumps) or `psql` directly (offsite dumps).
+
+### Offsite setup (`docker/backup-offsite.sh`)
+
+One-time, on the VPS:
+
+1. **Cloudflare R2 bucket**: dashboard → R2 → Create bucket. Add a
+   lifecycle rule expiring objects after 30 days (Object lifecycle rules →
+   Add rule) — this is what bounds retention, the script itself never
+   prunes.
+2. **API token**: R2 → Manage API tokens → Create token, scoped to that one
+   bucket only (not account-wide). Note the Access Key ID, Secret Access
+   Key, and your account's S3 endpoint (`https://<account-id>.r2.cloudflarestorage.com`).
+3. **Install `age` and [`rclone`](https://rclone.org/install/)** on the VPS
+   host, then configure the remote: `rclone config` → `n` (new remote) →
+   name it `r2` (or set `R2_REMOTE` in `.env` to whatever you pick) →
+   provider `Cloudflare R2` → paste the credentials from step 2.
+4. **Set `R2_BUCKET`** (and `BACKUP_ENCRYPTION_PUBLIC_KEY` if not already)
+   in `.env`.
+5. **Cron** — `crontab -e`, add (after the in-app dump's own 3:00 run):
+
+   ```
+   0 4 * * * cd ~/loomkeep && ./docker/backup-offsite.sh >> /var/log/loomkeep-backup-offsite.log 2>&1
+   ```
+
+6. Optional: a [Healthchecks.io](https://healthchecks.io) check, its ping
+   URL in `HEALTHCHECKS_OFFSITE_BACKUP_URL` — same dead-man's-switch
+   pattern as the app's own jobs (see "Job monitoring" below).
+
+**Test the restore path at least once** — an offsite backup nobody has ever
+decrypted is a hypothesis, not a guarantee. Pull one file down
+(`rclone copy r2:<bucket>/<date>/loomkeep-*.sql.age .`), decrypt it, and
+confirm it actually loads into a scratch Postgres.
+
 ## Image vulnerability scanning (Trivy)
 
 `.github/workflows/trivy.yml` — separate from `ci.yml`'s own

@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import type {
   AdminBackupFileContentDto,
@@ -34,6 +35,15 @@ const KEEP = 7;
  * dedicated Docker volume in self-host, separate from the Postgres data
  * volume it backs up, so a corrupt DB doesn't take its own backups down with
  * it. Only the {@link KEEP} most recent are kept.
+ *
+ * Every dump is encrypted (age, ASCII-armored) for BACKUP_ENCRYPTION_PUBLIC_KEY
+ * before it ever touches disk (LK-C20) — a plain-SQL dump on disk is the
+ * entire user database (emails, password hashes, birth dates, full watch
+ * history) sitting in the clear. Only the *public* key lives on this
+ * instance; nothing here can decrypt a dump back, by design — restoring
+ * requires the operator to decrypt it themselves (`age -d`) with the
+ * private key, which never touches this server, before uploading the
+ * plain SQL back through {@link restore}.
  */
 @Injectable()
 export class BackupService {
@@ -42,6 +52,7 @@ export class BackupService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobRuns: JobRunService,
+    private readonly configService: ConfigService,
   ) {}
 
   private get dir(): string {
@@ -90,8 +101,8 @@ export class BackupService {
   async readFile(id: string): Promise<AdminBackupFileContentDto> {
     const row = await this.prisma.backupFile.findUnique({ where: { id } });
     if (!row) throw new NotFoundException("Sauvegarde introuvable");
-    const sql = await readFile(join(this.dir, row.filename), "utf-8");
-    return { filename: row.filename, sql };
+    const content = await readFile(join(this.dir, row.filename), "utf-8");
+    return { filename: row.filename, content };
   }
 
   async deleteFile(id: string): Promise<void> {
@@ -103,15 +114,39 @@ export class BackupService {
 
   private async writeBackup(): Promise<AdminBackupFileDto> {
     const sql = await this.dump();
-    const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
+    const encrypted = await this.encrypt(sql);
+    const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql.age`;
     await mkdir(this.dir, { recursive: true });
-    await writeFile(join(this.dir, filename), sql, "utf-8");
+    await writeFile(join(this.dir, filename), encrypted, "utf-8");
 
     const row = await this.prisma.backupFile.create({
-      data: { filename, sizeBytes: Buffer.byteLength(sql, "utf-8") },
+      data: { filename, sizeBytes: Buffer.byteLength(encrypted, "utf-8") },
     });
     await this.prune();
     return toDto(row);
+  }
+
+  /**
+   * Encrypts `sql` for BACKUP_ENCRYPTION_PUBLIC_KEY. ASCII-armored (`-a`)
+   * rather than age's default binary output so the result stays a plain
+   * string, same transport as the SQL it replaces — no base64 wrapping
+   * needed to carry it through the JSON request/response pattern the rest
+   * of the app uses. Fails the whole backup rather than ever falling back
+   * to writing plaintext: an unconfigured key must not silently produce an
+   * unencrypted dump.
+   */
+  private async encrypt(sql: string): Promise<string> {
+    const publicKey = this.configService.get<string>(
+      "BACKUP_ENCRYPTION_PUBLIC_KEY",
+    );
+
+    if (!publicKey) {
+      throw new ServiceUnavailableException(
+        "BACKUP_ENCRYPTION_PUBLIC_KEY is not set",
+      );
+    }
+
+    return this.run("age", ["-r", publicKey, "-a"], sql);
   }
 
   /** Deletes every persisted dump beyond the {@link KEEP} most recent, on disk and in DB. */
@@ -154,7 +189,8 @@ export class BackupService {
     args: string[],
     stdin?: string,
   ): Promise<string> {
-    const env = command === "pnpm" ? process.env : this.pgEnv();
+    const env =
+      command === "pg_dump" || command === "psql" ? this.pgEnv() : process.env;
 
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, { env });

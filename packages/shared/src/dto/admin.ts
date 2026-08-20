@@ -339,10 +339,14 @@ export interface AdminBackupFileDto {
   createdAt: string;
 }
 
-/** Full plain-SQL content of one persisted backup, for download. */
+/**
+ * Age-encrypted, ASCII-armored content of one persisted backup, for
+ * download — never plain SQL (see LK-C20). Decrypt locally with
+ * `age -d -o dump.sql <file>` before restoring.
+ */
 export interface AdminBackupFileContentDto {
   filename: string;
-  sql: string;
+  content: string;
 }
 
 /** Replaces the entire instance database with a previously downloaded dump. */
