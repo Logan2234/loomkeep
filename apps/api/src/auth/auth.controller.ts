@@ -24,7 +24,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   // Brute-force / abuse guards on top of the global 60 req/min default.
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  // 10, not something tighter, partly so the e2e suite's own sequential
+  // /auth/register calls (app.e2e-spec.ts) stay well under the budget —
+  // bump this further alongside adding another one there.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post("register")
   register(
     @Body() dto: RegisterDto,
