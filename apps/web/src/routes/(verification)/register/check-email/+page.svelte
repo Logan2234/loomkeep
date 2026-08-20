@@ -92,7 +92,14 @@
           </p>
         {/if}
 
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-4">
+          <button
+            type="button"
+            class="btn btn-primary btn-primary-cartouche"
+            onclick={continueToApp}>
+            Continuer vers Loomkeep
+          </button>
+
           <button
             type="button"
             class="btn btn-ghost"
@@ -105,13 +112,6 @@
             {:else}
               Renvoyer l'email
             {/if}
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-primary btn-primary-cartouche"
-            onclick={continueToApp}>
-            Continuer vers Loomkeep
           </button>
         </div>
 
