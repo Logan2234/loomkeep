@@ -252,6 +252,20 @@ then open `http://localhost:3001` locally. Prometheus itself has no exposed
 port at all — it's purely a Grafana data source, queried through Grafana's
 own auth.
 
+**Cloudflare Access in front of Grafana (gotcha with UptimeRobot):** if
+`grafana.<DOMAIN>` is put behind Cloudflare Zero Trust Access as an extra
+login layer, every unauthenticated request — including UptimeRobot's health
+check — gets Access's own login/redirect response instead of ever reaching
+Grafana. UptimeRobot then reports the monitor as up even when Grafana itself
+is down (502), silently defeating the check. Fix: add an Access **bypass**
+policy scoped to a single path — Grafana's built-in `/api/health` endpoint —
+restricted to UptimeRobot's [published IP ranges](https://uptimerobot.com/locations),
+then point the UptimeRobot monitor at `grafana.<DOMAIN>/api/health` instead
+of the domain root. Requests from those IPs skip Access and reach
+Caddy/Grafana directly, so a real outage surfaces again, while the rest of
+Grafana stays behind Access. Keep the bypass scoped to that one path and IP
+list rather than a blanket bypass.
+
 ### Job monitoring (optional)
 
 Grafana/GlitchTip tell you when the app is unhealthy or throwing errors, but
