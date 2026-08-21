@@ -37,6 +37,40 @@ du premium, mais casse la promesse d'auto-hébergement complet du projet et
 complexifie l'archi (frontière technique dure autour de `entitlements`) pour
 un bénéfice que la section suivante montre limité de toute façon.
 
+### Aperçu du mécanisme (illustratif, le détail reste à concevoir)
+
+`User.entitlements` porte un **statut** (`premium: true/false`, éventuellement
+un tier), pas des valeurs numériques de quota — un quota gratuit ("3 listes
+collaboratives") est une constante de config lue via `hasPremium(user) ?
+Infinity : FREE_MAX`, pas une donnée stockée par utilisateur. Une entrée
+`entitlements` ne porte de valeur par-utilisateur que pour les exceptions
+réelles (deal négocié, grandfathering d'une feature devenue payante après
+coup — voir plus bas).
+
+L'activation diffère entre les deux publics :
+
+- **SaaS hébergé** : Stripe (ou équivalent) mène toute la logique
+  d'abonnement ; un webhook (`checkout.session.completed`,
+  `customer.subscription.deleted`, etc.) met à jour `entitlements` par
+  utilisateur. Révocation immédiate et fiable, puisque tout reste côté
+  serveur de Logan.
+- **Self-host** : pas d'abonnement révocable à distance possible sans
+  phone-home (contraire à l'esprit self-host du projet). Le mécanisme
+  envisagé est une **clé de licence signée par Logan** (clé privée hors de
+  l'app), vérifiée offline par une clé publique embarquée dans le code —
+  active le premium pour toute l'instance (un foyer = un opérateur, pas un
+  flag par utilisateur individuel côté self-host).
+
+  **Point de vigilance non résolu par cet ADR** : une clé signée offline n'a
+  de date d'expiration que si elle en embarque une (`expiresAt` dans la
+  charge signée) — impossible de facturer mensuellement et de révoquer une
+  clé déjà distribuée à distance. Deux pistes, ni l'une ni l'autre tranchée
+  ici : licence annuelle réémise manuellement à chaque paiement reçu, ou
+  licence perpétuelle par version majeure (paiement unique, façon
+  JetBrains). Un vrai contrôle périodique en ligne réglerait la révocation
+  mais réintroduirait le phone-home qu'on cherche à éviter — à trancher dans
+  le ticket d'implémentation, pas ici.
+
 ### Quota ou feature complète : un choix produit, pas une contrainte AGPL
 
 Le code de gating (`entitlements`) est lui-même dans le monorepo AGPL, donc
@@ -76,9 +110,11 @@ restriction que la licence ne permet pas de faire tenir.
 
 ## Hors périmètre de cette décision
 
-- Le mécanisme technique de gating (module optionnel, vérification de
+- Le mécanisme technique de gating (module optionnel, format exact de la
   licence, exposition via `/api/config`, etc.) — ticket d'implémentation
-  séparé, une fois les premières features premium arrêtées.
+  séparé, une fois les premières features premium arrêtées. Inclut la
+  question non tranchée de la durée de validité d'une licence self-host
+  (voir "Aperçu du mécanisme" ci-dessus).
 - Le calendrier de lancement du premium (quand la base d'utilisateurs et le
   catalogue de features premium seront suffisants).
 - La liste définitive des features premium — pistes évoquées : stats
