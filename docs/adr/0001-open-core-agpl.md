@@ -16,7 +16,8 @@ n'est pas un défaut de conformité — c'est la conséquence assumée du choix 
 licence — mais ça détermine ce que l'offre payante peut promettre, donc le
 contenu des CGV (LK-D01).
 
-Deux options étaient sur la table :
+Deux options étaient posées au départ comme mutuellement exclusives — la
+section "Décision" explique pourquoi ce cadrage était en fait trompeur :
 
 - **(a)** Assumer que le premium se vend comme **service géré** (hébergement,
   confort, seuils desserrés) et non comme logiciel exclusif — cohérent avec
@@ -26,16 +27,29 @@ Deux options étaient sur la table :
 
 ## Décision
 
-**Option (a), à la Grafana** : le code premium reste dans le monorepo AGPL.
-Le premium est vendu comme service géré, mais reste **aussi disponible en
-self-hosting** (activable par clé/licence) — pas seulement sur l'instance
-hébergée par Logan.
+Le clivage initial (a) "tout AGPL" vs (b) "dépôt séparé propriétaire, donc
+self-host premium impossible" était une fausse dichotomie : Grafana lui-même
+fait les deux à la fois — cœur AGPL, **et** un module Enterprise séparé sous
+licence propriétaire, mais toujours installable en self-host après achat
+d'une licence. Isoler le code premium n'empêche donc pas le self-hosting du
+premium ; ça change seulement qui reçoit le code par défaut (voir plus bas).
 
-(b) est écartée : isoler le code dans un dépôt séparé sous licence
-propriétaire aurait été le seul moyen d'empêcher légalement l'auto-hébergement
-du premium, mais casse la promesse d'auto-hébergement complet du projet et
-complexifie l'archi (frontière technique dure autour de `entitlements`) pour
-un bénéfice que la section suivante montre limité de toute façon.
+**Ce qui est tranché** : le premium est vendu comme service géré (hébergement,
+confort, seuils desserrés), **jamais** comme exclusivité logicielle — cohérent
+avec l'esprit du projet — et reste **disponible en self-hosting** (activable
+par clé/licence), pas seulement sur l'instance hébergée par Logan. Ce
+positionnement, et les règles de non-rétroactivité ci-dessous, ne dépendent
+pas de l'endroit où vit le code.
+
+**Ce qui reste ouvert** : est-ce que le code premium vit dans le monorepo AGPL
+(un guard `entitlements` visible par quiconque clone le repo, gratuit ou pas)
+ou dans un module séparé sous licence propriétaire, distribué seulement après
+achat (façon Grafana Enterprise) ? Les deux respectent la décision ci-dessus ;
+ils diffèrent sur la charge d'ingénierie (un guard vs un vrai système de
+chargement de module à construire et maintenir) et sur qui reçoit le code par
+défaut (tout le monde vs seulement les payeurs) — voir la section suivante.
+À trancher une fois les premières features premium arrêtées, en fonction du
+temps que Logan peut investir dans l'archi.
 
 ### Aperçu du mécanisme (illustratif, le détail reste à concevoir)
 
@@ -71,16 +85,25 @@ L'activation diffère entre les deux publics :
   mais réintroduirait le phone-home qu'on cherche à éviter — à trancher dans
   le ticket d'implémentation, pas ici.
 
-### Le gating self-host est une friction, pas une protection technique
+### Le gating self-host est une friction, pas une protection technique — et ça dépend d'où vit le code
 
-Il faut être honnête sur ce que la clé de licence protège réellement. Un
-self-hoster a les sources et les droits admin sur sa propre machine : rien
-n'empêche de supprimer le guard, de commenter le check `entitlements`, ou de
-patcher la vérification de licence. Aucun mécanisme technique — signature ou
-pas — ne peut empêcher ça pour du code distribué en clair ; ce n'est pas une
-faille à corriger, c'est une conséquence structurelle de l'open source.
+Dans les deux cas (monorepo ou module séparé), un self-hoster qui **a déjà
+reçu** le code premium — parce qu'il l'a acheté, ou parce qu'il vit dans le
+même repo que le reste — a les sources et les droits admin sur sa propre
+machine : rien n'empêche de supprimer le guard, de commenter le check
+`entitlements`, ou de patcher la vérification de licence. Aucun mécanisme
+technique — signature ou pas — ne peut empêcher ça pour du code qui tourne
+chez lui ; ce n'est pas une faille à corriger, c'est une conséquence
+structurelle de l'open source, quel que soit le dépôt.
 
-Ce que le gating self-host apporte quand même, en pratique :
+Là où le choix du dépôt change vraiment les choses, c'est **avant** l'achat :
+- **Monorepo** : tout le monde qui clone Loomkeep pour les features
+  gratuites reçoit aussi le code premium — payeur ou pas. Le guard est le
+  seul obstacle, public, zéro effort à retirer, aucun achat requis.
+- **Module séparé** : un self-hoster qui n'a jamais payé ne reçoit jamais le
+  code premium du tout — rien à patcher, puisqu'il n'a rien.
+
+Dans les deux cas :
 - **De la friction** pour la grande majorité des self-hosters, qui n'iront
   pas forker et maintenir un patch à chaque mise à jour juste pour éviter de
   payer.
@@ -89,21 +112,22 @@ Ce que le gating self-host apporte quand même, en pratique :
   respecterait la limite par principe.
 - Le profil capable de patcher proprement et de maintenir ce patch dans le
   temps n'aurait très probablement pas payé de toute façon — ce n'est pas
-  un revenu perdu.
+  un revenu perdu, dans les deux architectures.
 
 **La seule protection réellement solide reste le SaaS hébergé** : le code
 tourne sur les serveurs de Logan, pas chez l'utilisateur, donc personne ne
 peut patcher un guard auquel il n'a pas accès. Les CGV ne doivent jamais
-promettre côté self-host une garantie que la licence AGPL rend intenable.
+promettre côté self-host une garantie qu'aucune des deux architectures ne
+peut tenir.
 
 ### Quota ou feature complète : un choix produit, pas une contrainte AGPL
 
-Le code de gating (`entitlements`) est lui-même dans le monorepo AGPL, donc
-lisible et patchable par tout self-hoster — qu'il s'agisse d'un check de
-quota ("`N` listes en gratuit") ou d'un flag de feature complète ("export
-iCal réservé au premium"). Les deux offrent exactement la même protection
-technique, c'est-à-dire aucune, face à quelqu'un qui lit le code : l'AGPL ne
-privilégie pas l'un par rapport à l'autre.
+Une fois que le self-hoster a reçu le code premium (quelle que soit
+l'architecture retenue plus haut), un check de quota ("`N` listes en
+gratuit") et un flag de feature complète ("export iCal réservé au premium")
+offrent exactement la même protection technique, c'est-à-dire aucune, face à
+quelqu'un qui lit le code : ni l'AGPL ni le choix d'architecture ne
+privilégient l'un par rapport à l'autre à ce stade.
 
 Le choix entre seuil et feature complète est donc un arbitrage produit
 au cas par cas (ex. : desserrer le nombre de listes collaboratives vs.
@@ -137,9 +161,10 @@ restriction que la licence ne permet pas de faire tenir.
 
 - Le mécanisme technique de gating (module optionnel, format exact de la
   licence, exposition via `/api/config`, etc.) — ticket d'implémentation
-  séparé, une fois les premières features premium arrêtées. Inclut la
-  question non tranchée de la durée de validité d'une licence self-host
-  (voir "Aperçu du mécanisme" ci-dessus).
+  séparé, une fois les premières features premium arrêtées. Inclut les deux
+  questions non tranchées : où vit le code premium (monorepo vs module
+  séparé, voir "Décision" ci-dessus) et la durée de validité d'une licence
+  self-host (voir "Aperçu du mécanisme" ci-dessus).
 - Le calendrier de lancement du premium (quand la base d'utilisateurs et le
   catalogue de features premium seront suffisants).
 - La liste définitive des features premium — pistes évoquées : stats
@@ -149,10 +174,14 @@ restriction que la licence ne permet pas de faire tenir.
 
 ## Conséquences
 
-- `User.entitlements` reste dans le schéma AGPL principal, pas dans un dépôt
-  séparé.
+- `User.entitlements` (le statut, dans `apps/api/prisma/schema.prisma`) reste
+  dans le schéma AGPL principal quoi qu'il arrive — c'est le code des
+  *features* premium elles-mêmes dont l'emplacement (monorepo vs module
+  séparé) reste ouvert.
 - Le style de gating (seuil desserré vs. feature complète réservée) se
   décide feature par feature, sans préférence de principe imposée par
-  l'AGPL — dans les deux cas, un self-hoster qui lit le code peut le
-  contourner ; c'est un coût assumé, pas un problème à corriger.
-- LK-D01 peut être rédigé sur cette base.
+  l'AGPL — dans les deux architectures, un self-hoster qui a reçu le code
+  peut le contourner ; c'est un coût assumé, pas un problème à corriger.
+- LK-D01 peut être rédigé sur cette base : le positionnement service géré +
+  self-host inclus + non-rétroactivité est stable, indépendamment de la
+  question d'architecture encore ouverte.
