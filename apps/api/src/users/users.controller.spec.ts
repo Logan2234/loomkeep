@@ -160,7 +160,6 @@ describe("UsersController — email change", () => {
         notifyEmail: false,
         notifyPush: false,
         emailVerified: false,
-        entitlements: [],
         role: "USER",
         enabledDomains: [],
         createdAt: new Date(),

@@ -27,6 +27,40 @@ ADMIN ADMIN
 
 
 
+        Plan {
+            FREE FREE
+PREMIUM PREMIUM
+        }
+
+
+
+        EntitlementSource {
+            STRIPE STRIPE
+SELF_HOST_LICENSE SELF_HOST_LICENSE
+FRIENDS_FAMILY FRIENDS_FAMILY
+BETA_TESTER BETA_TESTER
+COMPENSATION COMPENSATION
+        }
+
+
+
+        SubscriptionProvider {
+            STRIPE STRIPE
+        }
+
+
+
+        SubscriptionStatus {
+            ACTIVE ACTIVE
+TRIALING TRIALING
+PAST_DUE PAST_DUE
+CANCELED CANCELED
+INCOMPLETE INCOMPLETE
+UNPAID UNPAID
+        }
+
+
+
         ProfileAccess {
             PUBLIC PUBLIC
 PRIVATE PRIVATE
@@ -320,6 +354,29 @@ LOGIN_FAILED LOGIN_FAILED
 NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
         }
 
+  "UserEntitlement" {
+    Plan plan
+    EntitlementSource source "❓"
+    DateTime grantedAt "❓"
+    DateTime expiresAt "❓"
+    Json overrides
+    DateTime updatedAt
+    }
+
+
+  "Subscription" {
+    String id "🗝️"
+    SubscriptionProvider provider
+    String providerSubscriptionId
+    SubscriptionStatus status
+    DateTime currentPeriodEnd "❓"
+    Boolean cancelAtPeriodEnd
+    DateTime canceledAt "❓"
+    DateTime createdAt
+    DateTime updatedAt
+    }
+
+
   "User" {
     String id "🗝️"
     String email
@@ -341,7 +398,6 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     ProfileAccess profileAccess
     ReviewVisibility defaultReviewVisibility
     ListVisibility defaultListVisibility
-    Json entitlements
     Role role
     Domain enabledDomains
     String mobileNavShortcuts
@@ -827,6 +883,12 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime updatedAt
     }
 
+    "UserEntitlement" |o--|| "User" : "user"
+    "UserEntitlement" |o--|| "Plan" : "enum:plan"
+    "UserEntitlement" |o--|o "EntitlementSource" : "enum:source"
+    "Subscription" }o--|| "User" : "user"
+    "Subscription" |o--|| "SubscriptionProvider" : "enum:provider"
+    "Subscription" |o--|| "SubscriptionStatus" : "enum:status"
     "User" |o--|| "ProfileAccess" : "enum:profileAccess"
     "User" |o--|| "ReviewVisibility" : "enum:defaultReviewVisibility"
     "User" |o--|| "ListVisibility" : "enum:defaultListVisibility"
