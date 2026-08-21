@@ -85,6 +85,9 @@ per device, SHA-256 hashed. `JwtAuthGuard` is registered globally in
 `app.module.ts`; opt out with `@Public()`. Handlers read the user from
 `@CurrentUser()` (JWT payload, `sub` = user id). `User.entitlements` (Json) is
 the open-core seam for future paid features — currently unused, don't remove it.
+The open-core positioning (premium as a managed service on top of the AGPL
+code, self-hosting included, gating by thresholds rather than hidden features)
+is decided in [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md).
 
 **Shared enums** (`packages/shared/src/enums.ts`) are `as const` objects, not
 TS enums, and Prisma declares parallel enums with identical values in
