@@ -71,6 +71,31 @@ L'activation diffère entre les deux publics :
   mais réintroduirait le phone-home qu'on cherche à éviter — à trancher dans
   le ticket d'implémentation, pas ici.
 
+### Le gating self-host est une friction, pas une protection technique
+
+Il faut être honnête sur ce que la clé de licence protège réellement. Un
+self-hoster a les sources et les droits admin sur sa propre machine : rien
+n'empêche de supprimer le guard, de commenter le check `entitlements`, ou de
+patcher la vérification de licence. Aucun mécanisme technique — signature ou
+pas — ne peut empêcher ça pour du code distribué en clair ; ce n'est pas une
+faille à corriger, c'est une conséquence structurelle de l'open source.
+
+Ce que le gating self-host apporte quand même, en pratique :
+- **De la friction** pour la grande majorité des self-hosters, qui n'iront
+  pas forker et maintenir un patch à chaque mise à jour juste pour éviter de
+  payer.
+- **Un contrat clair** (CGV) : contourner le gating reste une violation des
+  conditions, même si c'est techniquement possible — ça compte pour qui
+  respecterait la limite par principe.
+- Le profil capable de patcher proprement et de maintenir ce patch dans le
+  temps n'aurait très probablement pas payé de toute façon — ce n'est pas
+  un revenu perdu.
+
+**La seule protection réellement solide reste le SaaS hébergé** : le code
+tourne sur les serveurs de Logan, pas chez l'utilisateur, donc personne ne
+peut patcher un guard auquel il n'a pas accès. Les CGV ne doivent jamais
+promettre côté self-host une garantie que la licence AGPL rend intenable.
+
 ### Quota ou feature complète : un choix produit, pas une contrainte AGPL
 
 Le code de gating (`entitlements`) est lui-même dans le monorepo AGPL, donc
