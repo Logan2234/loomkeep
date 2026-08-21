@@ -37,14 +37,20 @@ du premium, mais casse la promesse d'auto-hébergement complet du projet et
 complexifie l'archi (frontière technique dure autour de `entitlements`) pour
 un bénéfice que la section suivante montre limité de toute façon.
 
-### Le gating se fait par seuils/quotas, pas par features binaires cachées
+### Quota ou feature complète : un choix produit, pas une contrainte AGPL
 
-Quand c'est possible, une feature premium doit être une **limite desserrée**
-sur une capacité déjà existante en gratuit (ex. : nombre de listes
-collaboratives, accès en avant-première à un nouveau domaine média, export
-avancé), plutôt qu'une feature entièrement absente du code gratuit. Ça
-correspond à ce que permet réellement l'AGPL — voir ci-dessous — et ça évite
-d'avoir deux implémentations divergentes à maintenir.
+Le code de gating (`entitlements`) est lui-même dans le monorepo AGPL, donc
+lisible et patchable par tout self-hoster — qu'il s'agisse d'un check de
+quota ("`N` listes en gratuit") ou d'un flag de feature complète ("export
+iCal réservé au premium"). Les deux offrent exactement la même protection
+technique, c'est-à-dire aucune, face à quelqu'un qui lit le code : l'AGPL ne
+privilégie pas l'un par rapport à l'autre.
+
+Le choix entre seuil et feature complète est donc un arbitrage produit
+au cas par cas (ex. : desserrer le nombre de listes collaboratives vs.
+réserver entièrement l'export iCal au premium), pas une règle à appliquer
+systématiquement — les deux styles sont légitimes et seront mélangés selon
+ce qui fait sens pour chaque feature.
 
 ### Non-rétroactivité sur le code déjà distribué
 
@@ -84,7 +90,8 @@ restriction que la licence ne permet pas de faire tenir.
 
 - `User.entitlements` reste dans le schéma AGPL principal, pas dans un dépôt
   séparé.
-- Les futures features premium sont conçues, quand c'est possible, comme des
-  seuils/quotas configurables plutôt que des branches de code entièrement
-  invisibles en gratuit.
+- Le style de gating (seuil desserré vs. feature complète réservée) se
+  décide feature par feature, sans préférence de principe imposée par
+  l'AGPL — dans les deux cas, un self-hoster qui lit le code peut le
+  contourner ; c'est un coût assumé, pas un problème à corriger.
 - LK-D01 peut être rédigé sur cette base.
