@@ -8,6 +8,7 @@ import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { HibpService } from "../common/hibp.service";
+import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { ListService } from "../lists/list.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -62,6 +63,9 @@ describe("UsersController — email change", () => {
       {
         reassignOwnedListsOnAccountDeletion: jest.fn(),
       } as unknown as ListService,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   });
 
@@ -285,6 +289,9 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
       {
         reassignOwnedListsOnAccountDeletion: jest.fn(),
       } as unknown as ListService,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   });
 
@@ -361,6 +368,9 @@ describe("UsersController — updateMe newsletter opt-in timestamp", () => {
       {
         reassignOwnedListsOnAccountDeletion: jest.fn(),
       } as unknown as ListService,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   }
 
@@ -448,6 +458,9 @@ describe("UsersController — uploadAvatar", () => {
       {
         reassignOwnedListsOnAccountDeletion: jest.fn(),
       } as unknown as ListService,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   });
 
@@ -528,6 +541,9 @@ describe("UsersController — changePassword", () => {
       {
         reassignOwnedListsOnAccountDeletion: jest.fn(),
       } as unknown as ListService,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   });
 
@@ -613,6 +629,9 @@ describe("UsersController — deleteAccount", () => {
       {} as unknown as ConfigService,
       { isPasswordPwned: jest.fn() } as unknown as HibpService,
       lists,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   });
 
@@ -684,6 +703,9 @@ describe("UsersController — deletionSummary", () => {
       {
         reassignOwnedListsOnAccountDeletion: jest.fn(),
       } as unknown as ListService,
+      {
+        hasPremium: jest.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
     );
   });
 

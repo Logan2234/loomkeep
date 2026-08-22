@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EntitlementModule } from "../entitlements/entitlement.module";
 import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -10,7 +11,13 @@ import { DomainGateService } from "./domain-gate.service";
 import { UsersController } from "./users.controller";
 
 @Module({
-  imports: [MailModule, SecurityModule, ReviewsModule, ListsModule],
+  imports: [
+    MailModule,
+    SecurityModule,
+    ReviewsModule,
+    ListsModule,
+    EntitlementModule,
+  ],
   controllers: [UsersController],
   providers: [
     AgeGateService,
@@ -23,6 +30,7 @@ import { UsersController } from "./users.controller";
     DomainGateService,
     DataExportService,
     CsvExportService,
+    EntitlementModule,
   ],
 })
 export class UsersModule {}

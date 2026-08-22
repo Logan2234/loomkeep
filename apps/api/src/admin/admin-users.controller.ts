@@ -19,6 +19,7 @@ import type {
   AdminUserLibraryStatsDto,
   AdminUserListResponseDto,
   AdminUserOptionDto,
+  AdminUserPlanDto,
   AdminUserRoleDto,
   MyListDto,
   MyReviewDto,
@@ -31,6 +32,7 @@ import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
+import { EntitlementService } from "../entitlements/entitlement.service";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
@@ -42,6 +44,7 @@ import { FollowService } from "../social/follow.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { AdminOnly } from "./admin-only.decorator";
+import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
 const PAGE_SIZE = 50;
@@ -62,6 +65,7 @@ export class AdminUsersController {
     private readonly reports: ReportService,
     private readonly lists: ListService,
     private readonly moderationDecisions: ModerationDecisionService,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   /**
@@ -113,6 +117,14 @@ export class AdminUsersController {
       lastActive.map((r) => [r.userId, r._max.lastUsedAt]),
     );
 
+    // Same batched pattern — most accounts have no row yet (defaults to
+    // FREE, see EntitlementService), so this is a lookup, not a per-user query.
+    const entitlements = await this.prisma.userEntitlement.findMany({
+      where: { userId: { in: users.map((u) => u.id) } },
+      select: { userId: true, plan: true },
+    });
+    const planByUserId = new Map(entitlements.map((e) => [e.userId, e.plan]));
+
     return {
       page: pageNum,
       users: users.map((u) => ({
@@ -123,6 +135,7 @@ export class AdminUsersController {
         avatarUrl: avatarUrl(u),
         emailVerified: u.emailVerified,
         role: u.role,
+        plan: planByUserId.get(u.id) ?? "FREE",
         createdAt: u.createdAt.toISOString(),
         lastActiveAt: lastActiveByUserId.get(u.id)?.toISOString() ?? null,
       })),
@@ -166,6 +179,20 @@ export class AdminUsersController {
       data: { role: dto.role },
     });
     return { role: user.role };
+  }
+
+  /**
+   * Sets the target account's plan (docs/adr/0001-open-core-agpl.md) — the
+   * only way to grant premium today, no billing wired up yet. Recorded with
+   * source ADMIN_GRANT (see EntitlementService#setPlan).
+   */
+  @Patch("users/:userId/plan")
+  async updateUserPlan(
+    @Param("userId") userId: string,
+    @Body() dto: UpdateAdminUserPlanDto,
+  ): Promise<AdminUserPlanDto> {
+    const entitlement = await this.entitlements.setPlan(userId, dto.plan);
+    return { plan: entitlement.plan };
   }
 
   /** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */

@@ -60,6 +60,9 @@ enum EntitlementSource {
   FRIENDS_FAMILY
   BETA_TESTER
   COMPENSATION
+  // Set by hand from the admin user panel — the catch-all for a manual grant
+  // that isn't specifically one of the reasons above.
+  ADMIN_GRANT
 }
 
 // One row per user, upserted. `plan` is a derived projection of the user's

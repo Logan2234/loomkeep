@@ -3,6 +3,7 @@ import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { MediaItemService } from "../catalog/media-item.service";
+import type { EntitlementService } from "../entitlements/entitlement.service";
 import { LibraryService } from "./library.service";
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -114,6 +115,7 @@ function makeService(
     {} as AgeGateService,
     reviews,
     { emit: jest.fn() } as unknown as ActivityService,
+    {} as EntitlementService,
   );
   return { service, prisma };
 }
@@ -255,6 +257,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
+      {} as EntitlementService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -300,6 +303,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
+      {} as EntitlementService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -351,6 +355,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
+      {} as EntitlementService,
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -407,6 +412,7 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
+      {} as EntitlementService,
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -431,6 +437,7 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: jest.fn() } as unknown as ActivityService,
+      {} as EntitlementService,
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -472,6 +479,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: jest.fn() } as unknown as ActivityService,
+      {} as EntitlementService,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -520,10 +528,46 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: jest.fn() } as unknown as ActivityService,
+      {} as EntitlementService,
     );
 
     await expect(
       service.deleteEntry("user-1", "entry-2"),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("LibraryService.getCalendarIcs", () => {
+  function makeService(user: { id: string } | null, hasPremium: boolean) {
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue(user) },
+      episode: { findMany: jest.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const entitlements = {
+      hasPremium: jest.fn().mockResolvedValue(hasPremium),
+    } as unknown as EntitlementService;
+    return new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: jest.fn() } as unknown as ActivityService,
+      entitlements,
+    );
+  }
+
+  it("returns the feed for a premium user with a valid token", async () => {
+    const service = makeService({ id: "user-1" }, true);
+    await expect(service.getCalendarIcs("tok")).resolves.not.toBeNull();
+  });
+
+  it("returns null for a non-premium user, even with a valid token", async () => {
+    const service = makeService({ id: "user-1" }, false);
+    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
+  });
+
+  it("returns null when the token matches no account", async () => {
+    const service = makeService(null, true);
+    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
   });
 });
