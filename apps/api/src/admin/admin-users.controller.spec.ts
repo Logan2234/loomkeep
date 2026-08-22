@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { CommentService } from "../comments/comment.service";
+import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
@@ -32,6 +33,7 @@ function makeController() {
       delete: jest.fn(),
     },
     refreshToken: { groupBy: jest.fn().mockResolvedValue([]) },
+    userEntitlement: { findMany: jest.fn().mockResolvedValue([]) },
     libraryEntry: { count: jest.fn() },
     gameEntry: { count: jest.fn() },
     bookEntry: { count: jest.fn() },
@@ -60,6 +62,9 @@ function makeController() {
   const moderationDecisions = {
     record: jest.fn(),
   } as unknown as ModerationDecisionService;
+  const entitlements = {
+    setPlan: jest.fn().mockResolvedValue({ plan: "PREMIUM" }),
+  } as unknown as EntitlementService;
 
   const controller = new AdminUsersController(
     prisma,
@@ -72,6 +77,7 @@ function makeController() {
     reports,
     lists,
     moderationDecisions,
+    entitlements,
   );
   return {
     controller,
@@ -80,6 +86,7 @@ function makeController() {
     dataExport,
     securityEvents,
     moderationDecisions,
+    entitlements,
   };
 }
 
@@ -230,6 +237,19 @@ describe("AdminUsersController.updateUserRole", () => {
         jwtPayload("user-1"),
       ),
     ).resolves.toEqual({ role: "ADMIN" });
+  });
+});
+
+describe("AdminUsersController.updateUserPlan", () => {
+  it("delegates to EntitlementService.setPlan and returns the resulting plan", async () => {
+    const { controller, entitlements } = makeController();
+
+    const result = await controller.updateUserPlan("user-2", {
+      plan: "PREMIUM",
+    });
+
+    expect(entitlements.setPlan).toHaveBeenCalledWith("user-2", "PREMIUM");
+    expect(result).toEqual({ plan: "PREMIUM" });
   });
 });
 

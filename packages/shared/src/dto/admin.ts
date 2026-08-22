@@ -1,4 +1,4 @@
-import type { Domain, Role, SecurityEventType } from "../enums";
+import type { Domain, Plan, Role, SecurityEventType } from "../enums";
 
 /** Which app area a dependency powers, for grouping in the admin services page. */
 export type ServiceArea =
@@ -283,6 +283,8 @@ export interface AdminUserDto {
   avatarUrl: string | null;
   emailVerified: boolean;
   role: Role;
+  /** Paid tier (docs/adr/0001-open-core-agpl.md) — set from this same panel. */
+  plan: Plan;
   createdAt: string;
   /** Most recent `RefreshToken.lastUsedAt` across every device, null if never signed in. */
   lastActiveAt: string | null;
@@ -324,6 +326,14 @@ export interface UpdateAdminUserRoleRequestDto {
 
 export interface AdminUserRoleDto {
   role: Role;
+}
+
+export interface UpdateAdminUserPlanRequestDto {
+  plan: Plan;
+}
+
+export interface AdminUserPlanDto {
+  plan: Plan;
 }
 
 /**

@@ -38,7 +38,6 @@ function makeUser(overrides: Partial<User> = {}): User {
     allowAdultContent: false,
     notifyEmail: true,
     notifyPush: true,
-    entitlements: [],
     role: "USER",
     locale: "fr",
     enabledDomains: ["MOVIE", "SERIES", "ANIME", "GAME", "BOOK"],

@@ -17,6 +17,7 @@
     revokeAdminUserSession,
     revokeAllAdminUserSessions,
     sendAdminUserPasswordReset,
+    updateAdminUserPlan,
     updateAdminUserRole,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
@@ -78,6 +79,9 @@
 
   let roleSaving = $state(false);
   let roleError = $state("");
+
+  let planSaving = $state(false);
+  let planError = $state("");
 
   let exporting = $state(false);
   let exportError = $state("");
@@ -256,6 +260,25 @@
         err instanceof ApiError ? err.message : "Mise à jour impossible";
     } finally {
       roleSaving = false;
+    }
+  }
+
+  async function changePlan(plan: "FREE" | "PREMIUM") {
+    if (!selected) return;
+
+    planSaving = true;
+    planError = "";
+    try {
+      const res = await updateAdminUserPlan(selected.id, plan);
+      selected = { ...selected, plan: res.plan };
+      users = users.map((u) =>
+        u.id === selected!.id ? { ...u, plan: res.plan } : u,
+      );
+    } catch (err) {
+      planError =
+        err instanceof ApiError ? err.message : "Mise à jour impossible";
+    } finally {
+      planSaving = false;
     }
   }
 
@@ -449,6 +472,12 @@
                           {m.common_admin()}
                         </span>
                       {/if}
+                      {#if u.plan === "PREMIUM"}
+                        <span
+                          class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
+                          Premium
+                        </span>
+                      {/if}
                       {#if !u.emailVerified}
                         <span
                           class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
@@ -577,6 +606,37 @@
         {/if}
         {#if roleError}
           <p class="text-danger mt-1.5 text-xs">{roleError}</p>
+        {/if}
+      </section>
+
+      <!-- Plan -->
+      <section class="mb-5">
+        <h3
+          class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+          Plan
+          <span class="bg-border h-px flex-1"></span>
+        </h3>
+        <label
+          class="border-border flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"
+          for="plan-select">
+          <span class="text-fg font-semibold">Premium</span>
+          <select
+            id="plan-select"
+            class="border-border bg-surface-2 text-fg rounded-md border px-2 py-1 text-sm"
+            value={selected.plan}
+            disabled={planSaving}
+            onchange={(e) =>
+              changePlan(e.currentTarget.value as "FREE" | "PREMIUM")}>
+            <option value="FREE">Gratuit</option>
+            <option value="PREMIUM">Premium</option>
+          </select>
+        </label>
+        <p class="text-dim mt-1.5 text-xs">
+          Pas de facturation branchée — octroi manuel uniquement (voir
+          docs/adr/0001-open-core-agpl.md).
+        </p>
+        {#if planError}
+          <p class="text-danger mt-1.5 text-xs">{planError}</p>
         {/if}
       </section>
 

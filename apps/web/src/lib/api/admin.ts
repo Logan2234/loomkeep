@@ -27,6 +27,7 @@ import type {
   AdminUserLibraryStatsDto,
   AdminUserListResponseDto,
   AdminUserOptionDto,
+  AdminUserPlanDto,
   AdminUserRoleDto,
   Domain,
   JobListResponseDto,
@@ -37,6 +38,7 @@ import type {
   MyListDto,
   MyReviewDto,
   NewsletterSendDto,
+  Plan,
   ReportDto,
   ReportPageDto,
   Role,
@@ -221,6 +223,17 @@ export function updateAdminUserRole(
   return request(`/admin/users/${userId}/role`, {
     method: "PATCH",
     body: { role },
+  });
+}
+
+/** Sets an account's plan (docs/adr/0001-open-core-agpl.md) — no billing yet, admin-only. */
+export function updateAdminUserPlan(
+  userId: string,
+  plan: Plan,
+): Promise<AdminUserPlanDto> {
+  return request(`/admin/users/${userId}/plan`, {
+    method: "PATCH",
+    body: { plan },
   });
 }
 

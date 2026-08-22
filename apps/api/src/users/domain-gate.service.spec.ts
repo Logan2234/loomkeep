@@ -1,5 +1,6 @@
 import { ForbiddenException } from "@nestjs/common";
 import { Domain } from "@loomkeep/shared";
+import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DomainGateService } from "./domain-gate.service";
@@ -8,6 +9,7 @@ describe("DomainGateService", () => {
   function makeService(
     enabledDomains: Domain[] | null,
     maintenanceDomains: Domain[] = [],
+    hasPremium = true,
   ) {
     const prisma = {
       user: {
@@ -25,7 +27,10 @@ describe("DomainGateService", () => {
           fallback,
       ),
     } as unknown as FeatureFlagsService;
-    return new DomainGateService(prisma, flags);
+    const entitlements = {
+      hasPremium: jest.fn().mockResolvedValue(hasPremium),
+    } as unknown as EntitlementService;
+    return new DomainGateService(prisma, flags, entitlements);
   }
 
   it("resolves when the domain is enabled", async () => {
@@ -76,5 +81,40 @@ describe("DomainGateService", () => {
     await expect(
       service.assertEnabled("u1", Domain.BOOKS),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  describe("premium-gated domains", () => {
+    it("allows a premium-gated domain for a premium user", async () => {
+      const service = makeService([Domain.MEDIA, Domain.MUSIC], [], true);
+      await expect(
+        service.assertEnabled("u1", Domain.MUSIC),
+      ).resolves.toBeUndefined();
+    });
+
+    it("throws 403 for a premium-gated domain the user enabled, but isn't premium", async () => {
+      const service = makeService([Domain.MEDIA, Domain.MUSIC], [], false);
+      await expect(
+        service.assertEnabled("u1", Domain.MUSIC),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("excludes premium-gated domains from getEnabledDomains for a non-premium user", async () => {
+      const service = makeService(
+        [Domain.MEDIA, Domain.MUSIC, Domain.BOOKS],
+        [],
+        false,
+      );
+      await expect(service.getEnabledDomains("u1")).resolves.toEqual([
+        Domain.MEDIA,
+        Domain.BOOKS,
+      ]);
+    });
+
+    it("does not check premium at all when no enabled domain requires it", async () => {
+      const service = makeService([Domain.MEDIA, Domain.BOOKS], [], false);
+      await service.getEnabledDomains("u1");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((service as any).entitlements.hasPremium).not.toHaveBeenCalled();
+    });
   });
 });

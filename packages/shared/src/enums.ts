@@ -24,15 +24,27 @@ export const Domain = {
 export type Domain = (typeof Domain)[keyof typeof Domain];
 
 /**
- * Operational permission level, orthogonal to `User.entitlements` (the future
- * paid-tier seam). A single self-host admin today; `ADMIN` is granted via the
- * `ADMIN_EMAIL` bootstrap or the admin panel, never by entitlement value.
+ * Operational permission level, orthogonal to `UserEntitlement` (the paid-tier
+ * seam, see docs/adr/0001-open-core-agpl.md). A single self-host admin today;
+ * `ADMIN` is granted via the `ADMIN_EMAIL` bootstrap or the admin panel, never
+ * by plan value.
  */
 export const Role = {
   USER: "USER",
   ADMIN: "ADMIN",
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
+
+/**
+ * Paid tier, mirrors Prisma's `Plan` enum on `UserEntitlement.plan` (see
+ * docs/adr/0001-open-core-agpl.md). Set today only by an admin from the
+ * user panel or directly in the database — no billing wired up yet.
+ */
+export const Plan = {
+  FREE: "FREE",
+  PREMIUM: "PREMIUM",
+} as const;
+export type Plan = (typeof Plan)[keyof typeof Plan];
 
 /**
  * In-app notification kinds. Stored as a plain string on `Notification.type`

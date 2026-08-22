@@ -15,6 +15,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Headers,
   HttpCode,
@@ -38,6 +39,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { EntitlementService } from "../entitlements/entitlement.service";
 import { ListService } from "../lists/list.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -74,6 +76,7 @@ export class UsersController {
     private readonly config: ConfigService,
     private readonly hibp: HibpService,
     private readonly lists: ListService,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   @Get("me")
@@ -205,12 +208,16 @@ export class UsersController {
   /**
    * Returns the token for the user's public .ics calendar subscription URL,
    * generating one on first call. Stable across calls — use the regenerate
-   * endpoint below to revoke a previously shared link.
+   * endpoint below to revoke a previously shared link. Premium
+   * (docs/adr/0001-open-core-agpl.md) — see LibraryService#getCalendarIcs
+   * for the matching check on the feed itself.
    */
   @Get("me/calendar-token")
   async getCalendarToken(
     @CurrentUser() payload: JwtPayload,
   ): Promise<CalendarTokenDto> {
+    await this.requirePremium(payload.sub);
+
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: payload.sub },
       select: { calendarToken: true },
@@ -228,17 +235,27 @@ export class UsersController {
     return { token: calendarToken! };
   }
 
-  /** Issues a new token, invalidating any previously shared .ics link. */
+  /** Issues a new token, invalidating any previously shared .ics link. Premium. */
   @Post("me/calendar-token/regenerate")
   async regenerateCalendarToken(
     @CurrentUser() payload: JwtPayload,
   ): Promise<CalendarTokenDto> {
+    await this.requirePremium(payload.sub);
+
     const { calendarToken } = await this.prisma.user.update({
       where: { id: payload.sub },
       data: { calendarToken: randomBytes(24).toString("base64url") },
       select: { calendarToken: true },
     });
     return { token: calendarToken! };
+  }
+
+  private async requirePremium(userId: string): Promise<void> {
+    if (!(await this.entitlements.hasPremium(userId))) {
+      throw new ForbiddenException(
+        "Cette fonctionnalité est réservée au premium",
+      );
+    }
   }
 
   /** Marks the mandatory first-run onboarding wizard as done. Idempotent. */

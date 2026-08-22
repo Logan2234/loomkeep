@@ -29,6 +29,7 @@ import type {
 import { ActivityType, isDormant, ReviewTargetType } from "@loomkeep/shared";
 import { MediaItemService } from "../catalog/media-item.service";
 import { canonicalExternalId } from "../common/external-id.util";
+import { EntitlementService } from "../entitlements/entitlement.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
@@ -142,6 +143,7 @@ export class LibraryService {
     private readonly ageGate: AgeGateService,
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   /** First touch of a media persists it (on-demand cache), then upserts the entry. */
@@ -760,7 +762,10 @@ export class LibraryService {
       select: { id: true },
     });
 
-    if (!user) {
+    // Re-checked here, not just at token issuance (UsersController), so a
+    // downgraded premium account's calendar app stops getting fed the moment
+    // its plan changes, instead of forever on a token minted while premium.
+    if (!user || !(await this.entitlements.hasPremium(user.id))) {
       return null;
     }
 
