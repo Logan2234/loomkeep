@@ -50,4 +50,21 @@ jobs:
             # "Version" widget, which reads GIT_SHA baked into the api image.
             export IMAGE_TAG=$(git rev-parse --short HEAD)
             docker compose pull
-            docker compose up -d
+            # --remove-orphans cleans up containers for services dropped from
+            # COMPOSE_FILE (e.g. an add-on removed from the VPS .env). It does
+            # NOT address "port is already allocated" on a service that's
+            # still part of the config — that's usually a stale container
+            # from an interrupted previous deploy not yet releasing its port,
+            # a transient docker daemon race, so retry a few times before
+            # giving up.
+            for attempt in 1 2 3; do
+              if docker compose up -d --remove-orphans; then
+                break
+              fi
+              if [ "$attempt" = 3 ]; then
+                echo "docker compose up -d failed after 3 attempts" >&2
+                exit 1
+              fi
+              echo "docker compose up -d failed (attempt $attempt/3), retrying in 5s..."
+              sleep 5
+            done
