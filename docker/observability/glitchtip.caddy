@@ -1,5 +1,18 @@
 # Mounted only when docker-compose.glitchtip.yml is in use. See
 # docker/README.md § "Access control per public subdomain".
+#
+# Two blocks — see observability/grafana.caddy's own comment for why the
+# second exists at all (`:8080` is the plain-HTTP path docker-compose.tunnel.yml's
+# Cloudflare Tunnel uses, dormant/unreachable for anyone on plain DNS) and
+# why the `header_up` override is needed: GlitchTip's CSRF_TRUSTED_ORIGINS
+# is `https://…`, so without it Django sees a "http" proto on an
+# https-only trusted origin and 403s every POST (login included).
 {$GLITCHTIP_SITE_ADDRESS} {
 	reverse_proxy glitchtip:8000
+}
+
+http://{$GLITCHTIP_SITE_ADDRESS}:8080 {
+	reverse_proxy glitchtip:8000 {
+		header_up X-Forwarded-Proto https
+	}
 }

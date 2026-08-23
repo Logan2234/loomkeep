@@ -44,17 +44,24 @@ automatically only on a brand-new volume (see each add-on's own
 
 ## Access control per public subdomain
 
-Three patterns, picked by what the add-on itself supports:
+Depends on whether Cloudflare Access is in front (public instance,
+`docker-compose.tunnel.yml`) or not (self-hosters, default):
 
-- **True OIDC SSO** (Grafana, GlitchTip, Portainer) — the app redirects to
-  Authelia on login and back; one login covers all three.
-- **Caddy `forward_auth`** (Homepage) — no login of its own, so Caddy asks
-  Authelia before proxying at all.
-- **Own login only, no Authelia** (Unleash, Umami, Quackback) — Unleash's
-  open-source edition has no OIDC and its Frontend API must stay reachable
-  unauthenticated by every visitor's browser; Umami's tracker/collect
-  endpoint would break the same way behind `forward_auth`; Quackback runs
-  as its own unmodified deployment with its own email-OTP login.
+- **With Cloudflare Access**: every admin hostname (`grafana.`, `portainer.`,
+  `errors.`, `flags.`, `home.<DOMAIN>`) sits behind a Cloudflare Tunnel, gated
+  by GitHub SSO + MFA before a request ever reaches Caddy — see "Cloudflare
+  Tunnel + Access" below. Grafana/GlitchTip/Portainer additionally point
+  their own OIDC config at Access as the identity provider (no second
+  login); Homepage and Unleash have no OIDC of their own, so Access alone is
+  the gate for Homepage, and Unleash needs a carve-out (see below).
+- **Without it (self-host default)**: three patterns, picked by what the
+  add-on itself supports — **true OIDC SSO** via Authelia (Grafana,
+  GlitchTip, Portainer), **Caddy `forward_auth`** against Authelia
+  (Homepage, which has no login of its own), or **own login only, no
+  Authelia** (Unleash — no OIDC support and its Frontend API must stay
+  reachable unauthenticated by every visitor's browser; Umami — same
+  reasoning for its tracker/collect endpoint; Quackback — runs as its own
+  unmodified deployment with its own email-OTP login).
 
 ## Cloudflare, real client IPs & bot protection
 
@@ -147,7 +154,42 @@ own separate, unmodified deployment, bootstrapped with
 `docker/quackback-bootstrap.sh` — this repo's override only wires Caddy to
 its published host port.
 
+## Cloudflare Tunnel + Access (`docker-compose.tunnel.yml`)
+
+Public-instance-specific (loomkeep.app's own Cloudflare account, not a
+generic self-host feature). `cloudflared` holds an outbound-only connection
+to Cloudflare's edge for every admin hostname — no inbound port left open to
+bypass Cloudflare Access with, unlike plain DNS-proxying where the VPS's
+origin IP is still directly reachable. Access enforces GitHub SSO + MFA
+before a request ever reaches the tunnel.
+
+Each admin add-on's own `*.caddy` file carries two blocks on the same file:
+the normal public hostname (Caddy's automatic HTTPS, what self-hosters on
+plain DNS use) and an explicit `{$X_SITE_ADDRESS}:8080` — an explicit port
+disables automatic HTTPS, so it stays plain HTTP, matched by the `Host`
+header `cloudflared` forwards. `docker-compose.tunnel.yml` exposes that
+`:8080` port to `cloudflared` only (`expose`, never `ports` — same trust
+boundary as `db`), so the same Caddyfile works unmodified whether or not
+this add-on is in use.
+
+Setup is entirely on the Cloudflare Zero Trust dashboard (tunnel + token,
+one Public Hostname per admin subdomain pointing at `http://caddy:8080`,
+one Access Application per hostname) — see the compose file's own header
+for the exact steps. **Unleash needs a carve-out**: every visitor's browser,
+not just admins, polls `flags.<DOMAIN>/api/frontend` unauthenticated for
+live feature flags — a second Access Application scoped to that path with a
+public/bypass policy is required before enforcing Access on that hostname.
+
+Self-hosters without Cloudflare keep using plain DNS + Caddy's automatic
+HTTPS, with `docker-compose.authelia.yml` for SSO instead (see "Single
+sign-on" below).
+
 ## Single sign-on (`docker-compose.authelia.yml`)
+
+**Not deployed on the public instance anymore** — Cloudflare Access
+(above) covers that role there instead. This section, and the OIDC/
+`forward_auth` wiring it describes, is still the documented path for
+self-hosters who want SSO without a Cloudflare account.
 
 [Authelia](https://www.authelia.com/) — chosen over Authentik for its
 footprint (single binary + SQLite, no dedicated Postgres/Redis). Real

@@ -1,8 +1,9 @@
 # Landing page aggregating every dashboard in this stack into one set of
-# link tiles. REQUIRES docker-compose.authelia.yml too — see
-# docker/README.md § "Access control per public subdomain".
+# link tiles. Homepage has no login of its own — see docker/README.md
+# § "Access control per public subdomain" for how it's gated (Cloudflare
+# Access on the public instance, Authelia `forward_auth` for self-hosters).
 #
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.homepage.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml -f docker-compose.homepage.yml up -d --build
 #
 # Static config only — no Docker socket mount, since Portainer/Grafana/
 # Prometheus/cAdvisor already give per-container metrics with history.
@@ -49,7 +50,6 @@ services:
   caddy:
     environment:
       HOMEPAGE_SITE_ADDRESS: home.${DOMAIN:?set DOMAIN in .env}
-      AUTHELIA_URL: https://auth.${DOMAIN:?set DOMAIN in .env}
     volumes:
       - ./homepage/homepage.caddy:/etc/caddy/sites-enabled/homepage.caddy:ro
     depends_on:

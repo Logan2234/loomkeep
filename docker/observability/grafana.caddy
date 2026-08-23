@@ -1,5 +1,33 @@
 # Mounted only when docker-compose.observability.yml is in use. See
 # docker/README.md § "Access control per public subdomain".
+#
+# Two blocks, so this file works unmodified whether GRAFANA_SITE_ADDRESS is
+# reached via plain DNS (the first block, Caddy's automatic HTTPS) or via
+# docker-compose.tunnel.yml's Cloudflare Tunnel (the second): its address is
+# explicitly `http://` — a bare `:8080` isn't enough to reliably opt out of
+# automatic HTTPS here, since the same hostname also appears in this file's
+# other, TLS-managed address; the explicit scheme is Caddy's own documented
+# way to force plain HTTP regardless (a bare `hostname:8080` address here
+# made Caddy reset the connection instead of serving plain HTTP through it —
+# seen live on the VPS via cloudflared's "read: connection reset by peer"
+# errors). `:8080` is matched by the Host header cloudflared forwards — see
+# docker-compose.tunnel.yml's own comment. Self-hosters without the tunnel
+# add-on simply never send traffic to `:8080` — it's not published to the
+# host, so nothing outside the compose network can reach it anyway.
+#
+# Two separate blocks (not one block with two addresses) so the `header_up`
+# override below applies only to the tunnel path: Caddy sets
+# X-Forwarded-Proto from its own listener's scheme, which is plain http for
+# this internal, un-TLS'd hop — even though the original browser connection
+# was https all the way to Cloudflare's edge. Without this override, Grafana
+# sees an apparently-insecure request behind a `root_url` declared as
+# https://…, which breaks secure-cookie/OAuth-callback handling.
 {$GRAFANA_SITE_ADDRESS} {
 	reverse_proxy grafana:3000
+}
+
+http://{$GRAFANA_SITE_ADDRESS}:8080 {
+	reverse_proxy grafana:3000 {
+		header_up X-Forwarded-Proto https
+	}
 }

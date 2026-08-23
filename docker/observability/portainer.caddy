@@ -1,6 +1,19 @@
 # Mounted only when docker-compose.portainer.yml is in use. Proxies to
 # Portainer's plain-HTTP port — see docker-compose.portainer.yml's
 # --http-enabled comment for why.
+#
+# Two blocks — see observability/grafana.caddy's own comment for why: `:8080`
+# is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare Tunnel uses,
+# dormant/unreachable for anyone on plain DNS, and the `header_up` override
+# tells Portainer the original request was https even though this internal
+# hop isn't — the connection Cloudflare terminated for the visitor always
+# was.
 {$PORTAINER_SITE_ADDRESS} {
 	reverse_proxy portainer:9000
+}
+
+http://{$PORTAINER_SITE_ADDRESS}:8080 {
+	reverse_proxy portainer:9000 {
+		header_up X-Forwarded-Proto https
+	}
 }

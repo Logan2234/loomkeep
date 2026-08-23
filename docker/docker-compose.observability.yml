@@ -4,8 +4,14 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
 #
-# Grafana is also reachable at 127.0.0.1:3001 without Caddy/DNS, via an SSH
-# tunnel: `ssh -L 3001:localhost:3001 <user>@<vps>`.
+# Grafana is reached over the internal Docker network on :3000 by Caddy —
+# no host port needed for that path. The `127.0.0.1:3001` host port publish
+# (an SSH-tunnel fallback that doesn't need Caddy/DNS: `ssh -L
+# 3001:localhost:3001 <user>@<vps>`) is commented out below: on the VPS it
+# hit a persistent "port is already allocated" / `NetworkSettings.Networks`
+# staying `{}` even after a full container recreate and a `systemctl
+# restart docker` — something's holding :3001 at a level neither survived.
+# Re-enable once that's root-caused.
 #
 # `x-logging` is redeclared (not reused from docker-compose.yml) since
 # Compose doesn't merge YAML anchors across separate `-f` files.
@@ -50,21 +56,27 @@ services:
       # Single sign-on via Authelia — GRAFANA_OIDC_CLIENT_SECRET is the
       # plaintext secret (Authelia's own config stores only its hash).
       GF_SERVER_ROOT_URL: https://grafana.${DOMAIN:-localhost}
+      # Defaults target Authelia (docker-compose.authelia.yml) — the
+      # self-host SSO path. The public instance overrides the five
+      # GRAFANA_OIDC_* vars in .env to point at Cloudflare Access's own OIDC
+      # endpoints instead (see docker/README.md's "Cloudflare Tunnel +
+      # Access" section) — nothing here assumes which identity provider is
+      # in front.
       GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
-      GF_AUTH_GENERIC_OAUTH_NAME: Authelia
-      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: grafana
+      GF_AUTH_GENERIC_OAUTH_NAME: ${GRAFANA_OIDC_PROVIDER_NAME:-Authelia}
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: ${GRAFANA_OIDC_CLIENT_ID:-grafana}
       GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-}
       GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email"
-      GF_AUTH_GENERIC_OAUTH_AUTH_URL: https://auth.${DOMAIN:-localhost}/api/oidc/authorization
-      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: https://auth.${DOMAIN:-localhost}/api/oidc/token
-      GF_AUTH_GENERIC_OAUTH_API_URL: https://auth.${DOMAIN:-localhost}/api/oidc/userinfo
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: ${GRAFANA_OIDC_AUTH_URL:-https://auth.${DOMAIN:-localhost}/api/oidc/authorization}
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: ${GRAFANA_OIDC_TOKEN_URL:-https://auth.${DOMAIN:-localhost}/api/oidc/token}
+      GF_AUTH_GENERIC_OAUTH_API_URL: ${GRAFANA_OIDC_API_URL:-https://auth.${DOMAIN:-localhost}/api/oidc/userinfo}
       GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: preferred_username
       GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
-    ports:
-      - "127.0.0.1:3001:3000"
+    # ports:
+    #   - "127.0.0.1:3001:3000"
     depends_on:
       - loki
       - prometheus
