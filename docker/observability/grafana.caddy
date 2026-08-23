@@ -11,12 +11,18 @@
 #
 # Two addresses on the same block, so this file works unmodified whether
 # GRAFANA_SITE_ADDRESS is reached via plain DNS (the first address, Caddy's
-# automatic HTTPS) or via docker-compose.tunnel.yml's Cloudflare Tunnel: an
-# explicit port always disables automatic HTTPS for that address, so `:8080`
-# stays plain HTTP, matched by the Host header cloudflared forwards — see
-# docker-compose.tunnel.yml's own comment. Self-hosters without the tunnel
-# add-on simply never send traffic to `:8080` — it's not published to the
-# host, so nothing outside the compose network can reach it anyway.
-{$GRAFANA_SITE_ADDRESS}, {$GRAFANA_SITE_ADDRESS}:8080 {
+# automatic HTTPS) or via docker-compose.tunnel.yml's Cloudflare Tunnel: the
+# second address is explicitly `http://` — a bare `:8080` isn't enough to
+# reliably opt out of automatic HTTPS here, since the same hostname also
+# appears in this block's other, TLS-managed address; the explicit scheme is
+# Caddy's own documented way to force plain HTTP regardless (a bare
+# `hostname:8080` address here made Caddy reset the connection instead of
+# serving plain HTTP through it — seen live on the VPS via cloudflared's
+# "read: connection reset by peer" errors). `:8080` is matched by the Host header
+# cloudflared forwards — see docker-compose.tunnel.yml's own comment.
+# Self-hosters without the tunnel add-on simply never send traffic to
+# `:8080` — it's not published to the host, so nothing outside the compose
+# network can reach it anyway.
+{$GRAFANA_SITE_ADDRESS}, http://{$GRAFANA_SITE_ADDRESS}:8080 {
 	reverse_proxy grafana:3000
 }

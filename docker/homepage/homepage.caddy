@@ -15,6 +15,6 @@
 # Two addresses on the same block — see observability/grafana.caddy's own
 # comment for why: `:8080` is the plain-HTTP path docker-compose.tunnel.yml's
 # Cloudflare Tunnel uses, dormant/unreachable for anyone on plain DNS.
-{$HOMEPAGE_SITE_ADDRESS}, {$HOMEPAGE_SITE_ADDRESS}:8080 {
+{$HOMEPAGE_SITE_ADDRESS}, http://{$HOMEPAGE_SITE_ADDRESS}:8080 {
 	reverse_proxy homepage:3000
 }
