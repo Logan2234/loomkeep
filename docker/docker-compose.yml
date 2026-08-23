@@ -1,7 +1,5 @@
-# Bound each service's Docker log driver so a chatty container can't slowly
-# fill the disk (Observability Palier 1). Palier 2 (Grafana/Loki/Promtail,
-# an optional add-on that ships these into a searchable store) lives in
-# docker-compose.observability.yml.
+# Bounds each service's Docker log driver so a chatty container can't fill
+# the disk. See docker-compose.observability.yml for shipping logs into Loki.
 x-logging: &default-logging
   driver: json-file
   options:
@@ -30,10 +28,7 @@ services:
       retries: 10
 
   api:
-    # Pre-built by CI and pushed to GHCR (see .github/workflows/ci.yml's
-    # docker-push job) — GIT_SHA is baked in at that point, not here.
-    # IMAGE_TAG defaults to the floating `latest` tag; deploy.yml pins it
-    # to the exact SHA CI validated.
+    # See docker/README.md § "Images & deploy" for how this tag is built and pinned.
     image: ghcr.io/logan2234/loomkeep-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *default-logging
@@ -62,8 +57,7 @@ services:
       SMTP_FROM: "${SMTP_FROM:-Loomkeep <noreply@loomkeep.app>}"
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-}
-      # Empty = TurnstileService.verify() always passes (no Cloudflare
-      # account configured) — see root README "Bot protection".
+      # Empty = TurnstileService.verify() always passes — see README "Bot protection".
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       BACKUP_DIR: /data/backups
       BACKUP_ENCRYPTION_PUBLIC_KEY: ${BACKUP_ENCRYPTION_PUBLIC_KEY:?set BACKUP_ENCRYPTION_PUBLIC_KEY in .env}
@@ -73,23 +67,13 @@ services:
       HEALTHCHECKS_REPORTS_DIGEST_URL: ${HEALTHCHECKS_REPORTS_DIGEST_URL:-}
       HEALTHCHECKS_BACKUP_URL: ${HEALTHCHECKS_BACKUP_URL:-}
       HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL: ${HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL:-}
-      # Shared secret for the Homepage dashboard's user-count widget
-      # (GET /api/public-stats/summary) — see docker/docker-compose.homepage.yml.
-      # Empty = the guard fails closed, endpoint stays unreachable.
+      # Homepage dashboard's user-count widget auth — see docker-compose.homepage.yml.
       HOMEPAGE_STATS_API_KEY: ${HOMEPAGE_STATS_API_KEY:-}
-      # Signs the SSO token for Quackback's feedback widget "Verified
-      # identity only" mode — must match the secret entered in Quackback's
-      # own widget settings. Empty = GET /users/me/widget-token 500s;
-      # WidgetIdentify.svelte swallows that, so an unconfigured secret just
-      # means the widget stays anonymous rather than breaking the app.
+      # Quackback feedback widget SSO token signing — must match Quackback's own widget settings.
       QUACKBACK_WIDGET_SECRET: ${QUACKBACK_WIDGET_SECRET:-}
-      # Signing secret for Quackback's "Changelog Published" webhook — see
-      # .env.example. Empty = the webhook guard rejects every delivery.
+      # Quackback's "Changelog Published" webhook signing secret — see .env.example.
       QUACKBACK_CHANGELOG_WEBHOOK_SECRET: ${QUACKBACK_CHANGELOG_WEBHOOK_SECRET:-}
-      # Umami Link base URL for trackable email CTAs (slugs are fixed in
-      # mail.service.ts, not per-deployment config) — empty means every
-      # email links straight to its destination, no click tracking. See
-      # root README "Analytics".
+      # Umami Link base URL for trackable email CTAs — empty disables click tracking.
       UMAMI_LINKS_BASE_URL: ${UMAMI_LINKS_BASE_URL:-}
     volumes:
       - backup-data:/data/backups
@@ -104,15 +88,9 @@ services:
       - api
     environment:
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000/api}
-      # Same value as the api service's SIMKL_CLIENT_ID (a client id is
-      # non-secret by OAuth design) — the web builds the authorize link
-      # itself, see the Simkl import page.
       PUBLIC_SIMKL_CLIENT_ID: ${SIMKL_CLIENT_ID:-}
       PUBLIC_GLITCHTIP_WEB_DSN: ${PUBLIC_GLITCHTIP_WEB_DSN:-}
-      # Empty = no Turnstile widget rendered, register() sends no token —
-      # see root README "Bot protection".
       PUBLIC_TURNSTILE_SITE_KEY: ${PUBLIC_TURNSTILE_SITE_KEY:-}
-      # Empty = no Umami tracking script loaded — see root README "Analytics".
       PUBLIC_UMAMI_WEBSITE_ID: ${PUBLIC_UMAMI_WEBSITE_ID:-}
       PUBLIC_UMAMI_SCRIPT_URL: ${PUBLIC_UMAMI_SCRIPT_URL:-}
     ports:

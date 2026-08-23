@@ -1,20 +1,14 @@
-# Landing page aggregating every dashboard added this session (Grafana,
-# Portainer, GlitchTip, the app itself) into one set of link tiles. Add on
-# top of the base compose + whichever deployment override you're using.
-# Homepage has no login of its own — on the public instance it's gated by
-# Cloudflare Access via docker-compose.tunnel.yml instead of Authelia's
-# forward_auth (see homepage/homepage.caddy's own comment):
+# Landing page aggregating every dashboard in this stack into one set of
+# link tiles. Homepage has no login of its own — see docker/README.md
+# § "Access control per public subdomain" for how it's gated (Cloudflare
+# Access on the public instance, Authelia `forward_auth` for self-hosters).
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml -f docker-compose.homepage.yml up -d --build
 #
-# Static config only (no Docker socket mount — deliberate, see services.yaml:
-# the Portainer tile's widget covers container counts via Portainer's own
-# API, and Grafana/Prometheus/cAdvisor already give per-container metrics
-# with history, so a second Docker-access path here would be redundant).
-# Widget API keys are passed as HOMEPAGE_VAR_* env vars, substituted into the
-# config as {{HOMEPAGE_VAR_X}} — Homepage's own mechanism for keeping
-# secrets out of the committed YAML, same intent as this repo's .env
-# convention elsewhere.
+# Static config only — no Docker socket mount, since Portainer/Grafana/
+# Prometheus/cAdvisor already give per-container metrics with history.
+# Widget API keys are passed as HOMEPAGE_VAR_* env vars, substituted into
+# the config as {{HOMEPAGE_VAR_X}} to keep secrets out of the committed YAML.
 services:
   homepage:
     image: ghcr.io/gethomepage/homepage:v1.13.2
@@ -46,19 +40,13 @@ services:
       - ./homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
       - ./homepage/custom.css:/app/config/custom.css:ro
       - ../apps/web/static/favicon.svg:/app/public/images/favicon.svg:ro
-      # Read-only, for the top-bar "resources" widget's disk field (see
-      # widgets.yaml) to report the real host disk instead of the
-      # container's own tiny writable layer (systeminformation, which the
-      # widget is built on, only sees paths actually mounted into the
-      # container — gethomepage.dev/widgets/information/resources). Whole
-      # host root, not a narrower path, since the VPS is single-disk; this
-      # does give the Homepage container read access to the entire host
-      # filesystem, accepted knowingly for this one widget.
+      # Read-only, so the top-bar "resources" widget's disk field reports
+      # the real host disk instead of the container's own writable layer
+      # (see widgets.yaml). Whole host root since the VPS is single-disk.
       - /:/host:ro
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds the Homepage site block + its domain, without redeclaring the
-  # whole service.
+  # Partial override of the `caddy` service in docker-compose.prod.yml: adds
+  # the Homepage site block + its domain.
   caddy:
     environment:
       HOMEPAGE_SITE_ADDRESS: home.${DOMAIN:?set DOMAIN in .env}

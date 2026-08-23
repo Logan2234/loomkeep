@@ -1,7 +1,6 @@
-# Scrape config for Palier 2's metrics stack (node_exporter + postgres_exporter
-# + Caddy's own /metrics). App-level metrics (a NestJS /metrics endpoint)
-# aren't wired up yet — this doesn't cover the API process itself, only the
-# host, the database, and the reverse proxy in front of them.
+# Scrape config for node_exporter + postgres_exporter + Caddy's own
+# /metrics. No app-level metrics yet — covers the host, DB, and reverse
+# proxy, not the API process itself.
 global:
   scrape_interval: 15s
 
@@ -26,11 +25,9 @@ scrape_configs:
     static_configs:
       - targets: ["caddy:2019"]
 
-  # Healthchecks.io's own per-project metrics endpoint (hc_check_up per
-  # check, tags as labels) — see root README "Job monitoring". The
-  # bearer-token variant of their endpoint (no trailing key in the URL) so
-  # the read-only API key stays out of this committed file; it's read at
-  # scrape time from a gitignored file instead (see docker-compose.observability.yml).
+  # Healthchecks.io's per-project metrics endpoint — see root README "Job
+  # monitoring". Bearer token read at scrape time from a gitignored file so
+  # the API key stays out of this committed file.
   - job_name: healthchecks
     scrape_interval: 60s
     scheme: https

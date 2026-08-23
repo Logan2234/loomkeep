@@ -1,6 +1,5 @@
-# Minimal single-node Loki config: everything stored on local disk (no S3/
-# GCS — one VPS, no need for object storage). 30 days of retention, tune
-# `limits_config.retention_period` if that's too much/little for your disk.
+# Minimal single-node Loki config, everything stored on local disk. 30 days
+# of retention — tune `limits_config.retention_period` if needed.
 auth_enabled: false
 
 server:

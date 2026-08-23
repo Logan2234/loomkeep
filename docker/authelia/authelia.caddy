@@ -1,13 +1,7 @@
-# Public site block for Authelia's own login portal, imported by the base
-# Caddyfile — only mounted when docker-compose.authelia.yml is in use (it
-# sets AUTHELIA_SITE_ADDRESS on the caddy service and mounts this file into
-# /etc/caddy/sites-enabled/). Same automatic Let's Encrypt handling as the
-# main site.
-#
-# This is the only site that needs a plain reverse_proxy — everything it
-# protects either talks to it directly via OIDC (Grafana/GlitchTip/
-# Portainer) or uses the forward_auth snippet below in their own site file
-# (see homepage/homepage.caddy).
+# Mounted only when docker-compose.authelia.yml is in use. The only site
+# here needing a plain reverse_proxy — everything it protects either talks
+# to it via OIDC or uses forward_auth in its own site file (see
+# homepage/homepage.caddy).
 {$AUTHELIA_SITE_ADDRESS} {
 	reverse_proxy authelia:9091
 }

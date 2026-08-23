@@ -9,12 +9,10 @@
     showSearchSuggestions: true
 
 - resources:
-    # cpu/memory are the Homepage CONTAINER's own usage, not the VPS host's
-    # — a systeminformation limitation (gethomepage.dev/widgets/information/
-    # resources), no volume mount fixes that part. The real host numbers
-    # are the "VPS" tile in services.yaml (Prometheus/node_exporter). disk
-    # is different: with /:/host:ro mounted (docker-compose.homepage.yml),
-    # /host below IS the real host root filesystem.
+    # cpu/memory report the Homepage CONTAINER's own usage, not the VPS
+    # host's (real host numbers: the "VPS" tile in services.yaml). disk is
+    # different — /host is the real host root, via the /:/host:ro mount in
+    # docker-compose.homepage.yml.
     cpu: true
     units: metric
     memory: true

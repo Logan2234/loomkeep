@@ -1,28 +1,12 @@
-# Optional add-on: Umami, a lightweight self-hosted, cookie-less analytics
-# tool for the public landing page (unique visitors, referrers, custom
-# events for CTA clicks) — see the root README "Analytics" section for the
-# reasoning and setup steps. Add on top of the base compose + whichever
-# deployment override you're using:
+# Umami: lightweight, self-hosted, cookie-less analytics for the public
+# landing page — see root README "Analytics" and docker/README.md § "Access
+# control per public subdomain" / § "Shared Postgres for add-ons". NOT
+# covered by the app's own pg_dump-based backup job — accepted since
+# analytics data is low-stakes and re-collectable.
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.umami.yml up -d --build
 #
-# Shares the app's own Postgres instance (a separate `umami` database, not a
-# dedicated container — unlike GlitchTip/Quackback, which run their own DB)
-# to avoid a second Postgres process on a single-VPS deployment. The `umami`
-# database is created automatically only on a brand-new `db` volume (see
-# umami/init-umami-db.sql); on an already-initialized volume, create it once
-# by hand — see that file's own comment for the exact command. Being a
-# separate database, it's NOT covered by the app's own pg_dump-based backup
-# job (apps/api/src/admin/backup.service.ts dumps only DATABASE_URL's
-# database) — accepted here since analytics data is low-stakes and
-# re-collectable, unlike user data.
-#
-# Reachable at UMAMI_SITE_ADDRESS (e.g. stats.loomkeep.app) via Caddy — see
-# umami/umami.caddy. Gated by Umami's own login only (default admin/umami on
-# first visit — change it immediately), no Authelia in front: Umami has no
-# OIDC support to integrate as true SSO, and gating the whole subdomain via
-# Caddy forward_auth would also block the tracker script/collect endpoint
-# for anonymous visitors, breaking analytics collection.
+# Default admin/umami login on first visit — change it immediately.
 services:
   umami:
     image: ghcr.io/umami-software/umami:3.3.0
@@ -39,16 +23,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/umami
       DATABASE_TYPE: postgresql
       APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET in .env}
-      # No outbound calls to umami.is (anonymous usage telemetry, version
-      # check) — consistent with the self-host philosophy of the rest of
-      # this stack.
       DISABLE_TELEMETRY: "1"
       DISABLE_UPDATES: "0"
       # Renamed off the defaults (script.js, /api/send): generic ad-blocker
-      # filter lists block those exact names even for cookie-less tools like
-      # Umami. The script stays fully declared in the privacy policy either
-      # way — this only avoids false-positive blocking, not detection by a
-      # user who's actually looking.
+      # filter lists block those exact names even for cookie-less tools.
       TRACKER_SCRIPT_NAME: loomkeep.js
       COLLECT_API_ENDPOINT: /api/loom
     healthcheck:
@@ -57,16 +35,14 @@ services:
       timeout: 5s
       retries: 5
 
-  # Partial override of the `db` service defined in docker-compose.yml: adds
-  # the init script that creates the `umami` database on a brand-new volume,
-  # without redeclaring the whole service.
+  # Partial override of the `db` service in docker-compose.yml: adds the
+  # init script that creates the `umami` database on a brand-new volume.
   db:
     volumes:
       - ./umami/init-umami-db.sql:/docker-entrypoint-initdb.d/init-umami-db.sql:ro
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds the Umami site block + its domain, without redeclaring the whole
-  # service.
+  # Partial override of the `caddy` service in docker-compose.prod.yml: adds
+  # the Umami site block + its domain.
   caddy:
     environment:
       UMAMI_SITE_ADDRESS: stats.${DOMAIN:?set DOMAIN in .env}

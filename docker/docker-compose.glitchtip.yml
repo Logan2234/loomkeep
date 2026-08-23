@@ -1,32 +1,13 @@
-# Observability Palier 3: grouped, alerted error tracking (GlitchTip — a
-# self-hostable, Sentry-API-compatible error tracker). Add on top of the
-# base compose + whichever deployment override you're using:
+# GlitchTip (self-hosted, Sentry-API-compatible error tracker). See
+# docker/README.md § "Error tracking" and § "Shared Postgres for add-ons".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.glitchtip.yml up -d --build
 #
-# Runs GlitchTip in `SERVER_ROLE: all_in_one` mode (web + Celery worker +
-# beat in one container) rather than splitting them into separate services —
-# this is a low-traffic single/few-user instance, not worth the extra
-# moving parts. Shares the app's own Postgres instance (a separate
-# `glitchtip` database, not a dedicated container) rather than running its
-# own — same reasoning as Umami: avoids a second Postgres process on a
-# single-VPS deployment. Accepted trade-off versus the original
-# fully-isolated setup: a Postgres outage now also takes down GlitchTip,
-# which is exactly the moment you'd most want it to still record/alert —
-# still keeps its own dedicated Valkey though, unrelated technology, nothing
-# to gain by trying to share that. The `glitchtip` database is created
-# automatically only on a brand-new `db` volume (see
-# observability/init-glitchtip-db.sql); on an already-initialized volume,
-# create it once by hand — see that file's own comment for the exact command.
+# Runs in `SERVER_ROLE: all_in_one` mode (web + Celery worker + beat in one
+# container) — low-traffic single/few-user instance, not worth splitting.
+# Keeps its own dedicated Valkey (unrelated to Postgres sharing).
 #
-# Reachable at GLITCHTIP_SITE_ADDRESS (e.g. errors.loomkeep.app) via
-# Caddy — see observability/glitchtip.caddy, imported by the base Caddyfile
-# only when this override is in use. Gated by GlitchTip's own login only
-# (first visit creates the org/first user), no basic auth in front — same
-# call as Grafana/Portainer.
-#
-# Config values (compose.sample.yml on glitchtip.com's own install docs):
-# https://glitchtip.com/documentation/install
+# Config values reference: https://glitchtip.com/documentation/install
 x-glitchtip-logging: &glitchtip-logging
   driver: json-file
   options:
@@ -38,30 +19,21 @@ x-glitchtip-environment: &glitchtip-environment
   VALKEY_URL: redis://glitchtip-valkey:6379
   SECRET_KEY: ${GLITCHTIP_SECRET_KEY:?set GLITCHTIP_SECRET_KEY in .env}
   GLITCHTIP_DOMAIN: https://errors.${DOMAIN:?set DOMAIN in .env}
-  # Without this, Django falls back to a wildcard ALLOWED_HOSTS (its own
-  # startup log flags this explicitly as unsafe for production). `glitchtip`
-  # (the bare service name) is included alongside the public hostname since
-  # Caddy's own healthcheck/internal requests hit the container by that name.
+  # `glitchtip` (the bare service name) is included alongside the public
+  # hostname since Caddy's own healthcheck/internal requests hit it by name.
   ALLOWED_HOSTS: errors.${DOMAIN:?set DOMAIN in .env},glitchtip
-  # Empty by default (GlitchTip's own settings.py), but required behind a
-  # reverse proxy fronting a different domain than the container sees
-  # directly — without it, cross-origin requests during the OIDC/SSO
-  # callback (browser bounces from auth.<DOMAIN> back here) can be silently
-  # rejected. Found live debugging the Authelia SSO integration.
+  # Required behind a reverse proxy fronting a different domain than the
+  # container sees directly — without it, the OIDC/SSO callback can be
+  # silently rejected as cross-origin.
   CSRF_TRUSTED_ORIGINS: https://errors.${DOMAIN:?set DOMAIN in .env}
-  # Emails (new-error/regression alerts) are off by default — GlitchTip's
-  # EMAIL_URL is parsed as a plain URL (user:pass@host), and the app's own
-  # Brevo SMTP_USER contains a literal "@", which breaks that parsing
-  # unescaped. Not worth auto-deriving; set GLITCHTIP_EMAIL_URL yourself
-  # (percent-encoded) in .env if you want real delivery — see .env.example.
+  # Off by default — GlitchTip's EMAIL_URL is parsed as a plain URL, and the
+  # app's Brevo SMTP_USER contains a literal "@" that breaks that unescaped.
+  # Set GLITCHTIP_EMAIL_URL yourself (percent-encoded) for real delivery.
   EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
   DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@loomkeep.app}
-  # Django admin at /admin/ exposes raw DB-level access — off by default.
-  # Env-var driven (not a hardcoded "False") specifically so it can be
-  # flipped on the VPS's own .env for the one-time OIDC/SSO SocialApp setup
-  # (see docker-compose.authelia.yml) with a `docker compose up -d`, not a
-  # git commit — auto-deploy on every push to main would otherwise silently
-  # revert a hardcoded value back on the next unrelated push.
+  # Django admin at /admin/ exposes raw DB-level access — off by default,
+  # env-var driven so it can be flipped for the one-time OIDC/SSO setup
+  # without a git commit (auto-deploy would otherwise revert it).
   ENABLE_ADMIN: false
 
 services:
@@ -88,16 +60,14 @@ services:
       glitchtip-valkey:
         condition: service_started
 
-  # Partial override of the `db` service defined in docker-compose.yml: adds
-  # the init script that creates the `glitchtip` database on a brand-new
-  # volume, without redeclaring the whole service.
+  # Partial override of the `db` service in docker-compose.yml: adds the
+  # init script that creates the `glitchtip` database on a brand-new volume.
   db:
     volumes:
       - ./observability/init-glitchtip-db.sql:/docker-entrypoint-initdb.d/init-glitchtip-db.sql:ro
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds the GlitchTip site block + its domain, without redeclaring the
-  # whole service.
+  # Partial override of the `caddy` service in docker-compose.prod.yml: adds
+  # the GlitchTip site block + its domain.
   caddy:
     environment:
       GLITCHTIP_SITE_ADDRESS: errors.${DOMAIN:?set DOMAIN in .env}

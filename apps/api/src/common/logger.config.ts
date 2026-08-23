@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV === "development";
 
 export const loggerOptions: Params = {
   pinoHttp: {
-    level: process.env.LOG_LEVEL ?? (isDev ? "debug" : "info"),
+    level: process.env.LOG_LEVEL || (isDev ? "debug" : "info"),
     transport: !isDev
       ? undefined
       : {

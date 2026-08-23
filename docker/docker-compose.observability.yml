@@ -1,35 +1,20 @@
-# Observability Palier 2: searchable, persistent log history AND metrics via
-# Grafana + Loki/Promtail (logs) + Prometheus/node_exporter/postgres_exporter
-# (metrics). Add on top of the base compose + whichever deployment override
-# you're using:
+# Grafana + Loki/Promtail (logs) + Prometheus/node_exporter/postgres_exporter/
+# cAdvisor (metrics). See docker/README.md § "Access control per public
+# subdomain" and § "Shared Postgres for add-ons".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
 #
-# Grafana is reachable at GRAFANA_SITE_ADDRESS (e.g. grafana.loomkeep.app) via
-# Caddy — see observability/grafana.caddy, imported by the base Caddyfile
-# only when this override is in use. Gated by Grafana's own login only, no
-# basic auth in front (Logan's explicit call — revisit if that ever feels
-# insufficient). Caddy reaches it over the internal Docker network on :3000 —
-# no host port needed for that path at all.
+# Grafana is reached over the internal Docker network on :3000 by Caddy —
+# no host port needed for that path. The `127.0.0.1:3001` host port publish
+# (an SSH-tunnel fallback that doesn't need Caddy/DNS: `ssh -L
+# 3001:localhost:3001 <user>@<vps>`) is commented out below: on the VPS it
+# hit a persistent "port is already allocated" / `NetworkSettings.Networks`
+# staying `{}` even after a full container recreate and a `systemctl
+# restart docker` — something's holding :3001 at a level neither survived.
+# Re-enable once that's root-caused.
 #
-# The `127.0.0.1:3001` host port publish (an SSH-tunnel fallback that doesn't
-# need Caddy/DNS: `ssh -L 3001:localhost:3001 <user>@<vps>`) is commented out
-# below: on the VPS it hit a persistent "port is already allocated" /
-# `NetworkSettings.Networks` staying `{}` even after a full container
-# recreate and a `systemctl restart docker` — something's holding :3001 at a
-# level neither survived. Re-enable once that's root-caused; until then this
-# override doesn't publish anything to the host, so no other change is
-# needed to keep working via the tunnel/plain-DNS Caddy path.
-#
-# Prometheus itself has no public/tunnel access point — it's only a Grafana
-# data source, queried through Grafana's own auth, so there's nothing to gate.
-#
-# Promtail is planned to be replaced by Grafana Alloy (see the promtail
-# service comment below) — when that happens, the same Alloy agent will
-# likely also take over node_exporter/postgres_exporter's job, not just logs.
-# `x-logging` is redeclared here (not reused from docker-compose.yml) since
-# Compose doesn't merge YAML anchors across separate `-f` files — same
-# reasoning as the caddy service's own duplicate in the prod override.
+# `x-logging` is redeclared (not reused from docker-compose.yml) since
+# Compose doesn't merge YAML anchors across separate `-f` files.
 x-logging: &default-logging
   driver: json-file
   options:
@@ -46,12 +31,6 @@ services:
       - ./observability/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki-data:/loki
 
-  # Promtail itself was deprecated by Grafana as of Loki 3.7 — its code was
-  # merged into Grafana Alloy, and grafana/promtail stopped receiving new
-  # version tags after 3.6.x (confirmed: no 3.7.x image exists on Docker
-  # Hub). Kept for now since it's still a supported Loki client and this
-  # setup's scrape config is simple — but this is the thing to replace with
-  # Alloy if Promtail ever stops receiving even security patches.
   promtail:
     image: grafana/promtail:3.6.11
     restart: unless-stopped
@@ -72,15 +51,10 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      # Cloud-upsell noise off; version/plugin-update checks left on the
-      # (secure) defaults so out-of-date warnings still show in the UI.
       GF_NEWS_NEWS_FEED_ENABLED: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
-      # Single sign-on via Authelia (see docker-compose.authelia.yml) — fully
-      # env-var configurable, unlike GlitchTip/Portainer which need one
-      # manual step in their own admin UI (see README "Single sign-on").
-      # GRAFANA_OIDC_CLIENT_SECRET is the PLAINTEXT secret (Grafana needs the
-      # real value); Authelia's own config stores only its hash.
+      # Single sign-on via Authelia — GRAFANA_OIDC_CLIENT_SECRET is the
+      # plaintext secret (Authelia's own config stores only its hash).
       GF_SERVER_ROOT_URL: https://grafana.${DOMAIN:-localhost}
       # Defaults target Authelia (docker-compose.authelia.yml) — the
       # self-host SSO path. The public instance overrides the five
@@ -107,8 +81,8 @@ services:
       - loki
       - prometheus
 
-  # Host-level metrics (CPU/RAM/disk/network) for the VPS itself. No public
-  # port — Prometheus scrapes it by service name over the compose network.
+  # Host-level metrics. No public port — scraped by Prometheus over the
+  # compose network.
   node_exporter:
     image: prom/node-exporter:v1.12.1
     restart: unless-stopped
@@ -124,9 +98,8 @@ services:
       - "--path.rootfs=/rootfs"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
 
-  # Postgres-level metrics (connections, table sizes, cache hit ratio...).
-  # Reuses the app's own DB user — this is a single-user self-host, not
-  # worth provisioning a separate read-only monitoring role for.
+  # Reuses the app's own DB user — single-user self-host, not worth a
+  # dedicated read-only monitoring role.
   postgres_exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
     restart: unless-stopped
@@ -137,11 +110,7 @@ services:
       db:
         condition: service_healthy
 
-  # Per-container metrics (CPU/RAM/network/IO by container) — node_exporter
-  # only sees the host in aggregate, this is what tells you *which* service
-  # is actually using the resources. Read-only host mounts; no privileged
-  # flag needed on modern kernels (only ever required on CentOS/RHEL-family
-  # hosts with older cgroup layouts, not this project's Debian/Ubuntu VPS).
+  # Per-container metrics. No privileged flag needed on modern kernels.
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.60.5
     restart: unless-stopped
@@ -161,9 +130,8 @@ services:
       - "--storage.tsdb.retention.time=30d"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      # Healthchecks.io read-only API key — gitignored real file, copied
-      # from healthchecks_token.example, same convention as Authelia's
-      # secrets (docker/authelia/*.yml).
+      # Healthchecks.io read-only API key — gitignored, copied from
+      # healthchecks_token.example.
       - ./observability/healthchecks_token:/etc/prometheus/secrets/healthchecks_token:ro
       - prometheus-data:/prometheus
     depends_on:
@@ -171,11 +139,8 @@ services:
       - postgres_exporter
       - cadvisor
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds the Grafana site block + its domain, without redeclaring the whole
-  # service. GRAFANA_SITE_ADDRESS mirrors the `${DOMAIN:?...}` pattern the
-  # base SITE_ADDRESS already uses — required, not defaulted, since this
-  # override is only meaningful alongside prod.yml.
+  # Partial override of the `caddy` service in docker-compose.prod.yml: adds
+  # the Grafana site block + its domain.
   caddy:
     environment:
       GRAFANA_SITE_ADDRESS: grafana.${DOMAIN:?set DOMAIN in .env}

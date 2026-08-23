@@ -1,6 +1,5 @@
-# Override for hosting Loomkeep publicly on a VPS with a real domain
-# (e.g. OVH) behind Caddy, which obtains and renews a Let's Encrypt
-# certificate automatically. Use it on top of the base compose:
+# Override for hosting Loomkeep publicly on a VPS with a real domain behind
+# Caddy, which obtains and renews a Let's Encrypt certificate automatically.
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
@@ -14,28 +13,17 @@ services:
 
   api:
     environment:
-      # Explicit, not just "unset" — several deps (this app's own isDev
-      # checks in main.ts/logger.config.ts included) only special-case the
-      # literal string "development"; NODE_ENV was never set to anything at
-      # all before, which happened to read the same way but left it to
-      # chance for any third-party package that specifically checks for
-      # "production" instead.
       NODE_ENV: production
       WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      # Safe here specifically because Caddy is always the one hop in front
-      # of the API in this override — see main.ts's FastifyAdapter comment.
+      # Safe because Caddy is always the one hop in front of the API here.
       TRUST_PROXY: "true"
-      # This is the public instance — turn the social features on (the
-      # web reads this back via GET /api/config).
+      # Public instance — turn social features on.
       SOCIAL_ENABLED: "true"
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    # Same rotation as the base compose's services — Compose doesn't merge
-    # YAML anchors across -f files, so this is a deliberate duplicate of
-    # docker-compose.yml's `x-logging`, not drift.
     logging:
       driver: json-file
       options:
@@ -50,8 +38,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./www-redirect.caddy:/etc/caddy/sites-enabled/www-redirect.caddy:ro
       - ./maintenance:/srv/maintenance:ro
-      # Bind mount (not a named volume) so the maintenance flag is a plain
-      # host path an admin can touch/rm over SSH — see Caddyfile.
+      # Bind mount, not a named volume, so the maintenance flag is a plain
+      # host path an admin can toggle over SSH — see Caddyfile.
       - ./caddy-flags:/flags
       - caddy-data:/data
       - caddy-config:/config

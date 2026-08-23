@@ -1,16 +1,12 @@
-# Public site block for Homepage, imported by the base Caddyfile — only
-# mounted when docker-compose.homepage.yml is in use. Same automatic Let's
-# Encrypt handling as the main site.
-#
-# Homepage has no login of its own. On the public instance it's gated by
-# Cloudflare Access before the request ever reaches this hostname (see
-# docker-compose.tunnel.yml) — nothing to enforce here at the Caddy layer.
-# Self-hosters without Cloudflare and without this Tunnel add-on are exposed
-# on this hostname with no login at all — either keep it off a public
-# hostname (bind it to a VPN/LAN-only address instead) or reintroduce
-# Authelia's forward_auth in front of it (see this repo's git history before
-# this change, or docker/README.md's "Single sign-on" section for the
-# pattern — auth.<DOMAIN> + forward_auth against authelia:9091).
+# Mounted only when docker-compose.homepage.yml is in use. Homepage has no
+# login of its own. On the public instance it's gated by Cloudflare Access
+# before the request ever reaches this hostname (see docker-compose.tunnel.yml)
+# — nothing to enforce here at the Caddy layer. Self-hosters without
+# Cloudflare and without that add-on are exposed on this hostname with no
+# login at all — either keep it off a public hostname (bind it to a
+# VPN/LAN-only address instead) or reintroduce Authelia's forward_auth in
+# front of it (see docker/README.md § "Single sign-on" for the pattern —
+# auth.<DOMAIN> + forward_auth against authelia:9091).
 #
 # Two blocks — see observability/grafana.caddy's own comment for why:
 # `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare

@@ -1,23 +1,11 @@
-# Public site block for GlitchTip, imported by the base Caddyfile — only
-# mounted when docker-compose.glitchtip.yml is in use (it sets
-# GLITCHTIP_SITE_ADDRESS on the caddy service and mounts this file into
-# /etc/caddy/sites-enabled/). Same automatic Let's Encrypt handling as the
-# main site: Caddy requests and renews its own certificate for this domain
-# too, independently.
+# Mounted only when docker-compose.glitchtip.yml is in use. See
+# docker/README.md § "Access control per public subdomain".
 #
-# No basic auth in front of this on purpose — GlitchTip's own login (the
-# first visitor creates the org/first user) is the only gate, same call as
-# Grafana/Portainer.
-#
-# Two blocks instead of one — see grafana.caddy's own comment for why the
+# Two blocks — see observability/grafana.caddy's own comment for why the
 # second exists at all (`:8080` is the plain-HTTP path docker-compose.tunnel.yml's
-# Cloudflare Tunnel uses, dormant/unreachable for anyone on plain DNS). Split
-# into separate blocks (rather than one block with two addresses) so the
-# `header_up` override below applies only to the tunnel path: Caddy sets
-# X-Forwarded-Proto from its own listener's scheme, which is plain http for
-# this internal, un-TLS'd hop — even though the original browser connection
-# was https all the way to Cloudflare's edge. GlitchTip's CSRF_TRUSTED_ORIGINS
-# is `https://…`, so without this override Django sees a "http" proto on an
+# Cloudflare Tunnel uses, dormant/unreachable for anyone on plain DNS) and
+# why the `header_up` override is needed: GlitchTip's CSRF_TRUSTED_ORIGINS
+# is `https://…`, so without it Django sees a "http" proto on an
 # https-only trusted origin and 403s every POST (login included).
 {$GLITCHTIP_SITE_ADDRESS} {
 	reverse_proxy glitchtip:8000
