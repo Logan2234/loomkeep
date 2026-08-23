@@ -1,8 +1,7 @@
 # Authelia configuration TEMPLATE — copy this to authelia/configuration.yml
 # (gitignored, real secrets go there) and fill in every REPLACE_ME. See the
 # README "Single sign-on" section for the exact commands to generate each
-# value. Domains are already filled in for loomkeep.app — change them if
-# you're self-hosting under a different domain.
+# value. Domains are already filled in for loomkeep.app.
 ---
 theme: "dark"
 
@@ -13,7 +12,7 @@ log:
   level: "info"
 
 # One-time secret for password-reset emails, sent via the same Brevo SMTP as
-# the app itself (see notifier below).
+# the app itself.
 identity_validation:
   reset_password:
     jwt_secret: "REPLACE_ME" # authelia crypto rand --length 64
@@ -21,18 +20,15 @@ identity_validation:
 totp:
   issuer: "loomkeep.app"
 
-# File-based user database — fine for a single admin account. No LDAP, no
-# extra service to run.
+# File-based user database — fine for a single admin account.
 authentication_backend:
   file:
     path: "/config/users_database.yml"
 
-# Deny-by-default: every domain must be explicitly listed to be reachable at
-# all. auth.<domain> itself must bypass (it's the login page — gating it
-# behind itself would be a lockout). Add a rule here for every new
-# forward_auth-protected site (e.g. home.<domain> for Homepage); apps using
-# OIDC directly (Grafana/GlitchTip/Portainer) don't need a rule here at all
-# — they're not behind Caddy's forward_auth, they call Authelia themselves.
+# Deny-by-default: every domain must be explicitly listed to be reachable.
+# auth.<domain> itself bypasses (it's the login page). Add a rule here for
+# every new forward_auth-protected site (e.g. home.<domain> for Homepage);
+# apps using OIDC directly (Grafana/GlitchTip/Portainer) don't need one.
 access_control:
   default_policy: "deny"
   rules:
@@ -41,11 +37,9 @@ access_control:
     - domain: "home.loomkeep.app"
       policy: "one_factor"
 
-# No session.redis block — in-memory session storage. This is a
-# single-instance deployment (one Authelia container, not a cluster), so
-# Redis would only buy HA we don't need; the one downside is that a
-# container restart logs everyone out (rare, single admin user, just log
-# back in).
+# No session.redis block — in-memory session storage, fine for a
+# single-instance deployment. Downside: a container restart logs everyone
+# out (rare, single admin user).
 session:
   secret: "REPLACE_ME" # authelia crypto rand --length 64
   expiration: "1h"
@@ -54,15 +48,13 @@ session:
       authelia_url: "https://auth.loomkeep.app"
       default_redirection_url: "https://home.loomkeep.app"
 
-# SQLite — fine at this scale, avoids a third dedicated Postgres instance
-# (GlitchTip already has its own, separate from the app's).
+# SQLite — fine at this scale, avoids a third dedicated Postgres instance.
 storage:
   encryption_key: "REPLACE_ME" # authelia crypto rand --length 64
   local:
     path: "/config/data/db.sqlite3"
 
-# Reuses the app's own Brevo SMTP relay — same account, different sender
-# address so alerts are distinguishable at a glance.
+# Reuses the app's own Brevo SMTP relay, different sender address.
 notifier:
   smtp:
     address: "submission://smtp-relay.brevo.com:587"
@@ -70,12 +62,10 @@ notifier:
     username: "REPLACE_ME" # same value as this repo's SMTP_USER
     password: "REPLACE_ME" # same value as this repo's SMTP_PASS
 
-# True SSO for the three apps below: each one redirects to Authelia on
-# login (Grafana via env vars — see docker-compose.observability.yml;
-# GlitchTip and Portainer need a one-time manual step in their own admin UI
-# — see the README "Single sign-on" section for the exact values to paste).
-# Once logged into Authelia, visiting a second app just bounces through
-# this redirect silently — no second password.
+# True SSO for the three apps below: each redirects to Authelia on login
+# (Grafana via env vars; GlitchTip and Portainer need a one-time manual step
+# in their own admin UI — see README "Single sign-on"). Once logged into
+# Authelia, visiting a second app bounces through this redirect silently.
 identity_providers:
   oidc:
     hmac_secret: "REPLACE_ME" # authelia crypto rand --length 64
@@ -94,11 +84,7 @@ identity_providers:
         client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
         public: false
         authorization_policy: "one_factor"
-        # Remembers your consent for a month instead of re-prompting on
-        # every single login — Authelia's own docs explicitly recommend
-        # this over "implicit" (which skips the consent screen forever,
-        # discouraged for security reasons) for exactly this "stop asking
-        # every time" itch.
+        # Remembers consent for a month instead of re-prompting every login.
         consent_mode: "pre-configured"
         pre_configured_consent_duration: "1M"
         redirect_uris:
@@ -113,11 +99,6 @@ identity_providers:
         client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
         public: false
         authorization_policy: "one_factor"
-        # Remembers your consent for a month instead of re-prompting on
-        # every single login — Authelia's own docs explicitly recommend
-        # this over "implicit" (which skips the consent screen forever,
-        # discouraged for security reasons) for exactly this "stop asking
-        # every time" itch.
         consent_mode: "pre-configured"
         pre_configured_consent_duration: "1M"
         redirect_uris:
@@ -125,11 +106,9 @@ identity_providers:
         scopes: ["openid", "profile", "email"]
         response_types: ["code"]
         grant_types: ["authorization_code"]
-        # GlitchTip's OIDC client (django-allauth) always sends its secret
-        # in the POST body, not an HTTP Basic Auth header — client_secret_
-        # basic (Authelia's own doc example, and what Grafana/Portainer use)
-        # rejects it with "Client authentication failed", confirmed live via
-        # Authelia's own logs. GlitchTip specifically needs this method.
+        # GlitchTip's OIDC client always sends its secret in the POST body,
+        # not an HTTP Basic Auth header — client_secret_basic gets rejected
+        # with "Client authentication failed".
         token_endpoint_auth_method: "client_secret_post"
 
       - client_id: "portainer"
@@ -137,11 +116,6 @@ identity_providers:
         client_secret: "REPLACE_ME" # pbkdf2-sha512 HASH, not the plaintext
         public: false
         authorization_policy: "one_factor"
-        # Remembers your consent for a month instead of re-prompting on
-        # every single login — Authelia's own docs explicitly recommend
-        # this over "implicit" (which skips the consent screen forever,
-        # discouraged for security reasons) for exactly this "stop asking
-        # every time" itch.
         consent_mode: "pre-configured"
         pre_configured_consent_duration: "1M"
         redirect_uris:

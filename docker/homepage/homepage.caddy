@@ -1,13 +1,6 @@
-# Public site block for Homepage, imported by the base Caddyfile — only
-# mounted when docker-compose.homepage.yml is in use. Same automatic Let's
-# Encrypt handling as the main site.
-#
-# Homepage has no login of its own, so unlike Grafana/GlitchTip/Portainer
-# (which do their own OIDC round-trip with Authelia) it's gated at the Caddy
-# layer instead: every request is checked against Authelia's forward-auth
-# endpoint before reverse_proxy even runs. Requires
-# docker-compose.authelia.yml to also be deployed — Homepage alone, without
-# Authelia running, would just 5xx on every request.
+# Mounted only when docker-compose.homepage.yml is in use. Requires
+# docker-compose.authelia.yml too — see docker/README.md § "Access control
+# per public subdomain".
 {$HOMEPAGE_SITE_ADDRESS} {
 	forward_auth authelia:9091 {
 		uri /api/authz/forward-auth?authelia_url={$AUTHELIA_URL}

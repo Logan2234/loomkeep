@@ -1,20 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Clones (or reports the existing checkout of) Quackback — Loomkeep's
-# self-hosted feedback board — as a sibling directory next to this Loomkeep
-# checkout. Kept as their own unmodified deployment rather than translated
-# into this repo's compose files, so it never drifts out of sync with
-# upstream; see docker-compose.quackback.yml's top comment for why.
-#
-# This script only manages the git checkout. It never touches .env or runs
-# `docker compose up` itself — those are manual steps you review, same bar
-# as every other deploy action in this repo. Re-running it is a no-op if the
-# checkout already exists (use `git pull` yourself to update).
+# Clones (or reports the existing checkout of) Quackback as a sibling
+# directory next to this Loomkeep checkout — kept as its own unmodified
+# deployment rather than translated into this repo's compose files, see
+# docker-compose.quackback.yml. Only manages the git checkout: never
+# touches .env or runs `docker compose up` itself. Re-running is a no-op if
+# the checkout already exists.
 #
 # Usage: docker/quackback-bootstrap.sh [target-dir]
-# Default target-dir: ../../quackback, i.e. a sibling of this Loomkeep
-# checkout (assumes the usual `~/loomkeep`, `~/quackback` VPS layout).
+# Default target-dir: ../../quackback (sibling of this Loomkeep checkout).
 
 REPO_URL="https://github.com/QuackbackIO/quackback.git"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

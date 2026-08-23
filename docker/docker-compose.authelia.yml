@@ -1,22 +1,10 @@
-# Single sign-on portal (Authelia) for every dashboard added this session.
-# Add on top of the base compose + whichever deployment override you're
-# using:
+# Single sign-on portal (Authelia) for every dashboard in this stack. See
+# docker/README.md § "Single sign-on" and § "Access control per public
+# subdomain".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml up -d --build
 #
-# Two integration modes, used depending on whether the protected app has its
-# own OIDC support:
-#  - True SSO (Grafana, GlitchTip, Portainer): the app itself redirects to
-#    Authelia on login and back again — one login covers all three, no
-#    forward_auth needed at the Caddy layer for them.
-#  - forward_auth (Homepage, which has no login of its own): Caddy asks
-#    Authelia before proxying at all — see homepage/homepage.caddy.
-#
-# Reachable at AUTHELIA_SITE_ADDRESS (e.g. auth.loomkeep.app). Real config —
-# secrets, the RSA signing key, your user database — is NOT in this repo
-# (authelia/configuration.yml and authelia/users_database.yml are
-# gitignored, same convention as .env): copy the two *.example files next to
-# this one and fill them in, see README "Single sign-on".
+# Copy the two *.example files next to this one and fill them in.
 services:
   authelia:
     image: authelia/authelia:4.39.20
@@ -33,9 +21,8 @@ services:
       - ./authelia/users_database.yml:/config/users_database.yml:ro
       - authelia-data:/config/data # SQLite storage db, persisted across restarts
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds Authelia's own site block + its domain, without redeclaring the
-  # whole service.
+  # Partial override of the `caddy` service in docker-compose.prod.yml: adds
+  # Authelia's own site block + its domain.
   caddy:
     environment:
       AUTHELIA_SITE_ADDRESS: auth.${DOMAIN:?set DOMAIN in .env}

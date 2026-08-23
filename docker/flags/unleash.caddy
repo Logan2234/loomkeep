@@ -1,17 +1,5 @@
-# Public site block for Unleash, imported by the base Caddyfile — only
-# mounted when docker-compose.unleash.yml is in use. Same automatic Let's
-# Encrypt handling as the main site.
-#
-# No basic auth in front of this on purpose — Unleash's own login (default
-# admin/unleash4all on first visit, change it immediately) is the only gate
-# on the admin UI, same call as Grafana/GlitchTip/Portainer. Unleash's
-# open-source edition has no OIDC support (enterprise-only), so unlike
-# Grafana/GlitchTip/Portainer this can't go behind Authelia as true SSO —
-# and unlike Umami/Homepage, it can't go behind Authelia's forward_auth
-# either: every visitor's browser calls this same subdomain's /api/frontend
-# path directly and unauthenticated to poll live flags (see
-# apps/web/src/lib/feature-flags-live.ts), so gating the whole subdomain
-# would break that for every user.
+# Mounted only when docker-compose.unleash.yml is in use. See
+# docker/README.md § "Access control per public subdomain".
 {$UNLEASH_SITE_ADDRESS} {
 	reverse_proxy unleash:4242
 }

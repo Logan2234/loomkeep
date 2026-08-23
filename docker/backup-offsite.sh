@@ -2,46 +2,29 @@
 set -euo pipefail
 
 # Offsite, encrypted backup of every datastore this VPS runs — not just
-# Loomkeep's own database. Complements (doesn't replace) the app's own daily
-# dump: that one only covers the `loomkeep` database, lives on the same disk
-# it's protecting, and is kept unencrypted-at-rest only as long as
-# BACKUP_ENCRYPTION_PUBLIC_KEY is set (see BackupService, LK-C20). Run this
-# script on the VPS host (not inside a container) via cron, e.g. daily at
-# 4:00 — after the app's own 3:00 dump:
+# Loomkeep's own database. Complements (doesn't replace) the app's own
+# daily dump, which only covers the `loomkeep` database and lives on the
+# same disk it's protecting. Run on the VPS host (not inside a container)
+# via cron, after the app's own 3:00 dump:
 #
 #   0 4 * * * cd ~/loomkeep && ./docker/backup-offsite.sh >> /var/log/loomkeep-backup-offsite.log 2>&1
 #
-# Covers:
-#   - loomkeep, unleash, glitchtip, umami — all separate databases on the
-#     same shared Postgres instance (docker-compose.yml's `db` service).
-#   - Quackback's own Postgres + MinIO uploads — a completely separate
-#     Compose project (own docker-compose.prod.yml, sibling checkout — see
-#     docker-compose.quackback.yml's own comment for why it's not
-#     reimplemented here).
-# Deliberately NOT covered (see docker/README.md "Backups" for the reasoning
-# already accepted for Umami, extended here to observability/ops state that
-# carries no user data and is trivially recreated): Grafana/Loki/Prometheus,
+# Covers: loomkeep, unleash, glitchtip, umami (separate databases on the
+# shared Postgres instance) and Quackback's own Postgres + MinIO uploads
+# (a completely separate compose project, sibling checkout). Deliberately
+# NOT covered (see docker/README.md "Backups"): Grafana/Loki/Prometheus,
 # Portainer, Caddy's TLS certs.
 #
 # Every dump is age-encrypted (ASCII-armored) before it leaves this host,
-# for BACKUP_ENCRYPTION_PUBLIC_KEY — same key as the in-app backup, same
-# guarantee: only the *public* key is ever needed here, decrypting requires
-# the private key, which must live somewhere that isn't this VPS. Uploaded
-# to Cloudflare R2 via rclone; a 30-day lifecycle rule on the bucket handles
-# retention (nothing to prune here — see docker/README.md for the rule).
+# for BACKUP_ENCRYPTION_PUBLIC_KEY — same key as the in-app backup, only
+# the public key is ever needed here. Uploaded to Cloudflare R2 via rclone;
+# a 30-day lifecycle rule on the bucket handles retention.
 #
 # One-time setup this script assumes is already done (see docker/README.md
-# "Offsite backups"):
-#   - `age` and `rclone` installed on this host
-#   - `rclone config` has a remote named $R2_REMOTE pointing at your R2
-#     account (R2's own dashboard gives you the S3-compatible endpoint +
-#     access key + secret to feed it)
-#   - the R2 bucket exists, with a 30-day expiry lifecycle rule
-#   - this Loomkeep checkout's own .env has POSTGRES_USER/POSTGRES_PASSWORD
-#     and BACKUP_ENCRYPTION_PUBLIC_KEY set (same file the app itself reads)
-#   - the Quackback sibling checkout's own .env has its POSTGRES_*/MINIO_*
-#     credentials (this script reads that file directly — nothing
-#     duplicated here)
+# "Offsite setup"): `age`/`rclone` installed, `rclone config` has a remote
+# named $R2_REMOTE, the R2 bucket exists with its lifecycle rule, and both
+# this checkout's .env and the Quackback sibling checkout's .env have their
+# credentials set.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOOMKEEP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -50,8 +33,6 @@ QUACKBACK_DIR="${QUACKBACK_DIR:-$LOOMKEEP_DIR/../quackback}"
 R2_REMOTE="${R2_REMOTE:-r2}"
 R2_BUCKET="${R2_BUCKET:?set R2_BUCKET (the Cloudflare R2 bucket name)}"
 
-# Loomkeep's own root .env — same file docker compose reads (POSTGRES_USER,
-# POSTGRES_PASSWORD, BACKUP_ENCRYPTION_PUBLIC_KEY).
 set -a
 # shellcheck disable=SC1091
 source "$LOOMKEEP_DIR/.env"
@@ -89,12 +70,10 @@ if [ -f "$QUACKBACK_DIR/.env" ]; then
   dump_pg quackback-db "${POSTGRES_USER:-quackback}" "$POSTGRES_PASSWORD" \
     "${POSTGRES_DB:-quackback}" "quackback-$DATE.sql.age"
 
-  # MinIO's upload bucket has no host port (internal-only, see
-  # docker-compose.prod.yml) — tar the named volume directly instead of
-  # talking to its S3 API, so this doesn't depend on network reachability
-  # from the host. Volume name is Compose's default
-  # "<project>_<volume>"; override QUACKBACK_MINIO_VOLUME if the sibling
-  # checkout uses a non-default COMPOSE_PROJECT_NAME.
+  # No host port on the MinIO bucket — tar the named volume directly.
+  # Volume name is Compose's default "<project>_<volume>"; override
+  # QUACKBACK_MINIO_VOLUME if the sibling checkout uses a non-default
+  # COMPOSE_PROJECT_NAME.
   echo "[$DATE] Archiving Quackback's MinIO uploads…"
   docker run --rm -v "${QUACKBACK_MINIO_VOLUME:-quackback_minio_data}:/data:ro" \
     -w /data alpine tar czf - . |
@@ -106,8 +85,7 @@ fi
 echo "[$DATE] Uploading to $R2_REMOTE:$R2_BUCKET/$DATE/…"
 rclone copy "$WORKDIR" "$R2_REMOTE:$R2_BUCKET/$DATE/"
 
-# Optional dead-man's-switch ping, same pattern as the app's own scheduled
-# jobs (src/jobs/job-run.service.ts) — silently skipped if unset.
+# Optional dead-man's-switch ping, silently skipped if unset.
 if [ -n "${HEALTHCHECKS_OFFSITE_BACKUP_URL:-}" ]; then
   curl -fsS -m 10 "$HEALTHCHECKS_OFFSITE_BACKUP_URL" >/dev/null || true
 fi

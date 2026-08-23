@@ -1,32 +1,18 @@
-# Optional add-on: Unleash (self-hosted, open-source feature flag service).
-# Backs the deployment-wide flags read by the api at runtime instead of a
-# baked-in env var (SOCIAL_ENABLED, REGISTRATION_ENABLED, and per-domain
-# MAINTENANCE_<DOMAIN> flags) so an admin can flip them without a redeploy.
-# Add on top of the base compose + whichever deployment override you're
-# using:
+# Unleash (self-hosted, open-source feature flag service). Backs the
+# deployment-wide flags read by the api at runtime (SOCIAL_ENABLED,
+# REGISTRATION_ENABLED, MAINTENANCE_<DOMAIN>) so an admin can flip them
+# without a redeploy. See docker/README.md § "Access control per public
+# subdomain" and § "Shared Postgres for add-ons".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.unleash.yml up -d
 #
-# Shares the app's own Postgres instance (a separate `unleash` database, not
-# a dedicated container) — same reasoning as Umami: avoids a second Postgres
-# process on a single-VPS deployment. Unlike GlitchTip/Loki this isn't an
-# observability tool watching the app from outside, so there's no
-# failure-domain reason to keep it isolated either. The `unleash` database is
-# created automatically only on a brand-new `db` volume (see
-# flags/init-unleash-db.sql); on an already-initialized volume, create it
-# once by hand — see that file's own comment for the exact command.
-#
-# Reachable at UNLEASH_SITE_ADDRESS (e.g. flags.loomkeep.app) via Caddy — see
-# flags/unleash.caddy. The api talks to Unleash over the internal Docker
-# network (UNLEASH_API_URL). The web additionally talks to Unleash's
-# Frontend API (built into unleash-server, no separate Proxy/Edge needed)
-# straight from the browser, over that same public subdomain, to refresh
+# The api talks to Unleash's client API over the internal Docker network
+# (UNLEASH_API_URL). The web additionally talks to Unleash's Frontend API
+# straight from the browser, over the public subdomain, to refresh
 # MAINTENANCE_<DOMAIN> flags live without a page reload — see
-# apps/web/src/lib/feature-flags-live.ts. That means CORS for the web
-# origin must be allowed in Unleash's own admin UI (Admin settings > Access
-# control > CORS origins), and this subdomain can never be put behind
-# Authelia forward_auth (unlike Grafana/GlitchTip/Portainer) — every
-# visitor's browser needs to reach /api/frontend unauthenticated.
+# apps/web/src/lib/feature-flags-live.ts. CORS for the web origin must be
+# allowed in Unleash's own admin UI (Admin settings > Access control > CORS
+# origins).
 x-unleash-logging: &unleash-logging
   driver: json-file
   options:
@@ -43,15 +29,10 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/unleash?sslmode=disable
-      # Comma-separated backend tokens created on first startup — the api
-      # authenticates to Unleash's client API with this one. Format is
-      # `<project>:<environment>.<64-hex-chars>`, e.g.
-      # `default:production.<output of openssl rand -hex 32>` — see
-      # .env.example.
+      # Backend token the api authenticates to Unleash's client API with.
+      # Format: `<project>:<environment>.<64-hex-chars>` — see .env.example.
       INIT_BACKEND_API_TOKENS: ${UNLEASH_API_TOKEN:?set UNLEASH_API_TOKEN in .env}
-      # Frontend token, safe to expose in the browser (read-only, no admin
-      # access) — created on first startup, same format as the backend
-      # token above.
+      # Frontend token, safe to expose in the browser (read-only).
       INIT_FRONTEND_API_TOKENS: ${PUBLIC_UNLEASH_FRONTEND_TOKEN:?set PUBLIC_UNLEASH_FRONTEND_TOKEN in .env}
       UNLEASH_DEFAULT_ADMIN_USERNAME: ${UNLEASH_ADMIN_USERNAME:-admin}
       UNLEASH_DEFAULT_ADMIN_PASSWORD: ${UNLEASH_ADMIN_PASSWORD:?set UNLEASH_ADMIN_PASSWORD in .env}
@@ -62,16 +43,14 @@ services:
       timeout: 5s
       retries: 5
 
-  # Partial override of the `db` service defined in docker-compose.yml: adds
-  # the init script that creates the `unleash` database on a brand-new
-  # volume, without redeclaring the whole service.
+  # Partial override of the `db` service in docker-compose.yml: adds the
+  # init script that creates the `unleash` database on a brand-new volume.
   db:
     volumes:
       - ./flags/init-unleash-db.sql:/docker-entrypoint-initdb.d/init-unleash-db.sql:ro
 
-  # Partial override of the `api` service defined in docker-compose.yml: adds
-  # the two env vars the api needs to reach Unleash over the internal Docker
-  # network, without redeclaring the whole service.
+  # Partial override of the `api` service in docker-compose.yml: adds the
+  # env vars the api needs to reach Unleash over the internal Docker network.
   api:
     environment:
       UNLEASH_API_URL: http://unleash:4242/api
@@ -79,18 +58,15 @@ services:
     depends_on:
       - unleash
 
-  # Partial override of the `web` service defined in docker-compose.yml: adds
-  # the two PUBLIC_ vars the browser needs to reach Unleash's Frontend API
-  # directly (see feature-flags-live.ts) — a real public URL, not the
-  # internal Docker network address the api uses above.
+  # Partial override of the `web` service in docker-compose.yml: adds the
+  # PUBLIC_ vars the browser needs to reach Unleash's Frontend API directly.
   web:
     environment:
       PUBLIC_UNLEASH_FRONTEND_URL: https://flags.${DOMAIN:?set DOMAIN in .env}/api/frontend
       PUBLIC_UNLEASH_FRONTEND_TOKEN: ${PUBLIC_UNLEASH_FRONTEND_TOKEN:?set PUBLIC_UNLEASH_FRONTEND_TOKEN in .env}
 
-  # Partial override of the `caddy` service defined in docker-compose.prod.yml:
-  # adds the Unleash site block + its domain, without redeclaring the whole
-  # service.
+  # Partial override of the `caddy` service in docker-compose.prod.yml: adds
+  # the Unleash site block + its domain.
   caddy:
     environment:
       UNLEASH_SITE_ADDRESS: flags.${DOMAIN:?set DOMAIN in .env}

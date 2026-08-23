@@ -1,41 +1,21 @@
-# User feedback board (Quackback — an open-source, self-hostable alternative
-# to Canny/UserVoice with feedback boards, voting, a roadmap and a
-# changelog). Add on top of the base compose + whichever deployment override
-# you're using:
+# User feedback board (Quackback). See docker/README.md § "User feedback
+# board" for why it's not reimplemented here. This override's only job:
+# wire Caddy to the published host port of Quackback's own, separate
+# deployment (run once via docker/quackback-bootstrap.sh).
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.quackback.yml up -d
 #
-# Deliberately NOT reimplemented as Loomkeep-managed services (a translated
-# Postgres/Dragonfly/MinIO/app stack) — that's a parallel copy of
-# Quackback's own docker-compose.prod.yml that would silently drift out of
-# sync the moment they add or change a service upstream, with no signal that
-# it happened. Instead this override only wires Caddy to Quackback's own,
-# completely separate, unmodified deployment:
-#
-#   1. Run docker/quackback-bootstrap.sh once (clones their repo as a
-#      sibling checkout — see that script for the manual .env/deploy steps,
-#      same "review before you run it" bar as everything else here).
-#   2. Their own docker-compose.prod.yml runs independently, publishing the
-#      app on the host at APP_PORT (default 3000, see their .env).
-#   3. This override's only job: Caddy reverse-proxies
-#      feedback.<DOMAIN> -> that published host port, reachable from inside
-#      Caddy's container via `host.docker.internal` (requires the
-#      extra_hosts entry below — a separate compose project's published
-#      port isn't otherwise reachable by container name).
-#
-# Upgrading Quackback is a `cd ../quackback && git pull && docker compose
+# Upgrading Quackback: `cd ../quackback && git pull && docker compose
 # -f docker-compose.prod.yml up -d --build` in their own checkout — nothing
-# to touch in this repo unless QUACKBACK_APP_PORT itself changes.
+# to touch here unless QUACKBACK_APP_PORT itself changes.
 services:
   caddy:
     environment:
       QUACKBACK_SITE_ADDRESS: feedback.${DOMAIN:?set DOMAIN in .env}
-      # Only needed if Quackback's own .env overrides APP_PORT away from
-      # its default of 3000.
+      # Only needed if Quackback's own .env overrides APP_PORT.
       QUACKBACK_APP_PORT: ${QUACKBACK_APP_PORT:-3000}
-    # Lets the Caddy container reach a port Quackback's own (separate)
-    # compose project published on the VPS host — works regardless of which
-    # compose project started that service, no shared Docker network needed.
+    # Lets the Caddy container reach a port Quackback's own compose project
+    # published on the VPS host.
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

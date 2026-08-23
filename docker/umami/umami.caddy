@@ -1,13 +1,5 @@
-# Public site block for Umami, imported by the base Caddyfile — only
-# mounted when docker-compose.umami.yml is in use. Same automatic Let's
-# Encrypt handling as the main site.
-#
-# No Authelia/forward_auth in front on purpose: Umami has no OIDC support to
-# integrate as true SSO (unlike Grafana/GlitchTip/Portainer), and gating the
-# whole subdomain at the Caddy layer would also block the tracker
-# script/collect endpoint for anonymous visitors — breaking analytics
-# collection entirely. Gated by Umami's own login only (default admin/umami
-# on first visit — change it immediately).
+# Mounted only when docker-compose.umami.yml is in use. See
+# docker/README.md § "Access control per public subdomain".
 {$UMAMI_SITE_ADDRESS} {
 	reverse_proxy umami:3000
 }
