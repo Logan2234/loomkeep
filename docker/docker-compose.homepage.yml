@@ -1,10 +1,11 @@
 # Landing page aggregating every dashboard added this session (Grafana,
 # Portainer, GlitchTip, the app itself) into one set of link tiles. Add on
-# top of the base compose + whichever deployment override you're using —
-# REQUIRES docker-compose.authelia.yml too, since Homepage has no login of
-# its own and is gated entirely via Authelia's forward_auth:
+# top of the base compose + whichever deployment override you're using.
+# Homepage has no login of its own — on the public instance it's gated by
+# Cloudflare Access via docker-compose.tunnel.yml instead of Authelia's
+# forward_auth (see homepage/homepage.caddy's own comment):
 #
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.authelia.yml -f docker-compose.homepage.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml -f docker-compose.homepage.yml up -d --build
 #
 # Static config only (no Docker socket mount — deliberate, see services.yaml:
 # the Portainer tile's widget covers container counts via Portainer's own
@@ -61,7 +62,6 @@ services:
   caddy:
     environment:
       HOMEPAGE_SITE_ADDRESS: home.${DOMAIN:?set DOMAIN in .env}
-      AUTHELIA_URL: https://auth.${DOMAIN:?set DOMAIN in .env}
     volumes:
       - ./homepage/homepage.caddy:/etc/caddy/sites-enabled/homepage.caddy:ro
     depends_on:

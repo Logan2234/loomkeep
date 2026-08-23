@@ -7,6 +7,10 @@
 #
 # Proxies to Portainer's plain-HTTP port (see docker-compose.portainer.yml's
 # --http-enabled comment) — Caddy is the only TLS termination point.
-{$PORTAINER_SITE_ADDRESS} {
+#
+# Two addresses on the same block — see grafana.caddy's own comment for why:
+# `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare
+# Tunnel uses, dormant/unreachable for anyone on plain DNS.
+{$PORTAINER_SITE_ADDRESS}, {$PORTAINER_SITE_ADDRESS}:8080 {
 	reverse_proxy portainer:9000
 }

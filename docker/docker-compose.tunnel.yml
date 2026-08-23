@@ -1,0 +1,69 @@
+# Optional add-on, public-instance-specific: a Cloudflare Tunnel exposing
+# the admin-only hostnames (Grafana, Portainer, GlitchTip, Unleash, Homepage)
+# without opening any inbound port for them — cloudflared only holds an
+# outbound connection to Cloudflare's edge, so Cloudflare Access (GitHub SSO
+# + MFA) is the only way in, and there's no origin IP left to bypass it with
+# for these hostnames specifically. Add on top of the base compose + whichever
+# deployment override you're using:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml [...other add-ons] up -d --build
+#
+# Setup (Cloudflare Zero Trust dashboard, one-time):
+#  1. Networks > Tunnels > create a tunnel, copy its token into
+#     CLOUDFLARE_TUNNEL_TOKEN in .env.
+#  2. On that tunnel, add a Public Hostname for each admin subdomain
+#     (grafana./portainer./errors./flags./home.<DOMAIN>), all pointing to
+#     service `http://caddy:8080` — the plain-HTTP internal listener each of
+#     those addons' own *.caddy file exposes alongside its normal public
+#     address (see e.g. observability/grafana.caddy's own comment). Cloudflare
+#     provisions the DNS record for each hostname itself (CNAME to the
+#     tunnel), so they stop pointing at the VPS's public IP directly — Caddy's
+#     automatic HTTPS for their normal address just stays dormant, nothing to
+#     disable.
+#  3. Access > Applications: a Self-hosted application per hostname, policy
+#     requiring the GitHub identity provider + MFA (already set up per Logan's
+#     own Cloudflare Access + MFA rollout).
+#
+# Verify before relying on this: nothing in this compose file closes the
+# VPS's own firewall for ports 80/443 — Caddy's automatic-HTTPS attempt for
+# each tunneled hostname's normal address should simply go dormant once its
+# DNS record points at the tunnel instead of the VPS, but that's an assumption
+# worth confirming (check Caddy's logs for repeated failed ACME attempts on
+# these hostnames after cutover).
+#
+# Unleash (flags.<DOMAIN>) needs care: every visitor's browser polls its
+# /api/frontend endpoint unauthenticated (see flags/unleash.caddy's own
+# comment) — putting the whole hostname behind an Access policy breaks that
+# for every signed-out visitor. Add a second Access Application scoped to
+# `flags.<DOMAIN>/api/frontend*` with a public/bypass policy (or exclude that
+# path from the main policy) before enforcing Access on this hostname.
+#
+# This override is specific to loomkeep.app's own Cloudflare account —
+# self-hosters without Cloudflare keep using plain DNS + Caddy's automatic
+# HTTPS, with docker-compose.authelia.yml for SSO instead (see this
+# directory's own README, "Single sign-on").
+services:
+  cloudflared:
+    # Pin to a specific tag before deploying — check
+    # https://github.com/cloudflare/cloudflared/releases for the current
+    # stable release rather than trusting this value blind.
+    image: cloudflare/cloudflared:2025.9.1
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      - caddy
+
+  # Partial override of the `caddy` service: exposes the internal plain-HTTP
+  # listener cloudflared talks to. `expose`, not `ports` — reachable only
+  # from other containers on the compose network, same trust boundary as
+  # `db` (never published to the host, let alone the internet).
+  caddy:
+    expose:
+      - "8080"

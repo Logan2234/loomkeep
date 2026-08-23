@@ -11,7 +11,14 @@
 # either: every visitor's browser calls this same subdomain's /api/frontend
 # path directly and unauthenticated to poll live flags (see
 # apps/web/src/lib/feature-flags-live.ts), so gating the whole subdomain
-# would break that for every user.
-{$UNLEASH_SITE_ADDRESS} {
+# would break that for every user — this still applies if this hostname is
+# later put behind Cloudflare Access via docker-compose.tunnel.yml: exempt
+# `/api/frontend*` from the Access policy (a separate Access Application
+# with a public/bypass policy scoped to that path) before enforcing it here.
+#
+# Two addresses on the same block — see grafana.caddy's own comment for why:
+# `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare
+# Tunnel uses, dormant/unreachable for anyone on plain DNS.
+{$UNLEASH_SITE_ADDRESS}, {$UNLEASH_SITE_ADDRESS}:8080 {
 	reverse_proxy unleash:4242
 }
