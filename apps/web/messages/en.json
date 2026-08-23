@@ -319,6 +319,7 @@
   "auth_already_registered": "Already have an account?",
   "auth_register_accept_terms_prefix": "I accept the",
   "auth_register_accept_terms_and": "and acknowledge I've read the",
+  "auth_register_certify_age": "I certify that I am at least 15 years old.",
 
   "terms_reacceptance_title": "Terms of service update",
   "terms_reacceptance_body": "Our terms of service have been updated. Please review and accept them to keep using Loomkeep.",

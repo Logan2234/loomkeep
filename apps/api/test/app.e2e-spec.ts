@@ -82,6 +82,7 @@ describe("Loomkeep API (e2e)", () => {
     password: "E2e-password-1!",
     displayName: "E2E",
     acceptedTerms: true,
+    certifiedAge: true,
   };
   let accessToken: string;
   let refreshToken: string;
@@ -152,6 +153,17 @@ describe("Loomkeep API (e2e)", () => {
         ...user,
         email: "e2e-no-terms@loomkeep.test",
         acceptedTerms: false,
+      })
+      .expect(400);
+  });
+
+  it("rejects registration without certifying the minimum age", () => {
+    return request(http)
+      .post("/api/auth/register")
+      .send({
+        ...user,
+        email: "e2e-no-age@loomkeep.test",
+        certifiedAge: false,
       })
       .expect(400);
   });
@@ -580,6 +592,7 @@ describe("Loomkeep API (e2e)", () => {
       password: "Sessions-1!",
       displayName: "Sessions",
       acceptedTerms: true,
+      certifiedAge: true,
     };
     const reg = await request(http)
       .post("/api/auth/register")
@@ -661,6 +674,7 @@ describe("Loomkeep API (e2e)", () => {
       password: "Delete-me-1!",
       displayName: "Delete",
       acceptedTerms: true,
+      certifiedAge: true,
     };
     const registered = await request(http)
       .post("/api/auth/register")

@@ -36,6 +36,7 @@
   let password = $state("");
   let turnstileToken = $state("");
   let acceptedTerms = $state(false);
+  let certifiedAge = $state(false);
   let error = $state<string | null>(null);
   let loading = $state(false);
 
@@ -49,6 +50,7 @@
         password,
         displayName,
         acceptedTerms,
+        certifiedAge,
         turnstileToken,
       });
       await goto("/register/check-email");
@@ -127,6 +129,14 @@
             >.
           </span>
         </label>
+        <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
+          <input
+            type="checkbox"
+            bind:checked={certifiedAge}
+            required
+            class="mt-0.5" />
+          <span>{m.auth_register_certify_age()}</span>
+        </label>
         <button
           type="submit"
           class="btn btn-primary"
@@ -135,6 +145,7 @@
             !email ||
             !isPasswordValid(password) ||
             !acceptedTerms ||
+            !certifiedAge ||
             (!!turnstileSiteKey && !turnstileToken)}>
           {loading
             ? m.auth_register_action_loading()

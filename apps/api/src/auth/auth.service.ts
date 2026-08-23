@@ -92,6 +92,7 @@ export class AuthService {
         locale: detectLocale(acceptLanguage),
         acceptedTermsAt: new Date(),
         acceptedTermsVersion: LEGAL_VERSION,
+        certifiedAgeAt: new Date(),
         lastActiveAt: new Date(),
       },
     });

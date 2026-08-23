@@ -22,6 +22,9 @@ import type {
 } from "./provider.types";
 
 const BASE_URL = "https://api.themoviedb.org/3";
+// TMDB's terms forbid using its API as an image host — never download/cache
+// these and serve them from Loomkeep's own infra. URLs are only ever handed
+// to the client, which loads them straight from image.tmdb.org.
 const IMG = "https://image.tmdb.org/t/p";
 
 interface TmdbMovieResult {
