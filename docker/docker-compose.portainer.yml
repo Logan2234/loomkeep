@@ -14,7 +14,17 @@
 # across separate -f files).
 services:
   portainer:
-    image: portainer/portainer-ce:2.39.6
+    # 2.40.0, not 2.39.6: fixes a Go mime.ParseMediaType panic
+    # ("mime: invalid media parameter") on OAuth resource retrieval, hit
+    # against Cloudflare Access specifically — its userinfo endpoint returns
+    # a malformed, duplicated Content-Type
+    # (`application/json; charset=utf-8, application/json`) that Portainer's
+    # OAuth client couldn't parse pre-2.40.0 (portainer/portainer#12409). Not
+    # confirmed fixed by the 2.40.0 changelog itself (issue was only labeled
+    # for that release) — if OAuth login still fails after this bump, the
+    # fallback is a Caddy-side proxy in front of Cloudflare's userinfo
+    # endpoint that rewrites Content-Type before Portainer ever sees it.
+    image: portainer/portainer-ce:2.40.0
     restart: unless-stopped
     logging:
       driver: json-file
