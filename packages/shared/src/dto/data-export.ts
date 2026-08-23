@@ -3,14 +3,33 @@ import type {
   BookSource,
   BookStatus,
   CatalogSource,
+  CommentEmote,
+  CommentTargetType,
+  Domain,
   EntryStatus,
+  FollowStatus,
   GameOwnershipStatus,
   GameSource,
   GameStatus,
+  ListKind,
+  ListVisibility,
   MediaType,
+  ModerationLegalBasis,
+  ModerationMeasure,
   MusicOwnershipStatus,
   MusicSource,
   MusicStatus,
+  Plan,
+  ReportCategory,
+  ReportMotif,
+  ReportStatus,
+  ReportTargetType,
+  ReviewTargetType,
+  ReviewVisibility,
+  ReviewVoteValue,
+  SecurityEventType,
+  VisibilityAudience,
+  VisibilityFacet,
 } from "../enums";
 import { UserDto } from "./user";
 
@@ -119,6 +138,175 @@ interface DataExportNotification {
   createdAt: string;
 }
 
+/** One review the user wrote, with its edit history. */
+interface DataExportReview {
+  targetType: ReviewTargetType;
+  targetId: string;
+  /** Best-effort title of the reviewed work; null when it can't be resolved. */
+  targetTitle: string | null;
+  rating: number;
+  text: string | null;
+  visibility: ReviewVisibility;
+  createdAt: string;
+  updatedAt: string;
+  revisions: { rating: number; text: string | null; createdAt: string }[];
+}
+
+/** One vote the user cast on someone else's review. */
+interface DataExportReviewVote {
+  targetType: ReviewTargetType;
+  targetId: string;
+  value: ReviewVoteValue;
+  createdAt: string;
+}
+
+/** One comment or reply the user posted. */
+interface DataExportComment {
+  targetType: CommentTargetType;
+  targetId: string;
+  parentId: string | null;
+  text: string | null;
+  spoilerTag: boolean;
+  edited: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One reaction the user left on a comment. */
+interface DataExportCommentReaction {
+  commentId: string;
+  emote: CommentEmote;
+  createdAt: string;
+}
+
+/** One work in a user-curated list. */
+interface DataExportListItem {
+  targetType: ReviewTargetType;
+  targetId: string;
+  position: number;
+  addedAt: string;
+}
+
+/** One list the user owns. */
+interface DataExportList {
+  title: string;
+  description: string | null;
+  kind: ListKind;
+  visibility: ListVisibility;
+  createdAt: string;
+  updatedAt: string;
+  items: DataExportListItem[];
+}
+
+/** One list owned by someone else where the user was granted edit access. */
+interface DataExportListMembership {
+  listTitle: string;
+  listOwnerUsername: string;
+  createdAt: string;
+}
+
+/** One directed follow edge, from either side. */
+interface DataExportFollow {
+  username: string;
+  status: FollowStatus;
+  createdAt: string;
+}
+
+/** One user this account has blocked. */
+interface DataExportBlock {
+  username: string;
+  createdAt: string;
+}
+
+/** One report the user filed. */
+interface DataExportReport {
+  targetType: ReportTargetType;
+  category: ReportCategory | null;
+  motif: ReportMotif | null;
+  reason: string | null;
+  status: ReportStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+/** One moderation measure applied against the user (DSA art. 17). */
+interface DataExportModerationDecision {
+  measure: ModerationMeasure;
+  targetType: ReportTargetType;
+  legalBasis: ModerationLegalBasis;
+  reasonCategory: ReportCategory | null;
+  reasonMotif: ReportMotif | null;
+  reasonText: string;
+  /** The removed content itself, when the measure was a takedown. */
+  contentSnapshot: string | null;
+  decidedAt: string;
+}
+
+/** One sensitive account action (login, password/email change…). */
+interface DataExportSecurityEvent {
+  type: SecurityEventType;
+  identifier: string;
+  detail: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+/** One device/browser the account has ever logged in from. */
+interface DataExportDevice {
+  deviceKey: string;
+  userAgent: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+/** One privacy preference for a domain/facet pair. */
+interface DataExportVisibilitySetting {
+  domain: Domain;
+  facet: VisibilityFacet;
+  audience: VisibilityAudience;
+}
+
+/** The account's plan/entitlement state. */
+interface DataExportEntitlement {
+  plan: Plan;
+  source: string | null;
+  grantedAt: string | null;
+  expiresAt: string | null;
+  overrides: Record<string, unknown>;
+}
+
+/** One subscription (billing) record. */
+interface DataExportSubscription {
+  provider: string;
+  status: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One yearly reading goal. */
+interface DataExportReadingGoal {
+  year: number;
+  target: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One committed import (TV Time, Trakt, …). */
+interface DataExportImportRun {
+  sourceId: string;
+  status: string;
+  itemCount: number;
+  overwrite: boolean;
+  summary: string | null;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string;
+}
+
 /** Full portable dump of everything the account holds (GDPR "download my data"). */
 export interface UserDataExportDto {
   /** ISO datetime the export was produced. */
@@ -138,6 +326,26 @@ export interface UserDataExportDto {
   /** Reserved for the planned board-games domain (see `Domain.BOARDGAMES`); always empty until it ships. */
   boardGames: never[];
   notifications: DataExportNotification[];
+  reviews: DataExportReview[];
+  reviewVotes: DataExportReviewVote[];
+  comments: DataExportComment[];
+  commentReactions: DataExportCommentReaction[];
+  lists: DataExportList[];
+  listMemberships: DataExportListMembership[];
+  follows: { following: DataExportFollow[]; followers: DataExportFollow[] };
+  // Users this account blocked. Who blocked *this* account is deliberately
+  // excluded — blocking is designed to be silent so the blocked party never
+  // learns of it (see Block model in schema.prisma).
+  blocks: { blocking: DataExportBlock[] };
+  reports: DataExportReport[];
+  moderationDecisions: DataExportModerationDecision[];
+  securityEvents: DataExportSecurityEvent[];
+  devices: DataExportDevice[];
+  visibilitySettings: DataExportVisibilitySetting[];
+  entitlement: DataExportEntitlement;
+  subscriptions: DataExportSubscription[];
+  readingGoals: DataExportReadingGoal[];
+  importRuns: DataExportImportRun[];
 }
 
 /**

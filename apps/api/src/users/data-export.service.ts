@@ -36,6 +36,24 @@ export class DataExportService {
       bookEntries,
       musicEntries,
       notifications,
+      reviewRows,
+      reviewVoteRows,
+      commentRows,
+      commentReactionRows,
+      listRows,
+      listMemberRows,
+      followingRows,
+      followerRows,
+      blockingRows,
+      reportRows,
+      moderationDecisionRows,
+      securityEventRows,
+      deviceRows,
+      visibilitySettingRows,
+      entitlementRow,
+      subscriptionRows,
+      readingGoalRows,
+      importRunRows,
     ] = await Promise.all([
       this.prisma.libraryEntry.findMany({
         where: { userId },
@@ -80,6 +98,98 @@ export class DataExportService {
         where: { userId },
         orderBy: { createdAt: "asc" },
       }),
+      this.prisma.review.findMany({
+        where: { userId },
+        include: { revisions: { orderBy: { createdAt: "asc" } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.reviewVote.findMany({
+        where: { userId },
+        include: { review: { select: { targetType: true, targetId: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.comment.findMany({
+        where: { authorId: userId },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.commentReaction.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.list.findMany({
+        where: { userId },
+        include: { items: { orderBy: { position: "asc" } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.listMember.findMany({
+        where: { userId },
+        include: {
+          list: {
+            select: { title: true, user: { select: { username: true } } },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.follow.findMany({
+        where: { followerId: userId },
+        include: { followee: { select: { username: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.follow.findMany({
+        where: { followeeId: userId },
+        include: { follower: { select: { username: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.block.findMany({
+        where: { blockerId: userId },
+        include: { blocked: { select: { username: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.report.findMany({
+        where: { reporterId: userId },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.moderationDecision.findMany({
+        where: { subjectUserId: userId },
+        orderBy: { decidedAt: "asc" },
+      }),
+      this.prisma.securityEvent.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.userDevice.findMany({
+        where: { userId },
+        orderBy: { firstSeenAt: "asc" },
+      }),
+      this.prisma.visibilitySetting.findMany({ where: { userId } }),
+      this.prisma.userEntitlement.upsert({
+        where: { userId },
+        create: { userId },
+        update: {},
+      }),
+      this.prisma.subscription.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.readingGoal.findMany({
+        where: { userId },
+        orderBy: { year: "asc" },
+      }),
+      this.prisma.importRun.findMany({
+        where: { userId },
+        orderBy: { startedAt: "asc" },
+      }),
+    ]);
+
+    const reviewTargetTitles = await this.resolveReviewTargetTitles([
+      ...reviewRows.map((r) => ({
+        targetType: r.targetType,
+        targetId: r.targetId,
+      })),
+      ...reviewVoteRows.map((v) => ({
+        targetType: v.review.targetType,
+        targetId: v.review.targetId,
+      })),
     ]);
 
     // Ratings now live in Review; project them back into the export.
@@ -221,6 +331,211 @@ export class DataExportService {
         data: (n.data ?? {}) as Record<string, unknown>,
         createdAt: n.createdAt.toISOString(),
       })),
+      reviews: reviewRows.map((r) => ({
+        targetType: r.targetType as ReviewTargetType,
+        targetId: r.targetId,
+        targetTitle:
+          reviewTargetTitles.get(`${r.targetType}:${r.targetId}`) ?? null,
+        rating: r.rating,
+        text: r.text,
+        visibility: r.visibility,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        revisions: r.revisions.map((rev) => ({
+          rating: rev.rating,
+          text: rev.text,
+          createdAt: rev.createdAt.toISOString(),
+        })),
+      })),
+      reviewVotes: reviewVoteRows.map((v) => ({
+        targetType: v.review.targetType as ReviewTargetType,
+        targetId: v.review.targetId,
+        value: v.value,
+        createdAt: v.createdAt.toISOString(),
+      })),
+      comments: commentRows.map((c) => ({
+        targetType: c.targetType,
+        targetId: c.targetId,
+        parentId: c.parentId,
+        text: c.text,
+        spoilerTag: c.spoilerTag,
+        edited: c.edited,
+        deletedAt: c.deletedAt?.toISOString() ?? null,
+        createdAt: c.createdAt.toISOString(),
+        updatedAt: c.updatedAt.toISOString(),
+      })),
+      commentReactions: commentReactionRows.map((r) => ({
+        commentId: r.commentId,
+        emote: r.emote,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      lists: listRows.map((l) => ({
+        title: l.title,
+        description: l.description,
+        kind: l.kind,
+        visibility: l.visibility,
+        createdAt: l.createdAt.toISOString(),
+        updatedAt: l.updatedAt.toISOString(),
+        items: l.items.map((i) => ({
+          targetType: i.targetType as ReviewTargetType,
+          targetId: i.targetId,
+          position: i.position,
+          addedAt: i.addedAt.toISOString(),
+        })),
+      })),
+      listMemberships: listMemberRows.map((m) => ({
+        listTitle: m.list.title,
+        listOwnerUsername: m.list.user.username,
+        createdAt: m.createdAt.toISOString(),
+      })),
+      follows: {
+        following: followingRows.map((f) => ({
+          username: f.followee.username,
+          status: f.status,
+          createdAt: f.createdAt.toISOString(),
+        })),
+        followers: followerRows.map((f) => ({
+          username: f.follower.username,
+          status: f.status,
+          createdAt: f.createdAt.toISOString(),
+        })),
+      },
+      blocks: {
+        blocking: blockingRows.map((b) => ({
+          username: b.blocked.username,
+          createdAt: b.createdAt.toISOString(),
+        })),
+      },
+      reports: reportRows.map((r) => ({
+        targetType: r.targetType,
+        category: r.category,
+        motif: r.motif,
+        reason: r.reason,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+        resolvedAt: r.resolvedAt?.toISOString() ?? null,
+      })),
+      moderationDecisions: moderationDecisionRows.map((m) => ({
+        measure: m.measure,
+        targetType: m.targetType,
+        legalBasis: m.legalBasis,
+        reasonCategory: m.reasonCategory,
+        reasonMotif: m.reasonMotif,
+        reasonText: m.reasonText,
+        contentSnapshot: m.contentSnapshot,
+        decidedAt: m.decidedAt.toISOString(),
+      })),
+      securityEvents: securityEventRows.map((s) => ({
+        type: s.type,
+        identifier: s.identifier,
+        detail: s.detail,
+        userAgent: s.userAgent,
+        createdAt: s.createdAt.toISOString(),
+      })),
+      devices: deviceRows.map((d) => ({
+        deviceKey: d.deviceKey,
+        userAgent: d.userAgent,
+        firstSeenAt: d.firstSeenAt.toISOString(),
+        lastSeenAt: d.lastSeenAt.toISOString(),
+      })),
+      visibilitySettings: visibilitySettingRows.map((v) => ({
+        domain: v.domain,
+        facet: v.facet,
+        audience: v.audience,
+      })),
+      entitlement: {
+        plan: entitlementRow.plan,
+        source: entitlementRow.source,
+        grantedAt: entitlementRow.grantedAt?.toISOString() ?? null,
+        expiresAt: entitlementRow.expiresAt?.toISOString() ?? null,
+        overrides: (entitlementRow.overrides ?? {}) as Record<string, unknown>,
+      },
+      subscriptions: subscriptionRows.map((s) => ({
+        provider: s.provider,
+        status: s.status,
+        currentPeriodEnd: s.currentPeriodEnd?.toISOString() ?? null,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+        canceledAt: s.canceledAt?.toISOString() ?? null,
+        createdAt: s.createdAt.toISOString(),
+        updatedAt: s.updatedAt.toISOString(),
+      })),
+      readingGoals: readingGoalRows.map((g) => ({
+        year: g.year,
+        target: g.target,
+        createdAt: g.createdAt.toISOString(),
+        updatedAt: g.updatedAt.toISOString(),
+      })),
+      importRuns: importRunRows.map((i) => ({
+        sourceId: i.sourceId,
+        status: i.status,
+        itemCount: i.itemCount,
+        overwrite: i.overwrite,
+        summary: i.summary,
+        error: i.error,
+        startedAt: i.startedAt.toISOString(),
+        finishedAt: i.finishedAt.toISOString(),
+      })),
     };
+  }
+
+  /**
+   * Best-effort title lookup for review/vote targets, batched per catalogue
+   * table. SEASON/EPISODE targets (not creatable from the UI yet) resolve to
+   * null, same as unknown/removed items.
+   */
+  private async resolveReviewTargetTitles(
+    targets: { targetType: string; targetId: string }[],
+  ): Promise<Map<string, string>> {
+    const idsByType = new Map<string, Set<string>>();
+
+    for (const t of targets) {
+      const set = idsByType.get(t.targetType) ?? new Set<string>();
+      set.add(t.targetId);
+      idsByType.set(t.targetType, set);
+    }
+
+    const map = new Map<string, string>();
+    const mediaIds = [...(idsByType.get(ReviewTargetType.MEDIA) ?? [])];
+    const gameIds = [...(idsByType.get(ReviewTargetType.GAME) ?? [])];
+    const bookIds = [...(idsByType.get(ReviewTargetType.BOOK) ?? [])];
+    const musicIds = [...(idsByType.get(ReviewTargetType.MUSIC) ?? [])];
+
+    const [mediaItems, gameItems, bookItems, musicItems] = await Promise.all([
+      mediaIds.length
+        ? this.prisma.mediaItem.findMany({
+            where: { id: { in: mediaIds } },
+            select: { id: true, title: true },
+          })
+        : [],
+      gameIds.length
+        ? this.prisma.gameItem.findMany({
+            where: { id: { in: gameIds } },
+            select: { id: true, title: true },
+          })
+        : [],
+      bookIds.length
+        ? this.prisma.bookItem.findMany({
+            where: { id: { in: bookIds } },
+            select: { id: true, title: true },
+          })
+        : [],
+      musicIds.length
+        ? this.prisma.musicItem.findMany({
+            where: { id: { in: musicIds } },
+            select: { id: true, title: true },
+          })
+        : [],
+    ]);
+
+    for (const i of mediaItems)
+      map.set(`${ReviewTargetType.MEDIA}:${i.id}`, i.title);
+    for (const i of gameItems)
+      map.set(`${ReviewTargetType.GAME}:${i.id}`, i.title);
+    for (const i of bookItems)
+      map.set(`${ReviewTargetType.BOOK}:${i.id}`, i.title);
+    for (const i of musicItems)
+      map.set(`${ReviewTargetType.MUSIC}:${i.id}`, i.title);
+
+    return map;
   }
 }
