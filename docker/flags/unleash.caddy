@@ -16,9 +16,17 @@
 # `/api/frontend*` from the Access policy (a separate Access Application
 # with a public/bypass policy scoped to that path) before enforcing it here.
 #
-# Two addresses on the same block — see grafana.caddy's own comment for why:
-# `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare
-# Tunnel uses, dormant/unreachable for anyone on plain DNS.
-{$UNLEASH_SITE_ADDRESS}, http://{$UNLEASH_SITE_ADDRESS}:8080 {
+# Two blocks — see grafana.caddy's own comment for why: `:8080` is the
+# plain-HTTP path docker-compose.tunnel.yml's Cloudflare Tunnel uses,
+# dormant/unreachable for anyone on plain DNS, and the `header_up` override
+# tells Unleash the original request was https even though this internal hop
+# isn't — the connection Cloudflare terminated for the visitor always was.
+{$UNLEASH_SITE_ADDRESS} {
 	reverse_proxy unleash:4242
+}
+
+http://{$UNLEASH_SITE_ADDRESS}:8080 {
+	reverse_proxy unleash:4242 {
+		header_up X-Forwarded-Proto https
+	}
 }

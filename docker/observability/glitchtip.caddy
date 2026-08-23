@@ -9,9 +9,22 @@
 # first visitor creates the org/first user) is the only gate, same call as
 # Grafana/Portainer.
 #
-# Two addresses on the same block — see grafana.caddy's own comment for why:
-# `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare
-# Tunnel uses, dormant/unreachable for anyone on plain DNS.
-{$GLITCHTIP_SITE_ADDRESS}, http://{$GLITCHTIP_SITE_ADDRESS}:8080 {
+# Two blocks instead of one — see grafana.caddy's own comment for why the
+# second exists at all (`:8080` is the plain-HTTP path docker-compose.tunnel.yml's
+# Cloudflare Tunnel uses, dormant/unreachable for anyone on plain DNS). Split
+# into separate blocks (rather than one block with two addresses) so the
+# `header_up` override below applies only to the tunnel path: Caddy sets
+# X-Forwarded-Proto from its own listener's scheme, which is plain http for
+# this internal, un-TLS'd hop — even though the original browser connection
+# was https all the way to Cloudflare's edge. GlitchTip's CSRF_TRUSTED_ORIGINS
+# is `https://…`, so without this override Django sees a "http" proto on an
+# https-only trusted origin and 403s every POST (login included).
+{$GLITCHTIP_SITE_ADDRESS} {
 	reverse_proxy glitchtip:8000
+}
+
+http://{$GLITCHTIP_SITE_ADDRESS}:8080 {
+	reverse_proxy glitchtip:8000 {
+		header_up X-Forwarded-Proto https
+	}
 }
