@@ -151,6 +151,7 @@ describe("AuthService.register", () => {
         password: "secret1234",
         displayName: "Alice",
         acceptedTerms: true,
+        certifiedAge: true,
       }),
     ).rejects.toThrow(ForbiddenException);
     expect(turnstile.verify).not.toHaveBeenCalled();
@@ -167,6 +168,7 @@ describe("AuthService.register", () => {
         password: "secret1234",
         displayName: "Alice",
         acceptedTerms: true,
+        certifiedAge: true,
         turnstileToken: "bad-token",
       }),
     ).rejects.toThrow(BadRequestException);
@@ -183,6 +185,7 @@ describe("AuthService.register", () => {
         password: "secret1234",
         displayName: "Alice",
         acceptedTerms: true,
+        certifiedAge: true,
       }),
     ).rejects.toThrow(ConflictException);
     expect(prisma.user.create).not.toHaveBeenCalled();
@@ -199,6 +202,7 @@ describe("AuthService.register", () => {
         password: "secret1234",
         displayName: "Alice",
         acceptedTerms: true,
+        certifiedAge: true,
       }),
     ).rejects.toThrow(BadRequestException);
     expect(prisma.user.create).not.toHaveBeenCalled();
@@ -218,6 +222,7 @@ describe("AuthService.register", () => {
       password: "secret1234",
       displayName: "Alice",
       acceptedTerms: true,
+      certifiedAge: true,
     });
 
     const createArgs = (prisma.user.create as jest.Mock).mock.calls[0][0];
@@ -228,6 +233,7 @@ describe("AuthService.register", () => {
     expect(createArgs.data.username).toBe("alice");
     expect(createArgs.data.acceptedTermsAt).toBeInstanceOf(Date);
     expect(createArgs.data.acceptedTermsVersion).toBeTruthy();
+    expect(createArgs.data.certifiedAgeAt).toBeInstanceOf(Date);
 
     expect(result.user.email).toBe("alice@example.com");
     expect(result.tokens.accessToken).toBeTruthy();
@@ -265,6 +271,7 @@ describe("AuthService.register", () => {
       password: "secret1234",
       displayName: "Alice",
       acceptedTerms: true,
+      certifiedAge: true,
     });
 
     const createArgs = (prisma.user.create as jest.Mock).mock.calls[0][0];

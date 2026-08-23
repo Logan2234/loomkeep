@@ -343,6 +343,7 @@
         {#each dragItems as item (item.id)}
           <div
             class="group relative"
+            role="presentation"
             style="-webkit-touch-callout: none;"
             oncontextmenu={(e) => canEditList && e.preventDefault()}
             use:longpress={{

@@ -18,6 +18,16 @@ install validates every importer in the lockfile). The api image runs
 `prisma migrate deploy` at boot; the web runtime image ships only the
 self-contained adapter-node `build/` output.
 
+## Self-hosting & legal responsibility
+
+Standing up this stack for other people (not just running it locally for
+yourself) makes you a data controller under the GDPR for whatever personal
+data your instance processes — Loomkeep's own hosted-instance legal notices
+and privacy policy (`apps/web/src/routes/legal/`) cover Logan's VPS only,
+they don't cover yours. You need your own mentions légales and privacy
+policy; the privacy policy's §20 ("Instances auto-hébergées") is a starting
+point to adapt, not something to reference in place of writing your own.
+
 ## Images
 
 `apps/api/Dockerfile` and `apps/web/Dockerfile` are built and pushed to
@@ -98,6 +108,13 @@ no Docker commands needed:
 touch docker/caddy-flags/maintenance   # on
 rm docker/caddy-flags/maintenance      # off
 ```
+
+## Operator checklist (public instance)
+
+Annual: confirm the OVH account behind loomkeep.app still carries Logan's
+real identity and address — required for the LCEN art. 6-III exemption from
+publishing personal mentions légales (the hosting provider's own registered
+details stand in for the operator's).
 
 ## Backups
 

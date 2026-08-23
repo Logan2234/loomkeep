@@ -41,6 +41,9 @@ export class RegisterDto implements RegisterRequestDto {
   @Equals(true, { message: "terms of service must be accepted" })
   acceptedTerms!: boolean;
 
+  @Equals(true, { message: "age certification is required" })
+  certifiedAge!: boolean;
+
   // Required only when TURNSTILE_SECRET_KEY is set — TurnstileService.verify
   // treats a missing token as a failed check in that case.
   @IsOptional()

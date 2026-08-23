@@ -497,6 +497,9 @@ model User {
   // current LEGAL_VERSION.
   acceptedTermsAt            DateTime?
   acceptedTermsVersion       String?
+  // LK-C21: when the user self-certified being at least 15 (register.dto.ts
+  // requires it). Null for accounts predating this field.
+  certifiedAgeAt             DateTime?
   // LK-C06: last time this account did anything that proves a human is still
   // behind it — bumped on register, login and refresh-token rotation (not
   // just login, since a long-lived session never re-enters credentials).

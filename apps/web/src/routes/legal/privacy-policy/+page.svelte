@@ -693,7 +693,12 @@
       <li>droit de rectification ;</li>
       <li>droit à l'effacement ;</li>
       <li>droit à la limitation du traitement ;</li>
-      <li>droit d'opposition lorsque ce droit est applicable ;</li>
+      <li>
+        droit d'opposition lorsque ce droit est applicable, à exercer via le
+        contact indiqué à l'article suivant ; Loomkeep peut refuser d'y faire
+        droit en présence de motifs légitimes impérieux, notamment pour des
+        raisons de sécurité ou de lutte contre la fraude ;
+      </li>
       <li>
         droit à la portabilité des données lorsque les conditions sont réunies ;
       </li>
@@ -725,6 +730,13 @@
       Lorsque cela est nécessaire pour protéger les données du compte, Loomkeep
       peut demander des informations permettant de vérifier l'identité du
       demandeur.
+    </p>
+    <p>
+      Loomkeep répond à la demande dans un délai d'un mois à compter de sa
+      réception. Ce délai peut être prolongé de deux mois supplémentaires compte
+      tenu de la complexité de la demande ou du nombre de demandes ;
+      l'utilisateur en est alors informé, avec les motifs du report, dans le
+      mois suivant la réception de sa demande.
     </p>
     <h2>18. Réclamation auprès de la CNIL</h2>
     <p>
