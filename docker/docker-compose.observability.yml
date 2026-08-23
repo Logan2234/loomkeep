@@ -5,14 +5,21 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d --build
 #
-# Grafana is reachable two ways at once:
-#  - Publicly at GRAFANA_SITE_ADDRESS (e.g. grafana.loomkeep.app) via Caddy —
-#    see observability/grafana.caddy, imported by the base Caddyfile only
-#    when this override is in use. Gated by Grafana's own login only, no
-#    basic auth in front (Logan's explicit call — revisit if that ever feels
-#    insufficient).
-#  - 127.0.0.1:3001 directly, kept as a fallback that doesn't need Caddy/DNS
-#    at all — reach it via an SSH tunnel: `ssh -L 3001:localhost:3001 <user>@<vps>`.
+# Grafana is reachable at GRAFANA_SITE_ADDRESS (e.g. grafana.loomkeep.app) via
+# Caddy — see observability/grafana.caddy, imported by the base Caddyfile
+# only when this override is in use. Gated by Grafana's own login only, no
+# basic auth in front (Logan's explicit call — revisit if that ever feels
+# insufficient). Caddy reaches it over the internal Docker network on :3000 —
+# no host port needed for that path at all.
+#
+# The `127.0.0.1:3001` host port publish (an SSH-tunnel fallback that doesn't
+# need Caddy/DNS: `ssh -L 3001:localhost:3001 <user>@<vps>`) is commented out
+# below: on the VPS it hit a persistent "port is already allocated" /
+# `NetworkSettings.Networks` staying `{}` even after a full container
+# recreate and a `systemctl restart docker` — something's holding :3001 at a
+# level neither survived. Re-enable once that's root-caused; until then this
+# override doesn't publish anything to the host, so no other change is
+# needed to keep working via the tunnel/plain-DNS Caddy path.
 #
 # Prometheus itself has no public/tunnel access point — it's only a Grafana
 # data source, queried through Grafana's own auth, so there's nothing to gate.
@@ -94,8 +101,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
-    ports:
-      - "127.0.0.1:3001:3000"
+    # ports:
+    #   - "127.0.0.1:3001:3000"
     depends_on:
       - loki
       - prometheus
