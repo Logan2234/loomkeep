@@ -12,9 +12,18 @@
 # this change, or docker/README.md's "Single sign-on" section for the
 # pattern — auth.<DOMAIN> + forward_auth against authelia:9091).
 #
-# Two addresses on the same block — see observability/grafana.caddy's own
-# comment for why: `:8080` is the plain-HTTP path docker-compose.tunnel.yml's
-# Cloudflare Tunnel uses, dormant/unreachable for anyone on plain DNS.
-{$HOMEPAGE_SITE_ADDRESS}, http://{$HOMEPAGE_SITE_ADDRESS}:8080 {
+# Two blocks — see observability/grafana.caddy's own comment for why:
+# `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare
+# Tunnel uses, dormant/unreachable for anyone on plain DNS, and the
+# `header_up` override tells Homepage the original request was https even
+# though this internal hop isn't — the connection Cloudflare terminated for
+# the visitor always was.
+{$HOMEPAGE_SITE_ADDRESS} {
 	reverse_proxy homepage:3000
+}
+
+http://{$HOMEPAGE_SITE_ADDRESS}:8080 {
+	reverse_proxy homepage:3000 {
+		header_up X-Forwarded-Proto https
+	}
 }
