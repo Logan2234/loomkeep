@@ -447,6 +447,22 @@ becomes authoritative immediately, even OFF by default — so create it and
 flip it on in Unleash _before_ removing the env var from `.env`, not after,
 or the feature goes dark for however long that gap lasts.
 
+**Cloudflare Access in front of `flags.<DOMAIN>` (same gotcha as
+Grafana/UptimeRobot above, worse impact):** putting the whole Unleash app
+behind Access breaks feature flags outright, not just monitoring — both the
+api's server-side SDK (`UNLEASH_API_URL`, hitting `/api/client/features`,
+whether that's this deployment's own api over Docker or a dev machine
+pointed at the remote instance) and the browser's live Frontend API
+(`PUBLIC_UNLEASH_FRONTEND_URL`, hitting `/api/frontend/*`) get Access's HTML
+login page back instead of JSON — the client logs `Unexpected token '<' ...
+is not valid JSON` and every flag falls back to its hardcoded default. Both
+of these endpoints already carry their own token
+(`UNLEASH_API_TOKEN`/`PUBLIC_UNLEASH_FRONTEND_TOKEN`), so they don't need
+Access's login on top. Fix: scope the Access application to the admin UI
+only — add a **bypass** policy (Include: Everyone) for the paths
+`/api/client/*` and `/api/frontend/*`, leaving every other path (the login
+screen and admin UI) behind Access as before.
+
 ### Landing page (optional)
 
 Add `docker/docker-compose.authelia.yml` and `docker/docker-compose.homepage.yml`
