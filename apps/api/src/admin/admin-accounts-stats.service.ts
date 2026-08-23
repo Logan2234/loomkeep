@@ -105,20 +105,12 @@ export class AdminAccountsStatsService {
     const months = cohortMonthStarts(now);
     const users = await this.prisma.user.findMany({
       where: { createdAt: { gte: months[0] } },
-      select: {
-        createdAt: true,
-        // Only the freshest session matters: it is the account's "last seen".
-        refreshTokens: {
-          select: { lastUsedAt: true },
-          orderBy: { lastUsedAt: "desc" },
-          take: 1,
-        },
-      },
+      select: { createdAt: true, lastActiveAt: true },
     });
 
     const cohortUsers: CohortUser[] = users.map((u) => ({
       createdAt: u.createdAt,
-      lastActiveAt: u.refreshTokens[0]?.lastUsedAt ?? null,
+      lastActiveAt: u.lastActiveAt,
     }));
 
     return cohortRetention(cohortUsers, months);

@@ -4,6 +4,7 @@ export const JOB_KEYS = {
   MEDIA_REFRESH_STALE: "media.refreshStale",
   REPORTS_DIGEST: "reports.digest",
   BACKUP: "backup.run",
+  INACTIVE_ACCOUNTS_SCAN: "users.inactiveAccountsScan",
 } as const;
 
 export type JobKey = (typeof JOB_KEYS)[keyof typeof JOB_KEYS];
@@ -18,6 +19,7 @@ export const JOB_HEALTHCHECK_ENV: Record<JobKey, string> = {
   [JOB_KEYS.MEDIA_REFRESH_STALE]: "HEALTHCHECKS_MEDIA_REFRESH_STALE_URL",
   [JOB_KEYS.REPORTS_DIGEST]: "HEALTHCHECKS_REPORTS_DIGEST_URL",
   [JOB_KEYS.BACKUP]: "HEALTHCHECKS_BACKUP_URL",
+  [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: "HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL",
 };
 
 /** Display metadata for the admin "Jobs & tâches" page. */
@@ -38,5 +40,9 @@ export const JOB_REGISTRY: Record<JobKey, { label: string; schedule: string }> =
     [JOB_KEYS.BACKUP]: {
       label: "Sauvegarde automatique",
       schedule: "Tous les jours à 3h",
+    },
+    [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: {
+      label: "Comptes inactifs (relance + suppression)",
+      schedule: "Tous les jours à 5h",
     },
   };

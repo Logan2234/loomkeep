@@ -96,7 +96,7 @@ export class AdminUsersController {
         : {}),
       ...(activeFilter === "admin" ? { role: "ADMIN" as const } : {}),
       ...(activeFilter === "unverified" ? { emailVerified: false } : {}),
-      ...(activeFilter === "never" ? { refreshTokens: { none: {} } } : {}),
+      ...(activeFilter === "never" ? { lastActiveAt: null } : {}),
     };
 
     const users = await this.prisma.user.findMany({
@@ -105,17 +105,6 @@ export class AdminUsersController {
       skip: (pageNum - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     });
-
-    // Scoped to this page's accounts only — the full-table groupBy this
-    // replaced didn't scale with the account count, this does.
-    const lastActive = await this.prisma.refreshToken.groupBy({
-      by: ["userId"],
-      where: { userId: { in: users.map((u) => u.id) } },
-      _max: { lastUsedAt: true },
-    });
-    const lastActiveByUserId = new Map(
-      lastActive.map((r) => [r.userId, r._max.lastUsedAt]),
-    );
 
     // Same batched pattern — most accounts have no row yet (defaults to
     // FREE, see EntitlementService), so this is a lookup, not a per-user query.
@@ -137,7 +126,9 @@ export class AdminUsersController {
         role: u.role,
         plan: planByUserId.get(u.id) ?? "FREE",
         createdAt: u.createdAt.toISOString(),
-        lastActiveAt: lastActiveByUserId.get(u.id)?.toISOString() ?? null,
+        lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
+        inactivityWarningSentAt:
+          u.inactivityWarningSentAt?.toISOString() ?? null,
       })),
     };
   }

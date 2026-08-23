@@ -40,10 +40,10 @@ import { Public } from "../auth/decorators/public.decorator";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
-import { ListService } from "../lists/list.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { AccountDeletionService } from "./account-deletion.service";
 import { isAdult } from "./age.util";
 import { matchesMimeType } from "./avatar.util";
 import { CsvExportService } from "./csv-export.service";
@@ -75,8 +75,8 @@ export class UsersController {
     private readonly csvExport: CsvExportService,
     private readonly config: ConfigService,
     private readonly hibp: HibpService,
-    private readonly lists: ListService,
     private readonly entitlements: EntitlementService,
+    private readonly accountDeletion: AccountDeletionService,
   ) {}
 
   @Get("me")
@@ -602,16 +602,12 @@ export class UsersController {
       dto.currentPassword,
     );
 
-    // Recorded before the delete so the FK (onDelete: SetNull) still resolves;
-    // the row itself survives the account's removal.
-    await this.security.record({
-      type: "USER_DELETED",
-      userId: payload.sub,
-      identifier: current.email,
+    await this.accountDeletion.deleteAccount(
+      payload.sub,
+      current.email,
+      "Suppression demandée par l'utilisateur",
       userAgent,
-    });
-    await this.lists.reassignOwnedListsOnAccountDeletion(payload.sub);
-    await this.prisma.user.delete({ where: { id: payload.sub } });
+    );
   }
 
   /** Live check backing the debounced availability hint in the username form. */

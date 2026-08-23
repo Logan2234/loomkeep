@@ -9,10 +9,10 @@ import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { HibpService } from "../common/hibp.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
-import type { ListService } from "../lists/list.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
+import type { AccountDeletionService } from "./account-deletion.service";
 import type { CsvExportService } from "./csv-export.service";
 import type { DataExportService } from "./data-export.service";
 import { UsersController } from "./users.controller";
@@ -61,11 +61,9 @@ describe("UsersController — email change", () => {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        reassignOwnedListsOnAccountDeletion: jest.fn(),
-      } as unknown as ListService,
-      {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
     );
   });
 
@@ -287,11 +285,9 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        reassignOwnedListsOnAccountDeletion: jest.fn(),
-      } as unknown as ListService,
-      {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
     );
   });
 
@@ -366,11 +362,9 @@ describe("UsersController — updateMe newsletter opt-in timestamp", () => {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        reassignOwnedListsOnAccountDeletion: jest.fn(),
-      } as unknown as ListService,
-      {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
     );
   }
 
@@ -456,11 +450,9 @@ describe("UsersController — uploadAvatar", () => {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        reassignOwnedListsOnAccountDeletion: jest.fn(),
-      } as unknown as ListService,
-      {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
     );
   });
 
@@ -539,11 +531,9 @@ describe("UsersController — changePassword", () => {
       {} as unknown as ConfigService,
       hibp,
       {
-        reassignOwnedListsOnAccountDeletion: jest.fn(),
-      } as unknown as ListService,
-      {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
     );
   });
 
@@ -602,7 +592,7 @@ describe("UsersController — changePassword", () => {
 describe("UsersController — deleteAccount", () => {
   const userId = "user-1";
   let prisma: PrismaService;
-  let lists: ListService;
+  let accountDeletion: AccountDeletionService;
   let controller: UsersController;
 
   beforeEach(async () => {
@@ -614,12 +604,11 @@ describe("UsersController — deleteAccount", () => {
           email: "alice@example.com",
           passwordHash,
         }),
-        delete: jest.fn(),
       },
     } as unknown as PrismaService;
-    lists = {
-      reassignOwnedListsOnAccountDeletion: jest.fn(),
-    } as unknown as ListService;
+    accountDeletion = {
+      deleteAccount: jest.fn(),
+    } as unknown as AccountDeletionService;
     controller = new UsersController(
       prisma,
       {} as unknown as MailService,
@@ -628,10 +617,10 @@ describe("UsersController — deleteAccount", () => {
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       { isPasswordPwned: jest.fn() } as unknown as HibpService,
-      lists,
       {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      accountDeletion,
     );
   });
 
@@ -642,30 +631,20 @@ describe("UsersController — deleteAccount", () => {
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
-    expect(lists.reassignOwnedListsOnAccountDeletion).not.toHaveBeenCalled();
-    expect(prisma.user.delete).not.toHaveBeenCalled();
+    expect(accountDeletion.deleteAccount).not.toHaveBeenCalled();
   });
 
-  it("reassigns owned lists with editors before deleting the account", async () => {
-    const calls: string[] = [];
-    (lists.reassignOwnedListsOnAccountDeletion as jest.Mock).mockImplementation(
-      async () => {
-        calls.push("reassign");
-      },
-    );
-    (prisma.user.delete as jest.Mock).mockImplementation(async () => {
-      calls.push("delete");
-    });
-
+  it("delegates to AccountDeletionService with the account's email", async () => {
     await controller.deleteAccount(jwtPayload(userId), {
       currentPassword: "correct-password",
     });
 
-    expect(lists.reassignOwnedListsOnAccountDeletion).toHaveBeenCalledWith(
+    expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
       userId,
+      "alice@example.com",
+      expect.any(String),
+      undefined,
     );
-    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: userId } });
-    expect(calls).toEqual(["reassign", "delete"]);
   });
 });
 
@@ -701,11 +680,9 @@ describe("UsersController — deletionSummary", () => {
         isPasswordPwned: jest.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        reassignOwnedListsOnAccountDeletion: jest.fn(),
-      } as unknown as ListService,
-      {
         hasPremium: jest.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
     );
   });
 

@@ -409,6 +409,8 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime onboardedAt "❓"
     DateTime acceptedTermsAt "❓"
     String acceptedTermsVersion "❓"
+    DateTime lastActiveAt "❓"
+    DateTime inactivityWarningSentAt "❓"
     }
 
 

@@ -321,6 +321,23 @@ describe("AuthService.login", () => {
     );
   });
 
+  it("bumps lastActiveAt and clears any pending inactivity warning (LK-C06)", async () => {
+    const { service, prisma } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash });
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+
+    await service.login({
+      identifier: "alice@example.com",
+      password: "correct-password",
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { lastActiveAt: expect.any(Date), inactivityWarningSentAt: null },
+    });
+  });
+
   it("drops any prior session for the same device before recording the new one", async () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
@@ -452,7 +469,11 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
       password: "correct-password",
     });
 
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: expect.anything() }),
+      }),
+    );
   });
 
   it("does not promote a non-matching account", async () => {
@@ -466,7 +487,11 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
       password: "correct-password",
     });
 
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: expect.anything() }),
+      }),
+    );
     expect(result.user.role).toBe("USER");
   });
 
@@ -481,7 +506,11 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
       password: "correct-password",
     });
 
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: expect.anything() }),
+      }),
+    );
   });
 });
 
@@ -539,6 +568,24 @@ describe("AuthService.refresh", () => {
         }),
       }),
     );
+  });
+
+  it("bumps lastActiveAt and clears any pending inactivity warning (LK-C06)", async () => {
+    const { service, prisma } = makeService();
+    const user = makeUser();
+    (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
+      id: "rt-1",
+      tokenHash: hashToken("old-token"),
+      expiresAt: new Date(Date.now() + 1000),
+      user,
+    });
+
+    await service.refresh("old-token");
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { lastActiveAt: expect.any(Date), inactivityWarningSentAt: null },
+    });
   });
 });
 

@@ -286,8 +286,10 @@ export interface AdminUserDto {
   /** Paid tier (docs/adr/0001-open-core-agpl.md) — set from this same panel. */
   plan: Plan;
   createdAt: string;
-  /** Most recent `RefreshToken.lastUsedAt` across every device, null if never signed in. */
+  /** `User.lastActiveAt` — bumped on register/login/refresh, null if never signed in. */
   lastActiveAt: string | null;
+  /** LK-C06: set once the inactivity reminder email has been sent, null otherwise. */
+  inactivityWarningSentAt: string | null;
 }
 
 /** Extra server-side filter for the admin users list, on top of free-text search. */

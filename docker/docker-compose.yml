@@ -71,6 +71,7 @@ services:
       HEALTHCHECKS_MEDIA_REFRESH_STALE_URL: ${HEALTHCHECKS_MEDIA_REFRESH_STALE_URL:-}
       HEALTHCHECKS_REPORTS_DIGEST_URL: ${HEALTHCHECKS_REPORTS_DIGEST_URL:-}
       HEALTHCHECKS_BACKUP_URL: ${HEALTHCHECKS_BACKUP_URL:-}
+      HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL: ${HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL:-}
       # Shared secret for the Homepage dashboard's user-count widget
       # (GET /api/public-stats/summary) — see docker/docker-compose.homepage.yml.
       # Empty = the guard fails closed, endpoint stays unreachable.

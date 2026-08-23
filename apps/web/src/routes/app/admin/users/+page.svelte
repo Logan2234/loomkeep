@@ -579,6 +579,15 @@
           onClose={() => (avatarLightbox = false)} />
       {/if}
 
+      {#if selected.inactivityWarningSentAt}
+        <p
+          class="border-warning/40 bg-warning/10 text-warning mb-4 rounded-lg border px-3 py-2 text-xs">
+          Relance inactivité envoyée le {formatDate(
+            selected.inactivityWarningSentAt,
+          )} — suppression automatique si le compte reste inactif (LK-C06).
+        </p>
+      {/if}
+
       <!-- Identité -->
       <section class="mb-5">
         <h3

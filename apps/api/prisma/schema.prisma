@@ -497,6 +497,18 @@ model User {
   // current LEGAL_VERSION.
   acceptedTermsAt            DateTime?
   acceptedTermsVersion       String?
+  // LK-C06: last time this account did anything that proves a human is still
+  // behind it — bumped on register, login and refresh-token rotation (not
+  // just login, since a long-lived session never re-enters credentials).
+  // Drives both the admin "last active" column and the inactive-account job
+  // below. Null only for accounts predating this field (backfilled by
+  // migration from the best signal then available).
+  lastActiveAt               DateTime?
+  // Set when the inactivity reminder email is sent (see
+  // InactiveAccountService); cleared back to null the moment lastActiveAt is
+  // next bumped, so a returning user gets the full inactivity window again
+  // instead of being deleted on the strength of a stale warning.
+  inactivityWarningSentAt    DateTime?
 
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
@@ -530,6 +542,8 @@ model User {
   moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
   entitlement                UserEntitlement?
   subscriptions              Subscription[]
+
+  @@index([lastActiveAt])
 }
 
 // Social (P4): per-user, per-domain, per-facet audience. One row overrides the
