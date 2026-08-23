@@ -209,6 +209,17 @@ export class MailService {
       ],
       build: (v) => this.buildNewDeviceLogin(v.deviceLabel, v.ip || null),
     },
+    inactivityWarning: {
+      label: "Relance compte inactif (LK-C06)",
+      fields: [
+        {
+          key: "deletionDate",
+          label: "Date de suppression prévue",
+          default: "15/08/2028",
+        },
+      ],
+      build: (v) => this.buildInactivityWarning(v.deletionDate),
+    },
     moderationDecision: {
       label: "Décision de modération (DSA art. 17)",
       fields: [
@@ -400,6 +411,16 @@ export class MailService {
   }
 
   /**
+   * LK-C06: warns an inactive account it will be deleted on `deletionDate`
+   * (the account-preservation notice required before InactiveAccountService's
+   * automatic purge). Sent regardless of `notifyEmail` — this is a retention
+   * notice, not a marketing/feature email.
+   */
+  async sendInactivityWarning(to: string, deletionDate: string): Promise<void> {
+    await this.send({ to, ...this.buildInactivityWarning(deletionDate) });
+  }
+
+  /**
    * DSA art. 17 statement of reasons for a restrictive measure. `replyTo`
    * lets the sanctioned user contest by replying directly, per the notice's
    * own text — the default `from` is a no-reply address.
@@ -482,6 +503,26 @@ export class MailService {
          <p><strong>Fondement :</strong> ${escapeHtml(basisText)}.</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">Cette décision a été prise par un modérateur, pas par un système automatisé.</p>
          <p>Tu peux la contester en répondant directement à cet e-mail ou en écrivant à <a href="mailto:contact@loomkeep.app">contact@loomkeep.app</a>.</p>`,
+      ),
+    };
+  }
+
+  /**
+   * LK-C06: 24 months without a login/session refresh trigger this notice,
+   * naming the exact date the account is due for automatic deletion (36
+   * months of inactivity) unless the account is used again before then.
+   */
+  private buildInactivityWarning(deletionDate: string): TemplateBody {
+    const url = `${this.webOrigin}/login`;
+    return {
+      subject: "Ton compte Loomkeep sera supprimé pour inactivité",
+      text: `Ton compte Loomkeep est inactif depuis 24 mois. Conformément à notre politique de conservation des données, il sera définitivement supprimé le ${deletionDate} si tu ne te reconnectes pas avant cette date.\n\nPour le conserver, connecte-toi simplement une fois :\n\n${url}`,
+      html: this.wrapEmail(
+        "Ton compte sera bientôt supprimé",
+        `<p>Ton compte Loomkeep est inactif depuis 24 mois.</p>
+         <p>Conformément à notre politique de conservation des données, il sera <strong>définitivement supprimé le ${escapeHtml(deletionDate)}</strong> si tu ne te reconnectes pas avant cette date.</p>
+         ${this.button(url, "Me reconnecter")}
+         <p style="color:${COLOR_MUTED};font-size:13px;">Une simple connexion suffit à annuler cette suppression.</p>`,
       ),
     };
   }

@@ -92,6 +92,7 @@ export class AuthService {
         locale: detectLocale(acceptLanguage),
         acceptedTermsAt: new Date(),
         acceptedTermsVersion: LEGAL_VERSION,
+        lastActiveAt: new Date(),
       },
     });
 
@@ -205,6 +206,7 @@ export class AuthService {
 
     const promoted = await this.ensureAdminRole(user);
     const isNewDevice = await this.recordDevice(promoted.id, userAgent);
+    await this.touchActivity(promoted.id);
     const tokens = await this.startSession(promoted, userAgent);
 
     if (isNewDevice) {
@@ -247,15 +249,18 @@ export class AuthService {
     }
 
     const signed = await this.signTokens(stored.user);
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: {
-        tokenHash: hashToken(signed.refreshToken),
-        jti: signed.jti,
-        expiresAt: signed.expiresAt,
-        lastUsedAt: new Date(),
-      },
-    });
+    await this.prisma.$transaction([
+      this.prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: {
+          tokenHash: hashToken(signed.refreshToken),
+          jti: signed.jti,
+          expiresAt: signed.expiresAt,
+          lastUsedAt: new Date(),
+        },
+      }),
+      this.touchActivityQuery(stored.user.id),
+    ]);
     return {
       accessToken: signed.accessToken,
       refreshToken: signed.refreshToken,
@@ -457,6 +462,23 @@ export class AuthService {
       Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
     );
     return { accessToken, refreshToken, jti, expiresAt };
+  }
+
+  /**
+   * Bumps `User.lastActiveAt` and clears any pending inactivity warning — see
+   * LK-C06. Called on register, login and refresh, so a session kept alive
+   * purely by silent refresh (no re-entered credentials) still counts as
+   * activity.
+   */
+  private touchActivityQuery(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { lastActiveAt: new Date(), inactivityWarningSentAt: null },
+    });
+  }
+
+  private async touchActivity(userId: string): Promise<void> {
+    await this.touchActivityQuery(userId);
   }
 
   /**

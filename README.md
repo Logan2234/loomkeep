@@ -272,9 +272,9 @@ Grafana/GlitchTip tell you when the app is unhealthy or throwing errors, but
 neither notices a scheduled job that silently stops firing (a crashed
 scheduler, a hung job that never throws) — Postgres and the app can both
 look perfectly healthy while a cron job just isn't running anymore. The API
-has four such jobs (`src/jobs/job-keys.ts`): notification scan (hourly),
-media cache refresh (every 6h), reports digest and the automatic backup
-(both daily).
+has five such jobs (`src/jobs/job-keys.ts`): notification scan (hourly),
+media cache refresh (every 6h), reports digest, the automatic backup and the
+inactive-accounts scan (all three daily).
 
 [Healthchecks.io](https://healthchecks.io) closes that gap: each job pings
 it once it finishes, and Healthchecks.io itself alerts you if an expected
@@ -283,12 +283,13 @@ you have the observability override above.
 
 1. Create a free account, then one check per job, with a **Period**/**Grace**
    matching its schedule (e.g. Period 1h for the notification scan, Period 6h
-   for the cache refresh, Period 1 day for the digest and the backup — a
-   Grace of an hour or so absorbs normal jitter).
+   for the cache refresh, Period 1 day for the digest, the backup and the
+   inactive-accounts scan — a Grace of an hour or so absorbs normal jitter).
 2. Copy each check's ping URL into `.env`:
    `HEALTHCHECKS_NOTIFICATIONS_SCAN_URL`, `HEALTHCHECKS_MEDIA_REFRESH_STALE_URL`,
-   `HEALTHCHECKS_REPORTS_DIGEST_URL`, `HEALTHCHECKS_BACKUP_URL`. Any left
-   empty just means that job doesn't ping — nothing else is affected.
+   `HEALTHCHECKS_REPORTS_DIGEST_URL`, `HEALTHCHECKS_BACKUP_URL`,
+   `HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL`. Any left empty just means that
+   job doesn't ping — nothing else is affected.
 3. Optional: for the Homepage tile below, a read-only API key
    (`HEALTHCHECKS_API_KEY`, Project Settings → API Access) shows an
    up/down count across every check at a glance.

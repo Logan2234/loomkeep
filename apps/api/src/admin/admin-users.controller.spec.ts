@@ -32,7 +32,6 @@ function makeController() {
       update: jest.fn(),
       delete: jest.fn(),
     },
-    refreshToken: { groupBy: jest.fn().mockResolvedValue([]) },
     userEntitlement: { findMany: jest.fn().mockResolvedValue([]) },
     libraryEntry: { count: jest.fn() },
     gameEntry: { count: jest.fn() },
@@ -91,7 +90,7 @@ function makeController() {
 }
 
 describe("AdminUsersController.listUsers", () => {
-  it("merges each account's most recent session into lastActiveAt", async () => {
+  it("maps each account's persisted lastActiveAt/inactivityWarningSentAt", async () => {
     const { controller, prisma } = makeController();
     (prisma.user.findMany as jest.Mock).mockResolvedValue([
       {
@@ -102,6 +101,8 @@ describe("AdminUsersController.listUsers", () => {
         emailVerified: true,
         role: "USER",
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        lastActiveAt: new Date("2026-02-01T00:00:00.000Z"),
+        inactivityWarningSentAt: new Date("2026-02-15T00:00:00.000Z"),
       },
       {
         id: "user-2",
@@ -111,12 +112,8 @@ describe("AdminUsersController.listUsers", () => {
         emailVerified: false,
         role: "USER",
         createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      },
-    ]);
-    (prisma.refreshToken.groupBy as jest.Mock).mockResolvedValue([
-      {
-        userId: "user-1",
-        _max: { lastUsedAt: new Date("2026-02-01T00:00:00.000Z") },
+        lastActiveAt: null,
+        inactivityWarningSentAt: null,
       },
     ]);
 
@@ -124,7 +121,11 @@ describe("AdminUsersController.listUsers", () => {
 
     expect(result.page).toBe(1);
     expect(result.users[0].lastActiveAt).toBe("2026-02-01T00:00:00.000Z");
+    expect(result.users[0].inactivityWarningSentAt).toBe(
+      "2026-02-15T00:00:00.000Z",
+    );
     expect(result.users[1].lastActiveAt).toBeNull();
+    expect(result.users[1].inactivityWarningSentAt).toBeNull();
   });
 
   it("paginates with skip/take derived from the page query param", async () => {

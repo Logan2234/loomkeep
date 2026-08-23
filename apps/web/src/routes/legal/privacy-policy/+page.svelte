@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 13/08/2026</em></p>
+    <p><em>Dernière mise à jour : 23/08/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -505,7 +505,7 @@
           <tr
             ><td>Données du compte</td><td
               >Jusqu'à suppression du compte, sous réserve des exceptions
-              légales</td
+              légales et de la politique de comptes inactifs ci-dessous</td
             ></tr>
           <tr
             ><td>Sessions et jetons temporaires</td><td
@@ -547,6 +547,13 @@
         </tbody>
       </table>
     </div>
+    <p>
+      <strong>Politique de comptes inactifs.</strong> Un compte n'ayant fait l'objet
+      d'aucune connexion pendant 24 mois reçoit un e-mail de relance l'informant qu'il
+      sera supprimé automatiquement au bout de 36 mois d'inactivité continue s'il
+      n'est pas réutilisé d'ici là. Une simple reconnexion avant cette échéance annule
+      la suppression prévue.
+    </p>
     <h2>12. Suppression du compte</h2>
     <p>
       L'utilisateur peut supprimer son compte selon les fonctionnalités
