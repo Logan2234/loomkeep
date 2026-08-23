@@ -32,6 +32,37 @@ function makeService() {
     bookEntry: { findMany: jest.fn().mockResolvedValue([]) },
     musicEntry: { findMany: jest.fn().mockResolvedValue([]) },
     notification: { findMany: jest.fn().mockResolvedValue([]) },
+    review: { findMany: jest.fn().mockResolvedValue([]) },
+    reviewVote: { findMany: jest.fn().mockResolvedValue([]) },
+    comment: { findMany: jest.fn().mockResolvedValue([]) },
+    commentReaction: { findMany: jest.fn().mockResolvedValue([]) },
+    list: { findMany: jest.fn().mockResolvedValue([]) },
+    listMember: { findMany: jest.fn().mockResolvedValue([]) },
+    follow: { findMany: jest.fn().mockResolvedValue([]) },
+    block: { findMany: jest.fn().mockResolvedValue([]) },
+    report: { findMany: jest.fn().mockResolvedValue([]) },
+    moderationDecision: { findMany: jest.fn().mockResolvedValue([]) },
+    securityEvent: { findMany: jest.fn().mockResolvedValue([]) },
+    userDevice: { findMany: jest.fn().mockResolvedValue([]) },
+    visibilitySetting: { findMany: jest.fn().mockResolvedValue([]) },
+    userEntitlement: {
+      upsert: jest.fn().mockResolvedValue({
+        userId: "user-1",
+        plan: "FREE",
+        source: null,
+        grantedAt: null,
+        expiresAt: null,
+        overrides: {},
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+    },
+    subscription: { findMany: jest.fn().mockResolvedValue([]) },
+    readingGoal: { findMany: jest.fn().mockResolvedValue([]) },
+    importRun: { findMany: jest.fn().mockResolvedValue([]) },
+    mediaItem: { findMany: jest.fn().mockResolvedValue([]) },
+    gameItem: { findMany: jest.fn().mockResolvedValue([]) },
+    bookItem: { findMany: jest.fn().mockResolvedValue([]) },
+    musicItem: { findMany: jest.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   // Ratings live in Review now; the export projects them but these tests don't
   // assert the value, so an empty projection is enough.
@@ -182,5 +213,92 @@ describe("DataExportService.buildExport", () => {
     expect(result.notifications).toEqual([
       expect.objectContaining({ title: "Show", body: "S1E2 · Pilot" }),
     ]);
+  });
+
+  it("includes review text and its edit history, with the target title resolved", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
+    (prisma.review.findMany as jest.Mock).mockResolvedValue([
+      {
+        targetType: "MEDIA",
+        targetId: "media-1",
+        rating: 8,
+        text: "Great show",
+        visibility: "FRIENDS",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+        revisions: [
+          {
+            rating: 7,
+            text: "Good show",
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          },
+        ],
+      },
+    ]);
+    (prisma.mediaItem.findMany as jest.Mock).mockResolvedValue([
+      { id: "media-1", title: "Severance" },
+    ]);
+
+    const result = await service.buildExport("user-1");
+
+    expect(result.reviews).toEqual([
+      expect.objectContaining({
+        targetTitle: "Severance",
+        text: "Great show",
+        revisions: [expect.objectContaining({ text: "Good show" })],
+      }),
+    ]);
+  });
+
+  it("includes comments, lists, follows and a default FREE entitlement", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
+    (prisma.comment.findMany as jest.Mock).mockResolvedValue([
+      {
+        targetType: "MEDIA",
+        targetId: "media-1",
+        parentId: null,
+        text: "Nice one",
+        spoilerTag: false,
+        edited: false,
+        deletedAt: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    ]);
+    (prisma.list.findMany as jest.Mock).mockResolvedValue([
+      {
+        title: "Top 10",
+        description: null,
+        kind: "RANKED",
+        visibility: "PRIVATE",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        items: [],
+      },
+    ]);
+    (prisma.follow.findMany as jest.Mock).mockResolvedValueOnce([
+      {
+        followee: { username: "bob" },
+        status: "ACCEPTED",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    ]);
+
+    const result = await service.buildExport("user-1");
+
+    expect(result.comments).toEqual([
+      expect.objectContaining({ text: "Nice one" }),
+    ]);
+    expect(result.lists).toEqual([
+      expect.objectContaining({ title: "Top 10" }),
+    ]);
+    expect(result.follows.following).toEqual([
+      expect.objectContaining({ username: "bob" }),
+    ]);
+    expect(result.entitlement).toEqual(
+      expect.objectContaining({ plan: "FREE" }),
+    );
   });
 });
