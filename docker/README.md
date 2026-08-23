@@ -346,7 +346,54 @@ Upgrading Quackback is entirely on their side: `cd ~/quackback && git pull
 && docker compose -f docker-compose.prod.yml up -d --build`. Nothing to
 touch in this repo unless `QUACKBACK_APP_PORT` itself changes.
 
+## Cloudflare Tunnel + Access (`docker-compose.tunnel.yml`)
+
+Public-instance-specific (loomkeep.app's own Cloudflare account, not a
+generic self-host feature — see the file's own comment). Every admin-only
+hostname (`grafana.`, `portainer.`, `errors.`, `flags.`, `home.`) is reached
+through a Cloudflare Tunnel instead of a normal DNS `A` record: `cloudflared`
+holds an outbound-only connection to Cloudflare's edge, so there's no inbound
+port left open for these hostnames to bypass Cloudflare Access with — unlike
+plain DNS-proxying, where the VPS's origin IP is still reachable directly
+unless separately firewalled. Cloudflare Access enforces GitHub SSO + MFA
+before a request ever reaches the tunnel.
+
+Each admin addon's own `*.caddy` site file carries two addresses on the same
+block: the normal public hostname (Caddy's automatic HTTPS, what self-hosters
+on plain DNS use) and an explicit `{$X_SITE_ADDRESS}:8080` — an explicit port
+disables automatic HTTPS for that address, so it stays plain HTTP, matched by
+the `Host` header `cloudflared` forwards. `docker-compose.tunnel.yml` exposes
+that `:8080` port to `cloudflared` only (`expose`, never `ports` — same trust
+boundary as `db`), so the same Caddyfile works unmodified whether or not the
+tunnel add-on is in use: without it, `:8080` simply never receives traffic.
+
+Grafana, GlitchTip and Portainer all support real OIDC (see "Single sign-on"
+below for the mechanics) — on the public instance their OIDC client config
+points at Cloudflare Access acting as the identity provider instead of
+Authelia, so visiting any of them requires no second login beyond the
+Cloudflare Access gate already passed to reach the hostname at all. Unleash
+(OSS) has no OIDC support and keeps its own local login regardless. Homepage
+has no login of its own either way — Access is the only gate for it.
+
+**Unleash needs its own carve-out**: every visitor's browser (not just
+admins) polls `flags.<DOMAIN>/api/frontend` unauthenticated for live feature
+flags (`apps/web/src/lib/feature-flags-live.ts`) — an Access policy covering
+the whole `flags.<DOMAIN>` hostname would block that for every signed-out
+visitor of the actual product. A second Access Application scoped to
+`flags.<DOMAIN>/api/frontend*` with a public/bypass policy (or excluding that
+path from the main policy) is required before enforcing Access on this
+hostname — this is a Cloudflare-dashboard-side policy, nothing in this repo
+enforces or checks it.
+
 ## Single sign-on (`docker-compose.authelia.yml`)
+
+**Not deployed on the public instance anymore** — logan2234's own VPS puts
+every admin dashboard (Grafana, Portainer, GlitchTip, Unleash, Homepage)
+behind Cloudflare Access instead (GitHub SSO + MFA enforced before traffic
+even reaches Caddy, via `docker-compose.tunnel.yml`'s Cloudflare Tunnel — see
+that file's own comment). This section, and the OIDC/`forward_auth` wiring it
+describes, stays in the repo and is still the documented path for
+self-hosters who want single sign-on without a Cloudflare account.
 
 [Authelia](https://www.authelia.com/) — chosen over Authentik specifically
 for its footprint (single binary + SQLite, no dedicated Postgres/Redis;
