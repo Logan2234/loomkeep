@@ -12,6 +12,6 @@
 # Two addresses on the same block — see grafana.caddy's own comment for why:
 # `:8080` is the plain-HTTP path docker-compose.tunnel.yml's Cloudflare
 # Tunnel uses, dormant/unreachable for anyone on plain DNS.
-{$GLITCHTIP_SITE_ADDRESS}, {$GLITCHTIP_SITE_ADDRESS}:8080 {
+{$GLITCHTIP_SITE_ADDRESS}, http://{$GLITCHTIP_SITE_ADDRESS}:8080 {
 	reverse_proxy glitchtip:8000
 }
