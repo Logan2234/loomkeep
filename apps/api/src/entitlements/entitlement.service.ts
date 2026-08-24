@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { Plan, UserEntitlement } from "@prisma/client";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 /**
@@ -14,7 +15,10 @@ import { PrismaService } from "../prisma/prisma.service";
  */
 @Injectable()
 export class EntitlementService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly flags: FeatureFlagsService,
+  ) {}
 
   async getEntitlement(userId: string): Promise<UserEntitlement> {
     return this.prisma.userEntitlement.upsert({
@@ -27,6 +31,19 @@ export class EntitlementService {
   async hasPremium(userId: string): Promise<boolean> {
     const entitlement = await this.getEntitlement(userId);
     return entitlement.plan === "PREMIUM";
+  }
+
+  /**
+   * The premium check every enforcement point should actually call: `false`
+   * as long as the `premium-features` Unleash flag isn't turned on (no CGV
+   * yet — see docs/adr/0001-open-core-agpl.md), regardless of `plan`, so
+   * nobody is locked out of anything before the offering is legally ready.
+   * `hasPremium` itself stays the raw plan check, used by the admin panel
+   * and the `GET /users/me/entitlement` endpoint the web reads.
+   */
+  async isEffectivelyPremium(userId: string): Promise<boolean> {
+    if (!this.flags.isEnabled("premium-features", false)) return true;
+    return this.hasPremium(userId);
   }
 
   /** Admin-only write path (see AdminUsersController) — no billing behind it. */

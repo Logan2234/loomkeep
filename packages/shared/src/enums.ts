@@ -24,6 +24,18 @@ export const Domain = {
 export type Domain = (typeof Domain)[keyof typeof Domain];
 
 /**
+ * Early-access domains, gated behind premium regardless of the user's own
+ * `enabledDomains` toggle — see docs/adr/0001-open-core-agpl.md. Shared so
+ * the API (DomainGateService, server-side enforcement) and the web (settings
+ * UI lock/tooltip) agree on the same list.
+ */
+export const PREMIUM_DOMAINS: readonly Domain[] = [
+  Domain.MUSIC,
+  Domain.PODCASTS,
+  Domain.BOARDGAMES,
+];
+
+/**
  * Operational permission level, orthogonal to `UserEntitlement` (the paid-tier
  * seam, see docs/adr/0001-open-core-agpl.md). A single self-host admin today;
  * `ADMIN` is granted via the `ADMIN_EMAIL` bootstrap or the admin panel, never

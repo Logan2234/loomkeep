@@ -722,3 +722,31 @@ describe("UsersController — deletionSummary", () => {
     );
   });
 });
+
+describe("UsersController.getMyEntitlement", () => {
+  const userId = "user-1";
+
+  function makeController(hasPremium: boolean) {
+    const entitlements = {
+      hasPremium: jest.fn().mockResolvedValue(hasPremium),
+    } as unknown as EntitlementService;
+    return new UsersController(
+      {} as unknown as PrismaService,
+      {} as unknown as MailService,
+      { record: jest.fn() } as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      { isPasswordPwned: jest.fn() } as unknown as HibpService,
+      entitlements,
+      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+    );
+  }
+
+  it("returns the user's real plan, not the premium-features-gated effective status", async () => {
+    const controller = makeController(false);
+    await expect(
+      controller.getMyEntitlement(jwtPayload(userId)),
+    ).resolves.toEqual({ isPremium: false });
+  });
+});

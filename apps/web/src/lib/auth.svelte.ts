@@ -8,6 +8,8 @@ class AuthState {
   user = $state<UserDto | null>(null);
   accessToken = $state<string | null>(null);
   refreshToken = $state<string | null>(null);
+  /** The real plan (not the `premium-features`-gated effective status) — see `getMyEntitlement`. */
+  isPremium = $state(false);
 
   // $derived (not a plain getter) so effects that read these only re-run when
   // the boolean itself flips — not on every `user` reassignment (e.g. every
@@ -65,6 +67,7 @@ class AuthState {
     this.user = null;
     this.accessToken = null;
     this.refreshToken = null;
+    this.isPremium = false;
 
     if (browser) {
       localStorage.removeItem(STORAGE_KEY);

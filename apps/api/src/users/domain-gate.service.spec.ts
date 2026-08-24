@@ -28,7 +28,7 @@ describe("DomainGateService", () => {
       ),
     } as unknown as FeatureFlagsService;
     const entitlements = {
-      hasPremium: jest.fn().mockResolvedValue(hasPremium),
+      isEffectivelyPremium: jest.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
     return new DomainGateService(prisma, flags, entitlements);
   }
@@ -113,8 +113,10 @@ describe("DomainGateService", () => {
     it("does not check premium at all when no enabled domain requires it", async () => {
       const service = makeService([Domain.MEDIA, Domain.BOOKS], [], false);
       await service.getEnabledDomains("u1");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect((service as any).entitlements.hasPremium).not.toHaveBeenCalled();
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (service as any).entitlements.isEffectivelyPremium,
+      ).not.toHaveBeenCalled();
     });
   });
 });

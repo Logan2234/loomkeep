@@ -1,18 +1,8 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
-import { Domain } from "@loomkeep/shared";
+import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
-
-// Early-access domains, gated behind premium regardless of the user's own
-// `enabledDomains` toggle — see docs/adr/0001-open-core-agpl.md. PODCASTS and
-// BOARDGAMES have no backing screens yet ("coming soon"), listed here so
-// they're already gated the moment they ship, with no extra change needed.
-const PREMIUM_DOMAINS: readonly Domain[] = [
-  Domain.MUSIC,
-  Domain.PODCASTS,
-  Domain.BOARDGAMES,
-];
 
 /**
  * Enforces `User.enabledDomains` server-side: a domain the user turned off is
@@ -58,7 +48,7 @@ export class DomainGateService {
       return enabled;
     }
 
-    const hasPremium = await this.entitlements.hasPremium(userId);
+    const hasPremium = await this.entitlements.isEffectivelyPremium(userId);
     return hasPremium
       ? enabled
       : enabled.filter((domain) => !PREMIUM_DOMAINS.includes(domain));

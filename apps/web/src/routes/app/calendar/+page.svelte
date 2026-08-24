@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ApiError, getCalendar } from "$lib/api/client";
+  import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CalendarSubscribeModal from "$lib/components/CalendarSubscribeModal.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
@@ -8,11 +9,18 @@
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
+
+  const calendarLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !auth.isPremium,
+  );
 
   let entries = $state<CalendarEntryDto[]>([]);
   let loading = $state(true);
@@ -86,15 +94,26 @@
     title={m.common_calendar()}
     subtitle="Les prochains épisodes de ce que tu suis.">
     {#snippet actions()}
-      <button
-        class="btn btn-ghost shrink-0"
-        onclick={() => (showSubscribeModal = true)}>
-        <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
-        Ajouter à mon agenda
-        {#if isFeatureNew("calendar-subscribe")}
-          <span class="ml-1.5 inline-flex"><NewBadge /></span>
-        {/if}
-      </button>
+      {#snippet calendarButton()}
+        <button
+          class="btn btn-ghost shrink-0"
+          disabled={calendarLocked}
+          onclick={() => (showSubscribeModal = true)}>
+          <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
+          Ajouter à mon agenda
+          {#if isFeatureNew("calendar-subscribe")}
+            <span class="ml-1.5 inline-flex"><NewBadge /></span>
+          {/if}
+        </button>
+      {/snippet}
+      {#if calendarLocked}
+        <Tooltip text={m.common_premium_locked()} class="inline-flex shrink-0">
+          {@render calendarButton()}
+          <PremiumLockBadge />
+        </Tooltip>
+      {:else}
+        {@render calendarButton()}
+      {/if}
     {/snippet}
   </PageHeader>
 

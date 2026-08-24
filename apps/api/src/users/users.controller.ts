@@ -6,6 +6,7 @@ import {
   type AccountDeletionSummaryDto,
   type CalendarTokenDto,
   type CsvExportDto,
+  type EntitlementDto,
   type UserDataExportDto,
   type WidgetTokenDto,
 } from "@loomkeep/shared";
@@ -250,8 +251,20 @@ export class UsersController {
     return { token: calendarToken! };
   }
 
+  /**
+   * The user's real plan (not gated by `premium-features` — see
+   * `EntitlementService#isEffectivelyPremium`) so the web can decide what to
+   * lock: `showLock = flag on && !isPremium`.
+   */
+  @Get("me/entitlement")
+  async getMyEntitlement(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<EntitlementDto> {
+    return { isPremium: await this.entitlements.hasPremium(payload.sub) };
+  }
+
   private async requirePremium(userId: string): Promise<void> {
-    if (!(await this.entitlements.hasPremium(userId))) {
+    if (!(await this.entitlements.isEffectivelyPremium(userId))) {
       throw new ForbiddenException(
         "Cette fonctionnalité est réservée au premium",
       );

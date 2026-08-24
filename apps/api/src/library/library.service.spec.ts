@@ -544,7 +544,7 @@ describe("LibraryService.getCalendarIcs", () => {
       episode: { findMany: jest.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
     const entitlements = {
-      hasPremium: jest.fn().mockResolvedValue(hasPremium),
+      isEffectivelyPremium: jest.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
     return new LibraryService(
       prisma,
