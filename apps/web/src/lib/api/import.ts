@@ -3,6 +3,7 @@ import type {
   ImportAvailabilityDto,
   ImportCommitRequest,
   ImportJobDto,
+  ImportQuotaDto,
   ImportSource,
 } from "@loomkeep/shared";
 import { request } from "./core";
@@ -10,6 +11,11 @@ import { request } from "./core";
 /** Which config-dependent sources are actually usable on this deployment. */
 export function getImportAvailability(): Promise<ImportAvailabilityDto> {
   return request("/import/availability");
+}
+
+/** Per domain, whether this account has already used its one free import in it. */
+export function getImportQuota(): Promise<ImportQuotaDto> {
+  return request("/import/quota");
 }
 
 /** Analyse an export → reconciliation plan (writes nothing). Poll the job. */

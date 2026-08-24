@@ -131,6 +131,17 @@ export interface ImportJobDto {
  */
 export type ImportAvailabilityDto = Partial<Record<ImportSource, boolean>>;
 
+/**
+ * `GET /import/quota` response — per `Domain`, whether the current user has
+ * already used their one free import in it (a free account gets one
+ * successful import per domain, regardless of which source; see
+ * `EntitlementService#isEffectivelyPremium` and `ImportJobService#getQuota`).
+ * A domain absent from the map means no successful import has been recorded
+ * there yet. Unlike `ImportAvailabilityDto` (server config, same for every
+ * user), this is per-account — the endpoint requires auth.
+ */
+export type ImportQuotaDto = Partial<Record<Domain, boolean>>;
+
 /** Body of `POST /import/:source/analyze`. */
 export interface ImportAnalyzeRequest {
   /**

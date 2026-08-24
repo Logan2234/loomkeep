@@ -634,6 +634,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     String id "🗝️"
     String identifier
     String sourceId
+    Domain domain "❓"
     String status
     Int itemCount
     Boolean overwrite
@@ -950,6 +951,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "UserToken" }o--|| "User" : "user"
     "SecurityEvent" |o--|| "SecurityEventType" : "enum:type"
     "SecurityEvent" }o--|o "User" : "user"
+    "ImportRun" |o--|o "Domain" : "enum:domain"
     "ImportRun" }o--|o "User" : "user"
     "EmailChangeRequest" }o--|| "User" : "user"
     "MediaItem" |o--|| "MediaType" : "enum:type"

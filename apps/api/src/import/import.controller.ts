@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import type {
   ImportAvailabilityDto,
   ImportJobDto,
+  ImportQuotaDto,
   ImportSource,
 } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -30,13 +31,19 @@ export class ImportController {
     return this.jobs.getAvailability();
   }
 
+  /** Per domain, whether this user has already used their one free import in it. */
+  @Get("quota")
+  quota(@CurrentUser() user: JwtPayload): Promise<ImportQuotaDto> {
+    return this.jobs.getQuota(user.sub);
+  }
+
   /** Analyse an export and build a reconciliation plan (writes nothing). */
   @Post(":source/analyze")
   analyze(
     @CurrentUser() user: JwtPayload,
     @Param("source") source: ImportSource,
     @Body() dto: AnalyzeImportDto,
-  ): ImportJobDto {
+  ): Promise<ImportJobDto> {
     return this.jobs.startAnalyze(user.sub, source, dto);
   }
 

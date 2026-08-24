@@ -4,9 +4,11 @@ import type {
   ImportCommitRequest,
   ImportJobDto,
   ImportPlan,
+  ImportQuotaDto,
   ImportReport,
   ImportSource,
 } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared";
 import {
   BadRequestException,
   ForbiddenException,
@@ -17,6 +19,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
+import { EntitlementService } from "../entitlements/entitlement.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   IMPORT_SOURCES,
@@ -61,6 +64,7 @@ export class ImportJobService {
     @Inject(IMPORT_SOURCES) sources: ImportReq[],
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly entitlements: EntitlementService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -86,16 +90,43 @@ export class ImportJobService {
   }
 
   /**
+   * Per `Domain`, whether this user has already used their one free import
+   * in it — see {@link assertImportAllowed}. Domains never successfully
+   * imported into are simply absent from the map.
+   */
+  async getQuota(userId: string): Promise<ImportQuotaDto> {
+    const runs = await this.prisma.importRun.findMany({
+      where: {
+        userId,
+        status: "SUCCESS",
+        itemCount: { gt: 0 },
+        domain: { not: null },
+      },
+      select: { domain: true },
+      distinct: ["domain"],
+    });
+
+    const quota: ImportQuotaDto = {};
+
+    for (const run of runs) {
+      if (run.domain) quota[run.domain as Domain] = true;
+    }
+
+    return quota;
+  }
+
+  /**
    * Parse the export and, in the background, resolve it into a review
    * {@link ImportPlan} — writing nothing. Returns a pending job to poll.
    */
-  startAnalyze(
+  async startAnalyze(
     userId: string,
     sourceId: ImportSource,
     dto: ImportAnalyzeRequest,
-  ): ImportJobDto {
+  ): Promise<ImportJobDto> {
     this.pruneOldJobs();
     const source = this.sourceOrThrow(sourceId);
+    await this.assertImportAllowed(userId, source.searchDomain);
 
     let parsed: unknown;
 
@@ -197,6 +228,30 @@ export class ImportJobService {
     return source;
   }
 
+  /**
+   * A free account gets one successful import per `Domain`, regardless of
+   * source (TV Time then Trakt on MEDIA counts as a 2nd MEDIA import) — see
+   * docs/adr/0001-open-core-agpl.md. No-op while the `premium-features` flag
+   * is off (see `EntitlementService#isEffectivelyPremium`) or once premium.
+   */
+  private async assertImportAllowed(
+    userId: string,
+    domain: Domain,
+  ): Promise<void> {
+    if (await this.entitlements.isEffectivelyPremium(userId)) return;
+
+    const alreadyImported = await this.prisma.importRun.findFirst({
+      where: { userId, domain, status: "SUCCESS", itemCount: { gt: 0 } },
+      select: { id: true },
+    });
+
+    if (alreadyImported) {
+      throw new ForbiddenException(
+        "Un import gratuit par domaine — passe premium pour réimporter dans ce domaine.",
+      );
+    }
+  }
+
   private newJob(
     userId: string,
     sourceId: ImportSource,
@@ -235,6 +290,7 @@ export class ImportJobService {
         userId,
         identifier: user?.email ?? "compte inconnu",
         sourceId: job.sourceId,
+        domain: this.sourceOrThrow(job.sourceId).searchDomain,
         status: job.status === "failed" ? "FAILURE" : "SUCCESS",
         itemCount: job.progress.total,
         overwrite,

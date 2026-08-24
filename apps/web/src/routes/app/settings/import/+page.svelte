@@ -1,16 +1,20 @@
 <script lang="ts">
-  import { getImportAvailability } from "$lib/api/client";
+  import { getImportAvailability, getImportQuota } from "$lib/api/client";
+  import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import {
     Domain,
     type ImportAvailabilityDto,
+    type ImportQuotaDto,
     type ImportSource,
   } from "@loomkeep/shared";
 
@@ -34,12 +38,23 @@
   // reads as available until proven otherwise — avoids flashing every
   // configured source as unavailable while the check is in flight.
   let availability = $state<ImportAvailabilityDto>({});
+  let quota = $state<ImportQuotaDto>({});
 
   $effect(() => {
     getImportAvailability()
       .then((a) => (availability = a))
       .catch(() => {});
   });
+
+  $effect(() => {
+    getImportQuota()
+      .then((q) => (quota = q))
+      .catch(() => {});
+  });
+
+  const premiumLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !auth.isPremium,
+  );
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
@@ -61,14 +76,21 @@
   <div class="flex flex-col gap-8">
     {#each Object.entries(groups) as [domain, sources] (domain)}
       {#if isDomainEnabled(domain as Domain)}
+        {@const usedUp = premiumLocked && quota[domain as Domain] === true}
         <section>
-          <p class="timecode mb-3 text-xs uppercase">
+          <p class="timecode mb-3 flex items-center gap-2 text-xs uppercase">
             {DOMAINS[domain as Domain].label}
+            {#if premiumLocked && !usedUp}
+              <span
+                class="bg-surface-2 text-dim rounded-full px-2 py-0.5 text-[0.65rem] font-semibold normal-case">
+                {m.common_import_free_quota()}
+              </span>
+            {/if}
           </p>
           <div class="flex flex-col gap-3">
             {#each sources as source (source.label)}
               {@const available =
-                !!source.href && availability[source.type] !== false}
+                !!source.href && availability[source.type] !== false && !usedUp}
               {#if available}
                 <a
                   href={source.href}
@@ -102,10 +124,22 @@
                     </span>
                     <span class="text-dim text-sm">{source.description}</span>
                   </span>
-                  <span
-                    class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                    {source.href ? "Indisponible" : m.landing_libraries_soon()}
-                  </span>
+                  {#if usedUp}
+                    <Tooltip text={m.common_import_quota_used()}>
+                      <span
+                        class="bg-accent text-accent-fg inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                        <Icon name="lock" class="h-3 w-3" />
+                        {m.common_premium()}
+                      </span>
+                    </Tooltip>
+                  {:else}
+                    <span
+                      class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                      {source.href
+                        ? "Indisponible"
+                        : m.landing_libraries_soon()}
+                    </span>
+                  {/if}
                 </div>
               {/if}
             {/each}
