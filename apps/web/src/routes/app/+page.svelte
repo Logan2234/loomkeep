@@ -16,6 +16,7 @@
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { IS_BETA } from "$lib/constants/app-status";
@@ -263,48 +264,43 @@
                   items={toWatch}
                   keyOf={(e) => e.id}>
                   {#snippet card(e)}
-                    <div class="w-28 shrink-0 snap-start">
-                      <a
-                        href={`/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
-                        class="block">
-                        <div
-                          class="card hover:border-accent overflow-hidden transition-[border-color]">
-                          <Poster
-                            src={e.mediaItem.posterUrl}
-                            title={e.mediaItem.title} />
-                        </div>
-                        <p
-                          class="font-display mt-1.5 truncate text-xs font-semibold">
-                          {e.mediaItem.title}
-                        </p>
-                      </a>
-                      {#if e.progress}
-                        <div
-                          class="bg-surface-2 mt-1 h-1 overflow-hidden rounded-full">
-                          <div
-                            class="bg-accent h-full"
-                            style={`width: ${pct(e)}%`}
-                            title="{e.progress.watchedEpisodes} / {e.progress
-                              .totalEpisodes}">
-                          </div>
-                        </div>
-                        {#if e.progress.nextEpisode}
-                          <button
-                            class="btn btn-primary btn-sm mt-2 w-full"
-                            disabled={resuming === e.id}
-                            onclick={() => resume(e)}>
-                            ▶ {epCodeOf(e.progress.nextEpisode)}
-                          </button>
-                        {/if}
-                      {:else if e.mediaItem.type === "MOVIE"}
+                    <a
+                      href={`/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
+                      class="block w-28">
+                      <div
+                        class="card hover:border-accent overflow-hidden transition-[border-color]">
+                        <Poster
+                          src={e.mediaItem.posterUrl}
+                          title={e.mediaItem.title} />
+                      </div>
+                      <p
+                        class="font-display mt-1.5 truncate text-xs font-semibold">
+                        {e.mediaItem.title}
+                      </p>
+                    </a>
+                    {#if e.progress}
+                      <ProgressBar
+                        value={pct(e)}
+                        height="h-1"
+                        class="mt-1"
+                        title="{e.progress.watchedEpisodes} / {e.progress
+                          .totalEpisodes}" />
+                      {#if e.progress.nextEpisode}
                         <button
-                          class="btn btn-primary btn-sm mt-4 w-full"
-                          disabled={markingMovieSeen === e.id}
-                          onclick={() => markMovieSeen(e)}>
-                          Vu
+                          class="btn btn-primary btn-sm mt-2 w-full"
+                          disabled={resuming === e.id}
+                          onclick={() => resume(e)}>
+                          ▶ {epCodeOf(e.progress.nextEpisode)}
                         </button>
                       {/if}
-                    </div>
+                    {:else if e.mediaItem.type === "MOVIE"}
+                      <button
+                        class="btn btn-primary btn-sm mt-4 w-full"
+                        disabled={markingMovieSeen === e.id}
+                        onclick={() => markMovieSeen(e)}>
+                        Vu
+                      </button>
+                    {/if}
                   {/snippet}
                 </Carousel>
               {:else}
@@ -329,9 +325,7 @@
             {#if playingGames.length > 0}
               <Carousel items={playingGames} keyOf={(e) => e.id}>
                 {#snippet card(e)}
-                  <a
-                    href={`/app/games/${e.game.sourceId}`}
-                    class="w-24 shrink-0 snap-start">
+                  <a href={`/app/games/${e.game.sourceId}`} class="block w-24">
                     <div
                       class="card hover:border-accent overflow-hidden transition-[border-color]">
                       <Poster src={e.game.coverUrl} title={e.game.title} />
@@ -382,13 +376,10 @@
                           {e.book.title}
                         </p>
                         {#if p !== null}
-                          <div
-                            class="bg-surface-2 mt-1 h-1 max-w-32 overflow-hidden rounded-full">
-                            <div
-                              class="bg-accent h-full"
-                              style={`width: ${p}%`}>
-                            </div>
-                          </div>
+                          <ProgressBar
+                            value={p}
+                            height="h-1"
+                            class="mt-1 max-w-32" />
                         {/if}
                         <p class="timecode text-xs">
                           {#if e.book.pageCount}
@@ -423,9 +414,7 @@
             {#if toListenAlbums.length > 0}
               <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
                 {#snippet card(e)}
-                  <a
-                    href={`/app/music/${e.album.sourceId}`}
-                    class="w-24 shrink-0 snap-start">
+                  <a href={`/app/music/${e.album.sourceId}`} class="block w-24">
                     <div
                       class="card hover:border-accent overflow-hidden transition-[border-color]">
                       <Poster src={e.album.coverUrl} title={e.album.title} />

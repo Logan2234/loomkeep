@@ -5,9 +5,11 @@
   // edges reveal prev/next arrows; on coarse/touch pointers native swipe drives
   // it and a row of tappable page dots gives the affordance arrows can't.
   // Callers supply their own per-item markup via the `card` snippet.
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import Icon from "./Icon.svelte";
   import type { Snippet } from "svelte";
+  import { flip } from "svelte/animate";
+  import Icon from "./Icon.svelte";
 
   let {
     items,
@@ -141,6 +143,8 @@
     }
     dragged = false;
   }
+
+  const reduced = prefersReducedMotion();
 </script>
 
 {#if items.length > 0}
@@ -157,7 +161,11 @@
       onpointerdown={onPointerDown}
       onclickcapture={onClickCapture}>
       {#each items as item (keyOf(item))}
-        {@render card(item)}
+        <div
+          class="w-fit shrink-0 snap-start"
+          animate:flip={{ duration: reduced ? 0 : 250 }}>
+          {@render card(item)}
+        </div>
       {/each}
     </div>
 

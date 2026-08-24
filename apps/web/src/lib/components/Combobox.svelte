@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
+
+  const reduced = prefersReducedMotion();
 
   // A styled dropdown used across the library filter bars. Works in two modes:
   //  - multiselect: several values at once (status, media type). Trigger reads
@@ -119,6 +123,7 @@
     <div
       role="listbox"
       style="top: {panelPos.top}px; left: {panelPos.left}px;"
+      transition:scale|global={{ duration: reduced ? 0 : 120, start: 0.95 }}
       class="border-border bg-surface fixed z-40 min-w-48 overflow-hidden rounded-lg border py-1 shadow-lg">
       {#if searchable}
         <div class="border-border border-b p-1.5">

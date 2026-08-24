@@ -11,6 +11,7 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
@@ -309,10 +310,11 @@
           {@const seasonPct = Math.round(
             (seasonWatchedCount(season) / season.episodes.length) * 100,
           )}
-          <div
-            class="bg-border mt-2 h-[3px] w-full overflow-hidden rounded-full">
-            <div class="bg-accent h-full" style={`width: ${seasonPct}%`}></div>
-          </div>
+          <ProgressBar
+            value={seasonPct}
+            height="h-0.75"
+            track="bg-border"
+            class="mt-2 w-full" />
         {/if}
       </summary>
       <ul>

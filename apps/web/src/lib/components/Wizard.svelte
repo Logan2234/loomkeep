@@ -2,6 +2,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
+  import ProgressBar from "./ProgressBar.svelte";
 
   let {
     steps,
@@ -88,12 +89,10 @@
          content (borrowed from the filmstrip direction, kept alongside the
          ticket-stub look everywhere else). -->
     <div class="border-border border-b p-4 md:hidden">
-      <div class="bg-surface-2 mb-2 h-1 overflow-hidden rounded-full">
-        <div
-          class="bg-accent h-full rounded-full transition-[width]"
-          style="width: {((activeIndex + 1) / steps.length) * 100}%">
-        </div>
-      </div>
+      <ProgressBar
+        value={((activeIndex + 1) / steps.length) * 100}
+        height="h-1"
+        class="mb-2" />
       <p class="timecode text-xs">
         {m.wizard_step_progress({
           current: activeIndex + 1,

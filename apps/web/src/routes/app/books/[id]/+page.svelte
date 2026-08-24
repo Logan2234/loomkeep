@@ -21,6 +21,7 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
@@ -298,12 +299,7 @@
                 {/if}
               </div>
               {#if detail.pageCount}
-                <div class="bg-surface-2 h-2 overflow-hidden rounded-full">
-                  <div
-                    class="bg-accent h-full rounded-full transition-[width]"
-                    style={`width:${progressPct}%`}>
-                  </div>
-                </div>
+                <ProgressBar value={progressPct} height="h-2" />
               {/if}
             </div>
 

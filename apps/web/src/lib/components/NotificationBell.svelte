@@ -19,13 +19,16 @@
     rejectFollowRequest,
   } from "$lib/api/social";
   import { formatDate } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { notifications } from "$lib/notifications.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
-  import { fade, slide } from "svelte/transition";
+  import { fade, scale, slide } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
+
+  const reduced = prefersReducedMotion();
 
   let open = $state(false);
   let requests = $state<FollowRequestDto[]>([]);
@@ -125,10 +128,15 @@
       name="bell"
       class="h-5 w-5 {open ? 'text-accent' : 'text-dim'} transition-colors" />
     {#if total > 0}
-      <span
-        class="bg-accent text-accent-fg ring-surface absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[0.65rem] font-bold ring-2">
-        {total > 9 ? "9+" : total}
-      </span>
+      {#key total}
+        <!-- Keyed on the count so the badge pops on every change, not just
+             its first appearance. -->
+        <span
+          in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}
+          class="bg-accent text-accent-fg ring-surface absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[0.65rem] font-bold ring-2">
+          {total > 9 ? "9+" : total}
+        </span>
+      {/key}
     {/if}
   </button>
 

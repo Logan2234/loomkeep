@@ -3,6 +3,7 @@
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
@@ -265,12 +266,13 @@
                 {#if s.today !== undefined}
                   <div class="mt-2">
                     {#if s.limit && s.percentUsed !== undefined}
-                      <div class="bg-border/60 h-px w-full">
-                        <div
-                          class="h-px {gaugeCls(s.percentUsed)}"
-                          style="width: {Math.min(s.percentUsed, 100)}%">
-                        </div>
-                      </div>
+                      <ProgressBar
+                        value={s.percentUsed}
+                        height="h-px"
+                        track="bg-border/60"
+                        fillClass={gaugeCls(s.percentUsed)}
+                        rounded={false}
+                        class="w-full" />
                       <p class="timecode mt-1.5 text-xs">
                         {formatNumber(s.today)} / {formatNumber(s.limit.max)}
                         {s.limit.window === "day"
