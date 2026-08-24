@@ -32,9 +32,12 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
   import { debounce } from "$lib/debounce";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Domain, MediaType, PagedResult } from "@loomkeep/shared";
   import { onMount, type ComponentProps, type Snippet } from "svelte";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
 
   type IconName = ComponentProps<typeof Icon>["name"];
 
@@ -111,6 +114,8 @@
     (initialParams.get("type")?.split(",").filter(Boolean) as MediaType[]) ??
       [],
   );
+
+  const reduced = prefersReducedMotion();
 
   // Non-reactive bookkeeping.
   let lastPage = 0;
@@ -358,7 +363,12 @@
   {:else}
     <PosterGrid>
       {#each items as entry (keyOf(entry))}
-        {@render card(entry)}
+        <div
+          animate:flip={{ duration: reduced ? 0 : 250 }}
+          in:fade={{ duration: reduced ? 0 : 150 }}
+          out:fade={{ duration: reduced ? 0 : 150 }}>
+          {@render card(entry)}
+        </div>
       {/each}
     </PosterGrid>
     {#if !done}

@@ -12,8 +12,12 @@
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { prefersReducedMotion } from "$lib/motion";
   import { NAVIGATION } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import { fade } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   // Pinned = stays open regardless of hover, persisted. Unpinned = follows the
   // mouse (hover-only), as before.
@@ -344,7 +348,11 @@
   </aside>
 
   <main class="min-w-0 flex-1">
-    {@render children()}
+    {#key page.url.pathname}
+      <div transition:fade={{ duration: reduced ? 0 : 120 }}>
+        {@render children()}
+      </div>
+    {/key}
   </main>
 </div>
 

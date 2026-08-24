@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
+  import { fade, scale } from "svelte/transition";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
 
@@ -31,6 +33,7 @@
   // The old always-both approach silently broke any child relying on
   // `bind:this` (scan camera, avatar crop canvas): it grabbed whichever copy
   // happened to mount last, regardless of which one was actually visible.
+  const reduced = prefersReducedMotion();
   const QUERY = "(min-width: 768px)";
   let isDesktop = $state(
     typeof window !== "undefined" && window.matchMedia(QUERY).matches,
@@ -70,12 +73,14 @@
     class={`fixed inset-0 z-60 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}>
     <button
       class="absolute inset-0 cursor-default bg-black/60"
+      transition:fade={{ duration: reduced ? 0 : 150 }}
       aria-label={m.common_close()}
       onclick={() => dismissable && onclose()}></button>
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      transition:scale={{ duration: reduced ? 0 : 150, start: 0.96 }}
       class="card relative z-10 w-full {wide
         ? 'max-w-2xl'
         : 'max-w-md'} rounded-2xl p-5 {overflowVisible
