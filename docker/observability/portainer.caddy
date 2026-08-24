@@ -8,11 +8,29 @@
 # tells Portainer the original request was https even though this internal
 # hop isn't — the connection Cloudflare terminated for the visitor always
 # was.
+#
+# @statusHead: Portainer's /api/status (the endpoint UptimeRobot's Cloudflare
+# Access bypass targets — see docker/README.md § "Access control per public
+# subdomain") only implements GET and 405s on HEAD, which is all UptimeRobot's
+# plan sends. Rewrite HEAD to GET before it reaches Portainer so the monitor
+# still exercises the real status check instead of getting a canned response.
 {$PORTAINER_SITE_ADDRESS} {
+	@statusHead {
+		method HEAD
+		path /api/status
+	}
+	method @statusHead GET
+
 	reverse_proxy portainer:9000
 }
 
 http://{$PORTAINER_SITE_ADDRESS}:8080 {
+	@statusHead {
+		method HEAD
+		path /api/status
+	}
+	method @statusHead GET
+
 	reverse_proxy portainer:9000 {
 		header_up X-Forwarded-Proto https
 	}
