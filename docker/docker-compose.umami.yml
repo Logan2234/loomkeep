@@ -9,7 +9,7 @@
 # Default admin/umami login on first visit — change it immediately.
 services:
   umami:
-    image: ghcr.io/umami-software/umami:3.3.0
+    image: ghcr.io/umami-software/umami:3.3.1
     restart: unless-stopped
     logging:
       driver: json-file
