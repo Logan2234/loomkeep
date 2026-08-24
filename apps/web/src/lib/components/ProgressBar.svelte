@@ -33,6 +33,26 @@
   } = $props();
 
   const clamped = $derived(Math.max(0, Math.min(100, value)));
+
+  // Starts empty and animates to the real value a frame after mount (rather
+  // than appearing already filled) — the fill's own `transition:` then
+  // animates every later change (an item added/removed shifting the %) too.
+  let displayValue = $state(0);
+  $effect(() => {
+    const target = clamped; // read synchronously so the effect re-runs on change
+    // Double rAF: a single one can race the element's very first paint (no
+    // loading state means the bar can mount already showing real data), so
+    // the "0%" starting point never actually gets painted before it jumps to
+    // the target — the second frame guarantees that first paint happens.
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => (displayValue = target));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  });
 </script>
 
 <div
@@ -41,7 +61,7 @@
     : ''} {cls}">
   <div
     class="progress-fill {fillClass} h-full {rounded ? 'rounded-full' : ''}"
-    style="width: {clamped}%; {fillStyle}"
+    style="width: {displayValue}%; {fillStyle}"
     {title}>
   </div>
 </div>

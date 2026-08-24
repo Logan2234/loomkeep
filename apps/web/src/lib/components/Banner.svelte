@@ -1,9 +1,9 @@
 <script lang="ts">
-  // Generic inline message block. `error` covers the failed-request banners
-  // that used to be hand-rolled on every page; `warning`/`info`/`neutral` reuse
-  // the same shape for the non-error asides (degraded capability, FYI, muted
-  // hint) instead of inventing a new color per case.
+  import { prefersReducedMotion } from "$lib/motion";
   import type { Snippet } from "svelte";
+  import { slide } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   type Variant = "error" | "warning" | "info" | "neutral";
 
@@ -26,6 +26,7 @@
 </script>
 
 <div
+  in:slide|global={{ duration: reduced ? 0 : 150 }}
   class="rounded-lg border px-4 py-3 text-sm {VARIANT_CLASSES[variant]} {cls}">
   {@render children()}
 </div>

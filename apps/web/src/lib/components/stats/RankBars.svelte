@@ -3,6 +3,8 @@
   // pattern already used ad hoc on /stats, extracted so every domain section
   // shares it. Shows the top `initialCount` items with a "tout voir" toggle
   // when there are more; the caller passes the full ranked list.
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
+
   let {
     items,
     initialCount = 5,
@@ -49,14 +51,11 @@
           </span>
           <span class="timecode shrink-0">{item.display ?? item.value}</span>
         </div>
-        <div class="bg-surface-2 h-2 overflow-hidden rounded-full">
-          <div
-            class="h-full rounded-full"
-            style="width:{Math.round(
-              (item.value / max) * 100,
-            )}%;background:{item.color ?? 'var(--accent)'}">
-          </div>
-        </div>
+        <ProgressBar
+          value={(item.value / max) * 100}
+          height="h-2"
+          fillClass=""
+          fillStyle="background:{item.color ?? 'var(--accent)'}" />
       </li>
     {/each}
   </ul>
