@@ -136,7 +136,7 @@
     <!-- Desktop dropdown -->
     <div
       bind:this={panelEl}
-      transition:fade={{ duration: 120 }}
+      transition:fade={{ duration: 100 }}
       role="dialog"
       aria-label={m.notif_title()}
       class="border-border bg-surface absolute top-[calc(100%+0.5rem)] right-0 hidden max-h-[min(32rem,80vh)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border shadow-xl md:flex">

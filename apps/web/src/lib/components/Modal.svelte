@@ -73,14 +73,14 @@
     class={`fixed inset-0 z-60 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}>
     <button
       class="absolute inset-0 cursor-default bg-black/60"
-      transition:fade={{ duration: reduced ? 0 : 180 }}
+      transition:fade|global={{ duration: reduced ? 0 : 180 }}
       aria-label={m.common_close()}
       onclick={() => dismissable && onclose()}></button>
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      transition:scale={{ duration: reduced ? 0 : 180, start: 0.9 }}
+      transition:scale|global={{ duration: reduced ? 0 : 180, start: 0.9 }}
       class="card relative z-10 w-full {wide
         ? 'max-w-2xl'
         : 'max-w-md'} rounded-2xl p-5 {overflowVisible

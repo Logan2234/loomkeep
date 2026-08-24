@@ -249,7 +249,7 @@
     {#each shown as media (keyOf(media))}
       {@const status = trackedStatus(media)}
       <div
-        in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
+        in:fly|global={{ y: 8, duration: reduced ? 0 : 220 }}
         class="card group hover:border-accent relative flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
         <a
           href={`/app/media/${media.type.toLowerCase()}/${media.sourceId}`}

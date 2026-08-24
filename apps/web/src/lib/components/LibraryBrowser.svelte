@@ -159,8 +159,8 @@
       loadId++;
       lastPage = 0;
       done = false;
-      items = [];
     }
+
     const mine = loadId;
     const next = lastPage + 1;
     if (reset) loading = true;
@@ -195,6 +195,16 @@
   }
 
   onMount(() => void run(true));
+
+  let showSkeleton = $state(false);
+  $effect(() => {
+    if (!loading || items.length > 0) {
+      showSkeleton = false;
+      return;
+    }
+    const timer = setTimeout(() => (showSkeleton = true), 200);
+    return () => clearTimeout(timer);
+  });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
   $effect(() => {
@@ -306,9 +316,9 @@
 
   {#if error}
     <Banner variant="error">{error}</Banner>
-  {:else if loading}
+  {:else if showSkeleton}
     <PosterGridSkeleton />
-  {:else if items.length === 0 && hasQuery && !hasFilters}
+  {:else if items.length === 0 && hasQuery && !hasFilters && !loading}
     <!-- No local match: a live catalogue preview instead of only a link out
          to /search — `previewCount` (reported by the panel) decides whether
          we're still waiting, have suggestions, or truly found nothing. -->
@@ -340,33 +350,34 @@
         Aucun {noun} ne correspond à « {query.trim()} » dans ta bibliothèque.
       </p>
     {/if}
-  {:else if items.length === 0}
-    <EmptyState>
-      {#if !hasFilters && !hasQuery}
-        <p>Tu n'as encore aucun {noun} dans ta bibliothèque.</p>
-        <a href={`/app/search?type=${domain}`} class="btn btn-primary mt-4">
-          <Icon name="search" class="h-4 w-4" /> Chercher un {noun}
-        </a>
-      {:else}
-        <p>
-          {#if hasQuery}
-            Aucun {noun} ne correspond à ces filtres pour « {query.trim()} ».
-          {:else}
-            Aucun {noun} ne correspond à ces filtres.
-          {/if}
-        </p>
-        <button class="btn btn-ghost mt-4" onclick={clearFilters}>
-          Effacer les filtres
-        </button>
-      {/if}
-    </EmptyState>
-  {:else}
+  {:else if items.length === 0 && !loading}
+    <div in:fade|global={{ duration: reduced ? 0 : 150 }}>
+      <EmptyState>
+        {#if !hasFilters && !hasQuery}
+          <p>Tu n'as encore aucun {noun} dans ta bibliothèque.</p>
+          <a href={`/app/search?type=${domain}`} class="btn btn-primary mt-4">
+            <Icon name="search" class="h-4 w-4" /> Chercher un {noun}
+          </a>
+        {:else}
+          <p>
+            {#if hasQuery}
+              Aucun {noun} ne correspond à ces filtres pour « {query.trim()} ».
+            {:else}
+              Aucun {noun} ne correspond à ces filtres.
+            {/if}
+          </p>
+          <button class="btn btn-ghost mt-4" onclick={clearFilters}>
+            Effacer les filtres
+          </button>
+        {/if}
+      </EmptyState>
+    </div>
+  {:else if items.length > 0}
     <PosterGrid>
       {#each items as entry (keyOf(entry))}
         <div
           animate:flip={{ duration: reduced ? 0 : 250 }}
-          in:fade={{ duration: reduced ? 0 : 150 }}
-          out:fade={{ duration: reduced ? 0 : 150 }}>
+          in:fade|global={{ duration: reduced ? 0 : 150 }}>
           {@render card(entry)}
         </div>
       {/each}

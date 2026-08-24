@@ -1,13 +1,10 @@
 <script lang="ts">
-  // Global toast stack; mounted once in the root layout. Reads from the
-  // `toast` store (src/lib/toast.svelte.ts) so any component can call
-  // `toast.success(...)` / `toast.error(...)` without prop-drilling.
   import { prefersReducedMotion } from "$lib/motion";
+  import { m } from "$lib/paraglide/messages.js";
+  import { toast, type ToastVariant } from "$lib/toast.svelte";
   import { flip } from "svelte/animate";
   import { fade, fly } from "svelte/transition";
   import Icon from "./Icon.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import { toast, type ToastVariant } from "$lib/toast.svelte";
 
   const reduced = prefersReducedMotion();
 
@@ -19,7 +16,7 @@
 </script>
 
 <div
-  class="pointer-events-none fixed inset-x-4 bottom-20 z-[60] flex flex-col items-center gap-2 md:inset-x-auto md:right-4 md:bottom-4 md:items-end">
+  class="pointer-events-none fixed inset-x-4 bottom-20 z-60 flex flex-col items-center gap-2 md:inset-x-auto md:right-4 md:bottom-4 md:items-end">
   {#each toast.items as t (t.id)}
     <div
       role="status"
