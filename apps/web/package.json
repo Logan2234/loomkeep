@@ -30,18 +30,18 @@
     "unleash-proxy-client": "^3.8.2"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.23.2",
+    "@inlang/paraglide-js": "^2.24.1",
     "@sveltejs/adapter-node": "^5.5.7",
-    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/qrcode": "^1.5.6",
     "@vite-pwa/sveltekit": "^1.1.0",
     "eslint-plugin-svelte": "^3.23.0",
-    "svelte": "^5.56.9",
+    "svelte": "^5.56.10",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.1",
+    "vite": "^8.2.2",
     "workbox-precaching": "^7.4.1"
   }
 }
