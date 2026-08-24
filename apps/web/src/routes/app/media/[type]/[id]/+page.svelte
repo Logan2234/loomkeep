@@ -32,6 +32,7 @@
   } from "$lib/constants/ownership-sources";
   import { formatDate } from "$lib/format";
   import { createLibraryEntryActions } from "$lib/library-entry";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     EntryStatus,
@@ -40,6 +41,7 @@
     MediaType,
   } from "@loomkeep/shared";
   import { isDormant } from "@loomkeep/shared";
+  import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
   import EpisodesSection from "./components/EpisodesSection.svelte";
@@ -90,6 +92,8 @@
   let saving = $state(false);
   let confirmRemove = $state(false);
   let removing = $state(false);
+  let trackingExpanded = $state(false);
+  const reduced = prefersReducedMotion();
 
   // Poster + backdrop + extras' backdrop gallery (TMDB only), deduped, for the
   // lightbox carousel.
@@ -334,7 +338,7 @@
     {#if detail.posterUrl}
       <button
         type="button"
-        class="absolute right-4 bottom-4 z-10 w-20 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg md:right-6 md:bottom-6 md:w-24"
+        class="absolute right-4 bottom-4 z-10 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg sm:w-20 md:right-6 md:bottom-6 md:w-24"
         aria-label="Agrandir l'affiche"
         onclick={() => openLightbox(detail?.posterUrl ?? null)}>
         <Poster src={detail.posterUrl} title={detail.title} />
@@ -342,7 +346,8 @@
     {/if}
 
     <div class="absolute inset-x-0 bottom-0">
-      <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-8">
+      <div
+        class="mx-auto max-w-4xl px-5 pr-20 pb-6 sm:pr-24 md:px-8 md:pr-8 md:pb-8">
         <div class="flex flex-wrap items-center gap-2">
           <span
             class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur">
@@ -455,75 +460,93 @@
     {#if entry}
       <!-- Set-once settings, not day-to-day actions — tucked away closed by
            default rather than living in the action bar above. -->
-      <details
-        class="border-border bg-surface group mt-6 max-w-xl overflow-hidden rounded-xl border">
-        <summary
-          class="group-open:border-border flex cursor-pointer items-center gap-2 px-4 py-3 group-open:border-b [&::-webkit-details-marker]:hidden">
+      <div
+        class="border-border bg-surface mt-6 max-w-xl overflow-hidden rounded-xl border">
+        <div
+          role="button"
+          tabindex="0"
+          aria-expanded={trackingExpanded}
+          class="flex cursor-pointer items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden {trackingExpanded
+            ? 'border-border border-b'
+            : ''}"
+          onclick={() => (trackingExpanded = !trackingExpanded)}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              trackingExpanded = !trackingExpanded;
+            }
+          }}>
           <Icon
             name="chevron-right"
-            class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
+            class="text-dim h-4 w-4 shrink-0 transition-transform {trackingExpanded
+              ? 'rotate-90'
+              : ''}" />
           <span class="text-sm font-semibold">Mon suivi</span>
           <span class="text-dim text-xs">Note privée · Possession</span>
-        </summary>
-        <div class="flex flex-col gap-4 px-4 py-4">
-          <OwnershipField
-            status={entry.ownershipStatus}
-            source={entry.ownershipSource}
-            statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
-            sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
-            onChange={(status, source) =>
-              patch({
-                ownershipStatus: status as typeof entry.ownershipStatus,
-                ownershipSource: source,
-              })} />
+        </div>
+        {#if trackingExpanded}
+          <div
+            class="flex flex-col gap-4 px-4 py-4"
+            transition:slide|global={{ duration: reduced ? 0 : 200 }}>
+            <OwnershipField
+              status={entry.ownershipStatus}
+              source={entry.ownershipSource}
+              statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
+              sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
+              onChange={(status, source) =>
+                patch({
+                  ownershipStatus: status as typeof entry.ownershipStatus,
+                  ownershipSource: source,
+                })} />
 
-          <NoteField
-            value={entry.notes}
-            placeholder="Une réplique, un souvenir…"
-            onChange={(v) => patch({ notes: v })} />
+            <NoteField
+              value={entry.notes}
+              placeholder="Une réplique, un souvenir…"
+              onChange={(v) => patch({ notes: v })} />
 
-          {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
-            <hr class="border-border" />
+            {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
+              <hr class="border-border" />
 
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center justify-between gap-2">
-                <span
-                  class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                  Revisionnages{#if entry.replays.length > 0}
-                    &nbsp;· {entry.replays.length}{/if}
-                </span>
-                {#if entry.status === "COMPLETED"}
-                  <button
-                    type="button"
-                    class="link-accent text-xs disabled:opacity-50"
-                    disabled={saving}
-                    onclick={addReplay}>
-                    + J'ai revu ce film
-                  </button>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span
+                    class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
+                    Revisionnages{#if entry.replays.length > 0}
+                      &nbsp;· {entry.replays.length}{/if}
+                  </span>
+                  {#if entry.status === "COMPLETED"}
+                    <button
+                      type="button"
+                      class="link-accent text-xs disabled:opacity-50"
+                      disabled={saving}
+                      onclick={addReplay}>
+                      + J'ai revu ce film
+                    </button>
+                  {/if}
+                </div>
+                {#if entry.replays.length > 0}
+                  <ul class="flex flex-col gap-1">
+                    {#each entry.replays as replay (replay.id)}
+                      <li class="text-dim flex items-center gap-2 text-xs">
+                        <span class="flex-1"
+                          >{formatDate(replay.finishedAt)}</span>
+                        <button
+                          type="button"
+                          class="hover:text-danger"
+                          aria-label="Supprimer ce revisionnage"
+                          disabled={saving}
+                          onclick={() => removeReplay(replay.id)}>
+                          {m.common_delete()}
+                        </button>
+                      </li>
+                    {/each}
+                  </ul>
                 {/if}
               </div>
-              {#if entry.replays.length > 0}
-                <ul class="flex flex-col gap-1">
-                  {#each entry.replays as replay (replay.id)}
-                    <li class="text-dim flex items-center gap-2 text-xs">
-                      <span class="flex-1"
-                        >{formatDate(replay.finishedAt)}</span>
-                      <button
-                        type="button"
-                        class="hover:text-danger"
-                        aria-label="Supprimer ce revisionnage"
-                        disabled={saving}
-                        onclick={() => removeReplay(replay.id)}>
-                        {m.common_delete()}
-                      </button>
-                    </li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      </details>
+            {/if}
+          </div>
+        {/if}
+      </div>
     {/if}
 
     {#if hasProviders && extras}

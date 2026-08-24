@@ -9,19 +9,24 @@
   } from "$lib/api/client";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
+  import Dropdown from "$lib/components/Dropdown.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import type {
     CommentTargetType,
     LibraryEntryDto,
     MediaDetailSeasonDto,
     ReviewTargetType,
   } from "@loomkeep/shared";
-  import { SvelteDate } from "svelte/reactivity";
+  import { SvelteDate, SvelteSet } from "svelte/reactivity";
+  import { slide } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   let {
     seasons,
@@ -38,14 +43,16 @@
   let busyEpisodeId = $state<string | null>(null);
   let busySeasonId = $state<string | null>(null);
 
-  // Fixed-position season "⋮" menu (fixed so it escapes the season card's
-  // clipping) — only one open at a time, mirrors the review/comment icons'
-  // per-row modals below.
-  let seasonMenu = $state<{
-    seasonId: string;
-    top: number;
-    right: number;
-  } | null>(null);
+  // Collapsed by default; several seasons can be expanded independently.
+  let expandedSeasons = new SvelteSet<number>();
+  function toggleSeason(seasonNumber: number) {
+    if (expandedSeasons.has(seasonNumber)) {
+      expandedSeasons.delete(seasonNumber);
+    } else {
+      expandedSeasons.add(seasonNumber);
+    }
+  }
+
   let confirmUnwatchSeasonId = $state<string | null>(null);
   let unwatchingSeasonBusy = $state(false);
 
@@ -111,15 +118,6 @@
     const days = daysUntilAir(airDate);
     if (days <= 0) return null;
     return days === 1 ? "Demain" : `Dans ${days} jours`;
-  }
-
-  function openSeasonMenu(event: MouseEvent, seasonId: string) {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    seasonMenu = {
-      seasonId,
-      top: rect.bottom + 4,
-      right: window.innerWidth - rect.right,
-    };
   }
 
   async function markWatched(episodeId: string) {
@@ -242,13 +240,28 @@
 <div class="flex flex-col gap-4 pb-4">
   {#each seasons as season (season.number)}
     <!-- Seasons are collapsible and collapsed by default. -->
-    <details class="card group">
-      <summary
-        class="bg-surface-2 font-display group-open:border-border cursor-pointer list-none rounded-[inherit] px-4 py-2.5 font-semibold group-open:rounded-b-none group-open:border-b [&::-webkit-details-marker]:hidden">
+    {@const expanded = expandedSeasons.has(season.number)}
+    <div class="card">
+      <div
+        role="button"
+        tabindex="0"
+        aria-expanded={expanded}
+        class="bg-surface-2 font-display cursor-pointer rounded-[inherit] px-4 py-2.5 font-semibold [&::-webkit-details-marker]:hidden {expanded
+          ? 'border-border rounded-b-none border-b'
+          : ''}"
+        onclick={() => toggleSeason(season.number)}
+        onkeydown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleSeason(season.number);
+          }
+        }}>
         <div class="flex items-center gap-3">
           <Icon
             name="chevron-right"
-            class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
+            class="text-dim h-4 w-4 shrink-0 transition-transform {expanded
+              ? 'rotate-90'
+              : ''}" />
           <span class="min-w-0 flex-1 truncate">
             {season.title ?? `Saison ${season.number}`}
           </span>
@@ -268,7 +281,7 @@
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
               aria-label="Critique de la saison"
               onclick={(e) => {
-                e.preventDefault();
+                e.stopPropagation();
                 reviewTarget = {
                   type: "SEASON",
                   id: season.id!,
@@ -283,7 +296,7 @@
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
               aria-label="Commentaires de la saison"
               onclick={(e) => {
-                e.preventDefault();
+                e.stopPropagation();
                 commentTarget = {
                   type: "SEASON",
                   id: season.id!,
@@ -294,16 +307,47 @@
             </button>
           {/if}
           {#if entry && season.id}
-            <button
-              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-              aria-label="Plus d'actions pour la saison"
-              aria-haspopup="menu"
-              onclick={(e) => {
-                e.preventDefault();
-                openSeasonMenu(e, season.id!);
-              }}>
-              <Icon name="dots-vertical" class="h-4 w-4" />
-            </button>
+            {@const seasonId = season.id}
+            <Dropdown placement="bottom-end" class="min-w-64">
+              {#snippet trigger({ open, toggle })}
+                <button
+                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                  aria-label="Plus d'actions pour la saison"
+                  aria-haspopup="menu"
+                  aria-expanded={open}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    toggle(e);
+                  }}>
+                  <Icon name="dots-vertical" class="h-4 w-4" />
+                </button>
+              {/snippet}
+              {#snippet children({ close })}
+                {#if !seasonWatched(season)}
+                  <button
+                    role="menuitem"
+                    class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                    disabled={busySeasonId === seasonId}
+                    onclick={() => {
+                      close();
+                      markSeason(seasonId);
+                    }}>
+                    <Icon name="check" class="h-4 w-4" /> Marquer la saison vue
+                  </button>
+                {/if}
+                {#if seasonWatchedCount(season) > 0}
+                  <button
+                    role="menuitem"
+                    class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
+                    onclick={() => {
+                      close();
+                      confirmUnwatchSeasonId = seasonId;
+                    }}>
+                    <Icon name="x" class="h-4 w-4" /> Tout annuler la saison
+                  </button>
+                {/if}
+              {/snippet}
+            </Dropdown>
           {/if}
         </div>
         {#if entry && season.episodes.length > 0}
@@ -316,151 +360,113 @@
             track="bg-border"
             class="mt-2 w-full" />
         {/if}
-      </summary>
-      <ul>
-        {#each season.episodes as episode (episode.number)}
-          {@const watched = episode.watchCount > 0}
-          <li class="border-border border-b last:border-b-0">
-            <div class="flex items-center gap-3 px-4 py-2.5">
-              <span class="timecode w-14 shrink-0 text-sm">
-                S{String(season.number).padStart(2, "0")}E{String(
-                  episode.number,
-                ).padStart(2, "0")}
-              </span>
-              <span class="min-w-0 flex-1 truncate text-sm">
-                {episode.title ?? `Épisode ${episode.number}`}
-                {#if episode.watchCount > 1}
-                  <span class="text-success">×{episode.watchCount}</span>
-                {/if}
-              </span>
-              {#if watched && episode.id}
-                <span
-                  class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-                  <Icon name="check" class="h-4 w-4" />
-                  {formatDate(
-                    episode.watches[0].watchedAt,
-                    DATE_MEDIUM_OPTIONS,
-                  )}
+      </div>
+      {#if expanded}
+        <ul transition:slide|global={{ duration: reduced ? 0 : 200 }}>
+          {#each season.episodes as episode (episode.number)}
+            {@const watched = episode.watchCount > 0}
+            <li class="border-border border-b last:border-b-0">
+              <div class="flex items-center gap-3 px-4 py-2.5">
+                <span class="timecode w-14 shrink-0 text-sm">
+                  S{String(season.number).padStart(2, "0")}E{String(
+                    episode.number,
+                  ).padStart(2, "0")}
                 </span>
-              {/if}
-              {#if entry && episode.id}
-                <button
-                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                  aria-label="Critique de l'épisode"
-                  onclick={() => {
-                    reviewTarget = {
-                      type: "EPISODE",
-                      id: episode.id!,
-                      label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
-                    };
-                  }}>
-                  <Icon name="star" class="h-4 w-4" />
-                </button>
-              {/if}
-              {#if entry && appConfig.socialEnabled && episode.id}
-                <button
-                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                  aria-label="Commentaires de l'épisode"
-                  onclick={() => {
-                    commentTarget = {
-                      type: "EPISODE",
-                      id: episode.id!,
-                      label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
-                    };
-                  }}>
-                  <Icon name="message" class="h-4 w-4" />
-                </button>
-              {/if}
-              {#if entry && episode.id}
-                {@const upcoming = !watched && upcomingLabel(episode.airDate)}
-                {#if upcoming}
+                <span class="min-w-0 flex-1 truncate text-sm">
+                  {episode.title ?? `Épisode ${episode.number}`}
+                  {#if episode.watchCount > 1}
+                    <span class="text-success">×{episode.watchCount}</span>
+                  {/if}
+                </span>
+                {#if watched && episode.id}
                   <span
-                    class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
-                    title="Pas encore diffusé">
-                    {upcoming}
+                    class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
+                    <Icon name="check" class="h-4 w-4" />
+                    {formatDate(
+                      episode.watches[0].watchedAt,
+                      DATE_MEDIUM_OPTIONS,
+                    )}
                   </span>
-                {:else if watched}
-                  <!-- Rare, secondary actions on an already-watched episode:
-                       two quiet icon buttons rather than a hidden menu. -->
-                  <div class="flex shrink-0 items-center gap-1">
-                    <button
-                      class="btn-icon"
-                      title="Revoir"
-                      aria-label="Revoir"
-                      disabled={busyEpisodeId === episode.id}
-                      onclick={() => markWatched(episode.id!)}>
-                      <Icon name="refresh" class="h-4 w-4" />
-                    </button>
-                    <button
-                      class="btn-icon hover:text-danger"
-                      title="Annuler ce visionnage"
-                      aria-label="Annuler ce visionnage"
-                      disabled={busyEpisodeId === episode.id}
-                      onclick={() => markUnwatch(episode.id!)}>
-                      <Icon name="x" class="h-4 w-4" />
-                    </button>
-                  </div>
-                {:else}
+                {/if}
+                {#if entry && episode.id}
                   <button
-                    class="btn btn-primary btn-sm shrink-0"
-                    disabled={busyEpisodeId === episode.id}
-                    onclick={() =>
-                      requestMarkWatched(
-                        season.number,
-                        episode.number,
-                        episode.id!,
-                      )}>
-                    Marquer vu
+                    class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                    aria-label="Critique de l'épisode"
+                    onclick={() => {
+                      reviewTarget = {
+                        type: "EPISODE",
+                        id: episode.id!,
+                        label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
+                      };
+                    }}>
+                    <Icon name="star" class="h-4 w-4" />
                   </button>
                 {/if}
-              {/if}
-            </div>
-          </li>
-        {/each}
-      </ul>
-    </details>
+                {#if entry && appConfig.socialEnabled && episode.id}
+                  <button
+                    class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                    aria-label="Commentaires de l'épisode"
+                    onclick={() => {
+                      commentTarget = {
+                        type: "EPISODE",
+                        id: episode.id!,
+                        label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
+                      };
+                    }}>
+                    <Icon name="message" class="h-4 w-4" />
+                  </button>
+                {/if}
+                {#if entry && episode.id}
+                  {@const upcoming = !watched && upcomingLabel(episode.airDate)}
+                  {#if upcoming}
+                    <span
+                      class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
+                      title="Pas encore diffusé">
+                      {upcoming}
+                    </span>
+                  {:else if watched}
+                    <!-- Rare, secondary actions on an already-watched episode:
+                       two quiet icon buttons rather than a hidden menu. -->
+                    <div class="flex shrink-0 items-center gap-1">
+                      <button
+                        class="btn-icon"
+                        title="Revoir"
+                        aria-label="Revoir"
+                        disabled={busyEpisodeId === episode.id}
+                        onclick={() => markWatched(episode.id!)}>
+                        <Icon name="refresh" class="h-4 w-4" />
+                      </button>
+                      <button
+                        class="btn-icon hover:text-danger"
+                        title="Annuler ce visionnage"
+                        aria-label="Annuler ce visionnage"
+                        disabled={busyEpisodeId === episode.id}
+                        onclick={() => markUnwatch(episode.id!)}>
+                        <Icon name="x" class="h-4 w-4" />
+                      </button>
+                    </div>
+                  {:else}
+                    <button
+                      class="btn btn-primary btn-sm shrink-0"
+                      disabled={busyEpisodeId === episode.id}
+                      onclick={() =>
+                        requestMarkWatched(
+                          season.number,
+                          episode.number,
+                          episode.id!,
+                        )}>
+                      Marquer vu
+                    </button>
+                  {/if}
+                {/if}
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
   {/each}
 </div>
-
-<!-- Season "⋮" menu (fixed so it escapes the season card's clipping). -->
-{#if seasonMenu}
-  {@const active = seasonMenu}
-  {@const activeSeason = seasons.find((s) => s.id === active.seasonId)}
-  <button
-    class="fixed inset-0 z-30 cursor-default"
-    aria-label="Fermer le menu"
-    onclick={() => (seasonMenu = null)}></button>
-  <div
-    role="menu"
-    class="border-border bg-surface fixed z-40 min-w-64 overflow-hidden rounded-lg border shadow-lg"
-    style={`top: ${active.top}px; right: ${active.right}px`}>
-    {#if activeSeason && !seasonWatched(activeSeason)}
-      <button
-        role="menuitem"
-        class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
-        disabled={busySeasonId === active.seasonId}
-        onclick={() => {
-          const seasonId = active.seasonId;
-          seasonMenu = null;
-          markSeason(seasonId);
-        }}>
-        <Icon name="check" class="h-4 w-4" /> Marquer la saison vue
-      </button>
-    {/if}
-    {#if activeSeason && seasonWatchedCount(activeSeason) > 0}
-      <button
-        role="menuitem"
-        class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
-        onclick={() => {
-          const seasonId = active.seasonId;
-          seasonMenu = null;
-          confirmUnwatchSeasonId = seasonId;
-        }}>
-        <Icon name="x" class="h-4 w-4" /> Tout annuler la saison
-      </button>
-    {/if}
-  </div>
-{/if}
 
 {#if catchup}
   {@const c = catchup}

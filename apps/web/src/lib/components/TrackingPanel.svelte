@@ -4,7 +4,11 @@
   // footer with the "remove from library" action.
   import type { Snippet } from "svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "$lib/motion";
+  import { scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
+
+  const reduced = prefersReducedMotion();
 
   let {
     favorite,
@@ -41,7 +45,11 @@
       class="rounded-full p-1.5 transition-colors disabled:opacity-50 {favorite
         ? 'text-accent'
         : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-      <Icon name="star" class="h-5 w-5 {favorite ? 'fill-accent' : ''}" />
+      {#key favorite}
+        <span in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}>
+          <Icon name="star" class="h-5 w-5 {favorite ? 'fill-accent' : ''}" />
+        </span>
+      {/key}
     </button>
   </div>
 

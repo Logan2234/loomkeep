@@ -81,7 +81,7 @@
       aria-modal="true"
       aria-labelledby="modal-title"
       transition:scale|global={{ duration: reduced ? 0 : 180, start: 0.9 }}
-      class="card relative z-10 w-full {wide
+      class="card relative z-10 max-h-[80vh] w-full overflow-scroll {wide
         ? 'max-w-2xl'
         : 'max-w-md'} rounded-2xl p-5 {overflowVisible
         ? 'overflow-visible'

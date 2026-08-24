@@ -49,6 +49,24 @@
         } as Record<ToggleChoice, { label: string }>)
       : undefined,
   );
+
+  // Starts empty and grows to real widths a frame after mount, rather than
+  // appearing already filled — each segment's own `transition:` then
+  // animates later changes (the Temps/Nombre toggle) too.
+  let mounted = $state(false);
+  $effect(() => {
+    // Double rAF: a single one can race the element's very first paint, so
+    // the "0%" starting width never actually gets painted before it jumps to
+    // the target — the second frame guarantees that first paint happens.
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => (mounted = true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  });
 </script>
 
 {#if canToggle && toggleMeta}
@@ -72,10 +90,16 @@
 <div class="bg-surface-2 flex h-3.5 overflow-hidden rounded-full">
   {#each active as s (s.label)}
     {#if s.shown > 0}
-      <div style="width:{(s.shown / total) * 100}%;background:{s.color}"></div>
+      <div
+        class="segment"
+        style="width:{mounted
+          ? (s.shown / total) * 100
+          : 0}%;background:{s.color}">
+      </div>
     {/if}
   {/each}
 </div>
+
 <ul class="mt-3.5 flex flex-col gap-2">
   {#each active as s (s.label)}
     <li class="flex items-center gap-2.5 text-sm">
@@ -89,3 +113,10 @@
     </li>
   {/each}
 </ul>
+
+<style>
+  /* prefers-reduced-motion is handled globally in app.css. */
+  .segment {
+    transition: width 300ms ease-out;
+  }
+</style>

@@ -16,9 +16,12 @@
   let open = $state(false);
 </script>
 
-<button class="btn btn-ghost" onclick={() => (open = true)}>
+<button
+  class="btn btn-ghost h-9 w-9 rounded-full p-0 sm:h-auto sm:w-auto sm:rounded-lg sm:px-4 sm:py-2"
+  title={m.add_to_list_button()}
+  onclick={() => (open = true)}>
   <Icon name="list" class="h-4 w-4" />
-  {m.add_to_list_button()}
+  <span class="hidden sm:inline">{m.add_to_list_button()}</span>
 </button>
 
 {#if open}
