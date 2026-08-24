@@ -11,7 +11,7 @@
 # the config as {{HOMEPAGE_VAR_X}} to keep secrets out of the committed YAML.
 services:
   homepage:
-    image: ghcr.io/gethomepage/homepage:v1.13.2
+    image: ghcr.io/gethomepage/homepage:v2.1.0
     restart: unless-stopped
     logging:
       driver: json-file
