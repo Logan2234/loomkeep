@@ -170,8 +170,8 @@
       quelques semaines selon le trafic) ; lorsque le module de supervision est
       activé, ils sont en outre conservés 30 jours glissants dans l'outil de
       supervision (Loki). Les données d'erreur (stack traces) sont conservées
-      dans l'outil de suivi des erreurs auto-hébergé (GlitchTip), selon sa durée
-      de rétention par défaut.
+      dans l'outil de suivi des erreurs auto-hébergé (GlitchTip), pendant sa
+      durée de rétention par défaut (90 jours).
     </p>
     <h2>4. Finalités et bases légales</h2>
     <p>Les données sont traitées notamment pour les finalités suivantes :</p>
