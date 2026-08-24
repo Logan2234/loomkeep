@@ -47,7 +47,7 @@ services:
     # Pin to a specific tag before deploying — check
     # https://github.com/cloudflare/cloudflared/releases for the current
     # stable release rather than trusting this value blind.
-    image: cloudflare/cloudflared:2025.9.1
+    image: cloudflare/cloudflared:2026.8.2
     restart: unless-stopped
     logging:
       driver: json-file
