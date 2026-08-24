@@ -2,11 +2,17 @@
   // Small inline indicator next to a pseudo — Snapchat-flame style. Renders
   // nothing when there's no streak (undefined/0), so callers can drop it in
   // unconditionally next to any displayName.
+  import { prefersReducedMotion } from "$lib/motion";
+  import { scale } from "svelte/transition";
+
   let { days }: { days: number | undefined } = $props();
+
+  const reduced = prefersReducedMotion();
 </script>
 
 {#if days && days > 0}
   <span
+    transition:scale={{ duration: reduced ? 0 : 200, start: 0.6 }}
     class="text-accent inline-flex items-center gap-0.5 align-middle text-xs font-bold"
     title="{days} prise{days > 1
       ? 's'
