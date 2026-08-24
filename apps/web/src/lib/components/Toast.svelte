@@ -2,10 +2,14 @@
   // Global toast stack; mounted once in the root layout. Reads from the
   // `toast` store (src/lib/toast.svelte.ts) so any component can call
   // `toast.success(...)` / `toast.error(...)` without prop-drilling.
-  import { fly } from "svelte/transition";
+  import { prefersReducedMotion } from "$lib/motion";
+  import { flip } from "svelte/animate";
+  import { fade, fly } from "svelte/transition";
   import Icon from "./Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { toast, type ToastVariant } from "$lib/toast.svelte";
+
+  const reduced = prefersReducedMotion();
 
   const VARIANT_CLASSES: Record<ToastVariant, string> = {
     success: "border-success/40 bg-success/10 text-success",
@@ -19,7 +23,9 @@
   {#each toast.items as t (t.id)}
     <div
       role="status"
-      transition:fly={{ y: 12, duration: 150 }}
+      in:fly={{ y: 12, duration: reduced ? 0 : 150 }}
+      out:fade={{ duration: reduced ? 0 : 120 }}
+      animate:flip={{ duration: reduced ? 0 : 200 }}
       class="pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur {VARIANT_CLASSES[
         t.variant
       ]}">
