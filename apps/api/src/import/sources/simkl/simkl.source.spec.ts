@@ -78,6 +78,7 @@ function makeService() {
     [source],
     prisma as unknown as PrismaService,
     {} as never,
+    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
   );
   return { prisma, mediaItemService, tmdb, service };
 }
@@ -161,7 +162,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
       },
     });
 
-    const started = service.startAnalyze("u1", "simkl", {
+    const started = await service.startAnalyze("u1", "simkl", {
       input: "the-oauth-code",
     });
     const job = await runToEnd(service, "u1", started.id);
@@ -188,7 +189,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
     const { service } = makeService();
     mockFetchByUrl({ "oauth/token": 400 });
 
-    const started = service.startAnalyze("u1", "simkl", {
+    const started = await service.startAnalyze("u1", "simkl", {
       input: "stale-code",
     });
     const job = await runToEnd(service, "u1", started.id);
@@ -238,7 +239,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
       },
     });
 
-    const analyzed = service.startAnalyze("u1", "simkl", {
+    const analyzed = await service.startAnalyze("u1", "simkl", {
       input: "the-oauth-code",
     });
     await runToEnd(service, "u1", analyzed.id);

@@ -81,7 +81,12 @@ function makeService() {
     tmdb as never,
     {} as never,
   );
-  const service = new ImportJobService([source], prisma as never, {} as never);
+  const service = new ImportJobService(
+    [source],
+    prisma as never,
+    {} as never,
+    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
+  );
   return { prisma, mediaItemService, tmdb, service };
 }
 
@@ -122,7 +127,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       ),
     );
 
-    const { id } = service.startAnalyze(
+    const { id } = await service.startAnalyze(
       "u1",
       "tvtime",
       analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
@@ -183,7 +188,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "towatch,movie,Later Film,2021-01-01 00:00:00",
     ].join("\n");
 
-    const { id } = service.startAnalyze(
+    const { id } = await service.startAnalyze(
       "u1",
       "tvtime",
       analyzeDto({
@@ -239,7 +244,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       mediaItemId: "media-100",
     });
 
-    const analyze = service.startAnalyze(
+    const analyze = await service.startAnalyze(
       "u1",
       "tvtime",
       analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
@@ -272,7 +277,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "type,entity_type,movie_name,release_date",
       "towatch,movie,Later Film,2021-01-01 00:00:00",
     ].join("\n");
-    const analyze = service.startAnalyze(
+    const analyze = await service.startAnalyze(
       "u1",
       "tvtime",
       analyzeDto({
@@ -318,7 +323,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       mediaItemId: "media-100",
     });
 
-    const analyze = service.startAnalyze(
+    const analyze = await service.startAnalyze(
       "u1",
       "tvtime",
       analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
@@ -341,15 +346,15 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     });
   });
 
-  it("rejects an archive missing a required file", () => {
+  it("rejects an archive missing a required file", async () => {
     const { service } = makeService();
     // No user_tv_show_data.csv → required file absent.
-    expect(() =>
+    await expect(
       service.startAnalyze(
         "u1",
         "tvtime",
         analyzeDto({ episodesCsv: EPISODES_CSV }),
       ),
-    ).toThrow(/user_tv_show_data\.csv/);
+    ).rejects.toThrow(/user_tv_show_data\.csv/);
   });
 });

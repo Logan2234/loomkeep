@@ -65,7 +65,12 @@ function makeService() {
     tmdb as never,
     {} as never,
   );
-  const service = new ImportJobService([source], prisma as never, {} as never);
+  const service = new ImportJobService(
+    [source],
+    prisma as never,
+    {} as never,
+    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
+  );
   return { prisma, mediaItemService, tmdb, service };
 }
 
@@ -113,7 +118,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
     const input = zipBase64([
       { name: "watched-history.json", content: HISTORY },
     ]);
-    const started = service.startAnalyze("u1", "trakt", { input });
+    const started = await service.startAnalyze("u1", "trakt", { input });
     const job = await runToEnd(service, "u1", started.id);
 
     expect(job.status).toBe("completed");
@@ -150,20 +155,20 @@ describe("TraktImportSource (via ImportJobService)", () => {
       { name: "watched-history-2.json", content: episodeOnly },
     ]);
 
-    const started = service.startAnalyze("u1", "trakt", { input });
+    const started = await service.startAnalyze("u1", "trakt", { input });
     const job = await runToEnd(service, "u1", started.id);
 
     expect(job.status).toBe("completed");
     expect(job.plan!.counts.total).toBe(2);
   });
 
-  it("throws immediately when the archive has no history file", () => {
+  it("throws immediately when the archive has no history file", async () => {
     const { service } = makeService();
     const input = zipBase64([{ name: "user-profile.json", content: "{}" }]);
 
-    expect(() => service.startAnalyze("u1", "trakt", { input })).toThrow(
-      /watched-history/i,
-    );
+    await expect(
+      service.startAnalyze("u1", "trakt", { input }),
+    ).rejects.toThrow(/watched-history/i);
   });
 
   it("commit writes episode watches and library entries", async () => {
@@ -188,7 +193,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
       { name: "watched-history.json", content: episodeOnly },
     ]);
 
-    const analyzed = service.startAnalyze("u1", "trakt", { input });
+    const analyzed = await service.startAnalyze("u1", "trakt", { input });
     await runToEnd(service, "u1", analyzed.id);
 
     const committed = service.commit("u1", "trakt", analyzed.id, {

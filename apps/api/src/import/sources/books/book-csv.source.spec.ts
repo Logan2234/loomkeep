@@ -85,6 +85,7 @@ function setup(
     [source],
     prisma as unknown as PrismaService,
     {} as never,
+    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
   );
   return { service, bookItemService, upsert, createMany, deleteMany, reviews };
 }
@@ -111,7 +112,9 @@ function byKey(plan: ImportPlan, key: string): ImportPlanItem | undefined {
 }
 
 async function analyze(service: ImportJobService, csv: string) {
-  const { id } = service.startAnalyze("user-1", "storygraph", { input: csv });
+  const { id } = await service.startAnalyze("user-1", "storygraph", {
+    input: csv,
+  });
   return runToEnd(service, "user-1", id);
 }
 
@@ -255,7 +258,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       HEADER,
       'Résister,Salomé Saqué,"",9782228937597,paperback,read,2025/07/23,2025/03/31,2025/02/01-2025/03/31,3,"",fast,,,,,,4.0,loved it,"","","",Yes',
     ].join("\n");
-    const analyzed = service.startAnalyze("user-1", "storygraph", {
+    const analyzed = await service.startAnalyze("user-1", "storygraph", {
       input: csv,
     });
     await runToEnd(service, "user-1", analyzed.id);
@@ -319,7 +322,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       HEADER,
       'Résister,Salomé Saqué,"",9782228937597,paperback,read,2025/07/23,2025/03/31,"",3,"",,,,,,,,"","","","",Yes',
     ].join("\n");
-    const analyzed = service.startAnalyze("user-1", "storygraph", {
+    const analyzed = await service.startAnalyze("user-1", "storygraph", {
       input: csv,
     });
     await runToEnd(service, "user-1", analyzed.id);
@@ -355,7 +358,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       HEADER,
       'X,Author,"",9782228937597,paperback,read,2025/07/23,"","",0,"",,,,,,,,"","","","",Yes',
     ].join("\n");
-    const analyzed = service.startAnalyze("user-1", "storygraph", {
+    const analyzed = await service.startAnalyze("user-1", "storygraph", {
       input: csv,
     });
     const plan = await runToEnd(service, "user-1", analyzed.id);
@@ -390,7 +393,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       HEADER,
       'X,Author,"",9782228937597,paperback,read,2025/07/23,"","",0,"",,,,,,,,"","","","",Yes',
     ].join("\n");
-    const analyzed = service.startAnalyze("user-1", "storygraph", {
+    const analyzed = await service.startAnalyze("user-1", "storygraph", {
       input: csv,
     });
     await runToEnd(service, "user-1", analyzed.id);

@@ -4,15 +4,19 @@
     ApiError,
     commitImport,
     getImportJob,
+    getImportQuota,
     searchBooks,
     searchCatalog,
     searchGames,
   } from "$lib/api/client";
+  import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import {
     Domain,
@@ -58,6 +62,16 @@
   let dragOver = $state(false);
 
   const descriptor = IMPORTS_DEFINITION[source];
+
+  let quotaUsed = $state(false);
+  $effect(() => {
+    getImportQuota()
+      .then((quota) => (quotaUsed = quota[descriptor.domain] === true))
+      .catch(() => {});
+  });
+  const premiumLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !auth.isPremium,
+  );
 
   const DOMAIN_TO_HREF = {
     [Domain.MEDIA]: "/app/media",
@@ -404,6 +418,12 @@
 
   {#if error}
     <Banner variant="error" class="mb-4">{error}</Banner>
+  {:else if premiumLocked && quotaUsed}
+    <Banner variant="warning" class="mb-4"
+      >{m.common_import_quota_used()}</Banner>
+  {:else if premiumLocked}
+    <Banner variant="info" class="mb-4"
+      >{m.common_import_quota_reminder()}</Banner>
   {/if}
 
   {#if phase === "input"}
@@ -458,12 +478,7 @@
       <p class="mb-2 font-semibold">
         {phase === "analyzing" ? "Analyse en cours…" : "Import en cours…"}
       </p>
-      <div class="bg-surface-2 h-2.5 overflow-hidden rounded-full">
-        <div
-          class="bg-accent h-full transition-[width]"
-          style={`width: ${progressPct}%`}>
-        </div>
-      </div>
+      <ProgressBar value={progressPct} height="h-2.5" />
       {#if job}
         <p class="timecode mt-2 text-sm">
           {job.progress.done}/{job.progress.total}

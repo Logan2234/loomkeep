@@ -1065,6 +1065,10 @@ model ImportRun {
   userId     String?
   identifier String
   sourceId   String
+  // Nullable: rows written before this column existed have no domain, and
+  // are deliberately left out of the free-import-per-domain check rather
+  // than backfilled — see ImportJobService#getQuota.
+  domain     Domain?
   status     String
   // Items actually written (the user's kept selection), regardless of outcome.
   itemCount  Int

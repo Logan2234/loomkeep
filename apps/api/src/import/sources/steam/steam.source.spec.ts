@@ -115,6 +115,7 @@ function build(over: Partial<Mocks> = {}): {
     [source],
     { ...mocks.prisma, ...prismaExtras } as unknown as PrismaService,
     {} as never,
+    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
   );
   return { service, mocks };
 }
@@ -191,7 +192,7 @@ describe("SteamImportSource (via ImportJobService)", () => {
       },
     });
 
-    const started = service.startAnalyze("user1", "steam", {
+    const started = await service.startAnalyze("user1", "steam", {
       input: "76561197960287930",
     });
     const job = await runToEnd(service, "user1", started.id);
@@ -238,7 +239,7 @@ describe("SteamImportSource (via ImportJobService)", () => {
       GetOwnedGames: { response: { game_count: 0, games: [] } },
     });
 
-    const started = service.startAnalyze("user1", "steam", {
+    const started = await service.startAnalyze("user1", "steam", {
       input: "https://steamcommunity.com/id/gaben",
     });
     const job = await runToEnd(service, "user1", started.id);
@@ -254,7 +255,7 @@ describe("SteamImportSource (via ImportJobService)", () => {
     const { service } = build();
     mockFetchByUrl({ GetOwnedGames: { response: {} } });
 
-    const started = service.startAnalyze("user1", "steam", {
+    const started = await service.startAnalyze("user1", "steam", {
       input: "76561197960287930",
     });
     const job = await runToEnd(service, "user1", started.id);
@@ -304,7 +305,7 @@ describe("SteamImportSource (via ImportJobService)", () => {
       },
     });
 
-    const analyzed = service.startAnalyze("user1", "steam", {
+    const analyzed = await service.startAnalyze("user1", "steam", {
       input: "76561197960287930",
     });
     await runToEnd(service, "user1", analyzed.id);

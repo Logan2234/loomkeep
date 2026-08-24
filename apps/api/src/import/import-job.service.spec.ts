@@ -1,5 +1,7 @@
 import type { ConfigService } from "@nestjs/config";
+import { ForbiddenException } from "@nestjs/common";
 import { Domain, type ImportSource } from "@loomkeep/shared";
+import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
@@ -33,6 +35,7 @@ describe("ImportJobService.getAvailability", () => {
       ],
       {} as PrismaService,
       config as unknown as ConfigService,
+      { isEffectivelyPremium: jest.fn() } as unknown as EntitlementService,
     );
 
     const availability = service.getAvailability();
@@ -42,5 +45,88 @@ describe("ImportJobService.getAvailability", () => {
       simkl: false,
     });
     expect(availability.tvtime).toBeUndefined();
+  });
+});
+
+describe("ImportJobService.startAnalyze — premium gating", () => {
+  function makeService(
+    hasPremium: boolean,
+    priorRun: { status: string; itemCount: number } | null,
+  ) {
+    const prisma = {
+      importRun: {
+        findFirst: jest.fn().mockResolvedValue(priorRun),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    } as unknown as PrismaService;
+    const entitlements = {
+      isEffectivelyPremium: jest.fn().mockResolvedValue(hasPremium),
+    } as unknown as EntitlementService;
+    const service = new ImportJobService(
+      [fakeSource("tvtime")],
+      prisma,
+      {} as unknown as ConfigService,
+      entitlements,
+    );
+    return { service, prisma };
+  }
+
+  it("allows a first import into a domain for a free account", async () => {
+    const { service } = makeService(false, null);
+    await expect(
+      service.startAnalyze("u1", "tvtime", { input: "" }),
+    ).resolves.toMatchObject({ status: "running" });
+  });
+
+  it("rejects a second import into an already-imported domain for a free account", async () => {
+    const { service } = makeService(false, {
+      status: "SUCCESS",
+      itemCount: 5,
+    });
+    await expect(
+      service.startAnalyze("u1", "tvtime", { input: "" }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it("allows any import for a premium account, even with prior history", async () => {
+    const { service } = makeService(true, { status: "SUCCESS", itemCount: 5 });
+    await expect(
+      service.startAnalyze("u1", "tvtime", { input: "" }),
+    ).resolves.toMatchObject({ status: "running" });
+  });
+
+  it("only counts a prior run with items actually written towards the free import", async () => {
+    const { service, prisma } = makeService(false, null);
+    await expect(
+      service.startAnalyze("u1", "tvtime", { input: "" }),
+    ).resolves.toMatchObject({ status: "running" });
+    expect(prisma.importRun.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ itemCount: { gt: 0 } }),
+      }),
+    );
+  });
+});
+
+describe("ImportJobService.getQuota", () => {
+  it("maps every domain with a recorded successful import to true", async () => {
+    const prisma = {
+      importRun: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ domain: "MEDIA" }, { domain: "BOOKS" }]),
+      },
+    } as unknown as PrismaService;
+    const service = new ImportJobService(
+      [fakeSource("tvtime")],
+      prisma,
+      {} as unknown as ConfigService,
+      {} as unknown as EntitlementService,
+    );
+
+    await expect(service.getQuota("u1")).resolves.toEqual({
+      MEDIA: true,
+      BOOKS: true,
+    });
   });
 });
