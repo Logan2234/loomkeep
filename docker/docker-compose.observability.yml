@@ -122,7 +122,7 @@ services:
       - /var/lib/docker:/var/lib/docker:ro
 
   prometheus:
-    image: prom/prometheus:v3.13.2
+    image: prom/prometheus:v3.14.0
     restart: unless-stopped
     logging: *default-logging
     command:
