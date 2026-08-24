@@ -4,6 +4,7 @@
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
   import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
@@ -86,9 +87,7 @@
       onToggleFavorite={(next) => toggleFavorite(entry, next)}>
       {#snippet meta()}
         {#if entry.progress}
-          <div class="bg-surface-2 h-1.5 overflow-hidden rounded-full">
-            <div class="bg-accent h-full" style={`width: ${pct(entry)}%`}></div>
-          </div>
+          <ProgressBar value={pct(entry)} />
           <span class="timecode text-xs">
             {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes} ép.
             {#if isDormant(entry)}

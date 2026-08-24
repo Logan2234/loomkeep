@@ -709,7 +709,7 @@
                   <button
                     type="button"
                     onclick={() => (creatingList = true)}
-                    class="w-28 shrink-0 snap-start self-start sm:w-32">
+                    class="w-28 self-start sm:w-32">
                     <div
                       class="card text-dim hover:border-accent hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 border-dashed transition-colors">
                       <Icon name="plus" class="h-6 w-6" />
@@ -720,7 +720,7 @@
                 {:else}
                   <a
                     href="/app/lists/{item.list.id}"
-                    class="w-28 shrink-0 snap-start sm:w-32">
+                    class="block w-28 sm:w-32">
                     <div
                       class="card hover:border-accent overflow-hidden transition-colors">
                       <ListCoverGrid

@@ -68,7 +68,7 @@
           <button
             type="button"
             onclick={() => openCast(c)}
-            class="group/cast w-24 shrink-0 snap-start text-center">
+            class="group/cast w-24 text-center">
             {@render castCard(c, true)}
           </button>
         {:else}
@@ -176,7 +176,7 @@
               <a
                 href={`/app/media/${k.type.toLowerCase()}/${k.sourceId}`}
                 onclick={closeCast}
-                class="w-20 shrink-0 snap-start">
+                class="block w-20">
                 <div
                   class="card hover:border-accent overflow-hidden transition-[border-color]">
                   <Poster src={k.posterUrl} title={k.title} />

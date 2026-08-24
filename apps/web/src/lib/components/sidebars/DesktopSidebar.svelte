@@ -12,8 +12,12 @@
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { prefersReducedMotion } from "$lib/motion";
   import { NAVIGATION } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import { scale } from "svelte/transition";
+
+  const reduced = prefersReducedMotion();
 
   let pinned = $state(
     browser ? localStorage.getItem("tl-rail-pinned") === "true" : false,
@@ -156,10 +160,16 @@
               <span class="relative grid h-10 w-10 shrink-0 place-items-center">
                 <Icon name={item.icon} class="h-5 w-5" />
                 {#if item.href === "/app/admin/reports" && adminReports.pending > 0}
-                  <span
-                    class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                    {adminReports.pending > 9 ? "9+" : adminReports.pending}
-                  </span>
+                  {#key adminReports.pending}
+                    <span
+                      in:scale|global={{
+                        duration: reduced ? 0 : 200,
+                        start: 0.5,
+                      }}
+                      class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
+                      {adminReports.pending > 9 ? "9+" : adminReports.pending}
+                    </span>
+                  {/key}
                 {/if}
               </span>
               <span

@@ -21,6 +21,7 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
@@ -439,9 +440,7 @@
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
     {#if entry?.progress}
       <div class="mt-6 max-w-sm">
-        <div class="bg-surface-2 h-1.5 overflow-hidden rounded-full">
-          <div class="bg-accent h-full" style={`width: ${pct}%`}></div>
-        </div>
+        <ProgressBar value={pct} />
         <p class="timecode mt-1.5 text-sm">
           {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes} épisodes
           vus · {pct} %
