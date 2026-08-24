@@ -349,7 +349,10 @@
 
   <main class="min-w-0 flex-1">
     {#key page.url.pathname}
-      <div transition:fade={{ duration: reduced ? 0 : 120 }}>
+      <!-- in-only: an out-transition here would keep the outgoing page's DOM
+           (and its scroll-affecting height) alive alongside the incoming one,
+           which is what caused the old page to flash behind the new one. -->
+      <div in:fade={{ duration: reduced ? 0 : 120 }}>
         {@render children()}
       </div>
     {/key}
