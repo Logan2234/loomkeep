@@ -12,15 +12,9 @@
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
   import { NAVIGATION } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
-  import { fade } from "svelte/transition";
 
-  const reduced = prefersReducedMotion();
-
-  // Pinned = stays open regardless of hover, persisted. Unpinned = follows the
-  // mouse (hover-only), as before.
   let pinned = $state(
     browser ? localStorage.getItem("tl-rail-pinned") === "true" : false,
   );
@@ -349,12 +343,7 @@
 
   <main class="min-w-0 flex-1">
     {#key page.url.pathname}
-      <!-- in-only: an out-transition here would keep the outgoing page's DOM
-           (and its scroll-affecting height) alive alongside the incoming one,
-           which is what caused the old page to flash behind the new one. -->
-      <div in:fade={{ duration: reduced ? 0 : 120 }}>
-        {@render children()}
-      </div>
+      {@render children()}
     {/key}
   </main>
 </div>
