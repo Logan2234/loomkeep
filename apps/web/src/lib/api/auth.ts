@@ -8,6 +8,7 @@ import type {
   CsvExportDto,
   DeleteAccountRequestDto,
   Domain,
+  EntitlementDto,
   LoginRequestDto,
   RegisterRequestDto,
   SessionDto,
@@ -39,6 +40,20 @@ export async function initAuth(): Promise<void> {
     }
   } catch {
     auth.clear();
+    return;
+  }
+
+  await loadEntitlement();
+}
+
+/** Best-effort: on failure `isPremium` stays false, the safe default. */
+async function loadEntitlement(): Promise<void> {
+  try {
+    auth.isPremium = (
+      await request<EntitlementDto>("/users/me/entitlement")
+    ).isPremium;
+  } catch {
+    auth.isPremium = false;
   }
 }
 
@@ -53,6 +68,7 @@ export async function register(body: RegisterRequestDto): Promise<void> {
   );
   auth.setTokens(result.tokens);
   auth.user = result.user;
+  await loadEntitlement();
 }
 
 /** Sends a reset link by email, if the address matches an account. */
@@ -109,6 +125,7 @@ export async function login(body: LoginRequestDto): Promise<void> {
   );
   auth.setTokens(result.tokens);
   auth.user = result.user;
+  await loadEntitlement();
 }
 
 export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {

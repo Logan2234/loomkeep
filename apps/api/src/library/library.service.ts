@@ -765,7 +765,7 @@ export class LibraryService {
     // Re-checked here, not just at token issuance (UsersController), so a
     // downgraded premium account's calendar app stops getting fed the moment
     // its plan changes, instead of forever on a token minted while premium.
-    if (!user || !(await this.entitlements.hasPremium(user.id))) {
+    if (!user || !(await this.entitlements.isEffectivelyPremium(user.id))) {
       return null;
     }
 
