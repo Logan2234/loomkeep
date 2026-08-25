@@ -1,4 +1,5 @@
 import {
+  DigestCadence,
   Domain,
   ListVisibility,
   Locale,
@@ -18,12 +19,14 @@ export interface UserDto {
   birthDate: string | null;
   /** Opt-in to seeing 18+ titles; only effective when birthDate proves the account is 18+. */
   allowAdultContent: boolean;
-  /** Email delivery for new episode alerts. */
-  notifyEmail: boolean;
-  /** Web Push delivery for new episode alerts. */
-  notifyPush: boolean;
-  /** Opt-in to the release newsletter (separate from notifyEmail's "new episode" alerts). */
+  /** Email delivery cadence for the new-episode digest. See `DigestCadence`. */
+  notifyEmail: DigestCadence;
+  /** Web Push delivery cadence for the new-episode digest. See `DigestCadence`. */
+  notifyPush: DigestCadence;
+  /** Opt-in to the release newsletter (separate from notifyEmail's episode digest). */
   notifyNewsletter: boolean;
+  /** IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local hour. */
+  timezone: string;
   /** Whether the account's email has been confirmed via the verification link (informational only). */
   emailVerified: boolean;
   /** Operational permission level (gates /admin). See `Role`. */
@@ -79,9 +82,11 @@ export interface UpdateUserRequestDto {
   /** ISO date (YYYY-MM-DD); pass null to clear it. */
   birthDate?: string | null;
   allowAdultContent?: boolean;
-  notifyEmail?: boolean;
-  notifyPush?: boolean;
+  notifyEmail?: DigestCadence;
+  notifyPush?: DigestCadence;
   notifyNewsletter?: boolean;
+  /** IANA timezone (e.g. "Europe/Paris"). */
+  timezone?: string;
   /** Content domains to keep visible; must list at least one. See `Domain`. */
   enabledDomains?: Domain[];
   /** Ordered mobile bottom-bar shortcut ids (3–7 entries, must include "menu"). */

@@ -35,6 +35,14 @@ enum Domain {
   BOARDGAMES
 }
 
+// How often a channel (email/push) delivers the "new episode" digest. See
+// packages/shared/src/enums.ts DigestCadence for the gating rationale.
+enum DigestCadence {
+  DISABLED
+  WEEKLY
+  DAILY
+}
+
 // Operational permission level, orthogonal to UserEntitlement (the paid-tier
 // seam, see docs/adr/0001-open-core-agpl.md). See packages/shared/src/enums.ts
 // Role for the rationale.
@@ -423,9 +431,13 @@ model User {
   birthDate                  DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
   allowAdultContent          Boolean          @default(false)
-  // Communication preferences: which channels deliver "new episode" alerts.
-  notifyEmail                Boolean          @default(false)
-  notifyPush                 Boolean          @default(false)
+  // Communication preferences: cadence at which each channel delivers the
+  // "new episode" digest. See DigestCadence.
+  notifyEmail                DigestCadence    @default(WEEKLY)
+  notifyPush                 DigestCadence    @default(WEEKLY)
+  // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
+  // hour. Auto-detected client-side at onboarding, editable afterwards.
+  timezone                   String           @default("Europe/Paris")
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
@@ -893,6 +905,12 @@ model Notification {
   // { actorUsername, actorDisplayName } (drives the Avatar + name in the feed).
   data      Json     @default("{}")
   createdAt DateTime @default(now())
+  // Set once a NEW_EPISODE row has been included in a digest send on that
+  // channel — the digest job's "pending content" query is simply "rows with
+  // this null", so no separate date-window/timezone logic is needed to know
+  // *what* to send, only *when* (see NotificationDigestService).
+  emailDigestedAt DateTime?
+  pushDigestedAt  DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

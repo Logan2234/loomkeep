@@ -1,6 +1,7 @@
 /** Stable identifiers for the app's scheduled jobs, shared by their owning service and the admin registry. */
 export const JOB_KEYS = {
   NOTIFICATIONS_SCAN: "notifications.scan",
+  NOTIFICATIONS_DIGEST: "notifications.digest",
   MEDIA_REFRESH_STALE: "media.refreshStale",
   REPORTS_DIGEST: "reports.digest",
   BACKUP: "backup.run",
@@ -16,6 +17,7 @@ export type JobKey = (typeof JOB_KEYS)[keyof typeof JOB_KEYS];
  */
 export const JOB_HEALTHCHECK_ENV: Record<JobKey, string> = {
   [JOB_KEYS.NOTIFICATIONS_SCAN]: "HEALTHCHECKS_NOTIFICATIONS_SCAN_URL",
+  [JOB_KEYS.NOTIFICATIONS_DIGEST]: "HEALTHCHECKS_NOTIFICATIONS_DIGEST_URL",
   [JOB_KEYS.MEDIA_REFRESH_STALE]: "HEALTHCHECKS_MEDIA_REFRESH_STALE_URL",
   [JOB_KEYS.REPORTS_DIGEST]: "HEALTHCHECKS_REPORTS_DIGEST_URL",
   [JOB_KEYS.BACKUP]: "HEALTHCHECKS_BACKUP_URL",
@@ -28,6 +30,11 @@ export const JOB_REGISTRY: Record<JobKey, { label: string; schedule: string }> =
     [JOB_KEYS.NOTIFICATIONS_SCAN]: {
       label: "Scan des notifications",
       schedule: "Toutes les heures",
+    },
+    [JOB_KEYS.NOTIFICATIONS_DIGEST]: {
+      label: "Digest de notifications (sorties)",
+      schedule:
+        "Toutes les heures (envoi à l'heure locale de chaque utilisateur : quotidien 18h, hebdo lundi 9h)",
     },
     [JOB_KEYS.MEDIA_REFRESH_STALE]: {
       label: "Rafraîchissement du cache",

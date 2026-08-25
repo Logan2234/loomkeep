@@ -11,7 +11,8 @@
   import { setLocale } from "$lib/paraglide/runtime.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
-  import { Domain, type Locale } from "@loomkeep/shared";
+  import { DigestCadence, Domain, type Locale } from "@loomkeep/shared";
+  import Combobox from "../Combobox.svelte";
   import Icon from "../Icon.svelte";
   import Switch from "../Switch.svelte";
   import ThemePreview from "../ThemePreview.svelte";
@@ -75,11 +76,30 @@
   let pushBusy = $state(false);
   const pushSupported = isPushSupported();
 
-  async function toggleNotify(key: "notifyEmail" | "notifyNewsletter") {
+  async function toggleNewsletter() {
     if (!auth.user) return;
     notifyError = "";
     try {
-      await updateMe({ [key]: !auth.user[key] });
+      await updateMe({ notifyNewsletter: !auth.user.notifyNewsletter });
+    } catch (err) {
+      notifyError =
+        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+    }
+  }
+
+  // No premium upsell at onboarding: a simple on/off, mapped onto the
+  // (now cadence-based) preference. WEEKLY is the free default — see
+  // Settings > Communications for the full daily/weekly/off picker.
+  async function toggleEmailDigest() {
+    if (!auth.user) return;
+    notifyError = "";
+    try {
+      await updateMe({
+        notifyEmail:
+          auth.user.notifyEmail === DigestCadence.DISABLED
+            ? DigestCadence.WEEKLY
+            : DigestCadence.DISABLED,
+      });
     } catch (err) {
       notifyError =
         err instanceof ApiError ? err.message : m.common_save_error_fallback();
@@ -91,16 +111,16 @@
     notifyError = "";
     pushBusy = true;
     try {
-      if (auth.user.notifyPush) {
+      if (auth.user.notifyPush !== DigestCadence.DISABLED) {
         await disablePush();
-        await updateMe({ notifyPush: false });
+        await updateMe({ notifyPush: DigestCadence.DISABLED });
       } else {
         const ok = await enablePush();
         if (!ok) {
           notifyError = m.onboarding_settings_push_error();
           return;
         }
-        await updateMe({ notifyPush: true });
+        await updateMe({ notifyPush: DigestCadence.WEEKLY });
       }
     } catch (err) {
       notifyError =
@@ -108,6 +128,30 @@
     } finally {
       pushBusy = false;
     }
+  }
+
+  const TIMEZONE_OPTIONS = Intl.supportedValuesOf("timeZone").map((tz) => ({
+    label: tz.replaceAll("_", " "),
+    value: tz,
+  }));
+
+  // Auto-detected once, the first time the "settings" step is shown — still
+  // freely editable afterwards (here and later in Settings).
+  let timezoneDetected = false;
+  $effect(() => {
+    if (stepId === "settings" && !timezoneDetected && auth.user) {
+      timezoneDetected = true;
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detected && detected !== auth.user.timezone) {
+        updateMe({ timezone: detected }).catch(() => undefined);
+      }
+    }
+  });
+
+  async function setTimezone(values: string[]) {
+    const timezone = values[0];
+    if (!auth.user || !timezone || timezone === auth.user.timezone) return;
+    await updateMe({ timezone }).catch(() => undefined);
   }
 
   const importSources = $derived(
@@ -236,6 +280,22 @@
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
         <div>
           <p class="text-sm font-semibold">
+            {m.onboarding_settings_timezone_label()}
+          </p>
+          <p class="text-dim text-xs">
+            {m.onboarding_settings_timezone_desc()}
+          </p>
+        </div>
+        <Combobox
+          label={m.onboarding_settings_timezone_label()}
+          options={TIMEZONE_OPTIONS}
+          values={[auth.user?.timezone ?? "Europe/Paris"]}
+          searchable
+          onChange={setTimezone} />
+      </div>
+      <div class="flex items-center justify-between gap-4 py-3">
+        <div>
+          <p class="text-sm font-semibold">
             {m.onboarding_settings_push_label()}
           </p>
           <p class="text-dim text-xs">
@@ -250,7 +310,8 @@
         </div>
         <Switch
           label={m.onboarding_settings_push_label()}
-          checked={auth.user?.notifyPush ?? false}
+          checked={(auth.user?.notifyPush ?? DigestCadence.DISABLED) !==
+            DigestCadence.DISABLED}
           disabled={!pushSupported || pushBusy}
           onChange={togglePush} />
       </div>
@@ -263,8 +324,9 @@
         </div>
         <Switch
           label={m.onboarding_settings_email_label()}
-          checked={auth.user?.notifyEmail ?? false}
-          onChange={() => toggleNotify("notifyEmail")} />
+          checked={(auth.user?.notifyEmail ?? DigestCadence.DISABLED) !==
+            DigestCadence.DISABLED}
+          onChange={toggleEmailDigest} />
       </div>
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
         <div>
@@ -278,7 +340,7 @@
         <Switch
           label={m.onboarding_settings_newsletter_label()}
           checked={auth.user?.notifyNewsletter ?? false}
-          onChange={() => toggleNotify("notifyNewsletter")} />
+          onChange={toggleNewsletter} />
       </div>
     </div>
 

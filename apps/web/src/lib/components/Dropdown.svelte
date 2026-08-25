@@ -58,7 +58,7 @@
       ? `right: ${panelPos.right}px`
       : `left: ${panelPos.left}px`}"
     transition:scale|global={{ duration: reduced ? 0 : 120, start: 0.95 }}
-    class="border-border bg-surface fixed z-40 overflow-hidden rounded-lg border shadow-lg {panelClass}">
+    class="border-border bg-surface fixed z-40 flex max-h-[min(20rem,calc(100vh-2rem))] flex-col overflow-hidden rounded-lg border shadow-lg {panelClass}">
     {@render children({ close })}
   </div>
 {/if}

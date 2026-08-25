@@ -2,13 +2,13 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
 import {
+  DigestCadence,
   type MediaType,
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
 } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
-import { MailService } from "../mail/mail.service";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -16,14 +16,13 @@ import {
   type NewEpisodeNotification,
   selectNewEpisodeNotifications,
 } from "./notification.util";
-import { PushService } from "./push.service";
 
 /** How far back a scan looks, so following an old show never floods the feed. */
 const WINDOW_DAYS = 14;
 /** Most recent notifications returned in the feed. */
 const FEED_LIMIT = 50;
 
-/** Push/email body: `S1E2 · Title` (title suffix only when known). */
+/** Digest body: `S1E2 · Title` (title suffix only when known). */
 function notificationBody(n: NewEpisodeNotification): string {
   return `S${n.seasonNumber}E${n.episodeNumber}${n.episodeTitle ? " · " + n.episodeTitle : ""}`;
 }
@@ -39,16 +38,15 @@ export class NotificationService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly push: PushService,
-    private readonly mail: MailService,
     private readonly jobRuns: JobRunService,
   ) {}
 
   /**
-   * Hourly: scan every user with push or email episode alerts enabled, so
-   * those channels fire without the client having to poll. Runs are
-   * idempotent (deduped by episode), so overlapping or missed ticks are
-   * harmless.
+   * Hourly: scan every user with an episode digest enabled on some channel
+   * and record any newly-aired episode as a ledger row. Delivery (push/mail)
+   * is a separate concern, cadenced per user/channel — see
+   * `NotificationDigestService`. Runs are idempotent (deduped by episode), so
+   * overlapping or missed ticks are harmless.
    */
   @Cron(CronExpression.EVERY_HOUR)
   async scanAll(): Promise<number> {
@@ -62,7 +60,12 @@ export class NotificationService {
 
   private async runScanAll(): Promise<number> {
     const users = await this.prisma.user.findMany({
-      where: { OR: [{ notifyPush: true }, { notifyEmail: true }] },
+      where: {
+        OR: [
+          { notifyPush: { not: DigestCadence.DISABLED } },
+          { notifyEmail: { not: DigestCadence.DISABLED } },
+        ],
+      },
       select: { id: true },
     });
 
@@ -99,16 +102,22 @@ export class NotificationService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        email: true,
         notifyPush: true,
         notifyEmail: true,
         enabledDomains: true,
       },
     });
 
-    // Nothing to deliver: episode rows only ever drive push/email, never the
+    // Nothing to deliver: episode rows only ever feed the digest, never the
     // in-app bell (see the model comment on Notification).
-    if (!user || (!user.notifyPush && !user.notifyEmail)) return 0;
+    if (
+      !user ||
+      (user.notifyPush === DigestCadence.DISABLED &&
+        user.notifyEmail === DigestCadence.DISABLED)
+    ) {
+      return 0;
+    }
+
     // Episode alerts belong to the MEDIA domain: a user who disabled it gets
     // none. Filtered here (not by hiding the feed) so other notification types
     // stay available.
@@ -191,31 +200,6 @@ export class NotificationService {
       })),
       skipDuplicates: true,
     });
-
-    if (user.notifyPush) {
-      await Promise.all(
-        toCreate.map((n) =>
-          this.push.sendToUser(userId, {
-            title: n.mediaTitle,
-            body: notificationBody(n),
-            url: notificationUrl(n),
-          }),
-        ),
-      );
-    }
-
-    if (user.notifyEmail) {
-      await Promise.all(
-        toCreate.map((n) =>
-          this.mail.sendNewEpisode(
-            user.email,
-            n.mediaTitle,
-            notificationBody(n),
-            notificationUrl(n),
-          ),
-        ),
-      );
-    }
 
     return toCreate.length;
   }

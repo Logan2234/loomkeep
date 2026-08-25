@@ -29,10 +29,28 @@
   // The element wrapping `children` — often a disabled button — is what
   // gets hovered/tapped, not `children` itself: a disabled control doesn't
   // fire mouse events, so listeners live here instead.
+  let wrapperEl: HTMLElement | undefined = $state();
   let open = $state(false);
+  // Positioned `fixed` from the wrapper's own rect (computed at show-time,
+  // not tracked continuously) rather than `absolute` within the wrapper —
+  // same reasoning as Dropdown.svelte: a `relative` wrapper is still
+  // clipped by any ancestor's `overflow-hidden` (e.g. `.card`), which cut
+  // the bubble off whenever a tooltip sat near a section's edge.
+  let pos = $state({ top: 0, left: 0 });
+
+  function computePos() {
+    if (!wrapperEl) return;
+    const rect = wrapperEl.getBoundingClientRect();
+    pos = {
+      top: placement === "top" ? rect.top - 8 : rect.bottom + 8,
+      left: rect.left + rect.width / 2,
+    };
+  }
 
   function show() {
-    if (supportsHover) open = true;
+    if (!supportsHover) return;
+    computePos();
+    open = true;
   }
   function hide() {
     if (supportsHover) open = false;
@@ -40,6 +58,7 @@
   function tap(e: MouseEvent) {
     if (supportsHover) return;
     e.stopPropagation();
+    if (!open) computePos();
     open = !open;
   }
   function closeOnOutsideClick() {
@@ -47,9 +66,13 @@
   }
 </script>
 
-<svelte:window onclick={closeOnOutsideClick} />
+<svelte:window
+  onclick={closeOnOutsideClick}
+  onscroll={() => (open = false)}
+  onresize={() => (open = false)} />
 
 <span
+  bind:this={wrapperEl}
   class="relative {className}"
   role="presentation"
   aria-describedby={id}
@@ -61,11 +84,12 @@
     <span
       {id}
       role="tooltip"
-      transition:scale={{ duration: 120, start: 0.9 }}
-      class="border-border bg-surface text-fg pointer-events-none absolute z-50 rounded-lg border px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-lg {placement ===
+      style="top: {pos.top}px; left: {pos.left}px; transform: translate(-50%, {placement ===
       'top'
-        ? 'bottom-full left-1/2 mb-2 -translate-x-1/2'
-        : 'top-full left-1/2 mt-2 -translate-x-1/2'}">
+        ? '-100%'
+        : '0%'});"
+      transition:scale|global={{ duration: 120, start: 0.9 }}
+      class="border-border bg-surface text-fg pointer-events-none fixed z-50 rounded-lg border px-2.5 py-1.5 text-xs font-medium whitespace-nowrap shadow-lg">
       {text}
     </span>
   {/if}

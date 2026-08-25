@@ -8,6 +8,7 @@
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
@@ -185,6 +186,16 @@
   }
 
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
+
+  // Only domains the user actually kept visible (see enabledDomains on
+  // UserDto) — otherwise a disabled/never-enabled domain (e.g. Livres off,
+  // or the early-access ones on a free account) would still show a row here
+  // even though it's absent everywhere else in the app.
+  const visibleDomainEntries = $derived(
+    Object.entries(DOMAINS).filter(([id]) =>
+      auth.user?.enabledDomains.includes(id as Domain),
+    ) as [Domain, (typeof DOMAINS)[Domain]][],
+  );
 </script>
 
 {#snippet audienceSegmented(
@@ -192,27 +203,15 @@
   facet: VisibilityFacet,
   current: VisibilityAudience,
 )}
-  <div
-    class="border-border bg-surface-2 inline-flex gap-0.5 rounded-full border p-0.5">
-    {#each AUDIENCES as a (a.id)}
-      {@const disabled = isPrivate && a.id === VisibilityAudience.PUBLIC}
-      {@const on = current === a.id}
-      <button
-        type="button"
-        class="rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40"
-        class:bg-accent={on}
-        class:text-accent-fg={on}
-        class:text-dim={!on}
-        class:hover:text-fg={!on}
-        {disabled}
-        title={disabled
-          ? "Un profil privé ne peut pas exposer au public."
-          : undefined}
-        onclick={() => setAudience(domain, facet, a.id)}>
-        {a.label}
-      </button>
-    {/each}
-  </div>
+  <SegmentedControl
+    options={AUDIENCES.map((a) => ({
+      value: a.id,
+      label: a.label,
+      disabled: isPrivate && a.id === VisibilityAudience.PUBLIC,
+      disabledReason: "Un profil privé ne peut pas exposer au public.",
+    }))}
+    value={current}
+    onChange={(v) => setAudience(domain, facet, v)} />
 {/snippet}
 
 {#if appConfig.socialEnabled && settings}
@@ -246,7 +245,7 @@
            so under md it drops to one stacked block per domain instead,
            same control, same data. -->
       <div class="divide-border divide-y md:hidden">
-        {#each Object.entries(DOMAINS) as [domainId, domainInfo] (domainId)}
+        {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
           <div class="py-3 first:pt-0">
             <p class="mb-2 font-semibold">{domainInfo.label}</p>
             <div class="space-y-2">
@@ -273,7 +272,7 @@
             </tr>
           </thead>
           <tbody class="divide-border divide-y">
-            {#each Object.entries(DOMAINS) as [domainId, domainInfo] (domainId)}
+            {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
               <tr>
                 <td class="py-2.5 pr-3 font-semibold whitespace-nowrap"
                   >{domainInfo.label}</td>

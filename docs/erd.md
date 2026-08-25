@@ -20,6 +20,14 @@ BOARDGAMES BOARDGAMES
 
 
 
+        DigestCadence {
+            DISABLED DISABLED
+WEEKLY WEEKLY
+DAILY DAILY
+        }
+
+
+
         Role {
             USER USER
 ADMIN ADMIN
@@ -386,8 +394,9 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     String username
     DateTime birthDate "❓"
     Boolean allowAdultContent
-    Boolean notifyEmail
-    Boolean notifyPush
+    DigestCadence notifyEmail
+    DigestCadence notifyPush
+    String timezone
     Boolean notifyNewsletter
     DateTime newsletterOptInAt "❓"
     String newsletterUnsubscribeToken "❓"
@@ -561,6 +570,8 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     String dedupeKey "❓"
     Json data
     DateTime createdAt
+    DateTime emailDigestedAt "❓"
+    DateTime pushDigestedAt "❓"
     }
 
 
@@ -894,6 +905,8 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "Subscription" }o--|| "User" : "user"
     "Subscription" |o--|| "SubscriptionProvider" : "enum:provider"
     "Subscription" |o--|| "SubscriptionStatus" : "enum:status"
+    "User" |o--|| "DigestCadence" : "enum:notifyEmail"
+    "User" |o--|| "DigestCadence" : "enum:notifyPush"
     "User" |o--|| "ProfileAccess" : "enum:profileAccess"
     "User" |o--|| "ReviewVisibility" : "enum:defaultReviewVisibility"
     "User" |o--|| "ListVisibility" : "enum:defaultListVisibility"
