@@ -10,6 +10,7 @@
     VideoStatsDto,
     WatchStaleness,
   } from "@loomkeep/shared";
+  import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
   import { statsResource } from "./stats-resource.svelte";
@@ -18,7 +19,11 @@
 
   let {
     mediaBreakdown,
-  }: { mediaBreakdown: DomainStatusBreakdownDto | undefined } = $props();
+    locked,
+  }: {
+    mediaBreakdown: DomainStatusBreakdownDto | undefined;
+    locked: boolean;
+  } = $props();
 
   const videoStats = statsResource<VideoStatsDto>(
     getVideoStats,
@@ -34,9 +39,6 @@
 
   const hours = $derived(video ? Math.round(video.totalMinutes / 60) : 0);
   const days = $derived(video ? Math.round(video.totalMinutes / 1440) : 0);
-  const rewatches = $derived(
-    video ? video.episodesWatched - video.uniqueEpisodesWatched : 0,
-  );
 
   const TYPE_LABEL: Record<string, string> = {
     MOVIE: "Films",
@@ -60,8 +62,43 @@
       : [],
   );
 
+  // Static, made-up previews shown instead of the real (redacted) advanced
+  // fields when `locked` — see stats.service.ts's redact* methods and
+  // PremiumTeaser's own doc comment.
+  const FAKE_GENRES = [
+    { label: "Action", value: 14 },
+    { label: "Drama", value: 11 },
+    { label: "Comédie", value: 8 },
+    { label: "Thriller", value: 5 },
+  ];
+  const FAKE_LONGEST_FILM = { title: "Un film mémorable", minutes: 172 };
+  const FAKE_SHORTEST_FILM = { title: "Un court métrage", minutes: 62 };
+  const FAKE_TRACKING = {
+    moviesRewatched: 3,
+    paused: 2,
+    ghost: 1,
+    longestBinge: 4,
+  };
+
   const genreItems = $derived(
-    video ? video.genres.map((g) => ({ label: g.genre, value: g.count })) : [],
+    locked
+      ? FAKE_GENRES
+      : video
+        ? video.genres.map((g) => ({ label: g.genre, value: g.count }))
+        : [],
+  );
+
+  const moviesRewatchedCount = $derived(
+    locked ? FAKE_TRACKING.moviesRewatched : (video?.moviesRewatchedCount ?? 0),
+  );
+  const pausedCount = $derived(
+    locked ? FAKE_TRACKING.paused : (video?.pausedCount ?? 0),
+  );
+  const ghostCount = $derived(
+    locked ? FAKE_TRACKING.ghost : (video?.ghostCount ?? 0),
+  );
+  const longestBingeCount = $derived(
+    locked ? FAKE_TRACKING.longestBinge : (video?.longestBingeCount ?? 0),
   );
 
   // Ghost/paused drill-down modal — same StatsWorksModal as ratings/decades.
@@ -81,16 +118,13 @@
 {#if error}
   <p class="text-danger text-sm">{error}</p>
 {:else if video}
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile
       value={hours}
       unit="h"
       label="Temps de visionnage"
       hint="≈ {days} jours" />
-    <StatTile
-      value={video.episodesWatched}
-      label="Épisodes vus"
-      hint="dont {rewatches} revus" />
+    <StatTile value={video.episodesWatched} label="Épisodes vus" />
     <StatTile
       value={video.seasonsCompleted}
       label="Saisons terminées"
@@ -99,7 +133,6 @@
       value={video.avgEpisodeRuntimeMin ?? "—"}
       unit="min"
       label="Durée moy. / épisode" />
-    <StatTile value={video.moviesRewatchedCount} label="Films revus" />
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
@@ -110,38 +143,45 @@
       <StackedBar
         segments={typeSegments}
         toggle={{ primaryLabel: "Temps", altLabel: "Nombre" }} />
-      {#if video.longestFilm || video.shortestFilm}
-        <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-          {#if video.longestFilm}
-            <a href={video.longestFilm.href} class="hover:text-accent">
-              <span class="text-dim block uppercase">Film le + long</span>
-              <span class="truncate font-semibold"
-                >{video.longestFilm.title}</span>
-              <span class="timecode block"
-                >{Math.floor(video.longestFilm.minutes / 60)}h{(
-                  video.longestFilm.minutes % 60
-                )
-                  .toString()
-                  .padStart(2, "0")}</span>
-            </a>
-          {/if}
-          {#if video.shortestFilm}
-            <a href={video.shortestFilm.href} class="hover:text-accent">
-              <span class="text-dim block uppercase">Film le + court</span>
-              <span class="truncate font-semibold"
-                >{video.shortestFilm.title}</span>
-              <span class="timecode block"
-                >{video.shortestFilm.minutes}min</span>
-            </a>
-          {/if}
-        </div>
+      {#if locked || video.longestFilm || video.shortestFilm}
+        {@const longestFilm = locked ? FAKE_LONGEST_FILM : video.longestFilm}
+        {@const shortestFilm = locked ? FAKE_SHORTEST_FILM : video.shortestFilm}
+        <PremiumTeaser {locked} class="mt-4">
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            {#if longestFilm}
+              <a
+                href={locked ? "#" : video.longestFilm?.href}
+                class="hover:text-accent">
+                <span class="text-dim block uppercase">Film le + long</span>
+                <span class="truncate font-semibold">{longestFilm.title}</span>
+                <span class="timecode block"
+                  >{Math.floor(longestFilm.minutes / 60)}h{(
+                    longestFilm.minutes % 60
+                  )
+                    .toString()
+                    .padStart(2, "0")}</span>
+              </a>
+            {/if}
+            {#if shortestFilm}
+              <a
+                href={locked ? "#" : video.shortestFilm?.href}
+                class="hover:text-accent">
+                <span class="text-dim block uppercase">Film le + court</span>
+                <span class="truncate font-semibold">{shortestFilm.title}</span>
+                <span class="timecode block">{shortestFilm.minutes}min</span>
+              </a>
+            {/if}
+          </div>
+        </PremiumTeaser>
       {/if}
     </section>
 
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">Genres favoris</h3>
-      <RankBars items={genreItems} />
-    </section>
+    <PremiumTeaser {locked}>
+      <section class="card p-5">
+        <h3 class="font-display mb-4 text-lg font-bold">Genres favoris</h3>
+        <RankBars items={genreItems} />
+      </section>
+    </PremiumTeaser>
   </div>
 
   <section class="card mt-5 p-5">
@@ -154,37 +194,45 @@
         <p class="font-display text-xl font-bold">{inProgressCount}</p>
         <p class="text-dim text-xs">En cours</p>
       </div>
-      <div class="bg-surface-2 border-border rounded-lg border p-3">
-        <p class="text-accent font-display text-xl font-bold">
-          {video.pausedCount}
-        </p>
-        <p class="text-dim text-xs">En pause · &gt; 30 j</p>
-        {#if video.pausedCount > 0}
-          <button
-            class="text-accent mt-1 text-xs font-semibold"
-            onclick={() => openStaleness("PAUSED")}>
-            voir ▾
-          </button>
-        {/if}
-      </div>
-      <div class="bg-surface-2 border-border rounded-lg border p-3">
-        <p class="text-danger font-display text-xl font-bold">
-          {video.ghostCount}
-        </p>
-        <p class="text-dim text-xs">Fantômes · &gt; 6 mois</p>
-        {#if video.ghostCount > 0}
-          <button
-            class="text-accent mt-1 text-xs font-semibold"
-            onclick={() => openStaleness("GHOST")}>
-            voir ▾
-          </button>
-        {/if}
-      </div>
-      <div class="bg-surface-2 border-border rounded-lg border p-3">
-        <p class="font-display text-xl font-bold">{video.longestBingeCount}</p>
-        <p class="text-dim text-xs">Plus long binge (24 h)</p>
-      </div>
     </div>
+    <PremiumTeaser {locked} class="mt-3 block">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="font-display text-xl font-bold">{moviesRewatchedCount}</p>
+          <p class="text-dim text-xs">Films revus</p>
+        </div>
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="text-accent font-display text-xl font-bold">
+            {pausedCount}
+          </p>
+          <p class="text-dim text-xs">En pause · &gt; 30 j</p>
+          {#if !locked && video.pausedCount > 0}
+            <button
+              class="text-accent mt-1 text-xs font-semibold"
+              onclick={() => openStaleness("PAUSED")}>
+              voir ▾
+            </button>
+          {/if}
+        </div>
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="text-danger font-display text-xl font-bold">
+            {ghostCount}
+          </p>
+          <p class="text-dim text-xs">Fantômes · &gt; 6 mois</p>
+          {#if !locked && video.ghostCount > 0}
+            <button
+              class="text-accent mt-1 text-xs font-semibold"
+              onclick={() => openStaleness("GHOST")}>
+              voir ▾
+            </button>
+          {/if}
+        </div>
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="font-display text-xl font-bold">{longestBingeCount}</p>
+          <p class="text-dim text-xs">Plus long binge (24 h)</p>
+        </div>
+      </div>
+    </PremiumTeaser>
   </section>
 {/if}
 

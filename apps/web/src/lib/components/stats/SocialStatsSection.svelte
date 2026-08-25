@@ -14,12 +14,56 @@
   import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
 
+  let { locked }: { locked: boolean } = $props();
+
   const socialStats = statsResource<SocialStatsDto>(
     getSocialStats,
     "Statistiques sociales indisponibles",
   );
-  const social = $derived(socialStats.data);
-  const error = $derived(socialStats.error);
+
+  // Static, made-up preview shown instead of the real (redacted) section
+  // when `locked` — see stats.service.ts's redact* methods and
+  // PremiumTeaser's own doc comment. Everything here is fabricated, but
+  // the whole template below reads from `social`, so faking the entire
+  // DTO once is simpler than patching every field individually.
+  const FAKE_SOCIAL: SocialStatsDto = {
+    reviewsWritten: 6,
+    avgReviewLength: 180,
+    ratingVsCommunity: {
+      sufficientData: true,
+      yourAverage: 7.4,
+      communityAverage: 6.8,
+      sampleSize: 14,
+    },
+    commentsWritten: 12,
+    rootCommentsCount: 8,
+    replyCommentsCount: 4,
+    spoilerCommentRatio: 0.2,
+    reviewRevisionsCount: 2,
+    helpfulVotesReceived: 9,
+    mostVotedReviewVotes: 5,
+    reactionsGiven: 15,
+    reactionsReceived: 11,
+    listsWritten: 3,
+    listsPublicCount: 2,
+    newFollowersByMonth: [4, 6, 3, 8, 5, 7, 9, 4, 6, 10, 8, 7].map(
+      (count, i) => ({
+        month: `2026-${String(i + 1).padStart(2, "0")}`,
+        count,
+      }),
+    ),
+    followerReciprocityRate: 0.6,
+    socialActivityByMonth: [3, 5, 2, 6, 4, 5, 7, 3, 4, 8, 6, 5].map(
+      (count, i) => ({
+        month: `2026-${String(i + 1).padStart(2, "0")}`,
+        count,
+      }),
+    ),
+    contributionStreakDays: 5,
+  };
+
+  const social = $derived(locked ? FAKE_SOCIAL : socialStats.data);
+  const error = $derived(locked ? null : socialStats.error);
 
   /** How the viewer's average reads against the community's. */
   function verdict(delta: number): string {

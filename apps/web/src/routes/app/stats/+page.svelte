@@ -9,6 +9,7 @@
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import PremiumTeaser from "$lib/components/PremiumTeaser.svelte";
   import BookStatsSection from "$lib/components/stats/BookStatsSection.svelte";
   import DomainFilter from "$lib/components/stats/DomainFilter.svelte";
   import GameStatsSection from "$lib/components/stats/GameStatsSection.svelte";
@@ -33,6 +34,7 @@
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
@@ -47,6 +49,15 @@
 
   const enabledDomains = $derived<StatsDomain[]>(
     STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
+  );
+
+  // Gates the "deep analysis" stats (rankings, distributions, temporal
+  // breakdowns) — the "counting" stats stay free everywhere. stats.service.ts
+  // redacts the advanced fields server-side for a non-premium account (see
+  // feature plan); this flag only drives which sections show a fake/blurred
+  // preview instead of the (already-empty) real data.
+  const statsLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !auth.isPremium,
   );
 
   let selected = $state<Choice>("ALL");
@@ -86,31 +97,57 @@
     }));
   });
 
+  // Static, made-up datasets shown instead of the real (redacted) ones when
+  // `statsLocked` — the API already zeroes/empties these fields for a
+  // non-premium account (see stats.service.ts), so there's nothing real to
+  // show; a plausible-looking fake chart previews the shape of what's
+  // behind the paywall better than an empty or generic placeholder would.
+  const FAKE_RATING_BARS = [2, 3, 5, 8, 12, 15, 11, 9, 6, 3].map(
+    (value, i) => ({ label: String(i + 1), value }),
+  );
+  const FAKE_DECADE_BARS = [
+    { label: "1990", value: 4 },
+    { label: "2000", value: 9 },
+    { label: "2010", value: 14 },
+    { label: "2020", value: 7 },
+  ];
+  const FAKE_POSSESSION_BARS = [
+    { label: "Possédé", value: 18 },
+    { label: "Emprunté", value: 6 },
+    { label: "Streaming", value: 11 },
+  ];
+
   const ratingBars = $derived(
-    overview
-      ? overview.ratingDistribution.map((b) => ({
-          label: String(b.rating),
-          value: b.count,
-        }))
-      : [],
+    statsLocked
+      ? FAKE_RATING_BARS
+      : overview
+        ? overview.ratingDistribution.map((b) => ({
+            label: String(b.rating),
+            value: b.count,
+          }))
+        : [],
   );
   const decadeBars = $derived(
-    overview
-      ? overview.decades.map((b) => ({
-          label: String(b.decade),
-          value: b.count,
-        }))
-      : [],
+    statsLocked
+      ? FAKE_DECADE_BARS
+      : overview
+        ? overview.decades.map((b) => ({
+            label: String(b.decade),
+            value: b.count,
+          }))
+        : [],
   );
   const possessionBars = $derived(
-    overview?.possession.sufficientData
-      ? overview.possession.byStatus
-          .map((s) => ({
-            label: POSSESSION_STATUS_LABEL[s.status] ?? s.status,
-            value: s.count,
-          }))
-          .sort((a, b) => b.value - a.value)
-      : [],
+    statsLocked
+      ? FAKE_POSSESSION_BARS
+      : overview?.possession.sufficientData
+        ? overview.possession.byStatus
+            .map((s) => ({
+              label: POSSESSION_STATUS_LABEL[s.status] ?? s.status,
+              value: s.count,
+            }))
+            .sort((a, b) => b.value - a.value)
+        : [],
   );
 
   const isEmpty = $derived(!!overview && overview.total === 0);
@@ -164,7 +201,6 @@
       {enabledDomains}
       {selected}
       onSelect={(c) => (selected = c)} />
-    <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
   </div>
 </div>
 
@@ -208,65 +244,97 @@
         <StackedBar segments={compositionSegments} />
       </section>
 
-      <section class="card p-5">
-        <h2 class="font-display mb-4 text-lg font-bold">
-          Distribution des notes
-        </h2>
-        {#if overview.ratedCount > 0}
-          <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
-        {:else}
-          <p class="text-dim text-sm">Aucune œuvre notée pour l'instant.</p>
-        {/if}
-      </section>
+      <PremiumTeaser locked={statsLocked}>
+        <section class="card p-5">
+          <h2 class="font-display mb-4 text-lg font-bold">
+            Distribution des notes
+          </h2>
+          {#if statsLocked || overview.ratedCount > 0}
+            <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
+          {:else}
+            <p class="text-dim text-sm">Aucune œuvre notée pour l'instant.</p>
+          {/if}
+        </section>
+      </PremiumTeaser>
     </div>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
-      <section class="card p-5">
-        <h2 class="font-display mb-4 text-lg font-bold">Décennie de sortie</h2>
-        {#if decadeBars.length > 0}
-          <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
-        {:else}
-          <p class="text-dim text-sm">Aucune date de sortie connue.</p>
-        {/if}
-      </section>
+      <PremiumTeaser locked={statsLocked}>
+        <section class="card p-5">
+          <h2 class="font-display mb-4 text-lg font-bold">
+            Décennie de sortie
+          </h2>
+          {#if statsLocked || decadeBars.length > 0}
+            <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
+          {:else}
+            <p class="text-dim text-sm">Aucune date de sortie connue.</p>
+          {/if}
+        </section>
+      </PremiumTeaser>
 
-      <section class="card p-5">
-        <h2 class="font-display mb-4 text-lg font-bold">Mode de possession</h2>
-        {#if overview.possession.sufficientData}
-          <RankBars items={possessionBars} />
-        {:else}
-          <InsufficientDataNotice
-            renseignedRatio={overview.possession.renseignedRatio} />
-        {/if}
-      </section>
+      <PremiumTeaser locked={statsLocked}>
+        <section class="card p-5">
+          <h2 class="font-display mb-4 text-lg font-bold">
+            Mode de possession
+          </h2>
+          {#if statsLocked || overview.possession.sufficientData}
+            <RankBars items={possessionBars} />
+          {:else}
+            <InsufficientDataNotice
+              renseignedRatio={overview.possession.renseignedRatio} />
+          {/if}
+        </section>
+      </PremiumTeaser>
     </div>
 
     {#if showSection("MEDIA")}
-      <SectionLabel label="Activité dans le temps" class="mt-10" />
-      <VideoTemporalSection {period} />
-
       <SectionLabel label="{m.common_Media()} — en détail" class="mt-10" />
-      <VideoStatsSection mediaBreakdown={breakdownOf("MEDIA")} />
+      <VideoStatsSection
+        mediaBreakdown={breakdownOf("MEDIA")}
+        locked={statsLocked} />
     {/if}
 
     {#if showSection("GAMES")}
       <SectionLabel label="{m.common_Games()} — en détail" class="mt-10" />
-      <GameStatsSection gameBreakdown={breakdownOf("GAMES")} />
+      <GameStatsSection
+        gameBreakdown={breakdownOf("GAMES")}
+        locked={statsLocked} />
     {/if}
 
     {#if showSection("BOOKS")}
       <SectionLabel label="{m.common_Books()} — en détail" class="mt-10" />
-      <BookStatsSection bookBreakdown={breakdownOf("BOOKS")} />
+      <BookStatsSection
+        bookBreakdown={breakdownOf("BOOKS")}
+        locked={statsLocked} />
     {/if}
 
     {#if showSection("MUSIC")}
       <SectionLabel label="{m.common_Music()} — en détail" class="mt-10" />
-      <MusicStatsSection musicBreakdown={breakdownOf("MUSIC")} />
+      <MusicStatsSection
+        musicBreakdown={breakdownOf("MUSIC")}
+        locked={statsLocked} />
+    {/if}
+
+    <!-- Entirely premium sections come last: a free account sees plenty of
+         real content first, rather than landing on a locked block right
+         after the overview. -->
+    {#if showSection("MEDIA")}
+      <div class="mt-10 flex flex-wrap items-center gap-3">
+        <SectionLabel label="Activité dans le temps" class="mb-0 flex-1" />
+        {#if !statsLocked}
+          <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
+        {/if}
+      </div>
+      <PremiumTeaser locked={statsLocked} class="mt-4 block">
+        <VideoTemporalSection {period} locked={statsLocked} />
+      </PremiumTeaser>
     {/if}
 
     {#if appConfig.socialEnabled}
       <SectionLabel label="Social" class="mt-10" />
-      <SocialStatsSection />
+      <PremiumTeaser locked={statsLocked}>
+        <SocialStatsSection locked={statsLocked} />
+      </PremiumTeaser>
     {/if}
   {/if}
 </div>
