@@ -6,7 +6,7 @@ import type {
   ProfileAccess,
   TrendPeriod,
 } from "@loomkeep/shared";
-import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import { DigestCadence, DORMANT_AFTER_DAYS } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   ageDistributionBuckets,
@@ -173,7 +173,9 @@ export class AdminAccountsStatsService {
       this.prisma.user.count({ where: { emailVerified: true } }),
       this.prisma.user.count({ where: { pushSubscriptions: { some: {} } } }),
       this.prisma.user.count({ where: { notifyNewsletter: true } }),
-      this.prisma.user.count({ where: { notifyEmail: true } }),
+      this.prisma.user.count({
+        where: { notifyEmail: { not: DigestCadence.DISABLED } },
+      }),
     ]);
 
     return {

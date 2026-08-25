@@ -286,7 +286,8 @@ you have the observability override above.
    for the cache refresh, Period 1 day for the digest, the backup and the
    inactive-accounts scan — a Grace of an hour or so absorbs normal jitter).
 2. Copy each check's ping URL into `.env`:
-   `HEALTHCHECKS_NOTIFICATIONS_SCAN_URL`, `HEALTHCHECKS_MEDIA_REFRESH_STALE_URL`,
+   `HEALTHCHECKS_NOTIFICATIONS_SCAN_URL`, `HEALTHCHECKS_NOTIFICATIONS_DIGEST_URL`,
+   `HEALTHCHECKS_MEDIA_REFRESH_STALE_URL`,
    `HEALTHCHECKS_REPORTS_DIGEST_URL`, `HEALTHCHECKS_BACKUP_URL`,
    `HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL`. Any left empty just means that
    job doesn't ping — nothing else is affected.

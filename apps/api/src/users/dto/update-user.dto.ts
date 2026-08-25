@@ -1,4 +1,5 @@
 import type {
+  DigestCadence,
   Domain,
   ListVisibility,
   Locale,
@@ -6,6 +7,7 @@ import type {
   UpdateUserRequestDto,
 } from "@loomkeep/shared";
 import {
+  DigestCadence as DigestCadenceValues,
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
   ReviewVisibility as ReviewVisibilityValues,
@@ -44,16 +46,25 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   allowAdultContent?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  notifyEmail?: boolean;
+  @IsIn(Object.values(DigestCadenceValues))
+  notifyEmail?: DigestCadence;
 
   @IsOptional()
-  @IsBoolean()
-  notifyPush?: boolean;
+  @IsIn(Object.values(DigestCadenceValues))
+  notifyPush?: DigestCadence;
 
   @IsOptional()
   @IsBoolean()
   notifyNewsletter?: boolean;
+
+  // Not validated against the IANA database (no bundled tz-data source of
+  // truth) — an invalid value just means the digest cron's Intl.DateTimeFormat
+  // call fails softly for that user (see NotificationDigestService), same
+  // failure mode as any other malformed free-text field.
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  timezone?: string;
 
   // At least one domain must stay visible; each must be a known Domain.
   @IsOptional()

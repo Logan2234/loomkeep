@@ -368,6 +368,7 @@ export class UsersController {
         notifyPush: dto.notifyPush,
         notifyNewsletter: dto.notifyNewsletter,
         newsletterOptInAt,
+        timezone: dto.timezone,
         enabledDomains: dto.enabledDomains,
         mobileNavShortcuts: dto.mobileNavShortcuts,
         // Empty string clears the bio back to null.

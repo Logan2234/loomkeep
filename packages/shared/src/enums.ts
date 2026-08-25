@@ -59,6 +59,20 @@ export const Plan = {
 export type Plan = (typeof Plan)[keyof typeof Plan];
 
 /**
+ * How often a user wants the "new episode" digest delivered on a given
+ * channel (email/push, configured independently). `DAILY` requires
+ * effective premium (see `EntitlementService.isEffectivelyPremium`) — a
+ * downgraded/non-premium account is served at `WEEKLY` cadence instead of
+ * losing the content, never silently switched back to `DISABLED`.
+ */
+export const DigestCadence = {
+  DISABLED: "DISABLED",
+  WEEKLY: "WEEKLY",
+  DAILY: "DAILY",
+} as const;
+export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
+
+/**
  * In-app notification kinds. Stored as a plain string on `Notification.type`
  * (new kinds need no migration); this list is the shared vocabulary the API
  * emits and the web renders.

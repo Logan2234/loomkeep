@@ -1,10 +1,8 @@
 import { NotFoundException } from "@nestjs/common";
-import { NotificationType } from "@loomkeep/shared";
+import { DigestCadence, NotificationType } from "@loomkeep/shared";
 import type { JobRunService } from "../jobs/job-run.service";
-import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "./notification.service";
-import type { PushService } from "./push.service";
 
 // Runs `fn` straight through without touching the DB, for services under test
 // that don't exercise job-recording behaviour themselves.
@@ -19,17 +17,20 @@ describe("NotificationService.scanAll", () => {
         findMany: jest.fn().mockResolvedValue(userIds.map((id) => ({ id }))),
       },
     } as unknown as PrismaService;
-    const push = { sendToUser: jest.fn() } as never;
-    const mail = { sendNewEpisode: jest.fn() } as never;
-    const service = new NotificationService(prisma, push, mail, jobRunsStub);
+    const service = new NotificationService(prisma, jobRunsStub);
     return { service, prisma };
   }
 
-  it("only queries users with push or email notifications enabled", async () => {
+  it("only queries users with a channel not disabled", async () => {
     const { service, prisma } = makeService([]);
     await service.scanAll();
     expect(prisma.user.findMany).toHaveBeenCalledWith({
-      where: { OR: [{ notifyPush: true }, { notifyEmail: true }] },
+      where: {
+        OR: [
+          { notifyPush: { not: DigestCadence.DISABLED } },
+          { notifyEmail: { not: DigestCadence.DISABLED } },
+        ],
+      },
       select: { id: true },
     });
   });
@@ -67,7 +68,7 @@ describe("NotificationService.scanAll", () => {
   });
 });
 
-describe("NotificationService.scan (push)", () => {
+describe("NotificationService.scan", () => {
   const episode = {
     id: "ep1",
     number: 5,
@@ -86,14 +87,13 @@ describe("NotificationService.scan (push)", () => {
   };
 
   function makeService(
-    notifyPush: boolean,
+    notifyPush: DigestCadence,
     enabledDomains: string[] = ["MEDIA", "BOOKS", "GAMES"],
-    notifyEmail = false,
+    notifyEmail: DigestCadence = DigestCadence.DISABLED,
   ) {
     const prisma = {
       user: {
         findUnique: jest.fn().mockResolvedValue({
-          email: "alice@example.com",
           notifyPush,
           notifyEmail,
           enabledDomains,
@@ -105,59 +105,45 @@ describe("NotificationService.scan (push)", () => {
         createMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
-    const push = { sendToUser: jest.fn() } as unknown as PushService;
-    const mail = { sendNewEpisode: jest.fn() } as unknown as MailService;
-    const service = new NotificationService(prisma, push, mail, jobRunsStub);
-    return { service, push, mail, prisma };
+    const service = new NotificationService(prisma, jobRunsStub);
+    return { service, prisma };
   }
 
-  it("sends a push per new notification when notifyPush is enabled", async () => {
-    const { service, push } = makeService(true);
-    await service.scan("u1");
-    expect(push.sendToUser).toHaveBeenCalledWith("u1", {
-      title: "Severance",
-      body: "S2E5 · The One With The Finale",
-      url: "/app/media/series/42",
+  it("creates a ledger row per new episode when a channel is enabled", async () => {
+    const { service, prisma } = makeService(DigestCadence.DAILY);
+    const created = await service.scan("u1");
+    expect(created).toBe(1);
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          userId: "u1",
+          type: NotificationType.NEW_EPISODE,
+          title: "Severance",
+          body: "S2E5 · The One With The Finale",
+          url: "/app/media/series/42",
+          dedupeKey: "episode:ep1",
+        }),
+      ],
+      skipDuplicates: true,
     });
   });
 
-  it("skips push entirely when notifyPush is disabled", async () => {
-    const { service, push } = makeService(false);
-    await service.scan("u1");
-    expect(push.sendToUser).not.toHaveBeenCalled();
-  });
-
-  it("sends an email per new notification when notifyEmail is enabled", async () => {
-    const { service, mail } = makeService(false, undefined, true);
-    await service.scan("u1");
-    expect(mail.sendNewEpisode).toHaveBeenCalledWith(
-      "alice@example.com",
-      "Severance",
-      "S2E5 · The One With The Finale",
-      "/app/media/series/42",
-    );
-  });
-
-  it("skips email entirely when notifyEmail is disabled", async () => {
-    const { service, mail } = makeService(true, undefined, false);
-    await service.scan("u1");
-    expect(mail.sendNewEpisode).not.toHaveBeenCalled();
-  });
-
-  it("creates no episode notifications when both push and email are disabled", async () => {
-    const { service, prisma } = makeService(false, undefined, false);
+  it("creates no episode notifications when both channels are disabled", async () => {
+    const { service, prisma } = makeService(DigestCadence.DISABLED);
     const created = await service.scan("u1");
     expect(created).toBe(0);
     expect(prisma.episode.findMany).not.toHaveBeenCalled();
   });
 
   it("creates no episode notifications when the MEDIA domain is disabled", async () => {
-    const { service, push, prisma } = makeService(true, ["BOOKS", "GAMES"]);
+    const { service, prisma } = makeService(DigestCadence.DAILY, [
+      "BOOKS",
+      "GAMES",
+    ]);
     const created = await service.scan("u1");
     expect(created).toBe(0);
-    // Filtered before any episode lookup or push.
+    // Filtered before any episode lookup.
     expect(prisma.episode.findMany).not.toHaveBeenCalled();
-    expect(push.sendToUser).not.toHaveBeenCalled();
   });
 });
 
@@ -169,12 +155,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
         deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(
-      prisma,
-      {} as never,
-      {} as never,
-      jobRunsStub,
-    );
+    const service = new NotificationService(prisma, jobRunsStub);
     return { service, prisma };
   }
 

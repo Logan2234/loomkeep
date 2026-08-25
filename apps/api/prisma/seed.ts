@@ -14,7 +14,11 @@ import { resolve } from "node:path";
 config({ path: resolve(__dirname, "../.env") });
 config({ path: resolve(__dirname, "../../../.env") });
 
-import { ActivityType, NotificationType } from "@loomkeep/shared";
+import {
+  ActivityType,
+  DigestCadence,
+  NotificationType,
+} from "@loomkeep/shared";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   BookOwnershipStatus,
@@ -94,8 +98,8 @@ async function main() {
       username: "logan",
       birthDate: new Date("1998-03-12"),
       allowAdultContent: true,
-      notifyEmail: true,
-      notifyPush: true,
+      notifyEmail: DigestCadence.DAILY,
+      notifyPush: DigestCadence.DAILY,
       notifyNewsletter: true,
       newsletterOptInAt: new Date("2026-01-05"),
       emailVerified: true,
@@ -118,7 +122,7 @@ async function main() {
       displayName: "Logan (perso)",
       username: "logan-perso",
       birthDate: new Date("1998-03-12"),
-      notifyEmail: true,
+      notifyEmail: DigestCadence.DAILY,
       emailVerified: true,
       bio: "Compte secondaire.",
       profileAccess: ProfileAccess.PRIVATE,
@@ -136,8 +140,8 @@ async function main() {
       displayName: "Alice Martin",
       username: "alice",
       birthDate: new Date("1995-07-20"),
-      notifyEmail: false,
-      notifyPush: true,
+      notifyEmail: DigestCadence.DISABLED,
+      notifyPush: DigestCadence.DAILY,
       emailVerified: true,
       bio: "Fan de séries coréennes et de jeux indés.",
       profileAccess: ProfileAccess.PUBLIC,

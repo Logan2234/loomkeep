@@ -186,6 +186,33 @@ export class MailService {
       // recipient/subscription to mint one for.
       build: (v) => this.buildNewsletter(v.title, v.content, "preview-token"),
     },
+    episodeDigest: {
+      label: "Digest de sorties (email)",
+      fields: [
+        { key: "itemCount", label: "Nombre d'épisodes (1-6)", default: "1" },
+        { key: "period", label: "Période (daily ou weekly)", default: "daily" },
+      ],
+      build: (v) => {
+        const count = Math.max(1, Math.min(6, Number(v.itemCount) || 1));
+        const sampleTitles = [
+          "One Piece",
+          "Loki",
+          "The Bear",
+          "Arcane",
+          "Shogun",
+          "Severance",
+        ];
+        const items = Array.from({ length: count }, (_, i) => ({
+          title: sampleTitles[i % sampleTitles.length],
+          body: `S1E${i + 1}`,
+          url: "/app/media/series/12345",
+        }));
+        return this.buildEpisodeDigest(
+          items,
+          v.period === "weekly" ? "weekly" : "daily",
+        );
+      },
+    },
     reportsDigest: {
       label: "Digest des signalements",
       fields: [
@@ -403,6 +430,18 @@ export class MailService {
       to,
       ...this.buildNewEpisode(mediaTitle, body, path),
     });
+  }
+
+  /**
+   * The recurring "new episode" digest — see NotificationDigestService,
+   * which is the only caller and already guarantees `items` is non-empty.
+   */
+  async sendEpisodeDigest(
+    to: string,
+    items: { title: string; body: string; url: string }[],
+    period: "daily" | "weekly",
+  ): Promise<void> {
+    await this.send({ to, ...this.buildEpisodeDigest(items, period) });
   }
 
   /** Daily admin-only summary of pending moderation reports. Only sent when `pendingCount > 0`. */
@@ -677,6 +716,55 @@ export class MailService {
         `<p>${body}</p>
          ${this.button(url, "Voir")}
          <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;"><a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes notifications</a></p>`,
+      ),
+    };
+  }
+
+  /**
+   * DRAFT WORDING — needs Logan's sign-off before any real send goes out
+   * (see the notification-digest feature plan). Three tiers by item count
+   * (1 / 2-4 / 5+) rather than one gabarit per event type, `period` only
+   * changes the "aujourd'hui"/"cette semaine" framing.
+   */
+  private buildEpisodeDigest(
+    items: { title: string; body: string; url: string }[],
+    period: "daily" | "weekly",
+  ): TemplateBody {
+    const periodLabel = period === "daily" ? "aujourd'hui" : "cette semaine";
+    const prefsUrl =
+      this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
+      `${this.webOrigin}/app/settings#communications`;
+
+    const listHtml = items
+      .map(
+        (i) =>
+          `<p style="margin:0 0 16px;"><a href="${this.webOrigin}${i.url}" style="color:${COLOR_TEXT};font-weight:600;text-decoration:none;">${i.title}</a><br/><span style="color:${COLOR_MUTED};font-size:13px;">${i.body}</span></p>`,
+      )
+      .join("");
+    const listText = items
+      .map((i) => `${i.title} — ${i.body}\n${this.webOrigin}${i.url}`)
+      .join("\n\n");
+
+    let subject: string;
+    let intro: string;
+
+    if (items.length === 1) {
+      subject = `Nouvel épisode : ${items[0].title}`;
+      intro = `Un épisode t'attend ${periodLabel}.`;
+    } else if (items.length <= 4) {
+      subject = `${items.length} nouveaux épisodes ${periodLabel}`;
+      intro = `Voici ce qui sort ${periodLabel}.`;
+    } else {
+      subject = `${items.length} sorties ${periodLabel}`;
+      intro = `Grosse fournée : ${items.length} épisodes sortent ${periodLabel}.`;
+    }
+
+    return {
+      subject,
+      text: `${intro}\n\n${listText}\n\nGérer mes notifications : ${prefsUrl}`,
+      html: this.wrapEmail(
+        subject,
+        `<p>${intro}</p>${listHtml}<p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;"><a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes notifications</a></p>`,
       ),
     };
   }

@@ -54,7 +54,7 @@
   }
 </script>
 
-<Dropdown role="listbox" class="min-w-48 py-1">
+<Dropdown role="listbox" class="min-w-48">
   {#snippet trigger({ open, toggle })}
     <button
       type="button"
@@ -81,7 +81,7 @@
   {/snippet}
   {#snippet children({ close })}
     {#if searchable}
-      <div class="border-border border-b p-1.5">
+      <div class="border-border shrink-0 border-b p-1.5">
         <input
           bind:this={searchInput}
           bind:value={query}
@@ -90,33 +90,35 @@
           class="border-border bg-surface-2 w-full rounded-md border px-2 py-1 text-sm" />
       </div>
     {/if}
-    {#each visibleOptions as o (o.value)}
-      {@const on = values.includes(o.value)}
-      <button
-        type="button"
-        role="option"
-        aria-selected={on}
-        class="hover:bg-surface-2 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-40"
-        onclick={() => choose(o.value, close)}>
-        {#if multiselect}
-          <span
-            class="grid h-4 w-4 shrink-0 place-items-center rounded border {on
-              ? 'border-accent bg-accent text-accent-fg'
-              : 'border-border'}">
-            {#if on}<Icon name="check" class="h-3 w-3" />{/if}
+    <div class="overflow-y-auto">
+      {#each visibleOptions as o (o.value)}
+        {@const on = values.includes(o.value)}
+        <button
+          type="button"
+          role="option"
+          aria-selected={on}
+          class="hover:bg-surface-2 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-40"
+          onclick={() => choose(o.value, close)}>
+          {#if multiselect}
+            <span
+              class="grid h-4 w-4 shrink-0 place-items-center rounded border {on
+                ? 'border-accent bg-accent text-accent-fg'
+                : 'border-border'}">
+              {#if on}<Icon name="check" class="h-3 w-3" />{/if}
+            </span>
+          {:else}
+            <span class="text-accent grid h-4 w-4 shrink-0 place-items-center">
+              {#if on}<Icon name="check" class="h-3.5 w-3.5" />{/if}
+            </span>
+          {/if}
+          <span class="{on && !multiselect ? 'font-semibold' : ''} truncate">
+            {o.label}
           </span>
-        {:else}
-          <span class="text-accent grid h-4 w-4 shrink-0 place-items-center">
-            {#if on}<Icon name="check" class="h-3.5 w-3.5" />{/if}
-          </span>
-        {/if}
-        <span class="{on && !multiselect ? 'font-semibold' : ''} truncate">
-          {o.label}
-        </span>
-      </button>
-    {/each}
-    {#if searchable && visibleOptions.length === 0}
-      <p class="text-dim px-3 py-2 text-sm">Aucun résultat.</p>
-    {/if}
+        </button>
+      {/each}
+      {#if searchable && visibleOptions.length === 0}
+        <p class="text-dim px-3 py-2 text-sm">Aucun résultat.</p>
+      {/if}
+    </div>
   {/snippet}
 </Dropdown>
