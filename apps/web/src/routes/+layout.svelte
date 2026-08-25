@@ -2,6 +2,7 @@
   import favicon from "$lib/assets/favicon.svg";
   import { bootstrap } from "$lib/bootstrap.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import { navStyle } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages";
   import { queryClient } from "$lib/queryClient";
   import { theme } from "$lib/theme.svelte";
@@ -20,6 +21,10 @@
 
   $effect(() => {
     theme.init();
+  });
+
+  $effect(() => {
+    navStyle.init();
   });
 </script>
 

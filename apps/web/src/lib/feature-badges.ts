@@ -18,6 +18,7 @@ const SHIPPED: Record<string, string> = {
   "import-trakt": "2026-08-17",
   "import-simkl": "2026-08-17",
   "notification-digest": "2026-08-25",
+  "nav-styles": "2026-08-26",
 };
 
 export function isFeatureNew(key: keyof typeof SHIPPED): boolean {

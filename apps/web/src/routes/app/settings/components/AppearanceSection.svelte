@@ -5,20 +5,32 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
+  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import ThemePreview from "$lib/components/ThemePreview.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import type { MobileDestination } from "$lib/navigation";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
     resolveBottomShortcuts,
     resolveShortcutChoices,
   } from "$lib/navigation";
+  import {
+    NAV_STYLE_META,
+    navStyle,
+    type NavStyle,
+  } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { setLocale } from "$lib/paraglide/runtime.js";
   import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
+
+  const navStyleLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !auth.isPremium,
+  );
 
   const MIN = 3;
   const MAX = 7;
@@ -115,6 +127,45 @@
     <div class="flex gap-2">
       {#each THEME_DEFINITIONS as theme (theme.mode)}
         <ThemePreview {theme} />
+      {/each}
+    </div>
+  </div>
+
+  <div>
+    <p class="mb-2 flex items-center gap-2 font-semibold">
+      Style de navigation
+      {#if isFeatureNew("nav-styles")}
+        <NewBadge />
+      {/if}
+    </p>
+    <p class="text-dim mb-3 text-sm">
+      Change la mise en forme du rail et de la barre du bas. « Marquee » est
+      inclus ; les deux autres sont réservés aux comptes premium.
+    </p>
+    <div class="grid gap-2 sm:grid-cols-3">
+      {#each Object.entries(NAV_STYLE_META) as [id, meta] (id)}
+        {@const locked = meta.premium && navStyleLocked}
+        {#snippet styleButton()}
+          <button
+            type="button"
+            disabled={locked}
+            onclick={() => navStyle.set(id as NavStyle)}
+            class="relative w-full rounded-xl border p-3 text-left transition-colors disabled:pointer-events-none disabled:opacity-50 {navStyle.choice ===
+            id
+              ? 'border-accent bg-accent/10 text-fg'
+              : 'text-dim hover:bg-surface-2 border-border'}">
+            <span class="text-fg text-sm font-semibold">{meta.label}</span>
+            <span class="text-dim mt-1 block text-xs">{meta.blurb}</span>
+          </button>
+        {/snippet}
+        {#if locked}
+          <Tooltip text={m.common_premium_locked()}>
+            {@render styleButton()}
+            <PremiumLockBadge />
+          </Tooltip>
+        {:else}
+          {@render styleButton()}
+        {/if}
       {/each}
     </div>
   </div>

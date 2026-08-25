@@ -1,17 +1,21 @@
 <script lang="ts">
-  // Loads, shows and identifies the Quackback feedback widget — mounted only
-  // on authenticated, non-public routes (see app/+layout.svelte), so its own
+  // Loads and shows the Quackback feedback widget — mounted only on
+  // authenticated, non-public routes (see app/+layout.svelte), so its own
   // mount/unmount lifecycle is what keeps the widget off the landing page and
   // login/register/legal pages: loaded on mount, hidden on unmount
   // (navigating to a public route, or logging out). The SDK is loaded here
   // rather than unconditionally in app.html so an anonymous visitor to the
-  // landing page never pulls in a third-party iframe. "identify" puts it in
-  // "Verified identity only" mode — the widget trusts our signed token
-  // instead of asking the visitor to type in their own email. Renders
-  // nothing; a failure here (e.g. QUACKBACK_WIDGET_SECRET unset) just leaves
-  // the widget anonymous rather than breaking the app.
+  // landing page never pulls in a third-party iframe.
+  //
+  // "identify" (Quackback's "Verified identity only" mode, trusting our
+  // signed SSO token instead of asking the visitor to type their own email)
+  // is disabled for now: calling it re-authenticates the user against
+  // Quackback on every widget mount, and Quackback's own "new sign-in from a
+  // new device" security email fires far too often as a result (their
+  // per-team toggle for that notification doesn't cover SSO-identified
+  // portal users, only team/admin accounts). Re-enable once that's fixed
+  // upstream or worked around.
   import { browser } from "$app/environment";
-  import { ApiError, getWidgetToken } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
 
   // Desktop-only: the launcher button (bottom-right, fixed) has no clean
@@ -45,15 +49,6 @@
     };
     syncLauncher();
     mq.addEventListener("change", syncLauncher);
-
-    getWidgetToken()
-      .then(({ ssoToken }) => window.Quackback?.("identify", { ssoToken }))
-      .catch((err) => {
-        console.error(
-          "Quackback identify failed:",
-          err instanceof ApiError ? err.message : err,
-        );
-      });
 
     return () => {
       mq.removeEventListener("change", syncLauncher);

@@ -53,11 +53,13 @@ export class CatalogController {
         ? this.mediaItemService
             .providerFor(CatalogSource.TMDB)
             .search(query.q, query.type, page)
+            .catch(() => [])
         : Promise.resolve([]),
       wantAnilist
         ? this.mediaItemService
             .providerFor(CatalogSource.ANILIST)
             .search(query.q, undefined, page)
+            .catch(() => [])
         : Promise.resolve([]),
       this.ageGate.allowsAdultContent(user.sub),
     ]);

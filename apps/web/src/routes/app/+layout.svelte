@@ -10,14 +10,29 @@
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
+  import ProgrammeBoardDesktop from "$lib/components/sidebars/ProgrammeBoardDesktop.svelte";
+  import ProjectorDockDesktop from "$lib/components/sidebars/ProjectorDockDesktop.svelte";
   import TermsReacceptance from "$lib/components/TermsReacceptance.svelte";
   import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
+  import { liveFlags } from "$lib/feature-flags-live.svelte";
+  import { navStyle } from "$lib/navStyle.svelte";
   import { notifications } from "$lib/notifications.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
 
   const needsTermsReacceptance = $derived(
     !!auth.user && auth.user.acceptedTermsVersion !== LEGAL_VERSION,
+  );
+
+  // "Dock" and "Programme" are premium nav skins (see navStyle.svelte.ts) —
+  // fall back to the free "Marquee" rail whenever the flag is on and the
+  // account isn't premium, regardless of what's still saved in
+  // localStorage (e.g. a lapsed subscription).
+  const navStyleLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !auth.isPremium,
+  );
+  const effectiveNavStyle = $derived(
+    navStyleLocked ? "marquee" : navStyle.choice,
   );
 
   let { children } = $props();
@@ -63,13 +78,23 @@
   <WidgetIdentify />
 
   <div class="hidden md:block">
-    <DesktopSidebar>
-      {@render children()}
-    </DesktopSidebar>
+    {#if effectiveNavStyle === "dock"}
+      <ProjectorDockDesktop>
+        {@render children()}
+      </ProjectorDockDesktop>
+    {:else if effectiveNavStyle === "board"}
+      <ProgrammeBoardDesktop>
+        {@render children()}
+      </ProgrammeBoardDesktop>
+    {:else}
+      <DesktopSidebar>
+        {@render children()}
+      </DesktopSidebar>
+    {/if}
   </div>
 
   <div class="md:hidden">
-    <MobileLayout>
+    <MobileLayout navStyle={effectiveNavStyle}>
       {@render children()}
     </MobileLayout>
   </div>

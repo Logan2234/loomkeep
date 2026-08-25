@@ -3,13 +3,6 @@
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
 
-  // Blurs `children` and draws the lock badge on top. Whether `children`
-  // renders real or made-up data is the caller's call (each stats section
-  // swaps in a small static fake dataset when `locked`, since the API
-  // already redacts the real fields for a non-premium account — see
-  // stats.service.ts's redact* methods). Blurring is safe here precisely
-  // *because* it's fake data underneath: unlike the earlier front-end-only
-  // version, inspecting past the blur reveals nothing real.
   let {
     locked,
     class: className = "",

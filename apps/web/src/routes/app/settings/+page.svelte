@@ -35,7 +35,11 @@
     },
     { id: "domaines", label: m.settings_section_domains() },
     { id: "communications", label: m.settings_section_communications() },
-    { id: "apparence", label: m.settings_section_appearance() },
+    {
+      id: "apparence",
+      label: m.settings_section_appearance(),
+      newBadgeKey: "nav-styles",
+    },
     { id: "import", label: m.settings_section_import() },
     { id: "export", label: m.common_export() },
     {

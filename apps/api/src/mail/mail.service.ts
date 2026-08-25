@@ -153,19 +153,6 @@ export class MailService {
       fields: [{ key: "code", label: "Code", default: "482913" }],
       build: (v) => this.buildEmailChangeCode(v.code),
     },
-    newEpisode: {
-      label: "Nouvel épisode",
-      fields: [
-        { key: "mediaTitle", label: "Titre", default: "One Piece" },
-        {
-          key: "body",
-          label: "Message",
-          default: "L'épisode 1089 est disponible.",
-        },
-        { key: "path", label: "Chemin", default: "/app/media/series/12345" },
-      ],
-      build: (v) => this.buildNewEpisode(v.mediaTitle, v.body, v.path),
-    },
     newsletter: {
       label: "Newsletter (nouveautés)",
       fields: [
@@ -418,18 +405,6 @@ export class MailService {
 
   async sendVerifyEmail(to: string, token: string): Promise<void> {
     await this.send({ to, ...this.buildVerifyEmail(token) });
-  }
-
-  async sendNewEpisode(
-    to: string,
-    mediaTitle: string,
-    body: string,
-    path: string,
-  ): Promise<void> {
-    await this.send({
-      to,
-      ...this.buildNewEpisode(mediaTitle, body, path),
-    });
   }
 
   /**
@@ -691,31 +666,6 @@ export class MailService {
         `<p>Confirme ton adresse email en cliquant sur le bouton ci-dessous.</p>
          ${this.button(url, "Confirmer mon email")}
          <p style="color:${COLOR_MUTED};font-size:13px;">Ce lien expire dans 24h.</p>`,
-      ),
-    };
-  }
-
-  private buildNewEpisode(
-    mediaTitle: string,
-    body: string,
-    path: string,
-  ): TemplateBody {
-    // "Voir" can't go through a Link: its destination is a different
-    // episode/series page on every send, and a Link is one fixed URL — only
-    // the notification-management link below (same destination every time)
-    // qualifies.
-    const url = `${this.webOrigin}${path}`;
-    const prefsUrl =
-      this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
-      `${this.webOrigin}/app/settings#communications`;
-    return {
-      subject: `Nouvel épisode : ${mediaTitle}`,
-      text: `${mediaTitle} — ${body}\n\n${url}\n\nGérer mes notifications : ${prefsUrl}`,
-      html: this.wrapEmail(
-        mediaTitle,
-        `<p>${body}</p>
-         ${this.button(url, "Voir")}
-         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;"><a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes notifications</a></p>`,
       ),
     };
   }

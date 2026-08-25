@@ -1,9 +1,16 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import type { NavStyle } from "$lib/navStyle.svelte";
+  import type { Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
   import MenuSheet from "./MenuSheet.svelte";
+  import ProgrammeBoardMobileBar from "./ProgrammeBoardMobileBar.svelte";
+  import ProjectorDockMobileBar from "./ProjectorDockMobileBar.svelte";
 
-  let { children } = $props();
+  let {
+    children,
+    navStyle = "marquee",
+  }: { children: Snippet; navStyle?: NavStyle } = $props();
 </script>
 
 <div class="min-h-screen">
@@ -17,7 +24,13 @@
     {/key}
   </main>
 
-  <BottomNavigation />
+  {#if navStyle === "dock"}
+    <ProjectorDockMobileBar />
+  {:else if navStyle === "board"}
+    <ProgrammeBoardMobileBar />
+  {:else}
+    <BottomNavigation />
+  {/if}
 
   <MenuSheet />
 </div>

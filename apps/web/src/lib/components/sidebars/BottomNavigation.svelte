@@ -27,13 +27,17 @@
   }
 </script>
 
+<!-- Séance signature: a "ticket stub" bar — the active tab punches up
+     through the line, sitting in a lit amber notch, and the top edge is
+     perforated like a torn ticket. -->
 <nav
   class="
-    border-border bg-surface/95 fixed inset-x-0
+    border-border bg-surface/95 ticket-edge fixed inset-x-0
     bottom-0
     z-30 flex
     border-t
-    pb-[env(safe-area-inset-bottom)]
+    pt-2
+    pb-[calc(0.4rem+env(safe-area-inset-bottom))]
     backdrop-blur
     md:hidden
   ">
@@ -42,8 +46,10 @@
       <button
         onclick={openMenu}
         aria-label={m.nav_open_menu()}
-        class="text-dim relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[0.62rem] font-semibold">
-        <Icon name={item.icon} class="h-6 w-6" />
+        class="text-dim flex flex-1 flex-col items-center gap-1 text-[0.62rem] font-semibold">
+        <span class="grid h-9 w-9 place-items-center rounded-full">
+          <Icon name={item.icon} class="h-5 w-5" />
+        </span>
         {item.label}
       </button>
     {:else}
@@ -52,18 +58,26 @@
         href={item.href}
         aria-current={active ? "page" : undefined}
         class="
-          relative flex flex-1 flex-col items-center gap-0.5
-          py-2.5
+          relative flex flex-1 flex-col items-center gap-1
           text-[0.62rem]
           font-semibold
-          transition-colors
-          {active ? 'text-accent' : 'text-dim'}
+          transition-transform
+          duration-200
+          {active ? 'text-accent -translate-y-1.5' : 'text-dim'}
         ">
-        <span class="relative">
-          <Icon name={item.icon} class="h-6 w-6" />
+        {#if active}
+          <span
+            class="bg-accent/25 pointer-events-none absolute -top-1 h-8 w-8 rounded-full blur-md"
+            aria-hidden="true"></span>
+        {/if}
+        <span
+          class="relative grid h-9 w-9 place-items-center rounded-full transition-colors {active
+            ? 'bg-accent text-accent-fg shadow-[0_4px_14px_-2px_var(--accent)]'
+            : ''}">
+          <Icon name={item.icon} class="h-5 w-5" />
           {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
             <span
-              class="bg-accent ring-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2"
+              class="bg-accent ring-surface absolute top-0 right-0 h-2 w-2 rounded-full ring-2"
               aria-hidden="true"></span>
           {/if}
         </span>
@@ -73,3 +87,19 @@
     {/if}
   {/each}
 </nav>
+
+<style>
+  /* Sprocket holes along the top edge — a 35mm frame line, quiet unless you
+     look closely. */
+  .ticket-edge {
+    background-image: radial-gradient(
+      circle,
+      var(--border) 1.1px,
+      transparent 1.2px
+    );
+    background-size: 18px 100%;
+    background-position: top center;
+    background-repeat: repeat-x;
+    background-origin: border-box;
+  }
+</style>

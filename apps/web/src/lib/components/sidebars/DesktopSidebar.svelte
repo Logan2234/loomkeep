@@ -61,6 +61,28 @@
     atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
   }
 
+  // Séance signature: a single tinted pill slides between items instead of
+  // each one carrying its own static highlight — the marquee "chaser light"
+  // landing on the current showtime. Measured off `aria-current="page"`
+  // rather than tracked separately, so it always matches the real active
+  // link.
+  let indicatorTop = $state(0);
+  let indicatorHeight = $state(0);
+  let indicatorVisible = $state(false);
+
+  function positionIndicator() {
+    const el = navEl;
+    if (!el) return;
+    const active = el.querySelector<HTMLElement>('a[aria-current="page"]');
+    if (!active) {
+      indicatorVisible = false;
+      return;
+    }
+    indicatorTop = active.offsetTop;
+    indicatorHeight = active.offsetHeight;
+    indicatorVisible = true;
+  }
+
   $effect(() => {
     window.addEventListener("resize", updateScroll);
     updateScroll();
@@ -68,11 +90,13 @@
   });
 
   // Recompute when the rendered list changes height (rail width or admin vs
-  // app navigation).
+  // app navigation) or the active route changes.
   $effect(() => {
     void expanded;
     void inAdmin;
+    void page.url.pathname;
     updateScroll();
+    positionIndicator();
   });
 </script>
 
@@ -113,7 +137,15 @@
       <nav
         bind:this={navEl}
         onscroll={updateScroll}
-        class="tl-rail-scroll flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+        class="tl-rail-scroll relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+        <div
+          class="bg-accent/15 pointer-events-none absolute inset-x-0 rounded-xl transition-[top,height,opacity] duration-300 ease-out {indicatorVisible
+            ? 'opacity-100'
+            : 'opacity-0'}"
+          style="top: {indicatorTop}px; height: {indicatorHeight}px"
+          aria-hidden="true">
+        </div>
+
         {#if inAdmin}
           <a
             href="/app/admin"
@@ -123,7 +155,7 @@
             title={expanded ? undefined : m.nav_overview()}
             class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {page
               .url.pathname === '/app/admin'
-              ? 'bg-accent/15 text-accent'
+              ? 'text-accent'
               : 'text-dim hover:bg-surface-2 hover:text-fg'}">
             <span class="grid h-10 w-10 shrink-0 place-items-center">
               <Icon name="home" class="h-5 w-5" />
@@ -155,7 +187,7 @@
               aria-current={active ? "page" : undefined}
               title={expanded ? undefined : item.label}
               class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {active
-                ? 'bg-accent/15 text-accent'
+                ? 'text-accent'
                 : 'text-dim hover:bg-surface-2 hover:text-fg'}">
               <span class="relative grid h-10 w-10 shrink-0 place-items-center">
                 <Icon name={item.icon} class="h-5 w-5" />
@@ -228,7 +260,7 @@
                 flex shrink-0 items-center overflow-hidden rounded-xl
                 transition-colors
                 {active
-                    ? 'bg-accent/15 text-accent'
+                    ? 'text-accent'
                     : 'text-dim hover:bg-surface-2 hover:text-fg'}
                 ">
                   <span

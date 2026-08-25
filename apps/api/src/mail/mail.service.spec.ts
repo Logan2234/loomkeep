@@ -185,30 +185,6 @@ describe("MailService", () => {
     expect(html).toContain("https://loomkeep.example/app");
   });
 
-  it("links new-episode's notification-management footer to communications settings", async () => {
-    process.env.SMTP_HOST = "smtp.example.com";
-    process.env.SMTP_USER = "user";
-    process.env.SMTP_PASS = "pass";
-    process.env.WEB_ORIGIN = "https://loomkeep.example";
-
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
-
-    const service = new MailService(quota);
-    await service.sendNewEpisode(
-      "alice@example.com",
-      "Show",
-      "New episode",
-      "/app/media/123",
-    );
-
-    const { html } = sendMail.mock.calls[0][0];
-    expect(html).toContain("https://loomkeep.example/app/media/123");
-    expect(html).toContain(
-      "https://loomkeep.example/app/settings#communications",
-    );
-  });
-
   it("includes a no-login unsubscribe link in the newsletter, alongside the settings link", async () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_USER = "user";
@@ -261,7 +237,6 @@ describe("MailService template gallery", () => {
         "emailChangedOld",
         "emailChangedNew",
         "emailChangeCode",
-        "newEpisode",
         "newDeviceLogin",
       ]),
     );
