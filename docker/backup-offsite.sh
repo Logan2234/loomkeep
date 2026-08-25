@@ -30,15 +30,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOOMKEEP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 QUACKBACK_DIR="${QUACKBACK_DIR:-$LOOMKEEP_DIR/../quackback}"
 
-R2_REMOTE="${R2_REMOTE:-r2}"
-R2_BUCKET="${R2_BUCKET:?set R2_BUCKET (the Cloudflare R2 bucket name)}"
-
 set -a
 # shellcheck disable=SC1091
 source "$LOOMKEEP_DIR/.env"
 set +a
 : "${BACKUP_ENCRYPTION_PUBLIC_KEY:?set BACKUP_ENCRYPTION_PUBLIC_KEY in $LOOMKEEP_DIR/.env}"
 : "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in $LOOMKEEP_DIR/.env}"
+
+R2_REMOTE="${R2_REMOTE:-r2}"
+R2_BUCKET="${R2_BUCKET:?set R2_BUCKET (the Cloudflare R2 bucket name)}"
 POSTGRES_USER="${POSTGRES_USER:-loomkeep}"
 
 WORKDIR="$(mktemp -d)"
@@ -55,10 +55,10 @@ dump_pg() {
 }
 
 echo "[$DATE] Dumping loomkeep, unleash, glitchtip, umami (shared Postgres)…"
-dump_pg db "$POSTGRES_USER" "$POSTGRES_PASSWORD" loomkeep "loomkeep-$DATE.sql.age"
-dump_pg db "$POSTGRES_USER" "$POSTGRES_PASSWORD" unleash "unleash-$DATE.sql.age"
-dump_pg db "$POSTGRES_USER" "$POSTGRES_PASSWORD" glitchtip "glitchtip-$DATE.sql.age"
-dump_pg db "$POSTGRES_USER" "$POSTGRES_PASSWORD" umami "umami-$DATE.sql.age"
+dump_pg loomkeep-db-1 "$POSTGRES_USER" "$POSTGRES_PASSWORD" loomkeep "loomkeep-$DATE.sql.age"
+dump_pg loomkeep-db-1 "$POSTGRES_USER" "$POSTGRES_PASSWORD" unleash "unleash-$DATE.sql.age"
+dump_pg loomkeep-db-1 "$POSTGRES_USER" "$POSTGRES_PASSWORD" glitchtip "glitchtip-$DATE.sql.age"
+dump_pg loomkeep-db-1 "$POSTGRES_USER" "$POSTGRES_PASSWORD" umami "umami-$DATE.sql.age"
 
 if [ -f "$QUACKBACK_DIR/.env" ]; then
   echo "[$DATE] Dumping Quackback (separate stack at $QUACKBACK_DIR)…"
