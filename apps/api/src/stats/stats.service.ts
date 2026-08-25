@@ -121,6 +121,7 @@ export class StatsService {
   async getOverview(
     userId: string,
     requested: StatsDomain | "ALL",
+    premium: boolean,
   ): Promise<StatsOverviewDto> {
     const domains = await this.resolveDomains(userId, requested);
     const rows = await this.fetchRows(userId, domains);
@@ -143,21 +144,130 @@ export class StatsService {
     const allRows = domains.flatMap((d) => rows.get(d) ?? []);
     const ratings = await this.ratingsFor(userId, domains, rows);
 
+    return this.redactOverview(
+      {
+        domain: requested,
+        breakdowns,
+        total,
+        favorites,
+        completionRate: total > 0 ? doneCount / total : 0,
+        abandonRate: total > 0 ? droppedCount / total : 0,
+        ratedCount: ratings.length,
+        ratingRate: total > 0 ? ratings.length / total : 0,
+        averageRating: computeAverageRating(ratings),
+        ratingDistribution: computeRatingDistribution(ratings),
+        decades: computeDecadeHistogram(allRows.map((r) => r.releaseDate)),
+        possession: computePossessionBreakdown(
+          allRows.map((r) => r.ownershipStatus),
+        ),
+      },
+      premium,
+    );
+  }
+
+  // --- Premium redaction — "compter/agréger" stays free, "classer/comparer/
+  //     temporaliser" is premium (see the premium-stats feature plan). The
+  //     underlying queries above still run unconditionally (kept simple,
+  //     not optimized to skip them for non-premium accounts); this is the
+  //     single point where advanced fields are zeroed/emptied before the
+  //     DTO ever reaches a non-premium client, so — unlike the front-end-only
+  //     blur this replaced — the real numbers no longer transit over the
+  //     wire for a locked account. ---
+
+  private redactOverview(
+    dto: StatsOverviewDto,
+    premium: boolean,
+  ): StatsOverviewDto {
+    if (premium) return dto;
     return {
-      domain: requested,
-      breakdowns,
-      total,
-      favorites,
-      completionRate: total > 0 ? doneCount / total : 0,
-      abandonRate: total > 0 ? droppedCount / total : 0,
-      ratedCount: ratings.length,
-      ratingRate: total > 0 ? ratings.length / total : 0,
-      averageRating: computeAverageRating(ratings),
-      ratingDistribution: computeRatingDistribution(ratings),
-      decades: computeDecadeHistogram(allRows.map((r) => r.releaseDate)),
-      possession: computePossessionBreakdown(
-        allRows.map((r) => r.ownershipStatus),
-      ),
+      ...dto,
+      ratingDistribution: dto.ratingDistribution.map((b) => ({
+        ...b,
+        count: 0,
+      })),
+      decades: [],
+      possession: { sufficientData: false, renseignedRatio: 0 },
+    };
+  }
+
+  private redactVideo(dto: VideoStatsDto, premium: boolean): VideoStatsDto {
+    if (premium) return dto;
+    return {
+      ...dto,
+      longestFilm: null,
+      shortestFilm: null,
+      genres: [],
+      pausedCount: 0,
+      ghostCount: 0,
+      longestBingeCount: 0,
+      moviesRewatchedCount: 0,
+    };
+  }
+
+  private redactGame(dto: GameStatsDto, premium: boolean): GameStatsDto {
+    if (premium) return dto;
+    return {
+      ...dto,
+      topGamesByPlaytime: [],
+      topPlatforms: [],
+      topGenres: [],
+      avgRatingByPlatform: [],
+      avgRatingByGenre: [],
+    };
+  }
+
+  private redactBook(dto: BookStatsDto, premium: boolean): BookStatsDto {
+    if (premium) return dto;
+    return {
+      ...dto,
+      longestBook: null,
+      shortestBook: null,
+      topAuthorsByPages: [],
+      distinctAuthorsCount: 0,
+    };
+  }
+
+  private redactMusic(dto: MusicStatsDto, premium: boolean): MusicStatsDto {
+    if (premium) return dto;
+    return { ...dto, topArtists: [], releaseTypeSplit: [] };
+  }
+
+  private redactVideoTemporal(
+    dto: VideoTemporalDto,
+    premium: boolean,
+  ): VideoTemporalDto {
+    if (premium) return dto;
+    return {
+      heatmap: [],
+      byWeekday: dto.byWeekday.map((b) => ({ ...b, count: 0 })),
+      byHour: dto.byHour.map((b) => ({ ...b, count: 0 })),
+      monthlyMinutes: [],
+      yearlyMinutes: [],
+      mostActiveYear: null,
+    };
+  }
+
+  private redactSocial(dto: SocialStatsDto, premium: boolean): SocialStatsDto {
+    if (premium) return dto;
+    return {
+      reviewsWritten: 0,
+      avgReviewLength: null,
+      ratingVsCommunity: { sufficientData: false, sampleSize: 0 },
+      commentsWritten: 0,
+      rootCommentsCount: 0,
+      replyCommentsCount: 0,
+      spoilerCommentRatio: 0,
+      reviewRevisionsCount: 0,
+      helpfulVotesReceived: 0,
+      mostVotedReviewVotes: null,
+      reactionsGiven: 0,
+      reactionsReceived: 0,
+      listsWritten: 0,
+      listsPublicCount: 0,
+      newFollowersByMonth: [],
+      followerReciprocityRate: 0,
+      socialActivityByMonth: [],
+      contributionStreakDays: 0,
     };
   }
 
@@ -405,7 +515,10 @@ export class StatsService {
   // --- Vidéo deep section — everything the cross-domain overview doesn't
   //     already cover (statuses/favorites live in getOverview's breakdowns). ---
 
-  async getVideoStats(userId: string): Promise<VideoStatsDto> {
+  async getVideoStats(
+    userId: string,
+    premium: boolean,
+  ): Promise<VideoStatsDto> {
     const [entries, watches, staleness, moviesRewatchedCount] =
       await Promise.all([
         this.prisma.libraryEntry.findMany({
@@ -530,41 +643,44 @@ export class StatsService {
       };
     });
 
-    return {
-      totalMinutes: episodeMinutes + movieMinutes,
-      episodesWatched: regularWatches.length,
-      uniqueEpisodesWatched: new Set(regularWatches.map((w) => w.episode.id))
-        .size,
-      seasonsCompleted: countCompletedSeasons(seasonProgress),
-      typeSplit: computeTypeSplit(typeSplitRows),
-      avgEpisodeRuntimeMin:
-        regularWatches.length > 0
-          ? Math.round(episodeMinutes / regularWatches.length)
+    return this.redactVideo(
+      {
+        totalMinutes: episodeMinutes + movieMinutes,
+        episodesWatched: regularWatches.length,
+        uniqueEpisodesWatched: new Set(regularWatches.map((w) => w.episode.id))
+          .size,
+        seasonsCompleted: countCompletedSeasons(seasonProgress),
+        typeSplit: computeTypeSplit(typeSplitRows),
+        avgEpisodeRuntimeMin:
+          regularWatches.length > 0
+            ? Math.round(episodeMinutes / regularWatches.length)
+            : null,
+        longestFilm: longest
+          ? {
+              title: longest.mediaItem.title,
+              minutes: longest.mediaItem.runtimeMin!,
+              href: this.mediaHref(longest.mediaItem),
+            }
           : null,
-      longestFilm: longest
-        ? {
-            title: longest.mediaItem.title,
-            minutes: longest.mediaItem.runtimeMin!,
-            href: this.mediaHref(longest.mediaItem),
-          }
-        : null,
-      shortestFilm: shortest
-        ? {
-            title: shortest.mediaItem.title,
-            minutes: shortest.mediaItem.runtimeMin!,
-            href: this.mediaHref(shortest.mediaItem),
-          }
-        : null,
-      genres: [...genreCounts.entries()]
-        .map(([genre, count]) => ({ genre, count }))
-        .sort((a, b) => b.count - a.count),
-      pausedCount: staleness.filter((s) => s.staleness === "PAUSED").length,
-      ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
-      moviesRewatchedCount,
-      longestBingeCount: computeLongestBinge(
-        regularWatches.map((w) => w.watchedAt),
-      ),
-    };
+        shortestFilm: shortest
+          ? {
+              title: shortest.mediaItem.title,
+              minutes: shortest.mediaItem.runtimeMin!,
+              href: this.mediaHref(shortest.mediaItem),
+            }
+          : null,
+        genres: [...genreCounts.entries()]
+          .map(([genre, count]) => ({ genre, count }))
+          .sort((a, b) => b.count - a.count),
+        pausedCount: staleness.filter((s) => s.staleness === "PAUSED").length,
+        ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
+        moviesRewatchedCount,
+        longestBingeCount: computeLongestBinge(
+          regularWatches.map((w) => w.watchedAt),
+        ),
+      },
+      premium,
+    );
   }
 
   async getVideoSeries(
@@ -655,7 +771,7 @@ export class StatsService {
   // --- Jeux deep section — everything the cross-domain overview doesn't
   //     already cover (statuses/favorites/decades live in getOverview). ---
 
-  async getGameStats(userId: string): Promise<GameStatsDto> {
+  async getGameStats(userId: string, premium: boolean): Promise<GameStatsDto> {
     const [entries, replaysCount] = await Promise.all([
       this.prisma.gameEntry.findMany({
         where: { userId },
@@ -713,40 +829,44 @@ export class StatsService {
       }
     }
 
-    return {
-      totalPlaytimeMinutes,
-      avgPlaytimePerCompletedMinutes:
-        completed.length > 0
-          ? Math.round(
-              completed.reduce((sum, e) => sum + e.playtimeMinutes, 0) /
-                completed.length,
-            )
-          : null,
-      neverLaunchedCount: entries.filter((e) => e.playtimeMinutes === 0).length,
-      replaysCount,
-      topGamesByPlaytime,
-      topPlatforms: toRankedList(platformCounts),
-      topGenres: toRankedList(genreCounts),
-      avgRatingByPlatform: computeAverageRatingByGroup(
-        entries.map((e) => ({
-          groups: e.gameItem.platforms,
-          rating: ratingMap.get(e.gameItem.id) ?? null,
-        })),
-      ),
-      avgRatingByGenre: computeAverageRatingByGroup(
-        entries.map((e) => ({
-          groups: e.gameItem.genres,
-          rating: ratingMap.get(e.gameItem.id) ?? null,
-        })),
-      ),
-    };
+    return this.redactGame(
+      {
+        totalPlaytimeMinutes,
+        avgPlaytimePerCompletedMinutes:
+          completed.length > 0
+            ? Math.round(
+                completed.reduce((sum, e) => sum + e.playtimeMinutes, 0) /
+                  completed.length,
+              )
+            : null,
+        neverLaunchedCount: entries.filter((e) => e.playtimeMinutes === 0)
+          .length,
+        replaysCount,
+        topGamesByPlaytime,
+        topPlatforms: toRankedList(platformCounts),
+        topGenres: toRankedList(genreCounts),
+        avgRatingByPlatform: computeAverageRatingByGroup(
+          entries.map((e) => ({
+            groups: e.gameItem.platforms,
+            rating: ratingMap.get(e.gameItem.id) ?? null,
+          })),
+        ),
+        avgRatingByGenre: computeAverageRatingByGroup(
+          entries.map((e) => ({
+            groups: e.gameItem.genres,
+            rating: ratingMap.get(e.gameItem.id) ?? null,
+          })),
+        ),
+      },
+      premium,
+    );
   }
 
   // --- Livres deep section — everything the cross-domain overview doesn't
   //     already cover (statuses/favorites/decades/possession/ratings live in
   //     getOverview). ---
 
-  async getBookStats(userId: string): Promise<BookStatsDto> {
+  async getBookStats(userId: string, premium: boolean): Promise<BookStatsDto> {
     const [entries, rereadsCount] = await Promise.all([
       this.prisma.bookEntry.findMany({
         where: { userId },
@@ -808,43 +928,51 @@ export class StatsService {
         DORMANT_AFTER_DAYS,
     ).length;
 
-    return {
-      pagesRead,
-      avgPagesPerRead:
-        readWithPages.length > 0
-          ? Math.round(
-              readWithPages.reduce((sum, e) => sum + e.bookItem.pageCount!, 0) /
-                readWithPages.length,
-            )
+    return this.redactBook(
+      {
+        pagesRead,
+        avgPagesPerRead:
+          readWithPages.length > 0
+            ? Math.round(
+                readWithPages.reduce(
+                  (sum, e) => sum + e.bookItem.pageCount!,
+                  0,
+                ) / readWithPages.length,
+              )
+            : null,
+        longestBook: longest
+          ? {
+              title: longest.bookItem.title,
+              pages: longest.bookItem.pageCount!,
+              href: this.itemHref("books", longest.bookItem),
+            }
           : null,
-      longestBook: longest
-        ? {
-            title: longest.bookItem.title,
-            pages: longest.bookItem.pageCount!,
-            href: this.itemHref("books", longest.bookItem),
-          }
-        : null,
-      shortestBook: shortest
-        ? {
-            title: shortest.bookItem.title,
-            pages: shortest.bookItem.pageCount!,
-            href: this.itemHref("books", shortest.bookItem),
-          }
-        : null,
-      topAuthorsByPages: [...pagesByAuthor.entries()]
-        .map(([author, pages]) => ({ author, pages }))
-        .sort((a, b) => b.pages - a.pages),
-      distinctAuthorsCount: distinctAuthors.size,
-      rereadsCount,
-      stagnantInProgressCount,
-    };
+        shortestBook: shortest
+          ? {
+              title: shortest.bookItem.title,
+              pages: shortest.bookItem.pageCount!,
+              href: this.itemHref("books", shortest.bookItem),
+            }
+          : null,
+        topAuthorsByPages: [...pagesByAuthor.entries()]
+          .map(([author, pages]) => ({ author, pages }))
+          .sort((a, b) => b.pages - a.pages),
+        distinctAuthorsCount: distinctAuthors.size,
+        rereadsCount,
+        stagnantInProgressCount,
+      },
+      premium,
+    );
   }
 
   // --- Musique deep section — everything the cross-domain overview doesn't
   //     already cover (statuses/favorites/decades/possession/ratings live in
   //     getOverview). ---
 
-  async getMusicStats(userId: string): Promise<MusicStatsDto> {
+  async getMusicStats(
+    userId: string,
+    premium: boolean,
+  ): Promise<MusicStatsDto> {
     const entries = await this.prisma.musicEntry.findMany({
       where: { userId },
       select: {
@@ -882,13 +1010,16 @@ export class StatsService {
       typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
     }
 
-    return {
-      listenDurationMin,
-      totalTracks,
-      distinctArtistsCount: artistCounts.size,
-      topArtists: toRankedList(artistCounts),
-      releaseTypeSplit: toRankedList(typeCounts),
-    };
+    return this.redactMusic(
+      {
+        listenDurationMin,
+        totalTracks,
+        distinctArtistsCount: artistCounts.size,
+        topArtists: toRankedList(artistCounts),
+        releaseTypeSplit: toRankedList(typeCounts),
+      },
+      premium,
+    );
   }
 
   // --- Vidéo "activité dans le temps" — the only domain with a true
@@ -899,6 +1030,7 @@ export class StatsService {
   async getVideoTemporal(
     userId: string,
     period: StatsWindow,
+    premium: boolean,
   ): Promise<VideoTemporalDto> {
     const watches = await this.prisma.episodeWatch.findMany({
       where: { userId },
@@ -933,24 +1065,30 @@ export class StatsService {
     }));
     const yearlyMinutes = computeYearlyMinutes(datedMinutes);
 
-    return {
-      heatmap: computeHeatmap(
-        regular.map((w) => w.watchedAt),
-        365,
-        now,
-      ),
-      byWeekday: computeWeekdayCounts(inWindow.map((w) => w.watchedAt)),
-      byHour: computeHourCounts(inWindow.map((w) => w.watchedAt)),
-      monthlyMinutes: computeMonthlyMinutes(datedMinutes, 12, now),
-      yearlyMinutes,
-      mostActiveYear: mostActiveYear(yearlyMinutes),
-    };
+    return this.redactVideoTemporal(
+      {
+        heatmap: computeHeatmap(
+          regular.map((w) => w.watchedAt),
+          365,
+          now,
+        ),
+        byWeekday: computeWeekdayCounts(inWindow.map((w) => w.watchedAt)),
+        byHour: computeHourCounts(inWindow.map((w) => w.watchedAt)),
+        monthlyMinutes: computeMonthlyMinutes(datedMinutes, 12, now),
+        yearlyMinutes,
+        mostActiveYear: mostActiveYear(yearlyMinutes),
+      },
+      premium,
+    );
   }
 
   // --- Social section — gated by SOCIAL_ENABLED on the controller. Always
   //     self-view (no visibility checks needed, mirrors /stats itself). ---
 
-  async getSocialStats(userId: string): Promise<SocialStatsDto> {
+  async getSocialStats(
+    userId: string,
+    premium: boolean,
+  ): Promise<SocialStatsDto> {
     const now = new Date();
     const twelveMonthsAgo = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1),
@@ -1013,42 +1151,49 @@ export class StatsService {
       ...comments.map((c) => c.createdAt),
     ];
 
-    return {
-      reviewsWritten: reviews.length,
-      avgReviewLength: computeAvgReviewLength(reviews.map((r) => r.text)),
-      ratingVsCommunity: computeRatingVsCommunity(
-        reviews.map((r) => ({
-          yourRating: r.rating,
-          otherRatings:
-            communityRatings.get(`${r.targetType}:${r.targetId}`) ?? [],
-        })),
-      ),
-      commentsWritten: comments.length,
-      rootCommentsCount: comments.filter((c) => c.parentId === null).length,
-      replyCommentsCount: comments.filter((c) => c.parentId !== null).length,
-      spoilerCommentRatio: computeSpoilerRatio(comments),
-      reviewRevisionsCount: reviews.reduce(
-        (sum, r) => sum + r._count.revisions,
-        0,
-      ),
-      helpfulVotesReceived: votesUp.reduce((sum, n) => sum + n, 0),
-      mostVotedReviewVotes: votesUp.length > 0 ? Math.max(...votesUp) : null,
-      reactionsGiven,
-      reactionsReceived,
-      listsWritten: lists.length,
-      listsPublicCount: lists.filter((l) => l.visibility === "PUBLIC").length,
-      newFollowersByMonth: computeMonthlyCounts(
-        newFollowers.map((f) => f.createdAt),
-        12,
-        now,
-      ),
-      followerReciprocityRate: computeReciprocityRate(
-        newFollowers.map((f) => f.followerId),
-        viewerFollowsIds,
-      ),
-      socialActivityByMonth: computeMonthlyCounts(socialActivityDates, 12, now),
-      contributionStreakDays: computeStreak(socialActivityDates, now),
-    };
+    return this.redactSocial(
+      {
+        reviewsWritten: reviews.length,
+        avgReviewLength: computeAvgReviewLength(reviews.map((r) => r.text)),
+        ratingVsCommunity: computeRatingVsCommunity(
+          reviews.map((r) => ({
+            yourRating: r.rating,
+            otherRatings:
+              communityRatings.get(`${r.targetType}:${r.targetId}`) ?? [],
+          })),
+        ),
+        commentsWritten: comments.length,
+        rootCommentsCount: comments.filter((c) => c.parentId === null).length,
+        replyCommentsCount: comments.filter((c) => c.parentId !== null).length,
+        spoilerCommentRatio: computeSpoilerRatio(comments),
+        reviewRevisionsCount: reviews.reduce(
+          (sum, r) => sum + r._count.revisions,
+          0,
+        ),
+        helpfulVotesReceived: votesUp.reduce((sum, n) => sum + n, 0),
+        mostVotedReviewVotes: votesUp.length > 0 ? Math.max(...votesUp) : null,
+        reactionsGiven,
+        reactionsReceived,
+        listsWritten: lists.length,
+        listsPublicCount: lists.filter((l) => l.visibility === "PUBLIC").length,
+        newFollowersByMonth: computeMonthlyCounts(
+          newFollowers.map((f) => f.createdAt),
+          12,
+          now,
+        ),
+        followerReciprocityRate: computeReciprocityRate(
+          newFollowers.map((f) => f.followerId),
+          viewerFollowsIds,
+        ),
+        socialActivityByMonth: computeMonthlyCounts(
+          socialActivityDates,
+          12,
+          now,
+        ),
+        contributionStreakDays: computeStreak(socialActivityDates, now),
+      },
+      premium,
+    );
   }
 
   /** Which of `candidateIds` the viewer follows back (accepted), for reciprocity. */

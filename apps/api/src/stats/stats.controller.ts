@@ -22,6 +22,7 @@ import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { EntitlementService } from "../entitlements/entitlement.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { DomainGateService } from "../users/domain-gate.service";
 import { StatsService } from "./stats.service";
@@ -35,6 +36,7 @@ export class StatsController {
   constructor(
     private readonly statsService: StatsService,
     private readonly domainGate: DomainGateService,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   @Get("overview")
@@ -48,7 +50,8 @@ export class StatsController {
       await this.domainGate.assertEnabled(user.sub, domain);
     }
 
-    return this.statsService.getOverview(user.sub, domain);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getOverview(user.sub, domain, premium);
   }
 
   @Get("works")
@@ -71,7 +74,8 @@ export class StatsController {
   @Get("video")
   async getVideoStats(@CurrentUser() user: JwtPayload): Promise<VideoStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
-    return this.statsService.getVideoStats(user.sub);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getVideoStats(user.sub, premium);
   }
 
   @Get("video/series")
@@ -99,25 +103,29 @@ export class StatsController {
       WINDOW_CHOICES,
       "stats window",
     ) as StatsWindow;
-    return this.statsService.getVideoTemporal(user.sub, period);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getVideoTemporal(user.sub, period, premium);
   }
 
   @Get("games")
   async getGameStats(@CurrentUser() user: JwtPayload): Promise<GameStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
-    return this.statsService.getGameStats(user.sub);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getGameStats(user.sub, premium);
   }
 
   @Get("books")
   async getBookStats(@CurrentUser() user: JwtPayload): Promise<BookStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
-    return this.statsService.getBookStats(user.sub);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getBookStats(user.sub, premium);
   }
 
   @Get("music")
   async getMusicStats(@CurrentUser() user: JwtPayload): Promise<MusicStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
-    return this.statsService.getMusicStats(user.sub);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getMusicStats(user.sub, premium);
   }
 
   @Get("social")
@@ -125,7 +133,8 @@ export class StatsController {
   async getSocialStats(
     @CurrentUser() user: JwtPayload,
   ): Promise<SocialStatsDto> {
-    return this.statsService.getSocialStats(user.sub);
+    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
+    return this.statsService.getSocialStats(user.sub, premium);
   }
 }
 

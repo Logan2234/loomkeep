@@ -7,6 +7,7 @@
     DomainStatusBreakdownDto,
     MusicStatsDto,
   } from "@loomkeep/shared";
+  import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
   import { statsResource } from "./stats-resource.svelte";
@@ -14,7 +15,11 @@
 
   let {
     musicBreakdown,
-  }: { musicBreakdown: DomainStatusBreakdownDto | undefined } = $props();
+    locked,
+  }: {
+    musicBreakdown: DomainStatusBreakdownDto | undefined;
+    locked: boolean;
+  } = $props();
 
   const musicStats = statsResource<MusicStatsDto>(
     getMusicStats,
@@ -29,10 +34,26 @@
 
   const hours = $derived(music ? Math.round(music.listenDurationMin / 60) : 0);
 
+  // Static, made-up previews shown instead of the real (redacted) advanced
+  // fields when `locked` — see stats.service.ts's redact* methods and
+  // PremiumTeaser's own doc comment.
+  const FAKE_ARTISTS = [
+    { label: "Un artiste favori", value: 12 },
+    { label: "Un autre artiste", value: 8 },
+    { label: "Découverte récente", value: 3 },
+  ];
+  const FAKE_TYPE_SPLIT = [
+    { label: "Album", count: 14 },
+    { label: "EP", count: 5 },
+    { label: "Single", count: 3 },
+  ];
+
   const artistItems = $derived(
-    music
-      ? music.topArtists.map((a) => ({ label: a.label, value: a.count }))
-      : [],
+    locked
+      ? FAKE_ARTISTS
+      : music
+        ? music.topArtists.map((a) => ({ label: a.label, value: a.count }))
+        : [],
   );
 
   const TYPE_TINTS = [
@@ -42,13 +63,13 @@
     "color-mix(in srgb, var(--stat-music) 20%, var(--surface))",
   ];
   const typeSegments = $derived(
-    music
-      ? music.releaseTypeSplit.map((t, i) => ({
-          label: t.label,
-          color: TYPE_TINTS[i % TYPE_TINTS.length],
-          value: t.count,
-        }))
-      : [],
+    (locked ? FAKE_TYPE_SPLIT : music ? music.releaseTypeSplit : []).map(
+      (t, i) => ({
+        label: t.label,
+        color: TYPE_TINTS[i % TYPE_TINTS.length],
+        value: t.count,
+      }),
+    ),
   );
 </script>
 
@@ -62,24 +83,26 @@
     <StatTile value={music.totalTracks} label="Titres au total" />
   </div>
 
-  <div class="mt-5 grid gap-5 md:grid-cols-2">
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">
-        Artistes les plus représentés
-      </h3>
-      {#if artistItems.length > 0}
-        <RankBars items={artistItems} />
-      {:else}
-        <p class="text-dim text-sm">Pas encore d'artiste.</p>
-      {/if}
-    </section>
-    <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">Type de sortie</h3>
-      {#if typeSegments.length > 0}
-        <StackedBar segments={typeSegments} />
-      {:else}
-        <p class="text-dim text-sm">Pas encore d'album.</p>
-      {/if}
-    </section>
-  </div>
+  <PremiumTeaser {locked} class="mt-5 block">
+    <div class="grid gap-5 md:grid-cols-2">
+      <section class="card p-5">
+        <h3 class="font-display mb-4 text-lg font-bold">
+          Artistes les plus représentés
+        </h3>
+        {#if locked || artistItems.length > 0}
+          <RankBars items={artistItems} />
+        {:else}
+          <p class="text-dim text-sm">Pas encore d'artiste.</p>
+        {/if}
+      </section>
+      <section class="card p-5">
+        <h3 class="font-display mb-4 text-lg font-bold">Type de sortie</h3>
+        {#if locked || typeSegments.length > 0}
+          <StackedBar segments={typeSegments} />
+        {:else}
+          <p class="text-dim text-sm">Pas encore d'album.</p>
+        {/if}
+      </section>
+    </div>
+  </PremiumTeaser>
 {/if}
