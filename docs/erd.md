@@ -6,7 +6,7 @@ erDiagram
 SERIES SERIES
 ANIME ANIME
         }
-    
+
 
 
         Domain {
@@ -17,7 +17,7 @@ MUSIC MUSIC
 PODCASTS PODCASTS
 BOARDGAMES BOARDGAMES
         }
-    
+
 
 
         DigestCadence {
@@ -25,21 +25,21 @@ BOARDGAMES BOARDGAMES
 WEEKLY WEEKLY
 DAILY DAILY
         }
-    
+
 
 
         Role {
             USER USER
 ADMIN ADMIN
         }
-    
+
 
 
         Plan {
             FREE FREE
 PREMIUM PREMIUM
         }
-    
+
 
 
         EntitlementSource {
@@ -50,13 +50,13 @@ BETA_TESTER BETA_TESTER
 COMPENSATION COMPENSATION
 ADMIN_GRANT ADMIN_GRANT
         }
-    
+
 
 
         SubscriptionProvider {
             STRIPE STRIPE
         }
-    
+
 
 
         SubscriptionStatus {
@@ -67,7 +67,7 @@ CANCELED CANCELED
 INCOMPLETE INCOMPLETE
 UNPAID UNPAID
         }
-    
+
 
 
         ProfileAccess {
@@ -75,7 +75,7 @@ UNPAID UNPAID
 PRIVATE PRIVATE
 GHOST GHOST
         }
-    
+
 
 
         VisibilityAudience {
@@ -83,21 +83,21 @@ GHOST GHOST
 FRIENDS FRIENDS
 NONE NONE
         }
-    
+
 
 
         VisibilityFacet {
             LIBRARY LIBRARY
 ACTIVITY ACTIVITY
         }
-    
+
 
 
         FollowStatus {
             PENDING PENDING
 ACCEPTED ACCEPTED
         }
-    
+
 
 
         ReviewTargetType {
@@ -108,14 +108,14 @@ GAME GAME
 BOOK BOOK
 MUSIC MUSIC
         }
-    
+
 
 
         ReviewVisibility {
             FRIENDS FRIENDS
 PUBLIC PUBLIC
         }
-    
+
 
 
         CommentTargetType {
@@ -126,7 +126,7 @@ GAME GAME
 BOOK BOOK
 MUSIC MUSIC
         }
-    
+
 
 
         CommentEmote {
@@ -137,14 +137,14 @@ WOW WOW
 SAD SAD
 DISLIKE DISLIKE
         }
-    
+
 
 
         ReviewVoteValue {
             UP UP
 DOWN DOWN
         }
-    
+
 
 
         ReportTargetType {
@@ -153,7 +153,7 @@ REVIEW REVIEW
 USER USER
 LIST LIST
         }
-    
+
 
 
         ReportCategory {
@@ -171,7 +171,7 @@ STOLEN_CONTENT STOLEN_CONTENT
 MISLEADING_REVIEW MISLEADING_REVIEW
 OTHER OTHER
         }
-    
+
 
 
         ReportMotif {
@@ -197,14 +197,14 @@ MISINFORMATION_FALSE_FACT MISINFORMATION_FALSE_FACT
 STOLEN_CONTENT_PLAGIARIZED STOLEN_CONTENT_PLAGIARIZED
 MISLEADING_REVIEW_MANIPULATION MISLEADING_REVIEW_MANIPULATION
         }
-    
+
 
 
         ListKind {
             RANKED RANKED
 COLLECTION COLLECTION
         }
-    
+
 
 
         ListVisibility {
@@ -212,7 +212,7 @@ COLLECTION COLLECTION
 FRIENDS FRIENDS
 PUBLIC PUBLIC
         }
-    
+
 
 
         ReportStatus {
@@ -220,28 +220,28 @@ PUBLIC PUBLIC
 RESOLVED RESOLVED
 DISMISSED DISMISSED
         }
-    
+
 
 
         ModerationMeasure {
             COMMENT_REMOVED COMMENT_REMOVED
 ACCOUNT_DELETED ACCOUNT_DELETED
         }
-    
+
 
 
         ModerationLegalBasis {
             ILLEGAL_CONTENT ILLEGAL_CONTENT
 TOS_BREACH TOS_BREACH
         }
-    
+
 
 
         CatalogSource {
             TMDB TMDB
 ANILIST ANILIST
         }
-    
+
 
 
         ExternalSource {
@@ -250,7 +250,7 @@ ANILIST ANILIST
 TVDB TVDB
 IMDB IMDB
         }
-    
+
 
 
         EntryStatus {
@@ -260,7 +260,7 @@ PLANNED PLANNED
 DROPPED DROPPED
 UP_TO_DATE UP_TO_DATE
         }
-    
+
 
 
         MediaOwnershipStatus {
@@ -270,13 +270,13 @@ DIGITAL DIGITAL
 STREAMING STREAMING
 BORROWED BORROWED
         }
-    
+
 
 
         GameSource {
             IGDB IGDB
         }
-    
+
 
 
         GameStatus {
@@ -285,7 +285,7 @@ PLAYING PLAYING
 COMPLETED COMPLETED
 DROPPED DROPPED
         }
-    
+
 
 
         GameOwnershipStatus {
@@ -295,13 +295,13 @@ DIGITAL DIGITAL
 SUBSCRIPTION SUBSCRIPTION
 BORROWED BORROWED
         }
-    
+
 
 
         BookSource {
             OPEN_LIBRARY OPEN_LIBRARY
         }
-    
+
 
 
         BookStatus {
@@ -310,7 +310,7 @@ READING READING
 READ READ
 DROPPED DROPPED
         }
-    
+
 
 
         BookOwnershipStatus {
@@ -320,20 +320,20 @@ DIGITAL DIGITAL
 AUDIO AUDIO
 BORROWED BORROWED
         }
-    
+
 
 
         MusicSource {
             MUSICBRAINZ MUSICBRAINZ
         }
-    
+
 
 
         MusicStatus {
             TO_LISTEN TO_LISTEN
 LISTENED LISTENED
         }
-    
+
 
 
         MusicOwnershipStatus {
@@ -343,14 +343,14 @@ DIGITAL DIGITAL
 STREAMING STREAMING
 BORROWED BORROWED
         }
-    
+
 
 
         UserTokenType {
             PASSWORD_RESET PASSWORD_RESET
 EMAIL_VERIFICATION EMAIL_VERIFICATION
         }
-    
+
 
 
         SecurityEventType {
@@ -362,59 +362,59 @@ PASSWORD_RESET PASSWORD_RESET
 LOGIN_FAILED LOGIN_FAILED
 NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
         }
-    
+
   "UserEntitlement" {
-    Plan plan 
+    Plan plan
     EntitlementSource source "❓"
     DateTime grantedAt "❓"
     DateTime expiresAt "❓"
-    Json overrides 
-    DateTime updatedAt 
+    Json overrides
+    DateTime updatedAt
     }
-  
+
 
   "Subscription" {
     String id "🗝️"
-    SubscriptionProvider provider 
-    String providerSubscriptionId 
-    SubscriptionStatus status 
+    SubscriptionProvider provider
+    String providerSubscriptionId
+    SubscriptionStatus status
     DateTime currentPeriodEnd "❓"
-    Boolean cancelAtPeriodEnd 
+    Boolean cancelAtPeriodEnd
     DateTime canceledAt "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "User" {
     String id "🗝️"
-    String email 
-    String passwordHash 
-    String displayName 
-    String username 
+    String email
+    String passwordHash
+    String displayName
+    String username
     DateTime birthDate "❓"
-    Boolean allowAdultContent 
-    DigestCadence notifyEmail 
-    DigestCadence notifyPush 
-    String timezone 
-    Boolean notifyNewsletter 
+    Boolean allowAdultContent
+    DigestCadence notifyEmail
+    DigestCadence notifyPush
+    String timezone
+    Boolean notifyNewsletter
     DateTime newsletterOptInAt "❓"
     String newsletterUnsubscribeToken "❓"
-    Boolean emailVerified 
+    Boolean emailVerified
     String bio "❓"
     Bytes avatar "❓"
     String avatarMimeType "❓"
     DateTime avatarUpdatedAt "❓"
-    ProfileAccess profileAccess 
-    ReviewVisibility defaultReviewVisibility 
-    ListVisibility defaultListVisibility 
-    Role role 
-    Domain enabledDomains 
-    String mobileNavShortcuts 
-    String locale 
+    ProfileAccess profileAccess
+    ReviewVisibility defaultReviewVisibility
+    ListVisibility defaultListVisibility
+    Role role
+    Domain enabledDomains
+    String mobileNavShortcuts
+    String locale
     String calendarToken "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     DateTime onboardedAt "❓"
     DateTime acceptedTermsAt "❓"
     String acceptedTermsVersion "❓"
@@ -422,483 +422,483 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime lastActiveAt "❓"
     DateTime inactivityWarningSentAt "❓"
     }
-  
+
 
   "VisibilitySetting" {
     String id "🗝️"
-    Domain domain 
-    VisibilityFacet facet 
-    VisibilityAudience audience 
+    Domain domain
+    VisibilityFacet facet
+    VisibilityAudience audience
     }
-  
+
 
   "Follow" {
     String id "🗝️"
-    FollowStatus status 
-    DateTime createdAt 
-    DateTime updatedAt 
+    FollowStatus status
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "Block" {
     String id "🗝️"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "Review" {
     String id "🗝️"
-    ReviewTargetType targetType 
-    String targetId 
-    Float rating 
+    ReviewTargetType targetType
+    String targetId
+    Float rating
     String text "❓"
-    ReviewVisibility visibility 
-    DateTime createdAt 
-    DateTime updatedAt 
+    ReviewVisibility visibility
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "ReviewVote" {
     String id "🗝️"
-    ReviewVoteValue value 
-    DateTime createdAt 
+    ReviewVoteValue value
+    DateTime createdAt
     }
-  
+
 
   "ReviewRevision" {
     String id "🗝️"
-    Float rating 
+    Float rating
     String text "❓"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "Comment" {
     String id "🗝️"
-    CommentTargetType targetType 
-    String targetId 
+    CommentTargetType targetType
+    String targetId
     String text "❓"
-    Boolean spoilerTag 
-    Boolean edited 
+    Boolean spoilerTag
+    Boolean edited
     DateTime deletedAt "❓"
-    Boolean deletedByAdmin 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Boolean deletedByAdmin
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "CommentReaction" {
     String id "🗝️"
-    CommentEmote emote 
-    DateTime createdAt 
+    CommentEmote emote
+    DateTime createdAt
     }
-  
+
 
   "Report" {
     String id "🗝️"
-    ReportTargetType targetType 
-    String targetId 
+    ReportTargetType targetType
+    String targetId
     ReportCategory category "❓"
     ReportMotif motif "❓"
     String reason "❓"
-    ReportStatus status 
-    DateTime createdAt 
+    ReportStatus status
+    DateTime createdAt
     DateTime resolvedAt "❓"
     }
-  
+
 
   "ModerationDecision" {
     String id "🗝️"
-    ModerationMeasure measure 
-    ReportTargetType targetType 
-    String targetId 
-    String subjectEmail 
-    String subjectUsername 
-    ModerationLegalBasis legalBasis 
+    ModerationMeasure measure
+    ReportTargetType targetType
+    String targetId
+    String subjectEmail
+    String subjectUsername
+    ModerationLegalBasis legalBasis
     ReportCategory reasonCategory "❓"
     ReportMotif reasonMotif "❓"
-    String reasonText 
-    String tosClause 
+    String reasonText
+    String tosClause
     String contentSnapshot "❓"
-    Boolean automated 
-    DateTime decidedAt 
+    Boolean automated
+    DateTime decidedAt
     }
-  
+
 
   "List" {
     String id "🗝️"
-    String title 
+    String title
     String description "❓"
-    ListKind kind 
-    ListVisibility visibility 
-    DateTime createdAt 
-    DateTime updatedAt 
+    ListKind kind
+    ListVisibility visibility
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "ListMember" {
     String id "🗝️"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "ListItem" {
     String id "🗝️"
-    ReviewTargetType targetType 
-    String targetId 
-    Int position 
-    DateTime addedAt 
+    ReviewTargetType targetType
+    String targetId
+    Int position
+    DateTime addedAt
     }
-  
+
 
   "PushSubscription" {
     String id "🗝️"
-    String endpoint 
-    String p256dh 
-    String auth 
+    String endpoint
+    String p256dh
+    String auth
     String userAgent "❓"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "Notification" {
     String id "🗝️"
-    String type 
-    String title 
+    String type
+    String title
     String body "❓"
     String url "❓"
     String dedupeKey "❓"
-    Json data 
-    DateTime createdAt 
+    Json data
+    DateTime createdAt
     DateTime emailDigestedAt "❓"
     DateTime pushDigestedAt "❓"
     }
-  
+
 
   "ActivityEvent" {
     String id "🗝️"
-    String type 
-    String domain 
-    String targetType 
-    String targetId 
-    String level 
-    Boolean homeFeed 
-    String title 
+    String type
+    String domain
+    String targetType
+    String targetId
+    String level
+    Boolean homeFeed
+    String title
     String imageUrl "❓"
     String href "❓"
-    Json data 
-    DateTime createdAt 
+    Json data
+    DateTime createdAt
     }
-  
+
 
   "JobRun" {
     String id "🗝️"
-    String jobKey 
-    DateTime startedAt 
-    DateTime finishedAt 
-    String status 
+    String jobKey
+    DateTime startedAt
+    DateTime finishedAt
+    String status
     String summary "❓"
     String error "❓"
     }
-  
+
 
   "RefreshToken" {
     String id "🗝️"
-    String tokenHash 
-    String jti 
+    String tokenHash
+    String jti
     String userAgent "❓"
-    DateTime expiresAt 
-    DateTime lastUsedAt 
-    DateTime createdAt 
+    DateTime expiresAt
+    DateTime lastUsedAt
+    DateTime createdAt
     }
-  
+
 
   "UserDevice" {
     String id "🗝️"
-    String deviceKey 
+    String deviceKey
     String userAgent "❓"
-    DateTime firstSeenAt 
-    DateTime lastSeenAt 
+    DateTime firstSeenAt
+    DateTime lastSeenAt
     }
-  
+
 
   "UserToken" {
     String id "🗝️"
-    UserTokenType type 
-    String tokenHash 
-    DateTime expiresAt 
-    DateTime createdAt 
+    UserTokenType type
+    String tokenHash
+    DateTime expiresAt
+    DateTime createdAt
     }
-  
+
 
   "SecurityEvent" {
     String id "🗝️"
-    SecurityEventType type 
-    String identifier 
+    SecurityEventType type
+    String identifier
     String detail "❓"
     String userAgent "❓"
-    DateTime createdAt 
+    DateTime createdAt
     }
-  
+
 
   "ImportRun" {
     String id "🗝️"
-    String identifier 
-    String sourceId 
+    String identifier
+    String sourceId
     Domain domain "❓"
-    String status 
-    Int itemCount 
-    Boolean overwrite 
+    String status
+    Int itemCount
+    Boolean overwrite
     String summary "❓"
     String error "❓"
-    DateTime startedAt 
-    DateTime finishedAt 
+    DateTime startedAt
+    DateTime finishedAt
     }
-  
+
 
   "BackupFile" {
     String id "🗝️"
-    String filename 
-    Int sizeBytes 
-    DateTime createdAt 
+    String filename
+    Int sizeBytes
+    DateTime createdAt
     }
-  
+
 
   "NewsletterSend" {
     String id "🗝️"
-    String quackbackChangelogId 
-    String title 
-    Int recipientCount 
-    DateTime sentAt 
+    String quackbackChangelogId
+    String title
+    Int recipientCount
+    DateTime sentAt
     }
-  
+
 
   "ApiCallCounter" {
     String id "🗝️"
-    String provider 
-    DateTime day 
-    Int count 
+    String provider
+    DateTime day
+    Int count
     }
-  
+
 
   "EmailChangeRequest" {
     String id "🗝️"
-    String newEmail 
-    String codeHash 
-    Int attempts 
-    DateTime expiresAt 
-    DateTime createdAt 
+    String newEmail
+    String codeHash
+    Int attempts
+    DateTime expiresAt
+    DateTime createdAt
     }
-  
+
 
   "MediaItem" {
     String id "🗝️"
-    MediaType type 
-    CatalogSource canonicalSource 
-    String title 
+    MediaType type
+    CatalogSource canonicalSource
+    String title
     String posterUrl "❓"
     String backdropUrl "❓"
     String overview "❓"
     DateTime releaseDate "❓"
     String status "❓"
-    String genres 
+    String genres
     Int runtimeMin "❓"
-    Boolean isAdult 
-    Json metadata 
-    DateTime lastSyncedAt 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Boolean isAdult
+    Json metadata
+    DateTime lastSyncedAt
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "MediaExternalId" {
     String id "🗝️"
-    ExternalSource source 
-    String externalId 
-    MediaType type 
+    ExternalSource source
+    String externalId
+    MediaType type
     }
-  
+
 
   "Season" {
     String id "🗝️"
-    Int number 
+    Int number
     String title "❓"
     }
-  
+
 
   "Episode" {
     String id "🗝️"
-    Int number 
+    Int number
     String title "❓"
     DateTime airDate "❓"
     }
-  
+
 
   "LibraryEntry" {
     String id "🗝️"
-    EntryStatus status 
+    EntryStatus status
     String notes "❓"
-    Boolean favorite 
+    Boolean favorite
     DateTime startedAt "❓"
     DateTime finishedAt "❓"
-    MediaOwnershipStatus ownershipStatus 
+    MediaOwnershipStatus ownershipStatus
     String ownershipSource "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "MovieReplay" {
     String id "🗝️"
-    DateTime finishedAt 
+    DateTime finishedAt
     }
-  
+
 
   "EpisodeWatch" {
     String id "🗝️"
-    DateTime watchedAt 
+    DateTime watchedAt
     }
-  
+
 
   "GameItem" {
     String id "🗝️"
-    GameSource canonicalSource 
-    String title 
+    GameSource canonicalSource
+    String title
     String coverUrl "❓"
     String backdropUrl "❓"
     String overview "❓"
     DateTime releaseDate "❓"
-    String genres 
-    String platforms 
-    Boolean isAdult 
-    Json metadata 
-    DateTime lastSyncedAt 
-    DateTime createdAt 
-    DateTime updatedAt 
+    String genres
+    String platforms
+    Boolean isAdult
+    Json metadata
+    DateTime lastSyncedAt
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "GameExternalId" {
     String id "🗝️"
-    GameSource source 
-    String externalId 
+    GameSource source
+    String externalId
     }
-  
+
 
   "GameEntry" {
     String id "🗝️"
-    GameStatus status 
+    GameStatus status
     String notes "❓"
-    Boolean favorite 
-    Int playtimeMinutes 
+    Boolean favorite
+    Int playtimeMinutes
     DateTime startedAt "❓"
     DateTime finishedAt "❓"
-    GameOwnershipStatus ownershipStatus 
+    GameOwnershipStatus ownershipStatus
     String ownershipSource "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "GameReplay" {
     String id "🗝️"
-    DateTime finishedAt 
+    DateTime finishedAt
     }
-  
+
 
   "BookItem" {
     String id "🗝️"
-    BookSource canonicalSource 
-    String title 
-    String authors 
+    BookSource canonicalSource
+    String title
+    String authors
     String coverUrl "❓"
     String overview "❓"
     DateTime releaseDate "❓"
-    String genres 
+    String genres
     Int pageCount "❓"
-    Boolean isAdult 
-    Json metadata 
-    DateTime lastSyncedAt 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Boolean isAdult
+    Json metadata
+    DateTime lastSyncedAt
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "BookExternalId" {
     String id "🗝️"
-    BookSource source 
-    String externalId 
+    BookSource source
+    String externalId
     }
-  
+
 
   "BookEntry" {
     String id "🗝️"
-    BookStatus status 
+    BookStatus status
     String notes "❓"
-    Boolean favorite 
-    Int currentPage 
+    Boolean favorite
+    Int currentPage
     DateTime startedAt "❓"
     DateTime finishedAt "❓"
-    BookOwnershipStatus ownershipStatus 
+    BookOwnershipStatus ownershipStatus
     String ownershipSource "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "BookReplay" {
     String id "🗝️"
-    DateTime finishedAt 
+    DateTime finishedAt
     }
-  
+
 
   "ReadingGoal" {
     String id "🗝️"
-    Int year 
-    Int target 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Int year
+    Int target
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "MusicItem" {
     String id "🗝️"
-    MusicSource canonicalSource 
-    String title 
-    String artists 
+    MusicSource canonicalSource
+    String title
+    String artists
     String coverUrl "❓"
     DateTime releaseDate "❓"
-    String genres 
+    String genres
     String albumType "❓"
     Int trackCount "❓"
     Int durationMin "❓"
-    Json metadata 
-    DateTime lastSyncedAt 
-    DateTime createdAt 
-    DateTime updatedAt 
+    Json metadata
+    DateTime lastSyncedAt
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
 
   "MusicExternalId" {
     String id "🗝️"
-    MusicSource source 
-    String externalId 
+    MusicSource source
+    String externalId
     }
-  
+
 
   "MusicEntry" {
     String id "🗝️"
-    MusicStatus status 
+    MusicStatus status
     String notes "❓"
-    Boolean favorite 
+    Boolean favorite
     DateTime startedAt "❓"
     DateTime finishedAt "❓"
-    MusicOwnershipStatus ownershipStatus 
+    MusicOwnershipStatus ownershipStatus
     String ownershipSource "❓"
-    DateTime createdAt 
-    DateTime updatedAt 
+    DateTime createdAt
+    DateTime updatedAt
     }
-  
+
     "UserEntitlement" |o--|| "User" : "user"
     "UserEntitlement" |o--|| "Plan" : "enum:plan"
     "UserEntitlement" |o--|o "EntitlementSource" : "enum:source"

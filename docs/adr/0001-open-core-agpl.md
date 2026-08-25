@@ -97,6 +97,7 @@ chez lui ; ce n'est pas une faille à corriger, c'est une conséquence
 structurelle de l'open source, quel que soit le dépôt.
 
 Là où le choix du dépôt change vraiment les choses, c'est **avant** l'achat :
+
 - **Monorepo** : tout le monde qui clone Loomkeep pour les features
   gratuites reçoit aussi le code premium — payeur ou pas. Le guard est le
   seul obstacle, public, zéro effort à retirer, aucun achat requis.
@@ -104,6 +105,7 @@ Là où le choix du dépôt change vraiment les choses, c'est **avant** l'achat 
   code premium du tout — rien à patcher, puisqu'il n'a rien.
 
 Dans les deux cas :
+
 - **De la friction** pour la grande majorité des self-hosters, qui n'iront
   pas forker et maintenir un patch à chaque mise à jour juste pour éviter de
   payer.
@@ -176,7 +178,7 @@ restriction que la licence ne permet pas de faire tenir.
 
 - `User.entitlements` (le statut, dans `apps/api/prisma/schema.prisma`) reste
   dans le schéma AGPL principal quoi qu'il arrive — c'est le code des
-  *features* premium elles-mêmes dont l'emplacement (monorepo vs module
+  _features_ premium elles-mêmes dont l'emplacement (monorepo vs module
   séparé) reste ouvert.
 - Le style de gating (seuil desserré vs. feature complète réservée) se
   décide feature par feature, sans préférence de principe imposée par
