@@ -13,6 +13,7 @@
   import ExportSection from "./components/ExportSection.svelte";
   import HelpFeedbackSection from "./components/HelpFeedbackSection.svelte";
   import ImportSection from "./components/ImportSection.svelte";
+  import MfaSection from "./components/MfaSection.svelte";
   import PrivacySection from "./components/PrivacySection.svelte";
   import ProfileSection from "./components/ProfileSection.svelte";
   import SecuritySection from "./components/SecuritySection.svelte";
@@ -27,6 +28,11 @@
     newBadgeKey?: Parameters<typeof isFeatureNew>[0];
   }[] = [
     { id: "securite", label: m.settings_section_security() },
+    {
+      id: "mfa",
+      label: m.settings_section_mfa(),
+      newBadgeKey: "mfa",
+    },
     { id: "contenu", label: m.settings_section_content() },
     {
       id: "confidentialite",
@@ -144,6 +150,9 @@
       <div bind:this={containerEl} class="min-w-0">
         <div id="securite" data-section-id="securite">
           <SecuritySection />
+        </div>
+        <div id="mfa" data-section-id="mfa">
+          <MfaSection />
         </div>
         <div id="contenu" data-section-id="contenu">
           <ProfileSection />

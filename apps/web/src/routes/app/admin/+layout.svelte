@@ -12,9 +12,29 @@
   $effect(() => {
     if (auth.user && !auth.isAdmin) void goto("/app");
   });
+
+  // LK-C17: an admin with no MFA method active is shown an explainer instead
+  // of the section — not a silent bounce, since they need a clear path to fix
+  // it. Real enforcement is server-side (AdminGuard 403s "MFA_REQUIRED"
+  // regardless); this is just the UX for that state, not the security boundary.
+  const mfaBlocked = $derived(
+    auth.isAdmin && !auth.user?.mfaTotpEnabled && !auth.user?.mfaEmailEnabled,
+  );
 </script>
 
-{#if auth.isAdmin}
+{#if auth.isAdmin && mfaBlocked}
+  <div
+    class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
+    <Icon name="shield" class="text-warning h-10 w-10" />
+    <h1 class="font-display text-xl font-bold">
+      {m.admin_mfa_required_title()}
+    </h1>
+    <p class="text-dim max-w-sm text-sm">{m.admin_mfa_required_desc()}</p>
+    <a href="/app/settings#mfa" class="btn btn-primary">
+      {m.admin_mfa_required_cta()}
+    </a>
+  </div>
+{:else if auth.isAdmin}
   {@render children()}
 
   <a

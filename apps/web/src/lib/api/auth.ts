@@ -10,6 +10,8 @@ import type {
   Domain,
   EntitlementDto,
   LoginRequestDto,
+  LoginResponseDto,
+  MfaVerifyRequestDto,
   RegisterRequestDto,
   SessionDto,
   UpdateUsernameRequestDto,
@@ -114,18 +116,39 @@ export function unsubscribeNewsletter(token: string): Promise<void> {
   });
 }
 
-export async function login(body: LoginRequestDto): Promise<void> {
+/** Returns the MFA challenge unresolved when the account requires a second factor. */
+export async function login(body: LoginRequestDto): Promise<LoginResponseDto> {
+  const result = await request<LoginResponseDto>("/auth/login", {
+    method: "POST",
+    body,
+    withAuth: false,
+  });
+
+  if (!result.mfaRequired) {
+    auth.setTokens(result.tokens);
+    auth.user = result.user;
+    await loadEntitlement();
+  }
+
+  return result;
+}
+
+export async function verifyMfaLogin(body: MfaVerifyRequestDto): Promise<void> {
   const result = await request<{ user: UserDto; tokens: AuthTokensDto }>(
-    "/auth/login",
-    {
-      method: "POST",
-      body,
-      withAuth: false,
-    },
+    "/auth/mfa/verify",
+    { method: "POST", body, withAuth: false },
   );
   auth.setTokens(result.tokens);
   auth.user = result.user;
   await loadEntitlement();
+}
+
+export function resendMfaEmailCode(challengeId: string): Promise<void> {
+  return request("/auth/mfa/resend-email-code", {
+    method: "POST",
+    body: { challengeId },
+    withAuth: false,
+  });
 }
 
 export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {

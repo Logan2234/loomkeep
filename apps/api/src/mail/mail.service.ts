@@ -153,6 +153,11 @@ export class MailService {
       fields: [{ key: "code", label: "Code", default: "482913" }],
       build: (v) => this.buildEmailChangeCode(v.code),
     },
+    mfaEmailCode: {
+      label: "Code MFA (connexion)",
+      fields: [{ key: "code", label: "Code", default: "482913" }],
+      build: (v) => this.buildMfaEmailCode(v.code),
+    },
     newsletter: {
       label: "Newsletter (nouveautés)",
       fields: [
@@ -399,6 +404,10 @@ export class MailService {
     await this.send({ to, ...this.buildEmailChangeCode(code) });
   }
 
+  async sendMfaEmailCode(to: string, code: string): Promise<void> {
+    await this.send({ to, ...this.buildMfaEmailCode(code) });
+  }
+
   async sendWelcome(to: string, displayName: string): Promise<void> {
     await this.send({ to, ...this.buildWelcome(displayName) });
   }
@@ -638,6 +647,19 @@ export class MailService {
         `<p>Voici ton code de confirmation :</p>
          <p style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR_ACCENT};text-align:center;margin:24px 0;">${code}</p>
          <p style="color:${COLOR_MUTED};font-size:13px;">Ce code expire dans 15 minutes. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>`,
+      ),
+    };
+  }
+
+  private buildMfaEmailCode(code: string): TemplateBody {
+    return {
+      subject: "Ton code de connexion Loomkeep",
+      text: `Voici ton code de connexion : ${code}\n\nCe code expire dans 10 minutes. Si tu n'es pas à l'origine de cette tentative de connexion, ignore cet email et vérifie ton mot de passe.`,
+      html: this.wrapEmail(
+        "Ton code de connexion",
+        `<p>Voici ton code de connexion :</p>
+         <p style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR_ACCENT};text-align:center;margin:24px 0;">${code}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">Ce code expire dans 10 minutes. Si tu n'es pas à l'origine de cette tentative de connexion, ignore cet email et vérifie ton mot de passe.</p>`,
       ),
     };
   }

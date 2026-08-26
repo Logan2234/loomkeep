@@ -525,10 +525,21 @@ model User {
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt    DateTime?
 
+  // --- MFA (LK-C17) ---
+  // Two independently-toggleable methods; admin accounts with neither active
+  // are blocked from /admin by AdminGuard. mfaTotpSecretEnc is cleared (not
+  // just flagged off) when TOTP is disabled, so re-enabling always starts
+  // from a fresh QR scan rather than silently reviving a stale secret.
+  mfaTotpEnabled             Boolean          @default(false)
+  mfaTotpSecretEnc           String?
+  mfaEmailEnabled            Boolean          @default(false)
+
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
   refreshTokens              RefreshToken[]
   devices                    UserDevice[]
+  mfaRecoveryCodes           MfaRecoveryCode[]
+  mfaLoginChallenges         MfaLoginChallenge[]
   notifications              Notification[]
   pushSubscriptions          PushSubscription[]
   gameEntries                GameEntry[]
@@ -1160,6 +1171,44 @@ model EmailChangeRequest {
   attempts  Int      @default(0)
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// One row per recovery code (bcrypt-hashed, BCRYPT_ROUNDS), single-use —
+// consumption deletes the row rather than flagging it. Deliberately NOT
+// @unique on codeHash: unlike EmailChangeRequest.codeHash (SHA-256 of a
+// high-entropy token, safe to look up by hash), bcrypt embeds a random salt,
+// so verification iterates a user's rows and bcrypt.compare against each.
+model MfaRecoveryCode {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Short-lived record created after a password check succeeds for an account
+// with MFA enabled, before a session is opened. emailCodeHash/expiresAt are
+// only set when the email method is allowed for this login (mirrors
+// EmailChangeRequest's SHA-256 code-hash convention, not bcrypt — this is a
+// short-TTL numeric code, not a human-chosen secret). attempts is capped the
+// same way as EmailChangeRequest.attempts (see MAX_MFA_CHALLENGE_ATTEMPTS).
+model MfaLoginChallenge {
+  id                 String   @id @default(cuid())
+  userId             String
+  totpAllowed        Boolean  @default(false)
+  emailAllowed       Boolean  @default(false)
+  emailCodeHash      String?
+  emailCodeExpiresAt DateTime?
+  attempts           Int      @default(0)
+  expiresAt          DateTime
+  createdAt          DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
