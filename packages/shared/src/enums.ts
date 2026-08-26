@@ -96,8 +96,6 @@ export const NotificationType = {
   LIST_MEMBER_ADDED: "LIST_MEMBER_ADDED",
   /** A moderation decision (content removal) was taken against you — see ModerationDecision. */
   MODERATION_ACTION: "MODERATION_ACTION",
-  /** DSA art. 16(4): acknowledges receipt of a report you filed. */
-  REPORT_ACKNOWLEDGED: "REPORT_ACKNOWLEDGED",
   /** DSA art. 16(5): a report you filed has been resolved or dismissed. */
   REPORT_RESOLVED: "REPORT_RESOLVED",
 } as const;

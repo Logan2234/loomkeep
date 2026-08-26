@@ -49,9 +49,10 @@ export class ReportService {
    * belongs to it — REPORT_CATEGORY_MOTIFS is the single source of truth for
    * that pairing, shared with the picker UI.
    *
-   * DSA art. 16(4): acknowledges receipt to the reporter (email + in-app) —
-   * see notifyReporterOfResolution for the matching art. 16(5) notice sent
-   * once the report is resolved.
+   * DSA art. 16(4)'s receipt confirmation is the caller's own success toast
+   * (e.g. CommentThread.svelte) — synchronous with submission, nothing "without
+   * undue delay" could beat that. See notifyReporterOfResolution for the
+   * art. 16(5) notice sent once the report is resolved.
    */
   async create(
     reporterId: string,
@@ -81,23 +82,6 @@ export class ReportService {
         reason: reason?.trim() || null,
       },
     });
-
-    const reporter = await this.prisma.user.findUnique({
-      where: { id: reporterId },
-      select: { email: true },
-    });
-
-    if (reporter) {
-      await Promise.all([
-        this.mail.sendReportAcknowledged(reporter.email),
-        this.notifications.create({
-          userId: reporterId,
-          type: NotificationType.REPORT_ACKNOWLEDGED,
-          title: "Ton signalement a bien été reçu",
-          body: "Nous allons l'examiner et te tiendrons informé de la décision.",
-        }),
-      ]);
-    }
   }
 
   async pendingCount(): Promise<number> {
@@ -177,11 +161,13 @@ export class ReportService {
   }
 
   /**
-   * DSA art. 16(5): tells the reporter what happened to their report.
-   * Deliberately generic — no detail on what measure (if any) was taken
-   * against the reported content's author, which the sanctioned user gets
-   * separately via ModerationDecisionService. Silently skipped if the
-   * reporter's account was deleted since filing (Report.reporterId SetNull).
+   * DSA art. 16(5): tells the reporter what happened to their report, via the
+   * same channel (in-app) they used to file it — no email, no legal
+   * requirement to use one here. Deliberately generic — no detail on what
+   * measure (if any) was taken against the reported content's author, which
+   * the sanctioned user gets separately via ModerationDecisionService.
+   * Silently skipped if the reporter's account was deleted since filing
+   * (Report.reporterId SetNull).
    */
   private async notifyReporterOfResolution(
     reportId: string,
@@ -193,24 +179,15 @@ export class ReportService {
     });
     if (!report?.reporterId) return;
 
-    const reporter = await this.prisma.user.findUnique({
-      where: { id: report.reporterId },
-      select: { email: true },
+    await this.notifications.create({
+      userId: report.reporterId,
+      type: NotificationType.REPORT_RESOLVED,
+      title: "Ton signalement a été traité",
+      body:
+        status === "RESOLVED"
+          ? "Une mesure a été prise suite à ton signalement."
+          : "Nous n'avons pas donné suite à ton signalement.",
     });
-    if (!reporter) return;
-
-    await Promise.all([
-      this.mail.sendReportResolved(reporter.email, status),
-      this.notifications.create({
-        userId: report.reporterId,
-        type: NotificationType.REPORT_RESOLVED,
-        title: "Ton signalement a été traité",
-        body:
-          status === "RESOLVED"
-            ? "Une mesure a été prise suite à ton signalement."
-            : "Nous n'avons pas donné suite à ton signalement.",
-      }),
-    ]);
   }
 
   /**

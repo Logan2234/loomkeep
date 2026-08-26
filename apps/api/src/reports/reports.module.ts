@@ -9,8 +9,10 @@ import { ReportService } from "./report.service";
 // across features — no controller of its own; CommentsModule wires the filing
 // endpoint, AdminModule wires the moderation queue. MailModule/JobsModule are
 // needed for ReportService's daily digest cron; NotificationModule for the
-// DSA art. 16 reporter notices (ReportService, email + in-app) and the
-// art. 17 statement of reasons (ModerationDecisionService, same channels).
+// DSA art. 16(5) in-app resolution notice (ReportService — art. 16(4)'s
+// receipt confirmation is just the caller's own success toast, no backend
+// notice needed) and the art. 17 statement of reasons
+// (ModerationDecisionService, email + in-app).
 @Module({
   imports: [MailModule, JobsModule, NotificationModule],
   providers: [ReportService, ModerationDecisionService],

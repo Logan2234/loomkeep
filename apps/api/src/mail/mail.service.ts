@@ -273,25 +273,6 @@ export class MailService {
           tosClause: v.tosClause,
         }),
     },
-    reportAcknowledged: {
-      label: "Accusé de réception d'un signalement (DSA art. 16(4))",
-      fields: [],
-      build: () => this.buildReportAcknowledged(),
-    },
-    reportResolved: {
-      label: "Signalement traité (DSA art. 16(5))",
-      fields: [
-        {
-          key: "status",
-          label: "Issue (RESOLVED ou DISMISSED)",
-          default: "RESOLVED",
-        },
-      ],
-      build: (v) =>
-        this.buildReportResolved(
-          v.status === "DISMISSED" ? "DISMISSED" : "RESOLVED",
-        ),
-    },
   };
 
   constructor(private readonly quota: QuotaTrackerService) {
@@ -474,19 +455,6 @@ export class MailService {
     });
   }
 
-  /** DSA art. 16(4): acknowledges receipt of a report right after it's filed. */
-  async sendReportAcknowledged(to: string): Promise<void> {
-    await this.send({ to, ...this.buildReportAcknowledged() });
-  }
-
-  /** DSA art. 16(5): informs the reporter of the outcome once their report is resolved/dismissed. */
-  async sendReportResolved(
-    to: string,
-    status: "RESOLVED" | "DISMISSED",
-  ): Promise<void> {
-    await this.send({ to, ...this.buildReportResolved(status) });
-  }
-
   /** Release newsletter — sent automatically when a changelog entry is published on Quackback (see NewsletterService). */
   async sendNewsletter(
     to: string,
@@ -510,41 +478,6 @@ export class MailService {
         "Signalements en attente",
         `<p><strong>${pendingCount}</strong> ${label} en attente de modération.</p>
          ${this.button(url, "Voir la file de modération")}`,
-      ),
-    };
-  }
-
-  /** DSA art. 16(4): plain receipt, no decision content yet — see buildReportResolved for that. */
-  private buildReportAcknowledged(): TemplateBody {
-    return {
-      subject: "Ton signalement a bien été reçu",
-      text: `Nous avons bien reçu ton signalement et allons l'examiner.\n\nTu recevras un email dès qu'une décision aura été prise.`,
-      html: this.wrapEmail(
-        "Signalement reçu",
-        `<p>Nous avons bien reçu ton signalement et allons l'examiner.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Tu recevras un email dès qu'une décision aura été prise.</p>`,
-      ),
-    };
-  }
-
-  /**
-   * DSA art. 16(5): informs the reporter of the outcome. Deliberately generic
-   * (no detail on what measure, if any, was taken against the reported
-   * content's author) — that detail is covered separately by
-   * buildModerationDecision, sent to the sanctioned user, not the reporter.
-   */
-  private buildReportResolved(status: "RESOLVED" | "DISMISSED"): TemplateBody {
-    const outcome =
-      status === "RESOLVED"
-        ? "Après examen, une mesure a été prise suite à ton signalement."
-        : "Après examen, nous n'avons pas donné suite à ton signalement.";
-    return {
-      subject: "Ton signalement a été traité",
-      text: `${outcome}\n\nSi tu souhaites contester cette décision, écris-nous à contact@loomkeep.app.`,
-      html: this.wrapEmail(
-        "Signalement traité",
-        `<p>${outcome}</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu souhaites contester cette décision, écris-nous à <a href="mailto:contact@loomkeep.app">contact@loomkeep.app</a>.</p>`,
       ),
     };
   }
