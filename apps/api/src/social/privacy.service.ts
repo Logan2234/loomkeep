@@ -1,5 +1,3 @@
-import { Injectable } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
 import {
   type GhostSwitchImpactDto,
   ProfileAccess,
@@ -7,6 +5,8 @@ import {
   type VisibilitySettingItemDto,
   type VisibilitySettingsDto,
 } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { SOCIAL_DOMAINS, SOCIAL_FACETS } from "./social.constants";
 import { VisibilityService } from "./visibility.service";

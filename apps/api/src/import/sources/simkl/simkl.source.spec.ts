@@ -1,8 +1,8 @@
-import { ConfigService } from "@nestjs/config";
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
-import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
+import { ConfigService } from "@nestjs/config";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ImportJobService } from "../../import-job.service";
 import { SimklImportSource } from "./simkl.source";

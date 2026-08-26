@@ -7,9 +7,9 @@ import type {
   VideoStatsDto,
   VideoTemporalDto,
 } from "@loomkeep/shared";
-import type { DomainGateService } from "../users/domain-gate.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
+import type { DomainGateService } from "../users/domain-gate.service";
 import { StatsService } from "./stats.service";
 
 // Only the redaction (premium gating) logic is under test here — the rest

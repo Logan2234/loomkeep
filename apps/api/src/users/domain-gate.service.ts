@@ -1,5 +1,5 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
 import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";

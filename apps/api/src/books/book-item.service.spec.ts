@@ -1,7 +1,7 @@
 import type { PrismaService } from "../prisma/prisma.service";
 import { BookItemService } from "./book-item.service";
-import type { OpenLibraryProvider } from "./providers/open-library.provider";
 import type { ProviderBookDetails } from "./providers/book-provider.types";
+import type { OpenLibraryProvider } from "./providers/open-library.provider";
 
 const details: ProviderBookDetails = {
   summary: {

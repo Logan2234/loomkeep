@@ -1,3 +1,11 @@
+import type { PagedResult } from "@loomkeep/shared";
+import {
+  Domain,
+  MusicDetailDto,
+  MusicEntryDto,
+  MusicSearchResponseDto,
+  MusicSource,
+} from "@loomkeep/shared";
 import {
   BadRequestException,
   Body,
@@ -11,16 +19,8 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import {
-  Domain,
-  MusicDetailDto,
-  MusicEntryDto,
-  MusicSearchResponseDto,
-  MusicSource,
-} from "@loomkeep/shared";
-import type { PagedResult } from "@loomkeep/shared";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";

@@ -1,6 +1,6 @@
+import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "./../src/app.module";

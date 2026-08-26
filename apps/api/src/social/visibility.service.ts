@@ -1,4 +1,3 @@
-import { Injectable } from "@nestjs/common";
 import type {
   Domain,
   ProfileAccess,
@@ -6,6 +5,7 @@ import type {
   VisibilityAudience,
   VisibilityFacet,
 } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   computeIsFriend,

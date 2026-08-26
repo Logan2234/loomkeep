@@ -10,9 +10,10 @@ import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { BooksModule } from "./books/books.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { CommentsModule } from "./comments/comments.module";
-import { CommonModule } from "./common/common.module";
-import { RuntimeConfigModule } from "./config/config.module";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
+import { CommonModule } from "./common/common.module";
+import { loggerOptions } from "./common/logger.config";
+import { RuntimeConfigModule } from "./config/config.module";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
 import { HealthModule } from "./health/health.module";
@@ -28,7 +29,6 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
 import { UsersModule } from "./users/users.module";
-import { loggerOptions } from "./common/logger.config";
 
 @Module({
   imports: [

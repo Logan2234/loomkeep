@@ -1,8 +1,8 @@
-import { BadRequestException, Controller, Get, Param } from "@nestjs/common";
-import { MediaType } from "@loomkeep/shared";
 import type { MediaDetailDto } from "@loomkeep/shared";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { MediaType } from "@loomkeep/shared";
+import { BadRequestException, Controller, Get, Param } from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { LibraryService } from "./library.service";
 
 /**

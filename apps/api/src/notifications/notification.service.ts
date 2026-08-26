@@ -1,6 +1,3 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
-import { type Notification, Prisma } from "@prisma/client";
 import {
   DigestCadence,
   type MediaType,
@@ -8,6 +5,9 @@ import {
   type NotificationFeedDto,
   NotificationType,
 } from "@loomkeep/shared";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { type Notification, Prisma } from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";

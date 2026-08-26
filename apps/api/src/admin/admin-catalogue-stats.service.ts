@@ -1,4 +1,3 @@
-import { Injectable } from "@nestjs/common";
 import type {
   AdminCacheDomainRowDto,
   AdminCatalogueSectionDto,
@@ -6,6 +5,7 @@ import type {
   StatsDomain,
 } from "@loomkeep/shared";
 import { Domain } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   percent,

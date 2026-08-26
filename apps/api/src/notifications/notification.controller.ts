@@ -1,3 +1,4 @@
+import type { NotificationFeedDto, PushPublicKeyDto } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -10,7 +11,6 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
-import type { NotificationFeedDto, PushPublicKeyDto } from "@loomkeep/shared";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";

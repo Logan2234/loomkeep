@@ -1,17 +1,3 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import type {
-  ExternalSource as DbExternalSource,
-  LibraryEntry,
-  MediaExternalId,
-  MediaItem,
-  MovieReplay,
-  Prisma,
-} from "@prisma/client";
 import type {
   CalendarEntryDto,
   CatalogSource,
@@ -27,6 +13,20 @@ import type {
   ProgressDto,
 } from "@loomkeep/shared";
 import { ActivityType, isDormant, ReviewTargetType } from "@loomkeep/shared";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import type {
+  ExternalSource as DbExternalSource,
+  LibraryEntry,
+  MediaExternalId,
+  MediaItem,
+  MovieReplay,
+  Prisma,
+} from "@prisma/client";
 import { MediaItemService } from "../catalog/media-item.service";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -37,9 +37,9 @@ import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
-import { buildCalendarIcs } from "./ics.util";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
+import { buildCalendarIcs } from "./ics.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
 // Reused include: entries always need the media + its external IDs (sourceId),

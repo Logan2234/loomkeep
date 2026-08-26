@@ -1,3 +1,4 @@
+import type { LoginResponseDto } from "@loomkeep/shared";
 import {
   BadRequestException,
   ConflictException,
@@ -19,7 +20,6 @@ import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
 import type { MfaService } from "./mfa.service";
 import type { TurnstileService } from "./turnstile.service";
-import type { LoginResponseDto } from "@loomkeep/shared";
 
 /** Login tests here all use non-MFA accounts, so the result is always the AuthResult branch. */
 function asAuthResult(result: LoginResponseDto): AuthResult {

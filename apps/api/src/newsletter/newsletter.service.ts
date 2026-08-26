@@ -1,8 +1,8 @@
-import { randomBytes } from "node:crypto";
-import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import type { NewsletterSend } from "@prisma/client";
 import type { NewsletterSendDto } from "@loomkeep/shared";
+import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import type { NewsletterSend } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { randomBytes } from "node:crypto";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 

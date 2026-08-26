@@ -1,10 +1,10 @@
-import type { NotificationDto } from "@loomkeep/shared";
 import {
   getNotifications,
   markNotificationRead,
   markNotificationsRead,
   scanNotifications,
 } from "$lib/api/client";
+import type { NotificationDto } from "@loomkeep/shared";
 
 /** In-app notification feed + unread count, shared across the app (rune store). */
 class Notifications {

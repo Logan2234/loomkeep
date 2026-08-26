@@ -1,15 +1,3 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import type {
-  MusicEntry,
-  MusicExternalId,
-  MusicItem,
-  MusicStatus as DbMusicStatus,
-  Prisma,
-} from "@prisma/client";
 import type {
   MusicDetailDto,
   MusicEntryDto,
@@ -18,6 +6,18 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import type {
+  MusicStatus as DbMusicStatus,
+  MusicEntry,
+  MusicExternalId,
+  MusicItem,
+  Prisma,
+} from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";

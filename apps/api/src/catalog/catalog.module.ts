@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
-import { UsersModule } from "../users/users.module";
 import { JobsModule } from "../jobs/jobs.module";
+import { UsersModule } from "../users/users.module";
 import { CatalogController } from "./catalog.controller";
 import { MediaItemService } from "./media-item.service";
 import { OmdbService } from "./omdb.service";

@@ -1,16 +1,16 @@
-import { Injectable } from "@nestjs/common";
-import type { BookItem } from "@prisma/client";
 import type {
   BookDetailsDto,
   BookSource,
   BookSummaryDto,
 } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
+import type { BookItem } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { OpenLibraryProvider } from "./providers/open-library.provider";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
 } from "./providers/book-provider.types";
+import { OpenLibraryProvider } from "./providers/open-library.provider";
 
 // A cached book referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;

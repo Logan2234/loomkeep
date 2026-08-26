@@ -1,9 +1,9 @@
+import type { MediaItemService } from "../catalog/media-item.service";
+import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
 import type { AgeGateService } from "../users/age-gate.service";
-import type { MediaItemService } from "../catalog/media-item.service";
-import type { EntitlementService } from "../entitlements/entitlement.service";
 import { LibraryService } from "./library.service";
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {

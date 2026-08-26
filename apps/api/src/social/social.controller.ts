@@ -1,3 +1,11 @@
+import type {
+  ActivityEventDto,
+  ActivityFeedDto,
+  FollowRequestDto,
+  RelationshipDto,
+  SocialProfileDto,
+  UserSummaryDto,
+} from "@loomkeep/shared";
 import {
   Controller,
   Delete,
@@ -7,14 +15,6 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
-import type {
-  ActivityEventDto,
-  ActivityFeedDto,
-  FollowRequestDto,
-  RelationshipDto,
-  SocialProfileDto,
-  UserSummaryDto,
-} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

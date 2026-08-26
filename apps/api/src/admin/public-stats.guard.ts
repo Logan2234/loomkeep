@@ -1,7 +1,7 @@
 import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { timingSafeEqual } from "node:crypto";
 import type { FastifyRequest } from "fastify";
+import { timingSafeEqual } from "node:crypto";
 
 /**
  * Shared-secret guard for the public-stats endpoint the Homepage dashboard

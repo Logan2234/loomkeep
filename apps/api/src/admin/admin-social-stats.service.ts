@@ -1,5 +1,3 @@
-import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import type {
   AdminSocialActivityTrendDto,
   AdminSocialSectionDto,
@@ -8,6 +6,8 @@ import type {
   TrendPeriod,
 } from "@loomkeep/shared";
 import { FollowStatus, ReportStatus, ReviewVoteValue } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";

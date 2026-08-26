@@ -1,6 +1,6 @@
+import { ModerationLegalBasis, ModerationMeasure } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
-import { ModerationLegalBasis, ModerationMeasure } from "@loomkeep/shared";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 
 interface SendArgs {

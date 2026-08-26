@@ -1,3 +1,4 @@
+import type { SessionDto } from "@loomkeep/shared";
 import {
   BadRequestException,
   Controller,
@@ -8,10 +9,9 @@ import {
   Param,
   Query,
 } from "@nestjs/common";
-import type { SessionDto } from "@loomkeep/shared";
 import { AuthService } from "./auth.service";
-import { CurrentUser } from "./decorators/current-user.decorator";
 import type { JwtPayload } from "./decorators/current-user.decorator";
+import { CurrentUser } from "./decorators/current-user.decorator";
 
 /**
  * Manage the user's signed-in devices. Lives outside the (@Public) AuthController

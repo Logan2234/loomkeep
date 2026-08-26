@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
+import { BookItemService } from "../../../books/book-item.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
-import { BookItemService } from "../../../books/book-item.service";
 import { BookCsvSource } from "./book-csv.source";
 import { parseGoodreadsCsv, type ParsedGoodreadsRow } from "./goodreads-parse";
 

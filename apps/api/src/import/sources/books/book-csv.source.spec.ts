@@ -3,9 +3,9 @@ import type {
   ImportPlan,
   ImportPlanItem,
 } from "@loomkeep/shared";
-import type { AgeGateService } from "../../../users/age-gate.service";
 import type { BookItemService } from "../../../books/book-item.service";
 import type { PrismaService } from "../../../prisma/prisma.service";
+import type { AgeGateService } from "../../../users/age-gate.service";
 import { ImportJobService } from "../../import-job.service";
 import { StoryGraphImportSource } from "./storygraph.source";
 

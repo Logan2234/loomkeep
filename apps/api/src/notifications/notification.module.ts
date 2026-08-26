@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { EntitlementModule } from "../entitlements/entitlement.module";
-import { MailModule } from "../mail/mail.module";
 import { JobsModule } from "../jobs/jobs.module";
-import { NotificationController } from "./notification.controller";
+import { MailModule } from "../mail/mail.module";
 import { NotificationDigestService } from "./notification-digest.service";
+import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
 import { PushService } from "./push.service";
 

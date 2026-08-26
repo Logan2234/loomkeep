@@ -1,15 +1,15 @@
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import {
   type FollowRequestDto,
   NotificationType,
   ProfileAccess,
   type RelationshipDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";

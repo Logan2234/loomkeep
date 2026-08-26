@@ -1,3 +1,13 @@
+import type {
+  BookDetailDto,
+  BookEntryDto,
+  BookItemDto,
+  BookReplayDto,
+  BookSource,
+  PagedResult,
+  ReadingGoalDto,
+} from "@loomkeep/shared";
+import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
 import {
   ForbiddenException,
   Injectable,
@@ -11,16 +21,6 @@ import type {
   BookStatus as DbBookStatus,
   Prisma,
 } from "@prisma/client";
-import type {
-  BookDetailDto,
-  BookEntryDto,
-  BookItemDto,
-  BookReplayDto,
-  BookSource,
-  PagedResult,
-  ReadingGoalDto,
-} from "@loomkeep/shared";
-import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";

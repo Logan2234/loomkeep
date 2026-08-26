@@ -1,4 +1,3 @@
-import { Injectable } from "@nestjs/common";
 import {
   ModerationLegalBasis,
   ModerationMeasure,
@@ -7,6 +6,7 @@ import {
   type ReportMotif,
   type ReportTargetType,
 } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { MailService } from "../mail/mail.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";

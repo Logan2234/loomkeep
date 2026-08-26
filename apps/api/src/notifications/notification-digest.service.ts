@@ -1,6 +1,6 @@
+import { DigestCadence, NotificationType } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { DigestCadence, NotificationType } from "@loomkeep/shared";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";

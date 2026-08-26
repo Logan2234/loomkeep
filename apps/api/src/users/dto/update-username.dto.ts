@@ -1,5 +1,5 @@
-import { IsString, MaxLength, MinLength } from "class-validator";
 import type { UpdateUsernameRequestDto } from "@loomkeep/shared";
+import { IsString, MaxLength, MinLength } from "class-validator";
 
 export class UpdateUsernameDto implements UpdateUsernameRequestDto {
   @IsString()

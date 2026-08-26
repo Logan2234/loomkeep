@@ -1,5 +1,5 @@
-import { IsEmail, IsString, MinLength } from "class-validator";
 import type { ChangeEmailRequestDto } from "@loomkeep/shared";
+import { IsEmail, IsString, MinLength } from "class-validator";
 
 export class ChangeEmailDto implements ChangeEmailRequestDto {
   @IsEmail()

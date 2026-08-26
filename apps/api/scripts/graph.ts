@@ -1,7 +1,7 @@
-import "reflect-metadata";
-import { mkdirSync, writeFileSync } from "node:fs";
 import { NestFactory } from "@nestjs/core";
 import { SpelunkerModule } from "nestjs-spelunker";
+import { mkdirSync, writeFileSync } from "node:fs";
+import "reflect-metadata";
 import { AppModule } from "../src/app.module";
 
 // Dumps the module dependency graph as a Mermaid file (docs/modules.md),

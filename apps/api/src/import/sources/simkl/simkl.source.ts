@@ -4,16 +4,16 @@ import {
   Injectable,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
 import { MediaImportSource } from "../media/media-import.source";
 import { buildImportMovies, buildImportShows } from "./parse-simkl";
-import { simklRedirectUri } from "./simkl-oauth.util";
 import type { SimklAllItemsResponse } from "./simkl-api.types";
+import { simklRedirectUri } from "./simkl-oauth.util";
 
 const SIMKL_API = "https://api.simkl.com";
 

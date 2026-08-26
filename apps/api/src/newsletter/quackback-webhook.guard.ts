@@ -1,7 +1,7 @@
 import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyRequest } from "fastify";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const MAX_CLOCK_SKEW_SECONDS = 300;
 

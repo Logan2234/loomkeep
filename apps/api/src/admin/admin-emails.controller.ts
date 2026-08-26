@@ -1,3 +1,7 @@
+import type {
+  MailTemplateListResponseDto,
+  MailTemplatePreviewDto,
+} from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -10,10 +14,6 @@ import {
   Query,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import type {
-  MailTemplateListResponseDto,
-  MailTemplatePreviewDto,
-} from "@loomkeep/shared";
 import { MailService } from "../mail/mail.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { SendTestEmailDto } from "./dto/send-test-email.dto";

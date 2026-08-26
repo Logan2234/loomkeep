@@ -1,4 +1,3 @@
-import { Injectable } from "@nestjs/common";
 import type {
   AdminAccountsSectionDto,
   AdminNewAccountsTrendDto,
@@ -7,6 +6,7 @@ import type {
   TrendPeriod,
 } from "@loomkeep/shared";
 import { DigestCadence, DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   ageDistributionBuckets,
