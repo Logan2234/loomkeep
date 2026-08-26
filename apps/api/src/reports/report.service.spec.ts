@@ -1,5 +1,6 @@
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ReportService } from "./report.service";
 
@@ -30,12 +31,24 @@ function make(
     bookItem: { findUnique: jest.fn().mockResolvedValue(null) },
     musicItem: { findUnique: jest.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
-  const mail = { sendReportsDigest: jest.fn() } as unknown as MailService;
+  const mail = {
+    sendReportsDigest: jest.fn(),
+    sendReportAcknowledged: jest.fn(),
+    sendReportResolved: jest.fn(),
+  } as unknown as MailService;
   const jobRuns = {
     record: jest.fn((_key, fn) => fn()),
   } as unknown as JobRunService;
+  const notifications = {
+    create: jest.fn(),
+  } as unknown as NotificationService;
 
-  return { svc: new ReportService(prisma, mail, jobRuns), prisma, mail };
+  return {
+    svc: new ReportService(prisma, mail, jobRuns, notifications),
+    prisma,
+    mail,
+    notifications,
+  };
 }
 
 describe("ReportService.create", () => {
@@ -107,6 +120,45 @@ describe("ReportService.create", () => {
     await expect(
       svc.create("reporter1", "COMMENT" as never, "c1", "SPAM" as never),
     ).rejects.toThrow();
+  });
+
+  it("acknowledges receipt to the reporter (email + in-app), DSA art. 16(4)", async () => {
+    const { svc, mail, notifications } = make({
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ email: "reporter@example.com" }),
+      },
+    });
+    await svc.create(
+      "reporter1",
+      "COMMENT" as never,
+      "c1",
+      "SPAM" as never,
+      "SPAM_PROMOTIONAL" as never,
+    );
+    expect(mail.sendReportAcknowledged).toHaveBeenCalledWith(
+      "reporter@example.com",
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "reporter1",
+        type: "REPORT_ACKNOWLEDGED",
+      }),
+    );
+  });
+
+  it("skips the acknowledgment when the reporter can't be found", async () => {
+    const { svc, mail, notifications } = make();
+    await svc.create(
+      "reporter1",
+      "COMMENT" as never,
+      "c1",
+      "SPAM" as never,
+      "SPAM_PROMOTIONAL" as never,
+    );
+    expect(mail.sendReportAcknowledged).not.toHaveBeenCalled();
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 });
 
@@ -224,6 +276,43 @@ describe("ReportService.resolve", () => {
         }),
       }),
     );
+  });
+
+  it("notifies the reporter of the outcome (email + in-app), DSA art. 16(5)", async () => {
+    const { svc, mail, notifications } = make({
+      report: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ reporterId: "reporter1" }),
+      },
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ email: "reporter@example.com" }),
+      },
+    });
+    await svc.resolve("admin1", "r1", "DISMISSED");
+    expect(mail.sendReportResolved).toHaveBeenCalledWith(
+      "reporter@example.com",
+      "DISMISSED",
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "reporter1",
+        type: "REPORT_RESOLVED",
+      }),
+    );
+  });
+
+  it("skips the reporter notification when the reporter's account is gone", async () => {
+    const { svc, mail, notifications } = make({
+      report: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ reporterId: null }),
+      },
+    });
+    await svc.resolve("admin1", "r1", "RESOLVED");
+    expect(mail.sendReportResolved).not.toHaveBeenCalled();
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 });
 

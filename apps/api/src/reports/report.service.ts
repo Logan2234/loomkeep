@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import {
+  NotificationType,
   REPORT_CATEGORY_MOTIFS,
   type ReportCategory,
   type ReportDto,
@@ -17,6 +18,7 @@ import { resolveWorkHref } from "../common/work-href.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 
@@ -37,6 +39,7 @@ export class ReportService {
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     private readonly jobRuns: JobRunService,
+    private readonly notifications: NotificationService,
   ) {}
 
   /**
@@ -45,6 +48,10 @@ export class ReportService {
    * fall back on); every other category requires a `motif` that actually
    * belongs to it — REPORT_CATEGORY_MOTIFS is the single source of truth for
    * that pairing, shared with the picker UI.
+   *
+   * DSA art. 16(4): acknowledges receipt to the reporter (email + in-app) —
+   * see notifyReporterOfResolution for the matching art. 16(5) notice sent
+   * once the report is resolved.
    */
   async create(
     reporterId: string,
@@ -74,6 +81,23 @@ export class ReportService {
         reason: reason?.trim() || null,
       },
     });
+
+    const reporter = await this.prisma.user.findUnique({
+      where: { id: reporterId },
+      select: { email: true },
+    });
+
+    if (reporter) {
+      await Promise.all([
+        this.mail.sendReportAcknowledged(reporter.email),
+        this.notifications.create({
+          userId: reporterId,
+          type: NotificationType.REPORT_ACKNOWLEDGED,
+          title: "Ton signalement a bien été reçu",
+          body: "Nous allons l'examiner et te tiendrons informé de la décision.",
+        }),
+      ]);
+    }
   }
 
   async pendingCount(): Promise<number> {
@@ -148,6 +172,45 @@ export class ReportService {
       data: { status, resolvedAt: new Date(), resolvedById: adminId },
     });
     if (count === 0) throw new NotFoundException();
+
+    await this.notifyReporterOfResolution(id, status);
+  }
+
+  /**
+   * DSA art. 16(5): tells the reporter what happened to their report.
+   * Deliberately generic — no detail on what measure (if any) was taken
+   * against the reported content's author, which the sanctioned user gets
+   * separately via ModerationDecisionService. Silently skipped if the
+   * reporter's account was deleted since filing (Report.reporterId SetNull).
+   */
+  private async notifyReporterOfResolution(
+    reportId: string,
+    status: "RESOLVED" | "DISMISSED",
+  ): Promise<void> {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId },
+      select: { reporterId: true },
+    });
+    if (!report?.reporterId) return;
+
+    const reporter = await this.prisma.user.findUnique({
+      where: { id: report.reporterId },
+      select: { email: true },
+    });
+    if (!reporter) return;
+
+    await Promise.all([
+      this.mail.sendReportResolved(reporter.email, status),
+      this.notifications.create({
+        userId: report.reporterId,
+        type: NotificationType.REPORT_RESOLVED,
+        title: "Ton signalement a été traité",
+        body:
+          status === "RESOLVED"
+            ? "Une mesure a été prise suite à ton signalement."
+            : "Nous n'avons pas donné suite à ton signalement.",
+      }),
+    ]);
   }
 
   /**
