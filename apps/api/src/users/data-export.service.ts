@@ -427,7 +427,7 @@ export class DataExportService {
       })),
       securityEvents: securityEventRows.map((s) => ({
         type: s.type,
-        identifier: s.identifier,
+        identifier: s.identifier ?? user.email,
         detail: s.detail,
         userAgent: s.userAgent,
         createdAt: s.createdAt.toISOString(),

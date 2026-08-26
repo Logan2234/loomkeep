@@ -34,14 +34,12 @@ describe("AccountDeletionService.deleteAccount", () => {
 
     await service.deleteAccount(
       "user-1",
-      "alice@example.com",
       "Suppression automatique pour inactivité (>36 mois, LK-C06)",
     );
 
     expect(security.record).toHaveBeenCalledWith({
       type: "USER_DELETED",
       userId: "user-1",
-      identifier: "alice@example.com",
       detail: "Suppression automatique pour inactivité (>36 mois, LK-C06)",
       userAgent: undefined,
     });

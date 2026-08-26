@@ -280,15 +280,9 @@ export class ImportJobService {
     job: JobRecord,
     overwrite: boolean,
   ): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
-    });
-
     await this.prisma.importRun.create({
       data: {
         userId,
-        identifier: user?.email ?? "compte inconnu",
         sourceId: job.sourceId,
         domain: this.sourceOrThrow(job.sourceId).searchDomain,
         status: job.status === "failed" ? "FAILURE" : "SUCCESS",

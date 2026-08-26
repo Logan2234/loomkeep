@@ -342,7 +342,6 @@ export class AdminUsersController {
     await this.securityEvents.record({
       type: "USER_DELETED",
       userId: user.id,
-      identifier: user.email,
       detail: "Supprimé depuis le panel admin",
     });
 

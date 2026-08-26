@@ -526,9 +526,11 @@
               suppression ou celle du compte</td
             ></tr>
           <tr
-            ><td>Données de sécurité</td><td
-              >Rotation de volume sur le serveur (~50 Mo/service) ; 30 jours
-              glissants si la supervision est activée</td
+            ><td>Journal de sécurité et d'imports</td><td
+              >Lié au compte tant qu'il existe ; le lien avec l'identité est
+              retiré dès la suppression du compte, plutôt que conservé. Les
+              tentatives de connexion échouées restent journalisées
+              indépendamment, à des fins de prévention des abus</td
             ></tr>
           <tr
             ><td>Logs applicatifs</td><td
@@ -593,6 +595,13 @@
       Certains contenus sociaux peuvent être supprimés ou anonymisés lorsqu'une
       suppression complète est incompatible avec le fonctionnement technique du
       service ou avec les obligations applicables.
+    </p>
+    <p>
+      Le journal de sécurité et d'imports (créations de compte, changements
+      d'identifiants, imports commis) perd son lien avec l'identité du compte
+      dès sa suppression, plutôt que d'être conservé nominativement. Les
+      tentatives de connexion échouées restent journalisées indépendamment du
+      compte visé, à des fins de prévention des abus.
     </p>
     <h2>13. Sécurité</h2>
     <p>

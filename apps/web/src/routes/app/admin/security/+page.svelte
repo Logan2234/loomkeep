@@ -190,7 +190,9 @@
               ]}">
               {TYPE_LABELS[e.type]}
             </span>
-            <span class="text-fg font-semibold">{e.identifier}</span>
+            {#if e.identifier}
+              <span class="text-fg font-semibold">{e.identifier}</span>
+            {/if}
             <span class="text-dim ml-auto text-xs">
               {formatDateTime(e.createdAt)}
             </span>

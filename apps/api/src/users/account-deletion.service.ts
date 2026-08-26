@@ -20,7 +20,6 @@ export class AccountDeletionService {
 
   async deleteAccount(
     userId: string,
-    email: string,
     detail: string,
     userAgent?: string,
   ): Promise<void> {
@@ -29,7 +28,6 @@ export class AccountDeletionService {
     await this.security.record({
       type: "USER_DELETED",
       userId,
-      identifier: email,
       detail,
       userAgent,
     });

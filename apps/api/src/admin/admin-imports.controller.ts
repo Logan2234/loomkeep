@@ -64,6 +64,7 @@ export class AdminImportsController {
 
     const runs = await this.prisma.importRun.findMany({
       where,
+      include: { user: { select: { email: true } } },
       orderBy: { startedAt: "desc" },
       skip: (pageNum - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -74,7 +75,7 @@ export class AdminImportsController {
       runs: runs.map((r) => ({
         id: r.id,
         userId: r.userId,
-        identifier: r.identifier,
+        identifier: r.user?.email ?? null,
         sourceId: r.sourceId,
         status: r.status as JobStatus,
         itemCount: r.itemCount,

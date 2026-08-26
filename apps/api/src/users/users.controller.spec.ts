@@ -634,14 +634,13 @@ describe("UsersController — deleteAccount", () => {
     expect(accountDeletion.deleteAccount).not.toHaveBeenCalled();
   });
 
-  it("delegates to AccountDeletionService with the account's email", async () => {
+  it("delegates to AccountDeletionService", async () => {
     await controller.deleteAccount(jwtPayload(userId), {
       currentPassword: "correct-password",
     });
 
     expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
       userId,
-      "alice@example.com",
       expect.any(String),
       undefined,
     );

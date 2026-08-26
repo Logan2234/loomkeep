@@ -251,7 +251,6 @@ describe("AuthService.register", () => {
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "USER_REGISTERED",
-        identifier: "alice@example.com",
       }),
     );
   });
@@ -391,7 +390,6 @@ describe("AuthService.login", () => {
       expect.objectContaining({
         type: "NEW_DEVICE_LOGIN",
         userId: user.id,
-        identifier: user.email,
       }),
     );
   });
@@ -751,7 +749,6 @@ describe("AuthService.resetPassword", () => {
       expect.objectContaining({
         type: "PASSWORD_RESET",
         userId: "user-1",
-        identifier: user.email,
       }),
     );
   });
