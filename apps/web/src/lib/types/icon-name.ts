@@ -53,4 +53,5 @@ export type IconName =
   | "link"
   | "logout"
   | "sparkles"
-  | "lock";
+  | "lock"
+  | "warning";
