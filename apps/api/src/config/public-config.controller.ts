@@ -26,6 +26,7 @@ export class PublicConfigController {
       socialEnabled: isSocialEnabled(this.config, this.flags),
       registrationEnabled: isRegistrationEnabled(this.config, this.flags),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
+      adminMfaEnforced: this.config.get<string>("NODE_ENV") === "production",
       version,
       // Set at build time (see apps/api/Dockerfile) — "unknown" outside a
       // CI-built image (pnpm dev, or any docker compose run against a

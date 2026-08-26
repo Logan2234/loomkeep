@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   let { children } = $props();
@@ -16,9 +17,15 @@
   // LK-C17: an admin with no MFA method active is shown an explainer instead
   // of the section — not a silent bounce, since they need a clear path to fix
   // it. Real enforcement is server-side (AdminGuard 403s "MFA_REQUIRED"
-  // regardless); this is just the UX for that state, not the security boundary.
+  // regardless); this is just the UX for that state, not the security
+  // boundary. Gated on appConfig.adminMfaEnforced (mirrors the API's own
+  // NODE_ENV check) so this screen never blocks access the API would
+  // actually allow outside production.
   const mfaBlocked = $derived(
-    auth.isAdmin && !auth.user?.mfaTotpEnabled && !auth.user?.mfaEmailEnabled,
+    appConfig.adminMfaEnforced &&
+      auth.isAdmin &&
+      !auth.user?.mfaTotpEnabled &&
+      !auth.user?.mfaEmailEnabled,
   );
 </script>
 

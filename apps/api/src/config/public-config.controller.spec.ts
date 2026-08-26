@@ -36,6 +36,7 @@ describe("PublicConfigController", () => {
       socialEnabled: true,
       registrationEnabled: true,
       erdEnabled: false,
+      adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -48,6 +49,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
+      adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -60,6 +62,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
+      adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -72,6 +75,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: false,
       erdEnabled: false,
+      adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -84,6 +88,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
+      adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -96,6 +101,20 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: true,
+      adminMfaEnforced: false,
+      version: "9.9.9",
+      gitSha: "unknown",
+    });
+  });
+
+  it("reports adminMfaEnforced=true only when NODE_ENV is exactly production (LK-C17)", async () => {
+    delete process.env.GIT_SHA;
+    const { controller } = makeController({ NODE_ENV: "production" });
+    await expect(controller.get()).resolves.toEqual({
+      socialEnabled: false,
+      registrationEnabled: true,
+      erdEnabled: false,
+      adminMfaEnforced: true,
       version: "9.9.9",
       gitSha: "unknown",
     });
@@ -108,6 +127,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
+      adminMfaEnforced: false,
       version: "9.9.9",
       gitSha: "a1b2c3d",
     });
