@@ -1068,13 +1068,16 @@ enum SecurityEventType {
 // One sensitive account action, for the admin "Sécurité" page. userId is
 // nullable + onDelete: SetNull (not Cascade) so the trail survives account
 // deletion — USER_DELETED itself would otherwise vanish the instant it's
-// written. `identifier` is denormalised for the same reason, and also covers
-// LOGIN_FAILED against an unknown email/username (no userId to attach).
+// written. `identifier` is only ever written for LOGIN_FAILED (the string
+// actually typed at a login attempt, independent of any account — see
+// SecurityEventService#record); every other type derives its display email
+// from userId → User.email at read time, so it anonymises itself the moment
+// the account is deleted instead of surviving indefinitely.
 model SecurityEvent {
   id         String            @id @default(cuid())
   type       SecurityEventType
   userId     String?
-  identifier String
+  identifier String?
   detail     String?
   userAgent  String?
   createdAt  DateTime          @default(now())
@@ -1087,12 +1090,13 @@ model SecurityEvent {
 
 // One committed import (tvtime/storygraph/goodreads/steam), for the admin
 // "Imports" audit log. Analyze-only runs write nothing and aren't logged.
-// userId is nullable + onDelete: SetNull and identifier is denormalised —
-// mirrors SecurityEvent, so the trail survives account deletion.
+// userId is nullable + onDelete: SetNull; the display email is always
+// derived from userId → User.email at read time (no denormalised
+// identifier — unlike SecurityEvent, ImportRun has no account-less write
+// path to justify one), so it reads as null once the account is deleted.
 model ImportRun {
   id         String   @id @default(cuid())
   userId     String?
-  identifier String
   sourceId   String
   // Nullable: rows written before this column existed have no domain, and
   // are deliberately left out of the free-import-per-domain check rather

@@ -636,8 +636,8 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
 
   "SecurityEvent" {
     String id "🗝️"
-    SecurityEventType type 
-    String identifier 
+    SecurityEventType type
+    String identifier "❓"
     String detail "❓"
     String userAgent "❓"
     DateTime createdAt 
@@ -646,8 +646,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
 
   "ImportRun" {
     String id "🗝️"
-    String identifier 
-    String sourceId 
+    String sourceId
     Domain domain "❓"
     String status 
     Int itemCount 

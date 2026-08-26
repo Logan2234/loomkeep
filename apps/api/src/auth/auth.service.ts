@@ -118,7 +118,6 @@ export class AuthService {
     await this.security.record({
       type: "USER_REGISTERED",
       userId: user.id,
-      identifier: user.email,
       userAgent,
     });
     // Seed this device so it isn't flagged as "new" on the user's next login.
@@ -363,7 +362,6 @@ export class AuthService {
       await this.security.record({
         type: "NEW_DEVICE_LOGIN",
         userId: promoted.id,
-        identifier: promoted.email,
         detail: ip ? `IP: ${ip}` : undefined,
         userAgent,
       });
@@ -536,7 +534,6 @@ export class AuthService {
     await this.security.record({
       type: "PASSWORD_RESET",
       userId: stored.userId,
-      identifier: stored.user.email,
       userAgent,
     });
   }

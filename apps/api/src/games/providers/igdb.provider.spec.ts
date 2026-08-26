@@ -34,6 +34,12 @@ describe("IgdbProvider", () => {
   let provider: IgdbProvider;
 
   beforeEach(() => {
+    // The provider throttles calls to stay under IGDB's 4 req/s cap via
+    // Date.now(); advance it well past the threshold on every read so tests
+    // don't actually sleep.
+    let now = 0;
+    jest.spyOn(Date, "now").mockImplementation(() => (now += 5000));
+
     const config = { getOrThrow: jest.fn().mockReturnValue("test-credential") };
     const quota = { record: jest.fn() };
     provider = new IgdbProvider(
@@ -44,6 +50,7 @@ describe("IgdbProvider", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
   it("maps search results to canonical summaries", async () => {

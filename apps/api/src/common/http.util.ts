@@ -17,11 +17,22 @@ const MAX_ATTEMPTS = 3;
  * The parsed body is returned as `T`. Providers wrapping their payload in an
  * envelope (GraphQL's `{ data, errors }`) pass that envelope as `T` and handle
  * their own in-band errors on top.
+ *
+ * `maxRetryDelayMs` bounds how long a retry is allowed to wait: if the
+ * computed delay (from `Retry-After` or backoff) would exceed it, the call
+ * gives up immediately instead of holding the request open. Some providers
+ * respond to a 429 with a `Retry-After` in the tens of seconds (an outright
+ * temporary ban, not a "slow down") — waiting that out inline would just
+ * trade a clean error for a client-side timeout.
  */
 export async function fetchJson<T>(
   url: string | URL,
   init: RequestInit,
-  opts: { sourceLabel: string; notFoundMessage?: string },
+  opts: {
+    sourceLabel: string;
+    notFoundMessage?: string;
+    maxRetryDelayMs?: number;
+  },
 ): Promise<T> {
   let lastStatus = 0;
 
@@ -56,7 +67,13 @@ export async function fetchJson<T>(
     const transient = response.status === 429 || response.status >= 500;
 
     if (transient && attempt < MAX_ATTEMPTS) {
-      await sleep(retryDelayMs(response.headers.get("Retry-After"), attempt));
+      const delay = retryDelayMs(response.headers.get("Retry-After"), attempt);
+
+      if (opts.maxRetryDelayMs !== undefined && delay > opts.maxRetryDelayMs) {
+        break;
+      }
+
+      await sleep(delay);
       continue;
     }
 
