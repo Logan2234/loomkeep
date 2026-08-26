@@ -253,8 +253,9 @@ export function regenerateCalendarToken(): Promise<CalendarTokenDto> {
   return request("/users/me/calendar-token/regenerate", { method: "POST" });
 }
 
+// Unused, for now...
 /** Short-lived SSO token for the feedback widget's "Verified identity only" mode. */
-export function getWidgetToken(): Promise<WidgetTokenDto> {
+function _getWidgetToken(): Promise<WidgetTokenDto> {
   return request("/users/me/widget-token");
 }
 

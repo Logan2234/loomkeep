@@ -87,7 +87,9 @@
         await resendMfaEmailCode(challengeId);
       } catch (err) {
         methodError =
-          err instanceof ApiError ? err.message : m.common_save_error_fallback();
+          err instanceof ApiError
+            ? err.message
+            : m.common_save_error_fallback();
         switchingMethod = false;
         return;
       }
@@ -264,7 +266,7 @@
           {#if selectedMethod === "email"}
             <button
               type="button"
-              class="link-accent -mt-2 text-left text-sm"
+              class="btn-text btn-text-underline text-accent hover:text-accent -mt-2 text-left text-sm"
               onclick={resendEmailCode}
               disabled={resendCooldown > 0}>
               {resendCooldown > 0
@@ -308,7 +310,7 @@
             {:else}
               <button
                 type="button"
-                class="link-accent"
+                class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
                 onclick={() => chooseMethod("recovery")}>
                 {m.auth_mfa_use_recovery_code()}
               </button>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { isPasswordValid } from "@loomkeep/shared";
   import {
     ApiError,
     changeEmail,
@@ -10,11 +9,13 @@
     updateUsername,
   } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
+  import { isPasswordValid } from "@loomkeep/shared";
 
   type SecurityModal = "username" | "email" | "password" | null;
 
@@ -239,7 +240,7 @@
                 class="text-success shrink-0"
                 aria-hidden="true"
                 title="Adresse email vérifiée">
-                ✓
+                <Icon name="check" class="h-4 w-4" />
               </span>
               <span class="sr-only">Adresse email vérifiée</span>
             {:else}
@@ -247,7 +248,7 @@
                 class="text-warning shrink-0"
                 aria-hidden="true"
                 title="Adresse email non vérifiée">
-                ⚠
+                <Icon name="warning" class="h-4 w-4" />
               </span>
               <span class="sr-only">Adresse email non vérifiée</span>
             {/if}
@@ -272,7 +273,9 @@
             </div>
 
             {#if verificationSent}
-              <p class="text-success mt-1 text-xs">✓ Email envoyé</p>
+              <p class="text-success mt-1 text-xs">
+                <Icon name="check" class="inline h-4 w-4" /> Email envoyé
+              </p>
             {/if}
           {/if}
         </div>
@@ -323,17 +326,17 @@
           <p class="text-dim text-sm">Vérification…</p>
         {:else if usernameCheck === "available"}
           <p class="text-success flex items-center gap-1.5 text-sm">
-            <span aria-hidden="true">✓</span>
+            <Icon name="check" class="h-4 w-4" />
             Ce nom d'utilisateur est disponible.
           </p>
         {:else if usernameCheck === "taken"}
           <p class="text-danger flex items-center gap-1.5 text-sm">
-            <span aria-hidden="true">✗</span>
+            <Icon name="warning" class="h-4 w-4" />
             Ce nom d'utilisateur est déjà utilisé par quelqu'un d'autre.
           </p>
         {:else if usernameCheck === "error"}
           <p class="text-danger flex items-center gap-1.5 text-sm">
-            <span aria-hidden="true">✗</span>
+            <Icon name="warning" class="h-4 w-4" />
             Impossible de vérifier la disponibilité, réessaie.
           </p>
         {/if}

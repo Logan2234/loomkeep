@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { ApiError, resendVerificationEmail } from "$lib/api/client";
   import { auth } from "$lib/auth.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   let status = $state<"idle" | "loading" | "sent" | "error">("idle");
@@ -68,9 +69,8 @@
       <div class="card flex flex-col gap-5 p-7">
         <div class="text-center">
           <div
-            class="bg-accent/10 text-accent mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full"
-            aria-hidden="true">
-            ✓
+            class="bg-accent/10 text-accent mx-auto mb-5 flex items-center justify-center rounded-full">
+            <Icon name="check" class="h-14 w-14" />
           </div>
 
           <h1 class="font-display text-xl font-bold">Vérifiez votre email</h1>

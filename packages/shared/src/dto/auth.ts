@@ -58,16 +58,9 @@ export interface VerifyEmailRequestDto {
 /** Which MFA method(s) a login challenge accepts, given what the account has enabled. */
 export type MfaMethod = "totp" | "email" | "recovery";
 
-export interface MfaChallengeDto {
-  mfaRequired: true;
-  challengeId: string;
-  /** "recovery" is always included alongside whichever primary method(s) are enabled. */
-  availableMethods: MfaMethod[];
-}
-
 /** Discriminated on `mfaRequired` — false carries the same shape `login()` always returned. */
 export type LoginResponseDto =
-  | MfaChallengeDto
+  | { mfaRequired: true; challengeId: string; availableMethods: MfaMethod[] }
   | { mfaRequired: false; user: UserDto; tokens: AuthTokensDto };
 
 export interface MfaVerifyRequestDto {

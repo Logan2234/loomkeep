@@ -1,5 +1,4 @@
 <script lang="ts">
-  import QRCode from "qrcode";
   import {
     ApiError,
     confirmTotp,
@@ -19,6 +18,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { MfaStatusDto } from "@loomkeep/shared";
+  import QRCode from "qrcode";
 
   const RECOVERY_CODES_LOW_THRESHOLD = 2;
 
@@ -205,7 +205,10 @@
           onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
       </div>
 
-      <div class="flex items-center justify-between gap-4 py-3">
+      <div
+        class="flex items-center justify-between gap-4 {hasAnyMfa
+          ? 'py-3'
+          : 'pt-3'}">
         <div class="flex items-start gap-3">
           <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
           <div>
@@ -220,30 +223,33 @@
       </div>
 
       {#if hasAnyMfa}
-        <div class="py-3 last:pb-0">
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <p class="font-semibold">{m.settings_mfa_recovery_title()}</p>
-              <p class="text-dim text-sm">{m.settings_mfa_recovery_hint()}</p>
-            </div>
-            <button
-              class="link-accent shrink-0 text-sm"
-              onclick={() => (openModal = "recovery-regenerate-confirm")}>
-              {m.settings_mfa_recovery_regenerate_action()}
-            </button>
-          </div>
-          <p class="mt-2 font-mono text-sm tabular-nums">
-            {m.settings_mfa_recovery_remaining({
-              count: status.recoveryCodesRemaining,
-            })}
-          </p>
-          {#if status.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD}
-            <p class="text-warning mt-1 text-sm">
-              {m.settings_mfa_recovery_low_warning({
-                count: status.recoveryCodesRemaining,
-              })}
+        <div class="flex items-center justify-between gap-4 pt-3">
+          <div>
+            <p class="font-semibold">
+              {m.settings_mfa_recovery_title()}
+
+              {#if status.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD}
+                <span
+                  class="text-warning shrink-0"
+                  aria-hidden="true"
+                  title={m.settings_mfa_recovery_low_warning({
+                    count: status.recoveryCodesRemaining,
+                  })}>
+                  <Icon name="warning" class="ml-1 inline h-5 w-5" />
+                </span>
+                <span class="sr-only"
+                  >{m.settings_mfa_recovery_low_warning({
+                    count: status.recoveryCodesRemaining,
+                  })}</span>
+              {/if}
             </p>
-          {/if}
+            <p class="text-dim text-sm">{m.settings_mfa_recovery_hint()}</p>
+          </div>
+          <button
+            class="link-accent shrink-0 text-sm"
+            onclick={() => (openModal = "recovery-regenerate-confirm")}>
+            {m.settings_mfa_recovery_regenerate_action()}
+          </button>
         </div>
       {/if}
     </div>
@@ -256,7 +262,6 @@
       <div class="flex flex-col items-center gap-4">
         {#if totpQrSvg}
           <div class="qr-frame rounded-xl bg-white p-3">
-            <!-- svg is qrcode's own generated markup (rects/paths only), not user input -->
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html totpQrSvg}
           </div>
@@ -376,15 +381,12 @@
 {/if}
 
 {#if openModal === "recovery-reveal"}
-  <Modal
-    title={m.settings_mfa_recovery_reveal_title()}
-    onclose={closeModal}
-    wide>
+  <Modal title={m.settings_mfa_recovery_reveal_title()} onclose={closeModal}>
     <p class="text-dim mb-4 text-sm">{m.settings_mfa_recovery_reveal_hint()}</p>
     <div
       class="border-border bg-surface-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-dashed p-4">
       {#each revealedCodes as code (code)}
-        <p class="font-mono text-sm tracking-wider tabular-nums">
+        <p class="text-center font-mono text-sm tracking-wider tabular-nums">
           {groupCode(code)}
         </p>
       {/each}
@@ -404,7 +406,6 @@
 {/if}
 
 <style>
-  /* qrcode's SVG output has no intrinsic size beyond its viewBox — pin one. */
   .qr-frame :global(svg) {
     width: 200px;
     height: 200px;

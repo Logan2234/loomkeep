@@ -204,5 +204,10 @@
   {:else if name === "lock"}
     <rect x="5" y="11" width="14" height="9" rx="2" />
     <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  {:else if name === "warning"}
+    <path
+      d="M21.73 18 13.74 4a2 2 0 0 0-3.48 0L2.27 18A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
   {/if}
 </svg>
