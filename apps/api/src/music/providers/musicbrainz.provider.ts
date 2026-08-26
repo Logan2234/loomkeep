@@ -1,10 +1,10 @@
+import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
 import {
   BadGatewayException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import type {

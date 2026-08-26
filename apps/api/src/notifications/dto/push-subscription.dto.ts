@@ -1,6 +1,6 @@
+import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import { IsString, ValidateNested } from "class-validator";
-import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
 
 class PushKeysDto {
   @IsString()

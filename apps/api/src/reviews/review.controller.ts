@@ -1,4 +1,11 @@
 import {
+  type MyReviewDto,
+  type ReviewDto,
+  type ReviewRevisionDto,
+  ReviewTargetType,
+  type ReviewVoteValue,
+} from "@loomkeep/shared";
+import {
   BadRequestException,
   Body,
   Controller,
@@ -10,15 +17,8 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
-  type MyReviewDto,
-  type ReviewDto,
-  type ReviewRevisionDto,
-  ReviewTargetType,
-  type ReviewVoteValue,
-} from "@loomkeep/shared";
-import {
-  type JwtPayload,
   CurrentUser,
+  type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import {

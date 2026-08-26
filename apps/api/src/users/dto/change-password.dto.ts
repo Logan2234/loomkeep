@@ -1,10 +1,10 @@
-import { IsString, Matches, MaxLength, MinLength } from "class-validator";
+import type { ChangePasswordRequestDto } from "@loomkeep/shared";
 import {
   PASSWORD_DIGIT_RE,
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
 } from "@loomkeep/shared";
-import type { ChangePasswordRequestDto } from "@loomkeep/shared";
+import { IsString, Matches, MaxLength, MinLength } from "class-validator";
 
 export class ChangePasswordDto implements ChangePasswordRequestDto {
   @IsString()

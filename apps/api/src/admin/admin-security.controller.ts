@@ -1,9 +1,9 @@
-import { Controller, Get, Query } from "@nestjs/common";
 import type {
   AdminSecuritySummaryDto,
   SecurityEventListResponseDto,
   SecurityEventType,
 } from "@loomkeep/shared";
+import { Controller, Get, Query } from "@nestjs/common";
 import { SecurityEventService } from "../security/security-event.service";
 import { AdminOnly } from "./admin-only.decorator";
 

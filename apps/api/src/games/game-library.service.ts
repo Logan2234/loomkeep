@@ -1,16 +1,3 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import type {
-  GameEntry,
-  GameExternalId,
-  GameItem,
-  GameReplay,
-  GameStatus as DbGameStatus,
-  Prisma,
-} from "@prisma/client";
 import type {
   GameDetailDto,
   GameEntryDto,
@@ -20,6 +7,19 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import type {
+  GameStatus as DbGameStatus,
+  GameEntry,
+  GameExternalId,
+  GameItem,
+  GameReplay,
+  Prisma,
+} from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -27,10 +27,10 @@ import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
-import { GameItemService } from "./game-item.service";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
+import { GameItemService } from "./game-item.service";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
 // its replay history, most recent first.

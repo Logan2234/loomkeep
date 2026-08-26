@@ -1,10 +1,4 @@
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
-import {
   NotificationType,
   REPORT_CATEGORY_MOTIFS,
   type ReportCategory,
@@ -14,6 +8,12 @@ import {
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { resolveWorkHref } from "../common/work-href.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";

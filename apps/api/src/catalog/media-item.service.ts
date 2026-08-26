@@ -1,11 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
-import type { MediaItem } from "@prisma/client";
 import type {
   CatalogSource,
   MediaDetailsDto,
   MediaType,
 } from "@loomkeep/shared";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import type { MediaItem } from "@prisma/client";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";

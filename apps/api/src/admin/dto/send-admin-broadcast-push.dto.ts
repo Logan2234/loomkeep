@@ -1,5 +1,5 @@
-import { IsOptional, IsString, MaxLength } from "class-validator";
 import type { SendAdminBroadcastPushRequestDto } from "@loomkeep/shared";
+import { IsOptional, IsString, MaxLength } from "class-validator";
 
 export class SendAdminBroadcastPushDto implements SendAdminBroadcastPushRequestDto {
   @IsOptional()

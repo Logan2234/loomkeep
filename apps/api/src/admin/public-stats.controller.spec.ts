@@ -1,5 +1,5 @@
-import type { AdminService } from "./admin.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { AdminService } from "./admin.service";
 import { PublicStatsController } from "./public-stats.controller";
 
 function makeController(

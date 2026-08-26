@@ -1,5 +1,3 @@
-import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import type {
   CastDetailDto,
   MediaExtrasDto,
@@ -11,6 +9,8 @@ import {
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { OmdbService } from "../omdb.service";

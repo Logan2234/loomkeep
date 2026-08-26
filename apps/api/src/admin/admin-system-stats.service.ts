@@ -1,10 +1,10 @@
-import { Injectable } from "@nestjs/common";
 import type { AdminSystemSectionDto } from "@loomkeep/shared";
 import { SecurityEventType } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { AdminService } from "./admin.service";
 import { startOfUtcDay } from "./admin-stats.util";
 import { providerCallRows } from "./admin-system-stats.util";
+import { AdminService } from "./admin.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

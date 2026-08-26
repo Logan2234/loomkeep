@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
 import type { AdminOverviewDto } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { trendBucketStarts } from "./admin-stats.util";
 

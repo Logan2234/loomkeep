@@ -1,12 +1,4 @@
 import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import {
   ActivityType,
   type ListDetailDto,
   type ListDto,
@@ -20,14 +12,22 @@ import {
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { canonicalExternalId } from "../common/external-id.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { isSocialEnabled } from "../social/social.config";
-import { resolveOwnVisibility } from "../social/visibility.util";
 import { VisibilityService } from "../social/visibility.service";
+import { resolveOwnVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 import type { AddListItemBody } from "./dto/add-list-item.dto";
 import type { CreateListBody } from "./dto/create-list.dto";

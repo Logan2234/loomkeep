@@ -1,4 +1,3 @@
-import { Controller, Get, Query } from "@nestjs/common";
 import type {
   AdminAccountsSectionDto,
   AdminCatalogueSectionDto,
@@ -8,6 +7,7 @@ import type {
   AdminSystemSectionDto,
   TrendPeriod,
 } from "@loomkeep/shared";
+import { Controller, Get, Query } from "@nestjs/common";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
 import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
 import { AdminOnly } from "./admin-only.decorator";

@@ -1,5 +1,5 @@
-import { IsEmail, IsOptional, IsString, MaxLength } from "class-validator";
 import type { SendAdminTestPushRequestDto } from "@loomkeep/shared";
+import { IsEmail, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class SendAdminTestPushDto implements SendAdminTestPushRequestDto {
   @IsEmail()

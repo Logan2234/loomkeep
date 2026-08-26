@@ -1,6 +1,6 @@
-import type { ConfigService } from "@nestjs/config";
-import { ForbiddenException } from "@nestjs/common";
 import { Domain, type ImportSource } from "@loomkeep/shared";
+import { ForbiddenException } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";

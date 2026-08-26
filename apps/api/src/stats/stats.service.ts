@@ -1,4 +1,3 @@
-import { Injectable } from "@nestjs/common";
 import type {
   BookStatsDto,
   DomainStatusBreakdownDto,
@@ -17,19 +16,26 @@ import type {
   WatchStaleness,
 } from "@loomkeep/shared";
 import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { DomainGateService } from "../users/domain-gate.service";
+import { sumStatusBreakdowns } from "./cross-domain-totals.util";
+import { computeDecadeHistogram, decadeOf } from "./decade.util";
+import { filterEnabledDomains } from "./enabled-domains.util";
+import { computePossessionBreakdown } from "./possession.util";
+import { computeAverageRatingByGroup } from "./rating-by-group.util";
 import {
   computeAverageRating,
   computeRatingDistribution,
 } from "./rating-distribution.util";
-import { computePossessionBreakdown } from "./possession.util";
-import { computeDecadeHistogram, decadeOf } from "./decade.util";
-import { sumStatusBreakdowns } from "./cross-domain-totals.util";
-import { filterEnabledDomains } from "./enabled-domains.util";
-import { computeAverageRatingByGroup } from "./rating-by-group.util";
+import {
+  computeAvgReviewLength,
+  computeRatingVsCommunity,
+  computeReciprocityRate,
+  computeSpoilerRatio,
+} from "./social-stats.util";
 import {
   bucketizeBookStatus,
   bucketizeEntryStatus,
@@ -57,12 +63,6 @@ import {
   mostActiveYear,
   windowStart,
 } from "./video-temporal.util";
-import {
-  computeAvgReviewLength,
-  computeReciprocityRate,
-  computeRatingVsCommunity,
-  computeSpoilerRatio,
-} from "./social-stats.util";
 
 /** One library entry, domain-agnostic, for the cross-domain aggregators below. */
 interface DomainRow {

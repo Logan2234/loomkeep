@@ -1,5 +1,5 @@
-import { IsIn, IsString, MaxLength } from "class-validator";
 import type { UploadAvatarRequestDto } from "@loomkeep/shared";
+import { IsIn, IsString, MaxLength } from "class-validator";
 
 /** Restricted to formats a browser <img> renders natively. */
 export const ALLOWED_AVATAR_MIME_TYPES = [

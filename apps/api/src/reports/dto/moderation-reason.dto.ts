@@ -1,5 +1,5 @@
-import { IsIn, IsString, MinLength } from "class-validator";
 import { ModerationLegalBasis } from "@loomkeep/shared";
+import { IsIn, IsString, MinLength } from "class-validator";
 
 /**
  * The DSA art. 17 "facts and legal basis" an admin must supply when taking a

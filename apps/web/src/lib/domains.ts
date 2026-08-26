@@ -1,6 +1,6 @@
 import type { Domain } from "@loomkeep/shared";
-import { DOMAINS } from "./constants/domains";
 import { auth } from "./auth.svelte";
+import { DOMAINS } from "./constants/domains";
 import { liveFlags } from "./feature-flags-live.svelte";
 
 /**

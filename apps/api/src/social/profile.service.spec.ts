@@ -1,8 +1,8 @@
-import type { FollowService } from "./follow.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { FollowService } from "./follow.service";
 import { ProfileService } from "./profile.service";
-import type { ViewerRelation } from "./visibility.util";
 import type { VisibilityService } from "./visibility.service";
+import type { ViewerRelation } from "./visibility.util";
 
 function relation(over: Partial<ViewerRelation>): ViewerRelation {
   return {

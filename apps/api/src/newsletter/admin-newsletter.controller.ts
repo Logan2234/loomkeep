@@ -1,5 +1,5 @@
-import { Controller, Get } from "@nestjs/common";
 import type { NewsletterSendDto } from "@loomkeep/shared";
+import { Controller, Get } from "@nestjs/common";
 import { AdminOnly } from "../admin/admin-only.decorator";
 import { NewsletterService } from "./newsletter.service";
 

@@ -1,9 +1,6 @@
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import {
+  ActivityType,
+  type Domain,
   type MyReviewDto,
   type ReviewDto,
   type ReviewRevisionDto,
@@ -14,7 +11,11 @@ import {
   type UpsertReviewDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
-import { ActivityType, type Domain } from "@loomkeep/shared";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";

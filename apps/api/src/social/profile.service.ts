@@ -1,34 +1,34 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
 import {
   Domain,
   type ListVisibility,
+  ProfileAccess,
   type ProfileActivityStatsDto,
   type ProfileDomainStatDto,
-  ProfileAccess,
   type ReviewVisibility,
   type SocialProfileDto,
   type UserSummaryDto,
   VisibilityFacet,
 } from "@loomkeep/shared";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { runtimeFor } from "../stats/video-stats.util";
-import { avatarUrl } from "../users/avatar.util";
 import {
   computeHeatmap,
   computeStreak,
   computeYearlyMinutes,
   mostActiveYear,
 } from "../stats/video-temporal.util";
+import { avatarUrl } from "../users/avatar.util";
 import { FollowService } from "./follow.service";
 import { earliest, latest } from "./profile-stats.util";
 import { SOCIAL_DOMAINS } from "./social.constants";
+import { VisibilityService } from "./visibility.service";
 import {
   resolveFacet,
   resolveOwnVisibility,
   resolveProfileVisibility,
   type ViewerRelation,
 } from "./visibility.util";
-import { VisibilityService } from "./visibility.service";
 
 const EMPTY_ACTIVITY_STATS: ProfileActivityStatsDto = {
   visible: false,

@@ -1,10 +1,3 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
 import type {
   BookStatsDto,
   GameStatsDto,
@@ -19,8 +12,15 @@ import type {
   WatchStaleness,
 } from "@loomkeep/shared";
 import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";

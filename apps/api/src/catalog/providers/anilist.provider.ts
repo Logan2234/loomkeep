@@ -1,15 +1,15 @@
-import {
-  BadGatewayException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import type { MediaExtrasDto } from "@loomkeep/shared";
 import {
   CatalogSource,
   MediaSource,
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
-import type { MediaExtrasDto } from "@loomkeep/shared";
+import {
+  BadGatewayException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";

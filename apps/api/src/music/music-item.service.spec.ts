@@ -1,7 +1,7 @@
 import type { PrismaService } from "../prisma/prisma.service";
 import { MusicItemService } from "./music-item.service";
-import type { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 import type { ProviderMusicDetails } from "./providers/music-provider.types";
+import type { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 
 const details: ProviderMusicDetails = {
   summary: {

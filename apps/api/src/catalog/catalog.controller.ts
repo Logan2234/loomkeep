@@ -1,11 +1,4 @@
 import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-} from "@nestjs/common";
-import {
   CastDetailDto,
   CatalogSource,
   Domain,
@@ -13,6 +6,13 @@ import {
   MediaType,
   SearchResponseDto,
 } from "@loomkeep/shared";
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+} from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";

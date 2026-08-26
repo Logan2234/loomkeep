@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
 import type { UserDataExportDto } from "@loomkeep/shared";
 import { ReviewTargetType } from "@loomkeep/shared";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { toUserDto } from "../auth/auth.service";
 import {
   canonicalExternalId,

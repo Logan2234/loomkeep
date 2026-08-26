@@ -1,12 +1,12 @@
+import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { GameItem } from "@prisma/client";
-import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
 import { PrismaService } from "../prisma/prisma.service";
-import { IgdbProvider } from "./providers/igdb.provider";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,
 } from "./providers/game-provider.types";
+import { IgdbProvider } from "./providers/igdb.provider";
 
 // A cached game referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;

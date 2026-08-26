@@ -1,7 +1,7 @@
 import type { PrismaService } from "../prisma/prisma.service";
 import { GameItemService } from "./game-item.service";
-import type { IgdbProvider } from "./providers/igdb.provider";
 import type { ProviderGameDetails } from "./providers/game-provider.types";
+import type { IgdbProvider } from "./providers/igdb.provider";
 
 const details: ProviderGameDetails = {
   summary: {

@@ -1,5 +1,3 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 import {
   type ActivityActorDto,
   type ActivityDomain,
@@ -12,15 +10,17 @@ import {
   type ProfileAccess,
   VisibilityFacet,
 } from "@loomkeep/shared";
+import { Injectable, Logger } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
+import { VisibilityService } from "./visibility.service";
 import {
   resolveFacet,
   resolveOwnVisibility,
   type ViewerRelation,
 } from "./visibility.util";
-import { VisibilityService } from "./visibility.service";
 
 /** Aggregatable event types: consecutive same-type/same-target events collapse into one, counted. */
 const AGGREGATABLE_TYPES = new Set(["PROGRESS", "LIST_ITEM_ADDED"]);

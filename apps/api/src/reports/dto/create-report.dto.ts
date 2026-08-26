@@ -1,5 +1,5 @@
-import { IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 import { ReportCategory, ReportMotif } from "@loomkeep/shared";
+import { IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class CreateReportBody {
   @IsIn(Object.values(ReportCategory))

@@ -1,3 +1,11 @@
+import type { PagedResult } from "@loomkeep/shared";
+import {
+  Domain,
+  GameDetailDto,
+  GameEntryDto,
+  GameSearchResponseDto,
+  GameSource,
+} from "@loomkeep/shared";
 import {
   BadRequestException,
   Body,
@@ -12,26 +20,18 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import {
-  Domain,
-  GameDetailDto,
-  GameEntryDto,
-  GameSearchResponseDto,
-  GameSource,
-} from "@loomkeep/shared";
-import type { PagedResult } from "@loomkeep/shared";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { AgeGateService } from "../users/age-gate.service";
-import { DomainGateService } from "../users/domain-gate.service";
 import { filterAdultContent } from "../users/age.util";
-import { GameItemService } from "./game-item.service";
-import { GameLibraryService } from "./game-library.service";
+import { DomainGateService } from "../users/domain-gate.service";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
+import { GameItemService } from "./game-item.service";
+import { GameLibraryService } from "./game-library.service";
 
 @Controller("games")
 export class GamesController {

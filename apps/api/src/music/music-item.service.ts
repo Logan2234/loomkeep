@@ -1,16 +1,16 @@
-import { Injectable } from "@nestjs/common";
-import type { MusicItem } from "@prisma/client";
 import type {
   MusicDetailsDto,
   MusicSource,
   MusicSummaryDto,
 } from "@loomkeep/shared";
+import { Injectable } from "@nestjs/common";
+import type { MusicItem } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 import type {
   MusicCatalogProvider,
   ProviderMusicDetails,
 } from "./providers/music-provider.types";
+import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 
 // A cached album referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;

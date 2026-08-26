@@ -1,3 +1,12 @@
+import type {
+  ListDetailDto,
+  ListDto,
+  ListItemDto,
+  ListItemTargetType,
+  ListMemberDto,
+  ListMembershipDto,
+  MyListDto,
+} from "@loomkeep/shared";
 import {
   BadRequestException,
   Body,
@@ -11,15 +20,6 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
-import type {
-  ListDetailDto,
-  ListDto,
-  ListItemDto,
-  ListItemTargetType,
-  ListMemberDto,
-  ListMembershipDto,
-  MyListDto,
-} from "@loomkeep/shared";
 import {
   type JwtPayload,
   CurrentUser,

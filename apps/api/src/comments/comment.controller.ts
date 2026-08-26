@@ -1,4 +1,11 @@
 import {
+  type CommentCountDto,
+  type CommentDto,
+  type CommentPageDto,
+  CommentTargetType,
+  type CommentTargetType as CommentTargetTypeT,
+} from "@loomkeep/shared";
+import {
   BadRequestException,
   Body,
   Controller,
@@ -12,18 +19,11 @@ import {
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import {
-  type CommentCountDto,
-  type CommentDto,
-  type CommentPageDto,
-  CommentTargetType,
-  type CommentTargetType as CommentTargetTypeT,
-} from "@loomkeep/shared";
-import {
-  type JwtPayload,
   CurrentUser,
+  type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
-import { ReportService } from "../reports/report.service";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { CommentService } from "./comment.service";
 import { CreateCommentBody } from "./dto/create-comment.dto";

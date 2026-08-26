@@ -1,7 +1,7 @@
 import {
   computeAvgReviewLength,
-  computeReciprocityRate,
   computeRatingVsCommunity,
+  computeReciprocityRate,
   computeSpoilerRatio,
 } from "./social-stats.util";
 

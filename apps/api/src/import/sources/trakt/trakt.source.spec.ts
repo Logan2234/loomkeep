@@ -1,6 +1,6 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
-import { makeZip } from "../../make-zip";
 import { ImportJobService } from "../../import-job.service";
+import { makeZip } from "../../make-zip";
 import { TraktImportSource } from "./trakt.source";
 
 const HISTORY = JSON.stringify([

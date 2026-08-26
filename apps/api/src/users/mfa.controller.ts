@@ -7,8 +7,8 @@ import type {
 } from "@loomkeep/shared";
 import { Body, Controller, Get, Patch, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { MfaService } from "../auth/mfa.service";
 import { ConfirmTotpDto } from "./dto/confirm-totp.dto";
 import { DisableTotpDto } from "./dto/disable-totp.dto";

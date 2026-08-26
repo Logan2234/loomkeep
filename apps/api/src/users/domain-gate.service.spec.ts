@@ -1,5 +1,5 @@
-import { ForbiddenException } from "@nestjs/common";
 import { Domain } from "@loomkeep/shared";
+import { ForbiddenException } from "@nestjs/common";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";

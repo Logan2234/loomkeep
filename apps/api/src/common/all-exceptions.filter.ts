@@ -1,9 +1,9 @@
 import type { ArgumentsHost } from "@nestjs/common";
 import { Catch, HttpException, HttpStatus } from "@nestjs/common";
 import { BaseExceptionFilter } from "@nestjs/core";
-import { Logger } from "nestjs-pino";
 import * as Sentry from "@sentry/node";
 import type { FastifyRequest } from "fastify";
+import { Logger } from "nestjs-pino";
 
 // Logging only — the response NestJS would normally send (status code,
 // body shape) is completely unchanged, since `catch()` always delegates to

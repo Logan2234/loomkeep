@@ -1,5 +1,5 @@
-import { IsString, MinLength } from "class-validator";
 import type { MfaVerifyRequestDto } from "@loomkeep/shared";
+import { IsString, MinLength } from "class-validator";
 
 export class MfaVerifyDto implements MfaVerifyRequestDto {
   @IsString()
