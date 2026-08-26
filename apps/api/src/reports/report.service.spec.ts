@@ -1,5 +1,6 @@
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
+import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ReportService } from "./report.service";
 
@@ -30,12 +31,22 @@ function make(
     bookItem: { findUnique: jest.fn().mockResolvedValue(null) },
     musicItem: { findUnique: jest.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
-  const mail = { sendReportsDigest: jest.fn() } as unknown as MailService;
+  const mail = {
+    sendReportsDigest: jest.fn(),
+  } as unknown as MailService;
   const jobRuns = {
     record: jest.fn((_key, fn) => fn()),
   } as unknown as JobRunService;
+  const notifications = {
+    create: jest.fn(),
+  } as unknown as NotificationService;
 
-  return { svc: new ReportService(prisma, mail, jobRuns), prisma, mail };
+  return {
+    svc: new ReportService(prisma, mail, jobRuns, notifications),
+    prisma,
+    mail,
+    notifications,
+  };
 }
 
 describe("ReportService.create", () => {
@@ -224,6 +235,33 @@ describe("ReportService.resolve", () => {
         }),
       }),
     );
+  });
+
+  it("notifies the reporter in-app of the outcome, DSA art. 16(5)", async () => {
+    const { svc, notifications } = make({
+      report: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ reporterId: "reporter1" }),
+      },
+    });
+    await svc.resolve("admin1", "r1", "DISMISSED");
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "reporter1",
+        type: "REPORT_RESOLVED",
+      }),
+    );
+  });
+
+  it("skips the reporter notification when the reporter's account is gone", async () => {
+    const { svc, notifications } = make({
+      report: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ reporterId: null }),
+      },
+    });
+    await svc.resolve("admin1", "r1", "RESOLVED");
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 });
 
