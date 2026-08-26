@@ -1,6 +1,8 @@
 import type {
   AuthTokensDto,
   Locale,
+  LoginResponseDto,
+  MfaMethod,
   SessionDto,
   UserDto,
 } from "@loomkeep/shared";
@@ -17,7 +19,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 import { HibpService } from "../common/hibp.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
@@ -28,6 +30,7 @@ import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { MfaService } from "./mfa.service";
 import { isRegistrationEnabled } from "./registration.config";
 import { TurnstileService } from "./turnstile.service";
 
@@ -36,6 +39,9 @@ const REFRESH_TOKEN_TTL_DAYS = 30;
 const RESET_TOKEN_TTL_MINUTES = 60;
 const VERIFY_TOKEN_TTL_HOURS = 24;
 export const BCRYPT_ROUNDS = 12;
+const MFA_CHALLENGE_TTL_MINUTES = 10;
+const MFA_EMAIL_CODE_TTL_MINUTES = 10;
+const MAX_MFA_CHALLENGE_ATTEMPTS = 5;
 
 export interface AuthResult {
   user: UserDto;
@@ -53,6 +59,7 @@ export class AuthService {
     private readonly turnstile: TurnstileService,
     private readonly hibp: HibpService,
     private readonly flags: FeatureFlagsService,
+    private readonly mfa: MfaService,
   ) {}
 
   async register(
@@ -189,7 +196,7 @@ export class AuthService {
     dto: LoginDto,
     userAgent?: string,
     ip?: string,
-  ): Promise<AuthResult> {
+  ): Promise<LoginResponseDto> {
     const user = await this.prisma.user.findFirst({
       where: { OR: [{ email: dto.identifier }, { username: dto.identifier }] },
     });
@@ -204,6 +211,146 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    if (user.mfaTotpEnabled || user.mfaEmailEnabled) {
+      return this.startMfaChallenge(user);
+    }
+
+    const result = await this.completeLogin(user, userAgent, ip);
+    return { mfaRequired: false, ...result };
+  }
+
+  /** Creates the pending-MFA record after a successful password check and, if enabled, emails the code. */
+  private async startMfaChallenge(user: User): Promise<LoginResponseDto> {
+    let emailCodeHash: string | undefined;
+    let emailCodeExpiresAt: Date | undefined;
+
+    if (user.mfaEmailEnabled) {
+      const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      emailCodeHash = hashToken(code);
+      emailCodeExpiresAt = new Date(
+        Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
+      );
+      await this.mail.sendMfaEmailCode(user.email, code);
+    }
+
+    const challenge = await this.prisma.mfaLoginChallenge.create({
+      data: {
+        userId: user.id,
+        totpAllowed: user.mfaTotpEnabled,
+        emailAllowed: user.mfaEmailEnabled,
+        emailCodeHash,
+        emailCodeExpiresAt,
+        expiresAt: new Date(Date.now() + MFA_CHALLENGE_TTL_MINUTES * 60_000),
+      },
+    });
+
+    const availableMethods: MfaMethod[] = [
+      ...(user.mfaTotpEnabled ? (["totp"] as const) : []),
+      ...(user.mfaEmailEnabled ? (["email"] as const) : []),
+      "recovery",
+    ];
+
+    return {
+      mfaRequired: true,
+      challengeId: challenge.id,
+      availableMethods,
+    };
+  }
+
+  /** Regenerates and re-sends the email code for a pending challenge, extending its window. */
+  async resendMfaEmailCode(challengeId: string): Promise<void> {
+    const challenge = await this.prisma.mfaLoginChallenge.findUnique({
+      where: { id: challengeId },
+      include: { user: true },
+    });
+
+    if (
+      !challenge ||
+      !challenge.emailAllowed ||
+      challenge.expiresAt < new Date()
+    ) {
+      throw new UnauthorizedException("Invalid or expired challenge");
+    }
+
+    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    await this.prisma.mfaLoginChallenge.update({
+      where: { id: challenge.id },
+      data: {
+        emailCodeHash: hashToken(code),
+        emailCodeExpiresAt: new Date(
+          Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
+        ),
+      },
+    });
+    await this.mail.sendMfaEmailCode(challenge.user.email, code);
+  }
+
+  /**
+   * Verifies a pending login MFA challenge, trying TOTP, then the emailed
+   * code, then a recovery code — whichever the challenge allows. On success,
+   * consumes the challenge and completes the session exactly like a
+   * non-MFA login would have.
+   */
+  async verifyMfaLogin(
+    challengeId: string,
+    rawCode: string,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<AuthResult> {
+    const challenge = await this.prisma.mfaLoginChallenge.findUnique({
+      where: { id: challengeId },
+      include: { user: true },
+    });
+
+    if (!challenge || challenge.expiresAt < new Date()) {
+      if (challenge) {
+        await this.prisma.mfaLoginChallenge.delete({
+          where: { id: challenge.id },
+        });
+      }
+
+      throw new UnauthorizedException("Invalid or expired challenge");
+    }
+
+    const verified =
+      (challenge.totpAllowed &&
+        /^\d{6}$/.test(rawCode) &&
+        challenge.user.mfaTotpSecretEnc !== null &&
+        this.mfa.validateTotpCode(challenge.user.mfaTotpSecretEnc, rawCode)) ||
+      (challenge.emailAllowed &&
+        challenge.emailCodeHash !== null &&
+        challenge.emailCodeExpiresAt !== null &&
+        challenge.emailCodeExpiresAt >= new Date() &&
+        challenge.emailCodeHash === hashToken(rawCode)) ||
+      (await this.mfa.verifyRecoveryCode(challenge.userId, rawCode));
+
+    if (!verified) {
+      if (challenge.attempts + 1 >= MAX_MFA_CHALLENGE_ATTEMPTS) {
+        await this.prisma.mfaLoginChallenge.delete({
+          where: { id: challenge.id },
+        });
+        throw new UnauthorizedException(
+          "Too many attempts — please log in again",
+        );
+      }
+
+      await this.prisma.mfaLoginChallenge.update({
+        where: { id: challenge.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException("Invalid code");
+    }
+
+    await this.prisma.mfaLoginChallenge.delete({ where: { id: challenge.id } });
+    return this.completeLogin(challenge.user, userAgent, ip);
+  }
+
+  /** Promotion, device recording, activity touch, and session issuance shared by login() and verifyMfaLogin(). */
+  private async completeLogin(
+    user: User,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<AuthResult> {
     const promoted = await this.ensureAdminRole(user);
     const isNewDevice = await this.recordDevice(promoted.id, userAgent);
     await this.touchActivity(promoted.id);
@@ -582,5 +729,7 @@ export function toUserDto(user: User): UserDto {
     avatarUrl: avatarUrl(user),
     onboardedAt: user.onboardedAt?.toISOString() ?? null,
     acceptedTermsVersion: user.acceptedTermsVersion,
+    mfaTotpEnabled: user.mfaTotpEnabled,
+    mfaEmailEnabled: user.mfaEmailEnabled,
   };
 }

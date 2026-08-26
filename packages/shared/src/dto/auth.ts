@@ -1,3 +1,5 @@
+import type { UserDto } from "./user";
+
 export interface RegisterRequestDto {
   email: string;
   password: string;
@@ -51,6 +53,68 @@ export interface ResetPasswordRequestDto {
 
 export interface VerifyEmailRequestDto {
   token: string;
+}
+
+/** Which MFA method(s) a login challenge accepts, given what the account has enabled. */
+export type MfaMethod = "totp" | "email" | "recovery";
+
+export interface MfaChallengeDto {
+  mfaRequired: true;
+  challengeId: string;
+  /** "recovery" is always included alongside whichever primary method(s) are enabled. */
+  availableMethods: MfaMethod[];
+}
+
+/** Discriminated on `mfaRequired` — false carries the same shape `login()` always returned. */
+export type LoginResponseDto =
+  | MfaChallengeDto
+  | { mfaRequired: false; user: UserDto; tokens: AuthTokensDto };
+
+export interface MfaVerifyRequestDto {
+  challengeId: string;
+  /** A TOTP code, the emailed code, or a recovery code — the server tries each allowed method. */
+  code: string;
+}
+
+export interface ResendMfaEmailCodeRequestDto {
+  challengeId: string;
+}
+
+export interface MfaStatusDto {
+  totpEnabled: boolean;
+  emailEnabled: boolean;
+  recoveryCodesRemaining: number;
+}
+
+export interface TotpSetupDto {
+  otpauthUri: string;
+  /** Shown as a "can't scan? enter manually" fallback. */
+  secret: string;
+}
+
+export interface ConfirmTotpRequestDto {
+  code: string;
+}
+
+/** `recoveryCodes` is only present when this call generated the account's first-ever batch. */
+export interface ConfirmTotpResponseDto {
+  recoveryCodes?: string[];
+}
+
+export interface DisableTotpRequestDto {
+  currentPassword: string;
+}
+
+export interface SetEmailMfaRequestDto {
+  enabled: boolean;
+}
+
+export interface SetEmailMfaResponseDto {
+  recoveryCodes?: string[];
+}
+
+export interface RegenerateRecoveryCodesResponseDto {
+  codes: string[];
 }
 
 /** One active refresh-token session, i.e. one signed-in device. */

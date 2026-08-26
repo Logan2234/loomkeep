@@ -1,4 +1,4 @@
-import type { AuthTokensDto } from "@loomkeep/shared";
+import type { AuthTokensDto, LoginResponseDto } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -13,8 +13,10 @@ import { AuthResult, AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { LoginDto } from "./dto/login.dto";
+import { MfaVerifyDto } from "./dto/mfa-verify.dto";
 import { RefreshDto } from "./dto/refresh.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { ResendMfaEmailCodeDto } from "./dto/resend-mfa-email-code.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
 
@@ -45,8 +47,32 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
-  ): Promise<AuthResult> {
+  ): Promise<LoginResponseDto> {
     return this.authService.login(dto, userAgent, ip);
+  }
+
+  // Same budget as login — this is its natural continuation for MFA-enabled accounts.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post("mfa/verify")
+  async mfaVerify(
+    @Body() dto: MfaVerifyDto,
+    @Headers("user-agent") userAgent?: string,
+    @Ip() ip?: string,
+  ): Promise<AuthResult> {
+    return this.authService.verifyMfaLogin(
+      dto.challengeId,
+      dto.code,
+      userAgent,
+      ip,
+    );
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("mfa/resend-email-code")
+  async mfaResendEmailCode(@Body() dto: ResendMfaEmailCodeDto): Promise<void> {
+    await this.authService.resendMfaEmailCode(dto.challengeId);
   }
 
   @HttpCode(HttpStatus.OK)

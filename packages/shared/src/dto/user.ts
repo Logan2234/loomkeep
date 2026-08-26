@@ -75,6 +75,10 @@ export interface UserDto {
    * re-acceptance prompt.
    */
   acceptedTermsVersion: string | null;
+  /** Whether TOTP-based MFA is confirmed and active. See LK-C17. */
+  mfaTotpEnabled: boolean;
+  /** Whether email-code-based MFA is active. See LK-C17. */
+  mfaEmailEnabled: boolean;
 }
 
 export interface UpdateUserRequestDto {
