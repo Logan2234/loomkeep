@@ -88,6 +88,25 @@ describe("fetchJson", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("gives up immediately when a 429's Retry-After exceeds maxRetryDelayMs", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: new Headers({ "Retry-After": "60" }),
+      json: () => Promise.resolve({}),
+    } as Response);
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      fetchJson(
+        "https://example.test",
+        {},
+        { sourceLabel: "Test", maxRetryDelayMs: 2_000 },
+      ),
+    ).rejects.toThrow(BadGatewayException);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("aborts a hung request via the timeout signal", async () => {
     jest.useFakeTimers();
     global.fetch = jest.fn(

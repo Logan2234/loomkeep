@@ -27,11 +27,22 @@ function mockFetch(body: unknown): void {
 }
 
 describe("AnilistProvider", () => {
-  const quota = { record: jest.fn() };
-  const provider = new AnilistProvider(quota as unknown as QuotaTrackerService);
+  let provider: AnilistProvider;
+
+  beforeEach(() => {
+    // The provider throttles calls to stay under AniList's 90 req/min cap via
+    // Date.now(); advance it well past the threshold on every read so tests
+    // don't actually sleep. Fresh provider each time so its throttle state
+    // doesn't leak across tests along with the mock.
+    let now = 0;
+    jest.spyOn(Date, "now").mockImplementation(() => (now += 5000));
+    const quota = { record: jest.fn() };
+    provider = new AnilistProvider(quota as unknown as QuotaTrackerService);
+  });
 
   afterEach(() => {
     global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
   it("maps search results, preferring the English title", async () => {
@@ -74,6 +85,21 @@ describe("AnilistProvider", () => {
       title: "Episode 1 - The Journey's End",
       airDate: null,
     });
+  });
+
+  it("fails fast on a 429 instead of waiting out AniList's minute-long ban", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response("{}", {
+        status: 429,
+        headers: { "Retry-After": "60" },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(provider.search("Frieren")).rejects.toThrow();
+    // A single attempt: the 60s Retry-After blows past maxRetryDelayMs, so
+    // the call gives up rather than retrying.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to aired count for ongoing shows without a total episode count", async () => {
