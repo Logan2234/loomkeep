@@ -6,6 +6,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { RequestThrottle } from "../../common/request-throttle";
 import type {
   MusicCatalogProvider,
   ProviderMusicDetails,
@@ -103,7 +104,7 @@ const EXTERNAL_LINK_LABELS: Record<string, string> = {
 export class MusicBrainzProvider implements MusicCatalogProvider {
   readonly source = MusicSource.MUSICBRAINZ;
 
-  private lastRequestAt = 0;
+  private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
 
   constructor(
     private readonly configService: ConfigService,
@@ -278,7 +279,7 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
     let lastStatus = 0;
 
     for (let attempt = 1; attempt <= GET_MAX_ATTEMPTS; attempt++) {
-      await this.throttle();
+      await this.throttle.wait();
 
       this.quota.record("musicbrainz");
       const response = await fetch(url, {
@@ -303,17 +304,6 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
     throw new BadGatewayException(
       `MusicBrainz request failed with status ${lastStatus}`,
     );
-  }
-
-  /** Serialises requests to at most one per `MIN_REQUEST_INTERVAL_MS`. */
-  private async throttle(): Promise<void> {
-    const elapsed = Date.now() - this.lastRequestAt;
-
-    if (elapsed < MIN_REQUEST_INTERVAL_MS) {
-      await sleep(MIN_REQUEST_INTERVAL_MS - elapsed);
-    }
-
-    this.lastRequestAt = Date.now();
   }
 }
 

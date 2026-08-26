@@ -12,6 +12,7 @@ import {
 import type { MediaExtrasDto } from "@loomkeep/shared";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { RequestThrottle } from "../../common/request-throttle";
 import type {
   CatalogProvider,
   ProviderEpisode,
@@ -19,6 +20,17 @@ import type {
 } from "./provider.types";
 
 const GRAPHQL_URL = "https://graphql.anilist.co";
+
+// AniList caps usage at 90 requests/minute and imposes a full minute's
+// timeout on the offending IP if that's exceeded — steeper than a plain
+// slow-down. Spacing calls out (shared instance-wide, same model as
+// MusicBrainz) keeps normal usage well clear of that ceiling.
+const MIN_REQUEST_INTERVAL_MS = 700;
+
+// If a 429 still happens (e.g. the ban was already triggered by something
+// else sharing this IP), don't wait out a minute-long Retry-After inline —
+// fail fast so the user gets a clean error instead of a client-side timeout.
+const MAX_RETRY_DELAY_MS = 2_000;
 
 const SEARCH_QUERY = `
   query ($search: String, $page: Int) {
@@ -118,6 +130,8 @@ interface AnilistExtras {
 @Injectable()
 export class AnilistProvider implements CatalogProvider {
   readonly source = CatalogSource.ANILIST;
+
+  private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
 
   constructor(private readonly quota: QuotaTrackerService) {}
 
@@ -220,6 +234,7 @@ export class AnilistProvider implements CatalogProvider {
     query: string,
     variables: Record<string, unknown>,
   ): Promise<T> {
+    await this.throttle.wait();
     this.quota.record("anilist");
     const body = await fetchJson<{
       data?: T;
@@ -234,7 +249,11 @@ export class AnilistProvider implements CatalogProvider {
         },
         body: JSON.stringify({ query, variables }),
       },
-      { sourceLabel: "AniList", notFoundMessage: "Media not found on AniList" },
+      {
+        sourceLabel: "AniList",
+        notFoundMessage: "Media not found on AniList",
+        maxRetryDelayMs: MAX_RETRY_DELAY_MS,
+      },
     );
 
     if (body.errors?.length || !body.data) {

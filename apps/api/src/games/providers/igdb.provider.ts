@@ -5,6 +5,7 @@ import { GameSource, GameSummaryDto } from "@loomkeep/shared";
 import { chunk } from "../../common/array.util";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { RequestThrottle } from "../../common/request-throttle";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,
@@ -21,6 +22,12 @@ const EROTIC_THEME_ID = 42;
 // Refresh the app-access token a minute before it actually expires, so a call
 // never rides on a token that lapses mid-flight.
 const TOKEN_SKEW_MS = 60 * 1000;
+
+// IGDB caps usage at 4 requests/second and 8 concurrent requests. Serialising
+// to one request every 260ms (a small margin over the 250ms floor) satisfies
+// both — there's never more than one in flight — shared instance-wide across
+// every user of this self-hosted origin, same model as MusicBrainz.
+const MIN_REQUEST_INTERVAL_MS = 260;
 
 interface IgdbImage {
   image_id: string;
@@ -95,6 +102,7 @@ export class IgdbProvider implements GameCatalogProvider {
   readonly source = GameSource.IGDB;
 
   private token: { value: string; expiresAt: number } | null = null;
+  private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
 
   constructor(
     private readonly configService: ConfigService,
@@ -250,6 +258,7 @@ export class IgdbProvider implements GameCatalogProvider {
 
   /** POST an Apicalypse query to an IGDB endpoint with a valid access token. */
   private async query<T>(path: string, body: string): Promise<T> {
+    await this.throttle.wait();
     this.quota.record("igdb");
     return fetchJson<T>(
       `${API_URL}${path}`,
