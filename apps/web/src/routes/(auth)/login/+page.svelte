@@ -30,6 +30,8 @@
   let verifying = $state(false);
   let resendCooldown = $state(0);
   let resendTimer: ReturnType<typeof setInterval> | undefined;
+  let methodError = $state<string | null>(null);
+  let switchingMethod = $state(false);
 
   // Only follow redirectTo when it's an internal path — anything else could
   // be an open-redirect vector (e.g. redirectTo=https://evil.example).
@@ -69,10 +71,30 @@
     }
   }
 
-  function chooseMethod(method: MfaMethod) {
-    selectedMethod = method;
+  // Only the email method needs a send before showing the code screen — TOTP
+  // and recovery codes need nothing from the server. Sending here (rather
+  // than eagerly for every MFA-enabled login) means an account with both
+  // TOTP and email enabled only burns an email send if the user actually
+  // picks that method.
+  async function chooseMethod(method: MfaMethod) {
     codeInput = "";
     codeError = null;
+
+    if (method === "email") {
+      methodError = null;
+      switchingMethod = true;
+      try {
+        await resendMfaEmailCode(challengeId);
+      } catch (err) {
+        methodError =
+          err instanceof ApiError ? err.message : m.common_save_error_fallback();
+        switchingMethod = false;
+        return;
+      }
+      switchingMethod = false;
+    }
+
+    selectedMethod = method;
     step = "code";
   }
 
@@ -168,7 +190,8 @@
             {#if availableMethods.includes("totp")}
               <button
                 type="button"
-                class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors"
+                class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
+                disabled={switchingMethod}
                 onclick={() => chooseMethod("totp")}>
                 <Icon name="qr-code" class="text-accent h-6 w-6 shrink-0" />
                 <span>
@@ -184,7 +207,8 @@
             {#if availableMethods.includes("email")}
               <button
                 type="button"
-                class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors"
+                class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
+                disabled={switchingMethod}
                 onclick={() => chooseMethod("email")}>
                 <Icon name="mail" class="text-accent h-6 w-6 shrink-0" />
                 <span>
@@ -192,12 +216,15 @@
                     {m.auth_mfa_choose_method_email_label()}
                   </span>
                   <span class="text-dim block text-sm">
-                    {m.auth_mfa_choose_method_email_desc()}
+                    {switchingMethod
+                      ? m.auth_mfa_sending_code()
+                      : m.auth_mfa_choose_method_email_desc()}
                   </span>
                 </span>
               </button>
             {/if}
           </div>
+          {#if methodError}<Banner variant="error">{methodError}</Banner>{/if}
           <button
             type="button"
             class="btn-text btn-text-underline text-dim hover:text-fg self-center text-sm"

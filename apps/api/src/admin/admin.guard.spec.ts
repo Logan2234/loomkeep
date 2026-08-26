@@ -1,4 +1,5 @@
 import { ExecutionContext, ForbiddenException } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminGuard } from "./admin.guard";
 
@@ -13,6 +14,7 @@ function contextFor(userId?: string): ExecutionContext {
 function makeGuard(
   role: unknown,
   mfa: { mfaTotpEnabled?: boolean; mfaEmailEnabled?: boolean } = {},
+  nodeEnv: string = "production",
 ) {
   const prisma = {
     user: {
@@ -24,7 +26,10 @@ function makeGuard(
       }),
     },
   } as unknown as PrismaService;
-  return { guard: new AdminGuard(prisma), prisma };
+  const config = {
+    get: jest.fn((key: string) => (key === "NODE_ENV" ? nodeEnv : undefined)),
+  } as unknown as ConfigService;
+  return { guard: new AdminGuard(prisma, config), prisma };
 }
 
 describe("AdminGuard", () => {
@@ -38,11 +43,16 @@ describe("AdminGuard", () => {
     await expect(guard.canActivate(contextFor("user-1"))).resolves.toBe(true);
   });
 
-  it("rejects an admin account with no MFA method active (LK-C17)", async () => {
-    const { guard } = makeGuard("ADMIN");
+  it("rejects an admin account with no MFA method active in production (LK-C17)", async () => {
+    const { guard } = makeGuard("ADMIN", {}, "production");
     await expect(guard.canActivate(contextFor("user-1"))).rejects.toThrow(
       "MFA_REQUIRED",
     );
+  });
+
+  it("allows an admin account with no MFA method active outside production", async () => {
+    const { guard } = makeGuard("ADMIN", {}, "development");
+    await expect(guard.canActivate(contextFor("user-1"))).resolves.toBe(true);
   });
 
   it("rejects an account with the USER role", async () => {

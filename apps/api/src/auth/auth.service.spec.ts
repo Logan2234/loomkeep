@@ -935,6 +935,79 @@ describe("AuthService.login — MFA challenge (LK-C17)", () => {
     );
     expect(result).toMatchObject({ availableMethods: ["email", "recovery"] });
   });
+
+  it("does NOT send the email code when TOTP is also enabled — only once the user picks it", async () => {
+    const { service, prisma, mail } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({
+      passwordHash,
+      mfaTotpEnabled: true,
+      mfaEmailEnabled: true,
+    });
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.mfaLoginChallenge.create as jest.Mock).mockResolvedValue({
+      id: "challenge-1",
+    });
+
+    const result = await service.login({
+      identifier: "alice@example.com",
+      password: "correct-password",
+    });
+
+    expect(mail.sendMfaEmailCode).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      availableMethods: ["totp", "email", "recovery"],
+    });
+    expect(prisma.mfaLoginChallenge.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          emailCodeHash: undefined,
+          emailCodeExpiresAt: undefined,
+        }),
+      }),
+    );
+  });
+});
+
+describe("AuthService.resendMfaEmailCode", () => {
+  it("generates and sends a code even when none was sent yet (first pick of the email method)", async () => {
+    const { service, prisma, mail } = makeService();
+    const user = makeUser({ mfaTotpEnabled: true, mfaEmailEnabled: true });
+    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+      id: "challenge-1",
+      userId: user.id,
+      totpAllowed: true,
+      emailAllowed: true,
+      emailCodeHash: null,
+      emailCodeExpiresAt: null,
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+
+    await service.resendMfaEmailCode("challenge-1");
+
+    expect(mail.sendMfaEmailCode).toHaveBeenCalledWith(
+      user.email,
+      expect.stringMatching(/^\d{6}$/),
+    );
+    expect(prisma.mfaLoginChallenge.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "challenge-1" } }),
+    );
+  });
+
+  it("rejects when the method isn't actually allowed on this challenge", async () => {
+    const { service, prisma } = makeService();
+    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+      id: "challenge-1",
+      emailAllowed: false,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    await expect(service.resendMfaEmailCode("challenge-1")).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
 });
 
 describe("AuthService.verifyMfaLogin", () => {

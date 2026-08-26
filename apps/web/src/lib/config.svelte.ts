@@ -2,12 +2,15 @@
  * Global runtime config (Svelte 5 runes), loaded once at startup from
  * `GET /api/config` (see initConfig in api/config.ts). Drives which optional
  * surfaces the app renders. Defaults to social OFF, registration OFF and erd
- * OFF so nothing optional shows until the deployment confirms its actual config.
+ * OFF so nothing optional shows until the deployment confirms its actual
+ * config — adminMfaEnforced defaults to true instead, the safe direction for
+ * a security gate (fail closed, not open, if the config fetch fails).
  */
 class AppConfig {
   socialEnabled = $state(false);
   registrationEnabled = $state(false);
   erdEnabled = $state(false);
+  adminMfaEnforced = $state(true);
   version = $state("");
   gitSha = $state("");
 }
