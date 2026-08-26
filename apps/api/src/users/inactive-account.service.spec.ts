@@ -69,7 +69,7 @@ describe("InactiveAccountService.scan", () => {
     const { service, prisma, accountDeletion } = makeService();
     (prisma.user.findMany as jest.Mock)
       .mockResolvedValueOnce([]) // no new warnings to send
-      .mockResolvedValueOnce([{ id: "user-2", email: "bob@example.com" }]);
+      .mockResolvedValueOnce([{ id: "user-2" }]);
 
     const result = await service.scan();
 
@@ -78,11 +78,10 @@ describe("InactiveAccountService.scan", () => {
         lastActiveAt: { lte: expect.any(Date) },
         inactivityWarningSentAt: { not: null },
       },
-      select: { id: true, email: true },
+      select: { id: true },
     });
     expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
       "user-2",
-      "bob@example.com",
       expect.stringContaining("LK-C06"),
     );
     expect(result).toEqual({ warned: 0, deleted: 1 });

@@ -372,8 +372,8 @@ export interface SecurityEventDto {
   type: SecurityEventType;
   /** Null once the account has since been deleted (USER_DELETED itself, or any earlier event on it). */
   userId: string | null;
-  /** Email or username involved — kept even after the account is gone, so the trail stays legible. */
-  identifier: string;
+  /** For LOGIN_FAILED, the string actually typed. Otherwise derived from the linked account's current email — null once the account is deleted. */
+  identifier: string | null;
   /** Free-form context, e.g. the old → new email on an EMAIL_CHANGED event. */
   detail: string | null;
   userAgent: string | null;
@@ -388,9 +388,10 @@ export interface SecurityEventListResponseDto {
 /** One committed import (analyze-only runs write nothing and aren't logged here). */
 export interface AdminImportRunDto {
   id: string;
-  /** Null once the account has since been deleted — identifier below is kept. */
+  /** Null once the account has since been deleted. */
   userId: string | null;
-  identifier: string;
+  /** The linked account's current email — null once the account is deleted. */
+  identifier: string | null;
   /** Import source id ("tvtime", "storygraph", "goodreads", "steam"). */
   sourceId: string;
   status: JobStatus;

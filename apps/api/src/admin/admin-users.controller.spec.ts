@@ -335,7 +335,6 @@ describe("AdminUsersController.deleteUser", () => {
       expect.objectContaining({
         type: "USER_DELETED",
         userId: "user-2",
-        identifier: "bob@example.com",
       }),
     );
     expect(moderationDecisions.record).toHaveBeenCalledWith(

@@ -17,14 +17,15 @@ export interface RecordSecurityEventParams {
   type: SecurityEventType;
   /** Null when the account is unknown (e.g. a LOGIN_FAILED against an unregistered identifier). */
   userId?: string | null;
-  identifier: string;
+  /** Only meaningful for LOGIN_FAILED (the string actually typed) — every other type derives its display email from userId at read time, so pass nothing. */
+  identifier?: string;
   detail?: string;
   userAgent?: string;
 }
 
 export interface ListSecurityEventsParams {
   type?: SecurityEventType;
-  /** Case-insensitive partial match against `identifier` — deliberately not limited to current accounts, so it still finds trails left by deleted ones. */
+  /** Matches either the stored identifier (LOGIN_FAILED) or the linked account's current email. */
   identifier?: string;
   page?: number;
 }
@@ -76,10 +77,17 @@ export class SecurityEventService {
       loginFailed7d: last7d,
       loginFailed30d: last30d,
       topTargets7d: rankFailedTargets(
-        byIdentifier.map((row) => ({
-          identifier: row.identifier,
-          failures: row._count._all,
-        })),
+        byIdentifier
+          // LOGIN_FAILED always writes identifier (see #record) — filter is
+          // just to satisfy the now-nullable column's type.
+          .filter(
+            (row): row is typeof row & { identifier: string } =>
+              row.identifier !== null,
+          )
+          .map((row) => ({
+            identifier: row.identifier,
+            failures: row._count._all,
+          })),
       ),
     };
   }
@@ -98,10 +106,25 @@ export class SecurityEventService {
     const events = await this.prisma.securityEvent.findMany({
       where: {
         type: params.type,
-        identifier: params.identifier
-          ? { contains: params.identifier, mode: "insensitive" }
-          : undefined,
+        ...(params.identifier
+          ? {
+              OR: [
+                {
+                  identifier: {
+                    contains: params.identifier,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  user: {
+                    email: { contains: params.identifier, mode: "insensitive" },
+                  },
+                },
+              ],
+            }
+          : {}),
       },
+      include: { user: { select: { email: true } } },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -113,7 +136,7 @@ export class SecurityEventService {
         id: e.id,
         type: e.type as SecurityEventType,
         userId: e.userId,
-        identifier: e.identifier,
+        identifier: e.identifier ?? e.user?.email ?? null,
         detail: e.detail,
         userAgent: e.userAgent,
         createdAt: e.createdAt.toISOString(),

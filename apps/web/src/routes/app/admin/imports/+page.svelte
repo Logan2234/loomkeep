@@ -195,14 +195,14 @@
             <span class="text-fg font-semibold"
               >{sourceLabel(run.sourceId)}</span
             ><span class="text-dim text-sm">·&nbsp;</span>
-            {#if run.userId}
+            {#if run.userId && run.identifier}
               <a
                 href="/app/admin/users?q={encodeURIComponent(run.identifier)}"
                 class="text-dim hover:text-fg text-sm underline decoration-dotted underline-offset-4"
                 title="Voir ce compte">
                 {run.identifier}
               </a>
-            {:else}
+            {:else if run.identifier}
               <span class="text-dim text-sm">{run.identifier}</span>
             {/if}
             {#if run.overwrite}

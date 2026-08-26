@@ -481,7 +481,6 @@ export class UsersController {
     await this.security.record({
       type: "EMAIL_CHANGED",
       userId: payload.sub,
-      identifier: stored.newEmail,
       detail: `${current.email} → ${stored.newEmail}`,
       userAgent,
     });
@@ -520,7 +519,6 @@ export class UsersController {
     await this.security.record({
       type: "PASSWORD_CHANGED",
       userId: payload.sub,
-      identifier: current.email,
       userAgent,
     });
   }
@@ -611,14 +609,10 @@ export class UsersController {
     @Body() dto: DeleteAccountDto,
     @Headers("user-agent") userAgent?: string,
   ): Promise<void> {
-    const current = await this.requireVerifiedUser(
-      payload.sub,
-      dto.currentPassword,
-    );
+    await this.requireVerifiedUser(payload.sub, dto.currentPassword);
 
     await this.accountDeletion.deleteAccount(
       payload.sub,
-      current.email,
       "Suppression demandée par l'utilisateur",
       userAgent,
     );

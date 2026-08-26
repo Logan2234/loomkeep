@@ -88,13 +88,12 @@ export class InactiveAccountService {
         lastActiveAt: { lte: monthsAgo(DELETE_AFTER_MONTHS) },
         inactivityWarningSentAt: { not: null },
       },
-      select: { id: true, email: true },
+      select: { id: true },
     });
 
     for (const user of candidates) {
       await this.accountDeletion.deleteAccount(
         user.id,
-        user.email,
         `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois, LK-C06)`,
       );
       this.logger.log(`Compte ${user.id} supprimé pour inactivité`);

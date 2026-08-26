@@ -34,7 +34,7 @@ describe("SecurityEventService.record", () => {
 });
 
 describe("SecurityEventService.list", () => {
-  it("defaults to page 1 and filters by type + a case-insensitive identifier match", async () => {
+  it("defaults to page 1 and filters by type + a case-insensitive match on either the stored identifier or the linked account's email", async () => {
     const { service, prisma } = makeService();
 
     await service.list({ type: "USER_DELETED", identifier: "Alice" });
@@ -43,7 +43,10 @@ describe("SecurityEventService.list", () => {
       expect.objectContaining({
         where: {
           type: "USER_DELETED",
-          identifier: { contains: "Alice", mode: "insensitive" },
+          OR: [
+            { identifier: { contains: "Alice", mode: "insensitive" } },
+            { user: { email: { contains: "Alice", mode: "insensitive" } } },
+          ],
         },
         skip: 0,
         take: 50,
@@ -59,5 +62,36 @@ describe("SecurityEventService.list", () => {
     expect(prisma.securityEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 100, take: 50 }),
     );
+  });
+
+  it("derives the display identifier from the linked account's email once the raw identifier is gone", async () => {
+    const { service, prisma } = makeService();
+    (prisma.securityEvent.findMany as jest.Mock).mockResolvedValue([
+      {
+        id: "e1",
+        type: "PASSWORD_CHANGED",
+        userId: "u1",
+        identifier: null,
+        user: { email: "a@b.com" },
+        detail: null,
+        userAgent: null,
+        createdAt: new Date("2026-01-01"),
+      },
+      {
+        id: "e2",
+        type: "USER_DELETED",
+        userId: null,
+        identifier: null,
+        user: null,
+        detail: null,
+        userAgent: null,
+        createdAt: new Date("2026-01-02"),
+      },
+    ]);
+
+    const { events } = await service.list({});
+
+    expect(events[0].identifier).toBe("a@b.com");
+    expect(events[1].identifier).toBeNull();
   });
 });
