@@ -1,19 +1,24 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, type ValidationError } from "@nestjs/common";
 import { AppException } from "./app.exception";
+import { extractConstraintParams } from "./validation-params.util";
+
+interface ValidationDetail {
+  field: string;
+  constraint: string;
+  params?: (string | number | boolean)[];
+}
 
 /**
  * Thrown by the global ValidationPipe's exceptionFactory (see main.ts)
  * instead of Nest's default flat message-array BadRequestException. Carries
- * per-field {field, constraint} pairs so the web app can eventually render
- * them under each input — see the "Translate form validation errors" ticket.
- * Until that ships, apps/web falls back to the joined constraint messages
- * for this one code (see the ValidationFailed case in
- * apps/web/src/lib/api/errors.ts) rather than a generic sentence, so no
- * screen regresses.
+ * per-field {field, constraint, params} triples so apps/web can render a
+ * translated message under each input (see
+ * apps/web/src/lib/api/validation-messages.ts) instead of the raw English
+ * class-validator message.
  */
 export class ValidationException extends AppException {
-  readonly details: { field: string; constraint: string }[];
+  readonly details: ValidationDetail[];
 
   constructor(errors: ValidationError[]) {
     const details = flattenValidationErrors(errors);
@@ -31,15 +36,18 @@ export class ValidationException extends AppException {
 function flattenValidationErrors(
   errors: ValidationError[],
   parentPath = "",
-): { field: string; constraint: string }[] {
+): ValidationDetail[] {
   return errors.flatMap((error) => {
     const field = parentPath
       ? `${parentPath}.${error.property}`
       : error.property;
+
     const own = Object.keys(error.constraints ?? {}).map((constraint) => ({
       field,
       constraint,
+      params: extractConstraintParams(error.target, error.property, constraint),
     }));
+
     const nested = error.children?.length
       ? flattenValidationErrors(error.children, field)
       : [];

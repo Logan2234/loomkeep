@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { login, resendMfaEmailCode, verifyMfaLogin } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { bannerMessage, fieldError } from "$lib/api/validation-messages";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
@@ -14,6 +15,7 @@
   let identifier = $state("");
   let password = $state("");
   let error = $state<string | null>(null);
+  let identifierError = $state<string | undefined>();
   let loading = $state(false);
 
   type Step = "credentials" | "choose-method" | "code";
@@ -39,6 +41,7 @@
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     error = null;
+    identifierError = undefined;
     loading = true;
     try {
       const result = await login({ identifier, password });
@@ -60,7 +63,8 @@
       }
       await goto(safeRedirect(page.url.searchParams.get("redirectTo")));
     } catch (err) {
-      error = resolveApiError(err);
+      identifierError = fieldError(err, "identifier");
+      error = bannerMessage(err, ["identifier"]);
     } finally {
       loading = false;
     }
@@ -149,6 +153,9 @@
             bind:value={identifier}
             required
             class="input" />
+          {#if identifierError}
+            <p class="text-danger -mt-2 text-xs">{identifierError}</p>
+          {/if}
           <PasswordInput
             placeholder={m.auth_login_password_placeholder()}
             bind:value={password}

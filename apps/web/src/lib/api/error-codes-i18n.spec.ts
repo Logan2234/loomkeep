@@ -1,7 +1,7 @@
 import { ErrorCode, errorCodeToMessageKey } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
-import en from "../../../messages/en.json";
-import fr from "../../../messages/fr.json";
+import en from "../../../messages/en/errors.json";
+import fr from "../../../messages/fr/errors.json";
 
 // Guardrail for the "API error codes" rework: every code declared in
 // packages/shared/src/error-codes.ts must have a translated message in both

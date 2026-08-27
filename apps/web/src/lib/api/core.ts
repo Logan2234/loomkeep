@@ -20,7 +20,7 @@ export class ApiError extends Error {
     message: string,
     readonly code: ErrorCode | null = null,
     readonly params?: Record<string, string | number>,
-    readonly details?: { field: string; constraint: string }[],
+    readonly details?: ApiErrorBody["details"],
     readonly requestId?: string,
     /** Seconds to wait before retrying, parsed from a 429's Retry-After header. */
     readonly retryAfterSeconds?: number,

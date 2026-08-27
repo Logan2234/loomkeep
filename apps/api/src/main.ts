@@ -78,6 +78,13 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
+    // ValidationException (exceptionFactory below) reads each error's
+    // `.target` — the validated DTO instance — to look up the raw
+    // constraint arguments in class-validator's metadata storage. That
+    // relies on class-validator's own default (`validationError.target`
+    // defaults to `true`), which we don't override here: setting
+    // `validationError: { target: false }` would silently break the
+    // per-field param extraction.
     new ValidationPipe({
       whitelist: true,
       transform: true,

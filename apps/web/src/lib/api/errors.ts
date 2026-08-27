@@ -188,15 +188,9 @@ const MESSAGES = {
     m.apierr_import_archive_missing_files(),
   [ErrorCode.ImportArchiveMalformed]: () => m.apierr_import_archive_malformed(),
   [ErrorCode.InvalidParam]: () => m.apierr_validation_invalid_param(),
-  // Transition case: until the "Translate form validation errors" ticket
-  // ships per-field UX, this key isn't actually read — resolveApiError()
-  // falls back to the API's joined constraint messages instead, so no
-  // screen regresses in the meantime. Still needs an entry here for the
-  // `satisfies` check below.
   [ErrorCode.ValidationFailed]: () => m.apierr_validation_failed(),
   [ErrorCode.InternalError]: () => m.apierr_internal_error(),
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
-  [ErrorCode.NetworkTimeout]: () => m.apierr_network_timeout(),
 } satisfies Record<ErrorCode, () => string>;
 
 /**
@@ -243,10 +237,6 @@ function statusFallback(err: ApiError): string {
 export function resolveApiError(err: unknown): string {
   if (!(err instanceof ApiError)) {
     return m.apierr_status_500();
-  }
-
-  if (err.code === ErrorCode.ValidationFailed) {
-    return err.message || m.apierr_validation_failed();
   }
 
   if (err.code && err.code in MESSAGES) {
