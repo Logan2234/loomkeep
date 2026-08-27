@@ -18,6 +18,7 @@ pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after edit
 # Tools
 pnpm lint                                      # global eslint + prettier
 pnpm lint:fix                                  # global auto-fix lintable issues (js/ts/svelte)
+pnpm check                                     # global typecheck (tsc --noEmit on api/shared, svelte-check on web)
 pnpm knip                                      # global dead code / unused dependency detection
 ```
 
@@ -26,24 +27,26 @@ auto-fixes and formats staged files (`eslint --fix` for js/ts/svelte —
 formatting is itself an ESLint rule via `eslint-plugin-prettier`, so this one
 step covers both; `prettier --write` for json/md/css/yaml) and re-stages them.
 **Formatting is handled by this hook.**
-`pre-push` runs the heavier gate once per push: `pnpm build:package && pnpm
-lint && pnpm --filter @loomkeep/web check` (unit tests and e2e are left to
-CI's `lint-build-test`/`e2e` jobs — running them again locally on every push
-just duplicates that gate). `knip` (dead code / unused dependency detection) is available via
-`pnpm knip` but isn't wired into a hook — run it on demand.
+`pre-push` runs `pnpm check` — a recursive typecheck across `apps/api`,
+`apps/web` and `packages/shared` (unit tests, e2e, and full-repo lint are
+left to CI's `lint-build-test`/`e2e` jobs — running them again locally on
+every push just duplicates that gate). `knip` (dead code / unused dependency
+detection) is available via `pnpm knip` but isn't wired into a hook — run it
+on demand.
 **Never lint, format, or typecheck yourself, at any point in a task —
 mid-edit or as a final pass.** That means no `pnpm lint`, `pnpm lint:fix`,
-`pnpm --filter @loomkeep/web check`, bare `tsc`, or running `pnpm
-build:package` just to see if it type-errors. The hooks above already cover
-every one of these — `pre-commit` formats and lints on every commit,
-`pre-push` typechecks the whole project — so running them yourself only
-duplicates that gate and burns time for nothing. Same for tests: CI runs the
-full suite plus e2e on every PR, so don't run tests as a reflex after every
-batch of edits. Judge whether the change is substantial enough to plausibly
-break something — a style tweak, a Paraglide message wording change, or a
-variable/route rename almost certainly isn't and needs no test run; new or
-changed logic, a refactor touching control flow, or a bug fix does. When a
-run is warranted, prefer a _targeted_ spec over the whole suite.
+`pnpm check`, `pnpm --filter @loomkeep/web check`, bare `tsc`, or running
+`pnpm build:package` just to see if it type-errors. The hooks above already
+cover every one of these — `pre-commit` formats and lints staged files on
+every commit, `pre-push` typechecks the whole project — so running them
+yourself only duplicates that gate and burns time for nothing. Same for
+tests: CI runs the full suite plus e2e on every PR, so don't run tests as a
+reflex after every batch of edits. Judge whether the change is substantial
+enough to plausibly break something — a style tweak, a Paraglide message
+wording change, or a variable/route rename almost certainly isn't and needs
+no test run; new or changed logic, a refactor touching control flow, or a
+bug fix does. When a run is warranted, prefer a _targeted_ spec over the
+whole suite.
 
 ## Architecture
 
@@ -57,6 +60,8 @@ below).
 
 pnpm monorepo, 100% TypeScript: `apps/api` (NestJS + Prisma + PostgreSQL),
 `apps/web` (SvelteKit, PWA), `packages/shared` (DTOs/enums used by both).
+Catalogues come live from TMDB (movies & series), AniList (anime), IGDB
+(games), Open Library (books) and MusicBrainz (music).
 
 Dev database: Docker container `loomkeep-dev-db`, Postgres 18 on port **5433**.
 Connection string lives in `apps/api/.env` (copy from `.env.example`).

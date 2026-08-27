@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "es2025",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "allowUnreachableCode": false,
+    "noEmitOnError": true
   }
 }

@@ -50,7 +50,7 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     return { source: this.id, code: input.trim(), shows: [], movies: [] };
   }
 
-  protected async load(parsed: SimklParsed): Promise<void> {
+  protected override async load(parsed: SimklParsed): Promise<void> {
     const accessToken = await this.exchangeCode(parsed.code);
     const data = await this.getAllItems(accessToken);
     parsed.shows = buildImportShows(data);

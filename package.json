@@ -1,13 +1,43 @@
 {
+  "$schema": "https://www.schemastore.org/package",
   "name": "loomkeep",
+  "description": "Personal tracker for everything you watch, play, read and listen to — series, movies, anime, games, books and albums, with more on the way — hosted or self-hosted, open-core.",
   "version": "1.6.0",
+  "author": {
+    "name": "Logan WILLEM",
+    "email": "loganwi322.dev@gmail.com"
+  },
   "private": true,
-  "description": "Personal tracker for everything you watch, play and read — series, games and books, with more on the way — hosted or self-hosted, open-core.",
   "license": "AGPL-3.0-only",
+  "bugs": {
+    "email": "loganwi322.dev@gmail.com",
+    "url": "https://feedback.loomkeep.app/?board=bug-reports"
+  },
   "engines": {
     "node": ">=22"
   },
   "packageManager": "pnpm@11.23.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Logan2234/loomkeep.git"
+  },
+  "homepage": "https://loomkeep.app",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/Logan2234"
+  },
+  "keywords": [
+    "media-tracker",
+    "self-hosted",
+    "movies",
+    "series",
+    "anime",
+    "games",
+    "books",
+    "music",
+    "sveltekit",
+    "nestjs"
+  ],
   "scripts": {
     "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" dev",
     "build:package": "pnpm --filter \"./packages/*\" build",

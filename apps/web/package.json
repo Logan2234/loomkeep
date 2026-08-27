@@ -1,9 +1,23 @@
 {
   "name": "@loomkeep/web",
-  "private": true,
+  "description": "Loomkeep's SvelteKit web client — the frontend consuming @loomkeep/api",
   "version": "1.6.0",
+  "author": {
+    "name": "Logan WILLEM",
+    "email": "loganwi322.dev@gmail.com"
+  },
+  "private": true,
   "license": "AGPL-3.0-only",
+  "bugs": {
+    "email": "loganwi322.dev@gmail.com",
+    "url": "https://feedback.loomkeep.app/?board=bug-reports"
+  },
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Logan2234/loomkeep.git",
+    "directory": "apps/web"
+  },
   "scripts": {
     "clean": "rm -rf build",
     "clean:dev": "rm -rf build node_modules .svelte-kit",

@@ -3,16 +3,12 @@
   "compilerOptions": {
     "resolvePackageJsonExports": true,
     "isolatedModules": true,
-    "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist",
     "incremental": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "./",
     "types": ["node", "jest"]

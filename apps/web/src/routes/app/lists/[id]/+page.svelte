@@ -92,6 +92,7 @@
             });
         }
         error = resolveApiError(err);
+        return;
       })
       .finally(() => (loading = false));
   }

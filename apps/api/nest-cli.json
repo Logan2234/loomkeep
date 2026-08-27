@@ -1,11 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
+  "entryFile": "main",
+  "language": "ts",
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
     "plugins": ["@nestjs/swagger"],
-    "manualRestart": true,
+    "manualRestart": false,
     "builder": "tsc",
     "tsConfigPath": "tsconfig.build.json"
   }

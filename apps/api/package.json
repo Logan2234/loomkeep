@@ -1,16 +1,30 @@
 {
   "name": "@loomkeep/api",
+  "description": "Loomkeep's NestJS REST API — auth, catalog providers and library data behind the web client",
   "version": "1.6.0",
-  "description": "Loomkeep REST API (NestJS)",
+  "author": {
+    "name": "Logan WILLEM",
+    "email": "loganwi322.dev@gmail.com"
+  },
   "private": true,
   "license": "AGPL-3.0-only",
+  "bugs": {
+    "email": "loganwi322.dev@gmail.com",
+    "url": "https://feedback.loomkeep.app/?board=bug-reports"
+  },
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Logan2234/loomkeep.git",
+    "directory": "apps/api"
+  },
   "scripts": {
     "build": "nest build",
     "clean": "rm -rf dist tsconfig.build.tsbuildinfo",
     "clean:dev": "rm -rf dist tsconfig.build.tsbuildinfo node_modules",
     "dev": "nest start --watch",
     "start": "nest start",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "jest",
