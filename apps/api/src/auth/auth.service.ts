@@ -6,13 +6,11 @@ import type {
   SessionDto,
   UserDto,
 } from "@loomkeep/shared";
-import { deviceLabel, LEGAL_VERSION } from "@loomkeep/shared";
+import { deviceLabel, ErrorCode, LEGAL_VERSION } from "@loomkeep/shared";
 import {
   BadRequestException,
-  ConflictException,
-  ForbiddenException,
+  HttpStatus,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -20,6 +18,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
@@ -69,11 +68,17 @@ export class AuthService {
     acceptLanguage?: string,
   ): Promise<AuthResult> {
     if (!isRegistrationEnabled(this.configService, this.flags)) {
-      throw new ForbiddenException("Registration is disabled");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.AuthRegistrationDisabled,
+      );
     }
 
     if (!(await this.turnstile.verify(dto.turnstileToken, ip))) {
-      throw new BadRequestException("Anti-bot verification failed");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthAntiBotVerificationFailed,
+      );
     }
 
     const existing = await this.prisma.user.findUnique({
@@ -81,7 +86,10 @@ export class AuthService {
     });
 
     if (existing) {
-      throw new ConflictException("An account with this email already exists");
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.AuthEmailAlreadyExists,
+      );
     }
 
     if (await this.hibp.isPasswordPwned(dto.password)) {
@@ -165,7 +173,10 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AuthAccountNotFound,
+      );
     }
 
     if (user.emailVerified) {

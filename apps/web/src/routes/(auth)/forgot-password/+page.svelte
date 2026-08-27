@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, forgotPassword } from "$lib/api/client";
+  import { forgotPassword } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -16,10 +17,7 @@
       await forgotPassword(email);
       submitted = true;
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : m.auth_forgot_password_error_fallback();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }

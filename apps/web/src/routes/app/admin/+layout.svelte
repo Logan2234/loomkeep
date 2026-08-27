@@ -16,8 +16,9 @@
 
   // LK-C17: an admin with no MFA method active is shown an explainer instead
   // of the section — not a silent bounce, since they need a clear path to fix
-  // it. Real enforcement is server-side (AdminGuard 403s "MFA_REQUIRED"
-  // regardless); this is just the UX for that state, not the security
+  // it. Real enforcement is server-side (AdminGuard 403s with
+  // ErrorCode.AuthMfaRequired regardless); this is just the UX for that
+  // state, not the security
   // boundary. Gated on appConfig.adminMfaEnforced (mirrors the API's own
   // NODE_ENV check) so this screen never blocks access the API would
   // actually allow outside production.

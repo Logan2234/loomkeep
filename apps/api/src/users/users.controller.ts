@@ -1,5 +1,6 @@
 import {
   Domain,
+  ErrorCode,
   LEGAL_VERSION,
   UserDto,
   UsernameAvailabilityDto,
@@ -38,6 +39,7 @@ import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -156,12 +158,18 @@ export class UsersController {
     const buffer = Buffer.from(dto.data, "base64");
 
     if (buffer.length === 0 || buffer.length > MAX_AVATAR_BYTES) {
-      throw new BadRequestException("Image trop volumineuse");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserAvatarTooLarge,
+      );
     }
 
     if (!matchesMimeType(buffer, dto.mimeType)) {
-      throw new BadRequestException(
-        "Le fichier ne correspond pas au type d'image déclaré",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserAvatarInvalidType,
+        undefined,
+        "File does not match the declared image type",
       );
     }
 

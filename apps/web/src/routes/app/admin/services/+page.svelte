@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, getAdminServices } from "$lib/api/client";
+  import { getAdminServices } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -25,8 +26,7 @@
       services = res.services;
       checkedAt = res.checkedAt;
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.admin_services_fetch_error();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }

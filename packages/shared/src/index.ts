@@ -26,5 +26,6 @@ export * from "./dto/stats";
 export * from "./dto/user";
 export * from "./dto/widget";
 export * from "./enums";
+export * from "./error-codes";
 export * from "./legal";
 export * from "./password";

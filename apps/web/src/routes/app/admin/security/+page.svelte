@@ -2,8 +2,8 @@
   import {
     getAdminSecurityEvents,
     getAdminSecuritySummary,
-    ApiError,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -70,7 +70,7 @@
       page = targetPage;
       hasMore = res.events.length === 50;
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Journal indisponible";
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }

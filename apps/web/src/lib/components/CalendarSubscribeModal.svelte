@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
     API_URL,
-    ApiError,
     getCalendarToken,
     regenerateCalendarToken,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import Icon from "./Icon.svelte";
@@ -23,10 +23,7 @@
     getCalendarToken()
       .then((result) => (token = result.token))
       .catch((err) => {
-        error =
-          err instanceof ApiError
-            ? err.message
-            : "Impossible de générer le lien.";
+        error = resolveApiError(err);
       })
       .finally(() => (loading = false));
   });
@@ -52,10 +49,7 @@
       await navigator.clipboard.writeText(calendarUrl(result.token));
       toast.success("Nouveau lien copié — l'ancien ne fonctionne plus.");
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : "Impossible de régénérer le lien.";
+      error = resolveApiError(err);
     } finally {
       busy = false;
     }

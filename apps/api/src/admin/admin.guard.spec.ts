@@ -1,5 +1,7 @@
+import { ErrorCode } from "@loomkeep/shared";
 import { ExecutionContext, ForbiddenException } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
+import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminGuard } from "./admin.guard";
 
@@ -46,7 +48,10 @@ describe("AdminGuard", () => {
   it("rejects an admin account with no MFA method active in production (LK-C17)", async () => {
     const { guard } = makeGuard("ADMIN", {}, "production");
     await expect(guard.canActivate(contextFor("user-1"))).rejects.toThrow(
-      "MFA_REQUIRED",
+      AppException,
+    );
+    await expect(guard.canActivate(contextFor("user-1"))).rejects.toMatchObject(
+      { code: ErrorCode.AuthMfaRequired },
     );
   });
 

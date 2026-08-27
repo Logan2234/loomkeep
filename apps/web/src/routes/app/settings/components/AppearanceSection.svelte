@@ -1,6 +1,6 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/auth";
-  import { ApiError } from "$lib/api/core";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -77,8 +77,7 @@
     try {
       await updateMe({ mobileNavShortcuts: next });
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      error = resolveApiError(err);
     } finally {
       saving = false;
     }

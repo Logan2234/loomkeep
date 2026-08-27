@@ -25,10 +25,7 @@
     locked: boolean;
   } = $props();
 
-  const videoStats = statsResource<VideoStatsDto>(
-    getVideoStats,
-    "Statistiques vidéo indisponibles",
-  );
+  const videoStats = statsResource<VideoStatsDto>(getVideoStats);
   const video = $derived(videoStats.data);
   const error = $derived(videoStats.error);
 

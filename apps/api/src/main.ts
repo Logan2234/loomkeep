@@ -11,6 +11,7 @@ import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
+import { ValidationException } from "./common/validation.exception";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -76,7 +77,13 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api");
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      exceptionFactory: (errors) => new ValidationException(errors),
+    }),
+  );
 
   // Swagger UI on /docs, dev-only. @nestjs/swagger is a production dependency
   // regardless (the nest-cli swagger plugin injects it into every compiled

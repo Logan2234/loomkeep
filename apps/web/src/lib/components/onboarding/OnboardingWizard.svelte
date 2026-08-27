@@ -1,7 +1,8 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
-  import { ApiError, completeOnboarding, updateMe } from "$lib/api/client";
+  import { completeOnboarding, updateMe } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
@@ -82,8 +83,7 @@
     try {
       await updateMe({ notifyNewsletter: !auth.user.notifyNewsletter });
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     }
   }
 
@@ -101,8 +101,7 @@
             : DigestCadence.DISABLED,
       });
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     }
   }
 
@@ -123,8 +122,7 @@
         await updateMe({ notifyPush: DigestCadence.WEEKLY });
       }
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     } finally {
       pushBusy = false;
     }

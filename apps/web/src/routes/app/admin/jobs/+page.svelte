@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, getAdminJobs, runAdminJob } from "$lib/api/client";
+  import { getAdminJobs, runAdminJob } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,8 +21,7 @@
     try {
       jobs = (await getAdminJobs()).jobs;
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.admin_jobs_fetch_error();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -34,7 +34,7 @@
       await runAdminJob(key);
       await load();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : m.admin_jobs_run_error();
+      error = resolveApiError(err);
     } finally {
       running = null;
     }

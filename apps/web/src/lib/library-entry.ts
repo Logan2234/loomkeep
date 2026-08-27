@@ -1,6 +1,5 @@
-import { ApiError } from "$lib/api/client";
+import { resolveApiError } from "$lib/api/errors";
 import { toast } from "$lib/toast.svelte";
-import { m } from "./paraglide/messages";
 
 /**
  * Shared plumbing for the three detail pages (media, games, books): the
@@ -41,8 +40,6 @@ export interface LibraryEntryConfig<TDetail extends DetailWithEntry, TChanges> {
   addReplay?: (entryId: string) => Promise<unknown>;
   /** Deletes a replay/reread (games & books only). */
   removeReplay?: (replayId: string) => Promise<unknown>;
-  /** Error shown when add() fails (wording is domain-specific). */
-  addErrorMessage: string;
 }
 
 export interface LibraryEntryActions<TChanges> {
@@ -75,8 +72,7 @@ export function createLibraryEntryActions<
       await config.add(detail);
       await reload();
     } catch (err) {
-      state.error =
-        err instanceof ApiError ? err.message : config.addErrorMessage;
+      state.error = resolveApiError(err);
     } finally {
       state.saving = false;
     }
@@ -92,8 +88,7 @@ export function createLibraryEntryActions<
       await config.update(entry.id, changes);
       await reload(); // Re-fetch so the derived status/progress refresh.
     } catch (err) {
-      state.error =
-        err instanceof ApiError ? err.message : "Mise à jour impossible";
+      state.error = resolveApiError(err);
     } finally {
       state.saving = false;
     }
@@ -111,10 +106,7 @@ export function createLibraryEntryActions<
       toast.success("Retiré de ta bibliothèque.");
       await reload(); // Entry becomes null → the page returns to the "add" state.
     } catch (err) {
-      state.error =
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback();
+      state.error = resolveApiError(err);
     } finally {
       state.removing = false;
     }
@@ -130,8 +122,7 @@ export function createLibraryEntryActions<
       await config.addReplay(entry.id);
       await reload();
     } catch (err) {
-      state.error =
-        err instanceof ApiError ? err.message : "Impossible d'enregistrer";
+      state.error = resolveApiError(err);
     } finally {
       state.saving = false;
     }
@@ -146,8 +137,7 @@ export function createLibraryEntryActions<
       await config.removeReplay(replayId);
       await reload();
     } catch (err) {
-      state.error =
-        err instanceof ApiError ? err.message : "Impossible de supprimer";
+      state.error = resolveApiError(err);
     } finally {
       state.saving = false;
     }

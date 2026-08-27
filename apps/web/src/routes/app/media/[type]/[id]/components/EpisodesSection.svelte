@@ -1,12 +1,12 @@
 <script lang="ts">
   import {
-    ApiError,
     unwatchEpisode,
     unwatchSeason,
     watchEpisode,
     watchSeason,
     watchThrough,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
@@ -127,11 +127,7 @@
       await watchEpisode(episodeId);
       await reload();
     } catch (err) {
-      onError(
-        err instanceof ApiError
-          ? err.message
-          : "Impossible de marquer comme vu",
-      );
+      onError(resolveApiError(err));
     } finally {
       busyEpisodeId = null;
     }
@@ -163,11 +159,7 @@
       await watchThrough(episodeId);
       await reload();
     } catch (err) {
-      onError(
-        err instanceof ApiError
-          ? err.message
-          : "Impossible de marquer les épisodes",
-      );
+      onError(resolveApiError(err));
     } finally {
       busyEpisodeId = null;
     }
@@ -188,11 +180,7 @@
       await watchSeason(seasonId);
       await reload();
     } catch (err) {
-      onError(
-        err instanceof ApiError
-          ? err.message
-          : "Impossible de marquer la saison",
-      );
+      onError(resolveApiError(err));
     } finally {
       busySeasonId = null;
     }
@@ -208,11 +196,7 @@
       await reload();
       confirmUnwatchSeasonId = null;
     } catch (err) {
-      onError(
-        err instanceof ApiError
-          ? err.message
-          : "Impossible d'annuler la saison",
-      );
+      onError(resolveApiError(err));
     } finally {
       unwatchingSeasonBusy = false;
     }
@@ -225,11 +209,7 @@
       await unwatchEpisode(episodeId);
       await reload();
     } catch (err) {
-      onError(
-        err instanceof ApiError
-          ? err.message
-          : "Impossible d'annuler le visionnage",
-      );
+      onError(resolveApiError(err));
     } finally {
       busyEpisodeId = null;
     }

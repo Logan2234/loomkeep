@@ -1,6 +1,6 @@
 <script lang="ts">
   import { deleteAvatar, uploadAvatar } from "$lib/api/client";
-  import { ApiError } from "$lib/api/core";
+  import { resolveApiError } from "$lib/api/errors";
   import type { UploadAvatarRequestDto } from "@loomkeep/shared";
   import { m } from "$lib/paraglide/messages.js";
   import Avatar from "./Avatar.svelte";
@@ -148,8 +148,7 @@
       onclose();
     } catch (err) {
       status = "error";
-      error =
-        err instanceof ApiError ? err.message : "Envoi de l'image impossible";
+      error = resolveApiError(err);
     }
   }
 
@@ -163,10 +162,7 @@
       onclose();
     } catch (err) {
       status = "error";
-      error =
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback();
+      error = resolveApiError(err);
     }
   }
 </script>

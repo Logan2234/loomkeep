@@ -12,10 +12,16 @@ import type {
   PagedResult,
   ProgressDto,
 } from "@loomkeep/shared";
-import { ActivityType, isDormant, ReviewTargetType } from "@loomkeep/shared";
+import {
+  ActivityType,
+  ErrorCode,
+  isDormant,
+  ReviewTargetType,
+} from "@loomkeep/shared";
 import {
   BadRequestException,
   ForbiddenException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -28,6 +34,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { MediaItemService } from "../catalog/media-item.service";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -550,7 +557,10 @@ export class LibraryService {
     }
 
     if (episode.airDate && episode.airDate > new Date()) {
-      throw new BadRequestException("Cet épisode n'est pas encore sorti");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryEpisodeNotAired,
+      );
     }
 
     const watch = await this.prisma.episodeWatch.create({
@@ -663,7 +673,10 @@ export class LibraryService {
     }
 
     if (target.airDate && target.airDate > new Date()) {
-      throw new BadRequestException("Cet épisode n'est pas encore sorti");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryEpisodeNotAired,
+      );
     }
 
     if (target.season.number === 0) {

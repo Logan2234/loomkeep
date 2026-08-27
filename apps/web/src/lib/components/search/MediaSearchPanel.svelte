@@ -1,11 +1,11 @@
 <script lang="ts">
   import {
-    ApiError,
     fetchAllPages,
     listLibrary,
     searchCatalog,
     upsertLibraryEntry,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -111,7 +111,7 @@
       });
       await loadTracked();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Ajout impossible";
+      error = resolveApiError(err);
     }
   }
 
@@ -170,7 +170,7 @@
       }
     } catch (err) {
       if (mine !== searchId) return;
-      error = err instanceof ApiError ? err.message : "Recherche impossible";
+      error = resolveApiError(err);
     } finally {
       if (mine === searchId) {
         loading = false;

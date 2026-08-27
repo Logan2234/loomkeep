@@ -5,12 +5,12 @@
   // that belong to an operational page link out to it instead of being
   // duplicated here — this page stays the cross-cutting overview.
   import {
-    ApiError,
     getAdminAccountsStats,
     getAdminCatalogueStats,
     getAdminSocialStats,
     getAdminSystemStats,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -51,8 +51,7 @@
         getAdminSystemStats(),
       ]);
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.admin_stats_fetch_error();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }

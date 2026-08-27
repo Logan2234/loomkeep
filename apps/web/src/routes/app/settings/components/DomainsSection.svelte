@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, updateMe } from "$lib/api/client";
+  import { updateMe } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
@@ -23,8 +24,7 @@
     try {
       await updateMe({ enabledDomains: next });
     } catch (err) {
-      domainsError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      domainsError = resolveApiError(err);
     }
   }
 </script>

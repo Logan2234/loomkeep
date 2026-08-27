@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
-    ApiError,
     deleteMusicEntry,
     getMusicDetail,
     updateMusicEntry,
     upsertMusicEntry,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import { goBack } from "$lib/backNav.svelte";
@@ -114,10 +114,7 @@
     getMusicDetail(SOURCE, i)
       .then((result) => (detail = result))
       .catch((err) => {
-        error =
-          err instanceof ApiError
-            ? err.message
-            : m.common_fetch_error_fallback();
+        error = resolveApiError(err);
       });
   });
 
@@ -164,7 +161,6 @@
         }),
       update: updateMusicEntry,
       remove: deleteMusicEntry,
-      addErrorMessage: "Impossible d'ajouter cet album",
     },
   );
 </script>

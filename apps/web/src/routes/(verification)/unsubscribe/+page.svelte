@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { ApiError, unsubscribeNewsletter } from "$lib/api/client";
+  import { unsubscribeNewsletter } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { m } from "$lib/paraglide/messages.js";
 
   const token = $page.url.searchParams.get("token") ?? "";
@@ -21,10 +22,7 @@
       })
       .catch((err) => {
         status = "error";
-        error =
-          err instanceof ApiError
-            ? err.message
-            : m.newsletter_unsubscribe_error_fallback();
+        error = resolveApiError(err);
       });
   });
 </script>

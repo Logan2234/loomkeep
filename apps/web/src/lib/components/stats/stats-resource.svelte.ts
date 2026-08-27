@@ -3,12 +3,9 @@
 // hand-roll this exact $state trio + $effect block; `fetcher` may read
 // reactive props/state synchronously (e.g. a period prop) to stay
 // re-triggerable, same as the $effect it replaces.
-import { ApiError } from "$lib/api/core";
+import { resolveApiError } from "$lib/api/errors";
 
-export function statsResource<T>(
-  fetcher: () => Promise<T>,
-  fallbackError: string,
-) {
+export function statsResource<T>(fetcher: () => Promise<T>) {
   let data = $state<T | null>(null);
   let error = $state<string | null>(null);
 
@@ -17,7 +14,7 @@ export function statsResource<T>(
     fetcher()
       .then((v) => (data = v))
       .catch((e) => {
-        error = e instanceof ApiError ? e.message : fallbackError;
+        error = resolveApiError(e);
       });
   });
 

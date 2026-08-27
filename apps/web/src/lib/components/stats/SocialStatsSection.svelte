@@ -16,10 +16,7 @@
 
   let { locked }: { locked: boolean } = $props();
 
-  const socialStats = statsResource<SocialStatsDto>(
-    getSocialStats,
-    "Statistiques sociales indisponibles",
-  );
+  const socialStats = statsResource<SocialStatsDto>(getSocialStats);
 
   // Static, made-up preview shown instead of the real (redacted) section
   // when `locked` — see stats.service.ts's redact* methods and

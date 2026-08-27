@@ -1,6 +1,6 @@
 <script lang="ts">
   import { upsertReadingGoal } from "$lib/api/books";
-  import { ApiError } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { m } from "$lib/paraglide/messages.js";
   import type { ReadingGoalDto } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
@@ -34,8 +34,7 @@
       onSaved(await upsertReadingGoal({ year, target }));
       onclose();
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.common_fetch_error_fallback();
+      error = resolveApiError(err);
     } finally {
       saving = false;
     }

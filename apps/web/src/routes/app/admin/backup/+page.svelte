@@ -1,12 +1,12 @@
 <script lang="ts">
   import {
-    ApiError,
     deleteAdminBackupFile,
     getAdminBackupFile,
     getAdminBackupFiles,
     restoreAdminBackup,
     runAdminJob,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -51,8 +51,7 @@
     try {
       files = await getAdminBackupFiles();
     } catch (err) {
-      loadError =
-        err instanceof ApiError ? err.message : "Sauvegardes indisponibles";
+      loadError = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -124,9 +123,7 @@
       await load();
       toast.success("Sauvegarde générée.");
     } catch (err) {
-      toast.error(
-        err instanceof ApiError ? err.message : "Sauvegarde impossible",
-      );
+      toast.error(resolveApiError(err));
     } finally {
       running = false;
     }
@@ -144,9 +141,7 @@
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error(
-        err instanceof ApiError ? err.message : "Téléchargement impossible",
-      );
+      toast.error(resolveApiError(err));
     } finally {
       downloadingId = null;
     }
@@ -161,11 +156,7 @@
       toast.success("Sauvegarde supprimée.");
       pendingDelete = null;
     } catch (err) {
-      toast.error(
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback(),
-      );
+      toast.error(resolveApiError(err));
     } finally {
       deletingId = null;
     }
@@ -202,8 +193,7 @@
       restoreDone = true;
       toast.success("Base de données restaurée.");
     } catch (err) {
-      restoreError =
-        err instanceof ApiError ? err.message : "Restauration impossible";
+      restoreError = resolveApiError(err);
     } finally {
       restoring = false;
     }

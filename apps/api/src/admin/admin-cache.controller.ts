@@ -8,6 +8,7 @@ import type {
   CommentTargetType,
   ReviewTargetType,
 } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
 import {
   BadRequestException,
   ConflictException,
@@ -17,13 +18,13 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
-  NotFoundException,
   Param,
   Post,
   Query,
 } from "@nestjs/common";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
+import { AppException } from "../common/app.exception";
 import { GameItemService } from "../games/game-item.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -215,7 +216,11 @@ export class AdminCacheController {
             _count: { select: { entries: true } },
           },
         });
-        if (!item) throw new NotFoundException("Item introuvable");
+        if (!item)
+          throw new AppException(
+            HttpStatus.NOT_FOUND,
+            ErrorCode.AdminCacheItemNotFound,
+          );
         const sourceId = this.canonicalId(
           item.canonicalSource,
           item.externalIds,
@@ -247,7 +252,11 @@ export class AdminCacheController {
             _count: { select: { entries: true } },
           },
         });
-        if (!item) throw new NotFoundException("Item introuvable");
+        if (!item)
+          throw new AppException(
+            HttpStatus.NOT_FOUND,
+            ErrorCode.AdminCacheItemNotFound,
+          );
         const sourceId = this.canonicalId(
           item.canonicalSource,
           item.externalIds,
@@ -268,7 +277,11 @@ export class AdminCacheController {
             _count: { select: { entries: true } },
           },
         });
-        if (!item) throw new NotFoundException("Item introuvable");
+        if (!item)
+          throw new AppException(
+            HttpStatus.NOT_FOUND,
+            ErrorCode.AdminCacheItemNotFound,
+          );
         const sourceId = this.canonicalId(
           item.canonicalSource,
           item.externalIds,
@@ -289,7 +302,11 @@ export class AdminCacheController {
             _count: { select: { entries: true } },
           },
         });
-        if (!item) throw new NotFoundException("Item introuvable");
+        if (!item)
+          throw new AppException(
+            HttpStatus.NOT_FOUND,
+            ErrorCode.AdminCacheItemNotFound,
+          );
         const sourceId = this.canonicalId(
           item.canonicalSource,
           item.externalIds,
@@ -317,7 +334,10 @@ export class AdminCacheController {
       await this.forceRefresh(cacheDomain, id);
     } catch (err) {
       this.logger.error(`Resync failed for ${cacheDomain}/${id}`, err);
-      throw new NotFoundException("Item introuvable ou source injoignable");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminCacheResyncFailed,
+      );
     }
   }
 
@@ -419,7 +439,11 @@ export class AdminCacheController {
   ): Promise<void> {
     const cacheDomain = this.domainOrThrow(domain);
     const references = await this.referenceCount(cacheDomain, id);
-    if (references === null) throw new NotFoundException("Item introuvable");
+    if (references === null)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminCacheItemNotFound,
+      );
 
     if (references > 0) {
       throw new ConflictException(

@@ -1,12 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import {
-    ApiError,
-    login,
-    resendMfaEmailCode,
-    verifyMfaLogin,
-  } from "$lib/api/client";
+  import { login, resendMfaEmailCode, verifyMfaLogin } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
@@ -64,8 +60,7 @@
       }
       await goto(safeRedirect(page.url.searchParams.get("redirectTo")));
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.auth_login_error_fallback();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -86,10 +81,7 @@
       try {
         await resendMfaEmailCode(challengeId);
       } catch (err) {
-        methodError =
-          err instanceof ApiError
-            ? err.message
-            : m.common_save_error_fallback();
+        methodError = resolveApiError(err);
         switchingMethod = false;
         return;
       }
@@ -108,8 +100,7 @@
       await verifyMfaLogin({ challengeId, code: codeInput.trim() });
       await goto(safeRedirect(page.url.searchParams.get("redirectTo")));
     } catch (err) {
-      codeError =
-        err instanceof ApiError ? err.message : m.auth_mfa_error_invalid_code();
+      codeError = resolveApiError(err);
     } finally {
       verifying = false;
     }
@@ -129,8 +120,7 @@
         }
       }, 1000);
     } catch (err) {
-      codeError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      codeError = resolveApiError(err);
     }
   }
 

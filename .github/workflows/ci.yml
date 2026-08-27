@@ -61,6 +61,9 @@ jobs:
       - name: svelte-check
         if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web check
+      - name: web unit tests
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm --filter @loomkeep/web test
       - name: web production build
         if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web build

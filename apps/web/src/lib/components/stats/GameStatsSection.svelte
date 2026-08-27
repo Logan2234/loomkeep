@@ -21,10 +21,7 @@
     locked: boolean;
   } = $props();
 
-  const gameStats = statsResource<GameStatsDto>(
-    getGameStats,
-    "Statistiques jeux indisponibles",
-  );
+  const gameStats = statsResource<GameStatsDto>(getGameStats);
   const games = $derived(gameStats.data);
   const error = $derived(gameStats.error);
 

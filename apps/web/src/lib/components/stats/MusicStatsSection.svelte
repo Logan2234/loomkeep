@@ -21,10 +21,7 @@
     locked: boolean;
   } = $props();
 
-  const musicStats = statsResource<MusicStatsDto>(
-    getMusicStats,
-    "Statistiques musique indisponibles",
-  );
+  const musicStats = statsResource<MusicStatsDto>(getMusicStats);
   const music = $derived(musicStats.data);
   const error = $derived(musicStats.error);
 

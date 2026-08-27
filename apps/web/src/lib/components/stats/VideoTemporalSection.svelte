@@ -12,9 +12,8 @@
 
   let { period, locked }: { period: StatsWindow; locked: boolean } = $props();
 
-  const temporalStats = statsResource<VideoTemporalDto>(
-    () => getVideoTemporal(period),
-    "Activité indisponible",
+  const temporalStats = statsResource<VideoTemporalDto>(() =>
+    getVideoTemporal(period),
   );
   const temporal = $derived(temporalStats.data);
   const error = $derived(temporalStats.error);

@@ -82,8 +82,7 @@
   title={m.admin_social_activity_title()}
   description={m.admin_social_activity_desc()}
   initial={stats.activity}
-  load={getAdminSocialActivityTrend}
-  errorMessage={m.admin_social_activity_error()}>
+  load={getAdminSocialActivityTrend}>
   {#snippet footer(trend)}
     <p class="timecode mt-1.5 text-xs">
       {m.admin_social_activity_footer({ count: formatNumber(trend.total) })}

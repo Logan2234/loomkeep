@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getAdminSchema, ApiError } from "$lib/api/client";
+  import { getAdminSchema } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
@@ -29,8 +30,7 @@
     try {
       data = await getAdminSchema();
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.admin_schema_fetch_error();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }

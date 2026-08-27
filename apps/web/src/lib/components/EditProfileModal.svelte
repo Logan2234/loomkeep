@@ -1,6 +1,6 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/client";
-  import { ApiError } from "$lib/api/core";
+  import { resolveApiError } from "$lib/api/errors";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { UserDto } from "@loomkeep/shared";
@@ -36,8 +36,7 @@
       onSaved(user);
       onclose();
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      error = resolveApiError(err);
     } finally {
       busy = false;
     }

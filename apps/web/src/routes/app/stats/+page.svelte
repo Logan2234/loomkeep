@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ApiError } from "$lib/api/core";
+  import { resolveApiError } from "$lib/api/errors";
   import {
     getStatsOverview,
     getStatsWorksByDecade,
@@ -73,8 +73,7 @@
     getStatsOverview(domain)
       .then((o) => (overview = o))
       .catch((e) => {
-        error =
-          e instanceof ApiError ? e.message : "Statistiques indisponibles";
+        error = resolveApiError(e);
       });
   });
 

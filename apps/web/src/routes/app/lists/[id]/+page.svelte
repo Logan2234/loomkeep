@@ -9,6 +9,7 @@
     removeListMember,
     reorderListItems,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Banner from "$lib/components/Banner.svelte";
@@ -90,10 +91,7 @@
               error = "Liste introuvable ou non accessible.";
             });
         }
-        error =
-          err instanceof ApiError
-            ? err.message
-            : m.common_fetch_error_fallback();
+        error = resolveApiError(err);
       })
       .finally(() => (loading = false));
   }

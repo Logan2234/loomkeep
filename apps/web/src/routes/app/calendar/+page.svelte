@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, getCalendar } from "$lib/api/client";
+  import { getCalendar } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CalendarSubscribeModal from "$lib/components/CalendarSubscribeModal.svelte";
@@ -31,10 +32,7 @@
     getCalendar()
       .then((result) => (entries = result))
       .catch((err) => {
-        error =
-          err instanceof ApiError
-            ? err.message
-            : m.common_fetch_error_fallback();
+        error = resolveApiError(err);
       })
       .finally(() => (loading = false));
   });
