@@ -38,11 +38,12 @@ build:package` just to see if it type-errors. The hooks above already cover
 every one of these — `pre-commit` formats and lints on every commit,
 `pre-push` typechecks the whole project — so running them yourself only
 duplicates that gate and burns time for nothing. Same for tests: CI runs the
-full suite plus e2e on every PR, so don't run tests reflexively after a
-batch of edits either. Use judgment instead — run a _targeted_ spec (not the
-whole suite) only when there's a real reason to think a specific change
-broke something: a red→green cycle on a bug fix, or checking the area a
-risky refactor actually touched.
+full suite plus e2e on every PR, so don't run tests as a reflex after every
+batch of edits. Judge whether the change is substantial enough to plausibly
+break something — a style tweak, a Paraglide message wording change, or a
+variable/route rename almost certainly isn't and needs no test run; new or
+changed logic, a refactor touching control flow, or a bug fix does. When a
+run is warranted, prefer a _targeted_ spec over the whole suite.
 
 ## Architecture
 
