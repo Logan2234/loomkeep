@@ -62,7 +62,13 @@
   const id = $derived(page.params.id ?? "");
   const entry = $derived(detail?.entry ?? null);
   const hasMeta = $derived(
-    !!detail && (!!detail.publisher || !!detail.pageCount),
+    !!detail &&
+      (!!detail.publisher ||
+        !!detail.pageCount ||
+        !!detail.editionCount ||
+        !!detail.series ||
+        !!detail.language ||
+        !!detail.isbn),
   );
 
   // Reading progress as a percentage of the known page count (0 when unknown).
@@ -222,18 +228,31 @@
             {#if detail.ratings.length > 0}
               <div class="mt-2.5 flex flex-wrap gap-1.5">
                 {#each detail.ratings as r (r.source)}
-                  <span
+                  <svelte:element
+                    this={r.url ? "a" : "span"}
+                    href={r.url}
+                    target={r.url ? "_blank" : undefined}
+                    rel={r.url ? "noopener noreferrer" : undefined}
                     class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
                       r.source
-                    ] ?? 'bg-surface-2 text-fg'}">
+                    ] ?? 'bg-surface-2 text-fg'} {r.url
+                      ? 'transition-opacity hover:opacity-80'
+                      : ''}">
                     <span>{r.source}</span>
                     <span class="tabular-nums opacity-90">{r.score}</span>
-                  </span>
+                  </svelte:element>
                 {/each}
               </div>
             {/if}
           </div>
         </div>
+
+        {#if detail.firstSentence}
+          <p
+            class="text-dim border-border mt-4 max-w-2xl border-l-2 pl-3 text-sm italic">
+            « {detail.firstSentence} »
+          </p>
+        {/if}
 
         {#if detail.overview}
           <p class="text-dim mt-6 max-w-2xl whitespace-pre-line">
@@ -241,14 +260,36 @@
           </p>
         {/if}
 
-        {#if detail.website}
-          <a
-            href={detail.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link-accent mt-4 inline-flex items-center gap-1 text-sm">
-            Voir sur Open Library ↗
-          </a>
+        {#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
+          <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {#if detail.website}
+              <a
+                href={detail.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-accent inline-flex items-center gap-1 text-sm">
+                Voir sur Open Library ↗
+              </a>
+            {/if}
+            {#if detail.readOnlineUrl}
+              <a
+                href={detail.readOnlineUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-accent inline-flex items-center gap-1 text-sm">
+                Lire en ligne ↗
+              </a>
+            {/if}
+            {#each detail.externalLinks as link (link.label)}
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-accent inline-flex items-center gap-1 text-sm">
+                {link.label} ↗
+              </a>
+            {/each}
+          </div>
         {/if}
 
         <!-- Actions -->
@@ -404,6 +445,30 @@
               <div>
                 <dt class="timecode text-xs">Pages</dt>
                 <dd class="mt-0.5 text-sm">{detail.pageCount}</dd>
+              </div>
+            {/if}
+            {#if detail?.series}
+              <div>
+                <dt class="timecode text-xs">Collection</dt>
+                <dd class="mt-0.5 text-sm">{detail.series}</dd>
+              </div>
+            {/if}
+            {#if detail?.language}
+              <div>
+                <dt class="timecode text-xs">Langue</dt>
+                <dd class="mt-0.5 text-sm">{detail.language}</dd>
+              </div>
+            {/if}
+            {#if detail?.isbn}
+              <div>
+                <dt class="timecode text-xs">ISBN</dt>
+                <dd class="mt-0.5 text-sm">{detail.isbn}</dd>
+              </div>
+            {/if}
+            {#if detail?.editionCount}
+              <div>
+                <dt class="timecode text-xs">Éditions</dt>
+                <dd class="mt-0.5 text-sm">{detail.editionCount}</dd>
               </div>
             {/if}
           </dl>

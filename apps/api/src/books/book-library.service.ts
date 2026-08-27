@@ -447,8 +447,13 @@ export class BookLibraryService {
     userId: string,
     source: BookSource,
     sourceId: string,
+    lang?: string,
   ): Promise<BookDetailDto> {
-    const details = await this.bookItemService.getLiveDetails(source, sourceId);
+    const details = await this.bookItemService.getLiveDetails(
+      source,
+      sourceId,
+      lang,
+    );
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
     this.ageGate.assertAdultAllowed(details.isAdult, allowAdult);
 

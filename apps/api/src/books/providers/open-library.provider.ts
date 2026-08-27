@@ -51,10 +51,41 @@ const SEARCH_FIELDS = [
   "subject",
   "ratings_average",
   "ratings_count",
+  "edition_count",
 ].join(",");
 
 // Same, plus the edition ISBNs the bulk lookup maps its results back through.
+// Left out of SEARCH_FIELDS: a work's `isbn` list can run to 700+ entries.
 const ISBN_SEARCH_FIELDS = `${SEARCH_FIELDS},isbn`;
+
+// Solr's plain `language`/`isbn`/etc. fields on the *work* doc are aggregated
+// across every edition ever catalogued — every translation, every reprint —
+// with no way to tell which array entry belongs to which edition. Picking
+// e.g. `language[0]` doesn't reliably give the edition being shown; it can
+// just as easily surface an unrelated translation's language code.
+//
+// Instead, `getDetails()` adds a nested `editions` field to the same
+// `/search.json` call, combined with `lang=` — Open Library's own relevance
+// engine then picks *one concrete edition* matching that language when one
+// exists (falling back gracefully otherwise), nested right in the response,
+// no extra request needed. Documented at
+// https://openlibrary.org/dev/docs/api/search (see "lang" and the editions
+// example). Known caveat from upstream: the language match isn't a hard
+// filter — `getDetails()` reads `editions.docs[0].language` back from
+// whatever edition Open Library actually returned rather than assuming it
+// matches `lang`.
+const DETAILS_FIELDS = `${SEARCH_FIELDS},editions,editions.key,editions.title,editions.language,editions.isbn,editions.ebook_access`;
+
+// Same trick for search results: the nested edition's own title (in the
+// requested language) reads far better than the work's single canonical
+// title, which is often the original-language one (e.g. a French reader
+// searching would otherwise see "Harry Potter and the Philosopher's Stone").
+const SEARCH_FIELDS_WITH_EDITIONS = `${SEARCH_FIELDS},editions,editions.title`;
+
+// Fallback when no caller-supplied language is available (e.g. bulk import).
+// `search()`/`getDetails()` accept a `lang` argument for the signed-in user's
+// own locale — see `BooksController` for where that's read from.
+const DEFAULT_LANG = "en";
 
 /** One Solr document from `/search.json` — a *work*, not an edition. */
 interface OpenLibraryDoc {
@@ -71,11 +102,54 @@ interface OpenLibraryDoc {
   ratings_average?: number; // 1–5.
   ratings_count?: number;
   isbn?: string[]; // Every ISBN across every edition of the work.
+  edition_count?: number;
+  // Present only when `editions`/`editions.*` was requested (getDetails()'s
+  // DETAILS_FIELDS) — the one edition Solr's `lang=` picked, per the note on
+  // DETAILS_FIELDS above.
+  editions?: { docs?: OpenLibraryNestedEdition[] };
+}
+
+/**
+ * The edition nested inside a `/search.json` doc via `editions.*` fields —
+ * a much smaller shape than the full `/books/{OLID}.json` record fetched
+ * separately for series/first-sentence/cross-reference ids (see
+ * `fetchEditionDetail`). Field names are plain strings here (`language`),
+ * unlike `/books/{OLID}.json`'s `languages: [{ key }]` — the two endpoints
+ * don't share a schema.
+ */
+interface OpenLibraryNestedEdition {
+  key: string; // "/books/OL31900393M".
+  title?: string;
+  language?: string[]; // ["fre"].
+  isbn?: string[];
+  ebook_access?: string; // "public" | "borrowable" | "printdisabled" | "no_ebook".
 }
 
 interface OpenLibrarySearchResponse {
   numFound: number;
   docs?: OpenLibraryDoc[];
+}
+
+/** The body of `/books/{OLID}.json` — one concrete edition, in full. */
+interface OpenLibraryEditionDetail {
+  key: string; // "/books/OL62190138M".
+  languages?: { key: string }[]; // [{ key: "/languages/eng" }].
+  isbn_13?: string[];
+  isbn_10?: string[];
+  series?: string[];
+  // An edition-specific synopsis, when this edition has its own (e.g. a
+  // French translation with its own back-cover text) — preferred over the
+  // work's single, usually original-language, description when present.
+  description?: string | { value?: string };
+  // Either a bare string or the `{ type, value }` text object — inconsistent
+  // with the plain-string form other Open Library endpoints use elsewhere.
+  first_sentence?: string | { value?: string };
+  identifiers?: {
+    goodreads?: string[];
+    librarything?: string[];
+    amazon?: string[];
+  };
+  ocaid?: string; // Internet Archive identifier, when this edition was scanned.
 }
 
 /**
@@ -112,8 +186,12 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     private readonly quota: QuotaTrackerService,
   ) {}
 
-  async search(query: string): Promise<BookSummaryDto[]> {
-    const data = await this.searchDocs(query, SEARCH_LIMIT);
+  /** `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known. */
+  async search(query: string, lang?: string): Promise<BookSummaryDto[]> {
+    const data = await this.searchDocs(query, SEARCH_LIMIT, {
+      fields: lang ? SEARCH_FIELDS_WITH_EDITIONS : undefined,
+      lang,
+    });
     return data.map((doc) => this.toSummary(doc));
   }
 
@@ -165,13 +243,31 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     return { matches, failedIsbns };
   }
 
-  async getDetails(sourceId: string): Promise<ProviderBookDetails> {
+  /** `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known. */
+  async getDetails(
+    sourceId: string,
+    lang: string = DEFAULT_LANG,
+  ): Promise<ProviderBookDetails> {
     // A merged work resolves to another id; everything below keys off the
     // canonical one so the cache never stores the stale alias.
     const { id, work } = await this.fetchWork(sourceId);
     // The work document itself carries no page count, publisher or rating —
     // Solr aggregates those across the work's editions, so both are needed.
-    const [doc] = await this.searchDocs(`key:/works/${id}`, 1).catch(() => []);
+    // `lang`/`editions.*` (DETAILS_FIELDS) nest one language-matched edition
+    // right in this same response — see the note on DETAILS_FIELDS.
+    const [doc] = await this.searchDocs(`key:/works/${id}`, 1, {
+      fields: DETAILS_FIELDS,
+      lang,
+    }).catch(() => []);
+    const nestedEdition = doc?.editions?.docs?.[0];
+    // One more targeted fetch for the fields the nested doc doesn't carry
+    // (description override, series, first sentence, cross-reference ids) —
+    // a single `/books/{OLID}.json` call, not a full editions listing.
+    const editionDetail = nestedEdition
+      ? await this.fetchEditionDetail(idFromKey(nestedEdition.key)).catch(
+          () => undefined,
+        )
+      : undefined;
 
     const summary = doc
       ? this.toSummary(doc)
@@ -185,19 +281,46 @@ export class OpenLibraryProvider implements BookCatalogProvider {
           isAdult: false,
         };
 
+    // Links to the specific, concrete edition rather than the abstract work
+    // page — "work" isn't a real book on Open Library, may not be in the
+    // requested language, and reads oddly as a rating's destination.
+    const bookUrl = nestedEdition
+      ? `${API_URL}/books/${idFromKey(nestedEdition.key)}`
+      : `${API_URL}/works/${id}`;
+
     return {
       summary,
-      overview: description(work.description),
+      // The edition's own synopsis when it has one (e.g. a translation's
+      // back-cover text) — the work's description is usually in whatever
+      // language the original cataloger wrote in, not necessarily `lang`.
+      overview: description(editionDetail?.description ?? work.description),
       subtitle: work.subtitle ?? doc?.subtitle ?? null,
       publisher: doc?.publisher?.[0] ?? null,
       genres: displaySubjects(doc?.subject ?? work.subjects ?? []),
       pageCount: doc?.number_of_pages_median ?? null,
       releaseDate: toIsoDate(work.first_publish_date),
-      website: `${API_URL}/works/${id}`,
+      website: bookUrl,
       sameAuthorBooks: await this.sameAuthorBooks(id, doc?.author_key?.[0]),
-      ratings: toRatings(doc),
+      ratings: toRatings(doc, bookUrl),
       externalIds: [{ source: this.source, externalId: id }],
+      editionCount: doc?.edition_count ?? null,
+      isbn: nestedEdition?.isbn?.[0] ?? null,
+      series: editionDetail?.series?.[0] ?? null,
+      language: languageLabel(nestedEdition?.language?.[0]),
+      firstSentence: firstSentenceText(editionDetail?.first_sentence),
+      readOnlineUrl: readOnlineUrl(nestedEdition, editionDetail),
+      externalLinks: editionExternalLinks(editionDetail),
     };
+  }
+
+  /** The full record for one edition — series, first sentence, cross-reference ids. */
+  private async fetchEditionDetail(
+    olid: string | null,
+  ): Promise<OpenLibraryEditionDetail | undefined> {
+    if (!olid) return undefined;
+    return this.get<OpenLibraryEditionDetail>(
+      `/books/${encodeURIComponent(olid)}.json`,
+    );
   }
 
   /**
@@ -222,7 +345,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       }
 
       const target =
-        work.type?.key === "/type/redirect" ? workId(work.location) : null;
+        work.type?.key === "/type/redirect" ? idFromKey(work.location) : null;
       if (!target) return { id, work };
 
       id = target;
@@ -243,7 +366,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     const docs = await this.searchDocs(
       `author_key:${authorKey}`,
       MAX_SAME_AUTHOR_BOOKS + 1,
-      "rating",
+      { sort: "rating" },
     ).catch(() => []);
 
     return docs
@@ -255,14 +378,15 @@ export class OpenLibraryProvider implements BookCatalogProvider {
   private async searchDocs(
     query: string,
     limit: number,
-    sort?: string,
+    options: { sort?: string; fields?: string; lang?: string } = {},
   ): Promise<OpenLibraryDoc[]> {
     const params = new URLSearchParams({
       q: query,
       limit: String(limit),
-      fields: SEARCH_FIELDS,
+      fields: options.fields ?? SEARCH_FIELDS,
     });
-    if (sort) params.set("sort", sort);
+    if (options.sort) params.set("sort", options.sort);
+    if (options.lang) params.set("lang", options.lang);
 
     const data = await this.get<OpenLibrarySearchResponse>(
       `/search.json?${params}`,
@@ -273,8 +397,11 @@ export class OpenLibraryProvider implements BookCatalogProvider {
   private toSummary(doc: OpenLibraryDoc): BookSummaryDto {
     return {
       source: this.source,
-      sourceId: workId(doc.key) ?? doc.key,
-      title: doc.title ?? "Sans titre",
+      sourceId: idFromKey(doc.key) ?? doc.key,
+      // The nested edition's own title, when one was requested and found
+      // (see SEARCH_FIELDS_WITH_EDITIONS/DETAILS_FIELDS) — closer to the
+      // requested language than the work's single canonical title.
+      title: doc.editions?.docs?.[0]?.title ?? doc.title ?? "Sans titre",
       authors: doc.author_name ?? [],
       year: doc.first_publish_year ?? null,
       coverUrl: coverUrl(doc.cover_i),
@@ -348,10 +475,104 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** "/works/OL893414W" → "OL893414W". Null when there is no id to extract. */
-function workId(key: string | undefined): string | null {
+/**
+ * "/works/OL893414W" → "OL893414W", "/books/OL62190138M" → "OL62190138M".
+ * Null when there is no id to extract.
+ */
+function idFromKey(key: string | undefined): string | null {
   const id = key?.split("/").filter(Boolean).pop();
   return id ?? null;
+}
+
+function firstSentenceText(
+  raw: OpenLibraryEditionDetail["first_sentence"],
+): string | null {
+  const text = typeof raw === "string" ? raw : raw?.value;
+  return text?.trim() || null;
+}
+
+/**
+ * Where else to find this edition, from its own cross-reference identifiers.
+ * Amazon links to a search rather than a direct product page: the ASIN is
+ * US-marketplace-specific, and a direct `/dp/` link could 404 or land on the
+ * wrong storefront for a reader outside it.
+ */
+function editionExternalLinks(
+  edition: OpenLibraryEditionDetail | undefined,
+): { label: string; url: string }[] {
+  const links: { label: string; url: string }[] = [];
+
+  const goodreads = edition?.identifiers?.goodreads?.[0];
+
+  if (goodreads) {
+    links.push({
+      label: "Goodreads",
+      url: `https://www.goodreads.com/book/show/${goodreads}`,
+    });
+  }
+
+  const librarything = edition?.identifiers?.librarything?.[0];
+
+  if (librarything) {
+    links.push({
+      label: "LibraryThing",
+      url: `https://www.librarything.com/work/${librarything}`,
+    });
+  }
+
+  const amazonAsin = edition?.identifiers?.amazon?.[0];
+
+  if (amazonAsin) {
+    links.push({
+      label: "Amazon",
+      url: `https://www.amazon.com/s?k=${encodeURIComponent(amazonAsin)}`,
+    });
+  }
+
+  return links;
+}
+
+// ISO 639-2 → French label, for the handful of languages a Loomkeep user is
+// realistically going to see. An unmapped code is shown as-is rather than
+// hidden, so an edition in a rarer language still displays something.
+const LANGUAGE_LABELS: Record<string, string> = {
+  eng: "Anglais",
+  fre: "Français",
+  fra: "Français",
+  spa: "Espagnol",
+  ger: "Allemand",
+  deu: "Allemand",
+  ita: "Italien",
+  por: "Portugais",
+  jpn: "Japonais",
+  rus: "Russe",
+  kor: "Coréen",
+  chi: "Chinois",
+  zho: "Chinois",
+  nld: "Néerlandais",
+  dut: "Néerlandais",
+};
+
+function languageLabel(code: string | undefined): string | null {
+  if (!code) return null;
+  return LANGUAGE_LABELS[code] ?? code;
+}
+
+/**
+ * A link to read the picked edition online, when Open Library has a fully
+ * public scan of it on the Internet Archive. Deliberately excludes
+ * "borrowable" — that needs an Internet Archive account and a wait for a
+ * lending copy, which isn't the one-click "read online" this link promises.
+ */
+function readOnlineUrl(
+  nestedEdition: OpenLibraryNestedEdition | undefined,
+  editionDetail: OpenLibraryEditionDetail | undefined,
+): string | null {
+  if (nestedEdition?.ebook_access !== "public" || !editionDetail?.ocaid) {
+    return null;
+  }
+
+  return `https://archive.org/details/${editionDetail.ocaid}`;
 }
 
 /**
@@ -386,12 +607,12 @@ function displaySubjects(subjects: string[]): string[] {
 }
 
 /** Open Library's own average rating (1–5), when the work has one. */
-function toRatings(doc: OpenLibraryDoc | undefined): RatingDto[] {
+function toRatings(doc: OpenLibraryDoc | undefined, url: string): RatingDto[] {
   if (!doc?.ratings_average) return [];
 
   const count = doc.ratings_count ? ` (${doc.ratings_count})` : "";
   const average = Math.round(doc.ratings_average * 10) / 10;
-  return [{ source: "Open Library", score: `${average}/5${count}` }];
+  return [{ source: "Open Library", score: `${average}/5${count}`, url }];
 }
 
 /**
@@ -408,8 +629,17 @@ function description(raw: OpenLibraryWork["description"]): string | null {
   const text = typeof raw === "string" ? raw : raw?.value;
   if (!text) return null;
 
-  const stripped = stripHtml(text);
-  return stripped.length > 0 ? stripped : null;
+  let cleaned = stripHtml(text);
+  // Editors often append cross-reference notes ("This work has also been
+  // published in multiple volumes. See: ...") after a "---" divider — keep
+  // only the synopsis that precedes it.
+  const dividerIndex = cleaned.search(/\n\s*-{3,}\s*\n/);
+  if (dividerIndex !== -1) cleaned = cleaned.slice(0, dividerIndex);
+  // Markdown links ([text](url)) → just the link text; the raw url reads as
+  // clutter in a plain-text synopsis.
+  cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
+
+  return cleaned.length > 0 ? cleaned : null;
 }
 
 function parseYear(publishDate: string | undefined): number | null {

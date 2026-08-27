@@ -5,6 +5,7 @@ import {
   BookSearchResponseDto,
   BookSource,
   Domain,
+  Locale,
   ReadingGoalDto,
 } from "@loomkeep/shared";
 import {
@@ -44,11 +45,16 @@ export class BooksController {
     private readonly ageGate: AgeGateService,
   ) {}
 
-  /** Live catalogue search (Open Library). */
+  /**
+   * Live catalogue search (Open Library). `lang`: the client's active UI
+   * locale, so results (and, on the detail page below, the description) come
+   * back in that language when Open Library has an edition for it.
+   */
   @Get("search")
   async search(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
+    @Query("lang") lang?: string,
   ): Promise<BookSearchResponseDto> {
     const query = q?.trim();
 
@@ -59,7 +65,7 @@ export class BooksController {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
 
     const [results, allowAdult] = await Promise.all([
-      this.bookItemService.search(query),
+      this.bookItemService.search(query, safeLang(lang)),
       this.ageGate.allowsAdultContent(user.sub),
     ]);
     return { results: filterAdultContent(results, allowAdult) };
@@ -165,15 +171,22 @@ export class BooksController {
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,
     @Param("sourceId") sourceId: string,
+    @Query("lang") lang?: string,
   ): Promise<BookDetailDto> {
     return this.bookLibraryService.getBookDetail(
       user.sub,
       parseBookSource(sourceParam),
       sourceId,
+      safeLang(lang),
     );
   }
 }
 
 function parseBookSource(value: string): BookSource {
   return parseEnumParam(value, [BookSource.OPEN_LIBRARY], "book source");
+}
+
+/** `lang` unrecognized or absent → undefined, letting the provider pick its own default. */
+function safeLang(lang: string | undefined): string | undefined {
+  return Locale.includes(lang as Locale) ? lang : undefined;
 }

@@ -27,9 +27,9 @@ export class BookItemService {
     return this.openLibraryProvider;
   }
 
-  /** Free-text catalogue search. */
-  async search(query: string): Promise<BookSummaryDto[]> {
-    return this.openLibraryProvider.search(query).catch(() => []);
+  /** Free-text catalogue search. `lang`: the signed-in user's locale, when known. */
+  async search(query: string, lang?: string): Promise<BookSummaryDto[]> {
+    return this.openLibraryProvider.search(query, lang).catch(() => []);
   }
 
   /**
@@ -63,12 +63,16 @@ export class BookItemService {
     return this.openLibraryProvider.searchByIsbns(isbns);
   }
 
-  /** Live details straight from the provider — nothing is persisted. */
+  /**
+   * Live details straight from the provider — nothing is persisted.
+   * `lang`: the signed-in user's locale, when known.
+   */
   async getLiveDetails(
     source: BookSource,
     sourceId: string,
+    lang?: string,
   ): Promise<BookDetailsDto> {
-    const details = await this.providerFor().getDetails(sourceId);
+    const details = await this.providerFor().getDetails(sourceId, lang);
     return {
       ...details.summary,
       overview: details.overview,
@@ -80,6 +84,13 @@ export class BookItemService {
       website: details.website,
       sameAuthorBooks: details.sameAuthorBooks,
       ratings: details.ratings,
+      editionCount: details.editionCount,
+      isbn: details.isbn,
+      series: details.series,
+      language: details.language,
+      firstSentence: details.firstSentence,
+      readOnlineUrl: details.readOnlineUrl,
+      externalLinks: details.externalLinks,
     };
   }
 
