@@ -77,9 +77,10 @@ const EXTRAS_QUERY = `
       studios(sort: NAME) {
         edges { isMain node { name } }
       }
-      tags(sort: RANK_DESC) {
+      tags {
         name
         isMediaSpoiler
+        rank
       }
       externalLinks { site url }
       staff(sort: RELEVANCE, perPage: 25) {
@@ -151,7 +152,7 @@ interface AnilistExtras {
   studios?: {
     edges?: { isMain?: boolean; node: { name: string } }[];
   };
-  tags?: { name: string; isMediaSpoiler?: boolean }[];
+  tags?: { name: string; isMediaSpoiler?: boolean; rank?: number | null }[];
   externalLinks?: { site: string; url?: string | null }[];
   staff?: {
     edges?: {
@@ -285,6 +286,8 @@ export class AnilistProvider implements CatalogProvider {
         .map((l) => ({ name: l.site, url: l.url })),
       tags: (media?.tags ?? [])
         .filter((t) => !t.isMediaSpoiler)
+        // The API doesn't support server-side sorting on this field.
+        .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0))
         .slice(0, 10)
         .map((t) => t.name),
     };
