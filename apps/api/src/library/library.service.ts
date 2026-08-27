@@ -18,13 +18,7 @@ import {
   isDormant,
   ReviewTargetType,
 } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  ForbiddenException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   ExternalSource as DbExternalSource,
   LibraryEntry,
@@ -553,7 +547,10 @@ export class LibraryService {
     });
 
     if (!episode) {
-      throw new NotFoundException("Episode not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEpisodeNotFound,
+      );
     }
 
     if (episode.airDate && episode.airDate > new Date()) {
@@ -609,7 +606,10 @@ export class LibraryService {
     });
 
     if (!season || episodes.length === 0) {
-      throw new NotFoundException("Season not found or has no episodes");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibrarySeasonEmpty,
+      );
     }
 
     // Unreleased episodes (future airDate) are silently skipped rather than
@@ -637,7 +637,12 @@ export class LibraryService {
     });
 
     if (!season) {
-      throw new NotFoundException("Season not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibrarySeasonNotFound,
+        undefined,
+        "Season not found",
+      );
     }
 
     const episodes = await this.prisma.episode.findMany({
@@ -669,7 +674,10 @@ export class LibraryService {
     });
 
     if (!target) {
-      throw new NotFoundException("Episode not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEpisodeNotFound,
+      );
     }
 
     if (target.airDate && target.airDate > new Date()) {
@@ -809,7 +817,10 @@ export class LibraryService {
     });
 
     if (!latest) {
-      throw new NotFoundException("No watch to undo for this episode");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryNoWatchToUndo,
+      );
     }
 
     await this.prisma.episodeWatch.delete({ where: { id: latest.id } });
@@ -829,11 +840,17 @@ export class LibraryService {
     });
 
     if (!entry) {
-      throw new NotFoundException("Library entry not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEntryNotFound,
+      );
     }
 
     if (entry.userId !== userId) {
-      throw new ForbiddenException("This entry belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
     }
 
     return entry;
@@ -1065,8 +1082,9 @@ export class LibraryService {
     });
 
     if (media.type !== "MOVIE") {
-      throw new BadRequestException(
-        "Only movies can have replays — series/anime rewatches are tracked per-episode",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryReplayNotMovie,
       );
     }
 
@@ -1096,11 +1114,17 @@ export class LibraryService {
     });
 
     if (!replay) {
-      throw new NotFoundException("Replay not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryReplayNotFound,
+      );
     }
 
     if (replay.libraryEntry.userId !== userId) {
-      throw new ForbiddenException("This replay belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryReplayForbidden,
+      );
     }
 
     await this.prisma.movieReplay.delete({ where: { id: replayId } });

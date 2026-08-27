@@ -6,12 +6,8 @@ import type {
   GameSource,
   PagedResult,
 } from "@loomkeep/shared";
-import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ActivityType, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   GameStatus as DbGameStatus,
   GameEntry,
@@ -20,6 +16,7 @@ import type {
   GameReplay,
   Prisma,
 } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -396,11 +393,17 @@ export class GameLibraryService {
     });
 
     if (!replay) {
-      throw new NotFoundException("Replay not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryReplayNotFound,
+      );
     }
 
     if (replay.gameEntry.userId !== userId) {
-      throw new ForbiddenException("This replay belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryReplayForbidden,
+      );
     }
 
     await this.prisma.gameReplay.delete({ where: { id: replayId } });
@@ -463,11 +466,17 @@ export class GameLibraryService {
     });
 
     if (!entry) {
-      throw new NotFoundException("Game library entry not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEntryNotFound,
+      );
     }
 
     if (entry.userId !== userId) {
-      throw new ForbiddenException("This entry belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
     }
 
     return entry;

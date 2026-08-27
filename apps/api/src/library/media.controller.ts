@@ -1,14 +1,9 @@
 import type { MediaDetailDto } from "@loomkeep/shared";
-import { Locale, MediaType } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-} from "@nestjs/common";
+import { ErrorCode, Locale, MediaType } from "@loomkeep/shared";
+import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { LibraryService } from "./library.service";
 
 /**
@@ -45,7 +40,12 @@ function parseType(value: string): MediaType {
     upper !== MediaType.SERIES &&
     upper !== MediaType.ANIME
   ) {
-    throw new BadRequestException(`Unknown media type '${value}'`);
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.CatalogUnknownMediaType,
+      { value },
+      `Unknown media type '${value}'`,
+    );
   }
 
   return upper;

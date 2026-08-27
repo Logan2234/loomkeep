@@ -1,5 +1,5 @@
 import { ErrorCode } from "@loomkeep/shared";
-import { BadGatewayException, HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
@@ -121,7 +121,10 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     });
 
     if (!response.ok) {
-      throw new BadGatewayException(
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.ImportSourceUnavailable,
+        undefined,
         `Simkl request failed with status ${response.status}`,
       );
     }

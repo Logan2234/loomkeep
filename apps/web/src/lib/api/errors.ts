@@ -47,10 +47,56 @@ const MESSAGES = {
     m.apierr_admin_cache_resync_failed(),
   [ErrorCode.LibraryEpisodeNotAired]: () =>
     m.apierr_library_episode_not_aired(),
+  [ErrorCode.LibraryCalendarUnavailable]: () =>
+    m.apierr_library_calendar_unavailable(),
+  [ErrorCode.LibraryEpisodeNotFound]: () =>
+    m.apierr_library_episode_not_found(),
+  [ErrorCode.LibrarySeasonEmpty]: () => m.apierr_library_season_empty(),
+  [ErrorCode.LibrarySeasonNotFound]: () => m.apierr_library_season_not_found(),
+  [ErrorCode.LibraryNoWatchToUndo]: () => m.apierr_library_no_watch_to_undo(),
+  [ErrorCode.LibraryEntryNotFound]: () => m.apierr_library_entry_not_found(),
+  [ErrorCode.LibraryEntryForbidden]: () => m.apierr_library_entry_forbidden(),
+  [ErrorCode.LibraryReplayNotMovie]: () => m.apierr_library_replay_not_movie(),
+  [ErrorCode.LibraryReplayNotFound]: () => m.apierr_library_replay_not_found(),
+  [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
+  [ErrorCode.CatalogUnknownMediaType]: () =>
+    m.apierr_catalog_unknown_media_type(),
+  [ErrorCode.CatalogNoPersonDetails]: () =>
+    m.apierr_catalog_no_person_details(),
+  [ErrorCode.CatalogMediaTypeRequired]: () =>
+    m.apierr_catalog_media_type_required(),
+  [ErrorCode.CatalogItemNotFound]: () => m.apierr_catalog_item_not_found(),
+  [ErrorCode.CatalogPersonNotFound]: () => m.apierr_catalog_person_not_found(),
+  [ErrorCode.CatalogProviderUnavailable]: () =>
+    m.apierr_catalog_provider_unavailable(),
+  [ErrorCode.CatalogSearchQueryRequired]: () =>
+    m.apierr_catalog_search_query_required(),
   [ErrorCode.UserAvatarTooLarge]: () => m.apierr_user_avatar_too_large(),
   [ErrorCode.UserAvatarInvalidType]: () => m.apierr_user_avatar_invalid_type(),
   [ErrorCode.ImportSimklConnectionFailed]: () =>
     m.apierr_import_simkl_connection_failed(),
+  [ErrorCode.ImportMalformedExport]: () => m.apierr_import_malformed_export(),
+  [ErrorCode.ImportJobNotFound]: () => m.apierr_import_job_not_found(),
+  [ErrorCode.ImportJobForbidden]: () => m.apierr_import_job_forbidden(),
+  [ErrorCode.ImportJobSourceMismatch]: () =>
+    m.apierr_import_job_source_mismatch(),
+  [ErrorCode.ImportJobNoAnalysis]: () => m.apierr_import_job_no_analysis(),
+  [ErrorCode.ImportUnknownSource]: () => m.apierr_import_unknown_source(),
+  [ErrorCode.ImportFreeQuotaExceeded]: () =>
+    m.apierr_import_free_quota_exceeded(),
+  [ErrorCode.ImportSourceUnavailable]: () =>
+    m.apierr_import_source_unavailable(),
+  [ErrorCode.ImportSteamProfileNotFound]: () =>
+    m.apierr_import_steam_profile_not_found(),
+  [ErrorCode.ImportSteamLibraryPrivate]: () =>
+    m.apierr_import_steam_library_private(),
+  [ErrorCode.ImportArchiveEmpty]: () => m.apierr_import_archive_empty(),
+  [ErrorCode.ImportArchiveUnreadable]: () =>
+    m.apierr_import_archive_unreadable(),
+  [ErrorCode.ImportArchiveMissingFiles]: () =>
+    m.apierr_import_archive_missing_files(),
+  [ErrorCode.ImportArchiveMalformed]: () => m.apierr_import_archive_malformed(),
+  [ErrorCode.InvalidParam]: () => m.apierr_validation_invalid_param(),
   // Transition case: until the "Translate form validation errors" ticket
   // ships per-field UX, this key isn't actually read — resolveApiError()
   // falls back to the API's joined constraint messages instead, so no

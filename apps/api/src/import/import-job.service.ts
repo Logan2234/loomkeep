@@ -8,17 +8,11 @@ import type {
   ImportReport,
   ImportSource,
 } from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from "@nestjs/common";
+import { Domain, ErrorCode } from "@loomkeep/shared";
+import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -134,7 +128,10 @@ export class ImportJobService {
       parsed = source.parseInput(dto.input);
     } catch (error) {
       // A malformed export is a client error, not a failed job.
-      throw new BadRequestException(
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportMalformedExport,
+        undefined,
         error instanceof Error ? error.message : "Could not read the export",
       );
     }
@@ -161,14 +158,21 @@ export class ImportJobService {
     const source = this.sourceOrThrow(sourceId);
 
     const analyzed = this.jobs.get(jobId);
-    if (!analyzed) throw new NotFoundException("Import job not found");
+    if (!analyzed)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ImportJobNotFound);
 
     if (analyzed.userId !== userId) {
-      throw new ForbiddenException("This import job belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ImportJobForbidden,
+      );
     }
 
     if (analyzed.sourceId !== sourceId) {
-      throw new BadRequestException("Import job source mismatch");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportJobSourceMismatch,
+      );
     }
 
     if (
@@ -176,7 +180,10 @@ export class ImportJobService {
       analyzed.parsed === undefined ||
       !analyzed.plan
     ) {
-      throw new BadRequestException("This job has no analysis to commit");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportJobNoAnalysis,
+      );
     }
 
     const decisions: CommitDecisions = {
@@ -212,10 +219,14 @@ export class ImportJobService {
 
   getJob(userId: string, jobId: string): ImportJobDto {
     const job = this.jobs.get(jobId);
-    if (!job) throw new NotFoundException("Import job not found");
+    if (!job)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ImportJobNotFound);
 
     if (job.userId !== userId) {
-      throw new ForbiddenException("This import job belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ImportJobForbidden,
+      );
     }
 
     return toDto(job);
@@ -224,7 +235,12 @@ export class ImportJobService {
   private sourceOrThrow(sourceId: ImportSource): ImportReq {
     const source = this.sources.get(sourceId);
     if (!source)
-      throw new NotFoundException(`Unknown import source: ${sourceId}`);
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ImportUnknownSource,
+        { sourceId },
+        `Unknown import source: ${sourceId}`,
+      );
     return source;
   }
 
@@ -246,8 +262,11 @@ export class ImportJobService {
     });
 
     if (alreadyImported) {
-      throw new ForbiddenException(
-        "Un import gratuit par domaine — passe premium pour réimporter dans ce domaine.",
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ImportFreeQuotaExceeded,
+        undefined,
+        "One free import per domain — go premium to re-import in this domain.",
       );
     }
   }

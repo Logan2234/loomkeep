@@ -1,15 +1,13 @@
 import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
 import {
   CatalogSource,
+  ErrorCode,
   MediaSource,
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
-import {
-  BadGatewayException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../../common/app.exception";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
@@ -249,7 +247,10 @@ export class AnilistProvider implements CatalogProvider {
     const media = data.Media;
 
     if (!media) {
-      throw new NotFoundException("Media not found on AniList");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogItemNotFound,
+      );
     }
 
     return {
@@ -347,7 +348,10 @@ export class AnilistProvider implements CatalogProvider {
     const staff = data.Staff;
 
     if (!staff) {
-      throw new NotFoundException("Staff not found on AniList");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogPersonNotFound,
+      );
     }
 
     return {
@@ -415,10 +419,16 @@ export class AnilistProvider implements CatalogProvider {
       if (
         body.errors?.some((e) => e.message.toLowerCase().includes("not found"))
       ) {
-        throw new NotFoundException("Media not found on AniList");
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.CatalogItemNotFound,
+        );
       }
 
-      throw new BadGatewayException(
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.CatalogProviderUnavailable,
+        undefined,
         body.errors?.[0]?.message ?? "AniList returned no data",
       );
     }

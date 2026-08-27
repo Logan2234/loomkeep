@@ -1,4 +1,4 @@
-import { BadGatewayException, NotFoundException } from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
 import { fetchJson } from "./http.util";
 
 // Node defines global fetch lazily, which confuses jest.spyOn on restore;
@@ -58,10 +58,10 @@ describe("fetchJson", () => {
 
     await expect(
       fetchJson("https://example.test", {}, { sourceLabel: "Test" }),
-    ).rejects.toThrow(BadGatewayException);
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogProviderUnavailable });
   });
 
-  it("maps 404 to NotFoundException without retrying, when notFoundMessage is set", async () => {
+  it("maps 404 to catalog.item_not_found without retrying, when notFoundMessage is set", async () => {
     const fetchMock = jest.fn().mockResolvedValue(jsonResponse(404));
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -74,7 +74,7 @@ describe("fetchJson", () => {
           notFoundMessage: "not found",
         },
       ),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogItemNotFound });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -84,7 +84,7 @@ describe("fetchJson", () => {
 
     await expect(
       fetchJson("https://example.test", {}, { sourceLabel: "Test" }),
-    ).rejects.toThrow(BadGatewayException);
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogProviderUnavailable });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -103,7 +103,7 @@ describe("fetchJson", () => {
         {},
         { sourceLabel: "Test", maxRetryDelayMs: 2_000 },
       ),
-    ).rejects.toThrow(BadGatewayException);
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogProviderUnavailable });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -127,7 +127,9 @@ describe("fetchJson", () => {
         sourceLabel: "Test",
       },
     );
-    const assertion = expect(promise).rejects.toThrow(BadGatewayException);
+    const assertion = expect(promise).rejects.toMatchObject({
+      code: ErrorCode.CatalogProviderUnavailable,
+    });
     // 3 attempts × 10s timeout + backoff (500ms, 1000ms) between them.
     await jest.advanceTimersByTimeAsync(3 * 10_000 + 500 + 1_000);
     await assertion;

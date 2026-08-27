@@ -29,8 +29,30 @@ export const ErrorCode = {
   AdminCacheItemNotFound: "admin.cache_item_not_found",
   AdminCacheResyncFailed: "admin.cache_resync_failed",
 
-  // library
+  // library — entry/replay codes are shared across media/games/books/music,
+  // the four domains that each have their own *LibraryService with the same
+  // ownership-check shape
   LibraryEpisodeNotAired: "library.episode_not_aired",
+  LibraryCalendarUnavailable: "library.calendar_unavailable",
+  LibraryEpisodeNotFound: "library.episode_not_found",
+  LibrarySeasonEmpty: "library.season_empty",
+  LibrarySeasonNotFound: "library.season_not_found",
+  LibraryNoWatchToUndo: "library.no_watch_to_undo",
+  LibraryEntryNotFound: "library.entry_not_found",
+  LibraryEntryForbidden: "library.entry_forbidden",
+  LibraryReplayNotMovie: "library.replay_not_movie",
+  LibraryReplayNotFound: "library.replay_not_found",
+  LibraryReplayForbidden: "library.replay_forbidden",
+
+  // catalog — item/person/provider codes are shared across every catalogue
+  // source (TMDB, AniList, IGDB, Open Library, MusicBrainz)
+  CatalogUnknownMediaType: "catalog.unknown_media_type",
+  CatalogNoPersonDetails: "catalog.no_person_details",
+  CatalogMediaTypeRequired: "catalog.media_type_required",
+  CatalogItemNotFound: "catalog.item_not_found",
+  CatalogPersonNotFound: "catalog.person_not_found",
+  CatalogProviderUnavailable: "catalog.provider_unavailable",
+  CatalogSearchQueryRequired: "catalog.search_query_required",
 
   // users
   UserAvatarTooLarge: "user.avatar_too_large",
@@ -38,9 +60,24 @@ export const ErrorCode = {
 
   // import
   ImportSimklConnectionFailed: "import.simkl_connection_failed",
+  ImportMalformedExport: "import.malformed_export",
+  ImportJobNotFound: "import.job_not_found",
+  ImportJobForbidden: "import.job_forbidden",
+  ImportJobSourceMismatch: "import.job_source_mismatch",
+  ImportJobNoAnalysis: "import.job_no_analysis",
+  ImportUnknownSource: "import.unknown_source",
+  ImportFreeQuotaExceeded: "import.free_quota_exceeded",
+  ImportSourceUnavailable: "import.source_unavailable",
+  ImportSteamProfileNotFound: "import.steam_profile_not_found",
+  ImportSteamLibraryPrivate: "import.steam_library_private",
+  ImportArchiveEmpty: "import.archive_empty",
+  ImportArchiveUnreadable: "import.archive_unreadable",
+  ImportArchiveMissingFiles: "import.archive_missing_files",
+  ImportArchiveMalformed: "import.archive_malformed",
 
   // cross-cutting — owned by the infra rather than a single domain
   ValidationFailed: "validation.failed",
+  InvalidParam: "validation.invalid_param",
   InternalError: "internal.error",
 
   // client-side only — never emitted by the API, thrown by apps/web's

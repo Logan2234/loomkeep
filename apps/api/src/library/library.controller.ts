@@ -6,7 +6,7 @@ import type {
   MediaType,
   PagedResult,
 } from "@loomkeep/shared";
-import { Domain, Locale } from "@loomkeep/shared";
+import { Domain, ErrorCode, Locale } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -14,7 +14,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -26,6 +25,7 @@ import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import { AppException } from "../common/app.exception";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
@@ -94,7 +94,10 @@ export class LibraryController {
     const ics = token ? await this.libraryService.getCalendarIcs(token) : null;
 
     if (!ics) {
-      throw new NotFoundException();
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryCalendarUnavailable,
+      );
     }
 
     reply

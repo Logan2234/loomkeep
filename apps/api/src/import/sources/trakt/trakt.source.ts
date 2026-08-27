@@ -1,6 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import { AppException } from "../../../common/app.exception";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
@@ -53,7 +55,7 @@ export class TraktImportSource extends MediaImportSource<ParsedImport> {
 
 /**
  * Decode + validate the archive and extract the watch-history parts + the
- * (optional) watchlist/favorites/ratings. Throws {@link BadRequestException}
+ * (optional) watchlist/favorites/ratings. Throws {@link AppException}
  * on a bad or incomplete archive.
  */
 function extractFiles(input: Buffer): {
@@ -64,7 +66,10 @@ function extractFiles(input: Buffer): {
   showRatings: TraktShowRatingEntry[];
 } {
   if (input.length === 0) {
-    throw new BadRequestException("The uploaded archive is empty");
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveEmpty,
+    );
   }
 
   let entries: Map<string, string>;
@@ -80,7 +85,10 @@ function extractFiles(input: Buffer): {
         name === SHOW_RATINGS_FILE,
     );
   } catch (error) {
-    throw new BadRequestException(
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveUnreadable,
+      undefined,
       error instanceof Error ? error.message : "Could not read the archive",
     );
   }
@@ -93,7 +101,10 @@ function extractFiles(input: Buffer): {
   );
 
   if (historyFiles.length === 0) {
-    throw new BadRequestException(
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveMissingFiles,
+      undefined,
       "Missing required file(s) in the archive: watched-history.json (or watched-history-N.json)",
     );
   }
@@ -116,7 +127,10 @@ function extractFiles(input: Buffer): {
       ),
     };
   } catch {
-    throw new BadRequestException(
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveMalformed,
+      undefined,
       "Could not read the archive — one of its JSON files is malformed",
     );
   }

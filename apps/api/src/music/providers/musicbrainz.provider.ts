@@ -1,10 +1,7 @@
-import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
-import {
-  BadGatewayException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ErrorCode, MusicSource, MusicSummaryDto } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../../common/app.exception";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import type {
@@ -131,7 +128,12 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
         `/release-group/${encodeURIComponent(sourceId)}?${params}`,
       );
     } catch {
-      throw new NotFoundException("Album not found on MusicBrainz");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogItemNotFound,
+        undefined,
+        "Album not found on MusicBrainz",
+      );
     }
 
     const primaryArtistId = releaseGroup["artist-credit"]?.[0]?.artist?.id;
@@ -301,7 +303,10 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
       break;
     }
 
-    throw new BadGatewayException(
+    throw new AppException(
+      HttpStatus.BAD_GATEWAY,
+      ErrorCode.CatalogProviderUnavailable,
+      undefined,
       `MusicBrainz request failed with status ${lastStatus}`,
     );
   }

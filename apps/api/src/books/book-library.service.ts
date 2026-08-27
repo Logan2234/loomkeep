@@ -7,12 +7,8 @@ import type {
   PagedResult,
   ReadingGoalDto,
 } from "@loomkeep/shared";
-import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ActivityType, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   BookEntry,
   BookExternalId,
@@ -21,6 +17,7 @@ import type {
   BookStatus as DbBookStatus,
   Prisma,
 } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -427,11 +424,17 @@ export class BookLibraryService {
     });
 
     if (!replay) {
-      throw new NotFoundException("Replay not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryReplayNotFound,
+      );
     }
 
     if (replay.bookEntry.userId !== userId) {
-      throw new ForbiddenException("This replay belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryReplayForbidden,
+      );
     }
 
     await this.prisma.bookReplay.delete({ where: { id: replayId } });
@@ -498,11 +501,17 @@ export class BookLibraryService {
     });
 
     if (!entry) {
-      throw new NotFoundException("Book library entry not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEntryNotFound,
+      );
     }
 
     if (entry.userId !== userId) {
-      throw new ForbiddenException("This entry belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
     }
 
     return entry;

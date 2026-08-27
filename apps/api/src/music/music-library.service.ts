@@ -5,12 +5,8 @@ import type {
   MusicSource,
   PagedResult,
 } from "@loomkeep/shared";
-import { ActivityType, ReviewTargetType } from "@loomkeep/shared";
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ActivityType, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   MusicStatus as DbMusicStatus,
   MusicEntry,
@@ -18,6 +14,7 @@ import type {
   MusicItem,
   Prisma,
 } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -392,11 +389,17 @@ export class MusicLibraryService {
     });
 
     if (!entry) {
-      throw new NotFoundException("Music library entry not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEntryNotFound,
+      );
     }
 
     if (entry.userId !== userId) {
-      throw new ForbiddenException("This entry belongs to another user");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
     }
 
     return entry;

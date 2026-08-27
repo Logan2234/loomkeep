@@ -1,7 +1,8 @@
-import type { TvTimeImportFilesDto } from "@loomkeep/shared";
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { ErrorCode, type TvTimeImportFilesDto } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import { AppException } from "../../../common/app.exception";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type {
@@ -81,12 +82,15 @@ function toImportMovie(movie: ParsedMovie): ImportMovie {
 
 /**
  * Decode + validate the archive and extract the CSVs we need. Throws
- * {@link BadRequestException} on a bad or incomplete archive. Movies are
+ * {@link AppException} on a bad or incomplete archive. Movies are
  * optional: their file may be absent (then there are simply no movies).
  */
 function extractFiles(input: Buffer): TvTimeImportFilesDto {
   if (input.length === 0) {
-    throw new BadRequestException("The uploaded archive is empty");
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveEmpty,
+    );
   }
 
   let entries: Map<string, string>;
@@ -94,7 +98,10 @@ function extractFiles(input: Buffer): TvTimeImportFilesDto {
   try {
     entries = readZipEntries(input, new Set(Object.values(FILE_NAMES)));
   } catch (error) {
-    throw new BadRequestException(
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveUnreadable,
+      undefined,
       error instanceof Error ? error.message : "Could not read the archive",
     );
   }
@@ -111,7 +118,10 @@ function extractFiles(input: Buffer): TvTimeImportFilesDto {
   if (!files.showsCsv) missing.push(FILE_NAMES.showsCsv);
 
   if (missing.length > 0) {
-    throw new BadRequestException(
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ImportArchiveMissingFiles,
+      undefined,
       `Missing required file(s) in the archive: ${missing.join(", ")}`,
     );
   }

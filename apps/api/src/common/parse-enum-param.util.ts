@@ -1,4 +1,6 @@
-import { BadRequestException } from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus } from "@nestjs/common";
+import { AppException } from "./app.exception";
 
 /**
  * Parse a case-insensitive route/query param into one of `allowed`'s enum
@@ -13,7 +15,12 @@ export function parseEnumParam<T extends string>(
   const upper = value.toUpperCase();
 
   if (!allowed.includes(upper as T)) {
-    throw new BadRequestException(`Unknown ${label} '${value}'`);
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.InvalidParam,
+      { label, value },
+      `Unknown ${label} '${value}'`,
+    );
   }
 
   return upper as T;

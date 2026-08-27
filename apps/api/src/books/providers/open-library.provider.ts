@@ -1,11 +1,8 @@
 import type { RatingDto } from "@loomkeep/shared";
-import { BookSource, BookSummaryDto } from "@loomkeep/shared";
-import {
-  BadGatewayException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { BookSource, BookSummaryDto, ErrorCode } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import type {
@@ -341,7 +338,12 @@ export class OpenLibraryProvider implements BookCatalogProvider {
           `/works/${encodeURIComponent(id)}.json`,
         );
       } catch {
-        throw new NotFoundException("Book not found on Open Library");
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.CatalogItemNotFound,
+          undefined,
+          "Book not found on Open Library",
+        );
       }
 
       const target =
@@ -351,7 +353,12 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       id = target;
     }
 
-    throw new NotFoundException("Book not found on Open Library");
+    throw new AppException(
+      HttpStatus.NOT_FOUND,
+      ErrorCode.CatalogItemNotFound,
+      undefined,
+      "Book not found on Open Library",
+    );
   }
 
   /** Other works by the primary author, excluding this one. */
@@ -446,7 +453,10 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       break;
     }
 
-    throw new BadGatewayException(
+    throw new AppException(
+      HttpStatus.BAD_GATEWAY,
+      ErrorCode.CatalogProviderUnavailable,
+      undefined,
       `Open Library request failed with status ${lastStatus}`,
     );
   }

@@ -7,13 +7,15 @@ import type {
   ImportReport,
   ImportReportTile,
 } from "@loomkeep/shared";
-import { Domain, GameOwnershipStatus, GameSource } from "@loomkeep/shared";
 import {
-  BadGatewayException,
-  BadRequestException,
-  Injectable,
-} from "@nestjs/common";
+  Domain,
+  ErrorCode,
+  GameOwnershipStatus,
+  GameSource,
+} from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../../../common/app.exception";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
@@ -313,8 +315,11 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     }>(`${STEAM_API}/ISteamUser/ResolveVanityURL/v1/`, { vanityurl: name });
 
     if (data.response.success !== 1 || !data.response.steamid) {
-      throw new BadRequestException(
-        "Profil Steam introuvable — vérifie l'identifiant ou l'URL du profil.",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportSteamProfileNotFound,
+        undefined,
+        "Steam profile not found — check the id or profile URL",
       );
     }
 
@@ -336,8 +341,11 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     // A private (or game-details-private) profile returns an empty response
     // object rather than an error.
     if (data.response.game_count === undefined) {
-      throw new BadRequestException(
-        "Bibliothèque Steam inaccessible — le profil et les détails des jeux doivent être publics.",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportSteamLibraryPrivate,
+        undefined,
+        "Steam library inaccessible — the profile and game details must be public",
       );
     }
 
@@ -362,7 +370,10 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     const response = await fetch(target);
 
     if (!response.ok) {
-      throw new BadGatewayException(
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.ImportSourceUnavailable,
+        undefined,
         `Steam request failed with status ${response.status}`,
       );
     }
