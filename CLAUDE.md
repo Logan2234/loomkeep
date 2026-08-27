@@ -31,11 +31,18 @@ lint && pnpm --filter @loomkeep/web check` (unit tests and e2e are left to
 CI's `lint-build-test`/`e2e` jobs — running them again locally on every push
 just duplicates that gate). `knip` (dead code / unused dependency detection) is available via
 `pnpm knip` but isn't wired into a hook — run it on demand.
-**Don't manually run `pnpm lint`/`pnpm --filter @loomkeep/web check` after
-every small edit** — the hooks above already cover formatting (pre-commit)
-and lint/typecheck (pre-push). When a change spans several planned edits,
-implement the whole batch first, then run one check pass — including tests,
-which no hook runs — at the end, rather than validating after each step.
+**Never lint, format, or typecheck yourself, at any point in a task —
+mid-edit or as a final pass.** That means no `pnpm lint`, `pnpm lint:fix`,
+`pnpm --filter @loomkeep/web check`, bare `tsc`, or running `pnpm
+build:package` just to see if it type-errors. The hooks above already cover
+every one of these — `pre-commit` formats and lints on every commit,
+`pre-push` typechecks the whole project — so running them yourself only
+duplicates that gate and burns time for nothing. Same for tests: CI runs the
+full suite plus e2e on every PR, so don't run tests reflexively after a
+batch of edits either. Use judgment instead — run a _targeted_ spec (not the
+whole suite) only when there's a real reason to think a specific change
+broke something: a red→green cycle on a bug fix, or checking the area a
+risky refactor actually touched.
 
 ## Architecture
 
