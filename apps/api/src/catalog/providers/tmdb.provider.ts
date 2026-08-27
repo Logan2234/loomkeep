@@ -397,6 +397,8 @@ export class TmdbProvider implements CatalogProvider {
         name: c.name,
         role: c.character || null,
         photoUrl: c.profile_path ? `${IMG}/w185${c.profile_path}` : null,
+        // Split cast photo is an AniList-only concept (voice actor vs. character).
+        characterPhotoUrl: null,
       })),
       similar: (data.recommendations?.results ?? [])
         .slice(0, 12)

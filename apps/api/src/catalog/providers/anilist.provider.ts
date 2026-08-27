@@ -1,4 +1,4 @@
-import type { MediaExtrasDto } from "@loomkeep/shared";
+import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
 import {
   CatalogSource,
   MediaSource,
@@ -88,7 +88,7 @@ const EXTRAS_QUERY = `
       }
       characters(sort: [ROLE, RELEVANCE], perPage: 12) {
         edges {
-          voiceActors(language: JAPANESE) { name { full } image { medium } }
+          voiceActors(language: JAPANESE) { id name { full } image { medium } }
           node { name { full } image { medium } }
         }
       }
@@ -113,6 +113,29 @@ const EXTRAS_QUERY = `
             coverImage { large }
             isAdult
           }
+        }
+      }
+    }
+  }
+`;
+
+const STAFF_QUERY = `
+  query ($id: Int) {
+    Staff(id: $id) {
+      name { full }
+      image { large }
+      description(asHtml: false)
+      dateOfBirth { year }
+      dateOfDeath { year }
+      homeTown
+      characterMedia(sort: POPULARITY_DESC, perPage: 12) {
+        nodes {
+          id
+          type
+          title { romaji english }
+          seasonYear
+          coverImage { large }
+          isAdult
         }
       }
     }
@@ -163,6 +186,7 @@ interface AnilistExtras {
   characters?: {
     edges?: {
       voiceActors?: {
+        id: number;
         name: { full?: string | null };
         image?: { medium?: string | null };
       }[];
@@ -178,6 +202,16 @@ interface AnilistExtras {
   recommendations?: {
     nodes?: { mediaRecommendation?: AnilistMedia | null }[];
   };
+}
+
+interface AnilistStaff {
+  name: { full?: string | null };
+  image?: { large?: string | null };
+  description?: string | null;
+  dateOfBirth?: { year?: number | null } | null;
+  dateOfDeath?: { year?: number | null } | null;
+  homeTown?: string | null;
+  characterMedia?: { nodes?: AnilistMedia[] };
 }
 
 /** Anime, from AniList (GraphQL, no API key needed for public queries). */
@@ -248,13 +282,19 @@ export class AnilistProvider implements CatalogProvider {
         // the named/pictured person, the character is the role underneath.
         // Falls back to the character alone when no voice actor is credited.
         const va = e.voiceActors?.[0];
+        const vaPhoto = va?.image?.medium ?? null;
+        const characterPhoto = e.node.image?.medium ?? null;
         return {
-          // AniList characters/staff have no person detail page here, so
-          // they are not clickable — id stays null (see CastMemberDto).
-          id: null,
+          // Clickable (opens the AniList staff modal) only when a voice
+          // actor is credited — plain characters have no detail page.
+          id: va ? String(va.id) : null,
           name: va?.name.full ?? e.node.name.full ?? "?",
           role: va ? (e.node.name.full ?? null) : null,
-          photoUrl: va?.image?.medium ?? e.node.image?.medium ?? null,
+          photoUrl: vaPhoto ?? characterPhoto,
+          // Only worth splitting the card when there are two distinct
+          // photos to show.
+          characterPhotoUrl:
+            va && vaPhoto && characterPhoto ? characterPhoto : null,
         };
       }),
       similar: (media?.recommendations?.nodes ?? [])
@@ -296,6 +336,37 @@ export class AnilistProvider implements CatalogProvider {
         .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0))
         .slice(0, 10)
         .map((t) => t.name),
+    };
+  }
+
+  /** Live detail of an AniList staff member (voice actor) for the cast modal. */
+  async getPerson(id: string): Promise<CastDetailDto> {
+    const data = await this.query<{ Staff: AnilistStaff | null }>(STAFF_QUERY, {
+      id: Number(id),
+    });
+    const staff = data.Staff;
+
+    if (!staff) {
+      throw new NotFoundException("Staff not found on AniList");
+    }
+
+    return {
+      name: staff.name.full ?? "?",
+      photoUrl: staff.image?.large ?? null,
+      subtitle: staffSubtitle(staff),
+      description: staff.description
+        ? stripAnilistMarkdown(staff.description)
+        : null,
+      // Anime only: characterMedia can also include manga/light-novel roles,
+      // which have no page of their own in Loomkeep.
+      knownFor: (staff.characterMedia?.nodes ?? [])
+        .filter((m): m is AnilistMedia => m?.type === "ANIME")
+        .map((m) => this.toSummary(m)),
+      // AniList has no IMDb/Wikidata ids, and no personal homepage distinct
+      // from its own profile page.
+      imdbId: null,
+      wikidataId: null,
+      homepage: null,
     };
   }
 
@@ -405,6 +476,30 @@ function anilistTrailer(trailer: AnilistExtras["trailer"]): string | null {
 
 function anilistStudios(studios: AnilistExtras["studios"]): string[] {
   return (studios?.edges ?? []).filter((e) => e.isMain).map((e) => e.node.name);
+}
+
+/** "1990 – 2020 · Oita" from whatever birth/death year and hometown exist. */
+function staffSubtitle(staff: AnilistStaff): string | null {
+  const birthYear = staff.dateOfBirth?.year;
+  const deathYear = staff.dateOfDeath?.year;
+  const years = birthYear
+    ? deathYear
+      ? `${birthYear} – ${deathYear}`
+      : String(birthYear)
+    : null;
+  return [years, staff.homeTown].filter(Boolean).join(" · ") || null;
+}
+
+// AniList bios use a light markdown dialect (links, bold, strikethrough);
+// rendered as plain text, so strip the markup rather than pull in a
+// markdown renderer for this one field.
+function stripAnilistMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/~~([^~]+)~~/g, "$1")
+    .trim();
 }
 
 function toIsoDate(date?: {

@@ -76,7 +76,7 @@ export class CatalogController {
     };
   }
 
-  /** Live detail of a cast entity (TMDB person) for the media-page modal. */
+  /** Live detail of a cast entity (TMDB person, or AniList staff) for the media-page modal. */
   @Get(":source/person/:id")
   async getPerson(
     @CurrentUser() user: JwtPayload,

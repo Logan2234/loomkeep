@@ -39,7 +39,21 @@
     class="bg-surface-2 aspect-2/3 w-full overflow-hidden rounded-lg border border-transparent {clickable
       ? 'group-hover/cast:border-accent transition-colors'
       : ''}">
-    {#if c.photoUrl}
+    {#if c.characterPhotoUrl}
+      <!-- Voice actor (left) / character (right), split down the middle. -->
+      <div class="flex h-full w-full">
+        <img
+          src={c.photoUrl}
+          alt={c.name}
+          loading="lazy"
+          class="h-full w-1/2 object-cover" />
+        <img
+          src={c.characterPhotoUrl}
+          alt={c.role ?? ""}
+          loading="lazy"
+          class="h-full w-1/2 object-cover" />
+      </div>
+    {:else if c.photoUrl}
       <img
         src={c.photoUrl}
         alt={c.name}

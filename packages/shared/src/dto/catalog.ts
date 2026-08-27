@@ -49,6 +49,14 @@ export interface CastMemberDto {
   /** Character/role, when known. */
   role: string | null;
   photoUrl: string | null;
+  /**
+   * The character's own photo, when `photoUrl`/`name` refer to the voice
+   * actor instead (AniList) — lets the cast card show both side by side.
+   * Null when there's no separate character image (TMDB, or an AniList
+   * entry with no voice actor credited, where `photoUrl` already is the
+   * character's).
+   */
+  characterPhotoUrl: string | null;
 }
 
 /**
