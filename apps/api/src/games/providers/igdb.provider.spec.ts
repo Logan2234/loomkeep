@@ -138,8 +138,13 @@ describe("IgdbProvider", () => {
       gameModes: [],
       playerPerspectives: [],
       franchiseGames: [],
+      franchiseName: null,
       ratings: [],
       externalIds: [{ source: "IGDB", externalId: "1020" }],
+      storyline: null,
+      trailerVideoId: null,
+      ageRatingImageUrls: [],
+      multiplayerModes: [],
     });
   });
 
@@ -173,6 +178,153 @@ describe("IgdbProvider", () => {
     const details = await provider.getDetails("1020");
 
     expect(details.ratings).toEqual([{ source: "IGDB", score: "80%" }]);
+  });
+
+  it("appends vote counts to ratings when IGDB reports them", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          rating: 87.3,
+          rating_count: 1284,
+          aggregated_rating: 96.7,
+          aggregated_rating_count: 12,
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.ratings).toEqual([
+      { source: "IGDB", score: "87% (1284)", url: undefined },
+      { source: "Critiques", score: "97% (12)", url: undefined },
+    ]);
+  });
+
+  it("links ratings to the IGDB game page when a slug is known", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          slug: "grand-theft-auto-v",
+          rating: 87.3,
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.ratings).toEqual([
+      {
+        source: "IGDB",
+        score: "87%",
+        url: "https://www.igdb.com/games/grand-theft-auto-v",
+      },
+    ]);
+  });
+
+  it("picks the video whose name mentions trailer, else the first video", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          videos: [
+            { video_id: "teaser1", name: "Teaser" },
+            { video_id: "trailer1", name: "Official Trailer" },
+          ],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.trailerVideoId).toBe("trailer1");
+  });
+
+  it("falls back to the first video when none is named trailer", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          videos: [{ video_id: "teaser1", name: "Teaser" }],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.trailerVideoId).toBe("teaser1");
+  });
+
+  it("normalises age rating badge urls and dedupes them", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          age_ratings: [
+            { rating_cover_url: "//images.igdb.com/esrb.png" },
+            { rating_cover_url: "//images.igdb.com/esrb.png" },
+            { rating_cover_url: "//images.igdb.com/pegi.png" },
+          ],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.ageRatingImageUrls).toEqual([
+      "https://images.igdb.com/esrb.png",
+      "https://images.igdb.com/pegi.png",
+    ]);
+  });
+
+  it("derives multiplayer mode labels, OR-combined across platform entries", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          multiplayer_modes: [
+            { onlinecoop: true, splitscreen: false },
+            { splitscreen: true },
+          ],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.multiplayerModes).toEqual(["Online co-op", "Split screen"]);
+  });
+
+  it("maps storyline and the first franchise's name", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1020,
+          name: "Grand Theft Auto V",
+          storyline: "Three criminals plan the ultimate heist.",
+          franchises: [{ name: "GTA", games: [] }],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.storyline).toBe("Three criminals plan the ultimate heist.");
+    expect(details.franchiseName).toBe("GTA");
   });
 
   it("maps screenshots to urls, capped at 12", async () => {

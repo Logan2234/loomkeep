@@ -51,8 +51,13 @@ function detail(id: string, adult = false): ProviderGameDetails {
     gameModes: [],
     playerPerspectives: [],
     franchiseGames: [],
+    franchiseName: null,
     ratings: [],
     externalIds: [{ source: GameSource.IGDB, externalId: id }],
+    storyline: null,
+    trailerVideoId: null,
+    ageRatingImageUrls: [],
+    multiplayerModes: [],
   };
 }
 
