@@ -1,6 +1,7 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { UserDto } from "@loomkeep/shared";
@@ -36,7 +37,10 @@
       onSaved(user);
       onclose();
     } catch (err) {
-      error = resolveApiError(err);
+      error =
+        fieldError(err, "displayName") ??
+        fieldError(err, "bio") ??
+        resolveApiError(err);
     } finally {
       busy = false;
     }

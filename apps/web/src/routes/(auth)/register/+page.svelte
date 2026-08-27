@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
   import { register } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { bannerMessage, fieldError } from "$lib/api/validation-messages";
   import Banner from "$lib/components/Banner.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -30,10 +30,19 @@
   let certifiedAge = $state(false);
   let error = $state<string | null>(null);
   let loading = $state(false);
+  let displayNameError = $state<string | undefined>();
+  let emailError = $state<string | undefined>();
+  let acceptedTermsError = $state<string | undefined>();
+  let certifiedAgeError = $state<string | undefined>();
 
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     error = null;
+    displayNameError =
+      emailError =
+      acceptedTermsError =
+      certifiedAgeError =
+        undefined;
     loading = true;
     try {
       await register({
@@ -46,7 +55,16 @@
       });
       await goto("/register/check-email");
     } catch (err) {
-      error = resolveApiError(err);
+      displayNameError = fieldError(err, "displayName");
+      emailError = fieldError(err, "email");
+      acceptedTermsError = fieldError(err, "acceptedTerms");
+      certifiedAgeError = fieldError(err, "certifiedAge");
+      error = bannerMessage(err, [
+        "displayName",
+        "email",
+        "acceptedTerms",
+        "certifiedAge",
+      ]);
     } finally {
       loading = false;
     }
@@ -75,12 +93,18 @@
           bind:value={displayName}
           required
           class="input" />
+        {#if displayNameError}
+          <p class="text-danger -mt-2 text-xs">{displayNameError}</p>
+        {/if}
         <input
           type="email"
           placeholder={m.auth_register_email_placeholder()}
           bind:value={email}
           required
           class="input" />
+        {#if emailError}
+          <p class="text-danger -mt-2 text-xs">{emailError}</p>
+        {/if}
         <PasswordInput
           placeholder={m.auth_register_password_placeholder()}
           bind:value={password}
@@ -117,6 +141,9 @@
             >.
           </span>
         </label>
+        {#if acceptedTermsError}
+          <p class="text-danger -mt-2 text-xs">{acceptedTermsError}</p>
+        {/if}
         <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
           <input
             type="checkbox"
@@ -125,6 +152,9 @@
             class="mt-0.5" />
           <span>{m.auth_register_certify_age()}</span>
         </label>
+        {#if certifiedAgeError}
+          <p class="text-danger -mt-2 text-xs">{certifiedAgeError}</p>
+        {/if}
         <button
           type="submit"
           class="btn btn-primary"

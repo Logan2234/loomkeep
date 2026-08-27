@@ -7,6 +7,7 @@
     takeDownAdminReport,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -131,7 +132,11 @@
       void adminReports.refresh();
       void loadSummary();
     } catch (err) {
-      error = resolveApiError(err);
+      error =
+        fieldError(err, "reasonText") ??
+        fieldError(err, "legalBasis") ??
+        fieldError(err, "tosClause") ??
+        resolveApiError(err);
     } finally {
       resolvingId = null;
       takeDownTarget = null;

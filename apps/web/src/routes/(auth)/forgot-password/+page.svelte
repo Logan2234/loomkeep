@@ -1,23 +1,26 @@
 <script lang="ts">
   import { forgotPassword } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { bannerMessage, fieldError } from "$lib/api/validation-messages";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   let email = $state("");
   let error = $state<string | null>(null);
+  let emailError = $state<string | undefined>();
   let loading = $state(false);
   let submitted = $state(false);
 
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     error = null;
+    emailError = undefined;
     loading = true;
     try {
       await forgotPassword(email);
       submitted = true;
     } catch (err) {
-      error = resolveApiError(err);
+      emailError = fieldError(err, "email");
+      error = bannerMessage(err, ["email"]);
     } finally {
       loading = false;
     }
@@ -50,6 +53,9 @@
               bind:value={email}
               required
               class="input" />
+            {#if emailError}
+              <p class="text-danger -mt-2 text-xs">{emailError}</p>
+            {/if}
             {#if error}<p class="text-danger text-sm">{error}</p>{/if}
             <button type="submit" class="btn btn-primary" disabled={loading}>
               {loading

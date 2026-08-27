@@ -4,6 +4,8 @@
     getReviewRevisions,
     upsertReview,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { appConfig } from "$lib/config.svelte";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
@@ -54,6 +56,7 @@
   let revisions = $state<ReviewRevisionDto[]>([]);
   let busy = $state(false);
   let confirmingDelete = $state(false);
+  let error = $state("");
 
   $effect(() => {
     if (!review) return;
@@ -63,6 +66,7 @@
   async function save() {
     if (formRating === null || busy) return;
     busy = true;
+    error = "";
     try {
       const updated = await upsertReview(targetType, targetId, {
         rating: formRating,
@@ -71,6 +75,11 @@
       });
       onSaved(updated);
       onClose();
+    } catch (err) {
+      error =
+        fieldError(err, "rating") ??
+        fieldError(err, "text") ??
+        resolveApiError(err);
     } finally {
       busy = false;
     }
@@ -79,10 +88,13 @@
   async function doDelete() {
     if (busy) return;
     busy = true;
+    error = "";
     try {
       await deleteReview(targetType, targetId);
       onDeleted?.();
       onClose();
+    } catch (err) {
+      error = resolveApiError(err);
     } finally {
       busy = false;
     }
@@ -155,6 +167,10 @@
           {/each}
         </ul>
       </details>
+    {/if}
+
+    {#if error}
+      <p class="text-danger text-sm">{error}</p>
     {/if}
 
     <div class="flex items-center gap-2 pt-1">

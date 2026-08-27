@@ -164,7 +164,6 @@ export const ErrorCode = {
   // client-side only — never emitted by the API, thrown by apps/web's
   // request() when the fetch itself fails (see apps/web/src/lib/api/core.ts)
   NetworkOffline: "network.offline",
-  NetworkTimeout: "network.timeout",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -190,7 +189,11 @@ export interface ApiErrorBody {
   statusCode: number;
   code: ErrorCode | null;
   params?: Record<string, string | number>;
-  details?: { field: string; constraint: string }[];
+  details?: {
+    field: string;
+    constraint: string;
+    params?: (string | number | boolean)[];
+  }[];
   requestId?: string;
   /** Dev-facing English text: logs, Swagger, debugging. Never displayed to the user. */
   message: string;

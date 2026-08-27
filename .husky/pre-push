@@ -1,1 +1,1 @@
-pnpm build:package && pnpm exec lint-staged && pnpm --filter @loomkeep/web check
+pnpm check

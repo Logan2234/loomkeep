@@ -74,18 +74,12 @@ describe("resolveApiError", () => {
     expect(resolveApiError(err)).toBe(m.apierr_status_429());
   });
 
-  it("falls back to the API's joined constraint messages for validation.failed (transition case)", () => {
+  it("always returns the generic banner for validation.failed, never the dev-facing message", () => {
     const err = new ApiError(
       400,
       "email: isEmail, password: minLength",
       ErrorCode.ValidationFailed,
     );
-
-    expect(resolveApiError(err)).toBe("email: isEmail, password: minLength");
-  });
-
-  it("falls back to the generic validation message when the API sent no dev message", () => {
-    const err = new ApiError(400, "", ErrorCode.ValidationFailed);
 
     expect(resolveApiError(err)).toBe(m.apierr_validation_failed());
   });

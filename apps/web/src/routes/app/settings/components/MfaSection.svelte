@@ -8,6 +8,7 @@
     setupTotp,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -111,7 +112,7 @@
       openModal = null;
       toast.success(m.settings_mfa_totp_disable_action());
     } catch (err) {
-      disableError = resolveApiError(err);
+      disableError = fieldError(err, "currentPassword") ?? resolveApiError(err);
     } finally {
       disableBusy = false;
     }

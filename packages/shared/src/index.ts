@@ -29,3 +29,4 @@ export * from "./enums";
 export * from "./error-codes";
 export * from "./legal";
 export * from "./password";
+export * from "./validation-constraints";

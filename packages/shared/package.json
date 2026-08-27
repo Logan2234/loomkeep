@@ -15,6 +15,7 @@
     "clean:dev": "rm -rf dist node_modules",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "check": "tsc --noEmit -p tsconfig.json"
   }
 }

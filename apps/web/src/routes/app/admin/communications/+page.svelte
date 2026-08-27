@@ -14,6 +14,7 @@
     sendAdminTestPush,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -135,7 +136,7 @@
     } catch (err) {
       sendResult = {
         ok: false,
-        message: resolveApiError(err),
+        message: fieldError(err, "to") ?? resolveApiError(err),
       };
     } finally {
       sendingEmail = false;
@@ -196,7 +197,11 @@
       await loadDevices();
       await refreshCounts();
     } catch (err) {
-      pushSendError = resolveApiError(err);
+      pushSendError =
+        fieldError(err, "email") ??
+        fieldError(err, "title") ??
+        fieldError(err, "body") ??
+        resolveApiError(err);
     } finally {
       sendingPush = false;
     }
@@ -280,7 +285,10 @@
       });
       showBroadcastConfirm = false;
     } catch (err) {
-      broadcastError = resolveApiError(err);
+      broadcastError =
+        fieldError(err, "title") ??
+        fieldError(err, "body") ??
+        resolveApiError(err);
       showBroadcastConfirm = false;
     } finally {
       broadcasting = false;
