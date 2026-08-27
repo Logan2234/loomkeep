@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    ApiError,
     confirmTotp,
     disableTotp,
     getMfaStatus,
@@ -8,6 +7,7 @@
     setEmailMfa,
     setupTotp,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -63,9 +63,7 @@
         color: { dark: "#000000", light: "#ffffff" },
       });
     } catch (err) {
-      toast.error(
-        err instanceof ApiError ? err.message : m.common_save_error_fallback(),
-      );
+      toast.error(resolveApiError(err));
       openModal = null;
     }
   }
@@ -113,8 +111,7 @@
       openModal = null;
       toast.success(m.settings_mfa_totp_disable_action());
     } catch (err) {
-      disableError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      disableError = resolveApiError(err);
     } finally {
       disableBusy = false;
     }
@@ -129,9 +126,7 @@
         : { totpEnabled: false, emailEnabled: next, recoveryCodesRemaining: 0 };
       if (recoveryCodes) openRecoveryReveal(recoveryCodes);
     } catch (err) {
-      toast.error(
-        err instanceof ApiError ? err.message : m.common_save_error_fallback(),
-      );
+      toast.error(resolveApiError(err));
     }
   }
 
@@ -155,9 +150,7 @@
         : status;
       openRecoveryReveal(codes);
     } catch (err) {
-      toast.error(
-        err instanceof ApiError ? err.message : m.common_save_error_fallback(),
-      );
+      toast.error(resolveApiError(err));
       openModal = null;
     } finally {
       regenerateBusy = false;

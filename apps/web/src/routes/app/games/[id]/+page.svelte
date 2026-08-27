@@ -9,6 +9,7 @@
     updateGameEntry,
     upsertGameEntry,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
@@ -114,10 +115,7 @@
           error =
             "Ce jeu est réservé aux comptes ayant activé le contenu pour adultes (réglages).";
         } else {
-          error =
-            err instanceof ApiError
-              ? err.message
-              : m.common_fetch_error_fallback();
+          error = resolveApiError(err);
         }
       });
   });
@@ -168,7 +166,6 @@
         remove: deleteGameEntry,
         addReplay: addGameReplay,
         removeReplay: deleteGameReplay,
-        addErrorMessage: "Impossible d'ajouter ce jeu",
       },
     );
 </script>

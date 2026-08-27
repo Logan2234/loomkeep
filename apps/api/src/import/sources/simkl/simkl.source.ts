@@ -1,11 +1,9 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  Injectable,
-} from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { BadGatewayException, HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import { AppException } from "../../../common/app.exception";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
@@ -82,15 +80,21 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
     });
 
     if (!response.ok) {
-      throw new BadRequestException(
-        "Connexion à Simkl impossible — la demande a peut-être expiré ou déjà été utilisée, réessaie depuis le début.",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportSimklConnectionFailed,
+        undefined,
+        "Simkl token exchange failed — the code may have expired or already been used",
       );
     }
 
     const data = (await response.json()) as { access_token?: string };
 
     if (!data.access_token) {
-      throw new BadRequestException("Connexion à Simkl impossible.");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportSimklConnectionFailed,
+      );
     }
 
     return data.access_token;

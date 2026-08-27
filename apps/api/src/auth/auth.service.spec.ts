@@ -1,16 +1,11 @@
-import type { LoginResponseDto } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { ErrorCode, type LoginResponseDto } from "@loomkeep/shared";
+import { BadRequestException, UnauthorizedException } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MailService } from "../mail/mail.service";
@@ -171,7 +166,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
 }
 
 describe("AuthService.register", () => {
-  it("throws ForbiddenException when registration is disabled", async () => {
+  it("throws AppException(auth.registration_disabled) when registration is disabled", async () => {
     const { service, prisma, turnstile } = makeService(undefined, "false");
 
     await expect(
@@ -182,12 +177,12 @@ describe("AuthService.register", () => {
         acceptedTerms: true,
         certifiedAge: true,
       }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthRegistrationDisabled });
     expect(turnstile.verify).not.toHaveBeenCalled();
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("throws BadRequestException when Turnstile verification fails", async () => {
+  it("throws AppException(auth.anti_bot_verification_failed) when Turnstile verification fails", async () => {
     const { service, prisma, turnstile } = makeService();
     (turnstile.verify as jest.Mock).mockResolvedValue(false);
 
@@ -200,11 +195,13 @@ describe("AuthService.register", () => {
         certifiedAge: true,
         turnstileToken: "bad-token",
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toMatchObject({
+      code: ErrorCode.AuthAntiBotVerificationFailed,
+    });
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("throws ConflictException when the email is already taken", async () => {
+  it("throws AppException(auth.email_already_exists) when the email is already taken", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
 
@@ -216,7 +213,9 @@ describe("AuthService.register", () => {
         acceptedTerms: true,
         certifiedAge: true,
       }),
-    ).rejects.toThrow(ConflictException);
+    ).rejects.toMatchObject({
+      code: ErrorCode.AuthEmailAlreadyExists,
+    });
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
@@ -790,13 +789,16 @@ describe("AuthService.resetPassword", () => {
 });
 
 describe("AuthService.resendVerificationEmail", () => {
-  it("throws NotFoundException when the account doesn't exist", async () => {
+  it("throws AppException(auth.account_not_found) when the account doesn't exist", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(service.resendVerificationEmail("nobody")).rejects.toThrow(
-      NotFoundException,
+      AppException,
     );
+    await expect(
+      service.resendVerificationEmail("nobody"),
+    ).rejects.toMatchObject({ code: ErrorCode.AuthAccountNotFound });
   });
 
   it("throws BadRequestException when already verified", async () => {

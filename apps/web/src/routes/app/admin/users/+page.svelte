@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
-    ApiError,
     deleteAdminUser,
     getAdminUserComments,
     getAdminUserExport,
@@ -20,6 +19,7 @@
     updateAdminUserPlan,
     updateAdminUserRole,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
@@ -145,8 +145,7 @@
       pageNum = targetPage;
       hasMore = res.users.length === PAGE_SIZE;
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : "Utilisateurs indisponibles";
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -256,8 +255,7 @@
         u.id === selected!.id ? { ...u, role: res.role } : u,
       );
     } catch (err) {
-      roleError =
-        err instanceof ApiError ? err.message : "Mise à jour impossible";
+      roleError = resolveApiError(err);
     } finally {
       roleSaving = false;
     }
@@ -275,8 +273,7 @@
         u.id === selected!.id ? { ...u, plan: res.plan } : u,
       );
     } catch (err) {
-      planError =
-        err instanceof ApiError ? err.message : "Mise à jour impossible";
+      planError = resolveApiError(err);
     } finally {
       planSaving = false;
     }
@@ -298,7 +295,7 @@
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      exportError = err instanceof ApiError ? err.message : "Export impossible";
+      exportError = resolveApiError(err);
     } finally {
       exporting = false;
     }
@@ -313,8 +310,7 @@
       verifyMessage = "Email de vérification renvoyé.";
       toast.success("Email de vérification renvoyé.");
     } catch (err) {
-      verifyMessage =
-        err instanceof ApiError ? err.message : "Échec de l'envoi";
+      verifyMessage = resolveApiError(err);
     } finally {
       verifySending = false;
     }
@@ -329,7 +325,7 @@
       resetMessage = "Lien de réinitialisation envoyé.";
       toast.success("Lien de réinitialisation envoyé.");
     } catch (err) {
-      resetMessage = err instanceof ApiError ? err.message : "Échec de l'envoi";
+      resetMessage = resolveApiError(err);
     } finally {
       resetSending = false;
     }
@@ -370,10 +366,7 @@
       selected = null;
       toast.success(`Compte de ${deletedName} supprimé.`);
     } catch (err) {
-      deleteError =
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback();
+      deleteError = resolveApiError(err);
     } finally {
       deleting = false;
     }

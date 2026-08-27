@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, updateMe } from "$lib/api/client";
+  import { updateMe } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
@@ -51,8 +52,7 @@
     try {
       await updateMe({ timezone });
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     }
   }
 
@@ -74,8 +74,7 @@
     try {
       await updateMe({ [key]: cadence });
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     }
   }
 
@@ -98,8 +97,7 @@
         await updateMe({ notifyPush: cadence });
       }
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     } finally {
       pushBusy = false;
     }
@@ -111,8 +109,7 @@
     try {
       await updateMe({ notifyNewsletter: !auth.user.notifyNewsletter });
     } catch (err) {
-      notifyError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      notifyError = resolveApiError(err);
     }
   }
 </script>

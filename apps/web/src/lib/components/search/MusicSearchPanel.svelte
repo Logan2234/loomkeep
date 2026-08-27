@@ -1,11 +1,11 @@
 <script lang="ts">
   import {
-    ApiError,
     fetchAllPages,
     listMusic,
     searchMusic,
     upsertMusicEntry,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -93,8 +93,7 @@
       searched = true;
     } catch (err) {
       if (mine !== searchId) return;
-      searchError =
-        err instanceof ApiError ? err.message : "Recherche impossible";
+      searchError = resolveApiError(err);
     } finally {
       if (mine === searchId) searching = false;
     }
@@ -109,7 +108,7 @@
       });
       await loadLibrary();
     } catch (err) {
-      searchError = err instanceof ApiError ? err.message : "Ajout impossible";
+      searchError = resolveApiError(err);
     }
   }
 </script>

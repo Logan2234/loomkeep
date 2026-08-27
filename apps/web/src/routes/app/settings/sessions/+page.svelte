@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
-    ApiError,
     getSessions,
     revokeOtherSessions,
     revokeSession,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -27,8 +27,7 @@
     try {
       sessions = await getSessions();
     } catch (err) {
-      error =
-        err instanceof ApiError ? err.message : m.common_fetch_error_fallback();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -56,8 +55,7 @@
       confirmTarget = null;
       await load();
     } catch (err) {
-      revokeError =
-        err instanceof ApiError ? err.message : "Déconnexion impossible";
+      revokeError = resolveApiError(err);
     } finally {
       revoking = false;
     }

@@ -21,10 +21,7 @@
     locked: boolean;
   } = $props();
 
-  const bookStats = statsResource<BookStatsDto>(
-    getBookStats,
-    "Statistiques livres indisponibles",
-  );
+  const bookStats = statsResource<BookStatsDto>(getBookStats);
   const books = $derived(bookStats.data);
   const error = $derived(bookStats.error);
 

@@ -1,10 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    ApiError,
-    deleteAccount,
-    getAccountDeletionSummary,
-  } from "$lib/api/client";
+  import { deleteAccount, getAccountDeletionSummary } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -65,10 +62,7 @@
       toast.success("Compte supprimé.");
       await goto("/login");
     } catch (err) {
-      deleteError =
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback();
+      deleteError = resolveApiError(err);
     } finally {
       deleteSaving = false;
     }

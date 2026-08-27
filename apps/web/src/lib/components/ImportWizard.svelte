@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     analyzeImport,
-    ApiError,
     commitImport,
     getImportJob,
     getImportQuota,
@@ -9,6 +8,7 @@
     searchCatalog,
     searchGames,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -144,10 +144,6 @@
     return n > 1 ? descriptor.noun.many : descriptor.noun.one;
   }
 
-  function msg(err: unknown, fallback: string): string {
-    return err instanceof ApiError ? err.message : fallback;
-  }
-
   function matchOf(item: ImportPlanItem): ImportMatch | null {
     return picked.get(item.key) ?? item.match;
   }
@@ -216,7 +212,7 @@
       job = started;
       pollJob(started.id, "review");
     } catch (err) {
-      error = msg(err, "Analyse impossible.");
+      error = resolveApiError(err);
       phase = "input";
     }
   }
@@ -244,7 +240,7 @@
         }
       })
       .catch((err) => {
-        error = msg(err, "Suivi du job impossible.");
+        error = resolveApiError(err);
       });
   }
 
@@ -378,7 +374,7 @@
       job = started;
       pollJob(started.id, "done");
     } catch (err) {
-      error = msg(err, "Import impossible.");
+      error = resolveApiError(err);
       phase = "review";
     }
   }

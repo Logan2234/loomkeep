@@ -2,13 +2,13 @@
   import { page } from "$app/state";
   import {
     addBookReplay,
-    ApiError,
     deleteBookEntry,
     deleteBookReplay,
     getBookDetail,
     updateBookEntry,
     upsertBookEntry,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import { goBack } from "$lib/backNav.svelte";
@@ -85,10 +85,7 @@
     getBookDetail(SOURCE, i)
       .then((result) => (detail = result))
       .catch((err) => {
-        error =
-          err instanceof ApiError
-            ? err.message
-            : m.common_fetch_error_fallback();
+        error = resolveApiError(err);
       });
   });
 
@@ -138,7 +135,6 @@
         remove: deleteBookEntry,
         addReplay: addBookReplay,
         removeReplay: deleteBookReplay,
-        addErrorMessage: "Impossible d'ajouter ce livre",
       },
     );
 </script>

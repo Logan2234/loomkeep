@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { ApiError, resendVerificationEmail } from "$lib/api/client";
+  import { resendVerificationEmail } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -35,10 +36,7 @@
       }, 1000);
     } catch (err) {
       status = "error";
-      error =
-        err instanceof ApiError
-          ? err.message
-          : m.auth_register_error_fallback();
+      error = resolveApiError(err);
     }
   }
 

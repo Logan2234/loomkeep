@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    ApiError,
     deleteAdminCacheItem,
     deleteAdminCacheOrphans,
     getAdminCache,
@@ -8,6 +7,7 @@
     resyncAdminCacheItem,
     resyncAdminCacheStale,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -83,7 +83,7 @@
       orphanTotal = res.orphanTotal;
       page = targetPage;
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "Cache indisponible";
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -146,10 +146,7 @@
       await refreshInPlace();
       toast.success(`« ${item.title} » re-synchronisé.`);
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : "Échec de la re-synchronisation";
+      error = resolveApiError(err);
     } finally {
       resyncing = null;
     }
@@ -167,10 +164,7 @@
           : `${res.resynced} titre(s) re-synchronisé(s).`,
       );
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : "Échec de la re-synchronisation";
+      error = resolveApiError(err);
     } finally {
       bulkResyncing = false;
     }
@@ -189,10 +183,7 @@
           : `${res.deleted} orphelin(s) supprimé(s) du cache.`,
       );
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback();
+      error = resolveApiError(err);
       showDeleteOrphansConfirm = false;
     } finally {
       bulkDeleting = false;
@@ -207,8 +198,7 @@
     try {
       detail = await getAdminCacheItem(item.domain, item.id);
     } catch (err) {
-      detailError =
-        err instanceof ApiError ? err.message : "Détail indisponible";
+      detailError = resolveApiError(err);
     } finally {
       detailLoading = false;
     }
@@ -229,10 +219,7 @@
       await refreshInPlace();
       toast.success("Re-synchronisé.");
     } catch (err) {
-      detailError =
-        err instanceof ApiError
-          ? err.message
-          : "Échec de la re-synchronisation";
+      detailError = resolveApiError(err);
     } finally {
       drawerResyncing = false;
     }
@@ -250,10 +237,7 @@
       closeDrawer();
       toast.success(`« ${title} » supprimé du cache.`);
     } catch (err) {
-      detailError =
-        err instanceof ApiError
-          ? err.message
-          : m.common_delete_error_fallback();
+      detailError = resolveApiError(err);
       showDeleteConfirm = false;
     } finally {
       deleting = false;

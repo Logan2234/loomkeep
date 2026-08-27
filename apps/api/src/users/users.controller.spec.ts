@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared";
 import {
   BadRequestException,
   ConflictException,
@@ -7,6 +8,7 @@ import type { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { MailService } from "../mail/mail.service";
@@ -479,7 +481,13 @@ describe("UsersController — uploadAvatar", () => {
         mimeType: "image/png",
         data: Buffer.from("not an image").toString("base64"),
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(AppException);
+    await expect(
+      controller.uploadAvatar(jwtPayload(userId), {
+        mimeType: "image/png",
+        data: Buffer.from("not an image").toString("base64"),
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.UserAvatarInvalidType });
 
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
@@ -492,7 +500,7 @@ describe("UsersController — uploadAvatar", () => {
         mimeType: "image/png",
         data: huge.toString("base64"),
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toMatchObject({ code: ErrorCode.UserAvatarTooLarge });
 
     expect(prisma.user.update).not.toHaveBeenCalled();
   });

@@ -3,7 +3,8 @@
   // right where they're shown, via the pencil/camera buttons on the profile
   // header. What's left here isn't "profile" content in the sense that
   // anyone else ever sees it — it's account-level content filtering.
-  import { ApiError, updateMe } from "$lib/api/client";
+  import { updateMe } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -26,8 +27,7 @@
       }, 2500);
     } catch (err) {
       birthDateStatus = "error";
-      birthDateError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      birthDateError = resolveApiError(err);
     }
   }
 
@@ -53,8 +53,7 @@
     try {
       await updateMe({ allowAdultContent: !auth.user.allowAdultContent });
     } catch (err) {
-      adultContentError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      adultContentError = resolveApiError(err);
     }
   }
 </script>

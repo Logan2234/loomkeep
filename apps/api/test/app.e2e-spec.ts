@@ -1,4 +1,9 @@
-import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
+import {
+  CatalogSource,
+  ErrorCode,
+  MediaSource,
+  MediaType,
+} from "@loomkeep/shared";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
@@ -360,11 +365,19 @@ describe("Loomkeep API (e2e)", () => {
       .expect(200);
     const futureEpisodeId = episodes.body.seasons[0].episodes[2].id;
 
-    await request(http)
+    const rejected = await request(http)
       .post(`/api/library/episodes/${futureEpisodeId}/watches`)
       .set("Authorization", `Bearer ${accessToken}`)
       .send({})
       .expect(400);
+
+    // Envelope shape (AllExceptionsFilter): a migrated AppException carries
+    // a translatable code, not just a raw English message.
+    expect(rejected.body).toMatchObject({
+      statusCode: 400,
+      code: ErrorCode.LibraryEpisodeNotAired,
+    });
+    expect(rejected.body.requestId).toEqual(expect.any(String));
 
     await request(http)
       .post(`/api/library/episodes/${futureEpisodeId}/watch-through`)

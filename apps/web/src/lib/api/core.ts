@@ -1,13 +1,29 @@
 import { env } from "$env/dynamic/public";
-import type { AuthTokensDto, PagedResult } from "@loomkeep/shared";
+import type {
+  ApiErrorBody,
+  AuthTokensDto,
+  PagedResult,
+} from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
 
 export const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";
 
+/**
+ * `message` stays for debugging (console, error reporting) — it's the API's
+ * dev-facing English text and must never be shown to the user directly. Use
+ * resolveApiError() (./errors.ts) to get a translated, user-facing string.
+ */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly code: ErrorCode | null = null,
+    readonly params?: Record<string, string | number>,
+    readonly details?: { field: string; constraint: string }[],
+    readonly requestId?: string,
+    /** Seconds to wait before retrying, parsed from a 429's Retry-After header. */
+    readonly retryAfterSeconds?: number,
   ) {
     super(message);
   }
@@ -35,11 +51,21 @@ export async function request<T>(
     headers.Authorization = `Bearer ${auth.accessToken}`;
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: options.method ?? "GET",
+      headers,
+      body:
+        options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    // The fetch itself failed (offline, DNS failure, VPS down) — there is no
+    // HTTP response at all, so this never reaches the !response.ok branch
+    // below. Most frequent failure mode on a PWA away from wifi.
+    throw new ApiError(0, "Network request failed", ErrorCode.NetworkOffline);
+  }
 
   // Expired access token: try one refresh, then replay the request.
   if (
@@ -58,15 +84,21 @@ export async function request<T>(
   }
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as {
-      message?: string | string[];
-    } | null;
-    const message = Array.isArray(body?.message)
-      ? body.message.join(", ")
-      : body?.message;
+    const body = (await response
+      .json()
+      .catch(() => null)) as Partial<ApiErrorBody> | null;
+    const retryAfterHeader = response.headers.get("Retry-After");
+    const retryAfterSeconds = retryAfterHeader
+      ? Number(retryAfterHeader)
+      : undefined;
     throw new ApiError(
       response.status,
-      message ?? `Request failed (${response.status})`,
+      body?.message ?? `Request failed (${response.status})`,
+      body?.code ?? null,
+      body?.params,
+      body?.details,
+      body?.requestId,
+      Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : undefined,
     );
   }
 

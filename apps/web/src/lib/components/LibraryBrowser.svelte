@@ -23,7 +23,7 @@
   // props/snippets.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { ApiError } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -184,8 +184,7 @@
       done = !result.hasMore;
     } catch (err) {
       if (mine !== loadId) return;
-      error =
-        err instanceof ApiError ? err.message : m.common_fetch_error_fallback();
+      error = resolveApiError(err);
     } finally {
       if (mine === loadId) {
         loading = false;

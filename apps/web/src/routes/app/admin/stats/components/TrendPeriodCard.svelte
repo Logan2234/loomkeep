@@ -5,7 +5,7 @@
   // period selector, so each temporal card re-queries its own endpoint. The
   // payload carries the default (weekly) curve; picking another period
   // overrides it locally, and remounting the section drops the override.
-  import { ApiError } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import TrendChart from "$lib/components/TrendChart.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
@@ -16,7 +16,6 @@
     description = "",
     initial,
     load,
-    errorMessage,
     footer,
   }: {
     title: string;
@@ -24,7 +23,6 @@
     description?: string;
     initial: T;
     load: (period: TrendPeriod) => Promise<T>;
-    errorMessage: string;
     /** The figures under the curve — they read fields only the caller knows. */
     footer: Snippet<[T]>;
   } = $props();
@@ -55,7 +53,7 @@
     try {
       picked = await load(period);
     } catch (err) {
-      error = err instanceof ApiError ? err.message : errorMessage;
+      error = resolveApiError(err);
     } finally {
       busy = false;
     }

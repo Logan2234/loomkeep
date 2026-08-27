@@ -1,12 +1,12 @@
 <script lang="ts">
   import { adminReports } from "$lib/admin-reports.svelte";
   import {
-    ApiError,
     getAdminReports,
     getAdminReportsSummary,
     resolveAdminReport,
     takeDownAdminReport,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -66,7 +66,7 @@
       page = targetPage;
       hasMore = res.reports.length === PAGE_SIZE;
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "File indisponible";
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }
@@ -90,7 +90,7 @@
       void adminReports.refresh();
       void loadSummary();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "L'action a échoué";
+      error = resolveApiError(err);
     } finally {
       resolvingId = null;
     }
@@ -131,7 +131,7 @@
       void adminReports.refresh();
       void loadSummary();
     } catch (err) {
-      error = err instanceof ApiError ? err.message : "L'action a échoué";
+      error = resolveApiError(err);
     } finally {
       resolvingId = null;
       takeDownTarget = null;

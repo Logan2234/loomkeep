@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, exportMyData, exportMyDataCsv } from "$lib/api/client";
+  import { exportMyData, exportMyDataCsv } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
@@ -30,10 +31,7 @@
       );
       toast.success(m.settings_export_success());
     } catch (err) {
-      exportError =
-        err instanceof ApiError
-          ? err.message
-          : m.settings_export_error_fallback();
+      exportError = resolveApiError(err);
     } finally {
       exporting = false;
     }
@@ -82,10 +80,7 @@
       );
       toast.success(m.settings_export_success());
     } catch (err) {
-      csvError =
-        err instanceof ApiError
-          ? err.message
-          : m.settings_export_error_fallback();
+      csvError = resolveApiError(err);
     } finally {
       csvExporting = null;
     }

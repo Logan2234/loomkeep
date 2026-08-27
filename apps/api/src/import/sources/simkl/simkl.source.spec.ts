@@ -195,7 +195,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "u1", started.id);
 
     expect(job.status).toBe("failed");
-    expect(job.error).toMatch(/impossible/i);
+    expect(job.error).toMatch(/token exchange failed/i);
   });
 
   it("commit writes episode watches and library entries", async () => {

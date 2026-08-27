@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ApiError, getAdminNewsletterSends } from "$lib/api/client";
+  import { getAdminNewsletterSends } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { DATETIME_NUMERIC_OPTIONS, formatDateTime } from "$lib/format";
@@ -15,8 +16,7 @@
     try {
       sends = await getAdminNewsletterSends();
     } catch (err) {
-      loadError =
-        err instanceof ApiError ? err.message : "Historique indisponible";
+      loadError = resolveApiError(err);
     } finally {
       loading = false;
     }

@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    ApiError,
     changeEmail,
     changePassword,
     checkUsernameAvailable,
@@ -8,6 +7,7 @@
     resendVerificationEmail,
     updateUsername,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -75,8 +75,7 @@
       openModal = null;
       toast.success("Nom d'utilisateur mis à jour.");
     } catch (err) {
-      usernameError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      usernameError = resolveApiError(err);
     } finally {
       usernameSaving = false;
     }
@@ -115,8 +114,7 @@
       });
       emailStep = "code";
     } catch (err) {
-      emailError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      emailError = resolveApiError(err);
     } finally {
       emailSaving = false;
     }
@@ -130,8 +128,7 @@
       openModal = null;
       toast.success("Email mis à jour.");
     } catch (err) {
-      emailConfirmError =
-        err instanceof ApiError ? err.message : "Code invalide ou expiré";
+      emailConfirmError = resolveApiError(err);
     } finally {
       emailConfirming = false;
     }
@@ -166,11 +163,7 @@
         }
       }, 1000);
     } catch (err) {
-      toast.error(
-        err instanceof ApiError
-          ? err.message
-          : "Impossible d'envoyer l'email de vérification.",
-      );
+      toast.error(resolveApiError(err));
     } finally {
       verificationSending = false;
     }
@@ -209,8 +202,7 @@
       openModal = null;
       toast.success("Mot de passe mis à jour.");
     } catch (err) {
-      passwordError =
-        err instanceof ApiError ? err.message : m.common_save_error_fallback();
+      passwordError = resolveApiError(err);
     } finally {
       passwordSaving = false;
     }

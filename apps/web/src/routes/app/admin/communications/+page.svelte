@@ -4,7 +4,6 @@
   // now two tabs of one page instead of two nav entries.
   import { page } from "$app/state";
   import {
-    ApiError,
     getAdminEmailPreview,
     getAdminEmailTemplates,
     getAdminPushDevices,
@@ -14,6 +13,7 @@
     sendAdminTestEmail,
     sendAdminTestPush,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -75,8 +75,7 @@
       smtpConfigured = res.smtpConfigured;
       if (templates.length > 0) selectTemplate(templates[0].key);
     } catch (err) {
-      emailLoadError =
-        err instanceof ApiError ? err.message : "Gabarits indisponibles";
+      emailLoadError = resolveApiError(err);
     } finally {
       emailLoading = false;
     }
@@ -136,7 +135,7 @@
     } catch (err) {
       sendResult = {
         ok: false,
-        message: err instanceof ApiError ? err.message : "Échec de l'envoi",
+        message: resolveApiError(err),
       };
     } finally {
       sendingEmail = false;
@@ -197,8 +196,7 @@
       await loadDevices();
       await refreshCounts();
     } catch (err) {
-      pushSendError =
-        err instanceof ApiError ? err.message : "Échec de l'envoi";
+      pushSendError = resolveApiError(err);
     } finally {
       sendingPush = false;
     }
@@ -282,8 +280,7 @@
       });
       showBroadcastConfirm = false;
     } catch (err) {
-      broadcastError =
-        err instanceof ApiError ? err.message : "Échec de la diffusion";
+      broadcastError = resolveApiError(err);
       showBroadcastConfirm = false;
     } finally {
       broadcasting = false;

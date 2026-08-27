@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { ApiError, resetPassword } from "$lib/api/client";
+  import { resetPassword } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
@@ -34,10 +35,7 @@
       await resetPassword(token, newPassword);
       await goto("/login");
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : m.auth_reset_password_error_fallback();
+      error = resolveApiError(err);
     } finally {
       loading = false;
     }

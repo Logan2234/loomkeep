@@ -11,6 +11,7 @@
     upsertLibraryEntry,
     watchEpisode,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { goBack } from "$lib/backNav.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
@@ -181,10 +182,7 @@
           error =
             "Ce titre est réservé aux comptes ayant activé le contenu pour adultes (réglages).";
         } else {
-          error =
-            err instanceof ApiError
-              ? err.message
-              : m.common_fetch_error_fallback();
+          error = resolveApiError(err);
         }
       });
   });
@@ -236,7 +234,6 @@
         remove: deleteLibraryEntry,
         addReplay: addLibraryReplay,
         removeReplay: deleteLibraryReplay,
-        addErrorMessage: "Impossible d'ajouter cet élément à ta bibliothèque",
       },
     );
 
@@ -306,10 +303,7 @@
       await watchEpisode(episodeId);
       await reload();
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : "Impossible de marquer comme vu";
+      error = resolveApiError(err);
     } finally {
       continuingEpisodeId = null;
     }

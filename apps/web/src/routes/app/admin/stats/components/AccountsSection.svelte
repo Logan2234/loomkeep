@@ -98,8 +98,7 @@
   <TrendPeriodCard
     title={m.admin_accounts_new_title()}
     initial={stats.newAccounts}
-    load={getAdminNewAccountsTrend}
-    errorMessage={m.admin_accounts_trend_error()}>
+    load={getAdminNewAccountsTrend}>
     {#snippet footer(trend)}
       <p class="timecode mt-1.5 text-xs">
         {m.admin_accounts_trend_summary({

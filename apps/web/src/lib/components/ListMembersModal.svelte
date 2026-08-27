@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
     addListMember,
-    ApiError,
     getListMembers,
     removeListMember,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { m } from "$lib/paraglide/messages.js";
   import type { ListMemberDto } from "@loomkeep/shared";
   import Avatar from "./Avatar.svelte";
@@ -38,10 +38,7 @@
       members = [...members, member];
       username = "";
     } catch (err) {
-      error =
-        err instanceof ApiError
-          ? err.message
-          : m.list_members_add_error_fallback();
+      error = resolveApiError(err);
     } finally {
       busy = false;
     }
