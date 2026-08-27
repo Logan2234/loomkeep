@@ -1,6 +1,5 @@
-import type { SessionDto } from "@loomkeep/shared";
+import { ErrorCode, type SessionDto } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -9,6 +8,7 @@ import {
   Param,
   Query,
 } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { AuthService } from "./auth.service";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -34,7 +34,10 @@ export class SessionsController {
     @Query("except") exceptJti?: string,
   ): Promise<void> {
     if (!exceptJti) {
-      throw new BadRequestException("Missing 'except' query parameter");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthMissingExceptParam,
+      );
     }
 
     await this.authService.revokeOtherSessions(payload.sub, exceptJti);

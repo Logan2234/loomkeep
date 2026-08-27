@@ -1,12 +1,14 @@
+import { ErrorCode } from "@loomkeep/shared";
 import {
   CanActivate,
   ExecutionContext,
+  HttpStatus,
   Injectable,
-  UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
+import { AppException } from "../../common/app.exception";
 import type {
   AuthenticatedRequest,
   JwtPayload,
@@ -40,7 +42,10 @@ export class JwtAuthGuard implements CanActivate {
         : null;
 
     if (!token) {
-      throw new UnauthorizedException("Missing access token");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthMissingAccessToken,
+      );
     }
 
     try {
@@ -48,7 +53,10 @@ export class JwtAuthGuard implements CanActivate {
         secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
       });
     } catch {
-      throw new UnauthorizedException("Invalid or expired access token");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidAccessToken,
+      );
     }
 
     return true;

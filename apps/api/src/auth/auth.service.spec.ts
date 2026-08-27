@@ -1,5 +1,4 @@
 import { ErrorCode, type LoginResponseDto } from "@loomkeep/shared";
-import { BadRequestException, UnauthorizedException } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
@@ -219,7 +218,7 @@ describe("AuthService.register", () => {
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
-  it("throws BadRequestException when the password has appeared in a data breach", async () => {
+  it("throws AppException(auth.password_breached) when the password has appeared in a data breach", async () => {
     const { service, prisma, hibp } = makeService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
     (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
@@ -232,7 +231,7 @@ describe("AuthService.register", () => {
         acceptedTerms: true,
         certifiedAge: true,
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthPasswordBreached });
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
@@ -307,16 +306,16 @@ describe("AuthService.register", () => {
 });
 
 describe("AuthService.login", () => {
-  it("throws UnauthorizedException when no user matches the identifier", async () => {
+  it("throws AppException(auth.invalid_credentials) when no user matches the identifier", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
 
     await expect(
       service.login({ identifier: "nobody", password: "whatever" }),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthInvalidCredentials });
   });
 
-  it("throws UnauthorizedException when the password doesn't match", async () => {
+  it("throws AppException(auth.invalid_credentials) when the password doesn't match", async () => {
     const { service, prisma, security } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
@@ -324,7 +323,7 @@ describe("AuthService.login", () => {
 
     await expect(
       service.login({ identifier: "alice@example.com", password: "wrong" }),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthInvalidCredentials });
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "LOGIN_FAILED",
@@ -554,25 +553,25 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
 });
 
 describe("AuthService.refresh", () => {
-  it("throws UnauthorizedException when the JWT itself fails verification", async () => {
+  it("throws AppException(auth.invalid_refresh_token) when the JWT itself fails verification", async () => {
     const { service, jwtService } = makeService();
     (jwtService.verifyAsync as jest.Mock).mockRejectedValue(new Error("bad"));
 
-    await expect(service.refresh("some-token")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.refresh("some-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidRefreshToken,
+    });
   });
 
-  it("throws UnauthorizedException when no matching session is stored", async () => {
+  it("throws AppException(auth.invalid_refresh_token) when no matching session is stored", async () => {
     const { service, prisma } = makeService();
     (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.refresh("some-token")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.refresh("some-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidRefreshToken,
+    });
   });
 
-  it("throws UnauthorizedException when the stored session already expired", async () => {
+  it("throws AppException(auth.invalid_refresh_token) when the stored session already expired", async () => {
     const { service, prisma } = makeService();
     (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
       id: "rt-1",
@@ -580,9 +579,9 @@ describe("AuthService.refresh", () => {
       user: makeUser(),
     });
 
-    await expect(service.refresh("some-token")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.refresh("some-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidRefreshToken,
+    });
   });
 
   it("rotates the stored token in place and returns a fresh pair", async () => {
@@ -704,16 +703,16 @@ describe("AuthService.requestPasswordReset", () => {
 });
 
 describe("AuthService.resetPassword", () => {
-  it("throws UnauthorizedException when the token is unknown", async () => {
+  it("throws AppException(auth.invalid_reset_token) when the token is unknown", async () => {
     const { service, prisma } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(
       service.resetPassword("bad-token", "new-password"),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthInvalidResetToken });
   });
 
-  it("throws UnauthorizedException when the token has expired", async () => {
+  it("throws AppException(auth.invalid_reset_token) when the token has expired", async () => {
     const { service, prisma } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
       userId: "user-1",
@@ -723,10 +722,10 @@ describe("AuthService.resetPassword", () => {
 
     await expect(
       service.resetPassword("expired-token", "new-password"),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthInvalidResetToken });
   });
 
-  it("throws UnauthorizedException when the token is of the wrong type", async () => {
+  it("throws AppException(auth.invalid_reset_token) when the token is of the wrong type", async () => {
     const { service, prisma } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
       userId: "user-1",
@@ -736,10 +735,10 @@ describe("AuthService.resetPassword", () => {
 
     await expect(
       service.resetPassword("verify-token", "new-password"),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthInvalidResetToken });
   });
 
-  it("throws BadRequestException when the new password has appeared in a data breach", async () => {
+  it("throws AppException(auth.password_breached) when the new password has appeared in a data breach", async () => {
     const { service, prisma, hibp } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
       userId: "user-1",
@@ -751,7 +750,7 @@ describe("AuthService.resetPassword", () => {
 
     await expect(
       service.resetPassword("good-token", "pwned-password"),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthPasswordBreached });
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -801,15 +800,17 @@ describe("AuthService.resendVerificationEmail", () => {
     ).rejects.toMatchObject({ code: ErrorCode.AuthAccountNotFound });
   });
 
-  it("throws BadRequestException when already verified", async () => {
+  it("throws AppException(auth.already_verified) when already verified", async () => {
     const { service, prisma, mail } = makeService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(
       makeUser({ emailVerified: true }),
     );
 
-    await expect(service.resendVerificationEmail("user-1")).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      service.resendVerificationEmail("user-1"),
+    ).rejects.toMatchObject({
+      code: ErrorCode.AuthAlreadyVerified,
+    });
     expect(mail.sendVerifyEmail).not.toHaveBeenCalled();
   });
 
@@ -839,16 +840,16 @@ describe("AuthService.resendVerificationEmail", () => {
 });
 
 describe("AuthService.verifyEmail", () => {
-  it("throws UnauthorizedException when the token is unknown", async () => {
+  it("throws AppException(auth.invalid_verification_token) when the token is unknown", async () => {
     const { service, prisma } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.verifyEmail("bad-token")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.verifyEmail("bad-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidVerificationToken,
+    });
   });
 
-  it("throws UnauthorizedException when the token has expired", async () => {
+  it("throws AppException(auth.invalid_verification_token) when the token has expired", async () => {
     const { service, prisma } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
       userId: "user-1",
@@ -856,12 +857,12 @@ describe("AuthService.verifyEmail", () => {
       expiresAt: new Date(Date.now() - 1000),
     });
 
-    await expect(service.verifyEmail("expired-token")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.verifyEmail("expired-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidVerificationToken,
+    });
   });
 
-  it("throws UnauthorizedException when the token is of the wrong type", async () => {
+  it("throws AppException(auth.invalid_verification_token) when the token is of the wrong type", async () => {
     const { service, prisma } = makeService();
     (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
       userId: "user-1",
@@ -869,9 +870,9 @@ describe("AuthService.verifyEmail", () => {
       expiresAt: new Date(Date.now() + 1000),
     });
 
-    await expect(service.verifyEmail("reset-token")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.verifyEmail("reset-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidVerificationToken,
+    });
   });
 
   it("marks the account verified and clears its verification tokens", async () => {
@@ -1006,9 +1007,11 @@ describe("AuthService.resendMfaEmailCode", () => {
       expiresAt: new Date(Date.now() + 60_000),
     });
 
-    await expect(service.resendMfaEmailCode("challenge-1")).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      service.resendMfaEmailCode("challenge-1"),
+    ).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidMfaChallenge,
+    });
   });
 });
 
@@ -1078,7 +1081,7 @@ describe("AuthService.verifyMfaLogin", () => {
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthMfaInvalidCode });
     expect(prisma.mfaLoginChallenge.update).toHaveBeenCalledWith({
       where: { id: "challenge-1" },
       data: { attempts: { increment: 1 } },
@@ -1105,7 +1108,7 @@ describe("AuthService.verifyMfaLogin", () => {
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toMatchObject({ code: ErrorCode.AuthMfaTooManyAttempts });
     expect(prisma.mfaLoginChallenge.delete).toHaveBeenCalledWith({
       where: { id: "challenge-1" },
     });

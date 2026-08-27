@@ -7,12 +7,7 @@ import type {
   UserDto,
 } from "@loomkeep/shared";
 import { deviceLabel, ErrorCode, LEGAL_VERSION } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  HttpStatus,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
@@ -93,8 +88,9 @@ export class AuthService {
     }
 
     if (await this.hibp.isPasswordPwned(dto.password)) {
-      throw new BadRequestException(
-        "This password has appeared in a known data breach — please choose a different one",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthPasswordBreached,
       );
     }
 
@@ -149,7 +145,10 @@ export class AuthService {
       stored.type !== "EMAIL_VERIFICATION" ||
       stored.expiresAt < new Date()
     ) {
-      throw new UnauthorizedException("Invalid or expired verification token");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidVerificationToken,
+      );
     }
 
     await this.prisma.$transaction([
@@ -180,7 +179,10 @@ export class AuthService {
     }
 
     if (user.emailVerified) {
-      throw new BadRequestException("This account is already verified");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthAlreadyVerified,
+      );
     }
 
     const verifyToken = randomBytes(32).toString("hex");
@@ -219,7 +221,10 @@ export class AuthService {
         identifier: dto.identifier,
         userAgent,
       });
-      throw new UnauthorizedException("Invalid credentials");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidCredentials,
+      );
     }
 
     if (user.mfaTotpEnabled || user.mfaEmailEnabled) {
@@ -288,7 +293,10 @@ export class AuthService {
       !challenge.emailAllowed ||
       challenge.expiresAt < new Date()
     ) {
-      throw new UnauthorizedException("Invalid or expired challenge");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidMfaChallenge,
+      );
     }
 
     const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
@@ -328,7 +336,10 @@ export class AuthService {
         });
       }
 
-      throw new UnauthorizedException("Invalid or expired challenge");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidMfaChallenge,
+      );
     }
 
     const verified =
@@ -348,8 +359,9 @@ export class AuthService {
         await this.prisma.mfaLoginChallenge.delete({
           where: { id: challenge.id },
         });
-        throw new UnauthorizedException(
-          "Too many attempts — please log in again",
+        throw new AppException(
+          HttpStatus.UNAUTHORIZED,
+          ErrorCode.AuthMfaTooManyAttempts,
         );
       }
 
@@ -357,7 +369,10 @@ export class AuthService {
         where: { id: challenge.id },
         data: { attempts: { increment: 1 } },
       });
-      throw new UnauthorizedException("Invalid code");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthMfaInvalidCode,
+      );
     }
 
     await this.prisma.mfaLoginChallenge.delete({ where: { id: challenge.id } });
@@ -400,7 +415,10 @@ export class AuthService {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
       });
     } catch {
-      throw new UnauthorizedException("Invalid or expired refresh token");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidRefreshToken,
+      );
     }
 
     const tokenHash = hashToken(refreshToken);
@@ -410,7 +428,10 @@ export class AuthService {
     });
 
     if (!stored || stored.expiresAt < new Date()) {
-      throw new UnauthorizedException("Unknown or expired refresh token");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidRefreshToken,
+      );
     }
 
     const signed = await this.signTokens(stored.user);
@@ -528,12 +549,16 @@ export class AuthService {
       stored.type !== "PASSWORD_RESET" ||
       stored.expiresAt < new Date()
     ) {
-      throw new UnauthorizedException("Invalid or expired reset token");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidResetToken,
+      );
     }
 
     if (await this.hibp.isPasswordPwned(newPassword)) {
-      throw new BadRequestException(
-        "This password has appeared in a known data breach — please choose a different one",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthPasswordBreached,
       );
     }
 
