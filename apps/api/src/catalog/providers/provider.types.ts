@@ -63,8 +63,9 @@ export interface CatalogProvider {
     lang?: string,
   ): Promise<MediaExtrasDto>;
   /**
-   * Live detail of a cast entity (e.g. a TMDB person). Optional: sources with
-   * no linkable cast entity (AniList) omit it, and their cast has null ids.
+   * Live detail of a cast entity (a TMDB person, or an AniList staff/voice
+   * actor). Optional: cast entries with no linkable entity (e.g. an AniList
+   * character with no credited voice actor) have a null id instead.
    */
   getPerson?(id: string): Promise<CastDetailDto>;
 }

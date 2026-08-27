@@ -434,7 +434,7 @@
         {/if}
         <p class="timecode mt-1.5 text-sm text-white/80">
           {#if detail.year}{detail.year}{#if extras?.season}
-              · {SEASON_LABELS[extras.season] ?? extras.season}
+              &nbsp;· {SEASON_LABELS[extras.season] ?? extras.season}
             {/if}{/if}
           {#if detail.genres.length > 0}
             {#if detail.year}

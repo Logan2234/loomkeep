@@ -168,11 +168,15 @@ describe("AnilistProvider", () => {
                 {
                   voiceActors: [
                     {
+                      id: 112215,
                       name: { full: "Atsumi Tanezaki" },
                       image: { medium: "https://example.com/va.jpg" },
                     },
                   ],
-                  node: { name: { full: "Frieren" }, image: { medium: null } },
+                  node: {
+                    name: { full: "Frieren" },
+                    image: { medium: "https://example.com/character.jpg" },
+                  },
                 },
               ],
             },
@@ -223,10 +227,11 @@ describe("AnilistProvider", () => {
       expect(extras.directors).toEqual(["Keiichirou Saitou"]);
       expect(extras.cast).toEqual([
         {
-          id: null,
+          id: "112215",
           name: "Atsumi Tanezaki",
           role: "Frieren",
           photoUrl: "https://example.com/va.jpg",
+          characterPhotoUrl: "https://example.com/character.jpg",
         },
       ]);
       // The manga source is filtered out; only the anime sequel remains.
@@ -250,11 +255,68 @@ describe("AnilistProvider", () => {
       const extras = await provider.getExtras("1");
 
       expect(extras.trailerVideoId).toBeNull();
+      expect(extras.cast[0].id).toBeNull();
       expect(extras.cast[0].name).toBe("Unknown");
       expect(extras.cast[0].role).toBeNull();
+      expect(extras.cast[0].characterPhotoUrl).toBeNull();
       expect(extras.directors).toEqual([]);
       expect(extras.studios).toEqual([]);
       expect(extras.relations).toEqual([]);
+    });
+  });
+
+  describe("getPerson", () => {
+    it("maps an AniList staff member, filtering knownFor to anime-type credits", async () => {
+      mockFetch({
+        data: {
+          Staff: {
+            name: { full: "Atsumi Tanezaki" },
+            image: { large: "https://example.com/large.jpg" },
+            description:
+              "**Height:** 157 cm\n\n[Twitter](https://twitter.com/x)",
+            dateOfBirth: { year: 1990 },
+            dateOfDeath: { year: null },
+            homeTown: "Oita, Japan",
+            characterMedia: {
+              nodes: [
+                {
+                  id: 154587,
+                  type: "ANIME",
+                  title: { romaji: "Frieren", english: null },
+                  seasonYear: 2023,
+                  coverImage: {},
+                  isAdult: false,
+                },
+                {
+                  id: 1,
+                  type: "MANGA",
+                  title: { romaji: "Some manga", english: null },
+                  coverImage: {},
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      const person = await provider.getPerson("112215");
+
+      expect(person.name).toBe("Atsumi Tanezaki");
+      expect(person.photoUrl).toBe("https://example.com/large.jpg");
+      expect(person.subtitle).toBe("1990 · Oita, Japan");
+      // Markdown syntax stripped, plain text kept.
+      expect(person.description).toBe("Height: 157 cm\n\nTwitter");
+      expect(person.knownFor).toHaveLength(1);
+      expect(person.knownFor[0].sourceId).toBe("154587");
+      expect(person.imdbId).toBeNull();
+      expect(person.wikidataId).toBeNull();
+      expect(person.homepage).toBeNull();
+    });
+
+    it("throws when AniList has no such staff id", async () => {
+      mockFetch({ data: { Staff: null } });
+
+      await expect(provider.getPerson("999999")).rejects.toThrow();
     });
   });
 });

@@ -31,7 +31,7 @@ export function getMediaExtras(
   );
 }
 
-/** Live detail of a cast entity (TMDB person) for the cast modal. */
+/** Live detail of a cast entity (TMDB person or AniList staff) for the cast modal. */
 export function getCastDetail(
   source: string,
   id: string,
