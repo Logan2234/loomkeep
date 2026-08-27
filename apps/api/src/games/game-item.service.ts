@@ -45,7 +45,12 @@ export class GameItemService {
       gameModes: details.gameModes,
       playerPerspectives: details.playerPerspectives,
       franchiseGames: details.franchiseGames,
+      franchiseName: details.franchiseName,
       ratings: details.ratings,
+      storyline: details.storyline,
+      trailerVideoId: details.trailerVideoId,
+      ageRatingImageUrls: details.ageRatingImageUrls,
+      multiplayerModes: details.multiplayerModes,
     };
   }
 

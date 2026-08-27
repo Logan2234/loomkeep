@@ -56,10 +56,31 @@ interface IgdbFranchise {
   games?: IgdbGame[];
 }
 
+interface IgdbVideo {
+  video_id: string;
+  name?: string;
+}
+
+interface IgdbAgeRating {
+  rating_cover_url?: string;
+}
+
+// One entry per platform the game supports; the boolean flags are OR-combined
+// across entries since we don't display multiplayer modes per platform.
+interface IgdbMultiplayerMode {
+  campaigncoop?: boolean;
+  onlinecoop?: boolean;
+  offlinecoop?: boolean;
+  splitscreen?: boolean;
+  lancoop?: boolean;
+}
+
 interface IgdbGame {
   id: number;
   name: string;
+  slug?: string;
   summary?: string;
+  storyline?: string;
   first_release_date?: number; // Unix seconds.
   cover?: IgdbImage;
   artworks?: IgdbImage[];
@@ -73,10 +94,15 @@ interface IgdbGame {
   game_modes?: IgdbNamed[];
   player_perspectives?: IgdbNamed[];
   franchises?: IgdbFranchise[];
+  videos?: IgdbVideo[];
+  age_ratings?: IgdbAgeRating[];
+  multiplayer_modes?: IgdbMultiplayerMode[];
   // Both 0–100. `rating` is IGDB's own user-submitted score; `aggregated_rating`
   // is IGDB's aggregate of external critic reviews.
   rating?: number;
   aggregated_rating?: number;
+  rating_count?: number;
+  aggregated_rating_count?: number;
 }
 
 // IGDB computes this list itself (genre/theme/franchise co-occurrence); it can
@@ -124,12 +150,14 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 
   private static readonly DETAIL_FIELDS =
-    "name, summary, first_release_date, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
+    "name, slug, summary, storyline, first_release_date, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
     "similar_games.name, similar_games.cover.image_id, similar_games.first_release_date, similar_games.themes, " +
     "involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
     "game_modes.name, player_perspectives.name, " +
     "franchises.name, franchises.games.name, franchises.games.cover.image_id, franchises.games.first_release_date, franchises.games.themes, " +
-    "rating, aggregated_rating";
+    "videos.video_id, videos.name, age_ratings.rating_cover_url, " +
+    "multiplayer_modes.campaigncoop, multiplayer_modes.onlinecoop, multiplayer_modes.offlinecoop, multiplayer_modes.splitscreen, multiplayer_modes.lancoop, " +
+    "rating, rating_count, aggregated_rating, aggregated_rating_count";
 
   async getDetails(sourceId: string): Promise<ProviderGameDetails> {
     const games = await this.query<IgdbGame[]>(
@@ -215,8 +243,13 @@ export class IgdbProvider implements GameCatalogProvider {
       gameModes: game.game_modes?.map((m) => m.name) ?? [],
       playerPerspectives: game.player_perspectives?.map((p) => p.name) ?? [],
       franchiseGames: this.franchiseGames(game),
+      franchiseName: game.franchises?.[0]?.name ?? null,
       ratings: toRatings(game),
       externalIds: [{ source: GameSource.IGDB, externalId: String(game.id) }],
+      storyline: game.storyline ?? null,
+      trailerVideoId: pickTrailer(game.videos),
+      ageRatingImageUrls: uniqueAgeRatingImages(game.age_ratings),
+      multiplayerModes: multiplayerModeLabels(game.multiplayer_modes),
     };
   }
 
@@ -309,19 +342,64 @@ export class IgdbProvider implements GameCatalogProvider {
 /** IGDB's own user rating + critic aggregate (both 0–100), when present. */
 function toRatings(game: IgdbGame): RatingDto[] {
   const ratings: RatingDto[] = [];
+  const url = game.slug ? `https://www.igdb.com/games/${game.slug}` : undefined;
 
   if (game.rating !== null && game.rating !== undefined) {
-    ratings.push({ source: "IGDB", score: `${Math.round(game.rating)}%` });
+    ratings.push({
+      source: "IGDB",
+      score: `${Math.round(game.rating)}%${voteSuffix(game.rating_count)}`,
+      url,
+    });
   }
 
   if (game.aggregated_rating !== null && game.aggregated_rating !== undefined) {
     ratings.push({
       source: "Critiques",
-      score: `${Math.round(game.aggregated_rating)}%`,
+      score: `${Math.round(game.aggregated_rating)}%${voteSuffix(game.aggregated_rating_count)}`,
+      url,
     });
   }
 
   return ratings;
+}
+
+function voteSuffix(count: number | undefined): string {
+  return count ? ` (${count})` : "";
+}
+
+/** Prefer a video whose name mentions "trailer"; else the first IGDB lists. */
+function pickTrailer(videos: IgdbVideo[] | undefined): string | null {
+  if (!videos || videos.length === 0) return null;
+  const trailer = videos.find((v) => /trailer/i.test(v.name ?? ""));
+  return (trailer ?? videos[0]).video_id;
+}
+
+/** Age rating badge images (ESRB/PEGI/…), normalised to absolute URLs. */
+function uniqueAgeRatingImages(ratings: IgdbAgeRating[] | undefined): string[] {
+  const urls = (ratings ?? [])
+    .map((r) => r.rating_cover_url)
+    .filter((url): url is string => !!url)
+    .map((url) => (url.startsWith("//") ? `https:${url}` : url));
+  return [...new Set(urls)];
+}
+
+/**
+ * Human-readable multiplayer modes, OR-combined across IGDB's per-platform
+ * entries. Left in English to match the untranslated style of the other
+ * catalog fields (genres, platforms, game modes all pass through as-is).
+ */
+function multiplayerModeLabels(
+  modes: IgdbMultiplayerMode[] | undefined,
+): string[] {
+  const any = (key: keyof IgdbMultiplayerMode) =>
+    (modes ?? []).some((m) => m[key]);
+  const labels: string[] = [];
+  if (any("campaigncoop")) labels.push("Campaign co-op");
+  if (any("onlinecoop")) labels.push("Online co-op");
+  if (any("offlinecoop")) labels.push("Local co-op");
+  if (any("splitscreen")) labels.push("Split screen");
+  if (any("lancoop")) labels.push("LAN co-op");
+  return labels;
 }
 
 /** Distinct company names with the given role (developer/publisher), in order. */

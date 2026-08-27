@@ -38,8 +38,10 @@
   } from "$lib/constants/status-labels";
   import { formatDate } from "$lib/format";
   import { createLibraryEntryActions } from "$lib/library-entry";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { GameDetailDto } from "@loomkeep/shared";
+  import { slide } from "svelte/transition";
 
   // IGDB is the only game source today; the web route carries just the id.
   const SOURCE = "igdb";
@@ -56,6 +58,8 @@
   let saving = $state(false);
   let confirmRemove = $state(false);
   let removing = $state(false);
+  let historyOpen = $state(false);
+  const reduced = prefersReducedMotion();
 
   const id = $derived(page.params.id ?? "");
   const entry = $derived(detail?.entry ?? null);
@@ -64,7 +68,8 @@
       (detail.developers.length > 0 ||
         detail.publishers.length > 0 ||
         detail.gameModes.length > 0 ||
-        detail.playerPerspectives.length > 0),
+        detail.playerPerspectives.length > 0 ||
+        detail.multiplayerModes.length > 0),
   );
 
   // Cover + backdrop + screenshots, deduped, for the lightbox carousel.
@@ -82,10 +87,19 @@
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
 
+  // Images are offset by one slide when a trailer is shown, since the
+  // trailer always sits at index 0 in the lightbox.
+  const trailerOffset = $derived(detail?.trailerVideoId ? 1 : 0);
+
   function openLightbox(url: string | null) {
     if (!url) return;
     const i = galleryImages.findIndex((img) => img.src === url);
-    lightboxIndex = i >= 0 ? i : 0;
+    lightboxIndex = (i >= 0 ? i : 0) + trailerOffset;
+    lightboxOpen = true;
+  }
+
+  function openTrailer() {
+    lightboxIndex = 0;
     lightboxOpen = true;
   }
 
@@ -189,6 +203,15 @@
     <div
       class="from-bg via-bg/50 absolute inset-0 bg-linear-to-t to-transparent">
     </div>
+    {#if detail.trailerVideoId}
+      <button
+        type="button"
+        class="absolute top-1/2 left-1/2 z-20 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+        aria-label="Voir la bande-annonce"
+        onclick={openTrailer}>
+        <Icon name="play" class="pointer-events-none h-7 w-7" />
+      </button>
+    {/if}
     <a
       href="/app/games"
       onclick={goBack}
@@ -226,6 +249,9 @@
                   18+
                 </span>
               {/if}
+              {#each detail.ageRatingImageUrls as url (url)}
+                <img src={url} alt="Classification d'âge" class="h-6 rounded" />
+              {/each}
               {#if entry}
                 <span
                   title={STATUS_DESC[entry.status]}
@@ -250,13 +276,19 @@
             {#if detail.ratings.length > 0}
               <div class="mt-2.5 flex flex-wrap gap-1.5">
                 {#each detail.ratings as r (r.source)}
-                  <span
+                  <svelte:element
+                    this={r.url ? "a" : "span"}
+                    href={r.url}
+                    target={r.url ? "_blank" : undefined}
+                    rel={r.url ? "noopener noreferrer" : undefined}
                     class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold {RATING_STYLES[
                       r.source
-                    ] ?? 'bg-surface-2 text-fg'}">
+                    ] ?? 'bg-surface-2 text-fg'} {r.url
+                      ? 'transition-opacity hover:opacity-80'
+                      : ''}">
                     <span>{r.source}</span>
                     <span class="tabular-nums opacity-90">{r.score}</span>
-                  </span>
+                  </svelte:element>
                 {/each}
               </div>
             {/if}
@@ -279,14 +311,31 @@
           </p>
         {/if}
 
-        {#if detail.website}
-          <a
-            href={detail.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link-accent mt-4 inline-flex items-center gap-1 text-sm">
-            Site officiel ↗
-          </a>
+        {#if detail.storyline}
+          <div class="mt-3 max-w-2xl">
+            <button
+              type="button"
+              class="btn-text group"
+              aria-expanded={historyOpen}
+              onclick={() => (historyOpen = !historyOpen)}>
+              <Icon
+                name="chevron-down"
+                class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 {historyOpen
+                  ? 'rotate-0'
+                  : '-rotate-90'}" />
+              <span
+                class="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
+                Histoire
+              </span>
+            </button>
+            {#if historyOpen}
+              <p
+                transition:slide|global={{ duration: reduced ? 0 : 200 }}
+                class="text-dim mt-2 px-4.5 whitespace-pre-line">
+                {detail.storyline}
+              </p>
+            {/if}
+          </div>
         {/if}
 
         <!-- Actions -->
@@ -413,7 +462,9 @@
         {/if}
 
         <RelatedCarousel
-          title="Même franchise"
+          title={detail.franchiseName
+            ? `Dans la franchise ${detail.franchiseName}`
+            : "Même franchise"}
           items={toCarouselItems(detail.franchiseGames, "/app/games")} />
 
         <RelatedCarousel
@@ -466,6 +517,24 @@
                 </dd>
               </div>
             {/if}
+            {#if detail && detail.multiplayerModes.length > 0}
+              <div>
+                <dt class="timecode text-xs">Multijoueur</dt>
+                <dd class="mt-0.5 text-sm">
+                  {detail.multiplayerModes.join(", ")}
+                </dd>
+              </div>
+            {/if}
+
+            {#if detail && detail.website}
+              <a
+                href={detail.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-text btn-text-underline text-accent hover:text-accent mt-0.5">
+                Site officiel ↗
+              </a>
+            {/if}
           </dl>
         </div>
       {/snippet}
@@ -491,6 +560,9 @@
   {#if lightboxOpen}
     <Lightbox
       images={galleryImages}
+      video={detail.trailerVideoId
+        ? { videoId: detail.trailerVideoId, alt: "Bande-annonce" }
+        : null}
       bind:index={lightboxIndex}
       onClose={() => (lightboxOpen = false)} />
   {/if}
