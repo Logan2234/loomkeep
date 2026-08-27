@@ -81,6 +81,13 @@ export interface RatingDto {
   url?: string;
 }
 
+/** An official/external link (streaming, official site…), from AniList. */
+export interface ExternalLinkDto {
+  /** Site name, e.g. "Crunchyroll", "Official Site". */
+  name: string;
+  url: string;
+}
+
 /** Rich, non-persisted extras for the media detail page (fetched live). */
 export interface MediaExtrasDto {
   watchProviders: WatchProvidersDto;
@@ -97,17 +104,30 @@ export interface MediaExtrasDto {
   /** Marketing tagline, when the source has one (TMDB only). */
   tagline: string | null;
   /**
-   * Director(s) for a movie, or creator(s)/showrunner(s) for a series (TMDB
-   * only — not yet populated for AniList).
+   * Director(s) for a movie, creator(s)/showrunner(s) for a series (TMDB), or
+   * the credited director(s) (AniList staff).
    */
   directors: string[];
-  /** YouTube video id for a trailer, when the source lists one (TMDB only). */
+  /** YouTube video id for a trailer, when the source lists one. */
   trailerVideoId: string | null;
   /**
    * Official age certification (e.g. "12", "PG-13"), when known — distinct
-   * from `isAdult`, which only flags pornographic content (TMDB only).
+   * from `isAdult`, which only flags pornographic content (TMDB only; AniList
+   * has no equivalent).
    */
   contentRating: string | null;
+  /** Animation studio(s) credited as main studio (AniList only). */
+  studios: string[];
+  /** Release format, e.g. "TV", "MOVIE", "OVA", "ONA", "SPECIAL" (AniList only). */
+  format: string | null;
+  /** Airing season — "WINTER" | "SPRING" | "SUMMER" | "FALL" (AniList only). */
+  season: string | null;
+  /** Prequels/sequels and other related anime entries (AniList only). */
+  relations: MediaSummaryDto[];
+  /** Official/external links (AniList only). */
+  externalLinks: ExternalLinkDto[];
+  /** Descriptive tags, spoiler tags excluded (AniList only). */
+  tags: string[];
 }
 
 interface EpisodeDto {

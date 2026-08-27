@@ -127,4 +127,128 @@ describe("AnilistProvider", () => {
     expect(details.summary.title).toBe("Ongoing Show");
     expect(details.seasons[0].episodes).toHaveLength(7);
   });
+
+  describe("getExtras", () => {
+    it("maps studios, format, season, tags, relations, links and the Japanese voice actor", async () => {
+      mockFetch({
+        data: {
+          Media: {
+            averageScore: 91,
+            siteUrl: "https://anilist.co/anime/154587",
+            format: "TV",
+            season: "FALL",
+            trailer: { id: "abc123", site: "youtube" },
+            studios: {
+              edges: [
+                { isMain: true, node: { name: "Madhouse" } },
+                { isMain: false, node: { name: "Some Other Credit" } },
+              ],
+            },
+            tags: [
+              { name: "Iyashikei", isMediaSpoiler: false },
+              { name: "A Late-Story Twist", isMediaSpoiler: true },
+            ],
+            externalLinks: [
+              { site: "Crunchyroll", url: "https://crunchyroll.com/frieren" },
+            ],
+            staff: {
+              edges: [
+                {
+                  role: "Director",
+                  node: { name: { full: "Keiichirou Saitou" } },
+                },
+                {
+                  role: "Series Composition",
+                  node: { name: { full: "Someone Else" } },
+                },
+              ],
+            },
+            characters: {
+              edges: [
+                {
+                  voiceActors: [{ name: { full: "Atsumi Tanezaki" } }],
+                  node: { name: { full: "Frieren" }, image: { medium: null } },
+                },
+              ],
+            },
+            relations: {
+              edges: [
+                {
+                  node: {
+                    id: 999,
+                    type: "ANIME",
+                    title: { romaji: "Sequel", english: null },
+                    seasonYear: 2024,
+                    coverImage: {},
+                    isAdult: false,
+                  },
+                },
+                {
+                  node: {
+                    id: 1,
+                    type: "MANGA",
+                    title: { romaji: "Source manga", english: null },
+                    coverImage: {},
+                  },
+                },
+              ],
+            },
+            recommendations: { nodes: [] },
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("154587");
+
+      expect(extras.ratings).toEqual([
+        {
+          source: "AniList",
+          score: "91%",
+          url: "https://anilist.co/anime/154587",
+        },
+      ]);
+      expect(extras.format).toBe("TV");
+      expect(extras.season).toBe("FALL");
+      expect(extras.trailerVideoId).toBe("abc123");
+      expect(extras.studios).toEqual(["Madhouse"]);
+      expect(extras.tags).toEqual(["Iyashikei"]);
+      expect(extras.externalLinks).toEqual([
+        { name: "Crunchyroll", url: "https://crunchyroll.com/frieren" },
+      ]);
+      expect(extras.directors).toEqual(["Keiichirou Saitou"]);
+      expect(extras.cast).toEqual([
+        {
+          id: null,
+          name: "Frieren",
+          role: "Atsumi Tanezaki",
+          photoUrl: null,
+        },
+      ]);
+      // The manga source is filtered out; only the anime sequel remains.
+      expect(extras.relations).toHaveLength(1);
+      expect(extras.relations[0].sourceId).toBe("999");
+    });
+
+    it("ignores non-YouTube trailers and falls back to the character name when no voice actor is credited", async () => {
+      mockFetch({
+        data: {
+          Media: {
+            trailer: { id: "xyz", site: "dailymotion" },
+            characters: {
+              edges: [{ voiceActors: [], node: { name: { full: "Unknown" } } }],
+            },
+            recommendations: { nodes: [] },
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("1");
+
+      expect(extras.trailerVideoId).toBeNull();
+      expect(extras.cast[0].role).toBeNull();
+      expect(extras.directors).toEqual([]);
+      expect(extras.studios).toEqual([]);
+      expect(extras.relations).toEqual([]);
+    });
+  });
 });

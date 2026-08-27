@@ -145,7 +145,10 @@ export class MediaItemService {
     type: MediaType,
     locale: string,
   ): Promise<MediaTranslation | null> {
-    if (locale === DEFAULT_LOCALE) return null;
+    // AniList has no localization support: a "French" fetch would return the
+    // exact same content as the English base row, so there's nothing to
+    // cache a translation for.
+    if (locale === DEFAULT_LOCALE || source === "ANILIST") return null;
 
     const existing = await this.prisma.mediaItemTranslation.findUnique({
       where: { mediaItemId_locale: { mediaItemId, locale } },

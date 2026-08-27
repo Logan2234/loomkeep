@@ -409,6 +409,14 @@ export class TmdbProvider implements CatalogProvider {
       directors: directorNames(type, data),
       trailerVideoId: pickTrailer(data.videos?.results),
       contentRating: certification(type, data),
+      // AniList-only fields — TMDB has no studios/format/season/relations/
+      // externalLinks/tags equivalent wired up here.
+      studios: [],
+      format: null,
+      season: null,
+      relations: [],
+      externalLinks: [],
+      tags: [],
     };
   }
 
