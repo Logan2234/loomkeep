@@ -69,6 +69,33 @@ interface TmdbTvDetails extends TmdbTvResult {
   seasons?: { season_number: number; name?: string | null }[];
 }
 
+interface TmdbCrewMember {
+  id: number;
+  name: string;
+  job?: string;
+}
+
+interface TmdbVideo {
+  site: string; // "YouTube" | "Vimeo" | …
+  type: string; // "Trailer" | "Teaser" | "Clip" | …
+  key: string; // YouTube video id.
+  official?: boolean;
+}
+
+interface TmdbReleaseDate {
+  certification?: string;
+}
+
+interface TmdbReleaseDatesResult {
+  iso_3166_1: string;
+  release_dates: TmdbReleaseDate[];
+}
+
+interface TmdbContentRatingsResult {
+  iso_3166_1: string;
+  rating: string;
+}
+
 interface TmdbSeasonDetails {
   episodes?: {
     episode_number: number;
@@ -90,6 +117,12 @@ interface TmdbWatchRegion {
 }
 
 interface TmdbExtras {
+  tagline?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+  // TV only — the show's own creator(s)/showrunner(s), a base field (no
+  // append_to_response needed) with no per-movie equivalent.
+  created_by?: { id: number; name: string }[];
   credits?: {
     cast?: {
       id: number;
@@ -97,7 +130,13 @@ interface TmdbExtras {
       character?: string;
       profile_path?: string | null;
     }[];
+    crew?: TmdbCrewMember[];
   };
+  videos?: { results?: TmdbVideo[] };
+  // Movie only (append_to_response=release_dates).
+  release_dates?: { results?: TmdbReleaseDatesResult[] };
+  // TV only (append_to_response=content_ratings).
+  content_ratings?: { results?: TmdbContentRatingsResult[] };
   recommendations?: { results?: (TmdbMovieResult | TmdbTvResult)[] };
   "watch/providers"?: { results?: Record<string, TmdbWatchRegion> };
   external_ids?: { imdb_id?: string | null };
@@ -147,12 +186,18 @@ export class TmdbProvider implements CatalogProvider {
     query: string,
     type?: MediaType,
     page = 1,
+    lang?: string,
   ): Promise<MediaSummaryDto[]> {
     const wantMovies = type === undefined || type === MediaType.MOVIE;
     const wantSeries = type === undefined || type === MediaType.SERIES;
     // Adult movies are fetched too (flagged via `adult`) — the caller
     // (CatalogController) strips them per-account with the age gate.
-    const params = { query, page: String(page), include_adult: "true" };
+    const params = {
+      query,
+      page: String(page),
+      include_adult: "true",
+      language: tmdbLanguage(lang),
+    };
 
     const [movies, series] = await Promise.all([
       wantMovies
@@ -172,10 +217,11 @@ export class TmdbProvider implements CatalogProvider {
   async getDetails(
     sourceId: string,
     type: MediaType,
+    lang?: string,
   ): Promise<ProviderMediaDetails> {
     return type === MediaType.MOVIE
-      ? this.getMovieDetails(sourceId)
-      : this.getTvDetails(sourceId);
+      ? this.getMovieDetails(sourceId, lang)
+      : this.getTvDetails(sourceId, lang);
   }
 
   /**
@@ -234,9 +280,11 @@ export class TmdbProvider implements CatalogProvider {
 
   private async getMovieDetails(
     sourceId: string,
+    lang?: string,
   ): Promise<ProviderMediaDetails> {
     const movie = await this.get<TmdbMovieDetails>(`/movie/${sourceId}`, {
       append_to_response: "external_ids",
+      language: tmdbLanguage(lang),
     });
 
     return {
@@ -254,9 +302,13 @@ export class TmdbProvider implements CatalogProvider {
     };
   }
 
-  private async getTvDetails(sourceId: string): Promise<ProviderMediaDetails> {
+  private async getTvDetails(
+    sourceId: string,
+    lang?: string,
+  ): Promise<ProviderMediaDetails> {
     const tv = await this.get<TmdbTvDetails>(`/tv/${sourceId}`, {
       append_to_response: "external_ids",
+      language: tmdbLanguage(lang),
     });
 
     // Episode lists live on per-season endpoints.
@@ -292,20 +344,37 @@ export class TmdbProvider implements CatalogProvider {
   }
 
   /** Live extras (where to watch, cast, similar) in a single append call. */
-  async getExtras(sourceId: string, type: MediaType): Promise<MediaExtrasDto> {
+  async getExtras(
+    sourceId: string,
+    type: MediaType,
+    lang?: string,
+  ): Promise<MediaExtrasDto> {
     const path = type === MediaType.MOVIE ? "movie" : "tv";
+    // Movie and TV certifications live under different append keys.
+    const certificationAppend =
+      type === MediaType.MOVIE ? "release_dates" : "content_ratings";
     const data = await this.get<TmdbExtras>(`/${path}/${sourceId}`, {
-      append_to_response:
-        "credits,recommendations,watch/providers,external_ids,images",
+      append_to_response: `credits,recommendations,watch/providers,external_ids,images,videos,${certificationAppend}`,
       // TMDB's /images endpoint defaults to the request's language, filtering
       // out most backdrops; an empty language keeps the full (unfiltered) set.
       include_image_language: "null",
+      language: tmdbLanguage(lang),
     });
 
     // IMDb / Rotten Tomatoes / Metacritic from OMDb (via the IMDb id).
-    const ratings = await this.omdb.getRatings(
+    const omdbRatings = await this.omdb.getRatings(
       data.external_ids?.imdb_id ?? null,
     );
+    const tmdbRating =
+      data.vote_average && data.vote_count
+        ? [
+            {
+              source: "TMDB",
+              score: `${data.vote_average.toFixed(1)}/10 (${data.vote_count})`,
+              url: `https://www.themoviedb.org/${path}/${sourceId}`,
+            },
+          ]
+        : [];
 
     const region = data["watch/providers"]?.results?.FR;
     const toProviders = (list?: TmdbWatchProvider[]): WatchProviderDto[] =>
@@ -332,10 +401,14 @@ export class TmdbProvider implements CatalogProvider {
       similar: (data.recommendations?.results ?? [])
         .slice(0, 12)
         .map((r) => summarize(r as TmdbMovieResult & TmdbTvResult)),
-      ratings,
+      ratings: [...tmdbRating, ...omdbRatings],
       images: (data.images?.backdrops ?? [])
         .slice(0, MAX_GALLERY_IMAGES)
         .map((b) => `${IMG}/w1280${b.file_path}`),
+      tagline: data.tagline?.trim() || null,
+      directors: directorNames(type, data),
+      trailerVideoId: pickTrailer(data.videos?.results),
+      contentRating: certification(type, data),
     };
   }
 
@@ -451,4 +524,54 @@ function personSubtitle(p: TmdbPersonDetails): string | null {
       : birthYear
     : null;
   return [years, p.place_of_birth].filter(Boolean).join(" · ") || null;
+}
+
+/** "fr" → "fr-FR"; anything else (including unset) → "en-US". */
+function tmdbLanguage(lang: string | undefined): string {
+  return lang === "fr" ? "fr-FR" : "en-US";
+}
+
+/**
+ * Movies: the crew members credited as "Director". Series: TMDB's `credits`
+ * append has no reliable per-series director, so the show's own creator(s)
+ * (`created_by`, a base field) stand in instead.
+ */
+function directorNames(type: MediaType, data: TmdbExtras): string[] {
+  if (type === MediaType.MOVIE) {
+    const names = (data.credits?.crew ?? [])
+      .filter((c) => c.job === "Director")
+      .map((c) => c.name);
+    return [...new Set(names)];
+  }
+
+  return (data.created_by ?? []).map((c) => c.name);
+}
+
+/** Prefer an official trailer, else any trailer, else nothing. */
+function pickTrailer(videos: TmdbVideo[] | undefined): string | null {
+  const trailers = (videos ?? []).filter(
+    (v) => v.site === "YouTube" && v.type === "Trailer",
+  );
+  const best = trailers.find((v) => v.official) ?? trailers[0];
+  return best?.key ?? null;
+}
+
+/** Official certification for France, falling back to the US. */
+function certification(type: MediaType, data: TmdbExtras): string | null {
+  if (type === MediaType.MOVIE) {
+    const byCountry = data.release_dates?.results ?? [];
+    const region =
+      byCountry.find((r) => r.iso_3166_1 === "FR") ??
+      byCountry.find((r) => r.iso_3166_1 === "US");
+    const cert = region?.release_dates.find(
+      (d) => d.certification,
+    )?.certification;
+    return cert || null;
+  }
+
+  const byCountry = data.content_ratings?.results ?? [];
+  const region =
+    byCountry.find((r) => r.iso_3166_1 === "FR") ??
+    byCountry.find((r) => r.iso_3166_1 === "US");
+  return region?.rating || null;
 }

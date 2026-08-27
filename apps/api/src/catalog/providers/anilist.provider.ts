@@ -213,6 +213,12 @@ export class AnilistProvider implements CatalogProvider {
       // AniList exposes no screenshot gallery beyond the poster/banner already
       // shown on the page.
       images: [],
+      // Not populated yet — AniList has no tagline/trailer, and staff/studio
+      // (its closest equivalent to a director) aren't wired up here.
+      tagline: null,
+      directors: [],
+      trailerVideoId: null,
+      contentRating: null,
     };
   }
 

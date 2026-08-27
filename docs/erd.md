@@ -732,6 +732,17 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     }
 
 
+  "MediaItemTranslation" {
+    String id "🗝️"
+    String locale
+    String title
+    String overview "❓"
+    String genres
+    DateTime createdAt
+    DateTime updatedAt
+    }
+
+
   "MediaExternalId" {
     String id "🗝️"
     ExternalSource source
@@ -992,6 +1003,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "MfaLoginChallenge" }o--|| "User" : "user"
     "MediaItem" |o--|| "MediaType" : "enum:type"
     "MediaItem" |o--|| "CatalogSource" : "enum:canonicalSource"
+    "MediaItemTranslation" }o--|| "MediaItem" : "mediaItem"
     "MediaExternalId" |o--|| "ExternalSource" : "enum:source"
     "MediaExternalId" |o--|| "MediaType" : "enum:type"
     "MediaExternalId" }o--|| "MediaItem" : "mediaItem"

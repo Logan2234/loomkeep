@@ -93,6 +93,8 @@ export interface ListEntriesFilters {
   sort?: string;
   order?: "asc" | "desc";
   page?: number;
+  /** The signed-in user's locale, when known — see `MediaItemService.translatedTitles`. */
+  lang?: string;
 }
 
 function timeMs(iso: string | null): number {
@@ -226,9 +228,12 @@ export class LibraryService {
     });
 
     const mediaItemIds = entries.map((e) => e.mediaItemId);
-    const [ratings, progressByMedia] = await Promise.all([
+    const [ratings, progressByMedia, translatedTitles] = await Promise.all([
       this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
       this.computeProgressBatch(userId, mediaItemIds),
+      filters.lang
+        ? this.mediaItemService.translatedTitles(mediaItemIds, filters.lang)
+        : Promise.resolve(new Map<string, string>()),
     ]);
     const dtos = entries.map((entry) => {
       const p = progressByMedia.get(entry.mediaItemId);
@@ -237,6 +242,7 @@ export class LibraryService {
         p?.progress ?? null,
         p?.lastWatchedAt ?? null,
         ratings.get(entry.mediaItemId) ?? null,
+        translatedTitles.get(entry.mediaItemId),
       );
     });
 
@@ -999,6 +1005,7 @@ export class LibraryService {
     progress: ProgressDto | null,
     watchedAt: Date | null,
     rating: number | null,
+    translatedTitle?: string,
   ): LibraryEntryDto {
     const media = entry.mediaItem;
     const status = deriveStatus(
@@ -1011,7 +1018,7 @@ export class LibraryService {
     const lastWatchedAt = watchedAt ?? entry.finishedAt;
     return {
       id: entry.id,
-      mediaItem: toMediaItemDto(media),
+      mediaItem: toMediaItemDto(media, translatedTitle),
       status,
       rating,
       notes: entry.notes,
@@ -1092,10 +1099,13 @@ export class LibraryService {
    * persisted, otherwise fetched live (persisting nothing — an unreferenced
    * media must not enter the on-demand cache just because it was previewed).
    */
+  // `lang`: the signed-in user's locale, when known (live path only — a
+  // cached item already has its stored, possibly stale, language).
   async getMediaDetail(
     userId: string,
     type: MediaType,
     sourceId: string,
+    lang?: string,
   ): Promise<MediaDetailDto> {
     const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
 
@@ -1116,6 +1126,8 @@ export class LibraryService {
         source,
         sourceId,
         ref.mediaItem,
+        type,
+        lang,
       );
       const allowAdult = await this.ageGate.allowsAdultContent(userId);
       this.ageGate.assertAdultAllowed(detail.isAdult, allowAdult);
@@ -1126,6 +1138,7 @@ export class LibraryService {
       source,
       sourceId,
       type,
+      lang,
     );
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
     this.ageGate.assertAdultAllowed(details.isAdult, allowAdult);
@@ -1165,7 +1178,21 @@ export class LibraryService {
     source: CatalogSource,
     sourceId: string,
     media: MediaItem,
+    type: MediaType,
+    lang: string | undefined,
   ): Promise<MediaDetailDto> {
+    // Only fetched/created when `lang` isn't the base row's own (English)
+    // language — see the note on MediaItemService.translationFor.
+    const translation = lang
+      ? await this.mediaItemService.translationFor(
+          media.id,
+          source,
+          sourceId,
+          type,
+          lang,
+        )
+      : null;
+
     const seasons = await this.prisma.season.findMany({
       where: { mediaItemId: media.id },
       orderBy: { number: "asc" },
@@ -1204,14 +1231,14 @@ export class LibraryService {
       source,
       sourceId,
       type: media.type,
-      title: media.title,
+      title: translation?.title ?? media.title,
       // Original title is not persisted separately; only used for matching.
       originalTitle: null,
       year: media.releaseDate ? media.releaseDate.getFullYear() : null,
       posterUrl: media.posterUrl,
       backdropUrl: media.backdropUrl,
-      overview: media.overview,
-      genres: media.genres,
+      overview: translation?.overview ?? media.overview,
+      genres: translation?.genres ?? media.genres,
       airingStatus: media.status,
       airingFinished: normalizeAiringFinished(media.status),
       isAdult: media.isAdult,
@@ -1239,11 +1266,12 @@ export class LibraryService {
 
 function toMediaItemDto(
   media: MediaItem & { externalIds: MediaExternalId[] },
+  translatedTitle?: string,
 ): MediaItemDto {
   return {
     id: media.id,
     type: media.type,
-    title: media.title,
+    title: translatedTitle ?? media.title,
     posterUrl: media.posterUrl,
     canonicalSource: media.canonicalSource,
     sourceId: canonicalExternalId(media, media.externalIds),

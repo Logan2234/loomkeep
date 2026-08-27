@@ -6,7 +6,7 @@ import type {
   MediaType,
   PagedResult,
 } from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
+import { Domain, Locale } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -51,6 +51,7 @@ export class LibraryController {
     @Query("sort") sort?: string,
     @Query("order") order?: string,
     @Query("page") page?: string,
+    @Query("lang") lang?: string,
   ): Promise<PagedResult<LibraryEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.listEntries(user.sub, {
@@ -61,6 +62,7 @@ export class LibraryController {
       sort,
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
+      lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }
 

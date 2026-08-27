@@ -407,6 +407,13 @@
                     Orphelin
                   </span>
                 {/if}
+                {#if item.cachedLocales.length > 1}
+                  <span
+                    title={item.cachedLocales.join(", ")}
+                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    {item.cachedLocales.length} langues
+                  </span>
+                {/if}
               </div>
               <p class="timecode mt-0.5 text-xs">
                 Sync {formatDateTime(item.lastSyncedAt)}
@@ -502,6 +509,12 @@
                   class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
                   {detail.referenceCount} compte(s)
                 </span>
+                {#if detail.cachedLocales.length > 1}
+                  <span
+                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    Langues : {detail.cachedLocales.join(", ")}
+                  </span>
+                {/if}
               </div>
             </div>
           </div>

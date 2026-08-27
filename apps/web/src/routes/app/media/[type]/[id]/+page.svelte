@@ -78,6 +78,7 @@
   // Brand-ish colors per rating source (no official logos — those are
   // trademarked). Literal classes so Tailwind picks them up.
   const RATING_STYLES: Record<string, string> = {
+    TMDB: "bg-[#01d277] text-black",
     IMDb: "bg-[#f5c518] text-black",
     RT: "bg-[#fa320a] text-white",
     Metacritic: "bg-[#66cc33] text-black",
@@ -116,7 +117,12 @@
   function openLightbox(url: string | null) {
     if (!url) return;
     const i = galleryImages.findIndex((img) => img.src === url);
-    lightboxIndex = i >= 0 ? i : 0;
+    lightboxIndex = (i >= 0 ? i : 0) + trailerOffset;
+    lightboxOpen = true;
+  }
+
+  function openTrailer() {
+    lightboxIndex = 0;
     lightboxOpen = true;
   }
 
@@ -226,6 +232,10 @@
       .catch(() => {});
   });
 
+  // The trailer, when there is one, always sits at slide 0 in the lightbox —
+  // images are offset by one to make room for it.
+  const trailerOffset = $derived(extras?.trailerVideoId ? 1 : 0);
+
   const hasProviders = $derived(
     !!extras &&
       (extras.watchProviders.flatrate.length > 0 ||
@@ -328,6 +338,15 @@
     <div
       class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent">
     </div>
+    {#if extras?.trailerVideoId}
+      <button
+        type="button"
+        class="absolute top-[38%] left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+        aria-label="Voir la bande-annonce"
+        onclick={openTrailer}>
+        <Icon name="play" class="pointer-events-none h-7 w-7" />
+      </button>
+    {/if}
     <a
       href="/app/media"
       onclick={goBack}
@@ -375,16 +394,26 @@
               18+
             </span>
           {/if}
+          {#if extras?.contentRating}
+            <span
+              title="Classification officielle"
+              class="rounded-full border border-white/40 px-2.5 py-0.5 text-xs font-bold text-white">
+              {extras.contentRating}
+            </span>
+          {/if}
         </div>
         <h1
           class="font-display mt-2 text-3xl font-extrabold tracking-tight text-balance text-white text-shadow-[0_2px_24px_rgba(0,0,0,.5)] md:text-4xl">
           {detail.title}
         </h1>
+        {#if extras?.tagline}
+          <p class="mt-1 text-sm text-white/70 italic">{extras.tagline}</p>
+        {/if}
         <p class="timecode mt-1.5 text-sm text-white/80">
           {#if detail.year}{detail.year}{/if}
           {#if detail.genres.length > 0}
             {#if detail.year}
-              ·
+              ·&nbsp;
             {/if}{detail.genres.slice(0, 3).join(", ")}
           {/if}
           {#if !isMovie && detail.seasons.length > 0}
@@ -415,7 +444,7 @@
               href="https://www.omdbapi.com/"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-dim mt-1 block text-[0.6rem] hover:underline">
+              class="btn-text mt-1 inline-block text-[0.6rem]">
               {m.media_omdb_notice()}
             </a>
           {/if}
@@ -453,8 +482,22 @@
       </div>
     {/if}
 
-    {#if detail.overview}
-      <p class="text-dim mt-6 max-w-2xl">{detail.overview}</p>
+    {#if (extras && extras.directors.length > 0) || detail.overview}
+      {@const hasDirectors = !!extras && extras.directors.length > 0}
+      <div class="mt-6 max-w-2xl">
+        {#if extras && hasDirectors}
+          <p class="timecode text-xs">
+            {isMovie ? "Réalisé par" : "Créé par"}
+            <span class="text-fg font-semibold"
+              >{extras.directors.join(", ")}</span>
+          </p>
+        {/if}
+        {#if detail.overview}
+          <p class="text-dim {hasDirectors ? 'mt-2' : ''}">
+            {detail.overview}
+          </p>
+        {/if}
+      </div>
     {/if}
 
     {#if entry}
@@ -654,6 +697,9 @@
   {#if lightboxOpen}
     <Lightbox
       images={galleryImages}
+      video={extras?.trailerVideoId
+        ? { videoId: extras.trailerVideoId, alt: "Bande-annonce" }
+        : null}
       bind:index={lightboxIndex}
       onClose={() => (lightboxOpen = false)} />
   {/if}

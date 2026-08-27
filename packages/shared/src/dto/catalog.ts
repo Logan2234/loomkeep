@@ -94,6 +94,20 @@ export interface MediaExtrasDto {
    * screenshot gallery beyond the poster/banner already shown on the page).
    */
   images: string[];
+  /** Marketing tagline, when the source has one (TMDB only). */
+  tagline: string | null;
+  /**
+   * Director(s) for a movie, or creator(s)/showrunner(s) for a series (TMDB
+   * only — not yet populated for AniList).
+   */
+  directors: string[];
+  /** YouTube video id for a trailer, when the source lists one (TMDB only). */
+  trailerVideoId: string | null;
+  /**
+   * Official age certification (e.g. "12", "PG-13"), when known — distinct
+   * from `isAdult`, which only flags pornographic content (TMDB only).
+   */
+  contentRating: string | null;
 }
 
 interface EpisodeDto {
