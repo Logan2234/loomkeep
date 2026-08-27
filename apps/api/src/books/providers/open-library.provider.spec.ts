@@ -130,6 +130,48 @@ describe("OpenLibraryProvider", () => {
     expect(results[0].isAdult).toBe(false);
   });
 
+  it("passes lang through to search and prefers the nested edition's own title", async () => {
+    const fn = mockFetchByUrl([
+      [
+        "q=hobbit",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: { docs: [{ title: "Le Hobbit" }] },
+            },
+          ],
+        },
+      ],
+    ]);
+
+    const results = await providerWith("k").search("hobbit", "fr");
+
+    expect(calledUrl(fn)).toContain("lang=fr");
+    expect(calledUrl(fn)).toContain("editions.title");
+    expect(results[0].title).toBe("Le Hobbit");
+  });
+
+  it("falls back to the work's title when the nested edition has none", async () => {
+    mockFetchByUrl([["q=hobbit", { numFound: 1, docs: [HOBBIT_DOC] }]]);
+
+    const results = await providerWith("k").search("hobbit", "fr");
+
+    expect(results[0].title).toBe("The Hobbit");
+  });
+
+  it("doesn't request editions when no lang is given", async () => {
+    const fn = mockFetchByUrl([
+      ["q=hobbit", { numFound: 1, docs: [HOBBIT_DOC] }],
+    ]);
+
+    await providerWith("k").search("hobbit");
+
+    expect(calledUrl(fn)).not.toContain("lang=");
+    expect(calledUrl(fn)).not.toContain("editions");
+  });
+
   it("resolves a single work by ISBN, or null when none", async () => {
     const fn = mockFetch({ numFound: 1, docs: [HOBBIT_DOC] });
     await expect(
@@ -187,7 +229,385 @@ describe("OpenLibraryProvider", () => {
       sameAuthorBooks: [],
       ratings: [],
       externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL27482W" }],
+      editionCount: null,
+      isbn: null,
+      series: null,
+      language: null,
+      firstSentence: null,
+      readOnlineUrl: null,
+      externalLinks: [],
     });
+  });
+
+  it("maps edition count", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        { numFound: 1, docs: [{ ...HOBBIT_DOC, edition_count: 187 }] },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.editionCount).toBe(187);
+  });
+
+  it("sends lang=en and the editions fields alongside the details query", async () => {
+    const fn = mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      ["q=key%3A", { numFound: 1, docs: [HOBBIT_DOC] }],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    await providerWith("k").getDetails("OL27482W");
+
+    expect(calledUrl(fn, 1)).toContain("lang=en");
+    expect(calledUrl(fn, 1)).toContain("editions.language");
+  });
+
+  it("passes a caller-supplied lang through instead of the English default", async () => {
+    const fn = mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      ["q=key%3A", { numFound: 1, docs: [HOBBIT_DOC] }],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    await providerWith("k").getDetails("OL27482W", "fr");
+
+    expect(calledUrl(fn, 1)).toContain("lang=fr");
+  });
+
+  it("prefers the picked edition's own description over the work's", async () => {
+    mockFetchByUrl([
+      [
+        "/works/OL27482W.json",
+        { title: "The Hobbit", description: "A hobbit goes on an adventure." },
+      ],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: { docs: [{ key: "/books/OL31900393M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL31900393M.json",
+        {
+          key: "/books/OL31900393M",
+          description: "Bilbo, comme tous les hobbits...",
+        },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W", "fr");
+
+    expect(details.overview).toBe("Bilbo, comme tous les hobbits...");
+  });
+
+  it("falls back to the work's description when the edition has none", async () => {
+    mockFetchByUrl([
+      [
+        "/works/OL27482W.json",
+        { title: "The Hobbit", description: "A hobbit goes on an adventure." },
+      ],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.overview).toBe("A hobbit goes on an adventure.");
+  });
+
+  it("points website at the picked edition's book page rather than the abstract work page", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.website).toBe("https://openlibrary.org/books/OL62190138M");
+  });
+
+  it("falls back to the work page for website when no edition was found", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      ["q=key%3A", { numFound: 1, docs: [HOBBIT_DOC] }],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.website).toBe("https://openlibrary.org/works/OL27482W");
+  });
+
+  it("maps isbn/language from the nested edition Solr's lang= picked", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: {
+                docs: [
+                  {
+                    key: "/books/OL62190138M",
+                    language: ["eng"],
+                    isbn: ["9780261102217"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.isbn).toBe("9780261102217");
+    expect(details.language).toBe("Anglais");
+  });
+
+  it("reads back whatever language the nested edition actually has, rather than assuming lang= was honoured", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: {
+                docs: [{ key: "/books/OL99999999M", language: ["fre"] }],
+              },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL99999999M.json", { key: "/books/OL99999999M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    // No French edition was requested (lang=en) — this asserts we trust the
+    // field we got back instead of hardcoding "Anglais".
+    expect(details.language).toBe("Français");
+  });
+
+  it("fetches series/first_sentence/identifiers from the nested edition's own /books/{olid}.json", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL62190138M.json",
+        {
+          key: "/books/OL62190138M",
+          series: ["Middle-earth Universe"],
+          first_sentence: "In a hole in the ground there lived a hobbit.",
+          identifiers: {
+            goodreads: ["5907"],
+            librarything: ["9462"],
+            amazon: ["0261102214"],
+          },
+        },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.series).toBe("Middle-earth Universe");
+    expect(details.firstSentence).toBe(
+      "In a hole in the ground there lived a hobbit.",
+    );
+    expect(details.externalLinks).toEqual([
+      { label: "Goodreads", url: "https://www.goodreads.com/book/show/5907" },
+      { label: "LibraryThing", url: "https://www.librarything.com/work/9462" },
+      { label: "Amazon", url: "https://www.amazon.com/s?k=0261102214" },
+    ]);
+  });
+
+  it("links the rating to the picked edition's book page", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              ratings_average: 4.3,
+              ratings_count: 128,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.ratings).toEqual([
+      {
+        source: "Open Library",
+        score: "4.3/5 (128)",
+        url: "https://openlibrary.org/books/OL62190138M",
+      },
+    ]);
+  });
+
+  it("falls back to the work page for the rating link when no edition was found", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        { numFound: 1, docs: [{ ...HOBBIT_DOC, ratings_average: 4.3 }] },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.ratings[0].url).toBe(
+      "https://openlibrary.org/works/OL27482W",
+    );
+  });
+
+  it("links a read-online url only for a public Internet Archive scan of the picked edition", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: {
+                docs: [{ key: "/books/OL62190138M", ebook_access: "public" }],
+              },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL62190138M.json",
+        { key: "/books/OL62190138M", ocaid: "hobbit0000tolk" },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.readOnlineUrl).toBe(
+      "https://archive.org/details/hobbit0000tolk",
+    );
+  });
+
+  it("omits the read-online url for a borrowable-only scan", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: {
+                docs: [
+                  { key: "/books/OL62190138M", ebook_access: "borrowable" },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL62190138M.json",
+        { key: "/books/OL62190138M", ocaid: "hobbit0000tolk" },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.readOnlineUrl).toBeNull();
+  });
+
+  it("strips markdown links and cross-reference footers from the description", async () => {
+    mockFetchByUrl([
+      [
+        "/works/OL27482W.json",
+        {
+          title: "The Hobbit",
+          description:
+            "A hobbit goes on an adventure. ([source](https://example.com/book))\n---\nThis work has also been published in multiple volumes. See:\n- [Part I](https://openlibrary.org/works/OL1W)",
+        },
+      ],
+      ["q=key%3A", { numFound: 1, docs: [HOBBIT_DOC] }],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.overview).toBe("A hobbit goes on an adventure. (source)");
   });
 
   it("keeps only full publication dates, and cleans up the subject list", async () => {
@@ -240,6 +660,8 @@ describe("OpenLibraryProvider", () => {
 
     const details = await providerWith("k").getDetails("OL893415W");
 
+    // 2 work fetches (redirect + canonical) + the Solr doc (no edition to
+    // follow up on here, and no author key to look up same-author books).
     expect(fn).toHaveBeenCalledTimes(3);
     expect(details.summary.title).toBe("Dune");
     // Everything keys off the canonical id, not the alias that was asked for.
@@ -269,7 +691,11 @@ describe("OpenLibraryProvider", () => {
     const details = await providerWith("k").getDetails("OL27482W");
 
     expect(details.ratings).toEqual([
-      { source: "Open Library", score: "4.3/5 (128)" },
+      {
+        source: "Open Library",
+        score: "4.3/5 (128)",
+        url: "https://openlibrary.org/works/OL27482W",
+      },
     ]);
   });
 
@@ -306,6 +732,8 @@ describe("OpenLibraryProvider", () => {
 
     const details = await providerWith("k").getDetails("OL27482W");
 
+    // Call order: work fetch, Solr doc, then same-author search (HOBBIT_DOC
+    // carries no nested edition, so there's no /books/{olid}.json in between).
     expect(calledUrl(fn, 2)).toContain("q=author_key:OL26320A");
     expect(calledUrl(fn, 2)).toContain("sort=rating");
     expect(details.sameAuthorBooks).toHaveLength(10);

@@ -8,10 +8,11 @@ import type {
   UpsertBookEntryDto,
   UpsertReadingGoalDto,
 } from "@loomkeep/shared";
+import { getLocale } from "../paraglide/runtime.js";
 import { request } from "./core";
 
 export function searchBooks(query: string): Promise<BookSearchResponseDto> {
-  const params = new URLSearchParams({ q: query });
+  const params = new URLSearchParams({ q: query, lang: getLocale() });
   return request(`/books/search?${params}`);
 }
 
@@ -44,7 +45,8 @@ export function getBookDetail(
   source: string,
   sourceId: string,
 ): Promise<BookDetailDto> {
-  return request(`/books/${source.toLowerCase()}/${sourceId}`);
+  const params = new URLSearchParams({ lang: getLocale() });
+  return request(`/books/${source.toLowerCase()}/${sourceId}?${params}`);
 }
 
 export function upsertBookEntry(

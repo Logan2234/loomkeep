@@ -40,6 +40,18 @@ export interface BookDetailsDto extends BookSummaryDto {
   sameAuthorBooks: BookSummaryDto[];
   /** Open Library's own average rating, when known. */
   ratings: RatingDto[];
+  /** Number of editions Open Library has catalogued for the work. */
+  editionCount: number | null;
+  /** ISBN of the picked edition (English when available), when known. */
+  isbn: string | null;
+  series: string | null;
+  /** Human-readable language of the picked edition, when known. */
+  language: string | null;
+  firstSentence: string | null;
+  /** Free full-text scan on the Internet Archive, when Open Library links one. */
+  readOnlineUrl: string | null;
+  /** Cross-reference links (Goodreads, LibraryThing, Amazon…), when known. */
+  externalLinks: { label: string; url: string }[];
 }
 
 /** A persisted book referenced by at least one user (on-demand cache). */
