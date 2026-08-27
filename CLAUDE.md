@@ -2,234 +2,177 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands you will need sometimes
+## What this is
+
+Loomkeep — self-hosted media tracker (series, movies, anime, games, books,
+music, and more to come), open-core under AGPL-3.0. pnpm monorepo: `apps/api`
+(NestJS + Prisma + PostgreSQL), `apps/web` (SvelteKit PWA), `packages/shared`
+(DTOs/enums — consumed from its built `dist/`, so run `pnpm build:package` after any change
+there). Catalogs are queried live (TMDB/AniList/IGDB/Open Library/
+MusicBrainz) and nothing is persisted until a user tracks an item — see
+"Data model & catalog" below.
+
+Two destinations: Logan's own hosted VPS (auto-deployed, `deploy.yml`) and
+self-hosting via `docker/`. A premium plan exists as a seam, not sold yet —
+see "Feature flags & entitlements".
+
+## Commands
 
 ```sh
 pnpm dev                                       # api on :3000 + web on :5173 (parallel)
 pnpm test                                      # runs all tests
 pnpm build:package                             # REQUIRED after any change in packages/shared
-                                               # (api and web consume its dist/, not its sources)
 
 # API
-pnpm --filter @loomkeep/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # test single file
+pnpm --filter @loomkeep/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # single test file
 pnpm --filter @loomkeep/api test:e2e           # full API flow; needs the dev Postgres running
 pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
 
 # Tools
-pnpm lint                                      # global eslint + prettier
-pnpm lint:fix                                  # global auto-fix lintable issues (js/ts/svelte)
-pnpm check                                     # global typecheck (tsc --noEmit on api/shared, svelte-check on web)
-pnpm knip                                      # global dead code / unused dependency detection
+pnpm lint / pnpm lint:fix                      # global eslint + prettier
+pnpm check                                     # global typecheck (tsc on api/shared, svelte-check on web)
+pnpm knip                                      # dead code / unused dependency detection
 ```
 
-**Git hooks (husky, `.husky/`):** `pre-commit` runs `lint-staged`, which
-auto-fixes and formats staged files (`eslint --fix` for js/ts/svelte —
-formatting is itself an ESLint rule via `eslint-plugin-prettier`, so this one
-step covers both; `prettier --write` for json/md/css/yaml) and re-stages them.
-**Formatting is handled by this hook.**
-`pre-push` runs `pnpm check` — a recursive typecheck across `apps/api`,
-`apps/web` and `packages/shared` (unit tests, e2e, and full-repo lint are
-left to CI's `lint-build-test`/`e2e` jobs — running them again locally on
-every push just duplicates that gate). `knip` (dead code / unused dependency
-detection) is available via `pnpm knip` but isn't wired into a hook — run it
-on demand.
-**Never lint, format, or typecheck yourself, at any point in a task —
-mid-edit or as a final pass.** That means no `pnpm lint`, `pnpm lint:fix`,
-`pnpm check`, `pnpm --filter @loomkeep/web check`, bare `tsc`, or running
-`pnpm build:package` just to see if it type-errors. The hooks above already
-cover every one of these — `pre-commit` formats and lints staged files on
-every commit, `pre-push` typechecks the whole project — so running them
-yourself only duplicates that gate and burns time for nothing. Same for
-tests: CI runs the full suite plus e2e on every PR, so don't run tests as a
-reflex after every batch of edits. Judge whether the change is substantial
-enough to plausibly break something — a style tweak, a Paraglide message
-wording change, or a variable/route rename almost certainly isn't and needs
-no test run; new or changed logic, a refactor touching control flow, or a
-bug fix does. When a run is warranted, prefer a _targeted_ spec over the
-whole suite.
+e2e tests reuse the dev Postgres but run in an isolated `e2e` schema
+(`apps/api/test/global-setup.js`), so they never touch dev data.
+
+**Never lint, format, typecheck, or run the test suite yourself as a
+verification step, mid-task or at the end.** `pre-commit` (lint-staged)
+already formats/lints staged files, `pre-push` already typechecks the whole
+repo, and CI runs the full test suite + e2e on every PR — running any of
+that yourself only duplicates the gate. Judge whether a change plausibly
+broke something before reaching for a test run at all: a style tweak, a
+wording change, a rename almost never needs one; new/changed logic or a bug
+fix does.
 
 ## Architecture
 
-**Product model:** Loomkeep has two destinations — the public
-instance Logan runs on his own VPS (`deploy.yml`, no setup required), and
-self-hosting via the `docker/` compose stack. A premium plan is
-planned for the future on **both**: extra features gated behind it on the
-hosted instance, and — undecided — possibly some features gated behind it
-for self-hosters too. This is the reason `User.entitlements` exists (see
-below).
+### Data model & catalog
 
-pnpm monorepo, 100% TypeScript: `apps/api` (NestJS + Prisma + PostgreSQL),
-`apps/web` (SvelteKit, PWA), `packages/shared` (DTOs/enums used by both).
-Catalogues come live from TMDB (movies & series), AniList (anime), IGDB
-(games), Open Library (books) and MusicBrainz (music).
+- **On-demand cache, not a mirror.** A `MediaItem`/`GameItem`/`BookItem`/
+  `MusicItem` (with children — seasons, episodes, external ids) is created
+  only when a user first tracks it, through a single entry point,
+  `MediaItemService.upsertFromSource()`. Refreshes are throttled by
+  `lastSyncedAt` (24h TTL) and never delete seasons/episodes, so
+  `EpisodeWatch` rows always keep a valid target.
+- **One provider per domain** (`apps/api/src/<domain>/providers/`): TMDB
+  (movies/series) + AniList (anime) share the catalog, IGDB (games), Open
+  Library (books), MusicBrainz (music). TMDB movie/TV ids are separate
+  namespaces, so every call carries a `MediaType`. AniList has no
+  per-episode listing — episodes are generated 1..N.
+- `MediaExternalId` is multi-source (TMDB/ANILIST/TVDB/IMDB) — TVDB is
+  captured from TMDB responses specifically because the TV Time import
+  reconciles through TVDB ids.
+- **Watch model**: one row per viewing (`EpisodeWatch`, mirrored by
+  `MovieReplay`/`GameReplay`/`BookReplay`) — a rewatch is a new row, never an
+  update. `LibraryService.computeProgress` excludes season 0 (TMDB specials).
+- **Import sources** (`apps/api/src/import/sources/`) share a base class per
+  domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
+  OAuth) and `BookCsvSource` (Goodreads, StoryGraph) own the common
+  analyze/resolve/commit flow — a new source only supplies its parsing.
+  Steam implements `ImportReq` directly (no shared base, single source).
+  `GET /import/availability` greys out a source when its env key is unset.
+- Shared enums (`packages/shared/src/enums.ts`) are `as const` objects
+  mirrored by Prisma enums with identical values — cast at boundaries
+  (`source as DbExternalSource`), don't write a mapping function.
 
-Dev database: Docker container `loomkeep-dev-db`, Postgres 18 on port **5433**.
-Connection string lives in `apps/api/.env` (copy from `.env.example`).
-e2e tests reuse that server but run in an isolated `e2e` schema (see `apps/api/test/global-setup.js`),
-so they never touch dev data.
+### Auth & errors
 
-**The database is an on-demand cache, not a catalogue mirror.** Searching hits
-TMDB/AniList live and persists nothing. A `MediaItem` (with its `Season`s,
-`Episode`s and `MediaExternalId`s) is created only when a user first references
-the media — the single entry point is `MediaItemService.upsertFromSource()`
-(`apps/api/src/catalog/media-item.service.ts`), called by `LibraryService` on
-entry upsert. Refreshes are throttled by `lastSyncedAt` (24h TTL) and never
-delete seasons/episodes, so `EpisodeWatch` rows always keep a valid target.
+- Access JWT (15 min) + rotating refresh tokens, one `RefreshToken`
+  row/device, SHA-256 hashed. `JwtAuthGuard` is global, opt out with
+  `@Public()`; `@CurrentUser()` reads `sub` from the JWT payload. TOTP MFA
+  layers on top (`auth/mfa.service.ts`).
+- Errors are typed codes (`packages/shared/src/error-codes.ts`,
+  `ErrorCode.AuthInvalidCredentials`-style, `domain.reason`), thrown via
+  `AppException` and caught by the global `AllExceptionsFilter`. The web
+  derives the i18n key mechanically from the code
+  (`errorCodeToMessageKey()`, `apps/web/src/lib/api/errors.ts`) — never
+  display API-supplied text directly; adding a failure mode means adding a
+  code here, not a bespoke string.
 
-**Catalogue providers** (`apps/api/src/catalog/providers/`) implement a common
-`CatalogProvider` interface. TMDB serves MOVIE/SERIES, AniList serves ANIME.
-TMDB movie and TV IDs live in separate namespaces, so every details/upsert call
-carries a `MediaType`; AniList implies ANIME (see `resolveType` in
-`catalog.controller.ts`). AniList has no per-episode listing: episodes are
-generated 1..N as a single season, titles from `streamingEpisodes` when
-available.
+### Feature flags & entitlements
 
-**External IDs are multi-source** (`MediaExternalId`: TMDB, ANILIST, TVDB,
-IMDB) — TVDB is deliberately captured from TMDB responses because the TV Time
-import (`apps/api/src/import/sources/tvtime/`) reconciles through TVDB IDs.
-The import is interactive: ask the user collection by collection what to keep.
+- `FeatureFlagsService` wraps Unleash with an env/config fallback
+  (`isEnabled(flag, default)`) so an unconfigured flag never locks out a
+  feature. Web's default gating path is `liveFlags.isEnabled("MY_FLAG")`
+  (`apps/web/src/lib/feature-flags-live.svelte.ts`) — reactive, no reload.
+  Exception: an on-by-default flag (`SOCIAL_ENABLED`, `REGISTRATION_ENABLED`)
+  can't use that path — the Frontend API only reports _enabled_ flags — so
+  those stay relayed through `GET /api/config` instead.
+- Premium is a seam, not sold yet: enforcement points call
+  `EntitlementService.isEffectivelyPremium()`, not the raw `hasPremium()` —
+  it's `true` for everyone until the `premium-features` Unleash flag is on
+  (no CGV/billing exists yet; positioning in
+  [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md)).
 
-**Watch model:** one `EpisodeWatch` row per viewing — rewatches are additional
-rows, never an update. Progress (computed in `LibraryService.computeProgress`)
-counts distinct watched episodes and excludes season 0 (TMDB specials).
+### Web routing & data fetching
 
-**Auth:** access JWT (15 min) + rotating refresh tokens, one `RefreshToken` row
-per device, SHA-256 hashed. `JwtAuthGuard` is registered globally in
-`app.module.ts`; opt out with `@Public()`. Handlers read the user from
-`@CurrentUser()` (JWT payload, `sub` = user id). `User.entitlements` (Json) is
-the open-core seam for future paid features — currently unused, don't remove it.
-The open-core positioning (premium as a managed service on top of the AGPL
-code, self-hosting included, gating by thresholds rather than hidden features)
-is decided in [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md).
+- App lives under `/app`, public site at root (`+page.svelte`, `legal/*` —
+  both prerendered). Auth is enforced by **layout nesting, not a route
+  allowlist**: `app/+layout.svelte` ↔ `(auth)/+layout.svelte` mirror-redirect
+  each other. Adding a screen under `app/` gates it automatically — never
+  reintroduce a `PUBLIC_ROUTES` array.
+- Signed-in routes run as SPA (`ssr = false` in the `app`/`(auth)`/
+  `(verification)` layouts only, never the root). Tokens in localStorage,
+  auto-refresh-and-retry on 401 in `src/lib/api/client.ts`. The API itself
+  emits `/app`-prefixed paths (push/email links) — grep `/app/` in
+  `apps/api/src` before renaming a client route.
+- Most data fetching is still ad hoc `request()` calls + local `$state`.
+  `@tanstack/svelte-query` was introduced for comments only
+  (`CommentThread.svelte` is the reference implementation) — reach for it,
+  not another local-`$state` pattern, when a mutation must invalidate data
+  shown in more than one component.
 
-**Shared enums** (`packages/shared/src/enums.ts`) are `as const` objects, not
-TS enums, and Prisma declares parallel enums with identical values in
-`schema.prisma`. They must stay in sync; boundaries cast (`source as
-DbExternalSource`) rather than map.
+### Ops
 
-**Route layout — the app lives under `/app`, the public site at the root.**
-`routes/+page.svelte` is the marketing landing page and `routes/legal/*` the
-legal documents; both are **prerendered** (`prerender = true`) so they're
-indexable and paint without the bundle. Everything a signed-in user touches
-sits under `routes/app/` (`/app`, `/app/media`, `/app/settings`, `/app/admin`,
-`/app/u/:username`…). Auth is enforced by **layout nesting, not a route
-allowlist**: `app/+layout.svelte` redirects to `/login` when there's no
-session and owns the app chrome (sidebars, notification bell, polling), while
-`(auth)/+layout.svelte` (login/register/forgot/reset — URLs stay at the root)
-does the mirror redirect to `/app`. `(verification)/` holds the two
-email-verification screens, reachable signed in _or_ out. Adding a screen
-under `app/` gates it automatically — never reintroduce a `PUBLIC_ROUTES`
-array. The one-shot session+config bootstrap lives in
-`src/lib/bootstrap.svelte.ts`; the three nested layouts gate their render on
-its `ready` flag, which is why the root layout must stay SSR-safe.
+- `docker/` holds every compose file, the Caddyfile, and add-on configs;
+  `context: ..` resolves against the compose file's location, not repo root.
+  `deploy.yml` redeploys on every successful CI run on `main` — which
+  override files get combined comes from `COMPOSE_FILE` in the VPS's own
+  `.env`, not the workflow. See [docker/README.md](docker/README.md) for
+  the add-on stack (observability, Authelia SSO, Portainer, GlitchTip,
+  Umami, Unleash, Homepage).
+- `nestjs-pino` structured JSON logging; `Authorization`/`Cookie`/
+  `Set-Cookie` redacted, request bodies never logged. `AllExceptionsFilter`
+  also reports to GlitchTip when `GLITCHTIP_API_DSN`/`PUBLIC_GLITCHTIP_WEB_DSN`
+  are set.
 
-**Signed-in routes run as SPA** (`export const ssr = false` in
-`app/+layout.ts`, `(auth)/+layout.ts` and `(verification)/+layout.ts` — _not_
-the root layout, which would kill the landing page's prerender): tokens in
-localStorage, auto-refresh-and-retry on 401 in `src/lib/api/client.ts`, auth
-state via Svelte 5 runes in `src/lib/auth.svelte.ts` (runes mode is forced in
-`vite.config.ts`, which also holds the SvelteKit + PWA config — there is no
-`svelte.config.js`). API base URL comes from `PUBLIC_API_URL`
-(`$env/dynamic/public`, resolved at server start, Docker-friendly). The API
-also emits web paths (push/notification `url`, `href` on activity and report
-rows, email links) — those carry the `/app` prefix, so grep `/app/` in
-`apps/api/src` before changing a client route.
+### Social
 
-**Data fetching**: most of the app still calls the domain-specific `request()`
-wrappers under `src/lib/api/*` directly from a component's own `$effect` and
-local `$state` — no shared cache. `@tanstack/svelte-query`
-(`src/lib/queryClient.ts`, `QueryClientProvider` wraps the tree in the root
-`+layout.svelte`) was added for the comments feature as the app's first
-shared query/cache layer — `CommentThread.svelte` is the reference
-implementation (`createInfiniteQuery`, `createMutation`,
-`queryClient.invalidateQueries`, `refetchInterval: 5000` with
-`refetchIntervalInBackground: false` rather than a websocket). Reach for it,
-not another local-`$state` pattern, when a mutation needs to invalidate data
-shown in more than one component.
-
-**Docker:** every `docker-compose.*.yml`, the `Caddyfile`, and the add-on
-config dirs (`observability/`, `authelia/`, `homepage/`) live under `docker/`,
-not the repo root. `context: ..` in `docker/docker-compose.yml`'s `api`/`web`
-build blocks points back up at the monorepo root, since Compose resolves
-relative paths against the compose file's own location, not the invocation
-cwd. `.github/workflows/deploy.yml` auto-redeploys on every successful CI run
-on `main` via a plain `docker compose up -d --build` (no `-f` flags) — which
-override files get combined comes from `COMPOSE_FILE` in the VPS's own
-`.env`, not from the workflow. The stack also includes optional add-ons
-(Grafana/Loki/Prometheus, GlitchTip, Portainer, Authelia SSO, Homepage) — see
-[docker/README.md](docker/README.md) for how they fit together.
-
-**Logging:** `nestjs-pino` (`main.ts` / `common/logger.config.ts`) replaces
-Nest's console logger with structured JSON (pretty-printed only in
-`NODE_ENV=development`, never true inside Docker). Level via `LOG_LEVEL`,
-default debug in dev / info otherwise. `Authorization`/`Cookie`/`Set-Cookie`
-are redacted; request bodies are never logged. A global
-`AllExceptionsFilter` (`common/all-exceptions.filter.ts`, `APP_FILTER`) logs
-every thrown exception — 5xx at "error" with the stack, 4xx (the app
-rejecting a request on purpose) at "warn" — then always delegates to
-`BaseExceptionFilter.catch()`, so the response sent to the client is
-unchanged. Errors also report to GlitchTip (self-hosted, Sentry-API-
-compatible) via the standard Sentry SDKs, gated on `GLITCHTIP_API_DSN` /
-`PUBLIC_GLITCHTIP_WEB_DSN` being set (empty disables reporting) — see
-[docker/README.md](docker/README.md) for the full setup.
-
-**Social** (`apps/api/src/social/`, `reviews/`, `comments/`, `reports/`) is
-gated behind the runtime `SOCIAL_ENABLED` env var, read by the web via
-`GET /api/config` (`RuntimeConfigModule`) — self-host defaults to off, the
-public VPS build turns it on. `SocialFeatureGuard` 404s every social route
-when off (never 403 — a self-host install shouldn't even advertise the
-surface exists). `Follow` is the single relationship primitive across the
-whole feature (a directed edge; friend = reciprocal _accepted_ follow, no
-separate friendship table) — see
-[apps/api/src/social/README.md](apps/api/src/social/README.md) for the
-visibility model, content registers, and GHOST/Figurant behaviour.
+Gated behind `SOCIAL_ENABLED` (off by default self-host, on for the hosted
+VPS) — `SocialFeatureGuard` 404s (never 403) when disabled, so a self-host
+install doesn't advertise the surface exists. `Follow` is the one
+relationship primitive (friend = reciprocal accepted follow). Details:
+[apps/api/src/social/README.md](apps/api/src/social/README.md).
 
 ## Conventions
 
-- Code, comments and commit messages are English.
-- UI is French-first, but i18n-ready with `paraglide`, so don't hardcode French
-  strings in the code — use `m()` instead.
-- New runtime deps: prefer none — HTTP calls use global `fetch` (Node ≥22).
-  pnpm blocks dependency build scripts by default: allow-list them in
-  `pnpm-workspace.yaml` (`allowBuilds`) when a package needs a postinstall.
-  One exception so far: `@tanstack/svelte-query` (web only) — see "Data
-  fetching" above. Ask before adding another.
-- Versioning: no tagged releases, so the `version` field (root + every
-  `apps/*`/`packages/*` package.json, kept in lockstep) is the only record of
-  where the app stands — currently past 1.0. Bump minor when a feature domain
-  ships (a new module, a significant capability), patch for smaller
-  fixes/polish. Use the `version-bump` skill (`.claude/skills/version-bump/`)
-  to do the bump — it covers the CHANGELOG.md + Quackback changelog ritual.
-  Quackback's changelog is the only user-facing release notes page, and
-  **publishing an entry there automatically sends the release newsletter**,
-  so that step always needs Logan's go-ahead.
-- **Feedback board (Quackback)**: user feedback lives at
-  feedback.loomkeep.app (self-hosted, MCP tools
-  `mcp__quackback__*`/REST API). Three boards: **Feature Requests** and
-  **Bug Reports** (both public) for user-facing asks, **Internal Roadmap**
-  (team-only) for business-sensitive backlog (monetization, ops, security
-  rationale) that must never land on a public board. Two matching roadmaps
-  (**Roadmap**, public; **Internal Roadmap**, private) group posts by
-  board — when creating a post, always add it to the roadmap matching its board
-  in the same pass (no server-side automation for this, it's a manual step
-  every time).
-  Note: the REST API silently ignores `audience`/`isPublic` on board/roadmap
-  **creation** (always defaults public) — set it via a follow-up `PATCH`
-  instead. Also: Cloudflare blocks Python's default `urllib` User-Agent on
-  this domain (opaque "error code: 1010") — pass an explicit `User-Agent`
-  header, or use `curl`.
-- Before adding a new Svelte component, check `apps/web/src/lib/components/`
-  (shared) and any route-local `components/` folder for one that already
-  covers the need — extend or reuse it rather than writing a new one from
-  scratch.
-- The app can be installed as a PWA — check the mobile viewport (not just desktop)
-  on every `apps/web` UI change.
-- Visual identity ("Séance" — fonts, palette, nav pattern): see
+- Code, comments, commits: English. UI is French-first but i18n-ready via
+  Paraglide — use `m()`, never hardcode a string. Sources live in
+  `apps/web/messages/{locale}/{common,errors,other}.json`.
+- Prefer no new runtime deps (global `fetch`, Node ≥22). pnpm blocks
+  postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
+  `allowBuilds`. Ask before adding one.
+- Versioning: the four `package.json` versions (root + each app/package) are
+  kept in lockstep — minor for a new module/capability, patch for a smaller
+  fix/polish. No tagged releases otherwise. Bump via the `version-bump`
+  skill (`CHANGELOG.md` + a Quackback changelog draft) — **publishing that
+  draft sends the release newsletter**, so it always needs Logan's go-ahead.
+- Feedback lives on Quackback (feedback.loomkeep.app), not GitHub Issues:
+  **Feature Requests**/**Bug Reports** (public) vs **Internal Roadmap**
+  (private, business-sensitive) — new posts need adding to the matching
+  roadmap by hand, no automation for it. Gotchas: the REST API ignores
+  `audience`/`isPublic` on board/roadmap creation (`PATCH` after the fact);
+  Cloudflare blocks Python's default `urllib` user agent on this domain
+  (pass an explicit one, or use `curl`). See `.claude/skills/quackback-ticket`.
+- Check `apps/web/src/lib/components/` (and route-local `components/`)
+  before writing a new Svelte component — extend or reuse instead.
+- Installable as a PWA — check the mobile viewport, not just desktop, on
+  every `apps/web` UI change.
+- Visual identity ("Séance" — fonts, palette, nav pattern):
   `apps/web/DESIGN.md`.
-- When a feature significant enough for a user to notice ships, flag it with
-  the "Nouveau" badge (`apps/web/src/lib/feature-badges.ts` `isFeatureNew()` +
-  `<NewBadge />`) at its point of discovery (nav entry, settings toggle,
-  action button…) — add a `{ key: shippedISODate }` entry to `SHIPPED`. It's
-  time-based (21 days from ship date) so it fades on its own.
-  Skip it for internal refactors, bug fixes, or anything that doesn't change
-  what the user sees/can do.
+- Shipping something a user will notice → add a `"Nouveau"` badge entry
+  (`apps/web/src/lib/feature-badges.ts`'s `SHIPPED` map, `{ key:
+shippedISODate }`) at its point of discovery — it fades on its own after
+  21 days. Skip for internal refactors and fixes.
