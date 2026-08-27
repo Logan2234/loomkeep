@@ -1,7 +1,8 @@
 import type { RatingDto } from "@loomkeep/shared";
-import { GameSource, GameSummaryDto } from "@loomkeep/shared";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ErrorCode, GameSource, GameSummaryDto } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
@@ -167,7 +168,12 @@ export class IgdbProvider implements GameCatalogProvider {
     const game = games[0];
 
     if (!game) {
-      throw new NotFoundException("Game not found on IGDB");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogItemNotFound,
+        undefined,
+        "Game not found on IGDB",
+      );
     }
 
     return this.toDetails(game);

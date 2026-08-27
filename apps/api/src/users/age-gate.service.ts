@@ -1,4 +1,6 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { PrismaService } from "../prisma/prisma.service";
 import { isAdult } from "./age.util";
 
@@ -22,7 +24,10 @@ export class AgeGateService {
    */
   assertAdultAllowed(isAdultTitle: boolean, allowsAdult: boolean): void {
     if (isAdultTitle && !allowsAdult) {
-      throw new ForbiddenException(
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.UserAdultContentDisabled,
+        undefined,
         "This title is restricted to accounts with adult content enabled",
       );
     }

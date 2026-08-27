@@ -1,15 +1,13 @@
 import {
+  ErrorCode,
   type FollowRequestDto,
   NotificationType,
   ProfileAccess,
   type RelationshipDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -41,11 +39,18 @@ export class FollowService {
       where: { username },
       select: { id: true, profileAccess: true },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
 
     if (target.id !== viewerId) {
       if (target.profileAccess === ProfileAccess.GHOST) {
-        throw new NotFoundException();
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.SocialUserNotFound,
+        );
       }
 
       const blocked = await this.prisma.block.findUnique({
@@ -53,7 +58,11 @@ export class FollowService {
           blockerId_blockedId: { blockerId: target.id, blockedId: viewerId },
         },
       });
-      if (blocked) throw new NotFoundException();
+      if (blocked)
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.SocialUserNotFound,
+        );
     }
 
     return target;
@@ -64,7 +73,12 @@ export class FollowService {
     const target = await this.resolveTarget(viewerId, username);
 
     if (target.id === viewerId) {
-      throw new BadRequestException("Cannot follow yourself");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.SocialCannotFollowSelf,
+        undefined,
+        "Cannot follow yourself",
+      );
     }
 
     const viewer = await this.prisma.user.findUnique({
@@ -76,8 +90,11 @@ export class FollowService {
       viewer?.profileAccess === ProfileAccess.GHOST &&
       target.profileAccess !== ProfileAccess.PUBLIC
     ) {
-      throw new BadRequestException(
-        "Un Figurant ne peut suivre que des profils publics",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.SocialGhostPublicOnly,
+        undefined,
+        "A Figurant can only follow public profiles",
       );
     }
 
@@ -87,7 +104,13 @@ export class FollowService {
         blockerId_blockedId: { blockerId: viewerId, blockedId: target.id },
       },
     });
-    if (blocking) throw new BadRequestException("Unblock this user first");
+    if (blocking)
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.SocialUnblockFirst,
+        undefined,
+        "Unblock this user first",
+      );
 
     const status =
       target.profileAccess === ProfileAccess.PUBLIC ? "ACCEPTED" : "PENDING";
@@ -142,7 +165,10 @@ export class FollowService {
       follow.followeeId !== userId ||
       follow.status !== "PENDING"
     ) {
-      throw new NotFoundException();
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialFollowRequestNotFound,
+      );
     }
 
     await this.prisma.follow.update({
@@ -201,7 +227,11 @@ export class FollowService {
     const { count } = await this.prisma.follow.deleteMany({
       where: { id: followId, followeeId: userId, status: "PENDING" },
     });
-    if (count === 0) throw new NotFoundException();
+    if (count === 0)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialFollowRequestNotFound,
+      );
   }
 
   /** Blocks a user: removes any follow edges both ways, then records the block. */
@@ -210,10 +240,19 @@ export class FollowService {
       where: { username },
       select: { id: true },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
 
     if (target.id === viewerId) {
-      throw new BadRequestException("Cannot block yourself");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.SocialCannotBlockSelf,
+        undefined,
+        "Cannot block yourself",
+      );
     }
 
     await this.prisma.$transaction([
@@ -242,7 +281,11 @@ export class FollowService {
       where: { username },
       select: { id: true },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
     await this.prisma.block.deleteMany({
       where: { blockerId: viewerId, blockedId: target.id },
     });
@@ -258,7 +301,11 @@ export class FollowService {
       where: { username },
       select: { id: true, profileAccess: true },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
     const relation = await this.visibility.getRelation(viewerId, target);
     return this.visibility.toRelationshipDto(relation);
   }

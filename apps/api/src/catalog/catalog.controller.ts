@@ -2,20 +2,16 @@ import {
   CastDetailDto,
   CatalogSource,
   Domain,
+  ErrorCode,
   Locale,
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
 } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-} from "@nestjs/common";
+import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
@@ -87,7 +83,12 @@ export class CatalogController {
     const provider = this.mediaItemService.providerFor(source);
 
     if (!provider.getPerson) {
-      throw new BadRequestException(`${source} has no person details`);
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.CatalogNoPersonDetails,
+        { source },
+        `${source} has no person details`,
+      );
     }
 
     const detail = await provider.getPerson(id);
@@ -140,7 +141,10 @@ function resolveType(source: CatalogSource, type?: MediaType): MediaType {
   }
 
   if (type !== MediaType.MOVIE && type !== MediaType.SERIES) {
-    throw new BadRequestException(
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.CatalogMediaTypeRequired,
+      undefined,
       "TMDB media require 'type' to be MOVIE or SERIES",
     );
   }

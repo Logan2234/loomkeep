@@ -1,5 +1,5 @@
 import { Domain } from "@loomkeep/shared";
-import { ForbiddenException } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -44,14 +44,14 @@ describe("DomainGateService", () => {
     const service = makeService([Domain.MEDIA]);
     await expect(
       service.assertEnabled("u1", Domain.BOOKS),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(AppException);
   });
 
   it("throws 403 when the user does not exist", async () => {
     const service = makeService(null);
     await expect(
       service.assertEnabled("nope", Domain.MEDIA),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(AppException);
   });
 
   describe("getEnabledDomains", () => {
@@ -80,7 +80,7 @@ describe("DomainGateService", () => {
     const service = makeService([Domain.BOOKS], [Domain.BOOKS]);
     await expect(
       service.assertEnabled("u1", Domain.BOOKS),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(AppException);
   });
 
   describe("premium-gated domains", () => {
@@ -95,7 +95,7 @@ describe("DomainGateService", () => {
       const service = makeService([Domain.MEDIA, Domain.MUSIC], [], false);
       await expect(
         service.assertEnabled("u1", Domain.MUSIC),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      ).rejects.toBeInstanceOf(AppException);
     });
 
     it("excludes premium-gated domains from getEnabledDomains for a non-premium user", async () => {

@@ -1,9 +1,7 @@
-import {
-  type CanActivate,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { type CanActivate, HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../common/app.exception";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { isSocialEnabled } from "./social.config";
 
@@ -21,7 +19,10 @@ export class SocialFeatureGuard implements CanActivate {
 
   canActivate(): boolean {
     if (!isSocialEnabled(this.config, this.flags)) {
-      throw new NotFoundException();
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialFeatureDisabled,
+      );
     }
 
     return true;

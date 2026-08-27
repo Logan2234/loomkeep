@@ -1,6 +1,7 @@
-import type {
-  MailTemplateListResponseDto,
-  MailTemplatePreviewDto,
+import {
+  ErrorCode,
+  type MailTemplateListResponseDto,
+  type MailTemplatePreviewDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -8,12 +9,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   Query,
-  ServiceUnavailableException,
 } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { MailService } from "../mail/mail.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { SendTestEmailDto } from "./dto/send-test-email.dto";
@@ -44,7 +44,11 @@ export class AdminEmailsController {
     @Query() overrides: Record<string, string>,
   ): MailTemplatePreviewDto {
     const preview = this.mail.renderTemplatePreview(key, overrides);
-    if (!preview) throw new NotFoundException("Unknown template");
+    if (!preview)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminEmailTemplateNotFound,
+      );
     return preview;
   }
 
@@ -56,10 +60,17 @@ export class AdminEmailsController {
     @Body() dto: SendTestEmailDto,
   ): Promise<void> {
     if (!this.mail.isConfigured()) {
-      throw new ServiceUnavailableException("SMTP is not configured");
+      throw new AppException(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        ErrorCode.AdminSmtpNotConfigured,
+      );
     }
 
     const sent = await this.mail.sendTemplateTest(key, dto.to, dto.values);
-    if (!sent) throw new NotFoundException("Unknown template");
+    if (!sent)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminEmailTemplateNotFound,
+      );
   }
 }

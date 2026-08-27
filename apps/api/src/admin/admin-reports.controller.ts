@@ -1,23 +1,25 @@
-import type {
-  AdminReportsSummaryDto,
-  ReportPageDto,
-  ReportStatus,
+import {
+  ErrorCode,
+  ModerationMeasure,
+  type AdminReportsSummaryDto,
+  type ReportPageDto,
+  type ReportStatus,
 } from "@loomkeep/shared";
-import { ModerationMeasure } from "@loomkeep/shared";
 import {
   Body,
   Controller,
   Get,
-  NotFoundException,
+  HttpStatus,
   Param,
   Post,
   Query,
 } from "@nestjs/common";
 import {
-  type JwtPayload,
   CurrentUser,
+  type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
+import { AppException } from "../common/app.exception";
 import { PrismaService } from "../prisma/prisma.service";
 import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
@@ -137,7 +139,11 @@ export class AdminReportsController {
     @Body() body: ModerationReasonBody,
   ): Promise<void> {
     const report = await this.reports.findOne(id);
-    if (!report) throw new NotFoundException();
+    if (!report)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminReportNotFound,
+      );
 
     if (report.targetType === "COMMENT") {
       const { authorId, text } = await this.comments.adminRemove(

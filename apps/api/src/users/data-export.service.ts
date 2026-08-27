@@ -1,7 +1,8 @@
 import type { UserDataExportDto } from "@loomkeep/shared";
-import { ReviewTargetType } from "@loomkeep/shared";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto } from "../auth/auth.service";
+import { AppException } from "../common/app.exception";
 import {
   canonicalExternalId,
   toExternalIdDtos,
@@ -26,7 +27,12 @@ export class DataExportService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAccountNotFound,
+        undefined,
+        "User not found",
+      );
     }
 
     const [

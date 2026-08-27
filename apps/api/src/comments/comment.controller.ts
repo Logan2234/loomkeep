@@ -4,13 +4,14 @@ import {
   type CommentPageDto,
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
+  ErrorCode,
 } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -22,6 +23,7 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -32,7 +34,10 @@ import { UpdateCommentBody } from "./dto/update-comment.dto";
 
 function parseTarget(type: string): CommentTargetTypeT {
   if (!(Object.values(CommentTargetType) as string[]).includes(type)) {
-    throw new BadRequestException("Unknown comment target type");
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.CommentUnknownTargetType,
+    );
   }
 
   return type as CommentTargetTypeT;

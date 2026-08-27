@@ -1,13 +1,15 @@
 import {
   DigestCadence,
+  ErrorCode,
   type MediaType,
   type NotificationDto,
   type NotificationFeedDto,
   NotificationType,
 } from "@loomkeep/shared";
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -276,7 +278,10 @@ export class NotificationService {
     });
 
     if (count === 0) {
-      throw new NotFoundException("Notification not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.NotificationNotFound,
+      );
     }
   }
 }

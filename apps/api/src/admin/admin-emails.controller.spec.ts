@@ -1,4 +1,4 @@
-import { NotFoundException, ServiceUnavailableException } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import type { MailService } from "../mail/mail.service";
 import { AdminEmailsController } from "./admin-emails.controller";
 
@@ -31,7 +31,7 @@ describe("AdminEmailsController", () => {
     (mail.renderTemplatePreview as jest.Mock).mockReturnValue(null);
 
     expect(() => controller.previewEmailTemplate("nope", {})).toThrow(
-      NotFoundException,
+      AppException,
     );
   });
 
@@ -41,7 +41,7 @@ describe("AdminEmailsController", () => {
 
     await expect(
       controller.sendTestEmail("welcome", { to: "a@b.com" }),
-    ).rejects.toThrow(ServiceUnavailableException);
+    ).rejects.toThrow(AppException);
     expect(mail.sendTemplateTest).not.toHaveBeenCalled();
   });
 
@@ -51,6 +51,6 @@ describe("AdminEmailsController", () => {
 
     await expect(
       controller.sendTestEmail("nope", { to: "a@b.com" }),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toThrow(AppException);
   });
 });

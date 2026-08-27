@@ -1,19 +1,15 @@
-import type {
-  AdminBackupFileContentDto,
-  AdminBackupFileDto,
-} from "@loomkeep/shared";
 import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-  ServiceUnavailableException,
-} from "@nestjs/common";
+  ErrorCode,
+  type AdminBackupFileContentDto,
+  type AdminBackupFileDto,
+} from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import { spawn } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { AppException } from "../common/app.exception";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -100,14 +96,22 @@ export class BackupService {
 
   async readFile(id: string): Promise<AdminBackupFileContentDto> {
     const row = await this.prisma.backupFile.findUnique({ where: { id } });
-    if (!row) throw new NotFoundException("Sauvegarde introuvable");
+    if (!row)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminBackupNotFound,
+      );
     const content = await readFile(join(this.dir, row.filename), "utf-8");
     return { filename: row.filename, content };
   }
 
   async deleteFile(id: string): Promise<void> {
     const row = await this.prisma.backupFile.findUnique({ where: { id } });
-    if (!row) throw new NotFoundException("Sauvegarde introuvable");
+    if (!row)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminBackupNotFound,
+      );
     await rm(join(this.dir, row.filename), { force: true });
     await this.prisma.backupFile.delete({ where: { id } });
   }
@@ -141,7 +145,10 @@ export class BackupService {
     );
 
     if (!publicKey) {
-      throw new ServiceUnavailableException(
+      throw new AppException(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        ErrorCode.AdminMisconfigured,
+        undefined,
         "BACKUP_ENCRYPTION_PUBLIC_KEY is not set",
       );
     }
@@ -170,7 +177,12 @@ export class BackupService {
     const databaseUrl = process.env.DATABASE_URL;
 
     if (!databaseUrl) {
-      throw new ServiceUnavailableException("DATABASE_URL is not set");
+      throw new AppException(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        ErrorCode.AdminMisconfigured,
+        undefined,
+        "DATABASE_URL is not set",
+      );
     }
 
     const url = new URL(databaseUrl);
@@ -203,12 +215,22 @@ export class BackupService {
       child.on("error", (err: NodeJS.ErrnoException) => {
         if (err.code === "ENOENT") {
           reject(
-            new ServiceUnavailableException(
+            new AppException(
+              HttpStatus.SERVICE_UNAVAILABLE,
+              ErrorCode.AdminMisconfigured,
+              undefined,
               `${command} is not installed on this instance`,
             ),
           );
         } else {
-          reject(new InternalServerErrorException(err.message));
+          reject(
+            new AppException(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              ErrorCode.InternalError,
+              undefined,
+              err.message,
+            ),
+          );
         }
       });
 
@@ -218,7 +240,10 @@ export class BackupService {
         } else {
           this.logger.error(`${command} exited with code ${code}: ${stderr}`);
           reject(
-            new InternalServerErrorException(
+            new AppException(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              ErrorCode.InternalError,
+              undefined,
               stderr.trim() || `${command} failed (exit ${code})`,
             ),
           );

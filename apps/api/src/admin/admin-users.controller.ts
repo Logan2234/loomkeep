@@ -13,16 +13,18 @@ import type {
   UserDataExportDto,
   UserSummaryDto,
 } from "@loomkeep/shared";
-import { ModerationMeasure, ReportTargetType } from "@loomkeep/shared";
 import {
-  BadRequestException,
+  ErrorCode,
+  ModerationMeasure,
+  ReportTargetType,
+} from "@loomkeep/shared";
+import {
   Body,
   Controller,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -32,6 +34,7 @@ import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
+import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -160,8 +163,11 @@ export class AdminUsersController {
     @CurrentUser() admin: JwtPayload,
   ): Promise<AdminUserRoleDto> {
     if (userId === admin.sub && dto.role !== "ADMIN") {
-      throw new BadRequestException(
-        "Impossible de retirer ton propre accès admin",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AdminCannotSelfDemote,
+        undefined,
+        "Cannot remove your own admin access",
       );
     }
 
@@ -305,7 +311,7 @@ export class AdminUsersController {
     });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
     }
 
     await this.authService.requestPasswordReset(user.email);
@@ -326,15 +332,18 @@ export class AdminUsersController {
     @Body() body: ModerationReasonBody,
   ): Promise<void> {
     if (userId === admin.sub) {
-      throw new BadRequestException(
-        "Utilise la suppression de compte depuis /settings pour ton propre compte",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AdminCannotSelfDelete,
+        undefined,
+        "Use the /settings account-deletion flow for your own account",
       );
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
     }
 
     // Recorded before the delete so the FK (onDelete: SetNull) still resolves;

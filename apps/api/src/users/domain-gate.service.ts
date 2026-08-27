@@ -1,5 +1,6 @@
-import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { Domain, ErrorCode, PREMIUM_DOMAINS } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -29,7 +30,12 @@ export class DomainGateService {
     const enabled = await this.getEnabledDomains(userId);
 
     if (!enabled.includes(domain)) {
-      throw new ForbiddenException(`Domain '${domain}' is disabled`);
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.UserDomainDisabled,
+        { domain },
+        `Domain '${domain}' is disabled`,
+      );
     }
   }
 

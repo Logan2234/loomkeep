@@ -1,4 +1,6 @@
-import { BadGatewayException, NotFoundException } from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus } from "@nestjs/common";
+import { AppException } from "./app.exception";
 
 // A hung provider must not hold a request open indefinitely.
 const TIMEOUT_MS = 10_000;
@@ -50,7 +52,10 @@ export async function fetchJson<T>(
         continue;
       }
 
-      throw new BadGatewayException(
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.CatalogProviderUnavailable,
+        undefined,
         `${opts.sourceLabel} request failed: ${(err as Error).message}`,
       );
     } finally {
@@ -58,7 +63,12 @@ export async function fetchJson<T>(
     }
 
     if (opts.notFoundMessage && response.status === 404) {
-      throw new NotFoundException(opts.notFoundMessage);
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogItemNotFound,
+        undefined,
+        opts.notFoundMessage,
+      );
     }
 
     if (response.ok) return (await response.json()) as T;
@@ -80,7 +90,10 @@ export async function fetchJson<T>(
     break;
   }
 
-  throw new BadGatewayException(
+  throw new AppException(
+    HttpStatus.BAD_GATEWAY,
+    ErrorCode.CatalogProviderUnavailable,
+    undefined,
     `${opts.sourceLabel} request failed with status ${lastStatus}`,
   );
 }

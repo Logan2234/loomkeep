@@ -11,16 +11,11 @@ import type {
   VideoTemporalDto,
   WatchStaleness,
 } from "@loomkeep/shared";
-import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
+import { Domain, ErrorCode, STATS_DOMAINS } from "@loomkeep/shared";
+import { Controller, Get, HttpStatus, Query, UseGuards } from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
@@ -147,14 +142,24 @@ function parseWorksFilter(
   decadeParam?: string,
 ): { rating?: number; decade?: number } {
   if (ratingParam !== undefined && decadeParam !== undefined) {
-    throw new BadRequestException("Pass either 'rating' or 'decade', not both");
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.StatsRatingOrDecadeOnly,
+      undefined,
+      "Pass either 'rating' or 'decade', not both",
+    );
   }
 
   if (ratingParam !== undefined) {
     const rating = Number(ratingParam);
 
     if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-      throw new BadRequestException("'rating' must be an integer 1-10");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.StatsInvalidRating,
+        undefined,
+        "'rating' must be an integer 1-10",
+      );
     }
 
     return { rating };
@@ -164,11 +169,21 @@ function parseWorksFilter(
     const decade = Number(decadeParam);
 
     if (!Number.isInteger(decade) || decade % 10 !== 0) {
-      throw new BadRequestException("'decade' must be a multiple of 10");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.StatsInvalidDecade,
+        undefined,
+        "'decade' must be a multiple of 10",
+      );
     }
 
     return { decade };
   }
 
-  throw new BadRequestException("Pass either 'rating' or 'decade'");
+  throw new AppException(
+    HttpStatus.BAD_REQUEST,
+    ErrorCode.StatsRatingOrDecadeRequired,
+    undefined,
+    "Pass either 'rating' or 'decade'",
+  );
 }

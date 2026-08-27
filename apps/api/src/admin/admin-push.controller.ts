@@ -1,17 +1,12 @@
-import type {
-  AdminPushBroadcastResponseDto,
-  AdminPushDeviceDto,
-  AdminPushSendResponseDto,
-  AdminPushSummaryDto,
-} from "@loomkeep/shared";
 import {
-  Body,
-  Controller,
-  Get,
-  NotFoundException,
-  Post,
-  Query,
-} from "@nestjs/common";
+  ErrorCode,
+  type AdminPushBroadcastResponseDto,
+  type AdminPushDeviceDto,
+  type AdminPushSendResponseDto,
+  type AdminPushSummaryDto,
+} from "@loomkeep/shared";
+import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -120,7 +115,11 @@ export class AdminPushController {
       where: { email },
       select: { id: true },
     });
-    if (!user) throw new NotFoundException("No account with this email");
+    if (!user)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AdminAccountNotFound,
+      );
     return user;
   }
 }

@@ -17,14 +17,14 @@ export default defineConfig(
     // per-status fallback message. Tests are exempt: they still construct
     // these to assert on thrown types/status, which is fine.
     //
-    // "warn", not "error": ~185 call sites predate AppException and are the
-    // subject of the "Migrate API errors to error codes, domain by domain"
-    // follow-up ticket — flip this to "error" once that ticket is done.
+    // "error": every call site was migrated by the "Migrate API errors to
+    // error codes, domain by domain" ticket — a new bare exception is a
+    // regression, not pre-existing debt.
     files: ["src/**/*.ts"],
     ignores: ["src/**/*.spec.ts"],
     rules: {
       "no-restricted-syntax": [
-        "warn",
+        "error",
         {
           selector: `NewExpression[callee.name=/^(${BARE_EXCEPTION_NAMES})Exception$/]`,
           message:

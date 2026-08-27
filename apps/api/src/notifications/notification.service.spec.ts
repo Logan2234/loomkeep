@@ -1,5 +1,5 @@
 import { DigestCadence, NotificationType } from "@loomkeep/shared";
-import { NotFoundException } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "./notification.service";
@@ -214,7 +214,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
       count: 0,
     });
     await expect(service.markRead("u1", "missing")).rejects.toBeInstanceOf(
-      NotFoundException,
+      AppException,
     );
   });
 

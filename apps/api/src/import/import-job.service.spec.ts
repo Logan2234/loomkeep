@@ -1,5 +1,4 @@
-import { Domain, type ImportSource } from "@loomkeep/shared";
-import { ForbiddenException } from "@nestjs/common";
+import { Domain, ErrorCode, type ImportSource } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -85,7 +84,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
     });
     await expect(
       service.startAnalyze("u1", "tvtime", { input: "" }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toMatchObject({ code: ErrorCode.ImportFreeQuotaExceeded });
   });
 
   it("allows any import for a premium account, even with prior history", async () => {

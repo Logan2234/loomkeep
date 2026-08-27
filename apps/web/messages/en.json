@@ -1,6 +1,5 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
   "common_cancel": "Cancel",
   "common_save": "Save",
   "common_save_loading": "Saving…",
@@ -79,10 +78,8 @@
   "common_terms": "Terms of service",
   "common_see": "See",
   "common_see_more": "See more",
-
   "admin_period_today": "today",
   "admin_period_this_month": "this month",
-
   "admin_jobs_title": "Jobs & tasks",
   "admin_jobs_subtitle": "History of scheduled scans/refreshes, triggerable on demand.",
   "admin_jobs_running": "Running…",
@@ -93,7 +90,6 @@
   "admin_jobs_last_run": "Last run: {date}",
   "admin_jobs_no_runs": "No runs recorded yet.",
   "admin_jobs_history": "History ({count})",
-
   "admin_schema_title": "Schema",
   "admin_schema_subtitle": "Database and app module graphs, generated locally.",
   "admin_schema_tab_database": "Database",
@@ -101,7 +97,6 @@
   "admin_schema_not_generated": "Not generated yet for this dev session (file missing from docs/).",
   "admin_schema_regenerate_hint": "Generate it with:",
   "admin_schema_refresh_hint": "Then refresh this page.",
-
   "admin_services_title": "Services",
   "admin_services_subtitle": "Health and usage of the external dependencies the app relies on.",
   "admin_services_kpi_operational": "Operational services",
@@ -116,7 +111,6 @@
   "admin_services_required_badge": "Required",
   "admin_services_get_key": "Get a key",
   "admin_services_checked_at": "Checked at {time}.",
-
   "admin_stats_title": "Instance stats",
   "admin_stats_subtitle": "Cross-cutting overview, all accounts combined.",
   "admin_stats_kpi_accounts": "Accounts",
@@ -128,7 +122,6 @@
   "admin_stats_section_catalogue": "Catalogue & cache",
   "admin_stats_section_social": "Social",
   "admin_stats_last_refresh": "Last refreshed: {date}",
-
   "admin_accounts_delta_today": "today",
   "admin_accounts_delta_week": "this week",
   "admin_accounts_delta_year": "this year",
@@ -156,7 +149,6 @@
   "admin_accounts_age_adult_percent": "18+ content enabled",
   "admin_accounts_locale_title": "User language",
   "admin_accounts_locale_desc": "Breakdown by interface language.",
-
   "admin_catalogue_cache_title": "Cache by domain",
   "admin_catalogue_cache_desc": "Cached items, stale share (> 24 h), growth over 12 weeks.",
   "admin_catalogue_table_domain": "Domain",
@@ -169,10 +161,8 @@
   "admin_catalogue_popular_desc": "Across every domain, by number of libraries referencing it.",
   "admin_catalogue_shared_cache": "Shared cache (≥ 2 accounts)",
   "admin_catalogue_orphans": "Orphan items",
-
   "admin_cohort_empty": "No cohorts yet.",
   "admin_cohort_signup_month_sr": "Signup month",
-
   "admin_social_total_comments": "Comments",
   "admin_social_total_follows": "Active follows",
   "admin_social_total_reactions": "Reactions",
@@ -196,7 +186,6 @@
   "admin_social_top_contributors_title": "Top contributors",
   "admin_social_top_contributors_desc": "Reviews + comments.",
   "admin_social_contributors_readers": "Contributors / readers ({contributors} of {total} accounts)",
-
   "admin_system_quota_badge": "quota {percent} %",
   "admin_system_notifs_pending": "Pending notifs",
   "admin_system_push_subscriptions": "Push subscriptions",
@@ -211,7 +200,6 @@
   "admin_system_ops_signals_title": "Operational signals",
   "admin_system_misc": "Misc.",
   "admin_system_ops_hint": "Jobs, imports, security, backups → their own pages.",
-
   "admin_trend_period_day": "Day",
   "admin_trend_period_week": "Week",
   "admin_trend_period_month": "Month",
@@ -220,9 +208,7 @@
   "admin_trend_cadence_week": "By week · last 12.",
   "admin_trend_cadence_month": "By month · last 12.",
   "admin_trend_cadence_year": "By year · last 5.",
-
   "admin_sparkline_growth": "Growth over 12 weeks",
-
   "reviews_section_community_title": "Community reviews ({count})",
   "reviews_section_my_review_title": "My review",
   "reviews_section_your_review": "Your review",
@@ -230,18 +216,15 @@
   "reviews_section_empty_community": "No community reviews yet.",
   "reviews_section_vote_up": "Upvote",
   "reviews_section_vote_down": "Downvote",
-
   "scan_profile_title": "Scan a profile",
   "scan_profile_invalid_code": "This code doesn't match a Loomkeep profile.",
   "scan_profile_camera_denied": "Camera access denied or unavailable.",
   "scan_profile_hint": "Point the camera at someone else's profile QR code.",
-
   "share_profile_title": "Share profile",
   "share_profile_hint": "Scan with a phone's camera to open this profile directly.",
   "share_profile_share_with": "Share with…",
   "share_profile_copied": "Link copied",
   "share_profile_copy_link": "Copy link",
-
   "profile_not_found_title": "Profile not found",
   "profile_not_found_body": "This profile doesn't exist, or isn't visible to you.",
   "profile_not_found_back_home": "Back to home",
@@ -289,14 +272,12 @@
   "profile_connections_empty_following": "This profile doesn't follow anyone yet.",
   "profile_block_confirm_title": "Block {name}",
   "profile_block_confirm_message": "{name} won't be able to follow you or see your content anymore, and you won't see theirs either. You can unblock at any time.",
-
   "nav_section_library": "My library",
   "nav_section_tracking": "Tracking",
   "nav_home": "Home",
   "nav_feed": "Feed",
   "nav_menu": "Menu",
   "nav_profile": "My profile",
-
   "auth_login_title": "Log in",
   "auth_login_tagline": "Your private screening room.",
   "auth_login_identifier_placeholder": "Email or username",
@@ -305,7 +286,6 @@
   "auth_login_action": "Log in",
   "auth_login_action_loading": "Logging in…",
   "auth_no_account": "Don't have an account yet?",
-
   "auth_mfa_choose_method_title": "Choose your verification method",
   "auth_mfa_choose_method_totp_label": "Authenticator app",
   "auth_mfa_choose_method_totp_desc": "Use the code generated by your app.",
@@ -325,7 +305,6 @@
   "auth_mfa_verify_action": "Verify",
   "auth_mfa_verify_action_loading": "Verifying…",
   "auth_mfa_back_to_login": "Back",
-
   "auth_register_tagline": "Track everything you watch, in one place.",
   "auth_register_display_name_placeholder": "Username",
   "auth_register_email_placeholder": "Email",
@@ -336,13 +315,11 @@
   "auth_register_accept_terms_prefix": "I accept the",
   "auth_register_accept_terms_and": "and acknowledge I've read the",
   "auth_register_certify_age": "I certify that I am at least 15 years old.",
-
   "terms_reacceptance_title": "Terms of service update",
   "terms_reacceptance_body": "Our terms of service have been updated. Please review and accept them to keep using Loomkeep.",
   "terms_reacceptance_action": "Continue",
   "terms_reacceptance_action_loading": "Saving…",
   "terms_reacceptance_error": "Something went wrong. Try again.",
-
   "settings_section_security": "Security",
   "settings_section_mfa": "Two-factor authentication",
   "settings_mfa_totp_label": "Authenticator app",
@@ -407,7 +384,6 @@
   "settings_support_recommended_reason": "no account needed",
   "settings_support_account_required": "Account required",
   "settings_support_no_account": "No account",
-
   "settings_section_datasources": "Data sources",
   "settings_datasources_title": "Data sources",
   "settings_datasources_body": "Loomkeep queries these catalogues live for search and detail pages; it doesn't host or edit them. Each remains subject to its own terms of use and licenses.",
@@ -422,7 +398,6 @@
   "media_omdb_notice": "Ratings via OMDb, under a CC BY-NC 4.0 license.",
   "settings_language_fr": "Français",
   "settings_language_en": "English",
-
   "nav_pin_panel": "Pin the panel open",
   "nav_unpin_panel": "Unpin the panel",
   "nav_overview": "Overview",
@@ -431,7 +406,6 @@
   "nav_back_to_app": "Back to the app",
   "nav_app_label": "App",
   "nav_open_menu": "Open menu",
-
   "auth_back_to_login": "Back to log in",
   "auth_forgot_password_title": "Reset your password",
   "auth_forgot_password_tagline": "Forgot your password.",
@@ -450,12 +424,10 @@
   "auth_verify_email_pending": "Verifying…",
   "auth_verify_email_done": "Your email address is confirmed.",
   "auth_verify_email_invalid_link": "Invalid link: no token found in the URL.",
-
   "newsletter_unsubscribe_title": "Unsubscribe",
   "newsletter_unsubscribe_pending": "Unsubscribing…",
   "newsletter_unsubscribe_done": "You're unsubscribed from the Loomkeep newsletter.",
   "newsletter_unsubscribe_invalid_link": "Invalid link: no token found in the URL.",
-
   "settings_export_body": "Download a full copy of your data — profile, library and watch history — as JSON.",
   "settings_export_action": "Download my data (JSON)",
   "settings_export_action_loading": "Preparing…",
@@ -467,7 +439,6 @@
   "settings_import_body": "Bring back your library by importing it from another app.",
   "settings_import_sources_available": "Available sources",
   "settings_import_sources_hint": "TV Time, Steam, The StoryGraph, Goodreads, and more.",
-
   "password_show": "Show password",
   "password_hide": "Hide password",
   "password_requirement_length": "{min} characters min.",
@@ -475,45 +446,34 @@
   "password_requirement_digit": "1 digit",
   "password_requirement_special": "1 special character",
   "password_requirement_progress": "{met} of {total} requirements met",
-
   "tracking_title": "My tracking",
   "tracking_remove": "Remove from my library",
   "tracking_favorite_add": "Favorite",
   "tracking_favorite_remove": "Remove from favorites",
-
   "search_result_add": "Add to library",
   "search_result_already_added": "Already in your library",
-
   "notefield_label": "Notes",
   "notefield_placeholder": "Personal notes…",
-
   "ownership_title": "Ownership",
   "ownership_detail_label": "Detail",
   "ownership_other": "Other…",
   "ownership_source_placeholder": "Specify the source…",
-
   "notif_title": "Notifications",
   "notif_clear_all": "Clear all",
   "notif_follow_requests": "Follow requests",
   "notif_empty": "Nothing to report. Follow requests and your community's activity show up here.",
-
   "user_selector_all_accounts": "All accounts",
   "user_selector_search_placeholder": "Search by name or email…",
-
   "add_to_list_button": "Add to a list",
-
   "avatar_alt": "Avatar for {seed}",
-
   "home_activity_title": "Recent activity",
   "home_activity_view_feed": "View feed →",
-
   "profile_reviews_title": "My reviews",
   "profile_reviews_manage": "Manage",
   "profile_reviews_untitled_work": "Work",
   "profile_reviews_season": "Season",
   "profile_reviews_episode": "Episode",
   "profile_reviews_public": "Public",
-
   "activity_added": "added",
   "activity_started": "started",
   "activity_finished": "finished",
@@ -528,7 +488,6 @@
   "activity_list_item_added_count": "added {count} works to a list",
   "activity_list_shared": "shared a list",
   "activity_updated": "updated",
-
   "list_members_manage": "Collaborators",
   "list_members_title": "Collaborators",
   "list_members_description": "People added here can edit this list (add, remove, reorder works) but can't delete it, change its visibility, or manage collaborators.",
@@ -540,13 +499,11 @@
   "list_item_remove": "Remove from list",
   "list_item_remove_confirm_title": "Remove this title?",
   "list_item_remove_confirm_message": "It will be removed from the list. You can add it back later.",
-
   "mermaid_invalid": "Invalid diagram.",
   "mermaid_zoom_out": "Zoom out",
   "mermaid_zoom_in": "Zoom in",
   "mermaid_reset": "Reset",
   "mermaid_pan_hint": "Draggable diagram",
-
   "landing_meta_tagline": "One room for everything you keep track of",
   "landing_meta_description": "Loomkeep is your space to track movies, shows, anime, games, books and albums. Keep your discoveries, watchlist and progress in one place.",
   "landing_theme_toggle": "Switch theme",
@@ -682,7 +639,6 @@
   "landing_footer_link_selfhost": "Self-host it",
   "landing_footer_signature": "Built and hosted by one person. No investor, so nothing to sell.",
   "landing_libraries_soon": "Soon",
-
   "reading_goal_modal_title": "{year} reading goal",
   "reading_goal_label": "Number of books",
   "reading_goal_title": "Reading goal",
@@ -691,12 +647,9 @@
   "reading_goal_cta_action": "Set a goal",
   "reading_goal_remaining": "{count} {noun} to go before the end of {year}.",
   "reading_goal_reached": "Goal reached — nice work!",
-
   "wizard_step_progress": "Step {current}/{total} — {label}",
-
   "onboarding_step_domains": "Domains",
   "onboarding_step_done": "All set",
-
   "onboarding_welcome_title": "Welcome to Loomkeep 👋",
   "onboarding_welcome_intro": "Loomkeep keeps track of what you watch, play, read and listen to — movies, shows, anime, games, books and music, all in one place. In short, you can:",
   "onboarding_welcome_feature_progress": "Track your progress (episodes watched, books finished, games in progress…)",
@@ -705,10 +658,8 @@
   "onboarding_welcome_feature_social": "Follow friends, share reviews, and see what they're watching",
   "onboarding_welcome_young_project": "Loomkeep is a young project, still moving fast: something might be missing, or a bug might be lurking somewhere. Every bit of feedback counts, so don't hold back 🙂.",
   "onboarding_welcome_help_hint": "Feedback, ideas or bugs: Settings → Help & Support, where you can also message me directly 😉.",
-
   "onboarding_domains_title": "What do you want to track?",
   "onboarding_domains_intro": "Pick at least one domain — Loomkeep will only show what you're into, nothing else. Changeable any time from Settings → Domains.",
-
   "onboarding_settings_title": "A few settings to get started.",
   "onboarding_settings_intro": "Nothing here is final — everything can be changed later in Settings.",
   "onboarding_settings_theme": "Theme",
@@ -723,14 +674,12 @@
   "onboarding_settings_newsletter_desc": "An occasional email, only to keep you posted on new features.",
   "onboarding_settings_timezone_label": "Time zone",
   "onboarding_settings_timezone_desc": "Used to time your episode digests — you can change it later in settings.",
-
   "onboarding_done_title": "All set — nice work! 🎉",
   "onboarding_done_intro": "You're all ready to go — welcome aboard. You'll find (and can change) all these settings any time in Settings.",
   "onboarding_done_import_title": "Already have data elsewhere?",
   "onboarding_done_import_domain_media": "Movies, shows & anime",
   "onboarding_done_import_via": "import from {source}",
   "onboarding_done_import_cta": "Go to import",
-
   "error_404_plaque_label": "Room",
   "error_404_plaque_caption": "Doesn't exist",
   "error_404_title": "This room doesn't exist",
@@ -742,7 +691,6 @@
   "error_generic_title": "The screening was interrupted",
   "error_generic_body": "A technical issue cut the projection. Try again in a moment, or head back home.",
   "error_generic_cta_home": "Back to home",
-
   "apierr_auth_mfa_required": "Two-factor authentication is required to access the admin panel.",
   "apierr_auth_account_not_found": "No account matches this request.",
   "apierr_auth_email_already_exists": "An account already exists with this email address.",
@@ -768,6 +716,38 @@
   "apierr_user_avatar_too_large": "The image is too large.",
   "apierr_user_avatar_invalid_type": "The file doesn't match the expected image type.",
   "apierr_import_simkl_connection_failed": "Couldn't connect to Simkl. Try the import again from the start.",
+  "apierr_library_calendar_unavailable": "This calendar is unavailable.",
+  "apierr_library_episode_not_found": "This episode could not be found.",
+  "apierr_library_season_empty": "This season could not be found or has no episodes.",
+  "apierr_library_season_not_found": "This season could not be found.",
+  "apierr_library_no_watch_to_undo": "No watch to undo for this episode.",
+  "apierr_library_entry_not_found": "This item could not be found in your library.",
+  "apierr_library_entry_forbidden": "This item belongs to another account.",
+  "apierr_library_replay_not_movie": "Only movies can have replays — series/anime rewatches are tracked per episode.",
+  "apierr_library_replay_not_found": "This replay could not be found.",
+  "apierr_library_replay_forbidden": "This replay belongs to another account.",
+  "apierr_catalog_unknown_media_type": "Unknown media type.",
+  "apierr_catalog_no_person_details": "Person details aren't available for this source.",
+  "apierr_catalog_media_type_required": "The media type is required.",
+  "apierr_catalog_item_not_found": "This item could not be found in the catalogue.",
+  "apierr_catalog_person_not_found": "This person could not be found in the catalogue.",
+  "apierr_catalog_provider_unavailable": "The catalogue is temporarily unavailable — try again in a moment.",
+  "apierr_catalog_search_query_required": "A search term is required.",
+  "apierr_import_malformed_export": "The exported file couldn't be read or is malformed.",
+  "apierr_import_job_not_found": "This import could not be found.",
+  "apierr_import_job_forbidden": "This import belongs to another account.",
+  "apierr_import_job_source_mismatch": "The import source doesn't match.",
+  "apierr_import_job_no_analysis": "This import hasn't been analyzed yet.",
+  "apierr_import_unknown_source": "Unknown import source.",
+  "apierr_import_free_quota_exceeded": "One free import per domain — go premium to re-import in this domain.",
+  "apierr_import_source_unavailable": "The import source is temporarily unavailable — try again in a moment.",
+  "apierr_import_steam_profile_not_found": "Steam profile not found — check the id or profile URL.",
+  "apierr_import_steam_library_private": "Steam library inaccessible — the profile and game details must be public.",
+  "apierr_import_archive_empty": "The uploaded archive is empty.",
+  "apierr_import_archive_unreadable": "The archive couldn't be read.",
+  "apierr_import_archive_missing_files": "The archive is missing required files.",
+  "apierr_import_archive_malformed": "The archive couldn't be read — one of its files is malformed.",
+  "apierr_validation_invalid_param": "Invalid parameter.",
   "apierr_validation_failed": "The form contains errors.",
   "apierr_internal_error": "Something went wrong.",
   "apierr_network_offline": "Couldn't reach the server — check your connection.",
@@ -779,5 +759,70 @@
   "apierr_status_409": "This action conflicts with the current state.",
   "apierr_status_429": "Too many requests — try again in a moment.",
   "apierr_status_429_retry": "Too many requests — try again in {seconds}s.",
-  "apierr_status_500": "Something went wrong on the server."
+  "apierr_status_500": "Something went wrong on the server.",
+  "apierr_admin_cache_item_referenced": "This cache item is still referenced and can't be deleted.",
+  "apierr_admin_cache_item_has_content": "This cache item still has content and can't be deleted.",
+  "apierr_admin_email_template_not_found": "This email template could not be found.",
+  "apierr_admin_smtp_not_configured": "Email sending isn't configured on this server.",
+  "apierr_admin_unknown_job": "This job is unknown.",
+  "apierr_admin_account_not_found": "This account could not be found.",
+  "apierr_admin_report_not_found": "This report could not be found.",
+  "apierr_admin_cannot_self_demote": "You can't remove your own admin rights.",
+  "apierr_admin_cannot_self_delete": "Use the account-deletion flow in settings to delete your own account.",
+  "apierr_admin_user_not_found": "This user could not be found.",
+  "apierr_admin_forbidden": "Admin access required.",
+  "apierr_admin_backup_not_found": "This backup could not be found.",
+  "apierr_admin_misconfigured": "This feature isn't configured on this server.",
+  "apierr_admin_unauthorized": "Unauthorized.",
+  "apierr_comment_unknown_target_type": "Unknown comment target type.",
+  "apierr_comment_parent_not_found": "This parent comment could not be found.",
+  "apierr_comment_not_found": "This comment could not be found.",
+  "apierr_comment_forbidden": "This comment belongs to another account.",
+  "apierr_lists_invalid_membership_target": "Invalid target for this list.",
+  "apierr_lists_not_found": "This list could not be found.",
+  "apierr_lists_owner_only_visibility": "Only the owner can change this list's visibility.",
+  "apierr_lists_forbidden": "This list belongs to another account.",
+  "apierr_lists_item_not_found": "This item could not be found in the list.",
+  "apierr_lists_item_already_exists": "This item is already in the list.",
+  "apierr_lists_reorder_mismatch": "The submitted order doesn't match the list's current items.",
+  "apierr_lists_stale": "This list changed in the meantime — reload the page.",
+  "apierr_lists_member_user_not_found": "This user could not be found.",
+  "apierr_lists_cannot_add_self": "You can't add yourself to this list.",
+  "apierr_lists_member_already_editor": "This user can already edit this list.",
+  "apierr_lists_membership_not_found": "This collaborator could not be found.",
+  "apierr_newsletter_webhook_invalid_payload": "Invalid request.",
+  "apierr_newsletter_invalid_unsubscribe_link": "This unsubscribe link is invalid.",
+  "apierr_newsletter_webhook_unauthorized": "Unauthorized request.",
+  "apierr_notifications_not_found": "This notification could not be found.",
+  "apierr_reports_reason_required": "A detail is required for the 'Other' category.",
+  "apierr_reports_invalid_motif": "This reason doesn't match the category.",
+  "apierr_reports_not_found": "This report could not be found.",
+  "apierr_reviews_unknown_target_type": "Unknown review target type.",
+  "apierr_reviews_not_found": "This review could not be found.",
+  "apierr_reviews_cannot_vote_self": "You can't vote on your own review.",
+  "apierr_social_user_not_found": "This user could not be found.",
+  "apierr_social_cannot_follow_self": "You can't follow yourself.",
+  "apierr_social_ghost_public_only": "In Figurant mode, you can only follow public profiles.",
+  "apierr_social_unblock_first": "Unblock this user first.",
+  "apierr_social_follow_request_not_found": "This follow request could not be found.",
+  "apierr_social_cannot_block_self": "You can't block yourself.",
+  "apierr_social_feature_disabled": "This feature isn't available on this instance.",
+  "apierr_stats_rating_or_decade_only": "Pass either a rating or a decade, not both.",
+  "apierr_stats_invalid_rating": "The rating must be an integer from 1 to 10.",
+  "apierr_stats_invalid_decade": "The decade must be a multiple of 10.",
+  "apierr_stats_rating_or_decade_required": "Pass either a rating or a decade.",
+  "apierr_user_adult_content_disabled": "This content is restricted to accounts with adult content enabled.",
+  "apierr_user_csv_export_unavailable": "CSV export isn't available for this domain yet.",
+  "apierr_user_account_not_found": "This account could not be found.",
+  "apierr_user_domain_disabled": "This domain is disabled on your account.",
+  "apierr_user_avatar_not_found": "This avatar could not be found.",
+  "apierr_user_premium_required": "This feature is reserved for premium accounts.",
+  "apierr_user_birth_date_future": "The birth date can't be in the future.",
+  "apierr_user_adult_content_requires_birth_date": "Adult content requires a birth date confirming you're 18 or older.",
+  "apierr_user_mobile_nav_missing_menu": "The \"Menu\" shortcut must always stay in the navigation bar.",
+  "apierr_user_email_already_current": "This is already your current email address.",
+  "apierr_user_email_already_exists": "An account with this email already exists.",
+  "apierr_user_email_change_code_invalid": "This code is invalid or has expired.",
+  "apierr_user_password_same_as_current": "The new password must be different from the current one.",
+  "apierr_user_username_taken": "This username is already taken."
 }

@@ -67,22 +67,21 @@ export class AllExceptionsFilter {
     status: number,
     requestId: string | undefined,
   ): ApiErrorBody {
-    if (status >= 500) {
-      return {
-        statusCode: status,
-        code: ErrorCode.InternalError,
-        requestId,
-        message: GENERIC_SERVER_ERROR_MESSAGE,
-      };
-    }
-
+    // A curated AppException/ValidationException code is always safe to
+    // send even for a 5xx (it's a fixed string the thrower deliberately
+    // picked, e.g. catalog.provider_unavailable) — only the free-text
+    // `message` risks leaking something real (a caught error's own
+    // message, a Prisma detail) and gets scrubbed to the generic sentence
+    // below. Only a *code-less* 5xx (an unwrapped crash, not deliberately
+    // thrown as an AppException) falls back to ErrorCode.InternalError.
     if (exception instanceof ValidationException) {
       return {
         statusCode: status,
         code: exception.code,
         details: exception.details,
         requestId,
-        message: exception.message,
+        message:
+          status >= 500 ? GENERIC_SERVER_ERROR_MESSAGE : exception.message,
       };
     }
 
@@ -92,7 +91,17 @@ export class AllExceptionsFilter {
         code: exception.code,
         params: exception.params,
         requestId,
-        message: exception.message,
+        message:
+          status >= 500 ? GENERIC_SERVER_ERROR_MESSAGE : exception.message,
+      };
+    }
+
+    if (status >= 500) {
+      return {
+        statusCode: status,
+        code: ErrorCode.InternalError,
+        requestId,
+        message: GENERIC_SERVER_ERROR_MESSAGE,
       };
     }
 

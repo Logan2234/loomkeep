@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminPushController } from "./admin-push.controller";
@@ -24,7 +24,7 @@ describe("AdminPushController.sendAdminTestPush", () => {
 
     await expect(
       controller.sendAdminTestPush({ email: "nobody@example.com" }),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toThrow(AppException);
     expect(push.sendToUserDetailed).not.toHaveBeenCalled();
   });
 

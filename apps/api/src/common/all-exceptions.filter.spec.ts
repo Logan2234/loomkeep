@@ -97,6 +97,26 @@ describe("AllExceptionsFilter", () => {
     });
   });
 
+  it("keeps a 5xx AppException's code but still scrubs its message", () => {
+    const error = new AppException(
+      HttpStatus.BAD_GATEWAY,
+      ErrorCode.CatalogProviderUnavailable,
+      undefined,
+      "MusicBrainz request failed: getaddrinfo ENOTFOUND internal-proxy.local",
+    );
+    const { host } = makeHost("req-5");
+
+    filter.catch(error, host);
+
+    expect(reply.mock.calls[0][1]).toEqual({
+      statusCode: HttpStatus.BAD_GATEWAY,
+      code: ErrorCode.CatalogProviderUnavailable,
+      params: undefined,
+      requestId: "req-5",
+      message: "Internal server error",
+    });
+  });
+
   it("emits validation.failed with structured details for a ValidationException", () => {
     const error = new ValidationException([
       {

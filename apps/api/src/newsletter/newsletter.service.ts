@@ -1,8 +1,9 @@
-import type { NewsletterSendDto } from "@loomkeep/shared";
-import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import { ErrorCode, type NewsletterSendDto } from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { NewsletterSend } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -119,7 +120,12 @@ export class NewsletterService {
     });
 
     if (!user) {
-      throw new UnauthorizedException("Invalid unsubscribe link");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.NewsletterInvalidUnsubscribeLink,
+        undefined,
+        "Invalid unsubscribe link",
+      );
     }
 
     await this.prisma.user.update({

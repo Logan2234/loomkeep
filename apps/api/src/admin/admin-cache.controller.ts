@@ -10,8 +10,6 @@ import type {
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import {
-  BadRequestException,
-  ConflictException,
   Controller,
   Delete,
   Get,
@@ -446,14 +444,20 @@ export class AdminCacheController {
       );
 
     if (references > 0) {
-      throw new ConflictException(
-        "Référencé par au moins un compte — impossible de supprimer",
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.AdminCacheItemReferenced,
+        undefined,
+        "Referenced by at least one account — cannot delete",
       );
     }
 
     if ((await this.idsWithContent(cacheDomain, [id])).size > 0) {
-      throw new ConflictException(
-        "Des critiques, commentaires ou activités référencent encore cet item — impossible de supprimer",
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.AdminCacheItemHasContent,
+        undefined,
+        "Reviews, comments or activity still reference this item — cannot delete",
       );
     }
 
@@ -609,7 +613,12 @@ export class AdminCacheController {
 
   private domainOrThrow(domain: string): CacheDomain {
     if (!DOMAINS.includes(domain as CacheDomain)) {
-      throw new BadRequestException(`Unknown cache domain: ${domain}`);
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.InvalidParam,
+        { label: "cache domain", value: domain },
+        `Unknown cache domain: ${domain}`,
+      );
     }
 
     return domain as CacheDomain;

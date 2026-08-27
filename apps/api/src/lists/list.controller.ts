@@ -1,19 +1,19 @@
-import type {
-  ListDetailDto,
-  ListDto,
-  ListItemDto,
-  ListItemTargetType,
-  ListMemberDto,
-  ListMembershipDto,
-  MyListDto,
+import {
+  ErrorCode,
+  type ListDetailDto,
+  type ListDto,
+  type ListItemDto,
+  type ListItemTargetType,
+  type ListMemberDto,
+  type ListMembershipDto,
+  type MyListDto,
 } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
-  NotFoundException,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -21,9 +21,10 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
-  type JwtPayload,
   CurrentUser,
+  type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { AddListItemBody } from "./dto/add-list-item.dto";
 import { AddListMemberBody } from "./dto/add-list-member.dto";
@@ -60,7 +61,10 @@ export class ListController {
     @Query("targetId") targetId: string,
   ): Promise<ListMembershipDto> {
     if (!LIST_ITEM_TARGET_TYPES.includes(targetType) || !targetId) {
-      throw new BadRequestException("Unknown or missing target");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ListInvalidMembershipTarget,
+      );
     }
 
     return this.lists.membershipFor(
@@ -180,7 +184,8 @@ export class ListController {
     @Param("id") id: string,
   ): Promise<ListDetailDto> {
     const list = await this.lists.getForViewer(user.sub, id);
-    if (!list) throw new NotFoundException();
+    if (!list)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     return list;
   }
 }

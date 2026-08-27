@@ -1,13 +1,13 @@
 import type { PagedResult } from "@loomkeep/shared";
 import {
   Domain,
+  ErrorCode,
   GameDetailDto,
   GameEntryDto,
   GameSearchResponseDto,
   GameSource,
 } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -22,6 +22,7 @@ import {
 } from "@nestjs/common";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { AgeGateService } from "../users/age-gate.service";
@@ -54,7 +55,10 @@ export class GamesController {
     const query = q?.trim();
 
     if (!query) {
-      throw new BadRequestException("Query 'q' is required");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.CatalogSearchQueryRequired,
+      );
     }
 
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
