@@ -166,7 +166,12 @@ describe("AnilistProvider", () => {
             characters: {
               edges: [
                 {
-                  voiceActors: [{ name: { full: "Atsumi Tanezaki" } }],
+                  voiceActors: [
+                    {
+                      name: { full: "Atsumi Tanezaki" },
+                      image: { medium: "https://example.com/va.jpg" },
+                    },
+                  ],
                   node: { name: { full: "Frieren" }, image: { medium: null } },
                 },
               ],
@@ -219,9 +224,9 @@ describe("AnilistProvider", () => {
       expect(extras.cast).toEqual([
         {
           id: null,
-          name: "Frieren",
-          role: "Atsumi Tanezaki",
-          photoUrl: null,
+          name: "Atsumi Tanezaki",
+          role: "Frieren",
+          photoUrl: "https://example.com/va.jpg",
         },
       ]);
       // The manga source is filtered out; only the anime sequel remains.
@@ -245,6 +250,7 @@ describe("AnilistProvider", () => {
       const extras = await provider.getExtras("1");
 
       expect(extras.trailerVideoId).toBeNull();
+      expect(extras.cast[0].name).toBe("Unknown");
       expect(extras.cast[0].role).toBeNull();
       expect(extras.directors).toEqual([]);
       expect(extras.studios).toEqual([]);

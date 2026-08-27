@@ -88,7 +88,7 @@ const EXTRAS_QUERY = `
       }
       characters(sort: [ROLE, RELEVANCE], perPage: 12) {
         edges {
-          voiceActors(language: JAPANESE) { name { full } }
+          voiceActors(language: JAPANESE) { name { full } image { medium } }
           node { name { full } image { medium } }
         }
       }
@@ -162,7 +162,10 @@ interface AnilistExtras {
   };
   characters?: {
     edges?: {
-      voiceActors?: { name: { full?: string | null } }[];
+      voiceActors?: {
+        name: { full?: string | null };
+        image?: { medium?: string | null };
+      }[];
       node: {
         name: { full?: string | null };
         image?: { medium?: string | null };
@@ -240,17 +243,20 @@ export class AnilistProvider implements CatalogProvider {
     const media = data.Media;
     return {
       watchProviders: { flatrate: [], rent: [], buy: [], link: null },
-      cast: (media?.characters?.edges ?? []).map((e) => ({
-        // AniList characters have no person detail page here, so they are not
-        // clickable — id stays null (see CastMemberDto).
-        id: null,
-        name: e.node.name.full ?? "?",
-        // The Japanese voice actor stands in for TMDB's "character played by
-        // an actor" pairing — more useful here than the character's own
-        // MAIN/SUPPORTING role tag.
-        role: e.voiceActors?.[0]?.name.full ?? null,
-        photoUrl: e.node.image?.medium ?? null,
-      })),
+      cast: (media?.characters?.edges ?? []).map((e) => {
+        // Mirrors TMDB's actor→character pairing: the Japanese voice actor is
+        // the named/pictured person, the character is the role underneath.
+        // Falls back to the character alone when no voice actor is credited.
+        const va = e.voiceActors?.[0];
+        return {
+          // AniList characters/staff have no person detail page here, so
+          // they are not clickable — id stays null (see CastMemberDto).
+          id: null,
+          name: va?.name.full ?? e.node.name.full ?? "?",
+          role: va ? (e.node.name.full ?? null) : null,
+          photoUrl: va?.image?.medium ?? e.node.image?.medium ?? null,
+        };
+      }),
       similar: (media?.recommendations?.nodes ?? [])
         .map((n) => n.mediaRecommendation)
         .filter((m): m is AnilistMedia => m !== null)
