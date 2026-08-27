@@ -52,6 +52,29 @@
     ANIME: "Animé",
   };
 
+  const DIRECTOR_LABELS: Record<MediaType, string> = {
+    MOVIE: "Réalisé par",
+    SERIES: "Créé par",
+    ANIME: "Réalisé par",
+  };
+
+  // AniList `format`/`season` enum values, kept as their raw string when
+  // unmapped rather than hidden.
+  const FORMAT_LABELS: Record<string, string> = {
+    TV_SHORT: "Série courte",
+    MOVIE: "Film",
+    SPECIAL: "Spécial",
+    OVA: "OVA",
+    ONA: "ONA",
+    MUSIC: "Clip musical",
+  };
+  const SEASON_LABELS: Record<string, string> = {
+    WINTER: "Hiver",
+    SPRING: "Printemps",
+    SUMMER: "Été",
+    FALL: "Automne",
+  };
+
   // Effective-status badge: label + chip styling. Statuses are derived server
   // side; here we only present them.
   const STATUS_META: Record<EntryStatus, { label: string; cls: string }> = {
@@ -410,11 +433,16 @@
           <p class="mt-1 text-sm text-white/70 italic">{extras.tagline}</p>
         {/if}
         <p class="timecode mt-1.5 text-sm text-white/80">
-          {#if detail.year}{detail.year}{/if}
+          {#if detail.year}{detail.year}{#if extras?.season}
+              · {SEASON_LABELS[extras.season] ?? extras.season}
+            {/if}{/if}
           {#if detail.genres.length > 0}
             {#if detail.year}
               ·&nbsp;
             {/if}{detail.genres.slice(0, 3).join(", ")}
+          {/if}
+          {#if extras?.format && extras.format !== "TV"}
+            · {FORMAT_LABELS[extras.format] ?? extras.format}
           {/if}
           {#if !isMovie && detail.seasons.length > 0}
             · {detail.airingFinished ? "Diffusion terminée" : "En diffusion"}
@@ -482,20 +510,41 @@
       </div>
     {/if}
 
-    {#if (extras && extras.directors.length > 0) || detail.overview}
-      {@const hasDirectors = !!extras && extras.directors.length > 0}
+    {#if (extras && (extras.directors.length > 0 || extras.studios.length > 0)) || detail.overview}
+      {@const hasMeta =
+        !!extras && (extras.directors.length > 0 || extras.studios.length > 0)}
       <div class="mt-6 max-w-2xl">
-        {#if extras && hasDirectors}
+        {#if extras && extras.directors.length > 0}
           <p class="timecode text-xs">
-            {isMovie ? "Réalisé par" : "Créé par"}
+            {DIRECTOR_LABELS[detail.type]}
             <span class="text-fg font-semibold"
               >{extras.directors.join(", ")}</span>
           </p>
         {/if}
+        {#if extras && extras.studios.length > 0}
+          <p
+            class="timecode text-xs {extras.directors.length > 0
+              ? 'mt-1'
+              : ''}">
+            {extras.studios.length > 1 ? "Studios" : "Studio"}
+            <span class="text-fg font-semibold"
+              >{extras.studios.join(", ")}</span>
+          </p>
+        {/if}
         {#if detail.overview}
-          <p class="text-dim {hasDirectors ? 'mt-2' : ''}">
+          <p class="text-dim {hasMeta ? 'mt-2' : ''}">
             {detail.overview}
           </p>
+        {/if}
+        {#if extras && extras.tags.length > 0}
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            {#each extras.tags as tag (tag)}
+              <span
+                class="border-border text-dim rounded-full border px-2 py-0.5 text-[0.65rem]">
+                {tag}
+              </span>
+            {/each}
+          </div>
         {/if}
       </div>
     {/if}
@@ -633,6 +682,21 @@
       </section>
     {/if}
 
+    {#if extras && extras.externalLinks.length > 0}
+      <section class="mt-4 flex flex-wrap items-center gap-2">
+        <span class="timecode text-xs">Liens</span>
+        {#each extras.externalLinks as link (link.url)}
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold transition-colors">
+            {link.name} ↗
+          </a>
+        {/each}
+      </section>
+    {/if}
+
     <!-- Provider attribution: required for TMDB (logo + non-endorsement
          notice, less prominent than Loomkeep's own branding), courtesy for
          AniList. -->
@@ -669,6 +733,17 @@
       <CastSection
         cast={extras.cast}
         source={type === "ANIME" ? "anilist" : "tmdb"} />
+    {/if}
+
+    {#if extras && extras.relations.length > 0}
+      <RelatedCarousel
+        title="Œuvres liées"
+        items={extras.relations.map((s) => ({
+          key: `${s.source}:${s.sourceId}`,
+          href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
+          cover: s.posterUrl,
+          title: s.title,
+        }))} />
     {/if}
 
     {#if extras}

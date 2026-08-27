@@ -158,6 +158,22 @@ describe("MediaItemService.translationFor", () => {
     expect(tmdbProvider.getDetails).not.toHaveBeenCalled();
   });
 
+  it("skips the DB and provider entirely for AniList (no localization support)", async () => {
+    const { service, prisma, tmdbProvider } = makeService({});
+
+    const result = await service.translationFor(
+      "m1",
+      "ANILIST",
+      "154587",
+      "ANIME",
+      "fr",
+    );
+
+    expect(result).toBeNull();
+    expect(prisma.mediaItemTranslation.findUnique).not.toHaveBeenCalled();
+    expect(tmdbProvider.getDetails).not.toHaveBeenCalled();
+  });
+
   it("returns an existing translation without calling the provider", async () => {
     const existing = { title: "Le Titre", overview: "Résumé", genres: [] };
     const { service, tmdbProvider } = makeService({

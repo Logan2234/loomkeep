@@ -70,8 +70,38 @@ const EXTRAS_QUERY = `
   query ($id: Int) {
     Media(id: $id, type: ANIME) {
       averageScore
+      siteUrl
+      format
+      season
+      trailer { id site }
+      studios(sort: NAME) {
+        edges { isMain node { name } }
+      }
+      tags(sort: RANK_DESC) {
+        name
+        isMediaSpoiler
+      }
+      externalLinks { site url }
+      staff(sort: RELEVANCE, perPage: 25) {
+        edges { role node { name { full } } }
+      }
       characters(sort: [ROLE, RELEVANCE], perPage: 12) {
-        edges { role node { name { full } image { medium } } }
+        edges {
+          voiceActors(language: JAPANESE) { name { full } }
+          node { name { full } image { medium } }
+        }
+      }
+      relations {
+        edges {
+          node {
+            id
+            type
+            title { romaji english }
+            seasonYear
+            coverImage { large }
+            isAdult
+          }
+        }
       }
       recommendations(sort: RATING_DESC, perPage: 12) {
         nodes {
@@ -90,6 +120,8 @@ const EXTRAS_QUERY = `
 
 interface AnilistMedia {
   id: number;
+  /** AniList's own type ("ANIME" | "MANGA") — only set where needed to filter it (relations). */
+  type?: string;
   title: { romaji?: string | null; english?: string | null };
   seasonYear?: number | null;
   coverImage?: { extraLarge?: string | null; large?: string | null };
@@ -112,14 +144,32 @@ interface AnilistMedia {
 
 interface AnilistExtras {
   averageScore?: number | null;
-  characters?: {
+  siteUrl?: string | null;
+  format?: string | null;
+  season?: string | null;
+  trailer?: { id: string; site: string } | null;
+  studios?: {
+    edges?: { isMain?: boolean; node: { name: string } }[];
+  };
+  tags?: { name: string; isMediaSpoiler?: boolean }[];
+  externalLinks?: { site: string; url?: string | null }[];
+  staff?: {
     edges?: {
       role?: string | null;
+      node: { name: { full?: string | null } };
+    }[];
+  };
+  characters?: {
+    edges?: {
+      voiceActors?: { name: { full?: string | null } }[];
       node: {
         name: { full?: string | null };
         image?: { medium?: string | null };
       };
     }[];
+  };
+  relations?: {
+    edges?: { node: AnilistMedia | null }[];
   };
   recommendations?: {
     nodes?: { mediaRecommendation?: AnilistMedia | null }[];
@@ -194,7 +244,10 @@ export class AnilistProvider implements CatalogProvider {
         // clickable — id stays null (see CastMemberDto).
         id: null,
         name: e.node.name.full ?? "?",
-        role: e.role ?? null,
+        // The Japanese voice actor stands in for TMDB's "character played by
+        // an actor" pairing — more useful here than the character's own
+        // MAIN/SUPPORTING role tag.
+        role: e.voiceActors?.[0]?.name.full ?? null,
         photoUrl: e.node.image?.medium ?? null,
       })),
       similar: (media?.recommendations?.nodes ?? [])
@@ -206,19 +259,34 @@ export class AnilistProvider implements CatalogProvider {
             {
               source: "AniList",
               score: `${media.averageScore}%`,
-              url: `https://anilist.co/anime/${sourceId}`,
+              url: media.siteUrl ?? `https://anilist.co/anime/${sourceId}`,
             },
           ]
         : [],
       // AniList exposes no screenshot gallery beyond the poster/banner already
       // shown on the page.
       images: [],
-      // Not populated yet — AniList has no tagline/trailer, and staff/studio
-      // (its closest equivalent to a director) aren't wired up here.
+      // AniList has neither a tagline nor an official age certification.
       tagline: null,
-      directors: [],
-      trailerVideoId: null,
+      directors: anilistDirectors(media?.staff),
+      trailerVideoId: anilistTrailer(media?.trailer),
       contentRating: null,
+      studios: anilistStudios(media?.studios),
+      format: media?.format ?? null,
+      season: media?.season ?? null,
+      // Only anime-type relations: AniList also links manga/light-novel
+      // sources, which have no page of their own in Loomkeep.
+      relations: (media?.relations?.edges ?? [])
+        .map((e) => e.node)
+        .filter((n): n is AnilistMedia => n?.type === "ANIME")
+        .map((n) => this.toSummary(n)),
+      externalLinks: (media?.externalLinks ?? [])
+        .filter((l): l is { site: string; url: string } => !!l.url)
+        .map((l) => ({ name: l.site, url: l.url })),
+      tags: (media?.tags ?? [])
+        .filter((t) => !t.isMediaSpoiler)
+        .slice(0, 10)
+        .map((t) => t.name),
     };
   }
 
@@ -310,6 +378,24 @@ function stripHtml(text: string): string {
   } while (result !== previous);
 
   return result.trim();
+}
+
+/** Staff credited with the exact role "Director" (case-insensitive). */
+function anilistDirectors(staff: AnilistExtras["staff"]): string[] {
+  const names = (staff?.edges ?? [])
+    .filter((e) => e.role?.trim().toLowerCase() === "director")
+    .map((e) => e.node.name.full)
+    .filter((n): n is string => !!n);
+  return [...new Set(names)];
+}
+
+/** YouTube trailers only — the only site the lightbox knows how to embed. */
+function anilistTrailer(trailer: AnilistExtras["trailer"]): string | null {
+  return trailer?.site === "youtube" ? trailer.id : null;
+}
+
+function anilistStudios(studios: AnilistExtras["studios"]): string[] {
+  return (studios?.edges ?? []).filter((e) => e.isMain).map((e) => e.node.name);
 }
 
 function toIsoDate(date?: {
