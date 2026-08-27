@@ -47,7 +47,12 @@ export class AllExceptionsFilter {
       this.logger.warn({ err: exception, ...context }, "Request rejected");
     }
 
-    const body = this.buildBody(exception, status, request?.id);
+    // request.id is typed as string, but pino-http's own default id
+    // generator (used when nestjs-pino's LoggerModule wires it up) returns a
+    // raw number — coerce explicitly rather than trust the type.
+    const requestId =
+      request?.id !== undefined ? String(request.id) : undefined;
+    const body = this.buildBody(exception, status, requestId);
     this.httpAdapterHost.httpAdapter.reply(response, body, status);
   }
 

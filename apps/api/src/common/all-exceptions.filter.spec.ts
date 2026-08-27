@@ -10,7 +10,7 @@ import { ValidationException } from "./validation.exception";
 
 jest.mock("@sentry/node", () => ({ captureException: jest.fn() }));
 
-function makeHost(requestId = "req-1") {
+function makeHost(requestId: string | number = "req-1") {
   const request = { method: "GET", url: "/api/whatever", id: requestId };
   const response = {};
   const host = {
@@ -124,6 +124,16 @@ describe("AllExceptionsFilter", () => {
 
     expect(reply.mock.calls[0][1]).toEqual(
       expect.objectContaining({ requestId: "req-abc-123" }),
+    );
+  });
+
+  it("stringifies a numeric request id (pino-http's default genReqId returns a number, not Fastify's string)", () => {
+    const { host } = makeHost(26);
+
+    filter.catch(new NotFoundException(), host);
+
+    expect(reply.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ requestId: "26" }),
     );
   });
 });
