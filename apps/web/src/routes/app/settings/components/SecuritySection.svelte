@@ -8,6 +8,7 @@
     updateUsername,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -75,7 +76,7 @@
       openModal = null;
       toast.success("Nom d'utilisateur mis à jour.");
     } catch (err) {
-      usernameError = resolveApiError(err);
+      usernameError = fieldError(err, "username") ?? resolveApiError(err);
     } finally {
       usernameSaving = false;
     }
@@ -114,7 +115,10 @@
       });
       emailStep = "code";
     } catch (err) {
-      emailError = resolveApiError(err);
+      emailError =
+        fieldError(err, "newEmail") ??
+        fieldError(err, "currentPassword") ??
+        resolveApiError(err);
     } finally {
       emailSaving = false;
     }
@@ -128,7 +132,7 @@
       openModal = null;
       toast.success("Email mis à jour.");
     } catch (err) {
-      emailConfirmError = resolveApiError(err);
+      emailConfirmError = fieldError(err, "code") ?? resolveApiError(err);
     } finally {
       emailConfirming = false;
     }
@@ -202,7 +206,8 @@
       openModal = null;
       toast.success("Mot de passe mis à jour.");
     } catch (err) {
-      passwordError = resolveApiError(err);
+      passwordError =
+        fieldError(err, "currentPassword") ?? resolveApiError(err);
     } finally {
       passwordSaving = false;
     }

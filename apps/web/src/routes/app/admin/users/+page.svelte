@@ -20,6 +20,7 @@
     updateAdminUserRole,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
@@ -366,7 +367,11 @@
       selected = null;
       toast.success(`Compte de ${deletedName} supprimé.`);
     } catch (err) {
-      deleteError = resolveApiError(err);
+      deleteError =
+        fieldError(err, "reasonText") ??
+        fieldError(err, "legalBasis") ??
+        fieldError(err, "tosClause") ??
+        resolveApiError(err);
     } finally {
       deleting = false;
     }

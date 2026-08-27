@@ -5,6 +5,7 @@
   // anyone else ever sees it — it's account-level content filtering.
   import { updateMe } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -27,7 +28,7 @@
       }, 2500);
     } catch (err) {
       birthDateStatus = "error";
-      birthDateError = resolveApiError(err);
+      birthDateError = fieldError(err, "birthDate") ?? resolveApiError(err);
     }
   }
 

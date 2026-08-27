@@ -1,5 +1,7 @@
 <script lang="ts">
   import { createList, deleteList, updateList } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
@@ -34,10 +36,12 @@
   );
   let busy = $state(false);
   let confirmingDelete = $state(false);
+  let error = $state("");
 
   async function save() {
     if (!title.trim() || busy) return;
     busy = true;
+    error = "";
     try {
       const saved = list
         ? await updateList(list.id, {
@@ -54,6 +58,11 @@
           });
       onSaved(saved);
       onClose();
+    } catch (err) {
+      error =
+        fieldError(err, "title") ??
+        fieldError(err, "description") ??
+        resolveApiError(err);
     } finally {
       busy = false;
     }
@@ -62,10 +71,13 @@
   async function doDelete() {
     if (!list || busy) return;
     busy = true;
+    error = "";
     try {
       await deleteList(list.id);
       onDeleted?.();
       onClose();
+    } catch (err) {
+      error = resolveApiError(err);
     } finally {
       busy = false;
     }
@@ -160,6 +172,10 @@
           </button>
         </div>
       </div>
+    {/if}
+
+    {#if error}
+      <p class="text-danger text-sm">{error}</p>
     {/if}
 
     <div class="flex items-center gap-2 pt-1">

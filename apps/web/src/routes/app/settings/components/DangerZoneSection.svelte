@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { deleteAccount, getAccountDeletionSummary } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -62,7 +63,7 @@
       toast.success("Compte supprimé.");
       await goto("/login");
     } catch (err) {
-      deleteError = resolveApiError(err);
+      deleteError = fieldError(err, "currentPassword") ?? resolveApiError(err);
     } finally {
       deleteSaving = false;
     }

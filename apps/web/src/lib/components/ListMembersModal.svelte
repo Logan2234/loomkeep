@@ -5,6 +5,7 @@
     removeListMember,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { fieldError } from "$lib/api/validation-messages";
   import { m } from "$lib/paraglide/messages.js";
   import type { ListMemberDto } from "@loomkeep/shared";
   import Avatar from "./Avatar.svelte";
@@ -38,7 +39,7 @@
       members = [...members, member];
       username = "";
     } catch (err) {
-      error = resolveApiError(err);
+      error = fieldError(err, "username") ?? resolveApiError(err);
     } finally {
       busy = false;
     }
