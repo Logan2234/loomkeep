@@ -222,6 +222,13 @@ export interface AdminCacheItemDto {
   referenceCount: number;
   /** Past the 24h refresh TTL. */
   stale: boolean;
+  /**
+   * MEDIA only: locales this item's title/overview/genres are cached in —
+   * the base row's own locale first (always "en" today), then any
+   * MediaItemTranslation rows. Empty for other domains, which cache one
+   * language only.
+   */
+  cachedLocales: string[];
 }
 
 /** How the cache list is ordered. `stale` (default) surfaces the least-fresh first. */

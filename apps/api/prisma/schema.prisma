@@ -1243,9 +1243,34 @@ model MediaItem {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  externalIds MediaExternalId[]
-  seasons     Season[]
-  entries     LibraryEntry[]
+  externalIds  MediaExternalId[]
+  seasons      Season[]
+  entries      LibraryEntry[]
+  translations MediaItemTranslation[]
+}
+
+// Locale-specific title/overview/genres, for a locale other than whatever
+// language the base MediaItem's own fields happen to be in (in practice
+// always English, since providers are queried without a language until a
+// non-default locale is actually requested). Created on demand the first
+// time someone views the item in that locale; refreshed alongside the base
+// row on the same lastSyncedAt-driven cycle (see MediaItemService.refresh) —
+// no TTL of its own. Stats/CSV export deliberately keep reading the base
+// MediaItem's own genres, never this table, so genre aggregation isn't
+// fragmented by language ("Horror" vs "Horreur" counted separately).
+model MediaItemTranslation {
+  id          String   @id @default(cuid())
+  mediaItemId String
+  locale      String
+  title       String
+  overview    String?
+  genres      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaItemId, locale])
 }
 
 model MediaExternalId {

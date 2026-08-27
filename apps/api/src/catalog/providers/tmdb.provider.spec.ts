@@ -237,4 +237,209 @@ describe("TmdbProvider", () => {
       { id: "1396", type: MediaType.SERIES },
     ]);
   });
+
+  describe("getExtras", () => {
+    it("sends the requested language, defaulting to English", async () => {
+      let requestedUrl = "";
+      global.fetch = jest.fn((input: RequestInfo | URL) => {
+        requestedUrl = String(input);
+        return Promise.resolve(
+          new Response(JSON.stringify({ id: 27205 }), { status: 200 }),
+        );
+      }) as typeof fetch;
+
+      await provider.getExtras("27205", MediaType.MOVIE);
+      expect(decodeURIComponent(requestedUrl)).toContain("language=en-US");
+
+      await provider.getExtras("27205", MediaType.MOVIE, "fr");
+      expect(decodeURIComponent(requestedUrl)).toContain("language=fr-FR");
+    });
+
+    it("maps tagline and TMDB's own vote rating, linked to the TMDB page", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          tagline: "Your mind is the scene of the crime.",
+          vote_average: 8.369,
+          vote_count: 35000,
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.tagline).toBe("Your mind is the scene of the crime.");
+      expect(extras.ratings).toEqual([
+        {
+          source: "TMDB",
+          score: "8.4/10 (35000)",
+          url: "https://www.themoviedb.org/movie/27205",
+        },
+      ]);
+    });
+
+    it("omits the TMDB rating when the vote count is missing", async () => {
+      mockFetchByUrl({
+        "/movie/27205": { id: 27205, vote_average: 8.4 },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.ratings).toEqual([]);
+    });
+
+    it("maps a movie's director from credits.crew, deduped", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          credits: {
+            crew: [
+              { id: 1, name: "Christopher Nolan", job: "Director" },
+              { id: 1, name: "Christopher Nolan", job: "Director" },
+              { id: 2, name: "Someone Else", job: "Producer" },
+            ],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.directors).toEqual(["Christopher Nolan"]);
+    });
+
+    it("maps a series' creators from created_by, not credits.crew", async () => {
+      mockFetchByUrl({
+        "/tv/1396": {
+          id: 1396,
+          created_by: [{ id: 1, name: "Vince Gilligan" }],
+          credits: {
+            crew: [{ id: 2, name: "Someone Else", job: "Director" }],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("1396", MediaType.SERIES);
+
+      expect(extras.directors).toEqual(["Vince Gilligan"]);
+    });
+
+    it("picks the official trailer over other YouTube videos", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          videos: {
+            results: [
+              { site: "YouTube", type: "Teaser", key: "teaser1" },
+              {
+                site: "YouTube",
+                type: "Trailer",
+                key: "trailer1",
+                official: false,
+              },
+              {
+                site: "YouTube",
+                type: "Trailer",
+                key: "trailer2",
+                official: true,
+              },
+              { site: "Vimeo", type: "Trailer", key: "vimeo1" },
+            ],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.trailerVideoId).toBe("trailer2");
+    });
+
+    it("falls back to the first YouTube trailer when none is official", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          videos: {
+            results: [{ site: "YouTube", type: "Trailer", key: "trailer1" }],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.trailerVideoId).toBe("trailer1");
+    });
+
+    it("returns no trailer when TMDB lists none", async () => {
+      mockFetchByUrl({ "/movie/27205": { id: 27205 } });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.trailerVideoId).toBeNull();
+    });
+
+    it("maps a movie's certification, preferring FR over US", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          release_dates: {
+            results: [
+              {
+                iso_3166_1: "US",
+                release_dates: [{ certification: "PG-13" }],
+              },
+              { iso_3166_1: "FR", release_dates: [{ certification: "12" }] },
+            ],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.contentRating).toBe("12");
+    });
+
+    it("falls back to the US certification when there is no FR one", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          release_dates: {
+            results: [
+              {
+                iso_3166_1: "US",
+                release_dates: [{ certification: "PG-13" }],
+              },
+            ],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.contentRating).toBe("PG-13");
+    });
+
+    it("maps a series' certification from content_ratings", async () => {
+      mockFetchByUrl({
+        "/tv/1396": {
+          id: 1396,
+          content_ratings: {
+            results: [
+              { iso_3166_1: "US", rating: "TV-MA" },
+              { iso_3166_1: "FR", rating: "16" },
+            ],
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("1396", MediaType.SERIES);
+
+      expect(extras.contentRating).toBe("16");
+    });
+
+    it("returns no certification when TMDB reports none", async () => {
+      mockFetchByUrl({ "/movie/27205": { id: 27205 } });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+
+      expect(extras.contentRating).toBeNull();
+    });
+  });
 });

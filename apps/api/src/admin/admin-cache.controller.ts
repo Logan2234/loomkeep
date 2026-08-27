@@ -124,12 +124,19 @@ export class AdminCacheController {
           this.prisma.mediaItem.count({ where: staleWhere }),
           this.prisma.mediaItem.count({ where: ORPHAN_WHERE }),
         ]);
+        const locales = await this.translatedLocales(rows.map((r) => r.id));
         return {
           total,
           staleTotal,
           orphanTotal,
           items: rows.map((r) =>
-            this.toDto("MEDIA", r, r.posterUrl, r._count.entries),
+            this.toDto(
+              "MEDIA",
+              r,
+              r.posterUrl,
+              r._count.entries,
+              locales.get(r.id),
+            ),
           ),
         };
       }
@@ -213,16 +220,23 @@ export class AdminCacheController {
           item.canonicalSource,
           item.externalIds,
         );
-        return this.toDetailDto("MEDIA", item, item.posterUrl, {
-          externalIds: item.externalIds,
-          referenceCount: item._count.entries,
-          detailPath: `/app/media/${item.type.toLowerCase()}/${sourceId}`,
-          seasons: item.seasons.map((s) => ({
-            number: s.number,
-            title: s.title,
-            episodeCount: s._count.episodes,
-          })),
-        });
+        const locales = await this.translatedLocales([item.id]);
+        return this.toDetailDto(
+          "MEDIA",
+          item,
+          item.posterUrl,
+          {
+            externalIds: item.externalIds,
+            referenceCount: item._count.entries,
+            detailPath: `/app/media/${item.type.toLowerCase()}/${sourceId}`,
+            seasons: item.seasons.map((s) => ({
+              number: s.number,
+              title: s.title,
+              episodeCount: s._count.episodes,
+            })),
+          },
+          locales.get(item.id),
+        );
       }
 
       case "GAMES": {
@@ -469,6 +483,26 @@ export class AdminCacheController {
     ]);
   }
 
+  /**
+   * MEDIA items' cached locales, keyed by id — the base row's own language
+   * ("en") plus whatever MediaItemTranslation rows exist for each.
+   */
+  private async translatedLocales(
+    mediaItemIds: string[],
+  ): Promise<Map<string, string[]>> {
+    if (mediaItemIds.length === 0) return new Map();
+
+    const rows = await this.prisma.mediaItemTranslation.findMany({
+      where: { mediaItemId: { in: mediaItemIds } },
+      select: { mediaItemId: true, locale: true },
+    });
+
+    const byItem = new Map<string, string[]>();
+    for (const id of mediaItemIds) byItem.set(id, ["en"]);
+    for (const row of rows) byItem.get(row.mediaItemId)?.push(row.locale);
+    return byItem;
+  }
+
   private staleBefore(): Date {
     return new Date(Date.now() - STALE_TTL_MS);
   }
@@ -568,6 +602,7 @@ export class AdminCacheController {
     },
     coverUrl: string | null,
     referenceCount: number,
+    cachedLocales: string[] = [],
   ): AdminCacheItemDto {
     return {
       id: item.id,
@@ -579,6 +614,7 @@ export class AdminCacheController {
       createdAt: item.createdAt.toISOString(),
       referenceCount,
       stale: Date.now() - item.lastSyncedAt.getTime() >= STALE_TTL_MS,
+      cachedLocales,
     };
   }
 
@@ -599,9 +635,16 @@ export class AdminCacheController {
       detailPath: string;
       seasons: { number: number; title: string | null; episodeCount: number }[];
     },
+    cachedLocales: string[] = [],
   ): AdminCacheItemDetailDto {
     return {
-      ...this.toDto(domain, item, coverUrl, extra.referenceCount),
+      ...this.toDto(
+        domain,
+        item,
+        coverUrl,
+        extra.referenceCount,
+        cachedLocales,
+      ),
       updatedAt: item.updatedAt.toISOString(),
       externalIds: extra.externalIds.map((e) => ({
         source: e.source,

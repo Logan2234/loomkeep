@@ -2,6 +2,7 @@ import {
   CastDetailDto,
   CatalogSource,
   Domain,
+  Locale,
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
@@ -52,7 +53,7 @@ export class CatalogController {
       wantTmdb
         ? this.mediaItemService
             .providerFor(CatalogSource.TMDB)
-            .search(query.q, query.type, page)
+            .search(query.q, query.type, page, query.lang)
             .catch(() => [])
         : Promise.resolve([]),
       wantAnilist
@@ -104,12 +105,13 @@ export class CatalogController {
     @Param("source") sourceParam: string,
     @Param("id") id: string,
     @Query("type") type?: MediaType,
+    @Query("lang") lang?: string,
   ): Promise<MediaExtrasDto> {
     const source = parseSource(sourceParam);
     const resolvedType = resolveType(source, type);
     const extras = await this.mediaItemService
       .providerFor(source)
-      .getExtras(id, resolvedType);
+      .getExtras(id, resolvedType, safeLang(lang));
     const allowAdult = await this.ageGate.allowsAdultContent(user.sub);
     return {
       ...extras,
@@ -124,6 +126,11 @@ function parseSource(value: string): CatalogSource {
     [CatalogSource.TMDB, CatalogSource.ANILIST],
     "catalog source",
   );
+}
+
+/** `lang` unrecognized or absent → undefined, letting the provider pick its own default. */
+function safeLang(lang: string | undefined): string | undefined {
+  return Locale.includes(lang as Locale) ? lang : undefined;
 }
 
 /** AniList only serves anime; TMDB needs the caller to disambiguate movie vs series. */

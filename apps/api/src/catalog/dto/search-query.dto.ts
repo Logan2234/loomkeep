@@ -1,4 +1,4 @@
-import { MediaType } from "@loomkeep/shared";
+import { Locale, MediaType } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import {
   IsIn,
@@ -24,4 +24,10 @@ export class SearchQueryDto {
   @IsInt()
   @Min(1)
   page?: number;
+
+  // The client's active UI locale, so TMDB results come back in that
+  // language when it has one.
+  @IsOptional()
+  @IsIn(Locale)
+  lang?: string;
 }

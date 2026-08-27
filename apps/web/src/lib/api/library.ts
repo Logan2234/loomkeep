@@ -6,6 +6,7 @@ import type {
   PagedResult,
   UpsertLibraryEntryDto,
 } from "@loomkeep/shared";
+import { getLocale } from "../paraglide/runtime.js";
 import { request } from "./core";
 
 export interface ListLibraryFilters {
@@ -22,7 +23,7 @@ export interface ListLibraryFilters {
 export function listLibrary(
   filters: ListLibraryFilters = {},
 ): Promise<PagedResult<LibraryEntryDto>> {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ lang: getLocale() });
   if (filters.query) params.set("q", filters.query);
   if (filters.favorite) params.set("favorite", "true");
   for (const s of filters.statuses ?? []) params.append("status", s);
@@ -31,8 +32,7 @@ export function listLibrary(
   if (filters.order) params.set("order", filters.order);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/library${suffix}`);
+  return request(`/library?${params}`);
 }
 
 export function upsertLibraryEntry(

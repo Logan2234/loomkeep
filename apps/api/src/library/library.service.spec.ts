@@ -47,6 +47,7 @@ interface ServiceOpts {
   >;
   watchedByMediaItem?: Record<string, string[]>;
   lastWatchedByMediaItem?: Record<string, Date | null>;
+  translatedTitles?: Map<string, string>;
 }
 
 function makeService(
@@ -109,15 +110,20 @@ function makeService(
     ),
     setRating: jest.fn(),
   } as unknown as ReviewService;
+  const mediaItemService = {
+    translatedTitles: jest
+      .fn()
+      .mockResolvedValue(opts.translatedTitles ?? new Map()),
+  } as unknown as MediaItemService;
   const service = new LibraryService(
     prisma,
-    {} as MediaItemService,
+    mediaItemService,
     {} as AgeGateService,
     reviews,
     { emit: jest.fn() } as unknown as ActivityService,
     {} as EntitlementService,
   );
-  return { service, prisma };
+  return { service, prisma, mediaItemService };
 }
 
 describe("LibraryService.listEntries", () => {
@@ -212,6 +218,37 @@ describe("LibraryService.listEntries", () => {
       "active",
       "dormant",
     ]);
+  });
+
+  it("uses the translated title when one is cached, falling back to the base title otherwise", async () => {
+    const rows = [
+      makeRow({ id: "a", title: "Arrival" }),
+      makeRow({ id: "b", title: "Dune" }),
+    ];
+    const { service, mediaItemService } = makeService(rows, {
+      translatedTitles: new Map([["media-a", "Premier Contact"]]),
+    });
+
+    const result = await service.listEntries("user-1", { lang: "fr" });
+
+    expect(mediaItemService.translatedTitles).toHaveBeenCalledWith(
+      ["media-a", "media-b"],
+      "fr",
+    );
+    expect(result.items.find((i) => i.id === "a")?.mediaItem.title).toBe(
+      "Premier Contact",
+    );
+    expect(result.items.find((i) => i.id === "b")?.mediaItem.title).toBe(
+      "Dune",
+    );
+  });
+
+  it("doesn't look up translations when no locale is given", async () => {
+    const { service, mediaItemService } = makeService([makeRow({ id: "a" })]);
+
+    await service.listEntries("user-1", {});
+
+    expect(mediaItemService.translatedTitles).not.toHaveBeenCalled();
   });
 });
 

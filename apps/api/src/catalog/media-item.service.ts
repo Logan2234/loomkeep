@@ -19,6 +19,18 @@ import { TmdbProvider } from "./providers/tmdb.provider";
 // A cached media referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
+// The language the base MediaItem row's own title/overview/genres are always
+// fetched in (providers default to English when no `lang` is passed). Only
+// non-default locales ever get a MediaItemTranslation row — a translation
+// for the default locale would just duplicate the base row.
+const DEFAULT_LOCALE = "en";
+
+export interface MediaTranslation {
+  title: string;
+  overview: string | null;
+  genres: string[];
+}
+
 @Injectable()
 export class MediaItemService {
   private readonly logger = new Logger(MediaItemService.name);
@@ -100,23 +112,96 @@ export class MediaItemService {
       throw new Error(`Media ${mediaItemId} has no ${item.canonicalSource} id`);
     }
 
-    const details = await this.providerFor(
-      item.canonicalSource as CatalogSource,
-    ).getDetails(sourceId, item.type as MediaType);
-    return this.refresh(mediaItemId, item.type as MediaType, details);
+    const source = item.canonicalSource as CatalogSource;
+    // No `lang` here either — see the note in upsertFromSource().
+    const details = await this.providerFor(source).getDetails(
+      sourceId,
+      item.type as MediaType,
+    );
+    return this.refresh(
+      source,
+      sourceId,
+      mediaItemId,
+      item.type as MediaType,
+      details,
+    );
   }
 
   providerFor(source: CatalogSource): CatalogProvider {
     return source === "TMDB" ? this.tmdbProvider : this.anilistProvider;
   }
 
-  /** Live details straight from the provider — nothing is persisted. */
+  /**
+   * The title/overview/genres for `mediaItemId` in `locale`, when it's not
+   * the default (English) locale already carried by the base row. Fetches
+   * live and persists a new MediaItemTranslation row the first time this
+   * locale is requested for this item; every later call (including the next
+   * scheduled refresh — see `refresh()`) reuses/updates that same row.
+   */
+  async translationFor(
+    mediaItemId: string,
+    source: CatalogSource,
+    sourceId: string,
+    type: MediaType,
+    locale: string,
+  ): Promise<MediaTranslation | null> {
+    if (locale === DEFAULT_LOCALE) return null;
+
+    const existing = await this.prisma.mediaItemTranslation.findUnique({
+      where: { mediaItemId_locale: { mediaItemId, locale } },
+    });
+    if (existing) return existing;
+
+    const details = await this.providerFor(source).getDetails(
+      sourceId,
+      type,
+      locale,
+    );
+    return this.prisma.mediaItemTranslation.upsert({
+      where: { mediaItemId_locale: { mediaItemId, locale } },
+      update: this.translationFields(details),
+      create: { mediaItemId, locale, ...this.translationFields(details) },
+    });
+  }
+
+  /**
+   * Titles already cached in `locale` for the given media items, keyed by
+   * mediaItemId — a batched read for list views. Deliberately does NOT fetch
+   * live for items with no translation yet: a list can hold dozens of items,
+   * and lazily populating one requires a live provider call (see
+   * `translationFor`), which only happens from the detail page. A title
+   * missing here just means the caller falls back to the base (English)
+   * title until someone views that item's detail page in this locale.
+   */
+  async translatedTitles(
+    mediaItemIds: string[],
+    locale: string,
+  ): Promise<Map<string, string>> {
+    if (locale === DEFAULT_LOCALE || mediaItemIds.length === 0)
+      return new Map();
+
+    const rows = await this.prisma.mediaItemTranslation.findMany({
+      where: { mediaItemId: { in: mediaItemIds }, locale },
+      select: { mediaItemId: true, title: true },
+    });
+    return new Map(rows.map((r) => [r.mediaItemId, r.title]));
+  }
+
+  /**
+   * Live details straight from the provider — nothing is persisted.
+   * `lang`: the signed-in user's locale, when known.
+   */
   async getLiveDetails(
     source: CatalogSource,
     sourceId: string,
     type: MediaType,
+    lang?: string,
   ): Promise<MediaDetailsDto> {
-    const details = await this.providerFor(source).getDetails(sourceId, type);
+    const details = await this.providerFor(source).getDetails(
+      sourceId,
+      type,
+      lang,
+    );
     return {
       ...details.summary,
       overview: details.overview,
@@ -160,9 +245,14 @@ export class MediaItemService {
       return existingRef.mediaItem;
     }
 
+    // Deliberately no `lang` here: the base MediaItem row must always be
+    // DEFAULT_LOCALE ("en"), never a translation — translationFor()/
+    // getMediaDetail() only skip the MediaItemTranslation lookup for that
+    // locale because this call site guarantees it's what's actually stored.
+    // Passing `lang` through here would silently break that guarantee.
     const details = await this.providerFor(source).getDetails(sourceId, type);
     return existingRef
-      ? this.refresh(existingRef.mediaItemId, type, details)
+      ? this.refresh(source, sourceId, existingRef.mediaItemId, type, details)
       : this.createFresh(source, type, details);
   }
 
@@ -201,6 +291,8 @@ export class MediaItemService {
   }
 
   private async refresh(
+    source: CatalogSource,
+    sourceId: string,
     mediaItemId: string,
     type: MediaType,
     details: ProviderMediaDetails,
@@ -258,6 +350,32 @@ export class MediaItemService {
       }
     }
 
+    // Refresh whatever locale translations already exist, on this same
+    // cycle — see the note on MediaItemTranslation in the Prisma schema.
+    const translations = await this.prisma.mediaItemTranslation.findMany({
+      where: { mediaItemId },
+      select: { locale: true },
+    });
+
+    for (const { locale } of translations) {
+      try {
+        const localized = await this.providerFor(source).getDetails(
+          sourceId,
+          type,
+          locale,
+        );
+        await this.prisma.mediaItemTranslation.update({
+          where: { mediaItemId_locale: { mediaItemId, locale } },
+          data: this.translationFields(localized),
+        });
+      } catch (err) {
+        this.logger.error(
+          `Translation refresh failed for media ${mediaItemId} (${locale})`,
+          err,
+        );
+      }
+    }
+
     return item;
   }
 
@@ -273,6 +391,14 @@ export class MediaItemService {
       runtimeMin: details.runtimeMin,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
+    };
+  }
+
+  private translationFields(details: ProviderMediaDetails): MediaTranslation {
+    return {
+      title: details.summary.title,
+      overview: details.overview,
+      genres: details.genres,
     };
   }
 }
