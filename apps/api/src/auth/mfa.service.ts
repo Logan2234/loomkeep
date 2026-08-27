@@ -1,12 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
+import { AppException } from "../common/app.exception";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { BCRYPT_ROUNDS } from "./auth.service";
@@ -81,11 +79,17 @@ export class MfaService {
     });
 
     if (!user.mfaTotpSecretEnc) {
-      throw new BadRequestException("No TOTP setup in progress");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthMfaTotpNotInProgress,
+      );
     }
 
     if (!this.validateTotpCode(user.mfaTotpSecretEnc, code)) {
-      throw new BadRequestException("Invalid code");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthMfaInvalidCode,
+      );
     }
 
     await this.prisma.user.update({
@@ -102,7 +106,10 @@ export class MfaService {
     });
 
     if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      throw new UnauthorizedException("Current password is incorrect");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthCurrentPasswordIncorrect,
+      );
     }
 
     await this.prisma.user.update({

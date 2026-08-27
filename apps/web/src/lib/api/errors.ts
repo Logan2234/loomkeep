@@ -18,6 +18,29 @@ const MESSAGES = {
     m.apierr_auth_registration_disabled(),
   [ErrorCode.AuthAntiBotVerificationFailed]: () =>
     m.apierr_auth_anti_bot_verification_failed(),
+  [ErrorCode.AuthPasswordBreached]: () => m.apierr_auth_password_breached(),
+  [ErrorCode.AuthInvalidVerificationToken]: () =>
+    m.apierr_auth_invalid_verification_token(),
+  [ErrorCode.AuthAlreadyVerified]: () => m.apierr_auth_already_verified(),
+  [ErrorCode.AuthInvalidCredentials]: () => m.apierr_auth_invalid_credentials(),
+  [ErrorCode.AuthInvalidMfaChallenge]: () =>
+    m.apierr_auth_invalid_mfa_challenge(),
+  [ErrorCode.AuthMfaTooManyAttempts]: () =>
+    m.apierr_auth_mfa_too_many_attempts(),
+  [ErrorCode.AuthMfaInvalidCode]: () => m.apierr_auth_mfa_invalid_code(),
+  [ErrorCode.AuthInvalidRefreshToken]: () =>
+    m.apierr_auth_invalid_refresh_token(),
+  [ErrorCode.AuthInvalidResetToken]: () => m.apierr_auth_invalid_reset_token(),
+  [ErrorCode.AuthMfaTotpNotInProgress]: () =>
+    m.apierr_auth_mfa_totp_not_in_progress(),
+  [ErrorCode.AuthCurrentPasswordIncorrect]: () =>
+    m.apierr_auth_current_password_incorrect(),
+  [ErrorCode.AuthMissingAccessToken]: () =>
+    m.apierr_auth_missing_access_token(),
+  [ErrorCode.AuthInvalidAccessToken]: () =>
+    m.apierr_auth_invalid_access_token(),
+  [ErrorCode.AuthMissingExceptParam]: () =>
+    m.apierr_auth_missing_except_param(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
