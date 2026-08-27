@@ -1,5 +1,6 @@
 import {
   ActivityType,
+  ErrorCode,
   type ListDetailDto,
   type ListDto,
   type ListItemDto,
@@ -12,14 +13,9 @@ import {
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { NotificationService } from "../notifications/notification.service";
@@ -142,7 +138,10 @@ export class ListService {
     const { row: existing, role } = await this.canEdit(userId, id);
 
     if (dto.visibility && role !== "OWNER") {
-      throw new ForbiddenException("Only the owner can change visibility");
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ListOwnerOnlyVisibility,
+      );
     }
 
     let visibility = dto.visibility;
@@ -192,7 +191,8 @@ export class ListService {
     const { count } = await this.prisma.list.deleteMany({
       where: { id, userId },
     });
-    if (count === 0) throw new NotFoundException();
+    if (count === 0)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
   }
 
   /**
@@ -387,7 +387,13 @@ export class ListService {
         },
       },
     });
-    if (dup) throw new ConflictException("Already in this list");
+    if (dup)
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.ListItemAlreadyExists,
+        undefined,
+        "Already in this list",
+      );
 
     const last = await this.prisma.listItem.findFirst({
       where: { listId },
@@ -426,7 +432,8 @@ export class ListService {
     const { count } = await this.prisma.listItem.deleteMany({
       where: { id: itemId, listId },
     });
-    if (count === 0) throw new NotFoundException();
+    if (count === 0)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListItemNotFound);
   }
 
   /**
@@ -454,7 +461,10 @@ export class ListService {
       orderedItemIds.every((id) => existingIds.has(id));
 
     if (!sameSet) {
-      throw new BadRequestException(
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ListReorderMismatch,
+        undefined,
         "orderedItemIds must match the list's current items",
       );
     }
@@ -466,7 +476,10 @@ export class ListService {
       });
 
       if (count === 0) {
-        throw new ConflictException(
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.ListStale,
+          undefined,
           "This list changed since you loaded it — refresh and try again",
         );
       }
@@ -506,16 +519,27 @@ export class ListService {
       where: { username },
       select: AUTHOR_SELECT,
     });
-    if (!target) throw new NotFoundException("User not found");
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ListMemberUserNotFound,
+      );
 
     if (target.id === userId) {
-      throw new BadRequestException("You already own this list");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ListCannotAddSelf,
+      );
     }
 
     const existing = await this.prisma.listMember.findUnique({
       where: { listId_userId: { listId: id, userId: target.id } },
     });
-    if (existing) throw new ConflictException("Already an editor");
+    if (existing)
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.ListMemberAlreadyEditor,
+      );
 
     const row = await this.prisma.listMember.create({
       data: { listId: id, userId: target.id },
@@ -555,7 +579,11 @@ export class ListService {
     const { count } = await this.prisma.listMember.deleteMany({
       where: { listId: id, userId: memberUserId },
     });
-    if (count === 0) throw new NotFoundException();
+    if (count === 0)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ListMembershipNotFound,
+      );
   }
 
   /**
@@ -602,8 +630,10 @@ export class ListService {
 
   private async ownList(userId: string, id: string): Promise<ListRow> {
     const row = await this.prisma.list.findUnique({ where: { id } });
-    if (!row) throw new NotFoundException();
-    if (row.userId !== userId) throw new ForbiddenException();
+    if (!row)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
+    if (row.userId !== userId)
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
     return row;
   }
 
@@ -620,7 +650,8 @@ export class ListService {
     role: Extract<ListViewerRole, "OWNER" | "EDITOR">;
   }> {
     const row = await this.prisma.list.findUnique({ where: { id } });
-    if (!row) throw new NotFoundException();
+    if (!row)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
     if (row.userId === userId) return { row, role: "OWNER" };
 
     if (isSocialEnabled(this.config, this.flags)) {
@@ -630,7 +661,7 @@ export class ListService {
       if (member) return { row, role: "EDITOR" };
     }
 
-    throw new ForbiddenException();
+    throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
   }
 
   private async detail(

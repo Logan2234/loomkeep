@@ -1,5 +1,5 @@
 import { ErrorCode } from "@loomkeep/shared";
-import { ExecutionContext, ForbiddenException } from "@nestjs/common";
+import type { ExecutionContext } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -62,16 +62,16 @@ describe("AdminGuard", () => {
 
   it("rejects an account with the USER role", async () => {
     const { guard } = makeGuard("USER");
-    await expect(guard.canActivate(contextFor("user-1"))).rejects.toThrow(
-      ForbiddenException,
+    await expect(guard.canActivate(contextFor("user-1"))).rejects.toMatchObject(
+      { code: ErrorCode.AdminForbidden },
     );
   });
 
   it("rejects when the request carries no authenticated user", async () => {
     const { guard, prisma } = makeGuard("ADMIN", { mfaTotpEnabled: true });
-    await expect(guard.canActivate(contextFor())).rejects.toThrow(
-      ForbiddenException,
-    );
+    await expect(guard.canActivate(contextFor())).rejects.toMatchObject({
+      code: ErrorCode.AdminForbidden,
+    });
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 });

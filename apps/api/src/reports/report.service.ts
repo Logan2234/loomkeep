@@ -1,4 +1,5 @@
 import {
+  ErrorCode,
   NotificationType,
   REPORT_CATEGORY_MOTIFS,
   type ReportCategory,
@@ -8,12 +9,9 @@ import {
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { AppException } from "../common/app.exception";
 import { resolveWorkHref } from "../common/work-href.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -64,12 +62,20 @@ export class ReportService {
   ): Promise<void> {
     if (category === "OTHER") {
       if (!reason?.trim()) {
-        throw new BadRequestException(
-          "Un détail est requis pour la catégorie « Autre »",
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.ReportReasonRequired,
+          undefined,
+          "A detail is required for the 'Other' category",
         );
       }
     } else if (!motif || !REPORT_CATEGORY_MOTIFS[category].includes(motif)) {
-      throw new BadRequestException("Motif invalide pour cette catégorie");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ReportInvalidMotif,
+        undefined,
+        "Invalid motif for this category",
+      );
     }
 
     await this.prisma.report.create({
@@ -155,7 +161,8 @@ export class ReportService {
       where: { id, status: "PENDING" },
       data: { status, resolvedAt: new Date(), resolvedById: adminId },
     });
-    if (count === 0) throw new NotFoundException();
+    if (count === 0)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReportNotFound);
 
     await this.notifyReporterOfResolution(id, status);
   }

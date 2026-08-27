@@ -1,5 +1,5 @@
+import { ErrorCode } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { Public } from "../auth/decorators/public.decorator";
+import { AppException } from "../common/app.exception";
 import { NewsletterService } from "./newsletter.service";
 import { QuackbackWebhookGuard } from "./quackback-webhook.guard";
 
@@ -58,7 +59,10 @@ export class NewsletterWebhookController {
       this.logger.warn(
         `Unexpected changelog-published payload: ${JSON.stringify(body)}`,
       );
-      throw new BadRequestException(
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.NewsletterWebhookInvalidPayload,
+        undefined,
         "Unexpected changelog-published payload shape",
       );
     }

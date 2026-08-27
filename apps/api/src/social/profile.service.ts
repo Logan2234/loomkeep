@@ -1,5 +1,6 @@
 import {
   Domain,
+  ErrorCode,
   type ListVisibility,
   ProfileAccess,
   type ProfileActivityStatsDto,
@@ -9,7 +10,8 @@ import {
   type UserSummaryDto,
   VisibilityFacet,
 } from "@loomkeep/shared";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { PrismaService } from "../prisma/prisma.service";
 import { runtimeFor } from "../stats/video-stats.util";
 import {
@@ -66,14 +68,21 @@ export class ProfileService {
         avatarUpdatedAt: true,
       },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
 
     if (visibility === "hidden") {
       // GHOST or a block in either direction: the profile must not exist.
-      throw new NotFoundException();
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
     }
 
     if (visibility === "locked") {
@@ -195,11 +204,19 @@ export class ProfileService {
       where: { username },
       select: { id: true, profileAccess: true },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
-    if (visibility === "hidden") throw new NotFoundException();
+    if (visibility === "hidden")
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
     if (visibility === "locked") return null;
     return target;
   }
@@ -237,11 +254,19 @@ export class ProfileService {
       where: { username },
       select: { id: true, profileAccess: true },
     });
-    if (!target) throw new NotFoundException();
+    if (!target)
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
 
     const relation = await this.visibility.getRelation(viewerId, target);
     const visibility = resolveProfileVisibility(target.profileAccess, relation);
-    if (visibility === "hidden") throw new NotFoundException();
+    if (visibility === "hidden")
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.SocialUserNotFound,
+      );
     if (visibility === "locked") return null;
     return target.id;
   }

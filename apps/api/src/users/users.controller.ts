@@ -12,23 +12,18 @@ import {
   type WidgetTokenDto,
 } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Body,
-  ConflictException,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Headers,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
   Query,
   Res,
-  UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
@@ -89,7 +84,12 @@ export class UsersController {
     });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAccountNotFound,
+        undefined,
+        "User not found",
+      );
     }
 
     return toUserDto(user);
@@ -140,7 +140,10 @@ export class UsersController {
     });
 
     if (!user?.avatar || !user.avatarMimeType) {
-      throw new NotFoundException();
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAvatarNotFound,
+      );
     }
 
     reply
@@ -273,8 +276,11 @@ export class UsersController {
 
   private async requirePremium(userId: string): Promise<void> {
     if (!(await this.entitlements.isEffectivelyPremium(userId))) {
-      throw new ForbiddenException(
-        "Cette fonctionnalité est réservée au premium",
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.UserPremiumRequired,
+        undefined,
+        "This feature is reserved for premium accounts",
       );
     }
   }
@@ -314,7 +320,12 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ): Promise<UserDto> {
     if (dto.birthDate && new Date(dto.birthDate) > new Date()) {
-      throw new BadRequestException("Birth date cannot be in the future");
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserBirthDateFuture,
+        undefined,
+        "Birth date cannot be in the future",
+      );
     }
 
     const current = await this.prisma.user.findUnique({
@@ -327,7 +338,12 @@ export class UsersController {
     });
 
     if (!current) {
-      throw new NotFoundException("User not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAccountNotFound,
+        undefined,
+        "User not found",
+      );
     }
 
     // Proof-of-consent timestamp (GDPR art. 7(1)): only stamped on the
@@ -350,7 +366,10 @@ export class UsersController {
 
     if (nextAllowAdultContent && !isAdult(nextBirthDate)) {
       if (dto.allowAdultContent === true) {
-        throw new BadRequestException(
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.UserAdultContentRequiresBirthDate,
+          undefined,
           "Adult content requires a birth date confirming the account is 18+",
         );
       }
@@ -361,7 +380,10 @@ export class UsersController {
 
     // The "menu" launcher must always be reachable from the bottom bar.
     if (dto.mobileNavShortcuts && !dto.mobileNavShortcuts.includes("menu")) {
-      throw new BadRequestException(
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserMobileNavMissingMenu,
+        undefined,
         'mobileNavShortcuts must include the "menu" launcher',
       );
     }
@@ -406,7 +428,12 @@ export class UsersController {
     );
 
     if (dto.newEmail === current.email) {
-      throw new ConflictException("This is already your current email address");
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.UserEmailAlreadyCurrent,
+        undefined,
+        "This is already your current email address",
+      );
     }
 
     const existing = await this.prisma.user.findUnique({
@@ -415,7 +442,12 @@ export class UsersController {
     });
 
     if (existing && existing.id !== payload.sub) {
-      throw new ConflictException("An account with this email already exists");
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.UserEmailAlreadyExists,
+        undefined,
+        "An account with this email already exists",
+      );
     }
 
     const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
@@ -447,7 +479,12 @@ export class UsersController {
     });
 
     if (!current) {
-      throw new NotFoundException("User not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAccountNotFound,
+        undefined,
+        "User not found",
+      );
     }
 
     const stored = await this.prisma.emailChangeRequest.findFirst({
@@ -473,7 +510,12 @@ export class UsersController {
         }
       }
 
-      throw new UnauthorizedException("Invalid or expired code");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.UserEmailChangeCodeInvalid,
+        undefined,
+        "Invalid or expired code",
+      );
     }
 
     const [user] = await this.prisma.$transaction([
@@ -508,13 +550,19 @@ export class UsersController {
     );
 
     if (await bcrypt.compare(dto.newPassword, current.passwordHash)) {
-      throw new BadRequestException(
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserPasswordSameAsCurrent,
+        undefined,
         "New password must be different from the current password",
       );
     }
 
     if (await this.hibp.isPasswordPwned(dto.newPassword)) {
-      throw new BadRequestException(
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.AuthPasswordBreached,
+        undefined,
         "This password has appeared in a known data breach — please choose a different one",
       );
     }
@@ -655,7 +703,12 @@ export class UsersController {
     });
 
     if (existing && existing.id !== payload.sub) {
-      throw new ConflictException("This username is already taken");
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.UserUsernameTaken,
+        undefined,
+        "This username is already taken",
+      );
     }
 
     const user = await this.prisma.user.update({
@@ -677,11 +730,21 @@ export class UsersController {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAccountNotFound,
+        undefined,
+        "User not found",
+      );
     }
 
     if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
-      throw new UnauthorizedException("Current password is incorrect");
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthCurrentPasswordIncorrect,
+        undefined,
+        "Current password is incorrect",
+      );
     }
 
     return user;

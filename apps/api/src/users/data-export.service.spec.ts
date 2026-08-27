@@ -1,5 +1,5 @@
-import { NotFoundException } from "@nestjs/common";
 import type { User } from "@prisma/client";
+import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { DataExportService } from "./data-export.service";
 
@@ -74,13 +74,11 @@ function makeService() {
 }
 
 describe("DataExportService.buildExport", () => {
-  it("throws NotFoundException when the account doesn't exist", async () => {
+  it("throws AppException when the account doesn't exist", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.buildExport("nobody")).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(service.buildExport("nobody")).rejects.toThrow(AppException);
   });
 
   it("includes the game library, its external id and its replays", async () => {

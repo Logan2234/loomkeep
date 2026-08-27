@@ -1,4 +1,5 @@
 import {
+  ErrorCode,
   type MyReviewDto,
   type ReviewDto,
   type ReviewRevisionDto,
@@ -6,11 +7,11 @@ import {
   type ReviewVoteValue,
 } from "@loomkeep/shared";
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -20,6 +21,7 @@ import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
+import { AppException } from "../common/app.exception";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import {
   BatchDeleteReviewsBody,
@@ -31,7 +33,12 @@ import { ReviewService } from "./review.service";
 
 function parseTarget(type: string): ReviewTargetType {
   if (!(Object.values(ReviewTargetType) as string[]).includes(type)) {
-    throw new BadRequestException("Unknown review target type");
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.ReviewUnknownTargetType,
+      undefined,
+      "Unknown review target type",
+    );
   }
 
   return type as ReviewTargetType;

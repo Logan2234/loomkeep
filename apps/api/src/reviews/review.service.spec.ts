@@ -228,7 +228,7 @@ describe("ReviewService.vote", () => {
   it("rejects voting on your own review", async () => {
     const { svc } = makeForVoting({ reviewOwnerId: "author" });
     await expect(svc.vote("author", "r1", "UP" as never)).rejects.toThrow(
-      "Vous ne pouvez pas voter sur votre propre review",
+      "You cannot vote on your own review",
     );
   });
 

@@ -1,6 +1,7 @@
 import {
   ActivityType,
   type Domain,
+  ErrorCode,
   type MyReviewDto,
   type ReviewDto,
   type ReviewRevisionDto,
@@ -11,11 +12,8 @@ import {
   type UpsertReviewDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
@@ -152,11 +150,15 @@ export class ReviewService {
       where: { id: reviewId },
       select: { userId: true },
     });
-    if (!review) throw new NotFoundException();
+    if (!review)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
 
     if (review.userId === viewerId) {
-      throw new BadRequestException(
-        "Vous ne pouvez pas voter sur votre propre review",
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ReviewCannotVoteSelf,
+        undefined,
+        "You cannot vote on your own review",
       );
     }
 
@@ -289,7 +291,8 @@ export class ReviewService {
     const { count } = await this.prisma.review.deleteMany({
       where: { userId, targetType, targetId },
     });
-    if (count === 0) throw new NotFoundException();
+    if (count === 0)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
   }
 
   /** The edit history of the user's own review (newest first). */

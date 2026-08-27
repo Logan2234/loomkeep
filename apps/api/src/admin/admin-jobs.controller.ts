@@ -1,14 +1,14 @@
-import type { JobListResponseDto } from "@loomkeep/shared";
+import { ErrorCode, type JobListResponseDto } from "@loomkeep/shared";
 import {
   Controller,
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
 } from "@nestjs/common";
 import { MediaItemService } from "../catalog/media-item.service";
+import { AppException } from "../common/app.exception";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { NotificationService } from "../notifications/notification.service";
@@ -57,7 +57,7 @@ export class AdminJobsController {
         await this.inactiveAccount.scan();
         return;
       default:
-        throw new NotFoundException("Unknown job");
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUnknownJob);
     }
   }
 }

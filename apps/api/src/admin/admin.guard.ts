@@ -2,7 +2,6 @@ import { ErrorCode } from "@loomkeep/shared";
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   HttpStatus,
   Injectable,
 } from "@nestjs/common";
@@ -40,7 +39,7 @@ export class AdminGuard implements CanActivate {
     const userId = request.user?.sub;
 
     if (!userId) {
-      throw new ForbiddenException("Admin access required");
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.AdminForbidden);
     }
 
     const user = await this.prisma.user.findUnique({
@@ -49,7 +48,7 @@ export class AdminGuard implements CanActivate {
     });
 
     if (user?.role !== "ADMIN") {
-      throw new ForbiddenException("Admin access required");
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.AdminForbidden);
     }
 
     const mfaEnforced = this.config.get<string>("NODE_ENV") === "production";

@@ -1,9 +1,5 @@
 import { ErrorCode } from "@loomkeep/shared";
-import {
-  BadRequestException,
-  ConflictException,
-  UnauthorizedException,
-} from "@nestjs/common";
+
 import type { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { hashToken } from "../auth/auth.service";
@@ -81,7 +77,7 @@ describe("UsersController — email change", () => {
           newEmail: "new@example.com",
           currentPassword: "wrong",
         }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
     });
@@ -98,7 +94,7 @@ describe("UsersController — email change", () => {
           newEmail: "current@example.com",
           currentPassword: "correct-password",
         }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
     });
@@ -197,7 +193,7 @@ describe("UsersController — email change", () => {
 
       await expect(
         controller.confirmEmailChange(jwtPayload(userId), { code: "000000" }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.emailChangeRequest.update).toHaveBeenCalledWith({
         where: { id: "req-1" },
@@ -217,7 +213,7 @@ describe("UsersController — email change", () => {
 
       await expect(
         controller.confirmEmailChange(jwtPayload(userId), { code: "000000" }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
         where: { userId },
@@ -236,7 +232,7 @@ describe("UsersController — email change", () => {
 
       await expect(
         controller.confirmEmailChange(jwtPayload(userId), { code: "123456" }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(AppException);
 
       expect(prisma.user.update).not.toHaveBeenCalled();
     });
@@ -317,7 +313,7 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
       controller.updateMe(jwtPayload(userId), {
         mobileNavShortcuts: ["home", "search", "account"],
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(AppException);
 
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
@@ -551,7 +547,7 @@ describe("UsersController — changePassword", () => {
         currentPassword: "wrong",
         newPassword: "Brand-new-pass1",
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toBeInstanceOf(AppException);
 
     expect(hibp.isPasswordPwned).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
@@ -563,7 +559,7 @@ describe("UsersController — changePassword", () => {
         currentPassword: "correct-password",
         newPassword: "correct-password",
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(AppException);
 
     expect(hibp.isPasswordPwned).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
@@ -577,7 +573,7 @@ describe("UsersController — changePassword", () => {
         currentPassword: "correct-password",
         newPassword: "Brand-new-pass1",
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(AppException);
 
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
@@ -637,7 +633,7 @@ describe("UsersController — deleteAccount", () => {
       controller.deleteAccount(jwtPayload(userId), {
         currentPassword: "wrong",
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toBeInstanceOf(AppException);
 
     expect(accountDeletion.deleteAccount).not.toHaveBeenCalled();
   });

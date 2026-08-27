@@ -1,5 +1,6 @@
-import { Domain, ReviewTargetType } from "@loomkeep/shared";
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { toCsv } from "../common/csv.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -33,7 +34,10 @@ export class CsvExportService {
       case Domain.BOARDGAMES:
         // Planned domains with no backing tables yet — the UI keeps their CSV
         // buttons disabled, so this only guards a hand-crafted request.
-        throw new BadRequestException(
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.UserCsvExportUnavailable,
+          { domain },
           `CSV export is not available for the '${domain}' domain yet`,
         );
     }

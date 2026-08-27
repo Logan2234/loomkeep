@@ -1,7 +1,7 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
 import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { CommentService } from "../comments/comment.service";
+import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -203,7 +203,7 @@ describe("AdminUsersController.updateUserRole", () => {
         { role: "USER" },
         jwtPayload("user-1"),
       ),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(AppException);
   });
 
   it("allows an admin granting/revoking another account's role", async () => {
@@ -284,7 +284,7 @@ describe("AdminUsersController.sendPasswordResetLink", () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
     await expect(controller.sendPasswordResetLink("nobody")).rejects.toThrow(
-      NotFoundException,
+      AppException,
     );
   });
 
@@ -308,7 +308,7 @@ describe("AdminUsersController.deleteUser", () => {
 
     await expect(
       controller.deleteUser("user-1", jwtPayload("user-1"), REASON_BODY),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(AppException);
   });
 
   it("throws NotFoundException when no account matches", async () => {
@@ -317,7 +317,7 @@ describe("AdminUsersController.deleteUser", () => {
 
     await expect(
       controller.deleteUser("nobody", jwtPayload("user-1"), REASON_BODY),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toThrow(AppException);
   });
 
   it("records USER_DELETED and the DSA art. 17 moderation decision before deleting the account", async () => {

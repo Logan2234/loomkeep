@@ -1,7 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared";
 import type { CanActivate, ExecutionContext } from "@nestjs/common";
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { AppException } from "../common/app.exception";
 
 const MAX_CLOCK_SKEW_SECONDS = 300;
 
@@ -32,7 +34,10 @@ export class QuackbackWebhookGuard implements CanActivate {
       typeof timestampHeader !== "string" ||
       !request.rawBody
     ) {
-      throw new UnauthorizedException();
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.NewsletterWebhookUnauthorized,
+      );
     }
 
     const age = Math.abs(
@@ -40,7 +45,10 @@ export class QuackbackWebhookGuard implements CanActivate {
     );
 
     if (!Number.isFinite(age) || age > MAX_CLOCK_SKEW_SECONDS) {
-      throw new UnauthorizedException();
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.NewsletterWebhookUnauthorized,
+      );
     }
 
     const expected = createHmac("sha256", secret)
@@ -57,7 +65,10 @@ export class QuackbackWebhookGuard implements CanActivate {
       expectedBuf.length !== providedBuf.length ||
       !timingSafeEqual(expectedBuf, providedBuf)
     ) {
-      throw new UnauthorizedException();
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.NewsletterWebhookUnauthorized,
+      );
     }
 
     return true;

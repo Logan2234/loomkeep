@@ -6,14 +6,12 @@ import {
   type CommentReactionSummaryDto,
   type CommentTargetType,
   COMMENT_REACTION_NOTIFY_THRESHOLD,
+  ErrorCode,
   NotificationType,
   ProfileAccess,
 } from "@loomkeep/shared";
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import { resolveWorkHref } from "../common/work-href.util";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -203,7 +201,10 @@ export class CommentService {
       if (!found || found.parentId) {
         // Flat + one level: replying to a reply is rejected, the client
         // should have offered "reply" only on top-level comments.
-        throw new NotFoundException("Parent comment not found");
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.CommentParentNotFound,
+        );
       }
 
       parent = found;
@@ -251,8 +252,10 @@ export class CommentService {
     body: UpdateCommentBody,
   ): Promise<CommentDto> {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
-    if (!existing || existing.deletedAt) throw new NotFoundException();
-    if (existing.authorId !== authorId) throw new ForbiddenException();
+    if (!existing || existing.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    if (existing.authorId !== authorId)
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.CommentForbidden);
 
     const spoilerTag =
       existing.targetType === "MUSIC" ? false : !!body.spoilerTag;
@@ -281,8 +284,10 @@ export class CommentService {
   /** Soft-delete: clears the text and tombstones the row so replies stay attached. */
   async remove(authorId: string, id: string): Promise<void> {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
-    if (!existing || existing.deletedAt) throw new NotFoundException();
-    if (existing.authorId !== authorId) throw new ForbiddenException();
+    if (!existing || existing.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    if (existing.authorId !== authorId)
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.CommentForbidden);
 
     await this.softDelete(id, false);
   }
@@ -296,7 +301,8 @@ export class CommentService {
     id: string,
   ): Promise<{ authorId: string | null; text: string | null }> {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
-    if (!existing || existing.deletedAt) throw new NotFoundException();
+    if (!existing || existing.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
     await this.softDelete(id, true);
     return { authorId: existing.authorId, text: existing.text };
@@ -319,7 +325,8 @@ export class CommentService {
       where: { id: commentId },
       select: { id: true, deletedAt: true, authorId: true },
     });
-    if (!comment || comment.deletedAt) throw new NotFoundException();
+    if (!comment || comment.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
     await this.prisma.commentReaction.upsert({
       where: { commentId_userId: { commentId, userId } },

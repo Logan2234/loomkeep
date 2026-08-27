@@ -1,6 +1,6 @@
 import type { ExecutionContext } from "@nestjs/common";
-import { UnauthorizedException } from "@nestjs/common";
 import { createHmac } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import { QuackbackWebhookGuard } from "./quackback-webhook.guard";
 
 const SECRET = "test-signing-secret";
@@ -69,7 +69,7 @@ describe("QuackbackWebhookGuard", () => {
       },
       rawBody,
     );
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow(AppException);
   });
 
   it("rejects a signature for a different body (tampered payload)", () => {
@@ -81,7 +81,7 @@ describe("QuackbackWebhookGuard", () => {
       },
       rawBody,
     );
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow(AppException);
   });
 
   it("rejects a timestamp older than 5 minutes", () => {
@@ -94,12 +94,12 @@ describe("QuackbackWebhookGuard", () => {
       },
       rawBody,
     );
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow(AppException);
   });
 
   it("rejects a missing signature header", () => {
     const context = contextFor({ "x-quackback-timestamp": timestamp }, rawBody);
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow(AppException);
   });
 
   it("rejects when rawBody wasn't captured", () => {
@@ -111,7 +111,7 @@ describe("QuackbackWebhookGuard", () => {
       },
       undefined,
     );
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow(AppException);
   });
 
   it("fails closed when QUACKBACK_CHANGELOG_WEBHOOK_SECRET isn't configured", () => {
@@ -124,6 +124,6 @@ describe("QuackbackWebhookGuard", () => {
       },
       rawBody,
     );
-    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow(AppException);
   });
 });

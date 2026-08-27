@@ -92,7 +92,7 @@ describe("FollowService notifications", () => {
       viewerAccess: "GHOST",
     });
     await expect(service.follow("viewer", "alice")).rejects.toThrow(
-      "Un Figurant ne peut suivre que des profils publics",
+      "A Figurant can only follow public profiles",
     );
   });
 

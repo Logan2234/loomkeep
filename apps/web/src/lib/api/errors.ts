@@ -71,6 +71,97 @@ const MESSAGES = {
     m.apierr_catalog_provider_unavailable(),
   [ErrorCode.CatalogSearchQueryRequired]: () =>
     m.apierr_catalog_search_query_required(),
+  [ErrorCode.AdminCacheItemReferenced]: () =>
+    m.apierr_admin_cache_item_referenced(),
+  [ErrorCode.AdminCacheItemHasContent]: () =>
+    m.apierr_admin_cache_item_has_content(),
+  [ErrorCode.AdminEmailTemplateNotFound]: () =>
+    m.apierr_admin_email_template_not_found(),
+  [ErrorCode.AdminSmtpNotConfigured]: () =>
+    m.apierr_admin_smtp_not_configured(),
+  [ErrorCode.AdminUnknownJob]: () => m.apierr_admin_unknown_job(),
+  [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
+  [ErrorCode.AdminReportNotFound]: () => m.apierr_admin_report_not_found(),
+  [ErrorCode.AdminCannotSelfDemote]: () => m.apierr_admin_cannot_self_demote(),
+  [ErrorCode.AdminCannotSelfDelete]: () => m.apierr_admin_cannot_self_delete(),
+  [ErrorCode.AdminUserNotFound]: () => m.apierr_admin_user_not_found(),
+  [ErrorCode.AdminForbidden]: () => m.apierr_admin_forbidden(),
+  [ErrorCode.AdminBackupNotFound]: () => m.apierr_admin_backup_not_found(),
+  [ErrorCode.AdminMisconfigured]: () => m.apierr_admin_misconfigured(),
+  [ErrorCode.AdminUnauthorized]: () => m.apierr_admin_unauthorized(),
+  [ErrorCode.CommentUnknownTargetType]: () =>
+    m.apierr_comment_unknown_target_type(),
+  [ErrorCode.CommentParentNotFound]: () => m.apierr_comment_parent_not_found(),
+  [ErrorCode.CommentNotFound]: () => m.apierr_comment_not_found(),
+  [ErrorCode.CommentForbidden]: () => m.apierr_comment_forbidden(),
+  [ErrorCode.ListInvalidMembershipTarget]: () =>
+    m.apierr_lists_invalid_membership_target(),
+  [ErrorCode.ListNotFound]: () => m.apierr_lists_not_found(),
+  [ErrorCode.ListOwnerOnlyVisibility]: () =>
+    m.apierr_lists_owner_only_visibility(),
+  [ErrorCode.ListForbidden]: () => m.apierr_lists_forbidden(),
+  [ErrorCode.ListItemNotFound]: () => m.apierr_lists_item_not_found(),
+  [ErrorCode.ListItemAlreadyExists]: () => m.apierr_lists_item_already_exists(),
+  [ErrorCode.ListReorderMismatch]: () => m.apierr_lists_reorder_mismatch(),
+  [ErrorCode.ListStale]: () => m.apierr_lists_stale(),
+  [ErrorCode.ListMemberUserNotFound]: () =>
+    m.apierr_lists_member_user_not_found(),
+  [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),
+  [ErrorCode.ListMemberAlreadyEditor]: () =>
+    m.apierr_lists_member_already_editor(),
+  [ErrorCode.ListMembershipNotFound]: () =>
+    m.apierr_lists_membership_not_found(),
+  [ErrorCode.NewsletterWebhookInvalidPayload]: () =>
+    m.apierr_newsletter_webhook_invalid_payload(),
+  [ErrorCode.NewsletterInvalidUnsubscribeLink]: () =>
+    m.apierr_newsletter_invalid_unsubscribe_link(),
+  [ErrorCode.NewsletterWebhookUnauthorized]: () =>
+    m.apierr_newsletter_webhook_unauthorized(),
+  [ErrorCode.NotificationNotFound]: () => m.apierr_notifications_not_found(),
+  [ErrorCode.ReportReasonRequired]: () => m.apierr_reports_reason_required(),
+  [ErrorCode.ReportInvalidMotif]: () => m.apierr_reports_invalid_motif(),
+  [ErrorCode.ReportNotFound]: () => m.apierr_reports_not_found(),
+  [ErrorCode.ReviewUnknownTargetType]: () =>
+    m.apierr_reviews_unknown_target_type(),
+  [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),
+  [ErrorCode.ReviewCannotVoteSelf]: () => m.apierr_reviews_cannot_vote_self(),
+  [ErrorCode.SocialUserNotFound]: () => m.apierr_social_user_not_found(),
+  [ErrorCode.SocialCannotFollowSelf]: () =>
+    m.apierr_social_cannot_follow_self(),
+  [ErrorCode.SocialGhostPublicOnly]: () => m.apierr_social_ghost_public_only(),
+  [ErrorCode.SocialUnblockFirst]: () => m.apierr_social_unblock_first(),
+  [ErrorCode.SocialFollowRequestNotFound]: () =>
+    m.apierr_social_follow_request_not_found(),
+  [ErrorCode.SocialCannotBlockSelf]: () => m.apierr_social_cannot_block_self(),
+  [ErrorCode.SocialFeatureDisabled]: () => m.apierr_social_feature_disabled(),
+  [ErrorCode.StatsRatingOrDecadeOnly]: () =>
+    m.apierr_stats_rating_or_decade_only(),
+  [ErrorCode.StatsInvalidRating]: () => m.apierr_stats_invalid_rating(),
+  [ErrorCode.StatsInvalidDecade]: () => m.apierr_stats_invalid_decade(),
+  [ErrorCode.StatsRatingOrDecadeRequired]: () =>
+    m.apierr_stats_rating_or_decade_required(),
+  [ErrorCode.UserAdultContentDisabled]: () =>
+    m.apierr_user_adult_content_disabled(),
+  [ErrorCode.UserCsvExportUnavailable]: () =>
+    m.apierr_user_csv_export_unavailable(),
+  [ErrorCode.UserAccountNotFound]: () => m.apierr_user_account_not_found(),
+  [ErrorCode.UserDomainDisabled]: () => m.apierr_user_domain_disabled(),
+  [ErrorCode.UserAvatarNotFound]: () => m.apierr_user_avatar_not_found(),
+  [ErrorCode.UserPremiumRequired]: () => m.apierr_user_premium_required(),
+  [ErrorCode.UserBirthDateFuture]: () => m.apierr_user_birth_date_future(),
+  [ErrorCode.UserAdultContentRequiresBirthDate]: () =>
+    m.apierr_user_adult_content_requires_birth_date(),
+  [ErrorCode.UserMobileNavMissingMenu]: () =>
+    m.apierr_user_mobile_nav_missing_menu(),
+  [ErrorCode.UserEmailAlreadyCurrent]: () =>
+    m.apierr_user_email_already_current(),
+  [ErrorCode.UserEmailAlreadyExists]: () =>
+    m.apierr_user_email_already_exists(),
+  [ErrorCode.UserEmailChangeCodeInvalid]: () =>
+    m.apierr_user_email_change_code_invalid(),
+  [ErrorCode.UserPasswordSameAsCurrent]: () =>
+    m.apierr_user_password_same_as_current(),
+  [ErrorCode.UserUsernameTaken]: () => m.apierr_user_username_taken(),
   [ErrorCode.UserAvatarTooLarge]: () => m.apierr_user_avatar_too_large(),
   [ErrorCode.UserAvatarInvalidType]: () => m.apierr_user_avatar_invalid_type(),
   [ErrorCode.ImportSimklConnectionFailed]: () =>
