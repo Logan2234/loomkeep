@@ -38,8 +38,6 @@ interface ApiInfiniteQueryOptions<TPage, TPageParam, TItem> {
   keepPreviousData?: boolean;
   /** Don't fetch until this holds. Default `true`. */
   enabled?: boolean;
-  /** Default: the global 30s (queryClient.ts). */
-  staleTime?: number;
   /** Default: the global retry (queryClient.ts). */
   retry?: number;
   onError?: (err: unknown) => void;
@@ -64,7 +62,6 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
       getNextPageParam: opts.getNextPageParam,
       enabled: opts.enabled ?? true,
       placeholderData: opts.keepPreviousData ? keepPreviousData : undefined,
-      ...(opts.staleTime !== undefined ? { staleTime: opts.staleTime } : {}),
       ...(opts.retry !== undefined ? { retry: opts.retry } : {}),
     };
   });

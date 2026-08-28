@@ -66,7 +66,9 @@ themselves, so there is no `try/catch` left to forget.
    on a read. Those two now compute `error` with `resolveApiError()`
    directly (no `bannerMessage`/`coveredFields`).
 6. **Mutations are triggered with `mutate(args)`.**
-7. **Global `staleTime: 30_000`**; no separate `refetchOnFocus` option.
+7. **Global `staleTime: 30_000`**; no separate `refetchOnFocus` option, and,
+   per an amendment during Phase 3 (see §3), no per-call-site `staleTime`
+   override either — it's the one global value everywhere.
 8. **`keepPreviousData` defaults to `false`**, opt-in per screen.
 9. **Query keys come from a factory** (`lib/api/keys.ts`). `invalidates`
    accepts factory keys only — never bare domain strings.
@@ -114,23 +116,28 @@ const feed = createApiQuery(() => ({
 }));
 ```
 
-| Option             | Default         | Role                                                |
-| ------------------ | --------------- | --------------------------------------------------- |
-| `key`              | **required**    | factory key                                         |
-| `fetch`            | **required**    | the route function call                             |
-| `enabled`          | `true`          | don't fetch until a condition holds                 |
-| `staleTime`        | global `30_000` | also the refetch-on-focus knob                      |
-| `refetchInterval`  | `false`         | polling                                             |
-| `keepPreviousData` | `false`         | opt-in                                              |
-| `retry`            | global `1`      |                                                     |
-| `onError`          | —               | extra side effect; the error is resolved either way |
-| `errorToast`       | `false`         | surface the error as a toast                        |
+| Option             | Default      | Role                                                |
+| ------------------ | ------------ | --------------------------------------------------- |
+| `key`              | **required** | factory key                                         |
+| `fetch`            | **required** | the route function call                             |
+| `enabled`          | `true`       | don't fetch until a condition holds                 |
+| `refetchInterval`  | `false`      | polling                                             |
+| `keepPreviousData` | `false`      | opt-in                                              |
+| `retry`            | global `1`   |                                                     |
+| `onError`          | —            | extra side effect; the error is resolved either way |
+| `errorToast`       | `false`      | surface the error as a toast                        |
 
-**No `refetchOnFocus` option.** `staleTime` already is that knob:
-`Infinity` = never refetch on focus, `0` = refetch on every focus,
-`30_000` = refetch only if the data is older than 30s. `staleTime` counts
-from the last successful fetch, not from when focus was lost — practically
-identical for alt-tab behaviour.
+**No `refetchOnFocus` option, and no per-call-site `staleTime` override either
+— dropped mid-implementation** (2026-08-28, Logan, during Phase 3): the plan
+originally spec'd `staleTime` as an overridable option, defaulting to the
+global 30s. Nothing across Phases 1–3 ever overrode it, so the knob was
+speculative — the global `staleTime: 30_000` (queryClient.ts) is now the only
+one, non-overridable. It still doubles as the refetch-on-focus knob:
+`Infinity` = never refetch on focus, `0` = refetch on every focus, `30_000` =
+refetch only if the data is older than 30s. Counts from the last successful
+fetch, not from when focus was lost — practically identical for alt-tab
+behaviour. `retry` stays overridable — plausible even if unused so far (e.g.
+not retrying against a flaky external catalog search).
 
 `keepPreviousData` is `false` by default because it is only correct when a
 key change means _same subject, different view_ (filters, sort, page,

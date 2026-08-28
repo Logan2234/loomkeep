@@ -17,8 +17,6 @@ interface ApiQueryOptions<T> {
   fetch: () => Promise<T>;
   /** Don't fetch until this holds. Default `true`. */
   enabled?: boolean;
-  /** Also the refetch-on-focus knob. Default: the global 30s (queryClient.ts). */
-  staleTime?: number;
   /** Polling interval. Default `false`. */
   refetchInterval?: number | false;
   // Opt-in — only correct when a key change means "same subject, different
@@ -41,7 +39,6 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
       enabled: opts.enabled ?? true,
       refetchInterval: opts.refetchInterval ?? false,
       placeholderData: opts.keepPreviousData ? keepPreviousData : undefined,
-      ...(opts.staleTime !== undefined ? { staleTime: opts.staleTime } : {}),
       ...(opts.retry !== undefined ? { retry: opts.retry } : {}),
     };
   });
