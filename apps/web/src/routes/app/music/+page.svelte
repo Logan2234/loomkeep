@@ -20,7 +20,7 @@
 
   const SORTS = [
     { label: "Ajout récent", value: "added" },
-    { label: "Titre", value: "title" },
+    { label: m.common_title(), value: "title" },
     { label: "Artiste", value: "artist" },
     { label: "Note", value: "rating" },
     { label: "Écouté récemment", value: "finished" },

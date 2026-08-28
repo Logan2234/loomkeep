@@ -157,7 +157,7 @@
             <p class="text-danger -mt-2 text-xs">{identifierError}</p>
           {/if}
           <PasswordInput
-            placeholder={m.auth_login_password_placeholder()}
+            placeholder={m.common_password()}
             bind:value={password}
             required />
           <p class="text-dim -mt-2 text-right text-sm">
@@ -228,7 +228,7 @@
             type="button"
             class="btn-text btn-text-underline text-dim hover:text-fg self-center text-sm"
             onclick={backToCredentials}>
-            {m.auth_mfa_back_to_login()}
+            {m.common_back()}
           </button>
         </div>
       {:else}
@@ -247,7 +247,7 @@
             <span class="mb-1.5 block text-sm font-semibold">
               {selectedMethod === "recovery"
                 ? m.auth_mfa_recovery_code_label()
-                : m.auth_mfa_code_label()}
+                : m.common_code()}
             </span>
             <input
               type="text"
@@ -267,7 +267,7 @@
               onclick={resendEmailCode}
               disabled={resendCooldown > 0}>
               {resendCooldown > 0
-                ? m.auth_mfa_resend_cooldown({ seconds: resendCooldown })
+                ? m.common_resend_cooldown({ seconds: resendCooldown })
                 : m.auth_mfa_resend_email_code()}
             </button>
           {/if}
@@ -278,9 +278,7 @@
             type="submit"
             class="btn btn-primary"
             disabled={verifying || !codeInput.trim()}>
-            {verifying
-              ? m.auth_mfa_verify_action_loading()
-              : m.auth_mfa_verify_action()}
+            {verifying ? m.common_verifying() : m.common_verify()}
           </button>
 
           <div class="flex items-center justify-between text-sm">
@@ -291,7 +289,7 @@
                 availableMethods.filter((mth) => mth !== "recovery").length > 1
                   ? (step = "choose-method")
                   : backToCredentials()}>
-              {m.auth_mfa_back_to_login()}
+              {m.common_back()}
             </button>
             {#if selectedMethod === "recovery"}
               <button

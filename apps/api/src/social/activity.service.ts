@@ -2,11 +2,11 @@ import {
   type ActivityActorDto,
   type ActivityDomain,
   type ActivityEventDto,
-  type ActivityFeedDto,
   type ActivityLevel,
   type ActivityType,
   type Domain,
   type ListVisibility,
+  type PagedResult,
   type ProfileAccess,
   VisibilityFacet,
 } from "@loomkeep/shared";
@@ -55,7 +55,7 @@ type EventRow = {
   createdAt: Date;
 };
 
-const PAGE_SIZE = 30;
+export const FEED_PAGE_SIZE = 30;
 const PREVIEW_SIZE = 6;
 
 @Injectable()
@@ -106,19 +106,19 @@ export class ActivityService {
    */
   async homeFeed(
     viewerId: string,
-    cursor?: string,
-    limit = PAGE_SIZE,
-  ): Promise<ActivityFeedDto> {
+    page = 1,
+    limit = FEED_PAGE_SIZE,
+  ): Promise<PagedResult<ActivityEventDto>> {
     const followeeIds = await this.followeeIds(viewerId);
-    if (followeeIds.length === 0) return { events: [], nextCursor: null };
+    if (followeeIds.length === 0) return { items: [], hasMore: false };
 
     const rows = await this.prisma.activityEvent.findMany({
       where: {
         userId: { in: followeeIds },
         homeFeed: true,
-        ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
       },
       orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
       take: limit + 1,
     });
 
@@ -127,8 +127,8 @@ export class ActivityService {
 
   /** A short home-page teaser of the home feed. */
   async homePreview(viewerId: string): Promise<ActivityEventDto[]> {
-    const feed = await this.homeFeed(viewerId, undefined, PREVIEW_SIZE);
-    return feed.events;
+    const feed = await this.homeFeed(viewerId, 1, PREVIEW_SIZE);
+    return feed.items;
   }
 
   /**
@@ -139,15 +139,13 @@ export class ActivityService {
   async profileTimeline(
     viewerId: string,
     target: { id: string; profileAccess: string },
-    cursor?: string,
-    limit = PAGE_SIZE,
-  ): Promise<ActivityFeedDto> {
+    page = 1,
+    limit = FEED_PAGE_SIZE,
+  ): Promise<PagedResult<ActivityEventDto>> {
     const rows = await this.prisma.activityEvent.findMany({
-      where: {
-        userId: target.id,
-        ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
-      },
+      where: { userId: target.id },
       orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
       take: limit + 1,
     });
 
@@ -172,18 +170,15 @@ export class ActivityService {
     viewerId: string,
     rows: EventRow[],
     limit: number,
-  ): Promise<ActivityFeedDto> {
+  ): Promise<PagedResult<ActivityEventDto>> {
     const visible = await this.filterVisible(viewerId, rows);
     const hasMore = visible.length > limit;
     const page = visible.slice(0, limit);
-    const nextCursor = hasMore
-      ? page[page.length - 1].createdAt.toISOString()
-      : null;
 
     const actors = await this.actors(page.map((e) => e.userId));
     const aggregated = aggregate(page);
 
-    const events: ActivityEventDto[] = aggregated.map((e) => ({
+    const items: ActivityEventDto[] = aggregated.map((e) => ({
       id: e.id,
       type: e.type as ActivityType,
       domain: e.domain as ActivityDomain,
@@ -202,7 +197,7 @@ export class ActivityService {
       count: e.count,
     }));
 
-    return { events, nextCursor };
+    return { items, hasMore };
   }
 
   /**

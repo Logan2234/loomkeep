@@ -4,22 +4,23 @@
   import { keys } from "$lib/api/keys";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ActivityEventDto, ActivityFeedDto } from "@loomkeep/shared";
+  import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
   // A user's recent activity timeline, shown under their profile stats. Loads
   // its own data (visibility-filtered server-side) and hides when empty.
   let { username }: { username: string } = $props();
 
   const activity = createApiInfiniteQuery<
-    ActivityFeedDto,
-    string | undefined,
+    PagedResult<ActivityEventDto>,
+    number,
     ActivityEventDto
   >(() => ({
     key: keys.profile.activity(username),
-    fetch: (cursor) => getUserActivity(username, cursor),
-    getPageItems: (page) => page.events,
-    initialPageParam: undefined,
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    fetch: (page) => getUserActivity(username, page),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
   }));
 </script>
 

@@ -16,7 +16,8 @@
   import { formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
-    SecurityEventListResponseDto,
+    PagedResult,
+    SecurityEventDto,
     SecurityEventType,
   } from "@loomkeep/shared";
 
@@ -53,9 +54,9 @@
   let identifierFilter = $state("");
 
   const eventsQuery = createApiInfiniteQuery<
-    SecurityEventListResponseDto,
+    PagedResult<SecurityEventDto>,
     number,
-    SecurityEventListResponseDto["events"][number]
+    SecurityEventDto
   >(() => ({
     key: keys.admin.securityEvents({
       type: activeType,
@@ -67,10 +68,10 @@
         identifier: identifierFilter || undefined,
         page,
       }),
-    getPageItems: (page) => page.events,
+    getPageItems: (page) => page.items,
     initialPageParam: 1,
     getNextPageParam: (last, allPages) =>
-      last.events.length === 50 ? allPages.length + 1 : undefined,
+      last.hasMore ? allPages.length + 1 : undefined,
   }));
   const events = $derived(eventsQuery.data);
   const error = $derived(eventsQuery.error);
@@ -123,7 +124,7 @@
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="shield"
-    title="Sécurité"
+    title={m.common_security()}
     subtitle="Actions sensibles sur les comptes : création, suppression, changements d'identifiants, connexions échouées." />
 
   {#if summary}

@@ -49,7 +49,7 @@
           <form onsubmit={submit} class="flex flex-col gap-4">
             <input
               type="email"
-              placeholder={m.auth_register_email_placeholder()}
+              placeholder={m.common_email()}
               bind:value={email}
               required
               class="input" />
@@ -58,9 +58,7 @@
             {/if}
             {#if error}<p class="text-danger text-sm">{error}</p>{/if}
             <button type="submit" class="btn btn-primary" disabled={loading}>
-              {loading
-                ? m.auth_forgot_password_action_loading()
-                : m.auth_forgot_password_action()}
+              {loading ? m.common_sending() : m.auth_forgot_password_action()}
             </button>
           </form>
         {:else}

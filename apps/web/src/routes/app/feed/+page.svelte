@@ -7,18 +7,19 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ActivityEventDto, ActivityFeedDto } from "@loomkeep/shared";
+  import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
   const feed = createApiInfiniteQuery<
-    ActivityFeedDto,
-    string | undefined,
+    PagedResult<ActivityEventDto>,
+    number,
     ActivityEventDto
   >(() => ({
     key: keys.feed.all(),
-    fetch: (cursor) => getFeed(cursor),
-    getPageItems: (page) => page.events,
-    initialPageParam: undefined,
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    fetch: (page) => getFeed(page),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
   }));
 </script>
 

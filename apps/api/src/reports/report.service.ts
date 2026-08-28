@@ -2,10 +2,10 @@ import {
   ErrorCode,
   NotificationType,
   REPORT_CATEGORY_MOTIFS,
+  type PagedResult,
   type ReportCategory,
   type ReportDto,
   type ReportMotif,
-  type ReportPageDto,
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
@@ -20,7 +20,7 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 
-const PAGE_SIZE = 20;
+export const REPORT_PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
 
 const REPORTER_SELECT = {
@@ -118,20 +118,23 @@ export class ReportService {
     status: "PENDING" | "RESOLVED" | "DISMISSED" | undefined,
     page: number,
     reporterId?: string,
-  ): Promise<ReportPageDto> {
+    limit = REPORT_PAGE_SIZE,
+  ): Promise<PagedResult<ReportDto>> {
     const rows = await this.prisma.report.findMany({
       where: {
         ...(status ? { status } : {}),
         ...(reporterId ? { reporterId } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * limit,
+      take: limit + 1,
       include: { reporter: { select: REPORTER_SELECT } },
     });
+    const hasMore = rows.length > limit;
+    const pageRows = rows.slice(0, limit);
 
-    const reports = await Promise.all(
-      rows.map(async (r): Promise<ReportDto> => ({
+    const items = await Promise.all(
+      pageRows.map(async (r): Promise<ReportDto> => ({
         id: r.id,
         targetType: r.targetType as ReportTargetType,
         targetId: r.targetId,
@@ -149,7 +152,7 @@ export class ReportService {
       })),
     );
 
-    return { reports, page };
+    return { items, hasMore };
   }
 
   async resolve(

@@ -43,10 +43,3 @@ export interface ActivityEventDto {
    */
   count: number;
 }
-
-/** A page of activity events, newest first. */
-export interface ActivityFeedDto {
-  events: ActivityEventDto[];
-  /** Opaque cursor for the next page, or null when there are no more. */
-  nextCursor: string | null;
-}

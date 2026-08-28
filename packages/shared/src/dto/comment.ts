@@ -39,12 +39,6 @@ export interface CommentDto {
   replies: CommentDto[];
 }
 
-/** A page of top-level comments (with their replies attached), newest first. */
-export interface CommentPageDto {
-  comments: CommentDto[];
-  nextCursor: string | null;
-}
-
 /** Total comment count (top-level + replies) for a target, for a collapsed toggle badge. */
 export interface CommentCountDto {
   count: number;

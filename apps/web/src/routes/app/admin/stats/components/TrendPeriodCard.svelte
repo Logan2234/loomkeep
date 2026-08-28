@@ -28,10 +28,10 @@
   } = $props();
 
   const PERIODS: { value: TrendPeriod; label: string }[] = [
-    { value: "day", label: m.admin_trend_period_day() },
-    { value: "week", label: m.admin_trend_period_week() },
-    { value: "month", label: m.admin_trend_period_month() },
-    { value: "year", label: m.admin_trend_period_year() },
+    { value: "day", label: m.common_day() },
+    { value: "week", label: m.common_week() },
+    { value: "month", label: m.common_month() },
+    { value: "year", label: m.common_year() },
   ];
   const CADENCE: Record<TrendPeriod, string> = {
     day: m.admin_trend_cadence_day(),

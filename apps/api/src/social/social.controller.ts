@@ -1,7 +1,7 @@
 import type {
   ActivityEventDto,
-  ActivityFeedDto,
   FollowRequestDto,
+  PagedResult,
   RelationshipDto,
   SocialProfileDto,
   UserSummaryDto,
@@ -19,7 +19,8 @@ import {
   type JwtPayload,
   CurrentUser,
 } from "../auth/decorators/current-user.decorator";
-import { ActivityService } from "./activity.service";
+import { parsePageQuery } from "../common/pagination.util";
+import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
 import { FollowService } from "./follow.service";
 import { ProfileService } from "./profile.service";
 import { SocialFeatureGuard } from "./social-feature.guard";
@@ -38,9 +39,11 @@ export class SocialController {
   @Get("feed")
   feed(
     @CurrentUser() user: JwtPayload,
-    @Query("cursor") cursor?: string,
-  ): Promise<ActivityFeedDto> {
-    return this.activity.homeFeed(user.sub, cursor);
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<ActivityEventDto>> {
+    const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
+    return this.activity.homeFeed(user.sub, parsed.page, parsed.limit);
   }
 
   /** A short home-page teaser of the home feed. */
@@ -54,15 +57,22 @@ export class SocialController {
   async userActivity(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
-    @Query("cursor") cursor?: string,
-  ): Promise<ActivityFeedDto> {
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<ActivityEventDto>> {
     const target = await this.profiles.resolveTimelineTarget(
       user.sub,
       username,
     );
     // A locked (private, unfollowed) profile exposes no activity.
-    if (!target) return { events: [], nextCursor: null };
-    return this.activity.profileTimeline(user.sub, target, cursor);
+    if (!target) return { items: [], hasMore: false };
+    const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
+    return this.activity.profileTimeline(
+      user.sub,
+      target,
+      parsed.page,
+      parsed.limit,
+    );
   }
 
   @Get("requests")

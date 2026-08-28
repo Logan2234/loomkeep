@@ -4,6 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
+  import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
   import { scale } from "svelte/transition";
 
@@ -116,8 +117,12 @@
           type="button"
           aria-pressed={entry.favorite}
           disabled={saving}
-          title={entry.favorite ? "Retirer des favoris" : "Favori"}
-          aria-label={entry.favorite ? "Retirer des favoris" : "Favori"}
+          title={entry.favorite
+            ? m.common_favorite_remove()
+            : m.common_favorite_add()}
+          aria-label={entry.favorite
+            ? m.common_favorite_remove()
+            : m.common_favorite_add()}
           onclick={onToggleFavorite}
           class="btn-icon h-9 w-9 border {entry.favorite
             ? 'border-accent text-accent'

@@ -3,14 +3,15 @@
   // Semaine). Distinct from the trend-curve period pickers (bucket size) —
   // this narrows *which* entries count, not how a curve is bucketed.
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
+  import { m } from "$lib/paraglide/messages";
   import type { StatsWindow } from "@loomkeep/shared";
 
   const WINDOWS: StatsWindow[] = ["ALL", "YEAR", "MONTH", "WEEK"];
   const LABEL: Record<StatsWindow, string> = {
     ALL: "Tout",
-    YEAR: "Année",
-    MONTH: "Mois",
-    WEEK: "Semaine",
+    YEAR: m.common_year(),
+    MONTH: m.common_month(),
+    WEEK: m.common_week(),
   };
   // Narrows the "Activité dans le temps" weekday/hour curves only (rolling
   // window: last 7/30/365 days) — the overview and Jeux/Livres/Musique

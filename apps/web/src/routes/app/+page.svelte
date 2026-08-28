@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { env } from "$env/dynamic/public";
   import {
     getCalendar,
     listBooks,
@@ -19,7 +20,6 @@
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { IS_BETA } from "$lib/constants/app-status";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
@@ -569,7 +569,7 @@
               <span class="opacity-60">({appConfig.gitSha})</span>
             {/if}
           </a>
-          {#if IS_BETA}<BetaBadge />{/if}
+          {#if env.PUBLIC_IS_BETA}<BetaBadge />{/if}
         </p>
       </div>
     </div>

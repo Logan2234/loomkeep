@@ -110,7 +110,7 @@
       await disableTotp({ currentPassword: disablePasswordInput });
       status = status ? { ...status, totpEnabled: false } : status;
       openModal = null;
-      toast.success(m.settings_mfa_totp_disable_action());
+      toast.success(m.common_disable());
     } catch (err) {
       disableError = fieldError(err, "currentPassword") ?? resolveApiError(err);
     } finally {
@@ -279,7 +279,7 @@
           class="btn btn-primary w-full"
           disabled={!totpQrSvg}
           onclick={() => (totpStep = "confirm")}>
-          {m.settings_mfa_totp_next()}
+          {m.common_next()}
         </button>
       </div>
     {:else}
@@ -292,7 +292,7 @@
         <p class="text-sm">{m.settings_mfa_totp_confirm_hint()}</p>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
-            {m.settings_mfa_totp_code_label()}
+            {m.common_code()}
           </span>
           <input
             type="text"
@@ -316,9 +316,7 @@
             type="submit"
             class="btn btn-primary"
             disabled={totpBusy || totpCodeInput.trim().length !== 6}>
-            {totpBusy
-              ? m.common_save_loading()
-              : m.settings_mfa_totp_confirm_action()}
+            {totpBusy ? m.common_save_loading() : m.common_enable()}
           </button>
         </div>
       </form>
@@ -354,9 +352,7 @@
           type="submit"
           class="btn btn-danger"
           disabled={disableBusy || !disablePasswordInput}>
-          {disableBusy
-            ? m.common_save_loading()
-            : m.settings_mfa_totp_disable_action()}
+          {disableBusy ? m.common_save_loading() : m.common_disable()}
         </button>
       </div>
     </form>
@@ -389,7 +385,7 @@
       <button class="btn btn-ghost w-full" onclick={copyAllCodes}>
         <Icon name={recoveryCopied ? "check" : "link"} class="h-4 w-4" />
         {recoveryCopied
-          ? m.settings_mfa_recovery_copied()
+          ? m.common_copied()
           : m.settings_mfa_recovery_copy_all()}
       </button>
       <button class="btn btn-primary w-full" onclick={closeModal}>

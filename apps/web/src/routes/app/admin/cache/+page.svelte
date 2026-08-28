@@ -31,7 +31,7 @@
   const SORT_OPTIONS: { label: string; value: AdminCacheSort }[] = [
     { label: "Obsolètes d'abord", value: "stale" },
     { label: "Récents", value: "recent" },
-    { label: "Titre", value: "title" },
+    { label: m.common_title(), value: "title" },
   ];
 
   const domainIcon = (d: Domain): IconName => DOMAINS[d]?.icon ?? "tv";
@@ -73,10 +73,8 @@
       }),
     getPageItems: (page) => page.items,
     initialPageParam: 1,
-    getNextPageParam: (last, allPages) => {
-      const loaded = allPages.reduce((n, p) => n + p.items.length, 0);
-      return loaded < last.total ? allPages.length + 1 : undefined;
-    },
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
   }));
 
   const items = $derived(cacheQuery.data);
@@ -485,7 +483,7 @@
                 <li
                   class="border-border flex items-center justify-between gap-3 rounded-lg border px-3 py-1.5">
                   <span class="text-fg truncate">
-                    {s.title ?? `Saison ${s.number}`}
+                    {s.title ?? `${m.common_season()} ${s.number}`}
                   </span>
                   <span class="timecode shrink-0 text-xs">
                     {s.episodeCount} ép.

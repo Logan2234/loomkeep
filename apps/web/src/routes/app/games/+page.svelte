@@ -20,7 +20,7 @@
 
   const SORTS = [
     { label: "Ajout récent", value: "added" },
-    { label: "Titre", value: "title" },
+    { label: m.common_title(), value: "title" },
     { label: "Note", value: "rating" },
     { label: "Temps de jeu", value: "playtime" },
     { label: "Terminé récemment", value: "finished" },

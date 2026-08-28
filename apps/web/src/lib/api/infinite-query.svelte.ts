@@ -57,7 +57,7 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
     const opts = optionsFn();
     return {
       queryKey: opts.key,
-      queryFn: ({ pageParam }) => opts.fetch(pageParam),
+      queryFn: ({ pageParam }) => opts.fetch(pageParam as TPageParam),
       initialPageParam: opts.initialPageParam,
       getNextPageParam: opts.getNextPageParam,
       enabled: opts.enabled ?? true,

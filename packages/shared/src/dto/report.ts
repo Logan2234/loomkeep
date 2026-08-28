@@ -33,9 +33,3 @@ export interface ReportDto {
   /** Null if the underlying target was since deleted. */
   target: ReportTargetSummaryDto | null;
 }
-
-/** A page of reports for the admin queue, newest first. */
-export interface ReportPageDto {
-  reports: ReportDto[];
-  page: number;
-}

@@ -64,12 +64,15 @@ export class CatalogController {
     // Each source returns its own popularity order, but concatenating movies +
     // series + anime buries the searched title. Re-rank by title relevance so
     // the actual match floats to the top (ties keep the source order).
-    return {
-      results: filterAdultContent(
-        rankBySearchRelevance([...anilistResults, ...tmdbResults], query.q),
-        allowAdult,
-      ),
-    };
+    const items = filterAdultContent(
+      rankBySearchRelevance([...anilistResults, ...tmdbResults], query.q),
+      allowAdult,
+    );
+
+    // Neither provider reports a total, so "more" just means this page
+    // wasn't empty — matches how a provider's own pagination ends (an empty
+    // page), same heuristic the client used before this moved server-side.
+    return { items, hasMore: items.length > 0 };
   }
 
   /** Live detail of a cast entity (TMDB person, or AniList staff) for the media-page modal. */

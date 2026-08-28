@@ -122,7 +122,7 @@
     <button
       onclick={reset}
       class="border-border text-dim hover:text-fg ml-1 rounded-md border px-2 py-1 text-xs">
-      {m.mermaid_reset()}
+      {m.common_reset()}
     </button>
   </div>
   <div

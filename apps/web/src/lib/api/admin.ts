@@ -9,7 +9,7 @@ import type {
   AdminCacheResyncStaleResultDto,
   AdminCacheSort,
   AdminCatalogueSectionDto,
-  AdminImportRunListResponseDto,
+  AdminImportRunDto,
   AdminImportSummaryDto,
   AdminNewAccountsTrendDto,
   AdminOverviewDto,
@@ -23,9 +23,9 @@ import type {
   AdminSocialSectionDto,
   AdminSystemSectionDto,
   AdminUserCommentDto,
+  AdminUserDto,
   AdminUserFilter,
   AdminUserLibraryStatsDto,
-  AdminUserListResponseDto,
   AdminUserOptionDto,
   AdminUserPlanDto,
   AdminUserRoleDto,
@@ -38,12 +38,12 @@ import type {
   MyListDto,
   MyReviewDto,
   NewsletterSendDto,
+  PagedResult,
   Plan,
   ReportDto,
-  ReportPageDto,
   Role,
   SchemaGraphResponseDto,
-  SecurityEventListResponseDto,
+  SecurityEventDto,
   SecurityEventType,
   SendAdminBroadcastPushRequestDto,
   SendAdminTestPushRequestDto,
@@ -173,14 +173,16 @@ export function getAdminUsers(
     search?: string;
     filter?: AdminUserFilter;
     page?: number;
+    limit?: number;
   } = {},
-): Promise<AdminUserListResponseDto> {
+): Promise<PagedResult<AdminUserDto>> {
   const params = new URLSearchParams();
   if (filters.search) params.set("search", filters.search);
   if (filters.filter && filters.filter !== "all")
     params.set("filter", filters.filter);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/users${suffix}`);
 }
@@ -337,6 +339,7 @@ export function getAdminCache(filters: {
   sort?: AdminCacheSort;
   orphans?: boolean;
   page?: number;
+  limit?: number;
 }): Promise<AdminCacheListResponseDto> {
   const params = new URLSearchParams({ domain: filters.domain });
   if (filters.search) params.set("search", filters.search);
@@ -344,6 +347,7 @@ export function getAdminCache(filters: {
   if (filters.orphans) params.set("orphans", "true");
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   return request(`/admin/cache?${params}`);
 }
 
@@ -392,14 +396,16 @@ export function getAdminImportRuns(
     status?: JobStatus;
     userId?: string;
     page?: number;
+    limit?: number;
   } = {},
-): Promise<AdminImportRunListResponseDto> {
+): Promise<PagedResult<AdminImportRunDto>> {
   const params = new URLSearchParams();
   if (filters.source) params.set("source", filters.source);
   if (filters.status) params.set("status", filters.status);
   if (filters.userId) params.set("userId", filters.userId);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/imports${suffix}`);
 }
@@ -420,13 +426,15 @@ export function getAdminSecurityEvents(
     type?: SecurityEventType;
     identifier?: string;
     page?: number;
+    limit?: number;
   } = {},
-): Promise<SecurityEventListResponseDto> {
+): Promise<PagedResult<SecurityEventDto>> {
   const params = new URLSearchParams();
   if (filters.type) params.set("type", filters.type);
   if (filters.identifier) params.set("identifier", filters.identifier);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/security${suffix}`);
 }
@@ -436,13 +444,15 @@ export function getAdminReports(
   filters: {
     status?: string;
     page?: number;
+    limit?: number;
     reporterId?: string;
   } = {},
-): Promise<ReportPageDto> {
+): Promise<PagedResult<ReportDto>> {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.reporterId) params.set("reporterId", filters.reporterId);
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/reports${suffix}`);

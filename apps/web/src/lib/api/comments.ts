@@ -2,9 +2,9 @@ import type {
   CommentCountDto,
   CommentDto,
   CommentEmote,
-  CommentPageDto,
   CommentTargetType,
   CreateCommentDto,
+  PagedResult,
   ReportCategory,
   ReportMotif,
   UpdateCommentDto,
@@ -23,11 +23,11 @@ export function getCommentCount(
 export function getComments(
   targetType: CommentTargetType,
   targetId: string,
-  cursor?: string,
-): Promise<CommentPageDto> {
-  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  page = 1,
+): Promise<PagedResult<CommentDto>> {
+  const params = new URLSearchParams({ page: String(page) });
   return request(
-    `/comments/${targetType}/${encodeURIComponent(targetId)}${suffix}`,
+    `/comments/${targetType}/${encodeURIComponent(targetId)}?${params}`,
   );
 }
 

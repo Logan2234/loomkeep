@@ -1,8 +1,19 @@
 /** A page of results, plus enough metadata to drive infinite scroll. */
 export interface PagedResult<T> {
   items: T[];
-  /** Total items matching the current filters, across all pages. */
-  total: number;
   /** Whether a further page exists beyond this one. */
   hasMore: boolean;
+  /**
+   * Total items matching the current filters, across all pages — omitted
+   * where it isn't cheaply available (e.g. an external catalog search).
+   */
+  total?: number;
+}
+
+/** Query params every page-paginated `GET` list endpoint accepts. */
+export interface PageQuery {
+  /** 1-indexed. Default 1. */
+  page?: number;
+  /** Default is endpoint-specific (its previous fixed page size). */
+  limit?: number;
 }

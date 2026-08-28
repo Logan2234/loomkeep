@@ -94,6 +94,7 @@ export interface ListEntriesFilters {
   sort?: string;
   order?: "asc" | "desc";
   page?: number;
+  limit?: number;
   /** The signed-in user's locale, when known — see `MediaItemService.translatedTitles`. */
   lang?: string;
 }
@@ -274,11 +275,13 @@ export class LibraryService {
     });
 
     const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const start = (page - 1) * PAGE_SIZE;
+    const limit =
+      filters.limit && filters.limit > 0 ? filters.limit : PAGE_SIZE;
+    const start = (page - 1) * limit;
     return {
-      items: filtered.slice(start, start + PAGE_SIZE),
+      items: filtered.slice(start, start + limit),
       total: filtered.length,
-      hasMore: filtered.length > page * PAGE_SIZE,
+      hasMore: filtered.length > page * limit,
     };
   }
 

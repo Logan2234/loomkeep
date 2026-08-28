@@ -104,9 +104,9 @@
             onclick={resend}
             disabled={status === "loading" || cooldown > 0}>
             {#if status === "loading"}
-              Envoi…
+              {m.common_sending()}
             {:else if cooldown > 0}
-              Renvoyer dans {cooldown}s
+              {m.common_resend_cooldown({ seconds: cooldown })}
             {:else}
               Renvoyer l'email
             {/if}

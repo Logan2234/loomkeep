@@ -45,12 +45,9 @@
   import type {
     AdminUserDto,
     AdminUserFilter,
-    AdminUserListResponseDto,
     ModerationLegalBasis,
+    PagedResult,
   } from "@loomkeep/shared";
-
-  // Must match PAGE_SIZE in apps/api/src/admin/admin-users.controller.ts.
-  const PAGE_SIZE = 50;
 
   // Pre-filled from `?q=` so links like /admin/users?q=<email> land pre-filtered
   // (used by the imports page's "Voir le compte →"). `query` is the raw
@@ -89,7 +86,7 @@
   const usersKey = $derived(keys.admin.users({ query: queryFilter, filter }));
 
   const usersQuery = createApiInfiniteQuery<
-    AdminUserListResponseDto,
+    PagedResult<AdminUserDto>,
     number,
     AdminUserDto
   >(() => ({
@@ -100,10 +97,10 @@
         filter,
         page: pageNum,
       }),
-    getPageItems: (page) => page.users,
+    getPageItems: (page) => page.items,
     initialPageParam: 1,
     getNextPageParam: (last, allPages) =>
-      last.users.length === PAGE_SIZE ? allPages.length + 1 : undefined,
+      last.hasMore ? allPages.length + 1 : undefined,
     keepPreviousData: true,
   }));
 
@@ -299,7 +296,7 @@
   }
 
   const FILTERS: { value: AdminUserFilter; label: string }[] = [
-    { value: "all", label: "Tous" },
+    { value: "all", label: m.common_all() },
     { value: "admin", label: m.common_admin() },
     { value: "unverified", label: "Non vérifié" },
     { value: "never", label: "Jamais connecté" },
@@ -691,14 +688,16 @@
             onclick={() => verifyMut.mutate()}
             disabled={verifyMut.loading || selected.emailVerified}
             class="btn btn-ghost btn-sm w-full">
-            {verifyMut.loading ? "Envoi…" : "Renvoyer l'email de vérification"}
+            {verifyMut.loading
+              ? m.common_sending()
+              : "Renvoyer l'email de vérification"}
           </button>
           <button
             onclick={() => resetMut.mutate()}
             disabled={resetMut.loading}
             class="btn btn-ghost btn-sm w-full">
             {resetMut.loading
-              ? "Envoi…"
+              ? m.common_sending()
               : "Envoyer un lien de réinitialisation"}
           </button>
           {#if selected.id === auth.user?.id}

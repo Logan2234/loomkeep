@@ -49,7 +49,7 @@ describe("SecurityEventService.list", () => {
           ],
         },
         skip: 0,
-        take: 50,
+        take: 51,
       }),
     );
   });
@@ -59,8 +59,9 @@ describe("SecurityEventService.list", () => {
 
     await service.list({ page: 3 });
 
+    // take is limit + 1 (over-fetch by one to derive hasMore).
     expect(prisma.securityEvent.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 100, take: 50 }),
+      expect.objectContaining({ skip: 100, take: 51 }),
     );
   });
 
@@ -89,9 +90,9 @@ describe("SecurityEventService.list", () => {
       },
     ]);
 
-    const { events } = await service.list({});
+    const { items } = await service.list({});
 
-    expect(events[0].identifier).toBe("a@b.com");
-    expect(events[1].identifier).toBeNull();
+    expect(items[0].identifier).toBe("a@b.com");
+    expect(items[1].identifier).toBeNull();
   });
 });

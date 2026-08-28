@@ -1,5 +1,6 @@
 import type { CatalogSource, MediaType } from "../enums";
 import type { EpisodeWatchDto, LibraryEntryDto } from "./library";
+import type { PagedResult } from "./pagination";
 
 /** A media as returned by a live catalogue search (not persisted). */
 export interface MediaSummaryDto {
@@ -19,9 +20,7 @@ export interface MediaSummaryDto {
   isAdult: boolean;
 }
 
-export interface SearchResponseDto {
-  results: MediaSummaryDto[];
-}
+export type SearchResponseDto = PagedResult<MediaSummaryDto>;
 
 /** A streaming platform where a title is available (from TMDB / JustWatch). */
 export interface WatchProviderDto {
@@ -90,7 +89,7 @@ export interface RatingDto {
 }
 
 /** An official/external link (streaming, official site…), from AniList. */
-export interface ExternalLinkDto {
+interface ExternalLinkDto {
   /** Site name, e.g. "Crunchyroll", "Official Site". */
   name: string;
   url: string;

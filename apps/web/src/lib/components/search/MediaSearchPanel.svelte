@@ -85,10 +85,10 @@
   >(() => ({
     key: keys.catalog.search({ query: queryFilter, type }),
     fetch: (pageNum) => searchCatalog(queryFilter, type, pageNum),
-    getPageItems: (p) => p.results,
+    getPageItems: (p) => p.items,
     initialPageParam: 1,
     getNextPageParam: (last, allPages) =>
-      last.results.length > 0 ? allPages.length + 1 : undefined,
+      last.items.length > 0 ? allPages.length + 1 : undefined,
     enabled: !!queryFilter,
     keepPreviousData: true,
   }));
@@ -262,7 +262,7 @@
   {/if}
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">Aucun résultat.</p>
+    <p class="timecode text-sm">{m.common_no_results()}.</p>
   {:else}
     <EmptyState>
       Lance une recherche pour trouver un film, une série ou un animé.

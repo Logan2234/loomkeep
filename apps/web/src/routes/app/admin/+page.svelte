@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { env } from "$env/dynamic/public";
   // "Poste de contrôle": a status strip of the 4 numbers an admin actually
   // checks at a glance (each a real link to its page), then every ADMIN_NAV
   // destination grouped by concern instead of one flat grid of identical
@@ -16,7 +17,6 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
-  import { IS_BETA } from "$lib/constants/app-status";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
@@ -308,6 +308,6 @@
         <span class="opacity-60">({appConfig.gitSha})</span>
       {/if}
     </a>
-    {#if IS_BETA}<BetaBadge />{/if}
+    {#if env.PUBLIC_IS_BETA}<BetaBadge />{/if}
   </p>
 </div>

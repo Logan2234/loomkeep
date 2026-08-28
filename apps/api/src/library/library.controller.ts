@@ -51,6 +51,7 @@ export class LibraryController {
     @Query("sort") sort?: string,
     @Query("order") order?: string,
     @Query("page") page?: string,
+    @Query("limit") limit?: string,
     @Query("lang") lang?: string,
   ): Promise<PagedResult<LibraryEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
@@ -62,6 +63,7 @@ export class LibraryController {
       sort,
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
       lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }

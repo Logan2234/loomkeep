@@ -61,5 +61,14 @@ export const keys = {
     userLists: (userId: string) => ["admin", "user-lists", userId] as const,
     userReportsAgainst: (userId: string) =>
       ["admin", "user-reports-against", userId] as const,
+    importRuns: (filters: {
+      source: string;
+      status: string;
+      userId: string | null;
+    }) => ["admin", "import-runs", filters] as const,
+    importSummary: () => ["admin", "import-summary"] as const,
+    reports: (filters: { status: string; reporterId: string | null }) =>
+      ["admin", "reports", filters] as const,
+    reportsSummary: () => ["admin", "reports-summary"] as const,
   },
 } as const;

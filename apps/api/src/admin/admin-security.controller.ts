@@ -1,10 +1,15 @@
 import type {
   AdminSecuritySummaryDto,
-  SecurityEventListResponseDto,
+  PagedResult,
+  SecurityEventDto,
   SecurityEventType,
 } from "@loomkeep/shared";
 import { Controller, Get, Query } from "@nestjs/common";
-import { SecurityEventService } from "../security/security-event.service";
+import { parsePageQuery } from "../common/pagination.util";
+import {
+  SECURITY_EVENT_PAGE_SIZE,
+  SecurityEventService,
+} from "../security/security-event.service";
 import { AdminOnly } from "./admin-only.decorator";
 
 const SECURITY_EVENT_TYPES: SecurityEventType[] = [
@@ -34,13 +39,16 @@ export class AdminSecurityController {
     @Query("type") type?: string,
     @Query("identifier") identifier?: string,
     @Query("page") page?: string,
-  ): Promise<SecurityEventListResponseDto> {
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<SecurityEventDto>> {
+    const parsed = parsePageQuery(page, limit, SECURITY_EVENT_PAGE_SIZE);
     return this.securityEvents.list({
       type: SECURITY_EVENT_TYPES.includes(type as SecurityEventType)
         ? (type as SecurityEventType)
         : undefined,
       identifier: identifier?.trim() || undefined,
-      page: page ? Number(page) : undefined,
+      page: parsed.page,
+      limit: parsed.limit,
     });
   }
 }

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { unsubscribeNewsletter } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
   import { m } from "$lib/paraglide/messages.js";
 
-  const token = $page.url.searchParams.get("token") ?? "";
+  const token = page.url.searchParams.get("token") ?? "";
 
   let status = $state<"pending" | "done" | "error">("pending");
   let error = $state<string | null>(null);

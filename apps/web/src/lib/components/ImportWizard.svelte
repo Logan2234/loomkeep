@@ -322,7 +322,7 @@
       } else if (domain === Domain.GAMES) {
         searchResults = (await searchGames(q)).results.map(gameToMatch);
       } else {
-        searchResults = (await searchCatalog(q)).results.map(mediaToMatch);
+        searchResults = (await searchCatalog(q)).items.map(mediaToMatch);
       }
     } catch {
       searchResults = [];

@@ -2,8 +2,10 @@
 // UX convenience list; the stored value is always a free-form string (see
 // OwnershipField's "Autre…" escape hatch).
 
+import { m } from "$lib/paraglide/messages";
+
 export const GAME_OWNERSHIP_STATUS_OPTIONS = [
-  { value: "NONE", label: "Aucun" },
+  { value: "NONE", label: m.common_none() },
   { value: "PHYSICAL", label: "Physique" },
   { value: "DIGITAL", label: "Numérique" },
   { value: "SUBSCRIPTION", label: "Abonnement" },
@@ -28,7 +30,7 @@ export const GAME_OWNERSHIP_SOURCES: Record<string, string[]> = {
 };
 
 export const BOOK_OWNERSHIP_STATUS_OPTIONS = [
-  { value: "NONE", label: "Aucun" },
+  { value: "NONE", label: m.common_none() },
   { value: "PHYSICAL", label: "Physique" },
   { value: "DIGITAL", label: "Numérique (ebook)" },
   { value: "AUDIO", label: "Audio" },
@@ -41,7 +43,7 @@ export const BOOK_OWNERSHIP_SOURCES: Record<string, string[]> = {
 };
 
 export const MEDIA_OWNERSHIP_STATUS_OPTIONS = [
-  { value: "NONE", label: "Aucun" },
+  { value: "NONE", label: m.common_none() },
   { value: "PHYSICAL", label: "Physique" },
   { value: "DIGITAL", label: "Numérique" },
   { value: "STREAMING", label: "Streaming" },
@@ -54,7 +56,7 @@ export const MEDIA_OWNERSHIP_SOURCES: Record<string, string[]> = {
 };
 
 export const MUSIC_OWNERSHIP_STATUS_OPTIONS = [
-  { value: "NONE", label: "Aucun" },
+  { value: "NONE", label: m.common_none() },
   { value: "PHYSICAL", label: "Physique (vinyle, CD)" },
   { value: "DIGITAL", label: "Numérique" },
   { value: "STREAMING", label: "Streaming" },
