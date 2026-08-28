@@ -18,8 +18,11 @@ interface ApiMutationOptions<TArgs, TData> {
   onSuccess?: (data: TData, args: TArgs) => void;
   /** Factory keys to refetch after success. Default `[]`. */
   invalidates?: QueryKey[];
-  /** Success message, via m() — never a hardcoded literal. */
-  successToast?: string;
+  /**
+   * Success message, via m() — never a hardcoded literal. A function reads
+   * the response/args for a message the fixed string can't express.
+   */
+  successToast?: string | ((data: TData, args: TArgs) => string);
   /** Clear `error` when `mutate()` is called. Default `true`. */
   resetErrorOnRun?: boolean;
   // Fields already shown via fieldError() under an input — suppresses the
@@ -47,7 +50,11 @@ export function createApiMutation<TArgs = void, TData = unknown>(
           void queryClient.invalidateQueries({ queryKey: key });
         }
 
-        if (opts.successToast) toast.success(opts.successToast);
+        const message =
+          typeof opts.successToast === "function"
+            ? opts.successToast(data, args)
+            : opts.successToast;
+        if (message) toast.success(message);
       },
       onError: (err: unknown) => {
         opts.onError?.(err);

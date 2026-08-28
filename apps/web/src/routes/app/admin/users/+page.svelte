@@ -104,6 +104,7 @@
     initialPageParam: 1,
     getNextPageParam: (last, allPages) =>
       last.users.length === PAGE_SIZE ? allPages.length + 1 : undefined,
+    keepPreviousData: true,
   }));
 
   const users = $derived(usersQuery.data);

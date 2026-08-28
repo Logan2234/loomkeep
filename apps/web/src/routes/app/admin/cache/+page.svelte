@@ -20,7 +20,6 @@
   import { DOMAINS } from "$lib/constants/domains";
   import { formatDateTime } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
   import type { IconName } from "$lib/types/icon-name";
   import type {
     AdminCacheItemDto,
@@ -125,8 +124,7 @@
   const resyncMut = createApiMutation(() => ({
     mutate: (item: AdminCacheItemDto) =>
       resyncAdminCacheItem(item.domain, item.id),
-    onSuccess: (_data, item) =>
-      toast.success(`« ${item.title} » re-synchronisé.`),
+    successToast: (_data, item) => `« ${item.title} » re-synchronisé.`,
     invalidates: [
       cacheKey,
       ...(selected ? [keys.admin.cacheItem(selected.domain, selected.id)] : []),
@@ -136,26 +134,23 @@
 
   const bulkResyncMut = createApiMutation(() => ({
     mutate: () => resyncAdminCacheStale(activeDomain),
-    onSuccess: (res) =>
-      toast.success(
-        res.failed > 0
-          ? `${res.resynced} re-synchronisé(s), ${res.failed} en échec.`
-          : `${res.resynced} titre(s) re-synchronisé(s).`,
-      ),
+    successToast: (res) =>
+      res.failed > 0
+        ? `${res.resynced} re-synchronisé(s), ${res.failed} en échec.`
+        : `${res.resynced} titre(s) re-synchronisé(s).`,
     invalidates: [cacheKey],
     errorToast: true,
   }));
 
   const deleteOrphansMut = createApiMutation(() => ({
     mutate: () => deleteAdminCacheOrphans(activeDomain),
-    onSuccess: (res) => {
+    onSuccess: () => {
       showDeleteOrphansConfirm = false;
-      toast.success(
-        res.skipped > 0
-          ? `${res.deleted} orphelin(s) supprimé(s) du cache — ${res.skipped} laissé(s) car référencé(s) par une critique, un commentaire ou une activité.`
-          : `${res.deleted} orphelin(s) supprimé(s) du cache.`,
-      );
     },
+    successToast: (res) =>
+      res.skipped > 0
+        ? `${res.deleted} orphelin(s) supprimé(s) du cache — ${res.skipped} laissé(s) car référencé(s) par une critique, un commentaire ou une activité.`
+        : `${res.deleted} orphelin(s) supprimé(s) du cache.`,
     onError: () => {
       showDeleteOrphansConfirm = false;
     },
@@ -166,11 +161,11 @@
   const deleteItemMut = createApiMutation(() => ({
     mutate: (_title: string) =>
       deleteAdminCacheItem(detail!.domain, detail!.id),
-    onSuccess: (_data, title) => {
+    onSuccess: () => {
       showDeleteConfirm = false;
       closeDrawer();
-      toast.success(`« ${title} » supprimé du cache.`);
     },
+    successToast: (_data, title) => `« ${title} » supprimé du cache.`,
     onError: () => {
       showDeleteConfirm = false;
     },

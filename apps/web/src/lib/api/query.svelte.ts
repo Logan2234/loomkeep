@@ -1,15 +1,16 @@
 // createApiQuery() — thin wrapper over TanStack's createQuery(), one of the
 // helpers from the centralized API layer (docs/plans/centralized-api-layer.md
-// §3). Every helper shares the same { data, error, loading, fieldErrors }
-// surface, with `error` always resolved through bannerMessage() so a raw
-// ApiError can never reach a template.
+// §3). `error` is always resolved through resolveApiError() so a raw
+// ApiError can never reach a template. No fieldErrors/coveredFields here —
+// unlike createApiMutation, a GET doesn't submit a body a server can return
+// per-field validation.failed details against.
 import { toast } from "$lib/toast.svelte";
 import {
   createQuery,
   keepPreviousData,
   type QueryKey,
 } from "@tanstack/svelte-query";
-import { bannerMessage, fieldError } from "./validation-messages";
+import { resolveApiError } from "./errors";
 
 interface ApiQueryOptions<T> {
   key: QueryKey;
@@ -25,9 +26,6 @@ interface ApiQueryOptions<T> {
   keepPreviousData?: boolean;
   /** Default: the global retry (queryClient.ts). */
   retry?: number;
-  // Fields already shown via fieldError() under an input — suppresses the
-  // duplicate banner message and is also the source for `fieldErrors`.
-  coveredFields?: string[];
   /** Extra side effect on failure; the error is resolved either way. */
   onError?: (err: unknown) => void;
   /** Surface the error as a toast in addition to `error`. Default `false`. */
@@ -59,10 +57,7 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
       const opts = optionsFn();
       opts.onError?.(query.error);
 
-      if (opts.errorToast) {
-        const message = bannerMessage(query.error, opts.coveredFields ?? []);
-        if (message) toast.error(message);
-      }
+      if (opts.errorToast) toast.error(resolveApiError(query.error));
     }
   });
 
@@ -71,22 +66,10 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
       return query.data ?? null;
     },
     get error() {
-      if (!query.error) return null;
-      return bannerMessage(query.error, optionsFn().coveredFields ?? []);
+      return query.error ? resolveApiError(query.error) : null;
     },
     get loading() {
       return query.isPending;
-    },
-    get fieldErrors() {
-      const coveredFields = optionsFn().coveredFields ?? [];
-      const result: Record<string, string> = {};
-
-      for (const field of coveredFields) {
-        const message = fieldError(query.error, field);
-        if (message) result[field] = message;
-      }
-
-      return result;
     },
   };
 }

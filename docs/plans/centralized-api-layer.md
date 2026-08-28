@@ -1,7 +1,7 @@
 # Plan — Centralized API layer (`createApiQuery` / `createApiMutation` / `createApiInfiniteQuery`)
 
-Implementation plan for the Quackback ticket *"Centralized API layer:
-createApiQuery / createApiMutation / paged helper"*
+Implementation plan for the Quackback ticket _"Centralized API layer:
+createApiQuery / createApiMutation / paged helper"_
 (`post_01m14vjtqeecw9tc2ajm79dqcc`). Written to be executed by an agent
 starting with no prior context.
 
@@ -16,14 +16,14 @@ picking an alternative.
 
 Audit of `apps/web` at the time of writing:
 
-| Measure | Value |
-| --- | --- |
-| Files importing `$lib/api/client` | 71 |
-| Files using `resolveApiError` | 56 (110 non-spec occurrences) |
-| **Files calling the API with no error resolution at all** | **27** |
-| `$effect` in `.svelte` | 109 |
-| `error = $state` / `loading = $state` | 38 / 29 |
-| `AbortController` anywhere in `apps/web` | 0 |
+| Measure                                                   | Value                         |
+| --------------------------------------------------------- | ----------------------------- |
+| Files importing `$lib/api/client`                         | 71                            |
+| Files using `resolveApiError`                             | 56 (110 non-spec occurrences) |
+| **Files calling the API with no error resolution at all** | **27**                        |
+| `$effect` in `.svelte`                                    | 109                           |
+| `error = $state` / `loading = $state`                     | 38 / 29                       |
+| `AbortController` anywhere in `apps/web`                  | 0                             |
 
 Every API call site today is `try { await route(...) } catch (err) { error =
 resolveApiError(err); }`, written by hand. Nothing forces it, and three call
@@ -35,7 +35,7 @@ sites have already regressed:
 - `lib/components/ProfileReviews.svelte:29` — `.catch(() => (reviews = []))`.
   A failure renders as "no reviews".
 - `routes/app/media/+page.svelte:50` — `toast.error("Mise à jour
-  impossible")`, a hardcoded French string bypassing both the error-code
+impossible")`, a hardcoded French string bypassing both the error-code
   convention and Paraglide.
 
 The goal is to make the error path structural: helpers that resolve the error
@@ -54,9 +54,17 @@ themselves, so there is no `try/catch` left to forget.
    and is **not** migrated.
 3. **Identical surface on every helper: `data` / `error` / `loading`.**
    `error` is always a translated `string | null`, never a raw `ApiError`.
-4. **`error` is computed with `bannerMessage()`**, not `resolveApiError()`
-   directly — see §3.
-5. **`fieldErrors` is always on**, never an option.
+4. **`error` is computed with `bannerMessage()`** on `createApiMutation`, not
+   `resolveApiError()` directly — see §3.
+5. **`fieldErrors`/`coveredFields` exist only on `createApiMutation`**,
+   always on there, never an option. **Amended mid-implementation**
+   (2026-08-28, Logan, during Phase 3): originally spec'd as part of every
+   helper's shared shape; dropped from `createApiQuery`/
+   `createApiInfiniteQuery` because a GET has no submitted body for the
+   server to return per-field `validation.failed` details against — the
+   surface was identical for uniformity's sake, not because it did anything
+   on a read. Those two now compute `error` with `resolveApiError()`
+   directly (no `bannerMessage`/`coveredFields`).
 6. **Mutations are triggered with `mutate(args)`.**
 7. **Global `staleTime: 30_000`**; no separate `refetchOnFocus` option.
 8. **`keepPreviousData` defaults to `false`**, opt-in per screen.
@@ -80,19 +88,20 @@ already reactive; the wrapper delegates to it — see
 ```ts
 {
   data: T | null,
-  error: string | null,        // translated, banner-ready
+  error: string | null,        // translated
   loading: boolean,
-  fieldErrors: Record<string, string>,
 }
 ```
 
-**`error` must be computed with `bannerMessage(err, coveredFields)`** from
-`lib/api/validation-messages.ts`, not `resolveApiError(err)`. `bannerMessage`
-already returns `null` when every `validation.failed` detail is displayed
-under an input via `fieldError()`, which avoids showing the same message
-twice on a form. With `coveredFields` empty it behaves exactly like
-`resolveApiError`, so this is a strict generalisation — take it.
+`createApiQuery`/`createApiInfiniteQuery` compute `error` with
+`resolveApiError(err)` directly. `createApiMutation` alone adds
+`fieldErrors: Record<string, string>` and computes `error` with
+`bannerMessage(err, coveredFields)` instead — see below.
 
+**`bannerMessage(err, coveredFields)`**, from `lib/api/validation-messages.ts`,
+returns `null` when every `validation.failed` detail is displayed under an
+input via `fieldError()`, which avoids showing the same message twice on a
+form. With `coveredFields` empty it behaves exactly like `resolveApiError`.
 `fieldErrors` is built from `fieldError(err, field)` in the same module. Do
 not reimplement either function.
 
@@ -105,18 +114,17 @@ const feed = createApiQuery(() => ({
 }));
 ```
 
-| Option | Default | Role |
-| --- | --- | --- |
-| `key` | **required** | factory key |
-| `fetch` | **required** | the route function call |
-| `enabled` | `true` | don't fetch until a condition holds |
-| `staleTime` | global `30_000` | also the refetch-on-focus knob |
-| `refetchInterval` | `false` | polling |
-| `keepPreviousData` | `false` | opt-in |
-| `retry` | global `1` | |
-| `coveredFields` | `[]` | passed to `bannerMessage` |
-| `onError` | — | extra side effect; the error is resolved either way |
-| `errorToast` | `false` | surface the error as a toast |
+| Option             | Default         | Role                                                |
+| ------------------ | --------------- | --------------------------------------------------- |
+| `key`              | **required**    | factory key                                         |
+| `fetch`            | **required**    | the route function call                             |
+| `enabled`          | `true`          | don't fetch until a condition holds                 |
+| `staleTime`        | global `30_000` | also the refetch-on-focus knob                      |
+| `refetchInterval`  | `false`         | polling                                             |
+| `keepPreviousData` | `false`         | opt-in                                              |
+| `retry`            | global `1`      |                                                     |
+| `onError`          | —               | extra side effect; the error is resolved either way |
+| `errorToast`       | `false`         | surface the error as a toast                        |
 
 **No `refetchOnFocus` option.** `staleTime` already is that knob:
 `Infinity` = never refetch on focus, `0` = refetch on every focus,
@@ -125,8 +133,8 @@ from the last successful fetch, not from when focus was lost — practically
 identical for alt-tab behaviour.
 
 `keepPreviousData` is `false` by default because it is only correct when a
-key change means *same subject, different view* (filters, sort, page,
-search). When a key change means *different subject* it is a bug: in
+key change means _same subject, different view_ (filters, sort, page,
+search). When a key change means _different subject_ it is a bug: in
 `admin/users`, selecting user B would show user A's sessions in B's panel —
 a panel carrying "Revoke" buttons. Opt in only on `LibraryBrowser`, the four
 search panels, and the `admin/users` **list** (never the selected-user
@@ -137,21 +145,24 @@ detail).
 ```ts
 const changePlan = createApiMutation(() => ({
   mutate: (plan: PlanDto) => updateAdminUserPlan(selected.id, plan),
-  onSuccess: (res) => { selected = { ...selected, plan: res.plan }; },
+  onSuccess: (res) => {
+    selected = { ...selected, plan: res.plan };
+  },
   invalidates: [keys.admin.users()],
 }));
 // template: onclick={() => changePlan.mutate("PREMIUM")}
 //           disabled={changePlan.loading}
 ```
 
-| Option | Default | Role |
-| --- | --- | --- |
-| `mutate` | **required** | the route function call |
-| `onSuccess(data)` | — | local update, close a modal, navigate |
-| `invalidates` | `[]` | factory keys to refresh after success |
-| `successToast` | — | success message, **via `m()`**, never a literal |
-| `resetErrorOnRun` | `true` | clear `error` when triggered |
-| `coveredFields` / `onError` / `errorToast` | as above | |
+| Option                   | Default             | Role                                                                                                                                           |
+| ------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mutate`                 | **required**        | the route function call                                                                                                                        |
+| `onSuccess(data)`        | —                   | local update, close a modal, navigate                                                                                                          |
+| `invalidates`            | `[]`                | factory keys to refresh after success                                                                                                          |
+| `successToast`           | —                   | success message, **via `m()`**, never a literal — a string or a `(data, args) => string` function for a message the fixed string can't express |
+| `resetErrorOnRun`        | `true`              | clear `error` when triggered                                                                                                                   |
+| `coveredFields`          | `[]`                | passed to `bannerMessage`/`fieldErrors` — mutation-only, see §3's shared-shape note                                                            |
+| `onError` / `errorToast` | as `createApiQuery` |                                                                                                                                                |
 
 `mutate()` **ignores the call when one is already in flight** — the
 double-submit guard (`LibraryBrowser.svelte:155`) moves into the helper and
@@ -184,7 +195,18 @@ use an `IntersectionObserver` sentinel, others a "load more" button. The
 trigger stays the component's business.
 
 Exposes `data` / `error` / `loading` plus the paging surface
-(`hasNextPage`, `fetchNextPage`, `isFetchingNextPage`).
+(`hasNextPage`, `fetchNextPage`, `isFetchingNextPage`), plus `pages` (the raw
+`TPage[]`, for a call site that also needs per-page metadata — a running
+`total` — alongside the flattened `data`).
+
+One option beyond the plan's original sketch, added during Phase 3
+implementation once a real call site needed it: `keepPreviousData` (same
+opt-in as `createApiQuery`, needed on `admin/users`' list and
+`LibraryBrowser`/`MediaSearchPanel` per the note above). No de-dupe option:
+`MediaSearchPanel`'s external catalog search can return the same item across
+consecutive pages, but that's specific to one source, not a general need —
+it de-dupes `data` itself in a local `$derived`, rather than growing the
+shared helper for a single call site.
 
 ## 4. Query keys and invalidation
 
@@ -192,12 +214,12 @@ Exposes `data` / `error` / `loading` plus the paging surface
 // apps/web/src/lib/api/keys.ts
 export const keys = {
   library: {
-    all:   ()                     => ["library"] as const,
-    list:  (p: LibraryListParams) => ["library", "list", p] as const,
-    entry: (id: string)           => ["library", "entry", id] as const,
+    all: () => ["library"] as const,
+    list: (p: LibraryListParams) => ["library", "list", p] as const,
+    entry: (id: string) => ["library", "entry", id] as const,
   },
   admin: {
-    users:        ()           => ["admin", "users"] as const,
+    users: () => ["admin", "users"] as const,
     userSessions: (id: string) => ["admin", "user-sessions", id] as const,
   },
   // …one namespace per API domain
@@ -229,7 +251,7 @@ Each phase is one PR. Do not start a phase before the previous one is merged.
 Independent of everything else; ship it first.
 
 `ApiError.requestId` (`lib/api/core.ts:26`) is parsed and then dropped.
-`hooks.client.ts` only wires Sentry to `handleError`, i.e. *unhandled*
+`hooks.client.ts` only wires Sentry to `handleError`, i.e. _unhandled_
 SvelteKit errors — so none of the caught API failures are visible in
 monitoring today.
 
@@ -408,5 +430,5 @@ invalidation is a semantic graph rather than a URL tree —
 `library.service.ts:186` emits activity to the feed and
 `stats.service.ts:542` reads `episodeWatch`, so one `POST /library/...`
 touches three domains and no route encodes that. Tracked separately as
-*"Generate the web API client from OpenAPI instead of declaring routes
-twice"* (`post_01m14vz9kpecw9tc4pg7v0ct29`).
+_"Generate the web API client from OpenAPI instead of declaring routes
+twice"_ (`post_01m14vz9kpecw9tc4pg7v0ct29`).

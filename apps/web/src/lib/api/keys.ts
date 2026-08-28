@@ -10,6 +10,29 @@ export const keys = {
   feed: {
     all: () => ["feed"] as const,
   },
+  profile: {
+    activity: (username: string) => ["profile", "activity", username] as const,
+  },
+  library: {
+    browse: (
+      domain: string,
+      filters: {
+        query: string;
+        statuses: string[];
+        favoritesOnly: boolean;
+        extra: unknown;
+        sort: string;
+        order: string;
+      },
+    ) => ["library", "browse", domain, filters] as const,
+    // Whole library, catalogue-identity-keyed — drives the "already
+    // tracked" flag on search results.
+    tracked: () => ["library", "tracked"] as const,
+  },
+  catalog: {
+    search: (filters: { query: string; type: string | undefined }) =>
+      ["catalog", "search", filters] as const,
+  },
   admin: {
     securityEvents: (filters: { type: string | null; identifier: string }) =>
       ["admin", "security-events", filters] as const,

@@ -23,7 +23,8 @@
   // props/snippets.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -35,7 +36,7 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Domain, MediaType, PagedResult } from "@loomkeep/shared";
-  import { onMount, type ComponentProps, type Snippet } from "svelte";
+  import type { ComponentProps, Snippet } from "svelte";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
 
@@ -93,19 +94,16 @@
   // via `replaceState`, see `syncUrl` below).
   const initialParams = page.url.searchParams;
 
-  let items = $state<T[]>([]);
-  let total = $state(0);
   let statuses = $state<string[]>(
     initialParams.get("status")?.split(",").filter(Boolean) ?? [],
   );
   let favoritesOnly = $state(initialParams.get("fav") === "1");
   let sort = $state<string>(initialParams.get("sort") ?? defaultSort);
   let reversed = $state(initialParams.get("order") === "asc");
+  // `query` is the raw input; `queryFilter` is the debounced value that
+  // actually drives the fetch (see the input's oninput below).
   let query = $state(initialParams.get("q") ?? "");
-  let loading = $state(true); // fetching the first page for the current filters
-  let loadingMore = $state(false); // fetching a follow-up page (infinite scroll)
-  let done = $state(false); // no more pages for the current filters
-  let error = $state<string | null>(null);
+  let queryFilter = $state(initialParams.get("q") ?? "");
 
   let sentinel = $state<HTMLElement | null>(null);
 
@@ -117,10 +115,9 @@
 
   const reduced = prefersReducedMotion();
 
-  // Non-reactive bookkeeping.
-  let lastPage = 0;
-  let loadId = 0; // bumped on every reset; stale responses are discarded
-  const debouncedRun = debounce(() => run(true), 300);
+  const debouncedQueryFilter = debounce(() => {
+    queryFilter = query.trim();
+  }, 300);
 
   const TYPE_OPTIONS: { label: string; value: MediaType }[] = [
     { label: "Films", value: "MOVIE" },
@@ -137,7 +134,7 @@
   // stays stale when the browser later navigates back to that entry.
   function syncUrl() {
     const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
+    if (queryFilter) params.set("q", queryFilter);
     if (statuses.length) params.set("status", statuses.join(","));
     if (favoritesOnly) params.set("fav", "1");
     if (types.length) params.set("type", types.join(","));
@@ -151,49 +148,46 @@
     });
   }
 
-  async function run(reset: boolean): Promise<void> {
-    if (!reset && (loading || loadingMore || done)) return;
+  $effect(() => {
+    // Tracked: queryFilter, statuses, favoritesOnly, types, sort, reversed.
+    syncUrl();
+  });
 
-    if (reset) {
-      syncUrl();
-      loadId++;
-      lastPage = 0;
-      done = false;
-    }
+  const browseKey = $derived(
+    keys.library.browse(domain, {
+      query: queryFilter,
+      statuses,
+      favoritesOnly,
+      extra: types,
+      sort,
+      order: reversed ? "asc" : "desc",
+    }),
+  );
 
-    const mine = loadId;
-    const next = lastPage + 1;
-    if (reset) loading = true;
-    else loadingMore = true;
-    error = null;
-
-    try {
-      const result = await load({
-        query: query.trim(),
+  const browseQuery = createApiInfiniteQuery<PagedResult<T>, number, T>(() => ({
+    key: browseKey,
+    fetch: (pageNum) =>
+      load({
+        query: queryFilter,
         statuses,
         favoritesOnly,
         extra: types,
         sort,
         order: reversed ? "asc" : "desc",
-        page: next,
-      });
-      if (mine !== loadId) return; // a newer load superseded this one
-      lastPage = next;
-      total = result.total;
-      items = reset ? result.items : [...items, ...result.items];
-      done = !result.hasMore;
-    } catch (err) {
-      if (mine !== loadId) return;
-      error = resolveApiError(err);
-    } finally {
-      if (mine === loadId) {
-        loading = false;
-        loadingMore = false;
-      }
-    }
-  }
+        page: pageNum,
+      }),
+    getPageItems: (p) => p.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+    keepPreviousData: true,
+  }));
 
-  onMount(() => void run(true));
+  const items = $derived(browseQuery.data);
+  const error = $derived(browseQuery.error);
+  const total = $derived(browseQuery.pages.at(-1)?.total ?? 0);
+  const loading = $derived(browseQuery.loading);
+  const loadingMore = $derived(browseQuery.isFetchingNextPage);
 
   let showSkeleton = $state(false);
   $effect(() => {
@@ -211,7 +205,7 @@
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) void run(false);
+        if (entries[0]?.isIntersecting) browseQuery.fetchNextPage();
       },
       { rootMargin: "400px" },
     );
@@ -228,7 +222,6 @@
     statuses = [];
     favoritesOnly = false;
     types = [];
-    void run(true);
   }
 </script>
 
@@ -252,7 +245,7 @@
       oninput={(e) => {
         query = e.currentTarget.value;
         previewCount = null;
-        debouncedRun.call();
+        debouncedQueryFilter.call();
       }}
       class="input pl-10" />
   </div>
@@ -268,7 +261,6 @@
           values={types}
           onChange={(v) => {
             types = v as MediaType[];
-            void run(true);
           }} />
       {/if}
       <Combobox
@@ -278,14 +270,12 @@
         values={statuses}
         onChange={(v) => {
           statuses = v;
-          void run(true);
         }} />
       <button
         class="chip inline-flex items-center gap-1"
         class:chip-on={favoritesOnly}
         onclick={() => {
           favoritesOnly = !favoritesOnly;
-          void run(true);
         }}>
         <Icon name="star" class="h-3.5 w-3.5" /> Favoris
       </button>
@@ -297,7 +287,6 @@
         values={[sort]}
         onChange={(v) => {
           sort = v[0] ?? sort;
-          void run(true);
         }} />
       <button
         type="button"
@@ -306,7 +295,6 @@
         aria-label="Inverser le sens du tri"
         onclick={() => {
           reversed = !reversed;
-          void run(true);
         }}>
         {reversed ? "↑" : "↓"}
       </button>
@@ -381,7 +369,7 @@
         </div>
       {/each}
     </PosterGrid>
-    {#if !done}
+    {#if browseQuery.hasNextPage}
       <!-- Sentinel: entering the viewport triggers the next page. -->
       <div bind:this={sentinel} class="absolute h-10"></div>
     {/if}
