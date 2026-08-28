@@ -51,7 +51,7 @@
         Partagez votre profil pour que d'autres vous suivent, ou suivez
         quelqu'un pour voir son activité ici.
       </p>
-      <a href="/app/settings" class="btn btn-ghost mt-3">Partager mon profil</a>
+      <a href="/app/profile" class="btn btn-ghost mt-3">Partager mon profil</a>
     </EmptyState>
   {:else}
     <ul class="flex flex-col gap-2">
