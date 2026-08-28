@@ -134,6 +134,8 @@
   "admin_trend_cadence_month": "Par mois · 12 derniers.",
   "admin_trend_cadence_year": "Par année · 5 dernières.",
   "admin_sparkline_growth": "Croissance sur 12 semaines",
+  "admin_users_verification_resent": "Email de vérification renvoyé.",
+  "admin_users_reset_link_sent": "Lien de réinitialisation envoyé.",
   "reviews_section_community_title": "Critiques de la communauté ({count})",
   "reviews_section_my_review_title": "Ma critique",
   "reviews_section_your_review": "Votre critique",

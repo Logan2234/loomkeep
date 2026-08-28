@@ -13,8 +13,9 @@ import { bannerMessage, fieldError } from "./validation-messages";
 
 interface ApiMutationOptions<TArgs, TData> {
   mutate: (args: TArgs) => Promise<TData>;
-  /** Local update, close a modal, navigate. */
-  onSuccess?: (data: TData) => void;
+  // Local update, close a modal, navigate. `args` is what `mutate()` was
+  // called with — useful for a message the response body doesn't carry.
+  onSuccess?: (data: TData, args: TArgs) => void;
   /** Factory keys to refetch after success. Default `[]`. */
   invalidates?: QueryKey[];
   /** Success message, via m() — never a hardcoded literal. */
@@ -39,8 +40,8 @@ export function createApiMutation<TArgs = void, TData = unknown>(
     const opts = optionsFn();
     return {
       mutationFn: opts.mutate,
-      onSuccess: (data: TData) => {
-        opts.onSuccess?.(data);
+      onSuccess: (data: TData, args: TArgs) => {
+        opts.onSuccess?.(data, args);
 
         for (const key of opts.invalidates ?? []) {
           void queryClient.invalidateQueries({ queryKey: key });
@@ -67,6 +68,11 @@ export function createApiMutation<TArgs = void, TData = unknown>(
       if (optionsFn().resetErrorOnRun ?? true) mutation.reset();
       mutation.mutate(args);
     },
+    // Clears `error`/`data` without running anything — e.g. when a dialog
+    // reopens and a previous attempt's error shouldn't linger.
+    reset() {
+      mutation.reset();
+    },
     get data() {
       return mutation.data ?? null;
     },
@@ -76,6 +82,13 @@ export function createApiMutation<TArgs = void, TData = unknown>(
     },
     get loading() {
       return mutation.isPending;
+    },
+    /**
+     * Args of the in-flight (or last) mutate() call — e.g. to tell which of
+     * several identical buttons triggered it.
+     */
+    get variables() {
+      return mutation.variables;
     },
     get fieldErrors() {
       const coveredFields = optionsFn().coveredFields ?? [];
