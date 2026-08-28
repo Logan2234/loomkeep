@@ -5,6 +5,7 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
+import * as Sentry from "@sentry/sveltekit";
 import { auth } from "../auth.svelte";
 
 export const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";
@@ -64,7 +65,13 @@ export async function request<T>(
     // The fetch itself failed (offline, DNS failure, VPS down) — there is no
     // HTTP response at all, so this never reaches the !response.ok branch
     // below. Most frequent failure mode on a PWA away from wifi.
-    throw new ApiError(0, "Network request failed", ErrorCode.NetworkOffline);
+    const error = new ApiError(
+      0,
+      "Network request failed",
+      ErrorCode.NetworkOffline,
+    );
+    reportToGlitchTip(error);
+    throw error;
   }
 
   // Expired access token: try one refresh, then replay the request.
@@ -91,7 +98,7 @@ export async function request<T>(
     const retryAfterSeconds = retryAfterHeader
       ? Number(retryAfterHeader)
       : undefined;
-    throw new ApiError(
+    const error = new ApiError(
       response.status,
       body?.message ?? `Request failed (${response.status})`,
       body?.code ?? null,
@@ -100,6 +107,8 @@ export async function request<T>(
       body?.requestId,
       Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : undefined,
     );
+    reportToGlitchTip(error);
+    throw error;
   }
 
   // Void-returning endpoints (POST/DELETE handlers with no return value) come
@@ -109,6 +118,19 @@ export async function request<T>(
   // status code.
   const text = await response.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+// 5xx and network failures only: everything else (401/403/404/409/429) is an
+// expected outcome and would be noise. Gated on the same DSN as
+// hooks.client.ts, which is the only place Sentry.init() is called — without
+// it these calls are no-ops, but the explicit check keeps the convention
+// visible here too.
+function reportToGlitchTip(error: ApiError): void {
+  if (!env.PUBLIC_GLITCHTIP_WEB_DSN) return;
+
+  if (error.status >= 500 || error.status === 0) {
+    Sentry.captureException(error, { tags: { requestId: error.requestId } });
+  }
 }
 
 /**
