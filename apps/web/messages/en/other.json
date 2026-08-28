@@ -375,6 +375,7 @@
   "tracking_remove": "Remove from my library",
   "tracking_favorite_add": "Favorite",
   "tracking_favorite_remove": "Remove from favorites",
+  "tracking_removed_toast": "Removed from your library.",
   "search_result_add": "Add to library",
   "search_result_already_added": "Already in your library",
   "notefield_label": "Notes",
