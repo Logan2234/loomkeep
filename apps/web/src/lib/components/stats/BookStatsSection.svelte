@@ -2,15 +2,13 @@
   // "Livres — en détail" section of /stats. Self-contained: fetches on
   // mount, reuses the BOOKS status breakdown already loaded by the overview
   // for "Lus", same pattern as the Vidéo/Jeux sections.
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { getBookStats } from "$lib/api/stats";
   import { formatNumber } from "$lib/format";
-  import type {
-    BookStatsDto,
-    DomainStatusBreakdownDto,
-  } from "@loomkeep/shared";
+  import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
-  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
 
   let {
@@ -21,9 +19,13 @@
     locked: boolean;
   } = $props();
 
-  const bookStats = statsResource<BookStatsDto>(getBookStats);
+  const bookStats = createApiQuery(() => ({
+    key: keys.stats.books(),
+    fetch: getBookStats,
+  }));
   const books = $derived(bookStats.data);
   const error = $derived(bookStats.error);
+  const loading = $derived(bookStats.loading);
 
   const readCount = $derived(
     bookBreakdown?.byStatus.find((s) => s.bucket === "DONE")?.count ?? 0,
@@ -52,7 +54,16 @@
   );
 </script>
 
-{#if error}
+{#if loading}
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    {#each { length: 4 } as _, i (i)}
+      <div class="card p-4">
+        <div class="skeleton h-8 w-1/2 rounded"></div>
+        <div class="skeleton mt-2 h-3 w-2/3 rounded"></div>
+      </div>
+    {/each}
+  </div>
+{:else if error}
   <p class="text-danger text-sm">{error}</p>
 {:else if books}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -8,6 +8,10 @@ export const queryClient = new QueryClient({
       // A stray network blip shouldn't need a manual refresh; 1 retry is
       // enough for a self-host instance on a possibly-flaky connection.
       retry: 1,
+      // Also the refetch-on-focus knob (no separate option): a query only
+      // refetches on window focus once its data is older than this — see
+      // docs/plans/centralized-api-layer.md §3.
+      staleTime: 30_000,
     },
   },
 });
