@@ -35,7 +35,7 @@
     },
     {
       id: ProfileAccess.GHOST,
-      label: m.common_ghost(),
+      label: m.profile_ghost(),
       desc: "Invisible : personne ne peut vous trouver, vous suivre, ni voir votre activité. Vous pouvez suivre et commenter de façon anonyme.",
     },
   ];
@@ -344,7 +344,7 @@
             <th class="py-2 pr-3 font-semibold">Action</th>
             <th class="px-3 py-2 font-semibold">{m.common_public()}</th>
             <th class="px-3 py-2 font-semibold">{m.common_private()}</th>
-            <th class="py-2 pl-3 font-semibold">{m.common_ghost()}</th>
+            <th class="py-2 pl-3 font-semibold">{m.profile_ghost()}</th>
           </tr>
         </thead>
         <tbody class="divide-border divide-y">

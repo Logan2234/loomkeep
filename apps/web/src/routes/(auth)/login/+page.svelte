@@ -139,7 +139,7 @@
     <div class="w-full max-w-sm">
       <div class="mb-8 text-center">
         <p class="font-display text-3xl font-extrabold tracking-tight">
-          LOOM<span class="text-accent">KEEP</span>
+          {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
         </p>
         <p class="text-dim mt-2 text-sm">{m.auth_login_tagline()}</p>
       </div>

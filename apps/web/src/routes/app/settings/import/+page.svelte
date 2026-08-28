@@ -83,7 +83,7 @@
             {#if premiumLocked && !usedUp}
               <span
                 class="bg-surface-2 text-dim rounded-full px-2 py-0.5 text-[0.65rem] font-semibold normal-case">
-                {m.common_import_free_quota()}
+                {m.import_free_quota()}
               </span>
             {/if}
           </p>
@@ -125,7 +125,7 @@
                     <span class="text-dim text-sm">{source.description}</span>
                   </span>
                   {#if usedUp}
-                    <Tooltip text={m.common_import_quota_used()}>
+                    <Tooltip text={m.import_free_quota_used()}>
                       <span
                         class="bg-accent text-accent-fg inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold">
                         <Icon name="lock" class="h-3 w-3" />

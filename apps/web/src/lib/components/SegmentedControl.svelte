@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends string">
+  import { m } from "$lib/paraglide/messages.js";
   import PremiumLockBadge from "./PremiumLockBadge.svelte";
   import Tooltip from "./Tooltip.svelte";
-  import { m } from "$lib/paraglide/messages.js";
 
   interface SegmentOption<V extends string> {
     value: V;
@@ -46,7 +46,7 @@
   class="border-border bg-surface-2 inline-flex shrink-0 gap-0.5 rounded-full border p-0.5 {className}">
   {#each options as opt (opt.value)}
     {#if opt.locked}
-      <Tooltip text={m.common_premium_locked()}>
+      <Tooltip text={m.premium_locked()}>
         {@render segment(opt)}
         <PremiumLockBadge />
       </Tooltip>

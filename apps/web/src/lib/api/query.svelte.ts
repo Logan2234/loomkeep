@@ -19,8 +19,10 @@ interface ApiQueryOptions<T> {
   enabled?: boolean;
   /** Polling interval. Default `false`. */
   refetchInterval?: number | false;
-  // Opt-in — only correct when a key change means "same subject, different
-  // view" (filters/sort/page/search), never "different subject". Default `false`.
+  /**
+   *  Opt-in — only correct when a key change means "same subject, different
+   * view" (filters/sort/page/search), never "different subject". Default `false`.
+   */
   keepPreviousData?: boolean;
   /** Default: the global retry (queryClient.ts). */
   retry?: number;

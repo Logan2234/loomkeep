@@ -1,14 +1,13 @@
-interface LandingWork {
+/**
+ * Decorative poster wall behind the hero — real cover art from the same
+ * providers the app queries live (TMDB, AniList, Open Library, MusicBrainz),
+ * not invented artwork. Games have no public, key-free cover source, so they
+ * fall back to Poster's gradient like they do in the real library.
+ */
+export const LANDING_LIBRARY: {
   title: string;
-  /** null falls back to Poster's deterministic gradient. */
   cover: string | null;
-}
-
-// Decorative poster wall behind the hero — real cover art from the same
-// providers the app queries live (TMDB, AniList, Open Library, MusicBrainz),
-// not invented artwork. Games have no public, key-free cover source, so they
-// fall back to Poster's gradient like they do in the real library.
-export const LANDING_LIBRARY: LandingWork[] = [
+}[] = [
   {
     title: "Severance",
     cover: "https://image.tmdb.org/t/p/w500/xmjW474DJ27bqTYNvS4MvraJgiQ.jpg",

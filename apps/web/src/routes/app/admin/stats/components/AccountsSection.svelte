@@ -3,9 +3,11 @@
   // Everything activity-related comes from refresh-token usage (see the API
   // service) — ActivityEvent only exists since P4 and would bury old accounts.
   import { getAdminNewAccountsTrend } from "$lib/api/client";
-  import { formatNumber } from "$lib/format";
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
+  import StatFigure from "$lib/components/stats/StatFigure.svelte";
+  import { formatNumber } from "$lib/format";
+  import { m } from "$lib/paraglide/messages.js";
   import {
     DORMANT_AFTER_DAYS,
     ProfileAccess,
@@ -13,8 +15,6 @@
     type TrendPeriod,
   } from "@loomkeep/shared";
   import CohortTable from "./CohortTable.svelte";
-  import { m } from "$lib/paraglide/messages.js";
-  import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminAccountsSectionDto } = $props();
@@ -41,7 +41,7 @@
   const ACCESS_LABEL: Record<ProfileAccess, string> = {
     [ProfileAccess.PUBLIC]: m.common_public(),
     [ProfileAccess.PRIVATE]: m.common_private(),
-    [ProfileAccess.GHOST]: m.common_ghost(),
+    [ProfileAccess.GHOST]: m.profile_ghost(),
   };
   const ACCESS_COLOR: Record<ProfileAccess, string> = {
     [ProfileAccess.PUBLIC]: "var(--stat-media)",

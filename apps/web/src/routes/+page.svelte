@@ -372,7 +372,7 @@
     <div
       class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3">
       <a href="/" class="font-display text-xl font-extrabold tracking-tight">
-        LOOM<span class="text-accent">KEEP</span>
+        {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
       </a>
 
       <div class="flex items-center gap-2">

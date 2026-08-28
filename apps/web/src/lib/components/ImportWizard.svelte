@@ -415,11 +415,10 @@
   {#if error}
     <Banner variant="error" class="mb-4">{error}</Banner>
   {:else if premiumLocked && quotaUsed}
-    <Banner variant="warning" class="mb-4"
-      >{m.common_import_quota_used()}</Banner>
+    <Banner variant="warning" class="mb-4">{m.import_free_quota_used()}</Banner>
   {:else if premiumLocked}
     <Banner variant="info" class="mb-4"
-      >{m.common_import_quota_reminder()}</Banner>
+      >{m.import_free_quota_reminder()}</Banner>
   {/if}
 
   {#if phase === "input"}

@@ -105,7 +105,7 @@
         </button>
       {/snippet}
       {#if calendarLocked}
-        <Tooltip text={m.common_premium_locked()} class="inline-flex shrink-0">
+        <Tooltip text={m.premium_locked()} class="inline-flex shrink-0">
           {@render calendarButton()}
           <PremiumLockBadge />
         </Tooltip>

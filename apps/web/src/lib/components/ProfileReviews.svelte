@@ -16,8 +16,8 @@
     GAME: m.common_Games(),
     BOOK: m.common_Books(),
     MUSIC: m.common_Music(),
-    SEASON: m.profile_reviews_season(),
-    EPISODE: m.profile_reviews_episode(),
+    SEASON: m.common_season(),
+    EPISODE: m.common_episode(),
   };
 
   let reviews = $state<MyReviewDto[]>([]);
@@ -40,7 +40,7 @@
       <a
         href="/app/reviews"
         class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold">
-        {m.profile_reviews_manage()}
+        {m.common_manage()}
         <Icon name="chevron-right" class="h-4 w-4" />
       </a>
     </div>
@@ -70,7 +70,7 @@
                 class="truncate font-semibold {review.target?.href
                   ? 'group-hover:text-accent transition-colors'
                   : ''}">
-                {review.target?.title ?? m.profile_reviews_untitled_work()}
+                {review.target?.title ?? m.common_work()}
               </p>
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
                 <span class="timecode uppercase"
