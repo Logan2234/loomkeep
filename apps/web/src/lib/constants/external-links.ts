@@ -6,3 +6,10 @@ export const FEEDBACK_FEATURE_REQUESTS_URL =
   "https://feedback.loomkeep.app/?board=feature-requests";
 export const CHANGELOG_URL = "https://feedback.loomkeep.app/changelog";
 export const ROADMAP_URL = "https://feedback.loomkeep.app/roadmap";
+
+export const TMDB_API = "https://www.themoviedb.org/";
+export const ANILIST_API = "https://anilist.co/";
+export const OMDB_API = "https://www.omdbapi.com/";
+export const IGDB_API = "https://www.igdb.com/";
+export const OPENLIBRARY_API = "https://openlibrary.org/";
+export const MUSICBRAINZ_API = "https://musicbrainz.org/";
