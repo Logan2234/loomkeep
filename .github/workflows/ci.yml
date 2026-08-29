@@ -54,30 +54,30 @@ jobs:
       - run: pnpm build:package
       - run: pnpm lint
       - name: generate paraglide types
-        if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web generate:paraglide
       - name: svelte-check
-        if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web check
       - name: web unit tests
-        if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web test
       - name: web production build
-        if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web build
       - name: generate Prisma client
-        if: needs.changes.outputs.api == 'true'
         run: pnpm --filter @loomkeep/api exec prisma generate
       - name: api unit tests (with coverage)
-        if: needs.changes.outputs.api == 'true'
         run: pnpm --filter @loomkeep/api test:cov
       - name: upload coverage to Codecov
-        if: needs.changes.outputs.api == 'true'
+        background: true
+        continue-on-error: true
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/api/coverage/lcov.info
           fail_ci_if_error: false
+      - run: pnpm exec lhci autorun
+        background: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
 
   e2e:
     needs: changes
@@ -130,21 +130,6 @@ jobs:
       - run: pnpm build:package
       - run: pnpm --filter @loomkeep/web generate:paraglide
       - run: pnpm knip
-
-  lighthouseci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install
-      - run: pnpm run build
-      - run: pnpm exec lhci autorun
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
   # PR/manual-dispatch validation only — build without pushing, to catch a
   # broken Dockerfile before merge. Skipped on a push to main: docker-push

@@ -31,5 +31,7 @@
     "https://loomkeep.app/legal/legal-notice"
   ],
   "concurrency": 1,
-  "useIncognitoBrowserContext": true
+  "useIncognitoBrowserContext": true,
+  "includeNotices": true,
+  "includeWarnings": true
 }
