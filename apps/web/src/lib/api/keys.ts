@@ -25,6 +25,12 @@ export const keys = {
     editable: () => ["lists", "editable"] as const,
     forUser: (username: string) => ["lists", "for-user", username] as const,
   },
+  reviews: {
+    mine: (targetType: string, targetId: string) =>
+      ["reviews", "mine", targetType, targetId] as const,
+    community: (targetType: string, targetId: string) =>
+      ["reviews", "community", targetType, targetId] as const,
+  },
   feed: {
     all: () => ["feed"] as const,
     preview: () => ["feed", "preview"] as const,
