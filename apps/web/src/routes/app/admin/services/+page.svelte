@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getAdminServices } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -12,29 +13,19 @@
   import { formatNumber, formatTime } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
-  let services = $state<ServiceStatusDto[] | null>(null);
-  let checkedAt = $state<string | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
+  const queryClient = useQueryClient();
 
-  async function load() {
-    loading = true;
-    error = null;
-    try {
-      const res = await getAdminServices();
-      services = res.services;
-      checkedAt = res.checkedAt;
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  $effect(() => {
-    if (auth.isAdmin) void load();
-  });
+  const servicesQuery = createApiQuery(() => ({
+    key: keys.admin.services(),
+    fetch: getAdminServices,
+    enabled: auth.isAdmin,
+  }));
+  const services = $derived(servicesQuery.data?.services ?? null);
+  const checkedAt = $derived(servicesQuery.data?.checkedAt ?? null);
+  const loading = $derived(servicesQuery.loading);
+  const error = $derived(servicesQuery.error);
 
   // Ordered areas so groups render in a stable, sensible order. Must match the
   // ServiceArea values the API emits (see admin.service.ts).
@@ -179,7 +170,11 @@
     title={m.admin_services_title()}
     subtitle={m.admin_services_subtitle()}>
     {#snippet actions()}
-      <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
+      <button
+        onclick={() =>
+          queryClient.refetchQueries({ queryKey: keys.admin.services() })}
+        disabled={loading}
+        class="btn btn-ghost shrink-0">
         {loading ? "…" : m.common_refresh()}
       </button>
     {/snippet}

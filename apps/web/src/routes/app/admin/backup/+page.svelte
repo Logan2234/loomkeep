@@ -6,7 +6,9 @@
     restoreAdminBackup,
     runAdminJob,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -28,38 +30,21 @@
   const BACKUP_JOB_KEY = "backup.run";
   const CONFIRM_PHRASE = "RESTAURER";
 
-  let files = $state<AdminBackupFileDto[] | null>(null);
-  let loading = $state(true);
-  let loadError = $state("");
+  const filesQuery = createApiQuery(() => ({
+    key: keys.admin.backups(),
+    fetch: getAdminBackupFiles,
+  }));
+  const files = $derived(filesQuery.data);
+  const loading = $derived(filesQuery.loading);
+  const loadError = $derived(filesQuery.error);
 
-  let running = $state(false);
-  let downloadingId = $state<string | null>(null);
-  let deletingId = $state<string | null>(null);
   let pendingDelete = $state<AdminBackupFileDto | null>(null);
 
   let fileInput = $state<HTMLInputElement | null>(null);
   let pendingFile = $state<File | null>(null);
   let showRestoreModal = $state(false);
   let confirmText = $state("");
-  let restoring = $state(false);
-  let restoreError = $state("");
   let restoreDone = $state(false);
-
-  async function load() {
-    loading = true;
-    loadError = "";
-    try {
-      files = await getAdminBackupFiles();
-    } catch (err) {
-      loadError = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  $effect(() => {
-    void load();
-  });
 
   const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -116,23 +101,21 @@
     ];
   });
 
-  async function runNow() {
-    running = true;
-    try {
-      await runAdminJob(BACKUP_JOB_KEY);
-      await load();
-      toast.success("Sauvegarde générée.");
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      running = false;
-    }
+  const runNowMut = createApiMutation(() => ({
+    mutate: () => runAdminJob(BACKUP_JOB_KEY),
+    invalidates: [keys.admin.backups()],
+    successToast: "Sauvegarde générée.",
+    errorToast: true,
+  }));
+
+  function runNow() {
+    runNowMut.mutate();
   }
 
-  async function downloadFile(file: AdminBackupFileDto) {
-    downloadingId = file.id;
-    try {
-      const { content, filename } = await getAdminBackupFile(file.id);
+  const downloadMut = createApiMutation(() => ({
+    mutate: (file: AdminBackupFileDto) => getAdminBackupFile(file.id),
+    errorToast: true,
+    onSuccess: ({ content, filename }) => {
       const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -140,26 +123,24 @@
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      downloadingId = null;
-    }
+    },
+  }));
+
+  function downloadFile(file: AdminBackupFileDto) {
+    downloadMut.mutate(file);
   }
 
-  async function confirmDeleteFile() {
+  const deleteMut = createApiMutation(() => ({
+    mutate: (file: AdminBackupFileDto) => deleteAdminBackupFile(file.id),
+    invalidates: [keys.admin.backups()],
+    successToast: "Sauvegarde supprimée.",
+    errorToast: true,
+    onSuccess: () => (pendingDelete = null),
+  }));
+
+  function confirmDeleteFile() {
     if (!pendingDelete) return;
-    deletingId = pendingDelete.id;
-    try {
-      await deleteAdminBackupFile(pendingDelete.id);
-      files = (files ?? []).filter((f) => f.id !== pendingDelete!.id);
-      toast.success("Sauvegarde supprimée.");
-      pendingDelete = null;
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      deletingId = null;
-    }
+    deleteMut.mutate(pendingDelete);
   }
 
   function pickFile() {
@@ -171,32 +152,30 @@
     if (!file) return;
     pendingFile = file;
     confirmText = "";
-    restoreError = "";
+    restoreMut.reset();
     restoreDone = false;
     showRestoreModal = true;
   }
 
   function closeRestoreModal() {
-    if (restoring) return;
+    if (restoreMut.loading) return;
     showRestoreModal = false;
     pendingFile = null;
     if (fileInput) fileInput.value = "";
   }
 
-  async function confirmRestore() {
-    if (!pendingFile || confirmText !== CONFIRM_PHRASE) return;
-    restoring = true;
-    restoreError = "";
-    try {
-      const sql = await pendingFile.text();
-      await restoreAdminBackup({ sql });
+  const restoreMut = createApiMutation(() => ({
+    mutate: async (file: File) =>
+      restoreAdminBackup({ sql: await file.text() }),
+    onSuccess: () => {
       restoreDone = true;
       toast.success("Base de données restaurée.");
-    } catch (err) {
-      restoreError = resolveApiError(err);
-    } finally {
-      restoring = false;
-    }
+    },
+  }));
+
+  function confirmRestore() {
+    if (!pendingFile || confirmText !== CONFIRM_PHRASE) return;
+    restoreMut.mutate(pendingFile);
   }
 </script>
 
@@ -208,10 +187,10 @@
     {#snippet actions()}
       <button
         class="btn btn-primary shrink-0"
-        disabled={running}
+        disabled={runNowMut.loading}
         onclick={runNow}>
         <Icon name="archive" class="mr-1.5 inline h-4 w-4" />
-        {running ? "Génération…" : "Sauvegarder maintenant"}
+        {runNowMut.loading ? "Génération…" : "Sauvegarder maintenant"}
       </button>
     {/snippet}
   </PageHeader>
@@ -248,7 +227,8 @@
             <button
               type="button"
               aria-label="Télécharger cette sauvegarde"
-              disabled={downloadingId === f.id}
+              disabled={downloadMut.loading &&
+                downloadMut.variables?.id === f.id}
               onclick={() => downloadFile(f)}
               class="text-dim hover:bg-surface-2 hover:text-fg shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
               <Icon name="download" class="h-4 w-4" />
@@ -256,7 +236,7 @@
             <button
               type="button"
               aria-label="Supprimer cette sauvegarde"
-              disabled={deletingId === f.id}
+              disabled={deleteMut.loading && deleteMut.variables?.id === f.id}
               onclick={() => (pendingDelete = f)}
               class="text-dim hover:bg-danger/10 hover:text-danger shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
               <Icon name="trash" class="h-4 w-4" />
@@ -304,7 +284,7 @@
     message={`${pendingDelete.filename} sera définitivement supprimée du disque.`}
     confirmLabel={m.common_delete()}
     danger
-    busy={deletingId === pendingDelete.id}
+    busy={deleteMut.loading}
     onConfirm={confirmDeleteFile}
     onCancel={() => (pendingDelete = null)} />
 {/if}
@@ -337,26 +317,26 @@
       <input
         type="text"
         bind:value={confirmText}
-        disabled={restoring}
+        disabled={restoreMut.loading}
         placeholder={CONFIRM_PHRASE}
         class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
-      {#if restoreError}
-        <Banner variant="error" class="mt-3">{restoreError}</Banner>
+      {#if restoreMut.error}
+        <Banner variant="error" class="mt-3">{restoreMut.error}</Banner>
       {/if}
       <div class="mt-5 flex justify-end gap-2">
         <button
           type="button"
           class="btn btn-ghost"
-          disabled={restoring}
+          disabled={restoreMut.loading}
           onclick={closeRestoreModal}>
           {m.common_cancel()}
         </button>
         <button
           type="button"
           class="btn btn-danger"
-          disabled={restoring || confirmText !== CONFIRM_PHRASE}
+          disabled={restoreMut.loading || confirmText !== CONFIRM_PHRASE}
           onclick={confirmRestore}>
-          {restoring ? "Restauration…" : "Restaurer définitivement"}
+          {restoreMut.loading ? "Restauration…" : "Restaurer définitivement"}
         </button>
       </div>
     {/if}

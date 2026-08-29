@@ -33,7 +33,7 @@
   }));
   const servicesQuery = createApiQuery(() => ({
     key: keys.admin.services(),
-    fetch: () => getAdminServices().then((r) => r.services),
+    fetch: getAdminServices,
   }));
   const jobsQuery = createApiQuery(() => ({
     key: keys.admin.jobs(),
@@ -50,7 +50,7 @@
   }));
 
   const overview = $derived(overviewQuery.data);
-  const services = $derived(servicesQuery.data);
+  const services = $derived(servicesQuery.data?.services ?? null);
   const jobs = $derived(jobsQuery.data);
   const backups = $derived(backupsQuery.data);
   const reportsPending = $derived(reportsPendingQuery.data ?? 0);
