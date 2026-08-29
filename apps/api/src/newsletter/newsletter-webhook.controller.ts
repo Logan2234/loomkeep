@@ -44,6 +44,8 @@ export class NewsletterWebhookController {
           id: string;
           title: string;
           contentPreview: string;
+          /** Full body as sanitized HTML — see NewsletterService.handleChangelogPublished. */
+          contentHtml: string;
           publishedAt: Date;
           linkedPostCount: number;
         };
@@ -53,9 +55,9 @@ export class NewsletterWebhookController {
     const data = body.data.changelog;
     const id = data.id;
     const title = data.title;
-    const content = data.contentPreview;
+    const contentPreview = data.contentPreview;
 
-    if (!id.startsWith("changelog_") || !title || !content) {
+    if (!id.startsWith("changelog_") || !title || !contentPreview) {
       this.logger.warn(
         `Unexpected changelog-published payload: ${JSON.stringify(body)}`,
       );
@@ -67,7 +69,12 @@ export class NewsletterWebhookController {
       );
     }
 
-    await this.newsletter.handleChangelogPublished(id, title, content);
+    await this.newsletter.handleChangelogPublished(
+      id,
+      title,
+      contentPreview,
+      data.contentHtml ?? "",
+    );
     return { ok: true };
   }
 }

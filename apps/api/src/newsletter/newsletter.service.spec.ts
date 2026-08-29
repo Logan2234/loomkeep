@@ -50,6 +50,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       "changelog_1",
       "Loomkeep 1.3.0",
       "content",
+      "<p>content</p>",
     );
     // The send itself is fired without awaiting (see NewsletterService docs).
     await new Promise((resolve) => setImmediate(resolve));
@@ -65,6 +66,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       "a@example.com",
       "Loomkeep 1.3.0",
       "content",
+      "<p>content</p>",
       expect.any(String),
     );
     expect(prisma.newsletterSend.update).toHaveBeenCalledWith({
@@ -89,6 +91,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       "changelog_1",
       "Loomkeep 1.3.0",
       "content",
+      "<p>content</p>",
     );
     await new Promise((resolve) => setImmediate(resolve));
 
@@ -97,6 +100,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       "a@example.com",
       "Loomkeep 1.3.0",
       "content",
+      "<p>content</p>",
       "existing-token",
     );
   });
@@ -111,6 +115,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       "changelog_1",
       "Loomkeep 1.3.0",
       "content",
+      "<p>content</p>",
     );
     await new Promise((resolve) => setImmediate(resolve));
 
@@ -129,6 +134,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
         "changelog_1",
         "Loomkeep 1.3.0",
         "content",
+        "<p>content</p>",
       ),
     ).rejects.toThrow("db down");
   });

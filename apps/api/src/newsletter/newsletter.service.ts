@@ -34,12 +34,18 @@ export class NewsletterService {
   async handleChangelogPublished(
     quackbackChangelogId: string,
     title: string,
-    content: string,
+    contentPreview: string,
+    contentHtml: string,
   ): Promise<void> {
     const reserved = await this.reserve(quackbackChangelogId, title);
     if (!reserved) return;
 
-    void this.sendAndFinalize(reserved.id, title, content).catch((err) => {
+    void this.sendAndFinalize(
+      reserved.id,
+      title,
+      contentPreview,
+      contentHtml,
+    ).catch((err) => {
       this.logger.error(
         `Newsletter send failed for changelog ${quackbackChangelogId}`,
         err,
@@ -70,7 +76,8 @@ export class NewsletterService {
   private async sendAndFinalize(
     id: string,
     title: string,
-    content: string,
+    contentPreview: string,
+    contentHtml: string,
   ): Promise<void> {
     const recipients = await this.prisma.user.findMany({
       where: { notifyNewsletter: true },
@@ -83,7 +90,13 @@ export class NewsletterService {
           r.id,
           r.newsletterUnsubscribeToken,
         );
-        await this.mail.sendNewsletter(r.email, title, content, token);
+        await this.mail.sendNewsletter(
+          r.email,
+          title,
+          contentPreview,
+          contentHtml,
+          token,
+        );
       }),
     );
 
