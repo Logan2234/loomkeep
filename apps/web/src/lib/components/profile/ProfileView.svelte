@@ -12,6 +12,9 @@
     unfollowUser,
   } from "$lib/api/client";
   import { ApiError } from "$lib/api/core";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
@@ -35,12 +38,11 @@
   import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
-    ListDto,
     MyListDto,
     RelationshipDto,
     SocialProfileDto,
-    UserSummaryDto,
   } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   // Shared body for both /u/[username] (any profile, including your own —
   // read-only there even for yourself) and /profile (your own, with the
@@ -67,24 +69,24 @@
     MUSIC: "/app/music",
   };
 
-  let profile = $state<SocialProfileDto | null>(null);
-  let notFound = $state(false);
-  let loading = $state(true);
-  let busy = $state(false);
+  const queryClient = useQueryClient();
 
+  // notFound is set from the query's onError, and cleared once a fetch for
+  // the (possibly new) username actually lands — see the $effect below.
+  let notFound = $state(false);
+
+  const profileQuery = createApiQuery(() => ({
+    key: keys.profile.detail(username),
+    fetch: () => getProfile(username),
+    onError: (err) => {
+      notFound = err instanceof ApiError && err.status === 404;
+    },
+  }));
   $effect(() => {
-    // Re-fetch whenever the target username changes.
-    const name = username;
-    loading = true;
-    notFound = false;
-    profile = null;
-    getProfile(name)
-      .then((p) => (profile = p))
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 404) notFound = true;
-      })
-      .finally(() => (loading = false));
+    if (profileQuery.data) notFound = false;
   });
+  const profile = $derived(profileQuery.data);
+  const loading = $derived(profileQuery.loading);
 
   let rel = $derived<RelationshipDto | null>(profile?.relationship ?? null);
 
@@ -94,15 +96,12 @@
 
   // Shared/public lists visible to the viewer — social-gated (own-visibility
   // per list, see ListService.listForUser), so only fetched when enabled.
-  let lists = $state<MyListDto[]>([]);
-  $effect(() => {
-    const name = username;
-    lists = [];
-    if (!appConfig.socialEnabled) return;
-    getUserLists(name)
-      .then((r) => (lists = r))
-      .catch(() => (lists = []));
-  });
+  const listsQuery = createApiQuery(() => ({
+    key: keys.lists.forUser(username),
+    fetch: () => getUserLists(username),
+    enabled: appConfig.socialEnabled,
+  }));
+  const lists = $derived(listsQuery.data ?? []);
 
   // Own view: a "+" create tile always trails the list — a stranger only
   // ever sees the plain list previews (or nothing, hiding the section). The
@@ -122,11 +121,10 @@
   );
 
   let creatingList = $state(false);
-  function handleListCreated(list: ListDto) {
-    lists = [
-      { ...list, itemCount: 0, previewImageUrls: [], role: "OWNER" },
-      ...lists,
-    ];
+  function handleListCreated() {
+    void queryClient.invalidateQueries({
+      queryKey: keys.lists.forUser(username),
+    });
   }
 
   let memberSince = $derived(
@@ -175,67 +173,77 @@
       !rel?.requested,
   );
 
+  // Patches the cached profile in place with a fresh relationship — the
+  // mutations below return it directly, so there's no need to refetch.
   function applyRelationship(next: RelationshipDto) {
-    if (!profile) return;
-    // Keep follower count roughly in sync for the common accepted-follow case.
-    const wasFollowing = profile.relationship.following;
-    profile = {
-      ...profile,
-      relationship: next,
-      followerCount:
-        profile.followerCount +
-        (next.following && !wasFollowing
-          ? 1
-          : !next.following && wasFollowing
-            ? -1
-            : 0),
-    };
+    queryClient.setQueryData(
+      keys.profile.detail(username),
+      (old: SocialProfileDto | undefined) => {
+        if (!old) return old;
+        // Keep follower count roughly in sync for the common accepted-follow case.
+        const wasFollowing = old.relationship.following;
+        return {
+          ...old,
+          relationship: next,
+          followerCount:
+            old.followerCount +
+            (next.following && !wasFollowing
+              ? 1
+              : !next.following && wasFollowing
+                ? -1
+                : 0),
+        };
+      },
+    );
   }
 
-  async function toggleFollow() {
-    if (!profile || busy) return;
-    busy = true;
-    try {
-      const next =
-        rel?.following || rel?.requested
-          ? await unfollowUser(profile.username)
-          : await followUser(profile.username);
-      applyRelationship(next);
-    } finally {
-      busy = false;
-    }
-  }
+  const followMut = createApiMutation(() => ({
+    mutate: () =>
+      rel?.following || rel?.requested
+        ? unfollowUser(profile!.username)
+        : followUser(profile!.username),
+    onSuccess: applyRelationship,
+  }));
 
   let confirmBlock = $state(false);
   let avatarZoomed = $state(false);
 
-  async function toggleBlock() {
-    if (!profile || busy) return;
+  const unblockMut = createApiMutation(() => ({
+    mutate: () => unblockUser(profile!.username),
+    onSuccess: applyRelationship,
+  }));
+
+  const blockMut = createApiMutation(() => ({
+    mutate: () => blockUser(profile!.username),
+    onSuccess: (next: RelationshipDto) => {
+      applyRelationship(next);
+      confirmBlock = false;
+    },
+  }));
+
+  const busy = $derived(
+    followMut.loading || unblockMut.loading || blockMut.loading,
+  );
+
+  function toggleFollow() {
+    if (!profile) return;
+    followMut.mutate();
+  }
+
+  function toggleBlock() {
+    if (!profile) return;
     // Blocking is consequential (cuts the relationship both ways) — confirm
     // first. Unblocking just restores access, no confirmation needed.
     if (!rel?.blocking) {
       confirmBlock = true;
       return;
     }
-    busy = true;
-    try {
-      const next = await unblockUser(profile.username);
-      applyRelationship(next);
-    } finally {
-      busy = false;
-    }
+    unblockMut.mutate();
   }
 
-  async function confirmBlockUser() {
-    if (!profile || busy) return;
-    busy = true;
-    try {
-      const next = await blockUser(profile.username);
-      applyRelationship(next);
-    } finally {
-      busy = false;
-      confirmBlock = false;
-    }
+  function confirmBlockUser() {
+    if (!profile) return;
+    blockMut.mutate();
   }
 
   async function signOut() {
@@ -249,30 +257,37 @@
   let editProfileModalOpen = $state(false);
 
   function applyAvatar(url: string | null) {
-    if (profile) profile = { ...profile, avatarUrl: url };
+    queryClient.setQueryData(
+      keys.profile.detail(username),
+      (old: SocialProfileDto | undefined) =>
+        old ? { ...old, avatarUrl: url } : old,
+    );
   }
 
   function applyProfileEdit(user: { displayName: string; bio: string | null }) {
-    if (profile)
-      profile = { ...profile, displayName: user.displayName, bio: user.bio };
+    queryClient.setQueryData(
+      keys.profile.detail(username),
+      (old: SocialProfileDto | undefined) =>
+        old ? { ...old, displayName: user.displayName, bio: user.bio } : old,
+    );
   }
 
   // Followers/following modal, opened from the counts below.
   let connectionsKind = $state<"followers" | "following" | null>(null);
-  let connections = $state<UserSummaryDto[]>([]);
-  let connectionsLoading = $state(false);
 
-  async function openConnections(kind: "followers" | "following") {
-    connectionsKind = kind;
-    connectionsLoading = true;
-    connections = [];
-    try {
-      connections = await (kind === "followers"
+  const connectionsQuery = createApiQuery(() => ({
+    key: keys.profile.connections(username, connectionsKind ?? "followers"),
+    fetch: () =>
+      connectionsKind === "followers"
         ? getUserFollowers(username)
-        : getUserFollowing(username));
-    } finally {
-      connectionsLoading = false;
-    }
+        : getUserFollowing(username),
+    enabled: connectionsKind !== null,
+  }));
+  const connections = $derived(connectionsQuery.data ?? []);
+  const connectionsLoading = $derived(connectionsQuery.loading);
+
+  function openConnections(kind: "followers" | "following") {
+    connectionsKind = kind;
   }
 </script>
 

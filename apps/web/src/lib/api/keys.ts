@@ -23,6 +23,7 @@ export const keys = {
   },
   lists: {
     editable: () => ["lists", "editable"] as const,
+    forUser: (username: string) => ["lists", "for-user", username] as const,
   },
   feed: {
     all: () => ["feed"] as const,
@@ -31,6 +32,9 @@ export const keys = {
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
     myReviews: () => ["profile", "my-reviews"] as const,
+    detail: (username: string) => ["profile", "detail", username] as const,
+    connections: (username: string, kind: "followers" | "following") =>
+      ["profile", "connections", username, kind] as const,
   },
   library: {
     watching: () => ["library", "watching"] as const,
