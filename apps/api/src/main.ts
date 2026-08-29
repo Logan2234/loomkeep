@@ -10,6 +10,8 @@ import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { Logger } from "nestjs-pino";
+import { readFile } from "node:fs/promises";
+import { join } from "path";
 import { AppModule } from "./app.module";
 import { ValidationException } from "./common/validation.exception";
 
@@ -89,15 +91,22 @@ async function bootstrap() {
   // regardless (the nest-cli swagger plugin injects it into every compiled
   // file using @Api* decorators), but the UI itself is still gated to dev.
   if (isDev) {
+    const raw = await readFile(join(process.cwd(), "package.json"), "utf-8");
+    const { version } = JSON.parse(raw) as { version: string };
+
     const { SwaggerModule, DocumentBuilder } = await import("@nestjs/swagger");
     const config = new DocumentBuilder()
       .setTitle("Loomkeep API")
       .setDescription("REST API contract")
-      .setVersion("0.1.0")
+      .setVersion(version)
       .addBearerAuth()
       .build();
 
-    SwaggerModule.setup("docs", app, SwaggerModule.createDocument(app, config));
+    SwaggerModule.setup(
+      "swagger",
+      app,
+      SwaggerModule.createDocument(app, config),
+    );
   }
 
   // Bind to 0.0.0.0: the Fastify adapter defaults to 127.0.0.1, which is

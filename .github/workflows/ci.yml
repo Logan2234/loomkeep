@@ -131,6 +131,21 @@ jobs:
       - run: pnpm --filter @loomkeep/web generate:paraglide
       - run: pnpm knip
 
+  lighthouseci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm run build
+      - run: pnpm exec lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
   # PR/manual-dispatch validation only — build without pushing, to catch a
   # broken Dockerfile before merge. Skipped on a push to main: docker-push
   # below builds the same images there (and pushes), so running this too

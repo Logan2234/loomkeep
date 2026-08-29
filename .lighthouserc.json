@@ -1,0 +1,14 @@
+{
+  "ci": {
+    "collect": {},
+    "assert": {
+      "preset": "lighthouse:recommended",
+      "includePassedAssertions": true
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    },
+    "server": {},
+    "wizard": {}
+  }
+}

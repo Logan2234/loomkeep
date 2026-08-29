@@ -18,6 +18,7 @@ const DISALLOWED = [
   "/forgot-password",
   "/reset-password",
   "/verify-email",
+  "/api/",
 ];
 
 export const GET: RequestHandler = ({ url, setHeaders }) => {

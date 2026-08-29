@@ -21,7 +21,10 @@ export const LANDING_LIBRARY: {
     title: "Piranesi",
     cover: "https://covers.openlibrary.org/b/id/10226290-L.jpg",
   },
-  { title: "Blue Prince", cover: null },
+  {
+    title: "Blue Prince",
+    cover: "https://images.igdb.com/igdb/image/upload/t_cover_big/co9mzd.jpg",
+  },
   {
     title: "Andor",
     cover: "https://image.tmdb.org/t/p/w500/wj0F4fU0jdsZI1cjiUSfeuE28y1.jpg",
@@ -53,7 +56,10 @@ export const LANDING_LIBRARY: {
     cover:
       "https://coverartarchive.org/release-group/6e335887-60ba-38f0-95af-fae7774336bf/front-250",
   },
-  { title: "Hollow Knight: Silksong", cover: null },
+  {
+    title: "Hollow Knight: Silksong",
+    cover: "https://images.igdb.com/igdb/image/upload/t_cover_big/cobebu.jpg",
+  },
   {
     title: "Arcane",
     cover: "https://image.tmdb.org/t/p/w500/ypS7R36Vjcn51zZsXsta5onnaCo.jpg",
@@ -102,5 +108,8 @@ export const LANDING_LIBRARY: {
     cover:
       "https://coverartarchive.org/release-group/0da340a0-6ad7-4fc2-a272-6f94393a7831/front-250",
   },
-  { title: "Outer Wilds", cover: null },
+  {
+    title: "Outer Wilds",
+    cover: "https://images.igdb.com/igdb/image/upload/t_cover_big/co65ac.jpg",
+  },
 ];

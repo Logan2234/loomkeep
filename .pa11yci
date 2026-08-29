@@ -1,0 +1,28 @@
+{
+  "defaults": {
+    "timeout": 30000,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "standard": "WCAG2AA",
+    "runners": [
+      "htmlcs"
+    ]
+  },
+  "urls": [
+    "https://loomkeep.app/",
+    "https://loomkeep.app/login",
+    "https://loomkeep.app/register",
+    "https://loomkeep.app/forgot-password",
+    "https://loomkeep.app/reset-password",
+    "https://loomkeep.app/register/check-email",
+    "https://loomkeep.app/verify-email",
+    "https://loomkeep.app/unsubscribe",
+    "https://loomkeep.app/legal/terms-of-service",
+    "https://loomkeep.app/legal/privacy-policy",
+    "https://loomkeep.app/legal/legal-notice"
+  ],
+  "concurrency": 1,
+  "useIncognitoBrowserContext": true
+}

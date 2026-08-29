@@ -1,0 +1,59 @@
+name: Web Audit
+
+on:
+  workflow_run:
+    workflows: [Deploy]
+    types: [completed]
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-audit
+  cancel-in-progress: true
+
+jobs:
+  pa11y:
+    name: Pa11y accessibility
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Run Pa11y CI
+        run: npx --yes pa11y-ci@4.1.1 https://loomkeep.app/
+
+  zap:
+    name: OWASP ZAP baseline
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: https://loomkeep.app/
+          fail_action: true
+          artifact_name: zap-scan
+
+#   zap-api:
+#     name: OWASP ZAP API
+#     runs-on: ubuntu-latest
+#     if: >
+#       github.event_name != 'workflow_run' ||
+#       github.event.workflow_run.conclusion == 'success'
+#     steps:
+#       - name: OWASP ZAP API scan
+#         uses: zaproxy/action-api-scan@v0.10.0
+#         with:
+#           target: https://loomkeep.app/api/openapi.json
+#           format: openapi
+#           fail_action: true
+#           artifact_name: zap-api-scan
