@@ -15,18 +15,21 @@ export const keys = {
       ["books", "detail", source, sourceId] as const,
     reading: () => ["books", "reading"] as const,
     tracked: () => ["books", "tracked"] as const,
+    search: (query: string) => ["books", "search", query] as const,
   },
   games: {
     playing: () => ["games", "playing"] as const,
     detail: (source: string, sourceId: string) =>
       ["games", "detail", source, sourceId] as const,
     tracked: () => ["games", "tracked"] as const,
+    search: (query: string) => ["games", "search", query] as const,
   },
   music: {
     toListen: () => ["music", "to-listen"] as const,
     detail: (source: string, sourceId: string) =>
       ["music", "detail", source, sourceId] as const,
     tracked: () => ["music", "tracked"] as const,
+    search: (query: string) => ["music", "search", query] as const,
   },
   media: {
     detail: (type: string, sourceId: string) =>
