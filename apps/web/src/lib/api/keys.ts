@@ -2,6 +2,13 @@ export const keys = {
   stats: {
     all: () => ["stats"] as const,
     books: () => ["stats", "books"] as const,
+    games: () => ["stats", "games"] as const,
+    music: () => ["stats", "music"] as const,
+    social: () => ["stats", "social"] as const,
+    video: () => ["stats", "video"] as const,
+    videoTemporal: (period: string) =>
+      ["stats", "video-temporal", period] as const,
+    overview: (domain: string) => ["stats", "overview", domain] as const,
   },
   books: {
     detail: (source: string, sourceId: string) =>

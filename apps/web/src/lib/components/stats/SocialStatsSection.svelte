@@ -2,6 +2,8 @@
   // "Social" section of /stats — gated by SOCIAL_ENABLED (see the page,
   // this component is only mounted when appConfig.socialEnabled is true).
   // Always cross-domain, not affected by the DomainFilter.
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { getSocialStats } from "$lib/api/stats";
   import {
     MONTH_SHORT_OPTIONS,
@@ -11,12 +13,14 @@
   } from "$lib/format";
   import type { SocialStatsDto } from "@loomkeep/shared";
   import LineChart from "./LineChart.svelte";
-  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
 
   let { locked }: { locked: boolean } = $props();
 
-  const socialStats = statsResource<SocialStatsDto>(getSocialStats);
+  const socialStats = createApiQuery(() => ({
+    key: keys.stats.social(),
+    fetch: getSocialStats,
+  }));
 
   // Static, made-up preview shown instead of the real (redacted) section
   // when `locked` — see stats.service.ts's redact* methods and

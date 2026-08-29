@@ -1,5 +1,7 @@
 <script lang="ts">
   import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import {
     getStatsOverview,
     getStatsWorksByDecade,
@@ -39,7 +41,6 @@
   import { m } from "$lib/paraglide/messages";
   import type {
     StatsDomain,
-    StatsOverviewDto,
     StatsWindow,
     StatsWorkDto,
   } from "@loomkeep/shared";
@@ -64,18 +65,13 @@
   // Narrows the "Activité dans le temps" weekday/hour curves only — see
   // PeriodFilter.
   let period = $state<StatsWindow>("ALL");
-  let overview = $state<StatsOverviewDto | null>(null);
-  let error = $state<string | null>(null);
 
-  $effect(() => {
-    const domain = selected;
-    error = null;
-    getStatsOverview(domain)
-      .then((o) => (overview = o))
-      .catch((e) => {
-        error = resolveApiError(e);
-      });
-  });
+  const overviewQuery = createApiQuery(() => ({
+    key: keys.stats.overview(selected),
+    fetch: () => getStatsOverview(selected),
+  }));
+  const overview = $derived(overviewQuery.data);
+  const error = $derived(overviewQuery.error);
 
   // "Tous" shows the domain split; a single domain shows its status funnel.
   const compositionSegments = $derived.by(() => {
@@ -165,14 +161,17 @@
   let modalTitle = $state("");
   let modalWorks = $state<StatsWorkDto[]>([]);
   let modalLoading = $state(false);
+  let modalError = $state<string | null>(null);
 
   function openRatingModal(ratingLabel: string) {
     const rating = Number(ratingLabel);
     modalOpen = true;
     modalLoading = true;
+    modalError = null;
     modalTitle = `Notées ${rating}/10`;
     getStatsWorksByRating(selected, rating)
       .then((w) => (modalWorks = w))
+      .catch((e) => (modalError = resolveApiError(e)))
       .finally(() => (modalLoading = false));
   }
 
@@ -180,9 +179,11 @@
     const decade = Number(decadeLabel);
     modalOpen = true;
     modalLoading = true;
+    modalError = null;
     modalTitle = `Sorties dans les années ${decade}`;
     getStatsWorksByDecade(selected, decade)
       .then((w) => (modalWorks = w))
+      .catch((e) => (modalError = resolveApiError(e)))
       .finally(() => (modalLoading = false));
   }
 </script>
@@ -339,5 +340,6 @@
     title={modalTitle}
     works={modalWorks}
     loading={modalLoading}
+    error={modalError}
     onclose={() => (modalOpen = false)} />
 {/if}

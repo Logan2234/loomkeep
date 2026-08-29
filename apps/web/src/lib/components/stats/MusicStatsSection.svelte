@@ -2,15 +2,13 @@
   // "Musique — en détail" section of /stats. Self-contained: fetches on
   // mount, reuses the MUSIC status breakdown already loaded by the overview
   // for "Écoutés", same pattern as the other domain sections.
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { getMusicStats } from "$lib/api/stats";
-  import type {
-    DomainStatusBreakdownDto,
-    MusicStatsDto,
-  } from "@loomkeep/shared";
+  import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
-  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
 
   let {
@@ -21,7 +19,10 @@
     locked: boolean;
   } = $props();
 
-  const musicStats = statsResource<MusicStatsDto>(getMusicStats);
+  const musicStats = createApiQuery(() => ({
+    key: keys.stats.music(),
+    fetch: getMusicStats,
+  }));
   const music = $derived(musicStats.data);
   const error = $derived(musicStats.error);
 

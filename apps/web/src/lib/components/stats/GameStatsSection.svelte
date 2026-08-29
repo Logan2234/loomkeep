@@ -3,14 +3,12 @@
   // reuses the GAMES status breakdown already loaded by the overview for
   // "Terminés" (avoids re-deriving it from scratch), same pattern as the
   // Vidéo section.
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { getGameStats } from "$lib/api/stats";
-  import type {
-    DomainStatusBreakdownDto,
-    GameStatsDto,
-  } from "@loomkeep/shared";
+  import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
-  import { statsResource } from "./stats-resource.svelte";
   import StatTile from "./StatTile.svelte";
 
   let {
@@ -21,7 +19,10 @@
     locked: boolean;
   } = $props();
 
-  const gameStats = statsResource<GameStatsDto>(getGameStats);
+  const gameStats = createApiQuery(() => ({
+    key: keys.stats.games(),
+    fetch: getGameStats,
+  }));
   const games = $derived(gameStats.data);
   const error = $derived(gameStats.error);
 

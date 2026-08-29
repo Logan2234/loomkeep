@@ -3,17 +3,18 @@
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
   // re-deriving "en cours" from scratch) and StatsWorksModal for the
   // ghost/paused drill-down, same pattern as the ratings/decades modal.
+  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { getVideoSeries, getVideoStats } from "$lib/api/stats";
   import type {
     DomainStatusBreakdownDto,
     StatsWorkDto,
-    VideoStatsDto,
     WatchStaleness,
   } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
-  import { statsResource } from "./stats-resource.svelte";
   import StatsWorksModal from "./StatsWorksModal.svelte";
   import StatTile from "./StatTile.svelte";
 
@@ -25,7 +26,10 @@
     locked: boolean;
   } = $props();
 
-  const videoStats = statsResource<VideoStatsDto>(getVideoStats);
+  const videoStats = createApiQuery(() => ({
+    key: keys.stats.video(),
+    fetch: getVideoStats,
+  }));
   const video = $derived(videoStats.data);
   const error = $derived(videoStats.error);
 
@@ -102,12 +106,15 @@
   let modalKind = $state<WatchStaleness | null>(null);
   let modalWorks = $state<StatsWorkDto[]>([]);
   let modalLoading = $state(false);
+  let modalError = $state<string | null>(null);
 
   function openStaleness(kind: WatchStaleness) {
     modalKind = kind;
     modalLoading = true;
+    modalError = null;
     getVideoSeries(kind)
       .then((w) => (modalWorks = w))
+      .catch((e) => (modalError = resolveApiError(e)))
       .finally(() => (modalLoading = false));
   }
 </script>
@@ -238,5 +245,6 @@
     title={modalKind === "PAUSED" ? "Séries en pause" : "Séries fantômes"}
     works={modalWorks}
     loading={modalLoading}
+    error={modalError}
     onclose={() => (modalKind = null)} />
 {/if}
