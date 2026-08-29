@@ -9,11 +9,3 @@ export interface PagedResult<T> {
    */
   total?: number;
 }
-
-/** Query params every page-paginated `GET` list endpoint accepts. */
-export interface PageQuery {
-  /** 1-indexed. Default 1. */
-  page?: number;
-  /** Default is endpoint-specific (its previous fixed page size). */
-  limit?: number;
-}
