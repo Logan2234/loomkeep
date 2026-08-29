@@ -1,29 +1,21 @@
 <script lang="ts">
   import { forgotPassword } from "$lib/api/client";
-  import { bannerMessage, fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   let email = $state("");
-  let error = $state<string | null>(null);
-  let emailError = $state<string | undefined>();
-  let loading = $state(false);
   let submitted = $state(false);
 
-  async function submit(event: SubmitEvent) {
+  const submitMut = createApiMutation(() => ({
+    mutate: forgotPassword,
+    coveredFields: ["email"],
+    onSuccess: () => (submitted = true),
+  }));
+
+  function submit(event: SubmitEvent) {
     event.preventDefault();
-    error = null;
-    emailError = undefined;
-    loading = true;
-    try {
-      await forgotPassword(email);
-      submitted = true;
-    } catch (err) {
-      emailError = fieldError(err, "email");
-      error = bannerMessage(err, ["email"]);
-    } finally {
-      loading = false;
-    }
+    submitMut.mutate(email);
   }
 </script>
 
@@ -53,12 +45,21 @@
               bind:value={email}
               required
               class="input" />
-            {#if emailError}
-              <p class="text-danger -mt-2 text-xs">{emailError}</p>
+            {#if submitMut.fieldErrors.email}
+              <p class="text-danger -mt-2 text-xs">
+                {submitMut.fieldErrors.email}
+              </p>
             {/if}
-            {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-            <button type="submit" class="btn btn-primary" disabled={loading}>
-              {loading ? m.common_sending() : m.auth_forgot_password_action()}
+            {#if submitMut.error}
+              <p class="text-danger text-sm">{submitMut.error}</p>
+            {/if}
+            <button
+              type="submit"
+              class="btn btn-primary"
+              disabled={submitMut.loading}>
+              {submitMut.loading
+                ? m.common_sending()
+                : m.auth_forgot_password_action()}
             </button>
           </form>
         {:else}

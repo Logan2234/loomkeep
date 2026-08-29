@@ -5,7 +5,9 @@
     searchGames,
     upsertGameEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -13,7 +15,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { GameEntryDto, GameSummaryDto } from "@loomkeep/shared";
+  import type { GameSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.
@@ -32,92 +34,71 @@
 
   const DEBOUNCE_MS = 300;
 
-  let results = $state<GameSummaryDto[]>([]);
+  // `query` (raw) drives the input; `queryFilter` (debounced) drives the
+  // fetch — same split as LibraryBrowser/MediaSearchPanel. A key-based query
+  // already discards a stale in-flight response on its own once the key
+  // moves on, so there's no manual staleness guard to maintain here.
+  let queryFilter = $state("");
+  const debouncedQueryFilter = debounce(() => {
+    queryFilter = query.trim();
+  }, DEBOUNCE_MS);
+
+  $effect(() => {
+    if (!query.trim()) {
+      debouncedQueryFilter.cancel();
+      queryFilter = "";
+      return;
+    }
+    debouncedQueryFilter.call();
+    return () => debouncedQueryFilter.cancel();
+  });
+
+  const searchQuery = createApiQuery(() => ({
+    key: keys.games.search(queryFilter),
+    fetch: () => searchGames(queryFilter).then((r) => r.results),
+    enabled: !!queryFilter,
+  }));
+  const results = $derived(searchQuery.data ?? []);
   const shown = $derived(limit ? results.slice(0, limit) : results);
+  const searched = $derived(!!queryFilter);
 
   $effect(() => {
     onResults?.(results.length);
   });
-  let searching = $state(false);
-  let searched = $state(false);
-  let searchError = $state<string | null>(null);
-  let searchId = 0;
-  const debouncedSearch = debounce(
-    (q: string) => void runSearch(q),
-    DEBOUNCE_MS,
-  );
 
   // Games already in the library, keyed by source id → their entry, so a search
   // result can be flagged (and jumped to) instead of re-added.
-  let entries = $state<GameEntryDto[]>([]);
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.games.tracked(),
+    fetch: () => fetchAllPages((page) => listGames({ page })),
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
   const tracked = $derived(
-    new SvelteMap(entries.map((e) => [e.game.sourceId, e])),
+    new SvelteMap((trackedQuery.data ?? []).map((e) => [e.game.sourceId, e])),
   );
 
-  async function loadLibrary() {
-    try {
-      entries = await fetchAllPages((page) => listGames({ page }));
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
-
-  $effect(() => {
-    void loadLibrary();
-  });
-
-  // Debounced catalogue search.
-  $effect(() => {
-    const q = query.trim();
-    if (!q) {
-      debouncedSearch.cancel();
-      searchId++;
-      results = [];
-      searched = false;
-      searchError = null;
-      searching = false;
-      return;
-    }
-    debouncedSearch.call(q);
-    return () => debouncedSearch.cancel();
-  });
-
-  async function runSearch(q: string) {
-    const mine = ++searchId;
-    searching = true;
-    searchError = null;
-    try {
-      const batch = (await searchGames(q)).results;
-      if (mine !== searchId) return;
-      results = batch;
-      searched = true;
-    } catch (err) {
-      if (mine !== searchId) return;
-      searchError = resolveApiError(err);
-    } finally {
-      if (mine === searchId) searching = false;
-    }
-  }
-
-  async function addGame(game: GameSummaryDto) {
-    try {
-      await upsertGameEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (game: GameSummaryDto) =>
+      upsertGameEntry({
         source: game.source,
         sourceId: game.sourceId,
         status: "BACKLOG",
-      });
-      await loadLibrary();
-    } catch (err) {
-      searchError = resolveApiError(err);
-    }
+      }),
+    invalidates: [keys.games.tracked()],
+    errorToast: true,
+  }));
+
+  function addGame(game: GameSummaryDto) {
+    addMut.mutate(game);
   }
 </script>
 
-{#if searchError}
-  <Banner variant="error" class="mb-4">{searchError}</Banner>
+{#if searchQuery.error}
+  <Banner variant="error" class="mb-4">{searchQuery.error}</Banner>
 {/if}
 
-{#if searching && results.length === 0}
+{#if queryFilter && searchQuery.loading}
   <PosterGrid>
     {#each { length: 10 } as _, i (i)}
       <div class="card flex flex-col">

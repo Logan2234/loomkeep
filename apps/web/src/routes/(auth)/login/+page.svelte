@@ -2,8 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { login, resendMfaEmailCode, verifyMfaLogin } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { bannerMessage, fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
@@ -14,9 +13,6 @@
 
   let identifier = $state("");
   let password = $state("");
-  let error = $state<string | null>(null);
-  let identifierError = $state<string | undefined>();
-  let loading = $state(false);
 
   type Step = "credentials" | "choose-method" | "code";
   let step = $state<Step>("credentials");
@@ -24,12 +20,8 @@
   let availableMethods = $state<MfaMethod[]>([]);
   let selectedMethod = $state<MfaMethod>("totp");
   let codeInput = $state("");
-  let codeError = $state<string | null>(null);
-  let verifying = $state(false);
   let resendCooldown = $state(0);
   let resendTimer: ReturnType<typeof setInterval> | undefined;
-  let methodError = $state<string | null>(null);
-  let switchingMethod = $state(false);
 
   // Only follow redirectTo when it's an internal path — anything else could
   // be an open-redirect vector (e.g. redirectTo=https://evil.example).
@@ -38,18 +30,14 @@
     return "/app";
   }
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
-    error = null;
-    identifierError = undefined;
-    loading = true;
-    try {
-      const result = await login({ identifier, password });
+  const loginMut = createApiMutation(() => ({
+    mutate: () => login({ identifier, password }),
+    coveredFields: ["identifier"],
+    onSuccess: (result) => {
       if (result.mfaRequired) {
         challengeId = result.challengeId;
         availableMethods = result.availableMethods;
         codeInput = "";
-        codeError = null;
         const primaryMethods = result.availableMethods.filter(
           (method) => method !== "recovery",
         );
@@ -61,13 +49,13 @@
         }
         return;
       }
-      await goto(safeRedirect(page.url.searchParams.get("redirectTo")));
-    } catch (err) {
-      identifierError = fieldError(err, "identifier");
-      error = bannerMessage(err, ["identifier"]);
-    } finally {
-      loading = false;
-    }
+      void goto(safeRedirect(page.url.searchParams.get("redirectTo")));
+    },
+  }));
+
+  function submit(event: SubmitEvent) {
+    event.preventDefault();
+    loginMut.mutate();
   }
 
   // Only the email method needs a send before showing the code screen — TOTP
@@ -75,45 +63,41 @@
   // than eagerly for every MFA-enabled login) means an account with both
   // TOTP and email enabled only burns an email send if the user actually
   // picks that method.
-  async function chooseMethod(method: MfaMethod) {
+  const sendEmailCodeMut = createApiMutation(() => ({
+    mutate: () => resendMfaEmailCode(challengeId),
+    onSuccess: () => {
+      selectedMethod = "email";
+      step = "code";
+    },
+  }));
+
+  function chooseMethod(method: MfaMethod) {
     codeInput = "";
-    codeError = null;
+    verifyMut.reset();
 
     if (method === "email") {
-      methodError = null;
-      switchingMethod = true;
-      try {
-        await resendMfaEmailCode(challengeId);
-      } catch (err) {
-        methodError = resolveApiError(err);
-        switchingMethod = false;
-        return;
-      }
-      switchingMethod = false;
+      sendEmailCodeMut.mutate();
+      return;
     }
 
     selectedMethod = method;
     step = "code";
   }
 
-  async function verifyCode(event: SubmitEvent) {
+  const verifyMut = createApiMutation(() => ({
+    mutate: () => verifyMfaLogin({ challengeId, code: codeInput.trim() }),
+    onSuccess: () =>
+      goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
+  }));
+
+  function verifyCode(event: SubmitEvent) {
     event.preventDefault();
-    codeError = null;
-    verifying = true;
-    try {
-      await verifyMfaLogin({ challengeId, code: codeInput.trim() });
-      await goto(safeRedirect(page.url.searchParams.get("redirectTo")));
-    } catch (err) {
-      codeError = resolveApiError(err);
-    } finally {
-      verifying = false;
-    }
+    verifyMut.mutate();
   }
 
-  async function resendEmailCode() {
-    if (resendCooldown > 0) return;
-    try {
-      await resendMfaEmailCode(challengeId);
+  const resendEmailCodeMut = createApiMutation(() => ({
+    mutate: () => resendMfaEmailCode(challengeId),
+    onSuccess: () => {
       resendCooldown = 30;
       clearInterval(resendTimer);
       resendTimer = setInterval(() => {
@@ -123,9 +107,12 @@
           resendTimer = undefined;
         }
       }, 1000);
-    } catch (err) {
-      codeError = resolveApiError(err);
-    }
+    },
+  }));
+
+  function resendEmailCode() {
+    if (resendCooldown > 0) return;
+    resendEmailCodeMut.mutate();
   }
 
   function backToCredentials() {
@@ -153,8 +140,10 @@
             bind:value={identifier}
             required
             class="input" />
-          {#if identifierError}
-            <p class="text-danger -mt-2 text-xs">{identifierError}</p>
+          {#if loginMut.fieldErrors.identifier}
+            <p class="text-danger -mt-2 text-xs">
+              {loginMut.fieldErrors.identifier}
+            </p>
           {/if}
           <PasswordInput
             placeholder={m.common_password()}
@@ -166,9 +155,15 @@
               class="btn-text btn-text-underline hover:text-accent text-sm"
               >{m.auth_forgot_password()}</a>
           </p>
-          {#if error}<Banner variant="error">{error}</Banner>{/if}
-          <button type="submit" class="btn btn-primary" disabled={loading}>
-            {loading ? m.auth_login_action_loading() : m.auth_login_action()}
+          {#if loginMut.error}<Banner variant="error">{loginMut.error}</Banner
+            >{/if}
+          <button
+            type="submit"
+            class="btn btn-primary"
+            disabled={loginMut.loading}>
+            {loginMut.loading
+              ? m.auth_login_action_loading()
+              : m.auth_login_action()}
           </button>
           {#if appConfig.registrationEnabled}
             <p class="text-dim text-center text-sm">
@@ -190,7 +185,7 @@
               <button
                 type="button"
                 class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
-                disabled={switchingMethod}
+                disabled={sendEmailCodeMut.loading}
                 onclick={() => chooseMethod("totp")}>
                 <Icon name="qr-code" class="text-accent h-6 w-6 shrink-0" />
                 <span>
@@ -207,7 +202,7 @@
               <button
                 type="button"
                 class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
-                disabled={switchingMethod}
+                disabled={sendEmailCodeMut.loading}
                 onclick={() => chooseMethod("email")}>
                 <Icon name="mail" class="text-accent h-6 w-6 shrink-0" />
                 <span>
@@ -215,7 +210,7 @@
                     {m.auth_mfa_choose_method_email_label()}
                   </span>
                   <span class="text-dim block text-sm">
-                    {switchingMethod
+                    {sendEmailCodeMut.loading
                       ? m.auth_mfa_sending_code()
                       : m.auth_mfa_choose_method_email_desc()}
                   </span>
@@ -223,7 +218,9 @@
               </button>
             {/if}
           </div>
-          {#if methodError}<Banner variant="error">{methodError}</Banner>{/if}
+          {#if sendEmailCodeMut.error}
+            <Banner variant="error">{sendEmailCodeMut.error}</Banner>
+          {/if}
           <button
             type="button"
             class="btn-text btn-text-underline text-dim hover:text-fg self-center text-sm"
@@ -272,13 +269,16 @@
             </button>
           {/if}
 
-          {#if codeError}<Banner variant="error">{codeError}</Banner>{/if}
+          {#if verifyMut.error || resendEmailCodeMut.error}
+            <Banner variant="error"
+              >{verifyMut.error ?? resendEmailCodeMut.error}</Banner>
+          {/if}
 
           <button
             type="submit"
             class="btn btn-primary"
-            disabled={verifying || !codeInput.trim()}>
-            {verifying ? m.common_verifying() : m.common_verify()}
+            disabled={verifyMut.loading || !codeInput.trim()}>
+            {verifyMut.loading ? m.common_verifying() : m.common_verify()}
           </button>
 
           <div class="flex items-center justify-between text-sm">

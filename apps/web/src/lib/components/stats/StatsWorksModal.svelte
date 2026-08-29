@@ -9,17 +9,21 @@
     title,
     works,
     loading,
+    error = null,
     onclose,
   }: {
     title: string;
     works: StatsWorkDto[];
     loading: boolean;
+    error?: string | null;
     onclose: () => void;
   } = $props();
 </script>
 
 <Modal {title} {onclose}>
-  {#if loading}
+  {#if error}
+    <p class="text-danger text-sm">{error}</p>
+  {:else if loading}
     <ul class="flex flex-col gap-3">
       {#each { length: 4 } as _, i (i)}
         <li class="flex items-center gap-3">

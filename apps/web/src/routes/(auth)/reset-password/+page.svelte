@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { resetPassword } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
@@ -13,32 +13,30 @@
 
   let newPassword = $state("");
   let confirmPassword = $state("");
-  let error = $state<string | null>(null);
-  let loading = $state(false);
+  let localError = $state<string | null>(null);
 
-  async function submit(event: SubmitEvent) {
+  const resetMut = createApiMutation(() => ({
+    mutate: () => resetPassword(token, newPassword),
+    onSuccess: () => goto("/login"),
+  }));
+
+  const error = $derived(localError ?? resetMut.error);
+
+  function submit(event: SubmitEvent) {
     event.preventDefault();
-    error = null;
+    localError = null;
 
     if (!isPasswordValid(newPassword)) {
-      error = m.auth_reset_password_requirements_unmet();
+      localError = m.auth_reset_password_requirements_unmet();
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      error = m.auth_reset_password_mismatch();
+      localError = m.auth_reset_password_mismatch();
       return;
     }
 
-    loading = true;
-    try {
-      await resetPassword(token, newPassword);
-      await goto("/login");
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
+    resetMut.mutate();
   }
 </script>
 
@@ -74,8 +72,11 @@
               minlength={8}
               required />
             {#if error}<p class="text-danger text-sm">{error}</p>{/if}
-            <button type="submit" class="btn btn-primary" disabled={loading}>
-              {loading ? m.common_save_loading() : m.common_reset()}
+            <button
+              type="submit"
+              class="btn btn-primary"
+              disabled={resetMut.loading}>
+              {resetMut.loading ? m.common_save_loading() : m.common_reset()}
             </button>
           </form>
         {/if}

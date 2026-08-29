@@ -12,6 +12,9 @@
     watchEpisode,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
@@ -33,16 +36,11 @@
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
   import { formatDate } from "$lib/format";
-  import { createLibraryEntryActions } from "$lib/library-entry";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import type {
-    EntryStatus,
-    MediaDetailDto,
-    MediaExtrasDto,
-    MediaType,
-  } from "@loomkeep/shared";
+  import type { EntryStatus, MediaType } from "@loomkeep/shared";
   import { isDormant } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
@@ -110,16 +108,15 @@
     AniList: "bg-[#02a9ff] text-white",
   };
 
-  let detail = $state<MediaDetailDto | null>(null);
-  let error = $state<string | null>(null);
-  // Busy flag for the hero's "Continuer" shortcut specifically (the episode
-  // accordion tracks its own busy state in EpisodesSection).
-  let continuingEpisodeId = $state<string | null>(null);
-  let saving = $state(false);
+  const queryClient = useQueryClient();
+
   let confirmRemove = $state(false);
-  let removing = $state(false);
   let trackingExpanded = $state(false);
   const reduced = prefersReducedMotion();
+
+  // EpisodesSection reports its own action failures through this — the
+  // query's own `error` covers only the initial load.
+  let episodesError = $state<string | null>(null);
 
   // Poster + backdrop + extras' backdrop gallery (TMDB only), deduped, for the
   // lightbox carousel.
@@ -169,89 +166,94 @@
 
   const type = $derived((page.params.type ?? "").toUpperCase() as MediaType);
   const id = $derived(page.params.id ?? "");
+  const detailKey = $derived(keys.media.detail(type, id));
 
+  // Adult-content-blocked titles return 403 with no body worth resolving
+  // generically — a distinct local message instead of the query's own error.
+  let adultBlocked = $state(false);
+
+  const mediaQuery = createApiQuery(() => ({
+    key: detailKey,
+    fetch: () => getMediaDetail(type, id),
+    enabled: !!type && !!id,
+    onError: (err) => {
+      adultBlocked = err instanceof ApiError && err.status === 403;
+    },
+  }));
   $effect(() => {
-    const t = type;
-    const i = id;
-    if (!t || !i) return;
-    error = null;
-    detail = null; // Clear stale content so the loader shows on navigation.
-    getMediaDetail(t, i)
-      .then((result) => (detail = result))
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 403) {
-          error =
-            "Ce titre est réservé aux comptes ayant activé le contenu pour adultes (réglages).";
-        } else {
-          error = resolveApiError(err);
-        }
-      });
+    if (mediaQuery.data) adultBlocked = false;
   });
+  const detail = $derived(mediaQuery.data);
+  const error = $derived(
+    adultBlocked
+      ? "Ce titre est réservé aux comptes ayant activé le contenu pour adultes (réglages)."
+      : (mediaQuery.error ?? episodesError),
+  );
 
-  const { reload, add, patch, doRemove, addReplay, removeReplay } =
-    createLibraryEntryActions(
-      {
-        get detail() {
-          return detail;
-        },
-        set detail(v) {
-          detail = v;
-        },
-        get error() {
-          return error;
-        },
-        set error(v) {
-          error = v;
-        },
-        get saving() {
-          return saving;
-        },
-        set saving(v) {
-          saving = v;
-        },
-        get confirmRemove() {
-          return confirmRemove;
-        },
-        set confirmRemove(v) {
-          confirmRemove = v;
-        },
-        get removing() {
-          return removing;
-        },
-        set removing(v) {
-          removing = v;
-        },
-      },
-      {
-        load: () => getMediaDetail(type, id),
-        add: (d) =>
-          upsertLibraryEntry({
-            source: d.source,
-            sourceId: d.sourceId,
-            type: d.type,
-            status: "PLANNED",
-          }),
-        update: updateLibraryEntry,
-        remove: deleteLibraryEntry,
-        addReplay: addLibraryReplay,
-        removeReplay: deleteLibraryReplay,
-      },
-    );
+  async function reload(): Promise<void> {
+    await queryClient.refetchQueries({ queryKey: detailKey });
+  }
+
+  const addMut = createApiMutation(() => ({
+    mutate: () => {
+      const d = detail!;
+      return upsertLibraryEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        type: d.type,
+        status: "PLANNED",
+      });
+    },
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const patchMut = createApiMutation(() => ({
+    mutate: (changes: Parameters<typeof updateLibraryEntry>[1]) =>
+      updateLibraryEntry(entry!.id, changes),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeMut = createApiMutation(() => ({
+    mutate: () => deleteLibraryEntry(entry!.id),
+    onSuccess: () => {
+      confirmRemove = false;
+    },
+    successToast: m.tracking_removed_toast(),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const addReplayMut = createApiMutation(() => ({
+    mutate: () => addLibraryReplay(entry!.id),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeReplayMut = createApiMutation(() => ({
+    mutate: (replayId: string) => deleteLibraryReplay(replayId),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const saving = $derived(
+    addMut.loading ||
+      patchMut.loading ||
+      addReplayMut.loading ||
+      removeReplayMut.loading,
+  );
 
   // Live extras (where to watch, cast, similar). Loaded once per media (keyed on
   // the route), independent of watch-state reloads. Best-effort: errors are
   // swallowed so a provider hiccup never breaks the page.
-  let extras = $state<MediaExtrasDto | null>(null);
-  $effect(() => {
-    const t = type;
-    const i = id;
-    extras = null;
-    if (!t || !i) return;
-    const source = t === "ANIME" ? "anilist" : "tmdb";
-    getMediaExtras(source, i, t)
-      .then((x) => (extras = x))
-      .catch(() => {});
-  });
+  const extrasQuery = createApiQuery(() => ({
+    key: keys.media.extras(type === "ANIME" ? "anilist" : "tmdb", id),
+    fetch: () =>
+      getMediaExtras(type === "ANIME" ? "anilist" : "tmdb", id, type),
+    enabled: !!type && !!id,
+  }));
+  const extras = $derived(extrasQuery.data);
 
   // The trailer, when there is one, always sits at slide 0 in the lightbox —
   // images are offset by one to make room for it.
@@ -297,42 +299,37 @@
 
   // Powers the action bar's "Continuer" shortcut only — the episode
   // accordion (EpisodesSection) has its own copy for its per-row actions.
-  async function markNextWatched(episodeId: string) {
-    continuingEpisodeId = episodeId;
-    error = null;
-    try {
-      await watchEpisode(episodeId);
-      await reload();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      continuingEpisodeId = null;
-    }
-  }
+  const continueWatchingMut = createApiMutation(() => ({
+    mutate: (episodeId: string) => watchEpisode(episodeId),
+    onSuccess: () => reload(),
+    onError: (err) => (episodesError = resolveApiError(err)),
+  }));
 
   function continueWatching() {
     const next = entry?.progress?.nextEpisode;
     if (!next) return;
-    void markNextWatched(next.episodeId);
+    continueWatchingMut.mutate(next.episodeId);
   }
 
   function toggleFavorite() {
     if (!entry) return;
-    patch({ favorite: !entry.favorite });
+    patchMut.mutate({ favorite: !entry.favorite });
   }
 
   // Movies: a single seen/not-seen toggle stands in for progress.
   function toggleWatched() {
     if (!entry) return;
-    patch({ status: entry.status === "COMPLETED" ? "PLANNED" : "COMPLETED" });
+    patchMut.mutate({
+      status: entry.status === "COMPLETED" ? "PLANNED" : "COMPLETED",
+    });
   }
 
   function dropEntry() {
-    patch({ status: "DROPPED" });
+    patchMut.mutate({ status: "DROPPED" });
   }
 
   function resumeEntry() {
-    patch({ status: "WATCHING" });
+    patchMut.mutate({ status: "WATCHING" });
   }
 </script>
 
@@ -485,8 +482,8 @@
     {compact}
     title={detail.title}
     nextEpisode={entry?.progress?.nextEpisode ?? null}
-    continuing={continuingEpisodeId !== null}
-    onAdd={add}
+    continuing={continueWatchingMut.loading}
+    onAdd={() => addMut.mutate()}
     onToggleFavorite={toggleFavorite}
     onContinue={continueWatching}
     onToggleWatched={toggleWatched}
@@ -581,7 +578,7 @@
               statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
               sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
               onChange={(status, source) =>
-                patch({
+                patchMut.mutate({
                   ownershipStatus: status as typeof entry.ownershipStatus,
                   ownershipSource: source,
                 })} />
@@ -589,7 +586,7 @@
             <NoteField
               value={entry.notes}
               placeholder="Une réplique, un souvenir…"
-              onChange={(v) => patch({ notes: v })} />
+              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
               <hr class="border-border" />
@@ -606,7 +603,7 @@
                       type="button"
                       class="link-accent text-xs disabled:opacity-50"
                       disabled={saving}
-                      onclick={addReplay}>
+                      onclick={() => addReplayMut.mutate()}>
                       + J'ai revu ce film
                     </button>
                   {/if}
@@ -622,7 +619,7 @@
                           class="hover:text-danger"
                           aria-label="Supprimer ce revisionnage"
                           disabled={saving}
-                          onclick={() => removeReplay(replay.id)}>
+                          onclick={() => removeReplayMut.mutate(replay.id)}>
                           {m.common_delete()}
                         </button>
                       </li>
@@ -708,7 +705,7 @@
         seasons={orderedSeasons}
         {entry}
         {reload}
-        onError={(m) => (error = m)} />
+        onError={(m) => (episodesError = m)} />
     {/if}
 
     {#if entry}
@@ -759,8 +756,8 @@
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, tes visionnages, ta critique, tes commentaires et ta note seront supprimés.`}
       confirmLabel={m.common_remove()}
       danger
-      busy={removing}
-      onConfirm={doRemove}
+      busy={removeMut.loading}
+      onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
   {/if}
 

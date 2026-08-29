@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { adminReports } from "$lib/admin-reports.svelte";
   import {
     getAdminReports,
     getAdminReportsSummary,
@@ -79,10 +78,11 @@
   const resolveMut = createApiMutation(() => ({
     mutate: (args: { id: string; status: "RESOLVED" | "DISMISSED" }) =>
       resolveAdminReport(args.id, args.status),
-    onSuccess: () => {
-      void adminReports.refresh();
-    },
-    invalidates: [reportsKey, keys.admin.reportsSummary()],
+    invalidates: [
+      reportsKey,
+      keys.admin.reportsSummary(),
+      keys.admin.reportsPendingCount(),
+    ],
     errorToast: true,
   }));
 
@@ -101,10 +101,13 @@
         tosClause: takeDownTosClause,
       }),
     onSuccess: () => {
-      void adminReports.refresh();
       takeDownTarget = null;
     },
-    invalidates: [reportsKey, keys.admin.reportsSummary()],
+    invalidates: [
+      reportsKey,
+      keys.admin.reportsSummary(),
+      keys.admin.reportsPendingCount(),
+    ],
     coveredFields: ["reasonText", "legalBasis", "tosClause"],
   }));
 

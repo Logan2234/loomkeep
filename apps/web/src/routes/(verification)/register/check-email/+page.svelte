@@ -1,43 +1,46 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resendVerificationEmail } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
-  let status = $state<"idle" | "loading" | "sent" | "error">("idle");
-  let error = $state<string | null>(null);
   let pageReady = $state(false);
-
   let cooldown = $state(0);
   let cooldownTimer: ReturnType<typeof setInterval> | undefined;
 
-  async function resend() {
-    if (status === "loading" || cooldown > 0) return;
-
-    status = "loading";
-    error = null;
-
-    try {
-      await resendVerificationEmail();
-
-      status = "sent";
+  const resendMut = createApiMutation(() => ({
+    mutate: resendVerificationEmail,
+    onSuccess: () => {
       cooldown = 60;
-
+      clearInterval(cooldownTimer);
       cooldownTimer = setInterval(() => {
         cooldown -= 1;
-
         if (cooldown <= 0) {
-          if (cooldownTimer) clearInterval(cooldownTimer);
+          clearInterval(cooldownTimer);
           cooldownTimer = undefined;
-          status = "idle";
         }
       }, 1000);
-    } catch (err) {
-      status = "error";
-      error = resolveApiError(err);
-    }
+    },
+  }));
+
+  // "sent" lasts as long as the cooldown; once it expires this reverts to
+  // "idle" on its own, matching the resend button re-enabling.
+  const status = $derived<"idle" | "loading" | "sent" | "error">(
+    resendMut.loading
+      ? "loading"
+      : resendMut.error
+        ? "error"
+        : cooldown > 0
+          ? "sent"
+          : "idle",
+  );
+  const error = $derived(resendMut.error);
+
+  function resend() {
+    if (resendMut.loading || cooldown > 0) return;
+    resendMut.mutate();
   }
 
   function continueToApp() {

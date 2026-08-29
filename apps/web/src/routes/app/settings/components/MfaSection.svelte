@@ -7,8 +7,9 @@
     setEmailMfa,
     setupTotp,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -19,6 +20,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { MfaStatusDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import QRCode from "qrcode";
 
   const RECOVERY_CODES_LOW_THRESHOLD = 2;
@@ -30,14 +32,23 @@
     | "recovery-reveal"
     | null;
 
-  let status = $state<MfaStatusDto | null>(null);
   let openModal = $state<MfaModal>(null);
 
-  $effect(() => {
-    getMfaStatus()
-      .then((s) => (status = s))
-      .catch(() => undefined);
-  });
+  const queryClient = useQueryClient();
+  const statusQuery = createApiQuery(() => ({
+    key: keys.mfa.status(),
+    fetch: getMfaStatus,
+  }));
+  const status = $derived(statusQuery.data);
+
+  // Every mutation below only runs from a control rendered inside
+  // `{#if status}`, so `status` is always non-null by the time this fires.
+  function patchStatus(patch: Partial<MfaStatusDto>) {
+    queryClient.setQueryData(
+      keys.mfa.status(),
+      (old: MfaStatusDto | undefined) => (old ? { ...old, ...patch } : old),
+    );
+  }
 
   // --- TOTP setup ---
   let totpStep: "scan" | "confirm" = $state("scan");
@@ -45,17 +56,11 @@
   let totpSecret = $state("");
   let totpQrSvg = $state("");
   let totpCodeInput = $state("");
-  let totpError = $state("");
-  let totpBusy = $state(false);
 
-  async function openTotpSetup() {
-    totpStep = "scan";
-    totpCodeInput = "";
-    totpError = "";
-    totpQrSvg = "";
-    openModal = "totp-setup";
-    try {
-      const setup = await setupTotp();
+  const totpSetupMut = createApiMutation(() => ({
+    mutate: setupTotp,
+    errorToast: true,
+    onSuccess: async (setup) => {
       totpOtpauthUri = setup.otpauthUri;
       totpSecret = setup.secret;
       totpQrSvg = await QRCode.toString(totpOtpauthUri, {
@@ -63,78 +68,75 @@
         margin: 1,
         color: { dark: "#000000", light: "#ffffff" },
       });
-    } catch (err) {
-      toast.error(resolveApiError(err));
-      openModal = null;
-    }
+    },
+    onError: () => (openModal = null),
+  }));
+
+  function openTotpSetup() {
+    totpStep = "scan";
+    totpCodeInput = "";
+    totpQrSvg = "";
+    openModal = "totp-setup";
+    totpSetupMut.mutate();
   }
 
-  async function confirmTotpSetup() {
-    totpError = "";
-    totpBusy = true;
-    try {
-      const { recoveryCodes } = await confirmTotp({
-        code: totpCodeInput.trim(),
-      });
-      status = status
-        ? { ...status, totpEnabled: true }
-        : { totpEnabled: true, emailEnabled: false, recoveryCodesRemaining: 0 };
+  const totpConfirmMut = createApiMutation(() => ({
+    mutate: (code: string) => confirmTotp({ code }),
+    onSuccess: ({ recoveryCodes }) => {
+      patchStatus({ totpEnabled: true });
       if (recoveryCodes) {
         openRecoveryReveal(recoveryCodes);
       } else {
         openModal = null;
         toast.success(m.settings_mfa_totp_label());
       }
-    } catch {
-      totpError = m.settings_mfa_totp_invalid_code();
-    } finally {
-      totpBusy = false;
-    }
+    },
+  }));
+
+  function confirmTotpSetup() {
+    totpConfirmMut.mutate(totpCodeInput.trim());
   }
 
   // --- TOTP disable ---
   let disablePasswordInput = $state("");
-  let disableError = $state("");
-  let disableBusy = $state(false);
 
   function openTotpDisable() {
     disablePasswordInput = "";
-    disableError = "";
+    totpDisableMut.reset();
     openModal = "totp-disable";
   }
 
-  async function confirmTotpDisable() {
-    disableError = "";
-    disableBusy = true;
-    try {
-      await disableTotp({ currentPassword: disablePasswordInput });
-      status = status ? { ...status, totpEnabled: false } : status;
+  const totpDisableMut = createApiMutation(() => ({
+    mutate: () => disableTotp({ currentPassword: disablePasswordInput }),
+    coveredFields: ["currentPassword"],
+    onSuccess: () => {
+      patchStatus({ totpEnabled: false });
       openModal = null;
       toast.success(m.common_disable());
-    } catch (err) {
-      disableError = fieldError(err, "currentPassword") ?? resolveApiError(err);
-    } finally {
-      disableBusy = false;
-    }
+    },
+  }));
+
+  function confirmTotpDisable() {
+    totpDisableMut.mutate();
   }
 
   // --- Email MFA (direct toggle, no confirmation modal) ---
-  async function onToggleEmail(next: boolean) {
-    try {
-      const { recoveryCodes } = await setEmailMfa({ enabled: next });
-      status = status
-        ? { ...status, emailEnabled: next }
-        : { totpEnabled: false, emailEnabled: next, recoveryCodesRemaining: 0 };
+  const emailMfaMut = createApiMutation(() => ({
+    mutate: (next: boolean) => setEmailMfa({ enabled: next }),
+    errorToast: true,
+    onSuccess: ({ recoveryCodes }, next) => {
+      patchStatus({ emailEnabled: next });
       if (recoveryCodes) openRecoveryReveal(recoveryCodes);
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    }
+    },
+  }));
+
+  function onToggleEmail(next: boolean) {
+    emailMfaMut.mutate(next);
   }
 
   // --- Recovery codes ---
   let revealedCodes = $state<string[]>([]);
   let recoveryCopied = $state(false);
-  let regenerateBusy = $state(false);
 
   function openRecoveryReveal(codes: string[]) {
     revealedCodes = codes;
@@ -142,20 +144,18 @@
     openModal = "recovery-reveal";
   }
 
-  async function confirmRegenerate() {
-    regenerateBusy = true;
-    try {
-      const { codes } = await regenerateRecoveryCodes();
-      status = status
-        ? { ...status, recoveryCodesRemaining: codes.length }
-        : status;
+  const regenerateMut = createApiMutation(() => ({
+    mutate: regenerateRecoveryCodes,
+    errorToast: true,
+    onSuccess: ({ codes }) => {
+      patchStatus({ recoveryCodesRemaining: codes.length });
       openRecoveryReveal(codes);
-    } catch (err) {
-      toast.error(resolveApiError(err));
-      openModal = null;
-    } finally {
-      regenerateBusy = false;
-    }
+    },
+    onError: () => (openModal = null),
+  }));
+
+  function confirmRegenerate() {
+    regenerateMut.mutate();
   }
 
   async function copyAllCodes() {
@@ -301,8 +301,10 @@
             placeholder="000000"
             bind:value={totpCodeInput} />
         </label>
-        {#if totpError}
-          <p class="text-danger text-sm">{totpError}</p>
+        {#if totpConfirmMut.error}
+          <p class="text-danger text-sm">
+            {m.settings_mfa_totp_invalid_code()}
+          </p>
         {/if}
         <div class="mt-2 flex justify-end gap-2">
           <button
@@ -314,8 +316,11 @@
           <button
             type="submit"
             class="btn btn-primary"
-            disabled={totpBusy || totpCodeInput.trim().length !== 6}>
-            {totpBusy ? m.common_save_loading() : m.common_enable()}
+            disabled={totpConfirmMut.loading ||
+              totpCodeInput.trim().length !== 6}>
+            {totpConfirmMut.loading
+              ? m.common_save_loading()
+              : m.common_enable()}
           </button>
         </div>
       </form>
@@ -340,8 +345,8 @@
           autocomplete="current-password"
           bind:value={disablePasswordInput} />
       </label>
-      {#if disableError}
-        <p class="text-danger text-sm">{disableError}</p>
+      {#if totpDisableMut.error}
+        <p class="text-danger text-sm">{totpDisableMut.error}</p>
       {/if}
       <div class="mt-2 flex justify-end gap-2">
         <button type="button" class="btn btn-ghost" onclick={closeModal}>
@@ -350,8 +355,10 @@
         <button
           type="submit"
           class="btn btn-danger"
-          disabled={disableBusy || !disablePasswordInput}>
-          {disableBusy ? m.common_save_loading() : m.common_disable()}
+          disabled={totpDisableMut.loading || !disablePasswordInput}>
+          {totpDisableMut.loading
+            ? m.common_save_loading()
+            : m.common_disable()}
         </button>
       </div>
     </form>
@@ -364,7 +371,7 @@
     message={m.settings_mfa_recovery_regenerate_confirm_message()}
     confirmLabel={m.settings_mfa_recovery_regenerate_action()}
     danger
-    busy={regenerateBusy}
+    busy={regenerateMut.loading}
     onConfirm={confirmRegenerate}
     onCancel={closeModal} />
 {/if}

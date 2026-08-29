@@ -2,7 +2,7 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { completeOnboarding, updateMe } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
@@ -60,73 +60,111 @@
     stepId !== "domains" || (auth.user?.enabledDomains.length ?? 0) > 0,
   );
 
-  async function toggleDomain(id: Domain) {
+  // No error UI for these three: a locale/domain/timezone hiccup just leaves
+  // the still-current value showing, same call as AppearanceSection/
+  // PrivacySection make for the same kind of low-stakes setting.
+  const toggleDomainMut = createApiMutation(() => ({
+    mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
+  }));
+
+  function toggleDomain(id: Domain) {
     if (!auth.user) return;
     const next = toggleDomainSelection(auth.user.enabledDomains, id);
     if (next === auth.user.enabledDomains) return;
-    await updateMe({ enabledDomains: next }).catch(() => undefined);
+    toggleDomainMut.mutate(next);
   }
 
-  async function saveLocale(next: Locale) {
+  const saveLocaleMut = createApiMutation(() => ({
+    mutate: (next: Locale) => updateMe({ locale: next }),
+    onSuccess: (_data, next) => setLocale(next),
+  }));
+
+  function saveLocale(next: Locale) {
     if (auth.user?.locale === next) return;
-    await updateMe({ locale: next });
-    setLocale(next);
+    saveLocaleMut.mutate(next);
   }
 
-  let notifyError = $state("");
-  let pushBusy = $state(false);
-  const pushSupported = isPushSupported();
+  const setTimezoneMut = createApiMutation(() => ({
+    mutate: (timezone: string) => updateMe({ timezone }),
+  }));
 
-  async function toggleNewsletter() {
-    if (!auth.user) return;
-    notifyError = "";
-    try {
-      await updateMe({ notifyNewsletter: !auth.user.notifyNewsletter });
-    } catch (err) {
-      notifyError = resolveApiError(err);
+  // One shared error banner — starting any of the three notification
+  // toggles resets the others', so a stale failure never lingers once
+  // another succeeds (same pattern as CommunicationsSection).
+  function resetOtherErrors(except: { reset(): void }) {
+    for (const mut of [newsletterMut, emailDigestMut, pushMut]) {
+      if (mut !== except) mut.reset();
     }
+  }
+
+  const newsletterMut = createApiMutation(() => ({
+    mutate: (notifyNewsletter: boolean) => updateMe({ notifyNewsletter }),
+  }));
+
+  function toggleNewsletter() {
+    if (!auth.user) return;
+    resetOtherErrors(newsletterMut);
+    newsletterMut.mutate(!auth.user.notifyNewsletter);
   }
 
   // No premium upsell at onboarding: a simple on/off, mapped onto the
   // (now cadence-based) preference. WEEKLY is the free default — see
   // Settings > Communications for the full daily/weekly/off picker.
-  async function toggleEmailDigest() {
+  const emailDigestMut = createApiMutation(() => ({
+    mutate: (notifyEmail: DigestCadence) => updateMe({ notifyEmail }),
+  }));
+
+  function toggleEmailDigest() {
     if (!auth.user) return;
-    notifyError = "";
-    try {
-      await updateMe({
-        notifyEmail:
-          auth.user.notifyEmail === DigestCadence.DISABLED
-            ? DigestCadence.WEEKLY
-            : DigestCadence.DISABLED,
-      });
-    } catch (err) {
-      notifyError = resolveApiError(err);
-    }
+    resetOtherErrors(emailDigestMut);
+    emailDigestMut.mutate(
+      auth.user.notifyEmail === DigestCadence.DISABLED
+        ? DigestCadence.WEEKLY
+        : DigestCadence.DISABLED,
+    );
   }
 
-  async function togglePush() {
-    if (!auth.user || pushBusy) return;
-    notifyError = "";
-    pushBusy = true;
-    try {
-      if (auth.user.notifyPush !== DigestCadence.DISABLED) {
+  const pushSupported = isPushSupported();
+
+  // "denied" (no browser permission) isn't an API failure — see
+  // CommunicationsSection's togglePushSubscription for why it's returned
+  // as data rather than thrown.
+  let pushPermissionError = $state<string | null>(null);
+
+  const pushMut = createApiMutation(() => ({
+    mutate: async (cadence: DigestCadence): Promise<"ok" | "denied"> => {
+      if (cadence === DigestCadence.DISABLED) {
         await disablePush();
-        await updateMe({ notifyPush: DigestCadence.DISABLED });
       } else {
         const ok = await enablePush();
-        if (!ok) {
-          notifyError = m.onboarding_settings_push_error();
-          return;
-        }
-        await updateMe({ notifyPush: DigestCadence.WEEKLY });
+        if (!ok) return "denied";
       }
-    } catch (err) {
-      notifyError = resolveApiError(err);
-    } finally {
-      pushBusy = false;
-    }
+      await updateMe({ notifyPush: cadence });
+      return "ok";
+    },
+    onSuccess: (result) => {
+      if (result === "denied") {
+        pushPermissionError = m.onboarding_settings_push_error();
+      }
+    },
+  }));
+
+  function togglePush() {
+    resetOtherErrors(pushMut);
+    pushPermissionError = null;
+    pushMut.mutate(
+      auth.user?.notifyPush !== DigestCadence.DISABLED
+        ? DigestCadence.DISABLED
+        : DigestCadence.WEEKLY,
+    );
   }
+
+  const notifyError = $derived(
+    pushPermissionError ??
+      newsletterMut.error ??
+      emailDigestMut.error ??
+      pushMut.error,
+  );
 
   const TIMEZONE_OPTIONS = Intl.supportedValuesOf("timeZone").map((tz) => ({
     label: tz.replaceAll("_", " "),
@@ -141,15 +179,15 @@
       timezoneDetected = true;
       const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (detected && detected !== auth.user.timezone) {
-        updateMe({ timezone: detected }).catch(() => undefined);
+        setTimezoneMut.mutate(detected);
       }
     }
   });
 
-  async function setTimezone(values: string[]) {
+  function setTimezone(values: string[]) {
     const timezone = values[0];
     if (!auth.user || !timezone || timezone === auth.user.timezone) return;
-    await updateMe({ timezone }).catch(() => undefined);
+    setTimezoneMut.mutate(timezone);
   }
 
   const importSources = $derived(
@@ -310,7 +348,7 @@
           label={m.onboarding_settings_push_label()}
           checked={(auth.user?.notifyPush ?? DigestCadence.DISABLED) !==
             DigestCadence.DISABLED}
-          disabled={!pushSupported || pushBusy}
+          disabled={!pushSupported || pushMut.loading}
           onChange={togglePush} />
       </div>
       <div class="flex items-center justify-between gap-4 py-3">

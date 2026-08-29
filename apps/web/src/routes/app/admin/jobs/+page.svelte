@@ -1,6 +1,8 @@
 <script lang="ts">
   import { getAdminJobs, runAdminJob } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -9,40 +11,27 @@
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { JobDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
-  let jobs = $state<JobDto[] | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
-  let running = $state<string | null>(null);
+  const queryClient = useQueryClient();
 
-  async function load() {
-    loading = true;
-    error = null;
-    try {
-      jobs = (await getAdminJobs()).jobs;
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
+  const jobsQuery = createApiQuery(() => ({
+    key: keys.admin.jobs(),
+    fetch: () => getAdminJobs().then((r) => r.jobs),
+    enabled: auth.isAdmin,
+  }));
+  const jobs = $derived(jobsQuery.data);
+  const loading = $derived(jobsQuery.loading);
+  const error = $derived(jobsQuery.error);
+
+  const runJobMut = createApiMutation(() => ({
+    mutate: (key: string) => runAdminJob(key),
+    invalidates: [keys.admin.jobs()],
+  }));
+
+  function runJob(key: string) {
+    runJobMut.mutate(key);
   }
-
-  async function runJob(key: string) {
-    running = key;
-    error = null;
-    try {
-      await runAdminJob(key);
-      await load();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      running = null;
-    }
-  }
-
-  $effect(() => {
-    if (auth.isAdmin) void load();
-  });
 
   const DAY_MONTH_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "2-digit",
@@ -83,7 +72,11 @@
     title={m.admin_jobs_title()}
     subtitle={m.admin_jobs_subtitle()}>
     {#snippet actions()}
-      <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
+      <button
+        onclick={() =>
+          queryClient.refetchQueries({ queryKey: keys.admin.jobs() })}
+        disabled={loading}
+        class="btn btn-ghost shrink-0">
         {loading ? "…" : m.common_refresh()}
       </button>
     {/snippet}
@@ -112,9 +105,9 @@
             </div>
             <button
               onclick={() => runJob(job.key)}
-              disabled={running === job.key}
+              disabled={runJobMut.loading && runJobMut.variables === job.key}
               class="btn btn-primary btn-sm shrink-0">
-              {running === job.key
+              {runJobMut.loading && runJobMut.variables === job.key
                 ? m.admin_jobs_running()
                 : m.admin_jobs_run_now()}
             </button>

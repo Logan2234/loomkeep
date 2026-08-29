@@ -4,10 +4,10 @@
     getListMembers,
     removeListMember,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ListMemberDto } from "@loomkeep/shared";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -17,44 +17,40 @@
   // list, change its visibility, or manage members themselves.
   let { listId, onClose }: { listId: string; onClose: () => void } = $props();
 
-  let members = $state<ListMemberDto[]>([]);
   let username = $state("");
-  let loading = $state(true);
-  let busy = $state(false);
-  let error = $state<string | null>(null);
 
-  $effect(() => {
-    getListMembers(listId)
-      .then((m) => (members = m))
-      .finally(() => (loading = false));
-  });
+  const membersQuery = createApiQuery(() => ({
+    key: keys.lists.members(listId),
+    fetch: () => getListMembers(listId),
+  }));
+  const members = $derived(membersQuery.data ?? []);
+  const loading = $derived(membersQuery.loading);
 
-  async function add() {
+  const addMut = createApiMutation(() => ({
+    mutate: (value: string) => addListMember(listId, { username: value }),
+    coveredFields: ["username"],
+    invalidates: [keys.lists.members(listId)],
+    onSuccess: () => (username = ""),
+  }));
+
+  function add() {
     const value = username.trim();
-    if (!value || busy) return;
-    busy = true;
-    error = null;
-    try {
-      const member = await addListMember(listId, { username: value });
-      members = [...members, member];
-      username = "";
-    } catch (err) {
-      error = fieldError(err, "username") ?? resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    if (!value || addMut.loading) return;
+    addMut.mutate(value);
   }
 
-  async function remove(userId: string) {
-    if (busy) return;
-    busy = true;
-    try {
-      await removeListMember(listId, userId);
-      members = members.filter((mbr) => mbr.user.id !== userId);
-    } finally {
-      busy = false;
-    }
+  const removeMut = createApiMutation(() => ({
+    mutate: (userId: string) => removeListMember(listId, userId),
+    invalidates: [keys.lists.members(listId)],
+  }));
+
+  function remove(userId: string) {
+    if (removeMut.loading) return;
+    removeMut.mutate(userId);
   }
+
+  const busy = $derived(addMut.loading || removeMut.loading);
+  const error = $derived(addMut.error);
 </script>
 
 <Modal title={m.list_members_title()} onclose={onClose}>

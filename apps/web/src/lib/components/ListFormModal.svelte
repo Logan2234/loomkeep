@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createList, deleteList, updateList } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
@@ -34,54 +33,50 @@
   let visibility: ListVisibility = $derived(
     list?.visibility ?? defaultVisibility,
   );
-  let busy = $state(false);
   let confirmingDelete = $state(false);
-  let error = $state("");
 
-  async function save() {
-    if (!title.trim() || busy) return;
-    busy = true;
-    error = "";
-    try {
-      const saved = list
-        ? await updateList(list.id, {
+  const saveMut = createApiMutation(() => ({
+    mutate: () =>
+      list
+        ? updateList(list.id, {
             title: title.trim(),
             description: description.trim() || null,
             visibility: canManage ? visibility : undefined,
             kind,
           })
-        : await createList({
+        : createList({
             title: title.trim(),
             description: description.trim() || null,
             kind,
             visibility,
-          });
+          }),
+    coveredFields: ["title", "description"],
+    onSuccess: (saved) => {
       onSaved(saved);
       onClose();
-    } catch (err) {
-      error =
-        fieldError(err, "title") ??
-        fieldError(err, "description") ??
-        resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    },
+  }));
+
+  function save() {
+    if (!title.trim() || saveMut.loading) return;
+    saveMut.mutate();
   }
 
-  async function doDelete() {
-    if (!list || busy) return;
-    busy = true;
-    error = "";
-    try {
-      await deleteList(list.id);
+  const deleteMut = createApiMutation(() => ({
+    mutate: () => deleteList(list!.id),
+    onSuccess: () => {
       onDeleted?.();
       onClose();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    },
+  }));
+
+  function doDelete() {
+    if (!list || deleteMut.loading) return;
+    deleteMut.mutate();
   }
+
+  const busy = $derived(saveMut.loading || deleteMut.loading);
+  const error = $derived(saveMut.error ?? deleteMut.error);
 </script>
 
 <Modal title={list ? "Modifier la liste" : "Créer une liste"} onclose={onClose}>

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminReports } from "$lib/admin-reports.svelte";
+  import { scanNotifications } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
   import { auth } from "$lib/auth.svelte";
   import { trackBackHistory } from "$lib/backNav.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
@@ -16,9 +17,11 @@
   import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
   import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { navStyle } from "$lib/navStyle.svelte";
-  import { notifications } from "$lib/notifications.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
+
+  const queryClient = useQueryClient();
 
   const needsTermsReacceptance = $derived(
     !!auth.user && auth.user.acceptedTermsVersion !== LEGAL_VERSION,
@@ -49,27 +52,18 @@
       );
   });
 
-  // Once logged in, trigger this user's episode scan (push/email only — see
-  // NotificationService) instead of waiting for the hourly cron, then load
-  // the bell feed (follow/comment activity).
+  // Once logged in, trigger this user's episode scan (push/email digest
+  // only — NEW_EPISODE rows never reach the in-app bell, see
+  // NotificationService.feed()) instead of waiting for the hourly cron.
+  // The endpoint also returns the current bell feed as a bonus, which is
+  // written straight into NotificationBell's query cache so it doesn't
+  // need a second round trip.
   $effect(() => {
-    if (bootstrap.ready && auth.isLoggedIn) void notifications.refresh(true);
-    if (bootstrap.ready && auth.isAdmin) void adminReports.refresh();
-  });
-
-  // Poll unread notifications + the admin reports badge while the tab is
-  // active, so both update without a full page reload — same idiom as
-  // CommentThread's refetchInterval, just for these two rune stores instead
-  // of a TanStack Query (there's no per-page "enabled" scope for a global
-  // nav badge, so this lives at the /app layout).
-  $effect(() => {
-    if (!bootstrap.ready || !auth.isLoggedIn) return;
-    const interval = setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      void notifications.refresh();
-      if (auth.isAdmin) void adminReports.refresh();
-    }, 20_000);
-    return () => clearInterval(interval);
+    if (bootstrap.ready && auth.isLoggedIn) {
+      void scanNotifications().then((feed) =>
+        queryClient.setQueryData(keys.notifications.feed(), feed),
+      );
+    }
   });
 </script>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getCalendar } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CalendarSubscribeModal from "$lib/components/CalendarSubscribeModal.svelte";
@@ -23,19 +24,15 @@
     liveFlags.isEnabled("premium-features") && !auth.isPremium,
   );
 
-  let entries = $state<CalendarEntryDto[]>([]);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
   let showSubscribeModal = $state(false);
 
-  $effect(() => {
-    getCalendar()
-      .then((result) => (entries = result))
-      .catch((err) => {
-        error = resolveApiError(err);
-      })
-      .finally(() => (loading = false));
-  });
+  const calendarQuery = createApiQuery(() => ({
+    key: keys.calendar.upcoming(),
+    fetch: getCalendar,
+  }));
+  const entries = $derived(calendarQuery.data ?? []);
+  const loading = $derived(calendarQuery.loading);
+  const error = $derived(calendarQuery.error);
 
   const WEEKDAY_LONG_OPTIONS: Intl.DateTimeFormatOptions = { weekday: "long" };
   const DAY_LABEL_OPTIONS: Intl.DateTimeFormatOptions = {

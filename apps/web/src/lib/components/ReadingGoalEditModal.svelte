@@ -1,7 +1,6 @@
 <script lang="ts">
   import { upsertReadingGoal } from "$lib/api/books";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ReadingGoalDto } from "@loomkeep/shared";
   import Modal from "./Modal.svelte";
@@ -19,27 +18,29 @@
   } = $props();
 
   let draft = $state(goal?.target ? String(goal.target) : "");
-  let saving = $state(false);
-  let error = $state<string | null>(null);
+  let localError = $state<string | null>(null);
 
-  async function save() {
+  const saveMut = createApiMutation(() => ({
+    mutate: (target: number) => upsertReadingGoal({ year, target }),
+    coveredFields: ["target"],
+    onSuccess: (goal) => {
+      onSaved(goal);
+      onclose();
+    },
+  }));
+
+  function save() {
     const target = Number(draft);
     if (!Number.isInteger(target) || target < 1) {
-      error = m.reading_goal_invalid();
+      localError = m.reading_goal_invalid();
       return;
     }
-
-    saving = true;
-    error = null;
-    try {
-      onSaved(await upsertReadingGoal({ year, target }));
-      onclose();
-    } catch (err) {
-      error = fieldError(err, "target") ?? resolveApiError(err);
-    } finally {
-      saving = false;
-    }
+    localError = null;
+    saveMut.mutate(target);
   }
+
+  const saving = $derived(saveMut.loading);
+  const error = $derived(localError ?? saveMut.error);
 </script>
 
 <Modal title={m.reading_goal_modal_title({ year })} {onclose}>

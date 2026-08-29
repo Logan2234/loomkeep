@@ -3,18 +3,20 @@
   // true per-event log in the app). `period` narrows only the weekday/hour
   // curves; the heatmap and monthly/yearly bars always show their own
   // natural full range (see VideoTemporalDto).
-  import type { StatsWindow, VideoTemporalDto } from "@loomkeep/shared";
+  import type { StatsWindow } from "@loomkeep/shared";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { getVideoTemporal } from "$lib/api/stats";
   import { MONTH_SHORT_OPTIONS, formatDate } from "$lib/format";
   import CalendarHeatmap from "./CalendarHeatmap.svelte";
   import LineChart from "./LineChart.svelte";
-  import { statsResource } from "./stats-resource.svelte";
 
   let { period, locked }: { period: StatsWindow; locked: boolean } = $props();
 
-  const temporalStats = statsResource<VideoTemporalDto>(() =>
-    getVideoTemporal(period),
-  );
+  const temporalStats = createApiQuery(() => ({
+    key: keys.stats.videoTemporal(period),
+    fetch: () => getVideoTemporal(period),
+  }));
   const temporal = $derived(temporalStats.data);
   const error = $derived(temporalStats.error);
 

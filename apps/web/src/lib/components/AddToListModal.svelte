@@ -5,6 +5,7 @@
     getListMembership,
     removeListItem,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
   import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
@@ -28,14 +29,17 @@
   let loading = $state(true);
   let busyId = $state<string | null>(null);
   let creating = $state(false);
+  let error = $state<string | null>(null);
 
   function load() {
     loading = true;
+    error = null;
     Promise.all([getEditableLists(), getListMembership(targetType, targetId)])
       .then(([r, membership]) => {
         lists = r;
         itemIdByList = membership;
       })
+      .catch((err) => (error = resolveApiError(err)))
       .finally(() => (loading = false));
   }
 
@@ -75,6 +79,8 @@
 <Modal title="Ajouter à une liste" onclose={onClose}>
   {#if loading}
     <p class="text-dim text-sm">{m.common_loading()}</p>
+  {:else if error}
+    <p class="text-danger text-sm">{error}</p>
   {:else if lists.length === 0}
     <p class="text-dim text-sm">Tu n'as pas encore de liste.</p>
   {:else}

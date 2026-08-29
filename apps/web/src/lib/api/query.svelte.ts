@@ -17,8 +17,12 @@ interface ApiQueryOptions<T> {
   fetch: () => Promise<T>;
   /** Don't fetch until this holds. Default `true`. */
   enabled?: boolean;
-  /** Polling interval. Default `false`. */
-  refetchInterval?: number | false;
+  /**
+   * Polling interval, or a function of the latest data deciding it per
+   * fetch — e.g. stop once a polled job's status leaves "running". Default
+   * `false`.
+   */
+  refetchInterval?: number | false | ((data: T | undefined) => number | false);
   /**
    *  Opt-in — only correct when a key change means "same subject, different
    * view" (filters/sort/page/search), never "different subject". Default `false`.
@@ -30,6 +34,8 @@ interface ApiQueryOptions<T> {
   onError?: (err: unknown) => void;
   /** Surface the error as a toast in addition to `error`. Default `false`. */
   errorToast?: boolean;
+  /** Extra side effect on every new successful fetch — mostly for polling. */
+  onSuccess?: (data: T) => void;
 }
 
 export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
@@ -39,7 +45,13 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
       queryKey: opts.key,
       queryFn: opts.fetch,
       enabled: opts.enabled ?? true,
-      refetchInterval: opts.refetchInterval ?? false,
+      refetchInterval:
+        typeof opts.refetchInterval === "function"
+          ? (q) =>
+              (opts.refetchInterval as (data: T | undefined) => number | false)(
+                q.state.data,
+              )
+          : (opts.refetchInterval ?? false),
       placeholderData: opts.keepPreviousData ? keepPreviousData : undefined,
       ...(opts.retry !== undefined ? { retry: opts.retry } : {}),
     };
@@ -49,6 +61,10 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
   // fresh error instance on every failed fetch, so reference identity is
   // enough to detect a new failure without a separate "seen" flag to reset.
   let reportedError: unknown = undefined;
+  // Same identity-based dedup for onSuccess — a fresh fetch always produces
+  // a new response object, so this fires once per completed fetch, including
+  // every tick of a poll.
+  let reportedData: T | undefined = undefined;
 
   $effect(() => {
     if (query.error && query.error !== reportedError) {
@@ -57,6 +73,13 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
       opts.onError?.(query.error);
 
       if (opts.errorToast) toast.error(resolveApiError(query.error));
+    }
+  });
+
+  $effect(() => {
+    if (query.data !== undefined && query.data !== reportedData) {
+      reportedData = query.data;
+      optionsFn().onSuccess?.(query.data);
     }
   });
 

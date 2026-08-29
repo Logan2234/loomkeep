@@ -1,6 +1,6 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/auth";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -40,10 +40,6 @@
     { label: m.common_language_en(), value: "en" },
   ];
 
-  let error = $state("");
-  let saving = $state(false);
-  let localeSaving = $state(false);
-
   const gate = $derived({ isDomainEnabled, isAdmin: auth.isAdmin });
 
   // Stored order, gated to what's visible now (drops disabled/unknown ids and
@@ -71,30 +67,25 @@
   const canRemove = $derived(selected.length > MIN);
   const canAdd = $derived(selected.length < MAX);
 
-  async function save(next: string[]) {
-    error = "";
-    saving = true;
-    try {
-      await updateMe({ mobileNavShortcuts: next });
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      saving = false;
-    }
+  const saveShortcutsMut = createApiMutation(() => ({
+    mutate: (next: string[]) => updateMe({ mobileNavShortcuts: next }),
+  }));
+
+  function save(next: string[]) {
+    saveShortcutsMut.mutate(next);
   }
 
   // No error UI here: reload on success (setLocale's default) makes an
   // inline error dead on arrival anyway, and a failed save just leaves the
   // toggle showing the still-current (unsaved) locale.
-  async function saveLocale(next: Locale) {
-    if (localeSaving || auth.user?.locale === next) return;
-    localeSaving = true;
-    try {
-      await updateMe({ locale: next });
-      setLocale(next);
-    } catch {
-      localeSaving = false;
-    }
+  const saveLocaleMut = createApiMutation(() => ({
+    mutate: (next: Locale) => updateMe({ locale: next }),
+    onSuccess: (_data, next) => setLocale(next),
+  }));
+
+  function saveLocale(next: Locale) {
+    if (saveLocaleMut.loading || auth.user?.locale === next) return;
+    saveLocaleMut.mutate(next);
   }
 
   function handleDndConsider(e: CustomEvent<{ items: MobileDestination[] }>) {
@@ -177,8 +168,8 @@
       {/if}
     </p>
     <div
-      class:pointer-events-none={localeSaving}
-      class:opacity-50={localeSaving}>
+      class:pointer-events-none={saveLocaleMut.loading}
+      class:opacity-50={saveLocaleMut.loading}>
       <Combobox
         label={m.common_language()}
         options={LOCALE_OPTIONS}
@@ -199,7 +190,7 @@
       class="divide-border divide-y"
       use:dndzone={{
         items: dragItems,
-        dragDisabled: saving,
+        dragDisabled: saveShortcutsMut.loading,
         flipDurationMs: 150,
       }}
       onconsider={handleDndConsider}
@@ -221,7 +212,7 @@
             type="button"
             class="hover:bg-danger/10 hover:text-danger text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-30"
             aria-label={m.common_remove()}
-            disabled={saving || locked || !canRemove}
+            disabled={saveShortcutsMut.loading || locked || !canRemove}
             title={locked
               ? "« Menu » ne peut pas être retiré."
               : !canRemove
@@ -244,7 +235,7 @@
             <button
               type="button"
               class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
-              disabled={saving || !canAdd}
+              disabled={saveShortcutsMut.loading || !canAdd}
               title={!canAdd ? `Maximum ${MAX} raccourcis.` : undefined}
               onclick={() => add(c.id)}>
               <Icon name={c.icon} class="h-3.5 w-3.5" />
@@ -260,8 +251,8 @@
       </div>
     {/if}
 
-    {#if error}
-      <p class="text-danger mt-3 text-sm">{error}</p>
+    {#if saveShortcutsMut.error}
+      <p class="text-danger mt-3 text-sm">{saveShortcutsMut.error}</p>
     {/if}
   </div>
 </section>

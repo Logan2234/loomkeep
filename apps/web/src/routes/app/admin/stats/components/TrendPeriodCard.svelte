@@ -5,7 +5,7 @@
   // period selector, so each temporal card re-queries its own endpoint. The
   // payload carries the default (weekly) curve; picking another period
   // overrides it locally, and remounting the section drops the override.
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import TrendChart from "$lib/components/TrendChart.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
@@ -40,23 +40,15 @@
     year: m.admin_trend_cadence_year(),
   };
 
-  let picked = $state<T | null>(null);
-  let busy = $state(false);
-  let error = $state<string | null>(null);
+  const periodMut = createApiMutation(() => ({
+    mutate: (period: TrendPeriod) => load(period),
+  }));
 
-  const trend = $derived(picked ?? initial);
+  const trend = $derived(periodMut.data ?? initial);
 
-  async function setPeriod(period: TrendPeriod) {
-    if (period === trend.period || busy) return;
-    busy = true;
-    error = null;
-    try {
-      picked = await load(period);
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+  function setPeriod(period: TrendPeriod) {
+    if (period === trend.period || periodMut.loading) return;
+    periodMut.mutate(period);
   }
 </script>
 
@@ -74,7 +66,7 @@
         <button
           class="chip !px-2.5 !py-1 !text-xs"
           class:chip-on={trend.period === p.value}
-          disabled={busy}
+          disabled={periodMut.loading}
           onclick={() => setPeriod(p.value)}>
           {p.label}
         </button>
@@ -82,11 +74,11 @@
     </div>
   </div>
 
-  <div class="transition-opacity" class:opacity-50={busy}>
+  <div class="transition-opacity" class:opacity-50={periodMut.loading}>
     <TrendChart points={trend.points} period={trend.period} />
   </div>
   {@render footer(trend)}
-  {#if error}
-    <p class="text-danger mt-1.5 text-xs">{error}</p>
+  {#if periodMut.error}
+    <p class="text-danger mt-1.5 text-xs">{periodMut.error}</p>
   {/if}
 </div>

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { getFeedPreview } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ActivityEventDto } from "@loomkeep/shared";
 
   // Home-page teaser of the activity feed. Social-gated, best-effort, and hides
   // itself entirely when empty so it never clutters a fresh dashboard. The full
@@ -15,19 +16,20 @@
     limit?: number;
   } = $props();
 
-  let events = $state<ActivityEventDto[]>([]);
-  let loaded = $state(false);
+  const previewQuery = createApiQuery(() => ({
+    key: keys.feed.preview(),
+    fetch: getFeedPreview,
+    enabled: appConfig.socialEnabled,
+  }));
 
-  $effect(() => {
-    if (!appConfig.socialEnabled) return;
-    getFeedPreview()
-      .then((e) => (events = limit ? e.slice(0, limit) : e))
-      .catch(() => (events = []))
-      .finally(() => (loaded = true));
-  });
+  const events = $derived(
+    limit
+      ? (previewQuery.data ?? []).slice(0, limit)
+      : (previewQuery.data ?? []),
+  );
 </script>
 
-{#if appConfig.socialEnabled && loaded && events.length > 0}
+{#if appConfig.socialEnabled && !previewQuery.loading && events.length > 0}
   <section class="card p-4">
     <div class="mb-4 flex items-baseline justify-between">
       <p class="timecode text-xs uppercase">{m.home_activity_title()}</p>

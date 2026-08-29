@@ -4,15 +4,15 @@
     getReviewRevisions,
     upsertReview,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
     REVIEW_TEXT_MAX_LENGTH,
     type ReviewDto,
-    type ReviewRevisionDto,
     type ReviewTargetType,
     type ReviewVisibility,
   } from "@loomkeep/shared";
@@ -53,52 +53,49 @@
   let formVisibility = $derived<ReviewVisibility>(
     review?.visibility ?? defaultVisibility,
   );
-  let revisions = $state<ReviewRevisionDto[]>([]);
-  let busy = $state(false);
   let confirmingDelete = $state(false);
-  let error = $state("");
 
-  $effect(() => {
-    if (!review) return;
-    void getReviewRevisions(targetType, targetId).then((r) => (revisions = r));
-  });
+  const revisionsQuery = createApiQuery(() => ({
+    key: keys.reviews.revisions(targetType, targetId),
+    fetch: () => getReviewRevisions(targetType, targetId),
+    enabled: !!review,
+  }));
+  const revisions = $derived(revisionsQuery.data ?? []);
 
-  async function save() {
-    if (formRating === null || busy) return;
-    busy = true;
-    error = "";
-    try {
-      const updated = await upsertReview(targetType, targetId, {
-        rating: formRating,
+  const saveMut = createApiMutation(() => ({
+    mutate: () =>
+      upsertReview(targetType, targetId, {
+        rating: formRating!,
         text: formText.trim() || null,
         visibility: formVisibility,
-      });
+      }),
+    coveredFields: ["rating", "text"],
+    onSuccess: (updated) => {
       onSaved(updated);
       onClose();
-    } catch (err) {
-      error =
-        fieldError(err, "rating") ??
-        fieldError(err, "text") ??
-        resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    },
+  }));
+
+  function save() {
+    if (formRating === null || saveMut.loading) return;
+    saveMut.mutate();
   }
 
-  async function doDelete() {
-    if (busy) return;
-    busy = true;
-    error = "";
-    try {
-      await deleteReview(targetType, targetId);
+  const deleteMut = createApiMutation(() => ({
+    mutate: () => deleteReview(targetType, targetId),
+    onSuccess: () => {
       onDeleted?.();
       onClose();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    },
+  }));
+
+  function doDelete() {
+    if (deleteMut.loading) return;
+    deleteMut.mutate();
   }
+
+  const busy = $derived(saveMut.loading || deleteMut.loading);
+  const error = $derived(saveMut.error ?? deleteMut.error);
 </script>
 
 <Modal {title} onclose={onClose}>

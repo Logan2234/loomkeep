@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getEditableLists } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -8,7 +10,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ListDto, MyListDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: "Classement",
@@ -36,8 +38,12 @@
   ];
   type SortKey = "updatedAt" | "createdAt" | "itemCount" | "title";
 
-  let lists = $state<MyListDto[]>([]);
-  let loading = $state(true);
+  const listsQuery = createApiQuery(() => ({
+    key: keys.lists.editable(),
+    fetch: getEditableLists,
+  }));
+  const lists = $derived(listsQuery.data ?? []);
+  const loading = $derived(listsQuery.loading);
   let creating = $state(false);
 
   let query = $state("");
@@ -45,11 +51,7 @@
   let visibilityFilter = $state<string[]>([]);
   let sort = $state<SortKey>("updatedAt");
 
-  $effect(() => {
-    getEditableLists()
-      .then((r) => (lists = r))
-      .finally(() => (loading = false));
-  });
+  const queryClient = useQueryClient();
 
   const filtered = $derived.by(() => {
     const q = query.trim().toLowerCase();
@@ -74,12 +76,8 @@
     });
   });
 
-  function handleCreated(list: ListDto) {
-    // Newest-updated first, matches the server order for a fresh list.
-    lists = [
-      { ...list, itemCount: 0, previewImageUrls: [], role: "OWNER" },
-      ...lists,
-    ];
+  function handleCreated() {
+    void queryClient.invalidateQueries({ queryKey: keys.lists.editable() });
   }
 </script>
 

@@ -4,33 +4,40 @@
   // header. What's left here isn't "profile" content in the sense that
   // anyone else ever sees it — it's account-level content filtering.
   import { updateMe } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   let birthDate = $state(auth.user?.birthDate ?? "");
-  let birthDateStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
-  let birthDateError = $state("");
+  let birthDateSaved = $state(false);
 
   // Today, formatted for the date input's `max` bound (no future birth dates).
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  async function saveBirthDate() {
-    birthDateStatus = "saving";
-    birthDateError = "";
-    try {
-      await updateMe({ birthDate: birthDate || null });
-      birthDateStatus = "saved";
-      setTimeout(() => {
-        if (birthDateStatus === "saved") birthDateStatus = "idle";
-      }, 2500);
-    } catch (err) {
-      birthDateStatus = "error";
-      birthDateError = fieldError(err, "birthDate") ?? resolveApiError(err);
-    }
+  const saveBirthDateMut = createApiMutation(() => ({
+    mutate: () => updateMe({ birthDate: birthDate || null }),
+    coveredFields: ["birthDate"],
+    onSuccess: () => {
+      birthDateSaved = true;
+      setTimeout(() => (birthDateSaved = false), 2500);
+    },
+  }));
+
+  function saveBirthDate() {
+    birthDateSaved = false;
+    saveBirthDateMut.mutate();
   }
+
+  const birthDateStatus = $derived<"idle" | "saving" | "saved" | "error">(
+    saveBirthDateMut.loading
+      ? "saving"
+      : saveBirthDateMut.error
+        ? "error"
+        : birthDateSaved
+          ? "saved"
+          : "idle",
+  );
 
   // Mirrors the API's age check, just for enabling/disabling the toggle below.
   function hasTurned18(isoBirthDate: string | null): boolean {
@@ -46,16 +53,14 @@
   }
 
   let isAdultEligible = $derived(hasTurned18(auth.user?.birthDate ?? null));
-  let adultContentError = $state("");
 
-  async function toggleAdultContent() {
+  const toggleAdultContentMut = createApiMutation(() => ({
+    mutate: (allowAdultContent: boolean) => updateMe({ allowAdultContent }),
+  }));
+
+  function toggleAdultContent() {
     if (!auth.user || !isAdultEligible) return;
-    adultContentError = "";
-    try {
-      await updateMe({ allowAdultContent: !auth.user.allowAdultContent });
-    } catch (err) {
-      adultContentError = resolveApiError(err);
-    }
+    toggleAdultContentMut.mutate(!auth.user.allowAdultContent);
   }
 </script>
 
@@ -84,7 +89,7 @@
     {:else if birthDateStatus === "saved"}
       <p class="text-success mt-2 text-sm">Enregistré.</p>
     {:else if birthDateStatus === "error"}
-      <p class="text-danger mt-2 text-sm">{birthDateError}</p>
+      <p class="text-danger mt-2 text-sm">{saveBirthDateMut.error}</p>
     {/if}
 
     {#if isAdultEligible}
@@ -102,8 +107,8 @@
             checked={auth.user.allowAdultContent}
             onChange={toggleAdultContent} />
         </div>
-        {#if adultContentError}
-          <p class="text-danger mt-2 text-sm">{adultContentError}</p>
+        {#if toggleAdultContentMut.error}
+          <p class="text-danger mt-2 text-sm">{toggleAdultContentMut.error}</p>
         {/if}
       </div>
     {/if}

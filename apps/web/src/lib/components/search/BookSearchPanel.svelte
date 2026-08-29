@@ -5,7 +5,9 @@
     searchBooks,
     upsertBookEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -13,7 +15,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { BookEntryDto, BookSummaryDto } from "@loomkeep/shared";
+  import type { BookSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.
@@ -36,90 +38,70 @@
   // this wraps the free-text query instead of adding a separate API param.
   let byAuthor = $state(false);
 
-  let results = $state<BookSummaryDto[]>([]);
+  // `query`/`byAuthor` (raw) drive the input; `queryFilter` (debounced) is
+  // the formatted string that actually drives the fetch — same split as
+  // LibraryBrowser/MediaSearchPanel. A key-based query already discards a
+  // stale in-flight response on its own once the key moves on, so there's
+  // no manual staleness guard to maintain here.
+  let queryFilter = $state("");
+  const debouncedQueryFilter = debounce((q: string) => {
+    queryFilter = q;
+  }, DEBOUNCE_MS);
+
+  $effect(() => {
+    const q = query.trim();
+    if (!q) {
+      debouncedQueryFilter.cancel();
+      queryFilter = "";
+      return;
+    }
+    debouncedQueryFilter.call(byAuthor ? `author:"${q.replace(/"/g, "")}"` : q);
+    return () => debouncedQueryFilter.cancel();
+  });
+
+  const searchQuery = createApiQuery(() => ({
+    key: keys.books.search(queryFilter),
+    fetch: () => searchBooks(queryFilter).then((r) => r.results),
+    enabled: !!queryFilter,
+  }));
+  const results = $derived(searchQuery.data ?? []);
   const shown = $derived(limit ? results.slice(0, limit) : results);
+  const searched = $derived(!!queryFilter);
 
   $effect(() => {
     onResults?.(results.length);
   });
-  let searching = $state(false);
-  let searched = $state(false);
-  let searchError = $state<string | null>(null);
-  let searchId = 0;
-  const debouncedSearch = debounce(
-    (q: string) => void runSearch(q),
-    DEBOUNCE_MS,
-  );
 
   // Books already in the library, keyed by source id → their entry, so a search
   // result can be flagged (and jumped to) instead of re-added.
-  let entries = $state<BookEntryDto[]>([]);
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.books.tracked(),
+    fetch: () => fetchAllPages((page) => listBooks({ page })),
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
   const tracked = $derived(
-    new SvelteMap(entries.map((e) => [e.book.sourceId, e])),
+    new SvelteMap((trackedQuery.data ?? []).map((e) => [e.book.sourceId, e])),
   );
 
-  async function loadLibrary() {
-    try {
-      entries = await fetchAllPages((page) => listBooks({ page }));
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
-
-  $effect(() => {
-    void loadLibrary();
-  });
-
-  // Debounced catalogue search. Re-runs when the "by author" toggle changes,
-  // since it changes the query sent, not just its formatting.
-  $effect(() => {
-    const q = query.trim();
-    if (!q) {
-      debouncedSearch.cancel();
-      searchId++;
-      results = [];
-      searched = false;
-      searchError = null;
-      searching = false;
-      return;
-    }
-    debouncedSearch.call(byAuthor ? `author:"${q.replace(/"/g, "")}"` : q);
-    return () => debouncedSearch.cancel();
-  });
-
-  async function runSearch(q: string) {
-    const mine = ++searchId;
-    searching = true;
-    searchError = null;
-    try {
-      const batch = (await searchBooks(q)).results;
-      if (mine !== searchId) return;
-      results = batch;
-      searched = true;
-    } catch (err) {
-      if (mine !== searchId) return;
-      searchError = resolveApiError(err);
-    } finally {
-      if (mine === searchId) searching = false;
-    }
-  }
-
-  async function addBook(book: BookSummaryDto) {
-    try {
-      await upsertBookEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (book: BookSummaryDto) =>
+      upsertBookEntry({
         source: book.source,
         sourceId: book.sourceId,
         status: "TO_READ",
-      });
-      await loadLibrary();
-    } catch (err) {
-      searchError = resolveApiError(err);
-    }
+      }),
+    invalidates: [keys.books.tracked()],
+    errorToast: true,
+  }));
+
+  function addBook(book: BookSummaryDto) {
+    addMut.mutate(book);
   }
 </script>
 
-{#if searchError}
-  <Banner variant="error" class="mb-4">{searchError}</Banner>
+{#if searchQuery.error}
+  <Banner variant="error" class="mb-4">{searchQuery.error}</Banner>
 {/if}
 
 <div class="mb-4 flex flex-wrap gap-2">
@@ -131,7 +113,7 @@
   </button>
 </div>
 
-{#if searching && results.length === 0}
+{#if queryFilter && searchQuery.loading}
   <PosterGrid>
     {#each { length: 10 } as _, i (i)}
       <div class="card flex flex-col">

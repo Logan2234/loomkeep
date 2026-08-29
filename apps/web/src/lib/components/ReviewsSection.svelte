@@ -5,6 +5,9 @@
     unvoteReview,
     voteReview,
   } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -17,6 +20,7 @@
   import Icon from "./Icon.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
   import StreakBadge from "./StreakBadge.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   // Always-visible review section for a work's detail page: the viewer's own
   // review (add/edit via the shared modal) + everyone else's, visibility-
@@ -36,10 +40,23 @@
     compact?: boolean;
   } = $props();
 
-  let myReview = $state<ReviewDto | null>(null);
-  let myReviewLoaded = $state(false);
-  let allReviews = $state<ReviewDto[]>([]);
-  let communityLoaded = $state(false);
+  const queryClient = useQueryClient();
+
+  const myReviewQuery = createApiQuery(() => ({
+    key: keys.reviews.mine(targetType, targetId),
+    fetch: () => getMyReview(targetType, targetId),
+  }));
+  const myReview = $derived(myReviewQuery.data);
+  const myReviewLoaded = $derived(!myReviewQuery.loading);
+
+  const communityQuery = createApiQuery(() => ({
+    key: keys.reviews.community(targetType, targetId),
+    fetch: () => getReviewsForTarget(targetType, targetId),
+    enabled: appConfig.socialEnabled,
+  }));
+  const allReviews = $derived(communityQuery.data ?? []);
+  const communityLoaded = $derived(!communityQuery.loading);
+
   let editing = $state(false);
 
   // `listForTarget` always includes the viewer's own review — keep the
@@ -48,62 +65,44 @@
     allReviews.filter((r) => r.author?.id !== auth.user?.id),
   );
 
-  $effect(() => {
-    const type = targetType;
-    const id = targetId;
-    myReviewLoaded = false;
-    void getMyReview(type, id)
-      .then((r) => (myReview = r))
-      .finally(() => (myReviewLoaded = true));
-  });
-
-  $effect(() => {
-    const type = targetType;
-    const id = targetId;
-    if (!appConfig.socialEnabled) return;
-    communityLoaded = false;
-    void getReviewsForTarget(type, id)
-      .then((r) => (allReviews = r))
-      .catch(() => (allReviews = []))
-      .finally(() => (communityLoaded = true));
-  });
-
   function handleSaved(updated: ReviewDto) {
-    myReview = updated;
+    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), updated);
   }
 
   function handleDeleted() {
-    myReview = null;
+    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), null);
   }
 
   // Reddit-style: clicking the already-active direction removes the vote,
   // clicking the other one replaces it. One in-flight vote at a time.
-  let votingId = $state<string | null>(null);
+  const voteMut = createApiMutation(() => ({
+    mutate: async (args: { review: ReviewDto; value: ReviewVoteValue }) => {
+      if (args.review.myVote === args.value) {
+        const { score } = await unvoteReview(args.review.id);
+        return { score, myVote: null as ReviewVoteValue | null };
+      }
+      const { score, myVote } = await voteReview(args.review.id, args.value);
+      return { score, myVote };
+    },
+    onSuccess: (result, args) => {
+      queryClient.setQueryData(
+        keys.reviews.community(targetType, targetId),
+        (old: ReviewDto[] | undefined) =>
+          old?.map((r) =>
+            r.id === args.review.id
+              ? { ...r, voteScore: result.score, myVote: result.myVote }
+              : r,
+          ),
+      );
+    },
+  }));
 
-  function applyVote(
-    id: string,
-    score: number,
-    myVote: ReviewVoteValue | null,
-  ) {
-    allReviews = allReviews.map((r) =>
-      r.id === id ? { ...r, voteScore: score, myVote } : r,
-    );
+  function isVoting(id: string): boolean {
+    return voteMut.loading && voteMut.variables?.review.id === id;
   }
 
-  async function castVote(review: ReviewDto, value: ReviewVoteValue) {
-    if (votingId) return;
-    votingId = review.id;
-    try {
-      if (review.myVote === value) {
-        const { score } = await unvoteReview(review.id);
-        applyVote(review.id, score, null);
-      } else {
-        const { score, myVote } = await voteReview(review.id, value);
-        applyVote(review.id, score, myVote);
-      }
-    } finally {
-      votingId = null;
-    }
+  function castVote(review: ReviewDto, value: ReviewVoteValue) {
+    voteMut.mutate({ review, value });
   }
 </script>
 
@@ -186,7 +185,7 @@
                   aria-label={m.reviews_section_vote_up()}
                   title={m.reviews_section_vote_up()}
                   aria-pressed={review.myVote === "UP"}
-                  disabled={votingId === review.id}
+                  disabled={isVoting(review.id)}
                   onclick={() => castVote(review, "UP")}>
                   <Icon name="chevron-up" class="h-4 w-4" />
                 </button>
@@ -202,7 +201,7 @@
                   aria-label={m.reviews_section_vote_down()}
                   title={m.reviews_section_vote_down()}
                   aria-pressed={review.myVote === "DOWN"}
-                  disabled={votingId === review.id}
+                  disabled={isVoting(review.id)}
                   onclick={() => castVote(review, "DOWN")}>
                   <Icon name="chevron-down" class="h-4 w-4" />
                 </button>

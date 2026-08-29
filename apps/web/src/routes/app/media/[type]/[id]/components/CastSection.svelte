@@ -1,9 +1,11 @@
 <script lang="ts">
   import { getCastDetail } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import Poster from "$lib/components/Poster.svelte";
-  import type { CastDetailDto, CastMemberDto } from "@loomkeep/shared";
+  import type { CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
     $props();
@@ -11,23 +13,22 @@
   // Cast modal: the clicked member (for the header shown immediately) plus its
   // lazily-loaded detail. Only members with an id are clickable (TMDB persons).
   let castMember = $state<CastMemberDto | null>(null);
-  let castDetail = $state<CastDetailDto | null>(null);
-  let castLoading = $state(false);
+
+  const castQuery = createApiQuery(() => ({
+    key: keys.catalog.castDetail(source, castMember?.id ?? ""),
+    fetch: () => getCastDetail(source, castMember!.id!),
+    enabled: castMember?.id !== undefined,
+  }));
+  const castDetail = $derived(castQuery.data);
+  const castLoading = $derived(castQuery.loading);
 
   function openCast(member: CastMemberDto) {
     if (!member.id) return;
     castMember = member;
-    castDetail = null;
-    castLoading = true;
-    getCastDetail(source, member.id)
-      .then((d) => (castDetail = d))
-      .catch(() => {})
-      .finally(() => (castLoading = false));
   }
 
   function closeCast() {
     castMember = null;
-    castDetail = null;
   }
 </script>
 

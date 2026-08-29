@@ -5,7 +5,9 @@
     searchMusic,
     upsertMusicEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -13,7 +15,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { MusicEntryDto, MusicSummaryDto } from "@loomkeep/shared";
+  import type { MusicSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.
@@ -32,92 +34,71 @@
 
   const DEBOUNCE_MS = 300;
 
-  let results = $state<MusicSummaryDto[]>([]);
+  // `query` (raw) drives the input; `queryFilter` (debounced) drives the
+  // fetch — same split as LibraryBrowser/MediaSearchPanel. A key-based query
+  // already discards a stale in-flight response on its own once the key
+  // moves on, so there's no manual staleness guard to maintain here.
+  let queryFilter = $state("");
+  const debouncedQueryFilter = debounce(() => {
+    queryFilter = query.trim();
+  }, DEBOUNCE_MS);
+
+  $effect(() => {
+    if (!query.trim()) {
+      debouncedQueryFilter.cancel();
+      queryFilter = "";
+      return;
+    }
+    debouncedQueryFilter.call();
+    return () => debouncedQueryFilter.cancel();
+  });
+
+  const searchQuery = createApiQuery(() => ({
+    key: keys.music.search(queryFilter),
+    fetch: () => searchMusic(queryFilter).then((r) => r.results),
+    enabled: !!queryFilter,
+  }));
+  const results = $derived(searchQuery.data ?? []);
   const shown = $derived(limit ? results.slice(0, limit) : results);
+  const searched = $derived(!!queryFilter);
 
   $effect(() => {
     onResults?.(results.length);
   });
-  let searching = $state(false);
-  let searched = $state(false);
-  let searchError = $state<string | null>(null);
-  let searchId = 0;
-  const debouncedSearch = debounce(
-    (q: string) => void runSearch(q),
-    DEBOUNCE_MS,
-  );
 
   // Albums already in the library, keyed by source id → their entry, so a
   // search result can be flagged (and jumped to) instead of re-added.
-  let entries = $state<MusicEntryDto[]>([]);
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.music.tracked(),
+    fetch: () => fetchAllPages((page) => listMusic({ page })),
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
   const tracked = $derived(
-    new SvelteMap(entries.map((e) => [e.album.sourceId, e])),
+    new SvelteMap((trackedQuery.data ?? []).map((e) => [e.album.sourceId, e])),
   );
 
-  async function loadLibrary() {
-    try {
-      entries = await fetchAllPages((page) => listMusic({ page }));
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
-
-  $effect(() => {
-    void loadLibrary();
-  });
-
-  // Debounced catalogue search.
-  $effect(() => {
-    const q = query.trim();
-    if (!q) {
-      debouncedSearch.cancel();
-      searchId++;
-      results = [];
-      searched = false;
-      searchError = null;
-      searching = false;
-      return;
-    }
-    debouncedSearch.call(q);
-    return () => debouncedSearch.cancel();
-  });
-
-  async function runSearch(q: string) {
-    const mine = ++searchId;
-    searching = true;
-    searchError = null;
-    try {
-      const batch = (await searchMusic(q)).results;
-      if (mine !== searchId) return;
-      results = batch;
-      searched = true;
-    } catch (err) {
-      if (mine !== searchId) return;
-      searchError = resolveApiError(err);
-    } finally {
-      if (mine === searchId) searching = false;
-    }
-  }
-
-  async function addAlbum(album: MusicSummaryDto) {
-    try {
-      await upsertMusicEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (album: MusicSummaryDto) =>
+      upsertMusicEntry({
         source: album.source,
         sourceId: album.sourceId,
         status: "TO_LISTEN",
-      });
-      await loadLibrary();
-    } catch (err) {
-      searchError = resolveApiError(err);
-    }
+      }),
+    invalidates: [keys.music.tracked()],
+    errorToast: true,
+  }));
+
+  function addAlbum(album: MusicSummaryDto) {
+    addMut.mutate(album);
   }
 </script>
 
-{#if searchError}
-  <Banner variant="error" class="mb-4">{searchError}</Banner>
+{#if searchQuery.error}
+  <Banner variant="error" class="mb-4">{searchQuery.error}</Banner>
 {/if}
 
-{#if searching && results.length === 0}
+{#if queryFilter && searchQuery.loading}
   <PosterGrid>
     {#each { length: 10 } as _, i (i)}
       <div class="card flex flex-col">

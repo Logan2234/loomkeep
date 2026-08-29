@@ -4,13 +4,15 @@
   // checks at a glance (each a real link to its page), then every ADMIN_NAV
   // destination grouped by concern instead of one flat grid of identical
   // cards — see apps/web/DESIGN.md for the palette/type tokens this reuses.
-  import { adminReports } from "$lib/admin-reports.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import {
     getAdminBackupFiles,
     getAdminJobs,
     getAdminOverview,
+    getAdminReportsPendingCount,
     getAdminServices,
   } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
   import { auth } from "$lib/auth.svelte";
   import BetaBadge from "$lib/components/BetaBadge.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,37 +22,38 @@
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
-  import type {
-    AdminBackupFileDto,
-    AdminOverviewDto,
-    JobDto,
-    ServiceStatusDto,
-  } from "@loomkeep/shared";
+  import type { ServiceStatusDto } from "@loomkeep/shared";
 
-  let overview = $state<AdminOverviewDto | null>(null);
-  let services = $state<ServiceStatusDto[] | null>(null);
-  let jobs = $state<JobDto[] | null>(null);
-  let backups = $state<AdminBackupFileDto[] | null>(null);
+  // ---- best-effort: a failed fetch just leaves that card/metric blank
+  // rather than breaking the page (no errorToast) ----
 
-  $effect(() => {
-    void adminReports.refresh();
-    getAdminOverview()
-      .then((o) => (overview = o))
-      .catch(() => {});
-    getAdminServices()
-      .then((r) => (services = r.services))
-      .catch(() => {});
-    getAdminJobs()
-      .then((r) => (jobs = r.jobs))
-      .catch(() => {});
-    getAdminBackupFiles()
-      .then((f) => (backups = f))
-      .catch(() => {});
-  });
+  const overviewQuery = createApiQuery(() => ({
+    key: keys.admin.overview(),
+    fetch: getAdminOverview,
+  }));
+  const servicesQuery = createApiQuery(() => ({
+    key: keys.admin.services(),
+    fetch: getAdminServices,
+  }));
+  const jobsQuery = createApiQuery(() => ({
+    key: keys.admin.jobs(),
+    fetch: () => getAdminJobs().then((r) => r.jobs),
+  }));
+  const backupsQuery = createApiQuery(() => ({
+    key: keys.admin.backups(),
+    fetch: getAdminBackupFiles,
+  }));
+  const reportsPendingQuery = createApiQuery(() => ({
+    key: keys.admin.reportsPendingCount(),
+    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
+    refetchInterval: 20_000,
+  }));
 
-  // ---- derived numbers for the strip + row metrics, all best-effort (a
-  // failed fetch just leaves that card/metric blank rather than breaking
-  // the page) ----
+  const overview = $derived(overviewQuery.data);
+  const services = $derived(servicesQuery.data?.services ?? null);
+  const jobs = $derived(jobsQuery.data);
+  const backups = $derived(backupsQuery.data);
+  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
 
   const usersTotal = $derived(overview?.accounts ?? null);
   const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);
@@ -101,9 +104,7 @@
       "/app/admin/cache":
         cacheTotal !== null ? `${formatNumber(cacheTotal)} items` : undefined,
       "/app/admin/reports":
-        adminReports.pending > 0
-          ? `${adminReports.pending} en attente`
-          : "à jour",
+        reportsPending > 0 ? `${reportsPending} en attente` : "à jour",
     };
   });
 
@@ -227,19 +228,19 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {adminReports.pending > 0
+          class="h-1.5 w-1.5 rounded-full {reportsPending > 0
             ? 'bg-danger'
             : 'bg-success'}"></span>
         Signalements
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {formatNumber(adminReports.pending)}
+        {formatNumber(reportsPending)}
       </span>
       <span
-        class="text-xs {adminReports.pending > 0
+        class="text-xs {reportsPending > 0
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {adminReports.pending > 0 ? "en attente de modération" : "à jour"}
+        {reportsPending > 0 ? "en attente de modération" : "à jour"}
       </span>
     </a>
   </div>
@@ -267,10 +268,10 @@
               <div class="min-w-0 flex-1">
                 <span class="text-fg flex items-center gap-2 font-semibold">
                   {item.label}
-                  {#if item.href === "/app/admin/reports" && adminReports.pending > 0}
+                  {#if item.href === "/app/admin/reports" && reportsPending > 0}
                     <span
                       class="bg-accent text-accent-fg rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold">
-                      {adminReports.pending}
+                      {reportsPending}
                     </span>
                   {:else if item.href === "/app/admin/services" && servicesDegraded > 0}
                     <span

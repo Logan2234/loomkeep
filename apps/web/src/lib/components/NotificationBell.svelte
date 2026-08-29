@@ -14,13 +14,20 @@
   // there rises a Drawer bottom sheet instead of a dropdown, matching the
   // Menu launcher's own pattern.
   import {
+    getNotifications,
+    markNotificationRead,
+    markNotificationsRead,
+  } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
+  import {
     acceptFollowRequest,
     getFollowRequests,
     rejectFollowRequest,
   } from "$lib/api/social";
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
-  import { notifications } from "$lib/notifications.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
   import { fade, scale, slide } from "svelte/transition";
@@ -38,7 +45,28 @@
   let drawerContentEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
 
-  const total = $derived(requests.length + notifications.unread);
+  // Polls while this bell is mounted (root layout, so effectively always
+  // while logged in) — TanStack only actually polls while the tab is
+  // visible, so this replaces what used to be a manual setInterval +
+  // document.visibilityState check in +layout.svelte.
+  const feedQuery = createApiQuery(() => ({
+    key: keys.notifications.feed(),
+    fetch: getNotifications,
+    refetchInterval: 20_000,
+  }));
+  const notificationItems = $derived(feedQuery.data?.notifications ?? []);
+  const unread = $derived(feedQuery.data?.unread ?? 0);
+
+  const markReadMut = createApiMutation(() => ({
+    mutate: markNotificationRead,
+    invalidates: [keys.notifications.feed()],
+  }));
+  const markAllReadMut = createApiMutation(() => ({
+    mutate: markNotificationsRead,
+    invalidates: [keys.notifications.feed()],
+  }));
+
+  const total = $derived(requests.length + unread);
 
   async function toggle() {
     open = !open;
@@ -73,7 +101,7 @@
   }
 
   function onItemClick(n: NotificationDto) {
-    void notifications.markRead(n.id);
+    markReadMut.mutate(n.id);
     if (!n.url) close();
   }
 
@@ -170,11 +198,11 @@
     <h2 id="notif-drawer-title" class="font-display text-base font-bold">
       {m.notif_title()}
     </h2>
-    {#if notifications.items.length > 0}
+    {#if notificationItems.length > 0}
       <button
         type="button"
         class="link-accent text-xs font-semibold"
-        onclick={() => notifications.markAllRead()}>
+        onclick={() => markAllReadMut.mutate()}>
         {m.notif_clear_all()}
       </button>
     {/if}
@@ -230,13 +258,13 @@
       <div class="border-border mx-4 my-2 border-t" aria-hidden="true"></div>
     {/if}
 
-    {#if notifications.items.length === 0 && requests.length === 0}
+    {#if notificationItems.length === 0 && requests.length === 0}
       <p class="text-dim px-4 py-10 text-center text-sm">
         {m.notif_empty()}
       </p>
-    {:else if notifications.items.length > 0}
+    {:else if notificationItems.length > 0}
       <ul>
-        {#each notifications.items as n (n.id)}
+        {#each notificationItems as n (n.id)}
           <li transition:slide={{ duration: 150 }}>
             {#if n.url}
               <a

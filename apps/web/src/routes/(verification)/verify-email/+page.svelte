@@ -1,30 +1,28 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { verifyEmail } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const token = page.url.searchParams.get("token") ?? "";
 
-  let status = $state<"pending" | "done" | "error">("pending");
-  let error = $state<string | null>(null);
+  const verifyQuery = createApiQuery(() => ({
+    key: keys.verification.email(token),
+    fetch: () => verifyEmail(token),
+    enabled: !!token,
+  }));
 
-  $effect(() => {
-    if (!token) {
-      status = "error";
-      error = m.auth_verify_email_invalid_link();
-      return;
-    }
-
-    verifyEmail(token)
-      .then(() => {
-        status = "done";
-      })
-      .catch((err) => {
-        status = "error";
-        error = resolveApiError(err);
-      });
-  });
+  const status = $derived<"pending" | "done" | "error">(
+    !token || verifyQuery.error
+      ? "error"
+      : verifyQuery.loading
+        ? "pending"
+        : "done",
+  );
+  const error = $derived(
+    !token ? m.auth_verify_email_invalid_link() : verifyQuery.error,
+  );
 </script>
 
 <div class="flex min-h-screen items-center justify-center px-4 py-12">

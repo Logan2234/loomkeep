@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getImportAvailability, getImportQuota } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
@@ -36,21 +38,20 @@
 
   // A source absent from this map needs no server config of its own, so it
   // reads as available until proven otherwise — avoids flashing every
-  // configured source as unavailable while the check is in flight.
-  let availability = $state<ImportAvailabilityDto>({});
-  let quota = $state<ImportQuotaDto>({});
-
-  $effect(() => {
-    getImportAvailability()
-      .then((a) => (availability = a))
-      .catch(() => {});
-  });
-
-  $effect(() => {
-    getImportQuota()
-      .then((q) => (quota = q))
-      .catch(() => {});
-  });
+  // configured source as unavailable while the check is in flight (or on
+  // a failed check — best-effort, no errorToast).
+  const availabilityQuery = createApiQuery(() => ({
+    key: keys.import.availability(),
+    fetch: getImportAvailability,
+  }));
+  const quotaQuery = createApiQuery(() => ({
+    key: keys.import.quota(),
+    fetch: getImportQuota,
+  }));
+  const availability = $derived<ImportAvailabilityDto>(
+    availabilityQuery.data ?? {},
+  );
+  const quota = $derived<ImportQuotaDto>(quotaQuery.data ?? {});
 
   const premiumLocked = $derived(
     liveFlags.isEnabled("premium-features") && !auth.isPremium,

@@ -118,11 +118,38 @@ fix does.
   auto-refresh-and-retry on 401 in `src/lib/api/client.ts`. The API itself
   emits `/app`-prefixed paths (push/email links) — grep `/app/` in
   `apps/api/src` before renaming a client route.
-- Most data fetching is still ad hoc `request()` calls + local `$state`.
-  `@tanstack/svelte-query` was introduced for comments only
-  (`CommentThread.svelte` is the reference implementation) — reach for it,
-  not another local-`$state` pattern, when a mutation must invalidate data
-  shown in more than one component.
+- API calls go through three helpers over `@tanstack/svelte-query`
+  (`apps/web/src/lib/api/{query,mutation,infinite-query}.svelte.ts`) —
+  never a hand-rolled `try/catch` + local `error`/`loading` `$state`.
+  `createApiQuery`/`createApiMutation`/`createApiInfiniteQuery` all take a
+  _getter_ (`() => ({...})`, not a plain object — TanStack needs to
+  re-evaluate the options reactively) and return `{ data, error, loading }`.
+  `error` is always a translated string: `resolveApiError()` for the two
+  read helpers, `bannerMessage()` for mutations (returns `null` once every
+  field it names is already shown under its own input via `fieldError()`).
+  A mutation also adds `mutate(args)` (ignored while one's already in
+  flight — no hand-rolled double-submit guard needed), `fieldErrors`, and
+  `invalidates` (factory keys to refetch on success). `CommentThread.svelte`
+  is the one deliberate exception — it needs raw TanStack directly
+  (`refetchInterval` polling, its own `createInfiniteQuery`) — don't
+  migrate it. Full design and the settled tradeoffs:
+  [docs/plans/centralized-api-layer.md](docs/plans/centralized-api-layer.md).
+- Query keys come from a factory (`apps/web/src/lib/api/keys.ts`),
+  namespaced per domain. TanStack dedupes by key at the single
+  `QueryClient` (mounted in `routes/+layout.svelte`) — two components
+  requesting the same key share one cache entry, so e.g. a nav badge and
+  its detail page stay in sync with no context/DI wiring needed.
+  `invalidates` lists only the keys for what's _displayed at the same
+  time_ as the mutation, not everything it semantically touches —
+  navigating away unmounts a query, and the next mount refetches it if
+  stale. When something outside the helpers changes the same data (a
+  not-yet-migrated modal calling its own route function), patch the cache
+  with `queryClient.setQueryData(key, ...)` rather than reassigning a
+  `$derived` value, which isn't a valid assignment target.
+- Every paginated `GET` list endpoint shares one contract: `page`/`limit`
+  request params (`apps/api/src/common/pagination.util.ts`'s
+  `parsePageQuery`), `PagedResult<T>` response
+  (`packages/shared/src/dto/pagination.ts`: `{ items, hasMore, total? }`).
 
 ### Ops
 

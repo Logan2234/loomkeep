@@ -1,5 +1,6 @@
 <script lang="ts">
   import { listGames } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { updateGameEntry } from "$lib/api/games";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
@@ -32,9 +33,9 @@
     entry.favorite = next; // optimistic
     try {
       await updateGameEntry(entry.id, { favorite: next });
-    } catch {
+    } catch (err) {
       entry.favorite = !next;
-      toast.error("Mise à jour impossible");
+      toast.error(resolveApiError(err));
     }
   }
 

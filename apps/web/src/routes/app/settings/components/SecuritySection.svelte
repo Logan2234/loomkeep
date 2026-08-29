@@ -7,8 +7,7 @@
     resendVerificationEmail,
     updateUsername,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -21,8 +20,6 @@
   type SecurityModal = "username" | "email" | "password" | null;
 
   let openModal = $state<SecurityModal>(null);
-  let verificationSending = $state(false);
-  let verificationSent = $state(false);
   let verificationCooldown = $state(0);
   let verificationCooldownTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -32,15 +29,13 @@
   }
 
   let usernameInput = $state("");
-  let usernameError = $state("");
-  let usernameSaving = $state(false);
   type UsernameCheck = "idle" | "checking" | "available" | "taken" | "error";
   let usernameCheck = $state<UsernameCheck>("idle");
   let usernameCheckTimer: ReturnType<typeof setTimeout> | undefined;
 
   function openUsernameModal() {
     usernameInput = auth.user?.username ?? "";
-    usernameError = "";
+    saveUsernameMut.reset();
     usernameCheck = "idle";
     openModal = "username";
   }
@@ -67,151 +62,142 @@
     }, 400);
   }
 
-  async function saveUsername() {
-    if (usernameCheck !== "available") return;
-    usernameError = "";
-    usernameSaving = true;
-    try {
-      await updateUsername({ username: usernameInput.trim() });
+  const saveUsernameMut = createApiMutation(() => ({
+    mutate: () => updateUsername({ username: usernameInput.trim() }),
+    coveredFields: ["username"],
+    onSuccess: () => {
       openModal = null;
       toast.success("Nom d'utilisateur mis à jour.");
-    } catch (err) {
-      usernameError = fieldError(err, "username") ?? resolveApiError(err);
-    } finally {
-      usernameSaving = false;
-    }
+    },
+  }));
+
+  function saveUsername() {
+    if (usernameCheck !== "available") return;
+    saveUsernameMut.mutate();
   }
 
   let emailInput = $state("");
   let emailPasswordInput = $state("");
-  let emailError = $state("");
-  let emailSaving = $state(false);
+  let emailAlreadyCurrentError = $state("");
   let emailStep: "form" | "code" = $state("form");
   let emailCodeInput = $state("");
-  let emailConfirmError = $state("");
-  let emailConfirming = $state(false);
 
   function openEmailModal() {
     emailInput = "";
     emailPasswordInput = "";
-    emailError = "";
+    emailAlreadyCurrentError = "";
+    saveEmailMut.reset();
     emailStep = "form";
     emailCodeInput = "";
-    emailConfirmError = "";
+    confirmEmailMut.reset();
     openModal = "email";
   }
 
-  async function saveEmail() {
-    emailError = "";
-    if (emailInput.trim() === auth.user?.email) {
-      emailError = "C'est déjà ton adresse email actuelle.";
-      return;
-    }
-    emailSaving = true;
-    try {
-      await changeEmail({
+  const saveEmailMut = createApiMutation(() => ({
+    mutate: () =>
+      changeEmail({
         newEmail: emailInput.trim(),
         currentPassword: emailPasswordInput,
-      });
-      emailStep = "code";
-    } catch (err) {
-      emailError =
-        fieldError(err, "newEmail") ??
-        fieldError(err, "currentPassword") ??
-        resolveApiError(err);
-    } finally {
-      emailSaving = false;
-    }
-  }
+      }),
+    coveredFields: ["newEmail", "currentPassword"],
+    onSuccess: () => (emailStep = "code"),
+  }));
 
-  async function confirmEmail() {
-    emailConfirmError = "";
-    emailConfirming = true;
-    try {
-      await confirmEmailChange({ code: emailCodeInput.trim() });
-      openModal = null;
-      toast.success("Email mis à jour.");
-    } catch (err) {
-      emailConfirmError = fieldError(err, "code") ?? resolveApiError(err);
-    } finally {
-      emailConfirming = false;
-    }
-  }
-
-  async function resendVerification() {
-    if (
-      verificationSending ||
-      verificationCooldown > 0 ||
-      auth.user?.emailVerified
-    ) {
+  function saveEmail() {
+    emailAlreadyCurrentError = "";
+    if (emailInput.trim() === auth.user?.email) {
+      emailAlreadyCurrentError = "C'est déjà ton adresse email actuelle.";
       return;
     }
+    saveEmailMut.mutate();
+  }
 
-    verificationSending = true;
-    verificationSent = false;
+  const emailError = $derived(emailAlreadyCurrentError || saveEmailMut.error);
 
-    try {
-      await resendVerificationEmail();
+  const confirmEmailMut = createApiMutation(() => ({
+    mutate: () => confirmEmailChange({ code: emailCodeInput.trim() }),
+    coveredFields: ["code"],
+    onSuccess: () => {
+      openModal = null;
+      toast.success("Email mis à jour.");
+    },
+  }));
 
-      verificationSent = true;
+  function confirmEmail() {
+    confirmEmailMut.mutate();
+  }
+
+  const resendVerificationMut = createApiMutation(() => ({
+    mutate: resendVerificationEmail,
+    errorToast: true,
+    onSuccess: () => {
       verificationCooldown = 60;
-
       clearInterval(verificationCooldownTimer);
-
       verificationCooldownTimer = setInterval(() => {
         verificationCooldown -= 1;
-
         if (verificationCooldown <= 0) {
           clearInterval(verificationCooldownTimer);
           verificationCooldownTimer = undefined;
         }
       }, 1000);
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      verificationSending = false;
+    },
+  }));
+
+  function resendVerification() {
+    if (
+      resendVerificationMut.loading ||
+      verificationCooldown > 0 ||
+      auth.user?.emailVerified
+    ) {
+      return;
     }
+    resendVerificationMut.mutate();
   }
+
+  const verificationSent = $derived(!!resendVerificationMut.data);
+
   let currentPasswordInput = $state("");
   let newPasswordInput = $state("");
   let confirmPasswordInput = $state("");
-  let passwordError = $state("");
-  let passwordSaving = $state(false);
+  let localPasswordError = $state("");
 
   function openPasswordModal() {
     currentPasswordInput = "";
     newPasswordInput = "";
     confirmPasswordInput = "";
-    passwordError = "";
+    localPasswordError = "";
+    savePasswordMut.reset();
     openModal = "password";
   }
 
-  async function savePassword() {
-    passwordError = "";
+  const savePasswordMut = createApiMutation(() => ({
+    mutate: () =>
+      changePassword({
+        currentPassword: currentPasswordInput,
+        newPassword: newPasswordInput,
+      }),
+    coveredFields: ["currentPassword"],
+    onSuccess: () => {
+      openModal = null;
+      toast.success("Mot de passe mis à jour.");
+    },
+  }));
+
+  function savePassword() {
+    localPasswordError = "";
     if (!isPasswordValid(newPasswordInput)) {
-      passwordError =
+      localPasswordError =
         "Le nouveau mot de passe ne respecte pas les exigences ci-dessus.";
       return;
     }
     if (newPasswordInput !== confirmPasswordInput) {
-      passwordError = "Les mots de passe ne correspondent pas.";
+      localPasswordError = "Les mots de passe ne correspondent pas.";
       return;
     }
-    passwordSaving = true;
-    try {
-      await changePassword({
-        currentPassword: currentPasswordInput,
-        newPassword: newPasswordInput,
-      });
-      openModal = null;
-      toast.success("Mot de passe mis à jour.");
-    } catch (err) {
-      passwordError =
-        fieldError(err, "currentPassword") ?? resolveApiError(err);
-    } finally {
-      passwordSaving = false;
-    }
+    savePasswordMut.mutate();
   }
+
+  const passwordError = $derived(localPasswordError || savePasswordMut.error);
 </script>
 
 {#if auth.user}
@@ -258,8 +244,9 @@
                 type="button"
                 class="link-accent"
                 onclick={resendVerification}
-                disabled={verificationSending || verificationCooldown > 0}>
-                {#if verificationSending}
+                disabled={resendVerificationMut.loading ||
+                  verificationCooldown > 0}>
+                {#if resendVerificationMut.loading}
                   {m.common_sending()}
                 {:else if verificationCooldown > 0}
                   {m.common_resend_cooldown({ seconds: verificationCooldown })}
@@ -339,8 +326,8 @@
             Impossible de vérifier la disponibilité, réessaie.
           </p>
         {/if}
-        {#if usernameError}
-          <p class="text-danger text-sm">{usernameError}</p>
+        {#if saveUsernameMut.error}
+          <p class="text-danger text-sm">{saveUsernameMut.error}</p>
         {/if}
         <div class="mt-2 flex justify-end gap-2">
           <button type="button" class="btn btn-ghost" onclick={closeModal}>
@@ -349,8 +336,10 @@
           <button
             type="submit"
             class="btn btn-primary"
-            disabled={usernameSaving || usernameCheck !== "available"}>
-            {usernameSaving ? m.common_save_loading() : m.common_save()}
+            disabled={saveUsernameMut.loading || usernameCheck !== "available"}>
+            {saveUsernameMut.loading
+              ? m.common_save_loading()
+              : m.common_save()}
           </button>
         </div>
       </form>
@@ -395,11 +384,11 @@
             <button
               type="submit"
               class="btn btn-primary"
-              disabled={emailSaving ||
+              disabled={saveEmailMut.loading ||
                 !emailInput.trim() ||
                 emailInput.trim() === auth.user?.email ||
                 !emailPasswordInput}>
-              {emailSaving ? m.common_save_loading() : m.common_save()}
+              {saveEmailMut.loading ? m.common_save_loading() : m.common_save()}
             </button>
           </div>
         </form>
@@ -425,8 +414,8 @@
               placeholder="123456"
               bind:value={emailCodeInput} />
           </label>
-          {#if emailConfirmError}
-            <p class="text-danger text-sm">{emailConfirmError}</p>
+          {#if confirmEmailMut.error}
+            <p class="text-danger text-sm">{confirmEmailMut.error}</p>
           {/if}
           <div class="mt-2 flex justify-end gap-2">
             <button
@@ -438,8 +427,11 @@
             <button
               type="submit"
               class="btn btn-primary"
-              disabled={emailConfirming || emailCodeInput.trim().length !== 6}>
-              {emailConfirming ? m.common_verifying() : m.common_confirm()}
+              disabled={confirmEmailMut.loading ||
+                emailCodeInput.trim().length !== 6}>
+              {confirmEmailMut.loading
+                ? m.common_verifying()
+                : m.common_confirm()}
             </button>
           </div>
         </form>
@@ -493,11 +485,13 @@
           <button
             type="submit"
             class="btn btn-primary"
-            disabled={passwordSaving ||
+            disabled={savePasswordMut.loading ||
               !currentPasswordInput ||
               !isPasswordValid(newPasswordInput) ||
               !confirmPasswordInput}>
-            {passwordSaving ? m.common_save_loading() : m.common_save()}
+            {savePasswordMut.loading
+              ? m.common_save_loading()
+              : m.common_save()}
           </button>
         </div>
       </form>

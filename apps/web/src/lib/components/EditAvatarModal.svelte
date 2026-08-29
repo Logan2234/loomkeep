@@ -1,6 +1,6 @@
 <script lang="ts">
   import { deleteAvatar, uploadAvatar } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import type { UploadAvatarRequestDto } from "@loomkeep/shared";
   import { m } from "$lib/paraglide/messages.js";
   import Avatar from "./Avatar.svelte";
@@ -27,8 +27,6 @@
   } = $props();
 
   let stage = $state<"idle" | "editing">("idle");
-  let status = $state<"idle" | "saving" | "error">("idle");
-  let error = $state("");
 
   let fileInput: HTMLInputElement | undefined = $state();
   let canvasEl: HTMLCanvasElement | undefined = $state();
@@ -66,7 +64,7 @@
   async function onFileSelected(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    error = "";
+    saveMut.reset();
     bitmap = await createImageBitmap(file);
     cropSide = Math.min(bitmap.width, bitmap.height);
     // Start centered — the same starting point the old fixed center-crop used.
@@ -114,57 +112,66 @@
   function cancelEdit() {
     stage = "idle";
     bitmap = null;
-    error = "";
+    saveMut.reset();
   }
 
-  async function save() {
+  function cropToPayload(): UploadAvatarRequestDto {
+    const out = document.createElement("canvas");
+    out.width = OUTPUT_SIZE;
+    out.height = OUTPUT_SIZE;
+    const ctx = out.getContext("2d");
+    if (!ctx) throw new Error("Canvas non supporté");
+    ctx.drawImage(
+      bitmap!,
+      cropX,
+      cropY,
+      cropSide,
+      cropSide,
+      0,
+      0,
+      OUTPUT_SIZE,
+      OUTPUT_SIZE,
+    );
+    const dataUrl = out.toDataURL("image/webp", 0.85);
+    const [header, data] = dataUrl.split(",");
+    const mimeType = (header.match(/data:(.*);base64/)?.[1] ??
+      "image/webp") as UploadAvatarRequestDto["mimeType"];
+    return { mimeType, data };
+  }
+
+  const saveMut = createApiMutation(() => ({
+    mutate: () => uploadAvatar(cropToPayload()),
+    onSuccess: (user) => {
+      onSaved(user.avatarUrl);
+      onclose();
+    },
+  }));
+
+  function save() {
     if (!bitmap) return;
-    status = "saving";
-    error = "";
-    try {
-      const out = document.createElement("canvas");
-      out.width = OUTPUT_SIZE;
-      out.height = OUTPUT_SIZE;
-      const ctx = out.getContext("2d");
-      if (!ctx) throw new Error("Canvas non supporté");
-      ctx.drawImage(
-        bitmap,
-        cropX,
-        cropY,
-        cropSide,
-        cropSide,
-        0,
-        0,
-        OUTPUT_SIZE,
-        OUTPUT_SIZE,
-      );
-      const dataUrl = out.toDataURL("image/webp", 0.85);
-      const [header, data] = dataUrl.split(",");
-      const mimeType = (header.match(/data:(.*);base64/)?.[1] ??
-        "image/webp") as UploadAvatarRequestDto["mimeType"];
-      const user = await uploadAvatar({ mimeType, data });
-      status = "idle";
-      onSaved(user.avatarUrl);
-      onclose();
-    } catch (err) {
-      status = "error";
-      error = resolveApiError(err);
-    }
+    saveMut.mutate();
   }
 
-  async function remove() {
-    status = "saving";
-    error = "";
-    try {
-      const user = await deleteAvatar();
-      status = "idle";
+  const removeMut = createApiMutation(() => ({
+    mutate: deleteAvatar,
+    onSuccess: (user) => {
       onSaved(user.avatarUrl);
       onclose();
-    } catch (err) {
-      status = "error";
-      error = resolveApiError(err);
-    }
+    },
+  }));
+
+  function remove() {
+    removeMut.mutate();
   }
+
+  const status = $derived<"idle" | "saving" | "error">(
+    saveMut.loading || removeMut.loading
+      ? "saving"
+      : saveMut.error || removeMut.error
+        ? "error"
+        : "idle",
+  );
+  const error = $derived(saveMut.error ?? removeMut.error);
 </script>
 
 <Modal title="Photo de profil" {onclose}>

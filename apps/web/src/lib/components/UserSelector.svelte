@@ -4,8 +4,9 @@
   // filter by account. Loads the
   // account list itself and emits the selected user id (null once cleared).
   import { getAdminUserOptions } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { AdminUserOptionDto } from "@loomkeep/shared";
   import Combobox from "./Combobox.svelte";
 
   let {
@@ -21,17 +22,14 @@
     onChange: (userId: string | null) => void;
   } = $props();
 
-  let users = $state<AdminUserOptionDto[]>([]);
-
-  $effect(() => {
-    getAdminUserOptions()
-      .then((u) => (users = u))
-      .catch(() => {});
-  });
+  const usersQuery = createApiQuery(() => ({
+    key: keys.admin.userOptions(),
+    fetch: getAdminUserOptions,
+  }));
 
   const options = $derived([
     { label, value: "" },
-    ...users.map((u) => ({
+    ...(usersQuery.data ?? []).map((u) => ({
       label: `${u.displayName} <${u.email}>`,
       value: u.id,
     })),
