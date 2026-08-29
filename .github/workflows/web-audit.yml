@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Run Pa11y CI
-        run: npx --yes pa11y-ci@4.1.1 --config .pa11yci.json
+        run: npx --yes pa11y-ci@4.1.1 -- --config .pa11yci.json
 
   zap:
     name: OWASP ZAP baseline
