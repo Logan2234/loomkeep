@@ -1,14 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getAdminSchema } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { SchemaGraphResponseDto } from "@loomkeep/shared";
 
   // Direct-URL access outside dev: the underlying docs/erd.md and
   // docs/modules.md are never generated in the Docker build (DISABLE_ERD),
@@ -19,26 +19,16 @@
 
   type Tab = "erd" | "modules";
 
-  let data = $state<SchemaGraphResponseDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
   let tab = $state<Tab>("erd");
 
-  async function load() {
-    loading = true;
-    error = null;
-    try {
-      data = await getAdminSchema();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  $effect(() => {
-    if (auth.isAdmin) void load();
-  });
+  const schemaQuery = createApiQuery(() => ({
+    key: keys.admin.schema(),
+    fetch: getAdminSchema,
+    enabled: auth.isAdmin,
+  }));
+  const data = $derived(schemaQuery.data);
+  const loading = $derived(schemaQuery.loading);
+  const error = $derived(schemaQuery.error);
 
   const TABS: { value: Tab; label: string; regenerate: string }[] = [
     {

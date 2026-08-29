@@ -86,6 +86,11 @@ export const keys = {
   admin: {
     overview: () => ["admin", "overview"] as const,
     reportsPendingCount: () => ["admin", "reports-pending-count"] as const,
+    newsletterSends: () => ["admin", "newsletter-sends"] as const,
+    schema: () => ["admin", "schema"] as const,
+    emailTemplates: () => ["admin", "email-templates"] as const,
+    pushDevices: (email: string) => ["admin", "push-devices", email] as const,
+    pushSummary: () => ["admin", "push-summary"] as const,
     userOptions: () => ["admin", "user-options"] as const,
     services: () => ["admin", "services"] as const,
     jobs: () => ["admin", "jobs"] as const,

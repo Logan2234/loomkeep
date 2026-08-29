@@ -1,30 +1,18 @@
 <script lang="ts">
   import { getAdminNewsletterSends } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { DATETIME_NUMERIC_OPTIONS, formatDateTime } from "$lib/format";
-  import type { NewsletterSendDto } from "@loomkeep/shared";
 
-  let sends = $state<NewsletterSendDto[] | null>(null);
-  let loading = $state(true);
-  let loadError = $state("");
-
-  async function load() {
-    loading = true;
-    loadError = "";
-    try {
-      sends = await getAdminNewsletterSends();
-    } catch (err) {
-      loadError = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  $effect(() => {
-    void load();
-  });
+  const sendsQuery = createApiQuery(() => ({
+    key: keys.admin.newsletterSends(),
+    fetch: getAdminNewsletterSends,
+  }));
+  const sends = $derived(sendsQuery.data);
+  const loading = $derived(sendsQuery.loading);
+  const loadError = $derived(sendsQuery.error);
 </script>
 
 <div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">

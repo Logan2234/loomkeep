@@ -13,8 +13,9 @@
     sendAdminTestEmail,
     sendAdminTestPush,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -24,15 +25,6 @@
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
-  import { toast } from "$lib/toast.svelte";
-  import type {
-    AdminPushBroadcastResponseDto,
-    AdminPushDeviceDto,
-    AdminPushSendResponseDto,
-    AdminPushSummaryDto,
-    AdminUserOptionDto,
-    MailTemplateInfoDto,
-  } from "@loomkeep/shared";
 
   type Tab = "email" | "push";
   let tab = $state<Tab>(
@@ -41,12 +33,22 @@
 
   // ---------------------------------------------------------------- Email --
 
-  let templates = $state<MailTemplateInfoDto[] | null>(null);
-  let smtpConfigured = $state(false);
-  let emailLoading = $state(true);
-  let emailLoadError = $state<string | null>(null);
+  const templatesQuery = createApiQuery(() => ({
+    key: keys.admin.emailTemplates(),
+    fetch: getAdminEmailTemplates,
+  }));
+  const templates = $derived(templatesQuery.data?.templates ?? null);
+  const smtpConfigured = $derived(templatesQuery.data?.smtpConfigured ?? false);
+  const emailLoading = $derived(templatesQuery.loading);
+  const emailLoadError = $derived(templatesQuery.error);
 
   let selectedKey = $state<string | null>(null);
+  // Auto-select the first template once the list lands.
+  $effect(() => {
+    if (selectedKey === null && templates && templates.length > 0) {
+      selectTemplate(templates[0].key);
+    }
+  });
   const selectedTemplate = $derived(
     templates?.find((t) => t.key === selectedKey) ?? null,
   );
@@ -64,27 +66,10 @@
   let previewDebounce: ReturnType<typeof setTimeout> | undefined;
 
   let testTo = $state("");
-  let sendingEmail = $state(false);
-  let sendResult = $state<{ ok: boolean; message: string } | null>(null);
-
-  async function loadEmails() {
-    emailLoading = true;
-    emailLoadError = null;
-    try {
-      const res = await getAdminEmailTemplates();
-      templates = res.templates;
-      smtpConfigured = res.smtpConfigured;
-      if (templates.length > 0) selectTemplate(templates[0].key);
-    } catch (err) {
-      emailLoadError = resolveApiError(err);
-    } finally {
-      emailLoading = false;
-    }
-  }
 
   function selectTemplate(key: string) {
     selectedKey = key;
-    sendResult = null;
+    sendTestEmailMut.reset();
     const template = templates?.find((t) => t.key === key);
     fieldValues = Object.fromEntries(
       (template?.fields ?? []).map((f) => [f.key, f.default]),
@@ -122,120 +107,84 @@
     setTimeout(() => (copied = false), 1500);
   }
 
-  async function sendTestEmail() {
+  const sendTestEmailMut = createApiMutation(() => ({
+    mutate: () =>
+      sendAdminTestEmail(selectedKey!, { to: testTo, values: fieldValues }),
+    coveredFields: ["to"],
+    successToast: () => `Email envoyé à ${testTo}.`,
+  }));
+
+  function sendTestEmail() {
     if (!selectedKey || !testTo) return;
-    sendingEmail = true;
-    sendResult = null;
-    try {
-      await sendAdminTestEmail(selectedKey, {
-        to: testTo,
-        values: fieldValues,
-      });
-      sendResult = { ok: true, message: `Envoyé à ${testTo}.` };
-      toast.success(`Email envoyé à ${testTo}.`);
-    } catch (err) {
-      sendResult = {
-        ok: false,
-        message: fieldError(err, "to") ?? resolveApiError(err),
-      };
-    } finally {
-      sendingEmail = false;
-    }
+    sendTestEmailMut.mutate();
   }
 
-  $effect(() => {
-    void loadEmails();
-  });
+  const sendResult = $derived(
+    sendTestEmailMut.error
+      ? { ok: false, message: sendTestEmailMut.error }
+      : sendTestEmailMut.data
+        ? { ok: true, message: `Envoyé à ${testTo}.` }
+        : null,
+  );
 
   // ----------------------------------------------------------------- Push --
 
-  let users = $state<AdminUserOptionDto[]>([]);
   let email = $state(page.url.searchParams.get("email") ?? "");
   let pushTitle = $state("");
   let pushBody = $state("");
 
+  const usersQuery = createApiQuery(() => ({
+    key: keys.admin.userOptions(),
+    fetch: getAdminUserOptions,
+  }));
   const userOptions = $derived(
-    users.map((u) => ({
+    (usersQuery.data ?? []).map((u) => ({
       label: `${u.displayName} <${u.email}>`,
       value: u.email,
     })),
   );
 
-  let devices = $state<AdminPushDeviceDto[] | null>(null);
-  let devicesLoading = $state(false);
+  const devicesQuery = createApiQuery(() => ({
+    key: keys.admin.pushDevices(email),
+    fetch: () => getAdminPushDevices(email),
+    enabled: !!email,
+  }));
+  const devices = $derived(email ? (devicesQuery.data ?? null) : null);
+  const devicesLoading = $derived(devicesQuery.loading);
 
-  let sendingPush = $state(false);
-  let pushResult = $state<AdminPushSendResponseDto | null>(null);
-  let pushSendError = $state<string | null>(null);
-
-  async function loadDevices() {
-    if (!email) {
-      devices = null;
-      return;
-    }
-    devicesLoading = true;
-    try {
-      devices = await getAdminPushDevices(email);
-    } catch {
-      devices = null;
-    } finally {
-      devicesLoading = false;
-    }
-  }
-
-  async function sendPush() {
-    if (!email) return;
-    sendingPush = true;
-    pushSendError = null;
-    pushResult = null;
-    try {
-      pushResult = await sendAdminTestPush({
+  const sendPushMut = createApiMutation(() => ({
+    mutate: () =>
+      sendAdminTestPush({
         email,
         title: pushTitle.trim() || undefined,
         body: pushBody.trim() || undefined,
-      });
-      await loadDevices();
-      await refreshCounts();
-    } catch (err) {
-      pushSendError =
-        fieldError(err, "email") ??
-        fieldError(err, "title") ??
-        fieldError(err, "body") ??
-        resolveApiError(err);
-    } finally {
-      sendingPush = false;
-    }
+      }),
+    coveredFields: ["email", "title", "body"],
+    invalidates: [keys.admin.pushDevices(email), keys.admin.pushSummary()],
+  }));
+
+  function sendPush() {
+    if (!email) return;
+    sendPushMut.mutate();
   }
 
-  $effect(() => {
-    getAdminUserOptions()
-      .then((u) => (users = u))
-      .catch(() => {});
-  });
+  const pushResult = $derived(sendPushMut.data ?? null);
+  const pushSendError = $derived(sendPushMut.error);
 
   $effect(() => {
+    // Starting a new attempt (or switching accounts) drops the last result.
     void email;
-    pushResult = null;
-    pushSendError = null;
-    void loadDevices();
+    sendPushMut.reset();
   });
 
   // Instance-wide push reach. Also feeds the broadcast section's "portée
   // actuelle", which used to read the same two numbers off /admin/overview —
   // one source now, so the header and the warning can't disagree.
-  let pushSummary = $state<AdminPushSummaryDto | null>(null);
-
-  async function refreshCounts() {
-    try {
-      pushSummary = await getAdminPushSummary();
-    } catch {
-      pushSummary = null;
-    }
-  }
-
-  $effect(() => {
-    void refreshCounts();
-  });
+  const pushSummaryQuery = createApiQuery(() => ({
+    key: keys.admin.pushSummary(),
+    fetch: getAdminPushSummary,
+  }));
+  const pushSummary = $derived(pushSummaryQuery.data ?? null);
 
   const accountCount = $derived(pushSummary?.accounts ?? null);
   const deviceCount = $derived(pushSummary?.subscriptions ?? null);
@@ -265,35 +214,31 @@
   let broadcastTitle = $state("");
   let broadcastBody = $state("");
   let showBroadcastConfirm = $state(false);
-  let broadcasting = $state(false);
-  let broadcastResult = $state<AdminPushBroadcastResponseDto | null>(null);
-  let broadcastError = $state<string | null>(null);
+
+  const broadcastMut = createApiMutation(() => ({
+    mutate: () =>
+      sendAdminBroadcastPush({
+        title: broadcastTitle.trim() || undefined,
+        body: broadcastBody.trim() || undefined,
+      }),
+    coveredFields: ["title", "body"],
+    invalidates: [keys.admin.pushSummary()],
+    // Closes either way — a failure's banner shows on the page, not the modal.
+    onSuccess: () => (showBroadcastConfirm = false),
+    onError: () => (showBroadcastConfirm = false),
+  }));
 
   function openBroadcastConfirm() {
-    broadcastResult = null;
-    broadcastError = null;
+    broadcastMut.reset();
     showBroadcastConfirm = true;
   }
 
-  async function confirmBroadcast() {
-    broadcasting = true;
-    broadcastError = null;
-    try {
-      broadcastResult = await sendAdminBroadcastPush({
-        title: broadcastTitle.trim() || undefined,
-        body: broadcastBody.trim() || undefined,
-      });
-      showBroadcastConfirm = false;
-    } catch (err) {
-      broadcastError =
-        fieldError(err, "title") ??
-        fieldError(err, "body") ??
-        resolveApiError(err);
-      showBroadcastConfirm = false;
-    } finally {
-      broadcasting = false;
-    }
+  function confirmBroadcast() {
+    broadcastMut.mutate();
   }
+
+  const broadcastResult = $derived(broadcastMut.data ?? null);
+  const broadcastError = $derived(broadcastMut.error);
 </script>
 
 <div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
@@ -453,9 +398,11 @@
               class="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
             <button
               onclick={sendTestEmail}
-              disabled={!smtpConfigured || !testTo || sendingEmail}
+              disabled={!smtpConfigured || !testTo || sendTestEmailMut.loading}
               class="btn btn-primary shrink-0">
-              {sendingEmail ? m.common_sending() : "Envoyer un test"}
+              {sendTestEmailMut.loading
+                ? m.common_sending()
+                : "Envoyer un test"}
             </button>
           </div>
 
@@ -556,9 +503,9 @@
 
         <button
           onclick={sendPush}
-          disabled={!email || sendingPush}
+          disabled={!email || sendPushMut.loading}
           class="btn btn-primary">
-          {sendingPush ? m.common_sending() : "Envoyer un test"}
+          {sendPushMut.loading ? m.common_sending() : "Envoyer un test"}
         </button>
 
         {#if pushSendError}
@@ -669,7 +616,7 @@
     message={`Cette notification sera envoyée à ${accountCount ?? 0} compte${(accountCount ?? 0) > 1 ? "s" : ""} (${deviceCount ?? 0} appareil${(deviceCount ?? 0) > 1 ? "s" : ""}). Cette action ne peut pas être annulée une fois lancée.`}
     confirmLabel="Diffuser"
     danger
-    busy={broadcasting}
+    busy={broadcastMut.loading}
     onConfirm={confirmBroadcast}
     onCancel={() => (showBroadcastConfirm = false)} />
 {/if}
