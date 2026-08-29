@@ -154,8 +154,8 @@ describe("ReportService.list — target resolution", () => {
       },
     });
     const page = await svc.list(undefined, 1);
-    expect(page.reports[0].target?.targetOwnerUsername).toBe("spammer");
-    expect(page.reports[0].target?.label).toContain("this is spam");
+    expect(page.items[0].target?.targetOwnerUsername).toBe("spammer");
+    expect(page.items[0].target?.label).toContain("this is spam");
   });
 
   it("shows a tombstone label for an already-deleted comment", async () => {
@@ -190,7 +190,7 @@ describe("ReportService.list — target resolution", () => {
       },
     });
     const page = await svc.list(undefined, 1);
-    expect(page.reports[0].target?.label).toContain("commentaire supprimé");
+    expect(page.items[0].target?.label).toContain("commentaire supprimé");
   });
 });
 

@@ -2,9 +2,9 @@
   // "Mon suivi" card shared by the three detail pages (books/games/media):
   // header with the favourite toggle, domain-specific body via `children`,
   // footer with the "remove from library" action.
-  import type { Snippet } from "svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import { prefersReducedMotion } from "$lib/motion";
+  import { m } from "$lib/paraglide/messages.js";
+  import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
 
@@ -35,12 +35,10 @@
       type="button"
       aria-pressed={favorite}
       disabled={saving}
-      title={favorite
-        ? m.tracking_favorite_remove()
-        : m.tracking_favorite_add()}
+      title={favorite ? m.common_favorite_remove() : m.common_favorite_add()}
       aria-label={favorite
-        ? m.tracking_favorite_remove()
-        : m.tracking_favorite_add()}
+        ? m.common_favorite_remove()
+        : m.common_favorite_add()}
       onclick={onToggleFavorite}
       class="rounded-full p-1.5 transition-colors disabled:opacity-50 {favorite
         ? 'text-accent'

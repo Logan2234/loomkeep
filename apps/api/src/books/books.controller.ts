@@ -84,6 +84,7 @@ export class BooksController {
     @Query("sort") sort?: string,
     @Query("order") order?: string,
     @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ): Promise<PagedResult<BookEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.listEntries(user.sub, {
@@ -93,6 +94,7 @@ export class BooksController {
       sort,
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
     });
   }
 

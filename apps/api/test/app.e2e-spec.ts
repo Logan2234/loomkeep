@@ -242,7 +242,7 @@ describe("Loomkeep API (e2e)", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.results).toEqual([ANIME_SUMMARY]);
+    expect(response.body.items).toEqual([ANIME_SUMMARY]);
   });
 
   it("tracks a media: first touch persists it with seasons and episodes", async () => {

@@ -3,8 +3,9 @@
   // SegmentedStatusControl (dot swatch + generic segmented UI) with the
   // stats domain metadata, and only ever offers domains the user enabled —
   // a disabled domain never appears here, mirroring the API's own gating.
-  import type { StatsDomain } from "@loomkeep/shared";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
+  import { m } from "$lib/paraglide/messages";
+  import type { StatsDomain } from "@loomkeep/shared";
   import { STATS_DOMAIN_COLOR_VAR, STATS_DOMAIN_LABEL } from "./stats-domain";
 
   type Choice = "ALL" | StatsDomain;
@@ -24,7 +25,7 @@
     Object.fromEntries(
       choices.map((c) => [
         c,
-        { label: c === "ALL" ? "Tous" : STATS_DOMAIN_LABEL[c] },
+        { label: c === "ALL" ? m.common_all() : STATS_DOMAIN_LABEL[c] },
       ]),
     ) as Record<Choice, { label: string }>,
   );

@@ -20,7 +20,7 @@
 
   const SORTS = [
     { label: "Ajout récent", value: "added" },
-    { label: "Titre", value: "title" },
+    { label: m.common_title(), value: "title" },
     { label: "Note", value: "rating" },
     { label: "Temps de jeu", value: "playtime" },
     { label: "Terminé récemment", value: "finished" },
@@ -38,8 +38,8 @@
     }
   }
 
-  function load(params: LibraryLoadParams) {
-    return listGames({
+  const load = (params: LibraryLoadParams) =>
+    listGames({
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses,
@@ -47,7 +47,6 @@
       order: params.order,
       page: params.page,
     });
-  }
 </script>
 
 <LibraryBrowser

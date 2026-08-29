@@ -27,18 +27,15 @@
     [DigestCadence.DAILY]: m.settings_communications_cadence_daily(),
   };
 
-  function cadenceOptions(disabled: boolean) {
-    return [
-      DigestCadence.DISABLED,
-      DigestCadence.WEEKLY,
-      DigestCadence.DAILY,
-    ].map((value) => ({
-      value,
-      label: CADENCE_LABELS[value],
-      disabled,
-      locked: value === DigestCadence.DAILY && dailyLocked,
-    }));
-  }
+  const cadenceOptions = (disabled: boolean) =>
+    [DigestCadence.DISABLED, DigestCadence.WEEKLY, DigestCadence.DAILY].map(
+      (value) => ({
+        value,
+        label: CADENCE_LABELS[value],
+        disabled,
+        locked: value === DigestCadence.DAILY && dailyLocked,
+      }),
+    );
 
   const TIMEZONE_OPTIONS = Intl.supportedValuesOf("timeZone").map((tz) => ({
     label: tz.replaceAll("_", " "),
@@ -141,7 +138,7 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
         <div>
-          <p class="font-semibold">{m.settings_communications_email_label()}</p>
+          <p class="font-semibold">{m.common_email()}</p>
           <p class="text-dim text-sm">
             {m.settings_communications_email_desc()}
           </p>

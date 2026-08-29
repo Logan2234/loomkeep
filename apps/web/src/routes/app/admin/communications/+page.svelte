@@ -308,7 +308,7 @@
       class="chip"
       class:chip-on={tab === "email"}
       onclick={() => (tab = "email")}>
-      Email
+      {m.common_email()}
     </button>
     <button
       type="button"
@@ -418,7 +418,7 @@
               onclick={copyHtml}
               disabled={!previewHtml}
               class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50">
-              {copied ? "Copié !" : "Copier le HTML"}
+              {copied ? `${m.common_copied()} !` : "Copier le HTML"}
             </button>
           </div>
 
@@ -455,7 +455,7 @@
               onclick={sendTestEmail}
               disabled={!smtpConfigured || !testTo || sendingEmail}
               class="btn btn-primary shrink-0">
-              {sendingEmail ? "Envoi…" : "Envoyer un test"}
+              {sendingEmail ? m.common_sending() : "Envoyer un test"}
             </button>
           </div>
 
@@ -504,7 +504,7 @@
           <label
             for="admin-push-title"
             class="text-dim mb-1 block text-xs font-semibold">
-            Titre (optionnel)
+            {m.common_title()} (optionnel)
           </label>
           <input
             id="admin-push-title"
@@ -558,7 +558,7 @@
           onclick={sendPush}
           disabled={!email || sendingPush}
           class="btn btn-primary">
-          {sendingPush ? "Envoi…" : "Envoyer un test"}
+          {sendingPush ? m.common_sending() : "Envoyer un test"}
         </button>
 
         {#if pushSendError}
@@ -603,7 +603,7 @@
           <label
             for="admin-broadcast-title"
             class="text-dim mb-1 block text-xs font-semibold">
-            Titre (optionnel)
+            {m.common_title()} (optionnel)
           </label>
           <input
             id="admin-broadcast-title"

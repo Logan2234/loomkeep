@@ -23,6 +23,7 @@ import {
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import { GameItemService } from "../games/game-item.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -91,10 +92,10 @@ export class AdminCacheController {
     @Query("sort") sort?: string,
     @Query("orphans") orphans?: string,
     @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ): Promise<AdminCacheListResponseDto> {
     const cacheDomain = this.domainOrThrow(domain);
-    const pageNum = page ? Math.max(1, Number(page)) : 1;
-    const skip = (pageNum - 1) * PAGE_SIZE;
+    const { skip, take } = parsePageQuery(page, limit, PAGE_SIZE);
     const query = search?.trim();
     const orderBy = orderByFor((sort as AdminCacheSort) ?? "stale");
     const orphansOnly = orphans === "true";
@@ -111,7 +112,7 @@ export class AdminCacheController {
       where,
       orderBy,
       skip,
-      take: PAGE_SIZE,
+      take,
       include: { _count: { select: { entries: true } } },
     };
 
@@ -126,6 +127,7 @@ export class AdminCacheController {
         const locales = await this.translatedLocales(rows.map((r) => r.id));
         return {
           total,
+          hasMore: skip + rows.length < total,
           staleTotal,
           orphanTotal,
           items: rows.map((r) =>
@@ -149,6 +151,7 @@ export class AdminCacheController {
         ]);
         return {
           total,
+          hasMore: skip + rows.length < total,
           staleTotal,
           orphanTotal,
           items: rows.map((r) =>
@@ -166,6 +169,7 @@ export class AdminCacheController {
         ]);
         return {
           total,
+          hasMore: skip + rows.length < total,
           staleTotal,
           orphanTotal,
           items: rows.map((r) =>
@@ -183,6 +187,7 @@ export class AdminCacheController {
         ]);
         return {
           total,
+          hasMore: skip + rows.length < total,
           staleTotal,
           orphanTotal,
           items: rows.map((r) =>

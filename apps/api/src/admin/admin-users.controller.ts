@@ -1,13 +1,14 @@
 import type {
   AdminUserCommentDto,
+  AdminUserDto,
   AdminUserFilter,
   AdminUserLibraryStatsDto,
-  AdminUserListResponseDto,
   AdminUserOptionDto,
   AdminUserPlanDto,
   AdminUserRoleDto,
   MyListDto,
   MyReviewDto,
+  PagedResult,
   ReportDto,
   SessionDto,
   UserDataExportDto,
@@ -35,6 +36,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -80,8 +82,13 @@ export class AdminUsersController {
     @Query("search") search?: string,
     @Query("filter") filter?: string,
     @Query("page") page?: string,
-  ): Promise<AdminUserListResponseDto> {
-    const pageNum = page ? Math.max(1, Number(page)) : 1;
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<AdminUserDto>> {
+    const {
+      skip,
+      take,
+      limit: pageLimit,
+    } = parsePageQuery(page, limit, PAGE_SIZE);
     const q = search?.trim();
     const activeFilter = FILTERS.includes(filter as AdminUserFilter)
       ? (filter as AdminUserFilter)
@@ -102,12 +109,14 @@ export class AdminUsersController {
       ...(activeFilter === "never" ? { lastActiveAt: null } : {}),
     };
 
-    const users = await this.prisma.user.findMany({
+    const rows = await this.prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      skip: (pageNum - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip,
+      take: take + 1,
     });
+    const hasMore = rows.length > pageLimit;
+    const users = rows.slice(0, pageLimit);
 
     // Same batched pattern — most accounts have no row yet (defaults to
     // FREE, see EntitlementService), so this is a lookup, not a per-user query.
@@ -118,8 +127,8 @@ export class AdminUsersController {
     const planByUserId = new Map(entitlements.map((e) => [e.userId, e.plan]));
 
     return {
-      page: pageNum,
-      users: users.map((u) => ({
+      hasMore,
+      items: users.map((u) => ({
         id: u.id,
         email: u.email,
         username: u.username,

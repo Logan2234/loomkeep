@@ -2,7 +2,8 @@ import {
   ErrorCode,
   ModerationMeasure,
   type AdminReportsSummaryDto,
-  type ReportPageDto,
+  type PagedResult,
+  type ReportDto,
   type ReportStatus,
 } from "@loomkeep/shared";
 import {
@@ -20,11 +21,12 @@ import {
 } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
 import { ModerationDecisionService } from "../reports/moderation-decision.service";
-import { ReportService } from "../reports/report.service";
+import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
 import { AdminOnly } from "./admin-only.decorator";
 import {
   foundedPercent,
@@ -49,19 +51,22 @@ export class AdminReportsController {
   list(
     @Query("status") status?: string,
     @Query("page") page?: string,
+    @Query("limit") limit?: string,
     @Query("reporterId") reporterId?: string,
-  ): Promise<ReportPageDto> {
+  ): Promise<PagedResult<ReportDto>> {
+    const parsed = parsePageQuery(page, limit, REPORT_PAGE_SIZE);
     return this.reports.list(
       STATUSES.includes(status as ReportStatus)
         ? (status as "PENDING" | "RESOLVED" | "DISMISSED")
         : undefined,
-      page ? Math.max(1, Number(page)) : 1,
+      parsed.page,
       reporterId,
+      parsed.limit,
     );
   }
 
   /**
-   * Page-header figures over the whole queue, not the cursor page on screen.
+   * Page-header figures over the whole queue, not the current page on screen.
    * Shares the /admin/stats moderation helpers so the two pages can't disagree
    * on the same numbers.
    */

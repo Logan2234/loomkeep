@@ -2,9 +2,8 @@ import { auth } from "$lib/auth.svelte";
 import { toIntlLocale } from "$lib/constants/language-to-locale";
 import { m } from "$lib/paraglide/messages.js";
 
-function resolveLocale(locale?: string) {
-  return locale ?? toIntlLocale(auth.user?.locale);
-}
+const resolveLocale = (locale?: string) =>
+  locale ?? toIntlLocale(auth.user?.locale);
 
 const dateTimeFormatCache = new Map<string, Intl.DateTimeFormat>();
 
@@ -81,15 +80,12 @@ export const DATETIME_NUMERIC_OPTIONS: Intl.DateTimeFormatOptions = {
 };
 
 /** Formats a date as e.g. "03/01/2026" by default. Accepts an ISO string or a `Date`. */
-export function formatDate(
+export const formatDate = (
   date: string | Date,
   options: Intl.DateTimeFormatOptions = DATE_OPTIONS,
   locale?: string,
-): string {
-  return getDateTimeFormat(resolveLocale(locale), options).format(
-    new Date(date),
-  );
-}
+): string =>
+  getDateTimeFormat(resolveLocale(locale), options).format(new Date(date));
 
 /** Formats a date as a time, e.g. "14:32" by default. Accepts an ISO string or a `Date`. */
 export function formatTime(

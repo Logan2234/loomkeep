@@ -74,47 +74,42 @@ export async function register(body: RegisterRequestDto): Promise<void> {
 }
 
 /** Sends a reset link by email, if the address matches an account. */
-export function forgotPassword(email: string): Promise<void> {
-  return request("/auth/forgot-password", {
+export const forgotPassword = (email: string): Promise<void> =>
+  request("/auth/forgot-password", {
     method: "POST",
     body: { email },
     withAuth: false,
   });
-}
 
-export function resetPassword(
+export const resetPassword = (
   token: string,
   newPassword: string,
-): Promise<void> {
-  return request("/auth/reset-password", {
+): Promise<void> =>
+  request("/auth/reset-password", {
     method: "POST",
     body: { token, newPassword },
     withAuth: false,
   });
-}
 
-export function verifyEmail(token: string): Promise<void> {
-  return request("/auth/verify-email", {
+export const verifyEmail = (token: string): Promise<void> =>
+  request("/auth/verify-email", {
     method: "POST",
     body: { token },
     withAuth: false,
   });
-}
 
-export function resendVerificationEmail(): Promise<void> {
-  return request("/auth/verification/resend", {
+export const resendVerificationEmail = (): Promise<void> =>
+  request("/auth/verification/resend", {
     method: "POST",
   });
-}
 
 /** One-click, no-login-required newsletter unsubscribe — token from the email footer link. */
-export function unsubscribeNewsletter(token: string): Promise<void> {
-  return request("/newsletter/unsubscribe", {
+export const unsubscribeNewsletter = (token: string): Promise<void> =>
+  request("/newsletter/unsubscribe", {
     method: "POST",
     body: { token },
     withAuth: false,
   });
-}
 
 /** Returns the MFA challenge unresolved when the account requires a second factor. */
 export async function login(body: LoginRequestDto): Promise<LoginResponseDto> {
@@ -143,13 +138,12 @@ export async function verifyMfaLogin(body: MfaVerifyRequestDto): Promise<void> {
   await loadEntitlement();
 }
 
-export function resendMfaEmailCode(challengeId: string): Promise<void> {
-  return request("/auth/mfa/resend-email-code", {
+export const resendMfaEmailCode = (challengeId: string): Promise<void> =>
+  request("/auth/mfa/resend-email-code", {
     method: "POST",
     body: { challengeId },
     withAuth: false,
   });
-}
 
 export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {
   const user = await request<UserDto>("/users/me", { method: "PATCH", body });
@@ -194,9 +188,8 @@ export async function deleteAvatar(): Promise<UserDto> {
   return user;
 }
 
-export function changeEmail(body: ChangeEmailRequestDto): Promise<void> {
-  return request("/users/me/email", { method: "PATCH", body });
-}
+export const changeEmail = (body: ChangeEmailRequestDto): Promise<void> =>
+  request("/users/me/email", { method: "PATCH", body });
 
 export async function confirmEmailChange(
   body: ConfirmEmailChangeRequestDto,
@@ -209,9 +202,8 @@ export async function confirmEmailChange(
   return user;
 }
 
-export function changePassword(body: ChangePasswordRequestDto): Promise<void> {
-  return request("/users/me/password", { method: "PATCH", body });
-}
+export const changePassword = (body: ChangePasswordRequestDto): Promise<void> =>
+  request("/users/me/password", { method: "PATCH", body });
 
 export function checkUsernameAvailable(
   value: string,
@@ -232,9 +224,8 @@ export async function updateUsername(
 }
 
 /** Full portable dump of the account's data (GDPR "download my data"). */
-export function exportMyData(): Promise<UserDataExportDto> {
-  return request("/users/me/export");
-}
+export const exportMyData = (): Promise<UserDataExportDto> =>
+  request("/users/me/export");
 
 // Flat per-domain CSV, meant for migrating to another tool — not gated by
 // `enabledDomains` (a hidden domain is still exportable).
@@ -244,25 +235,22 @@ export function exportMyDataCsv(domain: Domain): Promise<CsvExportDto> {
 }
 
 /** Fetches (creating on first call) the token for the .ics calendar subscription URL. */
-export function getCalendarToken(): Promise<CalendarTokenDto> {
-  return request("/users/me/calendar-token");
-}
+export const getCalendarToken = (): Promise<CalendarTokenDto> =>
+  request("/users/me/calendar-token");
 
 /** Issues a new calendar token, revoking any previously shared .ics link. */
-export function regenerateCalendarToken(): Promise<CalendarTokenDto> {
-  return request("/users/me/calendar-token/regenerate", { method: "POST" });
-}
+export const regenerateCalendarToken = (): Promise<CalendarTokenDto> =>
+  request("/users/me/calendar-token/regenerate", { method: "POST" });
 
 // Unused, for now...
 /** Short-lived SSO token for the feedback widget's "Verified identity only" mode. */
-function _getWidgetToken(): Promise<WidgetTokenDto> {
-  return request("/users/me/widget-token");
-}
+const _getWidgetToken = (): Promise<WidgetTokenDto> =>
+  request("/users/me/widget-token");
 
 /** Live preview of what deleting the account would delete/anonymize, for the confirmation modal. */
-export function getAccountDeletionSummary(): Promise<AccountDeletionSummaryDto> {
-  return request("/users/me/deletion-summary");
-}
+export const getAccountDeletionSummary =
+  (): Promise<AccountDeletionSummaryDto> =>
+    request("/users/me/deletion-summary");
 
 /** Permanently deletes the account and clears local auth state. */
 export async function deleteAccount(
@@ -274,13 +262,11 @@ export async function deleteAccount(
 
 // --- Sessions (connected devices) ---
 
-export function getSessions(): Promise<SessionDto[]> {
-  return request("/auth/sessions");
-}
+export const getSessions = (): Promise<SessionDto[]> =>
+  request("/auth/sessions");
 
-export function revokeSession(id: string): Promise<void> {
-  return request(`/auth/sessions/${id}`, { method: "DELETE" });
-}
+export const revokeSession = (id: string): Promise<void> =>
+  request(`/auth/sessions/${id}`, { method: "DELETE" });
 
 /** Revokes every session except the current device (kept via its jti). */
 export function revokeOtherSessions(exceptJti: string): Promise<void> {

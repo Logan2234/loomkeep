@@ -95,7 +95,7 @@
     <div class="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
       <div>
         <span class="font-display text-xl font-extrabold tracking-tight">
-          LOOM<span class="text-accent">KEEP</span>
+          {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
         </span>
         <p class="text-dim mt-3 max-w-xs text-sm">
           {m.landing_footer_tagline()}

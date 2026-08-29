@@ -3,7 +3,9 @@
     getAdminSecurityEvents,
     getAdminSecuritySummary,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -14,7 +16,7 @@
   import { formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
-    AdminSecuritySummaryDto,
+    PagedResult,
     SecurityEventDto,
     SecurityEventType,
   } from "@loomkeep/shared";
@@ -50,59 +52,45 @@
   let activeType = $state<SecurityEventType | null>(null);
   let identifierInput = $state("");
   let identifierFilter = $state("");
-  let events = $state<SecurityEventDto[]>([]);
-  let page = $state(1);
-  let hasMore = $state(true);
-  let loading = $state(false);
-  let error = $state("");
 
-  async function load(reset: boolean) {
-    loading = true;
-    error = "";
-    const targetPage = reset ? 1 : page + 1;
-    try {
-      const res = await getAdminSecurityEvents({
+  const eventsQuery = createApiInfiniteQuery<
+    PagedResult<SecurityEventDto>,
+    number,
+    SecurityEventDto
+  >(() => ({
+    key: keys.admin.securityEvents({
+      type: activeType,
+      identifier: identifierFilter,
+    }),
+    fetch: (page) =>
+      getAdminSecurityEvents({
         type: activeType ?? undefined,
         identifier: identifierFilter || undefined,
-        page: targetPage,
-      });
-      events = reset ? res.events : [...events, ...res.events];
-      page = targetPage;
-      hasMore = res.events.length === 50;
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  function selectType(type: SecurityEventType | null) {
-    activeType = type;
-    void load(true);
-  }
+        page,
+      }),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+  }));
+  const events = $derived(eventsQuery.data);
+  const error = $derived(eventsQuery.error);
 
   let searchTimeout: ReturnType<typeof setTimeout>;
   function onIdentifierInput() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       identifierFilter = identifierInput.trim();
-      void load(true);
     }, 300);
   }
 
-  $effect(() => {
-    void load(true);
-  });
-
   // Failed logins only, over fixed windows — see the API for why the other
   // event types don't get a rate. Independent of the list's own filters.
-  let summary = $state<AdminSecuritySummaryDto | null>(null);
-
-  $effect(() => {
-    getAdminSecuritySummary()
-      .then((s) => (summary = s))
-      .catch(() => (summary = null));
-  });
+  const summaryQuery = createApiQuery(() => ({
+    key: keys.admin.securitySummary(),
+    fetch: getAdminSecuritySummary,
+  }));
+  const summary = $derived(summaryQuery.data);
 
   const kpis = $derived(
     summary
@@ -136,7 +124,7 @@
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="shield"
-    title="Sécurité"
+    title={m.common_security()}
     subtitle="Actions sensibles sur les comptes : création, suppression, changements d'identifiants, connexions échouées." />
 
   {#if summary}
@@ -157,7 +145,7 @@
       label="Tous les types"
       options={TYPE_OPTIONS}
       values={activeType ? [activeType] : []}
-      onChange={(v) => selectType((v[0] as SecurityEventType) || null)} />
+      onChange={(v) => (activeType = (v[0] as SecurityEventType) || null)} />
   </div>
 
   <input
@@ -171,7 +159,7 @@
     <Banner variant="error" class="mb-4">{error}</Banner>
   {/if}
 
-  {#if loading && events.length === 0}
+  {#if eventsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card h-16 animate-pulse"></div>
@@ -211,12 +199,12 @@
       {/each}
     </ul>
 
-    {#if hasMore}
+    {#if eventsQuery.hasNextPage}
       <button
         class="btn btn-ghost mt-4 w-full"
-        disabled={loading}
-        onclick={() => load(false)}>
-        {loading ? m.common_loading() : "Charger plus"}
+        disabled={eventsQuery.isFetchingNextPage}
+        onclick={() => eventsQuery.fetchNextPage()}>
+        {eventsQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}

@@ -1,14 +1,11 @@
 import { getPushPublicKey, subscribePush, unsubscribePush } from "./api/client";
 
 /** Web Push is only available with a service worker and the Push API. */
-export function isPushSupported(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
-    "PushManager" in window &&
-    "Notification" in window
-  );
-}
+export const isPushSupported = (): boolean =>
+  typeof window !== "undefined" &&
+  "serviceWorker" in navigator &&
+  "PushManager" in window &&
+  "Notification" in window;
 
 // VAPID keys are base64url; PushManager wants a Uint8Array over a real
 // ArrayBuffer (not the ArrayBufferLike that Uint8Array.from infers).

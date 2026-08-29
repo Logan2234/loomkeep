@@ -60,7 +60,7 @@
     <div class="w-full max-w-sm">
       <div class="mb-8 text-center">
         <p class="font-display text-3xl font-extrabold tracking-tight">
-          LOOM<span class="text-accent">KEEP</span>
+          {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
         </p>
       </div>
 
@@ -104,9 +104,9 @@
             onclick={resend}
             disabled={status === "loading" || cooldown > 0}>
             {#if status === "loading"}
-              Envoi…
+              {m.common_sending()}
             {:else if cooldown > 0}
-              Renvoyer dans {cooldown}s
+              {m.common_resend_cooldown({ seconds: cooldown })}
             {:else}
               Renvoyer l'email
             {/if}

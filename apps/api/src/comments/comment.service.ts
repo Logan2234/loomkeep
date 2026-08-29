@@ -2,9 +2,9 @@ import {
   type AdminUserCommentDto,
   type CommentDto,
   type CommentEmote,
-  type CommentPageDto,
   type CommentReactionSummaryDto,
   type CommentTargetType,
+  type PagedResult,
   COMMENT_REACTION_NOTIFY_THRESHOLD,
   ErrorCode,
   NotificationType,
@@ -23,7 +23,7 @@ import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
 import { extractMentions } from "./mention.util";
 
-const PAGE_SIZE = 20;
+export const COMMENT_PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
 
 const AUTHOR_SELECT = {
@@ -72,7 +72,7 @@ export class CommentService {
    * A page of top-level comments for a target (newest first, YouTube-style),
    * each with its replies attached (oldest first, conversation order). Rows
    * from a blocked relationship (either direction) are dropped after the page
-   * is fetched, so a page can come back smaller than PAGE_SIZE when blocks
+   * is fetched, so a page can come back smaller than `limit` when blocks
    * are involved — accepted, matches how listForTarget already filters
    * reviews.
    */
@@ -80,22 +80,23 @@ export class CommentService {
     viewerId: string,
     targetType: CommentTargetType,
     targetId: string,
-    cursor?: string,
-  ): Promise<CommentPageDto> {
+    page = 1,
+    limit = COMMENT_PAGE_SIZE,
+  ): Promise<PagedResult<CommentDto>> {
     const rows = await this.prisma.comment.findMany({
       where: { targetType, targetId, parentId: null },
       // Newest first (YouTube-style) — a fresh comment is visible right away
       // instead of requiring "load more" clicks through the whole history.
       // Replies stay oldest-first (conversation order) — see below.
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: PAGE_SIZE + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      skip: (page - 1) * limit,
+      take: limit + 1,
       include: { author: { select: AUTHOR_SELECT } },
     });
 
-    const hasMore = rows.length > PAGE_SIZE;
-    const page = rows.slice(0, PAGE_SIZE);
-    const visible = await this.filterBlocked(viewerId, page);
+    const hasMore = rows.length > limit;
+    const pageRows = rows.slice(0, limit);
+    const visible = await this.filterBlocked(viewerId, pageRows);
 
     const replyRows = visible.length
       ? await this.prisma.comment.findMany({
@@ -127,7 +128,7 @@ export class CommentService {
       repliesByParent.set(r.parentId!, arr);
     }
 
-    const comments = await Promise.all(
+    const items = await Promise.all(
       visible.map(async (c) => {
         const dto = await toDtoWithMask(c);
         dto.replies = await Promise.all(
@@ -137,10 +138,7 @@ export class CommentService {
       }),
     );
 
-    return {
-      comments,
-      nextCursor: hasMore ? page[page.length - 1].id : null,
-    };
+    return { items, hasMore };
   }
 
   /** Total comment count (top-level + replies, deleted excluded) for a target. */

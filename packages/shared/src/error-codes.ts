@@ -172,7 +172,7 @@ export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
  * Derives the Paraglide message key for an error code, e.g.
  * "library.episode_not_aired" -> "apierr_library_episode_not_aired".
  * `apierr_` (not `error_`) because `error_*` is already used by the generic
- * error page (error_generic_body, error_generic_plaque_label...).
+ * error page (error_generic_body, common_error...).
  */
 export function errorCodeToMessageKey(code: ErrorCode): string {
   return `apierr_${code.replace(/\./g, "_")}`;

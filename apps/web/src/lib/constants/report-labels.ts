@@ -1,6 +1,7 @@
 // French labels for the report category/motif picker (CommentThread.svelte
 // today; any future REVIEW/USER/LIST report button reuses the same picker).
 
+import { m } from "$lib/paraglide/messages";
 import type {
   ModerationLegalBasis,
   ReportCategory,
@@ -49,7 +50,7 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   MISINFORMATION: "Désinformation",
   STOLEN_CONTENT: "Contenu volé",
   MISLEADING_REVIEW: "Avis trompeur",
-  OTHER: "Autre",
+  OTHER: m.common_other(),
 };
 
 // One-line scent shown under each category name in the picker, so 13 rows

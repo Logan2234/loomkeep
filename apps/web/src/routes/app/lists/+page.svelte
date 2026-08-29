@@ -32,7 +32,7 @@
     { label: "Dernière modification", value: "updatedAt" },
     { label: "Date de création", value: "createdAt" },
     { label: "Nombre d'œuvres", value: "itemCount" },
-    { label: "Nom", value: "title" },
+    { label: m.common_name(), value: "title" },
   ];
   type SortKey = "updatedAt" | "createdAt" | "itemCount" | "title";
 
@@ -122,7 +122,7 @@
       </div>
       <div class="sm:ml-auto">
         <Combobox
-          label="Trier"
+          label={m.common_sort()}
           options={SORT_OPTIONS}
           values={[sort]}
           onChange={(v) => (sort = (v[0] as SortKey) ?? sort)} />

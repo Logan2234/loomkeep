@@ -26,7 +26,7 @@
   const SORTS = [
     { label: "Vu récemment", value: "recent" },
     { label: "Ajout récent", value: "added" },
-    { label: "Titre", value: "title" },
+    { label: m.common_title(), value: "title" },
     { label: "Note", value: "rating" },
     { label: "Progression", value: "progress" },
     { label: "Terminé récemment", value: "finished" },
@@ -51,8 +51,8 @@
     }
   }
 
-  function load(params: LibraryLoadParams) {
-    return listLibrary({
+  const load = (params: LibraryLoadParams) =>
+    listLibrary({
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses,
@@ -61,7 +61,6 @@
       order: params.order,
       page: params.page,
     });
-  }
 </script>
 
 <LibraryBrowser

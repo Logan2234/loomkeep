@@ -3,7 +3,7 @@ import { AdminSecurityController } from "./admin-security.controller";
 
 function makeController() {
   const securityEvents = {
-    list: jest.fn().mockResolvedValue({ events: [], page: 1 }),
+    list: jest.fn().mockResolvedValue({ items: [], hasMore: false }),
   } as unknown as SecurityEventService;
 
   const controller = new AdminSecurityController(securityEvents);
@@ -20,6 +20,7 @@ describe("AdminSecurityController.getSecurityEvents", () => {
       type: undefined,
       identifier: undefined,
       page: 2,
+      limit: 50,
     });
   });
 
@@ -31,7 +32,8 @@ describe("AdminSecurityController.getSecurityEvents", () => {
     expect(securityEvents.list).toHaveBeenCalledWith({
       type: "LOGIN_FAILED",
       identifier: "alice@example.com",
-      page: undefined,
+      page: 1,
+      limit: 50,
     });
   });
 });

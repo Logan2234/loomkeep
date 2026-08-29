@@ -90,7 +90,7 @@
       <label
         for="list-title"
         class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-        Titre
+        {m.common_title()}
       </label>
       <input
         id="list-title"
@@ -105,7 +105,7 @@
       <label
         for="list-description"
         class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-        Description · optionnel
+        {m.common_description()} · optionnel
       </label>
       <textarea
         id="list-description"

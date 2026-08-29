@@ -82,7 +82,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
   {
     href: "/app/admin/security",
-    label: "Sécurité",
+    label: m.common_security(),
     description:
       "Journal des actions sensibles (création/suppression de compte, identifiants, connexions échouées).",
     icon: "shield",

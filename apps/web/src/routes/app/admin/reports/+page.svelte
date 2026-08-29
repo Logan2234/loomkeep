@@ -6,8 +6,10 @@
     resolveAdminReport,
     takeDownAdminReport,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -28,8 +30,8 @@
   import { formatDateTime, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
-    AdminReportsSummaryDto,
     ModerationLegalBasis,
+    PagedResult,
     ReportDto,
     ReportStatus,
   } from "@loomkeep/shared";
@@ -41,61 +43,48 @@
       .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
   ];
 
-  // Must match PAGE_SIZE in apps/api/src/reports/report.service.ts.
-  const PAGE_SIZE = 20;
-
   let activeStatus = $state<ReportStatus>("PENDING");
   let reporterId = $state<string | null>(null);
-  let reports = $state<ReportDto[]>([]);
-  let page = $state(1);
-  let hasMore = $state(false);
-  let loading = $state(false);
-  let error = $state("");
-  let resolvingId = $state<string | null>(null);
 
-  async function load(reset: boolean) {
-    loading = true;
-    error = "";
-    const targetPage = reset ? 1 : page + 1;
-    try {
-      const res = await getAdminReports({
+  const reportsKey = $derived(
+    keys.admin.reports({ status: activeStatus, reporterId }),
+  );
+
+  const reportsQuery = createApiInfiniteQuery<
+    PagedResult<ReportDto>,
+    number,
+    ReportDto
+  >(() => ({
+    key: reportsKey,
+    fetch: (page) =>
+      getAdminReports({
         status: activeStatus,
-        page: targetPage,
+        page,
         reporterId: reporterId ?? undefined,
-      });
-      reports = reset ? res.reports : [...reports, ...res.reports];
-      page = targetPage;
-      hasMore = res.reports.length === PAGE_SIZE;
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
+      }),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+  }));
+  const reports = $derived(reportsQuery.data);
+  const error = $derived(reportsQuery.error);
 
-  function selectStatus(status: ReportStatus) {
-    activeStatus = status;
-    void load(true);
-  }
+  const summaryQuery = createApiQuery(() => ({
+    key: keys.admin.reportsSummary(),
+    fetch: getAdminReportsSummary,
+  }));
+  const summary = $derived(summaryQuery.data);
 
-  function selectReporter(id: string | null) {
-    reporterId = id;
-    void load(true);
-  }
-
-  async function resolve(id: string, status: "RESOLVED" | "DISMISSED") {
-    resolvingId = id;
-    try {
-      await resolveAdminReport(id, status);
-      reports = reports.filter((r) => r.id !== id);
+  const resolveMut = createApiMutation(() => ({
+    mutate: (args: { id: string; status: "RESOLVED" | "DISMISSED" }) =>
+      resolveAdminReport(args.id, args.status),
+    onSuccess: () => {
       void adminReports.refresh();
-      void loadSummary();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      resolvingId = null;
-    }
-  }
+    },
+    invalidates: [reportsKey, keys.admin.reportsSummary()],
+    errorToast: true,
+  }));
 
   // DSA art. 17: the admin must state the facts and legal basis before a
   // takedown fires the notice — prefilled from the report, editable.
@@ -103,6 +92,21 @@
   let takeDownReasonText = $state("");
   let takeDownLegalBasis = $state<ModerationLegalBasis>("TOS_BREACH");
   let takeDownTosClause = $state("");
+
+  const takeDownMut = createApiMutation(() => ({
+    mutate: (id: string) =>
+      takeDownAdminReport(id, {
+        reasonText: takeDownReasonText,
+        legalBasis: takeDownLegalBasis,
+        tosClause: takeDownTosClause,
+      }),
+    onSuccess: () => {
+      void adminReports.refresh();
+      takeDownTarget = null;
+    },
+    invalidates: [reportsKey, keys.admin.reportsSummary()],
+    coveredFields: ["reasonText", "legalBasis", "tosClause"],
+  }));
 
   function openTakeDown(r: ReportDto) {
     takeDownTarget = r;
@@ -116,52 +120,15 @@
     const defaults = defaultModerationBasis(r.category);
     takeDownLegalBasis = defaults.legalBasis;
     takeDownTosClause = defaults.tosClause;
+    takeDownMut.reset();
   }
 
-  async function confirmTakeDown() {
-    if (!takeDownTarget) return;
-    const id = takeDownTarget.id;
-    resolvingId = id;
-    try {
-      await takeDownAdminReport(id, {
-        reasonText: takeDownReasonText,
-        legalBasis: takeDownLegalBasis,
-        tosClause: takeDownTosClause,
-      });
-      reports = reports.filter((r) => r.id !== id);
-      void adminReports.refresh();
-      void loadSummary();
-    } catch (err) {
-      error =
-        fieldError(err, "reasonText") ??
-        fieldError(err, "legalBasis") ??
-        fieldError(err, "tosClause") ??
-        resolveApiError(err);
-    } finally {
-      resolvingId = null;
-      takeDownTarget = null;
-    }
-  }
-
-  $effect(() => {
-    void load(true);
-  });
-
-  // Queue-wide, so it doesn't follow the status/reporter filters — but it does
-  // follow every moderation action, which moves the very counts it shows.
-  let summary = $state<AdminReportsSummaryDto | null>(null);
-
-  async function loadSummary() {
-    try {
-      summary = await getAdminReportsSummary();
-    } catch {
-      summary = null;
-    }
-  }
-
-  $effect(() => {
-    void loadSummary();
-  });
+  // A report row's action buttons disable while either mutation is in
+  // flight *for that row* — the two share this rather than each carrying
+  // its own row-keyed pending state.
+  const rowBusy = (id: string): boolean =>
+    (resolveMut.loading && resolveMut.variables?.id === id) ||
+    (takeDownMut.loading && takeDownMut.variables === id);
 
   const kpis = $derived(
     summary
@@ -222,19 +189,19 @@
       label={m.common_status()}
       options={STATUS_OPTIONS}
       values={[activeStatus]}
-      onChange={(v) => selectStatus((v[0] as ReportStatus) || "PENDING")} />
+      onChange={(v) => (activeStatus = (v[0] as ReportStatus) || "PENDING")} />
     <UserSelector
       value={reporterId}
       label="Tous les auteurs"
       searchPlaceholder="Filtrer par auteur du signalement…"
-      onChange={selectReporter} />
+      onChange={(id) => (reporterId = id)} />
   </div>
 
   {#if error}
     <Banner variant="error" class="mb-4">{error}</Banner>
   {/if}
 
-  {#if loading && reports.length === 0}
+  {#if reportsQuery.loading}
     <div class="space-y-2">
       {#each { length: 4 } as _, i (i)}
         <div class="card h-20 animate-pulse"></div>
@@ -305,21 +272,23 @@
               {#if r.targetType === "COMMENT" && r.target}
                 <button
                   class="btn btn-danger btn-sm"
-                  disabled={resolvingId === r.id}
+                  disabled={rowBusy(r.id)}
                   onclick={() => openTakeDown(r)}>
                   Retirer le contenu
                 </button>
               {/if}
               <button
                 class="btn btn-primary btn-sm"
-                disabled={resolvingId === r.id}
-                onclick={() => resolve(r.id, "RESOLVED")}>
+                disabled={rowBusy(r.id)}
+                onclick={() =>
+                  resolveMut.mutate({ id: r.id, status: "RESOLVED" })}>
                 Marquer résolu
               </button>
               <button
                 class="btn btn-ghost btn-sm"
-                disabled={resolvingId === r.id}
-                onclick={() => resolve(r.id, "DISMISSED")}>
+                disabled={rowBusy(r.id)}
+                onclick={() =>
+                  resolveMut.mutate({ id: r.id, status: "DISMISSED" })}>
                 Rejeter
               </button>
             </div>
@@ -328,12 +297,12 @@
       {/each}
     </ul>
 
-    {#if hasMore}
+    {#if reportsQuery.hasNextPage}
       <button
         class="btn btn-ghost mt-4 w-full"
-        disabled={loading}
-        onclick={() => load(false)}>
-        {loading ? m.common_loading() : "Charger plus"}
+        disabled={reportsQuery.isFetchingNextPage}
+        onclick={() => reportsQuery.fetchNextPage()}>
+        {reportsQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}
@@ -384,21 +353,30 @@
         placeholder="§7 — Règles de conduite" />
     {/if}
 
+    {#if takeDownMut.error}
+      <Banner variant="error" class="mt-3">{takeDownMut.error}</Banner>
+    {:else if takeDownMut.fieldErrors.reasonText || takeDownMut.fieldErrors.legalBasis || takeDownMut.fieldErrors.tosClause}
+      <Banner variant="error" class="mt-3">
+        {takeDownMut.fieldErrors.reasonText ??
+          takeDownMut.fieldErrors.legalBasis ??
+          takeDownMut.fieldErrors.tosClause}
+      </Banner>
+    {/if}
+
     <div class="mt-5 flex justify-end gap-2">
       <button
         type="button"
         class="btn btn-ghost"
-        disabled={resolvingId === takeDownTarget.id}
+        disabled={takeDownMut.loading}
         onclick={() => (takeDownTarget = null)}>
         {m.common_cancel()}
       </button>
       <button
         type="button"
         class="btn btn-danger"
-        disabled={resolvingId === takeDownTarget.id ||
-          !takeDownReasonText.trim()}
-        onclick={confirmTakeDown}>
-        {resolvingId === takeDownTarget.id ? "Retrait…" : m.common_remove()}
+        disabled={takeDownMut.loading || !takeDownReasonText.trim()}
+        onclick={() => takeDownMut.mutate(takeDownTarget!.id)}>
+        {takeDownMut.loading ? "Retrait…" : m.common_remove()}
       </button>
     </div>
   </Modal>

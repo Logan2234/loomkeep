@@ -7,6 +7,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
+  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { toggleDomainSelection } from "$lib/domains";
   import { m } from "$lib/paraglide/messages.js";
   import { setLocale } from "$lib/paraglide/runtime.js";
@@ -18,7 +19,6 @@
   import Switch from "../Switch.svelte";
   import ThemePreview from "../ThemePreview.svelte";
   import Wizard from "../Wizard.svelte";
-  import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
 
   const PICKABLE_DOMAINS = [
     Domain.MEDIA,
@@ -262,14 +262,14 @@
           class="chip"
           class:chip-on={(auth.user?.locale ?? "fr") === "fr"}
           onclick={() => saveLocale("fr")}>
-          {m.settings_language_fr()}
+          {m.common_language_fr()}
         </button>
         <button
           type="button"
           class="chip"
           class:chip-on={auth.user?.locale === "en"}
           onclick={() => saveLocale("en")}>
-          {m.settings_language_en()}
+          {m.common_language_en()}
         </button>
       </div>
     </div>

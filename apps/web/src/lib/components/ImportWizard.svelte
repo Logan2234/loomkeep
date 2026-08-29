@@ -140,13 +140,11 @@
     return Math.round((job.progress.done / job.progress.total) * 100);
   });
 
-  function plural(n: number): string {
-    return n > 1 ? descriptor.noun.many : descriptor.noun.one;
-  }
+  const plural = (n: number): string =>
+    n > 1 ? descriptor.noun.many : descriptor.noun.one;
 
-  function matchOf(item: ImportPlanItem): ImportMatch | null {
-    return picked.get(item.key) ?? item.match;
-  }
+  const matchOf = (item: ImportPlanItem): ImportMatch | null =>
+    picked.get(item.key) ?? item.match;
 
   // --- Input handling ---
   function readBase64(file: File): Promise<string> {
@@ -279,34 +277,30 @@
     searchResults = [];
   }
 
-  function mediaToMatch(m: MediaSummaryDto): ImportMatch {
-    return {
-      source: m.source,
-      sourceId: m.sourceId,
-      type: m.type,
-      title: m.title,
-      year: m.year,
-      coverUrl: m.posterUrl,
-    };
-  }
-  function bookToMatch(b: BookSummaryDto): ImportMatch {
-    return {
-      source: b.source,
-      sourceId: b.sourceId,
-      title: b.title,
-      year: b.year,
-      coverUrl: b.coverUrl,
-    };
-  }
-  function gameToMatch(g: GameSummaryDto): ImportMatch {
-    return {
-      source: g.source,
-      sourceId: g.sourceId,
-      title: g.title,
-      year: g.year,
-      coverUrl: g.coverUrl,
-    };
-  }
+  const mediaToMatch = (m: MediaSummaryDto): ImportMatch => ({
+    source: m.source,
+    sourceId: m.sourceId,
+    type: m.type,
+    title: m.title,
+    year: m.year,
+    coverUrl: m.posterUrl,
+  });
+
+  const bookToMatch = (b: BookSummaryDto): ImportMatch => ({
+    source: b.source,
+    sourceId: b.sourceId,
+    title: b.title,
+    year: b.year,
+    coverUrl: b.coverUrl,
+  });
+
+  const gameToMatch = (g: GameSummaryDto): ImportMatch => ({
+    source: g.source,
+    sourceId: g.sourceId,
+    title: g.title,
+    year: g.year,
+    coverUrl: g.coverUrl,
+  });
 
   async function runSearch() {
     if (!searchQuery.trim()) {
@@ -322,7 +316,7 @@
       } else if (domain === Domain.GAMES) {
         searchResults = (await searchGames(q)).results.map(gameToMatch);
       } else {
-        searchResults = (await searchCatalog(q)).results.map(mediaToMatch);
+        searchResults = (await searchCatalog(q)).items.map(mediaToMatch);
       }
     } catch {
       searchResults = [];
@@ -415,11 +409,10 @@
   {#if error}
     <Banner variant="error" class="mb-4">{error}</Banner>
   {:else if premiumLocked && quotaUsed}
-    <Banner variant="warning" class="mb-4"
-      >{m.common_import_quota_used()}</Banner>
+    <Banner variant="warning" class="mb-4">{m.import_free_quota_used()}</Banner>
   {:else if premiumLocked}
     <Banner variant="info" class="mb-4"
-      >{m.common_import_quota_reminder()}</Banner>
+      >{m.import_free_quota_reminder()}</Banner>
   {/if}
 
   {#if phase === "input"}

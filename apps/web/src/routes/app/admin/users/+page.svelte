@@ -19,8 +19,10 @@
     updateAdminUserPlan,
     updateAdminUserRole,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
@@ -41,61 +43,26 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type {
-    AdminUserCommentDto,
     AdminUserDto,
     AdminUserFilter,
-    AdminUserLibraryStatsDto,
     ModerationLegalBasis,
-    MyListDto,
-    MyReviewDto,
-    ReportDto,
-    SessionDto,
-    UserSummaryDto,
+    PagedResult,
   } from "@loomkeep/shared";
 
-  // Must match PAGE_SIZE in apps/api/src/admin/admin-users.controller.ts.
-  const PAGE_SIZE = 50;
-
-  let users = $state<AdminUserDto[]>([]);
-  let pageNum = $state(1);
-  let hasMore = $state(false);
-  let loading = $state(false);
-  let error = $state<string | null>(null);
-
   // Pre-filled from `?q=` so links like /admin/users?q=<email> land pre-filtered
-  // (used by the imports page's "Voir le compte →").
+  // (used by the imports page's "Voir le compte →"). `query` is the raw
+  // input; `queryFilter` is the debounced value that actually drives the
+  // fetch (see onQueryInput below).
   let query = $state(page.url.searchParams.get("q") ?? "");
+  let queryFilter = $state(page.url.searchParams.get("q") ?? "");
   let filter = $state<AdminUserFilter>("all");
 
   // --- drawer / detail state ---
-  let selected = $state<AdminUserDto | null>(null);
-  let sessions = $state<SessionDto[] | null>(null);
-  let sessionsLoading = $state(false);
-  let libraryStats = $state<AdminUserLibraryStatsDto | null>(null);
-  let libraryStatsLoading = $state(false);
-  let revoking = $state<string | null>(null);
-
+  let selectedId = $state<string | null>(null);
   let showRevokeAllConfirm = $state(false);
-  let revokingAll = $state(false);
-
-  let roleSaving = $state(false);
-  let roleError = $state("");
-
-  let planSaving = $state(false);
-  let planError = $state("");
-
-  let exporting = $state(false);
-  let exportError = $state("");
-
-  let verifySending = $state(false);
-  let verifyMessage = $state("");
-  let resetSending = $state(false);
-  let resetMessage = $state("");
 
   let showDeleteModal = $state(false);
   let deleteConfirmText = $state("");
-  let deleting = $state(false);
-  let deleteError = $state("");
   // DSA art. 17: sent as the statement of reasons in the deletion notice.
   let deleteReasonText = $state("");
   let deleteLegalBasis = $state<ModerationLegalBasis>("TOS_BREACH");
@@ -104,13 +71,6 @@
   // --- social activity shortcuts ---
   type ActivityKind =
     "reviews" | "comments" | "followers" | "following" | "lists" | "reports";
-  let activityLoading = $state(false);
-  let reviews = $state<MyReviewDto[]>([]);
-  let comments = $state<AdminUserCommentDto[]>([]);
-  let followers = $state<UserSummaryDto[]>([]);
-  let following = $state<UserSummaryDto[]>([]);
-  let lists = $state<MyListDto[]>([]);
-  let reportsAgainst = $state<ReportDto[]>([]);
   let activeModal = $state<ActivityKind | null>(null);
   let avatarLightbox = $state(false);
 
@@ -123,6 +83,41 @@
     { kind: "reports", label: "Signalements reçus" },
   ];
 
+  const usersKey = $derived(keys.admin.users({ query: queryFilter, filter }));
+
+  const usersQuery = createApiInfiniteQuery<
+    PagedResult<AdminUserDto>,
+    number,
+    AdminUserDto
+  >(() => ({
+    key: usersKey,
+    fetch: (pageNum) =>
+      getAdminUsers({
+        search: queryFilter || undefined,
+        filter,
+        page: pageNum,
+      }),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+    keepPreviousData: true,
+  }));
+
+  const users = $derived(usersQuery.data);
+  const error = $derived(usersQuery.error);
+  // Looked up from the list rather than kept as its own copy, so a role/plan
+  // change (which invalidates usersKey) refreshes the open drawer for free.
+  const selected = $derived(users.find((u) => u.id === selectedId) ?? null);
+
+  let searchTimeout: ReturnType<typeof setTimeout>;
+  function onQueryInput() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      queryFilter = query.trim();
+    }, 300);
+  }
+
   function activityCount(kind: ActivityKind): number {
     if (kind === "reviews") return reviews.length;
     if (kind === "comments") return comments.length;
@@ -132,254 +127,153 @@
     return reportsAgainst.length;
   }
 
-  async function load(reset: boolean) {
-    loading = true;
-    error = null;
-    const targetPage = reset ? 1 : pageNum + 1;
-    try {
-      const res = await getAdminUsers({
-        search: query.trim() || undefined,
-        filter,
-        page: targetPage,
-      });
-      users = reset ? res.users : [...users, ...res.users];
-      pageNum = targetPage;
-      hasMore = res.users.length === PAGE_SIZE;
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
+  const sessionsQuery = createApiQuery(() => ({
+    key: keys.admin.userSessions(selectedId ?? ""),
+    fetch: () => getAdminUserSessions(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const sessions = $derived(sessionsQuery.data ?? []);
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
-  function onQueryInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => void load(true), 300);
-  }
+  const libraryStatsQuery = createApiQuery(() => ({
+    key: keys.admin.userLibraryStats(selectedId ?? ""),
+    fetch: () => getAdminUserLibraryStats(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const libraryStats = $derived(libraryStatsQuery.data);
 
-  function selectFilter(next: AdminUserFilter) {
-    filter = next;
-    void load(true);
-  }
+  const reviewsQuery = createApiQuery(() => ({
+    key: keys.admin.userReviews(selectedId ?? ""),
+    fetch: () => getAdminUserReviews(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const commentsQuery = createApiQuery(() => ({
+    key: keys.admin.userComments(selectedId ?? ""),
+    fetch: () => getAdminUserComments(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const followersQuery = createApiQuery(() => ({
+    key: keys.admin.userFollowers(selectedId ?? ""),
+    fetch: () => getAdminUserFollowers(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const followingQuery = createApiQuery(() => ({
+    key: keys.admin.userFollowing(selectedId ?? ""),
+    fetch: () => getAdminUserFollowing(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const listsQuery = createApiQuery(() => ({
+    key: keys.admin.userLists(selectedId ?? ""),
+    fetch: () => getAdminUserLists(selectedId!),
+    enabled: !!selectedId,
+  }));
+  const reportsAgainstQuery = createApiQuery(() => ({
+    key: keys.admin.userReportsAgainst(selectedId ?? ""),
+    fetch: () => getAdminUserReportsAgainst(selectedId!),
+    enabled: !!selectedId,
+  }));
 
-  async function openUser(user: AdminUserDto) {
-    selected = user;
-    sessions = null;
-    sessionsLoading = true;
-    libraryStats = null;
-    libraryStatsLoading = true;
-    verifyMessage = "";
-    resetMessage = "";
-    roleError = "";
-    exportError = "";
-    reviews = [];
-    comments = [];
-    followers = [];
-    following = [];
-    lists = [];
-    reportsAgainst = [];
-    activityLoading = true;
-    try {
-      sessions = await getAdminUserSessions(user.id);
-    } catch {
-      sessions = [];
-    } finally {
-      sessionsLoading = false;
-    }
-    try {
-      libraryStats = await getAdminUserLibraryStats(user.id);
-    } catch {
-      libraryStats = null;
-    } finally {
-      libraryStatsLoading = false;
-    }
-    try {
-      const [r, c, fers, fing, l, rep] = await Promise.all([
-        getAdminUserReviews(user.id).catch(() => []),
-        getAdminUserComments(user.id).catch(() => []),
-        getAdminUserFollowers(user.id).catch(() => []),
-        getAdminUserFollowing(user.id).catch(() => []),
-        getAdminUserLists(user.id).catch(() => []),
-        getAdminUserReportsAgainst(user.id).catch(() => []),
-      ]);
-      reviews = r;
-      comments = c;
-      followers = fers;
-      following = fing;
-      lists = l;
-      reportsAgainst = rep;
-    } finally {
-      activityLoading = false;
-    }
-  }
+  const reviews = $derived(reviewsQuery.data ?? []);
+  const comments = $derived(commentsQuery.data ?? []);
+  const followers = $derived(followersQuery.data ?? []);
+  const following = $derived(followingQuery.data ?? []);
+  const lists = $derived(listsQuery.data ?? []);
+  const reportsAgainst = $derived(reportsAgainstQuery.data ?? []);
+  const activityLoading = $derived(
+    reviewsQuery.loading ||
+      commentsQuery.loading ||
+      followersQuery.loading ||
+      followingQuery.loading ||
+      listsQuery.loading ||
+      reportsAgainstQuery.loading,
+  );
 
   function closeDrawer() {
-    selected = null;
+    selectedId = null;
     activeModal = null;
     avatarLightbox = false;
   }
 
-  async function revoke(sessionId: string) {
-    if (!selected) return;
-    revoking = sessionId;
-    try {
-      await revokeAdminUserSession(selected.id, sessionId);
-      sessions = (sessions ?? []).filter((s) => s.id !== sessionId);
-    } finally {
-      revoking = null;
-    }
-  }
+  const revokeMut = createApiMutation(() => ({
+    mutate: (sessionId: string) =>
+      revokeAdminUserSession(selectedId!, sessionId),
+    invalidates: [keys.admin.userSessions(selectedId ?? "")],
+  }));
 
-  async function confirmRevokeAll() {
-    if (!selected) return;
-    revokingAll = true;
-    try {
-      await revokeAllAdminUserSessions(selected.id);
-      sessions = [];
+  const revokeAllMut = createApiMutation(() => ({
+    mutate: () => revokeAllAdminUserSessions(selectedId!),
+    onSuccess: () => {
       showRevokeAllConfirm = false;
-    } finally {
-      revokingAll = false;
-    }
-  }
+    },
+    invalidates: [keys.admin.userSessions(selectedId ?? "")],
+  }));
 
-  async function toggleAdmin(checked: boolean) {
-    if (!selected) return;
-    const next = checked ? "ADMIN" : "USER";
+  const roleMut = createApiMutation(() => ({
+    mutate: (role: "ADMIN" | "USER") => updateAdminUserRole(selectedId!, role),
+    invalidates: [usersKey],
+  }));
 
-    roleSaving = true;
-    roleError = "";
-    try {
-      const res = await updateAdminUserRole(selected.id, next);
-      selected = { ...selected, role: res.role };
-      users = users.map((u) =>
-        u.id === selected!.id ? { ...u, role: res.role } : u,
-      );
-    } catch (err) {
-      roleError = resolveApiError(err);
-    } finally {
-      roleSaving = false;
-    }
-  }
+  const planMut = createApiMutation(() => ({
+    mutate: (plan: "FREE" | "PREMIUM") =>
+      updateAdminUserPlan(selectedId!, plan),
+    invalidates: [usersKey],
+  }));
 
-  async function changePlan(plan: "FREE" | "PREMIUM") {
-    if (!selected) return;
-
-    planSaving = true;
-    planError = "";
-    try {
-      const res = await updateAdminUserPlan(selected.id, plan);
-      selected = { ...selected, plan: res.plan };
-      users = users.map((u) =>
-        u.id === selected!.id ? { ...u, plan: res.plan } : u,
-      );
-    } catch (err) {
-      planError = resolveApiError(err);
-    } finally {
-      planSaving = false;
-    }
-  }
-
-  async function downloadExport() {
-    if (!selected) return;
-    exporting = true;
-    exportError = "";
-    try {
-      const data = await getAdminUserExport(selected.id);
+  const exportMut = createApiMutation(() => ({
+    mutate: () => getAdminUserExport(selectedId!),
+    onSuccess: (data) => {
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `loomkeep-export-${selected.username}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `loomkeep-export-${selected!.username}-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (err) {
-      exportError = resolveApiError(err);
-    } finally {
-      exporting = false;
-    }
-  }
+    },
+  }));
 
-  async function resendVerification() {
-    if (!selected) return;
-    verifySending = true;
-    verifyMessage = "";
-    try {
-      await resendAdminUserVerification(selected.id);
-      verifyMessage = "Email de vérification renvoyé.";
-      toast.success("Email de vérification renvoyé.");
-    } catch (err) {
-      verifyMessage = resolveApiError(err);
-    } finally {
-      verifySending = false;
-    }
-  }
+  const verifyMut = createApiMutation(() => ({
+    mutate: () => resendAdminUserVerification(selectedId!),
+    successToast: m.admin_users_verification_resent(),
+    errorToast: true,
+  }));
 
-  async function sendPasswordReset() {
-    if (!selected) return;
-    resetSending = true;
-    resetMessage = "";
-    try {
-      await sendAdminUserPasswordReset(selected.id);
-      resetMessage = "Lien de réinitialisation envoyé.";
-      toast.success("Lien de réinitialisation envoyé.");
-    } catch (err) {
-      resetMessage = resolveApiError(err);
-    } finally {
-      resetSending = false;
-    }
-  }
+  const resetMut = createApiMutation(() => ({
+    mutate: () => sendAdminUserPasswordReset(selectedId!),
+    successToast: m.admin_users_reset_link_sent(),
+    errorToast: true,
+  }));
+
+  const deleteMut = createApiMutation(() => ({
+    mutate: (_displayName: string) =>
+      deleteAdminUser(selectedId!, {
+        reasonText: deleteReasonText,
+        legalBasis: deleteLegalBasis,
+        tosClause: deleteTosClause,
+      }),
+    onSuccess: (_data, displayName) => {
+      showDeleteModal = false;
+      selectedId = null;
+      toast.success(`Compte de ${displayName} supprimé.`);
+    },
+    invalidates: [usersKey],
+    coveredFields: ["reasonText", "legalBasis", "tosClause"],
+  }));
 
   function openDeleteModal() {
     deleteConfirmText = "";
-    deleteError = "";
     deleteReasonText = "";
     deleteLegalBasis = "TOS_BREACH";
     deleteTosClause = "";
+    deleteMut.reset();
     showDeleteModal = true;
   }
 
   function closeDeleteModal() {
-    if (deleting) return;
+    if (deleteMut.loading) return;
     showDeleteModal = false;
   }
-
-  async function confirmDelete() {
-    if (
-      !selected ||
-      deleteConfirmText !== selected.username ||
-      !deleteReasonText.trim()
-    )
-      return;
-    deleting = true;
-    deleteError = "";
-    try {
-      const deletedName = selected.displayName;
-      await deleteAdminUser(selected.id, {
-        reasonText: deleteReasonText,
-        legalBasis: deleteLegalBasis,
-        tosClause: deleteTosClause,
-      });
-      users = users.filter((u) => u.id !== selected!.id);
-      showDeleteModal = false;
-      selected = null;
-      toast.success(`Compte de ${deletedName} supprimé.`);
-    } catch (err) {
-      deleteError =
-        fieldError(err, "reasonText") ??
-        fieldError(err, "legalBasis") ??
-        fieldError(err, "tosClause") ??
-        resolveApiError(err);
-    } finally {
-      deleting = false;
-    }
-  }
-
-  $effect(() => {
-    void load(true);
-  });
 
   const DAY_MONTH_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
     day: "2-digit",
@@ -388,11 +282,10 @@
     minute: "2-digit",
   };
 
-  function activityLabel(u: AdminUserDto): string {
-    return u.lastActiveAt
+  const activityLabel = (u: AdminUserDto): string =>
+    u.lastActiveAt
       ? formatDate(u.lastActiveAt, DAY_MONTH_TIME_OPTIONS)
       : "Jamais connecté";
-  }
 
   function activityDotClass(u: AdminUserDto): string {
     if (!u.lastActiveAt) return "border border-dim";
@@ -402,7 +295,7 @@
   }
 
   const FILTERS: { value: AdminUserFilter; label: string }[] = [
-    { value: "all", label: "Tous" },
+    { value: "all", label: m.common_all() },
     { value: "admin", label: m.common_admin() },
     { value: "unverified", label: "Non vérifié" },
     { value: "never", label: "Jamais connecté" },
@@ -428,15 +321,15 @@
       placeholder="Filtrer par email, identifiant ou nom…"
       class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
     <Combobox
-      label="Filtrer"
+      label={m.common_filter()}
       options={FILTERS}
       values={[filter]}
-      onChange={(v) => selectFilter((v[0] as AdminUserFilter) ?? "all")} />
+      onChange={(v) => (filter = (v[0] as AdminUserFilter) ?? "all")} />
   </div>
 
   {#if error}
     <Banner variant="error">{error}</Banner>
-  {:else if loading && users.length === 0}
+  {:else if usersQuery.loading}
     <div class="card h-64 animate-pulse"></div>
   {:else}
     <div class="card overflow-x-auto">
@@ -452,7 +345,7 @@
         <tbody>
           {#each users as u (u.id)}
             <tr
-              onclick={() => openUser(u)}
+              onclick={() => (selectedId = u.id)}
               class="border-border hover:bg-surface-2 cursor-pointer border-b transition-colors last:border-b-0 {selected?.id ===
               u.id
                 ? 'bg-accent/10'
@@ -512,12 +405,12 @@
       {/if}
     </div>
 
-    {#if hasMore}
+    {#if usersQuery.hasNextPage}
       <button
         class="btn btn-ghost mt-4 w-full"
-        disabled={loading}
-        onclick={() => load(false)}>
-        {loading ? m.common_loading() : "Charger plus"}
+        disabled={usersQuery.isFetchingNextPage}
+        onclick={() => usersQuery.fetchNextPage()}>
+        {usersQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}
@@ -602,17 +495,18 @@
             type="checkbox"
             class="accent-accent h-4 w-4 shrink-0"
             checked={selected.role === "ADMIN"}
-            disabled={roleSaving ||
+            disabled={roleMut.loading ||
               (selected.id === auth.user?.id && selected.role === "ADMIN")}
-            onchange={(e) => toggleAdmin(e.currentTarget.checked)} />
+            onchange={(e) =>
+              roleMut.mutate(e.currentTarget.checked ? "ADMIN" : "USER")} />
         </label>
         {#if selected.id === auth.user?.id && selected.role === "ADMIN"}
           <p class="text-dim mt-1.5 text-xs">
             Tu ne peux pas retirer ton propre accès admin.
           </p>
         {/if}
-        {#if roleError}
-          <p class="text-danger mt-1.5 text-xs">{roleError}</p>
+        {#if roleMut.error}
+          <p class="text-danger mt-1.5 text-xs">{roleMut.error}</p>
         {/if}
       </section>
 
@@ -631,9 +525,9 @@
             id="plan-select"
             class="border-border bg-surface-2 text-fg rounded-md border px-2 py-1 text-sm"
             value={selected.plan}
-            disabled={planSaving}
+            disabled={planMut.loading}
             onchange={(e) =>
-              changePlan(e.currentTarget.value as "FREE" | "PREMIUM")}>
+              planMut.mutate(e.currentTarget.value as "FREE" | "PREMIUM")}>
             <option value="FREE">Gratuit</option>
             <option value="PREMIUM">Premium</option>
           </select>
@@ -642,8 +536,8 @@
           Pas de facturation branchée — octroi manuel uniquement (voir
           docs/adr/0001-open-core-agpl.md).
         </p>
-        {#if planError}
-          <p class="text-danger mt-1.5 text-xs">{planError}</p>
+        {#if planMut.error}
+          <p class="text-danger mt-1.5 text-xs">{planMut.error}</p>
         {/if}
       </section>
 
@@ -654,13 +548,13 @@
           Accès
           <span class="bg-border h-px flex-1"></span>
         </h3>
-        {#if sessionsLoading}
+        {#if sessionsQuery.loading}
           <div class="space-y-2">
             {#each { length: 2 } as _, i (i)}
               <div class="skeleton h-12 rounded-lg"></div>
             {/each}
           </div>
-        {:else if sessions && sessions.length > 0}
+        {:else if sessions.length > 0}
           <ul class="mb-2 space-y-2">
             {#each sessions as s (s.id)}
               <li
@@ -674,8 +568,8 @@
                   </p>
                 </div>
                 <button
-                  onclick={() => revoke(s.id)}
-                  disabled={revoking === s.id}
+                  onclick={() => revokeMut.mutate(s.id)}
+                  disabled={revokeMut.loading && revokeMut.variables === s.id}
                   aria-label="Révoquer cette session"
                   class="text-dim hover:bg-danger/10 hover:text-danger shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
                   <Icon name="trash" class="h-4 w-4" />
@@ -731,7 +625,7 @@
           {m.common_library()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
-        {#if libraryStatsLoading}
+        {#if libraryStatsQuery.loading}
           <div class="skeleton h-28 rounded-lg"></div>
         {:else if libraryStats}
           <div class="grid grid-cols-3 gap-2">
@@ -760,8 +654,8 @@
         </h3>
         <div class="flex gap-2">
           <button
-            onclick={downloadExport}
-            disabled={exporting}
+            onclick={() => exportMut.mutate()}
+            disabled={exportMut.loading}
             class="btn btn-ghost btn-sm flex-1">
             <Icon name="download" class="mr-1 inline h-3.5 w-3.5" />
             Exporter
@@ -775,8 +669,8 @@
             Push test
           </a>
         </div>
-        {#if exportError}
-          <p class="text-danger mt-1.5 text-xs">{exportError}</p>
+        {#if exportMut.error}
+          <p class="text-danger mt-1.5 text-xs">{exportMut.error}</p>
         {/if}
       </section>
 
@@ -790,23 +684,21 @@
         </h3>
         <div class="flex flex-col gap-2">
           <button
-            onclick={resendVerification}
-            disabled={verifySending || selected.emailVerified}
+            onclick={() => verifyMut.mutate()}
+            disabled={verifyMut.loading || selected.emailVerified}
             class="btn btn-ghost btn-sm w-full">
-            {verifySending ? "Envoi…" : "Renvoyer l'email de vérification"}
+            {verifyMut.loading
+              ? m.common_sending()
+              : "Renvoyer l'email de vérification"}
           </button>
           <button
-            onclick={sendPasswordReset}
-            disabled={resetSending}
+            onclick={() => resetMut.mutate()}
+            disabled={resetMut.loading}
             class="btn btn-ghost btn-sm w-full">
-            {resetSending ? "Envoi…" : "Envoyer un lien de réinitialisation"}
+            {resetMut.loading
+              ? m.common_sending()
+              : "Envoyer un lien de réinitialisation"}
           </button>
-          {#if verifyMessage}
-            <p class="text-dim text-xs">{verifyMessage}</p>
-          {/if}
-          {#if resetMessage}
-            <p class="text-dim text-xs">{resetMessage}</p>
-          {/if}
           {#if selected.id === auth.user?.id}
             <p class="text-dim text-xs">
               Utilise la suppression de compte depuis /settings pour ton propre
@@ -945,8 +837,8 @@
     message={`Tous les appareils connectés de ${selected.displayName} seront déconnectés. Le compte devra se reconnecter partout.`}
     confirmLabel="Révoquer tout"
     danger
-    busy={revokingAll}
-    onConfirm={confirmRevokeAll}
+    busy={revokeAllMut.loading}
+    onConfirm={() => revokeAllMut.mutate()}
     onCancel={() => (showRevokeAllConfirm = false)} />
 {/if}
 
@@ -978,7 +870,7 @@
       <input
         type="text"
         bind:value={deleteConfirmText}
-        disabled={deleting}
+        disabled={deleteMut.loading}
         placeholder={selected.username}
         class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
 
@@ -993,7 +885,7 @@
       <textarea
         id="delete-reason"
         bind:value={deleteReasonText}
-        disabled={deleting}
+        disabled={deleteMut.loading}
         rows="3"
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
         placeholder="Ce qui justifie la suppression, en clair pour l'utilisateur."
@@ -1004,7 +896,7 @@
       <select
         id="delete-basis"
         bind:value={deleteLegalBasis}
-        disabled={deleting}
+        disabled={deleteMut.loading}
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm">
         {#each Object.entries(MODERATION_LEGAL_BASIS_LABELS) as [value, label] (value)}
           <option {value}>{label}</option>
@@ -1018,30 +910,36 @@
           id="delete-clause"
           type="text"
           bind:value={deleteTosClause}
-          disabled={deleting}
+          disabled={deleteMut.loading}
           class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
           placeholder="§9 — Signalement et modération" />
       {/if}
 
-      {#if deleteError}
-        <Banner variant="error" class="mt-3">{deleteError}</Banner>
+      {#if deleteMut.error}
+        <Banner variant="error" class="mt-3">{deleteMut.error}</Banner>
+      {:else if deleteMut.fieldErrors.reasonText || deleteMut.fieldErrors.legalBasis || deleteMut.fieldErrors.tosClause}
+        <Banner variant="error" class="mt-3">
+          {deleteMut.fieldErrors.reasonText ??
+            deleteMut.fieldErrors.legalBasis ??
+            deleteMut.fieldErrors.tosClause}
+        </Banner>
       {/if}
       <div class="mt-5 flex justify-end gap-2">
         <button
           type="button"
           class="btn btn-ghost"
-          disabled={deleting}
+          disabled={deleteMut.loading}
           onclick={closeDeleteModal}>
           {m.common_cancel()}
         </button>
         <button
           type="button"
           class="btn btn-danger"
-          disabled={deleting ||
+          disabled={deleteMut.loading ||
             deleteConfirmText !== selected.username ||
             !deleteReasonText.trim()}
-          onclick={confirmDelete}>
-          {deleting ? "Suppression…" : "Supprimer définitivement"}
+          onclick={() => deleteMut.mutate(selected.displayName)}>
+          {deleteMut.loading ? "Suppression…" : "Supprimer définitivement"}
         </button>
       </div>
     </div>

@@ -216,11 +216,11 @@
 
 {#if auth.user}
   <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-4 text-lg font-bold">Sécurité</h2>
+    <h2 class="font-display mb-4 text-lg font-bold">{m.common_security()}</h2>
     <div class="divide-border divide-y">
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
         <div>
-          <p class="text-dim text-sm">Nom d'utilisateur</p>
+          <p class="text-dim text-sm">{m.common_username()}</p>
           <p class="font-semibold">{auth.user.username}</p>
         </div>
         <button class="link-accent text-sm" onclick={openUsernameModal}>
@@ -229,7 +229,7 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
         <div class="min-w-0">
-          <p class="text-dim text-sm">Email</p>
+          <p class="text-dim text-sm">{m.common_email()}</p>
           <p class="flex items-center gap-1.5 font-semibold">
             <span class="truncate">{auth.user.email}</span>
             {#if auth.user.emailVerified}
@@ -260,9 +260,9 @@
                 onclick={resendVerification}
                 disabled={verificationSending || verificationCooldown > 0}>
                 {#if verificationSending}
-                  Envoi…
+                  {m.common_sending()}
                 {:else if verificationCooldown > 0}
-                  Renvoyer dans {verificationCooldown}s
+                  {m.common_resend_cooldown({ seconds: verificationCooldown })}
                 {:else}
                   Renvoyer l'email de vérification
                 {/if}
@@ -283,7 +283,7 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
         <div>
-          <p class="text-dim text-sm">Mot de passe</p>
+          <p class="text-dim text-sm">{m.common_password()}</p>
           <p class="font-semibold tracking-widest">••••••••</p>
         </div>
         <button class="link-accent text-sm" onclick={openPasswordModal}>
@@ -295,7 +295,9 @@
           <p class="text-dim text-sm">Appareils connectés</p>
           <p class="font-semibold">Sessions ouvertes sur ton compte</p>
         </div>
-        <a href="/app/settings/sessions" class="link-accent text-sm"> Gérer </a>
+        <a href="/app/settings/sessions" class="link-accent text-sm">
+          {m.common_manage()}
+        </a>
       </div>
     </div>
   </section>
@@ -310,7 +312,7 @@
         }}>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
-            Nom d'utilisateur
+            {m.common_username()}
           </span>
           <input
             type="text"
@@ -320,7 +322,7 @@
             oninput={onUsernameInput} />
         </label>
         {#if usernameCheck === "checking"}
-          <p class="text-dim text-sm">Vérification…</p>
+          <p class="text-dim text-sm">{m.common_verifying()}</p>
         {:else if usernameCheck === "available"}
           <p class="text-success flex items-center gap-1.5 text-sm">
             <Icon name="check" class="h-4 w-4" />
@@ -413,7 +415,8 @@
             >.
           </p>
           <label class="block">
-            <span class="mb-1.5 block text-sm font-semibold">Code</span>
+            <span class="mb-1.5 block text-sm font-semibold"
+              >{m.common_code()}</span>
             <input
               type="text"
               inputmode="numeric"
@@ -436,7 +439,7 @@
               type="submit"
               class="btn btn-primary"
               disabled={emailConfirming || emailCodeInput.trim().length !== 6}>
-              {emailConfirming ? "Vérification…" : m.common_confirm()}
+              {emailConfirming ? m.common_verifying() : m.common_confirm()}
             </button>
           </div>
         </form>
@@ -462,7 +465,7 @@
         </label>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
-            Nouveau mot de passe
+            {m.common_new_password()}
           </span>
           <PasswordInput
             autocomplete="new-password"

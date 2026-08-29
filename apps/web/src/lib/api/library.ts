@@ -35,13 +35,11 @@ export function listLibrary(
   return request(`/library?${params}`);
 }
 
-export function upsertLibraryEntry(
+export const upsertLibraryEntry = (
   body: UpsertLibraryEntryDto,
-): Promise<LibraryEntryDto> {
-  return request("/library", { method: "PUT", body });
-}
+): Promise<LibraryEntryDto> => request("/library", { method: "PUT", body });
 
-export function updateLibraryEntry(
+export const updateLibraryEntry = (
   entryId: string,
   body: Partial<
     Pick<
@@ -54,59 +52,49 @@ export function updateLibraryEntry(
       | "ownershipSource"
     >
   >,
-): Promise<LibraryEntryDto> {
-  return request(`/library/entries/${entryId}`, { method: "PATCH", body });
-}
+): Promise<LibraryEntryDto> =>
+  request(`/library/entries/${entryId}`, { method: "PATCH", body });
 
-export function deleteLibraryEntry(entryId: string): Promise<void> {
-  return request(`/library/entries/${entryId}`, { method: "DELETE" });
-}
+export const deleteLibraryEntry = (entryId: string): Promise<void> =>
+  request(`/library/entries/${entryId}`, { method: "DELETE" });
 
 /** Log a completed rewatch (a completion beyond the entry's first one). Movies only. */
-export function addLibraryReplay(entryId: string): Promise<LibraryEntryDto> {
-  return request(`/library/entries/${entryId}/replays`, {
+export const addLibraryReplay = (entryId: string): Promise<LibraryEntryDto> =>
+  request(`/library/entries/${entryId}/replays`, {
     method: "POST",
     body: {},
   });
-}
 
-export function deleteLibraryReplay(replayId: string): Promise<void> {
-  return request(`/library/replays/${replayId}`, { method: "DELETE" });
-}
+export const deleteLibraryReplay = (replayId: string): Promise<void> =>
+  request(`/library/replays/${replayId}`, { method: "DELETE" });
 
-export function watchEpisode(episodeId: string): Promise<EpisodeWatchDto> {
-  return request(`/library/episodes/${episodeId}/watches`, {
+export const watchEpisode = (episodeId: string): Promise<EpisodeWatchDto> =>
+  request(`/library/episodes/${episodeId}/watches`, {
     method: "POST",
     body: {},
   });
-}
 
 /** Mark every not-yet-watched episode of a season as watched. */
-export function watchSeason(seasonId: string): Promise<void> {
-  return request(`/library/seasons/${seasonId}/watches`, { method: "POST" });
-}
+export const watchSeason = (seasonId: string): Promise<void> =>
+  request(`/library/seasons/${seasonId}/watches`, { method: "POST" });
 
 /** Mark all regular episodes up to and including this one (specials excluded). */
-export function watchThrough(episodeId: string): Promise<void> {
-  return request(`/library/episodes/${episodeId}/watch-through`, {
+export const watchThrough = (episodeId: string): Promise<void> =>
+  request(`/library/episodes/${episodeId}/watch-through`, {
     method: "POST",
   });
-}
 
 /** Undo the most recent watch of an episode (unwatches it at a single watch). */
-export function unwatchEpisode(episodeId: string): Promise<void> {
-  return request(`/library/episodes/${episodeId}/watches`, {
+export const unwatchEpisode = (episodeId: string): Promise<void> =>
+  request(`/library/episodes/${episodeId}/watches`, {
     method: "DELETE",
   });
-}
 
 /** Clear every watch (all rewatches included) for every episode of a season. */
-export function unwatchSeason(seasonId: string): Promise<void> {
-  return request(`/library/seasons/${seasonId}/watches`, {
+export const unwatchSeason = (seasonId: string): Promise<void> =>
+  request(`/library/seasons/${seasonId}/watches`, {
     method: "DELETE",
   });
-}
 
-export function getCalendar(): Promise<CalendarEntryDto[]> {
-  return request("/library/calendar");
-}
+export const getCalendar = (): Promise<CalendarEntryDto[]> =>
+  request("/library/calendar");

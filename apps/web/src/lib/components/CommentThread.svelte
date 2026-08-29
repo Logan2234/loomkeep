@@ -27,8 +27,8 @@
     REPORT_CATEGORY_MOTIFS,
     type CommentDto,
     type CommentEmote,
-    type CommentPageDto,
     type CommentTargetType,
+    type PagedResult,
     type ReportCategory,
     type ReportMotif,
   } from "@loomkeep/shared";
@@ -76,23 +76,24 @@
   }));
 
   const query = createInfiniteQuery<
-    CommentPageDto,
+    PagedResult<CommentDto>,
     Error,
-    InfiniteData<CommentPageDto>,
+    InfiniteData<PagedResult<CommentDto>>,
     typeof key,
-    string | undefined
+    number
   >(() => ({
     queryKey: key,
     queryFn: ({ pageParam }) => getComments(targetType, targetId, pageParam),
-    initialPageParam: undefined,
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
     enabled: expanded,
     // Only the currently-open thread polls, and only while the tab is active.
     refetchInterval: 5000,
     refetchIntervalInBackground: false,
   }));
 
-  const comments = $derived(query.data?.pages.flatMap((p) => p.comments) ?? []);
+  const comments = $derived(query.data?.pages.flatMap((p) => p.items) ?? []);
   // A deleted top-level comment only earns its tombstone when it still has
   // replies to keep attached; with none, there's nothing left to preserve so
   // it's simply dropped. A deleted reply never has children of its own, so

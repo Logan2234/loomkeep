@@ -68,6 +68,7 @@ export class MusicController {
     @Query("sort") sort?: string,
     @Query("order") order?: string,
     @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ): Promise<PagedResult<MusicEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.listEntries(user.sub, {
@@ -77,6 +78,7 @@ export class MusicController {
       sort,
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
     });
   }
 

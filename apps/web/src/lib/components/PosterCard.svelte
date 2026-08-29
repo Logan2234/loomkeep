@@ -43,12 +43,10 @@
     <button
       type="button"
       onclick={() => onToggleFavorite(!favorite)}
-      title={favorite
-        ? m.tracking_favorite_remove()
-        : m.tracking_favorite_add()}
+      title={favorite ? m.common_favorite_remove() : m.common_favorite_add()}
       aria-label={favorite
-        ? m.tracking_favorite_remove()
-        : m.tracking_favorite_add()}
+        ? m.common_favorite_remove()
+        : m.common_favorite_add()}
       aria-pressed={favorite}
       class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full backdrop-blur-sm transition-opacity {favorite
         ? 'opacity-100'

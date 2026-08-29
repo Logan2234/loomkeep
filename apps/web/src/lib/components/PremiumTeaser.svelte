@@ -24,7 +24,7 @@
         <Icon name="lock" class="h-4 w-4" />
       </span>
       <p class="text-fg text-xs font-semibold">
-        {m.common_premium_locked()}
+        {m.premium_locked()}
       </p>
     </div>
   {/if}

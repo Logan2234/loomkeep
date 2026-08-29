@@ -61,7 +61,7 @@
     aria-label={m.nav_open_menu()}
     class="text-dim flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem] font-semibold">
     <Icon name="menu" class="h-5 w-5" />
-    {m.nav_menu()}
+    {m.common_menu()}
   </button>
 </nav>
 

@@ -1,7 +1,6 @@
 /** Absolute link to a profile — what both the native share sheet and the QR code point at. */
-export function profileUrl(username: string): string {
-  return `${window.location.origin}/app/u/${username}`;
-}
+export const profileUrl = (username: string): string =>
+  `${window.location.origin}/app/u/${username}`;
 
 /**
  * Tries the native OS share sheet (mobile browsers, and increasingly desktop

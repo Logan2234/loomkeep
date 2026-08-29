@@ -1,37 +1,26 @@
 <script lang="ts">
   import { getFeed } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ActivityEventDto } from "@loomkeep/shared";
+  import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
-  let events = $state<ActivityEventDto[]>([]);
-  let cursor = $state<string | null>(null);
-  let loading = $state(true);
-  let loadingMore = $state(false);
-
-  $effect(() => {
-    getFeed()
-      .then((f) => {
-        events = f.events;
-        cursor = f.nextCursor;
-      })
-      .finally(() => (loading = false));
-  });
-
-  async function loadMore() {
-    if (!cursor || loadingMore) return;
-    loadingMore = true;
-    try {
-      const f = await getFeed(cursor);
-      events = [...events, ...f.events];
-      cursor = f.nextCursor;
-    } finally {
-      loadingMore = false;
-    }
-  }
+  const feed = createApiInfiniteQuery<
+    PagedResult<ActivityEventDto>,
+    number,
+    ActivityEventDto
+  >(() => ({
+    key: keys.feed.all(),
+    fetch: (page) => getFeed(page),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+  }));
 </script>
 
 <div class="mx-auto max-w-2xl px-4 py-6 md:py-8">
@@ -40,9 +29,11 @@
     title="Fil d'activité"
     subtitle="Ce que font les membres que vous suivez." />
 
-  {#if loading}
+  {#if feed.loading}
     <CardRowSkeleton count={6} />
-  {:else if events.length === 0}
+  {:else if feed.error}
+    <p class="text-danger text-sm">{feed.error}</p>
+  {:else if feed.data.length === 0}
     <EmptyState>
       <p class="font-display text-lg font-bold">
         Rien à afficher pour l'instant
@@ -55,15 +46,18 @@
     </EmptyState>
   {:else}
     <ul class="flex flex-col gap-2">
-      {#each events as event (event.id)}
+      {#each feed.data as event (event.id)}
         <ActivityItem {event} />
       {/each}
     </ul>
 
-    {#if cursor}
+    {#if feed.hasNextPage}
       <div class="mt-4 flex justify-center">
-        <button class="btn btn-ghost" disabled={loadingMore} onclick={loadMore}>
-          {loadingMore ? m.common_loading() : m.common_see_more()}
+        <button
+          class="btn btn-ghost"
+          disabled={feed.isFetchingNextPage}
+          onclick={() => feed.fetchNextPage()}>
+          {feed.isFetchingNextPage ? m.common_loading() : m.common_see_more()}
         </button>
       </div>
     {/if}

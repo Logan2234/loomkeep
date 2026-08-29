@@ -2,6 +2,7 @@
   // GitHub-style calendar heatmap: 7 rows (weekdays) × N columns (weeks).
   // Days are pre-zero-filled by the caller, oldest first, chronological.
   import { formatDate } from "$lib/format";
+  import { m } from "$lib/paraglide/messages";
 
   let {
     days,
@@ -80,10 +81,10 @@
 </div>
 {#if legend}
   <div class="text-dim mt-3 flex items-center gap-1.5 text-[11px]">
-    <span>Moins</span>
+    <span>{m.common_less()}</span>
     {#each LEVEL_BG as bg, i (i)}
       <span class="h-3 w-3 rounded-sm" style="background:{bg}"></span>
     {/each}
-    <span>Plus</span>
+    <span>{m.common_more()}</span>
   </div>
 {/if}

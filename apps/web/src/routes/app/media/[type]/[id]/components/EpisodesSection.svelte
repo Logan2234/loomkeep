@@ -17,6 +17,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
+  import { m } from "$lib/paraglide/messages";
   import type {
     CommentTargetType,
     LibraryEntryDto,
@@ -117,7 +118,7 @@
     if (!airDate) return null;
     const days = daysUntilAir(airDate);
     if (days <= 0) return null;
-    return days === 1 ? "Demain" : `Dans ${days} jours`;
+    return days === 1 ? m.common_tomorrow() : `Dans ${days} jours`;
   }
 
   async function markWatched(episodeId: string) {
@@ -243,7 +244,7 @@
               ? 'rotate-90'
               : ''}" />
           <span class="min-w-0 flex-1 truncate">
-            {season.title ?? `Saison ${season.number}`}
+            {season.title ?? `${m.common_season()} ${season.number}`}
           </span>
           {#if entry}
             <span class="timecode shrink-0 text-xs">
@@ -265,7 +266,8 @@
                 reviewTarget = {
                   type: "SEASON",
                   id: season.id!,
-                  label: season.title ?? `Saison ${season.number}`,
+                  label:
+                    season.title ?? `${m.common_season()} ${season.number}`,
                 };
               }}>
               <Icon name="star" class="h-4 w-4" />
@@ -280,7 +282,8 @@
                 commentTarget = {
                   type: "SEASON",
                   id: season.id!,
-                  label: season.title ?? `Saison ${season.number}`,
+                  label:
+                    season.title ?? `${m.common_season()} ${season.number}`,
                 };
               }}>
               <Icon name="message" class="h-4 w-4" />
@@ -353,7 +356,7 @@
                   ).padStart(2, "0")}
                 </span>
                 <span class="min-w-0 flex-1 truncate text-sm">
-                  {episode.title ?? `Épisode ${episode.number}`}
+                  {episode.title ?? `${m.common_episode()} ${episode.number}`}
                   {#if episode.watchCount > 1}
                     <span class="text-success">×{episode.watchCount}</span>
                   {/if}

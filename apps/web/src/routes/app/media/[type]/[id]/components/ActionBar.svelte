@@ -4,6 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
+  import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
   import { scale } from "svelte/transition";
 
@@ -71,14 +72,14 @@
             type="button"
             class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50"
             disabled={continuing}
-            title={`Continuer S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
+            title={`${m.common_continue()} S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
               nextEpisode.episodeNumber,
             ).padStart(2, "0")}`}
             onclick={onContinue}>
             <Icon name="chevron-right" class="h-5 w-5" />
           </button>
           <div class="text-sm whitespace-nowrap">
-            Continuer ·
+            {m.common_continue()} ·
             <b class="timecode">
               S{String(nextEpisode.seasonNumber).padStart(2, "0")}E{String(
                 nextEpisode.episodeNumber,
@@ -116,8 +117,12 @@
           type="button"
           aria-pressed={entry.favorite}
           disabled={saving}
-          title={entry.favorite ? "Retirer des favoris" : "Favori"}
-          aria-label={entry.favorite ? "Retirer des favoris" : "Favori"}
+          title={entry.favorite
+            ? m.common_favorite_remove()
+            : m.common_favorite_add()}
+          aria-label={entry.favorite
+            ? m.common_favorite_remove()
+            : m.common_favorite_add()}
           onclick={onToggleFavorite}
           class="btn-icon h-9 w-9 border {entry.favorite
             ? 'border-accent text-accent'

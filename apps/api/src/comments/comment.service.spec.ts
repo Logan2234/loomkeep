@@ -139,7 +139,7 @@ describe("CommentService.list — spoiler masking", () => {
       },
     });
     const page = await svc.list("viewer", "EPISODE" as never, "e1");
-    expect(page.comments[0].masked).toBe(true);
+    expect(page.items[0].masked).toBe(true);
   });
 
   it("does not mask a comment without a spoiler tag", async () => {
@@ -158,7 +158,7 @@ describe("CommentService.list — spoiler masking", () => {
       },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");
-    expect(page.comments[0].masked).toBe(false);
+    expect(page.items[0].masked).toBe(false);
   });
 
   it("never masks MUSIC even if the row somehow carries a spoiler tag", async () => {
@@ -177,7 +177,7 @@ describe("CommentService.list — spoiler masking", () => {
       },
     });
     const page = await svc.list("viewer", "MUSIC" as never, "al1");
-    expect(page.comments[0].masked).toBe(false);
+    expect(page.items[0].masked).toBe(false);
   });
 });
 
@@ -196,9 +196,9 @@ describe("CommentService.list — Figurant pseudonym", () => {
       },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");
-    expect(page.comments[0].author!.anonymized).toBe(true);
-    expect(page.comments[0].author!.username).toBe("");
-    expect(page.comments[0].author!.displayName).toMatch(/^Figurant n°\d{6}$/u);
+    expect(page.items[0].author!.anonymized).toBe(true);
+    expect(page.items[0].author!.username).toBe("");
+    expect(page.items[0].author!.displayName).toMatch(/^Figurant n°\d{6}$/u);
   });
 
   it("shows the real identity to the Figurant author themself", async () => {
@@ -216,8 +216,8 @@ describe("CommentService.list — Figurant pseudonym", () => {
       },
     });
     const page = await svc.list("ghost1", "MEDIA" as never, "m1");
-    expect(page.comments[0].author!.anonymized).toBeUndefined();
-    expect(page.comments[0].author!.username).toBe("author");
+    expect(page.items[0].author!.anonymized).toBeUndefined();
+    expect(page.items[0].author!.username).toBe("author");
   });
 });
 
@@ -239,7 +239,7 @@ describe("CommentService.list — blocking", () => {
       relations: { stranger: relation({ blocking: true }) },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");
-    expect(page.comments).toHaveLength(0);
+    expect(page.items).toHaveLength(0);
   });
 });
 

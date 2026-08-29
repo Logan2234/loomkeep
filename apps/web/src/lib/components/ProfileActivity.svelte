@@ -1,62 +1,48 @@
 <script lang="ts">
   import { getUserActivity } from "$lib/api/client";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ActivityEventDto } from "@loomkeep/shared";
+  import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
   // A user's recent activity timeline, shown under their profile stats. Loads
   // its own data (visibility-filtered server-side) and hides when empty.
   let { username }: { username: string } = $props();
 
-  let events = $state<ActivityEventDto[]>([]);
-  let cursor = $state<string | null>(null);
-  let loaded = $state(false);
-  let loadingMore = $state(false);
-
-  $effect(() => {
-    const name = username;
-    loaded = false;
-    events = [];
-    cursor = null;
-    getUserActivity(name)
-      .then((f) => {
-        events = f.events;
-        cursor = f.nextCursor;
-      })
-      .catch(() => (events = []))
-      .finally(() => (loaded = true));
-  });
-
-  async function loadMore() {
-    if (!cursor || loadingMore) return;
-    loadingMore = true;
-    try {
-      const f = await getUserActivity(username, cursor);
-      events = [...events, ...f.events];
-      cursor = f.nextCursor;
-    } finally {
-      loadingMore = false;
-    }
-  }
+  const activity = createApiInfiniteQuery<
+    PagedResult<ActivityEventDto>,
+    number,
+    ActivityEventDto
+  >(() => ({
+    key: keys.profile.activity(username),
+    fetch: (page) => getUserActivity(username, page),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+  }));
 </script>
 
-{#if loaded && events.length > 0}
+{#if !activity.loading && activity.data.length > 0}
   <section class="mt-6">
     <h2 class="timecode mb-3 text-[0.62rem] tracking-[0.18em] uppercase">
       Activité récente
     </h2>
     <ul class="flex flex-col gap-2">
-      {#each events as event (event.id)}
+      {#each activity.data as event (event.id)}
         <ActivityItem {event} />
       {/each}
     </ul>
-    {#if cursor}
+    {#if activity.hasNextPage}
       <div class="mt-3 flex justify-center">
         <button
           class="btn btn-ghost btn-sm"
-          disabled={loadingMore}
-          onclick={loadMore}>
-          {loadingMore ? m.common_loading() : m.common_see_more()}
+          disabled={activity.isFetchingNextPage}
+          onclick={() => activity.fetchNextPage()}>
+          {activity.isFetchingNextPage
+            ? m.common_loading()
+            : m.common_see_more()}
         </button>
       </div>
     {/if}

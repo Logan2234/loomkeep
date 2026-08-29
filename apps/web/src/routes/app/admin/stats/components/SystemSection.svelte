@@ -67,7 +67,7 @@
       {m.admin_system_api_calls_title()}
     </h3>
     <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
-      {m.admin_system_today_label()}
+      {m.common_today()}
     </p>
     {#if providerItems.length === 0}
       <p class="text-dim text-sm">{m.admin_system_no_calls_today()}</p>

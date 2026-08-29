@@ -76,7 +76,7 @@
     <div class="w-full max-w-sm">
       <div class="mb-8 text-center">
         <p class="font-display text-3xl font-extrabold tracking-tight">
-          LOOM<span class="text-accent">KEEP</span>
+          {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
         </p>
         <p class="text-dim mt-2 text-sm">
           {m.auth_register_tagline()}
@@ -89,7 +89,7 @@
         </h1>
         <input
           type="text"
-          placeholder={m.auth_register_display_name_placeholder()}
+          placeholder={m.common_username()}
           bind:value={displayName}
           required
           class="input" />
@@ -98,7 +98,7 @@
         {/if}
         <input
           type="email"
-          placeholder={m.auth_register_email_placeholder()}
+          placeholder={m.common_email()}
           bind:value={email}
           required
           class="input" />
@@ -106,7 +106,7 @@
           <p class="text-danger -mt-2 text-xs">{emailError}</p>
         {/if}
         <PasswordInput
-          placeholder={m.auth_register_password_placeholder()}
+          placeholder={m.common_password()}
           bind:value={password}
           minlength={8}
           required />

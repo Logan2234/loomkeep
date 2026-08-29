@@ -33,7 +33,7 @@
   <button
     type="button"
     class="text-dim hover:text-fg absolute inset-y-0 right-0 flex w-9 items-center justify-center"
-    aria-label={visible ? m.password_hide() : m.password_show()}
+    aria-label={visible ? m.common_password_hide() : m.common_password_show()}
     onclick={() => (visible = !visible)}>
     <Icon name={visible ? "eye-off" : "eye"} class="h-4 w-4" />
   </button>

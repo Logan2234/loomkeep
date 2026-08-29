@@ -7,9 +7,9 @@
     upsertMusicEntry,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
-  import { goBack } from "$lib/backNav.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -366,7 +366,9 @@
       <!-- Details panel, desktop position: sidebar next to the main column. -->
       {#snippet detailsPanel()}
         <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">Détails</h2>
+          <h2 class="font-display text-sm font-bold tracking-tight">
+            {m.common_details()}
+          </h2>
           <dl class="mt-3 flex flex-col gap-3">
             {#if detail && detail.label}
               <div>

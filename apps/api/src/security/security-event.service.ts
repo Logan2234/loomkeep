@@ -1,5 +1,6 @@
 import type {
   AdminSecuritySummaryDto,
+  PagedResult,
   SecurityEventDto,
   SecurityEventType,
 } from "@loomkeep/shared";
@@ -7,8 +8,8 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
 
-/** Events per page on the admin "Sécurité" list. */
-const PAGE_SIZE = 50;
+/** Default events per page on the admin "Sécurité" list. */
+export const SECURITY_EVENT_PAGE_SIZE = 50;
 
 /** Window the "most targeted identifiers" ranking looks back over, in days. */
 const TARGETS_WINDOW_DAYS = 7;
@@ -28,6 +29,7 @@ export interface ListSecurityEventsParams {
   /** Matches either the stored identifier (LOGIN_FAILED) or the linked account's current email. */
   identifier?: string;
   page?: number;
+  limit?: number;
 }
 
 @Injectable()
@@ -100,10 +102,14 @@ export class SecurityEventService {
 
   async list(
     params: ListSecurityEventsParams,
-  ): Promise<{ events: SecurityEventDto[]; page: number }> {
+  ): Promise<PagedResult<SecurityEventDto>> {
     const page = params.page && params.page > 0 ? params.page : 1;
+    const limit =
+      params.limit && params.limit > 0
+        ? params.limit
+        : SECURITY_EVENT_PAGE_SIZE;
 
-    const events = await this.prisma.securityEvent.findMany({
+    const rows = await this.prisma.securityEvent.findMany({
       where: {
         type: params.type,
         ...(params.identifier
@@ -126,13 +132,15 @@ export class SecurityEventService {
       },
       include: { user: { select: { email: true } } },
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * limit,
+      take: limit + 1,
     });
+    const hasMore = rows.length > limit;
+    const events = rows.slice(0, limit);
 
     return {
-      page,
-      events: events.map((e) => ({
+      hasMore,
+      items: events.map((e) => ({
         id: e.id,
         type: e.type as SecurityEventType,
         userId: e.userId,

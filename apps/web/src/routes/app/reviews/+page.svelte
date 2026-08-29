@@ -16,8 +16,8 @@
     GAME: m.common_Games(),
     BOOK: m.common_Books(),
     MUSIC: m.common_Music(),
-    SEASON: "Saison",
-    EPISODE: "Épisode",
+    SEASON: m.common_season(),
+    EPISODE: m.common_episode(),
   };
 
   let reviews = $state<MyReviewDto[]>([]);
@@ -220,7 +220,7 @@
                 class="truncate font-semibold {review.target?.href
                   ? 'group-hover:text-accent transition-colors'
                   : ''}">
-                {review.target?.title ?? "Œuvre"}
+                {review.target?.title ?? m.common_work()}
               </p>
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
                 <span class="timecode uppercase"
@@ -249,7 +249,7 @@
           <button
             class="btn btn-ghost shrink-0"
             onclick={() => openEdit(review)}>
-            Éditer
+            {m.common_edit()}
           </button>
         </li>
       {/each}

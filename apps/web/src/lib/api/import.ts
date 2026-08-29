@@ -9,36 +9,30 @@ import type {
 import { request } from "./core";
 
 /** Which config-dependent sources are actually usable on this deployment. */
-export function getImportAvailability(): Promise<ImportAvailabilityDto> {
-  return request("/import/availability");
-}
+export const getImportAvailability = (): Promise<ImportAvailabilityDto> =>
+  request("/import/availability");
 
 /** Per domain, whether this account has already used its one free import in it. */
-export function getImportQuota(): Promise<ImportQuotaDto> {
-  return request("/import/quota");
-}
+export const getImportQuota = (): Promise<ImportQuotaDto> =>
+  request("/import/quota");
 
 /** Analyse an export → reconciliation plan (writes nothing). Poll the job. */
-export function analyzeImport(
+export const analyzeImport = (
   source: ImportSource,
   body: ImportAnalyzeRequest,
-): Promise<ImportJobDto> {
-  return request(`/import/${source}/analyze`, { method: "POST", body });
-}
+): Promise<ImportJobDto> =>
+  request(`/import/${source}/analyze`, { method: "POST", body });
 
 /** Commit an analysed import with the user's reconciliation decisions. */
-export function commitImport(
+export const commitImport = (
   source: ImportSource,
   jobId: string,
   body: ImportCommitRequest,
-): Promise<ImportJobDto> {
-  return request(`/import/${source}/${jobId}/commit`, { method: "POST", body });
-}
+): Promise<ImportJobDto> =>
+  request(`/import/${source}/${jobId}/commit`, { method: "POST", body });
 
 /** Poll an import job's progress and, once finished, its plan or report. */
-export function getImportJob(
+export const getImportJob = (
   source: ImportSource,
   jobId: string,
-): Promise<ImportJobDto> {
-  return request(`/import/${source}/${jobId}`);
-}
+): Promise<ImportJobDto> => request(`/import/${source}/${jobId}`);

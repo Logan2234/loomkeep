@@ -9,57 +9,51 @@ import type {
 } from "@loomkeep/shared";
 import { request } from "./core";
 
-export function getMyReviews(): Promise<MyReviewDto[]> {
-  return request("/reviews/me");
-}
+export const getMyReviews = (): Promise<MyReviewDto[]> =>
+  request("/reviews/me");
 
 /** The current user's own review for a target, or null. Always available. */
-export function getMyReview(
+export const getMyReview = (
   targetType: ReviewTargetType,
   targetId: string,
-): Promise<ReviewDto | null> {
-  return request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`);
-}
+): Promise<ReviewDto | null> =>
+  request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`);
 
 /**
  * Others' reviews for a target, visibility-filtered (social-gated server-side —
  * fails when SOCIAL_ENABLED is off, so only call it when social is enabled).
  */
-export function getReviewsForTarget(
+export const getReviewsForTarget = (
   targetType: ReviewTargetType,
   targetId: string,
-): Promise<ReviewDto[]> {
-  return request(`/reviews/${targetType}/${encodeURIComponent(targetId)}`);
-}
+): Promise<ReviewDto[]> =>
+  request(`/reviews/${targetType}/${encodeURIComponent(targetId)}`);
 
-export function upsertReview(
+export const upsertReview = (
   targetType: ReviewTargetType,
   targetId: string,
   body: UpsertReviewDto,
-): Promise<ReviewDto> {
-  return request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`, {
+): Promise<ReviewDto> =>
+  request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`, {
     method: "PUT",
     body,
   });
-}
 
-export function deleteReview(
+export const deleteReview = (
   targetType: ReviewTargetType,
   targetId: string,
-): Promise<void> {
-  return request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`, {
+): Promise<void> =>
+  request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`, {
     method: "DELETE",
   });
-}
 
-export function getReviewRevisions(
+export const getReviewRevisions = (
   targetType: ReviewTargetType,
   targetId: string,
-): Promise<ReviewRevisionDto[]> {
-  return request(
+): Promise<ReviewRevisionDto[]> =>
+  request(
     `/reviews/me/${targetType}/${encodeURIComponent(targetId)}/revisions`,
   );
-}
 
 /** Bulk-delete the given reviews (by review id). Returns the count deleted. */
 export function batchDeleteReviews(ids: string[]): Promise<{ count: number }> {

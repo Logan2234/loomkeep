@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
 
@@ -29,7 +30,7 @@
   const selectedOption = $derived(options.find((o) => o.value === values[0]));
   const triggerText = $derived(
     multiselect
-      ? `${label} : ${values.length === 0 ? "Tous" : values.length}`
+      ? `${label} : ${values.length === 0 ? m.common_all() : values.length}`
       : (selectedOption?.label ?? label),
   );
   const visibleOptions = $derived(
@@ -117,7 +118,7 @@
         </button>
       {/each}
       {#if searchable && visibleOptions.length === 0}
-        <p class="text-dim px-3 py-2 text-sm">Aucun résultat.</p>
+        <p class="text-dim px-3 py-2 text-sm">{m.common_no_results()}.</p>
       {/if}
     </div>
   {/snippet}

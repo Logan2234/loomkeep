@@ -106,7 +106,7 @@
   <div class="mb-2 flex items-center justify-end gap-1.5">
     <button
       onclick={zoomOut}
-      aria-label={m.mermaid_zoom_out()}
+      aria-label={m.common_zoom_out()}
       class="border-border text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-md border text-sm">
       −
     </button>
@@ -115,14 +115,14 @@
     </span>
     <button
       onclick={zoomIn}
-      aria-label={m.mermaid_zoom_in()}
+      aria-label={m.common_zoom_in()}
       class="border-border text-dim hover:text-fg grid h-7 w-7 place-items-center rounded-md border text-sm">
       +
     </button>
     <button
       onclick={reset}
       class="border-border text-dim hover:text-fg ml-1 rounded-md border px-2 py-1 text-xs">
-      {m.mermaid_reset()}
+      {m.common_reset()}
     </button>
   </div>
   <div

@@ -38,38 +38,31 @@ export function listGames(
 }
 
 /** Game detail (catalogue metadata + the user's library state). */
-export function getGameDetail(
+export const getGameDetail = (
   source: string,
   sourceId: string,
-): Promise<GameDetailDto> {
-  return request(`/games/${source.toLowerCase()}/${sourceId}`);
-}
+): Promise<GameDetailDto> =>
+  request(`/games/${source.toLowerCase()}/${sourceId}`);
 
-export function upsertGameEntry(
+export const upsertGameEntry = (
   body: UpsertGameEntryDto,
-): Promise<GameEntryDto> {
-  return request("/games", { method: "PUT", body });
-}
+): Promise<GameEntryDto> => request("/games", { method: "PUT", body });
 
-export function updateGameEntry(
+export const updateGameEntry = (
   entryId: string,
   body: UpdateGameEntryDto,
-): Promise<GameEntryDto> {
-  return request(`/games/entries/${entryId}`, { method: "PATCH", body });
-}
+): Promise<GameEntryDto> =>
+  request(`/games/entries/${entryId}`, { method: "PATCH", body });
 
-export function deleteGameEntry(entryId: string): Promise<void> {
-  return request(`/games/entries/${entryId}`, { method: "DELETE" });
-}
+export const deleteGameEntry = (entryId: string): Promise<void> =>
+  request(`/games/entries/${entryId}`, { method: "DELETE" });
 
 /** Log a completed replay (a completion beyond the entry's first one). */
-export function addGameReplay(entryId: string): Promise<GameEntryDto> {
-  return request(`/games/entries/${entryId}/replays`, {
+export const addGameReplay = (entryId: string): Promise<GameEntryDto> =>
+  request(`/games/entries/${entryId}/replays`, {
     method: "POST",
     body: {},
   });
-}
 
-export function deleteGameReplay(replayId: string): Promise<void> {
-  return request(`/games/replays/${replayId}`, { method: "DELETE" });
-}
+export const deleteGameReplay = (replayId: string): Promise<void> =>
+  request(`/games/replays/${replayId}`, { method: "DELETE" });

@@ -36,7 +36,7 @@ describe("CatalogController.search", () => {
 
     const result = await controller.search(user, { q: "show" } as never);
 
-    expect(result.results).toEqual(
+    expect(result.items).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "a1" })]),
     );
   });
@@ -51,6 +51,6 @@ describe("CatalogController.search", () => {
 
     const result = await controller.search(user, { q: "x" } as never);
 
-    expect(result.results).toHaveLength(2);
+    expect(result.items).toHaveLength(2);
   });
 });

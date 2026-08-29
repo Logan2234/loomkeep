@@ -163,7 +163,7 @@
     if (rel.requested) return m.profile_follow_requested();
     return profile.profileAccess === "PRIVATE"
       ? m.profile_follow_request()
-      : m.profile_follow_follow();
+      : m.common_follow();
   });
 
   // A Figurant can only follow public profiles — hide the affordance rather
@@ -415,7 +415,7 @@
                 ? m.profile_status_public()
                 : profile.profileAccess === "PRIVATE"
                   ? m.profile_status_private()
-                  : m.common_ghost()}</span>
+                  : m.profile_ghost()}</span>
             <span aria-hidden="true">·</span>
             <span>{m.profile_member_since({ date: memberSince })}</span>
           </p>
@@ -684,7 +684,7 @@
             <a
               href="/app/lists"
               class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold md:hidden">
-              {m.profile_reviews_manage()}
+              {m.common_manage()}
               <Icon name="chevron-right" class="h-4 w-4" />
             </a>
           {/if}

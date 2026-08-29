@@ -9,7 +9,7 @@ import type {
   AdminCacheResyncStaleResultDto,
   AdminCacheSort,
   AdminCatalogueSectionDto,
-  AdminImportRunListResponseDto,
+  AdminImportRunDto,
   AdminImportSummaryDto,
   AdminNewAccountsTrendDto,
   AdminOverviewDto,
@@ -23,9 +23,9 @@ import type {
   AdminSocialSectionDto,
   AdminSystemSectionDto,
   AdminUserCommentDto,
+  AdminUserDto,
   AdminUserFilter,
   AdminUserLibraryStatsDto,
-  AdminUserListResponseDto,
   AdminUserOptionDto,
   AdminUserPlanDto,
   AdminUserRoleDto,
@@ -38,12 +38,12 @@ import type {
   MyListDto,
   MyReviewDto,
   NewsletterSendDto,
+  PagedResult,
   Plan,
   ReportDto,
-  ReportPageDto,
   Role,
   SchemaGraphResponseDto,
-  SecurityEventListResponseDto,
+  SecurityEventDto,
   SecurityEventType,
   SendAdminBroadcastPushRequestDto,
   SendAdminTestPushRequestDto,
@@ -64,13 +64,11 @@ export interface ModerationReasonBody {
 }
 
 /** Health and quota usage of every external dependency (config presence, live probe, call counters). */
-export function getAdminServices(): Promise<ServiceStatusResponseDto> {
-  return request("/admin/services");
-}
+export const getAdminServices = (): Promise<ServiceStatusResponseDto> =>
+  request("/admin/services");
 
-export function getAdminEmailTemplates(): Promise<MailTemplateListResponseDto> {
-  return request("/admin/emails");
-}
+export const getAdminEmailTemplates =
+  (): Promise<MailTemplateListResponseDto> => request("/admin/emails");
 
 export function getAdminEmailPreview(
   key: string,
@@ -81,18 +79,16 @@ export function getAdminEmailPreview(
   return request(`/admin/emails/${key}/preview${suffix}`);
 }
 
-export function sendAdminTestEmail(
+export const sendAdminTestEmail = (
   key: string,
   body: SendTestEmailRequestDto,
-): Promise<void> {
-  return request(`/admin/emails/${key}/test`, { method: "POST", body });
-}
+): Promise<void> =>
+  request(`/admin/emails/${key}/test`, { method: "POST", body });
 
-export function sendAdminTestPush(
+export const sendAdminTestPush = (
   body: SendAdminTestPushRequestDto,
-): Promise<AdminPushSendResponseDto> {
-  return request("/admin/push/test", { method: "POST", body });
-}
+): Promise<AdminPushSendResponseDto> =>
+  request("/admin/push/test", { method: "POST", body });
 
 export function getAdminPushDevices(
   email: string,
@@ -102,70 +98,58 @@ export function getAdminPushDevices(
 }
 
 /** Instance-wide push reach (active subscriptions, accounts, browser families). */
-export function getAdminPushSummary(): Promise<AdminPushSummaryDto> {
-  return request("/admin/push/summary");
-}
+export const getAdminPushSummary = (): Promise<AdminPushSummaryDto> =>
+  request("/admin/push/summary");
 
 /** Sends one push to every subscribed device on the instance, across every account. */
-export function sendAdminBroadcastPush(
+export const sendAdminBroadcastPush = (
   body: SendAdminBroadcastPushRequestDto,
-): Promise<AdminPushBroadcastResponseDto> {
-  return request("/admin/push/broadcast", { method: "POST", body });
-}
+): Promise<AdminPushBroadcastResponseDto> =>
+  request("/admin/push/broadcast", { method: "POST", body });
 
 /** Locally-generated architecture diagrams (DB ERD, module graph). */
-export function getAdminSchema(): Promise<SchemaGraphResponseDto> {
-  return request("/admin/schema");
-}
+export const getAdminSchema = (): Promise<SchemaGraphResponseDto> =>
+  request("/admin/schema");
 
 /** The few instance counters the admin dashboard and /admin/communications read. */
-export function getAdminOverview(): Promise<AdminOverviewDto> {
-  return request("/admin/overview");
-}
+export const getAdminOverview = (): Promise<AdminOverviewDto> =>
+  request("/admin/overview");
 
 /** "Comptes & engagement" section of /admin/stats. */
-export function getAdminAccountsStats(): Promise<AdminAccountsSectionDto> {
-  return request("/admin/stats/accounts");
-}
+export const getAdminAccountsStats = (): Promise<AdminAccountsSectionDto> =>
+  request("/admin/stats/accounts");
 
 /** Registration curve alone — re-queried by the card's own period picker. */
-export function getAdminNewAccountsTrend(
+export const getAdminNewAccountsTrend = (
   period: TrendPeriod,
-): Promise<AdminNewAccountsTrendDto> {
-  return request(`/admin/stats/accounts/new?period=${period}`);
-}
+): Promise<AdminNewAccountsTrendDto> =>
+  request(`/admin/stats/accounts/new?period=${period}`);
 
 /** "Catalogue & cache" section of /admin/stats. */
-export function getAdminCatalogueStats(): Promise<AdminCatalogueSectionDto> {
-  return request("/admin/stats/catalogue");
-}
+export const getAdminCatalogueStats = (): Promise<AdminCatalogueSectionDto> =>
+  request("/admin/stats/catalogue");
 
 /** "Social" section of /admin/stats — `{ enabled: false }` when SOCIAL_ENABLED is off. */
-export function getAdminSocialStats(): Promise<AdminSocialSectionDto> {
-  return request("/admin/stats/social");
-}
+export const getAdminSocialStats = (): Promise<AdminSocialSectionDto> =>
+  request("/admin/stats/social");
 
 /** Social activity curve alone — re-queried by the card's own period picker. */
-export function getAdminSocialActivityTrend(
+export const getAdminSocialActivityTrend = (
   period: TrendPeriod,
-): Promise<AdminSocialActivityTrendDto> {
-  return request(`/admin/stats/social/activity?period=${period}`);
-}
+): Promise<AdminSocialActivityTrendDto> =>
+  request(`/admin/stats/social/activity?period=${period}`);
 
 /** "Système" section of /admin/stats. */
-export function getAdminSystemStats(): Promise<AdminSystemSectionDto> {
-  return request("/admin/stats/system");
-}
+export const getAdminSystemStats = (): Promise<AdminSystemSectionDto> =>
+  request("/admin/stats/system");
 
 /** Every known scheduled job, with its recent run history. */
-export function getAdminJobs(): Promise<JobListResponseDto> {
-  return request("/admin/jobs");
-}
+export const getAdminJobs = (): Promise<JobListResponseDto> =>
+  request("/admin/jobs");
 
 /** Triggers a job immediately (both are idempotent). */
-export function runAdminJob(key: string): Promise<void> {
-  return request(`/admin/jobs/${key}/run`, { method: "POST" });
-}
+export const runAdminJob = (key: string): Promise<void> =>
+  request(`/admin/jobs/${key}/run`, { method: "POST" });
 
 /** Registered accounts, filterable by search/role/verification/activity, paginated. */
 export function getAdminUsers(
@@ -173,162 +157,137 @@ export function getAdminUsers(
     search?: string;
     filter?: AdminUserFilter;
     page?: number;
+    limit?: number;
   } = {},
-): Promise<AdminUserListResponseDto> {
+): Promise<PagedResult<AdminUserDto>> {
   const params = new URLSearchParams();
   if (filters.search) params.set("search", filters.search);
   if (filters.filter && filters.filter !== "all")
     params.set("filter", filters.filter);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/users${suffix}`);
 }
 
 /** Minimal, unpaginated account list for a picker (UserSelector, communications broadcast target). */
-export function getAdminUserOptions(): Promise<AdminUserOptionDto[]> {
-  return request("/admin/users/options");
-}
+export const getAdminUserOptions = (): Promise<AdminUserOptionDto[]> =>
+  request("/admin/users/options");
 
 /** Compact per-domain library breakdown for an account drawer. */
-export function getAdminUserLibraryStats(
+export const getAdminUserLibraryStats = (
   userId: string,
-): Promise<AdminUserLibraryStatsDto> {
-  return request(`/admin/users/${userId}/library-stats`);
-}
+): Promise<AdminUserLibraryStatsDto> =>
+  request(`/admin/users/${userId}/library-stats`);
 
-export function getAdminUserSessions(userId: string): Promise<SessionDto[]> {
-  return request(`/admin/users/${userId}/sessions`);
-}
+export const getAdminUserSessions = (userId: string): Promise<SessionDto[]> =>
+  request(`/admin/users/${userId}/sessions`);
 
-export function revokeAdminUserSession(
+export const revokeAdminUserSession = (
   userId: string,
   sessionId: string,
-): Promise<void> {
-  return request(`/admin/users/${userId}/sessions/${sessionId}`, {
+): Promise<void> =>
+  request(`/admin/users/${userId}/sessions/${sessionId}`, {
     method: "DELETE",
   });
-}
 
 /** Revokes every device for an account in one go. */
-export function revokeAllAdminUserSessions(userId: string): Promise<void> {
-  return request(`/admin/users/${userId}/sessions`, { method: "DELETE" });
-}
+export const revokeAllAdminUserSessions = (userId: string): Promise<void> =>
+  request(`/admin/users/${userId}/sessions`, { method: "DELETE" });
 
 /** Sets an account's role (e.g. toggling admin access). */
-export function updateAdminUserRole(
+export const updateAdminUserRole = (
   userId: string,
   role: Role,
-): Promise<AdminUserRoleDto> {
-  return request(`/admin/users/${userId}/role`, {
+): Promise<AdminUserRoleDto> =>
+  request(`/admin/users/${userId}/role`, {
     method: "PATCH",
     body: { role },
   });
-}
 
 /** Sets an account's plan (docs/adr/0001-open-core-agpl.md) — no billing yet, admin-only. */
-export function updateAdminUserPlan(
+export const updateAdminUserPlan = (
   userId: string,
   plan: Plan,
-): Promise<AdminUserPlanDto> {
-  return request(`/admin/users/${userId}/plan`, {
+): Promise<AdminUserPlanDto> =>
+  request(`/admin/users/${userId}/plan`, {
     method: "PATCH",
     body: { plan },
   });
-}
 
 /** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */
-export function getAdminUserExport(userId: string): Promise<UserDataExportDto> {
-  return request(`/admin/users/${userId}/export`);
-}
+export const getAdminUserExport = (
+  userId: string,
+): Promise<UserDataExportDto> => request(`/admin/users/${userId}/export`);
 
 /** Reviews the account has written, with resolved targets — for the user drawer shortcut. */
-export function getAdminUserReviews(userId: string): Promise<MyReviewDto[]> {
-  return request(`/admin/users/${userId}/reviews`);
-}
+export const getAdminUserReviews = (userId: string): Promise<MyReviewDto[]> =>
+  request(`/admin/users/${userId}/reviews`);
 
 /** Comments the account has authored — for the user drawer shortcut. */
-export function getAdminUserComments(
+export const getAdminUserComments = (
   userId: string,
-): Promise<AdminUserCommentDto[]> {
-  return request(`/admin/users/${userId}/comments`);
-}
+): Promise<AdminUserCommentDto[]> => request(`/admin/users/${userId}/comments`);
 
 /** Accepted followers of the account (admin view, bypasses visibility). */
-export function getAdminUserFollowers(
+export const getAdminUserFollowers = (
   userId: string,
-): Promise<UserSummaryDto[]> {
-  return request(`/admin/users/${userId}/followers`);
-}
+): Promise<UserSummaryDto[]> => request(`/admin/users/${userId}/followers`);
 
 /** Accounts this user follows (admin view, bypasses visibility). */
-export function getAdminUserFollowing(
+export const getAdminUserFollowing = (
   userId: string,
-): Promise<UserSummaryDto[]> {
-  return request(`/admin/users/${userId}/following`);
-}
+): Promise<UserSummaryDto[]> => request(`/admin/users/${userId}/following`);
 
 /** Reports filed against this account, directly or via a comment they authored. */
-export function getAdminUserReportsAgainst(
+export const getAdminUserReportsAgainst = (
   userId: string,
-): Promise<ReportDto[]> {
-  return request(`/admin/users/${userId}/reports-against`);
-}
+): Promise<ReportDto[]> => request(`/admin/users/${userId}/reports-against`);
 
 /** Every list the account owns, regardless of visibility (admin view). */
-export function getAdminUserLists(userId: string): Promise<MyListDto[]> {
-  return request(`/admin/users/${userId}/lists`);
-}
+export const getAdminUserLists = (userId: string): Promise<MyListDto[]> =>
+  request(`/admin/users/${userId}/lists`);
 
 /** Re-sends the account's email-verification link. */
-export function resendAdminUserVerification(userId: string): Promise<void> {
-  return request(`/admin/users/${userId}/resend-verification`, {
+export const resendAdminUserVerification = (userId: string): Promise<void> =>
+  request(`/admin/users/${userId}/resend-verification`, {
     method: "POST",
   });
-}
 
 /** Sends the account a password-reset link. */
-export function sendAdminUserPasswordReset(userId: string): Promise<void> {
-  return request(`/admin/users/${userId}/reset-password-link`, {
+export const sendAdminUserPasswordReset = (userId: string): Promise<void> =>
+  request(`/admin/users/${userId}/reset-password-link`, {
     method: "POST",
   });
-}
 
 /** Permanently deletes an account and all its data. Irreversible. */
-export function deleteAdminUser(
+export const deleteAdminUser = (
   userId: string,
   reason: ModerationReasonBody,
-): Promise<void> {
-  return request(`/admin/users/${userId}`, { method: "DELETE", body: reason });
-}
+): Promise<void> =>
+  request(`/admin/users/${userId}`, { method: "DELETE", body: reason });
 
 /** Newsletter send history, newest first — sending itself is automatic (Quackback webhook). */
-export function getAdminNewsletterSends(): Promise<NewsletterSendDto[]> {
-  return request("/admin/newsletter");
-}
+export const getAdminNewsletterSends = (): Promise<NewsletterSendDto[]> =>
+  request("/admin/newsletter");
 
 /** Persisted backup dumps on disk, most recent first — up to 7, pruned by the daily job. */
-export function getAdminBackupFiles(): Promise<AdminBackupFileDto[]> {
-  return request("/admin/backup/files");
-}
+export const getAdminBackupFiles = (): Promise<AdminBackupFileDto[]> =>
+  request("/admin/backup/files");
 
 /** Full SQL content of one persisted backup, for download. */
-export function getAdminBackupFile(
+export const getAdminBackupFile = (
   id: string,
-): Promise<AdminBackupFileContentDto> {
-  return request(`/admin/backup/files/${id}`);
-}
+): Promise<AdminBackupFileContentDto> => request(`/admin/backup/files/${id}`);
 
-export function deleteAdminBackupFile(id: string): Promise<void> {
-  return request(`/admin/backup/files/${id}`, { method: "DELETE" });
-}
+export const deleteAdminBackupFile = (id: string): Promise<void> =>
+  request(`/admin/backup/files/${id}`, { method: "DELETE" });
 
 /** Replaces the entire instance database with a previously downloaded dump. Irreversible. */
-export function restoreAdminBackup(
+export const restoreAdminBackup = (
   body: AdminBackupRestoreRequestDto,
-): Promise<void> {
-  return request("/admin/backup/restore", { method: "POST", body });
-}
+): Promise<void> => request("/admin/backup/restore", { method: "POST", body });
 
 /** Cached items for one domain, ordered by `sort`, filterable by title/orphans and paginated. */
 export function getAdminCache(filters: {
@@ -337,6 +296,7 @@ export function getAdminCache(filters: {
   sort?: AdminCacheSort;
   orphans?: boolean;
   page?: number;
+  limit?: number;
 }): Promise<AdminCacheListResponseDto> {
   const params = new URLSearchParams({ domain: filters.domain });
   if (filters.search) params.set("search", filters.search);
@@ -344,46 +304,41 @@ export function getAdminCache(filters: {
   if (filters.orphans) params.set("orphans", "true");
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   return request(`/admin/cache?${params}`);
 }
 
 /** Full detail of one cached item (external ids, metadata, media seasons). */
-export function getAdminCacheItem(
+export const getAdminCacheItem = (
   domain: Domain,
   id: string,
-): Promise<AdminCacheItemDetailDto> {
-  return request(`/admin/cache/${domain}/${id}`);
-}
+): Promise<AdminCacheItemDetailDto> => request(`/admin/cache/${domain}/${id}`);
 
 /** Forces a re-sync of one cached item from its canonical source, bypassing the TTL. */
-export function resyncAdminCacheItem(
+export const resyncAdminCacheItem = (
   domain: Domain,
   id: string,
-): Promise<void> {
-  return request(`/admin/cache/${domain}/${id}/resync`, { method: "POST" });
-}
+): Promise<void> =>
+  request(`/admin/cache/${domain}/${id}/resync`, { method: "POST" });
 
 /** Re-syncs every stale (>24h) item in a domain in one pass. */
-export function resyncAdminCacheStale(
+export const resyncAdminCacheStale = (
   domain: Domain,
-): Promise<AdminCacheResyncStaleResultDto> {
-  return request(`/admin/cache/${domain}/resync-stale`, { method: "POST" });
-}
+): Promise<AdminCacheResyncStaleResultDto> =>
+  request(`/admin/cache/${domain}/resync-stale`, { method: "POST" });
 
 /** Deletes an orphaned cached item (no account references it). 409 if referenced. */
-export function deleteAdminCacheItem(
+export const deleteAdminCacheItem = (
   domain: Domain,
   id: string,
-): Promise<void> {
-  return request(`/admin/cache/${domain}/${id}`, { method: "DELETE" });
-}
+): Promise<void> =>
+  request(`/admin/cache/${domain}/${id}`, { method: "DELETE" });
 
 /** Purges every orphaned (unreferenced) item in a domain in one pass. */
-export function deleteAdminCacheOrphans(
+export const deleteAdminCacheOrphans = (
   domain: Domain,
-): Promise<AdminCacheDeleteOrphansResultDto> {
-  return request(`/admin/cache/${domain}/orphans`, { method: "DELETE" });
-}
+): Promise<AdminCacheDeleteOrphansResultDto> =>
+  request(`/admin/cache/${domain}/orphans`, { method: "DELETE" });
 
 /** Past import commits across every account, filterable by source/status/account, paginated. */
 export function getAdminImportRuns(
@@ -392,27 +347,27 @@ export function getAdminImportRuns(
     status?: JobStatus;
     userId?: string;
     page?: number;
+    limit?: number;
   } = {},
-): Promise<AdminImportRunListResponseDto> {
+): Promise<PagedResult<AdminImportRunDto>> {
   const params = new URLSearchParams();
   if (filters.source) params.set("source", filters.source);
   if (filters.status) params.set("status", filters.status);
   if (filters.userId) params.set("userId", filters.userId);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/imports${suffix}`);
 }
 
 /** Totals/success rate/per-source volume over the whole import log, ignoring the list filters. */
-export function getAdminImportSummary(): Promise<AdminImportSummaryDto> {
-  return request("/admin/imports/summary");
-}
+export const getAdminImportSummary = (): Promise<AdminImportSummaryDto> =>
+  request("/admin/imports/summary");
 
 /** Failed-login pressure over 24 h / 7 j / 30 j, plus the most-targeted identifiers. */
-export function getAdminSecuritySummary(): Promise<AdminSecuritySummaryDto> {
-  return request("/admin/security/summary");
-}
+export const getAdminSecuritySummary = (): Promise<AdminSecuritySummaryDto> =>
+  request("/admin/security/summary");
 
 /** Sensitive account actions, filterable by type and identifier, paginated. */
 export function getAdminSecurityEvents(
@@ -420,13 +375,15 @@ export function getAdminSecurityEvents(
     type?: SecurityEventType;
     identifier?: string;
     page?: number;
+    limit?: number;
   } = {},
-): Promise<SecurityEventListResponseDto> {
+): Promise<PagedResult<SecurityEventDto>> {
   const params = new URLSearchParams();
   if (filters.type) params.set("type", filters.type);
   if (filters.identifier) params.set("identifier", filters.identifier);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/security${suffix}`);
 }
@@ -436,44 +393,43 @@ export function getAdminReports(
   filters: {
     status?: string;
     page?: number;
+    limit?: number;
     reporterId?: string;
   } = {},
-): Promise<ReportPageDto> {
+): Promise<PagedResult<ReportDto>> {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
   if (filters.page && filters.page > 1)
     params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.reporterId) params.set("reporterId", filters.reporterId);
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/reports${suffix}`);
 }
 
 /** Queue-wide moderation figures (statuses, delay, founded share, top reporters). */
-export function getAdminReportsSummary(): Promise<AdminReportsSummaryDto> {
-  return request("/admin/reports/summary");
-}
+export const getAdminReportsSummary = (): Promise<AdminReportsSummaryDto> =>
+  request("/admin/reports/summary");
 
 export function getAdminReportsPendingCount(): Promise<{ count: number }> {
   return request("/admin/reports/pending-count");
 }
 
-export function resolveAdminReport(
+export const resolveAdminReport = (
   id: string,
   status: "RESOLVED" | "DISMISSED",
-): Promise<void> {
-  return request(`/admin/reports/${id}/resolve`, {
+): Promise<void> =>
+  request(`/admin/reports/${id}/resolve`, {
     method: "POST",
     body: { status },
   });
-}
 
 /** Removes the reported content (comment tombstone), notifies its author (DSA art. 17), and resolves the report. */
-export function takeDownAdminReport(
+export const takeDownAdminReport = (
   id: string,
   reason: ModerationReasonBody,
-): Promise<void> {
-  return request(`/admin/reports/${id}/take-down`, {
+): Promise<void> =>
+  request(`/admin/reports/${id}/take-down`, {
     method: "POST",
     body: reason,
   });
-}

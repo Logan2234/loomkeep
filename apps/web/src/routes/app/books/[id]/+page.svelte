@@ -8,10 +8,12 @@
     updateBookEntry,
     upsertBookEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
+  import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
-  import { goBack } from "$lib/backNav.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -38,9 +40,7 @@
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { formatDate } from "$lib/format";
-  import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
-  import type { BookDetailDto } from "@loomkeep/shared";
 
   // Open Library is the only book source today; the web route carries just
   // the work id (e.g. "OL893414W").
@@ -52,14 +52,20 @@
     "Open Library": "bg-[#e1dcc5] text-black",
   };
 
-  let detail = $state<BookDetailDto | null>(null);
-  let error = $state<string | null>(null);
-  let saving = $state(false);
   let confirmRemove = $state(false);
-  let removing = $state(false);
   let lightboxOpen = $state(false);
 
   const id = $derived(page.params.id ?? "");
+  const detailKey = $derived(keys.books.detail(SOURCE, id));
+
+  const bookQuery = createApiQuery(() => ({
+    key: detailKey,
+    fetch: () => getBookDetail(SOURCE, id),
+    enabled: !!id,
+  }));
+  const detail = $derived(bookQuery.data);
+  const error = $derived(bookQuery.error);
+
   const entry = $derived(detail?.entry ?? null);
   const hasMeta = $derived(
     !!detail &&
@@ -78,65 +84,57 @@
       : 0,
   );
 
-  $effect(() => {
-    const i = id;
-    if (!i) return;
-    error = null;
-    getBookDetail(SOURCE, i)
-      .then((result) => (detail = result))
-      .catch((err) => {
-        error = resolveApiError(err);
+  const addMut = createApiMutation(() => ({
+    mutate: () => {
+      const d = detail!;
+      return upsertBookEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "TO_READ",
       });
-  });
+    },
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
 
-  const { add, patch, doRemove, addReplay, removeReplay } =
-    createLibraryEntryActions(
-      {
-        get detail() {
-          return detail;
-        },
-        set detail(v) {
-          detail = v;
-        },
-        get error() {
-          return error;
-        },
-        set error(v) {
-          error = v;
-        },
-        get saving() {
-          return saving;
-        },
-        set saving(v) {
-          saving = v;
-        },
-        get confirmRemove() {
-          return confirmRemove;
-        },
-        set confirmRemove(v) {
-          confirmRemove = v;
-        },
-        get removing() {
-          return removing;
-        },
-        set removing(v) {
-          removing = v;
-        },
-      },
-      {
-        load: () => getBookDetail(SOURCE, id),
-        add: (d) =>
-          upsertBookEntry({
-            source: d.source,
-            sourceId: d.sourceId,
-            status: "TO_READ",
-          }),
-        update: updateBookEntry,
-        remove: deleteBookEntry,
-        addReplay: addBookReplay,
-        removeReplay: deleteBookReplay,
-      },
-    );
+  const patchMut = createApiMutation(() => ({
+    mutate: (changes: Parameters<typeof updateBookEntry>[1]) =>
+      updateBookEntry(entry!.id, changes),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeMut = createApiMutation(() => ({
+    mutate: () => deleteBookEntry(entry!.id),
+    onSuccess: () => {
+      confirmRemove = false;
+    },
+    successToast: m.tracking_removed_toast(),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const addReplayMut = createApiMutation(() => ({
+    mutate: () => addBookReplay(entry!.id),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeReplayMut = createApiMutation(() => ({
+    mutate: (replayId: string) => deleteBookReplay(replayId),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  // Every action but "remove" shared one `saving` flag before this migration
+  // (see docs/plans/centralized-api-layer.md) — kept combined here rather
+  // than split per-button, since that's what the template already disables on.
+  const saving = $derived(
+    addMut.loading ||
+      patchMut.loading ||
+      addReplayMut.loading ||
+      removeReplayMut.loading,
+  );
 </script>
 
 {#if error}
@@ -291,7 +289,10 @@
         <!-- Actions -->
         {#if !entry}
           <div class="mt-6">
-            <button class="btn btn-primary" disabled={saving} onclick={add}>
+            <button
+              class="btn btn-primary"
+              disabled={saving}
+              onclick={() => addMut.mutate()}>
               <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
             </button>
           </div>
@@ -299,7 +300,8 @@
           <TrackingPanel
             favorite={entry.favorite}
             {saving}
-            onToggleFavorite={() => patch({ favorite: !entry.favorite })}
+            onToggleFavorite={() =>
+              patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}>
             <SegmentedStatusControl
               statuses={STATUS_ORDER}
@@ -308,7 +310,7 @@
               meta={STATUS_META}
               desc={STATUS_DESC}
               activeClass={SEG_ACTIVE}
-              onSelect={(status) => patch({ status })} />
+              onSelect={(status) => patchMut.mutate({ status })} />
 
             <AddToListButton targetType="BOOK" targetId={entry.book.id} />
 
@@ -326,7 +328,9 @@
                   value={entry.currentPage || ""}
                   onchange={(e) => {
                     const raw = e.currentTarget.value;
-                    void patch({ currentPage: raw === "" ? 0 : Number(raw) });
+                    patchMut.mutate({
+                      currentPage: raw === "" ? 0 : Number(raw),
+                    });
                   }} />
                 {#if detail.pageCount}
                   <span class="timecode">/ {detail.pageCount}</span>
@@ -345,7 +349,7 @@
             <NoteField
               value={entry.notes}
               placeholder="Une phrase, une note de lecture…"
-              onChange={(v) => patch({ notes: v })} />
+              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <hr class="border-border" />
 
@@ -355,7 +359,7 @@
               statusOptions={BOOK_OWNERSHIP_STATUS_OPTIONS}
               sourceOptionsByStatus={BOOK_OWNERSHIP_SOURCES}
               onChange={(status, source) =>
-                patch({
+                patchMut.mutate({
                   ownershipStatus: status as typeof entry.ownershipStatus,
                   ownershipSource: source,
                 })} />
@@ -375,7 +379,7 @@
                       type="button"
                       class="link-accent text-xs disabled:opacity-50"
                       disabled={saving}
-                      onclick={addReplay}>
+                      onclick={() => addReplayMut.mutate()}>
                       + J'ai relu ce livre
                     </button>
                   {/if}
@@ -392,7 +396,7 @@
                           class="hover:text-danger"
                           aria-label="Supprimer cette relecture"
                           disabled={saving}
-                          onclick={() => removeReplay(replay.id)}>
+                          onclick={() => removeReplayMut.mutate(replay.id)}>
                           {m.common_delete()}
                         </button>
                       </li>
@@ -429,7 +433,9 @@
       <!-- Details panel, desktop position: sidebar next to the main column. -->
       {#snippet detailsPanel()}
         <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">Détails</h2>
+          <h2 class="font-display text-sm font-bold tracking-tight">
+            {m.common_details()}
+          </h2>
           <dl class="mt-3 flex flex-col gap-3">
             {#if detail?.publisher}
               <div>
@@ -484,8 +490,8 @@
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
       confirmLabel={m.common_remove()}
       danger
-      busy={removing}
-      onConfirm={doRemove}
+      busy={removeMut.loading}
+      onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
   {/if}
 

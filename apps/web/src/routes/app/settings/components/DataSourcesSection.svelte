@@ -1,5 +1,13 @@
 <script lang="ts">
   import ProviderMark from "$lib/components/ProviderMark.svelte";
+  import {
+    ANILIST_API,
+    IGDB_API,
+    MUSICBRAINZ_API,
+    OMDB_API,
+    OPENLIBRARY_API,
+    TMDB_API,
+  } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
   import type { ProviderBrandKey } from "$lib/provider-brands";
 
@@ -14,35 +22,35 @@
     {
       brand: "tmdb",
       name: "TMDB",
-      href: "https://www.themoviedb.org/",
+      href: TMDB_API,
       notice: m.settings_datasources_tmdb_notice(),
-    },
-    {
-      name: "Open Library",
-      href: "https://openlibrary.org/",
-      notice: m.settings_datasources_openlibrary_notice(),
-    },
-    {
-      name: "OMDb",
-      href: "https://www.omdbapi.com/",
-      notice: m.settings_datasources_omdb_notice(),
     },
     {
       brand: "anilist",
       name: "AniList",
-      href: "https://anilist.co/",
+      href: ANILIST_API,
       notice: m.settings_datasources_anilist_notice(),
+    },
+    {
+      name: "OMDb",
+      href: OMDB_API,
+      notice: m.settings_datasources_omdb_notice(),
     },
     {
       brand: "igdb",
       name: "IGDB",
-      href: "https://www.igdb.com/",
+      href: IGDB_API,
       notice: m.settings_datasources_igdb_notice(),
+    },
+    {
+      name: "Open Library",
+      href: OPENLIBRARY_API,
+      notice: m.settings_datasources_openlibrary_notice(),
     },
     {
       brand: "musicbrainz",
       name: "MusicBrainz",
-      href: "https://musicbrainz.org/",
+      href: MUSICBRAINZ_API,
       notice: m.settings_datasources_musicbrainz_notice(),
     },
   ];

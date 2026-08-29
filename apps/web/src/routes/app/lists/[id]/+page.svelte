@@ -188,7 +188,7 @@
         title={item.target?.title ?? "?"} />
     </div>
     <p class="mt-1.5 truncate text-sm font-semibold">
-      {item.target?.title ?? "Œuvre"}
+      {item.target?.title ?? m.common_work()}
     </p>
   </svelte:element>
   {#if canEditList}
@@ -321,7 +321,7 @@
                   title={item.target?.title ?? "?"} />
               </div>
               <p class="min-w-0 truncate font-semibold">
-                {item.target?.title ?? "Œuvre"}
+                {item.target?.title ?? m.common_work()}
               </p>
             </svelte:element>
             {#if canEditList}

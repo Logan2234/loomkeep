@@ -1,4 +1,5 @@
 import type { Domain, Plan, Role, SecurityEventType } from "../enums";
+import type { PagedResult } from "./pagination";
 
 /** Which app area a dependency powers, for grouping in the admin services page. */
 export type ServiceArea =
@@ -234,10 +235,7 @@ export interface AdminCacheItemDto {
 /** How the cache list is ordered. `stale` (default) surfaces the least-fresh first. */
 export type AdminCacheSort = "stale" | "recent" | "title";
 
-export interface AdminCacheListResponseDto {
-  items: AdminCacheItemDto[];
-  /** Total items matching the current filters, across all pages. */
-  total: number;
+export interface AdminCacheListResponseDto extends PagedResult<AdminCacheItemDto> {
   /** How many items in this domain are past the 24h TTL — drives the "resync stale" action. */
   staleTotal: number;
   /** How many items in this domain have zero references — drives the "delete orphans" action. */
@@ -301,11 +299,6 @@ export interface AdminUserDto {
 
 /** Extra server-side filter for the admin users list, on top of free-text search. */
 export type AdminUserFilter = "all" | "admin" | "unverified" | "never";
-
-export interface AdminUserListResponseDto {
-  users: AdminUserDto[];
-  page: number;
-}
 
 /** Compact breakdown of the works saved in one account's libraries. */
 export interface AdminUserLibraryStatsDto {
@@ -387,11 +380,6 @@ export interface SecurityEventDto {
   createdAt: string;
 }
 
-export interface SecurityEventListResponseDto {
-  events: SecurityEventDto[];
-  page: number;
-}
-
 /** One committed import (analyze-only runs write nothing and aren't logged here). */
 export interface AdminImportRunDto {
   id: string;
@@ -412,11 +400,6 @@ export interface AdminImportRunDto {
   error: string | null;
   startedAt: string;
   finishedAt: string;
-}
-
-export interface AdminImportRunListResponseDto {
-  runs: AdminImportRunDto[];
-  page: number;
 }
 
 /** Committed imports for one source, all accounts and all time. */

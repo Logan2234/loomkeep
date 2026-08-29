@@ -75,7 +75,7 @@
           </button>
         {/snippet}
         {#if showLock}
-          <Tooltip text={m.common_premium_locked()}>
+          <Tooltip text={m.premium_locked()}>
             {@render domainButton()}
             <PremiumLockBadge />
           </Tooltip>

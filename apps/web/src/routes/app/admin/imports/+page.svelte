@@ -1,6 +1,8 @@
 <script lang="ts">
   import { getAdminImportRuns, getAdminImportSummary } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -14,8 +16,8 @@
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,
-    AdminImportSummaryDto,
     JobStatus,
+    PagedResult,
   } from "@loomkeep/shared";
 
   const sourceLabel = (id: string) =>
@@ -44,46 +46,39 @@
   let activeSource = $state("");
   let activeStatus = $state("");
   let accountId = $state<string | null>(null);
-  let runs = $state<AdminImportRunDto[]>([]);
-  let page = $state(1);
-  let hasMore = $state(true);
-  let loading = $state(false);
-  let error = $state("");
 
-  async function load(reset: boolean) {
-    loading = true;
-    error = "";
-    const targetPage = reset ? 1 : page + 1;
-    try {
-      const res = await getAdminImportRuns({
+  const runsQuery = createApiInfiniteQuery<
+    PagedResult<AdminImportRunDto>,
+    number,
+    AdminImportRunDto
+  >(() => ({
+    key: keys.admin.importRuns({
+      source: activeSource,
+      status: activeStatus,
+      userId: accountId,
+    }),
+    fetch: (page) =>
+      getAdminImportRuns({
         source: activeSource || undefined,
         status: (activeStatus || undefined) as JobStatus | undefined,
         userId: accountId ?? undefined,
-        page: targetPage,
-      });
-      runs = reset ? res.runs : [...runs, ...res.runs];
-      page = targetPage;
-      hasMore = res.runs.length === 50;
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  $effect(() => {
-    void load(true);
-  });
+        page,
+      }),
+    getPageItems: (page) => page.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+  }));
+  const runs = $derived(runsQuery.data);
+  const error = $derived(runsQuery.error);
 
   // The summary covers the whole log, so it is loaded once and never re-queried
   // when a filter changes — it would otherwise contradict its own page header.
-  let summary = $state<AdminImportSummaryDto | null>(null);
-
-  $effect(() => {
-    getAdminImportSummary()
-      .then((s) => (summary = s))
-      .catch(() => (summary = null));
-  });
+  const summaryQuery = createApiQuery(() => ({
+    key: keys.admin.importSummary(),
+    fetch: getAdminImportSummary,
+  }));
+  const summary = $derived(summaryQuery.data);
 
   const kpis = $derived(
     summary
@@ -145,31 +140,20 @@
       label="Toutes les sources"
       options={SOURCE_OPTIONS}
       values={activeSource ? [activeSource] : []}
-      onChange={(v) => {
-        activeSource = v[0] ?? "";
-        void load(true);
-      }} />
+      onChange={(v) => (activeSource = v[0] ?? "")} />
     <Combobox
       label="Tous les statuts"
       options={STATUS_OPTIONS}
       values={activeStatus ? [activeStatus] : []}
-      onChange={(v) => {
-        activeStatus = v[0] ?? "";
-        void load(true);
-      }} />
-    <UserSelector
-      value={accountId}
-      onChange={(id) => {
-        accountId = id;
-        void load(true);
-      }} />
+      onChange={(v) => (activeStatus = v[0] ?? "")} />
+    <UserSelector value={accountId} onChange={(id) => (accountId = id)} />
   </div>
 
   {#if error}
     <Banner variant="error" class="mb-4">{error}</Banner>
   {/if}
 
-  {#if loading && runs.length === 0}
+  {#if runsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
         <div class="card h-20 animate-pulse"></div>
@@ -229,12 +213,12 @@
       {/each}
     </ul>
 
-    {#if hasMore}
+    {#if runsQuery.hasNextPage}
       <button
         class="btn btn-ghost mt-4 w-full"
-        disabled={loading}
-        onclick={() => load(false)}>
-        {loading ? m.common_loading() : "Charger plus"}
+        disabled={runsQuery.isFetchingNextPage}
+        onclick={() => runsQuery.fetchNextPage()}>
+        {runsQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
       </button>
     {/if}
   {/if}

@@ -5,9 +5,8 @@ import { resolveApiError } from "./errors";
 
 type ConstraintParam = string | number | boolean;
 
-function asNumber(param: ConstraintParam | undefined) {
-  return typeof param === "number" ? param : 0;
-}
+const asNumber = (param: ConstraintParam | undefined) =>
+  typeof param === "number" ? param : 0;
 
 /**
  * One translated message per class-validator constraint name — interpolated
@@ -20,7 +19,7 @@ function asNumber(param: ConstraintParam | undefined) {
  * failure — validation-messages.spec.ts covers the i18n-key half of that
  * guarantee (this table existing doesn't yet prove `m.valerr_*` exists).
  */
-export const CONSTRAINT_MESSAGES = {
+const CONSTRAINT_MESSAGES = {
   isString: () => m.valerr_is_string(),
   isNotEmpty: () => m.valerr_is_not_empty(),
   isEmail: () => m.valerr_is_email(),

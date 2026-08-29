@@ -1,9 +1,11 @@
 import type {
-  AdminImportRunListResponseDto,
+  AdminImportRunDto,
   AdminImportSummaryDto,
   JobStatus,
+  PagedResult,
 } from "@loomkeep/shared";
 import { Controller, Get, Query } from "@nestjs/common";
+import { parsePageQuery } from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildImportSummary } from "./admin-imports.util";
 import { AdminOnly } from "./admin-only.decorator";
@@ -52,8 +54,13 @@ export class AdminImportsController {
     @Query("status") status?: string,
     @Query("userId") userId?: string,
     @Query("page") page?: string,
-  ): Promise<AdminImportRunListResponseDto> {
-    const pageNum = page ? Math.max(1, Number(page)) : 1;
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<AdminImportRunDto>> {
+    const {
+      skip,
+      take,
+      limit: pageLimit,
+    } = parsePageQuery(page, limit, PAGE_SIZE);
     const where = {
       sourceId: source?.trim() || undefined,
       status: STATUSES.includes(status as JobStatus)
@@ -62,17 +69,19 @@ export class AdminImportsController {
       userId: userId?.trim() || undefined,
     };
 
-    const runs = await this.prisma.importRun.findMany({
+    const rows = await this.prisma.importRun.findMany({
       where,
       include: { user: { select: { email: true } } },
       orderBy: { startedAt: "desc" },
-      skip: (pageNum - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip,
+      take: take + 1,
     });
+    const hasMore = rows.length > pageLimit;
+    const runs = rows.slice(0, pageLimit);
 
     return {
-      page: pageNum,
-      runs: runs.map((r) => ({
+      hasMore,
+      items: runs.map((r) => ({
         id: r.id,
         userId: r.userId,
         identifier: r.user?.email ?? null,

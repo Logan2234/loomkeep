@@ -79,6 +79,7 @@ export class GamesController {
     @Query("sort") sort?: string,
     @Query("order") order?: string,
     @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ): Promise<PagedResult<GameEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listEntries(user.sub, {
@@ -88,6 +89,7 @@ export class GamesController {
       sort,
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
     });
   }
 

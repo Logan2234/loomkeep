@@ -119,13 +119,13 @@ describe("AdminUsersController.listUsers", () => {
 
     const result = await controller.listUsers();
 
-    expect(result.page).toBe(1);
-    expect(result.users[0].lastActiveAt).toBe("2026-02-01T00:00:00.000Z");
-    expect(result.users[0].inactivityWarningSentAt).toBe(
+    expect(result.hasMore).toBe(false);
+    expect(result.items[0].lastActiveAt).toBe("2026-02-01T00:00:00.000Z");
+    expect(result.items[0].inactivityWarningSentAt).toBe(
       "2026-02-15T00:00:00.000Z",
     );
-    expect(result.users[1].lastActiveAt).toBeNull();
-    expect(result.users[1].inactivityWarningSentAt).toBeNull();
+    expect(result.items[1].lastActiveAt).toBeNull();
+    expect(result.items[1].inactivityWarningSentAt).toBeNull();
   });
 
   it("paginates with skip/take derived from the page query param", async () => {
@@ -134,8 +134,9 @@ describe("AdminUsersController.listUsers", () => {
 
     await controller.listUsers(undefined, undefined, "3");
 
+    // take is limit + 1 (over-fetch by one to derive hasMore).
     expect(prisma.user.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 100, take: 50 }),
+      expect.objectContaining({ skip: 100, take: 51 }),
     );
   });
 

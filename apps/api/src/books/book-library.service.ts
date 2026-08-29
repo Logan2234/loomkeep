@@ -79,6 +79,7 @@ export interface ListEntriesFilters {
   sort?: string;
   order?: "asc" | "desc";
   page?: number;
+  limit?: number;
 }
 
 function timeMs(iso: string | null): number {
@@ -266,11 +267,13 @@ export class BookLibraryService {
     });
 
     const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const start = (page - 1) * PAGE_SIZE;
+    const limit =
+      filters.limit && filters.limit > 0 ? filters.limit : PAGE_SIZE;
+    const start = (page - 1) * limit;
     return {
-      items: dtos.slice(start, start + PAGE_SIZE),
+      items: dtos.slice(start, start + limit),
       total: dtos.length,
-      hasMore: dtos.length > page * PAGE_SIZE,
+      hasMore: dtos.length > page * limit,
     };
   }
 

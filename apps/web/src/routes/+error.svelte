@@ -13,7 +13,7 @@
 
 <svelte:head>
   <title
-    >{isNotFound ? "Page introuvable" : "Erreur"} · {m.common_loomkeep()}</title>
+    >{isNotFound ? m.error_404_title() : m.error_generic_title()} · {m.common_loomkeep()}</title>
 </svelte:head>
 
 <div
@@ -31,9 +31,7 @@
       class="bg-btn text-btn-fg flex flex-col items-center gap-1 rounded-2xl px-10 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
       <span
         class="font-mono text-xs font-bold tracking-[0.3em] uppercase opacity-70">
-        {isNotFound
-          ? m.error_404_plaque_label()
-          : m.error_generic_plaque_label()}
+        {isNotFound ? m.error_404_plaque_label() : m.common_error()}
       </span>
       <span
         class="font-mono text-6xl leading-none font-bold tabular-nums sm:text-7xl">

@@ -65,7 +65,7 @@
       <input
         type="text"
         class="input flex-1"
-        placeholder={m.list_members_username_placeholder()}
+        placeholder={m.common_username()}
         bind:value={username}
         onkeydown={(e) => e.key === "Enter" && add()} />
       <button

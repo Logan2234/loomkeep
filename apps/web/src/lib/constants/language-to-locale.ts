@@ -11,6 +11,5 @@ const LANGUAGE_TO_LOCALE = {
  * `string`) to its `Intl` locale code, falling back to the app's base locale
  * when the value isn't one of the known Paraglide locales.
  */
-export function toIntlLocale(locale?: Locale) {
-  return LANGUAGE_TO_LOCALE[isLocale(locale) ? locale : baseLocale];
-}
+export const toIntlLocale = (locale?: Locale) =>
+  LANGUAGE_TO_LOCALE[isLocale(locale) ? locale : baseLocale];

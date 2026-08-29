@@ -27,6 +27,7 @@
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { OMDB_API } from "$lib/constants/external-links";
   import {
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
@@ -463,7 +464,7 @@
           </div>
           {#if hasOmdbRatings}
             <a
-              href="https://www.omdbapi.com/"
+              href={OMDB_API}
               target="_blank"
               rel="noopener noreferrer"
               class="btn-text mt-1 inline-block text-[0.6rem]">

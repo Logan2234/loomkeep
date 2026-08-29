@@ -36,8 +36,8 @@
   const MAX = 7;
 
   const LOCALE_OPTIONS = [
-    { label: m.settings_language_fr(), value: "fr" },
-    { label: m.settings_language_en(), value: "en" },
+    { label: m.common_language_fr(), value: "fr" },
+    { label: m.common_language_en(), value: "en" },
   ];
 
   let error = $state("");
@@ -158,7 +158,7 @@
           </button>
         {/snippet}
         {#if locked}
-          <Tooltip text={m.common_premium_locked()}>
+          <Tooltip text={m.premium_locked()}>
             {@render styleButton()}
             <PremiumLockBadge />
           </Tooltip>

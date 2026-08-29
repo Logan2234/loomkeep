@@ -5,7 +5,10 @@
     searchCatalog,
     upsertLibraryEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -17,9 +20,9 @@
     EntryStatus,
     MediaSummaryDto,
     MediaType,
+    SearchResponseDto,
   } from "@loomkeep/shared";
   import { onMount } from "svelte";
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { fly } from "svelte/transition";
 
   // The search query is owned by the page and shared across domain panels.
@@ -53,142 +56,103 @@
   const DEBOUNCE_MS = 300;
 
   let type = $state<MediaType | undefined>(undefined);
-  let results = $state<MediaSummaryDto[]>([]);
+  // `query` (prop) is the raw input; `queryFilter` is the debounced value
+  // that actually drives the fetch — type changes bypass the debounce.
+  let queryFilter = $state("");
+
+  const keyOf = (m: MediaSummaryDto) => `${m.source}:${m.sourceId}`;
+
+  let reduced = $state(false); // prefers-reduced-motion: skip enter animation
+
+  const debouncedQueryFilter = debounce(() => {
+    queryFilter = query.trim();
+  }, DEBOUNCE_MS);
+
+  $effect(() => {
+    const q = query; // track
+    if (!q.trim()) {
+      debouncedQueryFilter.cancel();
+      queryFilter = "";
+      return;
+    }
+    debouncedQueryFilter.call();
+  });
+
+  const searchQuery = createApiInfiniteQuery<
+    SearchResponseDto,
+    number,
+    MediaSummaryDto
+  >(() => ({
+    key: keys.catalog.search({ query: queryFilter, type }),
+    fetch: (pageNum) => searchCatalog(queryFilter, type, pageNum),
+    getPageItems: (p) => p.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.items.length > 0 ? allPages.length + 1 : undefined,
+    enabled: !!queryFilter,
+    keepPreviousData: true,
+  }));
+
+  // The external catalog can return the same item across consecutive pages
+  // if the underlying dataset shifts between requests — de-dupe locally,
+  // keeping the first occurrence.
+  const results = $derived.by(() => {
+    const seen = new Set<string>();
+    return searchQuery.data.filter((m) => {
+      const key = keyOf(m);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
   const shown = $derived(limit ? results.slice(0, limit) : results);
+  const searched = $derived(!!queryFilter);
+  let sentinel = $state<HTMLElement | null>(null);
 
   $effect(() => {
     onResults?.(results.length);
   });
-  let searched = $state(false);
-  let loading = $state(false); // fetching the first page of a new search
-  let loadingMore = $state(false); // fetching a follow-up page (infinite scroll)
-  let done = $state(false); // no more pages for the current search
-  let error = $state<string | null>(null);
 
-  let sentinel = $state<HTMLElement | null>(null);
-  let reduced = $state(false); // prefers-reduced-motion: skip enter animation
-
-  // Non-reactive search bookkeeping.
-  let lastPage = 0; // last page number fetched for the current search
-  let searchId = 0; // bumped on every reset; stale responses are discarded
-  let seen = new SvelteSet<string>(); // catalogue keys already shown (cross-page dedup)
-  const debouncedSearch = debounce(() => void runSearch(true), DEBOUNCE_MS);
-
-  const keyOf = (m: MediaSummaryDto) => `${m.source}:${m.sourceId}`;
+  function selectType(value: MediaType | undefined) {
+    type = value;
+  }
 
   // Titles already in the library, keyed by catalogue identity, so results can
   // be flagged (and their current status shown) instead of looking already-new.
-  let tracked = $state<Map<string, EntryStatus>>(new Map());
   const trackKey = (t: MediaType, sourceId: string) => `${t}:${sourceId}`;
-  const trackedStatus = (m: MediaSummaryDto) =>
-    tracked.get(trackKey(m.type, m.sourceId));
 
-  async function loadTracked() {
-    try {
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.library.tracked(),
+    fetch: async () => {
       const entries = await fetchAllPages((page) => listLibrary({ page }));
-      tracked = new SvelteMap(
+      return new Map<string, EntryStatus>(
         entries.map((e) => [
           trackKey(e.mediaItem.type, e.mediaItem.sourceId),
           e.status,
         ]),
       );
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
+    },
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
+  const tracked = $derived(trackedQuery.data ?? new Map<string, EntryStatus>());
+  const trackedStatus = (m: MediaSummaryDto) =>
+    tracked.get(trackKey(m.type, m.sourceId));
 
-  $effect(() => {
-    void loadTracked();
-  });
-
-  async function addMedia(media: MediaSummaryDto) {
-    try {
-      await upsertLibraryEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (media: MediaSummaryDto) =>
+      upsertLibraryEntry({
         source: media.source,
         sourceId: media.sourceId,
         type: media.type,
         status: "PLANNED",
-      });
-      await loadTracked();
-    } catch (err) {
-      error = resolveApiError(err);
-    }
-  }
+      }),
+    invalidates: [keys.library.tracked()],
+    errorToast: true,
+  }));
 
   onMount(() => {
     reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  });
-
-  function clearResults() {
-    searchId++; // invalidate any in-flight request
-    lastPage = 0;
-    done = false;
-    seen = new SvelteSet();
-    results = [];
-    searched = false;
-    error = null;
-    loading = false;
-    loadingMore = false;
-  }
-
-  /**
-   * Runs the search. `reset` starts a fresh search from page 1 (new query or
-   * type); otherwise it appends the next page for the infinite scroll.
-   */
-  async function runSearch(reset: boolean) {
-    const q = query.trim();
-    if (!q) {
-      clearResults();
-      return;
-    }
-    if (!reset && (loading || loadingMore || done)) return;
-
-    if (reset) {
-      searchId++;
-      lastPage = 0;
-      done = false;
-      seen = new SvelteSet();
-      results = [];
-    }
-    const mine = searchId;
-    const next = lastPage + 1;
-    if (reset) loading = true;
-    else loadingMore = true;
-    error = null;
-
-    try {
-      const batch = (await searchCatalog(q, type, next)).results;
-      if (mine !== searchId) return; // a newer search superseded this one
-      lastPage = next;
-      searched = true;
-      if (batch.length === 0) {
-        done = true;
-      } else {
-        const fresh = batch.filter((m) => !seen.has(keyOf(m)));
-        for (const m of fresh) seen.add(keyOf(m));
-        results = [...results, ...fresh];
-      }
-    } catch (err) {
-      if (mine !== searchId) return;
-      error = resolveApiError(err);
-    } finally {
-      if (mine === searchId) {
-        loading = false;
-        loadingMore = false;
-      }
-    }
-  }
-
-  // Debounced live search: refetch page 1 whenever the query changes.
-  $effect(() => {
-    const q = query; // track the query only (type is handled eagerly below)
-    if (!q.trim()) {
-      debouncedSearch.cancel();
-      clearResults();
-      return;
-    }
-    debouncedSearch.call();
-    return () => debouncedSearch.cancel();
   });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
@@ -197,22 +161,13 @@
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) void runSearch(false);
+        if (entries[0]?.isIntersecting) searchQuery.fetchNextPage();
       },
       { rootMargin: "400px" },
     );
     io.observe(el);
     return () => io.disconnect();
   });
-
-  function selectType(value: MediaType | undefined) {
-    if (value === type) return;
-    type = value;
-    debouncedSearch.cancel();
-    if (query.trim())
-      void runSearch(true); // eager, no debounce
-    else clearResults();
-  }
 </script>
 
 {#if !limit}
@@ -228,11 +183,11 @@
   </div>
 {/if}
 
-{#if error}
-  <Banner variant="error" class="mb-4">{error}</Banner>
+{#if searchQuery.error}
+  <Banner variant="error" class="mb-4">{searchQuery.error}</Banner>
 {/if}
 
-{#if loading && results.length === 0}
+{#if searchQuery.loading}
   <PosterGrid>
     {#each { length: 10 } as _, i (i)}
       <div class="card flex flex-col">
@@ -277,7 +232,7 @@
         {:else}
           <button
             type="button"
-            onclick={() => addMedia(media)}
+            onclick={() => addMut.mutate(media)}
             title={m.search_result_add()}
             aria-label={m.search_result_add()}
             class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
@@ -288,11 +243,11 @@
     {/each}
   </PosterGrid>
 
-  {#if !done && !limit}
+  {#if searchQuery.hasNextPage && !limit}
     <!-- Sentinel: entering the viewport triggers the next page. -->
     <div bind:this={sentinel} class="h-10"></div>
   {/if}
-  {#if loadingMore && !limit}
+  {#if searchQuery.isFetchingNextPage && !limit}
     <PosterGrid>
       {#each { length: 5 } as _, i (i)}
         <div class="card flex flex-col">
@@ -307,7 +262,7 @@
   {/if}
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">Aucun résultat.</p>
+    <p class="timecode text-sm">{m.common_no_results()}.</p>
   {:else}
     <EmptyState>
       Lance une recherche pour trouver un film, une série ou un animé.

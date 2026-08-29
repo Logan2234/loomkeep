@@ -1,10 +1,10 @@
 import {
   type CommentCountDto,
   type CommentDto,
-  type CommentPageDto,
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
   ErrorCode,
+  type PagedResult,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -24,10 +24,11 @@ import {
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { parsePageQuery } from "../common/pagination.util";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
-import { CommentService } from "./comment.service";
+import { COMMENT_PAGE_SIZE, CommentService } from "./comment.service";
 import { CreateCommentBody } from "./dto/create-comment.dto";
 import { ReactCommentBody } from "./dto/react-comment.dto";
 import { UpdateCommentBody } from "./dto/update-comment.dto";
@@ -69,9 +70,17 @@ export class CommentController {
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
     @Param("id") id: string,
-    @Query("cursor") cursor?: string,
-  ): Promise<CommentPageDto> {
-    return this.comments.list(user.sub, parseTarget(type), id, cursor);
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<CommentDto>> {
+    const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
+    return this.comments.list(
+      user.sub,
+      parseTarget(type),
+      id,
+      parsed.page,
+      parsed.limit,
+    );
   }
 
   // Anti-flood: comments (unlike reviews) have no per-target cap, so without a

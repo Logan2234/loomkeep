@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ImportWizard from "$lib/components/ImportWizard.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
-  const code = $page.url.searchParams.get("code");
-  const oauthError = $page.url.searchParams.get("error");
+  const code = page.url.searchParams.get("code");
+  const oauthError = page.url.searchParams.get("error");
 </script>
 
 {#if code}
@@ -36,7 +36,7 @@
         : "Connexion à Simkl impossible (code manquant). Réessaie depuis la page d'import."}
     </Banner>
     <a href="/app/settings/import/simkl" class="btn btn-primary mt-4">
-      Réessayer
+      {m.common_retry()}
     </a>
   </div>
 {/if}

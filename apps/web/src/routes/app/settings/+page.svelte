@@ -27,7 +27,7 @@
     social?: boolean;
     newBadgeKey?: Parameters<typeof isFeatureNew>[0];
   }[] = [
-    { id: "securite", label: m.settings_section_security() },
+    { id: "securite", label: m.common_security() },
     {
       id: "mfa",
       label: m.settings_section_mfa(),
@@ -50,7 +50,7 @@
     { id: "export", label: m.common_export() },
     {
       id: "aide",
-      label: m.settings_section_help(),
+      label: `${m.common_help()} & ${m.common_feedback()}`,
       newBadgeKey: "help-feedback",
     },
     {

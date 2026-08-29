@@ -43,7 +43,7 @@
 
 <section class="card mb-5 p-5 md:p-6">
   <h2 class="font-display mb-1 flex items-center gap-2 text-lg font-bold">
-    {m.settings_help_title()}
+    {m.common_help()} & {m.common_feedback()}
     {#if isFeatureNew("help-feedback")}
       <NewBadge />
     {/if}
