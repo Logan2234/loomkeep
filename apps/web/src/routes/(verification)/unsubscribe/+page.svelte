@@ -1,30 +1,28 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { unsubscribeNewsletter } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const token = page.url.searchParams.get("token") ?? "";
 
-  let status = $state<"pending" | "done" | "error">("pending");
-  let error = $state<string | null>(null);
+  const unsubscribeQuery = createApiQuery(() => ({
+    key: keys.verification.newsletterUnsubscribe(token),
+    fetch: () => unsubscribeNewsletter(token),
+    enabled: !!token,
+  }));
 
-  $effect(() => {
-    if (!token) {
-      status = "error";
-      error = m.newsletter_unsubscribe_invalid_link();
-      return;
-    }
-
-    unsubscribeNewsletter(token)
-      .then(() => {
-        status = "done";
-      })
-      .catch((err) => {
-        status = "error";
-        error = resolveApiError(err);
-      });
-  });
+  const status = $derived<"pending" | "done" | "error">(
+    !token || unsubscribeQuery.error
+      ? "error"
+      : unsubscribeQuery.loading
+        ? "pending"
+        : "done",
+  );
+  const error = $derived(
+    !token ? m.newsletter_unsubscribe_invalid_link() : unsubscribeQuery.error,
+  );
 </script>
 
 <div class="flex min-h-screen items-center justify-center px-4 py-12">

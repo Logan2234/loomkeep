@@ -21,6 +21,11 @@ export const keys = {
     availability: () => ["import", "availability"] as const,
     quota: () => ["import", "quota"] as const,
   },
+  verification: {
+    email: (token: string) => ["verification", "email", token] as const,
+    newsletterUnsubscribe: (token: string) =>
+      ["verification", "newsletter-unsubscribe", token] as const,
+  },
   lists: {
     editable: () => ["lists", "editable"] as const,
     forUser: (username: string) => ["lists", "for-user", username] as const,
