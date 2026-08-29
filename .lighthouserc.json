@@ -1,14 +1,18 @@
 {
   "ci": {
     "collect": {
-      "staticDistDir": "./apps/web/build"
+      "staticDistDir": "./apps/web/build",
+      "isSinglePageApplication": true,
+      "numberOfRuns": 1,
+      "staticDirFileDiscoveryDepth": 3
     },
     "assert": {
       "preset": "lighthouse:recommended",
       "includePassedAssertions": true
     },
     "upload": {
-      "target": "temporary-public-storage"
+      "target": "filesystem",
+      "outputDir": "./lighthouse-results"
     },
     "server": {},
     "wizard": {}

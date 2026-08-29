@@ -74,9 +74,15 @@ jobs:
           files: apps/api/coverage/lcov.info
           fail_ci_if_error: false
       - run: pnpm exec lhci autorun
-        background: true
+        continue-on-error: true
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: lighthouse-reports
+          path: lighthouse-results/
 
   e2e:
     needs: changes
