@@ -5,7 +5,9 @@
     updateMe,
     updatePrivacySettings,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -13,16 +15,15 @@
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
-  import { toast } from "$lib/toast.svelte";
   import {
     Domain,
-    type GhostSwitchImpactDto,
     ProfileAccess,
     type ReviewVisibility,
     VisibilityAudience,
     VisibilityFacet,
     type VisibilitySettingsDto,
   } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   const ACCESS: { id: ProfileAccess; label: string; desc: string }[] = [
     {
@@ -114,18 +115,22 @@
     },
   ];
 
-  let settings = $state<VisibilitySettingsDto | null>(null);
   let showModesModal = $state(false);
-  let savingDefaultReviewVisibility = $state(false);
-  let ghostImpact = $state<GhostSwitchImpactDto | null>(null);
   let confirmingGhost = $state(false);
-  let switchingToGhost = $state(false);
 
-  $effect(() => {
-    getPrivacySettings()
-      .then((s) => (settings = s))
-      .catch((err) => toast.error(resolveApiError(err)));
-  });
+  const queryClient = useQueryClient();
+  const settingsKey = keys.privacy.settings();
+
+  const settingsQuery = createApiQuery(() => ({
+    key: settingsKey,
+    fetch: getPrivacySettings,
+    errorToast: true,
+  }));
+  const settings = $derived(settingsQuery.data);
+
+  function patchSettings(updated: VisibilitySettingsDto) {
+    queryClient.setQueryData(settingsKey, updated);
+  }
 
   const audienceOf = (
     domain: Domain,
@@ -134,68 +139,71 @@
     settings?.settings.find((s) => s.domain === domain && s.facet === facet)
       ?.audience ?? VisibilityAudience.FRIENDS;
 
-  async function setAccess(access: ProfileAccess) {
+  const accessMut = createApiMutation(() => ({
+    mutate: (access: ProfileAccess) =>
+      updatePrivacySettings({ profileAccess: access }),
+    onSuccess: patchSettings,
+    errorToast: true,
+  }));
+
+  // Consequential + immediate (followers removed, lists downgraded) — show
+  // live counts and require confirmation before applying the GHOST switch.
+  const ghostImpactMut = createApiMutation(() => ({
+    mutate: () => getGhostSwitchImpact(),
+    onSuccess: () => (confirmingGhost = true),
+    errorToast: true,
+  }));
+  const ghostImpact = $derived(ghostImpactMut.data);
+
+  function setAccess(access: ProfileAccess) {
     if (!settings || settings.profileAccess === access) return;
-
-    try {
-      if (access === ProfileAccess.GHOST) {
-        // Consequential + immediate (followers removed, lists downgraded) —
-        // show live counts and require confirmation before applying it.
-        ghostImpact = await getGhostSwitchImpact();
-        confirmingGhost = true;
-        return;
-      }
-
-      settings = await updatePrivacySettings({ profileAccess: access });
-    } catch (err) {
-      toast.error(resolveApiError(err));
+    if (access === ProfileAccess.GHOST) {
+      ghostImpactMut.mutate();
+      return;
     }
+    accessMut.mutate(access);
   }
 
-  async function confirmGhostSwitch() {
-    if (switchingToGhost) return;
-    switchingToGhost = true;
-    try {
-      settings = await updatePrivacySettings({
-        profileAccess: ProfileAccess.GHOST,
-      });
+  const ghostSwitchMut = createApiMutation(() => ({
+    mutate: () => updatePrivacySettings({ profileAccess: ProfileAccess.GHOST }),
+    onSuccess: (updated) => {
+      patchSettings(updated);
       confirmingGhost = false;
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      switchingToGhost = false;
-    }
+    },
+    errorToast: true,
+  }));
+
+  function confirmGhostSwitch() {
+    ghostSwitchMut.mutate();
   }
 
-  async function setAudience(
+  const audienceMut = createApiMutation(() => ({
+    mutate: (args: {
+      domain: Domain;
+      facet: VisibilityFacet;
+      audience: VisibilityAudience;
+    }) => updatePrivacySettings({ settings: [args] }),
+    onSuccess: patchSettings,
+    errorToast: true,
+  }));
+
+  function setAudience(
     domain: Domain,
     facet: VisibilityFacet,
     audience: VisibilityAudience,
   ) {
     if (!settings) return;
-    try {
-      settings = await updatePrivacySettings({
-        settings: [{ domain, facet, audience }],
-      });
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    }
+    audienceMut.mutate({ domain, facet, audience });
   }
 
-  async function setDefaultReviewVisibility(v: ReviewVisibility) {
-    if (
-      savingDefaultReviewVisibility ||
-      auth.user?.defaultReviewVisibility === v
-    )
-      return;
-    savingDefaultReviewVisibility = true;
-    try {
-      await updateMe({ defaultReviewVisibility: v });
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      savingDefaultReviewVisibility = false;
-    }
+  const reviewVisibilityMut = createApiMutation(() => ({
+    mutate: (v: ReviewVisibility) => updateMe({ defaultReviewVisibility: v }),
+    errorToast: true,
+  }));
+
+  function setDefaultReviewVisibility(v: ReviewVisibility) {
+    if (auth.user?.defaultReviewVisibility === v) return;
+    reviewVisibilityMut.mutate(v);
   }
 
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
@@ -423,14 +431,14 @@
       <button
         type="button"
         class="btn btn-ghost"
-        disabled={switchingToGhost}
+        disabled={ghostSwitchMut.loading}
         onclick={() => (confirmingGhost = false)}>
         {m.common_cancel()}
       </button>
       <button
         type="button"
         class="btn btn-danger"
-        disabled={switchingToGhost}
+        disabled={ghostSwitchMut.loading}
         onclick={confirmGhostSwitch}>
         Devenir Figurant
       </button>

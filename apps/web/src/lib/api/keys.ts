@@ -67,6 +67,9 @@ export const keys = {
   calendarSubscribe: {
     token: () => ["calendar-subscribe", "token"] as const,
   },
+  privacy: {
+    settings: () => ["privacy", "settings"] as const,
+  },
   reviews: {
     mine: (targetType: string, targetId: string) =>
       ["reviews", "mine", targetType, targetId] as const,
