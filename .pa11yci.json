@@ -6,15 +6,9 @@
       "width": 1280,
       "height": 720
     },
-    "runners": [
-      "axe",
-      "htmlcs"
-    ],
+    "runners": ["axe", "htmlcs"],
     "chromeLaunchConfig": {
-      "args": [
-        "--no-sandbox",
-        "--disable-setuid-sandbox"
-      ]
+      "args": ["--no-sandbox", "--disable-setuid-sandbox"]
     }
   },
   "urls": [
