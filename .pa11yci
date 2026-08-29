@@ -1,14 +1,21 @@
 {
   "defaults": {
     "timeout": 30000,
+    "standard": "WCAG2AA",
     "viewport": {
       "width": 1280,
       "height": 720
     },
-    "standard": "WCAG2AA",
     "runners": [
+      "axe",
       "htmlcs"
-    ]
+    ],
+    "chromeLaunchConfig": {
+      "args": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox"
+      ]
+    }
   },
   "urls": [
     "https://loomkeep.app/",
