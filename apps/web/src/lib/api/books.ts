@@ -49,41 +49,33 @@ export function getBookDetail(
   return request(`/books/${source.toLowerCase()}/${sourceId}?${params}`);
 }
 
-export function upsertBookEntry(
+export const upsertBookEntry = (
   body: UpsertBookEntryDto,
-): Promise<BookEntryDto> {
-  return request("/books", { method: "PUT", body });
-}
+): Promise<BookEntryDto> => request("/books", { method: "PUT", body });
 
-export function updateBookEntry(
+export const updateBookEntry = (
   entryId: string,
   body: UpdateBookEntryDto,
-): Promise<BookEntryDto> {
-  return request(`/books/entries/${entryId}`, { method: "PATCH", body });
-}
+): Promise<BookEntryDto> =>
+  request(`/books/entries/${entryId}`, { method: "PATCH", body });
 
-export function deleteBookEntry(entryId: string): Promise<void> {
-  return request(`/books/entries/${entryId}`, { method: "DELETE" });
-}
+export const deleteBookEntry = (entryId: string): Promise<void> =>
+  request(`/books/entries/${entryId}`, { method: "DELETE" });
 
 /** Log a completed reread (a completion beyond the entry's first one). */
-export function addBookReplay(entryId: string): Promise<BookEntryDto> {
-  return request(`/books/entries/${entryId}/replays`, {
+export const addBookReplay = (entryId: string): Promise<BookEntryDto> =>
+  request(`/books/entries/${entryId}/replays`, {
     method: "POST",
     body: {},
   });
-}
 
-export function deleteBookReplay(replayId: string): Promise<void> {
-  return request(`/books/replays/${replayId}`, { method: "DELETE" });
-}
+export const deleteBookReplay = (replayId: string): Promise<void> =>
+  request(`/books/replays/${replayId}`, { method: "DELETE" });
 
-export function getReadingGoal(year: number): Promise<ReadingGoalDto> {
-  return request(`/books/reading-goal?year=${year}`);
-}
+export const getReadingGoal = (year: number): Promise<ReadingGoalDto> =>
+  request(`/books/reading-goal?year=${year}`);
 
-export function upsertReadingGoal(
+export const upsertReadingGoal = (
   body: UpsertReadingGoalDto,
-): Promise<ReadingGoalDto> {
-  return request("/books/reading-goal", { method: "PUT", body });
-}
+): Promise<ReadingGoalDto> =>
+  request("/books/reading-goal", { method: "PUT", body });

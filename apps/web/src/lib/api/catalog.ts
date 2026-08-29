@@ -32,12 +32,11 @@ export function getMediaExtras(
 }
 
 /** Live detail of a cast entity (TMDB person or AniList staff) for the cast modal. */
-export function getCastDetail(
+export const getCastDetail = (
   source: string,
   id: string,
-): Promise<CastDetailDto> {
-  return request(`/catalog/${source.toLowerCase()}/person/${id}`);
-}
+): Promise<CastDetailDto> =>
+  request(`/catalog/${source.toLowerCase()}/person/${id}`);
 
 /**
  * Unified media page: metadata + the user's library state (`entry` null when

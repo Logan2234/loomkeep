@@ -38,8 +38,8 @@
     }
   }
 
-  function load(params: LibraryLoadParams) {
-    return listGames({
+  const load = (params: LibraryLoadParams) =>
+    listGames({
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses,
@@ -47,7 +47,6 @@
       order: params.order,
       page: params.page,
     });
-  }
 </script>
 
 <LibraryBrowser

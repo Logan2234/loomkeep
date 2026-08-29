@@ -99,9 +99,8 @@
   ]);
 
   /** Calls counted against the window the provider's own quota resets on. */
-  function quotaUsage(s: ServiceStatusDto): number {
-    return (s.limit?.window === "month" ? s.thisMonth : s.today) ?? 0;
-  }
+  const quotaUsage = (s: ServiceStatusDto): number =>
+    (s.limit?.window === "month" ? s.thisMonth : s.today) ?? 0;
 
   const meteredBars = $derived(
     [...metered]
@@ -170,9 +169,8 @@
   }
 
   /** Hairline gauge fill color once a documented quota is approached or exceeded. */
-  function gaugeCls(percentUsed: number): string {
-    return percentUsed >= 80 ? "bg-danger" : "bg-accent";
-  }
+  const gaugeCls = (percentUsed: number): string =>
+    percentUsed >= 80 ? "bg-danger" : "bg-accent";
 </script>
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">

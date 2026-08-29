@@ -8,36 +8,31 @@ import { request } from "./core";
 // --- Notifications ---
 
 /** Detect new episodes of tracked shows, then return the refreshed feed. */
-export function scanNotifications(): Promise<NotificationFeedDto> {
-  return request("/notifications/scan", { method: "POST" });
-}
+export const scanNotifications = (): Promise<NotificationFeedDto> =>
+  request("/notifications/scan", { method: "POST" });
 
-export function getNotifications(): Promise<NotificationFeedDto> {
-  return request("/notifications");
-}
+export const getNotifications = (): Promise<NotificationFeedDto> =>
+  request("/notifications");
 
-export function markNotificationsRead(): Promise<void> {
-  return request("/notifications/read", { method: "POST" });
-}
+export const markNotificationsRead = (): Promise<void> =>
+  request("/notifications/read", { method: "POST" });
 
-export function markNotificationRead(id: string): Promise<void> {
-  return request(`/notifications/${id}/read`, { method: "PATCH" });
-}
+export const markNotificationRead = (id: string): Promise<void> =>
+  request(`/notifications/${id}/read`, { method: "PATCH" });
 
 // --- Web Push ---
 
 /** VAPID public key; empty string when the server has push disabled. */
-export function getPushPublicKey(): Promise<PushPublicKeyDto> {
-  return request("/notifications/push/public-key", { withAuth: false });
-}
+export const getPushPublicKey = (): Promise<PushPublicKeyDto> =>
+  request("/notifications/push/public-key", { withAuth: false });
 
-export function subscribePush(body: PushSubscriptionRequestDto): Promise<void> {
-  return request("/notifications/push/subscribe", { method: "POST", body });
-}
+export const subscribePush = (
+  body: PushSubscriptionRequestDto,
+): Promise<void> =>
+  request("/notifications/push/subscribe", { method: "POST", body });
 
-export function unsubscribePush(endpoint: string): Promise<void> {
-  return request("/notifications/push/subscribe", {
+export const unsubscribePush = (endpoint: string): Promise<void> =>
+  request("/notifications/push/subscribe", {
     method: "DELETE",
     body: { endpoint },
   });
-}

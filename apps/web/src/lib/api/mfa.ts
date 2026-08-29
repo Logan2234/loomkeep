@@ -11,13 +11,11 @@ import type {
 import { auth } from "../auth.svelte";
 import { request } from "./core";
 
-export function getMfaStatus(): Promise<MfaStatusDto> {
-  return request("/users/me/mfa");
-}
+export const getMfaStatus = (): Promise<MfaStatusDto> =>
+  request("/users/me/mfa");
 
-export function setupTotp(): Promise<TotpSetupDto> {
-  return request("/users/me/mfa/totp/setup", { method: "POST" });
-}
+export const setupTotp = (): Promise<TotpSetupDto> =>
+  request("/users/me/mfa/totp/setup", { method: "POST" });
 
 export async function confirmTotp(
   body: ConfirmTotpRequestDto,
@@ -46,6 +44,6 @@ export async function setEmailMfa(
   return result;
 }
 
-export function regenerateRecoveryCodes(): Promise<RegenerateRecoveryCodesResponseDto> {
-  return request("/users/me/mfa/recovery-codes/regenerate", { method: "POST" });
-}
+export const regenerateRecoveryCodes =
+  (): Promise<RegenerateRecoveryCodesResponseDto> =>
+    request("/users/me/mfa/recovery-codes/regenerate", { method: "POST" });

@@ -259,24 +259,18 @@
           multiselect
           options={TYPE_OPTIONS}
           values={types}
-          onChange={(v) => {
-            types = v as MediaType[];
-          }} />
+          onChange={(v) => (types = v as MediaType[])} />
       {/if}
       <Combobox
         label={m.common_status()}
         multiselect
         options={statusOptions}
         values={statuses}
-        onChange={(v) => {
-          statuses = v;
-        }} />
+        onChange={(v) => (statuses = v)} />
       <button
         class="chip inline-flex items-center gap-1"
         class:chip-on={favoritesOnly}
-        onclick={() => {
-          favoritesOnly = !favoritesOnly;
-        }}>
+        onclick={() => (favoritesOnly = !favoritesOnly)}>
         <Icon name="star" class="h-3.5 w-3.5" />&nbsp;
         {m.common_favorites()}
       </button>
@@ -286,17 +280,13 @@
         label={m.common_sort()}
         options={sorts}
         values={[sort]}
-        onChange={(v) => {
-          sort = v[0] ?? sort;
-        }} />
+        onChange={(v) => (sort = v[0] ?? sort)} />
       <button
         type="button"
         class="chip px-2.5 font-mono"
         title={reversed ? "Ordre inversé" : "Ordre par défaut"}
         aria-label="Inverser le sens du tri"
-        onclick={() => {
-          reversed = !reversed;
-        }}>
+        onclick={() => (reversed = !reversed)}>
         {reversed ? "↑" : "↓"}
       </button>
     </div>

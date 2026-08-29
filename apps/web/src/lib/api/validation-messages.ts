@@ -5,9 +5,8 @@ import { resolveApiError } from "./errors";
 
 type ConstraintParam = string | number | boolean;
 
-function asNumber(param: ConstraintParam | undefined) {
-  return typeof param === "number" ? param : 0;
-}
+const asNumber = (param: ConstraintParam | undefined) =>
+  typeof param === "number" ? param : 0;
 
 /**
  * One translated message per class-validator constraint name — interpolated

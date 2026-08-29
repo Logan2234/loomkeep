@@ -38,26 +38,21 @@ export function listMusic(
 }
 
 /** Album detail (catalogue metadata + the user's library state). */
-export function getMusicDetail(
+export const getMusicDetail = (
   source: string,
   sourceId: string,
-): Promise<MusicDetailDto> {
-  return request(`/music/${source.toLowerCase()}/${sourceId}`);
-}
+): Promise<MusicDetailDto> =>
+  request(`/music/${source.toLowerCase()}/${sourceId}`);
 
-export function upsertMusicEntry(
+export const upsertMusicEntry = (
   body: UpsertMusicEntryDto,
-): Promise<MusicEntryDto> {
-  return request("/music", { method: "PUT", body });
-}
+): Promise<MusicEntryDto> => request("/music", { method: "PUT", body });
 
-export function updateMusicEntry(
+export const updateMusicEntry = (
   entryId: string,
   body: UpdateMusicEntryDto,
-): Promise<MusicEntryDto> {
-  return request(`/music/entries/${entryId}`, { method: "PATCH", body });
-}
+): Promise<MusicEntryDto> =>
+  request(`/music/entries/${entryId}`, { method: "PATCH", body });
 
-export function deleteMusicEntry(entryId: string): Promise<void> {
-  return request(`/music/entries/${entryId}`, { method: "DELETE" });
-}
+export const deleteMusicEntry = (entryId: string): Promise<void> =>
+  request(`/music/entries/${entryId}`, { method: "DELETE" });

@@ -28,9 +28,8 @@
       .finally(() => (loading = false));
   });
 
-  function calendarUrl(t: string): string {
-    return `${API_URL}/library/calendar.ics?token=${t}`;
-  }
+  const calendarUrl = (t: string): string =>
+    `${API_URL}/library/calendar.ics?token=${t}`;
 
   async function copyLink() {
     if (!token) return;

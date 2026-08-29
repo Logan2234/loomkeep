@@ -282,11 +282,10 @@
     minute: "2-digit",
   };
 
-  function activityLabel(u: AdminUserDto): string {
-    return u.lastActiveAt
+  const activityLabel = (u: AdminUserDto): string =>
+    u.lastActiveAt
       ? formatDate(u.lastActiveAt, DAY_MONTH_TIME_OPTIONS)
       : "Jamais connecté";
-  }
 
   function activityDotClass(u: AdminUserDto): string {
     if (!u.lastActiveAt) return "border border-dim";

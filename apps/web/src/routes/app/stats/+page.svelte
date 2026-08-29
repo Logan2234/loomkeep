@@ -153,16 +153,12 @@
 
   // A domain's deep section shows when the user enabled it and the filter
   // doesn't exclude it; it reuses the status breakdown the overview loaded.
-  function showSection(domain: StatsDomain): boolean {
-    return (
-      enabledDomains.includes(domain) &&
-      (selected === "ALL" || selected === domain)
-    );
-  }
+  const showSection = (domain: StatsDomain): boolean =>
+    enabledDomains.includes(domain) &&
+    (selected === "ALL" || selected === domain);
 
-  function breakdownOf(domain: StatsDomain) {
-    return overview?.breakdowns.find((b) => b.domain === domain);
-  }
+  const breakdownOf = (domain: StatsDomain) =>
+    overview?.breakdowns.find((b) => b.domain === domain);
 
   // Works drill-down modal, opened from a clicked rating/decade bar.
   let modalOpen = $state(false);

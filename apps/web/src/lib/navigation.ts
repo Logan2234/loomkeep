@@ -334,36 +334,31 @@ interface MobileGateOptions {
   socialEnabled?: boolean;
 }
 
-function isVisible(d: MobileDestination, opts: MobileGateOptions): boolean {
-  return (
-    (!d.domain || opts.isDomainEnabled(d.domain)) &&
-    (!d.adminOnly || opts.isAdmin) &&
-    (!d.social || !!opts.socialEnabled)
-  );
-}
+const isVisible = (d: MobileDestination, opts: MobileGateOptions): boolean =>
+  (!d.domain || opts.isDomainEnabled(d.domain)) &&
+  (!d.adminOnly || opts.isAdmin) &&
+  (!d.social || !!opts.socialEnabled);
 
 // Resolve the ordered bottom-bar ids into visible destinations, dropping any
 //  gated out by the user's enabled domains / admin role. Coming-soon entries
 //  can't reach the bar (not offered as choices), so they're excluded too.
-export function resolveBottomShortcuts(
+export const resolveBottomShortcuts = (
   ids: readonly string[],
   opts: MobileGateOptions,
-): MobileDestination[] {
-  return ids
+): MobileDestination[] =>
+  ids
     .map((id) => MOBILE_DESTINATIONS[id as MobileNavId])
     .filter((d): d is MobileDestination => !!d && !d.comingSoon)
     .filter((d) => isVisible(d, opts));
-}
 
 // Destinations the user may pin to the bottom bar, gated to what's currently
 //  visible (enabled domains / admin). Used by the settings config UI.
-export function resolveShortcutChoices(
+export const resolveShortcutChoices = (
   opts: MobileGateOptions,
-): MobileDestination[] {
-  return BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter(
-    (d) => isVisible(d, opts),
+): MobileDestination[] =>
+  BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter((d) =>
+    isVisible(d, opts),
   );
-}
 
 // Launcher sheet groups with their visible destinations (coming-soon kept —
 //  they render dimmed with a "Bientôt" badge when their domain is enabled).

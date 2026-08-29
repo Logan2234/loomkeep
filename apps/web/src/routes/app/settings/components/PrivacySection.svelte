@@ -123,15 +123,12 @@
     void getPrivacySettings().then((s) => (settings = s));
   });
 
-  function audienceOf(
+  const audienceOf = (
     domain: Domain,
     facet: VisibilityFacet,
-  ): VisibilityAudience {
-    return (
-      settings?.settings.find((s) => s.domain === domain && s.facet === facet)
-        ?.audience ?? VisibilityAudience.FRIENDS
-    );
-  }
+  ): VisibilityAudience =>
+    settings?.settings.find((s) => s.domain === domain && s.facet === facet)
+      ?.audience ?? VisibilityAudience.FRIENDS;
 
   async function setAccess(access: ProfileAccess) {
     if (!settings || settings.profileAccess === access) return;

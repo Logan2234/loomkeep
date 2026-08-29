@@ -17,14 +17,13 @@ export interface CarouselItem {
  * Builds RelatedCarousel items from summaries sharing a source id, linking each
  * to `${hrefPrefix}/${sourceId}` (e.g. "/app/games", "/app/books").
  */
-export function toCarouselItems(
+export const toCarouselItems = (
   list: CarouselSource[],
   hrefPrefix: string,
-): CarouselItem[] {
-  return list.map((x) => ({
+): CarouselItem[] =>
+  list.map((x) => ({
     key: x.sourceId,
     href: `${hrefPrefix}/${x.sourceId}`,
     cover: x.coverUrl,
     title: x.title,
   }));
-}

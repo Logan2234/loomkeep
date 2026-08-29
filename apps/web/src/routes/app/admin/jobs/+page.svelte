@@ -51,15 +51,11 @@
     minute: "2-digit",
   };
 
-  function durationMs(run: JobDto["runs"][number]): number {
-    return (
-      new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()
-    );
-  }
+  const durationMs = (run: JobDto["runs"][number]): number =>
+    new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime();
 
-  function durationLabel(ms: number): string {
-    return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
-  }
+  const durationLabel = (ms: number): string =>
+    ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
 
   /**
    * Header figures for one job, derived from the run history the page already

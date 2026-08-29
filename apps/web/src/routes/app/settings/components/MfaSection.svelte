@@ -164,9 +164,8 @@
     setTimeout(() => (recoveryCopied = false), 2000);
   }
 
-  function groupCode(code: string): string {
-    return `${code.slice(0, 5)}-${code.slice(5)}`;
-  }
+  const groupCode = (code: string): string =>
+    `${code.slice(0, 5)}-${code.slice(5)}`;
 
   function closeModal() {
     openModal = null;

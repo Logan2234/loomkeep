@@ -9,65 +9,52 @@ import type {
 } from "@loomkeep/shared";
 import { request } from "./core";
 
-export function getProfile(username: string): Promise<SocialProfileDto> {
-  return request(`/social/users/${encodeURIComponent(username)}`);
-}
+export const getProfile = (username: string): Promise<SocialProfileDto> =>
+  request(`/social/users/${encodeURIComponent(username)}`);
 
-export function followUser(username: string): Promise<RelationshipDto> {
-  return request(`/social/users/${encodeURIComponent(username)}/follow`, {
+export const followUser = (username: string): Promise<RelationshipDto> =>
+  request(`/social/users/${encodeURIComponent(username)}/follow`, {
     method: "POST",
   });
-}
 
-export function unfollowUser(username: string): Promise<RelationshipDto> {
-  return request(`/social/users/${encodeURIComponent(username)}/follow`, {
+export const unfollowUser = (username: string): Promise<RelationshipDto> =>
+  request(`/social/users/${encodeURIComponent(username)}/follow`, {
     method: "DELETE",
   });
-}
 
-export function blockUser(username: string): Promise<RelationshipDto> {
-  return request(`/social/users/${encodeURIComponent(username)}/block`, {
+export const blockUser = (username: string): Promise<RelationshipDto> =>
+  request(`/social/users/${encodeURIComponent(username)}/block`, {
     method: "POST",
   });
-}
 
-export function unblockUser(username: string): Promise<RelationshipDto> {
-  return request(`/social/users/${encodeURIComponent(username)}/block`, {
+export const unblockUser = (username: string): Promise<RelationshipDto> =>
+  request(`/social/users/${encodeURIComponent(username)}/block`, {
     method: "DELETE",
   });
-}
 
-export function getFollowRequests(): Promise<FollowRequestDto[]> {
-  return request("/social/requests");
-}
+export const getFollowRequests = (): Promise<FollowRequestDto[]> =>
+  request("/social/requests");
 
-export function acceptFollowRequest(id: string): Promise<void> {
-  return request(`/social/requests/${id}/accept`, { method: "POST" });
-}
+export const acceptFollowRequest = (id: string): Promise<void> =>
+  request(`/social/requests/${id}/accept`, { method: "POST" });
 
-export function rejectFollowRequest(id: string): Promise<void> {
-  return request(`/social/requests/${id}/reject`, { method: "POST" });
-}
+export const rejectFollowRequest = (id: string): Promise<void> =>
+  request(`/social/requests/${id}/reject`, { method: "POST" });
 
-export function getUserFollowers(username: string): Promise<UserSummaryDto[]> {
-  return request(`/social/users/${encodeURIComponent(username)}/followers`);
-}
+export const getUserFollowers = (username: string): Promise<UserSummaryDto[]> =>
+  request(`/social/users/${encodeURIComponent(username)}/followers`);
 
-export function getUserFollowing(username: string): Promise<UserSummaryDto[]> {
-  return request(`/social/users/${encodeURIComponent(username)}/following`);
-}
+export const getUserFollowing = (username: string): Promise<UserSummaryDto[]> =>
+  request(`/social/users/${encodeURIComponent(username)}/following`);
 
-export function getPrivacySettings(): Promise<VisibilitySettingsDto> {
-  return request("/social/me/privacy");
-}
+export const getPrivacySettings = (): Promise<VisibilitySettingsDto> =>
+  request("/social/me/privacy");
 
-export function updatePrivacySettings(
+export const updatePrivacySettings = (
   body: UpdateVisibilitySettingsDto,
-): Promise<VisibilitySettingsDto> {
-  return request("/social/me/privacy", { method: "PATCH", body });
-}
+): Promise<VisibilitySettingsDto> =>
+  request("/social/me/privacy", { method: "PATCH", body });
 
 /** Live counts of what switching to Figurant mode would immediately clean up. */
-export function getGhostSwitchImpact(): Promise<GhostSwitchImpactDto> {
-  return request("/social/me/privacy/ghost-impact");
-}
+export const getGhostSwitchImpact = (): Promise<GhostSwitchImpactDto> =>
+  request("/social/me/privacy/ghost-impact");

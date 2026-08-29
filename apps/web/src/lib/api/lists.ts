@@ -13,91 +13,77 @@ import type {
 import { request } from "./core";
 
 /** Lists the user can add items to — owned, or edit access via a collaborator grant. */
-export function getEditableLists(): Promise<MyListDto[]> {
-  return request("/lists/editable");
-}
+export const getEditableLists = (): Promise<MyListDto[]> =>
+  request("/lists/editable");
 
-export function getMyList(id: string): Promise<ListDetailDto> {
-  return request(`/lists/me/${id}`);
-}
+export const getMyList = (id: string): Promise<ListDetailDto> =>
+  request(`/lists/me/${id}`);
 
 /** Which of the user's own lists already contain a target, keyed by list id. */
-export function getListMembership(
+export const getListMembership = (
   targetType: ListItemTargetType,
   targetId: string,
-): Promise<ListMembershipDto> {
-  return request(
+): Promise<ListMembershipDto> =>
+  request(
     `/lists/me/membership?targetType=${targetType}&targetId=${encodeURIComponent(targetId)}`,
   );
-}
 
-export function createList(body: CreateListDto): Promise<ListDto> {
-  return request("/lists", { method: "POST", body });
-}
+export const createList = (body: CreateListDto): Promise<ListDto> =>
+  request("/lists", { method: "POST", body });
 
-export function updateList(id: string, body: UpdateListDto): Promise<ListDto> {
-  return request(`/lists/${id}`, { method: "PUT", body });
-}
+export const updateList = (id: string, body: UpdateListDto): Promise<ListDto> =>
+  request(`/lists/${id}`, { method: "PUT", body });
 
-export function deleteList(id: string): Promise<void> {
-  return request(`/lists/${id}`, { method: "DELETE" });
-}
+export const deleteList = (id: string): Promise<void> =>
+  request(`/lists/${id}`, { method: "DELETE" });
 
-export function addListItem(
+export const addListItem = (
   listId: string,
   targetType: ListItemTargetType,
   targetId: string,
-): Promise<ListItemDto> {
-  return request(`/lists/${listId}/items`, {
+): Promise<ListItemDto> =>
+  request(`/lists/${listId}/items`, {
     method: "POST",
     body: { targetType, targetId },
   });
-}
 
-export function removeListItem(listId: string, itemId: string): Promise<void> {
-  return request(`/lists/${listId}/items/${itemId}`, { method: "DELETE" });
-}
+export const removeListItem = (listId: string, itemId: string): Promise<void> =>
+  request(`/lists/${listId}/items/${itemId}`, { method: "DELETE" });
 
-export function reorderListItems(
+export const reorderListItems = (
   listId: string,
   orderedItemIds: string[],
   expectedUpdatedAt: string,
-): Promise<void> {
-  return request(`/lists/${listId}/items/order`, {
+): Promise<void> =>
+  request(`/lists/${listId}/items/order`, {
     method: "PUT",
     body: { orderedItemIds, expectedUpdatedAt },
   });
-}
 
-export function getListMembers(listId: string): Promise<ListMemberDto[]> {
-  return request(`/lists/${listId}/members`);
-}
+export const getListMembers = (listId: string): Promise<ListMemberDto[]> =>
+  request(`/lists/${listId}/members`);
 
-export function addListMember(
+export const addListMember = (
   listId: string,
   body: AddListMemberDto,
-): Promise<ListMemberDto> {
-  return request(`/lists/${listId}/members`, { method: "POST", body });
-}
+): Promise<ListMemberDto> =>
+  request(`/lists/${listId}/members`, { method: "POST", body });
 
-export function removeListMember(
+export const removeListMember = (
   listId: string,
   memberUserId: string,
-): Promise<void> {
-  return request(`/lists/${listId}/members/${memberUserId}`, {
+): Promise<void> =>
+  request(`/lists/${listId}/members/${memberUserId}`, {
     method: "DELETE",
   });
-}
 
 /**
  * A list as seen by the viewer — own list or a shared one, resolved server-
  * side either way. Social-gated when it isn't the viewer's own list.
  */
-export function getList(id: string): Promise<ListDetailDto> {
-  return request(`/lists/${id}`);
-}
+export const getList = (id: string): Promise<ListDetailDto> =>
+  request(`/lists/${id}`);
 
 /** A user's lists visible to the viewer (social-gated). */
-export function getUserLists(username: string): Promise<MyListDto[]> {
-  return request(`/lists/user/${encodeURIComponent(username)}`);
-}
+export const getUserLists = (username: string): Promise<MyListDto[]> =>
+  request(`/lists/user/${encodeURIComponent(username)}`);

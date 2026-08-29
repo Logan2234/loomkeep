@@ -37,8 +37,8 @@
     }
   }
 
-  function load(params: LibraryLoadParams) {
-    return listMusic({
+  const load = (params: LibraryLoadParams) =>
+    listMusic({
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses,
@@ -46,7 +46,6 @@
       order: params.order,
       page: params.page,
     });
-  }
 </script>
 
 <LibraryBrowser

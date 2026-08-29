@@ -51,8 +51,8 @@
     }
   }
 
-  function load(params: LibraryLoadParams) {
-    return listBooks({
+  const load = (params: LibraryLoadParams) =>
+    listBooks({
       query: params.query,
       favorite: params.favoritesOnly,
       statuses: params.statuses,
@@ -60,7 +60,6 @@
       order: params.order,
       page: params.page,
     });
-  }
 </script>
 
 <LibraryBrowser

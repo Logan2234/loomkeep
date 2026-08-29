@@ -126,12 +126,9 @@
   // A report row's action buttons disable while either mutation is in
   // flight *for that row* — the two share this rather than each carrying
   // its own row-keyed pending state.
-  function rowBusy(id: string): boolean {
-    return (
-      (resolveMut.loading && resolveMut.variables?.id === id) ||
-      (takeDownMut.loading && takeDownMut.variables === id)
-    );
-  }
+  const rowBusy = (id: string): boolean =>
+    (resolveMut.loading && resolveMut.variables?.id === id) ||
+    (takeDownMut.loading && takeDownMut.variables === id);
 
   const kpis = $derived(
     summary
