@@ -175,8 +175,10 @@ export class MailService {
         },
       ],
       // Sample token — the gallery renders out of band, with no real
-      // recipient/subscription to mint one for.
-      build: (v) => this.buildNewsletter(v.title, v.content, "preview-token"),
+      // recipient/subscription to mint one for. No real Quackback HTML to
+      // preview here either, so this always exercises the Markdown fallback.
+      build: (v) =>
+        this.buildNewsletter(v.title, v.content, "", "preview-token"),
     },
     episodeDigest: {
       label: "Digest de sorties (email)",
@@ -468,12 +470,18 @@ export class MailService {
   async sendNewsletter(
     to: string,
     title: string,
-    content: string,
+    contentPreview: string,
+    contentHtml: string,
     unsubscribeToken: string,
   ): Promise<void> {
     await this.send({
       to,
-      ...this.buildNewsletter(title, content, unsubscribeToken),
+      ...this.buildNewsletter(
+        title,
+        contentPreview,
+        contentHtml,
+        unsubscribeToken,
+      ),
     });
   }
 
@@ -743,7 +751,8 @@ export class MailService {
 
   private buildNewsletter(
     title: string,
-    content: string,
+    contentPreview: string,
+    contentHtml: string,
     unsubscribeToken: string,
   ): TemplateBody {
     const entryUrl =
@@ -760,15 +769,23 @@ export class MailService {
     // anyone who wants finer-grained control instead of unsubscribing
     // outright.
     const unsubscribeUrl = `${this.webOrigin}/unsubscribe?token=${unsubscribeToken}`;
-    const { html: contentHtml, text: contentText } =
-      this.renderChangelogMarkdown(content);
+    // renderChangelogMarkdown always drives the plain-text alt (contentPreview
+    // is short but still real Markdown) and is also the HTML fallback for
+    // callers with no Quackback HTML to show (the template gallery). When the
+    // webhook did carry contentHtml, prefer it for the HTML body instead of
+    // the 200-char preview — same pre-sanitized-by-Quackback trust boundary
+    // its own email integration relies on (self-hosted, single-admin-authored
+    // content, reached only through the signed webhook).
+    const { html: fallbackHtml, text: contentText } =
+      this.renderChangelogMarkdown(contentPreview);
+    const bodyHtml = contentHtml || fallbackHtml;
 
     return {
       subject: `Loomkeep — ${title}`,
       text: `${title}\n\n${contentText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}\nSe désinscrire : ${unsubscribeUrl}`,
       html: this.wrapEmail(
         title,
-        `${contentHtml}
+        `${bodyHtml}
          ${this.button(entryUrl, "Voir sur le changelog")}
          <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">Tu reçois cet email car tu es abonné aux nouveautés · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes préférences</a> · <a href="${unsubscribeUrl}" style="color:${COLOR_MUTED};">Se désinscrire</a></p>`,
         "Nouvelle version",

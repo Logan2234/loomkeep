@@ -199,6 +199,7 @@ describe("MailService", () => {
       "alice@example.com",
       "Loomkeep 1.4.0",
       "content",
+      "",
       "unsub-token-123",
     );
 
@@ -209,6 +210,50 @@ describe("MailService", () => {
     expect(html).toContain(
       "https://loomkeep.example/app/settings#communications",
     );
+  });
+
+  it("uses Quackback's full contentHtml instead of the truncated preview", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      "alice@example.com",
+      "Loomkeep 1.7.0",
+      "## New\n\n- Only the start of the changelog fits in a 200-char preview",
+      "<h2>New</h2><p>The full body, including a section past the 200-char preview cutoff.</p>",
+      "unsub-token-123",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("past the 200-char preview cutoff");
+  });
+
+  it("falls back to rendering the Markdown preview when contentHtml is empty", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+    process.env.WEB_ORIGIN = "https://loomkeep.example";
+
+    const sendMail = jest.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      "alice@example.com",
+      "Loomkeep 1.7.0",
+      "## New\n\n- Rendered from Markdown",
+      "",
+      "unsub-token-123",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("Rendered from Markdown");
   });
 });
 

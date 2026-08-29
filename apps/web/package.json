@@ -1,7 +1,7 @@
 {
   "name": "@loomkeep/web",
   "description": "Loomkeep's SvelteKit web client — the frontend consuming @loomkeep/api",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": {
     "name": "Logan WILLEM",
     "email": "loganwi322.dev@gmail.com"

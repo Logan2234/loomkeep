@@ -1,7 +1,7 @@
 {
   "name": "@loomkeep/api",
   "description": "Loomkeep's NestJS REST API — auth, catalog providers and library data behind the web client",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": {
     "name": "Logan WILLEM",
     "email": "loganwi322.dev@gmail.com"
