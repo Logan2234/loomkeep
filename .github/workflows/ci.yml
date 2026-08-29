@@ -97,6 +97,7 @@ jobs:
         with:
           sarif_file: eslint-results
           category: eslint
+
   e2e:
     needs: changes
     if: needs.changes.outputs.api == 'true'

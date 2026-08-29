@@ -4,17 +4,17 @@
       "startServerCommand": "pnpm --filter ./apps/web preview",
       "startServerReadyPattern": "Local:",
       "url": [
-        "http://localhost:5173/",
-        "http://localhost:5173/login",
-        "http://localhost:5173/register",
-        "http://localhost:5173/forgot-password",
-        "http://localhost:5173/reset-password",
-        "http://localhost:5173/register/check-email",
-        "http://localhost:5173/verify-email",
-        "http://localhost:5173/unsubscribe",
-        "http://localhost:5173/legal/terms-of-service",
-        "http://localhost:5173/legal/privacy-policy",
-        "http://localhost:5173/legal/legal-notice"
+        "http://localhost:4173/",
+        "http://localhost:4173/login",
+        "http://localhost:4173/register",
+        "http://localhost:4173/forgot-password",
+        "http://localhost:4173/reset-password",
+        "http://localhost:4173/register/check-email",
+        "http://localhost:4173/verify-email",
+        "http://localhost:4173/unsubscribe",
+        "http://localhost:4173/legal/terms-of-service",
+        "http://localhost:4173/legal/privacy-policy",
+        "http://localhost:4173/legal/legal-notice"
       ],
       "numberOfRuns": 1,
       "staticDirFileDiscoveryDepth": 3
