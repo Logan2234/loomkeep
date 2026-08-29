@@ -10,9 +10,19 @@ export const keys = {
   },
   games: {
     playing: () => ["games", "playing"] as const,
+    detail: (source: string, sourceId: string) =>
+      ["games", "detail", source, sourceId] as const,
   },
   music: {
     toListen: () => ["music", "to-listen"] as const,
+    detail: (source: string, sourceId: string) =>
+      ["music", "detail", source, sourceId] as const,
+  },
+  media: {
+    detail: (type: string, sourceId: string) =>
+      ["media", "detail", type, sourceId] as const,
+    extras: (source: string, sourceId: string) =>
+      ["media", "extras", source, sourceId] as const,
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,

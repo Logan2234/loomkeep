@@ -6,7 +6,9 @@
     updateMusicEntry,
     upsertMusicEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
@@ -35,22 +37,26 @@
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { MONTH_YEAR_OPTIONS, formatDate } from "$lib/format";
-  import { createLibraryEntryActions } from "$lib/library-entry";
   import { m } from "$lib/paraglide/messages.js";
-  import type { MusicDetailDto } from "@loomkeep/shared";
 
   // MusicBrainz is the only music source today; the web route carries just the id.
   const SOURCE = "musicbrainz";
 
-  let detail = $state<MusicDetailDto | null>(null);
-  let error = $state<string | null>(null);
-  let saving = $state(false);
   let confirmRemove = $state(false);
-  let removing = $state(false);
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
 
   const id = $derived(page.params.id ?? "");
+  const detailKey = $derived(keys.music.detail(SOURCE, id));
+
+  const musicQuery = createApiQuery(() => ({
+    key: detailKey,
+    fetch: () => getMusicDetail(SOURCE, id),
+    enabled: !!id,
+  }));
+  const detail = $derived(musicQuery.data);
+  const error = $derived(musicQuery.error);
+
   const entry = $derived(detail?.entry ?? null);
 
   // Precise release date, respecting the source's actual precision — a
@@ -107,62 +113,37 @@
     return hours > 0 ? `${hours} h ${minutes} min` : `${minutes} min`;
   }
 
-  $effect(() => {
-    const i = id;
-    if (!i) return;
-    error = null;
-    getMusicDetail(SOURCE, i)
-      .then((result) => (detail = result))
-      .catch((err) => {
-        error = resolveApiError(err);
+  const addMut = createApiMutation(() => ({
+    mutate: () => {
+      const d = detail!;
+      return upsertMusicEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "TO_LISTEN",
       });
-  });
+    },
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
 
-  const { add, patch, doRemove } = createLibraryEntryActions(
-    {
-      get detail() {
-        return detail;
-      },
-      set detail(v) {
-        detail = v;
-      },
-      get error() {
-        return error;
-      },
-      set error(v) {
-        error = v;
-      },
-      get saving() {
-        return saving;
-      },
-      set saving(v) {
-        saving = v;
-      },
-      get confirmRemove() {
-        return confirmRemove;
-      },
-      set confirmRemove(v) {
-        confirmRemove = v;
-      },
-      get removing() {
-        return removing;
-      },
-      set removing(v) {
-        removing = v;
-      },
+  const patchMut = createApiMutation(() => ({
+    mutate: (changes: Parameters<typeof updateMusicEntry>[1]) =>
+      updateMusicEntry(entry!.id, changes),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeMut = createApiMutation(() => ({
+    mutate: () => deleteMusicEntry(entry!.id),
+    onSuccess: () => {
+      confirmRemove = false;
     },
-    {
-      load: () => getMusicDetail(SOURCE, id),
-      add: (d) =>
-        upsertMusicEntry({
-          source: d.source,
-          sourceId: d.sourceId,
-          status: "TO_LISTEN",
-        }),
-      update: updateMusicEntry,
-      remove: deleteMusicEntry,
-    },
-  );
+    successToast: m.tracking_removed_toast(),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const saving = $derived(addMut.loading || patchMut.loading);
 </script>
 
 {#if error}
@@ -253,7 +234,10 @@
         <!-- Actions -->
         {#if !entry}
           <div class="mt-6">
-            <button class="btn btn-primary" disabled={saving} onclick={add}>
+            <button
+              class="btn btn-primary"
+              disabled={saving}
+              onclick={() => addMut.mutate()}>
               <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
             </button>
           </div>
@@ -261,7 +245,8 @@
           <TrackingPanel
             favorite={entry.favorite}
             {saving}
-            onToggleFavorite={() => patch({ favorite: !entry.favorite })}
+            onToggleFavorite={() =>
+              patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}>
             <SegmentedStatusControl
               statuses={STATUS_ORDER}
@@ -270,14 +255,14 @@
               meta={STATUS_META}
               desc={STATUS_DESC}
               activeClass={SEG_ACTIVE}
-              onSelect={(status) => patch({ status })} />
+              onSelect={(status) => patchMut.mutate({ status })} />
 
             <AddToListButton targetType="MUSIC" targetId={entry.album.id} />
 
             <NoteField
               value={entry.notes}
               placeholder="Une phrase, une note d'écoute…"
-              onChange={(v) => patch({ notes: v })} />
+              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <hr class="border-border" />
 
@@ -287,7 +272,7 @@
               statusOptions={MUSIC_OWNERSHIP_STATUS_OPTIONS}
               sourceOptionsByStatus={MUSIC_OWNERSHIP_SOURCES}
               onChange={(status, source) =>
-                patch({
+                patchMut.mutate({
                   ownershipStatus: status as typeof entry.ownershipStatus,
                   ownershipSource: source,
                 })} />
@@ -428,8 +413,8 @@
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
       confirmLabel={m.common_remove()}
       danger
-      busy={removing}
-      onConfirm={doRemove}
+      busy={removeMut.loading}
+      onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
   {/if}
 

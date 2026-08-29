@@ -9,7 +9,9 @@
     updateGameEntry,
     upsertGameEntry,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
@@ -38,10 +40,8 @@
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { formatDate } from "$lib/format";
-  import { createLibraryEntryActions } from "$lib/library-entry";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import type { GameDetailDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
 
   // IGDB is the only game source today; the web route carries just the id.
@@ -54,15 +54,35 @@
     Critiques: "bg-[#66cc33] text-black",
   };
 
-  let detail = $state<GameDetailDto | null>(null);
-  let error = $state<string | null>(null);
-  let saving = $state(false);
   let confirmRemove = $state(false);
-  let removing = $state(false);
   let historyOpen = $state(false);
   const reduced = prefersReducedMotion();
 
   const id = $derived(page.params.id ?? "");
+  const detailKey = $derived(keys.games.detail(SOURCE, id));
+
+  // Adult-content-blocked games return 403 with no body worth resolving
+  // generically — a distinct local message instead of the query's own error.
+  let adultBlocked = $state(false);
+
+  const gameQuery = createApiQuery(() => ({
+    key: detailKey,
+    fetch: () => getGameDetail(SOURCE, id),
+    enabled: !!id,
+    onError: (err) => {
+      adultBlocked = err instanceof ApiError && err.status === 403;
+    },
+  }));
+  $effect(() => {
+    if (gameQuery.data) adultBlocked = false;
+  });
+  const detail = $derived(gameQuery.data);
+  const error = $derived(
+    adultBlocked
+      ? "Ce jeu est réservé aux comptes ayant activé le contenu pour adultes (réglages)."
+      : gameQuery.error,
+  );
+
   const entry = $derived(detail?.entry ?? null);
   const hasMeta = $derived(
     !!detail &&
@@ -104,70 +124,54 @@
     lightboxOpen = true;
   }
 
-  $effect(() => {
-    const i = id;
-    if (!i) return;
-    error = null;
-    getGameDetail(SOURCE, i)
-      .then((result) => (detail = result))
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 403) {
-          error =
-            "Ce jeu est réservé aux comptes ayant activé le contenu pour adultes (réglages).";
-        } else {
-          error = resolveApiError(err);
-        }
+  const addMut = createApiMutation(() => ({
+    mutate: () => {
+      const d = detail!;
+      return upsertGameEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "BACKLOG",
       });
-  });
+    },
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
 
-  const { add, patch, doRemove, addReplay, removeReplay } =
-    createLibraryEntryActions(
-      {
-        get detail() {
-          return detail;
-        },
-        set detail(v) {
-          detail = v;
-        },
-        get error() {
-          return error;
-        },
-        set error(v) {
-          error = v;
-        },
-        get saving() {
-          return saving;
-        },
-        set saving(v) {
-          saving = v;
-        },
-        get confirmRemove() {
-          return confirmRemove;
-        },
-        set confirmRemove(v) {
-          confirmRemove = v;
-        },
-        get removing() {
-          return removing;
-        },
-        set removing(v) {
-          removing = v;
-        },
-      },
-      {
-        load: () => getGameDetail(SOURCE, id),
-        add: (d) =>
-          upsertGameEntry({
-            source: d.source,
-            sourceId: d.sourceId,
-            status: "BACKLOG",
-          }),
-        update: updateGameEntry,
-        remove: deleteGameEntry,
-        addReplay: addGameReplay,
-        removeReplay: deleteGameReplay,
-      },
-    );
+  const patchMut = createApiMutation(() => ({
+    mutate: (changes: Parameters<typeof updateGameEntry>[1]) =>
+      updateGameEntry(entry!.id, changes),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeMut = createApiMutation(() => ({
+    mutate: () => deleteGameEntry(entry!.id),
+    onSuccess: () => {
+      confirmRemove = false;
+    },
+    successToast: m.tracking_removed_toast(),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const addReplayMut = createApiMutation(() => ({
+    mutate: () => addGameReplay(entry!.id),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const removeReplayMut = createApiMutation(() => ({
+    mutate: (replayId: string) => deleteGameReplay(replayId),
+    invalidates: [detailKey],
+    errorToast: true,
+  }));
+
+  const saving = $derived(
+    addMut.loading ||
+      patchMut.loading ||
+      addReplayMut.loading ||
+      removeReplayMut.loading,
+  );
 </script>
 
 {#if error}
@@ -338,7 +342,10 @@
         <!-- Actions -->
         {#if !entry}
           <div class="mt-6">
-            <button class="btn btn-primary" disabled={saving} onclick={add}>
+            <button
+              class="btn btn-primary"
+              disabled={saving}
+              onclick={() => addMut.mutate()}>
               <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
             </button>
           </div>
@@ -346,7 +353,8 @@
           <TrackingPanel
             favorite={entry.favorite}
             {saving}
-            onToggleFavorite={() => patch({ favorite: !entry.favorite })}
+            onToggleFavorite={() =>
+              patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}>
             <SegmentedStatusControl
               statuses={STATUS_ORDER}
@@ -355,7 +363,7 @@
               meta={STATUS_META}
               desc={STATUS_DESC}
               activeClass={SEG_ACTIVE}
-              onSelect={(status) => patch({ status })} />
+              onSelect={(status) => patchMut.mutate({ status })} />
 
             <AddToListButton targetType="GAME" targetId={entry.game.id} />
 
@@ -364,7 +372,7 @@
             <NoteField
               value={entry.notes}
               placeholder="Un boss, une astuce, ta config…"
-              onChange={(v) => patch({ notes: v })} />
+              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <div class="flex items-center justify-between gap-2">
               <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
@@ -383,7 +391,9 @@
                   onchange={(e) => {
                     const hours = parseFloat(e.currentTarget.value);
                     if (Number.isFinite(hours) && hours >= 0) {
-                      patch({ playtimeMinutes: Math.round(hours * 60) });
+                      patchMut.mutate({
+                        playtimeMinutes: Math.round(hours * 60),
+                      });
                     } else {
                       e.currentTarget.value = String(
                         Math.round((entry.playtimeMinutes / 60) * 10) / 10,
@@ -402,7 +412,7 @@
               statusOptions={GAME_OWNERSHIP_STATUS_OPTIONS}
               sourceOptionsByStatus={GAME_OWNERSHIP_SOURCES}
               onChange={(status, source) =>
-                patch({
+                patchMut.mutate({
                   ownershipStatus: status as typeof entry.ownershipStatus,
                   ownershipSource: source,
                 })} />
@@ -422,7 +432,7 @@
                       type="button"
                       class="link-accent text-xs disabled:opacity-50"
                       disabled={saving}
-                      onclick={addReplay}>
+                      onclick={() => addReplayMut.mutate()}>
                       + J'ai refait ce jeu
                     </button>
                   {/if}
@@ -439,7 +449,7 @@
                           class="hover:text-danger"
                           aria-label="Supprimer cette relecture"
                           disabled={saving}
-                          onclick={() => removeReplay(replay.id)}>
+                          onclick={() => removeReplayMut.mutate(replay.id)}>
                           {m.common_delete()}
                         </button>
                       </li>
@@ -551,8 +561,8 @@
       message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
       confirmLabel={m.common_remove()}
       danger
-      busy={removing}
-      onConfirm={doRemove}
+      busy={removeMut.loading}
+      onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
   {/if}
 
