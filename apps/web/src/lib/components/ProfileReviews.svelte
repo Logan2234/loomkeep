@@ -1,9 +1,10 @@
 <script lang="ts">
   import { getMyReviews } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { MyReviewDto } from "@loomkeep/shared";
 
   // Preview of the current user's own reviews, shown on their profile (own
   // view only — "Mes reviews" isn't a public surface). Mirrors the "Listes"
@@ -20,18 +21,15 @@
     EPISODE: m.common_episode(),
   };
 
-  let reviews = $state<MyReviewDto[]>([]);
-  let loaded = $state(false);
+  const reviewsQuery = createApiQuery(() => ({
+    key: keys.profile.myReviews(),
+    fetch: getMyReviews,
+  }));
 
-  $effect(() => {
-    getMyReviews()
-      .then((r) => (reviews = r.slice(0, PREVIEW_COUNT)))
-      .catch(() => (reviews = []))
-      .finally(() => (loaded = true));
-  });
+  const reviews = $derived((reviewsQuery.data ?? []).slice(0, PREVIEW_COUNT));
 </script>
 
-{#if loaded && reviews.length > 0}
+{#if !reviewsQuery.loading && reviews.length > 0}
   <section class="mt-10">
     <div class="mb-3 flex items-center justify-between">
       <h2 class="font-display text-xl font-bold">

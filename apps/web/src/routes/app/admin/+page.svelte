@@ -5,12 +5,14 @@
   // destination grouped by concern instead of one flat grid of identical
   // cards — see apps/web/DESIGN.md for the palette/type tokens this reuses.
   import { adminReports } from "$lib/admin-reports.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import {
     getAdminBackupFiles,
     getAdminJobs,
     getAdminOverview,
     getAdminServices,
   } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
   import { auth } from "$lib/auth.svelte";
   import BetaBadge from "$lib/components/BetaBadge.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,37 +22,36 @@
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
-  import type {
-    AdminBackupFileDto,
-    AdminOverviewDto,
-    JobDto,
-    ServiceStatusDto,
-  } from "@loomkeep/shared";
-
-  let overview = $state<AdminOverviewDto | null>(null);
-  let services = $state<ServiceStatusDto[] | null>(null);
-  let jobs = $state<JobDto[] | null>(null);
-  let backups = $state<AdminBackupFileDto[] | null>(null);
+  import type { ServiceStatusDto } from "@loomkeep/shared";
 
   $effect(() => {
     void adminReports.refresh();
-    getAdminOverview()
-      .then((o) => (overview = o))
-      .catch(() => {});
-    getAdminServices()
-      .then((r) => (services = r.services))
-      .catch(() => {});
-    getAdminJobs()
-      .then((r) => (jobs = r.jobs))
-      .catch(() => {});
-    getAdminBackupFiles()
-      .then((f) => (backups = f))
-      .catch(() => {});
   });
 
-  // ---- derived numbers for the strip + row metrics, all best-effort (a
-  // failed fetch just leaves that card/metric blank rather than breaking
-  // the page) ----
+  // ---- best-effort: a failed fetch just leaves that card/metric blank
+  // rather than breaking the page (no errorToast) ----
+
+  const overviewQuery = createApiQuery(() => ({
+    key: keys.admin.overview(),
+    fetch: getAdminOverview,
+  }));
+  const servicesQuery = createApiQuery(() => ({
+    key: keys.admin.services(),
+    fetch: () => getAdminServices().then((r) => r.services),
+  }));
+  const jobsQuery = createApiQuery(() => ({
+    key: keys.admin.jobs(),
+    fetch: () => getAdminJobs().then((r) => r.jobs),
+  }));
+  const backupsQuery = createApiQuery(() => ({
+    key: keys.admin.backups(),
+    fetch: getAdminBackupFiles,
+  }));
+
+  const overview = $derived(overviewQuery.data);
+  const services = $derived(servicesQuery.data);
+  const jobs = $derived(jobsQuery.data);
+  const backups = $derived(backupsQuery.data);
 
   const usersTotal = $derived(overview?.accounts ?? null);
   const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);

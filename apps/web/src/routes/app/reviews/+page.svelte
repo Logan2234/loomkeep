@@ -4,12 +4,16 @@
     batchSetReviewVisibility,
     getMyReviews,
   } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import ReviewFormModal from "$lib/components/ReviewFormModal.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { MyReviewDto, ReviewVisibility } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   const TYPE_LABEL: Record<string, string> = {
     MEDIA: m.common_Media(),
@@ -20,12 +24,15 @@
     EPISODE: m.common_episode(),
   };
 
-  let reviews = $state<MyReviewDto[]>([]);
-  let loading = $state(true);
+  const reviewsQuery = createApiQuery(() => ({
+    key: keys.profile.myReviews(),
+    fetch: getMyReviews,
+  }));
+  const reviews = $derived(reviewsQuery.data ?? []);
+  const loading = $derived(reviewsQuery.loading);
 
   // Bulk-selection state (review ids).
   let selected = $state<string[]>([]);
-  let batchBusy = $state(false);
   let confirmingBatchDelete = $state(false);
   const allSelected = $derived(
     reviews.length > 0 && selected.length === reviews.length,
@@ -48,42 +55,25 @@
     confirmingBatchDelete = false;
   }
 
-  async function batchDelete() {
-    if (selected.length === 0 || batchBusy) return;
-    batchBusy = true;
-    try {
-      await batchDeleteReviews(selected);
-      const removed = new Set(selected);
-      reviews = reviews.filter((r) => !removed.has(r.id));
-      clearSelection();
-    } finally {
-      batchBusy = false;
-    }
-  }
+  const batchDeleteMut = createApiMutation(() => ({
+    mutate: () => batchDeleteReviews(selected),
+    invalidates: [keys.profile.myReviews()],
+    onSuccess: clearSelection,
+  }));
 
-  async function batchVisibility(visibility: ReviewVisibility) {
-    if (selected.length === 0 || batchBusy) return;
-    batchBusy = true;
-    try {
-      await batchSetReviewVisibility(selected, visibility);
-      const changed = new Set(selected);
-      reviews = reviews.map((r) =>
-        changed.has(r.id) ? { ...r, visibility } : r,
-      );
-      clearSelection();
-    } finally {
-      batchBusy = false;
-    }
-  }
+  const batchVisibilityMut = createApiMutation(() => ({
+    mutate: (visibility: ReviewVisibility) =>
+      batchSetReviewVisibility(selected, visibility),
+    invalidates: [keys.profile.myReviews()],
+    onSuccess: clearSelection,
+  }));
+
+  const batchBusy = $derived(
+    batchDeleteMut.loading || batchVisibilityMut.loading,
+  );
 
   // Edit modal state.
   let editing = $state<MyReviewDto | null>(null);
-
-  $effect(() => {
-    getMyReviews()
-      .then((r) => (reviews = r))
-      .finally(() => (loading = false));
-  });
 
   function openEdit(review: MyReviewDto) {
     editing = review;
@@ -93,20 +83,11 @@
     editing = null;
   }
 
-  function handleSaved(updated: {
-    rating: number;
-    text: string | null;
-    visibility: ReviewVisibility;
-  }) {
-    if (!editing) return;
-    reviews = reviews.map((r) =>
-      r.id === editing!.id ? { ...r, ...updated, target: r.target } : r,
-    );
-  }
-
-  function handleDeleted() {
-    if (!editing) return;
-    reviews = reviews.filter((r) => r.id !== editing!.id);
+  // ReviewFormModal isn't itself migrated yet — it saves/deletes directly,
+  // so this list's cache needs an explicit nudge to pick the change up.
+  const queryClient = useQueryClient();
+  function handleReviewChanged() {
+    void queryClient.invalidateQueries({ queryKey: keys.profile.myReviews() });
   }
 </script>
 
@@ -157,13 +138,13 @@
             <button
               class="chip"
               disabled={batchBusy}
-              onclick={() => batchVisibility("FRIENDS")}>
+              onclick={() => batchVisibilityMut.mutate("FRIENDS")}>
               {m.common_friends()}
             </button>
             <button
               class="chip"
               disabled={batchBusy}
-              onclick={() => batchVisibility("PUBLIC")}>
+              onclick={() => batchVisibilityMut.mutate("PUBLIC")}>
               {m.common_public()}
             </button>
           {/if}
@@ -171,7 +152,7 @@
             <button
               class="btn btn-danger btn-sm"
               disabled={batchBusy}
-              onclick={batchDelete}>
+              onclick={() => batchDeleteMut.mutate()}>
               Confirmer la suppression
             </button>
           {:else}
@@ -264,6 +245,6 @@
     targetId={editing.targetId}
     review={editing}
     onClose={closeEdit}
-    onSaved={handleSaved}
-    onDeleted={handleDeleted} />
+    onSaved={handleReviewChanged}
+    onDeleted={handleReviewChanged} />
 {/if}

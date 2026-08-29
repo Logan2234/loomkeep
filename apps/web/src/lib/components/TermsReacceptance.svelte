@@ -1,24 +1,19 @@
 <script lang="ts">
   import { acceptTerms } from "$lib/api/client";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import Banner from "./Banner.svelte";
   import Modal from "./Modal.svelte";
 
   let checked = $state(false);
-  let loading = $state(false);
-  let error = $state<string | null>(null);
 
-  async function submit(event: SubmitEvent) {
+  const acceptMut = createApiMutation(() => ({
+    mutate: acceptTerms,
+  }));
+
+  function submit(event: SubmitEvent) {
     event.preventDefault();
-    error = null;
-    loading = true;
-    try {
-      await acceptTerms();
-    } catch {
-      error = m.terms_reacceptance_error();
-    } finally {
-      loading = false;
-    }
+    acceptMut.mutate();
   }
 </script>
 
@@ -44,12 +39,14 @@
         >.
       </span>
     </label>
-    {#if error}<Banner variant="error">{error}</Banner>{/if}
+    {#if acceptMut.error}<Banner variant="error">{acceptMut.error}</Banner>{/if}
     <button
       type="submit"
       class="btn btn-primary"
-      disabled={loading || !checked}>
-      {loading ? m.terms_reacceptance_action_loading() : m.common_continue()}
+      disabled={acceptMut.loading || !checked}>
+      {acceptMut.loading
+        ? m.terms_reacceptance_action_loading()
+        : m.common_continue()}
     </button>
   </form>
 </Modal>

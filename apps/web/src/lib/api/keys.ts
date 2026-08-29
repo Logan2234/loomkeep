@@ -9,9 +9,11 @@ export const keys = {
   },
   feed: {
     all: () => ["feed"] as const,
+    preview: () => ["feed", "preview"] as const,
   },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
+    myReviews: () => ["profile", "my-reviews"] as const,
   },
   library: {
     browse: (
@@ -34,6 +36,11 @@ export const keys = {
       ["catalog", "search", filters] as const,
   },
   admin: {
+    overview: () => ["admin", "overview"] as const,
+    userOptions: () => ["admin", "user-options"] as const,
+    services: () => ["admin", "services"] as const,
+    jobs: () => ["admin", "jobs"] as const,
+    backups: () => ["admin", "backups"] as const,
     securityEvents: (filters: { type: string | null; identifier: string }) =>
       ["admin", "security-events", filters] as const,
     securitySummary: () => ["admin", "security-summary"] as const,
