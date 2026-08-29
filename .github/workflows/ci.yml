@@ -43,6 +43,8 @@ jobs:
   lint-build-test:
     needs: changes
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
@@ -52,7 +54,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
-      - run: pnpm lint
+      - run: pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+      - run: |
+          pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+          mkdir -p eslint-results
+          mv apps/web/eslint-results.sarif eslint-results/web.sarif
+          mv apps/api/eslint-results.sarif eslint-results/api.sarif
+          mv packages/shared/eslint-results.sarif eslint-results/shared.sarif
       - name: generate paraglide types
         run: pnpm --filter @loomkeep/web generate:paraglide
       - name: svelte-check
@@ -83,7 +91,12 @@ jobs:
         with:
           name: lighthouse-reports
           path: lighthouse-results/
-
+      - name: Upload ESLint results
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: eslint-results
+          category: eslint
   e2e:
     needs: changes
     if: needs.changes.outputs.api == 'true'

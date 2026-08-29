@@ -27,22 +27,30 @@ jobs:
         with:
           node-version: 22
       - name: Run Pa11y CI
-        run: npx --yes pa11y-ci@4.1.1 -- --config .pa11yci.json
+        run: npx --yes pa11y-ci@4.1.1 --config .pa11yci.json
 
   zap:
-    name: OWASP ZAP baseline
+    name: OWASP ZAP
     runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+
+    permissions:
+      security-events: write
+
     steps:
-      - name: OWASP ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.15.0
+      - uses: actions/checkout@v4
+      - name: Run ZAP
+        uses: zaproxy/action-af@v0.3.0
         with:
-          target: https://loomkeep.app/
-          fail_action: false
-          artifact_name: zap-scan
-          allow_issue_writing: false
+          plan: .github/zap/plan.yaml
+      - name: List ZAP results
+        if: always()
+        run: find zap-results -type f -maxdepth 2 -print
+      - name: Upload ZAP SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: zap-results/zap-results.sarif
+          category: zap
 
 #   zap-api:
 #     name: OWASP ZAP API

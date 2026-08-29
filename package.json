@@ -60,6 +60,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.0",
+    "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
@@ -69,9 +70,9 @@
     "knip": "^6.32.2",
     "lint-staged": "^17.3.0",
     "prettier": "^3.9.6",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-svelte": "^4.1.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "prettier-plugin-organize-imports": "^4.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0"
   }

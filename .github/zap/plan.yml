@@ -1,0 +1,51 @@
+env:
+  contexts:
+    - name: loomkeep
+      urls:
+        - https://loomkeep.app/
+
+      includePaths:
+        - https://loomkeep\.app/.*
+
+      excludePaths:
+        - https://loomkeep\.app/api/.*
+
+      authentication:
+        method: manual
+
+      sessionManagement:
+        method: cookie
+
+jobs:
+  - type: spider
+    parameters:
+      context: loomkeep
+      maxDuration: 5
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: activeScan
+    parameters:
+      context: loomkeep
+      policy: Default Policy
+
+  - type: report
+    parameters:
+      template: sarif-json
+      reportDir: /zap/wrk/zap-results
+      reportFile: zap-results.sarif
+      reportTitle: Loomkeep ZAP Security Scan
+      reportDescription: OWASP ZAP security scan of Loomkeep
+      displayReport: false
+    risks:
+      - high
+      - medium
+      - low
+      - info
+    confidences:
+      - high
+      - medium
+      - low
+      - falsepositive
