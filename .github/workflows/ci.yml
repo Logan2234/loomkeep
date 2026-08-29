@@ -53,8 +53,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
       - run: pnpm lint
-        env:
-          ESLINT_TYPE_AWARE: true
       - name: generate paraglide types
         if: needs.changes.outputs.web == 'true'
         run: pnpm --filter @loomkeep/web generate:paraglide

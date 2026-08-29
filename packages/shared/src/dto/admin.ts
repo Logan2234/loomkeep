@@ -70,7 +70,7 @@ interface MailTemplateFieldDto {
 }
 
 /** One entry in the admin email-template gallery. */
-export interface MailTemplateInfoDto {
+interface MailTemplateInfoDto {
   key: string;
   label: string;
   fields: MailTemplateFieldDto[];
