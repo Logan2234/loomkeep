@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { PUBLIC_API_URL } from "$env/static/public";
+  import { env } from "$env/dynamic/public";
   import { bootstrap } from "$lib/bootstrap.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { toIntlLocale } from "$lib/constants/language-to-locale";
@@ -48,7 +48,7 @@
     content={toIntlLocale(baseLocale).replace("-", "_")} />
   <meta name="twitter:card" content="summary" />
 
-  <link rel="preconnect" href={PUBLIC_API_URL} />
+  <link rel="preconnect" href={env.PUBLIC_API_URL} />
   <link rel="canonical" href={page.url.href} />
 </svelte:head>
 
