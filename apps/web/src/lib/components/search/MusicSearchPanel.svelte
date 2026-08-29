@@ -6,6 +6,9 @@
     upsertMusicEntry,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -13,7 +16,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { MusicEntryDto, MusicSummaryDto } from "@loomkeep/shared";
+  import type { MusicSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.
@@ -49,22 +52,15 @@
 
   // Albums already in the library, keyed by source id → their entry, so a
   // search result can be flagged (and jumped to) instead of re-added.
-  let entries = $state<MusicEntryDto[]>([]);
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.music.tracked(),
+    fetch: () => fetchAllPages((page) => listMusic({ page })),
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
   const tracked = $derived(
-    new SvelteMap(entries.map((e) => [e.album.sourceId, e])),
+    new SvelteMap((trackedQuery.data ?? []).map((e) => [e.album.sourceId, e])),
   );
-
-  async function loadLibrary() {
-    try {
-      entries = await fetchAllPages((page) => listMusic({ page }));
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
-
-  $effect(() => {
-    void loadLibrary();
-  });
 
   // Debounced catalogue search.
   $effect(() => {
@@ -99,17 +95,19 @@
     }
   }
 
-  async function addAlbum(album: MusicSummaryDto) {
-    try {
-      await upsertMusicEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (album: MusicSummaryDto) =>
+      upsertMusicEntry({
         source: album.source,
         sourceId: album.sourceId,
         status: "TO_LISTEN",
-      });
-      await loadLibrary();
-    } catch (err) {
-      searchError = resolveApiError(err);
-    }
+      }),
+    invalidates: [keys.music.tracked()],
+    errorToast: true,
+  }));
+
+  function addAlbum(album: MusicSummaryDto) {
+    addMut.mutate(album);
   }
 </script>
 

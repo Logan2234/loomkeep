@@ -6,6 +6,9 @@
     upsertBookEntry,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -13,7 +16,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { BookEntryDto, BookSummaryDto } from "@loomkeep/shared";
+  import type { BookSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.
@@ -53,22 +56,15 @@
 
   // Books already in the library, keyed by source id → their entry, so a search
   // result can be flagged (and jumped to) instead of re-added.
-  let entries = $state<BookEntryDto[]>([]);
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.books.tracked(),
+    fetch: () => fetchAllPages((page) => listBooks({ page })),
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
   const tracked = $derived(
-    new SvelteMap(entries.map((e) => [e.book.sourceId, e])),
+    new SvelteMap((trackedQuery.data ?? []).map((e) => [e.book.sourceId, e])),
   );
-
-  async function loadLibrary() {
-    try {
-      entries = await fetchAllPages((page) => listBooks({ page }));
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
-
-  $effect(() => {
-    void loadLibrary();
-  });
 
   // Debounced catalogue search. Re-runs when the "by author" toggle changes,
   // since it changes the query sent, not just its formatting.
@@ -104,17 +100,19 @@
     }
   }
 
-  async function addBook(book: BookSummaryDto) {
-    try {
-      await upsertBookEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (book: BookSummaryDto) =>
+      upsertBookEntry({
         source: book.source,
         sourceId: book.sourceId,
         status: "TO_READ",
-      });
-      await loadLibrary();
-    } catch (err) {
-      searchError = resolveApiError(err);
-    }
+      }),
+    invalidates: [keys.books.tracked()],
+    errorToast: true,
+  }));
+
+  function addBook(book: BookSummaryDto) {
+    addMut.mutate(book);
   }
 </script>
 

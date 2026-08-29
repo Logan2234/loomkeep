@@ -6,6 +6,9 @@
     upsertGameEntry,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -13,7 +16,7 @@
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
-  import type { GameEntryDto, GameSummaryDto } from "@loomkeep/shared";
+  import type { GameSummaryDto } from "@loomkeep/shared";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.
@@ -49,22 +52,15 @@
 
   // Games already in the library, keyed by source id → their entry, so a search
   // result can be flagged (and jumped to) instead of re-added.
-  let entries = $state<GameEntryDto[]>([]);
+  const trackedQuery = createApiQuery(() => ({
+    key: keys.games.tracked(),
+    fetch: () => fetchAllPages((page) => listGames({ page })),
+  }));
+  // A failed library load only costs the "already added" flag; ignore it
+  // rather than surfacing an error for a secondary, non-essential lookup.
   const tracked = $derived(
-    new SvelteMap(entries.map((e) => [e.game.sourceId, e])),
+    new SvelteMap((trackedQuery.data ?? []).map((e) => [e.game.sourceId, e])),
   );
-
-  async function loadLibrary() {
-    try {
-      entries = await fetchAllPages((page) => listGames({ page }));
-    } catch {
-      // A failed library load only costs the "already added" flag; ignore.
-    }
-  }
-
-  $effect(() => {
-    void loadLibrary();
-  });
 
   // Debounced catalogue search.
   $effect(() => {
@@ -99,17 +95,19 @@
     }
   }
 
-  async function addGame(game: GameSummaryDto) {
-    try {
-      await upsertGameEntry({
+  const addMut = createApiMutation(() => ({
+    mutate: (game: GameSummaryDto) =>
+      upsertGameEntry({
         source: game.source,
         sourceId: game.sourceId,
         status: "BACKLOG",
-      });
-      await loadLibrary();
-    } catch (err) {
-      searchError = resolveApiError(err);
-    }
+      }),
+    invalidates: [keys.games.tracked()],
+    errorToast: true,
+  }));
+
+  function addGame(game: GameSummaryDto) {
+    addMut.mutate(game);
   }
 </script>
 
