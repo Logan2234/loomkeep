@@ -9,7 +9,9 @@
     removeListMember,
     reorderListItems,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Banner from "$lib/components/Banner.svelte";
@@ -24,13 +26,9 @@
   import { appConfig } from "$lib/config.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
-  import type {
-    ListDetailDto,
-    ListDto,
-    ListItemDto,
-    ListViewerRole,
-  } from "@loomkeep/shared";
+  import type { ListDto, ListItemDto } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: "Classement",
@@ -43,86 +41,89 @@
   };
 
   const id = $derived(page.params.id ?? "");
+  const detailKey = $derived(keys.lists.detail(id));
+  const queryClient = useQueryClient();
 
-  let list = $state<ListDetailDto | null>(null);
-  let role = $state<ListViewerRole>("VIEWER");
-  const canEditList = $derived(role === "OWNER" || role === "EDITOR");
-  const isOwner = $derived(role === "OWNER");
-  let error = $state<string | null>(null);
-  let loading = $state(true);
   let editing = $state(false);
   let managingMembers = $state(false);
-  let removingId = $state<string | null>(null);
   let conflictNotice = $state(false);
   let focusedItemId = $state<string | null>(null);
   let confirmRemoveId = $state<string | null>(null);
 
+  // Set only when getMyList's 403/404 fallback (getList, for a shared/public
+  // list the viewer doesn't own) also fails — the query's own resolved error
+  // otherwise covers every other failure.
+  let notFoundAfterFallback = $state(false);
+
+  const listQuery = createApiQuery(() => ({
+    key: detailKey,
+    fetch: async () => {
+      try {
+        return await getMyList(id);
+      } catch (err) {
+        if (
+          err instanceof ApiError &&
+          (err.status === 403 || err.status === 404)
+        ) {
+          try {
+            return await getList(id);
+          } catch {
+            notFoundAfterFallback = true;
+            throw err;
+          }
+        }
+        throw err;
+      }
+    },
+    enabled: !!id,
+  }));
+  $effect(() => {
+    if (listQuery.data) notFoundAfterFallback = false;
+  });
+  const list = $derived(listQuery.data);
+  const loading = $derived(listQuery.loading);
+  const error = $derived(
+    notFoundAfterFallback
+      ? "Liste introuvable ou non accessible."
+      : listQuery.error,
+  );
+
+  const role = $derived(list?.viewerRole ?? "VIEWER");
+  const canEditList = $derived(role === "OWNER" || role === "EDITOR");
+  const isOwner = $derived(role === "OWNER");
+  let removingId = $state<string | null>(null);
+
   // Local, reorderable copy of the items — svelte-dnd-action mutates this
-  // directly during a drag; `list.items` stays the source of truth otherwise.
-  let dragItems = $state<ListItemDto[]>([]);
+  // directly during a drag; resets to the query's own items whenever those
+  // change underneath (a refetch, a reorder-conflict reload, …).
+  let dragItems: ListItemDto[] = $derived(list?.items ?? []);
 
   const confirmRemoveItem = $derived(
     dragItems.find((i) => i.id === confirmRemoveId) ?? null,
   );
 
-  function load(listId: string) {
-    loading = true;
-    error = null;
-    list = null;
-
-    getMyList(listId)
-      .then((d) => {
-        list = d;
-        role = d.viewerRole;
-        dragItems = d.items;
-      })
-      .catch((err) => {
-        if (
-          err instanceof ApiError &&
-          (err.status === 403 || err.status === 404)
-        ) {
-          return getList(listId)
-            .then((d) => {
-              list = d;
-              role = d.viewerRole;
-              dragItems = d.items;
-            })
-            .catch(() => {
-              error = "Liste introuvable ou non accessible.";
-            });
-        }
-        error = resolveApiError(err);
-        return;
-      })
-      .finally(() => (loading = false));
+  function patchList(patch: Partial<NonNullable<typeof list>>) {
+    queryClient.setQueryData(detailKey, (old: typeof list) =>
+      old ? { ...old, ...patch } : old,
+    );
   }
 
-  $effect(() => {
-    const listId = id;
-    conflictNotice = false;
-    if (listId) load(listId);
-  });
-
   function handleSaved(updated: ListDto) {
-    if (!list) return;
-    list = { ...list, ...updated };
+    patchList(updated);
   }
 
   function handleDeleted() {
     window.location.href = "/app/lists";
   }
 
-  let leaving = $state(false);
+  const leaveMut = createApiMutation(() => ({
+    mutate: () => removeListMember(list!.id, auth.user!.id),
+    onSuccess: () => (window.location.href = "/app/lists"),
+  }));
 
-  async function leaveList() {
-    if (!list || leaving || !auth.user) return;
-    leaving = true;
-    try {
-      await removeListMember(list.id, auth.user.id);
-      window.location.href = "/app/lists";
-    } finally {
-      leaving = false;
-    }
+  function leaveList() {
+    if (!list || leaveMut.loading || !auth.user) return;
+    leaveMut.mutate();
   }
 
   async function removeItem(itemId: string) {
@@ -130,8 +131,8 @@
     removingId = itemId;
     try {
       await removeListItem(list.id, itemId);
-      dragItems = dragItems.filter((i) => i.id !== itemId);
-      list = { ...list, items: dragItems };
+      const items = list.items.filter((i) => i.id !== itemId);
+      patchList({ items });
     } finally {
       removingId = null;
     }
@@ -154,7 +155,7 @@
     if (!list) return;
     const listId = list.id;
     const expectedUpdatedAt = list.updatedAt;
-    list = { ...list, items: dragItems };
+    patchList({ items: dragItems });
     try {
       await reorderListItems(
         listId,
@@ -164,7 +165,7 @@
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         conflictNotice = true;
-        load(listId);
+        void queryClient.refetchQueries({ queryKey: detailKey });
         return;
       }
       throw err;
@@ -273,7 +274,10 @@
           </button>
         {/if}
         {#if role === "EDITOR"}
-          <button class="btn btn-ghost" disabled={leaving} onclick={leaveList}>
+          <button
+            class="btn btn-ghost"
+            disabled={leaveMut.loading}
+            onclick={leaveList}>
             {m.list_leave()}
           </button>
         {/if}
