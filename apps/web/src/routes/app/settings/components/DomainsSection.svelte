@@ -1,6 +1,6 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
@@ -11,21 +11,19 @@
   import { m } from "$lib/paraglide/messages.js";
   import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
 
-  let domainsError = $state("");
   const premiumLocked = $derived(
     liveFlags.isEnabled("premium-features") && !auth.isPremium,
   );
 
-  async function toggleDomain(id: Domain) {
+  const toggleDomainMut = createApiMutation(() => ({
+    mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
+  }));
+
+  function toggleDomain(id: Domain) {
     if (!auth.user) return;
     const next = toggleDomainSelection(auth.user.enabledDomains, id);
     if (next === auth.user.enabledDomains) return; // last domain, refused
-    domainsError = "";
-    try {
-      await updateMe({ enabledDomains: next });
-    } catch (err) {
-      domainsError = resolveApiError(err);
-    }
+    toggleDomainMut.mutate(next);
   }
 </script>
 
@@ -84,8 +82,8 @@
         {/if}
       {/each}
     </div>
-    {#if domainsError}
-      <p class="text-danger mt-2 text-sm">{domainsError}</p>
+    {#if toggleDomainMut.error}
+      <p class="text-danger mt-2 text-sm">{toggleDomainMut.error}</p>
     {/if}
   </section>
 {/if}

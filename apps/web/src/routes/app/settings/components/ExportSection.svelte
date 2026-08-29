@@ -1,13 +1,10 @@
 <script lang="ts">
   import { exportMyData, exportMyDataCsv } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { Domain } from "@loomkeep/shared";
-
-  let exporting = $state(false);
-  let exportError = $state("");
 
   function downloadBlob(content: string, mimeType: string, filename: string) {
     const blob = new Blob([content], { type: mimeType });
@@ -19,23 +16,17 @@
     URL.revokeObjectURL(url);
   }
 
-  async function downloadExport() {
-    exporting = true;
-    exportError = "";
-    try {
-      const data = await exportMyData();
+  const exportMut = createApiMutation(() => ({
+    mutate: exportMyData,
+    onSuccess: (data) => {
       downloadBlob(
         JSON.stringify(data, null, 2),
         "application/json",
         `loomkeep-export-${new Date().toISOString().slice(0, 10)}.json`,
       );
       toast.success(m.settings_export_success());
-    } catch (err) {
-      exportError = resolveApiError(err);
-    } finally {
-      exporting = false;
-    }
-  }
+    },
+  }));
 
   const CSV_DOMAINS: {
     domain: Domain;
@@ -65,25 +56,21 @@
     },
   ];
 
-  let csvExporting = $state<Domain | null>(null);
-  let csvError = $state("");
-
-  async function downloadCsv(domain: Domain, slug: string) {
-    csvExporting = domain;
-    csvError = "";
-    try {
-      const { csv } = await exportMyDataCsv(domain);
+  const csvExportMut = createApiMutation(() => ({
+    mutate: (args: { domain: Domain; slug: string }) =>
+      exportMyDataCsv(args.domain),
+    onSuccess: ({ csv }, args) => {
       downloadBlob(
         csv,
         "text/csv",
-        `loomkeep-${slug}-${new Date().toISOString().slice(0, 10)}.csv`,
+        `loomkeep-${args.slug}-${new Date().toISOString().slice(0, 10)}.csv`,
       );
       toast.success(m.settings_export_success());
-    } catch (err) {
-      csvError = resolveApiError(err);
-    } finally {
-      csvExporting = null;
-    }
+    },
+  }));
+
+  function downloadCsv(domain: Domain, slug: string) {
+    csvExportMut.mutate({ domain, slug });
   }
 </script>
 
@@ -94,14 +81,17 @@
   <p class="text-dim mb-4 text-sm">
     {m.settings_export_body()}
   </p>
-  <button class="btn btn-primary" disabled={exporting} onclick={downloadExport}>
+  <button
+    class="btn btn-primary"
+    disabled={exportMut.loading}
+    onclick={() => exportMut.mutate()}>
     <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-    {exporting
+    {exportMut.loading
       ? m.settings_export_action_loading()
       : m.settings_export_action()}
   </button>
-  {#if exportError}
-    <p class="text-danger mt-2 text-sm">{exportError}</p>
+  {#if exportMut.error}
+    <p class="text-danger mt-2 text-sm">{exportMut.error}</p>
   {/if}
 
   <div class="border-border mt-5 border-t pt-5">
@@ -122,18 +112,18 @@
         {:else}
           <button
             class="btn btn-ghost"
-            disabled={csvExporting !== null}
+            disabled={csvExportMut.loading}
             onclick={() => downloadCsv(d.domain, d.slug)}>
             <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-            {csvExporting === d.domain
+            {csvExportMut.loading && csvExportMut.variables?.domain === d.domain
               ? m.settings_export_action_loading()
               : `${d.label} (CSV)`}
           </button>
         {/if}
       {/each}
     </div>
-    {#if csvError}
-      <p class="text-danger mt-2 text-sm">{csvError}</p>
+    {#if csvExportMut.error}
+      <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
     {/if}
   </div>
 </section>

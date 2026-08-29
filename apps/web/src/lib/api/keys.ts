@@ -21,6 +21,9 @@ export const keys = {
     availability: () => ["import", "availability"] as const,
     quota: () => ["import", "quota"] as const,
   },
+  account: {
+    deletionSummary: () => ["account", "deletion-summary"] as const,
+  },
   verification: {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>

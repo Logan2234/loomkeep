@@ -1,8 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { deleteAccount, getAccountDeletionSummary } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -10,7 +11,6 @@
   import {
     type AccountDeletionAnonymizedCategory,
     type AccountDeletionDeletedCategory,
-    type AccountDeletionSummaryDto,
   } from "@loomkeep/shared";
 
   const DELETED_LABELS: Record<AccountDeletionDeletedCategory, string> = {
@@ -34,39 +34,36 @@
 
   let showModal = $state(false);
   let deletePasswordInput = $state("");
-  let deleteError = $state("");
-  let deleteSaving = $state(false);
-  let summary = $state<AccountDeletionSummaryDto | null>(null);
-  let summaryLoading = $state(false);
+
+  const summaryQuery = createApiQuery(() => ({
+    key: keys.account.deletionSummary(),
+    fetch: getAccountDeletionSummary,
+    enabled: showModal,
+  }));
+  const summary = $derived(summaryQuery.data);
+  const summaryLoading = $derived(summaryQuery.loading);
 
   function openDeleteModal() {
     deletePasswordInput = "";
-    deleteError = "";
+    deleteMut.reset();
     showModal = true;
-    summary = null;
-    summaryLoading = true;
-    getAccountDeletionSummary()
-      .then((s) => (summary = s))
-      .catch(() => (summary = null))
-      .finally(() => (summaryLoading = false));
   }
 
   function closeModal() {
     showModal = false;
   }
 
-  async function confirmDeleteAccount() {
-    deleteError = "";
-    deleteSaving = true;
-    try {
-      await deleteAccount({ currentPassword: deletePasswordInput });
+  const deleteMut = createApiMutation(() => ({
+    mutate: () => deleteAccount({ currentPassword: deletePasswordInput }),
+    coveredFields: ["currentPassword"],
+    onSuccess: () => {
       toast.success("Compte supprimé.");
-      await goto("/login");
-    } catch (err) {
-      deleteError = fieldError(err, "currentPassword") ?? resolveApiError(err);
-    } finally {
-      deleteSaving = false;
-    }
+      void goto("/login");
+    },
+  }));
+
+  function confirmDeleteAccount() {
+    deleteMut.mutate();
   }
 </script>
 
@@ -147,8 +144,8 @@
           autocomplete="current-password"
           bind:value={deletePasswordInput} />
       </label>
-      {#if deleteError}
-        <p class="text-danger text-sm">{deleteError}</p>
+      {#if deleteMut.error}
+        <p class="text-danger text-sm">{deleteMut.error}</p>
       {/if}
       <div class="mt-2 flex justify-end gap-2">
         <button type="button" class="btn btn-ghost" onclick={closeModal}>
@@ -157,8 +154,8 @@
         <button
           type="submit"
           class="btn btn-danger"
-          disabled={deleteSaving || !deletePasswordInput}>
-          {deleteSaving ? "Suppression…" : "Supprimer définitivement"}
+          disabled={deleteMut.loading || !deletePasswordInput}>
+          {deleteMut.loading ? "Suppression…" : "Supprimer définitivement"}
         </button>
       </div>
     </form>

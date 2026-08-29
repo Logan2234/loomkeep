@@ -1,6 +1,6 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
@@ -11,8 +11,6 @@
   import { m } from "$lib/paraglide/messages.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import { DigestCadence } from "@loomkeep/shared";
-
-  let notifyError = $state("");
 
   const dailyLocked = $derived(
     liveFlags.isEnabled("premium-features") && !auth.isPremium,
@@ -42,73 +40,98 @@
     value: tz,
   }));
 
-  async function setTimezone(values: string[]) {
-    const timezone = values[0];
-    if (!auth.user || !timezone || timezone === auth.user.timezone) return;
-    notifyError = "";
-    try {
-      await updateMe({ timezone });
-    } catch (err) {
-      notifyError = resolveApiError(err);
+  // One shared error banner at the bottom of the card — starting any of the
+  // four actions below resets every other mutation's error, so a stale
+  // failure from one control never lingers once another succeeds.
+  function resetOtherErrors(except: { reset(): void }) {
+    for (const mut of [timezoneMut, emailCadenceMut, pushMut, newsletterMut]) {
+      if (mut !== except) mut.reset();
     }
+    pushPermissionError = null;
   }
 
-  async function setCadence(
+  const timezoneMut = createApiMutation(() => ({
+    mutate: (timezone: string) => updateMe({ timezone }),
+  }));
+
+  function setTimezone(values: string[]) {
+    const timezone = values[0];
+    if (!auth.user || !timezone || timezone === auth.user.timezone) return;
+    resetOtherErrors(timezoneMut);
+    timezoneMut.mutate(timezone);
+  }
+
+  const emailCadenceMut = createApiMutation(() => ({
+    mutate: (cadence: DigestCadence) => updateMe({ notifyEmail: cadence }),
+  }));
+
+  function setCadence(
     key: "notifyEmail" | "notifyPush",
     cadence: DigestCadence,
   ) {
     if (!auth.user || cadence === auth.user[key]) return;
     if (cadence === DigestCadence.DAILY && dailyLocked) return;
-    notifyError = "";
 
     // Push additionally needs a live browser subscription — mirror the
     // subscribe/unsubscribe dance the boolean toggle used to do.
     if (key === "notifyPush") {
-      await togglePushSubscription(cadence);
+      togglePushSubscription(cadence);
       return;
     }
 
-    try {
-      await updateMe({ [key]: cadence });
-    } catch (err) {
-      notifyError = resolveApiError(err);
-    }
+    resetOtherErrors(emailCadenceMut);
+    emailCadenceMut.mutate(cadence);
   }
 
   const pushSupported = isPushSupported();
-  let pushBusy = $state(false);
 
-  async function togglePushSubscription(cadence: DigestCadence) {
-    if (pushBusy) return;
-    pushBusy = true;
-    try {
+  // "denied" (no browser permission) isn't an API failure — it's a plain
+  // returned outcome, not a throw, so a genuine ApiError from
+  // enablePush()/disablePush() (they call subscribePush/getPushPublicKey)
+  // still propagates through mutate() normally and resolves via the
+  // mutation's own .error instead of being conflated with this one.
+  let pushPermissionError = $state<string | null>(null);
+
+  const pushMut = createApiMutation(() => ({
+    mutate: async (cadence: DigestCadence): Promise<"ok" | "denied"> => {
       if (cadence === DigestCadence.DISABLED) {
         await disablePush();
-        await updateMe({ notifyPush: cadence });
       } else {
         const ok = await enablePush();
-        if (!ok) {
-          notifyError = m.settings_communications_push_error();
-          return;
-        }
-        await updateMe({ notifyPush: cadence });
+        if (!ok) return "denied";
       }
-    } catch (err) {
-      notifyError = resolveApiError(err);
-    } finally {
-      pushBusy = false;
-    }
+      await updateMe({ notifyPush: cadence });
+      return "ok";
+    },
+    onSuccess: (result) => {
+      if (result === "denied") {
+        pushPermissionError = m.settings_communications_push_error();
+      }
+    },
+  }));
+
+  function togglePushSubscription(cadence: DigestCadence) {
+    resetOtherErrors(pushMut);
+    pushMut.mutate(cadence);
   }
 
-  async function toggleNewsletter() {
+  const newsletterMut = createApiMutation(() => ({
+    mutate: (notifyNewsletter: boolean) => updateMe({ notifyNewsletter }),
+  }));
+
+  function toggleNewsletter() {
     if (!auth.user) return;
-    notifyError = "";
-    try {
-      await updateMe({ notifyNewsletter: !auth.user.notifyNewsletter });
-    } catch (err) {
-      notifyError = resolveApiError(err);
-    }
+    resetOtherErrors(newsletterMut);
+    newsletterMut.mutate(!auth.user.notifyNewsletter);
   }
+
+  const notifyError = $derived(
+    timezoneMut.error ??
+      emailCadenceMut.error ??
+      pushPermissionError ??
+      pushMut.error ??
+      newsletterMut.error,
+  );
 </script>
 
 {#if auth.user}
@@ -160,7 +183,7 @@
           </p>
         </div>
         <SegmentedControl
-          options={cadenceOptions(!pushSupported || pushBusy)}
+          options={cadenceOptions(!pushSupported || pushMut.loading)}
           value={auth.user.notifyPush}
           onChange={(v) => setCadence("notifyPush", v)} />
       </div>
