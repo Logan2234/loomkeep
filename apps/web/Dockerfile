@@ -13,17 +13,34 @@ COPY packages/shared packages/shared
 COPY apps/web apps/web
 RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web build
 
-# adapter-node's SSR build can't safely bundle @loomkeep/shared (see the
-# ssr.external comment in vite.config.ts — it's a CJS dist/ build, and Vite's
-# default inlining for linked workspace packages evaluates it as ESM and
-# crashes), so it stays a real "@loomkeep/shared" import in build/'s server
-# chunks that Node has to resolve at runtime — build/ alone isn't
-# self-contained, node_modules/@loomkeep/shared has to ship alongside it.
+# adapter-node's SSR build doesn't safely bundle every server-side dependency
+# into build/ — @loomkeep/shared (a linked workspace package, see the
+# ssr.external comment in vite.config.ts) and @sentry/sveltekit (GlitchTip
+# error reporting from src/lib/api/core.ts) both stay real npm imports build/'s
+# server chunks resolve at runtime, so build/ alone isn't self-contained.
+# `pnpm install --prod` alone isn't enough either: this is a pnpm workspace,
+# and the workspace's shared virtual store keeps every package ever resolved
+# for the monorepo's single lockfile. `pnpm deploy` instead materializes only
+# @loomkeep/web's actual production dependency graph as real files — see the
+# API Dockerfile's identical use of this for the same reasoning. `--legacy`
+# links @loomkeep/shared as a relative symlink
+# (deploy/node_modules/@loomkeep/shared -> ../../../packages/shared) rather
+# than copying it in, so `deploy`'s directory depth relative to
+# `packages/shared` has to be preserved below — the deploy output can't be
+# flattened into /app directly.
+#
+# `deploy` packs apps/web the way `npm publish` would, which respects
+# apps/web's own .gitignore — and /build is gitignored (it's generated), so
+# it's never in `deploy`'s output. node_modules is still the only thing we
+# need from it; build/ itself is copied straight from the build stage below.
+RUN pnpm --filter @loomkeep/web deploy --prod --legacy /app/deploy
+
 FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019
 WORKDIR /app
-COPY --from=build /app/apps/web/build ./build
-COPY --from=build /app/packages/shared/package.json ./node_modules/@loomkeep/shared/package.json
-COPY --from=build /app/packages/shared/dist ./node_modules/@loomkeep/shared/dist
+COPY --from=build /app/packages/shared ./packages/shared
+COPY --from=build /app/deploy ./deploy
+COPY --from=build /app/apps/web/build ./deploy/build
+WORKDIR /app/deploy
 ENV PORT=3000
 EXPOSE 3000
 CMD ["node", "build"]
