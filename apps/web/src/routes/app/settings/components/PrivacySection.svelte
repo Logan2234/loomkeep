@@ -5,6 +5,7 @@
     updateMe,
     updatePrivacySettings,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -12,6 +13,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
+  import { toast } from "$lib/toast.svelte";
   import {
     Domain,
     type GhostSwitchImpactDto,
@@ -120,7 +122,9 @@
   let switchingToGhost = $state(false);
 
   $effect(() => {
-    void getPrivacySettings().then((s) => (settings = s));
+    getPrivacySettings()
+      .then((s) => (settings = s))
+      .catch((err) => toast.error(resolveApiError(err)));
   });
 
   const audienceOf = (
@@ -133,15 +137,19 @@
   async function setAccess(access: ProfileAccess) {
     if (!settings || settings.profileAccess === access) return;
 
-    if (access === ProfileAccess.GHOST) {
-      // Consequential + immediate (followers removed, lists downgraded) —
-      // show live counts and require confirmation before applying it.
-      ghostImpact = await getGhostSwitchImpact();
-      confirmingGhost = true;
-      return;
-    }
+    try {
+      if (access === ProfileAccess.GHOST) {
+        // Consequential + immediate (followers removed, lists downgraded) —
+        // show live counts and require confirmation before applying it.
+        ghostImpact = await getGhostSwitchImpact();
+        confirmingGhost = true;
+        return;
+      }
 
-    settings = await updatePrivacySettings({ profileAccess: access });
+      settings = await updatePrivacySettings({ profileAccess: access });
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   async function confirmGhostSwitch() {
@@ -152,6 +160,8 @@
         profileAccess: ProfileAccess.GHOST,
       });
       confirmingGhost = false;
+    } catch (err) {
+      toast.error(resolveApiError(err));
     } finally {
       switchingToGhost = false;
     }
@@ -163,9 +173,13 @@
     audience: VisibilityAudience,
   ) {
     if (!settings) return;
-    settings = await updatePrivacySettings({
-      settings: [{ domain, facet, audience }],
-    });
+    try {
+      settings = await updatePrivacySettings({
+        settings: [{ domain, facet, audience }],
+      });
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   async function setDefaultReviewVisibility(v: ReviewVisibility) {
@@ -177,6 +191,8 @@
     savingDefaultReviewVisibility = true;
     try {
       await updateMe({ defaultReviewVisibility: v });
+    } catch (err) {
+      toast.error(resolveApiError(err));
     } finally {
       savingDefaultReviewVisibility = false;
     }

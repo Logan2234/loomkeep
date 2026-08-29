@@ -17,6 +17,13 @@ export const keys = {
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,
   },
+  import: {
+    availability: () => ["import", "availability"] as const,
+    quota: () => ["import", "quota"] as const,
+  },
+  lists: {
+    editable: () => ["lists", "editable"] as const,
+  },
   feed: {
     all: () => ["feed"] as const,
     preview: () => ["feed", "preview"] as const,
