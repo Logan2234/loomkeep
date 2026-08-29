@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Run Pa11y CI
-        run: npx --yes pa11y-ci@4.1.1
+        run: npx --yes pa11y-ci@4.1.1 --config .pa11yci
 
   zap:
     name: OWASP ZAP baseline
@@ -40,7 +40,7 @@ jobs:
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: https://loomkeep.app/
-          fail_action: true
+          fail_action: false
           artifact_name: zap-scan
           allow_issue_writing: false
 

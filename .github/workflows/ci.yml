@@ -78,7 +78,6 @@ jobs:
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-
   e2e:
     needs: changes
     if: needs.changes.outputs.api == 'true'

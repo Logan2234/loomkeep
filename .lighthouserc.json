@@ -1,6 +1,8 @@
 {
   "ci": {
-    "collect": {},
+    "collect": {
+      "staticDistDir": "./apps/web/build"
+    },
     "assert": {
       "preset": "lighthouse:recommended",
       "includePassedAssertions": true
