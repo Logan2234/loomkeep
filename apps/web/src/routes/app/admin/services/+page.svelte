@@ -234,7 +234,7 @@
                       {#if s.required}
                         <span
                           class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
-                          {m.admin_services_required_badge()}
+                          {m.common_required()}
                         </span>
                       {/if}
                     </div>

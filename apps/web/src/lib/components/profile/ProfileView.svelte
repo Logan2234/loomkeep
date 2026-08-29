@@ -163,7 +163,7 @@
     if (rel.requested) return m.profile_follow_requested();
     return profile.profileAccess === "PRIVATE"
       ? m.profile_follow_request()
-      : m.profile_follow_follow();
+      : m.common_follow();
   });
 
   // A Figurant can only follow public profiles — hide the affordance rather

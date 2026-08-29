@@ -29,7 +29,7 @@ export const NAVIGATION: NavSection[] = [
     items: [
       {
         href: "/app",
-        label: m.nav_home(),
+        label: m.common_home(),
         icon: "home",
         match: (p) => p === "/app",
       },
@@ -169,7 +169,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   home: {
     id: "home",
     href: "/app",
-    label: m.nav_home(),
+    label: m.common_home(),
     icon: "home",
     match: (p) => p === "/app",
   },
@@ -184,7 +184,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
   menu: {
     id: "menu",
     href: "#menu",
-    label: m.nav_menu(),
+    label: m.common_menu(),
     icon: "library",
     match: () => false,
   },

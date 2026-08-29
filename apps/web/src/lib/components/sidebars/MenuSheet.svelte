@@ -94,7 +94,7 @@
       <h2
         id="menu-sheet-title"
         class="font-display text-xl font-extrabold tracking-tight">
-        {inAdmin ? m.nav_administration() : m.nav_menu()}
+        {inAdmin ? m.nav_administration() : m.common_menu()}
       </h2>
     </div>
 

@@ -48,8 +48,8 @@
     const today = new SvelteDate();
     today.setHours(0, 0, 0, 0);
     const diff = Math.round((date.getTime() - today.getTime()) / 86_400_000);
-    if (diff === 0) return "Aujourd'hui";
-    if (diff === 1) return "Demain";
+    if (diff === 0) return m.common_today();
+    if (diff === 1) return m.common_tomorrow();
     const w = formatDate(date, WEEKDAY_LONG_OPTIONS);
     return w.charAt(0).toUpperCase() + w.slice(1);
   }

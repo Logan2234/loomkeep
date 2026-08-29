@@ -118,7 +118,7 @@
         : 'pointer-events-none -translate-x-4 opacity-0'}">
       <p
         class="mb-4 font-mono text-[0.62rem] font-bold tracking-[0.2em] text-[#f5b841]">
-        {inAdmin ? m.nav_administration() : m.nav_menu()}
+        {inAdmin ? m.nav_administration() : m.common_menu()}
       </p>
 
       {#if inAdmin}

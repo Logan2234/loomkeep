@@ -277,12 +277,13 @@
         onclick={() => {
           favoritesOnly = !favoritesOnly;
         }}>
-        <Icon name="star" class="h-3.5 w-3.5" /> Favoris
+        <Icon name="star" class="h-3.5 w-3.5" />&nbsp;
+        {m.common_favorites()}
       </button>
     </div>
     <div class="flex items-center gap-2 sm:ml-auto">
       <Combobox
-        label="Trier"
+        label={m.common_sort()}
         options={sorts}
         values={[sort]}
         onChange={(v) => {
@@ -354,7 +355,7 @@
             {/if}
           </p>
           <button class="btn btn-ghost mt-4" onclick={clearFilters}>
-            Effacer les filtres
+            {m.common_clear_filters()}
           </button>
         {/if}
       </EmptyState>

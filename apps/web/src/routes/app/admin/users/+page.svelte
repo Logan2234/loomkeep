@@ -322,7 +322,7 @@
       placeholder="Filtrer par email, identifiant ou nom…"
       class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
     <Combobox
-      label="Filtrer"
+      label={m.common_filter()}
       options={FILTERS}
       values={[filter]}
       onChange={(v) => (filter = (v[0] as AdminUserFilter) ?? "all")} />

@@ -192,7 +192,7 @@
     today.setHours(0, 0, 0, 0);
     const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
     if (diff === 0) return "Auj.";
-    if (diff === 1) return "Demain";
+    if (diff === 1) return m.common_tomorrow();
     return formatDate(iso, WEEKDAY_SHORT_OPTIONS);
   }
   const epCode = (e: CalendarEntryDto) =>
@@ -543,7 +543,7 @@
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="message" class="text-accent h-5 w-5 shrink-0" />
             <span class="flex flex-1 items-center gap-2 text-sm font-semibold">
-              Aide & Feedback
+              {m.common_help()} & {m.common_feedback()}
               {#if isFeatureNew("help-feedback")}<NewBadge />{/if}
             </span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />

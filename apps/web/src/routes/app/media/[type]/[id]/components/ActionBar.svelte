@@ -72,14 +72,14 @@
             type="button"
             class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50"
             disabled={continuing}
-            title={`Continuer S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
+            title={`${m.common_continue()} S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
               nextEpisode.episodeNumber,
             ).padStart(2, "0")}`}
             onclick={onContinue}>
             <Icon name="chevron-right" class="h-5 w-5" />
           </button>
           <div class="text-sm whitespace-nowrap">
-            Continuer ·
+            {m.common_continue()} ·
             <b class="timecode">
               S{String(nextEpisode.seasonNumber).padStart(2, "0")}E{String(
                 nextEpisode.episodeNumber,

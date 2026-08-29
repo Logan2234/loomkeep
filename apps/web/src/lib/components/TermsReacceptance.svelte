@@ -49,9 +49,7 @@
       type="submit"
       class="btn btn-primary"
       disabled={loading || !checked}>
-      {loading
-        ? m.terms_reacceptance_action_loading()
-        : m.terms_reacceptance_action()}
+      {loading ? m.terms_reacceptance_action_loading() : m.common_continue()}
     </button>
   </form>
 </Modal>

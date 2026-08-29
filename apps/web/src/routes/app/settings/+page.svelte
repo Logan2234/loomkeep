@@ -50,7 +50,7 @@
     { id: "export", label: m.common_export() },
     {
       id: "aide",
-      label: m.settings_section_help(),
+      label: `${m.common_help()} & ${m.common_feedback()}`,
       newBadgeKey: "help-feedback",
     },
     {

@@ -118,7 +118,7 @@
     if (!airDate) return null;
     const days = daysUntilAir(airDate);
     if (days <= 0) return null;
-    return days === 1 ? "Demain" : `Dans ${days} jours`;
+    return days === 1 ? m.common_tomorrow() : `Dans ${days} jours`;
   }
 
   async function markWatched(episodeId: string) {

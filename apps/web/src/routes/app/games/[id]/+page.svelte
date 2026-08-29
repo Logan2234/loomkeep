@@ -482,7 +482,9 @@
       <!-- Details panel, desktop position: sidebar next to the main column. -->
       {#snippet detailsPanel()}
         <div class="card p-4">
-          <h2 class="font-display text-sm font-bold tracking-tight">Détails</h2>
+          <h2 class="font-display text-sm font-bold tracking-tight">
+            {m.common_details()}
+          </h2>
           <dl class="mt-3 flex flex-col gap-3">
             {#if detail && detail.developers.length > 0}
               <div>
