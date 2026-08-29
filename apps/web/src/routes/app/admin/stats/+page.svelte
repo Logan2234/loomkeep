@@ -10,7 +10,8 @@
     getAdminSocialStats,
     getAdminSystemStats,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -22,44 +23,64 @@
     formatNumber,
   } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
-  import type {
-    AdminAccountsSectionDto,
-    AdminCatalogueSectionDto,
-    AdminSocialSectionDto,
-    AdminSystemSectionDto,
-  } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
   import SocialSection from "./components/SocialSection.svelte";
   import SystemSection from "./components/SystemSection.svelte";
 
-  let accounts = $state<AdminAccountsSectionDto | null>(null);
-  let catalogue = $state<AdminCatalogueSectionDto | null>(null);
-  let social = $state<AdminSocialSectionDto | null>(null);
-  let system = $state<AdminSystemSectionDto | null>(null);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
+  const queryClient = useQueryClient();
+  const STATS_KEYS = [
+    keys.admin.accountsStats(),
+    keys.admin.catalogueStats(),
+    keys.admin.socialStats(),
+    keys.admin.systemStats(),
+  ];
 
-  async function load() {
-    loading = true;
-    error = null;
-    try {
-      [accounts, catalogue, social, system] = await Promise.all([
-        getAdminAccountsStats(),
-        getAdminCatalogueStats(),
-        getAdminSocialStats(),
-        getAdminSystemStats(),
-      ]);
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
+  // Each section fails independently — one down endpoint no longer blanks
+  // the whole page.
+  const accountsQuery = createApiQuery(() => ({
+    key: keys.admin.accountsStats(),
+    fetch: getAdminAccountsStats,
+    enabled: auth.isAdmin,
+  }));
+  const catalogueQuery = createApiQuery(() => ({
+    key: keys.admin.catalogueStats(),
+    fetch: getAdminCatalogueStats,
+    enabled: auth.isAdmin,
+  }));
+  const socialQuery = createApiQuery(() => ({
+    key: keys.admin.socialStats(),
+    fetch: getAdminSocialStats,
+    enabled: auth.isAdmin,
+  }));
+  const systemQuery = createApiQuery(() => ({
+    key: keys.admin.systemStats(),
+    fetch: getAdminSystemStats,
+    enabled: auth.isAdmin,
+  }));
+
+  const accounts = $derived(accountsQuery.data);
+  const catalogue = $derived(catalogueQuery.data);
+  const social = $derived(socialQuery.data);
+  const system = $derived(systemQuery.data);
+  const loading = $derived(
+    accountsQuery.loading ||
+      catalogueQuery.loading ||
+      socialQuery.loading ||
+      systemQuery.loading,
+  );
+  const error = $derived(
+    accountsQuery.error ??
+      catalogueQuery.error ??
+      socialQuery.error ??
+      systemQuery.error,
+  );
+
+  function refresh() {
+    for (const key of STATS_KEYS)
+      void queryClient.refetchQueries({ queryKey: key });
   }
-
-  $effect(() => {
-    if (auth.isAdmin) void load();
-  });
 
   const socialStats = $derived(social && social.enabled ? social : null);
 
@@ -120,7 +141,10 @@
     title={m.admin_stats_title()}
     subtitle={m.admin_stats_subtitle()}>
     {#snippet actions()}
-      <button onclick={load} disabled={loading} class="btn btn-ghost shrink-0">
+      <button
+        onclick={refresh}
+        disabled={loading}
+        class="btn btn-ghost shrink-0">
         {loading ? "…" : m.common_refresh()}
       </button>
     {/snippet}
