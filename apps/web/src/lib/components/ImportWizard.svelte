@@ -88,6 +88,40 @@
   let job = $state<ImportJobDto | null>(null);
   let plan = $state<ImportPlan | null>(null);
 
+  // The job currently being polled, and which phase its completion leads
+  // to — analyzeImport's job leads to "review", commitImport's to "done".
+  // A key change (a new job id) is a fresh query, so switching targets
+  // between the two never carries over stale polling state.
+  let pollingJobId = $state<string | null>(null);
+  let pollingNext = $state<"review" | "done">("review");
+
+  // Drives job polling purely through its onSuccess/onError side effects —
+  // phase/job/error are the single source of truth the template reads,
+  // not this object.
+  const _jobQuery = createApiQuery(() => ({
+    key: keys.import.job(source, pollingJobId ?? ""),
+    fetch: () => getImportJob(source, pollingJobId!),
+    enabled: !!pollingJobId,
+    refetchInterval: (j) => (j?.status === "running" ? 1000 : false),
+    onSuccess: (j) => {
+      job = j;
+      if (j.status === "running") return;
+      if (j.status === "failed") {
+        error = j.error ?? "Le traitement a échoué.";
+        phase = pollingNext === "review" ? "input" : "review";
+      } else if (pollingNext === "review" && j.plan) {
+        plan = j.plan;
+        initDecisions(j.plan);
+        phase = "review";
+      } else {
+        phase = "done";
+      }
+    },
+    onError: (err) => {
+      error = resolveApiError(err);
+    },
+  }));
+
   // --- Decisions (reactive collections, mutated in place) ---
   const included = new SvelteSet<string>();
   const statuses = new SvelteMap<string, string>();
@@ -209,7 +243,8 @@
       });
       analyzeJobId = started.id;
       job = started;
-      pollJob(started.id, "review");
+      pollingNext = "review";
+      pollingJobId = started.id;
     } catch (err) {
       error = resolveApiError(err);
       phase = "input";
@@ -219,28 +254,6 @@
   if (autoInput) {
     inputValue = autoInput;
     void analyze();
-  }
-
-  function pollJob(jobId: string, next: "review" | "done") {
-    getImportJob(source, jobId)
-      .then((j) => {
-        job = j;
-        if (j.status === "running") {
-          window.setTimeout(() => pollJob(jobId, next), 1000);
-        } else if (j.status === "failed") {
-          error = j.error ?? "Le traitement a échoué.";
-          phase = next === "review" ? "input" : "review";
-        } else if (next === "review" && j.plan) {
-          plan = j.plan;
-          initDecisions(j.plan);
-          phase = "review";
-        } else {
-          phase = "done";
-        }
-      })
-      .catch((err) => {
-        error = resolveApiError(err);
-      });
   }
 
   /** Pre-select the confidently-resolved items and their default status. */
@@ -367,7 +380,8 @@
         overwrite,
       });
       job = started;
-      pollJob(started.id, "done");
+      pollingNext = "done";
+      pollingJobId = started.id;
     } catch (err) {
       error = resolveApiError(err);
       phase = "review";

@@ -43,6 +43,8 @@ export const keys = {
   import: {
     availability: () => ["import", "availability"] as const,
     quota: () => ["import", "quota"] as const,
+    job: (source: string, jobId: string) =>
+      ["import", "job", source, jobId] as const,
   },
   account: {
     deletionSummary: () => ["account", "deletion-summary"] as const,
