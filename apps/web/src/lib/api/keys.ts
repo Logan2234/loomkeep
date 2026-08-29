@@ -24,6 +24,12 @@ export const keys = {
   account: {
     deletionSummary: () => ["account", "deletion-summary"] as const,
   },
+  mfa: {
+    status: () => ["mfa", "status"] as const,
+  },
+  sessions: {
+    all: () => ["sessions", "all"] as const,
+  },
   verification: {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>

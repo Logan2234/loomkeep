@@ -4,7 +4,9 @@
     revokeOtherSessions,
     revokeSession,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -12,53 +14,37 @@
   import { formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
-  import { onMount } from "svelte";
-
-  let sessions = $state<SessionDto[]>([]);
-  let loading = $state(true);
-  let error = $state("");
 
   // The device we're browsing from, so it's never offered for revocation.
   const currentJti = auth.currentSessionJti;
 
-  async function load() {
-    loading = true;
-    error = "";
-    try {
-      sessions = await getSessions();
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  onMount(load);
+  const sessionsQuery = createApiQuery(() => ({
+    key: keys.sessions.all(),
+    fetch: getSessions,
+  }));
+  const sessions = $derived(sessionsQuery.data ?? []);
+  const loading = $derived(sessionsQuery.loading);
+  const error = $derived(sessionsQuery.error);
 
   // Confirmation modal, either for one session or for "all other devices".
   type Target =
     { kind: "one"; session: SessionDto } | { kind: "others" } | null;
   let confirmTarget = $state<Target>(null);
-  let revoking = $state(false);
-  let revokeError = $state("");
 
-  async function confirmRevoke() {
+  const revokeMut = createApiMutation(() => ({
+    mutate: () =>
+      confirmTarget?.kind === "one"
+        ? revokeSession(confirmTarget.session.id)
+        : currentJti
+          ? revokeOtherSessions(currentJti)
+          : Promise.resolve(),
+    invalidates: [keys.sessions.all()],
+    onSuccess: () => (confirmTarget = null),
+  }));
+
+  function confirmRevoke() {
     if (!confirmTarget) return;
-    revoking = true;
-    revokeError = "";
-    try {
-      if (confirmTarget.kind === "one") {
-        await revokeSession(confirmTarget.session.id);
-      } else if (currentJti) {
-        await revokeOtherSessions(currentJti);
-      }
-      confirmTarget = null;
-      await load();
-    } catch (err) {
-      revokeError = resolveApiError(err);
-    } finally {
-      revoking = false;
-    }
+    revokeMut.mutate();
   }
 
   let hasOthers = $derived(sessions.some((s) => s.jti !== currentJti));
@@ -144,8 +130,8 @@
             accéder à ton compte.
           {/if}
         </p>
-        {#if revokeError}
-          <p class="text-danger text-sm">{revokeError}</p>
+        {#if revokeMut.error}
+          <p class="text-danger text-sm">{revokeMut.error}</p>
         {/if}
         <div class="mt-2 flex justify-end gap-2">
           <button
@@ -157,9 +143,9 @@
           <button
             type="button"
             class="btn btn-danger"
-            disabled={revoking}
+            disabled={revokeMut.loading}
             onclick={confirmRevoke}>
-            {revoking ? "Déconnexion…" : "Déconnecter"}
+            {revokeMut.loading ? "Déconnexion…" : "Déconnecter"}
           </button>
         </div>
       </div>
