@@ -62,6 +62,8 @@ export const keys = {
       ["reviews", "mine", targetType, targetId] as const,
     community: (targetType: string, targetId: string) =>
       ["reviews", "community", targetType, targetId] as const,
+    revisions: (targetType: string, targetId: string) =>
+      ["reviews", "revisions", targetType, targetId] as const,
   },
   feed: {
     all: () => ["feed"] as const,

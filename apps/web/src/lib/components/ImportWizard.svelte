@@ -9,6 +9,8 @@
     searchGames,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -63,12 +65,11 @@
 
   const descriptor = IMPORTS_DEFINITION[source];
 
-  let quotaUsed = $state(false);
-  $effect(() => {
-    getImportQuota()
-      .then((quota) => (quotaUsed = quota[descriptor.domain] === true))
-      .catch(() => {});
-  });
+  const quotaQuery = createApiQuery(() => ({
+    key: keys.import.quota(),
+    fetch: getImportQuota,
+  }));
+  const quotaUsed = $derived(quotaQuery.data?.[descriptor.domain] === true);
   const premiumLocked = $derived(
     liveFlags.isEnabled("premium-features") && !auth.isPremium,
   );
