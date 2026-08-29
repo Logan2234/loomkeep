@@ -48,6 +48,10 @@ export const keys = {
   lists: {
     editable: () => ["lists", "editable"] as const,
     forUser: (username: string) => ["lists", "for-user", username] as const,
+    members: (listId: string) => ["lists", "members", listId] as const,
+  },
+  calendarSubscribe: {
+    token: () => ["calendar-subscribe", "token"] as const,
   },
   reviews: {
     mine: (targetType: string, targetId: string) =>

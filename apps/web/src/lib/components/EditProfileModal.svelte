@@ -1,7 +1,6 @@
 <script lang="ts">
   import { updateMe } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
-  import { fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { UserDto } from "@loomkeep/shared";
@@ -21,29 +20,20 @@
 
   let displayName = $state(initialDisplayName);
   let bio = $state(initialBio ?? "");
-  let busy = $state(false);
-  let error = $state("");
 
-  async function save() {
-    const trimmedName = displayName.trim();
-    if (!trimmedName || busy) return;
-    busy = true;
-    error = "";
-    try {
-      const user = await updateMe({
-        displayName: trimmedName,
-        bio: bio.trim() || null,
-      });
+  const saveMut = createApiMutation(() => ({
+    mutate: () =>
+      updateMe({ displayName: displayName.trim(), bio: bio.trim() || null }),
+    coveredFields: ["displayName", "bio"],
+    onSuccess: (user) => {
       onSaved(user);
       onclose();
-    } catch (err) {
-      error =
-        fieldError(err, "displayName") ??
-        fieldError(err, "bio") ??
-        resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    },
+  }));
+
+  function save() {
+    if (!displayName.trim() || saveMut.loading) return;
+    saveMut.mutate();
   }
 </script>
 
@@ -69,13 +59,13 @@
       </label>
     {/if}
 
-    {#if error}
-      <p class="text-danger text-sm">{error}</p>
+    {#if saveMut.error}
+      <p class="text-danger text-sm">{saveMut.error}</p>
     {/if}
 
     <button
       class="btn btn-primary w-full"
-      disabled={busy || !displayName.trim()}
+      disabled={saveMut.loading || !displayName.trim()}
       onclick={save}>
       {m.common_save()}
     </button>

@@ -4,7 +4,9 @@
     getCalendarToken,
     regenerateCalendarToken,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
   import Icon from "./Icon.svelte";
@@ -12,21 +14,15 @@
 
   let { onclose }: { onclose: () => void } = $props();
 
-  let token = $state<string | null>(null);
-  let loading = $state(true);
-  let busy = $state(false);
-  let error = $state("");
   let confirmingRegenerate = $state(false);
   let copied = $state(false);
 
-  $effect(() => {
-    getCalendarToken()
-      .then((result) => (token = result.token))
-      .catch((err) => {
-        error = resolveApiError(err);
-      })
-      .finally(() => (loading = false));
-  });
+  const tokenQuery = createApiQuery(() => ({
+    key: keys.calendarSubscribe.token(),
+    fetch: getCalendarToken,
+  }));
+  const token = $derived(tokenQuery.data?.token ?? null);
+  const loading = $derived(tokenQuery.loading);
 
   const calendarUrl = (t: string): string =>
     `${API_URL}/library/calendar.ics?token=${t}`;
@@ -38,50 +34,47 @@
     setTimeout(() => (copied = false), 2000);
   }
 
-  async function regenerate() {
-    busy = true;
-    error = "";
-    try {
-      const result = await regenerateCalendarToken();
-      token = result.token;
+  const regenerateMut = createApiMutation(() => ({
+    mutate: regenerateCalendarToken,
+    onSuccess: async (result) => {
       confirmingRegenerate = false;
       await navigator.clipboard.writeText(calendarUrl(result.token));
       toast.success("Nouveau lien copié — l'ancien ne fonctionne plus.");
-    } catch (err) {
-      error = resolveApiError(err);
-    } finally {
-      busy = false;
-    }
+    },
+  }));
+
+  function regenerate() {
+    regenerateMut.mutate();
   }
 </script>
 
 <Modal title="Ajouter à mon agenda" {onclose}>
   {#if loading}
     <p class="text-dim text-sm">Génération du lien…</p>
-  {:else if error && !token}
-    <p class="text-danger text-sm">{error}</p>
+  {:else if tokenQuery.error && !token}
+    <p class="text-danger text-sm">{tokenQuery.error}</p>
   {:else if confirmingRegenerate}
     <p class="text-dim text-sm">
       L'ancien lien cessera de fonctionner — tu devras t'abonner à nouveau
       depuis tes autres agendas. Continuer ?
     </p>
-    {#if error}
-      <p class="text-danger mt-2 text-sm">{error}</p>
+    {#if regenerateMut.error}
+      <p class="text-danger mt-2 text-sm">{regenerateMut.error}</p>
     {/if}
     <div class="mt-5 flex justify-end gap-2">
       <button
         type="button"
         class="btn btn-ghost"
-        disabled={busy}
+        disabled={regenerateMut.loading}
         onclick={() => (confirmingRegenerate = false)}>
         {m.common_cancel()}
       </button>
       <button
         type="button"
         class="btn btn-primary"
-        disabled={busy}
+        disabled={regenerateMut.loading}
         onclick={regenerate}>
-        {busy ? "Régénération…" : "Régénérer"}
+        {regenerateMut.loading ? "Régénération…" : "Régénérer"}
       </button>
     </div>
   {:else}
