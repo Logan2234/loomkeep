@@ -1,5 +1,6 @@
 <script lang="ts">
   import { listLibrary } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { updateLibraryEntry } from "$lib/api/library";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
@@ -45,9 +46,9 @@
     entry.favorite = next; // optimistic
     try {
       await updateLibraryEntry(entry.id, { favorite: next });
-    } catch {
+    } catch (err) {
       entry.favorite = !next;
-      toast.error("Mise à jour impossible");
+      toast.error(resolveApiError(err));
     }
   }
 

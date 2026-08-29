@@ -6,6 +6,16 @@ export const keys = {
   books: {
     detail: (source: string, sourceId: string) =>
       ["books", "detail", source, sourceId] as const,
+    reading: () => ["books", "reading"] as const,
+  },
+  games: {
+    playing: () => ["games", "playing"] as const,
+  },
+  music: {
+    toListen: () => ["music", "to-listen"] as const,
+  },
+  calendar: {
+    upcoming: () => ["calendar", "upcoming"] as const,
   },
   feed: {
     all: () => ["feed"] as const,
@@ -16,6 +26,8 @@ export const keys = {
     myReviews: () => ["profile", "my-reviews"] as const,
   },
   library: {
+    watching: () => ["library", "watching"] as const,
+    plannedMovies: () => ["library", "planned-movies"] as const,
     browse: (
       domain: string,
       filters: {
@@ -34,6 +46,8 @@ export const keys = {
   catalog: {
     search: (filters: { query: string; type: string | undefined }) =>
       ["catalog", "search", filters] as const,
+    castDetail: (source: string, personId: string) =>
+      ["catalog", "cast-detail", source, personId] as const,
   },
   admin: {
     overview: () => ["admin", "overview"] as const,

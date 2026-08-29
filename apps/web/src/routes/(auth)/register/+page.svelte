@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
   import { register } from "$lib/api/client";
-  import { bannerMessage, fieldError } from "$lib/api/validation-messages";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -28,46 +28,23 @@
   let turnstileToken = $state("");
   let acceptedTerms = $state(false);
   let certifiedAge = $state(false);
-  let error = $state<string | null>(null);
-  let loading = $state(false);
-  let displayNameError = $state<string | undefined>();
-  let emailError = $state<string | undefined>();
-  let acceptedTermsError = $state<string | undefined>();
-  let certifiedAgeError = $state<string | undefined>();
 
-  async function submit(event: SubmitEvent) {
+  const registerMut = createApiMutation(() => ({
+    mutate: register,
+    coveredFields: ["displayName", "email", "acceptedTerms", "certifiedAge"],
+    onSuccess: () => goto("/register/check-email"),
+  }));
+
+  function submit(event: SubmitEvent) {
     event.preventDefault();
-    error = null;
-    displayNameError =
-      emailError =
-      acceptedTermsError =
-      certifiedAgeError =
-        undefined;
-    loading = true;
-    try {
-      await register({
-        email,
-        password,
-        displayName,
-        acceptedTerms,
-        certifiedAge,
-        turnstileToken,
-      });
-      await goto("/register/check-email");
-    } catch (err) {
-      displayNameError = fieldError(err, "displayName");
-      emailError = fieldError(err, "email");
-      acceptedTermsError = fieldError(err, "acceptedTerms");
-      certifiedAgeError = fieldError(err, "certifiedAge");
-      error = bannerMessage(err, [
-        "displayName",
-        "email",
-        "acceptedTerms",
-        "certifiedAge",
-      ]);
-    } finally {
-      loading = false;
-    }
+    registerMut.mutate({
+      email,
+      password,
+      displayName,
+      acceptedTerms,
+      certifiedAge,
+      turnstileToken,
+    });
   }
 </script>
 
@@ -93,8 +70,10 @@
           bind:value={displayName}
           required
           class="input" />
-        {#if displayNameError}
-          <p class="text-danger -mt-2 text-xs">{displayNameError}</p>
+        {#if registerMut.fieldErrors.displayName}
+          <p class="text-danger -mt-2 text-xs">
+            {registerMut.fieldErrors.displayName}
+          </p>
         {/if}
         <input
           type="email"
@@ -102,8 +81,10 @@
           bind:value={email}
           required
           class="input" />
-        {#if emailError}
-          <p class="text-danger -mt-2 text-xs">{emailError}</p>
+        {#if registerMut.fieldErrors.email}
+          <p class="text-danger -mt-2 text-xs">
+            {registerMut.fieldErrors.email}
+          </p>
         {/if}
         <PasswordInput
           placeholder={m.common_password()}
@@ -116,7 +97,9 @@
             siteKey={turnstileSiteKey}
             onVerify={(token) => (turnstileToken = token)} />
         {/if}
-        {#if error}<Banner variant="error">{error}</Banner>{/if}
+        {#if registerMut.error}
+          <Banner variant="error">{registerMut.error}</Banner>
+        {/if}
         <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
           <input
             type="checkbox"
@@ -141,8 +124,10 @@
             >.
           </span>
         </label>
-        {#if acceptedTermsError}
-          <p class="text-danger -mt-2 text-xs">{acceptedTermsError}</p>
+        {#if registerMut.fieldErrors.acceptedTerms}
+          <p class="text-danger -mt-2 text-xs">
+            {registerMut.fieldErrors.acceptedTerms}
+          </p>
         {/if}
         <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
           <input
@@ -152,20 +137,22 @@
             class="mt-0.5" />
           <span>{m.auth_register_certify_age()}</span>
         </label>
-        {#if certifiedAgeError}
-          <p class="text-danger -mt-2 text-xs">{certifiedAgeError}</p>
+        {#if registerMut.fieldErrors.certifiedAge}
+          <p class="text-danger -mt-2 text-xs">
+            {registerMut.fieldErrors.certifiedAge}
+          </p>
         {/if}
         <button
           type="submit"
           class="btn btn-primary"
-          disabled={loading ||
+          disabled={registerMut.loading ||
             !displayName ||
             !email ||
             !isPasswordValid(password) ||
             !acceptedTerms ||
             !certifiedAge ||
             (!!turnstileSiteKey && !turnstileToken)}>
-          {loading
+          {registerMut.loading
             ? m.auth_register_action_loading()
             : m.auth_register_action()}
         </button>

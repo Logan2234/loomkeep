@@ -9,6 +9,8 @@
     updateLibraryEntry,
     watchEpisode,
   } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import BetaBadge from "$lib/components/BetaBadge.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
@@ -28,13 +30,14 @@
   import type {
     BookEntryDto,
     CalendarEntryDto,
-    GameEntryDto,
     LibraryEntryDto,
-    MusicEntryDto,
     NextEpisodeDto,
   } from "@loomkeep/shared";
   import { Domain } from "@loomkeep/shared";
   import { tick } from "svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+
+  const queryClient = useQueryClient();
 
   const mediaOn = $derived(isDomainEnabled(Domain.MEDIA));
   const gamesOn = $derived(isDomainEnabled(Domain.GAMES));
@@ -48,77 +51,68 @@
     isDomainEnabled(Domain.PODCASTS) || isDomainEnabled(Domain.BOARDGAMES),
   );
 
-  let watching = $state<LibraryEntryDto[]>([]);
-  let plannedMovies = $state<LibraryEntryDto[]>([]);
-  let upcoming = $state<CalendarEntryDto[]>([]);
-  let playingGames = $state<GameEntryDto[]>([]);
-  let readingBooks = $state<BookEntryDto[]>([]);
-  let toListenAlbums = $state<MusicEntryDto[]>([]);
-  let loading = $state(true);
   let resuming = $state<string | null>(null); // entry id being resumed
   let markingMovieSeen = $state<string | null>(null);
   let resumeCarousel = $state<{ scrollToStart: () => void }>();
 
-  // Fetch only the enabled domains' "in progress" content — the dashboard is
-  // best-effort, so a failing call just leaves its section empty. Reads the
-  // domain flags synchronously so the effect reloads when one is toggled.
-  async function load() {
-    if (!auth.user) return;
-    loading = true;
-    const jobs: Promise<unknown>[] = [];
+  // Each section is fetched (and fails) independently — one down endpoint no
+  // longer blanks the whole dashboard. `enabled` also gates on `auth.user`,
+  // since the layout mounts this before the session is confirmed.
+  const watchingQuery = createApiQuery(() => ({
+    key: keys.library.watching(),
+    fetch: () =>
+      listLibrary({ statuses: ["WATCHING"], types: ["SERIES", "ANIME"] }).then(
+        (r) => r.items,
+      ),
+    enabled: !!auth.user && mediaOn,
+  }));
+  const plannedMoviesQuery = createApiQuery(() => ({
+    key: keys.library.plannedMovies(),
+    fetch: () =>
+      listLibrary({ statuses: ["PLANNED"], types: ["MOVIE"] }).then(
+        (r) => r.items,
+      ),
+    enabled: !!auth.user && mediaOn,
+  }));
+  const calendarQuery = createApiQuery(() => ({
+    key: keys.calendar.upcoming(),
+    fetch: getCalendar,
+    enabled: !!auth.user && mediaOn,
+  }));
+  const gamesQuery = createApiQuery(() => ({
+    key: keys.games.playing(),
+    fetch: () => listGames({ statuses: ["PLAYING"] }).then((r) => r.items),
+    enabled: !!auth.user && gamesOn,
+  }));
+  const booksQuery = createApiQuery(() => ({
+    key: keys.books.reading(),
+    fetch: () => listBooks({ statuses: ["READING"] }).then((r) => r.items),
+    enabled: !!auth.user && booksOn,
+  }));
+  const musicQuery = createApiQuery(() => ({
+    key: keys.music.toListen(),
+    fetch: () => listMusic({ statuses: ["TO_LISTEN"] }).then((r) => r.items),
+    enabled: !!auth.user && musicOn,
+  }));
 
-    if (mediaOn) {
-      jobs.push(
-        listLibrary({
-          statuses: ["WATCHING"],
-          types: ["SERIES", "ANIME"],
-        }).then((r) => (watching = r.items)),
-      );
-      jobs.push(
-        listLibrary({ statuses: ["PLANNED"], types: ["MOVIE"] }).then(
-          (r) => (plannedMovies = r.items),
-        ),
-      );
-      jobs.push(getCalendar().then((c) => (upcoming = c)));
-    } else {
-      watching = [];
-      plannedMovies = [];
-      upcoming = [];
-    }
-    if (gamesOn)
-      jobs.push(
-        listGames({ statuses: ["PLAYING"] }).then(
-          (r) => (playingGames = r.items),
-        ),
-      );
-    else playingGames = [];
-    if (booksOn)
-      jobs.push(
-        listBooks({ statuses: ["READING"] }).then(
-          (r) => (readingBooks = r.items),
-        ),
-      );
-    else readingBooks = [];
-    if (musicOn)
-      jobs.push(
-        listMusic({ statuses: ["TO_LISTEN"] }).then(
-          (r) => (toListenAlbums = r.items),
-        ),
-      );
-    else toListenAlbums = [];
+  const watching = $derived(watchingQuery.data ?? []);
+  const plannedMovies = $derived(plannedMoviesQuery.data ?? []);
+  const upcoming = $derived(calendarQuery.data ?? []);
+  const playingGames = $derived(gamesQuery.data ?? []);
+  const readingBooks = $derived(booksQuery.data ?? []);
+  const toListenAlbums = $derived(musicQuery.data ?? []);
 
-    try {
-      await Promise.all(jobs);
-    } catch {
-      // Dashboard is best-effort; leave sections empty on error.
-    } finally {
-      loading = false;
-    }
-  }
-
-  $effect(() => {
-    void load();
-  });
+  // Only the enabled domains' skeleton counts toward the page-level loading
+  // state — a disabled query never settles, so it must never be OR'd in.
+  const loading = $derived(
+    (mediaOn &&
+      (watchingQuery.loading ||
+        plannedMoviesQuery.loading ||
+        calendarQuery.loading)) ||
+      (gamesOn && gamesQuery.loading) ||
+      (booksOn && booksQuery.loading) ||
+      (musicOn && musicQuery.loading),
+  );
 
   const epCodeOf = (n: NextEpisodeDto) =>
     `S${String(n.seasonNumber).padStart(2, "0")}E${String(n.episodeNumber).padStart(2, "0")}`;
@@ -136,12 +130,7 @@
     resuming = entry.id;
     try {
       await watchEpisode(next.episodeId);
-      watching = (
-        await listLibrary({
-          statuses: ["WATCHING"],
-          types: ["SERIES", "ANIME"],
-        })
-      ).items;
+      await queryClient.refetchQueries({ queryKey: keys.library.watching() });
       await tick();
       resumeCarousel?.scrollToStart();
     } catch {
@@ -155,7 +144,9 @@
     markingMovieSeen = entry.id;
     try {
       await updateLibraryEntry(entry.id, { status: "COMPLETED" });
-      plannedMovies = plannedMovies.filter((movie) => movie.id !== entry.id);
+      await queryClient.invalidateQueries({
+        queryKey: keys.library.plannedMovies(),
+      });
     } catch {
       // Ignore; the card stays as-is.
     } finally {
