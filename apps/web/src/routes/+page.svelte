@@ -12,8 +12,6 @@
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";
 
-  const canonical = $derived(`${page.url.origin}/`);
-
   type Salle =
     "video" | "games" | "books" | "music" | "podcasts" | "boardgames";
 
@@ -342,19 +340,6 @@
 
 <svelte:head>
   <title>{m.common_loomkeep()} — {m.landing_meta_tagline()}</title>
-  <meta name="description" content={m.landing_meta_description()} />
-  <link rel="canonical" href={canonical} />
-
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content={m.common_loomkeep()} />
-  <meta property="og:url" content={canonical} />
-  <meta
-    property="og:title"
-    content="{m.common_loomkeep()} — {m.landing_meta_tagline()}" />
-  <meta property="og:description" content={m.landing_meta_description()} />
-  <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
-  <meta property="og:locale" content="fr_FR" />
-  <meta name="twitter:card" content="summary" />
 
   {#if env.PUBLIC_UMAMI_WEBSITE_ID && env.PUBLIC_UMAMI_SCRIPT_URL}
     <script

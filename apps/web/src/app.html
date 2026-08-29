@@ -1,14 +1,42 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr-FR" dir="ltr">
   <head>
     <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0c0d10" />
-    <!-- @vite-pwa/sveltekit does not inject the manifest link (SvelteKit owns
-         the head), so link it here — without it the browser only offers a
-         plain shortcut (address bar stays) instead of a real PWA install. -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f2ebdc" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#0c0d10" />
+
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <script>
+      const localeMap = { fr: "fr-FR", en: "en-US" };
+
+      try {
+        const cookie = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("PARAGLIDE_LOCALE="));
+        const fromCookie = cookie?.split("=")[1];
+
+        if (fromCookie && localeMap[fromCookie]) {
+          document.documentElement.lang = localeMap[fromCookie];
+        }
+      } catch {}
+
+      if (!document.documentElement.lang) {
+        const navigatorLang = (navigator.language || "fr-FR").slice(0, 2);
+        document.documentElement.lang = localeMap[navigatorLang] || "fr-FR";
+      }
+
       // Apply the saved (or system) theme before first paint to avoid a flash.
       try {
         const saved = localStorage.getItem("tl-theme");

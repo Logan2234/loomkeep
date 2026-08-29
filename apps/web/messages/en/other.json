@@ -284,7 +284,6 @@
   "settings_support_recommended_reason": "no account needed",
   "settings_support_account_required": "Account required",
   "settings_support_no_account": "No account",
-  "settings_section_datasources": "Data sources",
   "settings_datasources_title": "Data sources",
   "settings_datasources_body": "Loomkeep queries these catalogues live for search and detail pages; it doesn't host or edit them. Each remains subject to its own terms of use and licenses.",
   "settings_datasources_tmdb_notice": "This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",

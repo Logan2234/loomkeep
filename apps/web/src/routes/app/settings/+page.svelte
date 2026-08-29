@@ -58,7 +58,7 @@
       label: m.settings_section_support(),
       newBadgeKey: "support",
     },
-    { id: "sources-donnees", label: m.settings_section_datasources() },
+    { id: "sources-donnees", label: m.settings_datasources_title() },
     { id: "danger", label: m.settings_section_danger_zone() },
   ];
   const visibleSections = $derived(
