@@ -2,8 +2,10 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminReports } from "$lib/admin-reports.svelte";
+  import { getAdminReportsPendingCount } from "$lib/api/client";
   import { logout } from "$lib/api/auth";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -26,6 +28,14 @@
   let expanded = $derived(pinned || hovered);
 
   let { children } = $props();
+
+  const reportsPendingQuery = createApiQuery(() => ({
+    key: keys.admin.reportsPendingCount(),
+    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
+    refetchInterval: 20_000,
+    enabled: auth.isAdmin,
+  }));
+  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
 
@@ -191,15 +201,15 @@
                 : 'text-dim hover:bg-surface-2 hover:text-fg'}">
               <span class="relative grid h-10 w-10 shrink-0 place-items-center">
                 <Icon name={item.icon} class="h-5 w-5" />
-                {#if item.href === "/app/admin/reports" && adminReports.pending > 0}
-                  {#key adminReports.pending}
+                {#if item.href === "/app/admin/reports" && reportsPending > 0}
+                  {#key reportsPending}
                     <span
                       in:scale|global={{
                         duration: reduced ? 0 : 200,
                         start: 0.5,
                       }}
                       class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                      {adminReports.pending > 9 ? "9+" : adminReports.pending}
+                      {reportsPending > 9 ? "9+" : reportsPending}
                     </span>
                   {/key}
                 {/if}

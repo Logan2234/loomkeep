@@ -29,6 +29,9 @@ export const keys = {
     all: () => ["feed"] as const,
     preview: () => ["feed", "preview"] as const,
   },
+  notifications: {
+    feed: () => ["notifications", "feed"] as const,
+  },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
     myReviews: () => ["profile", "my-reviews"] as const,
@@ -62,6 +65,7 @@ export const keys = {
   },
   admin: {
     overview: () => ["admin", "overview"] as const,
+    reportsPendingCount: () => ["admin", "reports-pending-count"] as const,
     userOptions: () => ["admin", "user-options"] as const,
     services: () => ["admin", "services"] as const,
     jobs: () => ["admin", "jobs"] as const,

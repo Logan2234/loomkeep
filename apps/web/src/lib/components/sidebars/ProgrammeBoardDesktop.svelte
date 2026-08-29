@@ -5,8 +5,10 @@
   // a small amber pin-light instead of a background highlight.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminReports } from "$lib/admin-reports.svelte";
+  import { getAdminReportsPendingCount } from "$lib/api/client";
   import { logout } from "$lib/api/auth";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,6 +22,14 @@
   let { children } = $props();
 
   let open = $state(false);
+
+  const reportsPendingQuery = createApiQuery(() => ({
+    key: keys.admin.reportsPendingCount(),
+    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
+    refetchInterval: 20_000,
+    enabled: auth.isAdmin,
+  }));
+  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const profileHref = $derived(
@@ -149,10 +159,10 @@
                 ? 'bg-[#f5b841] shadow-[0_0_6px_1px_#f5b841]'
                 : 'bg-white/15'}"></span>
             {item.label}
-            {#if item.href === "/app/admin/reports" && adminReports.pending > 0}
+            {#if item.href === "/app/admin/reports" && reportsPending > 0}
               <span
                 class="ml-auto rounded-full bg-[#f5b841] px-1.5 text-[0.6rem] font-bold text-[#1a1406]">
-                {adminReports.pending > 9 ? "9+" : adminReports.pending}
+                {reportsPending > 9 ? "9+" : reportsPending}
               </span>
             {/if}
           </a>
