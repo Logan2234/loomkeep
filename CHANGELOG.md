@@ -12,6 +12,73 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.7.0 — MFA, premium entitlements, and translatable API errors
+
+- **MFA for all users (LK-C17)**: TOTP and email one-time codes, independently
+  toggleable in Settings, backed by bcrypt-hashed recovery codes shown once
+  on activation. Login gains an intermediate challenge step (method picker
+  when both are active). Admin routes 403 with `MFA_REQUIRED` when the
+  account has no active method, checked live with no grace period — skipped
+  outside `NODE_ENV=production` to avoid dev/staging friction.
+- **Premium becomes a real seam, not just a flag.** New `UserEntitlement`/
+  `Subscription` tables back `EntitlementService` (self-healing FREE default
+  on every read), replacing the never-read `User.entitlements` Json field —
+  see [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md) for
+  the managed-service positioning this unblocks. Gated behind it: iCal export
+  and early-access domains (MUSIC/PODCASTS/BOARDGAMES), advanced stats
+  (redacted server-side, with a blurred fake-data preview via a new
+  `PremiumTeaser` component instead of just visually hiding real numbers),
+  daily notification digests (weekly stays free), and a premium nav/dock
+  styling option. An admin plan selector (`PATCH /admin/users/:userId/plan`)
+  is the only way to grant premium today — no billing wired up yet.
+- **API errors are now translatable codes, not raw English strings** — closes
+  out a 4-phase migration across every domain (auth/MFA, library/import,
+  catalog/providers, then the remaining tail) plus per-field validation
+  errors (`class-validator` messages translated and shown under the
+  relevant input instead of dumped in one banner). `AppException` +
+  `ErrorCode` (`packages/shared/src/error-codes.ts`) replace bare NestJS
+  exceptions API-wide; a `no-restricted-syntax` ESLint rule now errors on a
+  regression. 5xx bodies never leak internals — the detail stays in logs,
+  keyed by `requestId`.
+- **Centralized API layer**: `createApiQuery`/`createApiMutation`/
+  `createApiInfiniteQuery` (thin TanStack Query wrappers) replace hand-rolled
+  `try/catch` + local `error`/`loading` state across nearly the entire web
+  app, fixing several real unhandled-rejection bugs uncovered along the way
+  (ProfileView's follow/block actions, review casting, stats drill-downs).
+  Every paginated list endpoint now shares one `page`/`limit` +
+  `PagedResult<T>` contract. Full design in
+  [docs/plans/centralized-api-layer.md](docs/plans/centralized-api-layer.md).
+- **Notification digests** replace instant push/email on new episodes with a
+  per-channel cadence (weekly free, daily premium) timed at each user's
+  local hour.
+- **Catalog detail pages enriched and made locale-aware** across all four
+  domains: TMDB (native rating, tagline, director/creator, trailer, content
+  rating — plus a new `MediaItemTranslation` per-locale cache so a page
+  browsed in French no longer shows a stale cached English title), AniList
+  (Japanese voice actor pairing with a split cast photo and its own cast
+  modal, director, trailer, studios, related titles, tags), Open Library
+  (ISBN, series, language-matched edition, first sentence, external links),
+  and IGDB (franchise, age ratings, trailer, multiplayer modes).
+- **Compliance pass**: traceable CGU acceptance with a re-acceptance prompt
+  on version changes (LK-C03), an illicit-content notice procedure (LK-C10),
+  an inactive-account retention policy — reminder at 24 months, deletion at
+  36 (LK-C06), reporter notifications on report outcome (LK-C07), an
+  exhaustive GDPR data export (LK-C11), anonymised security/import audit
+  identifiers on account deletion (LK-C04), and several documentation
+  corrections (retention durations, age certification, a11y).
+- **Backups are now encrypted at rest and shipped offsite**: every dump is
+  age-encrypted before touching disk (only the public key lives on the
+  instance), plus a VPS-cron script shipping encrypted dumps of every
+  datastore to Cloudflare R2.
+- Admin dashboards (Grafana/Portainer/GlitchTip/Unleash/Homepage) now sit
+  behind a Cloudflare Tunnel + Access (GitHub SSO + MFA) instead of a
+  directly-reachable origin fronted by Authelia (kept for self-hosters
+  without Cloudflare).
+- Proactive rate limiting for IGDB and AniList providers, instead of only
+  reacting to a 429 after the fact.
+- Motion/transition polish across the app (page transitions, modals,
+  loading states) and free-account import quota management.
+
 ## 1.6.0 — Trakt & Simkl import, Open Library, and the new landing page
 
 - **Trakt and Simkl join TV Time as import sources.** Trakt started out as an
