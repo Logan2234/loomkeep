@@ -22,6 +22,9 @@ jobs:
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      security-events: write
     steps:
       # pa11y-ci resolves `--config .pa11yci.json` relative to the working
       # directory — without checking out the repo first, no such file exists
@@ -33,6 +36,18 @@ jobs:
           node-version: 22
       - name: Run Pa11y CI
         run: npx --yes pa11y-ci@4.1.1 --config .pa11yci.json
+      # pa11y-ci has no built-in SARIF reporter, so accessibility findings
+      # only ever lived in this step's console log. .pa11yci.json's
+      # defaults.reporters loads a small local reporter (alongside the
+      # normal "cli" one) that writes pa11y-results.sarif — see
+      # .github/pa11y/sarif-reporter.js. `if: always()` because a threshold
+      # violation exits pa11y-ci non-zero, but the SARIF is still written.
+      - name: Upload Pa11y SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: pa11y-results.sarif
+          category: pa11y
 
   zap:
     name: OWASP ZAP
@@ -44,6 +59,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     permissions:
+      contents: read
       security-events: write
 
     steps:
@@ -68,18 +84,3 @@ jobs:
           # confirmed by the NoSuchFileException path seen when this job failed.
           sarif_file: zap-results/zap-results.sarif.json
           category: zap
-
-#   zap-api:
-#     name: OWASP ZAP API
-#     runs-on: ubuntu-latest
-#     if: >
-#       github.event_name != 'workflow_run' ||
-#       github.event.workflow_run.conclusion == 'success'
-#     steps:
-#       - name: OWASP ZAP API scan
-#         uses: zaproxy/action-api-scan@v0.10.0
-#         with:
-#           target: https://loomkeep.app/api/openapi.json
-#           format: openapi
-#           fail_action: true
-#           artifact_name: zap-api-scan

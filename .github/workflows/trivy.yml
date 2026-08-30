@@ -23,6 +23,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       security-events: write
     strategy:
       matrix:

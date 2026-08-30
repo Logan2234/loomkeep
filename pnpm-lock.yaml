@@ -13,9 +13,6 @@ importers:
       "@lhci/cli":
         specifier: ^0.15.0
         version: 0.15.1(supports-color@8.1.1)
-      "@microsoft/eslint-formatter-sarif":
-        specifier: ^3.1.0
-        version: 3.1.0(supports-color@8.1.1)
       "@stylistic/eslint-plugin":
         specifier: ^5.10.0
         version: 5.10.0(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))
@@ -2306,13 +2303,6 @@ packages:
       {
         integrity: sha512-n12NohV3mrUyUL2o93IgG/ifeW9FTyeJn3zDxkhwa8MJ9Fxg3HQMlA3RiGmD/3UnJvheztkjjQAjA2T4LmUcpw==,
       }
-
-  "@microsoft/eslint-formatter-sarif@3.1.0":
-    resolution:
-      {
-        integrity: sha512-/mn4UXziHzGXnKCg+r8HGgPy+w4RzpgdoqFuqaKOqUVBT5x2CygGefIrO4SusaY7t0C4gyIWMNu6YQT6Jw64Cw==,
-      }
-    engines: { node: ">= 14" }
 
   "@microsoft/tsdoc@0.16.0":
     resolution:

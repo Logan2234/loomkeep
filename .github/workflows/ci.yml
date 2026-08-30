@@ -21,6 +21,12 @@ jobs:
     outputs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
+      # Whether lint-test-web/lint-test-api/knip have anything relevant to
+      # check: either
+      # app code, or a root file that changes what/how they check it
+      # (shared eslint config, shared tsconfig, root package.json, or this
+      # workflow itself).
+      lint: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.root == 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -39,11 +45,23 @@ jobs:
               - 'packages/shared/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+            root:
+              - 'eslint.config.base.mjs'
+              - 'tsconfig.base.json'
+              - 'package.json'
+              - '.github/workflows/ci.yml'
 
-  lint-build-test:
+  # Split web/api (mirroring the changes-filter split already used by
+  # e2e/docker-build-images below) so the two run in parallel instead of one
+  # long sequential job — Lighthouse alone used to take ~2.5min on top of
+  # everything else. packages/shared is TS-only like the api, so its lint
+  # runs alongside api's rather than web's.
+  lint-test-web:
     needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.root == 'true'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -54,9 +72,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
+      # Installed here rather than kept as a permanent devDependency: it's
+      # only ever invoked via --format in this one step, and knip has no way
+      # to see that CLI-flag usage, so a committed devDependency just sits
+      # there flagged as unused everywhere else in the repo.
+      - name: Install ESLint SARIF formatter
+        run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
       - name: ESLint
-        id: eslint
-        run: pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+        run: pnpm --filter @loomkeep/web lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
       - name: Generate Paraglide types
         run: pnpm --filter @loomkeep/web generate:paraglide
       - name: svelte-check
@@ -65,6 +88,45 @@ jobs:
         run: pnpm --filter @loomkeep/web test
       - name: Web production build
         run: pnpm --filter @loomkeep/web build
+      - name: Lighthouse
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm exec lhci autorun
+        continue-on-error: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      - name: Upload Lighthouse reports
+        if: always() && needs.changes.outputs.web == 'true'
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: lighthouse-reports
+          path: lighthouse-results/
+      - name: Upload ESLint Web results
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: apps/web/eslint-results.sarif
+          category: eslint-web
+
+  lint-test-api:
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.root == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:package
+      - name: Install ESLint SARIF formatter
+        run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
+      - name: ESLint
+        run: pnpm --filter @loomkeep/api --filter @loomkeep/shared lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
       - name: Generate Prisma client
         run: pnpm --filter @loomkeep/api exec prisma generate
       - name: api unit tests (with coverage)
@@ -77,28 +139,12 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/api/coverage/lcov.info
           fail_ci_if_error: false
-      - run: pnpm exec lhci autorun
-        continue-on-error: true
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-      - name: Upload Lighthouse reports
-        if: always()
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: lighthouse-reports
-          path: lighthouse-results/
       - name: Upload ESLint API results
         if: always()
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         with:
           sarif_file: apps/api/eslint-results.sarif
           category: eslint-api
-      - name: Upload ESLint Web results
-        if: always()
-        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
-        with:
-          sarif_file: apps/web/eslint-results.sarif
-          category: eslint-web
       - name: Upload ESLint Packages results
         if: always()
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
@@ -141,6 +187,8 @@ jobs:
       - run: pnpm --filter @loomkeep/api test:e2e
 
   knip:
+    needs: changes
+    if: needs.changes.outputs.lint == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
