@@ -11,8 +11,9 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-permissions:
-  contents: read
+# No checkout and no GitHub API call here — everything happens over SSH on
+# the VPS with its own secrets, so GITHUB_TOKEN needs no scope at all.
+permissions: {}
 
 jobs:
   deploy:

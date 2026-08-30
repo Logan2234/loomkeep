@@ -21,6 +21,11 @@ jobs:
     outputs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
+      # Whether lint-build-test/knip have anything relevant to check: either
+      # app code, or a root file that changes what/how they check it
+      # (shared eslint config, shared tsconfig, root package.json, or this
+      # workflow itself).
+      lint: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.root == 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -39,11 +44,18 @@ jobs:
               - 'packages/shared/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+            root:
+              - 'eslint.config.base.mjs'
+              - 'tsconfig.base.json'
+              - 'package.json'
+              - '.github/workflows/ci.yml'
 
   lint-build-test:
     needs: changes
+    if: needs.changes.outputs.lint == 'true'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -54,6 +66,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
+      # Installed here rather than kept as a permanent devDependency: it's
+      # only ever invoked via --format in this one step, and knip has no way
+      # to see that CLI-flag usage, so a committed devDependency just sits
+      # there flagged as unused everywhere else in the repo.
+      - name: Install ESLint SARIF formatter
+        run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
       - name: ESLint
         id: eslint
         run: pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
@@ -77,12 +95,14 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/api/coverage/lcov.info
           fail_ci_if_error: false
-      - run: pnpm exec lhci autorun
+      - name: Lighthouse
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm exec lhci autorun
         continue-on-error: true
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
       - name: Upload Lighthouse reports
-        if: always()
+        if: always() && needs.changes.outputs.web == 'true'
         uses: actions/upload-artifact@v7.0.1
         with:
           name: lighthouse-reports
@@ -141,6 +161,8 @@ jobs:
       - run: pnpm --filter @loomkeep/api test:e2e
 
   knip:
+    needs: changes
+    if: needs.changes.outputs.lint == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:

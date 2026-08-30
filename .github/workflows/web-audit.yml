@@ -44,6 +44,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     permissions:
+      contents: read
       security-events: write
 
     steps:
