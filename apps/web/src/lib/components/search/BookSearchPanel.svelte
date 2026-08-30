@@ -22,21 +22,21 @@
   // `limit` caps the rendered results and switches to compact embedded mode
   // (no own empty-state copy — the host renders it) for the library-page
   // preview use; `onResults` reports the raw result count to that host.
+  // `byAuthor` is owned by the search page (the Guichet's in-bar filter
+  // menu), not this panel — see MediaSearchPanel's `type` for the same split.
   let {
     query,
     limit,
     onResults,
+    byAuthor = false,
   }: {
     query: string;
     limit?: number;
     onResults?: (count: number) => void;
+    byAuthor?: boolean;
   } = $props();
 
   const DEBOUNCE_MS = 300;
-
-  // Open Library's Solr parses `author:"…"` as a field-scoped query; toggling
-  // this wraps the free-text query instead of adding a separate API param.
-  let byAuthor = $state(false);
 
   // `query`/`byAuthor` (raw) drive the input; `queryFilter` (debounced) is
   // the formatted string that actually drives the fetch — same split as
@@ -103,15 +103,6 @@
 {#if searchQuery.error}
   <Banner variant="error" class="mb-4">{searchQuery.error}</Banner>
 {/if}
-
-<div class="mb-4 flex flex-wrap gap-2">
-  <button
-    class="chip"
-    class:chip-on={byAuthor}
-    onclick={() => (byAuthor = !byAuthor)}>
-    Par auteur
-  </button>
-</div>
 
 {#if queryFilter && searchQuery.loading}
   <PosterGrid>

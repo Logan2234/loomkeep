@@ -730,6 +730,7 @@
   "search_domain_boardgames": "un jeu de société",
   "search_coming_soon": "Bientôt disponible",
   "search_coming_soon_desc": "La recherche de ce domaine arrive prochainement.",
+  "search_domain_switch_hint": "pour changer de domaine",
   "feed_title": "Fil d'activité",
   "feed_subtitle": "Ce que font les membres que vous suivez.",
   "feed_empty_title": "Rien à afficher pour l'instant",

@@ -733,6 +733,7 @@
   "search_domain_boardgames": "a board game",
   "search_coming_soon": "Coming soon",
   "search_coming_soon_desc": "This domain's search is coming soon.",
+  "search_domain_switch_hint": "to switch domain",
   "feed_title": "Activity feed",
   "feed_subtitle": "What the people you follow are up to.",
   "feed_empty_title": "Nothing to display yet",
