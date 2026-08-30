@@ -36,7 +36,7 @@
   } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
-    { label: "En attente", value: "PENDING" },
+    { label: m.admin_social_reports_pending(), value: "PENDING" },
     ...(Object.keys(REPORT_STATUS_LABELS) as ReportStatus[])
       .filter((s) => s !== "PENDING")
       .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
@@ -138,18 +138,24 @@
       ? [
           {
             value: formatNumber(summary.pending),
-            label: "En attente",
+            label: m.admin_social_reports_pending(),
             alert: summary.pending > 0,
           },
-          { value: formatNumber(summary.resolved), label: "Résolus" },
-          { value: formatNumber(summary.dismissed), label: "Rejetés" },
+          {
+            value: formatNumber(summary.resolved),
+            label: m.admin_social_reports_resolved(),
+          },
+          {
+            value: formatNumber(summary.dismissed),
+            label: m.admin_reports_dismissed(),
+          },
           {
             value:
               summary.medianResolutionHours === null
                 ? "—"
                 : String(summary.medianResolutionHours),
             unit: summary.medianResolutionHours === null ? undefined : "h",
-            label: "Délai médian",
+            label: m.admin_social_reports_median_delay(),
           },
           {
             value:
@@ -157,7 +163,7 @@
                 ? "—"
                 : String(summary.foundedPercent),
             unit: summary.foundedPercent === null ? undefined : "%",
-            label: "Signalements fondés",
+            label: m.admin_reports_upheld(),
           },
         ]
       : [],
@@ -174,14 +180,14 @@
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="flag"
-    title="Signalements"
-    subtitle="Commentaires (et à terme reviews/profils) signalés par les utilisateurs." />
+    title={m.admin_social_reports_title()}
+    subtitle={m.admin_reports_subtitle()} />
 
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if reporterBars.length > 0}
       <div class="card mb-5 p-4">
-        <SectionLabel label="Top signaleurs" class="mb-3" />
+        <SectionLabel label={m.admin_reports_top_reporters()} class="mb-3" />
         <RankBars items={reporterBars} />
       </div>
     {/if}
@@ -195,7 +201,7 @@
       onChange={(v) => (activeStatus = (v[0] as ReportStatus) || "PENDING")} />
     <UserSelector
       value={reporterId}
-      label="Tous les auteurs"
+      label={m.admin_reports_all_authors()}
       searchPlaceholder="Filtrer par auteur du signalement…"
       onChange={(id) => (reporterId = id)} />
   </div>
@@ -211,7 +217,7 @@
       {/each}
     </div>
   {:else if reports.length === 0}
-    <EmptyState>Aucun signalement pour ce statut.</EmptyState>
+    <EmptyState>{m.admin_no_matching_reports()}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each reports as r (r.id)}
@@ -254,18 +260,18 @@
             </p>
           {:else}
             <p class="text-dim mt-1.5 text-sm italic">
-              Cible introuvable (supprimée).
+              {m.admin_reports_target_missing()}
             </p>
           {/if}
 
           <p class="text-dim mt-1 text-xs">
-            Signalé par
+            {m.admin_reports_reported_by()}
             {#if r.reporter}
               <a
                 href="/app/admin/users?q={r.reporter.username}"
                 class="hover:underline">@{r.reporter.username}</a>
             {:else}
-              <span class="italic">un utilisateur supprimé</span>
+              <span class="italic">{m.admin_reports_deleted_user()}</span>
             {/if}
             {#if r.reason}· « {r.reason} »{/if}
           </p>
@@ -277,7 +283,7 @@
                   class="btn btn-danger btn-sm"
                   disabled={rowBusy(r.id)}
                   onclick={() => openTakeDown(r)}>
-                  Retirer le contenu
+                  {m.admin_reports_remove_content()}
                 </button>
               {/if}
               <button
@@ -285,14 +291,14 @@
                 disabled={rowBusy(r.id)}
                 onclick={() =>
                   resolveMut.mutate({ id: r.id, status: "RESOLVED" })}>
-                Marquer résolu
+                {m.admin_reports_resolve()}
               </button>
               <button
                 class="btn btn-ghost btn-sm"
                 disabled={rowBusy(r.id)}
                 onclick={() =>
                   resolveMut.mutate({ id: r.id, status: "DISMISSED" })}>
-                Rejeter
+                {m.admin_reports_dismiss()}
               </button>
             </div>
           {/if}
@@ -305,7 +311,9 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={reportsQuery.isFetchingNextPage}
         onclick={() => reportsQuery.fetchNextPage()}>
-        {reportsQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
+        {reportsQuery.isFetchingNextPage
+          ? m.common_loading()
+          : m.common_load_more()}
       </button>
     {/if}
   {/if}
@@ -313,27 +321,24 @@
 
 {#if takeDownTarget}
   <Modal
-    title="Retirer le contenu signalé"
+    title={m.admin_reports_remove_title()}
     onclose={() => (takeDownTarget = null)}>
     <p class="text-dim text-sm">
-      Le commentaire est retiré (tombstone, les réponses restent visibles) et
-      son auteur reçoit l'exposé des motifs (email + notification), comme
-      l'exige l'art. 17 du DSA.
+      {m.admin_reports_remove_description()}
     </p>
 
     <label class="mt-4 block text-sm font-semibold" for="takedown-reason">
-      Faits retenus
+      {m.admin_moderation_facts()}
     </label>
     <textarea
       id="takedown-reason"
       bind:value={takeDownReasonText}
       rows="3"
       class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-      placeholder="Ce qui justifie la mesure, en clair pour l'auteur."
-    ></textarea>
+      placeholder={m.admin_reports_reason_placeholder()}></textarea>
 
     <label class="mt-3 block text-sm font-semibold" for="takedown-basis">
-      Fondement
+      {m.admin_moderation_basis()}
     </label>
     <select
       id="takedown-basis"
@@ -346,14 +351,14 @@
 
     {#if takeDownLegalBasis === "TOS_BREACH"}
       <label class="mt-3 block text-sm font-semibold" for="takedown-clause">
-        Clause CGU
+        {m.admin_moderation_terms_clause()}
       </label>
       <input
         id="takedown-clause"
         type="text"
         bind:value={takeDownTosClause}
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-        placeholder="§7 — Règles de conduite" />
+        placeholder={m.admin_reports_clause_placeholder()} />
     {/if}
 
     {#if takeDownMut.error}
@@ -379,7 +384,7 @@
         class="btn btn-danger"
         disabled={takeDownMut.loading || !takeDownReasonText.trim()}
         onclick={() => takeDownMut.mutate(takeDownTarget!.id)}>
-        {takeDownMut.loading ? "Retrait…" : m.common_remove()}
+        {takeDownMut.loading ? m.admin_reports_removing() : m.common_remove()}
       </button>
     </div>
   </Modal>

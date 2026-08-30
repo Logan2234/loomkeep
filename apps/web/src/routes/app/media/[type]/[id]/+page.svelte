@@ -47,55 +47,63 @@
   import EpisodesSection from "./components/EpisodesSection.svelte";
 
   const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: "Film",
-    SERIES: "Série",
-    ANIME: "Animé",
+    MOVIE: m.media_movie(),
+    SERIES: m.media_series(),
+    ANIME: m.media_anime_label(),
   };
 
   const DIRECTOR_LABELS: Record<MediaType, string> = {
-    MOVIE: "Réalisé par",
-    SERIES: "Créé par",
-    ANIME: "Réalisé par",
+    MOVIE: m.media_directed_by(),
+    SERIES: m.media_created_by(),
+    ANIME: m.media_directed_by(),
   };
 
   // AniList `format`/`season` enum values, kept as their raw string when
   // unmapped rather than hidden.
   const FORMAT_LABELS: Record<string, string> = {
-    TV_SHORT: "Série courte",
-    MOVIE: "Film",
-    SPECIAL: "Spécial",
+    TV_SHORT: m.media_short_series(),
+    MOVIE: m.media_movie(),
+    SPECIAL: m.media_special(),
     OVA: "OVA",
     ONA: "ONA",
-    MUSIC: "Clip musical",
+    MUSIC: m.media_music_video(),
   };
   const SEASON_LABELS: Record<string, string> = {
-    WINTER: "Hiver",
-    SPRING: "Printemps",
-    SUMMER: "Été",
-    FALL: "Automne",
+    WINTER: m.media_season_winter(),
+    SPRING: m.media_season_spring(),
+    SUMMER: m.media_season_summer(),
+    FALL: m.media_season_fall(),
   };
 
   // Effective-status badge: label + chip styling. Statuses are derived server
   // side; here we only present them.
   const STATUS_META: Record<EntryStatus, { label: string; cls: string }> = {
-    PLANNED: { label: "À voir", cls: "bg-white/15 text-white" },
-    WATCHING: { label: "En cours", cls: "bg-accent text-accent-fg" },
+    PLANNED: { label: m.media_status_planned(), cls: "bg-white/15 text-white" },
+    WATCHING: {
+      label: m.media_status_watching(),
+      cls: "bg-accent text-accent-fg",
+    },
     UP_TO_DATE: {
-      label: "À jour",
+      label: m.media_status_caught_up(),
       cls: "border border-success text-success",
     },
-    COMPLETED: { label: "Terminé", cls: "bg-success/80 text-white" },
-    DROPPED: { label: "Abandonné", cls: "border border-danger text-danger" },
+    COMPLETED: {
+      label: m.media_status_completed(),
+      cls: "bg-success/80 text-white",
+    },
+    DROPPED: {
+      label: m.media_status_dropped(),
+      cls: "border border-danger text-danger",
+    },
   };
 
   // Surfaced as a tooltip on the status badge, so each state's meaning is clear.
   const STATUS_DESC: Record<EntryStatus, string> = {
-    PLANNED: "Dans ta liste, pas encore commencé.",
-    WATCHING: "Tu regardes ce titre en ce moment.",
-    UP_TO_DATE:
-      "Tu as vu tous les épisodes disponibles ; en attente de nouveaux.",
-    COMPLETED: "Tu as terminé ce titre.",
-    DROPPED: "Tu as arrêté et ne comptes pas le reprendre.",
+    PLANNED: m.media_status_planned_hint(),
+    WATCHING: m.media_status_watching_hint(),
+    UP_TO_DATE: m.media_status_caught_up_hint(),
+    COMPLETED: m.media_status_completed_hint(),
+    DROPPED: m.media_status_dropped_hint(),
   };
 
   // Brand-ish colors per rating source (no official logos — those are
@@ -186,7 +194,7 @@
   const detail = $derived(mediaQuery.data);
   const error = $derived(
     adultBlocked
-      ? "Ce titre est réservé aux comptes ayant activé le contenu pour adultes (réglages)."
+      ? m.media_adult_restricted()
       : (mediaQuery.error ?? episodesError),
   );
 
@@ -357,7 +365,7 @@
       <button
         type="button"
         class="absolute top-[38%] left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
-        aria-label="Voir la bande-annonce"
+        aria-label={m.media_watch_trailer()}
         onclick={openTrailer}>
         <Icon name="play" class="pointer-events-none h-7 w-7" />
       </button>
@@ -373,7 +381,7 @@
       <button
         type="button"
         class="absolute right-4 bottom-4 z-10 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg sm:w-20 md:right-6 md:bottom-6 md:w-24"
-        aria-label="Agrandir l'affiche"
+        aria-label={m.media_enlarge_poster()}
         onclick={() => openLightbox(detail?.posterUrl ?? null)}>
         <Poster src={detail.posterUrl} title={detail.title} />
       </button>
@@ -397,9 +405,9 @@
             </span>
             {#if dormant}
               <span
-                title="Série en cours laissée de côté depuis plus de 30 jours."
+                title={m.media_dormant_hint()}
                 class="rounded-full border border-white/30 px-2.5 py-0.5 text-xs font-bold text-white">
-                ⏸ En pause
+                {m.media_paused_badge()}
               </span>
             {/if}
           {/if}
@@ -411,7 +419,7 @@
           {/if}
           {#if extras?.contentRating}
             <span
-              title="Classification officielle"
+              title={m.media_official_rating()}
               class="rounded-full border border-white/40 px-2.5 py-0.5 text-xs font-bold text-white">
               {extras.contentRating}
             </span>
@@ -437,7 +445,9 @@
             · {FORMAT_LABELS[extras.format] ?? extras.format}
           {/if}
           {#if !isMovie && detail.seasons.length > 0}
-            · {detail.airingFinished ? "Diffusion terminée" : "En diffusion"}
+            · {detail.airingFinished
+              ? m.media_airing_finished()
+              : m.media_airing()}
           {/if}
         </p>
 
@@ -496,8 +506,9 @@
       <div class="mt-6 max-w-sm">
         <ProgressBar value={pct} />
         <p class="timecode mt-1.5 text-sm">
-          {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes} épisodes
-          vus · {pct} %
+          {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
+          {m.media_watched_episodes_suffix()}
+          {pct} %
         </p>
       </div>
     {/if}
@@ -518,7 +529,7 @@
             class="timecode text-xs {extras.directors.length > 0
               ? 'mt-1'
               : ''}">
-            {extras.studios.length > 1 ? "Studios" : "Studio"}
+            {extras.studios.length > 1 ? m.media_studios() : m.media_studio()}
             <span class="text-fg font-semibold"
               >{extras.studios.join(", ")}</span>
           </p>
@@ -565,8 +576,8 @@
             class="text-dim h-4 w-4 shrink-0 transition-transform {trackingExpanded
               ? 'rotate-90'
               : ''}" />
-          <span class="text-sm font-semibold">Mon suivi</span>
-          <span class="text-dim text-xs">Note privée · Possession</span>
+          <span class="text-sm font-semibold">{m.tracking_title()}</span>
+          <span class="text-dim text-xs">{m.media_tracking_summary()}</span>
         </div>
         {#if trackingExpanded}
           <div
@@ -585,7 +596,7 @@
 
             <NoteField
               value={entry.notes}
-              placeholder="Une réplique, un souvenir…"
+              placeholder={m.media_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
 
             {#if isMovie && (entry.status === "COMPLETED" || entry.replays.length > 0)}
@@ -595,7 +606,7 @@
                 <div class="flex items-center justify-between gap-2">
                   <span
                     class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    Revisionnages{#if entry.replays.length > 0}
+                    {m.media_rewatches()}{#if entry.replays.length > 0}
                       &nbsp;· {entry.replays.length}{/if}
                   </span>
                   {#if entry.status === "COMPLETED"}
@@ -604,7 +615,7 @@
                       class="link-accent text-xs disabled:opacity-50"
                       disabled={saving}
                       onclick={() => addReplayMut.mutate()}>
-                      + J'ai revu ce film
+                      {m.media_add_rewatch()}
                     </button>
                   {/if}
                 </div>
@@ -617,7 +628,7 @@
                         <button
                           type="button"
                           class="hover:text-danger"
-                          aria-label="Supprimer ce revisionnage"
+                          aria-label={m.media_delete_rewatch()}
                           disabled={saving}
                           onclick={() => removeReplayMut.mutate(replay.id)}>
                           {m.common_delete()}
@@ -636,8 +647,8 @@
     {#if hasProviders && extras}
       <!-- Où regarder: deliberately discreet (small, muted logos). -->
       <section class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span class="timecode text-xs">Où regarder</span>
-        {#each [{ label: "Streaming", list: extras.watchProviders.flatrate }, { label: "Location", list: extras.watchProviders.rent }, { label: "Achat", list: extras.watchProviders.buy }] as group (group.label)}
+        <span class="timecode text-xs">{m.media_where_to_watch()}</span>
+        {#each [{ label: m.media_streaming(), list: extras.watchProviders.flatrate }, { label: m.media_rent(), list: extras.watchProviders.rent }, { label: m.media_buy(), list: extras.watchProviders.buy }] as group (group.label)}
           {#if group.list.length > 0}
             <div class="flex items-center gap-1.5">
               <span class="text-dim text-[0.65rem]">{group.label}</span>
@@ -666,17 +677,18 @@
             target="_blank"
             rel="noopener noreferrer"
             class="timecode text-dim hover:text-accent w-full text-[0.6rem] hover:underline">
-            Voir sur TMDB · France
+            {m.media_tmdb_france()}
           </a>
         {:else}
-          <span class="timecode text-dim w-full text-[0.6rem]">France</span>
+          <span class="timecode text-dim w-full text-[0.6rem]"
+            >{m.media_france()}</span>
         {/if}
       </section>
     {/if}
 
     {#if extras && extras.externalLinks.length > 0}
       <section class="mt-4 flex flex-wrap items-center gap-2">
-        <span class="timecode text-xs">Liens</span>
+        <span class="timecode text-xs">{m.music_links()}</span>
         {#each extras.externalLinks as link (link.url)}
           <a
             href={link.url}
@@ -729,7 +741,7 @@
 
     {#if extras && extras.relations.length > 0}
       <RelatedCarousel
-        title="Œuvres liées"
+        title={m.media_related_works()}
         items={extras.relations.map((s) => ({
           key: `${s.source}:${s.sourceId}`,
           href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
@@ -740,7 +752,7 @@
 
     {#if extras}
       <RelatedCarousel
-        title="Titres similaires"
+        title={m.media_similar_titles()}
         items={extras.similar.map((s) => ({
           key: `${s.source}:${s.sourceId}`,
           href: `/app/media/${s.type.toLowerCase()}/${s.sourceId}`,
@@ -752,8 +764,8 @@
 
   {#if confirmRemove}
     <ConfirmationModal
-      title="Retirer de ma bibliothèque"
-      message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, tes visionnages, ta critique, tes commentaires et ta note seront supprimés.`}
+      title={m.tracking_remove()}
+      message={m.media_remove_message({ title: detail.title })}
       confirmLabel={m.common_remove()}
       danger
       busy={removeMut.loading}
@@ -765,7 +777,7 @@
     <Lightbox
       images={galleryImages}
       video={extras?.trailerVideoId
-        ? { videoId: extras.trailerVideoId, alt: "Bande-annonce" }
+        ? { videoId: extras.trailerVideoId, alt: m.media_trailer() }
         : null}
       bind:index={lightboxIndex}
       onClose={() => (lightboxOpen = false)} />

@@ -7,9 +7,9 @@ import type {
 } from "@loomkeep/shared";
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
-  PENDING: "En attente",
-  RESOLVED: "Résolu",
-  DISMISSED: "Rejeté",
+  PENDING: m.report_status_pending(),
+  RESOLVED: m.report_status_resolved(),
+  DISMISSED: m.report_status_dismissed(),
 };
 
 export const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
@@ -35,69 +35,67 @@ export const REPORT_CATEGORY_ORDER: ReportCategory[] = [
 ];
 
 export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
-  SPAM: "Spam ou publicité",
-  ILLEGAL_CONTENT: "Contenu illégal",
-  HARASSMENT: "Harcèlement",
-  HATE_SPEECH: "Discours haineux",
-  SEXUAL_CONTENT: "Contenu sexuel",
-  VIOLENCE: "Violence ou contenu choquant",
-  MINOR_ENDANGERMENT: "Mise en danger d'un mineur",
-  SPOILER: "Spoiler non signalé",
-  IMPERSONATION: "Usurpation d'identité",
-  MISINFORMATION: "Désinformation",
-  STOLEN_CONTENT: "Contenu volé",
-  MISLEADING_REVIEW: "Avis trompeur",
+  SPAM: m.report_category_spam(),
+  ILLEGAL_CONTENT: m.report_category_illegal(),
+  HARASSMENT: m.report_category_harassment(),
+  HATE_SPEECH: m.report_category_hate(),
+  SEXUAL_CONTENT: m.report_category_sexual(),
+  VIOLENCE: m.report_category_violence(),
+  MINOR_ENDANGERMENT: m.report_category_minor(),
+  SPOILER: m.report_category_spoiler(),
+  IMPERSONATION: m.report_category_impersonation(),
+  MISINFORMATION: m.report_category_misinformation(),
+  STOLEN_CONTENT: m.report_category_stolen(),
+  MISLEADING_REVIEW: m.report_category_misleading_review(),
   OTHER: m.common_other(),
 };
 
 export const REPORT_CATEGORY_HINTS: Record<ReportCategory, string> = {
-  SPAM: "Publicité, lien suspect, messages répétés",
-  ILLEGAL_CONTENT: "Piratage, streaming illégal",
-  HARASSMENT: "Insultes, menaces, intimidation, doxxing",
-  HATE_SPEECH: "Racisme, sexisme, homophobie…",
-  SEXUAL_CONTENT: "Contenu à caractère sexuel explicite",
-  VIOLENCE: "Violence ou contenu graphique",
-  MINOR_ENDANGERMENT: "Contenu ou sollicitation impliquant un mineur",
-  SPOILER: "Révèle l'intrigue sans balise",
-  IMPERSONATION: "Faux compte ou usurpation",
-  MISINFORMATION: "Fausse information présentée comme un fait",
-  STOLEN_CONTENT: "Texte copié sans attribution",
-  MISLEADING_REVIEW: "Faux avis, notation manipulée",
-  OTHER: "Autre chose — explique en quelques mots",
+  SPAM: m.report_hint_spam(),
+  ILLEGAL_CONTENT: m.report_hint_illegal(),
+  HARASSMENT: m.report_hint_harassment(),
+  HATE_SPEECH: m.report_hint_hate(),
+  SEXUAL_CONTENT: m.report_sexual_explicit(),
+  VIOLENCE: m.report_hint_violence(),
+  MINOR_ENDANGERMENT: m.report_hint_minor(),
+  SPOILER: m.report_hint_spoiler(),
+  IMPERSONATION: m.report_hint_impersonation(),
+  MISINFORMATION: m.report_false_information(),
+  STOLEN_CONTENT: m.report_hint_stolen(),
+  MISLEADING_REVIEW: m.report_hint_misleading_review(),
+  OTHER: m.report_hint_other(),
 };
 
 export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
-  SPAM_PROMOTIONAL: "Contenu publicitaire non sollicité",
-  SPAM_SUSPICIOUS_LINK: "Lien suspect ou malveillant",
-  SPAM_REPEATED: "Messages répétés (flood)",
-  ILLEGAL_PIRACY_LINK: "Lien de piratage ou de streaming illégal",
-  HARASSMENT_INSULTS: "Insultes ou propos dégradants ciblés",
-  HARASSMENT_THREATS: "Menaces",
-  HARASSMENT_STALKING: "Intimidation répétée / acharnement",
-  HARASSMENT_DOXXING: "Partage d'informations personnelles (doxxing)",
-  HATE_RACISM: "Racisme ou xénophobie",
-  HATE_SEXISM_LGBTQ: "Sexisme, homophobie ou transphobie",
-  HATE_OTHER: "Autre forme de discrimination",
-  SEXUAL_EXPLICIT: "Contenu à caractère sexuel explicite",
-  VIOLENCE_GRAPHIC: "Violence ou contenu graphique choquant",
-  MINOR_ENDANGERMENT_CONTENT:
-    "Contenu montrant un mineur en danger ou exploité",
-  MINOR_ENDANGERMENT_SOLICITATION: "Sollicitation impliquant un mineur",
-  SPOILER_UNTAGGED: "Révèle un élément d'intrigue sans balise",
-  IMPERSONATION_REAL_PERSON:
-    "Se fait passer pour une personne réelle ou un autre membre",
-  IMPERSONATION_FAKE_ACCOUNT: "Faux compte ou bot",
-  MISINFORMATION_FALSE_FACT: "Fausse information présentée comme un fait",
-  STOLEN_CONTENT_PLAGIARIZED: "Texte copié d'ailleurs sans attribution",
-  MISLEADING_REVIEW_MANIPULATION: "Faux avis ou manipulation de la note",
+  SPAM_PROMOTIONAL: m.report_motif_spam_promotional(),
+  SPAM_SUSPICIOUS_LINK: m.report_motif_spam_link(),
+  SPAM_REPEATED: m.report_motif_spam_repeated(),
+  ILLEGAL_PIRACY_LINK: m.report_motif_illegal_link(),
+  HARASSMENT_INSULTS: m.report_motif_harassment_insults(),
+  HARASSMENT_THREATS: m.report_motif_harassment_threats(),
+  HARASSMENT_STALKING: m.report_motif_harassment_stalking(),
+  HARASSMENT_DOXXING: m.report_motif_harassment_doxxing(),
+  HATE_RACISM: m.report_motif_hate_racism(),
+  HATE_SEXISM_LGBTQ: m.report_motif_hate_sexism_lgbtq(),
+  HATE_OTHER: m.report_motif_hate_other(),
+  SEXUAL_EXPLICIT: m.report_sexual_explicit(),
+  VIOLENCE_GRAPHIC: m.report_motif_violence_graphic(),
+  MINOR_ENDANGERMENT_CONTENT: m.report_motif_minor_content(),
+  MINOR_ENDANGERMENT_SOLICITATION: m.report_motif_minor_solicitation(),
+  SPOILER_UNTAGGED: m.report_motif_spoiler(),
+  IMPERSONATION_REAL_PERSON: m.report_motif_impersonation_person(),
+  IMPERSONATION_FAKE_ACCOUNT: m.report_motif_impersonation_fake(),
+  MISINFORMATION_FALSE_FACT: m.report_false_information(),
+  STOLEN_CONTENT_PLAGIARIZED: m.report_motif_stolen(),
+  MISLEADING_REVIEW_MANIPULATION: m.report_motif_misleading_review(),
 };
 
 export const MODERATION_LEGAL_BASIS_LABELS: Record<
   ModerationLegalBasis,
   string
 > = {
-  ILLEGAL_CONTENT: "Contenu manifestement illégal",
-  TOS_BREACH: "Violation des CGU",
+  ILLEGAL_CONTENT: m.moderation_basis_illegal(),
+  TOS_BREACH: m.moderation_basis_terms(),
 };
 
 /**
@@ -114,5 +112,5 @@ export function defaultModerationBasis(category: ReportCategory | null): {
     return { legalBasis: "ILLEGAL_CONTENT", tosClause: "" };
   }
 
-  return { legalBasis: "TOS_BREACH", tosClause: "§7 — Règles de conduite" };
+  return { legalBasis: "TOS_BREACH", tosClause: m.moderation_terms_conduct() };
 }

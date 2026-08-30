@@ -63,7 +63,8 @@
 
     {#if !entry}
       <button class="btn btn-primary ml-auto" disabled={saving} onclick={onAdd}>
-        <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
+        <Icon name="plus" class="h-4 w-4" />
+        {m.library_add()}
       </button>
     {:else}
       <div class="flex min-w-0 items-center gap-2.5">
@@ -93,18 +94,21 @@
               ? 'bg-accent text-accent-fg'
               : 'border-border text-dim border'}"
             disabled={saving}
-            title={isWatched ? "Marquer comme non vu" : "Marquer comme vu"}
+            title={isWatched
+              ? m.media_mark_unwatched()
+              : m.media_mark_watched()}
             onclick={onToggleWatched}>
             <Icon name="check" class="h-5 w-5" />
           </button>
           <div class="text-sm whitespace-nowrap">
             {#if isWatched}
-              Vu <span class="text-dim"
+              {m.home_mark_seen()}
+              <span class="text-dim"
                 >{entry.finishedAt
                   ? `(${formatDate(entry.finishedAt)})`
                   : ""}</span>
             {:else}
-              Pas encore vu
+              {m.media_not_watched()}
             {/if}
           </div>
         {/if}
@@ -142,8 +146,8 @@
               type="button"
               aria-haspopup="menu"
               aria-expanded={open}
-              aria-label="Plus d'actions"
-              title="Plus d'actions"
+              aria-label={m.media_more_actions()}
+              title={m.media_more_actions()}
               onclick={toggle}
               class="btn-icon border-border h-9 w-9 border">
               <Icon name="dots-horizontal" class="h-4 w-4" />
@@ -159,7 +163,8 @@
                   close();
                   onResume();
                 }}>
-                <Icon name="refresh" class="h-4 w-4" /> Reprendre
+                <Icon name="refresh" class="h-4 w-4" />
+                {m.media_resume()}
               </button>
             {:else}
               <button
@@ -170,7 +175,8 @@
                   close();
                   onDrop();
                 }}>
-                <Icon name="archive" class="h-4 w-4" /> Abandonner ce suivi
+                <Icon name="archive" class="h-4 w-4" />
+                {m.media_drop_tracking()}
               </button>
             {/if}
             <button
@@ -181,7 +187,8 @@
                 close();
                 onRemove();
               }}>
-              <Icon name="trash" class="h-4 w-4" /> Retirer de ma bibliothèque
+              <Icon name="trash" class="h-4 w-4" />
+              {m.tracking_remove()}
             </button>
           {/snippet}
         </Dropdown>

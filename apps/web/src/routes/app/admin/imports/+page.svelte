@@ -27,19 +27,19 @@
   // Combobox options carry an empty-value "all" entry so a single-select clears
   // back to unfiltered.
   const SOURCE_OPTIONS = [
-    { label: "Toutes les sources", value: "" },
+    { label: m.admin_imports_all_sources(), value: "" },
     ...Object.entries(IMPORTS_DEFINITION).map(([source, description]) => ({
       label: description.label,
       value: source,
     })),
   ];
   const STATUS_OPTIONS = [
-    { label: "Tous les statuts", value: "" },
-    { label: "Réussi", value: "SUCCESS" },
+    { label: m.admin_all_statuses(), value: "" },
+    { label: m.admin_successful(), value: "SUCCESS" },
     { label: m.common_failure(), value: "FAILURE" },
   ];
   const STATUS_LABELS: Record<JobStatus, string> = {
-    SUCCESS: "Réussi",
+    SUCCESS: m.admin_successful(),
     FAILURE: m.common_failure(),
   };
 
@@ -83,11 +83,17 @@
   const kpis = $derived(
     summary
       ? [
-          { value: formatNumber(summary.total), label: "Imports" },
-          { value: formatNumber(summary.success), label: "Réussis" },
+          {
+            value: formatNumber(summary.total),
+            label: m.admin_imports_title(),
+          },
+          {
+            value: formatNumber(summary.success),
+            label: m.admin_successful_plural(),
+          },
           {
             value: formatNumber(summary.failure),
-            label: "Échecs",
+            label: m.admin_failures(),
             alert: summary.failure > 0,
           },
           {
@@ -96,7 +102,7 @@
                 ? "—"
                 : String(summary.successPercent),
             unit: summary.successPercent === null ? undefined : "%",
-            label: "Taux de succès",
+            label: m.admin_success_rate(),
           },
         ]
       : [],
@@ -106,8 +112,8 @@
     (summary?.bySource ?? []).map((s) => ({
       label: sourceLabel(s.sourceId),
       value: s.items,
-      display: `${formatNumber(s.items)} élém.`,
-      badge: { text: `${s.runs} import${s.runs > 1 ? "s" : ""}` },
+      display: m.admin_imports_item_count({ count: formatNumber(s.items) }),
+      badge: { text: m.admin_imports_run_count({ count: s.runs }) },
     })),
   );
 
@@ -122,14 +128,14 @@
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="download"
-    title="Imports"
-    subtitle="Journal des imports commis, tous comptes confondus. Les analyses non validées n'écrivent rien et n'apparaissent pas ici." />
+    title={m.admin_imports_title()}
+    subtitle={m.admin_imports_subtitle()} />
 
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if sourceBars.length > 0}
       <div class="card mb-5 p-4">
-        <SectionLabel label="Éléments importés par source" class="mb-3" />
+        <SectionLabel label={m.admin_imports_by_source()} class="mb-3" />
         <RankBars items={sourceBars} />
       </div>
     {/if}
@@ -137,12 +143,12 @@
 
   <div class="mb-5 flex flex-wrap items-center gap-2">
     <Combobox
-      label="Toutes les sources"
+      label={m.admin_imports_all_sources()}
       options={SOURCE_OPTIONS}
       values={activeSource ? [activeSource] : []}
       onChange={(v) => (activeSource = v[0] ?? "")} />
     <Combobox
-      label="Tous les statuts"
+      label={m.admin_all_statuses()}
       options={STATUS_OPTIONS}
       values={activeStatus ? [activeStatus] : []}
       onChange={(v) => (activeStatus = v[0] ?? "")} />
@@ -160,7 +166,7 @@
       {/each}
     </div>
   {:else if runs.length === 0}
-    <EmptyState>Aucun import ne correspond à ce filtre.</EmptyState>
+    <EmptyState>{m.admin_no_matching_imports()}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each runs as run (run.id)}
@@ -180,7 +186,7 @@
               <a
                 href="/app/admin/users?q={encodeURIComponent(run.identifier)}"
                 class="text-dim hover:text-fg text-sm underline decoration-dotted underline-offset-4"
-                title="Voir ce compte">
+                title={m.admin_view_account()}>
                 {run.identifier}
               </a>
             {:else if run.identifier}
@@ -189,7 +195,7 @@
             {#if run.overwrite}
               <span
                 class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-xs font-bold">
-                Écrasement
+                {m.admin_imports_overwrite()}
               </span>
             {/if}
             <span class="timecode ml-auto text-xs">
@@ -202,12 +208,14 @@
             {:else if run.summary}
               {run.summary}
             {:else}
-              {run.itemCount} élément(s) importé(s)
+              {run.itemCount} {m.admin_imports_items_suffix()}
             {/if}
             <span class="timecode">· {durationLabel(run)}</span>
           </p>
           {#if !run.userId}
-            <p class="text-dim mt-1 text-xs italic">Compte supprimé depuis</p>
+            <p class="text-dim mt-1 text-xs italic">
+              {m.admin_deleted_account()}
+            </p>
           {/if}
         </li>
       {/each}
@@ -218,7 +226,9 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={runsQuery.isFetchingNextPage}
         onclick={() => runsQuery.fetchNextPage()}>
-        {runsQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
+        {runsQuery.isFetchingNextPage
+          ? m.common_loading()
+          : m.common_load_more()}
       </button>
     {/if}
   {/if}

@@ -1,9 +1,15 @@
 import { auth } from "$lib/auth.svelte";
 import { toIntlLocale } from "$lib/constants/language-to-locale";
 import { m } from "$lib/paraglide/messages.js";
+import { getLocale, isLocale } from "$lib/paraglide/runtime.js";
 
 const resolveLocale = (locale?: string) =>
-  locale ?? toIntlLocale(auth.user?.locale);
+  locale ?? toIntlLocale(auth.user?.locale ?? getLocale());
+
+function messageLocale(locale: string) {
+  const language = new Intl.Locale(locale).language;
+  return isLocale(language) ? language : getLocale();
+}
 
 const dateTimeFormatCache = new Map<string, Intl.DateTimeFormat>();
 
@@ -150,7 +156,10 @@ export function formatRelative(iso: string, locale?: string): string {
   const abs = Math.abs(diffSec);
   const resolved = resolveLocale(locale);
 
-  if (abs < 60) return m.common_just_now();
+  if (abs < 60) {
+    return m.common_just_now({}, { locale: messageLocale(resolved) });
+  }
+
   const relFmt = getRelativeTimeFormat(resolved);
   if (abs < 3600) return relFmt.format(Math.round(diffSec / 60), "minute");
   if (abs < 86_400) return relFmt.format(Math.round(diffSec / 3600), "hour");
@@ -158,22 +167,34 @@ export function formatRelative(iso: string, locale?: string): string {
   return formatDate(iso, DATE_OPTIONS, resolved);
 }
 
-const BYTE_UNITS = ["Ko", "Mo", "Go"];
-
 /** Byte size in the largest unit that keeps it readable, e.g. "218 Mo", "1,4 Go". */
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`;
+  const locale = resolveLocale();
+  const options = { locale: messageLocale(locale) };
+  const units = [
+    m.common_byte_short({}, options),
+    m.common_kilobyte_short({}, options),
+    m.common_megabyte_short({}, options),
+    m.common_gigabyte_short({}, options),
+  ];
 
-  let value = bytes / 1024;
+  let value = bytes;
   let unit = 0;
 
-  while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
+  while (value >= 1024 && unit < units.length - 1) {
     value /= 1024;
     unit++;
   }
 
-  return `${value.toFixed(value < 10 ? 1 : 0)} ${BYTE_UNITS[unit]}`.replace(
-    ".",
-    ",",
+  const decimals = unit > 0 && value < 10 ? 1 : 0;
+  const number = formatNumber(
+    value,
+    {
+      useGrouping: false,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    },
+    locale,
   );
+  return `${number} ${units[unit]}`;
 }

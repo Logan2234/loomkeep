@@ -87,7 +87,9 @@
         usersTotal !== null ? formatNumber(usersTotal) : undefined,
       "/app/admin/communications":
         overview !== null
-          ? `${formatNumber(overview.accountsWithPush)} abonné${overview.accountsWithPush > 1 ? "s" : ""} push`
+          ? m.admin_push_subscribers_count({
+              count: formatNumber(overview.accountsWithPush),
+            })
           : undefined,
       "/app/admin/services": services
         ? `${servicesLive.length - servicesDegraded}/${servicesLive.length}`
@@ -97,20 +99,27 @@
         : undefined,
       "/app/admin/backup":
         backups && backups.length > 0
-          ? `${backups.length} · dernière ${formatRelative(backups[0].createdAt)}`
+          ? m.admin_backup_count_latest({
+              count: backups.length,
+              date: formatRelative(backups[0].createdAt),
+            })
           : backups
-            ? "aucune"
+            ? m.admin_no_backups()
             : undefined,
       "/app/admin/cache":
-        cacheTotal !== null ? `${formatNumber(cacheTotal)} items` : undefined,
+        cacheTotal !== null
+          ? m.admin_cache_item_count({ count: formatNumber(cacheTotal) })
+          : undefined,
       "/app/admin/reports":
-        reportsPending > 0 ? `${reportsPending} en attente` : "à jour",
+        reportsPending > 0
+          ? m.admin_reports_pending_count({ count: reportsPending })
+          : m.admin_up_to_date(),
     };
   });
 
   const CATEGORIES: { label: string; hrefs: string[] }[] = [
     {
-      label: "Contenu & données",
+      label: m.admin_group_content(),
       hrefs: [
         "/app/admin/cache",
         "/app/admin/schema",
@@ -119,7 +128,7 @@
       ],
     },
     {
-      label: "Utilisateurs & communication",
+      label: m.admin_group_users(),
       hrefs: [
         "/app/admin/users",
         "/app/admin/communications",
@@ -127,11 +136,11 @@
       ],
     },
     {
-      label: "Système & exploitation",
+      label: m.admin_group_system(),
       hrefs: ["/app/admin/services", "/app/admin/jobs", "/app/admin/stats"],
     },
     {
-      label: "Sécurité & modération",
+      label: m.admin_group_security(),
       hrefs: ["/app/admin/security", "/app/admin/reports"],
     },
   ];
@@ -150,8 +159,10 @@
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="shield"
-    title="Poste de contrôle"
-    subtitle={`Connecté en tant que ${auth.user?.displayName}. Vue d'ensemble avant d'entrer dans une section.`} />
+    title={m.admin_dashboard_title()}
+    subtitle={m.admin_dashboard_subtitle({
+      name: auth.user?.displayName ?? "",
+    })} />
 
   <!-- The 4 numbers worth a glance before diving in — each links straight to its page. -->
   <div
@@ -161,14 +172,14 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span class="bg-success h-1.5 w-1.5 rounded-full"></span>
-        Utilisateurs
+        {m.admin_users_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {usersTotal !== null ? formatNumber(usersTotal) : "—"}
       </span>
       <span class="text-dim text-xs">
         {usersDeltaWeek !== null
-          ? `+${formatNumber(usersDeltaWeek)} cette semaine`
+          ? m.admin_users_added_week({ count: formatNumber(usersDeltaWeek) })
           : " "}
       </span>
     </a>
@@ -181,7 +192,7 @@
           class="h-1.5 w-1.5 rounded-full {servicesDegraded > 0
             ? 'bg-danger'
             : 'bg-success'}"></span>
-        Services
+        {m.admin_services_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {services
@@ -194,8 +205,8 @@
           : 'text-dim'}">
         {services
           ? servicesDegraded > 0
-            ? `${servicesDegraded} dégradé${servicesDegraded > 1 ? "s" : ""}`
-            : "tous opérationnels"
+            ? m.admin_degraded_count({ count: servicesDegraded })
+            : m.admin_services_all_healthy()
           : " "}
       </span>
     </a>
@@ -208,18 +219,20 @@
           class="h-1.5 w-1.5 rounded-full {jobsFailedRecent
             ? 'bg-danger'
             : 'bg-success'}"></span>
-        Jobs
+        {m.admin_jobs_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {jobsFailedRecent !== null
-          ? `${jobsFailedRecent} échec${jobsFailedRecent > 1 ? "s" : ""}`
+          ? m.admin_failed_count({ count: jobsFailedRecent })
           : "—"}
       </span>
       <span
         class="text-xs {jobsFailedRecent
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {jobsLastRunAt ? `dernier run ${formatRelative(jobsLastRunAt)}` : " "}
+        {jobsLastRunAt
+          ? m.admin_last_run({ date: formatRelative(jobsLastRunAt) })
+          : " "}
       </span>
     </a>
 
@@ -231,7 +244,7 @@
           class="h-1.5 w-1.5 rounded-full {reportsPending > 0
             ? 'bg-danger'
             : 'bg-success'}"></span>
-        Signalements
+        {m.admin_social_reports_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {formatNumber(reportsPending)}
@@ -240,7 +253,9 @@
         class="text-xs {reportsPending > 0
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {reportsPending > 0 ? "en attente de modération" : "à jour"}
+        {reportsPending > 0
+          ? m.admin_moderation_pending()
+          : m.admin_up_to_date()}
       </span>
     </a>
   </div>
@@ -276,9 +291,7 @@
                   {:else if item.href === "/app/admin/services" && servicesDegraded > 0}
                     <span
                       class="border-danger/40 bg-danger/10 text-danger rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
-                      {servicesDegraded} dégradé{servicesDegraded > 1
-                        ? "s"
-                        : ""}
+                      {m.admin_degraded_count({ count: servicesDegraded })}
                     </span>
                   {/if}
                 </span>

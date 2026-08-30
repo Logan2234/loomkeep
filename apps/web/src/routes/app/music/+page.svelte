@@ -20,11 +20,11 @@
   }));
 
   const SORTS = [
-    { label: "Ajout récent", value: "added" },
+    { label: m.library_sort_added(), value: "added" },
     { label: m.common_title(), value: "title" },
-    { label: "Artiste", value: "artist" },
-    { label: "Note", value: "rating" },
-    { label: "Écouté récemment", value: "finished" },
+    { label: m.music_artist(), value: "artist" },
+    { label: m.library_rating(), value: "rating" },
+    { label: m.music_sort_listened(), value: "finished" },
     { label: m.common_status(), value: "status" },
   ];
 
@@ -52,7 +52,10 @@
 <LibraryBrowser
   icon="music"
   title={m.common_Music()}
-  subtitle={(n) => `${n} album${n > 1 ? "s" : ""}`}
+  subtitle={(n) =>
+    n === 1
+      ? m.music_library_count_one({ count: n })
+      : m.music_library_count_many({ count: n })}
   noun="album"
   domain={Domain.MUSIC}
   {load}

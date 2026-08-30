@@ -238,7 +238,7 @@
       value: a.id,
       label: a.label,
       disabled: isPrivate && a.id === VisibilityAudience.PUBLIC,
-      disabledReason: "Un profil privé ne peut pas exposer au public.",
+      disabledReason: m.settings_private_profile_public_hint(),
     }))}
     value={current}
     onChange={(v) => setAudience(domain, facet, v)} />
@@ -248,21 +248,21 @@
   <section class="card mb-5 p-5 md:p-6">
     <h2 class="font-display mb-1 text-lg font-bold">{m.common_privacy()}</h2>
     <p class="text-dim text-sm">
-      Qui peut vous trouver, et ce que les autres voient de vous.
+      {m.settings_privacy_description()}
     </p>
 
     <div class="my-8">
       <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p class="font-semibold">Visibilité du profil</p>
+        <p class="font-semibold">{m.settings_profile_visibility()}</p>
         <button
           type="button"
           class="text-dim decoration-dim/50 cursor-pointer text-xs underline decoration-dotted underline-offset-4"
           onclick={() => (showModesModal = true)}>
-          En savoir plus
+          {m.settings_privacy_learn_more()}
         </button>
       </div>
       <Combobox
-        label="Profil"
+        label={m.settings_privacy_profile_label()}
         options={ACCESS_OPTIONS.map((a) => ({ label: a.label, value: a.id }))}
         values={settings.profileAccess ? [settings.profileAccess] : []}
         onChange={(v) => setAccess(v[0] as ProfileAccess)} />
@@ -295,7 +295,7 @@
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="border-border border-b">
-              <th class="pr-3 pb-2 font-semibold">Catégorie</th>
+              <th class="pr-3 pb-2 font-semibold">{m.settings_category()}</th>
               {#each FACETS as f (f.id)}
                 <th class="px-3 pb-2 text-center font-semibold">{f.label}</th>
               {/each}
@@ -327,14 +327,14 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p class="font-semibold">
-                Portée par défaut des nouvelles reviews
+                {m.settings_privacy_default_reviews()}
               </p>
               <p class="text-dim text-sm">
-                Utilisée quand vous notez une œuvre sans préciser la portée.
+                {m.settings_privacy_default_reviews_hint()}
               </p>
             </div>
             <Combobox
-              label="Portée"
+              label={m.settings_privacy_scope()}
               options={[
                 { label: m.common_friends(), value: "FRIENDS" },
                 { label: m.common_public(), value: "PUBLIC" },
@@ -348,15 +348,14 @@
     {/if}
 
     <p class="text-dim mt-4 text-xs">
-      Vos notes privées restent toujours privées. Les reviews et commentaires
-      que vous publiez ont leur propre portée, choisie à la publication.
+      {m.settings_privacy_content_hint()}
     </p>
   </section>
 {/if}
 
 {#if showModesModal}
   <Modal
-    title="Les 3 modes de confidentialité"
+    title={m.settings_privacy_modes_title()}
     wide
     onclose={() => (showModesModal = false)}>
     <div class="space-y-3">
@@ -371,7 +370,7 @@
       <table class="w-full text-left text-sm">
         <thead>
           <tr class="border-border border-b">
-            <th class="py-2 pr-3 font-semibold">Action</th>
+            <th class="py-2 pr-3 font-semibold">{m.settings_action()}</th>
             <th class="px-3 py-2 font-semibold">{m.common_public()}</th>
             <th class="px-3 py-2 font-semibold">{m.common_private()}</th>
             <th class="py-2 pl-3 font-semibold">{m.profile_ghost()}</th>
@@ -393,25 +392,26 @@
 {/if}
 
 {#if confirmingGhost && ghostImpact}
-  <Modal title="Passer en Figurant ?" onclose={() => (confirmingGhost = false)}>
+  <Modal
+    title={m.settings_privacy_ghost_title()}
+    onclose={() => (confirmingGhost = false)}>
     <p class="text-dim text-sm">
-      Vous devenez invisible : introuvable, non suivable, activité masquée. Cela
-      applique tout de suite :
+      {m.settings_privacy_ghost_description()}
     </p>
     <ul class="border-border divide-border mt-3 divide-y border-y text-sm">
       {#if ghostImpact.followersToRemove > 0}
         <li class="flex items-center justify-between gap-3 py-2">
           <span
             >{ghostImpact.followersToRemove > 1
-              ? "Abonnés retirés"
-              : "Abonné retiré"}</span>
+              ? m.settings_privacy_removed_followers()
+              : m.settings_privacy_removed_follower()}</span>
           <span class="timecode text-fg font-semibold"
             >{ghostImpact.followersToRemove}</span>
         </li>
       {/if}
       {#if ghostImpact.outgoingFollowsToCancel > 0}
         <li class="flex items-center justify-between gap-3 py-2">
-          <span>Abonnements/demandes annulés (profils non publics)</span>
+          <span>{m.settings_privacy_cancelled_following()}</span>
           <span class="timecode text-fg font-semibold"
             >{ghostImpact.outgoingFollowsToCancel}</span>
         </li>
@@ -420,21 +420,20 @@
         <li class="flex items-center justify-between gap-3 py-2">
           <span
             >{ghostImpact.listsToDowngrade > 1
-              ? "Listes repassées en Privé"
-              : "Liste repassée en Privé"}</span>
+              ? m.settings_privacy_private_lists()
+              : m.settings_privacy_private_list()}</span>
           <span class="timecode text-fg font-semibold"
             >{ghostImpact.listsToDowngrade}</span>
         </li>
       {/if}
       {#if ghostImpact.followersToRemove === 0 && ghostImpact.outgoingFollowsToCancel === 0 && ghostImpact.listsToDowngrade === 0}
         <li class="text-dim py-2">
-          Rien à nettoyer pour l'instant — aucun impact immédiat.
+          {m.settings_privacy_nothing_to_clean()}
         </li>
       {/if}
     </ul>
     <p class="text-dim mt-4 text-xs">
-      L'anonymat n'est pas permanent : repasser Public ou Privé réattribuera
-      votre historique (commentaires, reviews) à votre identité réelle.
+      {m.settings_privacy_anonymity_warning()}
     </p>
     <div class="mt-5 flex justify-end gap-2">
       <button
@@ -449,7 +448,7 @@
         class="btn btn-danger"
         disabled={ghostSwitchMut.loading}
         onclick={confirmGhostSwitch}>
-        Devenir Figurant
+        {m.settings_privacy_become_ghost()}
       </button>
     </div>
   </Modal>

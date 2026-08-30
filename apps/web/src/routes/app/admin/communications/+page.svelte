@@ -111,7 +111,7 @@
     mutate: () =>
       sendAdminTestEmail(selectedKey!, { to: testTo, values: fieldValues }),
     coveredFields: ["to"],
-    successToast: () => `Email envoyé à ${testTo}.`,
+    successToast: () => m.admin_communications_email_sent_to({ email: testTo }),
   }));
 
   function sendTestEmail() {
@@ -123,7 +123,10 @@
     sendTestEmailMut.error
       ? { ok: false, message: sendTestEmailMut.error }
       : sendTestEmailMut.data
-        ? { ok: true, message: `Envoyé à ${testTo}.` }
+        ? {
+            ok: true,
+            message: m.admin_communications_sent_to({ email: testTo }),
+          }
         : null,
   );
 
@@ -194,11 +197,11 @@
       ? [
           {
             value: formatNumber(pushSummary.subscriptions),
-            label: "Abonnements actifs",
+            label: m.admin_communications_active_subscriptions(),
           },
           {
             value: formatNumber(pushSummary.accounts),
-            label: "Comptes abonnés",
+            label: m.admin_communications_subscribed_accounts(),
           },
         ]
       : [],
@@ -244,8 +247,8 @@
 <div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="mail"
-    title="Communications"
-    subtitle="Aperçu/envoi de gabarits email et notifications push, individuel ou en diffusion." />
+    title={m.settings_section_communications()}
+    subtitle={m.admin_communications_subtitle()} />
 
   <div class="mb-6 flex gap-2">
     <button
@@ -260,7 +263,7 @@
       class="chip"
       class:chip-on={tab === "push"}
       onclick={() => (tab = "push")}>
-      Push
+      {m.admin_communications_push()}
     </button>
   </div>
 
@@ -272,8 +275,7 @@
     {:else if templates}
       {#if !smtpConfigured}
         <Banner variant="warning" class="mb-6">
-          SMTP n'est pas configuré — l'aperçu fonctionne, mais l'envoi de test
-          est désactivé.
+          {m.admin_communications_smtp_unavailable()}
         </Banner>
       {/if}
 
@@ -282,7 +284,7 @@
           <!-- Mobile: a dropdown instead of an ugly horizontal scroll strip. -->
           <div class="md:hidden">
             <Combobox
-              label="Gabarit"
+              label={m.admin_communications_template()}
               searchable
               options={templates.map((t) => ({
                 label: t.label,
@@ -356,14 +358,16 @@
                 'text'
                   ? 'bg-accent/15 text-accent'
                   : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-                Texte brut
+                {m.admin_communications_plain_text()}
               </button>
             </div>
             <button
               onclick={copyHtml}
               disabled={!previewHtml}
               class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50">
-              {copied ? `${m.common_copied()} !` : "Copier le HTML"}
+              {copied
+                ? `${m.common_copied()} !`
+                : m.admin_communications_copy_html()}
             </button>
           </div>
 
@@ -373,18 +377,18 @@
               <div class="h-96 animate-pulse"></div>
             {:else if previewTab === "html" && previewHtml}
               <iframe
-                title="Aperçu de l'email"
+                title={m.admin_communications_email_preview()}
                 sandbox=""
                 srcdoc={previewHtml}
                 class="h-130 w-full border-0 bg-white"></iframe>
             {:else if previewTab === "text" && previewText}
               <pre
                 class="bg-surface text-fg h-130 overflow-auto p-4 text-xs whitespace-pre-wrap">{previewSubject
-                  ? `Sujet : ${previewSubject}\n\n`
+                  ? m.admin_communications_subject({ subject: previewSubject })
                   : ""}{previewText}</pre>
             {:else}
               <div class="text-dim grid h-96 place-items-center text-sm">
-                Aperçu indisponible.
+                {m.admin_communications_preview_unavailable()}
               </div>
             {/if}
           </div>
@@ -393,7 +397,7 @@
             <input
               type="email"
               bind:value={testTo}
-              placeholder="destinataire@example.com"
+              placeholder={m.admin_communications_recipient_placeholder()}
               disabled={!smtpConfigured}
               class="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50" />
             <button
@@ -402,7 +406,7 @@
               class="btn btn-primary shrink-0">
               {sendTestEmailMut.loading
                 ? m.common_sending()
-                : "Envoyer un test"}
+                : m.admin_communications_send_test()}
             </button>
           </div>
 
@@ -425,7 +429,9 @@
           <div class="card mb-6 p-4">
             <!-- Active subscriptions only: a rejected one is deleted on send,
                  so there is no dead/alive ratio to show against it. -->
-            <SectionLabel label="Appareils par navigateur" class="mb-3" />
+            <SectionLabel
+              label={m.admin_communications_devices_browser()}
+              class="mb-3" />
             <RankBars items={userAgentBars} />
           </div>
         {/if}
@@ -434,12 +440,14 @@
 
     <div class="max-w-xl">
       <section class="card mb-6 space-y-4 p-4 md:p-5">
-        <h2 class="font-display text-lg font-bold">Test individuel</h2>
+        <h2 class="font-display text-lg font-bold">
+          {m.admin_communications_individual_test()}
+        </h2>
         <div>
           <span class="text-dim mb-1 block text-xs font-semibold"
             >{m.common_account()}</span>
           <Combobox
-            label="Choisir un compte"
+            label={m.admin_communications_choose_account()}
             options={userOptions}
             values={email ? [email] : []}
             searchable
@@ -451,7 +459,8 @@
           <label
             for="admin-push-title"
             class="text-dim mb-1 block text-xs font-semibold">
-            {m.common_title()} (optionnel)
+            {m.common_title()}
+            {m.common_optional_parentheses()}
           </label>
           <input
             id="admin-push-title"
@@ -466,12 +475,12 @@
           <label
             for="admin-push-body"
             class="text-dim mb-1 block text-xs font-semibold">
-            Message (optionnel)
+            {m.admin_communications_optional_message()}
           </label>
           <textarea
             id="admin-push-body"
             bind:value={pushBody}
-            placeholder="Ceci est une notification de test envoyée depuis le panel admin."
+            placeholder={m.admin_communications_test_placeholder()}
             maxlength="500"
             rows="2"
             class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
@@ -480,21 +489,20 @@
 
         {#if !devicesLoading && devices && devices.length === 0}
           <Banner variant="warning">
-            Aucun appareil abonné pour ce compte — l'envoi n'atteindra personne.
+            {m.admin_communications_no_devices_account()}
           </Banner>
         {:else if devices && devices.length > 0}
           <div>
             <p class="text-dim mb-1.5 text-xs font-semibold">
-              {devices.length} appareil{devices.length > 1 ? "s" : ""} abonné{devices.length >
-              1
-                ? "s"
-                : ""}
+              {devices.length === 1
+                ? m.admin_subscribed_device_one({ count: devices.length })
+                : m.admin_subscribed_device_many({ count: devices.length })}
             </p>
             <ul class="space-y-1">
               {#each devices as d (d.id)}
                 <li
                   class="border-border text-dim truncate rounded-lg border px-3 py-1.5 text-xs">
-                  {d.userAgent ?? "Appareil inconnu"}
+                  {d.userAgent ?? m.settings_sessions_unknown_device()}
                 </li>
               {/each}
             </ul>
@@ -505,7 +513,9 @@
           onclick={sendPush}
           disabled={!email || sendPushMut.loading}
           class="btn btn-primary">
-          {sendPushMut.loading ? m.common_sending() : "Envoyer un test"}
+          {sendPushMut.loading
+            ? m.common_sending()
+            : m.admin_communications_send_test()}
         </button>
 
         {#if pushSendError}
@@ -513,7 +523,7 @@
         {:else if pushResult}
           {#if pushResult.subscriptionCount === 0}
             <Banner variant="warning">
-              Aucun appareil abonné — rien n'a été envoyé.
+              {m.admin_communications_nothing_sent()}
             </Banner>
           {:else}
             <div class="space-y-2">
@@ -522,8 +532,10 @@
                   class="rounded-lg border px-4 py-2 text-sm {r.ok
                     ? 'border-success/40 bg-success/10 text-success'
                     : 'border-danger/40 bg-danger/10 text-danger'}">
-                  {r.userAgent ?? "Appareil inconnu"} —
-                  {r.ok ? "envoyé" : (r.error ?? "échec")}
+                  {r.userAgent ?? m.settings_sessions_unknown_device()} —
+                  {r.ok
+                    ? m.admin_communications_sent()
+                    : (r.error ?? m.admin_communications_failed())}
                 </p>
               {/each}
             </div>
@@ -533,15 +545,21 @@
 
       <section class="card border-accent/40 space-y-4 p-4 md:p-5">
         <div>
-          <h2 class="font-display text-lg font-bold">Diffusion générale</h2>
+          <h2 class="font-display text-lg font-bold">
+            {m.admin_communications_broadcast()}
+          </h2>
           <p class="text-dim mt-1 text-sm">
-            Envoie le même message à tous les appareils abonnés, tous comptes
-            confondus.
+            {m.admin_communications_broadcast_description()}
             {#if accountCount !== null && deviceCount !== null}
-              Portée actuelle : <strong class="text-fg">{accountCount}</strong>
-              compte{accountCount > 1 ? "s" : ""} /
+              {m.admin_communications_current_reach()}
+              <strong class="text-fg">{accountCount}</strong>
+              {accountCount === 1
+                ? m.admin_account_singular()
+                : m.admin_accounts_plural()} /
               <strong class="text-fg">{deviceCount}</strong>
-              appareil{deviceCount > 1 ? "s" : ""}.
+              {deviceCount === 1
+                ? m.admin_device_singular()
+                : m.admin_devices_plural()}.
             {/if}
           </p>
         </div>
@@ -550,7 +568,8 @@
           <label
             for="admin-broadcast-title"
             class="text-dim mb-1 block text-xs font-semibold">
-            {m.common_title()} (optionnel)
+            {m.common_title()}
+            {m.common_optional_parentheses()}
           </label>
           <input
             id="admin-broadcast-title"
@@ -565,12 +584,12 @@
           <label
             for="admin-broadcast-body"
             class="text-dim mb-1 block text-xs font-semibold">
-            Message (optionnel)
+            {m.admin_communications_optional_message()}
           </label>
           <textarea
             id="admin-broadcast-body"
             bind:value={broadcastBody}
-            placeholder="Message envoyé à tous les comptes depuis le panel admin."
+            placeholder={m.admin_communications_broadcast_placeholder()}
             maxlength="500"
             rows="2"
             class="border-border bg-surface w-full resize-none rounded-lg border px-3 py-2 text-sm"
@@ -581,7 +600,7 @@
           onclick={openBroadcastConfirm}
           disabled={!accountCount}
           class="btn btn-primary">
-          Diffuser à tous les comptes
+          {m.admin_communications_broadcast_all()}
         </button>
 
         {#if broadcastError}
@@ -589,20 +608,11 @@
         {:else if broadcastResult}
           <Banner
             variant={broadcastResult.failureCount === 0 ? "info" : "warning"}>
-            Diffusé à {broadcastResult.accountCount} compte{broadcastResult.accountCount >
-            1
-              ? "s"
-              : ""}
-            — {broadcastResult.successCount} appareil{broadcastResult.successCount >
-            1
-              ? "s"
-              : ""} atteint{broadcastResult.successCount > 1 ? "s" : ""}
-            {#if broadcastResult.failureCount > 0}
-              , {broadcastResult.failureCount} échec{broadcastResult.failureCount >
-              1
-                ? "s"
-                : ""}
-            {/if}.
+            {m.admin_broadcast_result({
+              accounts: broadcastResult.accountCount,
+              reached: broadcastResult.successCount,
+              failed: broadcastResult.failureCount,
+            })}
           </Banner>
         {/if}
       </section>
@@ -612,9 +622,12 @@
 
 {#if showBroadcastConfirm}
   <ConfirmationModal
-    title="Diffuser à tous les comptes ?"
-    message={`Cette notification sera envoyée à ${accountCount ?? 0} compte${(accountCount ?? 0) > 1 ? "s" : ""} (${deviceCount ?? 0} appareil${(deviceCount ?? 0) > 1 ? "s" : ""}). Cette action ne peut pas être annulée une fois lancée.`}
-    confirmLabel="Diffuser"
+    title={m.admin_communications_confirm_broadcast()}
+    message={m.admin_communications_broadcast_message({
+      accounts: accountCount ?? 0,
+      devices: deviceCount ?? 0,
+    })}
+    confirmLabel={m.admin_communications_confirm_send()}
     danger
     busy={broadcastMut.loading}
     onConfirm={confirmBroadcast}

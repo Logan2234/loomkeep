@@ -1,3 +1,3 @@
-// Static documents, no data and no session — bake them at build time so they
-// are indexable and instant (they're linked from the public landing page).
-export const prerender = true;
+// Render per request so browser language and explicit locale cookies also
+// apply to the initial HTML of these indexable documents.
+export const prerender = false;

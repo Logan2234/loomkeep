@@ -182,7 +182,7 @@
             class="border-border w-32 shrink-0 overflow-hidden rounded-xl border shadow-lg md:w-44 {detail.coverUrl
               ? 'cursor-zoom-in'
               : ''}"
-            aria-label="Agrandir l'image"
+            aria-label={m.common_enlarge_image()}
             onclick={() => openLightbox(detail?.coverUrl ?? null)}>
             <Poster src={detail.coverUrl} title={detail.title} />
           </button>
@@ -191,7 +191,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <span
                 class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                {detail.albumType ?? "Album"}
+                {detail.albumType ?? m.music_album()}
               </span>
               {#if entry}
                 <span
@@ -238,7 +238,8 @@
               class="btn btn-primary"
               disabled={saving}
               onclick={() => addMut.mutate()}>
-              <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
+              <Icon name="plus" class="h-4 w-4" />
+              {m.library_add()}
             </button>
           </div>
         {:else}
@@ -261,7 +262,7 @@
 
             <NoteField
               value={entry.notes}
-              placeholder="Une phrase, une note d'écoute…"
+              placeholder={m.music_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <hr class="border-border" />
@@ -282,7 +283,7 @@
         {#if detail.tracks.length > 0}
           <div class="mt-8">
             <div class="mb-3 flex items-baseline justify-between">
-              <h2 class="font-display text-lg font-bold">Pistes</h2>
+              <h2 class="font-display text-lg font-bold">{m.music_tracks()}</h2>
               {#if detail.totalDurationMs !== null}
                 <span class="timecode text-xs">
                   {formatTotalDuration(detail.totalDurationMs)}
@@ -309,13 +310,15 @@
 
         {#if detail.extraCoverImages.length > 0}
           <div class="mt-8">
-            <h2 class="font-display mb-3 text-lg font-bold">Pochettes</h2>
+            <h2 class="font-display mb-3 text-lg font-bold">
+              {m.music_artwork()}
+            </h2>
             <div class="flex flex-wrap gap-3">
               {#each detail.extraCoverImages as img (img.url)}
                 <button
                   type="button"
                   class="border-border hover:border-accent w-20 shrink-0 overflow-hidden rounded-lg border shadow-sm transition-colors"
-                  aria-label={`Agrandir : ${img.type}`}
+                  aria-label={m.music_enlarge_artwork({ type: img.type })}
                   onclick={() => openLightbox(img.url)}>
                   <Poster
                     src={img.url}
@@ -334,7 +337,7 @@
         {/if}
 
         <RelatedCarousel
-          title="Du même artiste"
+          title={m.music_same_artist()}
           items={toCarouselItems(detail.sameArtistAlbums, "/app/music")} />
 
         {#if entry}
@@ -357,19 +360,19 @@
           <dl class="mt-3 flex flex-col gap-3">
             {#if detail && detail.label}
               <div>
-                <dt class="timecode text-xs">Label</dt>
+                <dt class="timecode text-xs">{m.music_label()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.label}</dd>
               </div>
             {/if}
             {#if detail && detail.catalogNumber}
               <div>
-                <dt class="timecode text-xs">Numéro de catalogue</dt>
+                <dt class="timecode text-xs">{m.music_catalog_number()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.catalogNumber}</dd>
               </div>
             {/if}
             {#if detail && detail.tags.length > 0}
               <div>
-                <dt class="timecode text-xs">Tags</dt>
+                <dt class="timecode text-xs">{m.music_tags()}</dt>
                 <dd class="mt-1.5 flex flex-wrap gap-1.5">
                   {#each detail.tags as tag (tag)}
                     <span
@@ -382,7 +385,7 @@
             {/if}
             {#if detail && detail.externalLinks.length > 0}
               <div>
-                <dt class="timecode text-xs">Liens</dt>
+                <dt class="timecode text-xs">{m.music_links()}</dt>
                 <dd class="mt-1.5 flex flex-wrap gap-2">
                   {#each detail.externalLinks as link (link.url)}
                     <a
@@ -409,8 +412,8 @@
 
   {#if confirmRemove}
     <ConfirmationModal
-      title="Retirer de ma bibliothèque"
-      message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
+      title={m.tracking_remove()}
+      message={m.library_remove_message({ title: detail.title })}
       confirmLabel={m.common_remove()}
       danger
       busy={removeMut.loading}
