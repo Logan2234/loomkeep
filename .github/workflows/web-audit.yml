@@ -131,7 +131,7 @@ jobs:
       # trying to write the report into a dir it doesn't own.
       - run: mkdir -p zap-results && chmod a+w zap-results
       - name: Run ZAP (web)
-        uses: zaproxy/action-af@v0.3.0
+        uses: zaproxy/action-af@d186d5d9536d0f1380e5eaa58168432fefc8ed6d
         with:
           plan: .github/zap/plan.yml
       # Unblocks activeScan-ing write endpoints now that it's the ephemeral
@@ -140,7 +140,7 @@ jobs:
       # (/api/openapi.json) doesn't even exist in prod (Swagger is dev-only,
       # see apps/api/src/main.ts).
       - name: Run ZAP (api)
-        uses: zaproxy/action-af@v0.3.0
+        uses: zaproxy/action-af@d186d5d9536d0f1380e5eaa58168432fefc8ed6d
         with:
           plan: .github/zap/plan-api.yml
       - name: List ZAP results
