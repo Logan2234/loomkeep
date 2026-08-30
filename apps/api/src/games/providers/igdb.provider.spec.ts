@@ -93,6 +93,59 @@ describe("IgdbProvider", () => {
     ]);
   });
 
+  it('resolves a studio:"…" query to games by that company', async () => {
+    const fetchMock = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/companies": [{ id: 70 }, { id: 71 }],
+      "/games": [{ id: 900, name: "Horizon Zero Dawn" }],
+    });
+
+    const results = await provider.search('studio:"Guerrilla"');
+
+    expect(results).toEqual([
+      {
+        source: "IGDB",
+        sourceId: "900",
+        title: "Horizon Zero Dawn",
+        year: null,
+        coverUrl: null,
+        isAdult: false,
+      },
+    ]);
+    const gamesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/games"),
+    );
+    expect(gamesCall?.[1]?.body).toContain(
+      "involved_companies.company = (70,71)",
+    );
+  });
+
+  it('resolves a genre:"…" query to games in that genre', async () => {
+    const fetchMock = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/genres": [{ id: 12 }],
+      "/games": [{ id: 42, name: "Persona 5" }],
+    });
+
+    await provider.search('genre:"RPG"');
+
+    const gamesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/games"),
+    );
+    expect(gamesCall?.[1]?.body).toContain("genres = (12)");
+  });
+
+  it("returns no results when the studio/genre name matches nothing", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/companies": [],
+    });
+
+    const results = await provider.search('studio:"Nonexistent Studio Inc"');
+
+    expect(results).toEqual([]);
+  });
+
   it("maps details, deriving artwork url, genres and platforms", async () => {
     mockFetchByUrl({
       "id.twitch.tv": TOKEN_RESPONSE,
