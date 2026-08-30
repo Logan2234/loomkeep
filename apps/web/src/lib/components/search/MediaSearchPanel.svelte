@@ -30,22 +30,19 @@
   // to compact embedded mode (no own empty-state copy — the host renders it)
   // for the library-page preview use; `onResults` reports the raw result
   // count to that host.
+  // `type` is owned by the search page (the Guichet's in-bar filter menu),
+  // not this panel — see BookSearchPanel's `byAuthor` for the same split.
   let {
     query,
     limit,
     onResults,
+    type,
   }: {
     query: string;
     limit?: number;
     onResults?: (count: number) => void;
+    type?: MediaType;
   } = $props();
-
-  const TYPE_TABS: { label: string; value: MediaType | undefined }[] = [
-    { label: "Tout", value: undefined },
-    { label: "Films", value: "MOVIE" },
-    { label: "Séries", value: "SERIES" },
-    { label: "Animés", value: "ANIME" },
-  ];
 
   const TYPE_LABELS: Record<MediaType, string> = {
     MOVIE: "Film",
@@ -55,7 +52,6 @@
 
   const DEBOUNCE_MS = 300;
 
-  let type = $state<MediaType | undefined>(undefined);
   // `query` (prop) is the raw input; `queryFilter` is the debounced value
   // that actually drives the fetch — type changes bypass the debounce.
   let queryFilter = $state("");
@@ -113,10 +109,6 @@
     onResults?.(results.length);
   });
 
-  function selectType(value: MediaType | undefined) {
-    type = value;
-  }
-
   // Titles already in the library, keyed by catalogue identity, so results can
   // be flagged (and their current status shown) instead of looking already-new.
   const trackKey = (t: MediaType, sourceId: string) => `${t}:${sourceId}`;
@@ -170,24 +162,11 @@
   });
 </script>
 
-{#if !limit}
-  <div class="mb-7 flex flex-wrap gap-2">
-    {#each TYPE_TABS as tab (tab.label)}
-      <button
-        class="chip"
-        class:chip-on={type === tab.value}
-        onclick={() => selectType(tab.value)}>
-        {tab.label}
-      </button>
-    {/each}
-  </div>
-{/if}
-
 {#if searchQuery.error}
   <Banner variant="error" class="mb-4">{searchQuery.error}</Banner>
 {/if}
 
-{#if searchQuery.loading}
+{#if queryFilter && searchQuery.loading}
   <PosterGrid>
     {#each { length: 10 } as _, i (i)}
       <div class="card flex flex-col">

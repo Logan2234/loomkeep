@@ -11,7 +11,7 @@
   import { debounce } from "$lib/debounce";
   import { isDomainEnabled } from "$lib/domains";
   import { m } from "$lib/paraglide/messages";
-  import { Domain } from "@loomkeep/shared";
+  import { Domain, type MediaType } from "@loomkeep/shared";
 
   const DOMAIN_HINT: Record<Domain, string> = {
     [Domain.MEDIA]: m.search_domain_media(),
@@ -20,6 +20,18 @@
     [Domain.MUSIC]: m.search_domain_music(),
     [Domain.PODCASTS]: m.search_domain_podcasts(),
     [Domain.BOARDGAMES]: m.search_domain_boardgames(),
+  };
+
+  // Reuses the same one-hue-per-domain tokens as the stats charts
+  // (`--stat-media/games/books/music` in app.css) rather than inventing a
+  // second palette — "Bientôt" domains fall back to the neutral `--dim`.
+  const DOMAIN_ACCENT_VAR: Record<Domain, string> = {
+    [Domain.MEDIA]: "var(--stat-media)",
+    [Domain.GAMES]: "var(--stat-games)",
+    [Domain.BOOKS]: "var(--stat-books)",
+    [Domain.MUSIC]: "var(--stat-music)",
+    [Domain.PODCASTS]: "var(--dim)",
+    [Domain.BOARDGAMES]: "var(--dim)",
   };
 
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
@@ -73,6 +85,84 @@
     void domain;
     debouncedSyncUrl.call();
   });
+
+  // Tab cycles the domain instead of leaving the field — the tabs above the
+  // bar are the fast path at a glance, this is the fast path without leaving
+  // the keyboard. Escape blurs back out to normal Tab navigation.
+  function handleSearchKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      (event.currentTarget as HTMLInputElement).blur();
+      return;
+    }
+    if (event.key === "Tab" && enabledTabs.length > 1) {
+      event.preventDefault();
+      const ids = enabledTabs.map(([d]) => d as Domain);
+      const i = ids.indexOf(domain);
+      domain = ids[(i + (event.shiftKey ? -1 : 1) + ids.length) % ids.length];
+    }
+  }
+
+  // The sous-filtre lives inside the bar itself (right edge), not below it —
+  // only Vidéo (type) and Livres (titre/auteur) have one today; Jeux/Musique
+  // get one once their own search-by criteria ship.
+  const MEDIA_TYPE_OPTIONS: { label: string; value: MediaType | undefined }[] =
+    [
+      { label: "Tout", value: undefined },
+      { label: "Films", value: "MOVIE" },
+      { label: "Séries", value: "SERIES" },
+      { label: "Animés", value: "ANIME" },
+    ];
+  const BOOK_MODE_OPTIONS: { label: string; value: boolean }[] = [
+    { label: "Titre", value: false },
+    { label: "Auteur", value: true },
+  ];
+
+  let mediaType = $state<MediaType | undefined>(undefined);
+  let bookByAuthor = $state(false);
+  let filterOpen = $state(false);
+  let filterBtnEl = $state<HTMLButtonElement | null>(null);
+  let filterMenuEl = $state<HTMLDivElement | null>(null);
+
+  const hasFilter = $derived(
+    domain === Domain.MEDIA || domain === Domain.BOOKS,
+  );
+  const filterLabel = $derived(
+    domain === Domain.MEDIA
+      ? (MEDIA_TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ?? "Tout")
+      : (BOOK_MODE_OPTIONS.find((o) => o.value === bookByAuthor)?.label ??
+          "Titre"),
+  );
+
+  function closeFilter() {
+    filterOpen = false;
+  }
+
+  // The filter menu is domain-specific — a stale open menu from the previous
+  // domain would show the wrong options for a frame.
+  $effect(() => {
+    void domain;
+    filterOpen = false;
+  });
+
+  $effect(() => {
+    if (!filterOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (filterMenuEl?.contains(target) || filterBtnEl?.contains(target)) {
+        return;
+      }
+      closeFilter();
+    }
+    function onKeydown(e: KeyboardEvent) {
+      if (e.key === "Escape") closeFilter();
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeydown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeydown);
+    };
+  });
 </script>
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
@@ -82,33 +172,95 @@
     subtitle={m.search_subtitle()}
     class="mb-6" />
 
-  <div class="relative mb-5">
-    <span
-      class="text-dim pointer-events-none absolute inset-y-0 left-3 flex items-center">
-      <Icon name="search" class="h-5 w-5" />
-    </span>
-    <input type="search" {placeholder} bind:value={query} class="input pl-10" />
-  </div>
+  <div
+    class="guichet mb-5"
+    style={`--domain-accent: ${DOMAIN_ACCENT_VAR[domain]}`}>
+    {#if enabledTabs.length > 1}
+      <div class="guichet-tabs no-scrollbar">
+        {#each enabledTabs as tab (tab[0])}
+          <button
+            type="button"
+            class="guichet-tab"
+            class:guichet-tab-active={domain === tab[0]}
+            onclick={() => (domain = tab[0] as Domain)}>
+            <Icon name={tab[1].icon} class="h-3.5 w-3.5" />
+            {tab[1].label}
+            {#if tab[1].comingSoon}
+              <span class="guichet-tab-soon">{m.landing_libraries_soon()}</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
 
-  {#if enabledTabs.length > 1}
-    <div class="mb-5 flex flex-wrap gap-2">
-      {#each enabledTabs as tab (tab[0])}
-        <button
-          class="chip"
-          class:chip-on={domain === tab[0]}
-          onclick={() => (domain = tab[0] as Domain)}>
-          <Icon name={tab[1].icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
-          {tab[1].label}
-          {#if tab[1].comingSoon}
-            <span
-              class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
-              {m.landing_libraries_soon()}
-            </span>
+    <div class="guichet-bar" class:guichet-bar-solo={enabledTabs.length <= 1}>
+      <Icon name="search" class="text-dim h-5 w-5 shrink-0" />
+      <div class="guichet-input-wrap">
+        <input
+          type="search"
+          {placeholder}
+          bind:value={query}
+          onkeydown={handleSearchKeydown}
+          class="guichet-input" />
+
+        {#if enabledTabs.length > 1}
+          <!-- Overlaid, not a flex sibling — as a real layout child it would
+               steal width (and thus click area) from the input even while
+               invisible, leaving a dead zone that doesn't focus it. -->
+          <span class="guichet-hint hidden items-center gap-1 md:flex">
+            <kbd>Tab</kbd>
+            {m.search_domain_switch_hint()}
+          </span>
+        {/if}
+      </div>
+
+      {#if hasFilter}
+        <div class="guichet-filter">
+          <button
+            type="button"
+            bind:this={filterBtnEl}
+            class="guichet-filter-btn"
+            aria-expanded={filterOpen}
+            onclick={() => (filterOpen = !filterOpen)}>
+            {filterLabel}
+            <Icon name="chevron-down" class="h-3 w-3" />
+          </button>
+          {#if filterOpen}
+            <div bind:this={filterMenuEl} class="guichet-filter-menu shadow-xl">
+              {#if domain === Domain.MEDIA}
+                {#each MEDIA_TYPE_OPTIONS as opt (opt.label)}
+                  <button
+                    type="button"
+                    class="guichet-filter-option"
+                    class:guichet-filter-option-active={mediaType === opt.value}
+                    onclick={() => {
+                      mediaType = opt.value;
+                      closeFilter();
+                    }}>
+                    {opt.label}
+                  </button>
+                {/each}
+              {:else if domain === Domain.BOOKS}
+                {#each BOOK_MODE_OPTIONS as opt (opt.label)}
+                  <button
+                    type="button"
+                    class="guichet-filter-option"
+                    class:guichet-filter-option-active={bookByAuthor ===
+                      opt.value}
+                    onclick={() => {
+                      bookByAuthor = opt.value;
+                      closeFilter();
+                    }}>
+                    {opt.label}
+                  </button>
+                {/each}
+              {/if}
+            </div>
           {/if}
-        </button>
-      {/each}
+        </div>
+      {/if}
     </div>
-  {/if}
+  </div>
 
   {#if comingSoon}
     <div
@@ -122,12 +274,230 @@
       </p>
     </div>
   {:else if domain === Domain.MEDIA}
-    <MediaSearchPanel {query} />
+    <MediaSearchPanel {query} type={mediaType} />
   {:else if domain === Domain.GAMES}
     <GameSearchPanel {query} />
   {:else if domain === Domain.BOOKS}
-    <BookSearchPanel {query} />
+    <BookSearchPanel {query} byAuthor={bookByAuthor} />
   {:else if domain === Domain.MUSIC}
     <MusicSearchPanel {query} />
   {/if}
 </div>
+
+<style>
+  /* "Le Guichet" — domain tabs sit like ticket stubs above the bar; the
+     active one lifts and hands its color down as the bar's top edge, so the
+     two read as one connected control instead of a filter row plus a
+     separate input. */
+  .guichet-tabs {
+    display: flex;
+    gap: 0.25rem;
+    /* Padding gives the active tab's -2px lift *and* the global focus ring
+       (2px outline + 2px offset = 4px, 6px on top where the lift adds to
+       it) room to sit in without being clipped by `overflow-x: auto`, which
+       forces the y-axis to clip too (CSS overflow computes the other axis
+       to `auto` once one axis isn't `visible`). */
+    padding: 6px 5px 4px;
+    margin: -6px -5px -4px;
+    overflow-x: auto;
+  }
+
+  .guichet-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    position: relative;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 0.625rem 0.625rem 0 0;
+    background: var(--surface-2);
+    color: var(--dim);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition:
+      color 0.2s ease,
+      transform 0.15s ease;
+  }
+
+  .guichet-tab-active {
+    background: var(--surface);
+    color: var(--domain-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 -2px 0 var(--domain-accent) inset;
+  }
+
+  .guichet-tab-soon {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--border);
+    color: var(--dim);
+    border-radius: 999px;
+    padding: 0.1rem 0.35rem;
+  }
+
+  .guichet-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1px solid var(--border);
+    border-top: 2.5px solid var(--domain-accent);
+    border-radius: 0 0.875rem 0.875rem 0.875rem;
+    background: var(--surface);
+    padding: 0 0.5rem 0 1rem;
+    transition:
+      border-color 0.2s ease,
+      border-top-color 0.25s ease,
+      box-shadow 0.2s ease;
+  }
+
+  /* Focus state — the bar itself picks up the domain's color, not just the
+     top edge, so typing reads as clearly "in" the control. Keyed off the
+     *input's* own focus specifically (`:has()`), not `:focus-within` — the
+     filter button also lives inside the bar and has its own focus/hover
+     affordance, it shouldn't also light up the whole bar as if typing. */
+  .guichet-bar:has(.guichet-input:focus) {
+    border-color: var(--domain-accent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--domain-accent) 16%, transparent);
+  }
+
+  .guichet-bar-solo {
+    border-radius: 0.875rem;
+  }
+
+  .guichet-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .guichet-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0.85rem 0;
+    font-size: 0.95rem;
+    color: var(--fg);
+  }
+
+  .guichet-input::placeholder {
+    color: var(--dim);
+  }
+
+  /* The sous-filtre (type/mode) — a pill button flush inside the bar's
+     right edge, opening a small menu, rather than a separate row of chips. */
+  .guichet-filter {
+    position: relative;
+    flex: none;
+  }
+
+  .guichet-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--fg);
+    padding: 0.4rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: border-color 0.2s ease;
+  }
+
+  .guichet-filter-btn:hover {
+    border-color: var(--domain-accent);
+  }
+
+  .guichet-filter-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    z-index: 20;
+    display: grid;
+    gap: 0.1rem;
+    min-width: 9.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    padding: 0.35rem;
+  }
+
+  .guichet-filter-option {
+    text-align: left;
+    border: none;
+    border-radius: 0.5rem;
+    background: none;
+    color: var(--dim);
+    padding: 0.45rem 0.6rem;
+    font-size: 0.82rem;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .guichet-filter-option:hover {
+    background: var(--surface-2);
+    color: var(--fg);
+  }
+
+  .guichet-filter-option-active {
+    color: var(--domain-accent);
+    font-weight: 600;
+  }
+
+  /* Overlaid on the input's right edge, inside the bar, and only shown
+     while the *input itself* has focus (not the filter button, which also
+     sits inside the bar) — keyed off `.guichet-input:focus` via the
+     adjacent-sibling combinator, no JS state needed. Absolutely positioned
+     (not a flex sibling) so it never steals click area from the input
+     underneath, even while invisible. */
+  .guichet-hint {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--dim);
+    opacity: 0;
+    transform: translate(-4px, -50%);
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+    pointer-events: none;
+  }
+
+  .guichet-input:focus + .guichet-hint {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+
+  .guichet-hint kbd {
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0.03rem 0.28rem;
+    background: var(--surface-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guichet-tab-active {
+      transform: none;
+    }
+    /* Keep the vertical centering (translateY), just drop the slide-in. */
+    .guichet-hint,
+    .guichet-input:focus + .guichet-hint {
+      transform: translateY(-50%);
+    }
+  }
+</style>
