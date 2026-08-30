@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     # Same guard as pa11y above — skip scanning off the back of a
     # failed/stale Deploy run (the ephemeral stack below targets whatever
-    # commit Deploy just shipped, via its SHA-tagged GHCR images).
+    # commit is currently on main, via its SHA-tagged GHCR images).
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
@@ -65,34 +65,42 @@ jobs:
       contents: read
       security-events: write
 
+    # Required by docker/docker-compose.yml's `:?` interpolation — every step
+    # that invokes `docker compose` (including `down` on teardown, and `logs`
+    # when readiness times out) needs these resolvable, not just the step
+    # that first brings the stack up.
+    env:
+      POSTGRES_PASSWORD: ci-zap-postgres-password
+      JWT_ACCESS_SECRET: ci-zap-access-secret
+      JWT_REFRESH_SECRET: ci-zap-refresh-secret
+      BACKUP_ENCRYPTION_PUBLIC_KEY: ci-zap-unused-backup-key
+
     steps:
-      # Checks out the exact commit Deploy just shipped (its SHA-tagged
+      # Deliberately does NOT pin to `github.event.workflow_run.head_sha`:
+      # that's an untrusted-checkout pattern Scorecard's "Dangerous
+      # Workflow" check flags for workflow_run triggers, since a run's
+      # `branches` filter can match on the *base* branch even when the run
+      # itself was for a pull_request from a fork — head_sha would then be
+      # attacker-controlled. Plain checkout gives main's current tip
+      # instead, which is trusted and, in practice, is what Deploy just
+      # shipped anyway (this job runs immediately after). Its SHA-tagged
       # api/web images already sit on GHCR from CI's docker-push job — see
-      # .github/workflows/ci.yml) so this job never needs to build anything
-      # itself. Falls back to the trigger commit on schedule/workflow_dispatch,
-      # where there's no workflow_run context.
+      # .github/workflows/ci.yml — so this job never needs to build
+      # anything itself.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - id: vars
-        run: |
-          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       # ----------------------------------------------------------------
       # Stand up an ephemeral api+web+db stack (docker/docker-compose.yml)
       # instead of scanning https://loomkeep.app directly — activeScan sends
       # real attack payloads, and Logan isn't comfortable with that hitting
-      # production (no staging environment exists otherwise). Secrets below
-      # are throwaway, CI-only values: this stack never sees real traffic
-      # and is torn down at the end of the job.
+      # production (no staging environment exists otherwise). Secrets are
+      # throwaway, CI-only values (job-level `env:` above): this stack never
+      # sees real traffic and is torn down at the end of the job.
       - name: Start ephemeral stack
         env:
           IMAGE_TAG: ${{ steps.vars.outputs.sha }}
-          POSTGRES_PASSWORD: ci-zap-postgres-password
-          JWT_ACCESS_SECRET: ci-zap-access-secret
-          JWT_REFRESH_SECRET: ci-zap-refresh-secret
-          BACKUP_ENCRYPTION_PUBLIC_KEY: ci-zap-unused-backup-key
         run: |
           docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml pull
           docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d

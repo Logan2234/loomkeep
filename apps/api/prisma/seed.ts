@@ -1103,8 +1103,7 @@ async function main() {
 
   await prisma.importRun.create({
     data: {
-      userId: alice.id,
-      identifier: alice.email,
+      user: { connect: { id: alice.id } },
       sourceId: "tvtime",
       status: "SUCCESS",
       itemCount: 42,
