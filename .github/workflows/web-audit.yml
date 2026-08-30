@@ -1,11 +1,11 @@
 name: Web Audit
 
 on:
-  workflow_run:
-    workflows: [Deploy]
-    types: [completed]
+  # Deliberately no push/PR-adjacent trigger: this job takes ~5 minutes and
+  # scans a full ephemeral stack, which isn't worth the wait on every merge
+  # to main. Weekly cadence plus on-demand covers it.
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "30 3 * * 0"
   workflow_dispatch:
 
 permissions:
@@ -16,51 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pa11y:
-    name: Pa11y accessibility
+  audit:
+    name: Web Audit (Pa11y + OWASP ZAP)
     runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
-
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      # pa11y-ci resolves `--config .pa11yci.json` relative to the working
-      # directory — without checking out the repo first, no such file exists
-      # on the runner and the job always fails with "config file ... could
-      # not be loaded" before ever reaching a URL.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: 22
-      - name: Run Pa11y CI
-        run: npx --yes pa11y-ci@4.1.1 --config .pa11yci.json
-        continue-on-error: true
-      # pa11y-ci has no built-in SARIF reporter, so accessibility findings
-      # only ever lived in this step's console log. .pa11yci.json's
-      # defaults.reporters loads a small local reporter (alongside the
-      # normal "cli" one) that writes pa11y-results.sarif — see
-      # .github/pa11y/sarif-reporter.js. `if: always()` because a threshold
-      # violation exits pa11y-ci non-zero, but the SARIF is still written.
-      - name: Upload Pa11y SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
-        with:
-          sarif_file: pa11y-results.sarif
-          category: pa11y
-
-  zap:
-    name: OWASP ZAP
-    runs-on: ubuntu-latest
-    # Same guard as pa11y above — skip scanning off the back of a
-    # failed/stale Deploy run (the ephemeral stack below targets whatever
-    # commit is currently on main, via its SHA-tagged GHCR images).
-    if: >
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
-
     permissions:
       contents: read
       security-events: write
@@ -76,17 +34,9 @@ jobs:
       BACKUP_ENCRYPTION_PUBLIC_KEY: ci-zap-unused-backup-key
 
     steps:
-      # Deliberately does NOT pin to `github.event.workflow_run.head_sha`:
-      # that's an untrusted-checkout pattern Scorecard's "Dangerous
-      # Workflow" check flags for workflow_run triggers, since a run's
-      # `branches` filter can match on the *base* branch even when the run
-      # itself was for a pull_request from a fork — head_sha would then be
-      # attacker-controlled. Plain checkout gives main's current tip
-      # instead, which is trusted and, in practice, is what Deploy just
-      # shipped anyway (this job runs immediately after). Its SHA-tagged
-      # api/web images already sit on GHCR from CI's docker-push job — see
-      # .github/workflows/ci.yml — so this job never needs to build
-      # anything itself.
+      # Checks out main's current tip. Its SHA-tagged api/web images already
+      # sit on GHCR from CI's docker-push job (.github/workflows/ci.yml), so
+      # this job never needs to build anything itself.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - id: vars
         run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
@@ -131,17 +81,38 @@ jobs:
             done
           done
 
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Runs against the ephemeral stack instead of https://loomkeep.app —
+      # same reasoning as the ZAP steps below, one real environment to point
+      # every audit at. .github/pa11y/pa11yci.ci.json mirrors the root
+      # .pa11yci.json with localhost:18080 urls.
+      - name: Run Pa11y CI
+        run: npx --yes pa11y-ci@4.1.1 --config .github/pa11y/pa11yci.ci.json
+        continue-on-error: true
+      # pa11y-ci has no built-in SARIF reporter, so accessibility findings
+      # only ever lived in this step's console log. pa11yci.ci.json's
+      # defaults.reporters loads a small local reporter (alongside the
+      # normal "cli" one) that writes pa11y-results.sarif — see
+      # .github/pa11y/sarif-reporter.js. `if: always()` because a threshold
+      # violation exits pa11y-ci non-zero, but the SARIF is still written.
+      - name: Upload Pa11y SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: pa11y-results.sarif
+          category: pa11y
+
       # Seeds synthetic users/library data (apps/api/prisma/seed.ts) so the
       # crawl/scan has real pages to find instead of an empty database.
       # Runs from the runner rather than inside the api container: the seed
       # script needs ts-node and other devDependencies that the prod-only
       # runtime image (see apps/api/Dockerfile's `pnpm deploy --prod`)
       # doesn't carry.
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: 22
-          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
       - run: pnpm --filter @loomkeep/api exec prisma generate

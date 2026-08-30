@@ -1,0 +1,32 @@
+{
+  "defaults": {
+    "timeout": 30000,
+    "standard": "WCAG2AA",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "runners": ["axe", "htmlcs"],
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+    },
+    "reporters": ["cli", "./.github/pa11y/sarif-reporter.js"]
+  },
+  "urls": [
+    "http://localhost:18080/",
+    "http://localhost:18080/login",
+    "http://localhost:18080/register",
+    "http://localhost:18080/forgot-password",
+    "http://localhost:18080/reset-password",
+    "http://localhost:18080/register/check-email",
+    "http://localhost:18080/verify-email",
+    "http://localhost:18080/unsubscribe",
+    "http://localhost:18080/legal/terms-of-service",
+    "http://localhost:18080/legal/privacy-policy",
+    "http://localhost:18080/legal/legal-notice"
+  ],
+  "concurrency": 1,
+  "useIncognitoBrowserContext": true,
+  "includeNotices": true,
+  "includeWarnings": true
+}
