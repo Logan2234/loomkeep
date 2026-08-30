@@ -8,6 +8,7 @@
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
+  import { getLocale } from "$lib/paraglide/runtime.js";
   import {
     DORMANT_AFTER_DAYS,
     ProfileAccess,
@@ -84,7 +85,9 @@
     stats.age.distribution.map((b) => ({ label: b.label, value: b.count })),
   );
 
-  const localeDisplay = new Intl.DisplayNames(["fr"], { type: "language" });
+  const localeDisplay = new Intl.DisplayNames([getLocale()], {
+    type: "language",
+  });
   const localeItems = $derived(
     stats.byLocale.map((l) => ({
       label: localeDisplay.of(l.locale) ?? l.locale,

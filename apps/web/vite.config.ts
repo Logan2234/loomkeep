@@ -9,15 +9,12 @@ export default defineConfig({
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
   plugins: [
     tailwindcss(),
-    // Only "fr" ships today (see project.inlang/settings.json) — the point
-    // of adding this now is the message-extraction convention, not a second
-    // language yet. No "url" strategy: this is a CSR SPA (ssr=false below)
-    // with its own existing routes, not locale-prefixed ones — locale is
-    // resolved client-side only (cookie, then the base locale).
+    // Keep existing routes without locale prefixes. Explicit choices win,
+    // then browser preferences, with English as the base-locale fallback.
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/lib/paraglide",
-      strategy: ["cookie", "baseLocale"],
+      strategy: ["cookie", "preferredLanguage", "baseLocale"],
     }),
     sveltekit({
       compilerOptions: {
@@ -45,93 +42,8 @@ export default defineConfig({
         enabled: true,
         type: "module",
       },
-      manifest: {
-        id: "/",
-        name: "Loomkeep",
-        short_name: "Loomkeep",
-        description: "Self-hosted tracker for series, movies and anime",
-        lang: "fr",
-        dir: "ltr",
-        categories: ["entertainment"],
-        theme_color: "#0c0d10",
-        background_color: "#0c0d10",
-        display: "standalone",
-        start_url: "/app",
-        shortcuts: [
-          {
-            name: "Recherche",
-            url: "/app/search",
-            icons: [
-              {
-                src: "/shortcut-search.svg",
-                sizes: "any",
-                type: "image/svg+xml",
-              },
-            ],
-          },
-          {
-            name: "Calendrier",
-            url: "/app/calendar",
-            icons: [
-              {
-                src: "/shortcut-calendar.svg",
-                sizes: "any",
-                type: "image/svg+xml",
-              },
-            ],
-          },
-          {
-            name: "Statistiques",
-            url: "/app/stats",
-            icons: [
-              {
-                src: "/shortcut-stats.svg",
-                sizes: "any",
-                type: "image/svg+xml",
-              },
-            ],
-          },
-          {
-            name: "Mon profil",
-            url: "/app/profile",
-            icons: [
-              {
-                src: "/shortcut-profile.svg",
-                sizes: "any",
-                type: "image/svg+xml",
-              },
-            ],
-          },
-          {
-            name: "Paramètres",
-            url: "/app/settings",
-            icons: [
-              {
-                src: "/shortcut-settings.svg",
-                sizes: "any",
-                type: "image/svg+xml",
-              },
-            ],
-          },
-        ],
-        icons: [
-          { src: "/favicon.svg", sizes: "any", type: "image/svg+xml" },
-          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
-          {
-            src: "/pwa-maskable-192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "/pwa-maskable-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
+      // Served by the locale-aware /manifest.webmanifest endpoint.
+      manifest: false,
     }),
   ],
   // @loomkeep/shared is a linked workspace package, so Vite treats it as

@@ -107,9 +107,9 @@
     { label: "2020", value: 7 },
   ];
   const FAKE_POSSESSION_BARS = [
-    { label: "Possédé", value: 18 },
-    { label: "Emprunté", value: 6 },
-    { label: "Streaming", value: 11 },
+    { label: m.stats_ownership_owned(), value: 18 },
+    { label: m.stats_ownership_borrowed(), value: 6 },
+    { label: m.stats_ownership_streaming(), value: 11 },
   ];
 
   const ratingBars = $derived(

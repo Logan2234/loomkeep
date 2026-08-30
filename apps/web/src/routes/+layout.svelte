@@ -6,7 +6,7 @@
   import { toIntlLocale } from "$lib/constants/language-to-locale";
   import { navStyle } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages";
-  import { baseLocale } from "$lib/paraglide/runtime";
+  import { getLocale } from "$lib/paraglide/runtime";
   import { queryClient } from "$lib/queryClient";
   import { theme } from "$lib/theme.svelte";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
@@ -45,7 +45,7 @@
   <meta property="og:image" content="{page.url.origin}/pwa-512.png" />
   <meta
     property="og:locale"
-    content={toIntlLocale(baseLocale).replace("-", "_")} />
+    content={toIntlLocale(getLocale()).replace("-", "_")} />
   <meta name="twitter:card" content="summary" />
 
   <link rel="preconnect" href={env.PUBLIC_API_URL} />

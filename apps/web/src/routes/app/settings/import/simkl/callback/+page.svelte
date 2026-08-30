@@ -12,8 +12,7 @@
 {#if code}
   <ImportWizard source="simkl" autoInput={code}>
     {#snippet intro()}
-      Connexion à Simkl réussie — récupération de ton historique et de ta
-      watchlist en cours.
+      {m.settings_import_simkl_connected()}
     {/snippet}
   </ImportWizard>
 {:else}
@@ -32,8 +31,8 @@
     </div>
     <Banner variant="error">
       {oauthError === "access_denied"
-        ? "Connexion annulée — tu dois autoriser Loomkeep sur Simkl pour importer tes données."
-        : "Connexion à Simkl impossible (code manquant). Réessaie depuis la page d'import."}
+        ? m.settings_import_simkl_cancelled()
+        : m.settings_import_simkl_missing_code()}
     </Banner>
     <a href="/app/settings/import/simkl" class="btn btn-primary mt-4">
       {m.common_retry()}

@@ -7,6 +7,7 @@ import type {
 import { ErrorCode } from "@loomkeep/shared";
 import * as Sentry from "@sentry/sveltekit";
 import { auth } from "../auth.svelte";
+import { getLocale } from "../paraglide/runtime.js";
 
 export const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";
 
@@ -42,7 +43,9 @@ export async function request<T>(
   options: RequestOptions = {},
   retried = false,
 ): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    "Accept-Language": getLocale(),
+  };
 
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";

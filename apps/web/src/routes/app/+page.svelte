@@ -182,7 +182,7 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-    if (diff === 0) return "Auj."; // today abbreviation kept short
+    if (diff === 0) return m.common_today_short(); // today abbreviation kept short
     if (diff === 1) return m.common_tomorrow();
     return formatDate(iso, WEEKDAY_SHORT_OPTIONS);
   }
@@ -327,7 +327,8 @@
                     </p>
                     {#if e.playtimeMinutes > 0}
                       <p class="timecode text-[0.65rem]">
-                        {Math.round(e.playtimeMinutes / 60)} h jouées
+                        {Math.round(e.playtimeMinutes / 60)}
+                        {m.home_played_hours_suffix()}
                       </p>
                     {/if}
                   </a>
@@ -374,9 +375,10 @@
                         {/if}
                         <p class="timecode text-xs">
                           {#if e.book.pageCount}
-                            p. {e.currentPage} / {e.book.pageCount}
+                            {m.book_page_short()}
+                            {e.currentPage} / {e.book.pageCount}
                           {:else}
-                            p. {e.currentPage}
+                            {m.book_page_short()} {e.currentPage}
                           {/if}
                         </p>
                       </div>

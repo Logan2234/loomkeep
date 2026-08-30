@@ -20,12 +20,12 @@
   }));
 
   const SORTS = [
-    { label: "Ajout récent", value: "added" },
+    { label: m.library_sort_added(), value: "added" },
     { label: m.common_title(), value: "title" },
-    { label: "Note", value: "rating" },
-    { label: "Temps de jeu", value: "playtime" },
-    { label: "Terminé récemment", value: "finished" },
-    { label: "Commencé récemment", value: "started" },
+    { label: m.library_rating(), value: "rating" },
+    { label: m.game_playtime(), value: "playtime" },
+    { label: m.library_sort_finished(), value: "finished" },
+    { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
 
@@ -53,7 +53,10 @@
 <LibraryBrowser
   icon="gamepad"
   title={m.common_Games()}
-  subtitle={(n) => `${n} jeu${n > 1 ? "x" : ""}`}
+  subtitle={(n) =>
+    n === 1
+      ? m.game_library_count_one({ count: n })
+      : m.game_library_count_many({ count: n })}
   noun="jeu"
   domain={Domain.GAMES}
   {load}

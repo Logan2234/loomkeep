@@ -118,7 +118,7 @@
     if (!airDate) return null;
     const days = daysUntilAir(airDate);
     if (days <= 0) return null;
-    return days === 1 ? m.common_tomorrow() : `Dans ${days} jours`;
+    return days === 1 ? m.common_tomorrow() : m.media_airing_in_days({ days });
   }
 
   async function markWatched(episodeId: string) {
@@ -217,7 +217,7 @@
   }
 </script>
 
-<h2 class="font-display mt-10 mb-4 text-xl font-bold">Épisodes</h2>
+<h2 class="font-display mt-10 mb-4 text-xl font-bold">{m.media_episodes()}</h2>
 <div class="flex flex-col gap-4 pb-4">
   {#each seasons.filter((s) => s.episodes.length > 0) as season (season.number)}
     {@const expanded = expandedSeasons.has(season.number)}
@@ -253,13 +253,14 @@
           {#if entry && season.id && seasonWatched(season)}
             <span
               class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-              <Icon name="check" class="h-4 w-4" /> Vue
+              <Icon name="check" class="h-4 w-4" />
+              {m.media_season_watched()}
             </span>
           {/if}
           {#if entry && season.id}
             <button
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-              aria-label="Critique de la saison"
+              aria-label={m.media_season_review()}
               onclick={(e) => {
                 e.stopPropagation();
                 reviewTarget = {
@@ -275,7 +276,7 @@
           {#if entry && appConfig.socialEnabled && season.id}
             <button
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-              aria-label="Commentaires de la saison"
+              aria-label={m.media_season_comments()}
               onclick={(e) => {
                 e.stopPropagation();
                 commentTarget = {
@@ -294,7 +295,7 @@
               {#snippet trigger({ open, toggle })}
                 <button
                   class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                  aria-label="Plus d'actions pour la saison"
+                  aria-label={m.media_season_more_actions()}
                   aria-haspopup="menu"
                   aria-expanded={open}
                   onclick={(e) => {
@@ -314,7 +315,8 @@
                       close();
                       markSeason(seasonId);
                     }}>
-                    <Icon name="check" class="h-4 w-4" /> Marquer la saison vue
+                    <Icon name="check" class="h-4 w-4" />
+                    {m.media_mark_season_watched()}
                   </button>
                 {/if}
                 {#if seasonWatchedCount(season) > 0}
@@ -325,7 +327,8 @@
                       close();
                       confirmUnwatchSeasonId = seasonId;
                     }}>
-                    <Icon name="x" class="h-4 w-4" /> Tout annuler la saison
+                    <Icon name="x" class="h-4 w-4" />
+                    {m.media_undo_season()}
                   </button>
                 {/if}
               {/snippet}
@@ -373,7 +376,7 @@
                 {#if entry && episode.id}
                   <button
                     class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                    aria-label="Critique de l'épisode"
+                    aria-label={m.media_episode_review()}
                     onclick={() => {
                       reviewTarget = {
                         type: "EPISODE",
@@ -387,7 +390,7 @@
                 {#if entry && appConfig.socialEnabled && episode.id}
                   <button
                     class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                    aria-label="Commentaires de l'épisode"
+                    aria-label={m.media_episode_comments()}
                     onclick={() => {
                       commentTarget = {
                         type: "EPISODE",
@@ -403,7 +406,7 @@
                   {#if upcoming}
                     <span
                       class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
-                      title="Pas encore diffusé">
+                      title={m.media_not_aired()}>
                       {upcoming}
                     </span>
                   {:else if watched}
@@ -412,16 +415,16 @@
                     <div class="flex shrink-0 items-center gap-1">
                       <button
                         class="btn-icon"
-                        title="Revoir"
-                        aria-label="Revoir"
+                        title={m.media_rewatch()}
+                        aria-label={m.media_rewatch()}
                         disabled={busyEpisodeId === episode.id}
                         onclick={() => markWatched(episode.id!)}>
                         <Icon name="refresh" class="h-4 w-4" />
                       </button>
                       <button
                         class="btn-icon hover:text-danger"
-                        title="Annuler ce visionnage"
-                        aria-label="Annuler ce visionnage"
+                        title={m.media_undo_watch()}
+                        aria-label={m.media_undo_watch()}
                         disabled={busyEpisodeId === episode.id}
                         onclick={() => markUnwatch(episode.id!)}>
                         <Icon name="x" class="h-4 w-4" />
@@ -437,7 +440,7 @@
                           episode.number,
                           episode.id!,
                         )}>
-                      Marquer vu
+                      {m.media_mark_watched_short()}
                     </button>
                   {/if}
                 {/if}
@@ -453,10 +456,10 @@
 {#if catchup}
   {@const c = catchup}
   <ConfirmationModal
-    title="Rattraper les épisodes précédents ?"
-    message={`Tu as ${c.count} épisode${c.count > 1 ? "s" : ""} non vu${c.count > 1 ? "s" : ""} avant celui-ci.`}
-    confirmLabel="Oui, tout marquer"
-    cancelLabel="Non, juste celui-ci"
+    title={m.media_catch_up_title()}
+    message={m.media_catch_up_message({ count: c.count })}
+    confirmLabel={m.media_catch_up_confirm()}
+    cancelLabel={m.media_catch_up_cancel()}
     busy={busyEpisodeId === c.episodeId}
     onConfirm={confirmCatchupYes}
     onCancel={confirmCatchupNo} />
@@ -464,9 +467,9 @@
 
 {#if confirmUnwatchSeasonId}
   <ConfirmationModal
-    title="Tout annuler pour cette saison"
-    message="Tous les visionnages de cette saison (rediffusions comprises) seront supprimés. Cette action est irréversible."
-    confirmLabel="Tout annuler"
+    title={m.media_undo_season_title()}
+    message={m.media_undo_season_message()}
+    confirmLabel={m.media_undo_all()}
     danger
     busy={unwatchingSeasonBusy}
     onConfirm={confirmUnwatchSeason}
@@ -475,7 +478,7 @@
 
 {#if commentTarget}
   <Modal
-    title={`Commentaires · ${commentTarget.label}`}
+    title={m.media_comments_title({ target: commentTarget.label })}
     onclose={() => (commentTarget = null)}>
     <CommentThread
       targetType={commentTarget.type}
@@ -485,7 +488,7 @@
 
 {#if reviewTarget}
   <Modal
-    title={`Critique · ${reviewTarget.label}`}
+    title={m.media_review_title({ target: reviewTarget.label })}
     onclose={() => (reviewTarget = null)}>
     <ReviewsSection
       targetType={reviewTarget.type}

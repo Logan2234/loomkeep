@@ -89,22 +89,22 @@
     return [
       {
         value: formatDateTime(summary.last.createdAt, DATETIME_NUMERIC_OPTIONS),
-        label: "Dernière sauvegarde",
+        label: m.admin_system_last_backup(),
       },
-      { value: size, unit, label: "Taille" },
+      { value: size, unit, label: m.admin_backup_size() },
       {
         value: summary.medianGapDays ?? "—",
         unit: summary.medianGapDays === null ? undefined : "j",
-        label: "Intervalle médian",
+        label: m.admin_backup_interval(),
       },
-      { value: String(summary.count), label: "Sauvegardes conservées" },
+      { value: String(summary.count), label: m.admin_backup_retained() },
     ];
   });
 
   const runNowMut = createApiMutation(() => ({
     mutate: () => runAdminJob(BACKUP_JOB_KEY),
     invalidates: [keys.admin.backups()],
-    successToast: "Sauvegarde générée.",
+    successToast: m.admin_backup_created(),
     errorToast: true,
   }));
 
@@ -133,7 +133,7 @@
   const deleteMut = createApiMutation(() => ({
     mutate: (file: AdminBackupFileDto) => deleteAdminBackupFile(file.id),
     invalidates: [keys.admin.backups()],
-    successToast: "Sauvegarde supprimée.",
+    successToast: m.admin_backup_deleted(),
     errorToast: true,
     onSuccess: () => (pendingDelete = null),
   }));
@@ -169,7 +169,7 @@
       restoreAdminBackup({ sql: await file.text() }),
     onSuccess: () => {
       restoreDone = true;
-      toast.success("Base de données restaurée.");
+      toast.success(m.admin_backup_restored());
     },
   }));
 
@@ -182,15 +182,17 @@
 <div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="archive"
-    title="Sauvegarde"
-    subtitle="Sauvegarde automatique quotidienne (3h) de la base de données — les 7 dernières sont conservées, chiffrées.">
+    title={m.admin_backup_title()}
+    subtitle={m.admin_backup_subtitle()}>
     {#snippet actions()}
       <button
         class="btn btn-primary shrink-0"
         disabled={runNowMut.loading}
         onclick={runNow}>
         <Icon name="archive" class="mr-1.5 inline h-4 w-4" />
-        {runNowMut.loading ? "Génération…" : "Sauvegarder maintenant"}
+        {runNowMut.loading
+          ? m.admin_backup_generating()
+          : m.admin_backup_create()}
       </button>
     {/snippet}
   </PageHeader>
@@ -200,7 +202,7 @@
   {/if}
 
   <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-3 text-lg font-bold">Sauvegardes</h2>
+    <h2 class="font-display mb-3 text-lg font-bold">{m.admin_backups()}</h2>
 
     {#if loadError}
       <Banner variant="error">{loadError}</Banner>
@@ -226,7 +228,7 @@
             </div>
             <button
               type="button"
-              aria-label="Télécharger cette sauvegarde"
+              aria-label={m.admin_backup_download()}
               disabled={downloadMut.loading &&
                 downloadMut.variables?.id === f.id}
               onclick={() => downloadFile(f)}
@@ -235,7 +237,7 @@
             </button>
             <button
               type="button"
-              aria-label="Supprimer cette sauvegarde"
+              aria-label={m.admin_backup_delete()}
               disabled={deleteMut.loading && deleteMut.variables?.id === f.id}
               onclick={() => (pendingDelete = f)}
               class="text-dim hover:bg-danger/10 hover:text-danger shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
@@ -246,25 +248,26 @@
       </ul>
     {:else}
       <p class="text-dim py-6 text-center text-sm">
-        Aucune sauvegarde pour l'instant.
+        {m.admin_backup_empty()}
       </p>
     {/if}
   </section>
 
   <section class="card border-danger/40 p-5 md:p-6">
-    <h2 class="font-display text-danger mb-1 text-lg font-bold">Restaurer</h2>
+    <h2 class="font-display text-danger mb-1 text-lg font-bold">
+      {m.admin_restore()}
+    </h2>
     <p class="text-dim mb-4 text-sm">
-      Remplace <strong>l'intégralité</strong> de la base de données par le
-      contenu d'un fichier de sauvegarde. Les fichiers téléchargés ci-dessus
-      sont chiffrés (<code class="bg-surface-2 rounded px-1 py-0.5 text-xs"
-        >.sql.age</code
-      >) — déchiffre-les d'abord en local (<code
+      {m.admin_backup_restore_intro()}
+      <strong>{m.admin_backup_restore_entire()}</strong>
+      {m.admin_backup_restore_encrypted()}<code
+        class="bg-surface-2 rounded px-1 py-0.5 text-xs">.sql.age</code
+      >{m.admin_backup_restore_decrypt()}<code
         class="bg-surface-2 rounded px-1 py-0.5 text-xs"
         >age -d -o dump.sql fichier.sql.age</code
-      >) avant de sélectionner le
-      <code class="bg-surface-2 rounded px-1 py-0.5 text-xs">.sql</code> obtenu ici.
-      Toute donnée créée depuis cette sauvegarde sera définitivement perdue. Cette
-      action est irréversible.
+      >{m.admin_backup_restore_select()}
+      <code class="bg-surface-2 rounded px-1 py-0.5 text-xs">.sql</code>
+      {m.admin_backup_restore_warning()}
     </p>
     <input
       bind:this={fileInput}
@@ -273,15 +276,17 @@
       class="hidden"
       onchange={onFileSelected} />
     <button class="btn btn-danger" onclick={pickFile}>
-      Choisir un fichier à restaurer…
+      {m.admin_backup_choose_file()}
     </button>
   </section>
 </div>
 
 {#if pendingDelete}
   <ConfirmationModal
-    title="Supprimer cette sauvegarde ?"
-    message={`${pendingDelete.filename} sera définitivement supprimée du disque.`}
+    title={m.admin_backup_delete_title()}
+    message={m.admin_backup_delete_message({
+      filename: pendingDelete.filename,
+    })}
     confirmLabel={m.common_delete()}
     danger
     busy={deleteMut.loading}
@@ -290,29 +295,29 @@
 {/if}
 
 {#if showRestoreModal && pendingFile}
-  <Modal title="Restaurer la sauvegarde" onclose={closeRestoreModal}>
+  <Modal title={m.admin_backup_restore_title()} onclose={closeRestoreModal}>
     {#if restoreDone}
       <Banner variant="info">
-        Restauration terminée. Recharge la page pour repartir sur les données
-        restaurées.
+        {m.admin_backup_restored_hint()}
       </Banner>
       <div class="mt-5 flex justify-end">
         <button class="btn btn-primary" onclick={() => location.reload()}>
-          Recharger
+          {m.common_reload()}
         </button>
       </div>
     {:else}
       <p class="text-dim text-sm">
-        Fichier sélectionné : <strong class="text-fg"
-          >{pendingFile.name}</strong>
+        {m.admin_backup_selected_file()}
+        <strong class="text-fg">{pendingFile.name}</strong>
         ({formatBytes(pendingFile.size)})
       </p>
       <p class="text-dim mt-3 text-sm">
-        Cette action écrase <strong>toutes</strong> les données actuelles de
-        l'instance, sans retour en arrière possible. Pour confirmer, tape
+        {m.admin_backup_overwrite_intro()}
+        <strong>{m.admin_backup_overwrite_all()}</strong>
+        {m.admin_backup_overwrite_warning()}
         <code class="bg-surface-2 rounded px-1.5 py-0.5 text-xs font-bold"
           >{CONFIRM_PHRASE}</code>
-        ci-dessous.
+        {m.admin_confirmation_below()}
       </p>
       <input
         type="text"
@@ -336,7 +341,9 @@
           class="btn btn-danger"
           disabled={restoreMut.loading || confirmText !== CONFIRM_PHRASE}
           onclick={confirmRestore}>
-          {restoreMut.loading ? "Restauration…" : "Restaurer définitivement"}
+          {restoreMut.loading
+            ? m.admin_backup_restoring()
+            : m.admin_backup_restore_confirm()}
         </button>
       </div>
     {/if}

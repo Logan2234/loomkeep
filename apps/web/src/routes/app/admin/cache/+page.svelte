@@ -29,8 +29,8 @@
   } from "@loomkeep/shared";
 
   const SORT_OPTIONS: { label: string; value: AdminCacheSort }[] = [
-    { label: "Obsolètes d'abord", value: "stale" },
-    { label: "Récents", value: "recent" },
+    { label: m.admin_cache_sort_stale(), value: "stale" },
+    { label: m.admin_cache_sort_recent(), value: "recent" },
     { label: m.common_title(), value: "title" },
   ];
 
@@ -122,7 +122,8 @@
   const resyncMut = createApiMutation(() => ({
     mutate: (item: AdminCacheItemDto) =>
       resyncAdminCacheItem(item.domain, item.id),
-    successToast: (_data, item) => `« ${item.title} » re-synchronisé.`,
+    successToast: (_data, item) =>
+      m.admin_cache_resynced_item({ title: item.title }),
     invalidates: [
       cacheKey,
       ...(selected ? [keys.admin.cacheItem(selected.domain, selected.id)] : []),
@@ -134,8 +135,11 @@
     mutate: () => resyncAdminCacheStale(activeDomain),
     successToast: (res) =>
       res.failed > 0
-        ? `${res.resynced} re-synchronisé(s), ${res.failed} en échec.`
-        : `${res.resynced} titre(s) re-synchronisé(s).`,
+        ? m.admin_cache_resynced_partial({
+            count: res.resynced,
+            failed: res.failed,
+          })
+        : m.admin_cache_resynced_count({ count: res.resynced }),
     invalidates: [cacheKey],
     errorToast: true,
   }));
@@ -147,8 +151,11 @@
     },
     successToast: (res) =>
       res.skipped > 0
-        ? `${res.deleted} orphelin(s) supprimé(s) du cache — ${res.skipped} laissé(s) car référencé(s) par une critique, un commentaire ou une activité.`
-        : `${res.deleted} orphelin(s) supprimé(s) du cache.`,
+        ? m.admin_cache_purged_partial({
+            count: res.deleted,
+            skipped: res.skipped,
+          })
+        : m.admin_cache_purged_count({ count: res.deleted }),
     onError: () => {
       showDeleteOrphansConfirm = false;
     },
@@ -163,7 +170,7 @@
       showDeleteConfirm = false;
       closeDrawer();
     },
-    successToast: (_data, title) => `« ${title} » supprimé du cache.`,
+    successToast: (_data, title) => m.admin_cache_deleted_item({ title }),
     onError: () => {
       showDeleteConfirm = false;
     },
@@ -180,8 +187,8 @@
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="database"
-    title="Cache & synchronisation"
-    subtitle="Le cache à la demande : chaque titre n'existe ici qu'une fois référencé par un compte. Inspecte, re-synchronise ou purge les entrées orphelines." />
+    title={m.admin_cache_title()}
+    subtitle={m.admin_cache_subtitle()} />
 
   <div class="mb-3 flex flex-wrap items-center gap-2">
     {#each Object.entries(DOMAINS) as [id, d] (id)}
@@ -190,7 +197,7 @@
         <button
           class="chip disabled:pointer-events-none disabled:opacity-40"
           disabled
-          title="Disponible prochainement">
+          title={m.settings_export_csv_coming_soon_hint()}>
           <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
           {d.label}
           <span
@@ -215,15 +222,15 @@
       type="text"
       bind:value={searchInput}
       oninput={onSearchInput}
-      placeholder="Filtrer par titre…"
+      placeholder={m.admin_cache_search()}
       class="input sm:flex-1" />
     <div class="flex items-center gap-2">
       <span
         class="text-dim hidden text-[0.65rem] font-bold tracking-wider uppercase sm:inline">
-        Tri
+        {m.admin_cache_sort()}
       </span>
       <Combobox
-        label="Tri"
+        label={m.admin_cache_sort()}
         options={SORT_OPTIONS}
         values={[sort]}
         onChange={(v) => selectSort((v[0] as AdminCacheSort) ?? "stale")} />
@@ -233,7 +240,7 @@
   <!-- Bulk actions, scoped to the active domain. -->
   <div class="mb-5 flex flex-wrap items-center gap-2">
     <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}>
-      Orphelins uniquement
+      {m.admin_cache_orphans_only()}
     </button>
     <div class="ml-auto flex flex-wrap gap-2">
       <button
@@ -243,14 +250,14 @@
         <Icon
           name="refresh"
           class="h-3.5 w-3.5 {bulkResyncMut.loading ? 'animate-spin' : ''}" />
-        Re-sync obsolètes ({staleTotal})
+        {m.admin_cache_resync_stale()}{staleTotal})
       </button>
       <button
         onclick={() => (showDeleteOrphansConfirm = true)}
         disabled={deleteOrphansMut.loading || orphanTotal === 0}
         class="btn btn-danger btn-sm">
         <Icon name="trash" class="h-3.5 w-3.5" />
-        Supprimer orphelins ({orphanTotal})
+        {m.admin_cache_delete_orphans()}{orphanTotal})
       </button>
     </div>
   </div>
@@ -267,14 +274,16 @@
     </div>
   {:else if items.length === 0}
     <EmptyState>
-      {orphansOnly
-        ? "Aucun orphelin dans ce domaine."
-        : "Aucun titre en cache pour ce domaine."}
+      {orphansOnly ? m.admin_cache_empty_orphans() : m.admin_cache_empty()}
     </EmptyState>
   {:else}
     <p class="text-dim mb-2 text-xs">
-      {total} titre(s){orphansOnly ? " orphelin(s)" : ""} · {staleTotal} obsolète(s)
-      · {orphanTotal} orphelin(s).
+      {total}
+      {m.admin_cache_titles_suffix()}
+      {orphansOnly ? m.admin_cache_orphans_suffix() : ""} · {staleTotal}
+      {m.admin_cache_stale_suffix()}
+      {orphanTotal}
+      {m.admin_cache_orphans_end()}
     </p>
     <ul class="space-y-2">
       {#each items as item (item.id)}
@@ -309,26 +318,29 @@
                   <span
                     class="border-accent/40 bg-accent/10 text-accent flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold">
                     <span class="bg-accent h-1.5 w-1.5 rounded-full"></span>
-                    Obsolète
+                    {m.admin_cache_stale()}
                   </span>
                 {/if}
                 {#if item.referenceCount === 0}
                   <span
                     class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
-                    Orphelin
+                    {m.admin_cache_orphan()}
                   </span>
                 {/if}
                 {#if item.cachedLocales.length > 1}
                   <span
                     title={item.cachedLocales.join(", ")}
                     class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
-                    {item.cachedLocales.length} langues
+                    {item.cachedLocales.length}
+                    {m.admin_cache_languages_suffix()}
                   </span>
                 {/if}
               </div>
               <p class="timecode mt-0.5 text-xs">
-                Sync {formatDateTime(item.lastSyncedAt)}
-                · {item.referenceCount} compte(s)
+                {m.admin_cache_sync()}
+                {formatDateTime(item.lastSyncedAt)}
+                · {item.referenceCount}
+                {m.admin_accounts_suffix()}
               </p>
             </div>
           </button>
@@ -339,7 +351,7 @@
               resyncMut.mutate(item);
             }}
             disabled={resyncMut.loading}
-            aria-label="Re-synchroniser {item.title}"
+            aria-label={m.admin_cache_resync_item({ title: item.title })}
             class="btn btn-ghost btn-sm shrink-0">
             <Icon
               name="refresh"
@@ -347,7 +359,7 @@
               resyncMut.variables?.id === item.id
                 ? 'animate-spin'
                 : ''}" />
-            <span class="hidden sm:inline">Re-sync</span>
+            <span class="hidden sm:inline">{m.admin_cache_resync_short()}</span>
           </button>
         </li>
       {/each}
@@ -358,7 +370,9 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={cacheQuery.isFetchingNextPage}
         onclick={() => cacheQuery.fetchNextPage()}>
-        {cacheQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
+        {cacheQuery.isFetchingNextPage
+          ? m.common_loading()
+          : m.common_load_more()}
       </button>
     {/if}
   {/if}
@@ -383,7 +397,8 @@
         </div>
       {:else if detailQuery.error}
         <div class="mb-4 flex items-center justify-between">
-          <span class="font-display font-bold">Détail</span>
+          <span class="font-display font-bold"
+            >{m.ownership_detail_label()}</span>
           <button
             class="text-dim hover:bg-surface-2 hover:text-fg rounded-full p-1.5"
             aria-label={m.common_close()}
@@ -417,17 +432,19 @@
                 {#if detail.stale}
                   <span
                     class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-[10px] font-bold">
-                    Obsolète
+                    {m.admin_cache_stale()}
                   </span>
                 {/if}
                 <span
                   class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
-                  {detail.referenceCount} compte(s)
+                  {detail.referenceCount}
+                  {m.admin_accounts_suffix()}
                 </span>
                 {#if detail.cachedLocales.length > 1}
                   <span
                     class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
-                    Langues : {detail.cachedLocales.join(", ")}
+                    {m.admin_cache_languages()}
+                    {detail.cachedLocales.join(", ")}
                   </span>
                 {/if}
               </div>
@@ -444,24 +461,24 @@
         <section class="mb-5">
           <h3
             class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-            Informations du cache
+            {m.admin_cache_information()}
             <span class="bg-border h-px flex-1"></span>
           </h3>
           <dl class="space-y-1.5 text-sm">
             <div class="flex justify-between gap-3">
-              <dt class="text-dim">Dernière sync</dt>
+              <dt class="text-dim">{m.admin_cache_last_sync()}</dt>
               <dd class="timecode text-fg text-right">
                 {formatDateTime(detail.lastSyncedAt)}
               </dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-dim">Ajouté au cache</dt>
+              <dt class="text-dim">{m.admin_cache_added()}</dt>
               <dd class="timecode text-right">
                 {formatDateTime(detail.createdAt)}
               </dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-dim">Dernière modif.</dt>
+              <dt class="text-dim">{m.admin_cache_updated()}</dt>
               <dd class="timecode text-right">
                 {formatDateTime(detail.updatedAt)}
               </dd>
@@ -474,7 +491,7 @@
           <section class="mb-5">
             <h3
               class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-              Saisons ({detail.seasons.length})
+              {m.admin_cache_seasons()}{detail.seasons.length})
               <span class="bg-border h-px flex-1"></span>
             </h3>
             <ul class="space-y-1 text-sm">
@@ -485,7 +502,8 @@
                     {s.title ?? `${m.common_season()} ${s.number}`}
                   </span>
                   <span class="timecode shrink-0 text-xs">
-                    {s.episodeCount} ép.
+                    {s.episodeCount}
+                    {m.media_episode_short()}
                   </span>
                 </li>
               {/each}
@@ -496,7 +514,7 @@
         <section class="mb-5">
           <h3
             class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-            Identifiants externes
+            {m.admin_cache_external_ids()}
             <span class="bg-border h-px flex-1"></span>
           </h3>
           <ul class="space-y-1">
@@ -512,7 +530,7 @@
         <!-- Actions -->
         <section class="mt-auto space-y-2 pt-2">
           <a href={detail.detailPath} class="btn btn-ghost w-full">
-            Voir la fiche Loomkeep
+            {m.admin_cache_open_work()}
             <Icon name="chevron-right" class="h-4 w-4" />
           </a>
           <button
@@ -522,18 +540,22 @@
             <Icon
               name="refresh"
               class="h-4 w-4 {resyncMut.loading ? 'animate-spin' : ''}" />
-            {resyncMut.loading ? "Re-synchronisation…" : "Re-synchroniser"}
+            {resyncMut.loading
+              ? m.admin_cache_resync_loading()
+              : m.admin_cache_resync()}
           </button>
           {#if detail.referenceCount === 0}
             <button
               onclick={() => (showDeleteConfirm = true)}
               class="btn btn-danger w-full">
               <Icon name="trash" class="h-4 w-4" />
-              Supprimer du cache
+              {m.admin_cache_delete()}
             </button>
           {:else}
             <p class="text-dim text-center text-xs">
-              Référencé par {detail.referenceCount} compte(s) — non supprimable.
+              {m.admin_cache_referenced_by()}
+              {detail.referenceCount}
+              {m.admin_cache_cannot_delete()}
             </p>
           {/if}
         </section>
@@ -544,8 +566,8 @@
 
 {#if showDeleteConfirm && detail}
   <ConfirmationModal
-    title="Supprimer du cache ?"
-    message={`« ${detail.title} » sera retiré du cache. Aucun compte ne le référence, donc rien n'est perdu — il sera re-téléchargé si un utilisateur le rajoute.`}
+    title={m.admin_cache_delete_title()}
+    message={m.admin_cache_delete_message({ title: detail.title })}
     confirmLabel={m.common_delete()}
     danger
     busy={deleteItemMut.loading}
@@ -555,9 +577,9 @@
 
 {#if showDeleteOrphansConfirm}
   <ConfirmationModal
-    title="Purger les orphelins ?"
-    message={`Les ${orphanTotal} titre(s) de ce domaine que plus aucun compte ne référence seront retirés du cache. Rien n'est perdu — ils seront re-téléchargés au besoin.`}
-    confirmLabel="Purger"
+    title={m.admin_cache_purge_title()}
+    message={m.admin_cache_purge_message({ count: orphanTotal })}
+    confirmLabel={m.admin_cache_purge()}
     danger
     busy={deleteOrphansMut.loading}
     onConfirm={() => deleteOrphansMut.mutate()}

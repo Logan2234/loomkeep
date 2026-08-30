@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-  <title>Vérifiez votre email · {m.common_loomkeep()}</title>
+  <title>{m.auth_register_check_email_title()} · {m.common_loomkeep()}</title>
 </svelte:head>
 
 {#if pageReady}
@@ -74,18 +74,19 @@
             <Icon name="check" class="h-14 w-14" />
           </div>
 
-          <h1 class="font-display text-xl font-bold">Vérifiez votre email</h1>
+          <h1 class="font-display text-xl font-bold">
+            {m.auth_register_check_email_title()}
+          </h1>
 
           <p class="text-dim mt-3 text-sm leading-6">
-            Votre compte Loomkeep est prêt. Nous vous avons envoyé un email
-            contenant un lien pour confirmer votre adresse.
+            {m.auth_register_check_email_body()}
           </p>
         </div>
 
         {#if status === "sent"}
           <div
             class="border-success/30 bg-success/10 text-success rounded-lg border p-3 text-center text-sm">
-            Email envoyé !
+            {m.auth_register_check_email_sent()}
           </div>
         {:else if status === "error" && error}
           <p class="text-danger text-center text-sm">
@@ -98,7 +99,7 @@
             type="button"
             class="btn btn-primary btn-primary-cartouche"
             onclick={continueToApp}>
-            Continuer vers Loomkeep
+            {m.auth_register_check_email_continue()}
           </button>
 
           <button
@@ -111,14 +112,13 @@
             {:else if cooldown > 0}
               {m.common_resend_cooldown({ seconds: cooldown })}
             {:else}
-              Renvoyer l'email
+              {m.auth_register_check_email_resend()}
             {/if}
           </button>
         </div>
 
         <p class="text-dim text-center text-xs leading-5">
-          Vous ne trouvez pas l'email ? Vérifiez votre dossier spam ou courrier
-          indésirable.
+          {m.auth_register_check_email_hint()}
         </p>
       </div>
     </div>

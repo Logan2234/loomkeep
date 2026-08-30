@@ -31,14 +31,14 @@
   }
 
   const SORTS = [
-    { label: "Ajout récent", value: "added" },
+    { label: m.library_sort_added(), value: "added" },
     { label: m.common_title(), value: "title" },
-    { label: "Auteur", value: "author" },
-    { label: "Note", value: "rating" },
-    { label: "Nombre de pages", value: "pages" },
-    { label: "Progression de lecture", value: "progress" },
-    { label: "Terminé récemment", value: "finished" },
-    { label: "Commencé récemment", value: "started" },
+    { label: m.book_author(), value: "author" },
+    { label: m.library_rating(), value: "rating" },
+    { label: m.book_page_count(), value: "pages" },
+    { label: m.book_reading_progress(), value: "progress" },
+    { label: m.library_sort_finished(), value: "finished" },
+    { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
 
@@ -66,7 +66,10 @@
 <LibraryBrowser
   icon="book"
   title={m.common_Books()}
-  subtitle={(n) => `${n} livre${n > 1 ? "s" : ""}`}
+  subtitle={(n) =>
+    n === 1
+      ? m.book_library_count_one({ count: n })
+      : m.book_library_count_many({ count: n })}
   noun={m.common_book()}
   domain={Domain.BOOKS}
   {load}
@@ -91,7 +94,8 @@
         {#if entry.book.pageCount}
           <ProgressBar value={pct(entry)} />
           <span class="timecode text-xs">
-            {entry.currentPage} / {entry.book.pageCount} pages
+            {entry.currentPage} / {entry.book.pageCount}
+            {m.book_pages_lower()}
           </span>
         {:else}
           <span class="timecode text-xs">

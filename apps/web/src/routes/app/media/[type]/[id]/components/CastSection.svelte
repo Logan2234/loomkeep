@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import { getCastDetail } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -75,7 +76,7 @@
 
 {#if cast.length > 0}
   <section class="mt-10">
-    <h2 class="font-display mb-3 text-xl font-bold">Distribution</h2>
+    <h2 class="font-display mb-3 text-xl font-bold">{m.media_cast()}</h2>
     <Carousel items={cast} keyOf={(c) => c.name + (c.role ?? "")} gap="gap-3">
       {#snippet card(c)}
         {#if c.id}
@@ -136,7 +137,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-              >Site officiel ↗</a>
+              >{m.media_official_site()}</a>
           {/if}
           {#if castDetail.imdbId}
             <a
@@ -162,7 +163,9 @@
         </p>
       {/if}
       {#if castDetail.knownFor.length > 0}
-        <h4 class="font-display mt-5 mb-2 text-sm font-bold">Connu pour</h4>
+        <h4 class="font-display mt-5 mb-2 text-sm font-bold">
+          {m.media_known_for()}
+        </h4>
         <Carousel
           items={castDetail.knownFor}
           keyOf={(k) => `${k.source}:${k.sourceId}`}

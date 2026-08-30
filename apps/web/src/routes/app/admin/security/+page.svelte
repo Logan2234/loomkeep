@@ -22,13 +22,13 @@
   } from "@loomkeep/shared";
 
   const TYPE_LABELS: Record<SecurityEventType, string> = {
-    USER_REGISTERED: "Inscription",
-    USER_DELETED: "Suppression de compte",
-    EMAIL_CHANGED: "Changement d'email",
-    PASSWORD_CHANGED: "Changement de mot de passe",
-    PASSWORD_RESET: "Réinitialisation de mot de passe",
-    LOGIN_FAILED: "Échec de connexion",
-    NEW_DEVICE_LOGIN: "Connexion depuis un nouvel appareil",
+    USER_REGISTERED: m.admin_security_registration(),
+    USER_DELETED: m.admin_security_account_deletion(),
+    EMAIL_CHANGED: m.admin_security_email_change(),
+    PASSWORD_CHANGED: m.admin_security_password_change(),
+    PASSWORD_RESET: m.admin_security_password_reset(),
+    LOGIN_FAILED: m.admin_security_login_failed(),
+    NEW_DEVICE_LOGIN: m.admin_security_new_device(),
   };
 
   const TYPE_COLORS: Record<SecurityEventType, string> = {
@@ -42,7 +42,7 @@
   };
 
   const TYPE_OPTIONS = [
-    { label: "Tous les types", value: "" },
+    { label: m.admin_security_all_types(), value: "" },
     ...(Object.keys(TYPE_LABELS) as SecurityEventType[]).map((t) => ({
       label: TYPE_LABELS[t],
       value: t,
@@ -97,17 +97,20 @@
       ? [
           {
             value: formatNumber(summary.loginFailed24h),
-            label: "Échecs · 24 h",
+            label: m.admin_security_failures_day(),
             alert: summary.loginFailed24h > 0,
           },
-          { value: formatNumber(summary.loginFailed7d), label: "Échecs · 7 j" },
+          {
+            value: formatNumber(summary.loginFailed7d),
+            label: m.admin_security_failures_week(),
+          },
           {
             value: formatNumber(summary.loginFailed30d),
-            label: "Échecs · 30 j",
+            label: m.admin_security_failures_month(),
           },
           {
             value: formatNumber(summary.loginFailedTotal),
-            label: "Échecs · total",
+            label: m.admin_security_failures_total(),
           },
         ]
       : [],
@@ -125,14 +128,14 @@
   <PageHeader
     icon="shield"
     title={m.common_security()}
-    subtitle="Actions sensibles sur les comptes : création, suppression, changements d'identifiants, connexions échouées." />
+    subtitle={m.admin_security_subtitle()} />
 
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if targetBars.length > 0}
       <div class="card mb-5 p-4">
         <SectionLabel
-          label="Identifiants les plus visés"
+          label={m.admin_security_targeted_identifiers()}
           badge="7 jours"
           class="mb-3" />
         <RankBars items={targetBars} />
@@ -142,7 +145,7 @@
 
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <Combobox
-      label="Tous les types"
+      label={m.admin_security_all_types()}
       options={TYPE_OPTIONS}
       values={activeType ? [activeType] : []}
       onChange={(v) => (activeType = (v[0] as SecurityEventType) || null)} />
@@ -152,7 +155,7 @@
     type="text"
     bind:value={identifierInput}
     oninput={onIdentifierInput}
-    placeholder="Filtrer par email ou identifiant…"
+    placeholder={m.admin_security_search()}
     class="border-border bg-surface mb-5 w-full rounded-lg border px-3 py-2 text-sm" />
 
   {#if error}
@@ -166,7 +169,7 @@
       {/each}
     </div>
   {:else if events.length === 0}
-    <EmptyState>Aucun évènement ne correspond à ce filtre.</EmptyState>
+    <EmptyState>{m.admin_no_matching_events()}</EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each events as e (e.id)}
@@ -193,7 +196,9 @@
             </p>
           {/if}
           {#if !e.userId}
-            <p class="text-dim mt-1 text-xs italic">Compte supprimé depuis</p>
+            <p class="text-dim mt-1 text-xs italic">
+              {m.admin_deleted_account()}
+            </p>
           {/if}
         </li>
       {/each}
@@ -204,7 +209,9 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={eventsQuery.isFetchingNextPage}
         onclick={() => eventsQuery.fetchNextPage()}>
-        {eventsQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
+        {eventsQuery.isFetchingNextPage
+          ? m.common_loading()
+          : m.common_load_more()}
       </button>
     {/if}
   {/if}
