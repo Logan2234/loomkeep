@@ -7,6 +7,7 @@
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
+  import ScanIsbnModal from "$lib/components/ScanIsbnModal.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { debounce } from "$lib/debounce";
   import { isDomainEnabled } from "$lib/domains";
@@ -103,8 +104,7 @@
   }
 
   // The sous-filtre lives inside the bar itself (right edge), not below it —
-  // only Vidéo (type) and Livres (titre/auteur) have one today; Jeux/Musique
-  // get one once their own search-by criteria ship.
+  // Musique has no search-by criteria of its own yet.
   const MEDIA_TYPE_OPTIONS: { label: string; value: MediaType | undefined }[] =
     [
       { label: "Tout", value: undefined },
@@ -112,24 +112,38 @@
       { label: "Séries", value: "SERIES" },
       { label: "Animés", value: "ANIME" },
     ];
-  const BOOK_MODE_OPTIONS: { label: string; value: boolean }[] = [
-    { label: "Titre", value: false },
-    { label: "Auteur", value: true },
+  type BookMode = "title" | "author" | "isbn";
+  const BOOK_MODE_OPTIONS: { label: string; value: BookMode }[] = [
+    { label: "Titre", value: "title" },
+    { label: "Auteur", value: "author" },
+    { label: "ISBN", value: "isbn" },
+  ];
+  type GameMode = "title" | "studio" | "franchise";
+  const GAME_MODE_OPTIONS: { label: string; value: GameMode }[] = [
+    { label: "Titre", value: "title" },
+    { label: "Studio", value: "studio" },
+    { label: "Franchise", value: "franchise" },
   ];
 
   let mediaType = $state<MediaType | undefined>(undefined);
-  let bookByAuthor = $state(false);
+  let bookMode = $state<BookMode>("title");
+  let gameMode = $state<GameMode>("title");
   let filterOpen = $state(false);
   let filterBtnEl = $state<HTMLButtonElement | null>(null);
   let filterMenuEl = $state<HTMLDivElement | null>(null);
 
   const hasFilter = $derived(
-    domain === Domain.MEDIA || domain === Domain.BOOKS,
+    domain === Domain.MEDIA ||
+      domain === Domain.BOOKS ||
+      domain === Domain.GAMES,
   );
   const filterLabel = $derived(
     domain === Domain.MEDIA
       ? (MEDIA_TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ?? "Tout")
-      : (BOOK_MODE_OPTIONS.find((o) => o.value === bookByAuthor)?.label ??
+      : domain === Domain.BOOKS
+        ? (BOOK_MODE_OPTIONS.find((o) => o.value === bookMode)?.label ??
+          "Titre")
+        : (GAME_MODE_OPTIONS.find((o) => o.value === gameMode)?.label ??
           "Titre"),
   );
 
@@ -163,6 +177,18 @@
       document.removeEventListener("keydown", onKeydown);
     };
   });
+
+  // ISBN barcode scan (mobile only) — feature-detected since BarcodeDetector
+  // is Chrome/Edge-only today; the trigger just doesn't render on browsers
+  // without it rather than opening a scanner that can never decode anything.
+  let scanOpen = $state(false);
+  const barcodeSupported =
+    typeof window !== "undefined" && "BarcodeDetector" in window;
+
+  function onIsbnScanned(isbn: string) {
+    bookMode = "isbn";
+    query = isbn;
+  }
 </script>
 
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
@@ -245,10 +271,22 @@
                   <button
                     type="button"
                     class="guichet-filter-option"
-                    class:guichet-filter-option-active={bookByAuthor ===
-                      opt.value}
+                    class:guichet-filter-option-active={bookMode === opt.value}
                     onclick={() => {
-                      bookByAuthor = opt.value;
+                      bookMode = opt.value;
+                      closeFilter();
+                    }}>
+                    {opt.label}
+                  </button>
+                {/each}
+              {:else if domain === Domain.GAMES}
+                {#each GAME_MODE_OPTIONS as opt (opt.label)}
+                  <button
+                    type="button"
+                    class="guichet-filter-option"
+                    class:guichet-filter-option-active={gameMode === opt.value}
+                    onclick={() => {
+                      gameMode = opt.value;
                       closeFilter();
                     }}>
                     {opt.label}
@@ -258,6 +296,16 @@
             </div>
           {/if}
         </div>
+      {/if}
+
+      {#if domain === Domain.BOOKS && barcodeSupported}
+        <button
+          type="button"
+          class="guichet-scan-btn md:hidden"
+          aria-label={m.scan_isbn_title()}
+          onclick={() => (scanOpen = true)}>
+          <Icon name="camera" class="h-4 w-4" />
+        </button>
       {/if}
     </div>
   </div>
@@ -276,13 +324,17 @@
   {:else if domain === Domain.MEDIA}
     <MediaSearchPanel {query} type={mediaType} />
   {:else if domain === Domain.GAMES}
-    <GameSearchPanel {query} />
+    <GameSearchPanel {query} mode={gameMode} />
   {:else if domain === Domain.BOOKS}
-    <BookSearchPanel {query} byAuthor={bookByAuthor} />
+    <BookSearchPanel {query} mode={bookMode} />
   {:else if domain === Domain.MUSIC}
     <MusicSearchPanel {query} />
   {/if}
 </div>
+
+{#if scanOpen}
+  <ScanIsbnModal onclose={() => (scanOpen = false)} ondetect={onIsbnScanned} />
+{/if}
 
 <style>
   /* "Le Guichet" — domain tabs sit like ticket stubs above the bar; the
@@ -453,6 +505,28 @@
   .guichet-filter-option-active {
     color: var(--domain-accent);
     font-weight: 600;
+  }
+
+  /* ISBN barcode scan trigger — mobile only, and only when the browser
+     actually supports BarcodeDetector (see `barcodeSupported`). */
+  .guichet-scan-btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--dim);
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .guichet-scan-btn:hover {
+    color: var(--fg);
+    border-color: var(--domain-accent);
   }
 
   /* Overlaid on the input's right edge, inside the bar, and only shown

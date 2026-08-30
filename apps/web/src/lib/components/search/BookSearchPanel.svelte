@@ -22,27 +22,30 @@
   // `limit` caps the rendered results and switches to compact embedded mode
   // (no own empty-state copy — the host renders it) for the library-page
   // preview use; `onResults` reports the raw result count to that host.
-  // `byAuthor` is owned by the search page (the Guichet's in-bar filter
-  // menu), not this panel — see MediaSearchPanel's `type` for the same split.
+  // `mode` is owned by the search page (the Guichet's in-bar filter menu),
+  // not this panel — see MediaSearchPanel's `type` for the same split.
   let {
     query,
     limit,
     onResults,
-    byAuthor = false,
+    mode = "title",
   }: {
     query: string;
     limit?: number;
     onResults?: (count: number) => void;
-    byAuthor?: boolean;
+    mode?: "title" | "author" | "isbn";
   } = $props();
 
   const DEBOUNCE_MS = 300;
 
-  // `query`/`byAuthor` (raw) drive the input; `queryFilter` (debounced) is
-  // the formatted string that actually drives the fetch — same split as
-  // LibraryBrowser/MediaSearchPanel. A key-based query already discards a
-  // stale in-flight response on its own once the key moves on, so there's
-  // no manual staleness guard to maintain here.
+  // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
+  // formatted string that actually drives the fetch — same split as
+  // LibraryBrowser/MediaSearchPanel. Open Library's Solr parses `author:"…"`
+  // and `isbn:…` as field-scoped queries; wrapping the free-text query this
+  // way is real upstream syntax, not something this app invents (compare
+  // IgdbProvider's `studio:`/`genre:`, which IGDB doesn't understand itself).
+  // A key-based query already discards a stale in-flight response on its own
+  // once the key moves on, so there's no manual staleness guard to maintain.
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce((q: string) => {
     queryFilter = q;
@@ -55,7 +58,21 @@
       queryFilter = "";
       return;
     }
-    debouncedQueryFilter.call(byAuthor ? `author:"${q.replace(/"/g, "")}"` : q);
+    if (mode === "author") {
+      debouncedQueryFilter.call(`author:"${q.replace(/"/g, "")}"`);
+    } else if (mode === "isbn") {
+      // ISBNs are typed/scanned with dashes or spaces ("978-2-07-036822-8");
+      // Solr's isbn field is indexed as the bare digit string.
+      const digits = q.replace(/[^0-9Xx]/g, "");
+      if (!digits) {
+        debouncedQueryFilter.cancel();
+        queryFilter = "";
+        return;
+      }
+      debouncedQueryFilter.call(`isbn:${digits}`);
+    } else {
+      debouncedQueryFilter.call(q);
+    }
     return () => debouncedQueryFilter.cancel();
   });
 

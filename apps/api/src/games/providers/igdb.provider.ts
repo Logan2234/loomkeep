@@ -136,7 +136,39 @@ export class IgdbProvider implements GameCatalogProvider {
     private readonly quota: QuotaTrackerService,
   ) {}
 
+  // Reuses the same "mode prefix inside the free-text query" convention as
+  // OpenLibraryProvider's `author:"…"` search — no separate mode param on
+  // the search endpoint, just a self-contained convention this provider
+  // parses. Unlike `author:`, these aren't upstream syntax IGDB understands
+  // itself: `studio`/`franchise` resolve to IGDB ids on a small side query
+  // first, since Apicalypse has no single-string composite query form.
+  private static readonly STUDIO_PREFIX = /^studio:"(.+)"$/i;
+  private static readonly FRANCHISE_PREFIX = /^franchise:"(.+)"$/i;
+
+  private static readonly SUMMARY_FIELDS =
+    "name, cover.image_id, first_release_date, themes";
+
   async search(query: string): Promise<GameSummaryDto[]> {
+    const studio = IgdbProvider.STUDIO_PREFIX.exec(query)?.[1];
+
+    if (studio) {
+      return this.resolveThenFilterGames(
+        "/companies",
+        studio,
+        "involved_companies.company",
+      );
+    }
+
+    const franchise = IgdbProvider.FRANCHISE_PREFIX.exec(query)?.[1];
+
+    if (franchise) {
+      return this.resolveThenFilterGames(
+        "/franchises",
+        franchise,
+        "franchises",
+      );
+    }
+
     // Apicalypse strings are double-quoted; drop quotes from user input so they
     // cannot break out of the search literal.
     const safeQuery = query.replace(/"/g, "");
@@ -145,7 +177,42 @@ export class IgdbProvider implements GameCatalogProvider {
     // editions… so the searched title isn't buried under its re-releases.
     const games = await this.query<IgdbGame[]>(
       "/games",
-      `search "${safeQuery}"; fields name, cover.image_id, first_release_date, themes; where game_type = 0; limit 20;`,
+      `search "${safeQuery}"; fields ${IgdbProvider.SUMMARY_FIELDS}; where game_type = 0; limit 20;`,
+    );
+    return games.map((g) => this.toSummary(g));
+  }
+
+  /**
+   * Games by studio (developer/publisher) or franchise/series: resolve the
+   * typed name to matching IGDB ids on a side entity first, then filter
+   * games by that field — the whole query is the studio/franchise name, not
+   * a title to text-match, same as "par auteur" replacing title search for
+   * books.
+   *
+   * Neither `/companies` nor `/franchises` is in IGDB's `search`-capable
+   * endpoint list (confirmed against the live API: "Searchable endpoints:
+   * Characters, Collections, Games, Platforms, Themes" — querying either
+   * with `search` either errors or silently returns []), so both resolve
+   * the name with a `where name ~ *"…"*` fuzzy-contains filter instead.
+   * `sort rating desc` gives a reasonable order since there's no `search`
+   * relevance score once the query is a filter, not text.
+   */
+  private async resolveThenFilterGames(
+    entityPath: string,
+    name: string,
+    gameWhereField: string,
+  ): Promise<GameSummaryDto[]> {
+    const safeName = name.replace(/"/g, "");
+    const matches = await this.query<{ id: number }[]>(
+      entityPath,
+      `fields name; where name ~ *"${safeName}"*; limit 5;`,
+    );
+    if (matches.length === 0) return [];
+
+    const ids = matches.map((m) => m.id).join(",");
+    const games = await this.query<IgdbGame[]>(
+      "/games",
+      `fields ${IgdbProvider.SUMMARY_FIELDS}; where game_type = 0 & ${gameWhereField} = (${ids}); sort rating desc; limit 20;`,
     );
     return games.map((g) => this.toSummary(g));
   }

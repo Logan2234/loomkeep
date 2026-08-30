@@ -22,34 +22,48 @@
   // `limit` caps the rendered results and switches to compact embedded mode
   // (no own empty-state copy — the host renders it) for the library-page
   // preview use; `onResults` reports the raw result count to that host.
+  // `mode` is owned by the search page (the Guichet's in-bar filter menu),
+  // not this panel — see BookSearchPanel's `mode` for the same split.
   let {
     query,
     limit,
     onResults,
+    mode = "title",
   }: {
     query: string;
     limit?: number;
     onResults?: (count: number) => void;
+    mode?: "title" | "studio" | "franchise";
   } = $props();
 
   const DEBOUNCE_MS = 300;
 
-  // `query` (raw) drives the input; `queryFilter` (debounced) drives the
-  // fetch — same split as LibraryBrowser/MediaSearchPanel. A key-based query
-  // already discards a stale in-flight response on its own once the key
-  // moves on, so there's no manual staleness guard to maintain here.
+  // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
+  // formatted string that actually drives the fetch — same split as
+  // LibraryBrowser/MediaSearchPanel. `studio:"…"`/`franchise:"…"` are parsed
+  // by IgdbProvider, not real IGDB syntax — see its `search()` for why. A
+  // key-based query already discards a stale in-flight response on its own
+  // once the key moves on, so there's no manual staleness guard to maintain.
   let queryFilter = $state("");
-  const debouncedQueryFilter = debounce(() => {
-    queryFilter = query.trim();
+  const debouncedQueryFilter = debounce((q: string) => {
+    queryFilter = q;
   }, DEBOUNCE_MS);
 
   $effect(() => {
-    if (!query.trim()) {
+    const q = query.trim();
+    if (!q) {
       debouncedQueryFilter.cancel();
       queryFilter = "";
       return;
     }
-    debouncedQueryFilter.call();
+    const safeQ = q.replace(/"/g, "");
+    debouncedQueryFilter.call(
+      mode === "studio"
+        ? `studio:"${safeQ}"`
+        : mode === "franchise"
+          ? `franchise:"${safeQ}"`
+          : q,
+    );
     return () => debouncedQueryFilter.cancel();
   });
 

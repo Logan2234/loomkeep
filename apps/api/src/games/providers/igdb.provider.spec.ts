@@ -93,6 +93,76 @@ describe("IgdbProvider", () => {
     ]);
   });
 
+  it('resolves a studio:"…" query to games by that company', async () => {
+    const fetchMock = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/companies": [{ id: 70 }, { id: 71 }],
+      "/games": [{ id: 900, name: "Horizon Zero Dawn" }],
+    });
+
+    const results = await provider.search('studio:"Guerrilla"');
+
+    expect(results).toEqual([
+      {
+        source: "IGDB",
+        sourceId: "900",
+        title: "Horizon Zero Dawn",
+        year: null,
+        coverUrl: null,
+        isAdult: false,
+      },
+    ]);
+    const gamesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/games"),
+    );
+    expect(gamesCall?.[1]?.body).toContain(
+      "involved_companies.company = (70,71)",
+    );
+    // /companies doesn't support IGDB's `search` keyword (confirmed against
+    // the live API — it silently returns [] rather than erroring); the name
+    // must be resolved via a `where … ~ *"…"*` fuzzy-contains filter.
+    const companiesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/companies"),
+    );
+    expect(companiesCall?.[1]?.body).toContain('where name ~ *"Guerrilla"*');
+  });
+
+  it('resolves a franchise:"…" query to games in that franchise', async () => {
+    const fetchMock = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/franchises": [{ id: 596 }],
+      "/games": [{ id: 7346, name: "The Legend of Zelda: Breath of the Wild" }],
+    });
+
+    const results = await provider.search('franchise:"Zelda"');
+
+    expect(results).toEqual([
+      {
+        source: "IGDB",
+        sourceId: "7346",
+        title: "The Legend of Zelda: Breath of the Wild",
+        year: null,
+        coverUrl: null,
+        isAdult: false,
+      },
+    ]);
+    const gamesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/games"),
+    );
+    expect(gamesCall?.[1]?.body).toContain("franchises = (596)");
+  });
+
+  it("returns no results when the studio/franchise name matches nothing", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/companies": [],
+    });
+
+    const results = await provider.search('studio:"Nonexistent Studio Inc"');
+
+    expect(results).toEqual([]);
+  });
+
   it("maps details, deriving artwork url, genres and platforms", async () => {
     mockFetchByUrl({
       "id.twitch.tv": TOKEN_RESPONSE,
