@@ -6,8 +6,13 @@ env:
       # app and is deliberately excluded from plan.yml's scan there. Safe to
       # activeScan write endpoints here since the stack is seeded with
       # synthetic data and torn down after the job.
+      # Context urls are visited during context setup, before the spider
+      # job even runs — so this has to be a route that actually returns 200
+      # (NestJS has no handler on the bare /api/ root, only sub-routes), or
+      # action-af treats the resulting warning as a hard failure (exit code
+      # 2) even though the report still gets generated.
       urls:
-        - http://localhost:3000/api/
+        - http://localhost:3000/api/health
 
       includePaths:
         - http://localhost:3000/api/.*
@@ -22,12 +27,6 @@ jobs:
   - type: spider
     parameters:
       context: loomkeep-api
-      # The context's own url (bare /api/) 404s — NestJS has no handler on
-      # the exact global-prefix root, only sub-routes — and action-af treats
-      # that spider warning as a hard failure (exit code 2) even though the
-      # report itself still gets generated. Seed from a route that actually
-      # returns 200 instead.
-      url: http://localhost:3000/api/health
       maxDuration: 5
 
   - type: passiveScan-wait
