@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
 allowBuilds:
+  "@parcel/watcher": true
   "@prisma/client": true
   "@prisma/engines": true
   # prisma-erd-generator pulls puppeteer, but the .md ERD target never launches
