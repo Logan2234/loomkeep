@@ -5,6 +5,10 @@ import {
   MediaType,
 } from "@loomkeep/shared";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from "@nestjs/platform-fastify";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { App } from "supertest/types";
@@ -103,12 +107,17 @@ describe("Loomkeep API (e2e)", () => {
       .useValue(anilistStub)
       .compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
     app.setGlobalPrefix("api");
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
     await app.init();
+    // Fastify only starts routing after this — supertest requests made
+    // before it resolves would 404, unlike Express's synchronous listen().
+    await app.getHttpAdapter().getInstance().ready();
     http = app.getHttpServer();
 
     // Start from a clean e2e schema (cascades cover the child tables).
