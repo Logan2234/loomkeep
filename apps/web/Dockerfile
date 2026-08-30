@@ -1,6 +1,6 @@
 FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS build
 
-RUN corepack enable && corepack prepare pnpm@11.23.0 --activate
+RUN npm install -g corepack && corepack enable && corepack prepare pnpm@11.23.0 --activate
 WORKDIR /app
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
