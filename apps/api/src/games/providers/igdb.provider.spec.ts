@@ -118,24 +118,16 @@ describe("IgdbProvider", () => {
     expect(gamesCall?.[1]?.body).toContain(
       "involved_companies.company = (70,71)",
     );
-  });
-
-  it('resolves a genre:"…" query to games in that genre', async () => {
-    const fetchMock = mockFetchByUrl({
-      "id.twitch.tv": TOKEN_RESPONSE,
-      "/genres": [{ id: 12 }],
-      "/games": [{ id: 42, name: "Persona 5" }],
-    });
-
-    await provider.search('genre:"RPG"');
-
-    const gamesCall = fetchMock.mock.calls.find(([url]) =>
-      String(url).includes("/games"),
+    // /companies doesn't support IGDB's `search` keyword (confirmed against
+    // the live API — it silently returns [] rather than erroring); the name
+    // must be resolved via a `where … ~ *"…"*` fuzzy-contains filter.
+    const companiesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/companies"),
     );
-    expect(gamesCall?.[1]?.body).toContain("genres = (12)");
+    expect(companiesCall?.[1]?.body).toContain('where name ~ *"Guerrilla"*');
   });
 
-  it("returns no results when the studio/genre name matches nothing", async () => {
+  it("returns no results when the studio name matches nothing", async () => {
     mockFetchByUrl({
       "id.twitch.tv": TOKEN_RESPONSE,
       "/companies": [],
