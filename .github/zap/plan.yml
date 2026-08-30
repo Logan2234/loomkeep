@@ -1,14 +1,17 @@
 env:
   contexts:
     - name: loomkeep
+      # Targets the ephemeral docker-compose stack web-audit.yml stands up
+      # for this job, not production — see LK ticket "Ephemeral
+      # docker-compose environment for ZAP scans". The api is a separate
+      # origin here (localhost:3000, unlike prod's same-origin Caddy proxy),
+      # so it's out of this context's reach by construction; api coverage
+      # comes from the sibling plan-api.yml job instead.
       urls:
-        - https://loomkeep.app/
+        - http://localhost:8080/
 
       includePaths:
-        - https://loomkeep\.app/.*
-
-      excludePaths:
-        - https://loomkeep\.app/api/.*
+        - http://localhost:8080/.*
 
       authentication:
         method: manual

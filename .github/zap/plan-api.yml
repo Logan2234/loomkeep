@@ -1,0 +1,53 @@
+env:
+  contexts:
+    - name: loomkeep-api
+      # Only reachable against the ephemeral stack (localhost:3000) — on
+      # production the api sits behind Caddy on the same origin as the web
+      # app and is deliberately excluded from plan.yml's scan there. Safe to
+      # activeScan write endpoints here since the stack is seeded with
+      # synthetic data and torn down after the job.
+      urls:
+        - http://localhost:3000/api/
+
+      includePaths:
+        - http://localhost:3000/api/.*
+
+      authentication:
+        method: manual
+
+      sessionManagement:
+        method: cookie
+
+jobs:
+  - type: spider
+    parameters:
+      context: loomkeep-api
+      maxDuration: 5
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: activeScan
+    parameters:
+      context: loomkeep-api
+      policy: Default Policy
+
+  - type: report
+    parameters:
+      template: sarif-json
+      reportDir: /zap/wrk/zap-results
+      reportFile: zap-api-results.sarif
+      reportTitle: Loomkeep API ZAP Security Scan
+      reportDescription: OWASP ZAP security scan of Loomkeep's API against the ephemeral CI stack
+      displayReport: false
+    risks:
+      - high
+      - medium
+      - low
+      - info
+    confidences:
+      - high
+      - medium
+      - low
+      - falsepositive

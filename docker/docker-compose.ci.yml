@@ -1,0 +1,9 @@
+# Override for the ephemeral stack web-audit.yml stands up in CI to run ZAP
+# scans against (see .github/workflows/web-audit.yml). Publishes Postgres on
+# the host so the seed script — run via pnpm on the runner, not in a
+# container — can reach it directly; the base file deliberately doesn't
+# expose this port for a real deployment.
+services:
+  db:
+    ports:
+      - "5432:5432"
