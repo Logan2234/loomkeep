@@ -67,11 +67,11 @@
       <Icon name="chevron-left" class="h-5 w-5" />
     </a>
     <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-      Import
+      {m.common_import()}
     </h1>
   </div>
   <p class="text-dim mb-8 max-w-xl text-sm">
-    Récupère ton historique depuis une autre appli, par domaine.
+    {m.settings_import_description()}
   </p>
 
   <div class="flex flex-col gap-8">

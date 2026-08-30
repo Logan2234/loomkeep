@@ -29,10 +29,11 @@
 
 {#if auth.user}
   <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-1 text-lg font-bold">Domaines</h2>
+    <h2 class="font-display mb-1 text-lg font-bold">
+      {m.settings_domains_title()}
+    </h2>
     <p class="text-dim mb-4 text-sm">
-      Choisis les univers présents dans ton app. Ce que tu masques disparaît de
-      la navigation.
+      {m.settings_domains_description()}
     </p>
     <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
       {#each Object.entries(DOMAINS) as [id, d] (id)}
@@ -52,9 +53,9 @@
               : 'text-dim hover:bg-surface-2'}"
             disabled={isLast || inMaintenance || showLock}
             title={inMaintenance
-              ? "Temporairement indisponible."
+              ? m.settings_domain_temporarily_unavailable()
               : isLast
-                ? "Au moins un domaine doit rester actif."
+                ? m.settings_domain_last_required()
                 : undefined}
             onclick={() => toggleDomain(id as Domain)}>
             {#if inMaintenance}

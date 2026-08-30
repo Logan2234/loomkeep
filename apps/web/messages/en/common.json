@@ -156,5 +156,6 @@
   "common_info": "Information",
   "common_details": "Details",
   "common_unknown": "Unknown",
-  "common_default": "Default"
+  "common_default": "Default",
+  "common_import": "Import"
 }

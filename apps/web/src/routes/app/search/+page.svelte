@@ -14,12 +14,12 @@
   import { Domain } from "@loomkeep/shared";
 
   const DOMAIN_HINT: Record<Domain, string> = {
-    [Domain.MEDIA]: "un film, une série",
-    [Domain.GAMES]: "un jeu",
-    [Domain.BOOKS]: "un livre",
-    [Domain.MUSIC]: "un album",
-    [Domain.PODCASTS]: "un podcast",
-    [Domain.BOARDGAMES]: "un jeu de société",
+    [Domain.MEDIA]: m.search_domain_media(),
+    [Domain.GAMES]: m.search_domain_games(),
+    [Domain.BOOKS]: m.search_domain_books(),
+    [Domain.MUSIC]: m.search_domain_music(),
+    [Domain.PODCASTS]: m.search_domain_podcasts(),
+    [Domain.BOARDGAMES]: m.search_domain_boardgames(),
   };
 
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
@@ -79,7 +79,7 @@
   <PageHeader
     icon="search"
     title={m.common_search()}
-    subtitle="Trouve un titre et ajoute-le à ta bibliothèque."
+    subtitle={m.search_subtitle()}
     class="mb-6" />
 
   <div class="relative mb-5">
@@ -116,9 +116,9 @@
       <Icon
         name={domain === Domain.PODCASTS ? "podcast" : "boardgame"}
         class="text-dim/60 h-8 w-8" />
-      <p class="text-fg font-semibold">Bientôt disponible</p>
+      <p class="text-fg font-semibold">{m.search_coming_soon()}</p>
       <p class="max-w-xs text-sm">
-        La recherche de ce domaine arrive prochainement.
+        {m.search_coming_soon_desc()}
       </p>
     </div>
   {:else if domain === Domain.MEDIA}

@@ -67,7 +67,7 @@
     coveredFields: ["username"],
     onSuccess: () => {
       openModal = null;
-      toast.success("Nom d'utilisateur mis à jour.");
+      toast.success(m.settings_username_updated());
     },
   }));
 
@@ -106,7 +106,7 @@
   function saveEmail() {
     emailAlreadyCurrentError = "";
     if (emailInput.trim() === auth.user?.email) {
-      emailAlreadyCurrentError = "C'est déjà ton adresse email actuelle.";
+      emailAlreadyCurrentError = m.settings_email_already_current();
       return;
     }
     saveEmailMut.mutate();
@@ -119,7 +119,7 @@
     coveredFields: ["code"],
     onSuccess: () => {
       openModal = null;
-      toast.success("Email mis à jour.");
+      toast.success(m.settings_email_updated());
     },
   }));
 
@@ -179,19 +179,18 @@
     coveredFields: ["currentPassword"],
     onSuccess: () => {
       openModal = null;
-      toast.success("Mot de passe mis à jour.");
+      toast.success(m.settings_password_updated());
     },
   }));
 
   function savePassword() {
     localPasswordError = "";
     if (!isPasswordValid(newPasswordInput)) {
-      localPasswordError =
-        "Le nouveau mot de passe ne respecte pas les exigences ci-dessus.";
+      localPasswordError = m.settings_password_invalid();
       return;
     }
     if (newPasswordInput !== confirmPasswordInput) {
-      localPasswordError = "Les mots de passe ne correspondent pas.";
+      localPasswordError = m.settings_passwords_mismatch();
       return;
     }
     savePasswordMut.mutate();
@@ -222,18 +221,18 @@
               <span
                 class="text-success shrink-0"
                 aria-hidden="true"
-                title="Adresse email vérifiée">
+                title={m.settings_email_verified()}>
                 <Icon name="check" class="h-4 w-4" />
               </span>
-              <span class="sr-only">Adresse email vérifiée</span>
+              <span class="sr-only">{m.settings_email_verified()}</span>
             {:else}
               <span
                 class="text-warning shrink-0"
                 aria-hidden="true"
-                title="Adresse email non vérifiée">
+                title={m.settings_email_not_verified()}>
                 <Icon name="warning" class="h-4 w-4" />
               </span>
-              <span class="sr-only">Adresse email non vérifiée</span>
+              <span class="sr-only">{m.settings_email_not_verified()}</span>
             {/if}
           </p>
 
@@ -251,14 +250,15 @@
                 {:else if verificationCooldown > 0}
                   {m.common_resend_cooldown({ seconds: verificationCooldown })}
                 {:else}
-                  Renvoyer l'email de vérification
+                  {m.settings_resend_verification_email()}
                 {/if}
               </button>
             </div>
 
             {#if verificationSent}
               <p class="text-success mt-1 text-xs">
-                <Icon name="check" class="inline h-4 w-4" /> Email envoyé
+                <Icon name="check" class="inline h-4 w-4" />
+                {m.settings_verification_email_sent()}
               </p>
             {/if}
           {/if}
@@ -279,8 +279,8 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
         <div>
-          <p class="text-dim text-sm">Appareils connectés</p>
-          <p class="font-semibold">Sessions ouvertes sur ton compte</p>
+          <p class="text-dim text-sm">{m.settings_connected_devices()}</p>
+          <p class="font-semibold">{m.settings_open_sessions_description()}</p>
         </div>
         <a href="/app/settings/sessions" class="link-accent text-sm">
           {m.common_manage()}
@@ -290,7 +290,7 @@
   </section>
 
   {#if openModal === "username"}
-    <Modal title="Changer le nom d'utilisateur" onclose={closeModal}>
+    <Modal title={m.settings_change_username_title()} onclose={closeModal}>
       <form
         class="flex flex-col gap-3"
         onsubmit={(e) => {
@@ -313,17 +313,17 @@
         {:else if usernameCheck === "available"}
           <p class="text-success flex items-center gap-1.5 text-sm">
             <Icon name="check" class="h-4 w-4" />
-            Ce nom d'utilisateur est disponible.
+            {m.settings_username_available()}
           </p>
         {:else if usernameCheck === "taken"}
           <p class="text-danger flex items-center gap-1.5 text-sm">
             <Icon name="warning" class="h-4 w-4" />
-            Ce nom d'utilisateur est déjà utilisé par quelqu'un d'autre.
+            {m.settings_username_taken()}
           </p>
         {:else if usernameCheck === "error"}
           <p class="text-danger flex items-center gap-1.5 text-sm">
             <Icon name="warning" class="h-4 w-4" />
-            Impossible de vérifier la disponibilité, réessaie.
+            {m.settings_username_check_error()}
           </p>
         {/if}
         {#if saveUsernameMut.error}
@@ -347,7 +347,7 @@
   {/if}
 
   {#if openModal === "email"}
-    <Modal title="Changer l'email" onclose={closeModal}>
+    <Modal title={m.settings_change_email_title()} onclose={closeModal}>
       {#if emailStep === "form"}
         <form
           class="flex flex-col gap-3"
@@ -356,19 +356,20 @@
             saveEmail();
           }}>
           <label class="block">
-            <span class="mb-1.5 block text-sm font-semibold">Nouvel email</span>
+            <span class="mb-1.5 block text-sm font-semibold"
+              >{m.settings_new_email_label()}</span>
             <input
               type="email"
               class="input"
               placeholder={auth.user?.email}
               bind:value={emailInput} />
             <p class="text-dim mt-1.5 text-xs">
-              Un email de vérification te sera envoyé à l'adresse renseignée.
+              {m.settings_email_verification_desc()}
             </p>
           </label>
           <label class="block">
             <span class="mb-1.5 block text-sm font-semibold">
-              Mot de passe actuel
+              {m.settings_current_password_label()}
             </span>
             <PasswordInput
               autocomplete="current-password"
@@ -400,8 +401,7 @@
             confirmEmail();
           }}>
           <p class="text-sm">
-            Un code de confirmation a été envoyé à <strong>{emailInput}</strong
-            >.
+            {m.settings_confirmation_sent()} <strong>{emailInput}</strong>.
           </p>
           <label class="block">
             <span class="mb-1.5 block text-sm font-semibold"
@@ -440,7 +440,7 @@
   {/if}
 
   {#if openModal === "password"}
-    <Modal title="Changer le mot de passe" onclose={closeModal}>
+    <Modal title={m.settings_change_password_title()} onclose={closeModal}>
       <form
         class="flex flex-col gap-3"
         onsubmit={(e) => {
@@ -449,7 +449,7 @@
         }}>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
-            Mot de passe actuel
+            {m.settings_current_password_label()}
           </span>
           <PasswordInput
             autocomplete="current-password"
@@ -469,7 +469,7 @@
         </label>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
-            Confirmer le nouveau mot de passe
+            {m.settings_confirm_password_label()}
           </span>
           <PasswordInput
             autocomplete="new-password"

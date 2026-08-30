@@ -14,22 +14,22 @@
   } from "@loomkeep/shared";
 
   const DELETED_LABELS: Record<AccountDeletionDeletedCategory, string> = {
-    LIBRARY: "Bibliothèque films/séries",
-    WATCH_HISTORY: "Historique de visionnage",
-    GAMES: "Bibliothèque jeux",
-    BOOKS: "Bibliothèque livres",
-    MUSIC: "Bibliothèque musique",
-    LISTS: "Listes personnalisées",
-    NOTIFICATIONS: "Notifications",
-    FOLLOWS: "Abonnements (suivis et suiveurs)",
-    BLOCKS: "Utilisateurs bloqués",
-    ACTIVITY: "Fil d'activité",
+    LIBRARY: m.settings_delete_account_library_media(),
+    WATCH_HISTORY: m.settings_delete_account_watch_history(),
+    GAMES: m.settings_delete_account_games(),
+    BOOKS: m.settings_delete_account_books(),
+    MUSIC: m.settings_delete_account_music(),
+    LISTS: m.settings_delete_account_lists(),
+    NOTIFICATIONS: m.settings_delete_account_notifications(),
+    FOLLOWS: m.settings_delete_account_follows(),
+    BLOCKS: m.settings_delete_account_blocks(),
+    ACTIVITY: m.settings_delete_account_activity(),
   };
 
   const ANONYMIZED_LABELS: Record<AccountDeletionAnonymizedCategory, string> = {
-    REVIEWS: "Notes et avis",
-    COMMENTS: "Commentaires",
-    REPORTS: "Signalements déposés",
+    REVIEWS: m.settings_delete_account_reviews(),
+    COMMENTS: m.settings_delete_account_comments(),
+    REPORTS: m.settings_delete_account_reports(),
   };
 
   let showModal = $state(false);
@@ -57,7 +57,7 @@
     mutate: () => deleteAccount({ currentPassword: deletePasswordInput }),
     coveredFields: ["currentPassword"],
     onSuccess: () => {
-      toast.success("Compte supprimé.");
+      toast.success(m.settings_delete_account_success());
       void goto("/login");
     },
   }));
@@ -69,21 +69,18 @@
 
 <section class="card border-danger/40 p-5 md:p-6">
   <h2 class="font-display text-danger mb-1 text-lg font-bold">
-    Zone de danger
+    {m.settings_danger_zone_title()}
   </h2>
   <p class="text-dim mb-4 text-sm">
-    La suppression du compte efface définitivement ton profil et toutes les
-    données associées. Tes notes, commentaires et signalements restent visibles
-    mais deviennent anonymes. <span class="font-semibold"
-      >Cette action est irréversible</span> !
+    {m.settings_delete_account_description()}
   </p>
   <button class="btn btn-danger" onclick={openDeleteModal}>
-    Supprimer mon compte
+    {m.settings_delete_account_button()}
   </button>
 </section>
 
 {#if showModal}
-  <Modal title="Supprimer le compte" onclose={closeModal}>
+  <Modal title={m.settings_delete_account_modal_title()} onclose={closeModal}>
     <form
       class="flex flex-col gap-3"
       onsubmit={(e) => {
@@ -91,25 +88,26 @@
         confirmDeleteAccount();
       }}>
       <p class="text-dim text-sm">
-        Ton compte, ton profil et toutes les données qui t'appartiennent en
-        propre seront définitivement supprimés. Tes notes, commentaires et
-        signalements resteront visibles mais seront détachés de ton identité («
-        Utilisateur supprimé »). Cette action ne peut pas être annulée.
+        {m.settings_delete_account_modal_description()}
       </p>
 
       <details class="border-border rounded-lg border">
         <summary
           class="text-dim hover:text-fg cursor-pointer px-3 py-2 text-sm select-none">
-          Voir le détail de ce qui sera supprimé et anonymisé
+          {m.settings_delete_account_details_summary()}
         </summary>
         <div class="border-border space-y-3 border-t px-3 py-3 text-sm">
           {#if summaryLoading}
             <p class="text-dim">{m.common_loading()}</p>
           {:else if !summary}
-            <p class="text-dim">Détail indisponible pour le moment.</p>
+            <p class="text-dim">
+              {m.settings_delete_account_details_unavailable()}
+            </p>
           {:else}
             <div>
-              <p class="mb-1 font-semibold">Supprimé définitivement</p>
+              <p class="mb-1 font-semibold">
+                {m.settings_delete_account_deleted_heading()}
+              </p>
               <ul class="text-dim space-y-0.5">
                 {#each summary.deleted as row (row.category)}
                   <li class="flex items-center justify-between gap-2">
@@ -121,7 +119,7 @@
             </div>
             <div>
               <p class="mb-1 font-semibold">
-                Anonymisé (conservé sans ton identité)
+                {m.settings_delete_account_anonymized_heading()}
               </p>
               <ul class="text-dim space-y-0.5">
                 {#each summary.anonymized as row (row.category)}
@@ -138,7 +136,7 @@
 
       <label class="block">
         <span class="mb-1.5 block text-sm font-semibold">
-          Confirme avec ton mot de passe
+          {m.settings_delete_account_password_label()}
         </span>
         <PasswordInput
           autocomplete="current-password"
@@ -155,7 +153,9 @@
           type="submit"
           class="btn btn-danger"
           disabled={deleteMut.loading || !deletePasswordInput}>
-          {deleteMut.loading ? "Suppression…" : "Supprimer définitivement"}
+          {deleteMut.loading
+            ? m.settings_delete_account_deleting()
+            : m.settings_delete_account_confirm()}
         </button>
       </div>
     </form>

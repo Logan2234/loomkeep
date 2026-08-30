@@ -66,11 +66,13 @@
 
 {#if auth.user}
   <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-4 text-lg font-bold">Contenu</h2>
+    <h2 class="font-display mb-4 text-lg font-bold">
+      {m.settings_section_content()}
+    </h2>
 
     <label class="block max-w-xs">
       <span class="mb-1.5 block text-sm font-semibold">
-        Date de naissance
+        {m.settings_birthdate_label()}
       </span>
       <input
         type="date"
@@ -80,14 +82,14 @@
         onchange={saveBirthDate} />
     </label>
     <p class="text-dim mt-1.5 text-xs">
-      Utilisée pour adapter certaines recommandations à ton âge.
+      {m.settings_birthdate_description()}
     </p>
     {#if birthDateStatus === "saving"}
       <p class="text-dim mt-2 text-sm">
         {m.common_save_loading()}
       </p>
     {:else if birthDateStatus === "saved"}
-      <p class="text-success mt-2 text-sm">Enregistré.</p>
+      <p class="text-success mt-2 text-sm">{m.settings_birthdate_saved()}</p>
     {:else if birthDateStatus === "error"}
       <p class="text-danger mt-2 text-sm">{saveBirthDateMut.error}</p>
     {/if}
@@ -96,14 +98,13 @@
       <div class="border-border mt-5 border-t pt-5">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="font-semibold">Contenu pour adultes</p>
+            <p class="font-semibold">{m.settings_adult_content_label()}</p>
             <p class="text-dim text-sm">
-              Inclut les titres 18+ (hentai, films pornographiques) dans les
-              recherches.
+              {m.settings_adult_content_description()}
             </p>
           </div>
           <Switch
-            label="Contenu pour adultes"
+            label={m.settings_adult_content_label()}
             checked={auth.user.allowAdultContent}
             onChange={toggleAdultContent} />
         </div>

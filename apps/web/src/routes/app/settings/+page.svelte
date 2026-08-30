@@ -46,7 +46,7 @@
       label: m.settings_section_appearance(),
       newBadgeKey: "nav-styles",
     },
-    { id: "import", label: m.settings_section_import() },
+    { id: "import", label: m.common_import() },
     { id: "export", label: m.common_export() },
     {
       id: "aide",

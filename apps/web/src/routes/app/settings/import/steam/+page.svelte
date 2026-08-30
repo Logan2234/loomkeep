@@ -1,21 +1,17 @@
 <script lang="ts">
   import ImportWizard from "$lib/components/ImportWizard.svelte";
+  import { m } from "$lib/paraglide/messages.js";
 </script>
 
 <ImportWizard source="steam">
   {#snippet intro()}
-    Récupère ta bibliothèque et ton temps de jeu Steam. Ton profil et les
-    détails des jeux doivent être <strong class="text-fg">publics</strong> le
-    temps de l'import (<a
+    {m.settings_import_steam_intro()}
+    <strong class="text-fg">{m.settings_import_steam_public()}</strong>
+    {m.settings_import_steam_during()} (<a
       href="https://steamcommunity.com/my/edit/settings"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">réglages de confidentialité ↗</a
-    >). Le SteamID64 se trouve via un outil comme
-    <a
-      href="https://steamid.io"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="link-accent">steamid.io ↗</a> si ton profil n'a pas d'URL personnalisée.
+      class="link-accent">{m.settings_import_steam_privacy_link()}</a
+    >). {m.settings_import_steam_hint()}
   {/snippet}
 </ImportWizard>

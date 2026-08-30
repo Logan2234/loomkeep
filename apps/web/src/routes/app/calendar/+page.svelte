@@ -87,7 +87,7 @@
   <PageHeader
     icon="calendar"
     title={m.common_calendar()}
-    subtitle="Les prochains épisodes de ce que tu suis.">
+    subtitle={m.calendar_subtitle()}>
     {#snippet actions()}
       {#snippet calendarButton()}
         <button
@@ -95,7 +95,7 @@
           disabled={calendarLocked}
           onclick={() => (showSubscribeModal = true)}>
           <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
-          Ajouter à mon agenda
+          {m.calendar_subscribe_button()}
           {#if isFeatureNew("calendar-subscribe")}
             <span class="ml-1.5 inline-flex"><NewBadge /></span>
           {/if}
@@ -117,7 +117,7 @@
   {:else if loading}
     <CardRowSkeleton count={5} />
   {:else if days.length === 0}
-    <EmptyState>Aucun épisode à venir dans ce que tu suis.</EmptyState>
+    <EmptyState>{m.calendar_no_episodes()}</EmptyState>
   {:else}
     <div class="flex flex-col gap-8">
       {#each days as day (day.key)}

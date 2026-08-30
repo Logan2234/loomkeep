@@ -156,9 +156,9 @@
 
   const greeting = $derived.by(() => {
     const h = new Date().getHours();
-    if (h < 12) return "Bonjour";
-    if (h < 18) return "Bon après-midi";
-    return "Bonsoir";
+    if (h < 12) return m.home_greeting_morning();
+    if (h < 18) return m.home_greeting_afternoon();
+    return m.home_greeting_evening();
   });
 
   function pct(e: LibraryEntryDto): number {
@@ -182,7 +182,7 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-    if (diff === 0) return "Auj.";
+    if (diff === 0) return "Auj."; // today abbreviation kept short
     if (diff === 1) return m.common_tomorrow();
     return formatDate(iso, WEEKDAY_SHORT_OPTIONS);
   }
@@ -212,7 +212,7 @@
   <PageHeader
     icon="home"
     title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
-    subtitle="Reprends là où tu t'es arrêté." />
+    subtitle={m.home_subtitle()} />
 
   {#if loading}
     <div class="mb-10 flex flex-col gap-10">
@@ -244,7 +244,7 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="tv" class="text-accent h-4 w-4" />
-                {m.common_Media()} · à voir
+                {m.common_Media()} · {m.home_media_to_watch()}
               </h2>
               <a href="/app/media" class="btn-text">{m.common_see_more()} →</a>
             </div>
@@ -289,14 +289,14 @@
                         class="btn btn-primary btn-sm mt-4 w-full"
                         disabled={markingMovieSeen === e.id}
                         onclick={() => markMovieSeen(e)}>
-                        Vu
+                        {m.home_mark_seen()}
                       </button>
                     {/if}
                   {/snippet}
                 </Carousel>
               {:else}
                 <p class="text-dim py-10 text-center text-sm">
-                  Rien à voir pour le moment.
+                  {m.home_nothing_to_watch()}
                 </p>
               {/if}
             </div>
@@ -309,7 +309,7 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="gamepad" class="text-accent h-4 w-4" />
-                {m.common_Games()} · en cours
+                {m.common_Games()} · {m.home_games_playing()}
               </h2>
               <a href="/app/games" class="btn-text">{m.common_see()} →</a>
             </div>
@@ -335,7 +335,7 @@
               </Carousel>
             {:else}
               <p class="text-dim py-10 text-center text-sm">
-                Rien en cours de partie.
+                {m.home_nothing_playing()}
               </p>
             {/if}
           </section>
@@ -347,7 +347,7 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="book" class="text-accent h-4 w-4" />
-                {m.common_Books()} · en lecture
+                {m.common_Books()} · {m.home_books_reading()}
               </h2>
               <a href="/app/books" class="btn-text">{m.common_see()} →</a>
             </div>
@@ -386,7 +386,7 @@
               </ul>
             {:else}
               <p class="text-dim py-6 text-center text-sm">
-                Rien en cours de lecture.
+                {m.home_nothing_reading()}
               </p>
             {/if}
           </section>
@@ -398,7 +398,7 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="music" class="text-accent h-4 w-4" />
-                {m.common_Music()} · à écouter
+                {m.common_Music()} · {m.home_music_listening()}
               </h2>
               <a href="/app/music" class="btn-text">{m.common_see()} →</a>
             </div>
@@ -419,7 +419,7 @@
               </Carousel>
             {:else}
               <p class="text-dim py-10 text-center text-sm">
-                Rien à écouter pour l'instant.
+                {m.home_nothing_listening()}
               </p>
             {/if}
           </section>
@@ -431,7 +431,7 @@
             <p class="font-display text-sm font-bold">
               🎧 {m.common_Podcasts()} &amp; 🎲 {m.common_Boardgames()}
             </p>
-            <p class="text-dim text-xs">Bientôt disponible dans Loomkeep.</p>
+            <p class="text-dim text-xs">{m.home_coming_soon()}</p>
             <span
               class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
               {m.landing_libraries_soon()}
@@ -450,7 +450,8 @@
             <div class="mb-3 flex items-center justify-between">
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="calendar" class="text-accent h-4 w-4" /> Cette semaine
+                <Icon name="calendar" class="text-accent h-4 w-4" />
+                {m.home_this_week()}
               </h2>
               <a href="/app/calendar" class="btn-text"
                 >{m.common_calendar()} →</a>
@@ -483,7 +484,7 @@
               </ul>
             {:else}
               <p class="text-dim py-6 text-center text-sm">
-                Rien de prévu cette semaine.
+                {m.home_nothing_this_week()}
               </p>
             {/if}
           </section>
@@ -498,7 +499,8 @@
             href="/app/profile"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="user" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold">Mon compte</span>
+            <span class="flex-1 text-sm font-semibold"
+              >{m.home_sidebar_my_account()}</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a
@@ -512,21 +514,24 @@
             href="/app/lists"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="list" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold">Mes listes</span>
+            <span class="flex-1 text-sm font-semibold"
+              >{m.home_sidebar_my_lists()}</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a
             href="/app/reviews"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="star" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold">Mes critiques</span>
+            <span class="flex-1 text-sm font-semibold"
+              >{m.home_sidebar_my_reviews()}</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a
             href="/app/feed"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold">Fil d'activité</span>
+            <span class="flex-1 text-sm font-semibold"
+              >{m.home_sidebar_activity_feed()}</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a

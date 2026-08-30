@@ -168,7 +168,7 @@
     modalOpen = true;
     modalLoading = true;
     modalError = null;
-    modalTitle = `Notées ${rating}/10`;
+    modalTitle = m.stats_modal_rated({ rating });
     getStatsWorksByRating(selected, rating)
       .then((w) => (modalWorks = w))
       .catch((e) => (modalError = resolveApiError(e)))
@@ -180,7 +180,7 @@
     modalOpen = true;
     modalLoading = true;
     modalError = null;
-    modalTitle = `Sorties dans les années ${decade}`;
+    modalTitle = m.stats_modal_released({ decade });
     getStatsWorksByDecade(selected, decade)
       .then((w) => (modalWorks = w))
       .catch((e) => (modalError = resolveApiError(e)))
@@ -204,38 +204,36 @@
   <PageHeader
     icon="stats"
     title={m.common_stats()}
-    subtitle="Ton activité en un coup d'œil." />
+    subtitle={m.stats_subtitle()} />
 
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if isEmpty}
     <EmptyState>
-      Rien à afficher pour l'instant. Marque des œuvres pour voir tes
-      statistiques.
+      {m.stats_empty()}
     </EmptyState>
   {:else if overview}
-    <SectionLabel label="Vue d'ensemble" />
+    <SectionLabel label={m.stats_overview_label()} />
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile value={formatNumber(overview.total)} label="Œuvres" />
+      <StatTile
+        value={formatNumber(overview.total)}
+        label={m.stats_works_label()} />
       <StatTile
         value={formatNumber(overview.completionRate, PERCENT_OPTIONS)}
-        label="Taux de complétion" />
+        label={m.stats_completion_rate()} />
       <StatTile
         value={formatNumber(overview.abandonRate, PERCENT_OPTIONS)}
-        label="Taux d'abandon" />
+        label={m.stats_abandon_rate()} />
       <StatTile
         value={overview.averageRating ?? "—"}
         unit="/10"
-        label="Note moyenne · {formatNumber(
-          overview.ratingRate,
-          PERCENT_OPTIONS,
-        )} noté" />
+        label={m.stats_avg_rating()} />
     </div>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
       <section class="card p-5">
         <h2 class="font-display mb-4 text-lg font-bold">
-          {selected === "ALL" ? "Composition" : "Progression"}
+          {selected === "ALL" ? m.stats_composition() : m.stats_progression()}
         </h2>
         <StackedBar segments={compositionSegments} />
       </section>
@@ -243,12 +241,12 @@
       <PremiumTeaser locked={statsLocked}>
         <section class="card p-5">
           <h2 class="font-display mb-4 text-lg font-bold">
-            Distribution des notes
+            {m.stats_rating_distribution()}
           </h2>
           {#if statsLocked || overview.ratedCount > 0}
             <HistogramBars bars={ratingBars} onSelect={openRatingModal} />
           {:else}
-            <p class="text-dim text-sm">Aucune œuvre notée pour l'instant.</p>
+            <p class="text-dim text-sm">{m.stats_no_rated()}</p>
           {/if}
         </section>
       </PremiumTeaser>
@@ -258,12 +256,12 @@
       <PremiumTeaser locked={statsLocked}>
         <section class="card p-5">
           <h2 class="font-display mb-4 text-lg font-bold">
-            Décennie de sortie
+            {m.stats_decade()}
           </h2>
           {#if statsLocked || decadeBars.length > 0}
             <HistogramBars bars={decadeBars} onSelect={openDecadeModal} />
           {:else}
-            <p class="text-dim text-sm">Aucune date de sortie connue.</p>
+            <p class="text-dim text-sm">{m.stats_no_decade()}</p>
           {/if}
         </section>
       </PremiumTeaser>
@@ -271,7 +269,7 @@
       <PremiumTeaser locked={statsLocked}>
         <section class="card p-5">
           <h2 class="font-display mb-4 text-lg font-bold">
-            Mode de possession
+            {m.stats_possession()}
           </h2>
           {#if statsLocked || overview.possession.sufficientData}
             <RankBars items={possessionBars} />
@@ -284,28 +282,36 @@
     </div>
 
     {#if showSection("MEDIA")}
-      <SectionLabel label="{m.common_Media()} — en détail" class="mt-10" />
+      <SectionLabel
+        label="{m.common_Media()}{m.stats_detail_suffix()}"
+        class="mt-10" />
       <VideoStatsSection
         mediaBreakdown={breakdownOf("MEDIA")}
         locked={statsLocked} />
     {/if}
 
     {#if showSection("GAMES")}
-      <SectionLabel label="{m.common_Games()} — en détail" class="mt-10" />
+      <SectionLabel
+        label="{m.common_Games()}{m.stats_detail_suffix()}"
+        class="mt-10" />
       <GameStatsSection
         gameBreakdown={breakdownOf("GAMES")}
         locked={statsLocked} />
     {/if}
 
     {#if showSection("BOOKS")}
-      <SectionLabel label="{m.common_Books()} — en détail" class="mt-10" />
+      <SectionLabel
+        label="{m.common_Books()}{m.stats_detail_suffix()}"
+        class="mt-10" />
       <BookStatsSection
         bookBreakdown={breakdownOf("BOOKS")}
         locked={statsLocked} />
     {/if}
 
     {#if showSection("MUSIC")}
-      <SectionLabel label="{m.common_Music()} — en détail" class="mt-10" />
+      <SectionLabel
+        label="{m.common_Music()}{m.stats_detail_suffix()}"
+        class="mt-10" />
       <MusicStatsSection
         musicBreakdown={breakdownOf("MUSIC")}
         locked={statsLocked} />
@@ -316,7 +322,7 @@
          after the overview. -->
     {#if showSection("MEDIA")}
       <div class="mt-10 flex flex-wrap items-center gap-3">
-        <SectionLabel label="Activité dans le temps" class="mb-0 flex-1" />
+        <SectionLabel label={m.stats_temporal_section()} class="mb-0 flex-1" />
         {#if !statsLocked}
           <PeriodFilter selected={period} onSelect={(w) => (period = w)} />
         {/if}
@@ -327,7 +333,7 @@
     {/if}
 
     {#if appConfig.socialEnabled}
-      <SectionLabel label="Social" class="mt-10" />
+      <SectionLabel label={m.stats_social()} class="mt-10" />
       <PremiumTeaser locked={statsLocked}>
         <SocialStatsSection locked={statsLocked} />
       </PremiumTeaser>

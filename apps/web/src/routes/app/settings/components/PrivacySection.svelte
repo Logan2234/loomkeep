@@ -29,17 +29,17 @@
     {
       id: ProfileAccess.PUBLIC,
       label: m.common_public(),
-      desc: "Tout le monde peut vous trouver et vous suivre librement.",
+      desc: m.settings_privacy_public_desc(),
     },
     {
       id: ProfileAccess.PRIVATE,
       label: m.common_private(),
-      desc: "Vous validez chaque demande ; seuls vos amis voient votre contenu.",
+      desc: m.settings_privacy_private_desc(),
     },
     {
       id: ProfileAccess.GHOST,
       label: m.profile_ghost(),
-      desc: "Invisible : personne ne peut vous trouver, vous suivre, ni voir votre activité. Vous pouvez suivre et commenter de façon anonyme.",
+      desc: m.settings_privacy_ghost_desc(),
     },
   ];
 
@@ -53,7 +53,7 @@
   const AUDIENCES: { id: VisibilityAudience; label: string }[] = [
     { id: VisibilityAudience.PUBLIC, label: m.common_public() },
     { id: VisibilityAudience.FRIENDS, label: m.common_friends() },
-    { id: VisibilityAudience.NONE, label: "Personne" },
+    { id: VisibilityAudience.NONE, label: m.settings_privacy_nobody() },
   ];
 
   const MODE_MATRIX: {
@@ -62,54 +62,64 @@
     private: string;
     ghost: string;
   }[] = [
-    { action: "Trouvable en recherche", public: "✓", private: "✓", ghost: "✗" },
     {
-      action: "Profil consultable",
+      action: m.settings_privacy_searchable(),
+      public: "✓",
+      private: "✓",
+      ghost: "✗",
+    },
+    {
+      action: m.settings_privacy_profile_viewable(),
       public: "✓",
       private: m.common_friends(),
       ghost: "✗",
     },
     {
-      action: "Peut être suivi",
-      public: "Librement",
-      private: "Sur demande",
+      action: m.settings_privacy_can_follow(),
+      public: m.settings_privacy_freely(),
+      private: m.settings_privacy_on_request(),
       ghost: "✗",
     },
     {
-      action: "Peut suivre",
+      action: m.settings_privacy_can_initiate_follow(),
       public: "✓",
       private: "✓",
-      ghost: "Profils publics",
+      ghost: m.settings_privacy_public_profiles(),
     },
-    { action: "Devenir ami", public: "✓", private: "✓", ghost: "✗" },
     {
-      action: "Voir le contenu Public / Amis",
+      action: m.settings_privacy_befriend(),
+      public: "✓",
+      private: "✓",
+      ghost: "✗",
+    },
+    {
+      action: m.settings_privacy_view_content(),
       public: "✓ / ✓",
       private: "✓ / ✓",
       ghost: "✓ / ✗",
     },
     {
-      action: "Commenter + réagir",
+      action: m.settings_privacy_comment_react(),
       public: "✓",
       private: "✓",
-      ghost: "Anonyme",
+      ghost: m.settings_privacy_anonymous(),
     },
     {
-      action: "Publier des reviews",
+      action: m.settings_privacy_publish_reviews(),
       public: "✓",
       private: "✓",
-      ghost: "Hors moyenne",
+      ghost: m.settings_privacy_excluded_rating(),
     },
     {
-      action: "Apparaître dans le fil d'autrui",
+      action: m.settings_privacy_appear_feed(),
       public: "✓",
       private: m.common_friends(),
       ghost: "✗",
     },
     {
-      action: "Être mentionné / nom cliquable",
+      action: m.settings_privacy_mention_name(),
       public: "✓",
-      private: "✓ (verrouillé)",
+      private: m.settings_privacy_locked(),
       ghost: "✗",
     },
   ];

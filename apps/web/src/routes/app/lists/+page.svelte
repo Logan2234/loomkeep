@@ -13,8 +13,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const KIND_LABEL: Record<string, string> = {
-    RANKED: "Classement",
-    COLLECTION: "Collection",
+    RANKED: m.lists_kind_ranked(),
+    COLLECTION: m.lists_kind_collection(),
   };
   const VISIBILITY_LABEL: Record<string, string> = {
     PRIVATE: m.common_private(),
@@ -22,8 +22,8 @@
     PUBLIC: m.common_public(),
   };
   const KIND_OPTIONS = [
-    { label: "Classement", value: "RANKED" },
-    { label: "Collection", value: "COLLECTION" },
+    { label: m.lists_kind_ranked(), value: "RANKED" },
+    { label: m.lists_kind_collection(), value: "COLLECTION" },
   ];
   const VISIBILITY_OPTIONS = [
     { label: m.common_private(), value: "PRIVATE" },
@@ -31,9 +31,9 @@
     { label: m.common_public(), value: "PUBLIC" },
   ];
   const SORT_OPTIONS = [
-    { label: "Dernière modification", value: "updatedAt" },
-    { label: "Date de création", value: "createdAt" },
-    { label: "Nombre d'œuvres", value: "itemCount" },
+    { label: m.lists_sort_updated(), value: "updatedAt" },
+    { label: m.lists_sort_created(), value: "createdAt" },
+    { label: m.lists_sort_count(), value: "itemCount" },
     { label: m.common_name(), value: "title" },
   ];
   type SortKey = "updatedAt" | "createdAt" | "itemCount" | "title";
@@ -84,8 +84,8 @@
 <div class="mx-auto max-w-4xl px-4 py-6 md:py-8">
   <PageHeader
     icon="list"
-    title="Mes listes"
-    subtitle="Vos classements et collections, tous domaines confondus." />
+    title={m.lists_title()}
+    subtitle={m.lists_subtitle()} />
 
   {#if !loading && lists.length > 0}
     <div class="relative mb-4">
@@ -95,7 +95,7 @@
       </span>
       <input
         type="search"
-        placeholder="Chercher une liste…"
+        placeholder={m.lists_search_placeholder()}
         bind:value={query}
         class="input pl-10" />
     </div>
@@ -104,7 +104,7 @@
       class="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <div class="flex flex-wrap items-center gap-2">
         <Combobox
-          label="Type"
+          label={m.lists_kind_label()}
           multiselect
           options={KIND_OPTIONS}
           values={kindFilter}
@@ -142,7 +142,7 @@
         onclick={() => (creating = true)}>
         <span class="flex h-full flex-col items-center justify-center gap-1.5">
           <Icon name="plus" class="h-6 w-6" />
-          <span class="text-xs font-semibold">Créer une liste</span>
+          <span class="text-xs font-semibold">{m.lists_create_button()}</span>
         </span>
       </button>
 
@@ -157,7 +157,10 @@
             <span class="timecode uppercase">{KIND_LABEL[list.kind]}</span>
             <span aria-hidden="true">·</span>
             <span
-              >{list.itemCount} {list.itemCount > 1 ? "œuvres" : "œuvre"}</span>
+              >{list.itemCount}
+              {list.itemCount > 1
+                ? m.lists_works_plural()
+                : m.lists_works_singular()}</span>
             {#if appConfig.socialEnabled}
               <span aria-hidden="true">·</span>
               <span>{VISIBILITY_LABEL[list.visibility]}</span>
@@ -176,7 +179,7 @@
 
     {#if lists.length > 0 && filtered.length === 0}
       <p class="text-dim mt-8 text-center text-sm">
-        Aucune liste ne correspond à ces filtres.
+        {m.lists_empty_filter()}
       </p>
     {/if}
   {/if}

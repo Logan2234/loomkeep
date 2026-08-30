@@ -27,7 +27,7 @@
       </a>
       <h1
         class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-        Import Simkl
+        {m.settings_import_simkl_title()}
       </h1>
     </div>
     <Banner variant="error">

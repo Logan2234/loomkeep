@@ -26,8 +26,8 @@
 <div class="mx-auto max-w-2xl px-4 py-6 md:py-8">
   <PageHeader
     icon="users"
-    title="Fil d'activité"
-    subtitle="Ce que font les membres que vous suivez." />
+    title={m.feed_title()}
+    subtitle={m.feed_subtitle()} />
 
   {#if feed.loading}
     <CardRowSkeleton count={6} />
@@ -36,13 +36,13 @@
   {:else if feed.data.length === 0}
     <EmptyState>
       <p class="font-display text-lg font-bold">
-        Rien à afficher pour l'instant
+        {m.feed_empty_title()}
       </p>
       <p class="mt-1 text-sm">
-        Partagez votre profil pour que d'autres vous suivent, ou suivez
-        quelqu'un pour voir son activité ici.
+        {m.feed_empty_body()}
       </p>
-      <a href="/app/profile" class="btn btn-ghost mt-3">Partager mon profil</a>
+      <a href="/app/profile" class="btn btn-ghost mt-3"
+        >{m.feed_share_profile()}</a>
     </EmptyState>
   {:else}
     <ul class="flex flex-col gap-2">

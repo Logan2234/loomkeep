@@ -59,12 +59,11 @@
       <Icon name="chevron-left" class="h-5 w-5" />
     </a>
     <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-      Appareils connectés
+      {m.settings_sessions_title()}
     </h1>
   </div>
   <p class="text-dim mb-8 max-w-xl text-sm">
-    Les sessions actuellement ouvertes sur ton compte. Déconnecte un appareil
-    que tu ne reconnais pas ou que tu n'utilises plus.
+    {m.settings_sessions_description()}
   </p>
 
   {#if loading}
@@ -80,23 +79,25 @@
           <div class="min-w-0 flex-1">
             <p class="flex items-center gap-2 font-semibold">
               <span class="truncate"
-                >{deviceLabel(session.userAgent) ?? "Appareil inconnu"}</span>
+                >{deviceLabel(session.userAgent) ??
+                  m.settings_sessions_unknown_device()}</span>
               {#if isCurrent}
                 <span
                   class="bg-accent/15 text-accent rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                  Cet appareil
+                  {m.settings_sessions_current_device()}
                 </span>
               {/if}
             </p>
             <p class="text-dim text-sm">
-              Actif {formatRelative(session.lastUsedAt)}
+              {m.settings_sessions_active_prefix()}
+              {formatRelative(session.lastUsedAt)}
             </p>
           </div>
           {#if !isCurrent}
             <button
               class="btn-text btn-text-underline text-danger shrink-0 text-sm"
               onclick={() => (confirmTarget = { kind: "one", session })}>
-              Déconnecter
+              {m.settings_sessions_disconnect_button()}
             </button>
           {/if}
         </div>
@@ -108,7 +109,7 @@
         <button
           class="btn btn-danger"
           onclick={() => (confirmTarget = { kind: "others" })}>
-          Déconnecter tous les autres appareils
+          {m.settings_sessions_disconnect_all()}
         </button>
       </div>
     {/if}
@@ -117,17 +118,15 @@
   {#if confirmTarget}
     <Modal
       title={confirmTarget.kind === "others"
-        ? "Déconnecter les autres appareils"
-        : "Déconnecter l'appareil"}
+        ? m.settings_sessions_disconnect_others_title()
+        : m.settings_sessions_disconnect_one_title()}
       onclose={() => (confirmTarget = null)}>
       <div class="flex flex-col gap-3">
         <p class="text-dim text-sm">
           {#if confirmTarget.kind === "others"}
-            Toutes les autres sessions seront fermées. Les appareils concernés
-            devront se reconnecter.
+            {m.settings_sessions_disconnect_others_description()}
           {:else}
-            Cette session sera fermée. L'appareil devra se reconnecter pour
-            accéder à ton compte.
+            {m.settings_sessions_disconnect_one_description()}
           {/if}
         </p>
         {#if revokeMut.error}
@@ -145,7 +144,9 @@
             class="btn btn-danger"
             disabled={revokeMut.loading}
             onclick={confirmRevoke}>
-            {revokeMut.loading ? "Déconnexion…" : "Déconnecter"}
+            {revokeMut.loading
+              ? m.settings_sessions_disconnecting()
+              : m.settings_sessions_disconnect_confirm()}
           </button>
         </div>
       </div>

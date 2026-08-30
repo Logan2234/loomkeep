@@ -109,11 +109,13 @@
 </script>
 
 <section class="card mb-5 space-y-4 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">Apparence</h2>
-  <p class="text-dim text-sm">Configure l'apparence de l'application.</p>
+  <h2 class="font-display mb-1 text-lg font-bold">
+    {m.settings_appearance_title()}
+  </h2>
+  <p class="text-dim text-sm">{m.settings_appearance_description()}</p>
 
   <div>
-    <p class="mb-2 font-semibold">Thème</p>
+    <p class="mb-2 font-semibold">{m.settings_theme_label()}</p>
     <div class="flex gap-2">
       {#each THEME_DEFINITIONS as theme (theme.mode)}
         <ThemePreview {theme} />
@@ -123,14 +125,13 @@
 
   <div>
     <p class="mb-2 flex items-center gap-2 font-semibold">
-      Style de navigation
+      {m.settings_nav_style_label()}
       {#if isFeatureNew("nav-styles")}
         <NewBadge />
       {/if}
     </p>
     <p class="text-dim mb-3 text-sm">
-      Change la mise en forme du rail et de la barre du bas. « Marquee » est
-      inclus ; les deux autres sont réservés aux comptes premium.
+      {m.settings_nav_style_description()}
     </p>
     <div class="grid gap-2 sm:grid-cols-3">
       {#each Object.entries(NAV_STYLE_META) as [id, meta] (id)}
@@ -179,11 +180,9 @@
   </div>
 
   <div>
-    <p class="mb-2 font-semibold">Barre de navigation mobile</p>
+    <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
     <p class="text-dim text-sm">
-      Choisis les raccourcis du bas de l'écran sur téléphone ({MIN} à {MAX}) et
-      leur ordre. « Menu » reste toujours présent — c'est lui qui ouvre toutes
-      les pages.
+      {m.settings_mobile_nav_bar_description({ min: MIN, max: MAX })}
     </p>
 
     <ul
@@ -204,7 +203,7 @@
             {item.label}
             {#if locked}
               <span class="text-dim ml-1 text-xs font-normal"
-                >· toujours affiché</span>
+                >· {m.settings_nav_always_visible()}</span>
             {/if}
           </span>
 
@@ -214,9 +213,9 @@
             aria-label={m.common_remove()}
             disabled={saveShortcutsMut.loading || locked || !canRemove}
             title={locked
-              ? "« Menu » ne peut pas être retiré."
+              ? m.settings_nav_menu_cannot_remove()
               : !canRemove
-                ? `Au moins ${MIN} raccourcis.`
+                ? m.settings_nav_min_shortcuts({ min: MIN })
                 : undefined}
             onclick={() => remove(item.id)}>
             <Icon name="x" class="h-4 w-4" />
@@ -228,7 +227,7 @@
     {#if choices.length > 0}
       <div class="border-border border-t pt-4">
         <p class="text-dim mb-2 text-xs font-semibold tracking-wide uppercase">
-          Ajouter
+          {m.common_add()}
         </p>
         <div class="flex flex-wrap gap-2">
           {#each choices as c (c.id)}
@@ -236,7 +235,9 @@
               type="button"
               class="chip inline-flex items-center gap-1.5 disabled:pointer-events-none disabled:opacity-40"
               disabled={saveShortcutsMut.loading || !canAdd}
-              title={!canAdd ? `Maximum ${MAX} raccourcis.` : undefined}
+              title={!canAdd
+                ? m.settings_nav_max_shortcuts({ max: MAX })
+                : undefined}
               onclick={() => add(c.id)}>
               <Icon name={c.icon} class="h-3.5 w-3.5" />
               {c.label}
@@ -245,7 +246,7 @@
         </div>
         {#if !canAdd}
           <p class="text-dim mt-2 text-xs">
-            Maximum atteint — retire un raccourci pour en ajouter un autre.
+            {m.settings_nav_max_reached()}
           </p>
         {/if}
       </div>

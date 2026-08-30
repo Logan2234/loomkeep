@@ -5,7 +5,7 @@
 
 <section class="card mb-5 p-5 md:p-6">
   <h2 class="font-display mb-1 text-lg font-bold">
-    {m.settings_import_title()}
+    {m.common_import()}
   </h2>
   <p class="text-dim mb-4 text-sm">
     {m.settings_import_body()}
