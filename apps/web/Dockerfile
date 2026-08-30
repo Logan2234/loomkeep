@@ -1,6 +1,6 @@
-FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS build
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS build
 
-RUN npm install -g pnpm@11.23.0
+RUN npm install -g corepack && corepack enable && corepack prepare pnpm@11.23.0 --activate
 WORKDIR /app
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
@@ -35,7 +35,7 @@ RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web build
 # need from it; build/ itself is copied straight from the build stage below.
 RUN pnpm --filter @loomkeep/web deploy --prod --legacy /app/deploy
 
-FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3
 WORKDIR /app
 COPY --from=build /app/packages/shared ./packages/shared
 COPY --from=build /app/deploy ./deploy

@@ -1,5 +1,6 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
+import { vi, type Mock } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
@@ -9,8 +10,8 @@ import { SimklImportSource } from "./simkl.source";
 
 const originalFetch = global.fetch;
 
-function mockFetchByUrl(routes: Record<string, unknown>): jest.Mock {
-  const fn = jest.fn((input: RequestInfo | URL) => {
+function mockFetchByUrl(routes: Record<string, unknown>): Mock {
+  const fn = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     const match = Object.entries(routes).find(([part]) => url.includes(part));
     if (!match) throw new Error(`Unexpected fetch call in test: ${url}`);
@@ -33,39 +34,39 @@ function mockFetchByUrl(routes: Record<string, unknown>): jest.Mock {
 
 function makeService() {
   const prisma = {
-    season: { findMany: jest.fn().mockResolvedValue([]) },
+    season: { findMany: vi.fn().mockResolvedValue([]) },
     episodeWatch: {
-      count: jest.fn().mockResolvedValue(0),
-      createMany: jest.fn(),
-      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      count: vi.fn().mockResolvedValue(0),
+      createMany: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
-    mediaExternalId: { findUnique: jest.fn() },
+    mediaExternalId: { findUnique: vi.fn() },
     libraryEntry: {
-      upsert: jest.fn(),
-      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      upsert: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     user: {
-      findUnique: jest.fn().mockResolvedValue({ email: "test@example.com" }),
+      findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: jest.fn() },
-    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    importRun: { create: vi.fn() },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   const mediaItemService = {
-    upsertFromSource: jest.fn().mockResolvedValue({ id: "media-1" }),
+    upsertFromSource: vi.fn().mockResolvedValue({ id: "media-1" }),
   };
   const tmdb = {
-    getSeriesSummaryByTmdbId: jest.fn().mockRejectedValue(new Error("404")),
-    getMovieSummaryByTmdbId: jest.fn().mockRejectedValue(new Error("404")),
-    findSeriesSummaryByTvdbId: jest.fn().mockResolvedValue(null),
-    findSeriesSummaryByImdbId: jest.fn().mockResolvedValue(null),
-    findMovieSummaryByImdbId: jest.fn().mockResolvedValue(null),
-    search: jest.fn().mockResolvedValue([]),
+    getSeriesSummaryByTmdbId: vi.fn().mockRejectedValue(new Error("404")),
+    getMovieSummaryByTmdbId: vi.fn().mockRejectedValue(new Error("404")),
+    findSeriesSummaryByTvdbId: vi.fn().mockResolvedValue(null),
+    findSeriesSummaryByImdbId: vi.fn().mockResolvedValue(null),
+    findMovieSummaryByImdbId: vi.fn().mockResolvedValue(null),
+    search: vi.fn().mockResolvedValue([]),
   };
   const config = {
-    getOrThrow: jest.fn().mockReturnValue("simkl-client-id"),
-    get: jest.fn().mockReturnValue(undefined),
+    getOrThrow: vi.fn().mockReturnValue("simkl-client-id"),
+    get: vi.fn().mockReturnValue(undefined),
   };
-  const quota = { record: jest.fn() };
+  const quota = { record: vi.fn() };
   const source = new SimklImportSource(
     prisma as never,
     mediaItemService as unknown as MediaItemService,
@@ -78,7 +79,7 @@ function makeService() {
     [source],
     prisma as unknown as PrismaService,
     {} as never,
-    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
+    { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
   );
   return { prisma, mediaItemService, tmdb, service };
 }

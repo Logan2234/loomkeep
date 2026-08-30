@@ -1,13 +1,14 @@
 import { ConfigService } from "@nestjs/config";
+import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { MusicBrainzProvider } from "./musicbrainz.provider";
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
-function mockFetch(payload: unknown, ok = true): jest.Mock {
-  const fn = jest.fn(() =>
+function mockFetch(payload: unknown, ok = true): Mock {
+  const fn = vi.fn(() =>
     Promise.resolve(
       new Response(JSON.stringify(payload), {
         status: ok ? 200 : 404,
@@ -20,8 +21,8 @@ function mockFetch(payload: unknown, ok = true): jest.Mock {
 }
 
 /** Route responses by a substring of the request URL (query string included). */
-function mockFetchByUrl(routes: [string, unknown][]): jest.Mock {
-  const fn = jest.fn((input: RequestInfo | URL) => {
+function mockFetchByUrl(routes: [string, unknown][]): Mock {
+  const fn = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     const match = routes.find(([part]) => url.includes(part));
 
@@ -43,9 +44,9 @@ function mockFetchByUrl(routes: [string, unknown][]): jest.Mock {
 /** Returns a different status/payload on each successive call, in order. */
 function mockFetchSequence(
   responses: { status: number; payload?: unknown }[],
-): jest.Mock {
+): Mock {
   let call = 0;
-  const fn = jest.fn(() => {
+  const fn = vi.fn(() => {
     const { status, payload } = responses[Math.min(call, responses.length - 1)];
     call++;
     return Promise.resolve(
@@ -60,8 +61,8 @@ function mockFetchSequence(
 }
 
 function providerWith(contact?: string): MusicBrainzProvider {
-  const config = { get: jest.fn().mockReturnValue(contact) };
-  const quota = { record: jest.fn() };
+  const config = { get: vi.fn().mockReturnValue(contact) };
+  const quota = { record: vi.fn() };
   return new MusicBrainzProvider(
     config as unknown as ConfigService,
     quota as unknown as QuotaTrackerService,
@@ -73,11 +74,11 @@ describe("MusicBrainzProvider", () => {
     // The provider throttles calls to ~1/s via Date.now(); advance it well
     // past the threshold on every read so tests don't actually sleep.
     let now = 0;
-    jest.spyOn(Date, "now").mockImplementation(() => (now += 5000));
+    vi.spyOn(Date, "now").mockImplementation(() => (now += 5000));
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     global.fetch = originalFetch;
   });
 

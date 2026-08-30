@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -5,12 +6,12 @@ import { AccountDeletionService } from "./account-deletion.service";
 
 function makeService() {
   const prisma = {
-    user: { delete: jest.fn() },
+    user: { delete: vi.fn() },
   } as unknown as PrismaService;
   const lists = {
-    reassignOwnedListsOnAccountDeletion: jest.fn(),
+    reassignOwnedListsOnAccountDeletion: vi.fn(),
   } as unknown as ListService;
-  const security = { record: jest.fn() } as unknown as SecurityEventService;
+  const security = { record: vi.fn() } as unknown as SecurityEventService;
 
   const service = new AccountDeletionService(prisma, lists, security);
   return { service, prisma, lists, security };
@@ -20,15 +21,15 @@ describe("AccountDeletionService.deleteAccount", () => {
   it("records USER_DELETED, reassigns owned lists, then deletes the account", async () => {
     const { service, prisma, lists, security } = makeService();
     const calls: string[] = [];
-    (security.record as jest.Mock).mockImplementation(async () => {
+    (security.record as Mock).mockImplementation(async () => {
       calls.push("record");
     });
-    (lists.reassignOwnedListsOnAccountDeletion as jest.Mock).mockImplementation(
+    (lists.reassignOwnedListsOnAccountDeletion as Mock).mockImplementation(
       async () => {
         calls.push("reassign");
       },
     );
-    (prisma.user.delete as jest.Mock).mockImplementation(async () => {
+    (prisma.user.delete as Mock).mockImplementation(async () => {
       calls.push("delete");
     });
 

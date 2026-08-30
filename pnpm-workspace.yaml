@@ -2,8 +2,10 @@ packages:
   - apps/*
   - packages/*
 allowBuilds:
+  "@parcel/watcher": true
   "@prisma/client": true
   "@prisma/engines": true
+  "@swc/core": true
   # prisma-erd-generator pulls puppeteer, but the .md ERD target never launches
   # a browser, so we skip its Chromium download. @scarf/scarf is opt-in analytics.
   "@scarf/scarf": false

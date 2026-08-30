@@ -1,4 +1,5 @@
 import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import { vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
@@ -38,19 +39,19 @@ function makeService(opts: {
 
   const prisma = {
     user: {
-      findMany: jest
+      findMany: vi
         .fn()
         .mockResolvedValue([{ ...user, notifyEmail, notifyPush }]),
     },
     notification: {
-      findMany: jest.fn().mockResolvedValue(pending),
-      updateMany: jest.fn().mockResolvedValue({ count: pending.length }),
+      findMany: vi.fn().mockResolvedValue(pending),
+      updateMany: vi.fn().mockResolvedValue({ count: pending.length }),
     },
   } as unknown as PrismaService;
-  const push = { sendToUser: jest.fn() } as unknown as PushService;
-  const mail = { sendEpisodeDigest: jest.fn() } as unknown as MailService;
+  const push = { sendToUser: vi.fn() } as unknown as PushService;
+  const mail = { sendEpisodeDigest: vi.fn() } as unknown as MailService;
   const entitlements = {
-    isEffectivelyPremium: jest.fn().mockResolvedValue(isPremium),
+    isEffectivelyPremium: vi.fn().mockResolvedValue(isPremium),
   } as unknown as EntitlementService;
 
   const service = new NotificationDigestService(
@@ -92,7 +93,7 @@ describe("NotificationDigestService.resolveEffectiveCadence", () => {
 describe("NotificationDigestService.runDigests", () => {
   it("sends the weekly email digest on Monday 9h local and marks rows digested", async () => {
     const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
-    jest.useFakeTimers().setSystemTime(monday9amParis);
+    vi.useFakeTimers().setSystemTime(monday9amParis);
 
     const { service, mail, prisma } = makeService({
       notifyEmail: DigestCadence.WEEKLY,
@@ -116,12 +117,12 @@ describe("NotificationDigestService.runDigests", () => {
       data: { emailDigestedAt: monday9amParis },
     });
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("sends the daily push digest at 18h local for a premium user", async () => {
     const day18hParis = new Date("2026-08-25T16:00:00.000Z");
-    jest.useFakeTimers().setSystemTime(day18hParis);
+    vi.useFakeTimers().setSystemTime(day18hParis);
 
     const { service, push } = makeService({
       notifyPush: DigestCadence.DAILY,
@@ -138,12 +139,12 @@ describe("NotificationDigestService.runDigests", () => {
       }),
     );
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("does not send outside the due window", async () => {
     const noon = new Date("2026-08-24T10:00:00.000Z");
-    jest.useFakeTimers().setSystemTime(noon);
+    vi.useFakeTimers().setSystemTime(noon);
 
     const { service, mail } = makeService({
       notifyEmail: DigestCadence.WEEKLY,
@@ -153,12 +154,12 @@ describe("NotificationDigestService.runDigests", () => {
     expect(sent).toBe(0);
     expect(mail.sendEpisodeDigest).not.toHaveBeenCalled();
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("does not send when nothing is pending", async () => {
     const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
-    jest.useFakeTimers().setSystemTime(monday9amParis);
+    vi.useFakeTimers().setSystemTime(monday9amParis);
 
     const { service, mail } = makeService({
       notifyEmail: DigestCadence.WEEKLY,
@@ -169,12 +170,12 @@ describe("NotificationDigestService.runDigests", () => {
     expect(sent).toBe(0);
     expect(mail.sendEpisodeDigest).not.toHaveBeenCalled();
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("caps a non-premium DAILY email preference to WEEKLY's send window", async () => {
     const day18hParis = new Date("2026-08-25T16:00:00.000Z");
-    jest.useFakeTimers().setSystemTime(day18hParis);
+    vi.useFakeTimers().setSystemTime(day18hParis);
 
     const { service: notDueService, mail: notDueMail } = makeService({
       notifyEmail: DigestCadence.DAILY,
@@ -183,7 +184,7 @@ describe("NotificationDigestService.runDigests", () => {
     expect(await notDueService.runDigests()).toBe(0);
     expect(notDueMail.sendEpisodeDigest).not.toHaveBeenCalled();
 
-    jest.setSystemTime(new Date("2026-08-24T07:00:00.000Z"));
+    vi.setSystemTime(new Date("2026-08-24T07:00:00.000Z"));
     const { service: dueService, mail: dueMail } = makeService({
       notifyEmail: DigestCadence.DAILY,
       isPremium: false,
@@ -195,12 +196,12 @@ describe("NotificationDigestService.runDigests", () => {
       "weekly",
     );
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("queries only rows not yet digested on the sending channel", async () => {
     const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
-    jest.useFakeTimers().setSystemTime(monday9amParis);
+    vi.useFakeTimers().setSystemTime(monday9amParis);
 
     const { service, prisma } = makeService({
       notifyEmail: DigestCadence.WEEKLY,
@@ -217,6 +218,6 @@ describe("NotificationDigestService.runDigests", () => {
       }),
     );
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

@@ -3,6 +3,7 @@ import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
+import { vi, type Mock } from "vitest";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { encryptTotpSecret } from "./mfa-crypto.util";
@@ -28,38 +29,38 @@ function makeService() {
 
   const prisma = {
     user: {
-      findUniqueOrThrow: jest.fn(),
-      update: jest.fn(),
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
     },
     mfaRecoveryCode: {
-      count: jest.fn(() => Promise.resolve(recoveryCodeRows.length)),
-      findMany: jest.fn(({ where }: { where: { userId: string } }) =>
+      count: vi.fn(() => Promise.resolve(recoveryCodeRows.length)),
+      findMany: vi.fn(({ where }: { where: { userId: string } }) =>
         Promise.resolve(
           recoveryCodeRows.filter((r) => r.userId === where.userId),
         ),
       ),
-      delete: jest.fn(({ where }: { where: { id: string } }) => {
+      delete: vi.fn(({ where }: { where: { id: string } }) => {
         recoveryCodeRows = recoveryCodeRows.filter((r) => r.id !== where.id);
         return Promise.resolve();
       }),
-      deleteMany: jest.fn(({ where }: { where: { userId: string } }) => {
+      deleteMany: vi.fn(({ where }: { where: { userId: string } }) => {
         recoveryCodeRows = recoveryCodeRows.filter(
           (r) => r.userId !== where.userId,
         );
         return Promise.resolve();
       }),
-      create: jest.fn(
+      create: vi.fn(
         ({ data }: { data: { userId: string; codeHash: string } }) => {
           recoveryCodeRows.push({ id: `code-${nextId++}`, ...data });
           return Promise.resolve();
         },
       ),
     },
-    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   } as unknown as PrismaService;
 
   const configService = {
-    getOrThrow: jest.fn(() => ENCRYPTION_KEY),
+    getOrThrow: vi.fn(() => ENCRYPTION_KEY),
   } as unknown as ConfigService;
 
   const mail = {} as unknown as MailService;
@@ -68,6 +69,8 @@ function makeService() {
 }
 
 describe("MfaService recovery codes", () => {
+  // bcryptjs hashes all 10 codes in parallel — pure-JS bcrypt is CPU-bound
+  // enough that this can flirt with the default 5s timeout under load.
   it("generates 10 codes of 10 chars using only unambiguous characters", async () => {
     const { service } = makeService();
     const codes = await service.regenerateRecoveryCodes("user-1");
@@ -78,7 +81,7 @@ describe("MfaService recovery codes", () => {
       expect(code).toHaveLength(10);
       expect(code).toMatch(/^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{10}$/);
     }
-  });
+  }, 15_000);
 
   it("consumes a matching recovery code and deletes it (single-use)", async () => {
     const { service } = makeService();
@@ -122,7 +125,7 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     const totp = new TOTP({ secret, algorithm: "SHA1", digits: 6, period: 30 });
     const code = totp.generate();
 
-    (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
       makeUser({
         mfaTotpSecretEnc: encryptTotpSecret(
           secret.base32,
@@ -142,7 +145,7 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     const { service, prisma } = makeService();
     const secret = new Secret({ size: 20 });
 
-    (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
       makeUser({
         mfaTotpSecretEnc: encryptTotpSecret(
           secret.base32,
@@ -158,7 +161,7 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
 describe("MfaService.disableTotp", () => {
   it("rejects with the wrong current password", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
       makeUser({ passwordHash: await bcrypt.hash("correct", 4) }),
     );
 
@@ -167,7 +170,7 @@ describe("MfaService.disableTotp", () => {
 
   it("clears the stored secret and flag on success", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
       makeUser({ passwordHash: await bcrypt.hash("correct", 4) }),
     );
 

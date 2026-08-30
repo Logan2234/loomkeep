@@ -4,11 +4,12 @@ import { HttpStatus, NotFoundException } from "@nestjs/common";
 import type { HttpAdapterHost } from "@nestjs/core";
 import * as Sentry from "@sentry/node";
 import type { Logger } from "nestjs-pino";
+import { vi } from "vitest";
 import { AllExceptionsFilter } from "./all-exceptions.filter";
 import { AppException } from "./app.exception";
 import { ValidationException } from "./validation.exception";
 
-jest.mock("@sentry/node", () => ({ captureException: jest.fn() }));
+vi.mock("@sentry/node", () => ({ captureException: vi.fn() }));
 
 function makeHost(requestId: string | number = "req-1") {
   const request = { method: "GET", url: "/api/whatever", id: requestId };
@@ -23,14 +24,14 @@ function makeHost(requestId: string | number = "req-1") {
 }
 
 describe("AllExceptionsFilter", () => {
-  const logger = { error: jest.fn(), warn: jest.fn() } as unknown as Logger;
-  const reply = jest.fn();
+  const logger = { error: vi.fn(), warn: vi.fn() } as unknown as Logger;
+  const reply = vi.fn();
   const httpAdapterHost = {
     httpAdapter: { reply },
   } as unknown as HttpAdapterHost;
   const filter = new AllExceptionsFilter(logger, httpAdapterHost);
 
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it("reports 5xx (unexpected) exceptions to Sentry/GlitchTip and scrubs the message", () => {
     const error = new Error("Prisma exploded with connection string leaked");

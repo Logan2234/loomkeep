@@ -2,6 +2,7 @@ import { MediaSource, MediaType } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { vi } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { OmdbService } from "../omdb.service";
 import { TmdbProvider } from "./tmdb.provider";
@@ -12,12 +13,12 @@ function fixture(name: string): unknown {
   return JSON.parse(readFileSync(join(FIXTURES, name), "utf8"));
 }
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
 function mockFetchByUrl(routes: Record<string, unknown>): void {
-  global.fetch = jest.fn((input: RequestInfo | URL) => {
+  global.fetch = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     const match = Object.entries(routes).find(([pathPart]) =>
       url.includes(pathPart),
@@ -40,9 +41,9 @@ describe("TmdbProvider", () => {
   let provider: TmdbProvider;
 
   beforeEach(() => {
-    const config = { getOrThrow: jest.fn().mockReturnValue("test-token") };
-    const omdb = { getRatings: jest.fn().mockResolvedValue([]) };
-    const quota = { record: jest.fn() };
+    const config = { getOrThrow: vi.fn().mockReturnValue("test-token") };
+    const omdb = { getRatings: vi.fn().mockResolvedValue([]) };
+    const quota = { record: vi.fn() };
     provider = new TmdbProvider(
       config as unknown as ConfigService,
       omdb as unknown as OmdbService,
@@ -241,7 +242,7 @@ describe("TmdbProvider", () => {
   describe("getExtras", () => {
     it("sends the requested language, defaulting to English", async () => {
       let requestedUrl = "";
-      global.fetch = jest.fn((input: RequestInfo | URL) => {
+      global.fetch = vi.fn((input: RequestInfo | URL) => {
         requestedUrl = String(input);
         return Promise.resolve(
           new Response(JSON.stringify({ id: 27205 }), { status: 200 }),

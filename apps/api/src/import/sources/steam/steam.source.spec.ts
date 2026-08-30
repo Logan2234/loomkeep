@@ -1,6 +1,7 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { GameSource } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
+import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";
 import type { ProviderGameDetails } from "../../../games/providers/game-provider.types";
@@ -12,8 +13,8 @@ import { SteamImportSource } from "./steam.source";
 
 const originalFetch = global.fetch;
 
-function mockFetchByUrl(routes: Record<string, unknown>): jest.Mock {
-  const fn = jest.fn((input: RequestInfo | URL) => {
+function mockFetchByUrl(routes: Record<string, unknown>): Mock {
+  const fn = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     const match = Object.entries(routes).find(([part]) => url.includes(part));
     if (!match) throw new Error(`Unexpected fetch call in test: ${url}`);
@@ -62,15 +63,15 @@ function detail(id: string, adult = false): ProviderGameDetails {
 }
 
 interface Mocks {
-  igdb: { matchSteamAppIds: jest.Mock; getDetailsByIds: jest.Mock };
-  gameItemService: { persistDetails: jest.Mock };
-  ageGate: { allowsAdultContent: jest.Mock };
+  igdb: { matchSteamAppIds: Mock; getDetailsByIds: Mock };
+  gameItemService: { persistDetails: Mock };
+  ageGate: { allowsAdultContent: Mock };
   prisma: {
-    gameExternalId: { findMany: jest.Mock };
+    gameExternalId: { findMany: Mock };
     gameEntry: {
-      findMany: jest.Mock;
-      upsert: jest.Mock;
-      deleteMany: jest.Mock;
+      findMany: Mock;
+      upsert: Mock;
+      deleteMany: Mock;
     };
   };
 }
@@ -81,33 +82,33 @@ function build(over: Partial<Mocks> = {}): {
 } {
   const mocks: Mocks = {
     igdb: {
-      matchSteamAppIds: jest.fn().mockResolvedValue(new Map()),
-      getDetailsByIds: jest.fn().mockResolvedValue([]),
+      matchSteamAppIds: vi.fn().mockResolvedValue(new Map()),
+      getDetailsByIds: vi.fn().mockResolvedValue([]),
       ...over.igdb,
     },
-    gameItemService: { persistDetails: jest.fn(), ...over.gameItemService },
+    gameItemService: { persistDetails: vi.fn(), ...over.gameItemService },
     ageGate: {
-      allowsAdultContent: jest.fn().mockResolvedValue(false),
+      allowsAdultContent: vi.fn().mockResolvedValue(false),
       ...over.ageGate,
     },
     prisma: {
-      gameExternalId: { findMany: jest.fn().mockResolvedValue([]) },
+      gameExternalId: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: {
-        findMany: jest.fn().mockResolvedValue([]),
-        upsert: jest.fn(),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        findMany: vi.fn().mockResolvedValue([]),
+        upsert: vi.fn(),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
       ...over.prisma,
     },
   };
   const prismaExtras = {
     user: {
-      findUnique: jest.fn().mockResolvedValue({ email: "test@example.com" }),
+      findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: jest.fn() },
+    importRun: { create: vi.fn() },
   };
-  const config = { getOrThrow: jest.fn().mockReturnValue("steam-key") };
-  const quota = { record: jest.fn() };
+  const config = { getOrThrow: vi.fn().mockReturnValue("steam-key") };
+  const quota = { record: vi.fn() };
   const source = new SteamImportSource(
     config as unknown as ConfigService,
     mocks.prisma as unknown as PrismaService,
@@ -120,7 +121,7 @@ function build(over: Partial<Mocks> = {}): {
     [source],
     { ...mocks.prisma, ...prismaExtras } as unknown as PrismaService,
     {} as never,
-    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
+    { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
   );
   return { service, mocks };
 }
@@ -154,14 +155,14 @@ describe("SteamImportSource (via ImportJobService)", () => {
   it("matches owned games to IGDB, filtering adult titles and grouping by status", async () => {
     const { service, mocks } = build({
       igdb: {
-        matchSteamAppIds: jest.fn().mockResolvedValue(
+        matchSteamAppIds: vi.fn().mockResolvedValue(
           new Map([
             ["10", "100"],
             ["20", "200"],
             ["30", "300"],
           ]),
         ),
-        getDetailsByIds: jest
+        getDetailsByIds: vi
           .fn()
           .mockResolvedValue([
             detail("100"),
@@ -171,14 +172,14 @@ describe("SteamImportSource (via ImportJobService)", () => {
       },
       prisma: {
         gameExternalId: {
-          findMany: jest
+          findMany: vi
             .fn()
             .mockResolvedValue([{ externalId: "200", gameItemId: "gi200" }]),
         },
         gameEntry: {
-          findMany: jest.fn().mockResolvedValue([{ gameItemId: "gi200" }]),
-          upsert: jest.fn(),
-          deleteMany: jest.fn(),
+          findMany: vi.fn().mockResolvedValue([{ gameItemId: "gi200" }]),
+          upsert: vi.fn(),
+          deleteMany: vi.fn(),
         },
       },
     });
@@ -272,18 +273,18 @@ describe("SteamImportSource (via ImportJobService)", () => {
   it("commit persists chosen games and skips adult titles disabled at commit time", async () => {
     const { service, mocks } = build({
       igdb: {
-        matchSteamAppIds: jest.fn().mockResolvedValue(
+        matchSteamAppIds: vi.fn().mockResolvedValue(
           new Map([
             ["10", "100"],
             ["30", "300"],
           ]),
         ),
-        getDetailsByIds: jest
+        getDetailsByIds: vi
           .fn()
           .mockResolvedValue([detail("100"), detail("300", true)]),
       },
       gameItemService: {
-        persistDetails: jest
+        persistDetails: vi
           .fn()
           .mockImplementation((_s, d: ProviderGameDetails) =>
             Promise.resolve({ id: `gi-${d.summary.sourceId}` }),
@@ -291,7 +292,7 @@ describe("SteamImportSource (via ImportJobService)", () => {
       },
       ageGate: {
         // Opted-in during analyze (300 lands in the plan), opted-out at commit.
-        allowsAdultContent: jest
+        allowsAdultContent: vi
           .fn()
           .mockResolvedValueOnce(true)
           .mockResolvedValue(false),

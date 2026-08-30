@@ -1,4 +1,5 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
+import { vi } from "vitest";
 import { ImportJobService } from "../../import-job.service";
 import { makeZip } from "../../make-zip";
 import { TraktImportSource } from "./trakt.source";
@@ -31,33 +32,33 @@ function zipBase64(files: { name: string; content: string }[]): string {
 
 function makeService() {
   const prisma = {
-    season: { findMany: jest.fn().mockResolvedValue([]) },
+    season: { findMany: vi.fn().mockResolvedValue([]) },
     episodeWatch: {
-      count: jest.fn().mockResolvedValue(0),
-      createMany: jest.fn(),
-      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      count: vi.fn().mockResolvedValue(0),
+      createMany: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
-    mediaExternalId: { findUnique: jest.fn() },
+    mediaExternalId: { findUnique: vi.fn() },
     libraryEntry: {
-      upsert: jest.fn(),
-      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      upsert: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     user: {
-      findUnique: jest.fn().mockResolvedValue({ email: "test@example.com" }),
+      findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: jest.fn() },
-    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    importRun: { create: vi.fn() },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   const mediaItemService = {
-    upsertFromSource: jest.fn().mockResolvedValue({ id: "media-1" }),
+    upsertFromSource: vi.fn().mockResolvedValue({ id: "media-1" }),
   };
   const tmdb = {
-    getSeriesSummaryByTmdbId: jest.fn().mockRejectedValue(new Error("404")),
-    getMovieSummaryByTmdbId: jest.fn().mockRejectedValue(new Error("404")),
-    findSeriesSummaryByTvdbId: jest.fn().mockResolvedValue(null),
-    findSeriesSummaryByImdbId: jest.fn().mockResolvedValue(null),
-    findMovieSummaryByImdbId: jest.fn().mockResolvedValue(null),
-    search: jest.fn().mockResolvedValue([]),
+    getSeriesSummaryByTmdbId: vi.fn().mockRejectedValue(new Error("404")),
+    getMovieSummaryByTmdbId: vi.fn().mockRejectedValue(new Error("404")),
+    findSeriesSummaryByTvdbId: vi.fn().mockResolvedValue(null),
+    findSeriesSummaryByImdbId: vi.fn().mockResolvedValue(null),
+    findMovieSummaryByImdbId: vi.fn().mockResolvedValue(null),
+    search: vi.fn().mockResolvedValue([]),
   };
   const source = new TraktImportSource(
     prisma as never,
@@ -69,7 +70,7 @@ function makeService() {
     [source],
     prisma as never,
     {} as never,
-    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
+    { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
   );
   return { prisma, mediaItemService, tmdb, service };
 }

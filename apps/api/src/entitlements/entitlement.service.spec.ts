@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { EntitlementService } from "./entitlement.service";
@@ -6,11 +7,11 @@ describe("EntitlementService.isEffectivelyPremium", () => {
   function makeService(plan: "FREE" | "PREMIUM", flagEnabled: boolean) {
     const prisma = {
       userEntitlement: {
-        upsert: jest.fn().mockResolvedValue({ plan }),
+        upsert: vi.fn().mockResolvedValue({ plan }),
       },
     } as unknown as PrismaService;
     const flags = {
-      isEnabled: jest.fn().mockReturnValue(flagEnabled),
+      isEnabled: vi.fn().mockReturnValue(flagEnabled),
     } as unknown as FeatureFlagsService;
     return new EntitlementService(prisma, flags);
   }

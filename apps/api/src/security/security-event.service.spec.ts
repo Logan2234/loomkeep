@@ -1,11 +1,12 @@
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "./security-event.service";
 
 function makeService() {
   const prisma = {
     securityEvent: {
-      create: jest.fn(),
-      findMany: jest.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   } as unknown as PrismaService;
 
@@ -67,7 +68,7 @@ describe("SecurityEventService.list", () => {
 
   it("derives the display identifier from the linked account's email once the raw identifier is gone", async () => {
     const { service, prisma } = makeService();
-    (prisma.securityEvent.findMany as jest.Mock).mockResolvedValue([
+    (prisma.securityEvent.findMany as Mock).mockResolvedValue([
       {
         id: "e1",
         type: "PASSWORD_CHANGED",

@@ -1,9 +1,10 @@
+import { vi } from "vitest";
 import type { SecurityEventService } from "../security/security-event.service";
 import { AdminSecurityController } from "./admin-security.controller";
 
 function makeController() {
   const securityEvents = {
-    list: jest.fn().mockResolvedValue({ items: [], hasMore: false }),
+    list: vi.fn().mockResolvedValue({ items: [], hasMore: false }),
   } as unknown as SecurityEventService;
 
   const controller = new AdminSecurityController(securityEvents);

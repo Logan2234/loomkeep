@@ -1,6 +1,7 @@
 import { MediaSource, MediaType } from "@loomkeep/shared";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { vi } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { AnilistProvider } from "./anilist.provider";
 
@@ -11,12 +12,12 @@ function fixture(name: string): unknown {
   return JSON.parse(readFileSync(join(FIXTURES, name), "utf8"));
 }
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
 function mockFetch(body: unknown): void {
-  global.fetch = jest.fn(() =>
+  global.fetch = vi.fn(() =>
     Promise.resolve(
       new Response(JSON.stringify(body), {
         status: 200,
@@ -35,14 +36,14 @@ describe("AnilistProvider", () => {
     // don't actually sleep. Fresh provider each time so its throttle state
     // doesn't leak across tests along with the mock.
     let now = 0;
-    jest.spyOn(Date, "now").mockImplementation(() => (now += 5000));
-    const quota = { record: jest.fn() };
+    vi.spyOn(Date, "now").mockImplementation(() => (now += 5000));
+    const quota = { record: vi.fn() };
     provider = new AnilistProvider(quota as unknown as QuotaTrackerService);
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("maps search results, preferring the English title", async () => {
@@ -88,7 +89,7 @@ describe("AnilistProvider", () => {
   });
 
   it("fails fast on a 429 instead of waiting out AniList's minute-long ban", async () => {
-    const fetchMock = jest.fn().mockResolvedValue(
+    const fetchMock = vi.fn().mockResolvedValue(
       new Response("{}", {
         status: 429,
         headers: { "Retry-After": "60" },

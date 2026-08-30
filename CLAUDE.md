@@ -24,7 +24,7 @@ pnpm test                                      # runs all tests
 pnpm build:package                             # REQUIRED after any change in packages/shared
 
 # API
-pnpm --filter @loomkeep/api exec jest src/catalog/providers/tmdb.provider.spec.ts   # single test file
+pnpm --filter @loomkeep/api exec vitest src/catalog/providers/tmdb.provider.spec.ts   # single test file
 pnpm --filter @loomkeep/api test:e2e           # full API flow; needs the dev Postgres running
 pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
 

@@ -1,25 +1,26 @@
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { PrivacyService } from "./privacy.service";
 import type { VisibilityService } from "./visibility.service";
 
 function make() {
-  const userUpdate = jest.fn().mockResolvedValue(undefined);
-  const followersCount = jest.fn().mockResolvedValue(3);
-  const outgoingCount = jest.fn().mockResolvedValue(2);
-  const listsCount = jest.fn().mockResolvedValue(1);
-  const followDeleteMany = jest.fn().mockResolvedValue(undefined);
-  const listUpdateMany = jest.fn().mockResolvedValue(undefined);
-  const transaction = jest.fn((ops: unknown[]) => Promise.all(ops));
+  const userUpdate = vi.fn().mockResolvedValue(undefined);
+  const followersCount = vi.fn().mockResolvedValue(3);
+  const outgoingCount = vi.fn().mockResolvedValue(2);
+  const listsCount = vi.fn().mockResolvedValue(1);
+  const followDeleteMany = vi.fn().mockResolvedValue(undefined);
+  const listUpdateMany = vi.fn().mockResolvedValue(undefined);
+  const transaction = vi.fn((ops: unknown[]) => Promise.all(ops));
 
   const prisma = {
     user: {
-      findUniqueOrThrow: jest
+      findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue({ profileAccess: "PRIVATE" }),
       update: userUpdate,
     },
     follow: {
-      count: jest
+      count: vi
         .fn()
         .mockImplementation(({ where }: { where: Record<string, unknown> }) =>
           "followeeId" in where ? followersCount() : outgoingCount(),
@@ -30,13 +31,13 @@ function make() {
       count: listsCount,
       updateMany: listUpdateMany,
     },
-    visibilitySetting: { upsert: jest.fn() },
+    visibilitySetting: { upsert: vi.fn() },
     $transaction: transaction,
   } as unknown as PrismaService;
 
   const visibility = {
-    getSettingsMap: jest.fn().mockResolvedValue(new Map()),
-    audienceFor: jest.fn().mockReturnValue("FRIENDS"),
+    getSettingsMap: vi.fn().mockResolvedValue(new Map()),
+    audienceFor: vi.fn().mockReturnValue("FRIENDS"),
   } as unknown as VisibilityService;
 
   return {

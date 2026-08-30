@@ -66,7 +66,7 @@ pnpm --filter @loomkeep/api start:prod     # node dist/main (production)
 pnpm --filter @loomkeep/api lint           # eslint (formatting is a lint rule, see root CLAUDE.md)
 pnpm --filter @loomkeep/api lint:fix       # eslint --fix
 
-pnpm --filter @loomkeep/api test           # unit tests (jest, provider mapping etc.)
+pnpm --filter @loomkeep/api test           # unit tests (vitest, provider mapping etc.)
 pnpm --filter @loomkeep/api test:cov       # unit tests with coverage
 pnpm --filter @loomkeep/api test:e2e       # full API flow; needs the dev Postgres running,
                                             # runs in an isolated "e2e" schema

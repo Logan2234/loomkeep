@@ -1,19 +1,20 @@
 import type { ConfigService } from "@nestjs/config";
+import { vi, type Mock } from "vitest";
 import { TurnstileService } from "./turnstile.service";
 
 function makeService(secret: string | undefined) {
   const config = {
-    get: jest.fn(() => secret),
+    get: vi.fn(() => secret),
   } as unknown as ConfigService;
 
   return new TurnstileService(config);
 }
 
 describe("TurnstileService.verify", () => {
-  let fetchMock: jest.Mock;
+  let fetchMock: Mock;
 
   beforeEach(() => {
-    fetchMock = jest.fn();
+    fetchMock = vi.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 

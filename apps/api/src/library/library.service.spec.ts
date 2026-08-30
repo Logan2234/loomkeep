@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -55,11 +56,11 @@ function makeService(
   opts: ServiceOpts = {},
 ) {
   const prisma = {
-    libraryEntry: { findMany: jest.fn().mockResolvedValue(rows) },
+    libraryEntry: { findMany: vi.fn().mockResolvedValue(rows) },
     // listEntries fetches episodes/watches batched across all media items
     // (`mediaItemId: { in: [...] }`) rather than one query per entry.
     episode: {
-      findMany: jest.fn(
+      findMany: vi.fn(
         ({ where }: { where: { season: { mediaItemId: { in: string[] } } } }) =>
           Promise.resolve(
             where.season.mediaItemId.in.flatMap((mediaItemId) =>
@@ -72,7 +73,7 @@ function makeService(
       ),
     },
     episodeWatch: {
-      findMany: jest.fn(
+      findMany: vi.fn(
         ({
           where,
         }: {
@@ -96,7 +97,7 @@ function makeService(
   } as unknown as PrismaService;
   // Ratings now come from Review; project the rows' ratings back through it.
   const reviews = {
-    getRatings: jest.fn(() =>
+    getRatings: vi.fn(() =>
       Promise.resolve(
         new Map(
           rows
@@ -105,13 +106,13 @@ function makeService(
         ),
       ),
     ),
-    getRating: jest.fn((_u: string, _t: string, id: string) =>
+    getRating: vi.fn((_u: string, _t: string, id: string) =>
       Promise.resolve(rows.find((r) => r.mediaItemId === id)?.rating ?? null),
     ),
-    setRating: jest.fn(),
+    setRating: vi.fn(),
   } as unknown as ReviewService;
   const mediaItemService = {
-    translatedTitles: jest
+    translatedTitles: vi
       .fn()
       .mockResolvedValue(opts.translatedTitles ?? new Map()),
   } as unknown as MediaItemService;
@@ -120,7 +121,7 @@ function makeService(
     mediaItemService,
     {} as AgeGateService,
     reviews,
-    { emit: jest.fn() } as unknown as ActivityService,
+    { emit: vi.fn() } as unknown as ActivityService,
     {} as EntitlementService,
   );
   return { service, prisma, mediaItemService };
@@ -261,7 +262,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
   it("sets finishedAt when a movie's status is patched to COMPLETED", async () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });
 
-    const findUnique = jest
+    const findUnique = vi
       .fn()
       // assertEntryOwnership
       .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
@@ -269,7 +270,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       .mockResolvedValueOnce({ status: "PLANNED", favorite: false })
       // syncFinishedAt's lookup, post-write
       .mockResolvedValueOnce({ status: "COMPLETED", finishedAt: null });
-    const update = jest
+    const update = vi
       .fn()
       // the main entry write
       .mockResolvedValueOnce({ ...entryRow, status: "COMPLETED" })
@@ -278,16 +279,16 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
 
     const prisma = {
       libraryEntry: { findUnique, update },
-      episode: { findMany: jest.fn().mockResolvedValue([]) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
-        aggregate: jest.fn().mockResolvedValue({ _max: { watchedAt: null } }),
+        aggregate: vi.fn().mockResolvedValue({ _max: { watchedAt: null } }),
       },
     } as unknown as PrismaService;
     const reviews = {
-      getRating: jest.fn().mockResolvedValue(null),
-      setRating: jest.fn(),
+      getRating: vi.fn().mockResolvedValue(null),
+      setRating: vi.fn(),
     } as unknown as ReviewService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const service = new LibraryService(
       prisma,
       {} as MediaItemService,
@@ -312,11 +313,11 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });
     const explicit = "2026-01-15T00:00:00.000Z";
 
-    const findUnique = jest
+    const findUnique = vi
       .fn()
       .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
       .mockResolvedValueOnce({ status: "PLANNED", favorite: false });
-    const update = jest.fn().mockResolvedValueOnce({
+    const update = vi.fn().mockResolvedValueOnce({
       ...entryRow,
       status: "COMPLETED",
       finishedAt: new Date(explicit),
@@ -324,16 +325,16 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
 
     const prisma = {
       libraryEntry: { findUnique, update },
-      episode: { findMany: jest.fn().mockResolvedValue([]) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
       episodeWatch: {
-        aggregate: jest.fn().mockResolvedValue({ _max: { watchedAt: null } }),
+        aggregate: vi.fn().mockResolvedValue({ _max: { watchedAt: null } }),
       },
     } as unknown as PrismaService;
     const reviews = {
-      getRating: jest.fn().mockResolvedValue(null),
-      setRating: jest.fn(),
+      getRating: vi.fn().mockResolvedValue(null),
+      setRating: vi.fn(),
     } as unknown as ReviewService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const service = new LibraryService(
       prisma,
       {} as MediaItemService,
@@ -362,30 +363,30 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
 
     const prisma = {
       episode: {
-        findUnique: jest.fn().mockResolvedValue(episode),
-        findMany: jest.fn().mockResolvedValue([
+        findUnique: vi.fn().mockResolvedValue(episode),
+        findMany: vi.fn().mockResolvedValue([
           { id: "ep1", number: 1, airDate: null, season: { number: 1 } },
           { id: "ep2", number: 2, airDate: null, season: { number: 1 } },
         ]),
       },
       episodeWatch: {
-        create: jest.fn().mockResolvedValue({
+        create: vi.fn().mockResolvedValue({
           id: "w1",
           episodeId: "ep2",
           watchedAt: new Date(),
         }),
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValue([{ episodeId: "ep1" }, { episodeId: "ep2" }]),
       },
       libraryEntry: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue({ status: "WATCHING", finishedAt: null }),
-        update: jest.fn().mockResolvedValue({}),
+        update: vi.fn().mockResolvedValue({}),
       },
     } as unknown as PrismaService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const service = new LibraryService(
       prisma,
       {} as MediaItemService,
@@ -414,16 +415,16 @@ describe("LibraryService.unwatchSeason", () => {
       { id: "ep2", number: 2, airDate: null, season: { number: 1 } },
     ];
 
-    const deleteMany = jest.fn().mockResolvedValue({ count: 2 });
+    const deleteMany = vi.fn().mockResolvedValue({ count: 2 });
     const prisma = {
       season: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           mediaItemId: "media-1",
           mediaItem: { type: "SERIES" },
         }),
       },
       episode: {
-        findMany: jest
+        findMany: vi
           .fn()
           // unwatchSeason's own lookup (season's episode ids)
           .mockImplementationOnce(() => Promise.resolve(seasonEpisodes))
@@ -432,17 +433,17 @@ describe("LibraryService.unwatchSeason", () => {
       },
       episodeWatch: {
         deleteMany,
-        findMany: jest.fn().mockResolvedValue([]), // nothing left watched
+        findMany: vi.fn().mockResolvedValue([]), // nothing left watched
       },
       libraryEntry: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue({ status: "COMPLETED", finishedAt: new Date() }),
-        update: jest.fn().mockResolvedValue({}),
+        update: vi.fn().mockResolvedValue({}),
       },
     } as unknown as PrismaService;
 
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const service = new LibraryService(
       prisma,
       {} as MediaItemService,
@@ -466,14 +467,14 @@ describe("LibraryService.unwatchSeason", () => {
 
   it("throws when the season doesn't exist", async () => {
     const prisma = {
-      season: { findUnique: jest.fn().mockResolvedValue(null) },
+      season: { findUnique: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
     const service = new LibraryService(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
       {} as ReviewService,
-      { emit: jest.fn() } as unknown as ActivityService,
+      { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
     );
 
@@ -489,25 +490,25 @@ describe("LibraryService.deleteEntry", () => {
       { id: "s1", episodes: [{ id: "e1" }, { id: "e2" }] },
       { id: "s2", episodes: [{ id: "e3" }] },
     ];
-    const episodeWatchDeleteMany = jest.fn().mockResolvedValue({ count: 2 });
-    const reviewDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
-    const commentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
-    const libraryEntryDelete = jest.fn().mockResolvedValue({});
+    const episodeWatchDeleteMany = vi.fn().mockResolvedValue({ count: 2 });
+    const reviewDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
+    const commentUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const libraryEntryDelete = vi.fn().mockResolvedValue({});
 
     const prisma = {
       libraryEntry: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "entry-1",
           userId: "user-1",
           mediaItemId: "media-1",
         }),
         delete: libraryEntryDelete,
       },
-      season: { findMany: jest.fn().mockResolvedValue(seasons) },
+      season: { findMany: vi.fn().mockResolvedValue(seasons) },
       episodeWatch: { deleteMany: episodeWatchDeleteMany },
       review: { deleteMany: reviewDeleteMany },
       comment: { updateMany: commentUpdateMany },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
 
     const service = new LibraryService(
@@ -515,7 +516,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as MediaItemService,
       {} as AgeGateService,
       {} as ReviewService,
-      { emit: jest.fn() } as unknown as ActivityService,
+      { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
     );
 
@@ -545,18 +546,18 @@ describe("LibraryService.deleteEntry", () => {
   it("still works for a movie entry with no seasons/episodes", async () => {
     const prisma = {
       libraryEntry: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "entry-2",
           userId: "user-1",
           mediaItemId: "media-2",
         }),
-        delete: jest.fn().mockResolvedValue({}),
+        delete: vi.fn().mockResolvedValue({}),
       },
-      season: { findMany: jest.fn().mockResolvedValue([]) },
-      episodeWatch: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      review: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      comment: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      season: { findMany: vi.fn().mockResolvedValue([]) },
+      episodeWatch: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      review: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      comment: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
 
     const service = new LibraryService(
@@ -564,7 +565,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as MediaItemService,
       {} as AgeGateService,
       {} as ReviewService,
-      { emit: jest.fn() } as unknown as ActivityService,
+      { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
     );
 
@@ -577,18 +578,18 @@ describe("LibraryService.deleteEntry", () => {
 describe("LibraryService.getCalendarIcs", () => {
   function makeService(user: { id: string } | null, hasPremium: boolean) {
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue(user) },
-      episode: { findMany: jest.fn().mockResolvedValue([]) },
+      user: { findUnique: vi.fn().mockResolvedValue(user) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
     const entitlements = {
-      isEffectivelyPremium: jest.fn().mockResolvedValue(hasPremium),
+      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
     return new LibraryService(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
       {} as ReviewService,
-      { emit: jest.fn() } as unknown as ActivityService,
+      { emit: vi.fn() } as unknown as ActivityService,
       entitlements,
     );
   }

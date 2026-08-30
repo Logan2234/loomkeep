@@ -7,7 +7,7 @@ const BARE_EXCEPTION_NAMES =
 
 export default defineConfig(
   ...baseConfig(import.meta.dirname),
-  // Plain CJS jest setup scripts, not part of the app tsconfig (no allowJs) —
+  // Plain CJS vitest setup scripts, not part of the app tsconfig (no allowJs) —
   // same rationale as the *.config.* exclusion in the shared base.
   { ignores: ["test/e2e-env.js", "test/global-setup.js"] },
   {

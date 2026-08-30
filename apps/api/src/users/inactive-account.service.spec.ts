@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -7,20 +8,20 @@ import { InactiveAccountService } from "./inactive-account.service";
 function makeService() {
   const prisma = {
     user: {
-      findMany: jest.fn().mockResolvedValue([]),
-      update: jest.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
+      update: vi.fn(),
     },
   } as unknown as PrismaService;
   const mail = {
-    sendInactivityWarning: jest.fn(),
+    sendInactivityWarning: vi.fn(),
   } as unknown as MailService;
   const accountDeletion = {
-    deleteAccount: jest.fn(),
+    deleteAccount: vi.fn(),
   } as unknown as AccountDeletionService;
   // Runs the job body directly, bypassing JobRun persistence/Healthchecks —
   // those are covered by JobRunService's own tests.
   const jobRuns = {
-    record: jest.fn((_key: string, fn: () => Promise<unknown>) => fn()),
+    record: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   } as unknown as JobRunService;
 
   const service = new InactiveAccountService(
@@ -35,7 +36,7 @@ function makeService() {
 describe("InactiveAccountService.scan", () => {
   it("sends the reminder to accounts inactive for 24+ months with no warning yet", async () => {
     const { service, prisma, mail } = makeService();
-    (prisma.user.findMany as jest.Mock)
+    (prisma.user.findMany as Mock)
       .mockResolvedValueOnce([
         {
           id: "user-1",
@@ -67,7 +68,7 @@ describe("InactiveAccountService.scan", () => {
 
   it("deletes accounts inactive for 36+ months that were already warned", async () => {
     const { service, prisma, accountDeletion } = makeService();
-    (prisma.user.findMany as jest.Mock)
+    (prisma.user.findMany as Mock)
       .mockResolvedValueOnce([]) // no new warnings to send
       .mockResolvedValueOnce([{ id: "user-2" }]);
 

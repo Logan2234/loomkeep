@@ -1,4 +1,5 @@
 import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -14,7 +15,7 @@ describe("NotificationService.scanAll", () => {
   function makeService(userIds: string[]) {
     const prisma = {
       user: {
-        findMany: jest.fn().mockResolvedValue(userIds.map((id) => ({ id }))),
+        findMany: vi.fn().mockResolvedValue(userIds.map((id) => ({ id }))),
       },
     } as unknown as PrismaService;
     const service = new NotificationService(prisma, jobRunsStub);
@@ -37,7 +38,7 @@ describe("NotificationService.scanAll", () => {
 
   it("scans every eligible user and sums the created count", async () => {
     const { service } = makeService(["u1", "u2", "u3"]);
-    const scan = jest
+    const scan = vi
       .spyOn(service, "scan")
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(0)
@@ -54,8 +55,8 @@ describe("NotificationService.scanAll", () => {
 
   it("keeps scanning the rest of the batch when one user fails", async () => {
     const { service } = makeService(["u1", "u2", "u3"]);
-    jest.spyOn(service["logger"], "error").mockImplementation(() => undefined);
-    const scan = jest
+    vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
+    const scan = vi
       .spyOn(service, "scan")
       .mockResolvedValueOnce(1)
       .mockRejectedValueOnce(new Error("boom"))
@@ -93,16 +94,16 @@ describe("NotificationService.scan", () => {
   ) {
     const prisma = {
       user: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           notifyPush,
           notifyEmail,
           enabledDomains,
         }),
       },
-      episode: { findMany: jest.fn().mockResolvedValue([episode]) },
+      episode: { findMany: vi.fn().mockResolvedValue([episode]) },
       notification: {
-        findMany: jest.fn().mockResolvedValue([]),
-        createMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findMany: vi.fn().mockResolvedValue([]),
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
     const service = new NotificationService(prisma, jobRunsStub);
@@ -151,8 +152,8 @@ describe("NotificationService — bell feed (read = deleted)", () => {
   function makeService() {
     const prisma = {
       notification: {
-        findMany: jest.fn().mockResolvedValue([]),
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findMany: vi.fn().mockResolvedValue([]),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
     const service = new NotificationService(prisma, jobRunsStub);
@@ -179,7 +180,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
 
   it("reports every returned row as unread (existence = unread)", async () => {
     const { service, prisma } = makeService();
-    (prisma.notification.findMany as jest.Mock).mockResolvedValueOnce([
+    (prisma.notification.findMany as Mock).mockResolvedValueOnce([
       {
         id: "n1",
         type: "FOLLOW",
@@ -210,7 +211,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
 
   it("markRead throws when nothing was deleted", async () => {
     const { service, prisma } = makeService();
-    (prisma.notification.deleteMany as jest.Mock).mockResolvedValueOnce({
+    (prisma.notification.deleteMany as Mock).mockResolvedValueOnce({
       count: 0,
     });
     await expect(service.markRead("u1", "missing")).rejects.toBeInstanceOf(

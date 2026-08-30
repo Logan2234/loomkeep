@@ -1,4 +1,5 @@
 import { Domain } from "@loomkeep/shared";
+import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -13,7 +14,7 @@ describe("DomainGateService", () => {
   ) {
     const prisma = {
       user: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue(
             enabledDomains === null ? null : { enabledDomains },
@@ -21,14 +22,14 @@ describe("DomainGateService", () => {
       },
     } as unknown as PrismaService;
     const flags = {
-      isEnabled: jest.fn(
+      isEnabled: vi.fn(
         (name: string, fallback: boolean) =>
           maintenanceDomains.some((d) => name === `MAINTENANCE_${d}`) ||
           fallback,
       ),
     } as unknown as FeatureFlagsService;
     const entitlements = {
-      isEffectivelyPremium: jest.fn().mockResolvedValue(hasPremium),
+      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
     return new DomainGateService(prisma, flags, entitlements);
   }

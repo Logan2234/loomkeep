@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -12,17 +13,17 @@ const VIEWER = "viewer";
 /** SOCIAL_ENABLED="true" unless overridden — most tests exercise the social-on path. */
 function fakeConfig(socialEnabled = true): ConfigService {
   return {
-    get: jest.fn(() => (socialEnabled ? "true" : "false")),
+    get: vi.fn(() => (socialEnabled ? "true" : "false")),
   } as unknown as ConfigService;
 }
 
 function fakeNotifications(): NotificationService {
-  return { create: jest.fn() } as unknown as NotificationService;
+  return { create: vi.fn() } as unknown as NotificationService;
 }
 
 function fakeFlags(): FeatureFlagsService {
   return {
-    isEnabled: jest.fn((_name: string, fallback: boolean) => fallback),
+    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
   } as unknown as FeatureFlagsService;
 }
 
@@ -59,11 +60,11 @@ describe("ListService.getForViewer — own-visibility gate", () => {
   function make(row: ReturnType<typeof listRow>, rel: ViewerRelation) {
     const prisma = {
       list: {
-        findUnique: jest.fn().mockResolvedValue(row),
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ ...row, items: [] }),
+        findUnique: vi.fn().mockResolvedValue(row),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ ...row, items: [] }),
       },
       user: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: row.userId,
           username: row.userId,
           displayName: row.userId,
@@ -72,9 +73,9 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       },
     } as unknown as PrismaService;
     const visibility = {
-      getRelation: jest.fn().mockResolvedValue(rel),
+      getRelation: vi.fn().mockResolvedValue(rel),
     } as unknown as VisibilityService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     return new ListService(
       prisma,
       visibility,
@@ -170,23 +171,23 @@ describe("ListService.listForUser — editor lists on a profile", () => {
         _count: { items: 0 },
       }),
     ];
-    const listFindMany = jest
+    const listFindMany = vi
       .fn()
       .mockResolvedValueOnce(ownRows)
       .mockResolvedValueOnce(editorRows);
     const prisma = {
       user: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue({ id: "profile-user", profileAccess: "PUBLIC" }),
-        findUniqueOrThrow: jest.fn((args: { where: { id: string } }) =>
+        findUniqueOrThrow: vi.fn((args: { where: { id: string } }) =>
           Promise.resolve(userSummary(args.where.id)),
         ),
       },
       list: { findMany: listFindMany },
     } as unknown as PrismaService;
     const visibility = {
-      getRelation: jest.fn((_viewerId: string, target: { id: string }) =>
+      getRelation: vi.fn((_viewerId: string, target: { id: string }) =>
         Promise.resolve(relationByOwnerId[target.id] ?? relation()),
       ),
     } as unknown as VisibilityService;
@@ -216,7 +217,7 @@ describe("ListService.listForUser — editor lists on a profile", () => {
 
 describe("ListService.addItem", () => {
   function make(dup: boolean) {
-    const create = jest.fn().mockResolvedValue({
+    const create = vi.fn().mockResolvedValue({
       id: "i1",
       targetType: "MEDIA",
       targetId: "m1",
@@ -225,18 +226,16 @@ describe("ListService.addItem", () => {
     });
     const prisma = {
       list: {
-        findUnique: jest.fn().mockResolvedValue(listRow({ userId: "u1" })),
+        findUnique: vi.fn().mockResolvedValue(listRow({ userId: "u1" })),
       },
       listItem: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValue(dup ? { id: "existing" } : null),
-        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(dup ? { id: "existing" } : null),
+        findFirst: vi.fn().mockResolvedValue(null),
         create,
       },
-      mediaItem: { findMany: jest.fn().mockResolvedValue([]) },
+      mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -273,8 +272,8 @@ describe("ListService.reorder", () => {
   const UPDATED_AT = new Date("2026-01-01T00:00:00.000Z");
 
   function make(existingIds: string[], updateManyCount = 1) {
-    const listItemUpdate = jest.fn();
-    const listUpdateMany = jest
+    const listItemUpdate = vi.fn();
+    const listUpdateMany = vi
       .fn()
       .mockResolvedValue({ count: updateManyCount });
     const tx = {
@@ -283,16 +282,14 @@ describe("ListService.reorder", () => {
     };
     const prisma = {
       list: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue(listRow({ userId: "u1", updatedAt: UPDATED_AT })),
       },
       listItem: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue(existingIds.map((id) => ({ id }))),
+        findMany: vi.fn().mockResolvedValue(existingIds.map((id) => ({ id }))),
       },
-      $transaction: jest.fn((fn) => fn(tx)),
+      $transaction: vi.fn((fn) => fn(tx)),
     } as unknown as PrismaService;
     const svc = new ListService(
       prisma,
@@ -348,16 +345,16 @@ describe("ListService.canEdit (via getEditable)", () => {
     const row = listRow({ userId: opts.ownerId ?? "owner", items: [] });
     const prisma = {
       list: {
-        findUnique: jest.fn().mockResolvedValue(row),
-        findUniqueOrThrow: jest.fn().mockResolvedValue(row),
+        findUnique: vi.fn().mockResolvedValue(row),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(row),
       },
       listMember: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue(opts.member ? { id: "m1" } : null),
       },
       user: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: row.userId,
           username: row.userId,
           displayName: row.userId,
@@ -401,21 +398,21 @@ describe("ListService.canEdit (via getEditable)", () => {
 describe("ListService member management — owner only", () => {
   function make(ownerId: string) {
     const row = listRow({ userId: ownerId });
-    const create = jest.fn().mockResolvedValue({
+    const create = vi.fn().mockResolvedValue({
       id: "lm1",
       createdAt: new Date(),
     });
     const prisma = {
-      list: { findUnique: jest.fn().mockResolvedValue(row) },
+      list: { findUnique: vi.fn().mockResolvedValue(row) },
       user: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "friend",
           username: "friend",
           displayName: "Friend",
           profileAccess: "PUBLIC",
           avatarUpdatedAt: null,
         }),
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: ownerId,
           username: ownerId,
           displayName: ownerId,
@@ -424,9 +421,9 @@ describe("ListService member management — owner only", () => {
         }),
       },
       listMember: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
         create,
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
     const notifications = fakeNotifications();
@@ -480,15 +477,15 @@ describe("ListService member management — owner only", () => {
 
 describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
   function make(rows: { id: string; members: { userId: string }[] }[]) {
-    const listUpdate = jest.fn();
-    const listMemberDelete = jest.fn();
+    const listUpdate = vi.fn();
+    const listMemberDelete = vi.fn();
     const prisma = {
       list: {
-        findMany: jest.fn().mockResolvedValue(rows),
+        findMany: vi.fn().mockResolvedValue(rows),
         update: listUpdate,
       },
       listMember: { delete: listMemberDelete },
-      $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
+      $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
     } as unknown as PrismaService;
     const svc = new ListService(
       prisma,
@@ -530,17 +527,17 @@ describe("ListService — activity emission on create/share", () => {
     const row = listRow({ userId: "u1", visibility: "PRIVATE" });
     const prisma = {
       list: {
-        create: jest.fn().mockResolvedValue(row),
-        findUnique: jest.fn().mockResolvedValue(row),
-        update: jest.fn().mockResolvedValue({ ...row, visibility: "FRIENDS" }),
+        create: vi.fn().mockResolvedValue(row),
+        findUnique: vi.fn().mockResolvedValue(row),
+        update: vi.fn().mockResolvedValue({ ...row, visibility: "FRIENDS" }),
       },
       user: {
-        findUniqueOrThrow: jest
+        findUniqueOrThrow: vi
           .fn()
           .mockResolvedValue({ defaultListVisibility: "PRIVATE" }),
       },
     } as unknown as PrismaService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -578,22 +575,22 @@ describe("ListService — activity emission on create/share", () => {
 describe("ListService — Figurant can't share a list", () => {
   function make() {
     const row = listRow({ userId: "u1", visibility: "PRIVATE" });
-    const create = jest.fn().mockResolvedValue(row);
-    const update = jest.fn().mockResolvedValue(row);
+    const create = vi.fn().mockResolvedValue(row);
+    const update = vi.fn().mockResolvedValue(row);
     const prisma = {
       list: {
         create,
-        findUnique: jest.fn().mockResolvedValue(row),
+        findUnique: vi.fn().mockResolvedValue(row),
         update,
       },
       user: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           defaultListVisibility: "PRIVATE",
           profileAccess: "GHOST",
         }),
       },
     } as unknown as PrismaService;
-    const activity = { emit: jest.fn() } as unknown as ActivityService;
+    const activity = { emit: vi.fn() } as unknown as ActivityService;
     const svc = new ListService(
       prisma,
       {} as VisibilityService,

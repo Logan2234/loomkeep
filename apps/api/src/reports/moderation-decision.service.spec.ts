@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { MailService } from "../mail/mail.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -5,12 +6,12 @@ import { ModerationDecisionService } from "./moderation-decision.service";
 
 function make() {
   const prisma = {
-    moderationDecision: { create: jest.fn() },
+    moderationDecision: { create: vi.fn() },
   } as unknown as PrismaService;
   const mail = {
-    sendModerationDecision: jest.fn(),
+    sendModerationDecision: vi.fn(),
   } as unknown as MailService;
-  const notifications = { create: jest.fn() } as unknown as NotificationService;
+  const notifications = { create: vi.fn() } as unknown as NotificationService;
 
   return {
     svc: new ModerationDecisionService(prisma, mail, notifications),

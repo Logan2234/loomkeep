@@ -3,6 +3,7 @@ import type {
   ImportPlan,
   ImportPlanItem,
 } from "@loomkeep/shared";
+import { vi, type Mock } from "vitest";
 import type { BookItemService } from "../../../books/book-item.service";
 import type { PrismaService } from "../../../prisma/prisma.service";
 import type { AgeGateService } from "../../../users/age-gate.service";
@@ -27,9 +28,9 @@ function summary(over: Partial<BookSummaryDto> = {}): BookSummaryDto {
 
 function setup(
   overrides: {
-    resolve?: jest.Mock;
-    resolveByIsbns?: jest.Mock;
-    getDetails?: jest.Mock;
+    resolve?: Mock;
+    resolveByIsbns?: Mock;
+    getDetails?: Mock;
     inLibraryRefs?: {
       source: string;
       externalId: string;
@@ -40,41 +41,39 @@ function setup(
     allowAdult?: boolean;
   } = {},
 ) {
-  const getDetails = overrides.getDetails ?? jest.fn();
+  const getDetails = overrides.getDetails ?? vi.fn();
   const bookItemService = {
-    resolve: overrides.resolve ?? jest.fn().mockResolvedValue(null),
+    resolve: overrides.resolve ?? vi.fn().mockResolvedValue(null),
     resolveByIsbns:
       overrides.resolveByIsbns ??
-      jest.fn().mockResolvedValue({ matches: new Map(), failedIsbns: [] }),
-    providerFor: jest.fn().mockReturnValue({ getDetails }),
-    persistDetails: jest.fn().mockResolvedValue({ id: "item-1" }),
+      vi.fn().mockResolvedValue({ matches: new Map(), failedIsbns: [] }),
+    providerFor: vi.fn().mockReturnValue({ getDetails }),
+    persistDetails: vi.fn().mockResolvedValue({ id: "item-1" }),
   };
-  const upsert = jest.fn().mockResolvedValue({ id: "entry-1" });
-  const createMany = jest.fn().mockResolvedValue({ count: 0 });
-  const deleteMany = jest.fn().mockResolvedValue({ count: 0 });
+  const upsert = vi.fn().mockResolvedValue({ id: "entry-1" });
+  const createMany = vi.fn().mockResolvedValue({ count: 0 });
+  const deleteMany = vi.fn().mockResolvedValue({ count: 0 });
   const prisma = {
     bookExternalId: {
-      findMany: jest.fn().mockResolvedValue(overrides.inLibraryRefs ?? []),
+      findMany: vi.fn().mockResolvedValue(overrides.inLibraryRefs ?? []),
     },
     bookEntry: {
-      findMany: jest.fn().mockResolvedValue(overrides.ownedEntries ?? []),
-      findUnique: jest.fn().mockResolvedValue(overrides.existingEntry ?? null),
+      findMany: vi.fn().mockResolvedValue(overrides.ownedEntries ?? []),
+      findUnique: vi.fn().mockResolvedValue(overrides.existingEntry ?? null),
       upsert,
       deleteMany,
     },
     bookReplay: { createMany },
     user: {
-      findUnique: jest.fn().mockResolvedValue({ email: "test@example.com" }),
+      findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: jest.fn() },
+    importRun: { create: vi.fn() },
   };
   const ageGate = {
-    allowsAdultContent: jest
-      .fn()
-      .mockResolvedValue(overrides.allowAdult ?? true),
+    allowsAdultContent: vi.fn().mockResolvedValue(overrides.allowAdult ?? true),
   };
 
-  const reviews = { setRating: jest.fn().mockResolvedValue(undefined) };
+  const reviews = { setRating: vi.fn().mockResolvedValue(undefined) };
   const source = new StoryGraphImportSource(
     prisma as unknown as PrismaService,
     bookItemService as unknown as BookItemService,
@@ -85,7 +84,7 @@ function setup(
     [source],
     prisma as unknown as PrismaService,
     {} as never,
-    { isEffectivelyPremium: jest.fn().mockResolvedValue(true) } as never,
+    { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
   );
   return { service, bookItemService, upsert, createMany, deleteMany, reviews };
 }
@@ -120,13 +119,13 @@ async function analyze(service: ImportJobService, csv: string) {
 
 describe("BookCsvSource (via StoryGraphImportSource)", () => {
   it("resolves rows, groups by status and reports the unmatched", async () => {
-    const resolveByIsbns = jest.fn().mockResolvedValue({
+    const resolveByIsbns = vi.fn().mockResolvedValue({
       matches: new Map([
         ["9782228937597", summary({ sourceId: "OL1W", title: "First" })],
       ]),
       failedIsbns: [],
     });
-    const resolve = jest
+    const resolve = vi
       .fn()
       .mockResolvedValueOnce(summary({ sourceId: "G-2", title: "Second" }))
       .mockResolvedValueOnce(null); // Unmatched.
@@ -167,7 +166,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("counts API failures separately from genuine non-matches", async () => {
-    const resolve = jest
+    const resolve = vi
       .fn()
       .mockResolvedValueOnce(summary({ sourceId: "OL1W" }))
       .mockRejectedValueOnce(new Error("rate limited"))
@@ -191,7 +190,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
 
   it("flags books already in the user's library by (source, id)", async () => {
     const { service } = setup({
-      resolveByIsbns: jest.fn().mockResolvedValue({
+      resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL-DUPW" })]]),
         failedIsbns: [],
       }),
@@ -219,7 +218,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   it("skips adult titles in the plan when the account is not opted in", async () => {
     const { service } = setup({
       allowAdult: false,
-      resolveByIsbns: jest.fn().mockResolvedValue({
+      resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([
           ["9782228937597", summary({ sourceId: "G-ADULT", isAdult: true })],
         ]),
@@ -238,7 +237,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit persists metadata, marks finished books fully read, backfills replays", async () => {
-    const getDetails = jest.fn().mockResolvedValue({
+    const getDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
@@ -248,7 +247,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     });
     const { service, bookItemService, upsert, createMany, reviews } = setup({
       getDetails,
-      resolveByIsbns: jest.fn().mockResolvedValue({
+      resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
@@ -301,7 +300,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit does not backfill replays when the entry already exists", async () => {
-    const getDetails = jest.fn().mockResolvedValue({
+    const getDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
@@ -312,7 +311,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     const { service, createMany } = setup({
       getDetails,
       existingEntry: { id: "entry-1" },
-      resolveByIsbns: jest.fn().mockResolvedValue({
+      resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
@@ -335,7 +334,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit skips adult titles even if their key is included", async () => {
-    const getDetails = jest.fn().mockResolvedValue({
+    const getDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W", isAdult: true }),
       overview: null,
       genres: [],
@@ -348,7 +347,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     const { service, upsert } = setup({
       getDetails,
       allowAdult: false,
-      resolveByIsbns: jest.fn().mockResolvedValue({
+      resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),
@@ -373,7 +372,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
   });
 
   it("commit with overwrite wipes the book library first", async () => {
-    const getDetails = jest.fn().mockResolvedValue({
+    const getDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
       genres: [],
@@ -383,7 +382,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     });
     const { service, deleteMany } = setup({
       getDetails,
-      resolveByIsbns: jest.fn().mockResolvedValue({
+      resolveByIsbns: vi.fn().mockResolvedValue({
         matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
         failedIsbns: [],
       }),

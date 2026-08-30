@@ -1,13 +1,14 @@
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { QuotaTrackerService } from "./quota-tracker.service";
 
-function makePrisma(upsert: jest.Mock) {
+function makePrisma(upsert: Mock) {
   return { apiCallCounter: { upsert } } as unknown as PrismaService;
 }
 
 describe("QuotaTrackerService.record", () => {
   it("upserts today's UTC counter for the given provider", () => {
-    const upsert = jest.fn().mockResolvedValue(undefined);
+    const upsert = vi.fn().mockResolvedValue(undefined);
     const service = new QuotaTrackerService(makePrisma(upsert));
 
     service.record("tmdb");
@@ -25,7 +26,7 @@ describe("QuotaTrackerService.record", () => {
   });
 
   it("never throws when the upsert fails (best-effort counting)", () => {
-    const upsert = jest.fn().mockRejectedValue(new Error("db down"));
+    const upsert = vi.fn().mockRejectedValue(new Error("db down"));
     const service = new QuotaTrackerService(makePrisma(upsert));
 
     expect(() => service.record("tmdb")).not.toThrow();

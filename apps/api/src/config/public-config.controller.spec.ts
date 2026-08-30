@@ -1,18 +1,19 @@
 import type { ConfigService } from "@nestjs/config";
+import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PublicConfigController } from "./public-config.controller";
 
-jest.mock("node:fs/promises", () => ({
-  readFile: jest.fn().mockResolvedValue(JSON.stringify({ version: "9.9.9" })),
+vi.mock("node:fs/promises", () => ({
+  readFile: vi.fn().mockResolvedValue(JSON.stringify({ version: "9.9.9" })),
 }));
 
 function makeController(env: Record<string, string | undefined>) {
   const config = {
-    get: jest.fn((key: string) => env[key]),
+    get: vi.fn((key: string) => env[key]),
   } as unknown as ConfigService;
 
   const flags = {
-    isEnabled: jest.fn((_name: string, fallback: boolean) => fallback),
+    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
   } as unknown as FeatureFlagsService;
 
   return {
