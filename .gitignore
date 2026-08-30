@@ -38,6 +38,7 @@ apps/api/backups/
 *.log
 .turbo/
 coverage/
+coverage-e2e/
 
 # OS / editors
 .DS_Store

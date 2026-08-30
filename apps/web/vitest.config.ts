@@ -10,5 +10,13 @@ export default defineConfig({
   plugins: [sveltekit()],
   test: {
     include: ["src/**/*.spec.ts"],
+    coverage: {
+      provider: "v8",
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.{ts,svelte}"],
+      // Vitest's v8 provider defaults to text/html/clover/json — no lcov,
+      // which is what Codecov's upload actually reads.
+      reporter: ["lcov", "text", "html"],
+    },
   },
 });

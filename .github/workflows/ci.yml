@@ -84,8 +84,17 @@ jobs:
         run: pnpm --filter @loomkeep/web generate:paraglide
       - name: svelte-check
         run: pnpm --filter @loomkeep/web check
-      - name: Web unit tests
-        run: pnpm --filter @loomkeep/web test
+      - name: Web unit tests (with coverage)
+        run: pnpm --filter @loomkeep/web test:cov
+      - name: upload unit coverage to Codecov
+        background: true
+        continue-on-error: true
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: apps/web/coverage/lcov.info
+          flags: web-unit
+          fail_ci_if_error: false
       - name: Web production build
         run: pnpm --filter @loomkeep/web build
       - name: Lighthouse
@@ -131,13 +140,14 @@ jobs:
         run: pnpm --filter @loomkeep/api exec prisma generate
       - name: api unit tests (with coverage)
         run: pnpm --filter @loomkeep/api test:cov
-      - name: upload coverage to Codecov
+      - name: upload unit coverage to Codecov
         background: true
         continue-on-error: true
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: apps/api/coverage/lcov.info
+          flags: api-unit
           fail_ci_if_error: false
       - name: Upload ESLint API results
         if: always()
@@ -184,7 +194,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
       - run: pnpm --filter @loomkeep/api exec prisma generate
-      - run: pnpm --filter @loomkeep/api test:e2e
+      - run: pnpm --filter @loomkeep/api test:e2e:cov
+      - name: upload e2e coverage to Codecov
+        background: true
+        continue-on-error: true
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: apps/api/coverage-e2e/lcov.info
+          flags: api-e2e
+          fail_ci_if_error: false
 
   knip:
     needs: changes

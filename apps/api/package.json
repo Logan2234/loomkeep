@@ -30,6 +30,7 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "test:e2e:cov": "vitest run --config ./vitest.config.e2e.ts --coverage",
     "graph": "ts-node -r tsconfig-paths/register scripts/graph.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "spelunk": "ts-node ./scripts/graph.ts"
