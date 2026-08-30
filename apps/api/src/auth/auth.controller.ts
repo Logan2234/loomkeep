@@ -8,10 +8,21 @@ import {
   Ip,
   Post,
 } from "@nestjs/common";
+import {
+  ApiCreatedResponse,
+  ApiExtraModels,
+  ApiOkResponse,
+  getSchemaPath,
+} from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { AuthResult, AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
+import { AuthResultResponseDto } from "./dto/auth-result-response.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import {
+  LoginMfaChallengeResponseDto,
+  LoginSuccessResponseDto,
+} from "./dto/login-response.dto";
 import { LoginDto } from "./dto/login.dto";
 import { MfaVerifyDto } from "./dto/mfa-verify.dto";
 import { RefreshDto } from "./dto/refresh.dto";
@@ -30,6 +41,7 @@ export class AuthController {
   // /auth/register calls (app.e2e-spec.ts) stay well under the budget —
   // bump this further alongside adding another one there.
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiCreatedResponse({ type: AuthResultResponseDto })
   @Post("register")
   register(
     @Body() dto: RegisterDto,
@@ -42,6 +54,15 @@ export class AuthController {
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
+  @ApiExtraModels(LoginMfaChallengeResponseDto, LoginSuccessResponseDto)
+  @ApiOkResponse({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(LoginMfaChallengeResponseDto) },
+        { $ref: getSchemaPath(LoginSuccessResponseDto) },
+      ],
+    },
+  })
   @Post("login")
   login(
     @Body() dto: LoginDto,
@@ -54,6 +75,7 @@ export class AuthController {
   // Same budget as login — this is its natural continuation for MFA-enabled accounts.
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("mfa/verify")
   async mfaVerify(
     @Body() dto: MfaVerifyDto,

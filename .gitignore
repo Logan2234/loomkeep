@@ -31,6 +31,13 @@ docker/observability/healthchecks_token
 # Generated docs (prisma-erd-generator output; regenerated on prisma generate OR modules.md for NestJS modules)
 docs/modules.md
 
+# Generated OpenAPI contract (apps/api generate:openapi) and the typed
+# client derived from it (apps/web generate:api-types) — regenerated on
+# demand, not committed. See apps/web/src/lib/api/generated/typed-request.ts
+# (hand-written, stays tracked) for the wrapper built on top of it.
+apps/api/openapi.json
+apps/web/src/lib/api/generated/schema.d.ts
+
 # Local dev backups
 apps/api/backups/
 
