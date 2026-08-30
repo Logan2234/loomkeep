@@ -66,8 +66,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # The report job's reportDir (.github/zap/plan.yml) isn't created
       # automatically by the automation framework — without this the report
-      # job fails with NoSuchFileException and no SARIF file is ever written.
-      - run: mkdir -p zap-results
+      # job fails with NoSuchFileException. `chmod` matters too: the ZAP
+      # container runs as its own internal user and writes into this
+      # directory over the bind mount — action-af's own `chmod a+w` only
+      # touches the workspace root, not a subdirectory created before it
+      # runs, so without this the container hits AccessDeniedException
+      # trying to write the report into a dir it doesn't own.
+      - run: mkdir -p zap-results && chmod a+w zap-results
       - name: Run ZAP
         uses: zaproxy/action-af@v0.3.0
         with:
@@ -75,6 +80,46 @@ jobs:
       - name: List ZAP results
         if: always()
         run: find zap-results -type f -maxdepth 2 -print
+      # Code Scanning's upload-sarif step always sends a file:// checkoutURI
+      # and rejects the whole upload if any result location is absolute
+      # with a different scheme — the sarif-json template's locations are
+      # the scanned page's own https:// URL (see ZAP's own docs example),
+      # so without this every ZAP finding fails to upload with "SARIF URI
+      # scheme https did not match the checkout URI scheme file".
+      - name: Rewrite ZAP SARIF locations for Code Scanning
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from urllib.parse import urlparse
+
+          path = "zap-results/zap-results.sarif.json"
+          if not os.path.exists(path):
+              raise SystemExit(0)
+
+          with open(path) as f:
+              sarif = json.load(f)
+
+          for run in sarif.get("runs", []):
+              for result in run.get("results", []):
+                  for location in result.get("locations", []):
+                      artifact = location.get("physicalLocation", {}).get(
+                          "artifactLocation", {}
+                      )
+                      uri = artifact.get("uri", "")
+                      if uri.startswith("http://") or uri.startswith("https://"):
+                          parsed_path = urlparse(uri).path or "/"
+                          slug = (
+                              "index"
+                              if parsed_path == "/"
+                              else parsed_path.lstrip("/")
+                          )
+                          artifact["uri"] = f"zap-findings/{slug}"
+
+          with open(path, "w") as f:
+              json.dump(sarif, f)
+          PY
       - name: Upload ZAP SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
