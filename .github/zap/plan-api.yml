@@ -22,6 +22,12 @@ jobs:
   - type: spider
     parameters:
       context: loomkeep-api
+      # The context's own url (bare /api/) 404s — NestJS has no handler on
+      # the exact global-prefix root, only sub-routes — and action-af treats
+      # that spider warning as a hard failure (exit code 2) even though the
+      # report itself still gets generated. Seed from a route that actually
+      # returns 200 instead.
+      url: http://localhost:3000/api/health
       maxDuration: 5
 
   - type: passiveScan-wait
