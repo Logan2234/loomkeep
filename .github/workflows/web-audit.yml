@@ -54,8 +54,9 @@ jobs:
   zap:
     name: OWASP ZAP
     runs-on: ubuntu-latest
-    # Same guard as pa11y above — skip scanning prod off the back of a
-    # failed/stale Deploy run.
+    # Same guard as pa11y above — skip scanning off the back of a
+    # failed/stale Deploy run (the ephemeral stack below targets whatever
+    # commit Deploy just shipped, via its SHA-tagged GHCR images).
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
@@ -65,8 +66,83 @@ jobs:
       security-events: write
 
     steps:
+      # Checks out the exact commit Deploy just shipped (its SHA-tagged
+      # api/web images already sit on GHCR from CI's docker-push job — see
+      # .github/workflows/ci.yml) so this job never needs to build anything
+      # itself. Falls back to the trigger commit on schedule/workflow_dispatch,
+      # where there's no workflow_run context.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # The report job's reportDir (.github/zap/plan.yml) isn't created
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: vars
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      # ----------------------------------------------------------------
+      # Stand up an ephemeral api+web+db stack (docker/docker-compose.yml)
+      # instead of scanning https://loomkeep.app directly — activeScan sends
+      # real attack payloads, and Logan isn't comfortable with that hitting
+      # production (no staging environment exists otherwise). Secrets below
+      # are throwaway, CI-only values: this stack never sees real traffic
+      # and is torn down at the end of the job.
+      - name: Start ephemeral stack
+        env:
+          IMAGE_TAG: ${{ steps.vars.outputs.sha }}
+          POSTGRES_PASSWORD: ci-zap-postgres-password
+          JWT_ACCESS_SECRET: ci-zap-access-secret
+          JWT_REFRESH_SECRET: ci-zap-refresh-secret
+          BACKUP_ENCRYPTION_PUBLIC_KEY: ci-zap-unused-backup-key
+        run: |
+          docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml pull
+          docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d
+
+      # The api migrates its own schema on boot (see apps/api/Dockerfile's
+      # CMD), but there's no signal here for "migrations done, server
+      # listening" beyond polling — same for web, which depends_on: api with
+      # no condition, so compose considers it "up" the instant the container
+      # starts, well before SvelteKit's Node server is actually accepting
+      # connections.
+      - name: Wait for stack readiness
+        run: |
+          for service in "api http://localhost:3000/api/health" "web http://localhost:8080/"; do
+            name=${service%% *}
+            url=${service#* }
+            echo "waiting for $name ($url)..."
+            for attempt in $(seq 1 30); do
+              if curl -fsS -o /dev/null "$url"; then
+                echo "$name is up"
+                break
+              fi
+              if [ "$attempt" = 30 ]; then
+                echo "$name never became ready" >&2
+                docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml logs "$name" >&2
+                exit 1
+              fi
+              sleep 2
+            done
+          done
+
+      # Seeds synthetic users/library data (apps/api/prisma/seed.ts) so the
+      # crawl/scan has real pages to find instead of an empty database.
+      # Runs from the runner rather than inside the api container: the seed
+      # script needs ts-node and other devDependencies that the prod-only
+      # runtime image (see apps/api/Dockerfile's `pnpm deploy --prod`)
+      # doesn't carry.
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:package
+      - run: pnpm --filter @loomkeep/api exec prisma generate
+      - name: Seed synthetic data
+        env:
+          DATABASE_URL: postgresql://loomkeep:ci-zap-postgres-password@localhost:5432/loomkeep?schema=public
+        run: pnpm --filter @loomkeep/api exec prisma db seed
+
+      # The report job's reportDir (.github/zap/plan*.yml) isn't created
       # automatically by the automation framework — without this the report
       # job fails with NoSuchFileException. `chmod` matters too: the ZAP
       # container runs as its own internal user and writes into this
@@ -75,22 +151,36 @@ jobs:
       # runs, so without this the container hits AccessDeniedException
       # trying to write the report into a dir it doesn't own.
       - run: mkdir -p zap-results && chmod a+w zap-results
-      - name: Run ZAP
+      - name: Run ZAP (web)
         uses: zaproxy/action-af@v0.3.0
         with:
           plan: .github/zap/plan.yml
+      # Unblocks activeScan-ing write endpoints now that it's the ephemeral
+      # stack's synthetic data taking the hit, not production — was removed
+      # as dead code from this workflow previously since its old target
+      # (/api/openapi.json) doesn't even exist in prod (Swagger is dev-only,
+      # see apps/api/src/main.ts).
+      - name: Run ZAP (api)
+        uses: zaproxy/action-af@v0.3.0
+        with:
+          plan: .github/zap/plan-api.yml
       - name: List ZAP results
         if: always()
         run: find zap-results -type f -maxdepth 2 -print
+
+      - name: Tear down ephemeral stack
+        if: always()
+        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml down -v
+
       # Code Scanning's upload-sarif step always sends a file:// checkoutURI
       # and rejects the whole upload if any result location is absolute
       # with a different scheme — the sarif-json template's locations are
-      # the scanned page's own https:// URL (see ZAP's own docs example),
+      # the scanned page's own http(s):// URL (see ZAP's own docs example),
       # so without this every ZAP finding fails to upload with "SARIF URI
-      # scheme https did not match the checkout URI scheme file". Writes to
-      # a *new* file rather than overwriting zap-results.sarif.json in
-      # place: that file was created by the ZAP container's own user over
-      # the bind mount, so it's readable but not writable by the runner
+      # scheme http did not match the checkout URI scheme file". Writes to
+      # *new* files rather than overwriting the *-results.sarif.json files
+      # in place: those were created by the ZAP container's own user over
+      # the bind mount, so they're readable but not writable by the runner
       # user this step runs as (PermissionError on open(..., "w")).
       - name: Rewrite ZAP SARIF locations for Code Scanning
         if: always()
@@ -100,36 +190,44 @@ jobs:
           import os
           from urllib.parse import urlparse
 
-          src = "zap-results/zap-results.sarif.json"
-          dst = "zap-results/zap-results.fixed.sarif.json"
-          if not os.path.exists(src):
-              raise SystemExit(0)
+          for src, dst in [
+              ("zap-results/zap-results.sarif.json", "zap-results/zap-results.fixed.sarif.json"),
+              ("zap-results/zap-api-results.sarif.json", "zap-results/zap-api-results.fixed.sarif.json"),
+          ]:
+              if not os.path.exists(src):
+                  continue
 
-          with open(src) as f:
-              sarif = json.load(f)
+              with open(src) as f:
+                  sarif = json.load(f)
 
-          for run in sarif.get("runs", []):
-              for result in run.get("results", []):
-                  for location in result.get("locations", []):
-                      artifact = location.get("physicalLocation", {}).get(
-                          "artifactLocation", {}
-                      )
-                      uri = artifact.get("uri", "")
-                      if uri.startswith("http://") or uri.startswith("https://"):
-                          parsed_path = urlparse(uri).path or "/"
-                          slug = (
-                              "index"
-                              if parsed_path == "/"
-                              else parsed_path.lstrip("/")
+              for run in sarif.get("runs", []):
+                  for result in run.get("results", []):
+                      for location in result.get("locations", []):
+                          artifact = location.get("physicalLocation", {}).get(
+                              "artifactLocation", {}
                           )
-                          artifact["uri"] = f"zap-findings/{slug}"
+                          uri = artifact.get("uri", "")
+                          if uri.startswith("http://") or uri.startswith("https://"):
+                              parsed_path = urlparse(uri).path or "/"
+                              slug = (
+                                  "index"
+                                  if parsed_path == "/"
+                                  else parsed_path.lstrip("/")
+                              )
+                              artifact["uri"] = f"zap-findings/{slug}"
 
-          with open(dst, "w") as f:
-              json.dump(sarif, f)
+              with open(dst, "w") as f:
+                  json.dump(sarif, f)
           PY
-      - name: Upload ZAP SARIF
+      - name: Upload ZAP SARIF (web)
         if: always()
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         with:
           sarif_file: zap-results/zap-results.fixed.sarif.json
           category: zap
+      - name: Upload ZAP SARIF (api)
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: zap-results/zap-api-results.fixed.sarif.json
+          category: zap-api
