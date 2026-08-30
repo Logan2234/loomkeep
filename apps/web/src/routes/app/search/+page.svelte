@@ -118,10 +118,11 @@
     { label: "Auteur", value: "author" },
     { label: "ISBN", value: "isbn" },
   ];
-  type GameMode = "title" | "studio";
+  type GameMode = "title" | "studio" | "franchise";
   const GAME_MODE_OPTIONS: { label: string; value: GameMode }[] = [
     { label: "Titre", value: "title" },
     { label: "Studio", value: "studio" },
+    { label: "Franchise", value: "franchise" },
   ];
 
   let mediaType = $state<MediaType | undefined>(undefined);

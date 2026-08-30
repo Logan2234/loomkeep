@@ -33,17 +33,17 @@
     query: string;
     limit?: number;
     onResults?: (count: number) => void;
-    mode?: "title" | "studio";
+    mode?: "title" | "studio" | "franchise";
   } = $props();
 
   const DEBOUNCE_MS = 300;
 
   // `query`/`mode` (raw) drive the input; `queryFilter` (debounced) is the
   // formatted string that actually drives the fetch — same split as
-  // LibraryBrowser/MediaSearchPanel. `studio:"…"` is parsed by IgdbProvider,
-  // not real IGDB syntax — see its `search()` for why. A key-based query
-  // already discards a stale in-flight response on its own once the key
-  // moves on, so there's no manual staleness guard to maintain.
+  // LibraryBrowser/MediaSearchPanel. `studio:"…"`/`franchise:"…"` are parsed
+  // by IgdbProvider, not real IGDB syntax — see its `search()` for why. A
+  // key-based query already discards a stale in-flight response on its own
+  // once the key moves on, so there's no manual staleness guard to maintain.
   let queryFilter = $state("");
   const debouncedQueryFilter = debounce((q: string) => {
     queryFilter = q;
@@ -57,7 +57,13 @@
       return;
     }
     const safeQ = q.replace(/"/g, "");
-    debouncedQueryFilter.call(mode === "studio" ? `studio:"${safeQ}"` : q);
+    debouncedQueryFilter.call(
+      mode === "studio"
+        ? `studio:"${safeQ}"`
+        : mode === "franchise"
+          ? `franchise:"${safeQ}"`
+          : q,
+    );
     return () => debouncedQueryFilter.cancel();
   });
 

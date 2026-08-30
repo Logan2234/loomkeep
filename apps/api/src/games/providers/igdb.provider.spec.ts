@@ -127,7 +127,32 @@ describe("IgdbProvider", () => {
     expect(companiesCall?.[1]?.body).toContain('where name ~ *"Guerrilla"*');
   });
 
-  it("returns no results when the studio name matches nothing", async () => {
+  it('resolves a franchise:"…" query to games in that franchise', async () => {
+    const fetchMock = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/franchises": [{ id: 596 }],
+      "/games": [{ id: 7346, name: "The Legend of Zelda: Breath of the Wild" }],
+    });
+
+    const results = await provider.search('franchise:"Zelda"');
+
+    expect(results).toEqual([
+      {
+        source: "IGDB",
+        sourceId: "7346",
+        title: "The Legend of Zelda: Breath of the Wild",
+        year: null,
+        coverUrl: null,
+        isAdult: false,
+      },
+    ]);
+    const gamesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/games"),
+    );
+    expect(gamesCall?.[1]?.body).toContain("franchises = (596)");
+  });
+
+  it("returns no results when the studio/franchise name matches nothing", async () => {
     mockFetchByUrl({
       "id.twitch.tv": TOKEN_RESPONSE,
       "/companies": [],
