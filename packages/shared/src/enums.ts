@@ -78,17 +78,13 @@ export type DigestCadence = (typeof DigestCadence)[keyof typeof DigestCadence];
  * emits and the web renders.
  */
 export const NotificationType = {
-  /** A new episode of a tracked show aired. */
   NEW_EPISODE: "NEW_EPISODE",
   /** Someone started following you (public profile). */
   FOLLOW: "FOLLOW",
   /** Someone asked to follow your private profile. */
   FOLLOW_REQUEST: "FOLLOW_REQUEST",
-  /** Someone approved your follow request. */
   FOLLOW_ACCEPTED: "FOLLOW_ACCEPTED",
-  /** Someone replied to your comment. */
   COMMENT_REPLY: "COMMENT_REPLY",
-  /** Someone @mentioned you in a comment. */
   COMMENT_MENTION: "COMMENT_MENTION",
   /** Your comment crossed the reaction notification threshold. */
   COMMENT_REACTIONS: "COMMENT_REACTIONS",
@@ -108,23 +104,18 @@ export type NotificationType =
  * decided at emit time (the `homeFeed` flag), per the feed matrix.
  */
 export const ActivityType = {
-  /** Added a work to the library. */
   ADDED: "ADDED",
   /** Started watching/playing/reading/listening. */
   STARTED: "STARTED",
-  /** Finished a work. */
   FINISHED: "FINISHED",
-  /** Dropped a work. */
   DROPPED: "DROPPED",
   /** Started a rewatch/replay/reread. */
   REWATCHED: "REWATCHED",
   /** Watched an episode / made reading or play progress. */
   PROGRESS: "PROGRESS",
-  /** Marked a work as favourite. */
   FAVORITED: "FAVORITED",
   /** Published or updated a review. */
   REVIEWED: "REVIEWED",
-  /** Created a new list. */
   LIST_CREATED: "LIST_CREATED",
   /** Added one or more works to a list. */
   LIST_ITEM_ADDED: "LIST_ITEM_ADDED",

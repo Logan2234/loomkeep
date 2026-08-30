@@ -37,7 +37,6 @@ export function listMusic(
   return request(`/music${suffix}`);
 }
 
-/** Album detail (catalogue metadata + the user's library state). */
 export const getMusicDetail = (
   source: string,
   sourceId: string,

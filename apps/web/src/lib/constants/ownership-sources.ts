@@ -1,7 +1,3 @@
-// Preset "detail" values offered per ownership status, per domain — purely a
-// UX convenience list; the stored value is always a free-form string (see
-// OwnershipField's "Autre…" escape hatch).
-
 import { m } from "$lib/paraglide/messages";
 
 export const GAME_OWNERSHIP_STATUS_OPTIONS = [

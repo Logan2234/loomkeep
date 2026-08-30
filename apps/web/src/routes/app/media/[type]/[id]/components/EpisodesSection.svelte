@@ -220,7 +220,6 @@
 <h2 class="font-display mt-10 mb-4 text-xl font-bold">Épisodes</h2>
 <div class="flex flex-col gap-4 pb-4">
   {#each seasons.filter((s) => s.episodes.length > 0) as season (season.number)}
-    <!-- Seasons are collapsible and collapsed by default. -->
     {@const expanded = expandedSeasons.has(season.number)}
     <div class="card">
       <div

@@ -103,7 +103,6 @@ export const resendVerificationEmail = (): Promise<void> =>
     method: "POST",
   });
 
-/** One-click, no-login-required newsletter unsubscribe — token from the email footer link. */
 export const unsubscribeNewsletter = (token: string): Promise<void> =>
   request("/newsletter/unsubscribe", {
     method: "POST",
@@ -223,18 +222,16 @@ export async function updateUsername(
   return user;
 }
 
-/** Full portable dump of the account's data (GDPR "download my data"). */
 export const exportMyData = (): Promise<UserDataExportDto> =>
   request("/users/me/export");
 
-// Flat per-domain CSV, meant for migrating to another tool — not gated by
-// `enabledDomains` (a hidden domain is still exportable).
+// Not gated by `enabledDomains` — a hidden domain is still exportable.
 export function exportMyDataCsv(domain: Domain): Promise<CsvExportDto> {
   const params = new URLSearchParams({ domain });
   return request(`/users/me/export.csv?${params}`);
 }
 
-/** Fetches (creating on first call) the token for the .ics calendar subscription URL. */
+// Creates the token on first call.
 export const getCalendarToken = (): Promise<CalendarTokenDto> =>
   request("/users/me/calendar-token");
 
@@ -243,16 +240,13 @@ export const regenerateCalendarToken = (): Promise<CalendarTokenDto> =>
   request("/users/me/calendar-token/regenerate", { method: "POST" });
 
 // Unused, for now...
-/** Short-lived SSO token for the feedback widget's "Verified identity only" mode. */
 const _getWidgetToken = (): Promise<WidgetTokenDto> =>
   request("/users/me/widget-token");
 
-/** Live preview of what deleting the account would delete/anonymize, for the confirmation modal. */
 export const getAccountDeletionSummary =
   (): Promise<AccountDeletionSummaryDto> =>
     request("/users/me/deletion-summary");
 
-/** Permanently deletes the account and clears local auth state. */
 export async function deleteAccount(
   body: DeleteAccountRequestDto,
 ): Promise<void> {

@@ -84,7 +84,6 @@
     stats.age.distribution.map((b) => ({ label: b.label, value: b.count })),
   );
 
-  // Friendly language name from the locale code ("fr" → "Français").
   const localeDisplay = new Intl.DisplayNames(["fr"], { type: "language" });
   const localeItems = $derived(
     stats.byLocale.map((l) => ({

@@ -37,7 +37,6 @@ export function listGames(
   return request(`/games${suffix}`);
 }
 
-/** Game detail (catalogue metadata + the user's library state). */
 export const getGameDetail = (
   source: string,
   sourceId: string,
@@ -57,7 +56,6 @@ export const updateGameEntry = (
 export const deleteGameEntry = (entryId: string): Promise<void> =>
   request(`/games/entries/${entryId}`, { method: "DELETE" });
 
-/** Log a completed replay (a completion beyond the entry's first one). */
 export const addGameReplay = (entryId: string): Promise<GameEntryDto> =>
   request(`/games/entries/${entryId}/replays`, {
     method: "POST",

@@ -4,8 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import "reflect-metadata";
 import { AppModule } from "../src/app.module";
 
-// Dumps the module dependency graph as a Mermaid file (docs/modules.md),
-// a free, offline alternative to the (paywalled) NestJS Devtools inspector.
+/** Dumps the module dependency graph as a Mermaid file (docs/modules.md) */
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: false,

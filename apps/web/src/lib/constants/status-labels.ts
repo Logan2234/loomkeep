@@ -1,7 +1,3 @@
-// Shared status labels/order and detail-page styling for books and games, so
-// the same constants aren't retyped across list, detail, import and stats pages.
-// (Media entry statuses are server-derived and handled separately.)
-
 import type { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared";
 
 // --- Books ---
@@ -20,7 +16,6 @@ export const BOOK_STATUS_ORDER: BookStatus[] = [
   "DROPPED",
 ];
 
-// Status badge: label + chip styling (neutral / accent / success / danger).
 export const BOOK_STATUS_META: Record<
   BookStatus,
   { label: string; cls: string }
@@ -31,7 +26,6 @@ export const BOOK_STATUS_META: Record<
   DROPPED: { label: "Abandonné", cls: "border border-danger text-danger" },
 };
 
-// Surfaced as a tooltip on the status badge / segments.
 export const BOOK_STATUS_DESC: Record<BookStatus, string> = {
   TO_READ: "Dans ta pile, pas encore commencé.",
   READING: "Tu lis ce livre en ce moment.",
@@ -39,7 +33,6 @@ export const BOOK_STATUS_DESC: Record<BookStatus, string> = {
   DROPPED: "Tu as arrêté et ne comptes pas le reprendre.",
 };
 
-// Active-segment styling for the segmented status control.
 export const BOOK_STATUS_SEG_ACTIVE: Record<BookStatus, string> = {
   TO_READ: "bg-surface text-fg shadow-sm",
   READING: "bg-accent text-accent-fg",
@@ -63,7 +56,6 @@ export const GAME_STATUS_ORDER: GameStatus[] = [
   "DROPPED",
 ];
 
-// Status badge: label + chip styling (neutral / accent / success / danger).
 export const GAME_STATUS_META: Record<
   GameStatus,
   { label: string; cls: string }
@@ -74,7 +66,6 @@ export const GAME_STATUS_META: Record<
   DROPPED: { label: "Abandonné", cls: "border border-danger text-danger" },
 };
 
-// Surfaced as a tooltip on the status badge / segments.
 export const GAME_STATUS_DESC: Record<GameStatus, string> = {
   BACKLOG: "Dans ta pile, pas encore commencé.",
   PLAYING: "Tu joues à ce jeu en ce moment.",
@@ -82,7 +73,6 @@ export const GAME_STATUS_DESC: Record<GameStatus, string> = {
   DROPPED: "Tu as arrêté et ne comptes pas le reprendre.",
 };
 
-// Active-segment styling for the segmented status control.
 export const GAME_STATUS_SEG_ACTIVE: Record<GameStatus, string> = {
   BACKLOG: "bg-surface text-fg shadow-sm",
   PLAYING: "bg-accent text-accent-fg",
@@ -91,8 +81,6 @@ export const GAME_STATUS_SEG_ACTIVE: Record<GameStatus, string> = {
 };
 
 // --- Music ---
-// Deliberately binary (no "in progress"/"dropped") — an album listen is a
-// short, single-session event, unlike a book or a game.
 
 export const MUSIC_STATUS_LABELS: Record<MusicStatus, string> = {
   TO_LISTEN: "À écouter",
@@ -101,7 +89,6 @@ export const MUSIC_STATUS_LABELS: Record<MusicStatus, string> = {
 
 export const MUSIC_STATUS_ORDER: MusicStatus[] = ["TO_LISTEN", "LISTENED"];
 
-// Status badge: label + chip styling (neutral / success).
 export const MUSIC_STATUS_META: Record<
   MusicStatus,
   { label: string; cls: string }
@@ -110,13 +97,11 @@ export const MUSIC_STATUS_META: Record<
   LISTENED: { label: "Écouté", cls: "bg-success/15 text-success" },
 };
 
-// Surfaced as a tooltip on the status badge / segments.
 export const MUSIC_STATUS_DESC: Record<MusicStatus, string> = {
   TO_LISTEN: "Dans ta liste, pas encore écouté.",
   LISTENED: "Tu as écouté cet album.",
 };
 
-// Active-segment styling for the segmented status control.
 export const MUSIC_STATUS_SEG_ACTIVE: Record<MusicStatus, string> = {
   TO_LISTEN: "bg-surface text-fg shadow-sm",
   LISTENED: "bg-success/20 text-success",

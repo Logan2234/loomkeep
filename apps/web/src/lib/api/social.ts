@@ -55,6 +55,5 @@ export const updatePrivacySettings = (
 ): Promise<VisibilitySettingsDto> =>
   request("/social/me/privacy", { method: "PATCH", body });
 
-/** Live counts of what switching to Figurant mode would immediately clean up. */
 export const getGhostSwitchImpact = (): Promise<GhostSwitchImpactDto> =>
   request("/social/me/privacy/ghost-impact");

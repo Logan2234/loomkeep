@@ -56,7 +56,6 @@
     { id: VisibilityAudience.NONE, label: "Personne" },
   ];
 
-  // The modal's matrix — actions × the 3 modes (from the P4 cadrage plan).
   const MODE_MATRIX: {
     action: string;
     public: string;

@@ -441,7 +441,6 @@
           </button>
         </div>
 
-        <!-- Informations du cache -->
         <section class="mb-5">
           <h3
             class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -494,7 +493,6 @@
           </section>
         {/if}
 
-        <!-- Identifiants externes -->
         <section class="mb-5">
           <h3
             class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">

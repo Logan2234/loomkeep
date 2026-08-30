@@ -2,14 +2,12 @@ import type Icon from "$lib/components/Icon.svelte";
 import { m } from "$lib/paraglide/messages";
 import type { ComponentProps } from "svelte";
 
-/** One admin destination, shared by the admin rail and the /admin home cards. */
 type AdminNavItem = {
   href: string;
   label: string;
   description: string;
   icon: ComponentProps<typeof Icon>["name"];
   match: (path: string) => boolean;
-  /** Only shown when `appConfig.erdEnabled` (dev-only content, see config.svelte.ts). */
   devOnly?: boolean;
 };
 

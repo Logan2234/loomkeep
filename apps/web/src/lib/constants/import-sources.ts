@@ -2,8 +2,6 @@ import { m } from "$lib/paraglide/messages";
 import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
 import { Domain, type ImportSource } from "@loomkeep/shared";
 
-// Disabled (no href) cards are a visible checklist of what's left to wire up,
-// not decoration — keep names to sources we'd actually build against.
 export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
   {
     tvtime: {
