@@ -1,9 +1,25 @@
 # Override for the ephemeral stack web-audit.yml stands up in CI to run ZAP
-# scans against (see .github/workflows/web-audit.yml). Publishes Postgres on
-# the host so the seed script — run via pnpm on the runner, not in a
-# container — can reach it directly; the base file deliberately doesn't
-# expose this port for a real deployment.
+# scans against (see .github/workflows/web-audit.yml).
 services:
   db:
+    # Publishes Postgres on the host so the seed script — run via pnpm on
+    # the runner, not in a container — can reach it directly; the base file
+    # deliberately doesn't expose this port for a real deployment.
     ports:
       - "5432:5432"
+
+  # zaproxy/action-af runs the ZAP container with --network=host, so ZAP's
+  # own internal proxy (default port 8080) binds directly on the runner's
+  # host network — colliding with the base file's "8080:3000" for web and
+  # crashing ZAP with "Address already in use" before it ever scans
+  # anything. Move web off 8080 instead of trying to reconfigure ZAP's own
+  # proxy port; api's WEB_ORIGIN (its CORS allowlist) has to follow.
+  web:
+    # `!override` (not the default merge behavior for list fields) so this
+    # replaces the base file's "8080:3000" instead of publishing both.
+    ports: !override
+      - "18080:3000"
+
+  api:
+    environment:
+      WEB_ORIGIN: http://localhost:18080

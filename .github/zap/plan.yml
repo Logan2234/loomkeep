@@ -6,12 +6,15 @@ env:
       # docker-compose environment for ZAP scans". The api is a separate
       # origin here (localhost:3000, unlike prod's same-origin Caddy proxy),
       # so it's out of this context's reach by construction; api coverage
-      # comes from the sibling plan-api.yml job instead.
+      # comes from the sibling plan-api.yml job instead. Web is published on
+      # 18080, not the usual 8080 (docker/docker-compose.ci.yml) — ZAP's own
+      # scanning proxy binds to 8080 on the runner's host network, and the
+      # two collide otherwise.
       urls:
-        - http://localhost:8080/
+        - http://localhost:18080/
 
       includePaths:
-        - http://localhost:8080/.*
+        - http://localhost:18080/.*
 
       authentication:
         method: manual

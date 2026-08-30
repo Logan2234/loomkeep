@@ -113,7 +113,7 @@ jobs:
       # connections.
       - name: Wait for stack readiness
         run: |
-          for service in "api http://localhost:3000/api/health" "web http://localhost:8080/"; do
+          for service in "api http://localhost:3000/api/health" "web http://localhost:18080/"; do
             name=${service%% *}
             url=${service#* }
             echo "waiting for $name ($url)..."
