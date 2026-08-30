@@ -20,6 +20,19 @@ const OUTPUT_FILE =
 // pa11y issue.type is "error" | "warning" | "notice".
 const LEVEL_BY_TYPE = { error: "error", warning: "warning", notice: "note" };
 
+// Code Scanning's upload-sarif step always sends a file:// checkoutURI (it
+// defaults checkout_path to the job's own workspace) and the server rejects
+// the whole upload if any result's artifactLocation.uri is absolute with a
+// different scheme — "SARIF URI scheme https did not match the checkout URI
+// scheme file". A relative, repo-path-shaped location is the only kind
+// Code Scanning accepts, even though these pages aren't real files —
+// GitHub still lists the alert, just without an inline code snippet.
+function relativeLocation(url) {
+  const { pathname } = new URL(url);
+  const slug = pathname === "/" ? "index" : pathname.replace(/^\//, "");
+  return `pa11y-pages/${slug}`;
+}
+
 function toSarif(report) {
   const rulesByCode = new Map();
   const results = [];
@@ -38,9 +51,16 @@ function toSarif(report) {
       results.push({
         ruleId: issue.code,
         level: LEVEL_BY_TYPE[issue.type] || "warning",
-        message: { text: issue.message },
-        locations: [{ physicalLocation: { artifactLocation: { uri: url } } }],
+        message: { text: `${issue.message} (${url})` },
+        locations: [
+          {
+            physicalLocation: {
+              artifactLocation: { uri: relativeLocation(url) },
+            },
+          },
+        ],
         properties: {
+          url,
           selector: issue.selector,
           context: issue.context,
           runner: issue.runner,
