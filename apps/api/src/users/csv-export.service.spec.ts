@@ -1,4 +1,5 @@
 import { Domain } from "@loomkeep/shared";
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import { CsvExportService } from "./csv-export.service";
@@ -16,7 +17,7 @@ function makeService(model: string, rows: Record<string, unknown>[]) {
   const idField = ITEM_ID_FIELD[model];
   rows.forEach((r, i) => (r[idField] = `${model}-${i}`));
   const prisma = {
-    [model]: { findMany: jest.fn().mockResolvedValue(rows) },
+    [model]: { findMany: vi.fn().mockResolvedValue(rows) },
   } as unknown as PrismaService;
   const ratings = new Map(
     rows
@@ -24,7 +25,7 @@ function makeService(model: string, rows: Record<string, unknown>[]) {
       .map((r) => [r[idField] as string, r.rating as number]),
   );
   const reviews = {
-    getRatings: jest.fn(() => Promise.resolve(ratings)),
+    getRatings: vi.fn(() => Promise.resolve(ratings)),
   } as unknown as ReviewService;
   return new CsvExportService(prisma, reviews);
 }

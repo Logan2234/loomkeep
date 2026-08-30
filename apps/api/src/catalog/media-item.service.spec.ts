@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { MediaItemService } from "./media-item.service";
@@ -11,7 +12,7 @@ const jobRunsStub = {
 describe("MediaItemService.refreshStale", () => {
   function makeService(items: unknown[]) {
     const prisma = {
-      mediaItem: { findMany: jest.fn().mockResolvedValue(items) },
+      mediaItem: { findMany: vi.fn().mockResolvedValue(items) },
     } as unknown as PrismaService;
     const service = new MediaItemService(
       prisma,
@@ -50,7 +51,7 @@ describe("MediaItemService.refreshStale", () => {
       },
     ];
     const { service } = makeService(items);
-    const upsert = jest
+    const upsert = vi
       .spyOn(service, "upsertFromSource")
       .mockResolvedValue(undefined as never);
 
@@ -64,7 +65,7 @@ describe("MediaItemService.refreshStale", () => {
   it("skips items missing their canonical external id", async () => {
     const items = [{ id: "m1", canonicalSource: "TMDB", externalIds: [] }];
     const { service } = makeService(items);
-    const upsert = jest.spyOn(service, "upsertFromSource");
+    const upsert = vi.spyOn(service, "upsertFromSource");
 
     const refreshed = await service.refreshStale();
 
@@ -86,8 +87,8 @@ describe("MediaItemService.refreshStale", () => {
       },
     ];
     const { service } = makeService(items);
-    jest.spyOn(service["logger"], "error").mockImplementation(() => undefined);
-    const upsert = jest
+    vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
+    const upsert = vi
       .spyOn(service, "upsertFromSource")
       .mockRejectedValueOnce(new Error("boom"))
       .mockResolvedValueOnce(undefined as never);
@@ -120,18 +121,18 @@ const PROVIDER_DETAILS = {
 
 describe("MediaItemService.translationFor", () => {
   function makeService(overrides: {
-    findUnique?: jest.Mock;
-    upsert?: jest.Mock;
-    getDetails?: jest.Mock;
+    findUnique?: Mock;
+    upsert?: Mock;
+    getDetails?: Mock;
   }) {
     const prisma = {
       mediaItemTranslation: {
-        findUnique: overrides.findUnique ?? jest.fn().mockResolvedValue(null),
-        upsert: overrides.upsert ?? jest.fn(),
+        findUnique: overrides.findUnique ?? vi.fn().mockResolvedValue(null),
+        upsert: overrides.upsert ?? vi.fn(),
       },
     } as unknown as PrismaService;
     const tmdbProvider = {
-      getDetails: overrides.getDetails ?? jest.fn(),
+      getDetails: overrides.getDetails ?? vi.fn(),
     };
     const service = new MediaItemService(
       prisma,
@@ -177,7 +178,7 @@ describe("MediaItemService.translationFor", () => {
   it("returns an existing translation without calling the provider", async () => {
     const existing = { title: "Le Titre", overview: "Résumé", genres: [] };
     const { service, tmdbProvider } = makeService({
-      findUnique: jest.fn().mockResolvedValue(existing),
+      findUnique: vi.fn().mockResolvedValue(existing),
     });
 
     const result = await service.translationFor(
@@ -193,13 +194,13 @@ describe("MediaItemService.translationFor", () => {
   });
 
   it("fetches live and persists a new translation when none exists yet", async () => {
-    const upsert = jest.fn().mockResolvedValue({
+    const upsert = vi.fn().mockResolvedValue({
       title: "Le Titre",
       overview: "Le résumé.",
       genres: ["Horreur"],
     });
     const { service, tmdbProvider } = makeService({
-      getDetails: jest.fn().mockResolvedValue(PROVIDER_DETAILS),
+      getDetails: vi.fn().mockResolvedValue(PROVIDER_DETAILS),
       upsert,
     });
 
@@ -233,7 +234,7 @@ describe("MediaItemService.translationFor", () => {
 
 describe("MediaItemService.translatedTitles", () => {
   it("skips the DB for the default locale or an empty id list", async () => {
-    const findMany = jest.fn();
+    const findMany = vi.fn();
     const prisma = {
       mediaItemTranslation: { findMany },
     } as unknown as PrismaService;
@@ -252,7 +253,7 @@ describe("MediaItemService.translatedTitles", () => {
   it("maps cached titles by media item id", async () => {
     const prisma = {
       mediaItemTranslation: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           { mediaItemId: "m1", title: "Le Titre" },
           { mediaItemId: "m2", title: "Un Autre" },
         ]),
@@ -275,27 +276,27 @@ describe("MediaItemService.translatedTitles", () => {
 
 describe("MediaItemService.forceRefresh (translation refresh)", () => {
   it("refreshes every existing translation on the same cycle as the base row", async () => {
-    const getDetails = jest
+    const getDetails = vi
       .fn()
       .mockResolvedValueOnce(PROVIDER_DETAILS) // base (English) refresh
       .mockResolvedValueOnce({
         ...PROVIDER_DETAILS,
         summary: { ...PROVIDER_DETAILS.summary, title: "Le Titre FR" },
       }); // fr translation refresh
-    const translationUpdate = jest.fn();
+    const translationUpdate = vi.fn();
     const prisma = {
       mediaItem: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: "m1",
           type: "MOVIE",
           canonicalSource: "TMDB",
           externalIds: [{ source: "TMDB", externalId: "42" }],
         }),
-        update: jest.fn().mockResolvedValue({ id: "m1" }),
+        update: vi.fn().mockResolvedValue({ id: "m1" }),
       },
-      mediaExternalId: { upsert: jest.fn() },
+      mediaExternalId: { upsert: vi.fn() },
       mediaItemTranslation: {
-        findMany: jest.fn().mockResolvedValue([{ locale: "fr" }]),
+        findMany: vi.fn().mockResolvedValue([{ locale: "fr" }]),
         update: translationUpdate,
       },
     } as unknown as PrismaService;
@@ -322,24 +323,24 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
   });
 
   it("logs and keeps going when a translation refresh fails", async () => {
-    const getDetails = jest
+    const getDetails = vi
       .fn()
       .mockResolvedValueOnce(PROVIDER_DETAILS)
       .mockRejectedValueOnce(new Error("boom"));
     const prisma = {
       mediaItem: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: "m1",
           type: "MOVIE",
           canonicalSource: "TMDB",
           externalIds: [{ source: "TMDB", externalId: "42" }],
         }),
-        update: jest.fn().mockResolvedValue({ id: "m1" }),
+        update: vi.fn().mockResolvedValue({ id: "m1" }),
       },
-      mediaExternalId: { upsert: jest.fn() },
+      mediaExternalId: { upsert: vi.fn() },
       mediaItemTranslation: {
-        findMany: jest.fn().mockResolvedValue([{ locale: "fr" }]),
-        update: jest.fn(),
+        findMany: vi.fn().mockResolvedValue([{ locale: "fr" }]),
+        update: vi.fn(),
       },
     } as unknown as PrismaService;
     const service = new MediaItemService(
@@ -348,7 +349,7 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
       undefined as never,
       jobRunsStub,
     );
-    jest.spyOn(service["logger"], "error").mockImplementation(() => undefined);
+    vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
 
     await expect(service.forceRefresh("m1")).resolves.toEqual({ id: "m1" });
   });

@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { CommentService } from "../comments/comment.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
@@ -13,40 +14,40 @@ const REASON_BODY: ModerationReasonBody = {
 
 function makeController(
   overrides: {
-    findOne?: jest.Mock;
-    adminRemove?: jest.Mock;
-    findUniqueUser?: jest.Mock;
+    findOne?: Mock;
+    adminRemove?: Mock;
+    findUniqueUser?: Mock;
   } = {},
 ) {
   const reports = {
     findOne:
       overrides.findOne ??
-      jest.fn().mockResolvedValue({
+      vi.fn().mockResolvedValue({
         targetType: "COMMENT",
         targetId: "c1",
         category: "HARASSMENT",
         motif: "HARASSMENT_INSULTS",
       }),
-    resolve: jest.fn(),
+    resolve: vi.fn(),
   } as unknown as ReportService;
 
   const comments = {
     adminRemove:
       overrides.adminRemove ??
-      jest.fn().mockResolvedValue({ authorId: "author1", text: "commentaire" }),
+      vi.fn().mockResolvedValue({ authorId: "author1", text: "commentaire" }),
   } as unknown as CommentService;
 
   const prisma = {
     report: {
-      count: jest.fn().mockResolvedValue(0),
-      findMany: jest.fn().mockResolvedValue([]),
-      groupBy: jest.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(0),
+      findMany: vi.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue([]),
     },
     user: {
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue([]),
       findUnique:
         overrides.findUniqueUser ??
-        jest.fn().mockResolvedValue({
+        vi.fn().mockResolvedValue({
           email: "author@example.com",
           username: "author1",
         }),
@@ -54,7 +55,7 @@ function makeController(
   } as unknown as PrismaService;
 
   const moderationDecisions = {
-    record: jest.fn(),
+    record: vi.fn(),
   } as unknown as ModerationDecisionService;
 
   const controller = new AdminReportsController(
@@ -97,7 +98,7 @@ describe("AdminReportsController.takeDown", () => {
 
   it("skips the notice when the comment's author account is already gone", async () => {
     const { controller, moderationDecisions } = makeController({
-      adminRemove: jest
+      adminRemove: vi
         .fn()
         .mockResolvedValue({ authorId: null, text: "commentaire" }),
     });
@@ -110,7 +111,7 @@ describe("AdminReportsController.takeDown", () => {
   it("resolves without touching a comment for a non-COMMENT target", async () => {
     const { controller, reports, comments, moderationDecisions } =
       makeController({
-        findOne: jest.fn().mockResolvedValue({
+        findOne: vi.fn().mockResolvedValue({
           targetType: "USER",
           targetId: "u1",
           category: null,
@@ -127,7 +128,7 @@ describe("AdminReportsController.takeDown", () => {
 
   it("404s on an unknown report", async () => {
     const { controller } = makeController({
-      findOne: jest.fn().mockResolvedValue(null),
+      findOne: vi.fn().mockResolvedValue(null),
     });
 
     await expect(
@@ -139,21 +140,21 @@ describe("AdminReportsController.takeDown", () => {
 describe("AdminReportsController.summary", () => {
   it("counts the whole queue and ranks the reporters", async () => {
     const { controller, prisma } = makeController();
-    (prisma.report.count as jest.Mock)
+    (prisma.report.count as Mock)
       .mockResolvedValueOnce(2) // pending
       .mockResolvedValueOnce(7) // resolved
       .mockResolvedValueOnce(3); // dismissed
-    (prisma.report.findMany as jest.Mock).mockResolvedValue([
+    (prisma.report.findMany as Mock).mockResolvedValue([
       {
         createdAt: new Date("2026-07-01T00:00:00.000Z"),
         resolvedAt: new Date("2026-07-01T04:00:00.000Z"),
       },
     ]);
-    (prisma.report.groupBy as jest.Mock).mockResolvedValue([
+    (prisma.report.groupBy as Mock).mockResolvedValue([
       { reporterId: "u1", _count: { _all: 8 } },
       { reporterId: "u2", _count: { _all: 1 } },
     ]);
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findMany as Mock).mockResolvedValue([
       { id: "u1", username: "logan" },
       { id: "u2", username: "mira" },
     ]);

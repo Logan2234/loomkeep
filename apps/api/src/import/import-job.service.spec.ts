@@ -1,5 +1,6 @@
 import { Domain, ErrorCode, type ImportSource } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
+import { vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
@@ -24,7 +25,7 @@ function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
 describe("ImportJobService.getAvailability", () => {
   it("omits sources with no required env keys, and reports configured/unconfigured ones", () => {
     const config = {
-      get: jest.fn((key: string) => (key === "SET_KEY" ? "value" : undefined)),
+      get: vi.fn((key: string) => (key === "SET_KEY" ? "value" : undefined)),
     };
     const service = new ImportJobService(
       [
@@ -34,7 +35,7 @@ describe("ImportJobService.getAvailability", () => {
       ],
       {} as PrismaService,
       config as unknown as ConfigService,
-      { isEffectivelyPremium: jest.fn() } as unknown as EntitlementService,
+      { isEffectivelyPremium: vi.fn() } as unknown as EntitlementService,
     );
 
     const availability = service.getAvailability();
@@ -54,12 +55,12 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
   ) {
     const prisma = {
       importRun: {
-        findFirst: jest.fn().mockResolvedValue(priorRun),
-        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: vi.fn().mockResolvedValue(priorRun),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     } as unknown as PrismaService;
     const entitlements = {
-      isEffectivelyPremium: jest.fn().mockResolvedValue(hasPremium),
+      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
     const service = new ImportJobService(
       [fakeSource("tvtime")],
@@ -111,7 +112,7 @@ describe("ImportJobService.getQuota", () => {
   it("maps every domain with a recorded successful import to true", async () => {
     const prisma = {
       importRun: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValue([{ domain: "MEDIA" }, { domain: "BOOKS" }]),
       },

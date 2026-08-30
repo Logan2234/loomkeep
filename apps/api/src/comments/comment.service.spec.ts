@@ -1,3 +1,4 @@
+import { type Mock, vi } from "vitest";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { VisibilityService } from "../social/visibility.service";
@@ -45,75 +46,75 @@ function commentRow(over: Partial<Record<string, unknown>> = {}) {
 
 function make(
   overrides: Partial<{
-    comment: Partial<Record<string, jest.Mock>>;
-    reaction: Partial<Record<string, jest.Mock>>;
-    episodeWatch: Partial<Record<string, jest.Mock>>;
-    season: Partial<Record<string, jest.Mock>>;
-    libraryEntry: Partial<Record<string, jest.Mock>>;
-    gameEntry: Partial<Record<string, jest.Mock>>;
-    bookEntry: Partial<Record<string, jest.Mock>>;
-    block: Partial<Record<string, jest.Mock>>;
-    user: Partial<Record<string, jest.Mock>>;
+    comment: Partial<Record<string, Mock>>;
+    reaction: Partial<Record<string, Mock>>;
+    episodeWatch: Partial<Record<string, Mock>>;
+    season: Partial<Record<string, Mock>>;
+    libraryEntry: Partial<Record<string, Mock>>;
+    gameEntry: Partial<Record<string, Mock>>;
+    bookEntry: Partial<Record<string, Mock>>;
+    block: Partial<Record<string, Mock>>;
+    user: Partial<Record<string, Mock>>;
     relations: Record<string, ViewerRelation>;
   }> = {},
 ) {
   const prisma = {
     comment: {
-      findMany: jest.fn().mockResolvedValue([]),
-      findUnique: jest.fn().mockResolvedValue(null),
-      create: jest.fn(),
-      update: jest.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn(),
+      update: vi.fn(),
       ...overrides.comment,
     },
     commentReaction: {
-      findMany: jest.fn().mockResolvedValue([]),
-      count: jest.fn().mockResolvedValue(0),
-      upsert: jest.fn(),
-      deleteMany: jest.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(0),
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
       ...overrides.reaction,
     },
     episodeWatch: {
-      findFirst: jest.fn().mockResolvedValue(null),
-      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       ...overrides.episodeWatch,
     },
     season: {
-      findUnique: jest.fn().mockResolvedValue(null),
+      findUnique: vi.fn().mockResolvedValue(null),
       ...overrides.season,
     },
     libraryEntry: {
-      findUnique: jest.fn().mockResolvedValue(null),
+      findUnique: vi.fn().mockResolvedValue(null),
       ...overrides.libraryEntry,
     },
     gameEntry: {
-      findUnique: jest.fn().mockResolvedValue(null),
+      findUnique: vi.fn().mockResolvedValue(null),
       ...overrides.gameEntry,
     },
     bookEntry: {
-      findUnique: jest.fn().mockResolvedValue(null),
+      findUnique: vi.fn().mockResolvedValue(null),
       ...overrides.bookEntry,
     },
     block: {
-      findFirst: jest.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
       ...overrides.block,
     },
     user: {
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue([]),
       ...overrides.user,
     },
-    mediaItem: { findUnique: jest.fn().mockResolvedValue(null) },
-    gameItem: { findUnique: jest.fn().mockResolvedValue(null) },
-    bookItem: { findUnique: jest.fn().mockResolvedValue(null) },
-    musicItem: { findUnique: jest.fn().mockResolvedValue(null) },
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    gameItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    bookItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    musicItem: { findUnique: vi.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
 
   const visibility = {
-    getRelation: jest.fn((_v: string, target: { id: string }) =>
+    getRelation: vi.fn((_v: string, target: { id: string }) =>
       Promise.resolve(overrides.relations?.[target.id] ?? relation()),
     ),
   } as unknown as VisibilityService;
 
-  const notifications = { create: jest.fn() } as unknown as NotificationService;
+  const notifications = { create: vi.fn() } as unknown as NotificationService;
 
   return {
     svc: new CommentService(prisma, visibility, notifications),
@@ -126,7 +127,7 @@ describe("CommentService.list — spoiler masking", () => {
   it("masks a comment its author tagged as spoiler", async () => {
     const { svc } = make({
       comment: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([
             commentRow({
@@ -145,7 +146,7 @@ describe("CommentService.list — spoiler masking", () => {
   it("does not mask a comment without a spoiler tag", async () => {
     const { svc } = make({
       comment: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([
             commentRow({
@@ -164,7 +165,7 @@ describe("CommentService.list — spoiler masking", () => {
   it("never masks MUSIC even if the row somehow carries a spoiler tag", async () => {
     const { svc } = make({
       comment: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([
             commentRow({
@@ -185,7 +186,7 @@ describe("CommentService.list — Figurant pseudonym", () => {
   it("replaces a GHOST author's identity for another viewer", async () => {
     const { svc } = make({
       comment: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([
             commentRow({
@@ -204,7 +205,7 @@ describe("CommentService.list — Figurant pseudonym", () => {
   it("shows the real identity to the Figurant author themself", async () => {
     const { svc } = make({
       comment: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([
             commentRow({
@@ -225,7 +226,7 @@ describe("CommentService.list — blocking", () => {
   it("drops comments from a blocked author", async () => {
     const { svc } = make({
       comment: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([
             commentRow({
@@ -247,7 +248,7 @@ describe("CommentService.create", () => {
   it("rejects replying to a reply (flat + one level only)", async () => {
     const { svc } = make({
       comment: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "reply1",
           authorId: "someone",
           parentId: "root1",
@@ -267,12 +268,12 @@ describe("CommentService.create", () => {
   it("notifies the parent author on a reply, not itself", async () => {
     const { svc, notifications } = make({
       comment: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "root1",
           authorId: "parentAuthor",
           parentId: null,
         }),
-        create: jest
+        create: vi
           .fn()
           .mockResolvedValue(
             commentRow({ id: "reply1", parentId: "root1", authorId: "viewer" }),
@@ -296,14 +297,14 @@ describe("CommentService.create", () => {
   it("always targets whatever its parent targets, ignoring a mismatched body", async () => {
     const { svc, prisma } = make({
       comment: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "root1",
           authorId: "parentAuthor",
           parentId: null,
           targetType: "MEDIA",
           targetId: "m1",
         }),
-        create: jest
+        create: vi
           .fn()
           .mockResolvedValue(
             commentRow({ id: "reply1", parentId: "root1", authorId: "viewer" }),
@@ -328,18 +329,18 @@ describe("CommentService.create", () => {
   it("does not notify a reply when the parent author blocked the commenter", async () => {
     const { svc, notifications } = make({
       comment: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "root1",
           authorId: "parentAuthor",
           parentId: null,
         }),
-        create: jest
+        create: vi
           .fn()
           .mockResolvedValue(
             commentRow({ id: "reply1", parentId: "root1", authorId: "viewer" }),
           ),
       },
-      block: { findFirst: jest.fn().mockResolvedValue({ id: "b1" }) },
+      block: { findFirst: vi.fn().mockResolvedValue({ id: "b1" }) },
     });
     await svc.create("viewer", {
       targetType: "MEDIA" as never,
@@ -353,12 +354,12 @@ describe("CommentService.create", () => {
   it("notifies a mentioned user but not the author mentioning themselves", async () => {
     const { svc, notifications } = make({
       comment: {
-        create: jest
+        create: vi
           .fn()
           .mockResolvedValue(commentRow({ text: "hey @author and @bob" })),
       },
       user: {
-        findMany: jest.fn().mockResolvedValue([{ id: "bobId" }]),
+        findMany: vi.fn().mockResolvedValue([{ id: "bobId" }]),
       },
     });
     await svc.create(AUTHOR.id, {
@@ -373,12 +374,10 @@ describe("CommentService.create", () => {
   });
 
   it("excludes Figurants from mention resolution (unaddressable)", async () => {
-    const findMany = jest.fn().mockResolvedValue([]);
+    const findMany = vi.fn().mockResolvedValue([]);
     const { svc } = make({
       comment: {
-        create: jest
-          .fn()
-          .mockResolvedValue(commentRow({ text: "hey @ghosty" })),
+        create: vi.fn().mockResolvedValue(commentRow({ text: "hey @ghosty" })),
       },
       user: { findMany },
     });
@@ -400,14 +399,14 @@ describe("CommentService.create", () => {
 describe("CommentService.remove", () => {
   it("rejects deleting someone else's comment", async () => {
     const { svc } = make({
-      comment: { findUnique: jest.fn().mockResolvedValue(commentRow()) },
+      comment: { findUnique: vi.fn().mockResolvedValue(commentRow()) },
     });
     await expect(svc.remove("someone-else", "c1")).rejects.toThrow();
   });
 
   it("soft-deletes: clears text and sets deletedAt", async () => {
     const { svc, prisma } = make({
-      comment: { findUnique: jest.fn().mockResolvedValue(commentRow()) },
+      comment: { findUnique: vi.fn().mockResolvedValue(commentRow()) },
     });
     await svc.remove(AUTHOR.id, "c1");
     expect(prisma.comment.update).toHaveBeenCalledWith(
@@ -420,7 +419,7 @@ describe("CommentService.remove", () => {
 
   it("does not flag a self-delete as an admin takedown", async () => {
     const { svc, prisma } = make({
-      comment: { findUnique: jest.fn().mockResolvedValue(commentRow()) },
+      comment: { findUnique: vi.fn().mockResolvedValue(commentRow()) },
     });
     await svc.remove(AUTHOR.id, "c1");
     expect(prisma.comment.update).toHaveBeenCalledWith(
@@ -435,7 +434,7 @@ describe("CommentService.adminRemove", () => {
   it("soft-deletes without checking ownership (moderation takedown)", async () => {
     const { svc, prisma } = make({
       comment: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue(commentRow({ authorId: "someone-else" })),
       },
@@ -452,7 +451,7 @@ describe("CommentService.adminRemove", () => {
   it("returns the pre-tombstone author/text for the moderation notice", async () => {
     const { svc } = make({
       comment: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue(
             commentRow({ authorId: "someone-else", text: "insulte gratuite" }),
@@ -468,7 +467,7 @@ describe("CommentService.adminRemove", () => {
   it("404s on an already-deleted comment", async () => {
     const { svc } = make({
       comment: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue(commentRow({ deletedAt: new Date() })),
       },
@@ -481,7 +480,7 @@ describe("CommentService.react", () => {
   it("notifies the author once the reaction count reaches the threshold", async () => {
     const { svc, notifications } = make({
       comment: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce({
             id: "c1",
@@ -490,7 +489,7 @@ describe("CommentService.react", () => {
           })
           .mockResolvedValueOnce({ targetType: "MEDIA", targetId: "m1" }),
       },
-      reaction: { count: jest.fn().mockResolvedValue(10) },
+      reaction: { count: vi.fn().mockResolvedValue(10) },
     });
     await svc.react("someone", "c1", "LIKE" as never);
     expect(notifications.create).toHaveBeenCalledWith(
@@ -501,13 +500,13 @@ describe("CommentService.react", () => {
   it("does not re-notify past the threshold", async () => {
     const { svc, notifications } = make({
       comment: {
-        findUnique: jest.fn().mockResolvedValueOnce({
+        findUnique: vi.fn().mockResolvedValueOnce({
           id: "c1",
           deletedAt: null,
           authorId: "author",
         }),
       },
-      reaction: { count: jest.fn().mockResolvedValue(11) },
+      reaction: { count: vi.fn().mockResolvedValue(11) },
     });
     await svc.react("someone", "c1", "LIKE" as never);
     expect(notifications.create).not.toHaveBeenCalled();

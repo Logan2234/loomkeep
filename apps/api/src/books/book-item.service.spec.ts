@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BookItemService } from "./book-item.service";
 import type { ProviderBookDetails } from "./providers/book-provider.types";
@@ -27,20 +28,20 @@ const details: ProviderBookDetails = {
 
 function makeService(overrides: {
   bookExternalId?: unknown;
-  getDetails?: jest.Mock;
+  getDetails?: Mock;
 }) {
   const prisma = {
     bookExternalId: {
-      findUnique: jest.fn().mockResolvedValue(overrides.bookExternalId ?? null),
-      upsert: jest.fn(),
+      findUnique: vi.fn().mockResolvedValue(overrides.bookExternalId ?? null),
+      upsert: vi.fn(),
     },
     bookItem: {
-      create: jest.fn().mockResolvedValue({ id: "created" }),
-      update: jest.fn().mockResolvedValue({ id: "updated" }),
+      create: vi.fn().mockResolvedValue({ id: "created" }),
+      update: vi.fn().mockResolvedValue({ id: "updated" }),
     },
   } as unknown as PrismaService;
   const openLibraryProvider = {
-    getDetails: overrides.getDetails ?? jest.fn().mockResolvedValue(details),
+    getDetails: overrides.getDetails ?? vi.fn().mockResolvedValue(details),
   } as unknown as OpenLibraryProvider;
   const service = new BookItemService(prisma, openLibraryProvider);
   return { service, prisma, openLibraryProvider };

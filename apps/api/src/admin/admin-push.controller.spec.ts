@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -5,12 +6,12 @@ import { AdminPushController } from "./admin-push.controller";
 
 function makeController() {
   const push = {
-    listSubscriptions: jest.fn().mockResolvedValue([]),
-    sendToUserDetailed: jest.fn().mockResolvedValue([]),
+    listSubscriptions: vi.fn().mockResolvedValue([]),
+    sendToUserDetailed: vi.fn().mockResolvedValue([]),
   } as unknown as PushService;
   const prisma = {
-    user: { findUnique: jest.fn() },
-    pushSubscription: { findMany: jest.fn().mockResolvedValue([]) },
+    user: { findUnique: vi.fn() },
+    pushSubscription: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 
   const controller = new AdminPushController(push, prisma);
@@ -20,7 +21,7 @@ function makeController() {
 describe("AdminPushController.sendAdminTestPush", () => {
   it("throws NotFoundException when no account matches the email", async () => {
     const { controller, prisma, push } = makeController();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await expect(
       controller.sendAdminTestPush({ email: "nobody@example.com" }),
@@ -30,7 +31,7 @@ describe("AdminPushController.sendAdminTestPush", () => {
 
   it("sends to the matching account's devices", async () => {
     const { controller, prisma, push } = makeController();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: "user-1" });
+    (prisma.user.findUnique as Mock).mockResolvedValue({ id: "user-1" });
 
     await controller.sendAdminTestPush({ email: "alice@example.com" });
 
@@ -44,11 +45,11 @@ describe("AdminPushController.sendAdminTestPush", () => {
 describe("AdminPushController.broadcastAdminPush", () => {
   it("sends to every distinct subscribed account and aggregates the outcome", async () => {
     const { controller, prisma, push } = makeController();
-    (prisma.pushSubscription.findMany as jest.Mock).mockResolvedValue([
+    (prisma.pushSubscription.findMany as Mock).mockResolvedValue([
       { userId: "user-1" },
       { userId: "user-2" },
     ]);
-    (push.sendToUserDetailed as jest.Mock)
+    (push.sendToUserDetailed as Mock)
       .mockResolvedValueOnce([{ userAgent: "a", ok: true }])
       .mockResolvedValueOnce([
         { userAgent: "b", ok: true },

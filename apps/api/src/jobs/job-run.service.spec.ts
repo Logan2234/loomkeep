@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { JOB_KEYS } from "./job-keys";
 import { JobRunService } from "./job-run.service";
@@ -5,9 +6,9 @@ import { JobRunService } from "./job-run.service";
 function makeService() {
   const prisma = {
     jobRun: {
-      create: jest.fn().mockResolvedValue(undefined),
-      findMany: jest.fn().mockResolvedValue([]),
-      deleteMany: jest.fn().mockResolvedValue(undefined),
+      create: vi.fn().mockResolvedValue(undefined),
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue(undefined),
     },
   };
 
@@ -20,10 +21,10 @@ function makeService() {
 describe("JobRunService.record — Healthchecks.io ping", () => {
   const ENV_VAR = "HEALTHCHECKS_BACKUP_URL";
   const PING_URL = "https://hc-ping.com/some-uuid";
-  let fetchMock: jest.Mock;
+  let fetchMock: Mock;
 
   beforeEach(() => {
-    fetchMock = jest.fn().mockResolvedValue(undefined);
+    fetchMock = vi.fn().mockResolvedValue(undefined);
     global.fetch = fetchMock as unknown as typeof fetch;
     delete process.env[ENV_VAR];
   });

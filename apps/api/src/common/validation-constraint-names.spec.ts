@@ -1,15 +1,9 @@
 import { VALIDATION_CONSTRAINT_NAMES } from "@loomkeep/shared";
 import { getMetadataStorage } from "class-validator";
 import { readdirSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import "reflect-metadata";
-
-// ts-jest compiles this file to CommonJS, and a dynamic import() needs
-// --experimental-vm-modules to work there — createRequire() gets a real
-// require() without tripping @typescript-eslint/no-require-imports, which
-// only flags a literal `require(...)` call/import assignment.
-const createdRequire = createRequire(__filename);
 
 // Guardrail for the "Translate form validation errors" ticket: every
 // class-validator constraint actually used by a DTO in this app must be
@@ -19,12 +13,14 @@ const createdRequire = createRequire(__filename);
 // falls back to a generic per-field message. This test turns that gap into
 // a build failure instead.
 describe("validation constraint registry stays in sync with the DTOs", () => {
-  it("covers every class-validator constraint name used across all DTOs", () => {
+  it("covers every class-validator constraint name used across all DTOs", async () => {
     const dtoFiles = findDtoFiles(join(__dirname, ".."));
     const usedNames = new Set<string>();
 
     for (const file of dtoFiles) {
-      const mod: Record<string, unknown> = createdRequire(file);
+      const mod: Record<string, unknown> = await import(
+        pathToFileURL(file).href
+      );
 
       for (const exported of Object.values(mod)) {
         if (typeof exported !== "function") continue;

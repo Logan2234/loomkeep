@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { MusicItemService } from "./music-item.service";
 import type { ProviderMusicDetails } from "./providers/music-provider.types";
@@ -31,22 +32,20 @@ const details: ProviderMusicDetails = {
 
 function makeService(overrides: {
   musicExternalId?: unknown;
-  getDetails?: jest.Mock;
+  getDetails?: Mock;
 }) {
   const prisma = {
     musicExternalId: {
-      findUnique: jest
-        .fn()
-        .mockResolvedValue(overrides.musicExternalId ?? null),
-      upsert: jest.fn(),
+      findUnique: vi.fn().mockResolvedValue(overrides.musicExternalId ?? null),
+      upsert: vi.fn(),
     },
     musicItem: {
-      create: jest.fn().mockResolvedValue({ id: "created" }),
-      update: jest.fn().mockResolvedValue({ id: "updated" }),
+      create: vi.fn().mockResolvedValue({ id: "created" }),
+      update: vi.fn().mockResolvedValue({ id: "updated" }),
     },
   } as unknown as PrismaService;
   const musicBrainzProvider = {
-    getDetails: overrides.getDetails ?? jest.fn().mockResolvedValue(details),
+    getDetails: overrides.getDetails ?? vi.fn().mockResolvedValue(details),
   } as unknown as MusicBrainzProvider;
   const service = new MusicItemService(prisma, musicBrainzProvider);
   return { service, prisma, musicBrainzProvider };

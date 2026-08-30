@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { vi, type Mock } from "vitest";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { NewsletterService } from "./newsletter.service";
@@ -26,23 +27,23 @@ describe("NewsletterService.handleChangelogPublished", () => {
   ) {
     const prisma = {
       newsletterSend: {
-        create: jest.fn(),
-        update: jest.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
       },
       user: {
-        findMany: jest.fn().mockResolvedValue(recipients),
-        update: jest.fn(),
-        findUnique: jest.fn(),
+        findMany: vi.fn().mockResolvedValue(recipients),
+        update: vi.fn(),
+        findUnique: vi.fn(),
       },
     } as unknown as PrismaService;
-    const mail = { sendNewsletter: jest.fn() } as unknown as MailService;
+    const mail = { sendNewsletter: vi.fn() } as unknown as MailService;
     const service = new NewsletterService(prisma, mail);
     return { service, prisma, mail };
   }
 
   it("reserves the send, then sends and finalizes it, minting an unsubscribe token for a recipient who doesn't have one yet", async () => {
     const { service, prisma, mail } = makeService();
-    (prisma.newsletterSend.create as jest.Mock).mockResolvedValue({
+    (prisma.newsletterSend.create as Mock).mockResolvedValue({
       id: "send_1",
     });
 
@@ -83,7 +84,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
         newsletterUnsubscribeToken: "existing-token",
       },
     ]);
-    (prisma.newsletterSend.create as jest.Mock).mockResolvedValue({
+    (prisma.newsletterSend.create as Mock).mockResolvedValue({
       id: "send_1",
     });
 
@@ -107,7 +108,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
 
   it("is a no-op when the changelog entry was already reserved (retried webhook delivery)", async () => {
     const { service, prisma, mail } = makeService();
-    (prisma.newsletterSend.create as jest.Mock).mockRejectedValue(
+    (prisma.newsletterSend.create as Mock).mockRejectedValue(
       uniqueConstraintError(),
     );
 
@@ -125,7 +126,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
 
   it("propagates unexpected errors from the reserve step", async () => {
     const { service, prisma } = makeService();
-    (prisma.newsletterSend.create as jest.Mock).mockRejectedValue(
+    (prisma.newsletterSend.create as Mock).mockRejectedValue(
       new Error("db down"),
     );
 
@@ -144,8 +145,8 @@ describe("NewsletterService.unsubscribe", () => {
   function makeService() {
     const prisma = {
       user: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
+        findUnique: vi.fn(),
+        update: vi.fn(),
       },
     } as unknown as PrismaService;
     const mail = {} as unknown as MailService;
@@ -155,7 +156,7 @@ describe("NewsletterService.unsubscribe", () => {
 
   it("flips notifyNewsletter off for the user matching the token", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.user.findUnique as Mock).mockResolvedValue({
       id: "user_1",
     });
 
@@ -172,7 +173,7 @@ describe("NewsletterService.unsubscribe", () => {
 
   it("rejects an unknown token", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await expect(service.unsubscribe("bogus")).rejects.toThrow(
       "Invalid unsubscribe link",

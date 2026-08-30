@@ -11,6 +11,6 @@
     "incremental": true,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "./",
-    "types": ["node", "jest"]
+    "types": ["node", "vitest/globals"]
   }
 }

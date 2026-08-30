@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import type { ExecutionContext } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
+import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminGuard } from "./admin.guard";
@@ -20,7 +21,7 @@ function makeGuard(
 ) {
   const prisma = {
     user: {
-      findUnique: jest.fn().mockResolvedValue({
+      findUnique: vi.fn().mockResolvedValue({
         role,
         mfaTotpEnabled: false,
         mfaEmailEnabled: false,
@@ -29,7 +30,7 @@ function makeGuard(
     },
   } as unknown as PrismaService;
   const config = {
-    get: jest.fn((key: string) => (key === "NODE_ENV" ? nodeEnv : undefined)),
+    get: vi.fn((key: string) => (key === "NODE_ENV" ? nodeEnv : undefined)),
   } as unknown as ConfigService;
   return { guard: new AdminGuard(prisma, config), prisma };
 }

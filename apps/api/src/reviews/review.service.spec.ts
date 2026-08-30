@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
@@ -44,19 +45,19 @@ function relation(over: Partial<ViewerRelation>): ViewerRelation {
 
 function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
   const prisma = {
-    review: { findMany: jest.fn().mockResolvedValue(rows) },
+    review: { findMany: vi.fn().mockResolvedValue(rows) },
     reviewVote: {
-      groupBy: jest.fn().mockResolvedValue([]),
-      findMany: jest.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue([]),
     },
-    episodeWatch: { findMany: jest.fn().mockResolvedValue([]) },
+    episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const visibility = {
-    getRelation: jest.fn((_v: string, target: { id: string }) =>
+    getRelation: vi.fn((_v: string, target: { id: string }) =>
       Promise.resolve(relations[target.id] ?? relation({})),
     ),
   } as unknown as VisibilityService;
-  const activity = { emit: jest.fn() } as unknown as ActivityService;
+  const activity = { emit: vi.fn() } as unknown as ActivityService;
   return new ReviewService(prisma, visibility, activity);
 }
 
@@ -139,27 +140,27 @@ function makeForWrite(
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  const revisionCreate = jest.fn().mockResolvedValue({});
+  const revisionCreate = vi.fn().mockResolvedValue({});
   const prisma = {
     review: {
-      findUnique: jest.fn().mockResolvedValue(existing),
-      upsert: jest.fn().mockResolvedValue(row),
-      update: jest.fn().mockResolvedValue(row),
-      create: jest.fn().mockResolvedValue(row),
+      findUnique: vi.fn().mockResolvedValue(existing),
+      upsert: vi.fn().mockResolvedValue(row),
+      update: vi.fn().mockResolvedValue(row),
+      create: vi.fn().mockResolvedValue(row),
     },
     reviewRevision: { create: revisionCreate },
     reviewVote: {
-      groupBy: jest.fn().mockResolvedValue([]),
-      findMany: jest.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     user: {
-      findUniqueOrThrow: jest
+      findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue({ defaultReviewVisibility: "FRIENDS" }),
     },
-    episodeWatch: { findMany: jest.fn().mockResolvedValue([]) },
+    episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
-  const activity = { emit: jest.fn() } as unknown as ActivityService;
+  const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
   const svc = new ReviewService(prisma, visibility, activity);
   return { svc, revisionCreate };
@@ -203,17 +204,17 @@ function makeForVoting(opts: {
   reviewOwnerId: string;
   grouped?: { reviewId: string; value: string; _count: { _all: number } }[];
 }) {
-  const upsert = jest.fn().mockResolvedValue({});
-  const deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+  const upsert = vi.fn().mockResolvedValue({});
+  const deleteMany = vi.fn().mockResolvedValue({ count: 1 });
   const prisma = {
     review: {
-      findUnique: jest.fn().mockResolvedValue({ userId: opts.reviewOwnerId }),
+      findUnique: vi.fn().mockResolvedValue({ userId: opts.reviewOwnerId }),
     },
     reviewVote: {
       upsert,
       deleteMany,
-      groupBy: jest.fn().mockResolvedValue(opts.grouped ?? []),
-      findMany: jest.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue(opts.grouped ?? []),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   } as unknown as PrismaService;
   const svc = new ReviewService(

@@ -1,7 +1,8 @@
 import { ErrorCode } from "@loomkeep/shared";
+import { vi } from "vitest";
 import { fetchJson } from "./http.util";
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // swap the reference directly instead.
 const originalFetch = global.fetch;
 
@@ -16,12 +17,12 @@ function jsonResponse(status: number, body: unknown = {}) {
 
 afterEach(() => {
   global.fetch = originalFetch;
-  jest.restoreAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe("fetchJson", () => {
   it("returns the parsed body on success", async () => {
-    global.fetch = jest.fn().mockResolvedValue(jsonResponse(200, { ok: true }));
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(200, { ok: true }));
 
     const result = await fetchJson(
       "https://example.test",
@@ -35,7 +36,7 @@ describe("fetchJson", () => {
   });
 
   it("retries a transient 503 and succeeds on the next attempt", async () => {
-    const fetchMock = jest
+    const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(503))
       .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
@@ -54,7 +55,7 @@ describe("fetchJson", () => {
   });
 
   it("gives up after exhausting retries on repeated 5xx", async () => {
-    global.fetch = jest.fn().mockResolvedValue(jsonResponse(500));
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(500));
 
     await expect(
       fetchJson("https://example.test", {}, { sourceLabel: "Test" }),
@@ -62,7 +63,7 @@ describe("fetchJson", () => {
   });
 
   it("maps 404 to catalog.item_not_found without retrying, when notFoundMessage is set", async () => {
-    const fetchMock = jest.fn().mockResolvedValue(jsonResponse(404));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(404));
     global.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(
@@ -79,7 +80,7 @@ describe("fetchJson", () => {
   });
 
   it("does not retry a non-transient 400", async () => {
-    const fetchMock = jest.fn().mockResolvedValue(jsonResponse(400));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(400));
     global.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(
@@ -89,7 +90,7 @@ describe("fetchJson", () => {
   });
 
   it("gives up immediately when a 429's Retry-After exceeds maxRetryDelayMs", async () => {
-    const fetchMock = jest.fn().mockResolvedValue({
+    const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 429,
       headers: new Headers({ "Retry-After": "60" }),
@@ -108,8 +109,8 @@ describe("fetchJson", () => {
   });
 
   it("aborts a hung request via the timeout signal", async () => {
-    jest.useFakeTimers();
-    global.fetch = jest.fn(
+    vi.useFakeTimers();
+    global.fetch = vi.fn(
       (_url: unknown, init?: RequestInit) =>
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener("abort", () => {
@@ -131,9 +132,9 @@ describe("fetchJson", () => {
       code: ErrorCode.CatalogProviderUnavailable,
     });
     // 3 attempts × 10s timeout + backoff (500ms, 1000ms) between them.
-    await jest.advanceTimersByTimeAsync(3 * 10_000 + 500 + 1_000);
+    await vi.advanceTimersByTimeAsync(3 * 10_000 + 500 + 1_000);
     await assertion;
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

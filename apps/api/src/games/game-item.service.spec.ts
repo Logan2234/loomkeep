@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { GameItemService } from "./game-item.service";
 import type { ProviderGameDetails } from "./providers/game-provider.types";
@@ -31,20 +32,20 @@ const details: ProviderGameDetails = {
 
 function makeService(overrides: {
   gameExternalId?: unknown;
-  getDetails?: jest.Mock;
+  getDetails?: Mock;
 }) {
   const prisma = {
     gameExternalId: {
-      findUnique: jest.fn().mockResolvedValue(overrides.gameExternalId ?? null),
-      upsert: jest.fn(),
+      findUnique: vi.fn().mockResolvedValue(overrides.gameExternalId ?? null),
+      upsert: vi.fn(),
     },
     gameItem: {
-      create: jest.fn().mockResolvedValue({ id: "created" }),
-      update: jest.fn().mockResolvedValue({ id: "updated" }),
+      create: vi.fn().mockResolvedValue({ id: "created" }),
+      update: vi.fn().mockResolvedValue({ id: "updated" }),
     },
   } as unknown as PrismaService;
   const igdbProvider = {
-    getDetails: overrides.getDetails ?? jest.fn().mockResolvedValue(details),
+    getDetails: overrides.getDetails ?? vi.fn().mockResolvedValue(details),
   } as unknown as IgdbProvider;
   const service = new GameItemService(prisma, igdbProvider);
   return { service, prisma, igdbProvider };

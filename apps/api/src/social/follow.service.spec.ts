@@ -1,4 +1,5 @@
 import { NotificationType } from "@loomkeep/shared";
+import { vi, type Mock } from "vitest";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { FollowService } from "./follow.service";
@@ -12,11 +13,11 @@ function makeService(opts: {
   upsertStatus?: "ACCEPTED" | "PENDING";
   viewerAccess?: "PUBLIC" | "PRIVATE" | "GHOST";
 }) {
-  const create = jest.fn().mockResolvedValue(undefined);
+  const create = vi.fn().mockResolvedValue(undefined);
 
   const prisma = {
     user: {
-      findUnique: jest.fn(
+      findUnique: vi.fn(
         ({ where }: { where: { username?: string; id?: string } }) => {
           if (where.username) {
             return Promise.resolve({
@@ -35,21 +36,21 @@ function makeService(opts: {
         },
       ),
     },
-    block: { findUnique: jest.fn().mockResolvedValue(null) },
+    block: { findUnique: vi.fn().mockResolvedValue(null) },
     follow: {
-      upsert: jest.fn().mockResolvedValue({
+      upsert: vi.fn().mockResolvedValue({
         status:
           opts.upsertStatus ??
           (opts.targetAccess === "PUBLIC" ? "ACCEPTED" : "PENDING"),
       }),
-      findUnique: jest.fn(),
-      update: jest.fn().mockResolvedValue(undefined),
+      findUnique: vi.fn(),
+      update: vi.fn().mockResolvedValue(undefined),
     },
   } as unknown as PrismaService;
 
   const visibility = {
-    getRelation: jest.fn().mockResolvedValue({}),
-    toRelationshipDto: jest.fn().mockReturnValue({}),
+    getRelation: vi.fn().mockResolvedValue({}),
+    toRelationshipDto: vi.fn().mockReturnValue({}),
   } as unknown as VisibilityService;
 
   const notifications = { create } as unknown as NotificationService;
@@ -111,7 +112,7 @@ describe("FollowService notifications", () => {
     const { service, prisma, create } = makeService({
       targetAccess: "PRIVATE",
     });
-    (prisma.follow.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
       id: "f1",
       followerId: "requester",
       followeeId: "me",

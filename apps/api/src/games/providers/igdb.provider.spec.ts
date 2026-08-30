@@ -1,13 +1,14 @@
 import { ConfigService } from "@nestjs/config";
+import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { IgdbProvider } from "./igdb.provider";
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
-function mockFetchByUrl(routes: Record<string, unknown>): jest.Mock {
-  const fn = jest.fn((input: RequestInfo | URL) => {
+function mockFetchByUrl(routes: Record<string, unknown>): Mock {
+  const fn = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     const match = Object.entries(routes).find(([pathPart]) =>
       url.includes(pathPart),
@@ -38,10 +39,10 @@ describe("IgdbProvider", () => {
     // Date.now(); advance it well past the threshold on every read so tests
     // don't actually sleep.
     let now = 0;
-    jest.spyOn(Date, "now").mockImplementation(() => (now += 5000));
+    vi.spyOn(Date, "now").mockImplementation(() => (now += 5000));
 
-    const config = { getOrThrow: jest.fn().mockReturnValue("test-credential") };
-    const quota = { record: jest.fn() };
+    const config = { getOrThrow: vi.fn().mockReturnValue("test-credential") };
+    const quota = { record: vi.fn() };
     provider = new IgdbProvider(
       config as unknown as ConfigService,
       quota as unknown as QuotaTrackerService,
@@ -50,7 +51,7 @@ describe("IgdbProvider", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("maps search results to canonical summaries", async () => {

@@ -8,6 +8,7 @@ import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { App } from "supertest/types";
+import { vi } from "vitest";
 import { AppModule } from "./../src/app.module";
 import { AnilistProvider } from "./../src/catalog/providers/anilist.provider";
 import type { ProviderMediaDetails } from "./../src/catalog/providers/provider.types";
@@ -58,21 +59,21 @@ const EMPTY_EXTRAS = {
 };
 const anilistStub = {
   source: CatalogSource.ANILIST,
-  search: jest.fn().mockResolvedValue([ANIME_SUMMARY]),
-  getDetails: jest.fn().mockImplementation((sourceId: string) =>
+  search: vi.fn().mockResolvedValue([ANIME_SUMMARY]),
+  getDetails: vi.fn().mockImplementation((sourceId: string) =>
     Promise.resolve({
       ...ANIME_DETAILS,
       summary: { ...ANIME_SUMMARY, sourceId },
       externalIds: [{ source: MediaSource.ANILIST, externalId: sourceId }],
     }),
   ),
-  getExtras: jest.fn().mockResolvedValue(EMPTY_EXTRAS),
+  getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
 };
 const tmdbStub = {
   source: CatalogSource.TMDB,
-  search: jest.fn().mockResolvedValue([]),
-  getDetails: jest.fn(),
-  getExtras: jest.fn().mockResolvedValue(EMPTY_EXTRAS),
+  search: vi.fn().mockResolvedValue([]),
+  getDetails: vi.fn(),
+  getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
 };
 
 describe("Loomkeep API (e2e)", () => {

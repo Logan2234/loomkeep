@@ -2,6 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 
 import type { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
+import { vi, type Mock } from "vitest";
 import { hashToken } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
@@ -30,24 +31,24 @@ describe("UsersController — email change", () => {
     passwordHash = await bcrypt.hash("correct-password", 4);
     prisma = {
       user: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
+        findUnique: vi.fn(),
+        update: vi.fn(),
       },
       emailChangeRequest: {
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        create: jest.fn().mockResolvedValue({}),
-        update: jest.fn().mockResolvedValue({}),
-        findFirst: jest.fn(),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+        create: vi.fn().mockResolvedValue({}),
+        update: vi.fn().mockResolvedValue({}),
+        findFirst: vi.fn(),
       },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
     mail = {
-      sendEmailChangeCode: jest.fn(),
-      sendEmailChanged: jest.fn(),
+      sendEmailChangeCode: vi.fn(),
+      sendEmailChanged: vi.fn(),
     } as unknown as MailService;
-    const security = { record: jest.fn() };
-    const dataExport = { buildExport: jest.fn() };
-    const csvExport = { buildCsv: jest.fn() };
+    const security = { record: vi.fn() };
+    const dataExport = { buildExport: vi.fn() };
+    const csvExport = { buildCsv: vi.fn() };
     controller = new UsersController(
       prisma,
       mail,
@@ -56,18 +57,18 @@ describe("UsersController — email change", () => {
       csvExport as unknown as CsvExportService,
       {} as unknown as ConfigService,
       {
-        isPasswordPwned: jest.fn().mockResolvedValue(false),
+        isPasswordPwned: vi.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
 
   describe("changeEmail", () => {
     it("rejects an incorrect current password without creating a request", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         passwordHash,
       });
@@ -83,7 +84,7 @@ describe("UsersController — email change", () => {
     });
 
     it("rejects submitting the current email unchanged", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         email: "current@example.com",
         passwordHash,
@@ -100,7 +101,7 @@ describe("UsersController — email change", () => {
     });
 
     it("creates a pending request and emails the code, without touching User.email", async () => {
-      (prisma.user.findUnique as jest.Mock)
+      (prisma.user.findUnique as Mock)
         .mockResolvedValueOnce({ id: userId, passwordHash }) // current user
         .mockResolvedValueOnce(null); // no email collision
 
@@ -142,15 +143,15 @@ describe("UsersController — email change", () => {
     }
 
     it("applies the new email and notifies both addresses on a correct code", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         email: "old@example.com",
         passwordHash,
       });
-      (prisma.emailChangeRequest.findFirst as jest.Mock).mockResolvedValueOnce(
+      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
         pendingRequest(),
       );
-      (prisma.user.update as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.update as Mock).mockResolvedValueOnce({
         id: userId,
         email: "new@example.com",
         displayName: "Alice",
@@ -183,11 +184,11 @@ describe("UsersController — email change", () => {
     });
 
     it("rejects a wrong code and increments attempts", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         passwordHash,
       });
-      (prisma.emailChangeRequest.findFirst as jest.Mock).mockResolvedValueOnce(
+      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
         pendingRequest(),
       );
 
@@ -203,11 +204,11 @@ describe("UsersController — email change", () => {
     });
 
     it("deletes the request after the max number of failed attempts", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         passwordHash,
       });
-      (prisma.emailChangeRequest.findFirst as jest.Mock).mockResolvedValueOnce(
+      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
         pendingRequest({ attempts: 4 }),
       );
 
@@ -222,11 +223,11 @@ describe("UsersController — email change", () => {
     });
 
     it("rejects an expired code", async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         passwordHash,
       });
-      (prisma.emailChangeRequest.findFirst as jest.Mock).mockResolvedValueOnce(
+      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
         pendingRequest({ expiresAt: new Date(Date.now() - 1_000) }),
       );
 
@@ -266,34 +267,32 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
   beforeEach(() => {
     prisma = {
       user: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue({ birthDate: null, allowAdultContent: false }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     } as unknown as PrismaService;
     controller = new UsersController(
       prisma,
       {} as unknown as MailService,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       {
-        isPasswordPwned: jest.fn().mockResolvedValue(false),
+        isPasswordPwned: vi.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
 
   it("persists a valid ordered list that includes the menu launcher", async () => {
     const shortcuts = ["home", "menu", "account"];
-    (prisma.user.update as jest.Mock).mockResolvedValueOnce(
-      updatedUser(shortcuts),
-    );
+    (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser(shortcuts));
 
     const dto = await controller.updateMe(jwtPayload(userId), {
       mobileNavShortcuts: shortcuts,
@@ -327,12 +326,12 @@ describe("UsersController — updateMe newsletter opt-in timestamp", () => {
   function makeController(currentNotifyNewsletter: boolean) {
     prisma = {
       user: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           birthDate: null,
           allowAdultContent: false,
           notifyNewsletter: currentNotifyNewsletter,
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: userId,
           email: "alice@example.com",
           username: "alice",
@@ -352,17 +351,17 @@ describe("UsersController — updateMe newsletter opt-in timestamp", () => {
     controller = new UsersController(
       prisma,
       {} as unknown as MailService,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       {
-        isPasswordPwned: jest.fn().mockResolvedValue(false),
+        isPasswordPwned: vi.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   }
 
@@ -435,27 +434,27 @@ describe("UsersController — uploadAvatar", () => {
 
   beforeEach(() => {
     prisma = {
-      user: { update: jest.fn() },
+      user: { update: vi.fn() },
     } as unknown as PrismaService;
     controller = new UsersController(
       prisma,
       {} as unknown as MailService,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       {
-        isPasswordPwned: jest.fn().mockResolvedValue(false),
+        isPasswordPwned: vi.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
 
   it("stores a valid PNG upload and cache-busts avatarUrl", async () => {
-    (prisma.user.update as jest.Mock).mockResolvedValueOnce(updatedUser());
+    (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser());
 
     const dto = await controller.uploadAvatar(jwtPayload(userId), {
       mimeType: "image/png",
@@ -514,30 +513,30 @@ describe("UsersController — changePassword", () => {
     passwordHash = await bcrypt.hash("correct-password", 4);
     prisma = {
       user: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: userId,
           email: "alice@example.com",
           passwordHash,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     } as unknown as PrismaService;
-    mail = { sendPasswordChanged: jest.fn() } as unknown as MailService;
+    mail = { sendPasswordChanged: vi.fn() } as unknown as MailService;
     hibp = {
-      isPasswordPwned: jest.fn().mockResolvedValue(false),
+      isPasswordPwned: vi.fn().mockResolvedValue(false),
     } as unknown as HibpService;
     controller = new UsersController(
       prisma,
       mail,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       hibp,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
 
@@ -566,7 +565,7 @@ describe("UsersController — changePassword", () => {
   });
 
   it("rejects a new password that has appeared in a known data breach", async () => {
-    (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
+    (hibp.isPasswordPwned as Mock).mockResolvedValue(true);
 
     await expect(
       controller.changePassword(jwtPayload(userId), {
@@ -584,7 +583,7 @@ describe("UsersController — changePassword", () => {
       newPassword: "Brand-new-pass1",
     });
 
-    const updateArgs = (prisma.user.update as jest.Mock).mock.calls[0][0];
+    const updateArgs = (prisma.user.update as Mock).mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: userId });
     expect(
       await bcrypt.compare("Brand-new-pass1", updateArgs.data.passwordHash),
@@ -603,7 +602,7 @@ describe("UsersController — deleteAccount", () => {
     const passwordHash = await bcrypt.hash("correct-password", 4);
     prisma = {
       user: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: userId,
           email: "alice@example.com",
           passwordHash,
@@ -611,18 +610,18 @@ describe("UsersController — deleteAccount", () => {
       },
     } as unknown as PrismaService;
     accountDeletion = {
-      deleteAccount: jest.fn(),
+      deleteAccount: vi.fn(),
     } as unknown as AccountDeletionService;
     controller = new UsersController(
       prisma,
       {} as unknown as MailService,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
-      { isPasswordPwned: jest.fn() } as unknown as HibpService,
+      { isPasswordPwned: vi.fn() } as unknown as HibpService,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       accountDeletion,
     );
@@ -658,34 +657,34 @@ describe("UsersController — deletionSummary", () => {
 
   beforeEach(() => {
     prisma = {
-      libraryEntry: { count: jest.fn().mockResolvedValue(0) },
-      episodeWatch: { count: jest.fn().mockResolvedValue(0) },
-      gameEntry: { count: jest.fn().mockResolvedValue(0) },
-      bookEntry: { count: jest.fn().mockResolvedValue(0) },
-      musicEntry: { count: jest.fn().mockResolvedValue(0) },
-      list: { count: jest.fn().mockResolvedValue(0) },
-      notification: { count: jest.fn().mockResolvedValue(0) },
-      follow: { count: jest.fn().mockResolvedValue(0) },
-      block: { count: jest.fn().mockResolvedValue(0) },
-      activityEvent: { count: jest.fn().mockResolvedValue(0) },
-      review: { count: jest.fn().mockResolvedValue(0) },
-      comment: { count: jest.fn().mockResolvedValue(0) },
-      report: { count: jest.fn().mockResolvedValue(0) },
+      libraryEntry: { count: vi.fn().mockResolvedValue(0) },
+      episodeWatch: { count: vi.fn().mockResolvedValue(0) },
+      gameEntry: { count: vi.fn().mockResolvedValue(0) },
+      bookEntry: { count: vi.fn().mockResolvedValue(0) },
+      musicEntry: { count: vi.fn().mockResolvedValue(0) },
+      list: { count: vi.fn().mockResolvedValue(0) },
+      notification: { count: vi.fn().mockResolvedValue(0) },
+      follow: { count: vi.fn().mockResolvedValue(0) },
+      block: { count: vi.fn().mockResolvedValue(0) },
+      activityEvent: { count: vi.fn().mockResolvedValue(0) },
+      review: { count: vi.fn().mockResolvedValue(0) },
+      comment: { count: vi.fn().mockResolvedValue(0) },
+      report: { count: vi.fn().mockResolvedValue(0) },
     } as unknown as PrismaService;
     controller = new UsersController(
       prisma,
       {} as unknown as MailService,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
       {
-        isPasswordPwned: jest.fn().mockResolvedValue(false),
+        isPasswordPwned: vi.fn().mockResolvedValue(false),
       } as unknown as HibpService,
       {
-        hasPremium: jest.fn().mockResolvedValue(true),
+        hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
 
@@ -714,7 +713,7 @@ describe("UsersController — deletionSummary", () => {
   });
 
   it("sums both follow directions into a single FOLLOWS count", async () => {
-    (prisma.follow.count as jest.Mock)
+    (prisma.follow.count as Mock)
       .mockResolvedValueOnce(3) // followers
       .mockResolvedValueOnce(5); // following
 
@@ -731,18 +730,18 @@ describe("UsersController.getMyEntitlement", () => {
 
   function makeController(hasPremium: boolean) {
     const entitlements = {
-      hasPremium: jest.fn().mockResolvedValue(hasPremium),
+      hasPremium: vi.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
     return new UsersController(
       {} as unknown as PrismaService,
       {} as unknown as MailService,
-      { record: jest.fn() } as unknown as SecurityEventService,
+      { record: vi.fn() } as unknown as SecurityEventService,
       {} as unknown as DataExportService,
       {} as unknown as CsvExportService,
       {} as unknown as ConfigService,
-      { isPasswordPwned: jest.fn() } as unknown as HibpService,
+      { isPasswordPwned: vi.fn() } as unknown as HibpService,
       entitlements,
-      { deleteAccount: jest.fn() } as unknown as AccountDeletionService,
+      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   }
 

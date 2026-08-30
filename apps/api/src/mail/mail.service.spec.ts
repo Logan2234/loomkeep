@@ -1,16 +1,17 @@
 import nodemailer from "nodemailer";
+import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../common/quota-tracker.service";
 import { MailService } from "./mail.service";
 
-jest.mock("nodemailer");
+vi.mock("nodemailer");
 
-const quota = { record: jest.fn() } as unknown as QuotaTrackerService;
+const quota = { record: vi.fn() } as unknown as QuotaTrackerService;
 
 describe("MailService", () => {
   const ORIGINAL_ENV = process.env;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
   });
 
@@ -37,8 +38,8 @@ describe("MailService", () => {
     process.env.SMTP_FROM = "Loomkeep <noreply@loomkeep.app>";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendPasswordResetLink("alice@example.com", "tok123");
@@ -67,8 +68,8 @@ describe("MailService", () => {
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendEmailChangeCode("alice@example.com", "123456");
@@ -90,8 +91,8 @@ describe("MailService", () => {
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendNewDeviceLogin(
@@ -111,8 +112,8 @@ describe("MailService", () => {
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
 
-    const sendMail = jest.fn().mockRejectedValue(new Error("smtp down"));
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockRejectedValue(new Error("smtp down"));
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await expect(
@@ -126,8 +127,8 @@ describe("MailService", () => {
     process.env.SMTP_PASS = "pass";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendPasswordChanged("alice@example.com");
@@ -142,8 +143,8 @@ describe("MailService", () => {
     process.env.SMTP_PASS = "pass";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendNewDeviceLogin("alice@example.com", "Chrome", null);
@@ -157,8 +158,8 @@ describe("MailService", () => {
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendEmailChanged("old@example.com", "new@example.com");
@@ -166,7 +167,7 @@ describe("MailService", () => {
     const oldAddressCall = sendMail.mock.calls.find(
       (call) => call[0].to === "old@example.com",
     );
-    expect(oldAddressCall[0].html).toContain("mailto:contact@loomkeep.app");
+    expect(oldAddressCall![0].html).toContain("mailto:contact@loomkeep.app");
   });
 
   it("links welcome to the app", async () => {
@@ -175,8 +176,8 @@ describe("MailService", () => {
     process.env.SMTP_PASS = "pass";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendWelcome("alice@example.com", "Alice");
@@ -191,8 +192,8 @@ describe("MailService", () => {
     process.env.SMTP_PASS = "pass";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendNewsletter(
@@ -218,8 +219,8 @@ describe("MailService", () => {
     process.env.SMTP_PASS = "pass";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendNewsletter(
@@ -240,8 +241,8 @@ describe("MailService", () => {
     process.env.SMTP_PASS = "pass";
     process.env.WEB_ORIGIN = "https://loomkeep.example";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     await service.sendNewsletter(
@@ -261,7 +262,7 @@ describe("MailService template gallery", () => {
   const ORIGINAL_ENV = process.env;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
   });
 
@@ -308,8 +309,8 @@ describe("MailService template gallery", () => {
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
 
-    const sendMail = jest.fn().mockResolvedValue(undefined);
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
     const sent = await service.sendTemplateTest("welcome", "test@example.com");
@@ -324,8 +325,8 @@ describe("MailService template gallery", () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_USER = "user";
     process.env.SMTP_PASS = "pass";
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({
-      sendMail: jest.fn(),
+    (nodemailer.createTransport as Mock).mockReturnValue({
+      sendMail: vi.fn(),
     });
 
     const service = new MailService(quota);

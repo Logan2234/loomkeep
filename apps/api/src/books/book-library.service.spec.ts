@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
@@ -35,10 +36,10 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
 
 function makeService(rows: ReturnType<typeof makeRow>[]) {
   const prisma = {
-    bookEntry: { findMany: jest.fn().mockResolvedValue(rows) },
+    bookEntry: { findMany: vi.fn().mockResolvedValue(rows) },
   } as unknown as PrismaService;
   const reviews = {
-    getRatings: jest.fn(() =>
+    getRatings: vi.fn(() =>
       Promise.resolve(
         new Map(
           rows
@@ -47,10 +48,10 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
         ),
       ),
     ),
-    getRating: jest.fn((_u: string, _t: string, id: string) =>
+    getRating: vi.fn((_u: string, _t: string, id: string) =>
       Promise.resolve(rows.find((r) => r.bookItemId === id)?.rating ?? null),
     ),
-    setRating: jest.fn(),
+    setRating: vi.fn(),
   } as unknown as import("../reviews/review.service").ReviewService;
   const service = new BookLibraryService(
     prisma,
@@ -58,7 +59,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     {} as AgeGateService,
     reviews,
     {
-      emit: jest.fn(),
+      emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService,
   );
   return { service, prisma };
@@ -117,13 +118,13 @@ describe("BookLibraryService.listEntries", () => {
 
 describe("BookLibraryService.deleteEntry", () => {
   it("wipes the user's reviews and comments for the book, not just the entry row", async () => {
-    const reviewDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
-    const commentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
-    const bookEntryDelete = jest.fn().mockResolvedValue({});
+    const reviewDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
+    const commentUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const bookEntryDelete = vi.fn().mockResolvedValue({});
 
     const prisma = {
       bookEntry: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "entry-1",
           userId: "user-1",
           bookItemId: "book-1",
@@ -132,7 +133,7 @@ describe("BookLibraryService.deleteEntry", () => {
       },
       review: { deleteMany: reviewDeleteMany },
       comment: { updateMany: commentUpdateMany },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
 
     const service = new BookLibraryService(
@@ -141,7 +142,7 @@ describe("BookLibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as import("../reviews/review.service").ReviewService,
       {
-        emit: jest.fn(),
+        emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
     );
 
@@ -165,7 +166,7 @@ describe("BookLibraryService — finishedAt sync", () => {
   it("sets finishedAt when a book's status is patched to READ", async () => {
     const entryRow = makeRow({ id: "e1", status: "TO_READ" });
 
-    const findUnique = jest
+    const findUnique = vi
       .fn()
       // assertEntryOwnership
       .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
@@ -173,7 +174,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
       // syncFinishedAt's lookup, post-write
       .mockResolvedValueOnce({ status: "READ", finishedAt: null });
-    const update = jest
+    const update = vi
       .fn()
       .mockResolvedValueOnce({ ...entryRow, status: "READ" })
       .mockResolvedValueOnce({});
@@ -182,11 +183,11 @@ describe("BookLibraryService — finishedAt sync", () => {
       bookEntry: { findUnique, update },
     } as unknown as PrismaService;
     const reviews = {
-      getRating: jest.fn().mockResolvedValue(null),
-      setRating: jest.fn(),
+      getRating: vi.fn().mockResolvedValue(null),
+      setRating: vi.fn(),
     } as unknown as import("../reviews/review.service").ReviewService;
     const activity = {
-      emit: jest.fn(),
+      emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService;
     const service = new BookLibraryService(
       prisma,
@@ -211,11 +212,11 @@ describe("BookLibraryService — finishedAt sync", () => {
     const entryRow = makeRow({ id: "e1", status: "TO_READ" });
     const explicit = "2026-01-15T00:00:00.000Z";
 
-    const findUnique = jest
+    const findUnique = vi
       .fn()
       .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
       .mockResolvedValueOnce({ status: "TO_READ", favorite: false });
-    const update = jest.fn().mockResolvedValueOnce({
+    const update = vi.fn().mockResolvedValueOnce({
       ...entryRow,
       status: "READ",
       finishedAt: new Date(explicit),
@@ -225,11 +226,11 @@ describe("BookLibraryService — finishedAt sync", () => {
       bookEntry: { findUnique, update },
     } as unknown as PrismaService;
     const reviews = {
-      getRating: jest.fn().mockResolvedValue(null),
-      setRating: jest.fn(),
+      getRating: vi.fn().mockResolvedValue(null),
+      setRating: vi.fn(),
     } as unknown as import("../reviews/review.service").ReviewService;
     const activity = {
-      emit: jest.fn(),
+      emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService;
     const service = new BookLibraryService(
       prisma,
@@ -255,14 +256,12 @@ describe("BookLibraryService reading goal", () => {
     entryCount?: number;
     replayCount?: number;
   }) {
-    const readingGoalFindUnique = jest
+    const readingGoalFindUnique = vi
       .fn()
       .mockResolvedValue(overrides.goal ?? null);
-    const readingGoalUpsert = jest.fn().mockResolvedValue({});
-    const bookEntryCount = jest
-      .fn()
-      .mockResolvedValue(overrides.entryCount ?? 0);
-    const bookReplayCount = jest
+    const readingGoalUpsert = vi.fn().mockResolvedValue({});
+    const bookEntryCount = vi.fn().mockResolvedValue(overrides.entryCount ?? 0);
+    const bookReplayCount = vi
       .fn()
       .mockResolvedValue(overrides.replayCount ?? 0);
 

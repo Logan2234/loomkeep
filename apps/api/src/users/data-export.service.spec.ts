@@ -1,4 +1,5 @@
 import type { User } from "@prisma/client";
+import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { DataExportService } from "./data-export.service";
@@ -25,28 +26,28 @@ function makeUser(overrides: Partial<User> = {}): User {
 
 function makeService() {
   const prisma = {
-    user: { findUnique: jest.fn() },
-    libraryEntry: { findMany: jest.fn().mockResolvedValue([]) },
-    episodeWatch: { findMany: jest.fn().mockResolvedValue([]) },
-    gameEntry: { findMany: jest.fn().mockResolvedValue([]) },
-    bookEntry: { findMany: jest.fn().mockResolvedValue([]) },
-    musicEntry: { findMany: jest.fn().mockResolvedValue([]) },
-    notification: { findMany: jest.fn().mockResolvedValue([]) },
-    review: { findMany: jest.fn().mockResolvedValue([]) },
-    reviewVote: { findMany: jest.fn().mockResolvedValue([]) },
-    comment: { findMany: jest.fn().mockResolvedValue([]) },
-    commentReaction: { findMany: jest.fn().mockResolvedValue([]) },
-    list: { findMany: jest.fn().mockResolvedValue([]) },
-    listMember: { findMany: jest.fn().mockResolvedValue([]) },
-    follow: { findMany: jest.fn().mockResolvedValue([]) },
-    block: { findMany: jest.fn().mockResolvedValue([]) },
-    report: { findMany: jest.fn().mockResolvedValue([]) },
-    moderationDecision: { findMany: jest.fn().mockResolvedValue([]) },
-    securityEvent: { findMany: jest.fn().mockResolvedValue([]) },
-    userDevice: { findMany: jest.fn().mockResolvedValue([]) },
-    visibilitySetting: { findMany: jest.fn().mockResolvedValue([]) },
+    user: { findUnique: vi.fn() },
+    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+    gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    bookEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    musicEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    notification: { findMany: vi.fn().mockResolvedValue([]) },
+    review: { findMany: vi.fn().mockResolvedValue([]) },
+    reviewVote: { findMany: vi.fn().mockResolvedValue([]) },
+    comment: { findMany: vi.fn().mockResolvedValue([]) },
+    commentReaction: { findMany: vi.fn().mockResolvedValue([]) },
+    list: { findMany: vi.fn().mockResolvedValue([]) },
+    listMember: { findMany: vi.fn().mockResolvedValue([]) },
+    follow: { findMany: vi.fn().mockResolvedValue([]) },
+    block: { findMany: vi.fn().mockResolvedValue([]) },
+    report: { findMany: vi.fn().mockResolvedValue([]) },
+    moderationDecision: { findMany: vi.fn().mockResolvedValue([]) },
+    securityEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    userDevice: { findMany: vi.fn().mockResolvedValue([]) },
+    visibilitySetting: { findMany: vi.fn().mockResolvedValue([]) },
     userEntitlement: {
-      upsert: jest.fn().mockResolvedValue({
+      upsert: vi.fn().mockResolvedValue({
         userId: "user-1",
         plan: "FREE",
         source: null,
@@ -56,18 +57,18 @@ function makeService() {
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
       }),
     },
-    subscription: { findMany: jest.fn().mockResolvedValue([]) },
-    readingGoal: { findMany: jest.fn().mockResolvedValue([]) },
-    importRun: { findMany: jest.fn().mockResolvedValue([]) },
-    mediaItem: { findMany: jest.fn().mockResolvedValue([]) },
-    gameItem: { findMany: jest.fn().mockResolvedValue([]) },
-    bookItem: { findMany: jest.fn().mockResolvedValue([]) },
-    musicItem: { findMany: jest.fn().mockResolvedValue([]) },
+    subscription: { findMany: vi.fn().mockResolvedValue([]) },
+    readingGoal: { findMany: vi.fn().mockResolvedValue([]) },
+    importRun: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
+    gameItem: { findMany: vi.fn().mockResolvedValue([]) },
+    bookItem: { findMany: vi.fn().mockResolvedValue([]) },
+    musicItem: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   // Ratings live in Review now; the export projects them but these tests don't
   // assert the value, so an empty projection is enough.
   const reviews = {
-    getRatings: jest.fn(() => Promise.resolve(new Map())),
+    getRatings: vi.fn(() => Promise.resolve(new Map())),
   } as unknown as import("../reviews/review.service").ReviewService;
 
   return { service: new DataExportService(prisma, reviews), prisma };
@@ -76,15 +77,15 @@ function makeService() {
 describe("DataExportService.buildExport", () => {
   it("throws AppException when the account doesn't exist", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await expect(service.buildExport("nobody")).rejects.toThrow(AppException);
   });
 
   it("includes the game library, its external id and its replays", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
-    (prisma.gameEntry.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.gameEntry.findMany as Mock).mockResolvedValue([
       {
         status: "PLAYING",
         rating: 8,
@@ -118,8 +119,8 @@ describe("DataExportService.buildExport", () => {
 
   it("includes the book library", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
-    (prisma.bookEntry.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.bookEntry.findMany as Mock).mockResolvedValue([
       {
         status: "READ",
         rating: 9,
@@ -157,8 +158,8 @@ describe("DataExportService.buildExport", () => {
 
   it("includes the music library and its external id", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
-    (prisma.musicEntry.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.musicEntry.findMany as Mock).mockResolvedValue([
       {
         status: "LISTENED",
         rating: 9,
@@ -194,8 +195,8 @@ describe("DataExportService.buildExport", () => {
 
   it("includes notifications", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
-    (prisma.notification.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.notification.findMany as Mock).mockResolvedValue([
       {
         type: "NEW_EPISODE",
         title: "Show",
@@ -215,8 +216,8 @@ describe("DataExportService.buildExport", () => {
 
   it("includes review text and its edit history, with the target title resolved", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
-    (prisma.review.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.review.findMany as Mock).mockResolvedValue([
       {
         targetType: "MEDIA",
         targetId: "media-1",
@@ -234,7 +235,7 @@ describe("DataExportService.buildExport", () => {
         ],
       },
     ]);
-    (prisma.mediaItem.findMany as jest.Mock).mockResolvedValue([
+    (prisma.mediaItem.findMany as Mock).mockResolvedValue([
       { id: "media-1", title: "Severance" },
     ]);
 
@@ -251,8 +252,8 @@ describe("DataExportService.buildExport", () => {
 
   it("includes comments, lists, follows and a default FREE entitlement", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
-    (prisma.comment.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.comment.findMany as Mock).mockResolvedValue([
       {
         targetType: "MEDIA",
         targetId: "media-1",
@@ -265,7 +266,7 @@ describe("DataExportService.buildExport", () => {
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
       },
     ]);
-    (prisma.list.findMany as jest.Mock).mockResolvedValue([
+    (prisma.list.findMany as Mock).mockResolvedValue([
       {
         title: "Top 10",
         description: null,
@@ -276,7 +277,7 @@ describe("DataExportService.buildExport", () => {
         items: [],
       },
     ]);
-    (prisma.follow.findMany as jest.Mock).mockResolvedValueOnce([
+    (prisma.follow.findMany as Mock).mockResolvedValueOnce([
       {
         followee: { username: "bob" },
         status: "ACCEPTED",

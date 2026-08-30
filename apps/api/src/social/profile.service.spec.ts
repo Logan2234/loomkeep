@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { FollowService } from "./follow.service";
 import { ProfileService } from "./profile.service";
@@ -23,17 +24,17 @@ function make(
 ) {
   const prisma = {
     user: {
-      findUnique: jest
+      findUnique: vi
         .fn()
         .mockResolvedValue({ id: "target", profileAccess: targetAccess }),
     },
   } as unknown as PrismaService;
   const visibility = {
-    getRelation: jest.fn().mockResolvedValue(rel),
+    getRelation: vi.fn().mockResolvedValue(rel),
   } as unknown as VisibilityService;
   const follow = {
-    listFollowers: jest.fn().mockResolvedValue([{ id: "u1" }]),
-    listFollowing: jest.fn().mockResolvedValue([{ id: "u2" }]),
+    listFollowers: vi.fn().mockResolvedValue([{ id: "u1" }]),
+    listFollowing: vi.fn().mockResolvedValue([{ id: "u2" }]),
   } as unknown as FollowService;
   return { svc: new ProfileService(prisma, visibility, follow), follow };
 }

@@ -4,6 +4,7 @@ import type { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
+import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -59,49 +60,49 @@ function makeUser(overrides: Partial<User> = {}): User {
 function makeService(adminEmail?: string, registrationEnabled?: string) {
   const prisma = {
     user: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     refreshToken: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn().mockResolvedValue([]),
-      update: jest.fn(),
-      deleteMany: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
+      update: vi.fn(),
+      deleteMany: vi.fn(),
     },
     userDevice: {
-      findUnique: jest.fn().mockResolvedValue(null),
-      create: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     mfaLoginChallenge: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     userToken: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      deleteMany: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      deleteMany: vi.fn(),
     },
-    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
+    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   } as unknown as PrismaService;
 
   const jwtService = {
-    signAsync: jest
+    signAsync: vi
       .fn()
       .mockImplementation(async (payload: Record<string, unknown>) =>
         payload.jti ? `refresh-${payload.jti}` : `access-${payload.sub}`,
       ),
-    verifyAsync: jest.fn().mockResolvedValue({}),
+    verifyAsync: vi.fn().mockResolvedValue({}),
   } as unknown as JwtService;
 
   const configService = {
-    getOrThrow: jest.fn((key: string) => SECRETS[key]),
-    get: jest.fn((key: string) => {
+    getOrThrow: vi.fn((key: string) => SECRETS[key]),
+    get: vi.fn((key: string) => {
       if (key === "ADMIN_EMAIL") return adminEmail;
       if (key === "REGISTRATION_ENABLED") return registrationEnabled;
       return undefined;
@@ -109,33 +110,33 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   } as unknown as ConfigService;
 
   const mail = {
-    sendWelcome: jest.fn(),
-    sendVerifyEmail: jest.fn(),
-    sendPasswordResetLink: jest.fn(),
-    sendPasswordChanged: jest.fn(),
-    sendNewDeviceLogin: jest.fn(),
-    sendMfaEmailCode: jest.fn(),
+    sendWelcome: vi.fn(),
+    sendVerifyEmail: vi.fn(),
+    sendPasswordResetLink: vi.fn(),
+    sendPasswordChanged: vi.fn(),
+    sendNewDeviceLogin: vi.fn(),
+    sendMfaEmailCode: vi.fn(),
   } as unknown as MailService;
 
   const security = {
-    record: jest.fn(),
+    record: vi.fn(),
   } as unknown as SecurityEventService;
 
   const turnstile = {
-    verify: jest.fn().mockResolvedValue(true),
+    verify: vi.fn().mockResolvedValue(true),
   } as unknown as TurnstileService;
 
   const hibp = {
-    isPasswordPwned: jest.fn().mockResolvedValue(false),
+    isPasswordPwned: vi.fn().mockResolvedValue(false),
   } as unknown as HibpService;
 
   const flags = {
-    isEnabled: jest.fn((_name: string, fallback: boolean) => fallback),
+    isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
   } as unknown as FeatureFlagsService;
 
   const mfa = {
-    validateTotpCode: jest.fn(),
-    verifyRecoveryCode: jest.fn().mockResolvedValue(false),
+    validateTotpCode: vi.fn(),
+    verifyRecoveryCode: vi.fn().mockResolvedValue(false),
   } as unknown as MfaService;
 
   const service = new AuthService(
@@ -183,7 +184,7 @@ describe("AuthService.register", () => {
 
   it("throws AppException(auth.anti_bot_verification_failed) when Turnstile verification fails", async () => {
     const { service, prisma, turnstile } = makeService();
-    (turnstile.verify as jest.Mock).mockResolvedValue(false);
+    (turnstile.verify as Mock).mockResolvedValue(false);
 
     await expect(
       service.register({
@@ -202,7 +203,7 @@ describe("AuthService.register", () => {
 
   it("throws AppException(auth.email_already_exists) when the email is already taken", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(makeUser());
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
 
     await expect(
       service.register({
@@ -220,8 +221,8 @@ describe("AuthService.register", () => {
 
   it("throws AppException(auth.password_breached) when the password has appeared in a data breach", async () => {
     const { service, prisma, hibp } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-    (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
+    (hibp.isPasswordPwned as Mock).mockResolvedValue(true);
 
     await expect(
       service.register({
@@ -237,10 +238,10 @@ describe("AuthService.register", () => {
 
   it("creates the user with a bcrypt hash, opens a session and sends welcome/verify emails", async () => {
     const { service, prisma, mail, security } = makeService();
-    (prisma.user.findUnique as jest.Mock)
+    (prisma.user.findUnique as Mock)
       .mockResolvedValueOnce(null) // email uniqueness check
       .mockResolvedValueOnce(null); // username uniqueness check
-    (prisma.user.create as jest.Mock).mockImplementation(
+    (prisma.user.create as Mock).mockImplementation(
       async ({ data }: { data: Partial<User> }) => makeUser(data),
     );
 
@@ -252,7 +253,7 @@ describe("AuthService.register", () => {
       certifiedAge: true,
     });
 
-    const createArgs = (prisma.user.create as jest.Mock).mock.calls[0][0];
+    const createArgs = (prisma.user.create as Mock).mock.calls[0][0];
     expect(createArgs.data.email).toBe("alice@example.com");
     expect(
       await bcrypt.compare("secret1234", createArgs.data.passwordHash),
@@ -284,11 +285,11 @@ describe("AuthService.register", () => {
 
   it("appends a random suffix when the slugified username is taken", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock)
+    (prisma.user.findUnique as Mock)
       .mockResolvedValueOnce(null) // email uniqueness
       .mockResolvedValueOnce(makeUser()) // "alice" taken
       .mockResolvedValueOnce(null); // suffixed candidate free
-    (prisma.user.create as jest.Mock).mockImplementation(
+    (prisma.user.create as Mock).mockImplementation(
       async ({ data }: { data: Partial<User> }) => makeUser(data),
     );
 
@@ -300,7 +301,7 @@ describe("AuthService.register", () => {
       certifiedAge: true,
     });
 
-    const createArgs = (prisma.user.create as jest.Mock).mock.calls[0][0];
+    const createArgs = (prisma.user.create as Mock).mock.calls[0][0];
     expect(createArgs.data.username).toMatch(/^alice.+/);
   });
 });
@@ -308,7 +309,7 @@ describe("AuthService.register", () => {
 describe("AuthService.login", () => {
   it("throws AppException(auth.invalid_credentials) when no user matches the identifier", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findFirst as Mock).mockResolvedValue(null);
 
     await expect(
       service.login({ identifier: "nobody", password: "whatever" }),
@@ -319,7 +320,7 @@ describe("AuthService.login", () => {
     const { service, prisma, security } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     await expect(
       service.login({ identifier: "alice@example.com", password: "wrong" }),
@@ -337,7 +338,7 @@ describe("AuthService.login", () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     const result = asAuthResult(
       await service.login({
@@ -360,7 +361,7 @@ describe("AuthService.login", () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     await service.login({
       identifier: "alice@example.com",
@@ -377,7 +378,7 @@ describe("AuthService.login", () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     await service.login(
       { identifier: "alice@example.com", password: "correct-password" },
@@ -393,8 +394,8 @@ describe("AuthService.login", () => {
     const { service, prisma, mail, security } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.userDevice.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.userDevice.findUnique as Mock).mockResolvedValue(null);
 
     await service.login(
       { identifier: "alice@example.com", password: "correct-password" },
@@ -427,8 +428,8 @@ describe("AuthService.login", () => {
     const { service, prisma, mail, security } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.userDevice.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.userDevice.findUnique as Mock).mockResolvedValue({
       id: "device-1",
       userId: user.id,
       deviceKey: "Chrome · Windows",
@@ -456,8 +457,8 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
     const { service, prisma } = makeService("alice@example.com");
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, role: "USER" });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.user.update as jest.Mock).mockImplementation(
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.user.update as Mock).mockImplementation(
       async ({ data }: { data: Partial<User> }) =>
         makeUser({ ...user, ...data }),
     );
@@ -480,8 +481,8 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
     const { service, prisma } = makeService("Alice@Example.com");
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, role: "USER" });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.user.update as jest.Mock).mockImplementation(
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.user.update as Mock).mockImplementation(
       async ({ data }: { data: Partial<User> }) =>
         makeUser({ ...user, ...data }),
     );
@@ -498,7 +499,7 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
     const { service, prisma } = makeService("alice@example.com");
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, role: "ADMIN" });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     await service.login({
       identifier: "alice@example.com",
@@ -516,7 +517,7 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
     const { service, prisma } = makeService("admin@example.com");
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, role: "USER" });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     const result = asAuthResult(
       await service.login({
@@ -537,7 +538,7 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, role: "USER" });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
 
     await service.login({
       identifier: "alice@example.com",
@@ -555,7 +556,7 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
 describe("AuthService.refresh", () => {
   it("throws AppException(auth.invalid_refresh_token) when the JWT itself fails verification", async () => {
     const { service, jwtService } = makeService();
-    (jwtService.verifyAsync as jest.Mock).mockRejectedValue(new Error("bad"));
+    (jwtService.verifyAsync as Mock).mockRejectedValue(new Error("bad"));
 
     await expect(service.refresh("some-token")).rejects.toMatchObject({
       code: ErrorCode.AuthInvalidRefreshToken,
@@ -564,7 +565,7 @@ describe("AuthService.refresh", () => {
 
   it("throws AppException(auth.invalid_refresh_token) when no matching session is stored", async () => {
     const { service, prisma } = makeService();
-    (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
 
     await expect(service.refresh("some-token")).rejects.toMatchObject({
       code: ErrorCode.AuthInvalidRefreshToken,
@@ -573,7 +574,7 @@ describe("AuthService.refresh", () => {
 
   it("throws AppException(auth.invalid_refresh_token) when the stored session already expired", async () => {
     const { service, prisma } = makeService();
-    (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
       expiresAt: new Date(Date.now() - 1000),
       user: makeUser(),
@@ -587,7 +588,7 @@ describe("AuthService.refresh", () => {
   it("rotates the stored token in place and returns a fresh pair", async () => {
     const { service, prisma } = makeService();
     const user = makeUser();
-    (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
       tokenHash: hashToken("old-token"),
       expiresAt: new Date(Date.now() + 1000),
@@ -611,7 +612,7 @@ describe("AuthService.refresh", () => {
   it("bumps lastActiveAt and clears any pending inactivity warning (LK-C06)", async () => {
     const { service, prisma } = makeService();
     const user = makeUser();
-    (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
       tokenHash: hashToken("old-token"),
       expiresAt: new Date(Date.now() + 1000),
@@ -630,7 +631,7 @@ describe("AuthService.refresh", () => {
 describe("AuthService.listSessions", () => {
   it("prunes expired sessions before listing, so dead ones don't linger as phantom devices", async () => {
     const { service, prisma } = makeService();
-    (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.refreshToken.findMany as Mock).mockResolvedValue([]);
 
     await service.listSessions("user-1");
 
@@ -670,7 +671,7 @@ describe("AuthService.logout", () => {
 describe("AuthService.requestPasswordReset", () => {
   it("does nothing when the email is unknown", async () => {
     const { service, prisma, mail } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await service.requestPasswordReset("nobody@example.com");
 
@@ -681,7 +682,7 @@ describe("AuthService.requestPasswordReset", () => {
   it("issues a token, clears any previous ones and emails the link", async () => {
     const { service, prisma, mail } = makeService();
     const user = makeUser();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findUnique as Mock).mockResolvedValue(user);
 
     await service.requestPasswordReset(user.email);
 
@@ -689,7 +690,7 @@ describe("AuthService.requestPasswordReset", () => {
       where: { userId: user.id, type: "PASSWORD_RESET" },
     });
     expect(prisma.userToken.create).toHaveBeenCalledTimes(1);
-    const createArgs = (prisma.userToken.create as jest.Mock).mock.calls[0][0];
+    const createArgs = (prisma.userToken.create as Mock).mock.calls[0][0];
     expect(createArgs.data.userId).toBe(user.id);
     expect(createArgs.data.type).toBe("PASSWORD_RESET");
 
@@ -697,7 +698,7 @@ describe("AuthService.requestPasswordReset", () => {
       user.email,
       expect.any(String),
     );
-    const [, token] = (mail.sendPasswordResetLink as jest.Mock).mock.calls[0];
+    const [, token] = (mail.sendPasswordResetLink as Mock).mock.calls[0];
     expect(createArgs.data.tokenHash).toBe(hashToken(token));
   });
 });
@@ -705,7 +706,7 @@ describe("AuthService.requestPasswordReset", () => {
 describe("AuthService.resetPassword", () => {
   it("throws AppException(auth.invalid_reset_token) when the token is unknown", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.userToken.findUnique as Mock).mockResolvedValue(null);
 
     await expect(
       service.resetPassword("bad-token", "new-password"),
@@ -714,7 +715,7 @@ describe("AuthService.resetPassword", () => {
 
   it("throws AppException(auth.invalid_reset_token) when the token has expired", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "PASSWORD_RESET",
       expiresAt: new Date(Date.now() - 1000),
@@ -727,7 +728,7 @@ describe("AuthService.resetPassword", () => {
 
   it("throws AppException(auth.invalid_reset_token) when the token is of the wrong type", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "EMAIL_VERIFICATION",
       expiresAt: new Date(Date.now() + 1000),
@@ -740,13 +741,13 @@ describe("AuthService.resetPassword", () => {
 
   it("throws AppException(auth.password_breached) when the new password has appeared in a data breach", async () => {
     const { service, prisma, hibp } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "PASSWORD_RESET",
       expiresAt: new Date(Date.now() + 1000),
       user: makeUser(),
     });
-    (hibp.isPasswordPwned as jest.Mock).mockResolvedValue(true);
+    (hibp.isPasswordPwned as Mock).mockResolvedValue(true);
 
     await expect(
       service.resetPassword("good-token", "pwned-password"),
@@ -757,7 +758,7 @@ describe("AuthService.resetPassword", () => {
   it("updates the password, revokes every session and reset token, and emails a confirmation", async () => {
     const { service, prisma, mail, security } = makeService();
     const user = makeUser();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "PASSWORD_RESET",
       expiresAt: new Date(Date.now() + 1000),
@@ -766,7 +767,7 @@ describe("AuthService.resetPassword", () => {
 
     await service.resetPassword("good-token", "brand-new-password");
 
-    const updateArgs = (prisma.user.update as jest.Mock).mock.calls[0][0];
+    const updateArgs = (prisma.user.update as Mock).mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: "user-1" });
     expect(
       await bcrypt.compare("brand-new-password", updateArgs.data.passwordHash),
@@ -790,7 +791,7 @@ describe("AuthService.resetPassword", () => {
 describe("AuthService.resendVerificationEmail", () => {
   it("throws AppException(auth.account_not_found) when the account doesn't exist", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await expect(service.resendVerificationEmail("nobody")).rejects.toThrow(
       AppException,
@@ -802,7 +803,7 @@ describe("AuthService.resendVerificationEmail", () => {
 
   it("throws AppException(auth.already_verified) when already verified", async () => {
     const { service, prisma, mail } = makeService();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(
+    (prisma.user.findUnique as Mock).mockResolvedValue(
       makeUser({ emailVerified: true }),
     );
 
@@ -817,7 +818,7 @@ describe("AuthService.resendVerificationEmail", () => {
   it("replaces any previous token and emails a fresh link", async () => {
     const { service, prisma, mail } = makeService();
     const user = makeUser({ emailVerified: false });
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
+    (prisma.user.findUnique as Mock).mockResolvedValue(user);
 
     await service.resendVerificationEmail("user-1");
 
@@ -842,7 +843,7 @@ describe("AuthService.resendVerificationEmail", () => {
 describe("AuthService.verifyEmail", () => {
   it("throws AppException(auth.invalid_verification_token) when the token is unknown", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.userToken.findUnique as Mock).mockResolvedValue(null);
 
     await expect(service.verifyEmail("bad-token")).rejects.toMatchObject({
       code: ErrorCode.AuthInvalidVerificationToken,
@@ -851,7 +852,7 @@ describe("AuthService.verifyEmail", () => {
 
   it("throws AppException(auth.invalid_verification_token) when the token has expired", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "EMAIL_VERIFICATION",
       expiresAt: new Date(Date.now() - 1000),
@@ -864,7 +865,7 @@ describe("AuthService.verifyEmail", () => {
 
   it("throws AppException(auth.invalid_verification_token) when the token is of the wrong type", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "PASSWORD_RESET",
       expiresAt: new Date(Date.now() + 1000),
@@ -877,7 +878,7 @@ describe("AuthService.verifyEmail", () => {
 
   it("marks the account verified and clears its verification tokens", async () => {
     const { service, prisma } = makeService();
-    (prisma.userToken.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
       type: "EMAIL_VERIFICATION",
       expiresAt: new Date(Date.now() + 1000),
@@ -900,8 +901,8 @@ describe("AuthService.login — MFA challenge (LK-C17)", () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, mfaTotpEnabled: true });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.mfaLoginChallenge.create as jest.Mock).mockResolvedValue({
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.mfaLoginChallenge.create as Mock).mockResolvedValue({
       id: "challenge-1",
     });
 
@@ -922,8 +923,8 @@ describe("AuthService.login — MFA challenge (LK-C17)", () => {
     const { service, prisma, mail } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash, mfaEmailEnabled: true });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.mfaLoginChallenge.create as jest.Mock).mockResolvedValue({
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.mfaLoginChallenge.create as Mock).mockResolvedValue({
       id: "challenge-1",
     });
 
@@ -947,8 +948,8 @@ describe("AuthService.login — MFA challenge (LK-C17)", () => {
       mfaTotpEnabled: true,
       mfaEmailEnabled: true,
     });
-    (prisma.user.findFirst as jest.Mock).mockResolvedValue(user);
-    (prisma.mfaLoginChallenge.create as jest.Mock).mockResolvedValue({
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.mfaLoginChallenge.create as Mock).mockResolvedValue({
       id: "challenge-1",
     });
 
@@ -976,7 +977,7 @@ describe("AuthService.resendMfaEmailCode", () => {
   it("generates and sends a code even when none was sent yet (first pick of the email method)", async () => {
     const { service, prisma, mail } = makeService();
     const user = makeUser({ mfaTotpEnabled: true, mfaEmailEnabled: true });
-    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
       id: "challenge-1",
       userId: user.id,
       totpAllowed: true,
@@ -1001,7 +1002,7 @@ describe("AuthService.resendMfaEmailCode", () => {
 
   it("rejects when the method isn't actually allowed on this challenge", async () => {
     const { service, prisma } = makeService();
-    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
       id: "challenge-1",
       emailAllowed: false,
       expiresAt: new Date(Date.now() + 60_000),
@@ -1019,7 +1020,7 @@ describe("AuthService.verifyMfaLogin", () => {
   it("accepts a valid TOTP code and completes the session", async () => {
     const { service, prisma, mfa } = makeService();
     const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
-    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
       id: "challenge-1",
       userId: user.id,
       totpAllowed: true,
@@ -1030,7 +1031,7 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as jest.Mock).mockReturnValue(true);
+    (mfa.validateTotpCode as Mock).mockReturnValue(true);
 
     const result = await service.verifyMfaLogin("challenge-1", "123456");
 
@@ -1044,7 +1045,7 @@ describe("AuthService.verifyMfaLogin", () => {
   it("falls back to a valid recovery code when TOTP/email don't match", async () => {
     const { service, prisma, mfa } = makeService();
     const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
-    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
       id: "challenge-1",
       userId: user.id,
       totpAllowed: true,
@@ -1055,8 +1056,8 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as jest.Mock).mockReturnValue(false);
-    (mfa.verifyRecoveryCode as jest.Mock).mockResolvedValue(true);
+    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.verifyRecoveryCode as Mock).mockResolvedValue(true);
 
     const result = await service.verifyMfaLogin("challenge-1", "ABCDE12345");
     expect(result.user.id).toBe(user.id);
@@ -1065,7 +1066,7 @@ describe("AuthService.verifyMfaLogin", () => {
   it("increments attempts on an invalid code without consuming the challenge", async () => {
     const { service, prisma, mfa } = makeService();
     const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
-    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
       id: "challenge-1",
       userId: user.id,
       totpAllowed: true,
@@ -1076,8 +1077,8 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as jest.Mock).mockReturnValue(false);
-    (mfa.verifyRecoveryCode as jest.Mock).mockResolvedValue(false);
+    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),
@@ -1092,7 +1093,7 @@ describe("AuthService.verifyMfaLogin", () => {
   it("deletes the challenge once the attempt cap is reached", async () => {
     const { service, prisma, mfa } = makeService();
     const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
-    (prisma.mfaLoginChallenge.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
       id: "challenge-1",
       userId: user.id,
       totpAllowed: true,
@@ -1103,8 +1104,8 @@ describe("AuthService.verifyMfaLogin", () => {
       expiresAt: new Date(Date.now() + 60_000),
       user,
     });
-    (mfa.validateTotpCode as jest.Mock).mockReturnValue(false);
-    (mfa.verifyRecoveryCode as jest.Mock).mockResolvedValue(false);
+    (mfa.validateTotpCode as Mock).mockReturnValue(false);
+    (mfa.verifyRecoveryCode as Mock).mockResolvedValue(false);
 
     await expect(
       service.verifyMfaLogin("challenge-1", "000000"),

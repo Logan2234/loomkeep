@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AdminService } from "./admin.service";
 import { PublicStatsController } from "./public-stats.controller";
@@ -14,16 +15,16 @@ function makeController(
     reachable: boolean | null;
   }[] = [],
 ) {
-  const userCountMock = jest
+  const userCountMock = vi
     .fn()
     .mockResolvedValueOnce(counts.userCount)
     .mockResolvedValueOnce(counts.newUsers7d);
   const prisma = {
     user: { count: userCountMock },
-    report: { count: jest.fn().mockResolvedValue(counts.openReports) },
+    report: { count: vi.fn().mockResolvedValue(counts.openReports) },
   } as unknown as PrismaService;
   const admin = {
-    getServicesStatus: jest
+    getServicesStatus: vi
       .fn()
       .mockResolvedValue({ services, checkedAt: new Date().toISOString() }),
   } as unknown as AdminService;

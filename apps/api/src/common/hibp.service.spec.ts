@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
+import { vi } from "vitest";
 import { HibpService } from "./hibp.service";
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
@@ -12,7 +13,7 @@ function sha1(password: string): { prefix: string; suffix: string } {
 }
 
 function mockRangeResponse(body: string, status = 200): void {
-  global.fetch = jest.fn(() =>
+  global.fetch = vi.fn(() =>
     Promise.resolve(new Response(body, { status })),
   ) as typeof fetch;
 }
@@ -26,7 +27,7 @@ describe("HibpService", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("returns true when the suffix is present with a positive count", async () => {
@@ -61,7 +62,7 @@ describe("HibpService", () => {
   });
 
   it("fails open (false) when the fetch rejects", async () => {
-    global.fetch = jest.fn(() =>
+    global.fetch = vi.fn(() =>
       Promise.reject(new Error("network down")),
     ) as typeof fetch;
 

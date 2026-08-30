@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { MusicItemService } from "./music-item.service";
 import { MusicLibraryService } from "./music-library.service";
@@ -32,10 +33,10 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
 
 function makeService(rows: ReturnType<typeof makeRow>[]) {
   const prisma = {
-    musicEntry: { findMany: jest.fn().mockResolvedValue(rows) },
+    musicEntry: { findMany: vi.fn().mockResolvedValue(rows) },
   } as unknown as PrismaService;
   const reviews = {
-    getRatings: jest.fn(() =>
+    getRatings: vi.fn(() =>
       Promise.resolve(
         new Map(
           rows
@@ -44,17 +45,17 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
         ),
       ),
     ),
-    getRating: jest.fn((_u: string, _t: string, id: string) =>
+    getRating: vi.fn((_u: string, _t: string, id: string) =>
       Promise.resolve(rows.find((r) => r.musicItemId === id)?.rating ?? null),
     ),
-    setRating: jest.fn(),
+    setRating: vi.fn(),
   } as unknown as import("../reviews/review.service").ReviewService;
   const service = new MusicLibraryService(
     prisma,
     {} as MusicItemService,
     reviews,
     {
-      emit: jest.fn(),
+      emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService,
   );
   return { service, prisma };
@@ -120,13 +121,13 @@ describe("MusicLibraryService.listEntries", () => {
 
 describe("MusicLibraryService.deleteEntry", () => {
   it("wipes the user's reviews and comments for the album, not just the entry row", async () => {
-    const reviewDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
-    const commentUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
-    const musicEntryDelete = jest.fn().mockResolvedValue({});
+    const reviewDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
+    const commentUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const musicEntryDelete = vi.fn().mockResolvedValue({});
 
     const prisma = {
       musicEntry: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: "entry-1",
           userId: "user-1",
           musicItemId: "album-1",
@@ -135,7 +136,7 @@ describe("MusicLibraryService.deleteEntry", () => {
       },
       review: { deleteMany: reviewDeleteMany },
       comment: { updateMany: commentUpdateMany },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
 
     const service = new MusicLibraryService(
@@ -143,7 +144,7 @@ describe("MusicLibraryService.deleteEntry", () => {
       {} as MusicItemService,
       {} as import("../reviews/review.service").ReviewService,
       {
-        emit: jest.fn(),
+        emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
     );
 

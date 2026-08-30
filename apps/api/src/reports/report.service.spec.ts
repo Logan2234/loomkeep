@@ -1,3 +1,4 @@
+import { type Mock, vi } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
 import type { NotificationService } from "../notifications/notification.service";
@@ -5,40 +6,40 @@ import type { PrismaService } from "../prisma/prisma.service";
 import { ReportService } from "./report.service";
 
 function make(
-  overrides: Partial<Record<string, Partial<Record<string, jest.Mock>>>> = {},
+  overrides: Partial<Record<string, Partial<Record<string, Mock>>>> = {},
 ) {
   const prisma = {
     report: {
-      create: jest.fn(),
-      count: jest.fn().mockResolvedValue(0),
-      findMany: jest.fn().mockResolvedValue([]),
-      findUnique: jest.fn().mockResolvedValue(null),
-      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      create: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       ...overrides.report,
     },
     comment: {
-      findUnique: jest.fn().mockResolvedValue(null),
-      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       ...overrides.comment,
     },
     user: {
-      findUnique: jest.fn().mockResolvedValue(null),
-      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       ...overrides.user,
     },
-    mediaItem: { findUnique: jest.fn().mockResolvedValue(null) },
-    gameItem: { findUnique: jest.fn().mockResolvedValue(null) },
-    bookItem: { findUnique: jest.fn().mockResolvedValue(null) },
-    musicItem: { findUnique: jest.fn().mockResolvedValue(null) },
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    gameItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    bookItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    musicItem: { findUnique: vi.fn().mockResolvedValue(null) },
   } as unknown as PrismaService;
   const mail = {
-    sendReportsDigest: jest.fn(),
+    sendReportsDigest: vi.fn(),
   } as unknown as MailService;
   const jobRuns = {
-    record: jest.fn((_key, fn) => fn()),
+    record: vi.fn((_key, fn) => fn()),
   } as unknown as JobRunService;
   const notifications = {
-    create: jest.fn(),
+    create: vi.fn(),
   } as unknown as NotificationService;
 
   return {
@@ -125,7 +126,7 @@ describe("ReportService.list — target resolution", () => {
   it("resolves a COMMENT target to an excerpt", async () => {
     const { svc } = make({
       report: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: "r1",
             targetType: "COMMENT",
@@ -144,7 +145,7 @@ describe("ReportService.list — target resolution", () => {
         ]),
       },
       comment: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           text: "this is spam",
           deletedAt: null,
           targetType: "MEDIA",
@@ -161,7 +162,7 @@ describe("ReportService.list — target resolution", () => {
   it("shows a tombstone label for an already-deleted comment", async () => {
     const { svc } = make({
       report: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: "r1",
             targetType: "COMMENT",
@@ -180,7 +181,7 @@ describe("ReportService.list — target resolution", () => {
         ]),
       },
       comment: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           text: null,
           deletedAt: new Date(),
           targetType: "MEDIA",
@@ -198,7 +199,7 @@ describe("ReportService.findOne", () => {
   it("returns the target type/id for takedown routing", async () => {
     const { svc } = make({
       report: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValue({ targetType: "COMMENT", targetId: "c1" }),
       },
@@ -218,7 +219,7 @@ describe("ReportService.findOne", () => {
 describe("ReportService.resolve", () => {
   it("throws when the report is not (still) pending", async () => {
     const { svc } = make({
-      report: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      report: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     });
     await expect(svc.resolve("admin1", "r1", "RESOLVED")).rejects.toThrow();
   });
@@ -240,8 +241,8 @@ describe("ReportService.resolve", () => {
   it("notifies the reporter in-app of the outcome, DSA art. 16(5)", async () => {
     const { svc, notifications } = make({
       report: {
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        findUnique: jest.fn().mockResolvedValue({ reporterId: "reporter1" }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUnique: vi.fn().mockResolvedValue({ reporterId: "reporter1" }),
       },
     });
     await svc.resolve("admin1", "r1", "DISMISSED");
@@ -256,8 +257,8 @@ describe("ReportService.resolve", () => {
   it("skips the reporter notification when the reporter's account is gone", async () => {
     const { svc, notifications } = make({
       report: {
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        findUnique: jest.fn().mockResolvedValue({ reporterId: null }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUnique: vi.fn().mockResolvedValue({ reporterId: null }),
       },
     });
     await svc.resolve("admin1", "r1", "RESOLVED");
@@ -288,7 +289,7 @@ describe("ReportService.list — reporterId filter", () => {
 describe("ReportService.listAgainstUser", () => {
   it("matches reports targeting the user directly or a comment they authored", async () => {
     const { svc, prisma } = make({
-      comment: { findMany: jest.fn().mockResolvedValue([{ id: "c1" }]) },
+      comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },
     });
     await svc.listAgainstUser("user1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
@@ -307,7 +308,7 @@ describe("ReportService.listAgainstUser", () => {
 describe("ReportService.sendDailyDigest", () => {
   it("sends nothing when there are no pending reports", async () => {
     const { svc, mail } = make({
-      report: { count: jest.fn().mockResolvedValue(0) },
+      report: { count: vi.fn().mockResolvedValue(0) },
     });
     const sent = await svc.sendDailyDigest();
     expect(sent).toBe(0);
@@ -316,9 +317,9 @@ describe("ReportService.sendDailyDigest", () => {
 
   it("emails every admin the pending count", async () => {
     const { svc, prisma, mail } = make({
-      report: { count: jest.fn().mockResolvedValue(2) },
+      report: { count: vi.fn().mockResolvedValue(2) },
       user: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValue([{ email: "a@x.com" }, { email: "b@x.com" }]),
       },

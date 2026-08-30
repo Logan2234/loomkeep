@@ -1,25 +1,26 @@
 import type { ConfigService } from "@nestjs/config";
+import { vi } from "vitest";
 import { FeatureFlagsService } from "./feature-flags.service";
 
 const fakeClient = {
-  on: jest.fn(),
-  isEnabled: jest.fn(),
-  destroy: jest.fn(),
+  on: vi.fn(),
+  isEnabled: vi.fn(),
+  destroy: vi.fn(),
 };
 
-jest.mock("unleash-client", () => ({
-  initialize: jest.fn(() => fakeClient),
+vi.mock("unleash-client", () => ({
+  initialize: vi.fn(() => fakeClient),
 }));
 
 function fakeConfig(env: Record<string, string | undefined>): ConfigService {
   return {
-    get: jest.fn((key: string) => env[key]),
+    get: vi.fn((key: string) => env[key]),
   } as unknown as ConfigService;
 }
 
 describe("FeatureFlagsService", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("returns the fallback and never talks to Unleash when UNLEASH_API_URL is unset", () => {
@@ -57,7 +58,7 @@ describe("FeatureFlagsService", () => {
     withUrl.onModuleDestroy();
     expect(fakeClient.destroy).toHaveBeenCalledTimes(1);
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     const withoutUrl = new FeatureFlagsService(fakeConfig({}));
     withoutUrl.onModuleInit();

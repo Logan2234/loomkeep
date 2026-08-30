@@ -1,3 +1,4 @@
+import { vi, type Mock } from "vitest";
 import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { CommentService } from "../comments/comment.service";
@@ -27,42 +28,42 @@ const REASON_BODY: ModerationReasonBody = {
 function makeController() {
   const prisma = {
     user: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
-    userEntitlement: { findMany: jest.fn().mockResolvedValue([]) },
-    libraryEntry: { count: jest.fn() },
-    gameEntry: { count: jest.fn() },
-    bookEntry: { count: jest.fn() },
-    musicEntry: { count: jest.fn() },
+    userEntitlement: { findMany: vi.fn().mockResolvedValue([]) },
+    libraryEntry: { count: vi.fn() },
+    gameEntry: { count: vi.fn() },
+    bookEntry: { count: vi.fn() },
+    musicEntry: { count: vi.fn() },
   } as unknown as PrismaService;
   const authService = {
-    resendVerificationEmail: jest.fn(),
-    requestPasswordReset: jest.fn(),
+    resendVerificationEmail: vi.fn(),
+    requestPasswordReset: vi.fn(),
   } as unknown as AuthService;
   const dataExport = {
-    buildExport: jest.fn(),
+    buildExport: vi.fn(),
   } as unknown as DataExportService;
   const securityEvents = {
-    record: jest.fn(),
+    record: vi.fn(),
   } as unknown as SecurityEventService;
-  const reviews = { listMine: jest.fn() } as unknown as ReviewService;
-  const comments = { listByAuthor: jest.fn() } as unknown as CommentService;
+  const reviews = { listMine: vi.fn() } as unknown as ReviewService;
+  const comments = { listByAuthor: vi.fn() } as unknown as CommentService;
   const follows = {
-    listFollowers: jest.fn(),
-    listFollowing: jest.fn(),
+    listFollowers: vi.fn(),
+    listFollowing: vi.fn(),
   } as unknown as FollowService;
-  const reports = { listAgainstUser: jest.fn() } as unknown as ReportService;
+  const reports = { listAgainstUser: vi.fn() } as unknown as ReportService;
   const lists = {
-    listEditable: jest.fn(),
+    listEditable: vi.fn(),
   } as unknown as ListService;
   const moderationDecisions = {
-    record: jest.fn(),
+    record: vi.fn(),
   } as unknown as ModerationDecisionService;
   const entitlements = {
-    setPlan: jest.fn().mockResolvedValue({ plan: "PREMIUM" }),
+    setPlan: vi.fn().mockResolvedValue({ plan: "PREMIUM" }),
   } as unknown as EntitlementService;
 
   const controller = new AdminUsersController(
@@ -92,7 +93,7 @@ function makeController() {
 describe("AdminUsersController.listUsers", () => {
   it("maps each account's persisted lastActiveAt/inactivityWarningSentAt", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([
+    (prisma.user.findMany as Mock).mockResolvedValue([
       {
         id: "user-1",
         email: "a@example.com",
@@ -130,7 +131,7 @@ describe("AdminUsersController.listUsers", () => {
 
   it("paginates with skip/take derived from the page query param", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
 
     await controller.listUsers(undefined, undefined, "3");
 
@@ -142,7 +143,7 @@ describe("AdminUsersController.listUsers", () => {
 
   it("applies the search/filter query params to the where clause", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
 
     await controller.listUsers("alice", "unverified");
 
@@ -164,13 +165,13 @@ describe("AdminUsersController.listUsers", () => {
 describe("AdminUsersController.getUserLibraryStats", () => {
   it("counts every persisted library domain, splitting media by type", async () => {
     const { controller, prisma } = makeController();
-    (prisma.libraryEntry.count as jest.Mock)
+    (prisma.libraryEntry.count as Mock)
       .mockResolvedValueOnce(3)
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(2);
-    (prisma.gameEntry.count as jest.Mock).mockResolvedValue(4);
-    (prisma.bookEntry.count as jest.Mock).mockResolvedValue(6);
-    (prisma.musicEntry.count as jest.Mock).mockResolvedValue(1);
+    (prisma.gameEntry.count as Mock).mockResolvedValue(4);
+    (prisma.bookEntry.count as Mock).mockResolvedValue(6);
+    (prisma.musicEntry.count as Mock).mockResolvedValue(1);
 
     await expect(controller.getUserLibraryStats("user-2")).resolves.toEqual({
       movies: 3,
@@ -209,7 +210,7 @@ describe("AdminUsersController.updateUserRole", () => {
 
   it("allows an admin granting/revoking another account's role", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.update as jest.Mock).mockResolvedValue({
+    (prisma.user.update as Mock).mockResolvedValue({
       role: "ADMIN",
     });
 
@@ -228,7 +229,7 @@ describe("AdminUsersController.updateUserRole", () => {
 
   it("allows an admin keeping their own ADMIN role", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.update as jest.Mock).mockResolvedValue({
+    (prisma.user.update as Mock).mockResolvedValue({
       role: "ADMIN",
     });
 
@@ -258,7 +259,7 @@ describe("AdminUsersController.updateUserPlan", () => {
 describe("AdminUsersController.getUserExport", () => {
   it("delegates to DataExportService for the target account", async () => {
     const { controller, dataExport } = makeController();
-    (dataExport.buildExport as jest.Mock).mockResolvedValue({
+    (dataExport.buildExport as Mock).mockResolvedValue({
       exportedAt: "now",
     });
 
@@ -282,7 +283,7 @@ describe("AdminUsersController.resendVerification", () => {
 describe("AdminUsersController.sendPasswordResetLink", () => {
   it("throws NotFoundException when no account matches", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await expect(controller.sendPasswordResetLink("nobody")).rejects.toThrow(
       AppException,
@@ -291,7 +292,7 @@ describe("AdminUsersController.sendPasswordResetLink", () => {
 
   it("requests a reset for the target account's email", async () => {
     const { controller, prisma, authService } = makeController();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.user.findUnique as Mock).mockResolvedValue({
       email: "alice@example.com",
     });
 
@@ -314,7 +315,7 @@ describe("AdminUsersController.deleteUser", () => {
 
   it("throws NotFoundException when no account matches", async () => {
     const { controller, prisma } = makeController();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
 
     await expect(
       controller.deleteUser("nobody", jwtPayload("user-1"), REASON_BODY),
@@ -324,7 +325,7 @@ describe("AdminUsersController.deleteUser", () => {
   it("records USER_DELETED and the DSA art. 17 moderation decision before deleting the account", async () => {
     const { controller, prisma, securityEvents, moderationDecisions } =
       makeController();
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.user.findUnique as Mock).mockResolvedValue({
       id: "user-2",
       email: "bob@example.com",
       username: "bob",

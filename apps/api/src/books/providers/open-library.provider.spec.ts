@@ -1,13 +1,14 @@
 import { ConfigService } from "@nestjs/config";
+import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { OpenLibraryProvider } from "./open-library.provider";
 
-// Node defines global fetch lazily, which confuses jest.spyOn on restore;
+// Node defines global fetch lazily, which confuses vi.spyOn on restore;
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
-function mockFetch(payload: unknown, ok = true): jest.Mock {
-  const fn = jest.fn(() =>
+function mockFetch(payload: unknown, ok = true): Mock {
+  const fn = vi.fn(() =>
     Promise.resolve(
       new Response(JSON.stringify(payload), {
         status: ok ? 200 : 404,
@@ -20,8 +21,8 @@ function mockFetch(payload: unknown, ok = true): jest.Mock {
 }
 
 /** Route responses by a substring of the request URL (query string included). */
-function mockFetchByUrl(routes: [string, unknown][]): jest.Mock {
-  const fn = jest.fn((input: RequestInfo | URL) => {
+function mockFetchByUrl(routes: [string, unknown][]): Mock {
+  const fn = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     const match = routes.find(([part]) => url.includes(part));
 
@@ -43,9 +44,9 @@ function mockFetchByUrl(routes: [string, unknown][]): jest.Mock {
 /** Returns a different status/payload on each successive call, in order. */
 function mockFetchSequence(
   responses: { status: number; payload?: unknown }[],
-): jest.Mock {
+): Mock {
   let call = 0;
-  const fn = jest.fn(() => {
+  const fn = vi.fn(() => {
     const { status, payload } = responses[Math.min(call, responses.length - 1)];
     call++;
     return Promise.resolve(
@@ -60,8 +61,8 @@ function mockFetchSequence(
 }
 
 function providerWith(contact?: string): OpenLibraryProvider {
-  const config = { get: jest.fn().mockReturnValue(contact) };
-  const quota = { record: jest.fn() };
+  const config = { get: vi.fn().mockReturnValue(contact) };
+  const quota = { record: vi.fn() };
   return new OpenLibraryProvider(
     config as unknown as ConfigService,
     quota as unknown as QuotaTrackerService,
@@ -69,7 +70,7 @@ function providerWith(contact?: string): OpenLibraryProvider {
 }
 
 /** The URL of the nth fetch call, percent-decoded for readable assertions. */
-function calledUrl(fn: jest.Mock, index = 0): string {
+function calledUrl(fn: Mock, index = 0): string {
   return decodeURIComponent(String(fn.mock.calls[index][0]));
 }
 
@@ -805,7 +806,7 @@ describe("OpenLibraryProvider", () => {
 
   it("chunks ISBN batches at 20 and reports a failed chunk without retrying it individually", async () => {
     const isbns = Array.from({ length: 25 }, (_, i) => `978000000000${i}`);
-    const fn = jest
+    const fn = vi
       .fn()
       .mockImplementationOnce(() => Promise.reject(new Error("network down")))
       .mockImplementationOnce(() =>
