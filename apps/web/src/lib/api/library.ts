@@ -58,7 +58,7 @@ export const updateLibraryEntry = (
 export const deleteLibraryEntry = (entryId: string): Promise<void> =>
   request(`/library/entries/${entryId}`, { method: "DELETE" });
 
-/** Log a completed rewatch (a completion beyond the entry's first one). Movies only. */
+// Movies only.
 export const addLibraryReplay = (entryId: string): Promise<LibraryEntryDto> =>
   request(`/library/entries/${entryId}/replays`, {
     method: "POST",

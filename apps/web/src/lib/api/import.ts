@@ -8,11 +8,9 @@ import type {
 } from "@loomkeep/shared";
 import { request } from "./core";
 
-/** Which config-dependent sources are actually usable on this deployment. */
 export const getImportAvailability = (): Promise<ImportAvailabilityDto> =>
   request("/import/availability");
 
-/** Per domain, whether this account has already used its one free import in it. */
 export const getImportQuota = (): Promise<ImportQuotaDto> =>
   request("/import/quota");
 

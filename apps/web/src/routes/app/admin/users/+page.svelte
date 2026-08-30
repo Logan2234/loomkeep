@@ -479,7 +479,6 @@
         </p>
       {/if}
 
-      <!-- Identité -->
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -510,7 +509,6 @@
         {/if}
       </section>
 
-      <!-- Plan -->
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -541,7 +539,6 @@
         {/if}
       </section>
 
-      <!-- Accès -->
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -589,7 +586,6 @@
         {/if}
       </section>
 
-      <!-- Activité sociale -->
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -618,7 +614,6 @@
         {/if}
       </section>
 
-      <!-- Bibliothèque -->
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -645,7 +640,6 @@
         {/if}
       </section>
 
-      <!-- Données -->
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
@@ -674,7 +668,6 @@
         {/if}
       </section>
 
-      <!-- Zone sensible -->
       <section
         class="border-danger/40 bg-danger/5 mt-auto rounded-xl border p-3">
         <h3

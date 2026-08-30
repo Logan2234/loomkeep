@@ -19,7 +19,6 @@ export function searchCatalog(
   return request(`/catalog/search?${params}`);
 }
 
-/** Live extras (where to watch, cast, similar) — not persisted. */
 export function getMediaExtras(
   source: string,
   sourceId: string,
@@ -31,18 +30,14 @@ export function getMediaExtras(
   );
 }
 
-/** Live detail of a cast entity (TMDB person or AniList staff) for the cast modal. */
 export const getCastDetail = (
   source: string,
   id: string,
 ): Promise<CastDetailDto> =>
   request(`/catalog/${source.toLowerCase()}/person/${id}`);
 
-/**
- * Unified media page: metadata + the user's library state (`entry` null when
- * not in the library). Addressed by catalogue identity — `type` implies the
- * source, so no source segment is needed.
- */
+// Addressed by catalogue identity — `type` implies the source, so no source
+// segment is needed in the URL.
 export function getMediaDetail(
   type: MediaType,
   sourceId: string,

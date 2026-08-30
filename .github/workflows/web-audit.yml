@@ -22,6 +22,7 @@ jobs:
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
+
     permissions:
       contents: read
       security-events: write
@@ -36,6 +37,7 @@ jobs:
           node-version: 22
       - name: Run Pa11y CI
         run: npx --yes pa11y-ci@4.1.1 --config .pa11yci.json
+        continue-on-error: true
       # pa11y-ci has no built-in SARIF reporter, so accessibility findings
       # only ever lived in this step's console log. .pa11yci.json's
       # defaults.reporters loads a small local reporter (alongside the

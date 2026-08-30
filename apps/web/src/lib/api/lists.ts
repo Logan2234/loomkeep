@@ -19,7 +19,6 @@ export const getEditableLists = (): Promise<MyListDto[]> =>
 export const getMyList = (id: string): Promise<ListDetailDto> =>
   request(`/lists/me/${id}`);
 
-/** Which of the user's own lists already contain a target, keyed by list id. */
 export const getListMembership = (
   targetType: ListItemTargetType,
   targetId: string,

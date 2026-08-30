@@ -1,7 +1,3 @@
-// Generic Svelte action: fires `onLongPress` after holding a touch point on
-// the node for `duration`ms without moving past `MOVE_TOLERANCE` px. Ignores
-// mouse/pen — desktop already reveals per-item actions on hover, so a
-// long-press-to-focus gesture only makes sense on touch.
 const MOVE_TOLERANCE = 10;
 
 type LongPressParams = {
@@ -9,6 +5,12 @@ type LongPressParams = {
   duration?: number;
 };
 
+/**
+ * Generic Svelte action: fires `onLongPress` after holding a touch point on
+ * the node for `duration`ms without moving past `MOVE_TOLERANCE` px. Ignores
+ * mouse/pen — desktop already reveals per-item actions on hover, so a
+ * long-press-to-focus gesture only makes sense on touch.
+ */
 export function longpress(node: HTMLElement, params: LongPressParams) {
   let { onLongPress, duration = 500 } = params;
   let timer: ReturnType<typeof setTimeout> | null = null;

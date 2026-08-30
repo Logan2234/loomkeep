@@ -44,15 +44,12 @@ const ANIME_DETAILS: ProviderMediaDetails = {
       episodes: [
         { number: 1, title: "Episode 1", airDate: null },
         { number: 2, title: "Episode 2", airDate: null },
-        // A future air date so the release calendar has something to return.
         { number: 3, title: "Episode 3", airDate: FUTURE_AIR_DATE },
       ],
     },
   ],
 };
 
-// External catalogues are stubbed: e2e exercises our API + database, not TMDB/AniList.
-// getDetails echoes the requested id so different sourceIds yield distinct media.
 const EMPTY_EXTRAS = {
   watchProviders: { flatrate: [], rent: [], buy: [], link: null },
   cast: [],

@@ -56,14 +56,12 @@ import type {
 } from "@loomkeep/shared";
 import { request } from "./core";
 
-/** The DSA art. 17 facts/basis an admin supplies when taking a restrictive measure. */
 export interface ModerationReasonBody {
   reasonText: string;
   legalBasis: ModerationLegalBasis;
   tosClause: string;
 }
 
-/** Health and quota usage of every external dependency (config presence, live probe, call counters). */
 export const getAdminServices = (): Promise<ServiceStatusResponseDto> =>
   request("/admin/services");
 
@@ -97,21 +95,17 @@ export function getAdminPushDevices(
   return request(`/admin/push/devices?${params}`);
 }
 
-/** Instance-wide push reach (active subscriptions, accounts, browser families). */
 export const getAdminPushSummary = (): Promise<AdminPushSummaryDto> =>
   request("/admin/push/summary");
 
-/** Sends one push to every subscribed device on the instance, across every account. */
 export const sendAdminBroadcastPush = (
   body: SendAdminBroadcastPushRequestDto,
 ): Promise<AdminPushBroadcastResponseDto> =>
   request("/admin/push/broadcast", { method: "POST", body });
 
-/** Locally-generated architecture diagrams (DB ERD, module graph). */
 export const getAdminSchema = (): Promise<SchemaGraphResponseDto> =>
   request("/admin/schema");
 
-/** The few instance counters the admin dashboard and /admin/communications read. */
 export const getAdminOverview = (): Promise<AdminOverviewDto> =>
   request("/admin/overview");
 
@@ -119,7 +113,6 @@ export const getAdminOverview = (): Promise<AdminOverviewDto> =>
 export const getAdminAccountsStats = (): Promise<AdminAccountsSectionDto> =>
   request("/admin/stats/accounts");
 
-/** Registration curve alone — re-queried by the card's own period picker. */
 export const getAdminNewAccountsTrend = (
   period: TrendPeriod,
 ): Promise<AdminNewAccountsTrendDto> =>
@@ -129,11 +122,9 @@ export const getAdminNewAccountsTrend = (
 export const getAdminCatalogueStats = (): Promise<AdminCatalogueSectionDto> =>
   request("/admin/stats/catalogue");
 
-/** "Social" section of /admin/stats — `{ enabled: false }` when SOCIAL_ENABLED is off. */
 export const getAdminSocialStats = (): Promise<AdminSocialSectionDto> =>
   request("/admin/stats/social");
 
-/** Social activity curve alone — re-queried by the card's own period picker. */
 export const getAdminSocialActivityTrend = (
   period: TrendPeriod,
 ): Promise<AdminSocialActivityTrendDto> =>
@@ -143,7 +134,6 @@ export const getAdminSocialActivityTrend = (
 export const getAdminSystemStats = (): Promise<AdminSystemSectionDto> =>
   request("/admin/stats/system");
 
-/** Every known scheduled job, with its recent run history. */
 export const getAdminJobs = (): Promise<JobListResponseDto> =>
   request("/admin/jobs");
 
@@ -171,11 +161,9 @@ export function getAdminUsers(
   return request(`/admin/users${suffix}`);
 }
 
-/** Minimal, unpaginated account list for a picker (UserSelector, communications broadcast target). */
 export const getAdminUserOptions = (): Promise<AdminUserOptionDto[]> =>
   request("/admin/users/options");
 
-/** Compact per-domain library breakdown for an account drawer. */
 export const getAdminUserLibraryStats = (
   userId: string,
 ): Promise<AdminUserLibraryStatsDto> =>
@@ -192,11 +180,9 @@ export const revokeAdminUserSession = (
     method: "DELETE",
   });
 
-/** Revokes every device for an account in one go. */
 export const revokeAllAdminUserSessions = (userId: string): Promise<void> =>
   request(`/admin/users/${userId}/sessions`, { method: "DELETE" });
 
-/** Sets an account's role (e.g. toggling admin access). */
 export const updateAdminUserRole = (
   userId: string,
   role: Role,
@@ -206,7 +192,6 @@ export const updateAdminUserRole = (
     body: { role },
   });
 
-/** Sets an account's plan (docs/adr/0001-open-core-agpl.md) — no billing yet, admin-only. */
 export const updateAdminUserPlan = (
   userId: string,
   plan: Plan,
@@ -216,7 +201,6 @@ export const updateAdminUserPlan = (
     body: { plan },
   });
 
-/** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */
 export const getAdminUserExport = (
   userId: string,
 ): Promise<UserDataExportDto> => request(`/admin/users/${userId}/export`);
@@ -225,7 +209,6 @@ export const getAdminUserExport = (
 export const getAdminUserReviews = (userId: string): Promise<MyReviewDto[]> =>
   request(`/admin/users/${userId}/reviews`);
 
-/** Comments the account has authored — for the user drawer shortcut. */
 export const getAdminUserComments = (
   userId: string,
 ): Promise<AdminUserCommentDto[]> => request(`/admin/users/${userId}/comments`);
@@ -249,13 +232,11 @@ export const getAdminUserReportsAgainst = (
 export const getAdminUserLists = (userId: string): Promise<MyListDto[]> =>
   request(`/admin/users/${userId}/lists`);
 
-/** Re-sends the account's email-verification link. */
 export const resendAdminUserVerification = (userId: string): Promise<void> =>
   request(`/admin/users/${userId}/resend-verification`, {
     method: "POST",
   });
 
-/** Sends the account a password-reset link. */
 export const sendAdminUserPasswordReset = (userId: string): Promise<void> =>
   request(`/admin/users/${userId}/reset-password-link`, {
     method: "POST",
@@ -268,15 +249,12 @@ export const deleteAdminUser = (
 ): Promise<void> =>
   request(`/admin/users/${userId}`, { method: "DELETE", body: reason });
 
-/** Newsletter send history, newest first — sending itself is automatic (Quackback webhook). */
 export const getAdminNewsletterSends = (): Promise<NewsletterSendDto[]> =>
   request("/admin/newsletter");
 
-/** Persisted backup dumps on disk, most recent first — up to 7, pruned by the daily job. */
 export const getAdminBackupFiles = (): Promise<AdminBackupFileDto[]> =>
   request("/admin/backup/files");
 
-/** Full SQL content of one persisted backup, for download. */
 export const getAdminBackupFile = (
   id: string,
 ): Promise<AdminBackupFileContentDto> => request(`/admin/backup/files/${id}`);
@@ -284,12 +262,11 @@ export const getAdminBackupFile = (
 export const deleteAdminBackupFile = (id: string): Promise<void> =>
   request(`/admin/backup/files/${id}`, { method: "DELETE" });
 
-/** Replaces the entire instance database with a previously downloaded dump. Irreversible. */
+/** Irreversible. */
 export const restoreAdminBackup = (
   body: AdminBackupRestoreRequestDto,
 ): Promise<void> => request("/admin/backup/restore", { method: "POST", body });
 
-/** Cached items for one domain, ordered by `sort`, filterable by title/orphans and paginated. */
 export function getAdminCache(filters: {
   domain: Domain;
   search?: string;
@@ -334,7 +311,6 @@ export const deleteAdminCacheItem = (
 ): Promise<void> =>
   request(`/admin/cache/${domain}/${id}`, { method: "DELETE" });
 
-/** Purges every orphaned (unreferenced) item in a domain in one pass. */
 export const deleteAdminCacheOrphans = (
   domain: Domain,
 ): Promise<AdminCacheDeleteOrphansResultDto> =>
@@ -361,15 +337,12 @@ export function getAdminImportRuns(
   return request(`/admin/imports${suffix}`);
 }
 
-/** Totals/success rate/per-source volume over the whole import log, ignoring the list filters. */
 export const getAdminImportSummary = (): Promise<AdminImportSummaryDto> =>
   request("/admin/imports/summary");
 
-/** Failed-login pressure over 24 h / 7 j / 30 j, plus the most-targeted identifiers. */
 export const getAdminSecuritySummary = (): Promise<AdminSecuritySummaryDto> =>
   request("/admin/security/summary");
 
-/** Sensitive account actions, filterable by type and identifier, paginated. */
 export function getAdminSecurityEvents(
   filters: {
     type?: SecurityEventType;
@@ -407,7 +380,6 @@ export function getAdminReports(
   return request(`/admin/reports${suffix}`);
 }
 
-/** Queue-wide moderation figures (statuses, delay, founded share, top reporters). */
 export const getAdminReportsSummary = (): Promise<AdminReportsSummaryDto> =>
   request("/admin/reports/summary");
 

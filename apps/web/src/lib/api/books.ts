@@ -40,7 +40,6 @@ export function listBooks(
   return request(`/books${suffix}`);
 }
 
-/** Book detail (catalogue metadata + the user's library state). */
 export function getBookDetail(
   source: string,
   sourceId: string,
@@ -62,7 +61,6 @@ export const updateBookEntry = (
 export const deleteBookEntry = (entryId: string): Promise<void> =>
   request(`/books/entries/${entryId}`, { method: "DELETE" });
 
-/** Log a completed reread (a completion beyond the entry's first one). */
 export const addBookReplay = (entryId: string): Promise<BookEntryDto> =>
   request(`/books/entries/${entryId}/replays`, {
     method: "POST",

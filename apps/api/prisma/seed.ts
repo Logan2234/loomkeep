@@ -1,16 +1,15 @@
 /* eslint-disable no-console */
-// Dev-only seeder. Meant to run against an empty (freshly `migrate reset`)
-// database — it does not clean up existing rows, so re-running it against a
-// populated DB will fail on unique constraints (email, username, ...).
-//
-// Usage: pnpm --filter @loomkeep/api exec prisma migrate reset
-// (runs the migrations then this file automatically, via the "prisma.seed"
-// entry in package.json).
+/**
+ * Dev-only seeder. Meant to run against an empty (freshly `migrate reset`)
+ * database — it does not clean up existing rows.
+ *
+ * Usage: pnpm --filter @loomkeep/api exec prisma migrate reset
+ * (runs the migrations then this file automatically, via the "prisma.seed"
+ * entry in package.json).
+ */
 import { config } from "dotenv";
 import { resolve } from "node:path";
 
-// Standalone script — no Nest ConfigModule here, so load the same env files
-// app.module.ts does (see envFilePath: [".env", "../../.env"]).
 config({ path: resolve(__dirname, "../.env") });
 config({ path: resolve(__dirname, "../../../.env") });
 

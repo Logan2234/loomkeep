@@ -13,7 +13,6 @@
   import { m } from "$lib/paraglide/messages";
   import { Domain } from "@loomkeep/shared";
 
-  // Search-box placeholder fragment, named after the active domain tab.
   const DOMAIN_HINT: Record<Domain, string> = {
     [Domain.MEDIA]: "un film, une série",
     [Domain.GAMES]: "un jeu",
