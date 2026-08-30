@@ -54,22 +54,18 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
-      - run: pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
-      - run: |
-          pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
-          mkdir -p eslint-results
-          mv apps/web/eslint-results.sarif eslint-results/web.sarif
-          mv apps/api/eslint-results.sarif eslint-results/api.sarif
-          mv packages/shared/eslint-results.sarif eslint-results/shared.sarif
-      - name: generate paraglide types
+      - name: ESLint
+        id: eslint
+        run: pnpm lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+      - name: Generate Paraglide types
         run: pnpm --filter @loomkeep/web generate:paraglide
       - name: svelte-check
         run: pnpm --filter @loomkeep/web check
-      - name: web unit tests
+      - name: Web unit tests
         run: pnpm --filter @loomkeep/web test
-      - name: web production build
+      - name: Web production build
         run: pnpm --filter @loomkeep/web build
-      - name: generate Prisma client
+      - name: Generate Prisma client
         run: pnpm --filter @loomkeep/api exec prisma generate
       - name: api unit tests (with coverage)
         run: pnpm --filter @loomkeep/api test:cov
@@ -91,12 +87,24 @@ jobs:
         with:
           name: lighthouse-reports
           path: lighthouse-results/
-      - name: Upload ESLint results
+      - name: Upload ESLint API results
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: apps/api/eslint-results.sarif
+          category: eslint-api
+      - name: Upload ESLint Web results
         if: always()
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         with:
           sarif_file: eslint-results
-          category: eslint
+          category: eslint-web
+      - name: Upload ESLint Packages results
+        if: always()
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        with:
+          sarif_file: packages/shared/eslint-results.sarif
+          category: eslint-packages
 
   e2e:
     needs: changes

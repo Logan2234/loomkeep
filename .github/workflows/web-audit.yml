@@ -41,7 +41,7 @@ jobs:
       - name: Run ZAP
         uses: zaproxy/action-af@v0.3.0
         with:
-          plan: .github/zap/plan.yaml
+          plan: .github/zap/plan.yml
       - name: List ZAP results
         if: always()
         run: find zap-results -type f -maxdepth 2 -print
