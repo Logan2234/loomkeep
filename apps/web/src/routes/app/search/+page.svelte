@@ -214,7 +214,7 @@
             <Icon name={tab[1].icon} class="h-3.5 w-3.5" />
             {tab[1].label}
             {#if tab[1].comingSoon}
-              <span class="guichet-tab-soon">{m.landing_libraries_soon()}</span>
+              <span class="guichet-tab-soon">{m.common_coming_soon()}</span>
             {/if}
           </button>
         {/each}
@@ -318,7 +318,7 @@
       <Icon
         name={domain === Domain.PODCASTS ? "podcast" : "boardgame"}
         class="text-dim/60 h-8 w-8" />
-      <p class="text-fg font-semibold">{m.search_coming_soon()}</p>
+      <p class="text-fg font-semibold">{m.common_coming_soon()}</p>
       <p class="max-w-xs text-sm">
         {m.search_coming_soon_desc()}
       </p>

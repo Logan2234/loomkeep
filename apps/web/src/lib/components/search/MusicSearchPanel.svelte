@@ -132,7 +132,7 @@
             {:else if album.year}
               {album.year}
             {:else}
-              Album
+              {m.music_album()}
             {/if}
           </span>
         </div>
@@ -158,9 +158,8 @@
   </PosterGrid>
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">Aucun album trouvé.</p>
+    <p class="timecode text-sm">{m.search_music_empty()}</p>
   {:else}
-    <EmptyState
-      >Lance une recherche pour trouver un album à ajouter.</EmptyState>
+    <EmptyState>{m.search_music_hint()}</EmptyState>
   {/if}
 {/if}

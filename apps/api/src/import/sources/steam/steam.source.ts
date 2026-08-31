@@ -122,6 +122,12 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
           title: game.name ?? "Jeu inconnu",
           sourceTitle: game.name ?? "Jeu inconnu",
           subtitle: fmtPlaytime(game.playtime_forever),
+          context: {
+            kind: "game",
+            playtimeMinutes: game.playtime_forever,
+            recentlyPlayed: false,
+            unknownTitle: game.name === undefined || game.name === null,
+          },
           coverUrl: null,
           match: null,
           include: false,
@@ -149,6 +155,11 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         title: detail.summary.title,
         sourceTitle: detail.summary.title,
         subtitle: fmtPlaytime(playtime) + (recent ? " · joué récemment" : ""),
+        context: {
+          kind: "game",
+          playtimeMinutes: playtime,
+          recentlyPlayed: recent,
+        },
         coverUrl: detail.summary.coverUrl,
         match: toMatch(igdbId, detail.summary.title, detail.summary.coverUrl),
         include: !alreadyInLibrary,
@@ -262,9 +273,16 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
 
     const tiles: ImportReportTile[] = STATUS_GROUPS.filter(
       (g) => (tally.get(g.status) ?? 0) > 0,
-    ).map((g) => ({ label: g.label, value: tally.get(g.status)!, sub: null }));
-    if (tiles.length === 0) tiles.push({ label: "Jeux", value: 0, sub: null });
+    ).map((g) => ({
+      id: g.status,
+      label: g.label,
+      value: tally.get(g.status)!,
+      sub: null,
+    }));
+    if (tiles.length === 0)
+      tiles.push({ id: "games", label: "Jeux", value: 0, sub: null });
     tiles.push({
+      id: "playtime",
       label: "Temps de jeu",
       value: Math.round(totalMinutes / 60),
       sub: "heures importées",

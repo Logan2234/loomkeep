@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // "Musique — en détail" section of /stats. Self-contained: fetches on
   // mount, reuses the MUSIC status breakdown already loaded by the overview
   // for "Écoutés", same pattern as the other domain sections.
@@ -36,12 +37,12 @@
   // fields when `locked` — see stats.service.ts's redact* methods and
   // PremiumTeaser's own doc comment.
   const FAKE_ARTISTS = [
-    { label: "Un artiste favori", value: 12 },
-    { label: "Un autre artiste", value: 8 },
-    { label: "Découverte récente", value: 3 },
+    { label: m.stats_preview_artist(), value: 12 },
+    { label: m.stats_preview_other_artist(), value: 8 },
+    { label: m.stats_preview_recent(), value: 3 },
   ];
   const FAKE_TYPE_SPLIT = [
-    { label: "Album", count: 14 },
+    { label: m.music_album(), count: 14 },
     { label: "EP", count: 5 },
     { label: "Single", count: 3 },
   ];
@@ -75,30 +76,37 @@
   <p class="text-danger text-sm">{error}</p>
 {:else if music}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-    <StatTile value={hours} unit="h" label="Durée d'écoute" />
-    <StatTile value={listenedCount} label="Écoutés" />
-    <StatTile value={music.distinctArtistsCount} label="Artistes distincts" />
-    <StatTile value={music.totalTracks} label="Titres au total" />
+    <StatTile
+      value={hours}
+      unit={m.common_hours_short()}
+      label={m.stats_music_duration()} />
+    <StatTile value={listenedCount} label={m.stats_music_listened()} />
+    <StatTile
+      value={music.distinctArtistsCount}
+      label={m.stats_music_distinct_artists()} />
+    <StatTile value={music.totalTracks} label={m.stats_music_total_tracks()} />
   </div>
 
   <PremiumTeaser {locked} class="mt-5 block">
     <div class="grid gap-5 md:grid-cols-2">
       <section class="card p-5">
         <h3 class="font-display mb-4 text-lg font-bold">
-          Artistes les plus représentés
+          {m.stats_music_top_artists()}
         </h3>
         {#if locked || artistItems.length > 0}
           <RankBars items={artistItems} />
         {:else}
-          <p class="text-dim text-sm">Pas encore d'artiste.</p>
+          <p class="text-dim text-sm">{m.stats_music_no_artists()}</p>
         {/if}
       </section>
       <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">Type de sortie</h3>
+        <h3 class="font-display mb-4 text-lg font-bold">
+          {m.music_release_type()}
+        </h3>
         {#if locked || typeSegments.length > 0}
           <StackedBar segments={typeSegments} />
         {:else}
-          <p class="text-dim text-sm">Pas encore d'album.</p>
+          <p class="text-dim text-sm">{m.stats_music_no_albums()}</p>
         {/if}
       </section>
     </div>

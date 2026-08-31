@@ -105,14 +105,14 @@
       class="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <div class="flex flex-wrap items-center gap-2">
         <Combobox
-          label={m.lists_kind_label()}
+          label={m.common_type()}
           multiselect
           options={KIND_OPTIONS}
           values={kindFilter}
           onChange={(v) => (kindFilter = v)} />
         {#if appConfig.socialEnabled}
           <Combobox
-            label={m.lists_visibility()}
+            label={m.common_visibility()}
             multiselect
             options={VISIBILITY_OPTIONS}
             values={visibilityFilter}

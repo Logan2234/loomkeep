@@ -44,9 +44,7 @@
       type="submit"
       class="btn btn-primary"
       disabled={acceptMut.loading || !checked}>
-      {acceptMut.loading
-        ? m.terms_reacceptance_action_loading()
-        : m.common_continue()}
+      {acceptMut.loading ? m.common_save_loading() : m.common_continue()}
     </button>
   </form>
 </Modal>

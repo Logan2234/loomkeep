@@ -162,7 +162,7 @@
             aria-current={page.url.pathname === "/app/admin"
               ? "page"
               : undefined}
-            title={expanded ? undefined : m.nav_overview()}
+            title={expanded ? undefined : m.common_overview()}
             class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {page
               .url.pathname === '/app/admin'
               ? 'text-accent'
@@ -174,7 +174,7 @@
               class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
                 ? 'opacity-100'
                 : 'opacity-0'}">
-              {m.nav_overview()}
+              {m.common_overview()}
             </span>
           </a>
 

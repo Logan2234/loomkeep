@@ -76,13 +76,13 @@
   }
 </script>
 
-<Modal title="Ajouter à une liste" onclose={onClose}>
+<Modal title={m.add_to_list_button()} onclose={onClose}>
   {#if loading}
     <p class="text-dim text-sm">{m.common_loading()}</p>
   {:else if error}
     <p class="text-danger text-sm">{error}</p>
   {:else if lists.length === 0}
-    <p class="text-dim text-sm">Tu n'as pas encore de liste.</p>
+    <p class="text-dim text-sm">{m.lists_none_yet()}</p>
   {:else}
     <ul class="flex flex-col gap-1">
       {#each lists as list (list.id)}
@@ -100,7 +100,9 @@
             <span class="min-w-0 flex-1 truncate font-semibold"
               >{list.title}</span>
             <span class="text-dim text-xs"
-              >{list.itemCount} {list.itemCount > 1 ? "œuvres" : "œuvre"}</span>
+              >{list.itemCount === 1
+                ? m.lists_work_count_one({ count: list.itemCount })
+                : m.lists_work_count_many({ count: list.itemCount })}</span>
           </label>
         </li>
       {/each}
@@ -111,7 +113,8 @@
     type="button"
     class="btn btn-ghost mt-3 w-full"
     onclick={() => (creating = true)}>
-    <Icon name="plus" class="h-4 w-4" /> Créer une liste
+    <Icon name="plus" class="h-4 w-4" />
+    {m.lists_create_button()}
   </button>
 </Modal>
 

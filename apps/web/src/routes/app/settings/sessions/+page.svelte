@@ -89,7 +89,7 @@
               {/if}
             </p>
             <p class="text-dim text-sm">
-              {m.settings_sessions_active_prefix()}
+              {m.common_active()}
               {formatRelative(session.lastUsedAt)}
             </p>
           </div>
@@ -97,7 +97,7 @@
             <button
               class="btn-text btn-text-underline text-danger shrink-0 text-sm"
               onclick={() => (confirmTarget = { kind: "one", session })}>
-              {m.settings_sessions_disconnect_button()}
+              {m.settings_sessions_disconnect()}
             </button>
           {/if}
         </div>
@@ -146,7 +146,7 @@
             onclick={confirmRevoke}>
             {revokeMut.loading
               ? m.settings_sessions_disconnecting()
-              : m.settings_sessions_disconnect_confirm()}
+              : m.settings_sessions_disconnect()}
           </button>
         </div>
       </div>

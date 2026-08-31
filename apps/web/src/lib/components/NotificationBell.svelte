@@ -34,6 +34,7 @@
   import Avatar from "./Avatar.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
+  import { notificationText } from "./notification-presentation";
 
   const reduced = prefersReducedMotion();
 
@@ -149,7 +150,7 @@
     bind:this={buttonEl}
     type="button"
     onclick={toggle}
-    aria-label={m.notif_title()}
+    aria-label={m.common_notifications()}
     aria-expanded={open}
     class="border-border bg-surface/90 hover:border-accent/40 relative grid h-11 w-11 place-items-center rounded-full border shadow-lg backdrop-blur transition-colors md:shadow-sm">
     <Icon
@@ -174,7 +175,7 @@
       bind:this={panelEl}
       transition:fade={{ duration: 100 }}
       role="dialog"
-      aria-label={m.notif_title()}
+      aria-label={m.common_notifications()}
       class="border-border bg-surface absolute top-[calc(100%+0.5rem)] right-0 hidden max-h-[min(32rem,80vh)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border shadow-xl md:flex">
       {@render content()}
     </div>
@@ -196,7 +197,7 @@
   <header
     class="border-border flex items-center justify-between border-b px-4 py-3">
     <h2 id="notif-drawer-title" class="font-display text-base font-bold">
-      {m.notif_title()}
+      {m.common_notifications()}
     </h2>
     {#if notificationItems.length > 0}
       <button
@@ -286,6 +287,7 @@
 {/snippet}
 
 {#snippet row(n: NotificationDto)}
+  {@const text = notificationText(n)}
   {#if isSocial(n)}
     <Avatar seed={actorSeed(n)} size={32} />
   {:else}
@@ -296,9 +298,9 @@
   {/if}
   <div class="min-w-0 flex-1">
     <p class="truncate text-sm">
-      <span class="font-semibold">{n.title}</span>
-      {#if n.body}
-        <span class="text-dim"> · {n.body}</span>
+      <span class="font-semibold">{text.title}</span>
+      {#if text.body}
+        <span class="text-dim"> · {text.body}</span>
       {/if}
     </p>
   </div>

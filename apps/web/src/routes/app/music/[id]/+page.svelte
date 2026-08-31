@@ -385,7 +385,7 @@
             {/if}
             {#if detail && detail.externalLinks.length > 0}
               <div>
-                <dt class="timecode text-xs">{m.music_links()}</dt>
+                <dt class="timecode text-xs">{m.common_links()}</dt>
                 <dd class="mt-1.5 flex flex-wrap gap-2">
                   {#each detail.externalLinks as link (link.url)}
                     <a

@@ -19,6 +19,7 @@
     DATETIME_NUMERIC_OPTIONS,
     formatBytes,
     formatDateTime,
+    formatNumber,
   } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
@@ -79,7 +80,12 @@
       last: files[0],
       count: files.length,
       medianGapDays:
-        medianGapMs === null ? null : (medianGapMs / DAY_MS).toFixed(1),
+        medianGapMs === null
+          ? null
+          : formatNumber(medianGapMs / DAY_MS, {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            }),
     };
   });
 
@@ -91,10 +97,11 @@
         value: formatDateTime(summary.last.createdAt, DATETIME_NUMERIC_OPTIONS),
         label: m.admin_system_last_backup(),
       },
-      { value: size, unit, label: m.admin_backup_size() },
+      { value: size, unit, label: m.common_size() },
       {
         value: summary.medianGapDays ?? "—",
-        unit: summary.medianGapDays === null ? undefined : "j",
+        unit:
+          summary.medianGapDays === null ? undefined : m.common_days_short(),
         label: m.admin_backup_interval(),
       },
       { value: String(summary.count), label: m.admin_backup_retained() },

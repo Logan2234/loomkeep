@@ -133,6 +133,12 @@ export function formatNumber(
   return getNumberFormat(resolveLocale(locale), options).format(value);
 }
 
+/** Compact technical duration with locale-aware decimals. */
+export function formatDurationMs(ms: number, locale?: string): string {
+  if (ms < 1000) return `${formatNumber(ms, {}, locale)} ms`;
+  return `${formatNumber(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, locale)} s`;
+}
+
 const relativeTimeFormatCache = new Map<string, Intl.RelativeTimeFormat>();
 
 function getRelativeTimeFormat(locale: string): Intl.RelativeTimeFormat {

@@ -21,7 +21,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
   {
     href: "/app/admin/users",
-    label: m.admin_users_title(),
+    label: m.common_users(),
     description: m.admin_nav_users_description(),
     icon: "user",
     match: (p) => p.startsWith("/app/admin/users"),
@@ -85,7 +85,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
   {
     href: "/app/admin/newsletter",
-    label: m.settings_communications_newsletter_label(),
+    label: m.common_newsletter(),
     description: m.admin_nav_newsletter_description(),
     icon: "sparkles",
     match: (p) => p.startsWith("/app/admin/newsletter"),

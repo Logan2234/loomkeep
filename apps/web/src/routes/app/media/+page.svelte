@@ -13,11 +13,11 @@
   import { Domain, isDormant } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
-    { label: m.media_status_watching(), value: "WATCHING" },
+    { label: m.library_status_in_progress(), value: "WATCHING" },
     { label: m.media_status_planned(), value: "PLANNED" },
-    { label: m.media_status_completed(), value: "COMPLETED" },
+    { label: m.library_status_completed(), value: "COMPLETED" },
     { label: m.media_status_paused(), value: "DORMANT" },
-    { label: m.media_status_dropped(), value: "DROPPED" },
+    { label: m.library_status_dropped(), value: "DROPPED" },
   ];
 
   const STATUS_LABELS = Object.fromEntries(

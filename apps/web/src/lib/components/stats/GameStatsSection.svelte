@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // "Jeux — en détail" section of /stats. Self-contained: fetches on mount,
   // reuses the GAMES status breakdown already loaded by the overview for
   // "Terminés" (avoids re-deriving it from scratch), same pattern as the
@@ -46,9 +47,9 @@
   // fields when `locked` — see stats.service.ts's redact* methods and
   // PremiumTeaser's own doc comment.
   const FAKE_TOP_GAMES = [
-    { label: "Un jeu marquant", value: 24 },
-    { label: "Un autre favori", value: 16 },
-    { label: "Découverte récente", value: 9 },
+    { label: m.stats_preview_game(), value: 24 },
+    { label: m.stats_preview_favorite(), value: 16 },
+    { label: m.stats_preview_recent(), value: 9 },
   ];
   const FAKE_PLATFORMS = [
     { label: "PC", value: 5 },
@@ -121,38 +122,46 @@
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile
       value={hours}
-      unit="h"
-      label="Temps de jeu"
-      hint="≈ {days} jours" />
+      unit={m.common_hours_short()}
+      label={m.game_playtime()}
+      hint={days === 1
+        ? m.stats_approx_day({ days })
+        : m.stats_approx_days({ days })} />
     <StatTile
       value={completedCount}
-      label="Terminés"
+      label={m.stats_games_completed()}
       hint={avgHoursPerCompleted !== null
-        ? `temps moy. ${avgHoursPerCompleted}h`
+        ? m.stats_games_average_time({ hours: avgHoursPerCompleted })
         : undefined} />
-    <StatTile value={games.neverLaunchedCount} label="Jamais lancés" />
-    <StatTile value={games.replaysCount} label="Rejouées" />
+    <StatTile
+      value={games.neverLaunchedCount}
+      label={m.stats_games_never_launched()} />
+    <StatTile value={games.replaysCount} label={m.stats_games_replays()} />
   </div>
 
   <PremiumTeaser {locked} class="mt-5 block">
     <section class="card p-5">
       <h3 class="font-display mb-4 text-lg font-bold">
-        Top jeux par temps de jeu
+        {m.stats_games_top_playtime()}
       </h3>
       {#if locked || topGamesItems.length > 0}
         <RankBars items={topGamesItems} />
       {:else}
-        <p class="text-dim text-sm">Pas encore de temps de jeu enregistré.</p>
+        <p class="text-dim text-sm">{m.stats_games_no_playtime()}</p>
       {/if}
     </section>
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
       <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">Plateformes</h3>
+        <h3 class="font-display mb-4 text-lg font-bold">
+          {m.game_platforms()}
+        </h3>
         <RankBars items={platformItems} />
       </section>
       <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">Genres favoris</h3>
+        <h3 class="font-display mb-4 text-lg font-bold">
+          {m.stats_favorite_genres()}
+        </h3>
         <RankBars items={genreItems} />
       </section>
     </div>
@@ -160,22 +169,22 @@
     <div class="mt-5 grid gap-5 md:grid-cols-2">
       <section class="card p-5">
         <h3 class="font-display mb-4 text-lg font-bold">
-          Note moyenne par plateforme
+          {m.stats_games_rating_platform()}
         </h3>
         {#if locked || ratingByPlatformItems.length > 0}
           <RankBars items={ratingByPlatformItems} />
         {:else}
-          <p class="text-dim text-sm">Pas encore de jeu noté.</p>
+          <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
         {/if}
       </section>
       <section class="card p-5">
         <h3 class="font-display mb-4 text-lg font-bold">
-          Note moyenne par genre
+          {m.stats_rating_genre()}
         </h3>
         {#if locked || ratingByGenreItems.length > 0}
           <RankBars items={ratingByGenreItems} />
         {:else}
-          <p class="text-dim text-sm">Pas encore de jeu noté.</p>
+          <p class="text-dim text-sm">{m.stats_games_no_ratings()}</p>
         {/if}
       </section>
     </div>

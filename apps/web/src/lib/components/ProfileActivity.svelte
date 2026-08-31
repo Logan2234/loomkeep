@@ -27,7 +27,7 @@
 {#if !activity.loading && activity.data.length > 0}
   <section class="mt-6">
     <h2 class="timecode mb-3 text-[0.62rem] tracking-[0.18em] uppercase">
-      Activité récente
+      {m.profile_recent_activity()}
     </h2>
     <ul class="flex flex-col gap-2">
       {#each activity.data as event (event.id)}

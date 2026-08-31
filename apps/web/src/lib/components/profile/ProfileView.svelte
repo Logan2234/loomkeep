@@ -310,8 +310,7 @@
       <p class="text-dim max-w-sm text-sm">
         {m.profile_not_found_body()}
       </p>
-      <a href="/app" class="btn btn-ghost mt-2"
-        >{m.profile_not_found_back_home()}</a>
+      <a href="/app" class="btn btn-ghost mt-2">{m.common_back_home()}</a>
     </div>
   {:else if profile.locked}
     <!-- Private profile the viewer can't see yet: identity only, under embargo.
@@ -565,9 +564,7 @@
           {#if d.visible}
             <p class="timecode text-fg mt-1 text-2xl font-bold">{d.count}</p>
             <p class="text-dim text-xs">
-              {d.count > 1
-                ? m.profile_titles_plural()
-                : m.profile_titles_singular()}
+              {d.count > 1 ? m.library_title_many() : m.library_title_one()}
             </p>
             {#if d.favorites > 0}
               <p
@@ -597,7 +594,8 @@
           {#if watchDays > 0}
             <div class="border-border min-w-35 flex-1 border-r border-b p-3.5">
               <p class="font-display text-xl font-extrabold tracking-tight">
-                {watchDays}<span class="text-dim text-xs font-bold"> j</span>
+                {watchDays}<span class="text-dim text-xs font-bold">
+                  {m.common_days_short()}</span>
               </p>
               <p class="text-dim mt-0.5 text-xs">
                 {m.profile_watch_time_cumulative()}
@@ -674,7 +672,7 @@
           compact />
         <div class="text-sm">
           <p>
-            {m.profile_activity_summary_prefix()}
+            {m.common_active()}
             <b class="font-bold"
               >{m.profile_activity_days({ days: activeRecentDays })}</b>
             {m.profile_activity_summary_suffix()}{#if firstActivity}
@@ -693,7 +691,7 @@
       <section class="mt-10">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="font-display text-xl font-bold">
-            {m.profile_lists_title()}
+            {m.common_lists()}
           </h2>
           {#if selfManage && lists.length > 0}
             <a
@@ -712,8 +710,7 @@
               <div
                 class="card hover:border-accent text-dim hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 transition-colors">
                 <Icon name="list" class="h-6 w-6" />
-                <span class="text-xs font-semibold"
-                  >{m.profile_lists_view_all()}</span>
+                <span class="text-xs font-semibold">{m.common_view_all()}</span>
               </div>
             </a>
           {/if}

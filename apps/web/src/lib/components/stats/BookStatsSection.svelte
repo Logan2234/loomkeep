@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // "Livres — en détail" section of /stats. Self-contained: fetches on
   // mount, reuses the BOOKS status breakdown already loaded by the overview
   // for "Lus", same pattern as the Vidéo/Jeux sections.
@@ -35,12 +36,12 @@
   // fields when `locked` — see stats.service.ts's redact* methods and
   // PremiumTeaser's own doc comment.
   const FAKE_AUTHORS = [
-    { label: "Un auteur favori", value: 850 },
-    { label: "Un autre auteur", value: 420 },
-    { label: "Découverte récente", value: 210 },
+    { label: m.stats_preview_author(), value: 850 },
+    { label: m.stats_preview_other_author(), value: 420 },
+    { label: m.stats_preview_recent(), value: 210 },
   ];
-  const FAKE_LONGEST_BOOK = { title: "Un pavé mémorable", pages: 820 };
-  const FAKE_SHORTEST_BOOK = { title: "Une lecture rapide", pages: 96 };
+  const FAKE_LONGEST_BOOK = { title: m.stats_preview_long_book(), pages: 820 };
+  const FAKE_SHORTEST_BOOK = { title: m.stats_preview_short_book(), pages: 96 };
 
   const authorItems = $derived(
     locked
@@ -67,30 +68,44 @@
   <p class="text-danger text-sm">{error}</p>
 {:else if books}
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-    <StatTile value={formatNumber(books.pagesRead)} label="Pages lues" />
+    <StatTile
+      value={formatNumber(books.pagesRead)}
+      label={m.stats_books_pages_read()} />
     <StatTile
       value={readCount}
-      label="Lus"
+      label={m.stats_books_read()}
       hint={books.avgPagesPerRead !== null
-        ? `moy. ${books.avgPagesPerRead} pages`
+        ? books.avgPagesPerRead === 1
+          ? m.stats_books_average_page({
+              pages: formatNumber(books.avgPagesPerRead),
+            })
+          : m.stats_books_average_pages({
+              pages: formatNumber(books.avgPagesPerRead),
+            })
         : undefined} />
     <StatTile
       value={books.stagnantInProgressCount}
-      label="En lecture stagnants" />
-    <StatTile value={books.rereadsCount} label="Relectures" />
+      label={m.stats_books_stagnant()} />
+    <StatTile value={books.rereadsCount} label={m.book_rereads()} />
   </div>
 
   <PremiumTeaser {locked} class="mt-5 block">
     <section class="card p-5">
       <div class="mb-4 flex items-baseline justify-between">
-        <h3 class="font-display text-lg font-bold">Auteurs les plus lus</h3>
+        <h3 class="font-display text-lg font-bold">
+          {m.stats_books_top_authors()}
+        </h3>
         <span class="text-dim text-xs"
-          >{locked ? 8 : books.distinctAuthorsCount} auteurs distincts</span>
+          >{!locked && books.distinctAuthorsCount === 1
+            ? m.stats_distinct_author({ count: 1 })
+            : m.stats_distinct_authors({
+                count: locked ? 8 : books.distinctAuthorsCount,
+              })}</span>
       </div>
       {#if locked || authorItems.length > 0}
         <RankBars items={authorItems} />
       {:else}
-        <p class="text-dim text-sm">Pas encore de pages lues.</p>
+        <p class="text-dim text-sm">{m.stats_books_no_pages()}</p>
       {/if}
       {#if locked || books.longestBook || books.shortestBook}
         {@const longestBook = locked ? FAKE_LONGEST_BOOK : books.longestBook}
@@ -100,18 +115,22 @@
             <a
               href={locked ? "#" : books.longestBook?.href}
               class="hover:text-accent">
-              <span class="text-dim block uppercase">Livre le + long</span>
+              <span class="text-dim block uppercase"
+                >{m.stats_books_longest()}</span>
               <span class="truncate font-semibold">{longestBook.title}</span>
-              <span class="timecode block">{longestBook.pages} p.</span>
+              <span class="timecode block"
+                >{longestBook.pages} {m.book_page_short()}</span>
             </a>
           {/if}
           {#if shortestBook}
             <a
               href={locked ? "#" : books.shortestBook?.href}
               class="hover:text-accent">
-              <span class="text-dim block uppercase">Livre le + court</span>
+              <span class="text-dim block uppercase"
+                >{m.stats_books_shortest()}</span>
               <span class="truncate font-semibold">{shortestBook.title}</span>
-              <span class="timecode block">{shortestBook.pages} p.</span>
+              <span class="timecode block"
+                >{shortestBook.pages} {m.book_page_short()}</span>
             </a>
           {/if}
         </div>

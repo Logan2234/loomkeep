@@ -279,7 +279,7 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
         <div>
-          <p class="text-dim text-sm">{m.settings_connected_devices()}</p>
+          <p class="text-dim text-sm">{m.settings_sessions_title()}</p>
           <p class="font-semibold">{m.settings_open_sessions_description()}</p>
         </div>
         <a href="/app/settings/sessions" class="link-accent text-sm">
@@ -369,7 +369,7 @@
           </label>
           <label class="block">
             <span class="mb-1.5 block text-sm font-semibold">
-              {m.settings_current_password_label()}
+              {m.common_current_password()}
             </span>
             <PasswordInput
               autocomplete="current-password"
@@ -449,7 +449,7 @@
         }}>
         <label class="block">
           <span class="mb-1.5 block text-sm font-semibold">
-            {m.settings_current_password_label()}
+            {m.common_current_password()}
           </span>
           <PasswordInput
             autocomplete="current-password"

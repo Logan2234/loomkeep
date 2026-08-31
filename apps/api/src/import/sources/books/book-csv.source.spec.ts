@@ -154,6 +154,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     expect(byKey(job.plan!, "b0")).toMatchObject({
       sourceTitle: "Résister",
       subtitle: "★ 8/10",
+      context: { kind: "book", rating: 8 },
       defaultStatus: "READ",
       include: true,
       match: { source: "OPEN_LIBRARY", sourceId: "OL1W" },
@@ -404,5 +405,6 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
 
     expect(deleteMany).toHaveBeenCalledWith({ where: { userId: "user-1" } });
     expect(job.report!.overwrite).toBe(true);
+    expect(job.report!.tiles).toMatchObject([{ id: "READ", value: 1 }]);
   });
 });

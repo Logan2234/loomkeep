@@ -12,7 +12,7 @@
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import UserSelector from "$lib/components/UserSelector.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { formatDateTime, formatNumber } from "$lib/format";
+  import { formatDateTime, formatDurationMs, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,
@@ -120,8 +120,7 @@
   function durationLabel(run: AdminImportRunDto): string {
     const ms =
       new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime();
-    if (ms < 1000) return `${ms} ms`;
-    return `${(ms / 1000).toFixed(1)} s`;
+    return formatDurationMs(ms);
   }
 </script>
 

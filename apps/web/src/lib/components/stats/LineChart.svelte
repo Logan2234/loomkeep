@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // Single-series line chart over an SVG viewbox — reusable for any
   // {label,value}[] series (weekday/hour curves, monthly minutes…). Shows a
   // handful of evenly-spaced x-axis labels regardless of point count.
@@ -46,7 +47,7 @@
   {height}
   preserveAspectRatio="none"
   role="img"
-  aria-label="Courbe">
+  aria-label={m.stats_line_chart()}>
   {#if areaPath}
     <path d={areaPath} fill={color} opacity="0.12" />
   {/if}

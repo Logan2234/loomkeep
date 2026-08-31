@@ -21,7 +21,7 @@
         : "done",
   );
   const error = $derived(
-    !token ? m.auth_verify_email_invalid_link() : verifyQuery.error,
+    !token ? m.link_invalid_missing_token() : verifyQuery.error,
   );
 </script>
 

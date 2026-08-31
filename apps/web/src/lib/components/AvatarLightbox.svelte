@@ -19,7 +19,7 @@
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
   role="dialog"
   aria-modal="true"
-  aria-label="Avatar en grand">
+  aria-label={m.profile_avatar_large()}>
   <button
     type="button"
     class="absolute inset-0"
@@ -38,7 +38,7 @@
   <button
     type="button"
     class="relative cursor-zoom-out"
-    aria-label="Réduire l'avatar"
+    aria-label={m.profile_avatar_reduce()}
     onclick={onClose}>
     <div class="pointer-events-none">
       <Avatar {seed} {url} size={280} />

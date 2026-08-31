@@ -161,7 +161,7 @@
           <a
             href="/login"
             class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
-            >{m.auth_login_action()}</a>
+            >{m.common_login()}</a>
         </p>
       </form>
     </div>

@@ -74,7 +74,7 @@
       onChange={pickStatus} />
     {#if presets}
       <Combobox
-        label={m.ownership_detail_label()}
+        label={m.common_detail()}
         options={[
           ...presets.map((p) => ({ label: p, value: p })),
           { label: m.ownership_other(), value: CUSTOM },

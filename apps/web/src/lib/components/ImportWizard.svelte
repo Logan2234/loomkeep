@@ -19,6 +19,7 @@
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { liveFlags } from "$lib/feature-flags-live.svelte";
+  import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
     Domain,
@@ -39,6 +40,14 @@
     GAME_STATUS_LABELS,
     GAME_STATUS_ORDER,
   } from "../constants/status-labels";
+  import {
+    importGroupLabel,
+    importItemSubtitle,
+    importItemTitle,
+    importJobError,
+    importReportLabel,
+    importReportSubtitle,
+  } from "./import-presentation";
 
   // `intro` holds the source-specific export instructions (markup, hence a
   // snippet rather than a config field); everything else comes from `source`.
@@ -107,7 +116,7 @@
       job = j;
       if (j.status === "running") return;
       if (j.status === "failed") {
-        error = j.error ?? "Le traitement a échoué.";
+        error = importJobError(j);
         phase = pollingNext === "review" ? "input" : "review";
       } else if (pollingNext === "review" && j.plan) {
         plan = j.plan;
@@ -176,7 +185,7 @@
   });
 
   const plural = (n: number): string =>
-    n > 1 ? descriptor.noun.many : descriptor.noun.one;
+    n === 1 ? descriptor.noun.one : descriptor.noun.many;
 
   const matchOf = (item: ImportPlanItem): ImportMatch | null =>
     picked.get(item.key) ?? item.match;
@@ -201,13 +210,13 @@
     inputValue = "";
     if (descriptor.input.type === "zip") {
       if (!file.name.toLowerCase().endsWith(".zip")) {
-        fileError = "Sélectionne une archive .zip.";
+        fileError = m.import_zip_required();
         return;
       }
       const b64 = await readBase64(file);
       // A real ZIP starts with PK\x03\x04 → base64 "UEsD".
       if (!b64.startsWith("UEsD")) {
-        fileError = "Ce fichier ne ressemble pas à une archive .zip valide.";
+        fileError = m.import_zip_invalid();
         return;
       }
       inputValue = b64;
@@ -287,7 +296,11 @@
 
   function openSearch(item: ImportPlanItem) {
     searchKey = searchKey === item.key ? null : item.key;
-    searchQuery = matchOf(item)?.title ?? item.sourceTitle;
+    searchQuery =
+      matchOf(item)?.title ??
+      (item.context?.kind === "game" && item.context.unknownTitle
+        ? ""
+        : item.sourceTitle);
     searchResults = [];
   }
 
@@ -417,7 +430,7 @@
       <Icon name="chevron-left" class="h-5 w-5" />
     </a>
     <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-      Import {descriptor.label}
+      {m.import_title({ source: descriptor.label })}
     </h1>
   </div>
 
@@ -454,10 +467,10 @@
           onchange={onFile} />
         {#if inputValue}
           <span class="font-semibold">📦 {fileName}</span>
-          <span class="timecode text-sm">clique ou dépose pour changer</span>
+          <span class="timecode text-sm">{m.import_file_change_hint()}</span>
         {:else}
-          <span class="font-semibold">Dépose ton fichier ici</span>
-          <span class="text-dim text-sm">ou clique pour parcourir</span>
+          <span class="font-semibold">{m.import_file_drop()}</span>
+          <span class="text-dim text-sm">{m.import_file_browse()}</span>
         {/if}
       </label>
       {#if fileError}
@@ -466,7 +479,7 @@
     {:else}
       <input
         type="text"
-        placeholder={descriptor.input.placeholder ?? "Identifiant"}
+        placeholder={descriptor.input.placeholder ?? m.common_identifier()}
         bind:value={inputValue}
         onkeydown={(e) => e.key === "Enter" && analyze()}
         class="input w-full" />
@@ -474,13 +487,13 @@
 
     <div class="mt-5">
       <button class="btn btn-primary" disabled={!inputReady} onclick={analyze}>
-        Analyser
+        {m.common_analyze()}
       </button>
     </div>
   {:else if phase === "analyzing" || phase === "committing"}
     <section class="card p-5 md:p-6">
       <p class="mb-2 font-semibold">
-        {phase === "analyzing" ? "Analyse en cours…" : "Import en cours…"}
+        {phase === "analyzing" ? m.import_analyzing() : m.import_committing()}
       </p>
       <ProgressBar value={progressPct} height="h-2.5" />
       {#if job}
@@ -493,17 +506,17 @@
     {#if plan.groups.length === 0}
       <div
         class="border-border text-dim mt-6 mb-24 rounded-xl border border-dashed px-6 py-12 text-center">
-        Rien à importer dans cet export.
+        {m.import_export_empty()}
       </div>
     {:else if filterUnresolved && unresolvedRemaining === 0}
       <div
         class="border-border text-dim mt-2 mb-24 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
-        Tout est associé.
+        {m.import_all_matched()}
         <button
           type="button"
           class="btn-text btn-text-underline text-accent text-sm"
           onclick={() => (filterUnresolved = false)}>
-          Afficher tout
+          {m.common_view_all()}
         </button>
       </div>
     {:else}
@@ -517,7 +530,7 @@
               <summary
                 class="font-display flex cursor-pointer items-center justify-between font-bold">
                 <span
-                  >{g.label} ({visibleItems.length}{#if filterUnresolved}
+                  >{importGroupLabel(g.id)} ({visibleItems.length}{#if filterUnresolved}
                     / {g.items.length}{/if})</span>
                 <span class="flex gap-2 text-xs font-normal">
                   <button
@@ -525,13 +538,13 @@
                     onclick={(e) => {
                       e.preventDefault();
                       setAll(visibleItems, true);
-                    }}>Tout</button>
+                    }}>{m.common_all()}</button>
                   <button
                     class="chip"
                     onclick={(e) => {
                       e.preventDefault();
                       setAll(visibleItems, false);
-                    }}>Rien</button>
+                    }}>{m.common_none()}</button>
                 </span>
               </summary>
               {@render groupBody(visibleItems)}
@@ -547,7 +560,9 @@
         <span class="font-display text-xl font-extrabold tabular-nums"
           >{selectedCount}</span>
         <span class="text-dim text-sm">
-          {plural(selectedCount)} à importer{#if unresolvedRemaining > 0}
+          {m.import_selected_label({
+            noun: plural(selectedCount),
+          })}{#if unresolvedRemaining > 0}
             ·
             <button
               type="button"
@@ -555,7 +570,7 @@
                 ? 'text-accent'
                 : 'text-danger hover:text-fg'}"
               onclick={() => (filterUnresolved = !filterUnresolved)}>
-              {unresolvedRemaining} à associer
+              {m.import_unmatched_count({ count: unresolvedRemaining })}
             </button>
           {/if}
         </span>
@@ -567,13 +582,13 @@
             type="checkbox"
             bind:checked={overwrite}
             class="accent-danger" />
-          Écraser mes données
+          {m.import_overwrite_data()}
         </label>
         <button
           class="btn btn-primary"
           disabled={selectedCount === 0}
           onclick={commit}>
-          Importer
+          {m.common_import_action()}
         </button>
       </div>
     </div>
@@ -582,29 +597,34 @@
     <section class="card p-5 md:p-6">
       <div class="mb-4 flex items-center gap-3">
         <Icon name="check" class="text-success h-6 w-6" />
-        <h2 class="font-display text-lg font-bold">Import terminé</h2>
+        <h2 class="font-display text-lg font-bold">
+          {m.import_completed_title()}
+        </h2>
         {#if r.overwrite}
           <span
             class="bg-danger/15 text-danger rounded-full px-2.5 py-0.5 text-xs font-semibold">
-            Données remplacées
+            {m.import_data_replaced()}
           </span>
         {/if}
       </div>
       <div
         class="grid gap-3"
         style={`grid-template-columns: repeat(${Math.min(r.tiles.length, 3)}, minmax(0, 1fr))`}>
-        {#each r.tiles as tile (tile.label)}
+        {#each r.tiles as tile, index (tile.id ?? index)}
+          {@const subtitle = importReportSubtitle(tile)}
           <div class="border-border bg-bg rounded-lg border p-4">
-            <p class="timecode text-xs uppercase">{tile.label}</p>
-            <p class="font-display text-2xl font-bold">{tile.value}</p>
-            {#if tile.sub}<p class="text-dim text-sm">{tile.sub}</p>{/if}
+            <p class="timecode text-xs uppercase">{importReportLabel(tile)}</p>
+            <p class="font-display text-2xl font-bold">
+              {formatNumber(tile.value)}
+            </p>
+            {#if subtitle}<p class="text-dim text-sm">{subtitle}</p>{/if}
           </div>
         {/each}
       </div>
       <div class="mt-5 flex gap-2">
         <a href={DOMAIN_TO_HREF[descriptor.domain]} class="btn btn-primary"
-          >Voir ma bibliothèque</a>
-        <button class="btn btn-ghost" onclick={reset}>Nouvel import</button>
+          >{m.library_view_own()}</a>
+        <button class="btn btn-ghost" onclick={reset}>{m.import_new()}</button>
       </div>
     </section>
   {/if}
@@ -612,9 +632,9 @@
 
 {#if showOverwriteConfirm}
   <ConfirmationModal
-    title="Écraser tes données ?"
-    message="Écraser supprimera définitivement ta bibliothèque et ton historique de ce domaine avant l'import. Cette action est irréversible."
-    confirmLabel="Écraser et importer"
+    title={m.import_overwrite_title()}
+    message={m.import_overwrite_confirm_message()}
+    confirmLabel={m.import_overwrite_confirm()}
     danger
     onConfirm={doCommit}
     onCancel={() => (showOverwriteConfirm = false)} />
@@ -624,6 +644,8 @@
   <ul class="divide-border mt-3 flex flex-col divide-y">
     {#each items as item, i (i)}
       {@const match = matchOf(item)}
+      {@const sourceTitle = importItemTitle(item)}
+      {@const subtitle = importItemSubtitle(item)}
       {@const on = included.has(item.key)}
       <li class="flex flex-col gap-2 py-2.5">
         <div class="flex items-center gap-3">
@@ -644,27 +666,27 @@
           </div>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold">
-              {match?.title ?? item.sourceTitle}
+              {match?.title ?? sourceTitle}
             </p>
             <p class="timecode truncate text-xs">
-              {#if match && match.title !== item.sourceTitle}
-                {item.sourceTitle} ·
+              {#if match && match.title !== sourceTitle}
+                {sourceTitle} ·
               {/if}
-              {#if item.subtitle}{item.subtitle}{/if}
+              {#if subtitle}{subtitle}{/if}
               {#if item.alreadyInLibrary}
-                · <span class="text-dim">déjà suivi</span>
+                · <span class="text-dim">{m.import_already_tracked()}</span>
               {/if}
             </p>
           </div>
           {#if match}
             <button class="chip text-xs" onclick={() => openSearch(item)}>
-              Changer
+              {m.common_change()}
             </button>
           {:else}
             <button
               class="chip text-danger text-xs"
               onclick={() => openSearch(item)}>
-              Associer…
+              {m.import_match()}
             </button>
           {/if}
           {#if statusOptions.length > 0}
@@ -690,10 +712,10 @@
               class="mb-2 flex gap-2">
               <input
                 class="input flex-1"
-                placeholder="Rechercher le bon titre…"
+                placeholder={m.import_match_search()}
                 bind:value={searchQuery} />
               <button class="btn btn-primary" disabled={searching}>
-                {searching ? "…" : "Chercher"}
+                {searching ? "…" : m.common_search_action()}
               </button>
             </form>
             {#if searchResults.length > 0}
@@ -712,7 +734,12 @@
                             · {r.year}</span
                           >{/if}
                       </span>
-                      {#if r.type}<span class="timecode text-xs">{r.type}</span
+                      {#if r.type}<span class="timecode text-xs"
+                          >{r.type === "MOVIE"
+                            ? m.media_movie()
+                            : r.type === "SERIES"
+                              ? m.media_series()
+                              : m.media_anime_label()}</span
                         >{/if}
                     </button>
                   </li>
@@ -720,7 +747,7 @@
               </ul>
             {:else if !searching}
               <p class="timecode text-xs">
-                Lance une recherche pour choisir le bon titre.
+                {m.import_match_search_hint()}
               </p>
             {/if}
           </div>

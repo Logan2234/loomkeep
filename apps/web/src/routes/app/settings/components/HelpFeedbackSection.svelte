@@ -14,12 +14,12 @@
     {
       href: FEEDBACK_FEATURE_REQUESTS_URL,
       icon: "sparkles" as const,
-      label: m.settings_help_feature_request(),
+      label: m.common_suggest_idea(),
     },
     {
       href: FEEDBACK_BUG_REPORTS_URL,
       icon: "flag" as const,
-      label: m.settings_help_bug_report(),
+      label: m.common_report_bug(),
     },
     {
       href: ROADMAP_URL,

@@ -19,7 +19,7 @@
 <div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="sparkles"
-    title={m.settings_communications_newsletter_label()}
+    title={m.common_newsletter()}
     subtitle={m.admin_newsletter_subtitle()} />
 
   <section class="card p-5 md:p-6">

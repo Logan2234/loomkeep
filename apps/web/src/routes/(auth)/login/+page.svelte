@@ -163,7 +163,7 @@
             disabled={loginMut.loading}>
             {loginMut.loading
               ? m.auth_login_action_loading()
-              : m.auth_login_action()}
+              : m.common_login()}
           </button>
           {#if appConfig.registrationEnabled}
             <p class="text-dim text-center text-sm">
@@ -190,7 +190,7 @@
                 <Icon name="qr-code" class="text-accent h-6 w-6 shrink-0" />
                 <span>
                   <span class="block font-semibold">
-                    {m.auth_mfa_choose_method_totp_label()}
+                    {m.auth_mfa_totp_label()}
                   </span>
                   <span class="text-dim block text-sm">
                     {m.auth_mfa_choose_method_totp_desc()}
@@ -207,7 +207,7 @@
                 <Icon name="mail" class="text-accent h-6 w-6 shrink-0" />
                 <span>
                   <span class="block font-semibold">
-                    {m.auth_mfa_choose_method_email_label()}
+                    {m.auth_mfa_email_label()}
                   </span>
                   <span class="text-dim block text-sm">
                     {sendEmailCodeMut.loading

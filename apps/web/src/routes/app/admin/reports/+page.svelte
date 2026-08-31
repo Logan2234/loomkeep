@@ -36,7 +36,7 @@
   } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
-    { label: m.admin_social_reports_pending(), value: "PENDING" },
+    { label: m.report_status_pending(), value: "PENDING" },
     ...(Object.keys(REPORT_STATUS_LABELS) as ReportStatus[])
       .filter((s) => s !== "PENDING")
       .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
@@ -138,7 +138,7 @@
       ? [
           {
             value: formatNumber(summary.pending),
-            label: m.admin_social_reports_pending(),
+            label: m.report_status_pending(),
             alert: summary.pending > 0,
           },
           {
@@ -358,7 +358,7 @@
         type="text"
         bind:value={takeDownTosClause}
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-        placeholder={m.admin_reports_clause_placeholder()} />
+        placeholder={m.moderation_terms_conduct()} />
     {/if}
 
     {#if takeDownMut.error}

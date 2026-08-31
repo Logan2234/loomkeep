@@ -143,6 +143,12 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       key: "tvdb:100",
       title: "My Show",
       subtitle: "2 épisodes vus",
+      context: {
+        kind: "series",
+        episodesWatched: 2,
+        rating: null,
+        favorite: false,
+      },
       include: true,
       match: { sourceId: "500", source: "TMDB" },
     });
@@ -269,6 +275,11 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       job.report!.tiles.find((t) => t.label === label);
     expect(tile("Séries")!.value).toBe(1);
     expect(tile("Épisodes")!.value).toBe(2);
+    expect(job.report!.tiles).toMatchObject([
+      { id: "series", watchlistCount: 0 },
+      { id: "episodes" },
+      { id: "movies", watchlistCount: 0 },
+    ]);
   });
 
   it("commit applies a manual override for an unresolved movie", async () => {

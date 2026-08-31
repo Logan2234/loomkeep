@@ -260,7 +260,7 @@
           <button
             class="btn btn-ghost"
             onclick={() => (managingMembers = true)}>
-            {m.list_members_manage()}
+            {m.list_members_title()}
             {#if isFeatureNew("collaborative-lists")}
               <NewBadge />
             {/if}

@@ -49,7 +49,7 @@ export const BOOK_STATUS_SEG_ACTIVE: Record<BookStatus, string> = {
 export const GAME_STATUS_LABELS: Record<GameStatus, string> = {
   BACKLOG: m.game_status_backlog(),
   PLAYING: m.game_status_playing(),
-  COMPLETED: m.game_status_completed(),
+  COMPLETED: m.library_status_completed(),
   DROPPED: m.library_status_dropped(),
 };
 
@@ -67,7 +67,7 @@ export const GAME_STATUS_META: Record<
   BACKLOG: { label: m.game_status_backlog(), cls: "bg-surface-2 text-dim" },
   PLAYING: { label: m.game_status_playing(), cls: "bg-accent text-accent-fg" },
   COMPLETED: {
-    label: m.game_status_completed(),
+    label: m.library_status_completed(),
     cls: "bg-success/15 text-success",
   },
   DROPPED: {

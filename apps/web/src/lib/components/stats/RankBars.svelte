@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // Horizontal ranked bars (genres, authors, artists, platforms…) — the
   // pattern already used ad hoc on /stats, extracted so every domain section
   // shares it. Shows the top `initialCount` items with a "tout voir" toggle
   // when there are more; the caller passes the full ranked list.
+  import { formatNumber } from "$lib/format";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
 
   let {
@@ -31,7 +33,7 @@
 </script>
 
 {#if items.length === 0}
-  <p class="text-dim text-sm">Rien pour l'instant.</p>
+  <p class="text-dim text-sm">{m.common_nothing_yet()}</p>
 {:else}
   <ul class="flex flex-col gap-3">
     {#each visible as item (item.label)}
@@ -49,7 +51,8 @@
               </span>
             {/if}
           </span>
-          <span class="timecode shrink-0">{item.display ?? item.value}</span>
+          <span class="timecode shrink-0"
+            >{item.display ?? formatNumber(item.value)}</span>
         </div>
         <ProgressBar
           value={(item.value / max) * 100}
@@ -64,7 +67,9 @@
       type="button"
       class="btn btn-ghost btn-sm mt-3.5 w-full"
       onclick={() => (expanded = !expanded)}>
-      {expanded ? "Voir moins" : `Tout voir — ${items.length}`}
+      {expanded
+        ? m.common_see_less()
+        : m.common_view_all_count({ count: items.length })}
     </button>
   {/if}
 {/if}

@@ -49,7 +49,7 @@
     },
     {
       id: "music",
-      label: m.landing_salle_music_label,
+      label: m.common_albums,
       detail: m.landing_salle_music_detail,
       catalog: "MusicBrainz",
       color: "var(--stat-music)",
@@ -59,7 +59,7 @@
       id: "podcasts",
       label: m.common_Podcasts,
       detail: m.landing_salle_podcasts_detail,
-      catalog: m.landing_libraries_soon(),
+      catalog: m.common_coming_soon(),
       color: null,
       shipped: false,
     },
@@ -67,7 +67,7 @@
       id: "boardgames",
       label: m.common_Boardgames,
       detail: m.landing_salle_boardgames_detail,
-      catalog: m.landing_libraries_soon(),
+      catalog: m.common_coming_soon(),
       color: null,
       shipped: false,
     },
@@ -332,7 +332,7 @@
       <a href="/register" class={cls} data-umami-event={event}>{label}</a>
     {:else}
       <a href="/login" class={cls} data-umami-event="{event}-login">
-        {m.landing_login()}
+        {m.common_login()}
       </a>
     {/if}
   {/if}
@@ -383,7 +383,7 @@
               href="/login"
               class="btn btn-ghost"
               data-umami-event="cta-nav-login">
-              {m.landing_login()}
+              {m.common_login()}
             </a>
             {#if appConfig.registrationEnabled}
               <a
@@ -780,7 +780,7 @@
               rel="noopener noreferrer"
               data-umami-event="cta-name-selfhost"
               class="btn btn-ghost">
-              {m.landing_name_cta()}
+              {m.landing_source_cta()}
             </a>
           </div>
         </div>
@@ -830,7 +830,7 @@
             data-umami-event="cta-final-selfhost"
             class="btn btn-ghost btn-lg">
             <Icon name="shield" class="h-4 w-4" />
-            {m.landing_final_cta_secondary()}
+            {m.landing_source_cta()}
           </a>
         </div>
       </div>

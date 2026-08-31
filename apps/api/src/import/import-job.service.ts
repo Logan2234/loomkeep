@@ -35,6 +35,7 @@ interface JobRecord {
   plan: ImportPlan | null;
   report: ImportReport | null;
   error: string | null;
+  errorCode: ErrorCode | null;
   startedAt: number;
   finishedAt: number | null;
   /** The source's parse model, kept between an analysis and its later commit. */
@@ -287,6 +288,7 @@ export class ImportJobService {
       plan: null,
       report: null,
       error: null,
+      errorCode: null,
       startedAt: Date.now(),
       finishedAt: null,
       parsed,
@@ -336,6 +338,17 @@ export class ImportJobService {
     } catch (error) {
       job.status = "failed";
       job.error = error instanceof Error ? error.message : String(error);
+      // Media imports wrap failures with the title while preserving the cause.
+      const appError =
+        error instanceof AppException
+          ? error
+          : error instanceof Error
+            ? error.cause
+            : null;
+      job.errorCode =
+        appError instanceof AppException
+          ? appError.code
+          : ErrorCode.InternalError;
     } finally {
       job.finishedAt = Date.now();
     }
@@ -360,5 +373,6 @@ function toDto(job: JobRecord): ImportJobDto {
     plan: job.plan,
     report: job.report,
     error: job.error,
+    errorCode: job.errorCode,
   };
 }

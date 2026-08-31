@@ -458,7 +458,7 @@
             {/if}
             {#if detail?.language}
               <div>
-                <dt class="timecode text-xs">{m.book_language()}</dt>
+                <dt class="timecode text-xs">{m.common_language()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.language}</dd>
               </div>
             {/if}

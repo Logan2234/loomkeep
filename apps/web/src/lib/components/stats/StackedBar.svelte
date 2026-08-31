@@ -3,6 +3,7 @@
   // split…). Segments can carry a second value (e.g. time alongside count) —
   // passing `toggle` renders a small switch between the two, matching the
   // "Temps / Nombre" pattern in the video section.
+  import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
 
   type Segment = {
@@ -15,7 +16,7 @@
   let {
     segments,
     toggle,
-    formatValue = (n: number) => `${n}`,
+    formatValue = formatNumber,
   }: {
     segments: Segment[];
     toggle?: { primaryLabel: string; altLabel: string };
@@ -107,9 +108,10 @@
       ></span>
       <span class="flex-1 truncate">{s.label}</span>
       <span class="timecode"
-        >{formatValue(s.shown)} · {Math.round(
-          (s.shown / total) * 100,
-        )}&nbsp;%</span>
+        >{formatValue(s.shown)} · {formatNumber(
+          s.shown / total,
+          PERCENT_OPTIONS,
+        )}</span>
     </li>
   {/each}
 </ul>

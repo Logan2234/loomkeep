@@ -174,7 +174,7 @@
   const error = $derived(saveMut.error ?? removeMut.error);
 </script>
 
-<Modal title="Photo de profil" {onclose}>
+<Modal title={m.profile_photo()} {onclose}>
   <div class="flex flex-col items-center gap-4">
     <div
       class="bg-surface-2 border-border/60 relative overflow-hidden rounded-md border"
@@ -196,7 +196,7 @@
 
     {#if stage === "editing"}
       <p class="text-dim max-w-xs text-center text-sm">
-        Faites glisser l'image pour choisir le cadrage.
+        {m.profile_photo_crop_hint()}
       </p>
     {/if}
 
@@ -232,7 +232,7 @@
           disabled={status === "saving"}
           onclick={() => fileInput?.click()}>
           <Icon name="edit" class="h-4 w-4" />
-          Changer la photo
+          {m.profile_photo_change()}
         </button>
         {#if avatarUrl}
           <button
@@ -240,7 +240,7 @@
             disabled={status === "saving"}
             onclick={remove}>
             <Icon name="trash" class="h-4 w-4" />
-            Supprimer l'avatar
+            {m.profile_avatar_delete()}
           </button>
         {/if}
       {/if}

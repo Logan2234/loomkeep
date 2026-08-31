@@ -120,9 +120,9 @@
   }, 300);
 
   const TYPE_OPTIONS: { label: string; value: MediaType }[] = [
-    { label: "Films", value: "MOVIE" },
-    { label: "Séries", value: "SERIES" },
-    { label: "Animés", value: "ANIME" },
+    { label: m.media_movies(), value: "MOVIE" },
+    { label: m.media_series_plural(), value: "SERIES" },
+    { label: m.media_anime(), value: "ANIME" },
   ];
 
   // Mirrors the current filters/sort/query into the URL so navigating back
@@ -240,7 +240,7 @@
     </span>
     <input
       type="search"
-      placeholder="Filtrer ma bibliothèque…"
+      placeholder={m.library_filter_placeholder()}
       value={query}
       oninput={(e) => {
         query = e.currentTarget.value;
@@ -255,7 +255,7 @@
     <div class="flex flex-wrap items-center gap-2">
       {#if domain === "MEDIA"}
         <Combobox
-          label="Type"
+          label={m.common_type()}
           multiselect
           options={TYPE_OPTIONS}
           values={types}
@@ -284,8 +284,8 @@
       <button
         type="button"
         class="chip px-2.5 font-mono"
-        title={reversed ? "Ordre inversé" : "Ordre par défaut"}
-        aria-label="Inverser le sens du tri"
+        title={reversed ? m.common_sort_reversed() : m.common_sort_default()}
+        aria-label={m.common_reverse_sort()}
         onclick={() => (reversed = !reversed)}>
         {reversed ? "↑" : "↓"}
       </button>
@@ -303,12 +303,11 @@
     {#if catalogPreview}
       {#if previewCount === 0}
         <p class="text-dim py-10 text-center text-sm">
-          Aucun {noun} ne correspond à « {query.trim()} », ni dans ta bibliothèque
-          ni dans le catalogue.
+          {m.library_empty_search_catalog({ noun, query: query.trim() })}
         </p>
       {:else if previewCount !== null}
         <p class="text-dim mb-3 text-xs font-semibold tracking-wide uppercase">
-          Suggestions du catalogue — pas encore dans ta bibliothèque
+          {m.library_catalog_suggestions()}
         </p>
       {/if}
       {@render catalogPreview(query.trim(), (n) => (previewCount = n))}
@@ -317,31 +316,33 @@
           <a
             href={`/app/search?query=${encodeURIComponent(query.trim())}&type=${domain}`}
             class="btn btn-ghost">
-            Voir plus dans le catalogue <Icon
-              name="chevron-right"
-              class="h-4 w-4" />
+            {m.library_catalog_more()}
+            <Icon name="chevron-right" class="h-4 w-4" />
           </a>
         </div>
       {/if}
     {:else}
       <p class="text-dim py-10 text-center text-sm">
-        Aucun {noun} ne correspond à « {query.trim()} » dans ta bibliothèque.
+        {m.library_empty_search({ noun, query: query.trim() })}
       </p>
     {/if}
   {:else if items.length === 0 && !loading}
     <div in:fade|global={{ duration: reduced ? 0 : 150 }}>
       <EmptyState>
         {#if !hasFilters && !hasQuery}
-          <p>Tu n'as encore aucun {noun} dans ta bibliothèque.</p>
+          <p>{m.library_empty_domain({ noun })}</p>
           <a href={`/app/search?type=${domain}`} class="btn btn-primary mt-4">
-            <Icon name="search" class="h-4 w-4" /> Chercher un {noun}
+            <Icon name="search" class="h-4 w-4" />
+            {domain === "MUSIC"
+              ? m.library_search_album()
+              : m.library_search_noun({ noun })}
           </a>
         {:else}
           <p>
             {#if hasQuery}
-              Aucun {noun} ne correspond à ces filtres pour « {query.trim()} ».
+              {m.library_empty_filters_query({ noun, query: query.trim() })}
             {:else}
-              Aucun {noun} ne correspond à ces filtres.
+              {m.library_empty_filters({ noun })}
             {/if}
           </p>
           <button class="btn btn-ghost mt-4" onclick={clearFilters}>

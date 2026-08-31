@@ -45,9 +45,9 @@
   } = $props();
 
   const TYPE_LABELS: Record<MediaType, string> = {
-    MOVIE: "Film",
-    SERIES: "Série",
-    ANIME: "Animé",
+    MOVIE: m.media_movie(),
+    SERIES: m.media_series(),
+    ANIME: m.media_anime_label(),
   };
 
   const DEBOUNCE_MS = 300;
@@ -244,7 +244,7 @@
     <p class="timecode text-sm">{m.common_no_results()}.</p>
   {:else}
     <EmptyState>
-      Lance une recherche pour trouver un film, une série ou un animé.
+      {m.search_media_hint()}
     </EmptyState>
   {/if}
 {/if}

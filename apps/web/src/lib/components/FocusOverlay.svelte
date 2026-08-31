@@ -49,7 +49,7 @@
   class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-5"
   role="dialog"
   aria-modal="true"
-  aria-label="Actions">
+  aria-label={m.common_actions()}>
   <button
     class="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity {visible
       ? 'opacity-100'

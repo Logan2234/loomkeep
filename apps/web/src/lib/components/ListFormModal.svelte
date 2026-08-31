@@ -79,7 +79,9 @@
   const error = $derived(saveMut.error ?? deleteMut.error);
 </script>
 
-<Modal title={list ? "Modifier la liste" : "Créer une liste"} onclose={onClose}>
+<Modal
+  title={list ? m.lists_edit() : m.lists_create_button()}
+  onclose={onClose}>
   <div class="space-y-4">
     <div>
       <label
@@ -92,7 +94,7 @@
         type="text"
         class="input"
         maxlength={100}
-        placeholder="Mon top 10…"
+        placeholder={m.lists_title_placeholder()}
         bind:value={title} />
     </div>
 
@@ -100,7 +102,8 @@
       <label
         for="list-description"
         class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-        {m.common_description()} · optionnel
+        {m.common_description()}
+        {m.common_optional_marker()}
       </label>
       <textarea
         id="list-description"
@@ -112,7 +115,7 @@
     <div>
       <span
         class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-        Type
+        {m.common_type()}
       </span>
       <div class="flex gap-2">
         <button
@@ -120,20 +123,18 @@
           class="chip"
           class:chip-on={kind === "COLLECTION"}
           onclick={() => (kind = "COLLECTION")}>
-          Collection
+          {m.lists_kind_collection()}
         </button>
         <button
           type="button"
           class="chip"
           class:chip-on={kind === "RANKED"}
           onclick={() => (kind = "RANKED")}>
-          Classement
+          {m.lists_kind_ranked()}
         </button>
       </div>
       <p class="text-dim mt-1 text-xs">
-        {kind === "RANKED"
-          ? "Ordre affiché et réordonnable (façon « top 10 »)."
-          : "Grille sans ordre particulier."}
+        {kind === "RANKED" ? m.lists_ranked_hint() : m.lists_collection_hint()}
       </p>
     </div>
 
@@ -141,7 +142,7 @@
       <div>
         <span
           class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-          Visible par
+          {m.common_visible_to()}
         </span>
         <div class="flex gap-2">
           <button

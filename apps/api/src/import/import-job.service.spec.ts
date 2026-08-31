@@ -1,6 +1,8 @@
 import { Domain, ErrorCode, type ImportSource } from "@loomkeep/shared";
+import { HttpStatus } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
+import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
@@ -21,6 +23,49 @@ function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
     commit: async () => ({ overwrite: false, tiles: [] }),
   };
 }
+
+describe("ImportJobService translatable failures", () => {
+  it.each([
+    [
+      new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ImportSteamLibraryPrivate,
+      ),
+      ErrorCode.ImportSteamLibraryPrivate,
+    ],
+    [
+      new Error("Title: provider failure", {
+        cause: new AppException(
+          HttpStatus.BAD_GATEWAY,
+          ErrorCode.ImportSourceUnavailable,
+        ),
+      }),
+      ErrorCode.ImportSourceUnavailable,
+    ],
+    [new Error("Internal diagnostic"), ErrorCode.InternalError],
+  ])(
+    "preserves a stable code for background failures",
+    async (failure, code) => {
+      const source = fakeSource("steam");
+      source.buildPlan = vi.fn().mockRejectedValue(failure);
+      const service = new ImportJobService(
+        [source],
+        {} as PrismaService,
+        {} as ConfigService,
+        {
+          isEffectivelyPremium: vi.fn().mockResolvedValue(true),
+        } as unknown as EntitlementService,
+      );
+      const started = await service.startAnalyze("u1", "steam", { input: "" });
+      await vi.waitFor(() => {
+        expect(service.getJob("u1", started.id)).toMatchObject({
+          status: "failed",
+          errorCode: code,
+        });
+      });
+    },
+  );
+});
 
 describe("ImportJobService.getAvailability", () => {
   it("omits sources with no required env keys, and reports configured/unconfigured ones", () => {

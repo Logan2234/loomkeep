@@ -23,7 +23,7 @@
       brand: "tmdb",
       name: "TMDB",
       href: TMDB_API,
-      notice: m.settings_datasources_tmdb_notice(),
+      notice: m.datasource_tmdb_notice(),
     },
     {
       brand: "anilist",

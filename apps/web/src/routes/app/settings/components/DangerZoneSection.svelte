@@ -20,15 +20,15 @@
     BOOKS: m.settings_delete_account_books(),
     MUSIC: m.settings_delete_account_music(),
     LISTS: m.settings_delete_account_lists(),
-    NOTIFICATIONS: m.settings_delete_account_notifications(),
+    NOTIFICATIONS: m.common_notifications(),
     FOLLOWS: m.settings_delete_account_follows(),
     BLOCKS: m.settings_delete_account_blocks(),
-    ACTIVITY: m.settings_delete_account_activity(),
+    ACTIVITY: m.common_activity_feed(),
   };
 
   const ANONYMIZED_LABELS: Record<AccountDeletionAnonymizedCategory, string> = {
     REVIEWS: m.settings_delete_account_reviews(),
-    COMMENTS: m.settings_delete_account_comments(),
+    COMMENTS: m.common_comments(),
     REPORTS: m.settings_delete_account_reports(),
   };
 

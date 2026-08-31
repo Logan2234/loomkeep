@@ -141,7 +141,7 @@
             <p class="timecode flex items-center gap-2 text-xs">
               <span
                 >{myReview.visibility === "PUBLIC"
-                  ? m.profile_reviews_public()
+                  ? m.common_public()
                   : m.common_friends()}</span>
               {#if myReview.voteScore !== 0}
                 <span aria-label={m.reviews_section_vote_score_label()}
@@ -212,7 +212,7 @@
                     <Avatar seed="utilisateur-supprime" size={32} />
                   </span>
                   <p class="text-dim truncate text-sm font-semibold italic">
-                    Utilisateur supprimé
+                    {m.common_deleted_user()}
                   </p>
                 {:else if review.author.anonymized}
                   <!-- Seeded on the derived pseudonym, never the real id — a

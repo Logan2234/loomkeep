@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // "Activité dans le temps" — video-only for now (EpisodeWatch is the only
   // true per-event log in the app). `period` narrows only the weekday/hour
   // curves; the heatmap and monthly/yearly bars always show their own
@@ -20,7 +21,12 @@
   const temporal = $derived(temporalStats.data);
   const error = $derived(temporalStats.error);
 
-  const WEEKDAY_LABEL = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const WEEKDAY_LABEL = Array.from({ length: 7 }, (_, day) =>
+    formatDate(new Date(Date.UTC(2026, 7, 30 + day)), {
+      weekday: "short",
+      timeZone: "UTC",
+    }),
+  );
 
   // Static, made-up preview shown instead of the real (redacted) data when
   // `locked` — see stats.service.ts's redact* methods and PremiumTeaser's
@@ -40,7 +46,7 @@
     value,
   }));
   const FAKE_HOUR_POINTS = Array.from({ length: 24 }, (_, hour) => ({
-    label: `${hour}h`,
+    label: m.stats_clock_hour({ hour }),
     value: hour >= 19 && hour <= 22 ? 8 : hour >= 12 && hour <= 14 ? 4 : 1,
   }));
   const FAKE_MONTHLY_POINTS = [8, 10, 6, 9, 12, 7, 5, 6, 11, 14, 9, 8].map(
@@ -67,7 +73,10 @@
     locked
       ? FAKE_HOUR_POINTS
       : temporal
-        ? temporal.byHour.map((h) => ({ label: `${h.hour}h`, value: h.count }))
+        ? temporal.byHour.map((h) => ({
+            label: m.stats_clock_hour({ hour: h.hour }),
+            value: h.count,
+          }))
         : [],
   );
 
@@ -101,15 +110,21 @@
 {:else if locked || temporal}
   <div class="card p-5">
     <h3 class="font-display mb-1 text-lg font-bold">
-      Épisodes &amp; films vus par jour
+      {m.stats_video_daily_watches()}
     </h3>
     <p class="text-dim mb-4 text-sm">
-      Historique réel (import TV Time inclus) — 365 derniers jours.
+      {m.stats_video_history_hint()}
     </p>
     <CalendarHeatmap days={heatmapDays} />
     {#if recordDay && recordDay.count > 0}
       <p class="text-dim mt-3 text-xs">
-        Record : {recordDay.count} le {recordDay.date}
+        {m.stats_video_record_day({
+          count: recordDay.count,
+          date: formatDate(`${recordDay.date}T00:00:00Z`, {
+            dateStyle: "medium",
+            timeZone: "UTC",
+          }),
+        })}
       </p>
     {/if}
   </div>
@@ -117,22 +132,27 @@
   <div class="mt-5 grid gap-5 md:grid-cols-2">
     <section class="card p-5">
       <h3 class="font-display mb-4 text-lg font-bold">
-        Quand regardes-tu ? (jour)
+        {m.stats_video_weekday()}
       </h3>
       <LineChart points={weekdayPoints} color="var(--stat-media)" />
     </section>
     <section class="card p-5">
-      <h3 class="font-display mb-4 text-lg font-bold">À quelle heure ?</h3>
+      <h3 class="font-display mb-4 text-lg font-bold">
+        {m.stats_video_hour()}
+      </h3>
       <LineChart points={hourPoints} color="var(--stat-media)" />
     </section>
   </div>
 
   <section class="card mt-5 p-5">
     <div class="mb-4 flex items-baseline justify-between">
-      <h3 class="font-display text-lg font-bold">Heures vues par mois</h3>
+      <h3 class="font-display text-lg font-bold">
+        {m.stats_video_monthly_hours()}
+      </h3>
       {#if mostActiveYear !== null}
         <span class="text-dim text-xs"
-          >année la plus active : <b class="text-fg">{mostActiveYear}</b></span>
+          >{m.stats_video_most_active_year_label()}
+          <b class="text-fg">{mostActiveYear}</b></span>
       {/if}
     </div>
     <LineChart points={monthlyPoints} color="var(--stat-media)" />

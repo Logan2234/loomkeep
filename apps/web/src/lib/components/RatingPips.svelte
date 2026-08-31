@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // 0–10 rating as 11 tappable pips. Emits integers; "0" is a real score, so a
   // separate "effacer" clears back to unrated (null) — the distinction a bare
   // number input can't make. Legacy half-point values are shown on the nearest
@@ -38,9 +39,12 @@
 <div class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-      >Ma note</span>
+      >{m.reviews_my_rating()}</span>
   </div>
-  <div class="grid grid-cols-11 gap-1" role="group" aria-label="Note sur 10">
+  <div
+    class="grid grid-cols-11 gap-1"
+    role="group"
+    aria-label={m.reviews_rating_out_of_ten()}>
     {#each pips as n (n)}
       {@const on = selected === n}
       {@const lit = selected !== null && n < selected}
@@ -48,7 +52,7 @@
       <button
         type="button"
         aria-pressed={on}
-        aria-label={`${n} sur 10`}
+        aria-label={m.reviews_rating_value({ rating: n })}
         class={`h-8 rounded-lg border font-mono text-sm font-bold transition-colors ${className}`}
         onclick={() => (value !== n ? onChange(n) : onChange(null))}
         onmouseenter={() => (hovered = n)}

@@ -59,7 +59,7 @@
 <div
   class="grid auto-cols-min grid-flow-col {gapClass} overflow-x-auto pb-1"
   role="img"
-  aria-label="Heatmap d'activité">
+  aria-label={m.stats_activity_heatmap()}>
   {#each weeks as week, wi (wi)}
     <div class="grid grid-rows-7 {gapClass}">
       {#each week as day, di (di)}

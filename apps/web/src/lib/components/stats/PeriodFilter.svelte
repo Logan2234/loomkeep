@@ -8,7 +8,7 @@
 
   const WINDOWS: StatsWindow[] = ["ALL", "YEAR", "MONTH", "WEEK"];
   const LABEL: Record<StatsWindow, string> = {
-    ALL: "Tout",
+    ALL: m.common_all(),
     YEAR: m.common_year(),
     MONTH: m.common_month(),
     WEEK: m.common_week(),
@@ -18,10 +18,10 @@
   // sections stay all-time, and the heatmap/monthly bars always show their
   // own natural full range regardless of this filter.
   const DESC: Record<StatsWindow, string> = {
-    ALL: "Tout l'historique",
-    YEAR: `${LABEL.YEAR} — 365 derniers jours`,
-    MONTH: `${LABEL.MONTH} — 30 derniers jours`,
-    WEEK: `${LABEL.WEEK} — 7 derniers jours`,
+    ALL: m.stats_all_history(),
+    YEAR: m.stats_period_days({ period: LABEL.YEAR, days: 365 }),
+    MONTH: m.stats_period_days({ period: LABEL.MONTH, days: 30 }),
+    WEEK: m.stats_period_days({ period: LABEL.WEEK, days: 7 }),
   };
 
   let {

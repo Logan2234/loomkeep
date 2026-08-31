@@ -21,7 +21,7 @@
         : "done",
   );
   const error = $derived(
-    !token ? m.newsletter_unsubscribe_invalid_link() : unsubscribeQuery.error,
+    !token ? m.link_invalid_missing_token() : unsubscribeQuery.error,
   );
 </script>
 
