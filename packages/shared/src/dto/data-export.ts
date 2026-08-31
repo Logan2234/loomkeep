@@ -34,7 +34,7 @@ import type {
 import { UserDto } from "./user";
 
 /** One library entry in a data export: the media plus the user's tracking. */
-interface DataExportEntry {
+export interface DataExportEntry {
   media: {
     type: MediaType;
     title: string;
@@ -54,7 +54,7 @@ interface DataExportEntry {
 }
 
 /** One episode viewing in a data export (rewatches appear as separate rows). */
-interface DataExportWatch {
+export interface DataExportWatch {
   media: { type: MediaType; title: string; sourceId: string };
   seasonNumber: number;
   episodeNumber: number;
@@ -63,7 +63,7 @@ interface DataExportWatch {
 }
 
 /** One game library entry in a data export. */
-interface DataExportGameEntry {
+export interface DataExportGameEntry {
   game: {
     title: string;
     canonicalSource: GameSource;
@@ -85,7 +85,7 @@ interface DataExportGameEntry {
 }
 
 /** One book library entry in a data export. */
-interface DataExportBookEntry {
+export interface DataExportBookEntry {
   book: {
     title: string;
     authors: string[];
@@ -108,7 +108,7 @@ interface DataExportBookEntry {
 }
 
 /** One album library entry in a data export. */
-interface DataExportMusicEntry {
+export interface DataExportMusicEntry {
   album: {
     title: string;
     artists: string[];
@@ -128,7 +128,7 @@ interface DataExportMusicEntry {
 }
 
 /** One in-app notification in a data export. */
-interface DataExportNotification {
+export interface DataExportNotification {
   type: string;
   title: string;
   body: string | null;
@@ -139,7 +139,7 @@ interface DataExportNotification {
 }
 
 /** One review the user wrote, with its edit history. */
-interface DataExportReview {
+export interface DataExportReview {
   targetType: ReviewTargetType;
   targetId: string;
   /** Best-effort title of the reviewed work; null when it can't be resolved. */
@@ -153,7 +153,7 @@ interface DataExportReview {
 }
 
 /** One vote the user cast on someone else's review. */
-interface DataExportReviewVote {
+export interface DataExportReviewVote {
   targetType: ReviewTargetType;
   targetId: string;
   value: ReviewVoteValue;
@@ -161,7 +161,7 @@ interface DataExportReviewVote {
 }
 
 /** One comment or reply the user posted. */
-interface DataExportComment {
+export interface DataExportComment {
   targetType: CommentTargetType;
   targetId: string;
   parentId: string | null;
@@ -174,14 +174,14 @@ interface DataExportComment {
 }
 
 /** One reaction the user left on a comment. */
-interface DataExportCommentReaction {
+export interface DataExportCommentReaction {
   commentId: string;
   emote: CommentEmote;
   createdAt: string;
 }
 
 /** One work in a user-curated list. */
-interface DataExportListItem {
+export interface DataExportListItem {
   targetType: ReviewTargetType;
   targetId: string;
   position: number;
@@ -189,7 +189,7 @@ interface DataExportListItem {
 }
 
 /** One list the user owns. */
-interface DataExportList {
+export interface DataExportList {
   title: string;
   description: string | null;
   kind: ListKind;
@@ -200,27 +200,27 @@ interface DataExportList {
 }
 
 /** One list owned by someone else where the user was granted edit access. */
-interface DataExportListMembership {
+export interface DataExportListMembership {
   listTitle: string;
   listOwnerUsername: string;
   createdAt: string;
 }
 
 /** One directed follow edge, from either side. */
-interface DataExportFollow {
+export interface DataExportFollow {
   username: string;
   status: FollowStatus;
   createdAt: string;
 }
 
 /** One user this account has blocked. */
-interface DataExportBlock {
+export interface DataExportBlock {
   username: string;
   createdAt: string;
 }
 
 /** One report the user filed. */
-interface DataExportReport {
+export interface DataExportReport {
   targetType: ReportTargetType;
   category: ReportCategory | null;
   motif: ReportMotif | null;
@@ -231,7 +231,7 @@ interface DataExportReport {
 }
 
 /** One moderation measure applied against the user (DSA art. 17). */
-interface DataExportModerationDecision {
+export interface DataExportModerationDecision {
   measure: ModerationMeasure;
   targetType: ReportTargetType;
   legalBasis: ModerationLegalBasis;
@@ -244,7 +244,7 @@ interface DataExportModerationDecision {
 }
 
 /** One sensitive account action (login, password/email change…). */
-interface DataExportSecurityEvent {
+export interface DataExportSecurityEvent {
   type: SecurityEventType;
   identifier: string;
   detail: string | null;
@@ -253,7 +253,7 @@ interface DataExportSecurityEvent {
 }
 
 /** One device/browser the account has ever logged in from. */
-interface DataExportDevice {
+export interface DataExportDevice {
   deviceKey: string;
   userAgent: string | null;
   firstSeenAt: string;
@@ -261,14 +261,14 @@ interface DataExportDevice {
 }
 
 /** One privacy preference for a domain/facet pair. */
-interface DataExportVisibilitySetting {
+export interface DataExportVisibilitySetting {
   domain: Domain;
   facet: VisibilityFacet;
   audience: VisibilityAudience;
 }
 
 /** The account's plan/entitlement state. */
-interface DataExportEntitlement {
+export interface DataExportEntitlement {
   plan: Plan;
   source: string | null;
   grantedAt: string | null;
@@ -277,7 +277,7 @@ interface DataExportEntitlement {
 }
 
 /** One subscription (billing) record. */
-interface DataExportSubscription {
+export interface DataExportSubscription {
   provider: string;
   status: string;
   currentPeriodEnd: string | null;
@@ -288,7 +288,7 @@ interface DataExportSubscription {
 }
 
 /** One yearly reading goal. */
-interface DataExportReadingGoal {
+export interface DataExportReadingGoal {
   year: number;
   target: number;
   createdAt: string;
@@ -296,7 +296,7 @@ interface DataExportReadingGoal {
 }
 
 /** One committed import (TV Time, Trakt, …). */
-interface DataExportImportRun {
+export interface DataExportImportRun {
   sourceId: string;
   status: string;
   itemCount: number;

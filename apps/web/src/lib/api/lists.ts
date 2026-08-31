@@ -2,10 +2,8 @@ import type {
   AddListMemberDto,
   CreateListDto,
   ListItemTargetType,
-  ListMembershipDto,
   UpdateListDto,
 } from "@loomkeep/shared";
-import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 /** Lists the user can add items to — owned, or edit access via a collaborator grant. */
@@ -14,14 +12,13 @@ export const getEditableLists = () => typedRequest("/lists/editable");
 export const getMyList = (id: string) =>
   typedRequest("/lists/me/{id}", { params: { id } });
 
-// Not migrated: query-string params aren't supported by typedRequest yet.
 export const getListMembership = (
   targetType: ListItemTargetType,
   targetId: string,
-): Promise<ListMembershipDto> =>
-  request(
-    `/lists/me/membership?targetType=${targetType}&targetId=${encodeURIComponent(targetId)}`,
-  );
+) =>
+  typedRequest("/lists/me/membership", {
+    query: { targetType, targetId },
+  });
 
 export const createList = (body: CreateListDto) =>
   typedRequest("/lists", { method: "POST", body });

@@ -53,6 +53,7 @@ import { ChangeEmailDto } from "./dto/change-email.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
 import { CsvExportResponseDto } from "./dto/csv-export-response.dto";
+import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-response.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
@@ -209,12 +210,9 @@ export class UsersController {
     return toUserDto(user);
   }
 
-  /**
-   * Full portable dump of the account's data (GDPR "download my data").
-   * ~30 nested types (see packages/shared/src/dto/data-export.ts) — too much
-   * to mirror by hand for one lightly-used export endpoint. Left untyped.
-   */
+  /** Full portable dump of the account's data (GDPR "download my data"). */
   @Get("me/export")
+  @ApiOkResponse({ type: UserDataExportResponseDto })
   exportData(@CurrentUser() payload: JwtPayload): Promise<UserDataExportDto> {
     return this.dataExport.buildExport(payload.sub);
   }

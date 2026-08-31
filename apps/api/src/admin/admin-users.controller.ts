@@ -55,6 +55,7 @@ import { SecurityEventService } from "../security/security-event.service";
 import { FollowService } from "../social/follow.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
+import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
 import { AdminUserLibraryStatsResponseDto } from "./dto/admin-user-library-stats-response.dto";
@@ -218,10 +219,9 @@ export class AdminUsersController {
     return { plan: entitlement.plan };
   }
 
-  // Not typed: UserDataExportDto is too deeply nested to mirror by hand (see
-  // the comment on UsersController#exportData, which has the same shape).
   /** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */
   @Get("users/:userId/export")
+  @ApiOkResponse({ type: UserDataExportResponseDto })
   getUserExport(@Param("userId") userId: string): Promise<UserDataExportDto> {
     return this.dataExport.buildExport(userId);
   }

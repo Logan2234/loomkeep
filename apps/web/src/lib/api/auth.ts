@@ -3,7 +3,6 @@ import type {
   ChangeEmailRequestDto,
   ChangePasswordRequestDto,
   ConfirmEmailChangeRequestDto,
-  CsvExportDto,
   DeleteAccountRequestDto,
   Domain,
   LoginRequestDto,
@@ -13,13 +12,11 @@ import type {
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
   UploadAvatarRequestDto,
-  UserDataExportDto,
   UserDto,
   WidgetTokenDto,
 } from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
-import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export async function initAuth(): Promise<void> {
@@ -194,15 +191,8 @@ export async function confirmEmailChange(
 export const changePassword = (body: ChangePasswordRequestDto): Promise<void> =>
   typedRequest("/users/me/password", { method: "PATCH", body });
 
-// Not migrated to typedRequest: query-string params aren't supported by the
-// wrapper yet (only path params, see generated/typed-request.ts) — path
-// typing and response typing are still both correct here via `request<T>`.
-export function checkUsernameAvailable(
-  value: string,
-): ReturnType<typeof request<{ available: boolean }>> {
-  const params = new URLSearchParams({ value });
-  return request(`/users/me/username-availability?${params}`);
-}
+export const checkUsernameAvailable = (value: string) =>
+  typedRequest("/users/me/username-availability", { query: { value } });
 
 export async function updateUsername(
   body: UpdateUsernameRequestDto,
@@ -215,18 +205,11 @@ export async function updateUsername(
   return user;
 }
 
-// Not migrated: UserDataExportDto is too deeply nested to type for now (see
-// the comment on UsersController#exportData) — the API response itself is
-// still untyped in Swagger, so there's nothing for typedRequest to read yet.
-export const exportMyData = (): Promise<UserDataExportDto> =>
-  request("/users/me/export");
+export const exportMyData = () => typedRequest("/users/me/export");
 
-// Not migrated: query-string params aren't supported by typedRequest yet.
 // Not gated by `enabledDomains` — a hidden domain is still exportable.
-export function exportMyDataCsv(domain: Domain): Promise<CsvExportDto> {
-  const params = new URLSearchParams({ domain });
-  return request(`/users/me/export.csv?${params}`);
-}
+export const exportMyDataCsv = (domain: Domain) =>
+  typedRequest("/users/me/export.csv", { query: { domain } });
 
 // Creates the token on first call.
 export const getCalendarToken = () => typedRequest("/users/me/calendar-token");
@@ -257,12 +240,12 @@ export const getSessions = () => typedRequest("/auth/sessions");
 export const revokeSession = (id: string): Promise<void> =>
   typedRequest("/auth/sessions/{id}", { method: "DELETE", params: { id } });
 
-// Not migrated: query-string params aren't supported by typedRequest yet.
 /** Revokes every session except the current device (kept via its jti). */
-export function revokeOtherSessions(exceptJti: string): Promise<void> {
-  const params = new URLSearchParams({ except: exceptJti });
-  return request(`/auth/sessions?${params}`, { method: "DELETE" });
-}
+export const revokeOtherSessions = (exceptJti: string): Promise<void> =>
+  typedRequest("/auth/sessions", {
+    method: "DELETE",
+    query: { except: exceptJti },
+  });
 
 export async function logout(): Promise<void> {
   if (auth.refreshToken) {

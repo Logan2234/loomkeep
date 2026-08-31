@@ -5,7 +5,6 @@ import type {
   JobStatus,
   MailTemplatePreviewDto,
   ModerationLegalBasis,
-  NewsletterSendDto,
   Plan,
   Role,
   SecurityEventType,
@@ -13,7 +12,6 @@ import type {
   SendAdminTestPushRequestDto,
   SendTestEmailRequestDto,
   TrendPeriod,
-  UserDataExportDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
@@ -150,12 +148,8 @@ export const updateAdminUserPlan = (userId: string, plan: Plan) =>
     body: { plan },
   });
 
-// Not migrated: UserDataExportDto is too deeply nested to type for now (see
-// the comment on UsersController#exportData) — the API response itself is
-// still untyped in Swagger, so there's nothing for typedRequest to read yet.
-export const getAdminUserExport = (
-  userId: string,
-): Promise<UserDataExportDto> => request(`/admin/users/${userId}/export`);
+export const getAdminUserExport = (userId: string) =>
+  typedRequest("/admin/users/{userId}/export", { params: { userId } });
 
 /** Reviews the account has written, with resolved targets — for the user drawer shortcut. */
 export const getAdminUserReviews = (userId: string) =>
@@ -203,8 +197,7 @@ export const deleteAdminUser = (
     body: reason,
   });
 
-export const getAdminNewsletterSends = (): Promise<NewsletterSendDto[]> =>
-  request("/admin/newsletter");
+export const getAdminNewsletterSends = () => typedRequest("/admin/newsletter");
 
 export const getAdminBackupFiles = () => typedRequest("/admin/backup/files");
 
