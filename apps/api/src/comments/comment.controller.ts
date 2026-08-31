@@ -25,6 +25,7 @@ import {
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
@@ -70,6 +71,7 @@ export class CommentController {
   }
 
   @Get(":type/:id")
+  @ApiOkResponse({ type: PagedResponseDto(CommentResponseDto) })
   list(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,

@@ -29,7 +29,7 @@ export interface WatchProviderDto {
 }
 
 /** Where to watch, split by offer type, for one region. */
-interface WatchProvidersDto {
+export interface WatchProvidersDto {
   flatrate: WatchProviderDto[];
   rent: WatchProviderDto[];
   buy: WatchProviderDto[];
@@ -89,7 +89,7 @@ export interface RatingDto {
 }
 
 /** An official/external link (streaming, official site…), from AniList. */
-interface ExternalLinkDto {
+export interface ExternalLinkDto {
   /** Site name, e.g. "Crunchyroll", "Official Site". */
   name: string;
   url: string;

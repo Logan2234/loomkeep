@@ -1,14 +1,11 @@
 import type {
-  CommentDto,
   CommentEmote,
   CommentTargetType,
   CreateCommentDto,
-  PagedResult,
   ReportCategory,
   ReportMotif,
   UpdateCommentDto,
 } from "@loomkeep/shared";
-import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getCommentCount = (
@@ -19,17 +16,15 @@ export const getCommentCount = (
     params: { type: targetType, id: targetId },
   });
 
-// Not migrated: query-string params aren't supported by typedRequest yet.
-export function getComments(
+export const getComments = (
   targetType: CommentTargetType,
   targetId: string,
   page = 1,
-): Promise<PagedResult<CommentDto>> {
-  const params = new URLSearchParams({ page: String(page) });
-  return request(
-    `/comments/${targetType}/${encodeURIComponent(targetId)}?${params}`,
-  );
-}
+) =>
+  typedRequest("/comments/{type}/{id}", {
+    params: { type: targetType, id: targetId },
+    query: { page: String(page) },
+  });
 
 export const createComment = (body: CreateCommentDto) =>
   typedRequest("/comments", { method: "POST", body });
