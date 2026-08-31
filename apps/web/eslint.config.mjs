@@ -6,7 +6,14 @@ import { baseConfig } from "../../eslint.config.base.mjs";
 export default defineConfig(
   // The service worker is compiled in SvelteKit's own worker context (no DOM
   // globals); it is type-checked by svelte-check, not by this ESLint config.
-  { ignores: ["src/service-worker.ts"] },
+  //
+  // schema.d.ts is generated (openapi-typescript), gitignored, and never
+  // Prettier-formatted — baseConfig's includeIgnoreFile(root .gitignore)
+  // doesn't exclude it here: its patterns are root-repo-relative, but
+  // ESLint resolves a config's `ignores` relative to *this* file's own
+  // directory (apps/web/), so "apps/web/src/lib/api/generated/schema.d.ts"
+  // effectively looks for apps/web/apps/web/... and never matches.
+  { ignores: ["src/service-worker.ts", "src/lib/api/generated/schema.d.ts"] },
   ...baseConfig(import.meta.dirname, { browser: true }),
   svelte.configs.recommended,
   svelte.configs.prettier,
