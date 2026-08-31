@@ -57,7 +57,7 @@
 
     <div class="flex flex-wrap items-center justify-center gap-3">
       <a href={homeHref} class="btn btn-primary">
-        {isNotFound ? m.error_404_cta_home() : m.error_generic_cta_home()}
+        {isNotFound ? m.error_404_cta_home() : m.common_back_home()}
       </a>
       {#if isNotFound && auth.isLoggedIn}
         <a href="/app/search" class="btn btn-ghost"

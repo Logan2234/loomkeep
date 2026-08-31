@@ -132,6 +132,7 @@ export abstract class BookCsvSource<
         title: summary?.title ?? row.title,
         sourceTitle: row.title,
         subtitle: row.rating !== null ? `★ ${row.rating}/10` : null,
+        context: { kind: "book", rating: row.rating },
         coverUrl: summary?.coverUrl ?? null,
         match,
         include: match !== null && !alreadyInLibrary,
@@ -202,10 +203,15 @@ export abstract class BookCsvSource<
 
     const tiles: ImportReportTile[] = STATUS_GROUPS.filter(
       (g) => (tally.get(g.status) ?? 0) > 0,
-    ).map((g) => ({ label: g.label, value: tally.get(g.status)!, sub: null }));
+    ).map((g) => ({
+      id: g.status,
+      label: g.label,
+      value: tally.get(g.status)!,
+      sub: null,
+    }));
 
     if (tiles.length === 0) {
-      tiles.push({ label: "Livres", value: 0, sub: null });
+      tiles.push({ id: "books", label: "Livres", value: 0, sub: null });
     }
 
     return { overwrite: decisions.overwrite, tiles };

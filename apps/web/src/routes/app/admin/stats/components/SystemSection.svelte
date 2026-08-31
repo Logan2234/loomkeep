@@ -6,6 +6,7 @@
   import { formatBytes, formatNumber, formatRelative } from "$lib/format";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { adminServiceLabel } from "$lib/constants/admin-presentation";
   import type { AdminSystemSectionDto } from "@loomkeep/shared";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
 
@@ -17,7 +18,7 @@
 
   const providerItems = $derived(
     stats.providerCalls.map((p) => ({
-      label: p.provider,
+      label: adminServiceLabel("", p.provider),
       value: p.calls,
       display: formatNumber(p.calls),
       badge:
@@ -51,7 +52,7 @@
     {
       value: stats.ops.lastBackup
         ? formatRelative(stats.ops.lastBackup.createdAt)
-        : m.admin_system_no_backup(),
+        : m.admin_no_backups(),
       label: stats.ops.lastBackup
         ? m.admin_system_last_backup_with_size({
             size: formatBytes(stats.ops.lastBackup.sizeBytes),

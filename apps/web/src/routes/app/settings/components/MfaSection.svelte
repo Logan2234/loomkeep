@@ -88,7 +88,7 @@
         openRecoveryReveal(recoveryCodes);
       } else {
         openModal = null;
-        toast.success(m.settings_mfa_totp_label());
+        toast.success(m.auth_mfa_totp_label());
       }
     },
   }));
@@ -188,12 +188,12 @@
         <div class="flex items-start gap-3">
           <Icon name="qr-code" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
           <div>
-            <p class="font-semibold">{m.settings_mfa_totp_label()}</p>
+            <p class="font-semibold">{m.auth_mfa_totp_label()}</p>
             <p class="text-dim text-sm">{m.settings_mfa_totp_desc()}</p>
           </div>
         </div>
         <Switch
-          label={m.settings_mfa_totp_label()}
+          label={m.auth_mfa_totp_label()}
           checked={status.totpEnabled}
           onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
       </div>
@@ -205,12 +205,12 @@
         <div class="flex items-start gap-3">
           <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
           <div>
-            <p class="font-semibold">{m.settings_mfa_email_label()}</p>
+            <p class="font-semibold">{m.auth_mfa_email_label()}</p>
             <p class="text-dim text-sm">{m.settings_mfa_email_desc()}</p>
           </div>
         </div>
         <Switch
-          label={m.settings_mfa_email_label()}
+          label={m.auth_mfa_email_label()}
           checked={status.emailEnabled}
           onChange={onToggleEmail} />
       </div>
@@ -241,7 +241,7 @@
           <button
             class="link-accent shrink-0 text-sm"
             onclick={() => (openModal = "recovery-regenerate-confirm")}>
-            {m.settings_mfa_recovery_regenerate_action()}
+            {m.common_regenerate()}
           </button>
         </div>
       {/if}
@@ -339,7 +339,7 @@
       <p class="text-sm">{m.settings_mfa_totp_disable_hint()}</p>
       <label class="block">
         <span class="mb-1.5 block text-sm font-semibold">
-          {m.settings_mfa_totp_disable_password_label()}
+          {m.common_current_password()}
         </span>
         <PasswordInput
           autocomplete="current-password"
@@ -369,7 +369,7 @@
   <ConfirmationModal
     title={m.settings_mfa_recovery_regenerate_confirm_title()}
     message={m.settings_mfa_recovery_regenerate_confirm_message()}
-    confirmLabel={m.settings_mfa_recovery_regenerate_action()}
+    confirmLabel={m.common_regenerate()}
     danger
     busy={regenerateMut.loading}
     onConfirm={confirmRegenerate}

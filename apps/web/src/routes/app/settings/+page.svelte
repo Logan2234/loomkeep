@@ -39,11 +39,11 @@
       label: m.common_privacy(),
       social: true,
     },
-    { id: "domaines", label: m.settings_section_domains() },
+    { id: "domaines", label: m.common_domains() },
     { id: "communications", label: m.settings_section_communications() },
     {
       id: "apparence",
-      label: m.settings_section_appearance(),
+      label: m.settings_appearance_title(),
       newBadgeKey: "nav-styles",
     },
     { id: "import", label: m.common_import() },
@@ -59,7 +59,7 @@
       newBadgeKey: "support",
     },
     { id: "sources-donnees", label: m.settings_datasources_title() },
-    { id: "danger", label: m.settings_section_danger_zone() },
+    { id: "danger", label: m.settings_danger_zone_title() },
   ];
   const visibleSections = $derived(
     SECTIONS.filter((s) => !s.social || appConfig.socialEnabled),

@@ -189,9 +189,7 @@
          no social surface to report on. -->
     {#if socialStats}
       <section class="border-border border-t py-6">
-        <SectionLabel
-          label={m.admin_stats_section_social()}
-          badge="SOCIAL_ENABLED" />
+        <SectionLabel label={m.common_social()} badge="SOCIAL_ENABLED" />
         {#key socialStats.generatedAt}
           <SocialSection stats={socialStats} />
         {/key}

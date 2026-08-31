@@ -23,7 +23,7 @@
           href: "/register",
           event: "footer-register",
         },
-        { label: m.landing_login(), href: "/login", event: "footer-login" },
+        { label: m.common_login(), href: "/login", event: "footer-login" },
         {
           label: m.landing_footer_link_roadmap(),
           href: ROADMAP_URL,
@@ -48,13 +48,13 @@
           event: "footer-github",
         },
         {
-          label: m.landing_footer_link_suggest(),
+          label: m.common_suggest_idea(),
           href: FEEDBACK_URL,
           external: true,
           event: "footer-feedback",
         },
         {
-          label: m.landing_footer_link_bug(),
+          label: m.common_report_bug(),
           href: FEEDBACK_BUG_REPORTS_URL,
           external: true,
           event: "footer-bug-report",

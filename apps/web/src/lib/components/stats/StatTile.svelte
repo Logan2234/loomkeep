@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatNumber } from "$lib/format";
   // The headline figure of /stats: one big number, its caps label and an
   // optional secondary line. Every domain section opens on a row of four.
   let {
@@ -18,7 +19,9 @@
 
 <div class="card p-4">
   <p class="font-display text-3xl font-extrabold tabular-nums">
-    {value}{#if unit}<span class="text-dim text-lg">{unit}</span>{/if}
+    {typeof value === "number" ? formatNumber(value) : value}{#if unit}<span
+        class="text-dim text-lg">{unit}</span
+      >{/if}
   </p>
   <p class="text-dim mt-1 text-xs tracking-wide uppercase">{label}</p>
   {#if hint}

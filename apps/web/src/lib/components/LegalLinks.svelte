@@ -9,7 +9,7 @@
 <footer
   class="border-border text-dim flex flex-col items-center gap-4 px-4 py-5 text-center text-xs">
   <nav
-    aria-label="Informations légales"
+    aria-label={m.common_legal_information()}
     class="flex flex-wrap justify-center gap-y-1">
     <a
       href="/legal/legal-notice"

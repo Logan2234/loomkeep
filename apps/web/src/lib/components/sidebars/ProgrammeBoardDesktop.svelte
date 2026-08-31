@@ -87,7 +87,7 @@
         {@render railIcon({
           href: "/app/admin",
           icon: "home",
-          label: m.nav_overview(),
+          label: m.common_overview(),
           match: (p) => p === "/app/admin",
         })}
         {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
@@ -144,7 +144,7 @@
             '/app/admin'
               ? 'bg-[#f5b841] shadow-[0_0_6px_1px_#f5b841]'
               : 'bg-white/15'}"></span>
-          {m.nav_overview()}
+          {m.common_overview()}
         </a>
         {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
           {@const active = item.match(page.url.pathname)}

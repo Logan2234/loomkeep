@@ -57,7 +57,7 @@
       <div class="group relative">
         <a
           href="/app/admin"
-          aria-label={m.nav_overview()}
+          aria-label={m.common_overview()}
           aria-current={page.url.pathname === "/app/admin" ? "page" : undefined}
           class="grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 ease-out group-hover:scale-110 {page
             .url.pathname === '/app/admin'
@@ -67,7 +67,7 @@
         </a>
         <span
           class="bg-fg text-bg pointer-events-none absolute top-1/2 left-full ml-3 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold whitespace-nowrap opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-          {m.nav_overview()}
+          {m.common_overview()}
         </span>
       </div>
       <div class="border-border my-1 border-t"></div>

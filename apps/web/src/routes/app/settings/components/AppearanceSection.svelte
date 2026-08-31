@@ -24,7 +24,7 @@
     type NavStyle,
   } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import { setLocale } from "$lib/paraglide/runtime.js";
+  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
   import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
 
@@ -115,7 +115,7 @@
   <p class="text-dim text-sm">{m.settings_appearance_description()}</p>
 
   <div>
-    <p class="mb-2 font-semibold">{m.settings_theme_label()}</p>
+    <p class="mb-2 font-semibold">{m.common_theme()}</p>
     <div class="flex gap-2">
       {#each THEME_DEFINITIONS as theme (theme.mode)}
         <ThemePreview {theme} />
@@ -174,7 +174,7 @@
       <Combobox
         label={m.common_language()}
         options={LOCALE_OPTIONS}
-        values={[auth.user?.locale ?? "fr"]}
+        values={[auth.user?.locale ?? getLocale()]}
         onChange={(v) => saveLocale(v[0] as Locale)} />
     </div>
   </div>

@@ -39,7 +39,7 @@
     onSuccess: async (result) => {
       confirmingRegenerate = false;
       await navigator.clipboard.writeText(calendarUrl(result.token));
-      toast.success("Nouveau lien copié — l'ancien ne fonctionne plus.");
+      toast.success(m.calendar_link_regenerated());
     },
   }));
 
@@ -48,15 +48,14 @@
   }
 </script>
 
-<Modal title="Ajouter à mon agenda" {onclose}>
+<Modal title={m.calendar_subscribe_button()} {onclose}>
   {#if loading}
-    <p class="text-dim text-sm">Génération du lien…</p>
+    <p class="text-dim text-sm">{m.calendar_link_generating()}</p>
   {:else if tokenQuery.error && !token}
     <p class="text-danger text-sm">{tokenQuery.error}</p>
   {:else if confirmingRegenerate}
     <p class="text-dim text-sm">
-      L'ancien lien cessera de fonctionner — tu devras t'abonner à nouveau
-      depuis tes autres agendas. Continuer ?
+      {m.calendar_link_regenerate_confirm()}
     </p>
     {#if regenerateMut.error}
       <p class="text-danger mt-2 text-sm">{regenerateMut.error}</p>
@@ -74,29 +73,28 @@
         class="btn btn-primary"
         disabled={regenerateMut.loading}
         onclick={regenerate}>
-        {regenerateMut.loading ? "Régénération…" : "Régénérer"}
+        {regenerateMut.loading
+          ? m.common_regenerating()
+          : m.common_regenerate()}
       </button>
     </div>
   {:else}
     <p class="text-dim text-sm">
-      Ce lien te permet de t'abonner au calendrier des prochains épisodes de ce
-      que tu suis depuis Google Calendar, Apple Calendar ou toute application
-      compatible — les nouvelles dates apparaissent automatiquement, sans rien
-      réimporter.
+      {m.calendar_subscription_description()}
     </p>
     <p class="text-dim mt-2 text-sm">
-      Le lien est personnel : ne le partage pas.
+      {m.calendar_subscription_private()}
     </p>
     <div class="mt-5 flex flex-wrap items-center justify-between gap-2">
       <button
         type="button"
         class="btn btn-ghost"
         onclick={() => (confirmingRegenerate = true)}>
-        Régénérer le lien
+        {m.calendar_link_regenerate()}
       </button>
       <button class="btn btn-primary" onclick={copyLink}>
         <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
-        {copied ? "Lien copié" : "Copier le lien"}
+        {copied ? m.common_link_copied() : m.common_copy_link()}
       </button>
     </div>
   {/if}

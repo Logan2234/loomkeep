@@ -139,6 +139,12 @@ export abstract class MediaImportSource<
         title: match?.title ?? show.title,
         sourceTitle: show.title,
         subtitle,
+        context: {
+          kind: "series",
+          episodesWatched: n,
+          rating: show.rating ?? null,
+          favorite: show.favorite ?? false,
+        },
         coverUrl: match?.coverUrl ?? null,
         match,
         include: match !== null,
@@ -170,6 +176,13 @@ export abstract class MediaImportSource<
         title: match?.title ?? movie.title,
         sourceTitle: movie.title,
         subtitle: subtitleParts.length > 0 ? subtitleParts.join(" · ") : null,
+        context: {
+          kind: "movie",
+          year: movie.year,
+          rewatches: movie.rewatchedAt.length,
+          rating: movie.rating ?? null,
+          favorite: movie.favorite ?? false,
+        },
         coverUrl: match?.coverUrl ?? null,
         match,
         include: match !== null,
@@ -266,16 +279,21 @@ export abstract class MediaImportSource<
       tiles: [
         {
           label: "Séries",
+          id: "series",
+          watchlistCount: tally.showsWatchlist,
           value: tally.showsImported,
           sub: `${tally.showsWatchlist} en watchlist`,
         },
         {
           label: "Épisodes",
+          id: "episodes",
           value: tally.episodesCreated,
           sub: "visionnages créés",
         },
         {
           label: "Films",
+          id: "movies",
+          watchlistCount: tally.moviesWatchlist,
           value: tally.moviesImported,
           sub: `${tally.moviesWatchlist} en watchlist`,
         },

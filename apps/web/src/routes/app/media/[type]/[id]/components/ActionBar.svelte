@@ -146,8 +146,8 @@
               type="button"
               aria-haspopup="menu"
               aria-expanded={open}
-              aria-label={m.media_more_actions()}
-              title={m.media_more_actions()}
+              aria-label={m.common_more_actions()}
+              title={m.common_more_actions()}
               onclick={toggle}
               class="btn-icon border-border h-9 w-9 border">
               <Icon name="dots-horizontal" class="h-4 w-4" />

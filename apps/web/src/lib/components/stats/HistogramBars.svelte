@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { formatNumber } from "$lib/format";
+  import { m } from "$lib/paraglide/messages.js";
   // Vertical bar histogram (ratings, decades…). Bars are clickable when
   // onSelect is passed — the caller decides what "select" means (open a
   // modal, navigate to a filtered list); this component only renders and
@@ -36,13 +38,16 @@
   });
 </script>
 
-<div class="flex h-32 items-end gap-1.5" role="img" aria-label="Histogramme">
+<div
+  class="flex h-32 items-end gap-1.5"
+  role="img"
+  aria-label={m.stats_histogram()}>
   {#each bars as b (b.label)}
     {#if onSelect}
       <button
         type="button"
         class="group flex flex-1 flex-col items-center gap-1.5"
-        title="{b.label} — {b.value}"
+        title="{b.label} — {formatNumber(b.value)}"
         onclick={() => onSelect(b.label)}>
         <div
           class="bg-accent w-full rounded-t transition-[filter,height] duration-300 ease-out group-hover:brightness-110"
@@ -53,7 +58,7 @@
     {:else}
       <div
         class="flex flex-1 flex-col items-center gap-1.5"
-        title="{b.label} — {b.value}">
+        title="{b.label} — {formatNumber(b.value)}">
         <div
           class="bg-accent w-full rounded-t transition-[height] duration-300 ease-out"
           style="height:{barHeight(b)}px">

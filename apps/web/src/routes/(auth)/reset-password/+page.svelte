@@ -56,7 +56,7 @@
 
         {#if !token}
           <p class="text-danger text-sm">
-            {m.auth_reset_password_invalid_link()}
+            {m.link_invalid_missing_token()}
           </p>
         {:else}
           <form onsubmit={submit} class="flex flex-col gap-4">

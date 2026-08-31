@@ -108,8 +108,8 @@
   ];
   const FAKE_POSSESSION_BARS = [
     { label: m.stats_ownership_owned(), value: 18 },
-    { label: m.stats_ownership_borrowed(), value: 6 },
-    { label: m.stats_ownership_streaming(), value: 11 },
+    { label: m.ownership_borrowed(), value: 6 },
+    { label: m.ownership_streaming(), value: 11 },
   ];
 
   const ratingBars = $derived(
@@ -213,11 +213,9 @@
       {m.stats_empty()}
     </EmptyState>
   {:else if overview}
-    <SectionLabel label={m.stats_overview_label()} />
+    <SectionLabel label={m.common_overview()} />
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile
-        value={formatNumber(overview.total)}
-        label={m.stats_works_label()} />
+      <StatTile value={formatNumber(overview.total)} label={m.common_works()} />
       <StatTile
         value={formatNumber(overview.completionRate, PERCENT_OPTIONS)}
         label={m.stats_completion_rate()} />
@@ -333,7 +331,7 @@
     {/if}
 
     {#if appConfig.socialEnabled}
-      <SectionLabel label={m.stats_social()} class="mt-10" />
+      <SectionLabel label={m.common_social()} class="mt-10" />
       <PremiumTeaser locked={statsLocked}>
         <SocialStatsSection locked={statsLocked} />
       </PremiumTeaser>

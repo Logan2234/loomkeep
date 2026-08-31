@@ -61,7 +61,7 @@
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
   role="dialog"
   aria-modal="true"
-  aria-label={isVideoSlide ? "Bande-annonce" : "Image en grand"}
+  aria-label={isVideoSlide ? m.media_trailer() : m.common_image_large()}
   tabindex="-1"
   ontouchstart={onTouchStart}
   ontouchend={onTouchEnd}>
@@ -87,14 +87,14 @@
     <button
       type="button"
       class="absolute left-2 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60 sm:left-4"
-      aria-label="Image précédente"
+      aria-label={m.common_image_previous()}
       onclick={prev}>
       <Icon name="chevron-left" class="h-6 w-6" />
     </button>
     <button
       type="button"
       class="absolute right-2 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60 sm:right-4"
-      aria-label="Image suivante"
+      aria-label={m.common_image_next()}
       onclick={next}>
       <Icon name="chevron-right" class="h-6 w-6" />
     </button>
@@ -118,7 +118,7 @@
     <button
       type="button"
       class="relative cursor-zoom-out"
-      aria-label="Réduire l'image"
+      aria-label={m.common_image_reduce()}
       onclick={onClose}>
       <img
         src={currentImage.src}
@@ -133,8 +133,8 @@
         <button
           type="button"
           aria-label={video && i === 0
-            ? "Bande-annonce"
-            : `Image ${i + 1 - (video ? 1 : 0)}`}
+            ? m.media_trailer()
+            : m.common_image_number({ index: i + 1 - (video ? 1 : 0) })}
           aria-current={i === index}
           onclick={() => (index = i)}
           class="h-1.5 w-1.5 rounded-full transition-colors {i === index

@@ -197,12 +197,12 @@
         <button
           class="chip disabled:pointer-events-none disabled:opacity-40"
           disabled
-          title={m.settings_export_csv_coming_soon_hint()}>
+          title={m.common_coming_soon()}>
           <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
           {d.label}
           <span
             class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
-            {m.landing_libraries_soon()}
+            {m.common_coming_soon()}
           </span>
         </button>
       {:else}
@@ -397,8 +397,7 @@
         </div>
       {:else if detailQuery.error}
         <div class="mb-4 flex items-center justify-between">
-          <span class="font-display font-bold"
-            >{m.ownership_detail_label()}</span>
+          <span class="font-display font-bold">{m.common_detail()}</span>
           <button
             class="text-dim hover:bg-surface-2 hover:text-fg rounded-full p-1.5"
             aria-label={m.common_close()}

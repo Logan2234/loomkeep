@@ -80,7 +80,7 @@
   const STATUS_META: Record<EntryStatus, { label: string; cls: string }> = {
     PLANNED: { label: m.media_status_planned(), cls: "bg-white/15 text-white" },
     WATCHING: {
-      label: m.media_status_watching(),
+      label: m.library_status_in_progress(),
       cls: "bg-accent text-accent-fg",
     },
     UP_TO_DATE: {
@@ -88,11 +88,11 @@
       cls: "border border-success text-success",
     },
     COMPLETED: {
-      label: m.media_status_completed(),
+      label: m.library_status_completed(),
       cls: "bg-success/80 text-white",
     },
     DROPPED: {
-      label: m.media_status_dropped(),
+      label: m.library_status_dropped(),
       cls: "border border-danger text-danger",
     },
   };
@@ -103,7 +103,7 @@
     WATCHING: m.media_status_watching_hint(),
     UP_TO_DATE: m.media_status_caught_up_hint(),
     COMPLETED: m.media_status_completed_hint(),
-    DROPPED: m.media_status_dropped_hint(),
+    DROPPED: m.library_status_dropped_description(),
   };
 
   // Brand-ish colors per rating source (no official logos — those are
@@ -688,7 +688,7 @@
 
     {#if extras && extras.externalLinks.length > 0}
       <section class="mt-4 flex flex-wrap items-center gap-2">
-        <span class="timecode text-xs">{m.music_links()}</span>
+        <span class="timecode text-xs">{m.common_links()}</span>
         {#each extras.externalLinks as link (link.url)}
           <a
             href={link.url}
@@ -708,7 +708,7 @@
       <ProviderMark
         brand={type === "ANIME" ? "anilist" : "tmdb"}
         class="h-3 w-3 shrink-0 opacity-70" />
-      {type === "ANIME" ? m.media_anilist_notice() : m.media_tmdb_notice()}
+      {type === "ANIME" ? m.media_anilist_notice() : m.datasource_tmdb_notice()}
     </p>
 
     <!-- Episodes (series/anime). Watch actions only once the media is tracked. -->

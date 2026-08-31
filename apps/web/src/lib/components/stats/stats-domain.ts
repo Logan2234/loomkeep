@@ -7,10 +7,18 @@ import { m } from "$lib/paraglide/messages.js";
 import type { StatsDomain, StatsStatusBucket } from "@loomkeep/shared";
 
 export const STATS_DOMAIN_LABEL: Record<StatsDomain, string> = {
-  MEDIA: m.common_Media(),
-  GAMES: m.common_Games(),
-  BOOKS: m.common_Books(),
-  MUSIC: m.common_Music(),
+  get MEDIA() {
+    return m.common_Media();
+  },
+  get GAMES() {
+    return m.common_Games();
+  },
+  get BOOKS() {
+    return m.common_Books();
+  },
+  get MUSIC() {
+    return m.common_Music();
+  },
 };
 
 // CSS var name (see app.css) carrying this domain's validated stat hue.
@@ -30,10 +38,18 @@ export const STATUS_BUCKET_ORDER: StatsStatusBucket[] = [
   "DROPPED",
 ];
 export const STATUS_BUCKET_LABEL: Record<StatsStatusBucket, string> = {
-  PLANNED: "À faire",
-  IN_PROGRESS: "En cours",
-  DONE: "Terminé",
-  DROPPED: "Abandonné",
+  get PLANNED() {
+    return m.library_status_planned();
+  },
+  get IN_PROGRESS() {
+    return m.library_status_in_progress();
+  },
+  get DONE() {
+    return m.library_status_completed();
+  },
+  get DROPPED() {
+    return m.library_status_dropped();
+  },
 };
 export const STATUS_BUCKET_COLOR: Record<StatsStatusBucket, string> = {
   PLANNED: "var(--dim)",

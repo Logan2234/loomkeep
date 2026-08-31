@@ -9,7 +9,11 @@
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
-  import { DOMAINS } from "$lib/constants/domains";
+  import {
+    groupAdminServices,
+    adminServiceLabel,
+    adminServiceDetail,
+  } from "$lib/constants/admin-presentation";
   import { formatNumber, formatTime } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared";
@@ -27,19 +31,7 @@
   const loading = $derived(servicesQuery.loading);
   const error = $derived(servicesQuery.error);
 
-  // Ordered areas so groups render in a stable, sensible order. Must match the
-  // ServiceArea values the API emits (see admin.service.ts).
-  const AREAS = [
-    ...Object.values(DOMAINS).map((d) => d.label),
-    m.common_system(),
-  ] as const;
-
-  const grouped = $derived(
-    AREAS.map((area) => ({
-      area,
-      items: (services ?? []).filter((s) => s.area === area),
-    })).filter((g) => g.items.length > 0),
-  );
+  const grouped = $derived(groupAdminServices(services ?? []));
 
   const TIME_SECONDS_OPTIONS: Intl.DateTimeFormatOptions = {
     hour: "2-digit",
@@ -97,7 +89,7 @@
     [...metered]
       .sort((a, b) => (b.percentUsed ?? 0) - (a.percentUsed ?? 0))
       .map((s) => ({
-        label: s.label,
+        label: adminServiceLabel(s.key, s.label),
         value: quotaUsage(s),
         display: `${formatNumber(quotaUsage(s))} / ${formatNumber(s.limit?.max ?? 0)}`,
         badge: {
@@ -112,7 +104,7 @@
     [...unmetered]
       .sort((a, b) => (b.today ?? 0) - (a.today ?? 0))
       .map((s) => ({
-        label: s.label,
+        label: adminServiceLabel(s.key, s.label),
         value: s.today ?? 0,
         display: `${formatNumber(s.today ?? 0)} ${m.admin_period_today()}`,
         badge: { text: m.admin_services_no_limit_badge() },
@@ -211,7 +203,7 @@
       {#each grouped as group (group.area)}
         <section>
           <h2 class="timecode mb-2 text-xs uppercase">
-            {group.area}
+            {group.label}
           </h2>
           <div class="border-border overflow-hidden rounded-xl border">
             {#each group.items as s, i (s.key)}
@@ -223,7 +215,8 @@
                 <div class="flex items-center gap-3">
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
-                      <span class="text-fg font-semibold">{s.label}</span>
+                      <span class="text-fg font-semibold"
+                        >{adminServiceLabel(s.key, s.label)}</span>
                       {#if s.required}
                         <span
                           class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
@@ -231,9 +224,9 @@
                         </span>
                       {/if}
                     </div>
-                    {#if s.detail}
+                    {#if adminServiceDetail(s)}
                       <p class="text-dim mt-0.5 text-xs">
-                        {s.detail}
+                        {adminServiceDetail(s)}
                         {#if !s.configured && s.keyUrl}
                           · <a
                             href={s.keyUrl}

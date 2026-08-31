@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // "Social" section of /stats — gated by SOCIAL_ENABLED (see the page,
   // this component is only mounted when appConfig.socialEnabled is true).
   // Always cross-domain, not affected by the DomainFilter.
@@ -68,9 +69,9 @@
 
   /** How the viewer's average reads against the community's. */
   function verdict(delta: number): string {
-    if (delta < 0) return "plus sévère";
-    if (delta > 0) return "plus généreux";
-    return "aligné";
+    if (delta < 0) return m.stats_social_stricter();
+    if (delta > 0) return m.stats_social_more_generous();
+    return m.stats_social_aligned();
   }
 
   const toPoints = (rows: { month: string; count: number }[]) =>
@@ -86,53 +87,62 @@
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile
       value={social.reviewsWritten}
-      label="Critiques écrites"
+      label={m.stats_social_reviews()}
       hint={social.avgReviewLength !== null
-        ? `longueur moy. ${social.avgReviewLength} signes`
+        ? social.avgReviewLength === 1
+          ? m.stats_social_review_length_one({ count: social.avgReviewLength })
+          : m.stats_social_review_length({ count: social.avgReviewLength })
         : undefined} />
     <StatTile
       value={social.commentsWritten}
-      label="Commentaires"
-      hint="{formatNumber(
-        social.spoilerCommentRatio,
-        PERCENT_OPTIONS,
-      )} marqués spoiler" />
+      label={m.common_comments()}
+      hint={m.stats_social_spoiler_ratio({
+        percent: formatNumber(social.spoilerCommentRatio, PERCENT_OPTIONS),
+      })} />
     <StatTile
       value={social.helpfulVotesReceived}
-      label="Votes « utile » reçus"
+      label={m.stats_social_helpful_votes()}
       hint={social.mostVotedReviewVotes !== null
-        ? `critique la + votée : ${social.mostVotedReviewVotes}`
+        ? m.stats_social_top_review_votes({
+            count: social.mostVotedReviewVotes,
+          })
         : undefined} />
     <StatTile
       value={social.listsWritten}
-      label="Listes publiées"
-      hint="{social.listsPublicCount} publiques" />
+      label={m.stats_social_lists()}
+      hint={social.listsPublicCount === 1
+        ? m.stats_social_public_list({ count: social.listsPublicCount })
+        : m.stats_social_public_lists({ count: social.listsPublicCount })} />
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
     <section class="card p-5">
       <h3 class="font-display mb-4 text-lg font-bold">
-        Commentaires : racines vs réponses
+        {m.stats_social_comments_breakdown()}
       </h3>
       <div class="flex items-baseline gap-6">
         <div>
           <p class="font-display text-2xl font-extrabold tabular-nums">
             {social.rootCommentsCount}
           </p>
-          <p class="text-dim text-xs tracking-wide uppercase">Racines</p>
+          <p class="text-dim text-xs tracking-wide uppercase">
+            {m.stats_social_root_comments()}
+          </p>
         </div>
         <div>
           <p class="font-display text-2xl font-extrabold tabular-nums">
             {social.replyCommentsCount}
           </p>
-          <p class="text-dim text-xs tracking-wide uppercase">Réponses</p>
+          <p class="text-dim text-xs tracking-wide uppercase">
+            {m.common_replies()}
+          </p>
         </div>
       </div>
     </section>
 
     <section class="card p-5">
       <h3 class="font-display mb-4 text-lg font-bold">
-        Révisions &amp; réactions
+        {m.stats_social_revisions_reactions()}
       </h3>
       <div class="flex flex-wrap items-baseline gap-6">
         <div>
@@ -140,7 +150,7 @@
             {social.reviewRevisionsCount}
           </p>
           <p class="text-dim text-xs tracking-wide uppercase">
-            Révisions de critiques
+            {m.stats_social_review_revisions()}
           </p>
         </div>
         <div>
@@ -148,7 +158,7 @@
             {social.reactionsGiven}
           </p>
           <p class="text-dim text-xs tracking-wide uppercase">
-            Réactions données
+            {m.stats_social_reactions_given()}
           </p>
         </div>
         <div>
@@ -156,7 +166,7 @@
             {social.reactionsReceived}
           </p>
           <p class="text-dim text-xs tracking-wide uppercase">
-            Réactions reçues
+            {m.stats_social_reactions_received()}
           </p>
         </div>
       </div>
@@ -164,37 +174,52 @@
   </div>
 
   <section class="card mt-5 p-5">
-    <h3 class="font-display text-lg font-bold">Ta note vs la communauté</h3>
+    <h3 class="font-display text-lg font-bold">
+      {m.stats_social_rating_comparison()}
+    </h3>
     {#if social.ratingVsCommunity.sufficientData}
       {@const cmp = social.ratingVsCommunity}
       {@const delta =
         Math.round((cmp.yourAverage - cmp.communityAverage) * 10) / 10}
       <p class="text-dim mb-3 text-sm">
-        Sur les {cmp.sampleSize} œuvres notées en commun — es-tu sévère ou généreux
-        ?
+        {m.stats_social_comparison_sample({ count: cmp.sampleSize })}
       </p>
       <span class="chip chip-on mb-3 inline-block text-xs">
-        {delta > 0 ? "+" : ""}{delta} pt{Math.abs(delta) > 1 ? "s" : ""} · {verdict(
-          delta,
-        )}
+        {Math.abs(delta) === 1
+          ? m.stats_social_delta_one({
+              delta: formatNumber(delta, { signDisplay: "exceptZero" }),
+              verdict: verdict(delta),
+            })
+          : m.stats_social_delta_many({
+              delta: formatNumber(delta, { signDisplay: "exceptZero" }),
+              verdict: verdict(delta),
+            })}
       </span>
       <div class="bg-surface-2 relative h-2 rounded-full">
         <span
           class="border-fg absolute top-1/2 h-3 w-0.5 -translate-y-1/2 border-l-2"
           style="left:{(cmp.communityAverage / 10) * 100}%"
-          title="communauté {cmp.communityAverage}/10"></span>
+          title={m.stats_social_community_rating({
+            rating: formatNumber(cmp.communityAverage),
+          })}></span>
         <span
           class="bg-accent absolute top-1/2 h-3 w-0.5 -translate-y-1/2"
           style="left:{(cmp.yourAverage / 10) * 100}%"
-          title="toi {cmp.yourAverage}/10"></span>
+          title={m.stats_social_your_rating({
+            rating: formatNumber(cmp.yourAverage),
+          })}></span>
       </div>
       <p class="timecode mt-2 text-xs">
-        toi {cmp.yourAverage} · communauté {cmp.communityAverage}
+        {m.stats_social_comparison_summary({
+          yours: formatNumber(cmp.yourAverage),
+          community: formatNumber(cmp.communityAverage),
+        })}
       </p>
     {:else}
       <p class="text-dim text-sm">
-        Pas assez d'œuvres notées en commun avec d'autres membres pour comparer
-        ({social.ratingVsCommunity.sampleSize} pour l'instant).
+        {m.stats_social_insufficient_comparison({
+          count: social.ratingVsCommunity.sampleSize,
+        })}
       </p>
     {/if}
   </section>
@@ -202,13 +227,15 @@
   <div class="mt-5 grid gap-5 md:grid-cols-2">
     <section class="card p-5">
       <h3 class="font-display mb-4 text-lg font-bold">
-        Nouveaux abonnés par mois
+        {m.stats_social_new_followers()}
       </h3>
       <p class="text-dim mb-3 text-xs">
-        Réciprocité : {formatNumber(
-          social.followerReciprocityRate,
-          PERCENT_OPTIONS,
-        )} suivis en retour
+        {m.stats_social_reciprocity({
+          percent: formatNumber(
+            social.followerReciprocityRate,
+            PERCENT_OPTIONS,
+          ),
+        })}
       </p>
       <LineChart
         points={toPoints(social.newFollowersByMonth)}
@@ -217,12 +244,15 @@
     <section class="card p-5">
       <div class="mb-4 flex items-baseline justify-between">
         <h3 class="font-display text-lg font-bold">
-          Activité sociale par mois
+          {m.stats_social_monthly_activity()}
         </h3>
         {#if social.contributionStreakDays > 0}
           <span class="text-dim text-xs"
-            >série en cours : <b class="text-fg"
-              >{social.contributionStreakDays} j</b
+            >{m.stats_social_current_streak_label()}
+            <b class="text-fg"
+              >{m.common_day_count_short({
+                days: social.contributionStreakDays,
+              })}</b
             ></span>
         {/if}
       </div>

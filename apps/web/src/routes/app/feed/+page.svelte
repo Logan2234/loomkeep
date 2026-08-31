@@ -26,7 +26,7 @@
 <div class="mx-auto max-w-2xl px-4 py-6 md:py-8">
   <PageHeader
     icon="users"
-    title={m.feed_title()}
+    title={m.common_activity_feed()}
     subtitle={m.feed_subtitle()} />
 
   {#if feed.loading}

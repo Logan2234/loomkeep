@@ -64,7 +64,7 @@
       </button>
       <button class="btn btn-ghost w-full" onclick={copyLink}>
         <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
-        {copied ? m.share_profile_copied() : m.share_profile_copy_link()}
+        {copied ? m.common_link_copied() : m.common_copy_link()}
       </button>
     </div>
   </div>

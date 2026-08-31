@@ -8,7 +8,11 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
-  import { formatDate } from "$lib/format";
+  import { formatDate, formatDurationMs } from "$lib/format";
+  import {
+    adminJobLabel,
+    adminJobSchedule,
+  } from "$lib/constants/admin-presentation";
   import { m } from "$lib/paraglide/messages.js";
   import type { JobDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -42,9 +46,6 @@
 
   const durationMs = (run: JobDto["runs"][number]): number =>
     new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime();
-
-  const durationLabel = (ms: number): string =>
-    ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
 
   /**
    * Header figures for one job, derived from the run history the page already
@@ -100,8 +101,8 @@
         <section>
           <div class="mb-2 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-fg font-semibold">{job.label}</h2>
-              <p class="text-dim text-xs">{job.schedule}</p>
+              <h2 class="text-fg font-semibold">{adminJobLabel(job.key)}</h2>
+              <p class="text-dim text-xs">{adminJobSchedule(job.key)}</p>
             </div>
             <button
               onclick={() => runJob(job.key)}
@@ -120,7 +121,7 @@
                 label={m.admin_jobs_failure_rate()}
                 alert={stats.failurePercent > 0} />
               <StatFigure
-                value={durationLabel(stats.averageMs)}
+                value={formatDurationMs(stats.averageMs)}
                 label={m.admin_jobs_avg_duration()} />
               <StatFigure
                 value={stats.count}
@@ -180,7 +181,7 @@
                       {run.status === "FAILURE" ? run.error : run.summary}
                     </span>
                     <span class="text-dim shrink-0 text-xs tabular-nums">
-                      {durationMs(run)} ms
+                      {formatDurationMs(durationMs(run))}
                     </span>
                   </div>
                 {/each}

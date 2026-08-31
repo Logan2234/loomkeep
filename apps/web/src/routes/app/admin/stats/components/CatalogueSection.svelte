@@ -44,9 +44,9 @@
           <tr
             class="border-border text-dim border-b font-mono text-[10px] uppercase">
             <th class="px-2 py-1.5 text-left font-normal"
-              >{m.admin_catalogue_table_domain()}</th>
+              >{m.common_domain()}</th>
             <th class="px-2 py-1.5 text-right font-normal"
-              >{m.admin_catalogue_table_items()}</th>
+              >{m.common_items()}</th>
             <th class="px-2 py-1.5 text-right font-normal"
               >{m.admin_catalogue_table_stale()}</th>
             <th class="px-2 py-1.5 text-left font-normal"

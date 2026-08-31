@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // "Vidéo — en détail" section of /stats. Self-contained: fetches on mount,
   // reuses the MEDIA status breakdown already loaded by the overview (avoids
   // re-deriving "en cours" from scratch) and StatsWorksModal for the
@@ -42,9 +43,9 @@
   const days = $derived(video ? Math.round(video.totalMinutes / 1440) : 0);
 
   const TYPE_LABEL: Record<string, string> = {
-    MOVIE: "Films",
-    SERIES: "Séries",
-    ANIME: "Animés",
+    MOVIE: m.media_movies(),
+    SERIES: m.media_series_plural(),
+    ANIME: m.media_anime(),
   };
   const TYPE_TINT: Record<string, string> = {
     SERIES: "var(--stat-media)",
@@ -68,12 +69,15 @@
   // PremiumTeaser's own doc comment.
   const FAKE_GENRES = [
     { label: "Action", value: 14 },
-    { label: "Drama", value: 11 },
-    { label: "Comédie", value: 8 },
+    { label: m.stats_preview_drama(), value: 11 },
+    { label: m.stats_preview_comedy(), value: 8 },
     { label: "Thriller", value: 5 },
   ];
-  const FAKE_LONGEST_FILM = { title: "Un film mémorable", minutes: 172 };
-  const FAKE_SHORTEST_FILM = { title: "Un court métrage", minutes: 62 };
+  const FAKE_LONGEST_FILM = { title: m.stats_preview_movie(), minutes: 172 };
+  const FAKE_SHORTEST_FILM = {
+    title: m.stats_preview_short_movie(),
+    minutes: 62,
+  };
   const FAKE_TRACKING = {
     moviesRewatched: 3,
     paused: 2,
@@ -125,28 +129,35 @@
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     <StatTile
       value={hours}
-      unit="h"
-      label="Temps de visionnage"
-      hint="≈ {days} jours" />
-    <StatTile value={video.episodesWatched} label="Épisodes vus" />
+      unit={m.common_hours_short()}
+      label={m.stats_video_watch_time()}
+      hint={days === 1
+        ? m.stats_approx_day({ days })
+        : m.stats_approx_days({ days })} />
+    <StatTile value={video.episodesWatched} label={m.stats_video_episodes()} />
     <StatTile
       value={video.seasonsCompleted}
-      label="Saisons terminées"
-      hint="{inProgressCount} en cours" />
+      label={m.stats_video_seasons()}
+      hint={m.stats_video_progress_count({ count: inProgressCount })} />
     <StatTile
       value={video.avgEpisodeRuntimeMin ?? "—"}
-      unit="min"
-      label="Durée moy. / épisode" />
+      unit={m.common_minutes_short()}
+      label={m.stats_video_average_episode()} />
   </div>
 
   <div class="mt-5 grid gap-5 md:grid-cols-2">
     <section class="card p-5">
       <div class="mb-4 flex items-center justify-between">
-        <h3 class="font-display text-lg font-bold">Films · Séries · Animés</h3>
+        <h3 class="font-display text-lg font-bold">
+          {m.stats_video_type_split()}
+        </h3>
       </div>
       <StackedBar
         segments={typeSegments}
-        toggle={{ primaryLabel: "Temps", altLabel: "Nombre" }} />
+        toggle={{
+          primaryLabel: m.common_time(),
+          altLabel: m.common_count(),
+        }} />
       {#if locked || video.longestFilm || video.shortestFilm}
         {@const longestFilm = locked ? FAKE_LONGEST_FILM : video.longestFilm}
         {@const shortestFilm = locked ? FAKE_SHORTEST_FILM : video.shortestFilm}
@@ -156,12 +167,13 @@
               <a
                 href={locked ? "#" : video.longestFilm?.href}
                 class="hover:text-accent">
-                <span class="text-dim block uppercase">Film le + long</span>
+                <span class="text-dim block uppercase"
+                  >{m.stats_video_longest()}</span>
                 <span class="truncate font-semibold">{longestFilm.title}</span>
                 <span class="timecode block"
-                  >{Math.floor(longestFilm.minutes / 60)}h{(
-                    longestFilm.minutes % 60
-                  )
+                  >{Math.floor(
+                    longestFilm.minutes / 60,
+                  )}{m.common_hours_short()}{(longestFilm.minutes % 60)
                     .toString()
                     .padStart(2, "0")}</span>
               </a>
@@ -170,9 +182,11 @@
               <a
                 href={locked ? "#" : video.shortestFilm?.href}
                 class="hover:text-accent">
-                <span class="text-dim block uppercase">Film le + court</span>
+                <span class="text-dim block uppercase"
+                  >{m.stats_video_shortest()}</span>
                 <span class="truncate font-semibold">{shortestFilm.title}</span>
-                <span class="timecode block">{shortestFilm.minutes}min</span>
+                <span class="timecode block"
+                  >{shortestFilm.minutes}{m.common_minutes_short()}</span>
               </a>
             {/if}
           </div>
@@ -182,39 +196,43 @@
 
     <PremiumTeaser {locked}>
       <section class="card p-5">
-        <h3 class="font-display mb-4 text-lg font-bold">Genres favoris</h3>
+        <h3 class="font-display mb-4 text-lg font-bold">
+          {m.stats_favorite_genres()}
+        </h3>
         <RankBars items={genreItems} />
       </section>
     </PremiumTeaser>
   </div>
 
   <section class="card mt-5 p-5">
-    <h3 class="font-display mb-1 text-lg font-bold">Suivi des séries</h3>
+    <h3 class="font-display mb-1 text-lg font-bold">
+      {m.stats_video_tracking()}
+    </h3>
     <p class="text-dim mb-4 text-sm">
-      Combien de séries commencées attendent une décision.
+      {m.stats_video_tracking_hint()}
     </p>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <div class="bg-surface-2 border-border rounded-lg border p-3">
         <p class="font-display text-xl font-bold">{inProgressCount}</p>
-        <p class="text-dim text-xs">En cours</p>
+        <p class="text-dim text-xs">{m.library_status_in_progress()}</p>
       </div>
     </div>
     <PremiumTeaser {locked} class="mt-3 block">
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div class="bg-surface-2 border-border rounded-lg border p-3">
           <p class="font-display text-xl font-bold">{moviesRewatchedCount}</p>
-          <p class="text-dim text-xs">Films revus</p>
+          <p class="text-dim text-xs">{m.stats_video_rewatched()}</p>
         </div>
         <div class="bg-surface-2 border-border rounded-lg border p-3">
           <p class="text-accent font-display text-xl font-bold">
             {pausedCount}
           </p>
-          <p class="text-dim text-xs">En pause · &gt; 30 j</p>
+          <p class="text-dim text-xs">{m.stats_video_paused_old()}</p>
           {#if !locked && video.pausedCount > 0}
             <button
               class="text-accent mt-1 text-xs font-semibold"
               onclick={() => openStaleness("PAUSED")}>
-              voir ▾
+              {m.common_see()} ▾
             </button>
           {/if}
         </div>
@@ -222,18 +240,18 @@
           <p class="text-danger font-display text-xl font-bold">
             {ghostCount}
           </p>
-          <p class="text-dim text-xs">Fantômes · &gt; 6 mois</p>
+          <p class="text-dim text-xs">{m.stats_video_ghost_old()}</p>
           {#if !locked && video.ghostCount > 0}
             <button
               class="text-accent mt-1 text-xs font-semibold"
               onclick={() => openStaleness("GHOST")}>
-              voir ▾
+              {m.common_see()} ▾
             </button>
           {/if}
         </div>
         <div class="bg-surface-2 border-border rounded-lg border p-3">
           <p class="font-display text-xl font-bold">{longestBingeCount}</p>
-          <p class="text-dim text-xs">Plus long binge (24 h)</p>
+          <p class="text-dim text-xs">{m.stats_video_longest_binge()}</p>
         </div>
       </div>
     </PremiumTeaser>
@@ -242,7 +260,9 @@
 
 {#if modalKind}
   <StatsWorksModal
-    title={modalKind === "PAUSED" ? "Séries en pause" : "Séries fantômes"}
+    title={modalKind === "PAUSED"
+      ? m.stats_video_paused_series()
+      : m.stats_video_ghost_series()}
     works={modalWorks}
     loading={modalLoading}
     error={modalError}

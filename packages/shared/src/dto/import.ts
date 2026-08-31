@@ -1,4 +1,11 @@
-import type { Domain, EntryStatus, MediaType } from "../enums";
+import type {
+  BookStatus,
+  Domain,
+  EntryStatus,
+  GameStatus,
+  MediaType,
+} from "../enums";
+import type { ErrorCode } from "../error-codes";
 
 // ============================================================================
 // Generic, source-agnostic import model.
@@ -43,6 +50,29 @@ export interface ImportMatch {
   coverUrl: string | null;
 }
 
+/** Locale-independent preview data. The client formats numbers and messages. */
+export type ImportItemContext =
+  | { kind: "book"; rating: number | null }
+  | {
+      kind: "game";
+      playtimeMinutes: number;
+      recentlyPlayed: boolean;
+      unknownTitle?: boolean;
+    }
+  | {
+      kind: "series";
+      episodesWatched: number;
+      rating: number | null;
+      favorite: boolean;
+    }
+  | {
+      kind: "movie";
+      year: number | null;
+      rewatches: number;
+      rating: number | null;
+      favorite: boolean;
+    };
+
 /** One reviewable item in the plan (a show, movie, book or game). */
 export interface ImportPlanItem {
   /** Stable id carrying the user's decision from analyze → commit. */
@@ -51,8 +81,10 @@ export interface ImportPlanItem {
   title: string;
   /** Raw title from the export, shown when the match looks uncertain. */
   sourceTitle: string;
-  /** Extra context under the title (rating, playtime, episodes…); null hides it. */
+  /** Legacy French preview for older clients; use context in new clients. */
   subtitle: string | null;
+  /** Optional on the wire for clients talking to an older API deployment. */
+  context?: ImportItemContext;
   coverUrl: string | null;
   /** Auto-resolved match, or null when it needs a manual search. */
   match: ImportMatch | null;
@@ -74,7 +106,7 @@ export interface ImportPlanItem {
 export interface ImportPlanGroup {
   /** Stable id (e.g. "READ", "seriesTracked"). */
   id: string;
-  /** Section heading ("Lus", "Séries suivies"). */
+  /** Legacy heading for older clients; new clients translate the stable id. */
   label: string;
   items: ImportPlanItem[];
 }
@@ -96,9 +128,22 @@ export interface ImportPlan {
 
 /** One headline number in the completion report (rendered as a stat tile). */
 export interface ImportReportTile {
+  /** Stable identity for localization, absent on older API deployments. */
+  id?:
+    | BookStatus
+    | GameStatus
+    | "books"
+    | "games"
+    | "series"
+    | "movies"
+    | "episodes"
+    | "playtime";
+  /** Legacy heading for older clients and the admin audit log. */
   label: string;
   value: number;
-  /** Secondary line under the number ("3 en watchlist"); null omits it. */
+  /** Media tiles only: titles imported without watch history. */
+  watchlistCount?: number;
+  /** Legacy secondary line for older clients; new clients use id and counts. */
   sub: string | null;
 }
 
@@ -119,7 +164,10 @@ export interface ImportJobDto {
   plan: ImportPlan | null;
   /** Populated once a commit job completes. */
   report: ImportReport | null;
+  /** Diagnostic text, not a user-facing message. */
   error: string | null;
+  /** Stable error code, including failures of background work. */
+  errorCode?: ErrorCode | null;
 }
 
 /**

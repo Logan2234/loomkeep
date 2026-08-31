@@ -24,6 +24,10 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { formatNumber } from "$lib/format";
+  import {
+    adminTemplateLabel,
+    adminTemplateFieldLabel,
+  } from "$lib/constants/admin-presentation";
   import { m } from "$lib/paraglide/messages";
 
   type Tab = "email" | "push";
@@ -287,7 +291,7 @@
               label={m.admin_communications_template()}
               searchable
               options={templates.map((t) => ({
-                label: t.label,
+                label: adminTemplateLabel(t.key),
                 value: t.key,
               }))}
               values={selectedKey ? [selectedKey] : []}
@@ -303,7 +307,7 @@
                 t.key
                   ? 'bg-accent/15 text-accent'
                   : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-                {t.label}
+                {adminTemplateLabel(t.key)}
               </button>
             {/each}
           </nav>
@@ -317,7 +321,7 @@
                   <label
                     for="field-{f.key}"
                     class="text-dim mb-1 block text-xs font-semibold">
-                    {f.label}
+                    {adminTemplateFieldLabel(f.key)}
                   </label>
                   {#if f.multiline}
                     <textarea

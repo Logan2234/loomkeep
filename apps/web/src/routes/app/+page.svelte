@@ -436,7 +436,7 @@
             <p class="text-dim text-xs">{m.home_coming_soon()}</p>
             <span
               class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
-              {m.landing_libraries_soon()}
+              {m.common_coming_soon()}
             </span>
           </section>
         {/if}
@@ -516,8 +516,7 @@
             href="/app/lists"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="list" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold"
-              >{m.home_sidebar_my_lists()}</span>
+            <span class="flex-1 text-sm font-semibold">{m.lists_title()}</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a
@@ -533,7 +532,7 @@
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
             <span class="flex-1 text-sm font-semibold"
-              >{m.home_sidebar_activity_feed()}</span>
+              >{m.common_activity_feed()}</span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a

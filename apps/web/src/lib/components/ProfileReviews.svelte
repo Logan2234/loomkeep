@@ -77,7 +77,7 @@
                   <span aria-hidden="true">·</span>
                   <span
                     >{review.visibility === "PUBLIC"
-                      ? m.profile_reviews_public()
+                      ? m.common_public()
                       : m.common_friends()}</span>
                 {/if}
               </p>

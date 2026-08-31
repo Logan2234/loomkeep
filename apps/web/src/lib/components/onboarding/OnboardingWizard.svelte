@@ -10,7 +10,7 @@
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { toggleDomainSelection } from "$lib/domains";
   import { m } from "$lib/paraglide/messages.js";
-  import { setLocale } from "$lib/paraglide/runtime.js";
+  import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import { DigestCadence, Domain, type Locale } from "@loomkeep/shared";
@@ -29,7 +29,7 @@
 
   const STEPS = [
     { id: "welcome", label: m.common_welcome() },
-    { id: "domains", label: m.onboarding_step_domains() },
+    { id: "domains", label: m.common_domains() },
     { id: "settings", label: m.common_settings() },
     { id: "done", label: m.onboarding_step_done() },
   ];
@@ -144,7 +144,7 @@
     },
     onSuccess: (result) => {
       if (result === "denied") {
-        pushPermissionError = m.onboarding_settings_push_error();
+        pushPermissionError = m.notifications_push_error();
       }
     },
   }));
@@ -284,7 +284,7 @@
     <p class="text-dim mb-4 text-sm">{m.onboarding_settings_intro()}</p>
 
     <div class="mb-5">
-      <p class="mb-2 text-sm font-semibold">{m.onboarding_settings_theme()}</p>
+      <p class="mb-2 text-sm font-semibold">{m.common_theme()}</p>
       <div class="flex gap-2">
         {#each THEME_DEFINITIONS as theme (theme.mode)}
           <ThemePreview {theme} />
@@ -298,14 +298,14 @@
         <button
           type="button"
           class="chip"
-          class:chip-on={(auth.user?.locale ?? "fr") === "fr"}
+          class:chip-on={(auth.user?.locale ?? getLocale()) === "fr"}
           onclick={() => saveLocale("fr")}>
           {m.common_language_fr()}
         </button>
         <button
           type="button"
           class="chip"
-          class:chip-on={auth.user?.locale === "en"}
+          class:chip-on={(auth.user?.locale ?? getLocale()) === "en"}
           onclick={() => saveLocale("en")}>
           {m.common_language_en()}
         </button>
@@ -316,14 +316,14 @@
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
         <div>
           <p class="text-sm font-semibold">
-            {m.onboarding_settings_timezone_label()}
+            {m.common_timezone()}
           </p>
           <p class="text-dim text-xs">
             {m.onboarding_settings_timezone_desc()}
           </p>
         </div>
         <Combobox
-          label={m.onboarding_settings_timezone_label()}
+          label={m.common_timezone()}
           options={TIMEZONE_OPTIONS}
           values={[auth.user?.timezone ?? "Europe/Paris"]}
           searchable
@@ -332,11 +332,11 @@
       <div class="flex items-center justify-between gap-4 py-3">
         <div>
           <p class="text-sm font-semibold">
-            {m.onboarding_settings_push_label()}
+            {m.common_push_notifications()}
           </p>
           <p class="text-dim text-xs">
             {#if !pushSupported}
-              {m.onboarding_settings_push_unsupported()}
+              {m.notifications_push_unsupported()}
             {:else if isIphone}
               {m.onboarding_settings_push_desc_iphone()}
             {:else}
@@ -345,7 +345,7 @@
           </p>
         </div>
         <Switch
-          label={m.onboarding_settings_push_label()}
+          label={m.common_push_notifications()}
           checked={(auth.user?.notifyPush ?? DigestCadence.DISABLED) !==
             DigestCadence.DISABLED}
           disabled={!pushSupported || pushMut.loading}
@@ -367,14 +367,14 @@
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
         <div>
           <p class="text-sm font-semibold">
-            {m.onboarding_settings_newsletter_label()}
+            {m.common_newsletter()}
           </p>
           <p class="text-dim text-xs">
             {m.onboarding_settings_newsletter_desc()}
           </p>
         </div>
         <Switch
-          label={m.onboarding_settings_newsletter_label()}
+          label={m.common_newsletter()}
           checked={auth.user?.notifyNewsletter ?? false}
           onChange={toggleNewsletter} />
       </div>

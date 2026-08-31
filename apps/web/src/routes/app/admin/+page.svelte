@@ -108,7 +108,7 @@
             : undefined,
       "/app/admin/cache":
         cacheTotal !== null
-          ? m.admin_cache_item_count({ count: formatNumber(cacheTotal) })
+          ? m.common_item_count_many({ count: formatNumber(cacheTotal) })
           : undefined,
       "/app/admin/reports":
         reportsPending > 0
@@ -172,7 +172,7 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span class="bg-success h-1.5 w-1.5 rounded-full"></span>
-        {m.admin_users_title()}
+        {m.common_users()}
       </span>
       <span class="font-display text-2xl font-extrabold">
         {usersTotal !== null ? formatNumber(usersTotal) : "—"}

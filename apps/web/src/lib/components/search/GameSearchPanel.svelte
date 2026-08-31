@@ -140,7 +140,7 @@
             {game.title}
           </span>
           <span class="timecode text-xs">
-            Jeu{#if game.year}
+            {m.game_type()}{#if game.year}
               &nbsp;· {game.year}{/if}
           </span>
         </div>
@@ -166,8 +166,8 @@
   </PosterGrid>
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">Aucun jeu trouvé.</p>
+    <p class="timecode text-sm">{m.search_games_empty()}</p>
   {:else}
-    <EmptyState>Lance une recherche pour trouver un jeu à ajouter.</EmptyState>
+    <EmptyState>{m.search_games_hint()}</EmptyState>
   {/if}
 {/if}

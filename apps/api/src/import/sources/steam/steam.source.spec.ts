@@ -204,6 +204,17 @@ describe("SteamImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "user1", started.id);
 
     expect(job.status).toBe("completed");
+    expect(byKey(job.plan!, "g200")).toMatchObject({
+      context: { kind: "game", playtimeMinutes: 100, recentlyPlayed: true },
+    });
+    expect(byKey(job.plan!, "u40")).toMatchObject({
+      context: {
+        kind: "game",
+        playtimeMinutes: 5,
+        recentlyPlayed: false,
+        unknownTitle: true,
+      },
+    });
     // Adult (300) excluded entirely; 100 + 200 matched, 40 unmatched.
     expect(job.plan!.counts).toEqual({
       total: 3,
@@ -324,6 +335,10 @@ describe("SteamImportSource (via ImportJobService)", () => {
 
     expect(job.status).toBe("completed");
     // Only the non-adult game is written; 300 is skipped by the commit guard.
+    expect(job.report!.tiles).toMatchObject([
+      { id: "PLAYING", value: 1 },
+      { id: "playtime", value: 10 },
+    ]);
     expect(mocks.gameItemService.persistDetails).toHaveBeenCalledTimes(1);
     expect(mocks.prisma.gameEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -181,9 +181,8 @@
   </PosterGrid>
 {:else if !limit}
   {#if searched}
-    <p class="timecode text-sm">Aucun livre trouvé.</p>
+    <p class="timecode text-sm">{m.search_books_empty()}</p>
   {:else}
-    <EmptyState
-      >Lance une recherche pour trouver un livre à ajouter.</EmptyState>
+    <EmptyState>{m.search_books_hint()}</EmptyState>
   {/if}
 {/if}

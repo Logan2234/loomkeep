@@ -20,9 +20,9 @@
     },
     {
       value: formatNumber(stats.totals.comments),
-      label: m.admin_social_total_comments(),
+      label: m.common_comments(),
     },
-    { value: formatNumber(stats.totals.lists), label: m.profile_lists_title() },
+    { value: formatNumber(stats.totals.lists), label: m.common_lists() },
     {
       value: formatNumber(stats.totals.follows),
       label: m.admin_social_total_follows(),
@@ -119,7 +119,7 @@
     <div class="grid grid-cols-2 gap-3">
       <StatFigure
         value={formatNumber(stats.reports.pending)}
-        label={m.admin_social_reports_pending()}
+        label={m.report_status_pending()}
         alert={stats.reports.pending > 0} />
       <StatFigure
         value={formatNumber(stats.reports.resolved)}

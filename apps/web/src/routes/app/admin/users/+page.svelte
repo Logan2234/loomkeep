@@ -76,10 +76,10 @@
 
   const ACTIVITY_SECTIONS: { kind: ActivityKind; label: string }[] = [
     { kind: "reviews", label: m.admin_users_reviews() },
-    { kind: "comments", label: m.admin_social_total_comments() },
+    { kind: "comments", label: m.common_comments() },
     { kind: "following", label: m.profile_connections_following_title() },
     { kind: "followers", label: m.profile_connections_followers_title() },
-    { kind: "lists", label: m.profile_lists_title() },
+    { kind: "lists", label: m.common_lists() },
     { kind: "reports", label: m.admin_users_reports_received() },
   ];
 
@@ -310,7 +310,7 @@
 <div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="user"
-    title={m.admin_users_title()}
+    title={m.common_users()}
     subtitle={m.admin_users_subtitle()} />
 
   <div class="mb-4 flex flex-wrap items-center gap-2">
@@ -339,7 +339,7 @@
             class="border-border text-dim border-b text-left text-xs font-semibold uppercase">
             <th class="px-4 py-2.5">{m.common_account()}</th>
             <th class="hidden px-4 py-2.5 sm:table-cell"
-              >{m.profile_activity_summary_prefix()}</th>
+              >{m.common_active()}</th>
             <th class="hidden px-4 py-2.5 md:table-cell"
               >{m.admin_users_created()}</th>
           </tr>
@@ -565,7 +565,7 @@
                     {s.userAgent ?? m.settings_sessions_unknown_device()}
                   </p>
                   <p class="text-dim text-[0.65rem]">
-                    {m.profile_activity_summary_prefix()}
+                    {m.common_active()}
                     {formatDate(s.lastUsedAt, DAY_MONTH_TIME_OPTIONS)}
                   </p>
                 </div>
@@ -629,7 +629,7 @@
           <div class="skeleton h-28 rounded-lg"></div>
         {:else if libraryStats}
           <div class="grid grid-cols-3 gap-2">
-            {#each [{ label: m.media_movies(), value: libraryStats.movies }, { label: m.media_series_plural(), value: libraryStats.series }, { label: m.media_anime(), value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: m.landing_salle_music_label(), value: libraryStats.music }] as stat (stat.label)}
+            {#each [{ label: m.media_movies(), value: libraryStats.movies }, { label: m.media_series_plural(), value: libraryStats.series }, { label: m.media_anime(), value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: m.common_albums(), value: libraryStats.music }] as stat (stat.label)}
               <div
                 class="border-border rounded-lg border px-2 py-2 text-center">
                 <p class="font-display text-base font-bold">{stat.value}</p>
@@ -639,8 +639,8 @@
           </div>
           <p class="text-dim mt-2 text-right text-xs">
             {libraryStats.total === 1
-              ? m.admin_library_item_count_one({ count: libraryStats.total })
-              : m.admin_library_item_count_many({ count: libraryStats.total })}
+              ? m.common_item_count_one({ count: libraryStats.total })
+              : m.common_item_count_many({ count: libraryStats.total })}
           </p>
         {:else}
           <p class="text-dim text-sm">{m.admin_users_stats_unavailable()}</p>
@@ -735,9 +735,7 @@
     </ul>
   </Modal>
 {:else if activeModal === "comments"}
-  <Modal
-    title={m.admin_social_total_comments()}
-    onclose={() => (activeModal = null)}>
+  <Modal title={m.common_comments()} onclose={() => (activeModal = null)}>
     <ul class="space-y-2">
       {#each comments as c (c.id)}
         <li class="border-border rounded-lg border p-3 text-sm">
@@ -777,7 +775,7 @@
     </ul>
   </Modal>
 {:else if activeModal === "lists"}
-  <Modal title={m.profile_lists_title()} onclose={() => (activeModal = null)}>
+  <Modal title={m.common_lists()} onclose={() => (activeModal = null)}>
     <ul class="space-y-2">
       {#each lists as l (l.id)}
         <li class="border-border rounded-lg border p-3 text-sm">

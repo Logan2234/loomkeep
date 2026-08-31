@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
-import { formatBytes, formatRelative } from "./format";
+import { formatBytes, formatDurationMs, formatRelative } from "./format";
 import { getLocale, overwriteGetLocale } from "./paraglide/runtime.js";
 
 vi.mock("./auth.svelte", () => ({ auth: { user: { locale: "en" } } }));
@@ -13,6 +13,12 @@ afterEach(() => {
 });
 
 describe("localized formatting", () => {
+  it("formats duration decimals in the requested language", () => {
+    expect(formatDurationMs(1500, "fr-FR")).toBe("1,5 s");
+    expect(formatDurationMs(1500, "en-US")).toBe("1.5 s");
+    expect(formatDurationMs(500, "fr-FR")).toBe("500 ms");
+    expect(formatDurationMs(1000, "en-US")).toBe("1.0 s");
+  });
   it("formats byte units and decimals in English", () => {
     auth.user!.locale = "en";
     overwriteGetLocale(() => "en");

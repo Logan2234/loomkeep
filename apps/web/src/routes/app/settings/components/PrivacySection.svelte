@@ -258,7 +258,7 @@
           type="button"
           class="text-dim decoration-dim/50 cursor-pointer text-xs underline decoration-dotted underline-offset-4"
           onclick={() => (showModesModal = true)}>
-          {m.settings_privacy_learn_more()}
+          {m.common_learn_more()}
         </button>
       </div>
       <Combobox
@@ -295,7 +295,7 @@
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="border-border border-b">
-              <th class="pr-3 pb-2 font-semibold">{m.settings_category()}</th>
+              <th class="pr-3 pb-2 font-semibold">{m.common_category()}</th>
               {#each FACETS as f (f.id)}
                 <th class="px-3 pb-2 text-center font-semibold">{f.label}</th>
               {/each}
@@ -370,7 +370,7 @@
       <table class="w-full text-left text-sm">
         <thead>
           <tr class="border-border border-b">
-            <th class="py-2 pr-3 font-semibold">{m.settings_action()}</th>
+            <th class="py-2 pr-3 font-semibold">{m.common_action()}</th>
             <th class="px-3 py-2 font-semibold">{m.common_public()}</th>
             <th class="px-3 py-2 font-semibold">{m.common_private()}</th>
             <th class="py-2 pl-3 font-semibold">{m.profile_ghost()}</th>

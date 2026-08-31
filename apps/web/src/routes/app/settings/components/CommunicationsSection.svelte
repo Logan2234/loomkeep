@@ -105,7 +105,7 @@
     },
     onSuccess: (result) => {
       if (result === "denied") {
-        pushPermissionError = m.settings_communications_push_error();
+        pushPermissionError = m.notifications_push_error();
       }
     },
   }));
@@ -146,14 +146,14 @@
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
         <div>
           <p class="font-semibold">
-            {m.settings_communications_timezone_label()}
+            {m.common_timezone()}
           </p>
           <p class="text-dim text-sm">
             {m.settings_communications_timezone_desc()}
           </p>
         </div>
         <Combobox
-          label={m.settings_communications_timezone_label()}
+          label={m.common_timezone()}
           options={TIMEZONE_OPTIONS}
           values={[auth.user.timezone]}
           searchable
@@ -173,12 +173,12 @@
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
         <div>
-          <p class="font-semibold">{m.settings_communications_push_label()}</p>
+          <p class="font-semibold">{m.common_push_notifications()}</p>
           <p class="text-dim text-sm">
             {#if pushSupported}
               {m.settings_communications_push_desc()}
             {:else}
-              {m.settings_communications_push_unsupported()}
+              {m.notifications_push_unsupported()}
             {/if}
           </p>
         </div>
@@ -190,7 +190,7 @@
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
         <div>
           <p class="flex items-center gap-2 font-semibold">
-            {m.settings_communications_newsletter_label()}
+            {m.common_newsletter()}
             {#if isFeatureNew("newsletter")}
               <NewBadge />
             {/if}
@@ -200,7 +200,7 @@
           </p>
         </div>
         <Switch
-          label={m.settings_communications_newsletter_label()}
+          label={m.common_newsletter()}
           checked={auth.user.notifyNewsletter}
           onChange={toggleNewsletter} />
       </div>

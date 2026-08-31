@@ -10,7 +10,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       description: m.import_source_tvtime_description(),
       href: "/app/settings/import/tvtime",
       input: { type: "zip", accept: ".zip" },
-      noun: { one: m.import_title_one(), many: m.import_title_many() },
+      noun: { one: m.library_title_one(), many: m.library_title_many() },
     },
     trakt: {
       domain: Domain.MEDIA,
@@ -18,7 +18,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       description: m.import_source_trakt_description(),
       href: "/app/settings/import/trakt",
       input: { type: "zip", accept: ".zip" },
-      noun: { one: m.import_title_one(), many: m.import_title_many() },
+      noun: { one: m.library_title_one(), many: m.library_title_many() },
       newBadgeKey: "import-trakt",
     },
     letterboxd: {
@@ -37,7 +37,7 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       description: m.import_source_simkl_description(),
       href: "/app/settings/import/simkl",
       input: { type: "oauth" },
-      noun: { one: m.import_title_one(), many: m.import_title_many() },
+      noun: { one: m.library_title_one(), many: m.library_title_many() },
       newBadgeKey: "import-simkl",
     },
     kitsu: {

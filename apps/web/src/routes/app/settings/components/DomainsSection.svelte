@@ -30,7 +30,7 @@
 {#if auth.user}
   <section class="card mb-5 p-5 md:p-6">
     <h2 class="font-display mb-1 text-lg font-bold">
-      {m.settings_domains_title()}
+      {m.common_domains()}
     </h2>
     <p class="text-dim mb-4 text-sm">
       {m.settings_domains_description()}

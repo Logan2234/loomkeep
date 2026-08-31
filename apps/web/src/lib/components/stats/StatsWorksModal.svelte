@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   // Drill-down for a clicked rating/decade bar: the works behind that count.
   import Modal from "$lib/components/Modal.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -36,7 +37,7 @@
       {/each}
     </ul>
   {:else if works.length === 0}
-    <p class="text-dim text-sm">Rien pour l'instant.</p>
+    <p class="text-dim text-sm">{m.common_nothing_yet()}</p>
   {:else}
     <ul class="flex max-h-96 flex-col gap-1 overflow-y-auto">
       {#each works as w (w.href)}

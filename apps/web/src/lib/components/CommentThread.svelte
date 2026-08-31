@@ -289,9 +289,9 @@
         reportMotif ?? undefined,
         reportReason.trim() || undefined,
       );
-      toast.success("Commentaire signalé.");
+      toast.success(m.comment_reported());
     } catch {
-      toast.error("Le signalement a échoué.");
+      toast.error(m.comment_report_failed());
     } finally {
       reportingId = null;
     }
@@ -334,8 +334,8 @@
       <div class="relative">
         <button
           class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full"
-          title="Réagir"
-          aria-label="Réagir"
+          title={m.common_react()}
+          aria-label={m.common_react()}
           onclick={() => (reactingId = reactingId === c.id ? null : c.id)}>
           <Icon name="plus" class="h-3.5 w-3.5" />
         </button>
@@ -360,8 +360,8 @@
         {#if !isReply}
           <button
             class="btn-icon"
-            title="Répondre"
-            aria-label="Répondre"
+            title={m.common_reply()}
+            aria-label={m.common_reply()}
             onclick={() => (replyToId = replyToId === c.id ? null : c.id)}>
             <Icon name="reply" class="h-4 w-4" />
           </button>
@@ -384,8 +384,8 @@
         {:else}
           <button
             class="btn-icon"
-            title="Signaler"
-            aria-label="Signaler"
+            title={m.common_report()}
+            aria-label={m.common_report()}
             onclick={() => openReport(c.id)}>
             <Icon name="flag" class="h-4 w-4" />
           </button>
@@ -408,16 +408,14 @@
     }}>
     {#if c.deleted}
       <p class="text-dim text-sm italic">
-        {c.deletedByAdmin
-          ? "Commentaire supprimé par un administrateur."
-          : "Commentaire supprimé."}
+        {c.deletedByAdmin ? m.comment_deleted_by_admin() : m.comment_deleted()}
       </p>
     {:else if c.masked && !revealed.has(c.id)}
       <button
         class="border-border text-dim hover:text-fg hover:border-accent/40 flex w-full items-center gap-2 rounded-lg border border-dashed py-2 text-sm transition"
         onclick={() => reveal(c.id)}>
         <Icon name="eye-off" class="h-4 w-4 shrink-0" />
-        Spoiler potentiel — cliquer pour afficher
+        {m.comment_reveal_spoiler()}
       </button>
     {:else}
       <div class="flex items-start gap-3">
@@ -444,7 +442,7 @@
           <div class="flex items-baseline gap-2">
             {#if !c.author}
               <span class="text-dim truncate text-sm font-semibold italic">
-                Utilisateur supprimé
+                {m.common_deleted_user()}
               </span>
             {:else if c.author.anonymized}
               <span class="timecode truncate text-sm font-semibold">
@@ -460,7 +458,7 @@
             {/if}
             <RelativeTime iso={c.createdAt} class="timecode text-xs" />
             {#if c.edited}
-              <span class="text-dim text-xs">· modifié</span>
+              <span class="text-dim text-xs">{m.comment_edited_marker()}</span>
             {/if}
           </div>
 
@@ -471,11 +469,11 @@
                   type="button"
                   aria-pressed={editSpoilerTag}
                   title={editSpoilerTag
-                    ? "Retirer le tag spoiler"
-                    : "Marquer comme spoiler"}
+                    ? m.comment_unmark_spoiler()
+                    : m.comment_mark_spoiler()}
                   aria-label={editSpoilerTag
-                    ? "Retirer le tag spoiler"
-                    : "Marquer comme spoiler"}
+                    ? m.comment_unmark_spoiler()
+                    : m.comment_mark_spoiler()}
                   onclick={() => (editSpoilerTag = !editSpoilerTag)}
                   class="grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors {editSpoilerTag
                     ? 'border-accent text-accent'
@@ -522,10 +520,10 @@
                   type="text"
                   class="input pr-14 text-sm"
                   placeholder={!c.author
-                    ? "Répondre…"
+                    ? m.comment_reply_placeholder()
                     : c.author.anonymized
-                      ? `Répondre à ${c.author.displayName}…`
-                      : `Répondre à @${c.author.username}…`}
+                      ? m.comment_reply_to({ name: c.author.displayName })
+                      : m.comment_reply_to({ name: `@${c.author.username}` })}
                   maxlength={COMMENT_TEXT_MAX_LENGTH}
                   bind:value={replyText}
                   onkeydown={(e) => e.key === "Enter" && submitReply(c.id)} />
@@ -539,8 +537,8 @@
                 disabled={!replyText.trim() || cooldownRemaining > 0}
                 onclick={() => submitReply(c.id)}>
                 {cooldownRemaining > 0
-                  ? `Patiente ${cooldownRemaining}s`
-                  : "Répondre"}
+                  ? m.common_wait_seconds({ seconds: cooldownRemaining })
+                  : m.common_reply()}
               </button>
               <button
                 class="btn btn-ghost btn-sm shrink-0"
@@ -558,7 +556,7 @@
 <section class="mt-6">
   {#if digest}
     <h2 class="font-display mb-3 text-xl font-bold">
-      Commentaires
+      {m.common_comments()}
       {#if countQuery.data}
         <span class="text-dim font-normal">({countQuery.data.count})</span>
       {/if}
@@ -570,7 +568,7 @@
       onclick={() => (expanded = !expanded)}>
       <span class="flex items-center gap-1.5 text-sm font-semibold">
         <Icon name="message" class="h-4 w-4" />
-        Commentaires
+        {m.common_comments()}
         {#if countQuery.data}
           <span class="text-dim font-normal">({countQuery.data.count})</span>
         {/if}
@@ -591,11 +589,11 @@
             type="button"
             aria-pressed={newSpoilerTag}
             title={newSpoilerTag
-              ? "Retirer le tag spoiler"
-              : "Marquer comme spoiler"}
+              ? m.comment_unmark_spoiler()
+              : m.comment_mark_spoiler()}
             aria-label={newSpoilerTag
-              ? "Retirer le tag spoiler"
-              : "Marquer comme spoiler"}
+              ? m.comment_unmark_spoiler()
+              : m.comment_mark_spoiler()}
             onclick={() => (newSpoilerTag = !newSpoilerTag)}
             class="grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors {newSpoilerTag
               ? 'border-accent text-accent'
@@ -607,7 +605,7 @@
           <input
             type="text"
             class="input pr-14 text-sm"
-            placeholder="Ajouter un commentaire…"
+            placeholder={m.comment_add_placeholder()}
             maxlength={COMMENT_TEXT_MAX_LENGTH}
             bind:value={newText}
             onkeydown={(e) => e.key === "Enter" && submitTop()} />
@@ -622,14 +620,16 @@
             createMut.isPending ||
             cooldownRemaining > 0}
           onclick={submitTop}>
-          {cooldownRemaining > 0 ? `Patiente ${cooldownRemaining}s` : "Publier"}
+          {cooldownRemaining > 0
+            ? m.common_wait_seconds({ seconds: cooldownRemaining })
+            : m.common_publish()}
         </button>
       </div>
 
       {#if query.isPending}
         <p class="text-dim text-sm">{m.common_loading()}</p>
       {:else if visibleComments.length === 0}
-        <p class="text-dim text-sm">Aucun commentaire pour l'instant.</p>
+        <p class="text-dim text-sm">{m.comments_empty()}</p>
       {:else}
         <div class="relative">
           <div class="flex flex-col gap-2">
@@ -653,7 +653,9 @@
                   type="button"
                   class="timecode ml-8 block text-left text-xs hover:underline"
                   onclick={() => expandReplies(c.id)}>
-                  +{hiddenReplyCount} réponse{hiddenReplyCount > 1 ? "s" : ""}
+                  {hiddenReplyCount === 1
+                    ? m.comments_more_replies_one({ count: hiddenReplyCount })
+                    : m.comments_more_replies_many({ count: hiddenReplyCount })}
                 </button>
               {/if}
             {/each}
@@ -666,7 +668,9 @@
                 type="button"
                 class="chip timecode pointer-events-auto"
                 onclick={() => (showAllTop = true)}>
-                +{hiddenTopCount} commentaire{hiddenTopCount > 1 ? "s" : ""}
+                {hiddenTopCount === 1
+                  ? m.comments_more_one({ count: hiddenTopCount })
+                  : m.comments_more_many({ count: hiddenTopCount })}
               </button>
             </div>
           {/if}
@@ -677,7 +681,7 @@
             class="btn btn-ghost btn-sm mt-3"
             disabled={query.isFetchingNextPage}
             onclick={() => query.fetchNextPage()}>
-            Charger la suite
+            {m.common_load_more()}
           </button>
         {/if}
       {/if}
@@ -687,8 +691,8 @@
 
 {#if confirmDeleteId}
   <ConfirmationModal
-    title="Supprimer le commentaire"
-    message="Le texte sera retiré ; les réponses éventuelles resteront visibles."
+    title={m.comment_delete_title()}
+    message={m.comment_delete_description()}
     confirmLabel={m.common_delete()}
     danger
     busy={deleteMut.isPending}
@@ -705,11 +709,11 @@
 {/if}
 
 {#if reportingId}
-  <Modal title="Signaler ce commentaire" onclose={() => (reportingId = null)}>
+  <Modal title={m.comment_report_title()} onclose={() => (reportingId = null)}>
     <div class="flex flex-col gap-3">
       <div>
         <Combobox
-          label="Catégorie"
+          label={m.common_category()}
           options={reportCategoryOptions}
           values={reportCategory ? [reportCategory] : []}
           onChange={(v) => chooseReportCategory(v[0] as ReportCategory)} />
@@ -743,8 +747,8 @@
         <textarea
           class="input min-h-20 resize-y text-sm"
           placeholder={reportIsOther
-            ? "Explique le problème…"
-            : "Détail (optionnel)…"}
+            ? m.report_reason_placeholder()
+            : m.report_detail_placeholder()}
           maxlength={500}
           bind:value={reportReason}></textarea>
       {/if}
@@ -758,7 +762,7 @@
         class="btn btn-primary"
         disabled={!canSubmitReport}
         onclick={submitReport}>
-        Signaler
+        {m.common_report()}
       </button>
     </div>
   </Modal>

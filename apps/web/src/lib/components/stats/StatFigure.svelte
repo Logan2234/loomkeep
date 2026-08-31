@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatNumber } from "$lib/format";
   // One dense figure + caption, the unit every admin card counts in (/admin/stats
   // sections, and the summary headers of the operational pages). Smaller and
   // quieter than KpiStrip's tiles: those head the page, these sit inside a card.
@@ -18,7 +19,7 @@
   <span
     class="font-display text-xl font-extrabold tabular-nums"
     class:text-danger={alert}>
-    {value}
+    {typeof value === "number" ? formatNumber(value) : value}
   </span>
   <span class="text-dim text-[11.5px]">{label}</span>
 </div>

@@ -138,7 +138,7 @@
                       class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
                       {source.href
                         ? m.common_unavailable()
-                        : m.landing_libraries_soon()}
+                        : m.common_coming_soon()}
                     </span>
                   {/if}
                 </div>

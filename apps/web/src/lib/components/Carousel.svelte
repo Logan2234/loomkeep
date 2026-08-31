@@ -195,7 +195,7 @@
       {#each { length: pageCount } as _, i (i)}
         <button
           type="button"
-          aria-label={`Aller à la page ${i + 1}`}
+          aria-label={m.common_page_number({ page: i + 1 })}
           aria-current={i === pageIndex ? "true" : undefined}
           onclick={() => scrollToPage(i)}
           class="h-1.5 rounded-full transition-all {i === pageIndex

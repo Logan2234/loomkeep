@@ -102,10 +102,7 @@
       {#each CSV_DOMAINS as d (d.domain)}
         {#if d.comingSoon}
           <!-- Planned domain: no data to export yet. -->
-          <button
-            class="btn btn-ghost"
-            disabled
-            title={m.settings_export_csv_coming_soon_hint()}>
+          <button class="btn btn-ghost" disabled title={m.common_coming_soon()}>
             <Icon name="download" class="mr-1.5 inline h-4 w-4" />
             {d.label} (CSV) · {m.common_coming_soon()}
           </button>

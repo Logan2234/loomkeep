@@ -37,10 +37,11 @@
   }
 </script>
 
-<Modal title="Modifier le profil" {onclose}>
+<Modal title={m.profile_edit()} {onclose}>
   <div class="flex flex-col gap-4">
     <label class="block">
-      <span class="mb-1.5 block text-sm font-semibold">Nom affiché</span>
+      <span class="mb-1.5 block text-sm font-semibold"
+        >{m.common_display_name()}</span>
       <input
         type="text"
         class="input"
@@ -50,11 +51,11 @@
 
     {#if appConfig.socialEnabled}
       <label class="block">
-        <span class="mb-1.5 block text-sm font-semibold">Bio</span>
+        <span class="mb-1.5 block text-sm font-semibold">{m.common_bio()}</span>
         <textarea
           class="input min-h-20 resize-y"
           maxlength="500"
-          placeholder="Quelques mots sur vous, affichés sur votre profil…"
+          placeholder={m.profile_bio_placeholder()}
           bind:value={bio}></textarea>
       </label>
     {/if}

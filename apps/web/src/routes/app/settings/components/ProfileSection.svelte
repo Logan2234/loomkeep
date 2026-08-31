@@ -72,7 +72,7 @@
 
     <label class="block max-w-xs">
       <span class="mb-1.5 block text-sm font-semibold">
-        {m.settings_birthdate_label()}
+        {m.common_birthdate()}
       </span>
       <input
         type="date"

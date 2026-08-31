@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import { MONTH_YEAR_OPTIONS, formatDate, formatNumber } from "$lib/format";
   import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
 
@@ -63,7 +64,8 @@
 
   function bucketLabel(iso: string): string {
     if (period === "day") return formatDate(iso, DAY_MONTH_OPTIONS);
-    if (period === "week") return `sem. ${formatDate(iso, DAY_MONTH_OPTIONS)}`;
+    if (period === "week")
+      return m.stats_week_label({ date: formatDate(iso, DAY_MONTH_OPTIONS) });
     if (period === "month") return formatDate(iso, MONTH_YEAR_OPTIONS);
     return formatDate(iso, YEAR_OPTIONS);
   }
@@ -85,7 +87,7 @@
     viewBox="0 0 {chartWidth} {H}"
     class="block"
     role="img"
-    aria-label="Évolution sur la période sélectionnée"
+    aria-label={m.stats_trend_accessible()}
     onpointermove={onMove}
     onpointerleave={() => (hoverIndex = null)}>
     <!-- Recessive baseline grid: two hairlines, no axis chrome. -->

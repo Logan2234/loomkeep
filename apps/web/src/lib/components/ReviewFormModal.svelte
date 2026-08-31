@@ -106,12 +106,12 @@
       <label
         for="review-text"
         class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-        Critique · optionnel
+        {m.reviews_optional_text()}
       </label>
       <textarea
         id="review-text"
         class="input min-h-24 resize-y"
-        placeholder="Votre avis…"
+        placeholder={m.reviews_text_placeholder()}
         maxlength={REVIEW_TEXT_MAX_LENGTH}
         bind:value={formText}></textarea>
       <p class="text-dim mt-1 text-right text-xs">
@@ -123,7 +123,7 @@
       <div>
         <span
           class="timecode mb-1 block text-[0.62rem] tracking-[0.18em] uppercase">
-          Visible par
+          {m.common_visible_to()}
         </span>
         <div class="flex gap-2">
           <button
@@ -145,7 +145,7 @@
     {#if revisions.length > 1}
       <details class="text-sm">
         <summary class="text-dim cursor-pointer select-none">
-          Historique ({revisions.length} versions)
+          {m.reviews_revision_count({ count: revisions.length })}
         </summary>
         <ul class="border-border mt-2 space-y-2 border-l pl-3">
           {#each revisions as rev, i (i)}
@@ -158,7 +158,7 @@
               {#if rev.text}
                 <p class="mt-0.5 text-sm italic">« {rev.text} »</p>
               {:else}
-                <p class="mt-0.5 italic opacity-60">Sans texte</p>
+                <p class="mt-0.5 italic opacity-60">{m.reviews_no_text()}</p>
               {/if}
             </li>
           {/each}
