@@ -14,6 +14,56 @@ export function createManifest(locale: Locale) {
     background_color: "#0c0d10",
     display: "standalone",
     start_url: "/app",
+    screenshots: [
+      {
+        src: "/pwa-screenshot-home-desktop.png",
+        sizes: "1265x712",
+        type: "image/png",
+        form_factor: "wide",
+      },
+      {
+        src: "/pwa-screenshot-home-mobile.png",
+        sizes: "375x811",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+      {
+        src: "/pwa-screenshot-app-desktop.png",
+        sizes: "1265x712",
+        type: "image/png",
+        form_factor: "wide",
+      },
+      {
+        src: "/pwa-screenshot-app-mobile.png",
+        sizes: "375x811",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+      {
+        src: "/pwa-screenshot-search-desktop.png",
+        sizes: "1265x712",
+        type: "image/png",
+        form_factor: "wide",
+      },
+      {
+        src: "/pwa-screenshot-search-mobile.png",
+        sizes: "390x843",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+      {
+        src: "/pwa-screenshot-obsession-desktop.png",
+        sizes: "1265x712",
+        type: "image/png",
+        form_factor: "wide",
+      },
+      {
+        src: "/pwa-screenshot-obsession-mobile.png",
+        sizes: "375x811",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+    ],
     shortcuts: [
       {
         name: m.common_search({}, { locale }),
