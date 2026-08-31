@@ -20,15 +20,20 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
+import { GameDetailResponseDto } from "./dto/game-detail-response.dto";
+import { GameEntryResponseDto } from "./dto/game-entry-response.dto";
+import { GameSearchResultResponseDto } from "./dto/game-search-response.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { GameItemService } from "./game-item.service";
@@ -48,6 +53,7 @@ export class GamesController {
    * unless the account opted in and is confirmed 18+.
    */
   @Get("search")
+  @ApiOkResponse({ type: GameSearchResultResponseDto })
   async search(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -71,6 +77,7 @@ export class GamesController {
   }
 
   @Get()
+  @ApiOkResponse({ type: PagedResponseDto(GameEntryResponseDto) })
   async listEntries(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -94,6 +101,7 @@ export class GamesController {
   }
 
   @Put()
+  @ApiOkResponse({ type: GameEntryResponseDto })
   upsertEntry(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpsertGameEntryDto,
@@ -102,6 +110,7 @@ export class GamesController {
   }
 
   @Get("entries/:id")
+  @ApiOkResponse({ type: GameEntryResponseDto })
   getEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -110,6 +119,7 @@ export class GamesController {
   }
 
   @Patch("entries/:id")
+  @ApiOkResponse({ type: GameEntryResponseDto })
   updateEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -129,6 +139,7 @@ export class GamesController {
 
   /** Log a completed replay (a completion beyond the entry's first one). */
   @Post("entries/:id/replays")
+  @ApiCreatedResponse({ type: GameEntryResponseDto })
   addReplay(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -148,6 +159,7 @@ export class GamesController {
 
   /** Game detail page: catalogue metadata + the user's library state. */
   @Get(":source/:sourceId")
+  @ApiOkResponse({ type: GameDetailResponseDto })
   getGameDetail(
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,

@@ -22,9 +22,11 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { AgeGateService } from "../users/age-gate.service";
@@ -33,6 +35,10 @@ import { DomainGateService } from "../users/domain-gate.service";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 import { AddBookReplayDto } from "./dto/add-book-replay.dto";
+import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
+import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
+import { BookSearchResultResponseDto } from "./dto/book-search-response.dto";
+import { ReadingGoalResponseDto } from "./dto/reading-goal-response.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
 import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
@@ -52,6 +58,7 @@ export class BooksController {
    * back in that language when Open Library has an edition for it.
    */
   @Get("search")
+  @ApiOkResponse({ type: BookSearchResultResponseDto })
   async search(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -76,6 +83,7 @@ export class BooksController {
   }
 
   @Get()
+  @ApiOkResponse({ type: PagedResponseDto(BookEntryResponseDto) })
   async listEntries(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -99,6 +107,7 @@ export class BooksController {
   }
 
   @Put()
+  @ApiOkResponse({ type: BookEntryResponseDto })
   upsertEntry(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpsertBookEntryDto,
@@ -107,6 +116,7 @@ export class BooksController {
   }
 
   @Get("entries/:id")
+  @ApiOkResponse({ type: BookEntryResponseDto })
   getEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -115,6 +125,7 @@ export class BooksController {
   }
 
   @Patch("entries/:id")
+  @ApiOkResponse({ type: BookEntryResponseDto })
   updateEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -134,6 +145,7 @@ export class BooksController {
 
   /** Log a completed reread (a completion beyond the entry's first one). */
   @Post("entries/:id/replays")
+  @ApiCreatedResponse({ type: BookEntryResponseDto })
   addReplay(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -153,6 +165,7 @@ export class BooksController {
 
   /** The current user's reading goal for `year` (defaults to this year) + progress. */
   @Get("reading-goal")
+  @ApiOkResponse({ type: ReadingGoalResponseDto })
   getReadingGoal(
     @CurrentUser() user: JwtPayload,
     @Query("year") year?: string,
@@ -164,6 +177,7 @@ export class BooksController {
   }
 
   @Put("reading-goal")
+  @ApiOkResponse({ type: ReadingGoalResponseDto })
   upsertReadingGoal(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpsertReadingGoalDto,
@@ -173,6 +187,7 @@ export class BooksController {
 
   /** Book detail page: catalogue metadata + the user's library state. */
   @Get(":source/:sourceId")
+  @ApiOkResponse({ type: BookDetailResponseDto })
   getBookDetail(
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,

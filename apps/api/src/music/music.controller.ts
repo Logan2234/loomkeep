@@ -19,12 +19,17 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
+import { MusicDetailResponseDto } from "./dto/music-detail-response.dto";
+import { MusicEntryResponseDto } from "./dto/music-entry-response.dto";
+import { MusicSearchResultResponseDto } from "./dto/music-search-response.dto";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
 import { MusicItemService } from "./music-item.service";
@@ -40,6 +45,7 @@ export class MusicController {
 
   /** Live catalogue search (MusicBrainz). */
   @Get("search")
+  @ApiOkResponse({ type: MusicSearchResultResponseDto })
   async search(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -60,6 +66,7 @@ export class MusicController {
   }
 
   @Get()
+  @ApiOkResponse({ type: PagedResponseDto(MusicEntryResponseDto) })
   async listEntries(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -83,6 +90,7 @@ export class MusicController {
   }
 
   @Put()
+  @ApiOkResponse({ type: MusicEntryResponseDto })
   async upsertEntry(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpsertMusicEntryDto,
@@ -92,6 +100,7 @@ export class MusicController {
   }
 
   @Get("entries/:id")
+  @ApiOkResponse({ type: MusicEntryResponseDto })
   async getEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -101,6 +110,7 @@ export class MusicController {
   }
 
   @Patch("entries/:id")
+  @ApiOkResponse({ type: MusicEntryResponseDto })
   async updateEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -122,6 +132,7 @@ export class MusicController {
 
   /** Album detail page: catalogue metadata + the user's library state. */
   @Get(":source/:sourceId")
+  @ApiOkResponse({ type: MusicDetailResponseDto })
   async getMusicDetail(
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,
