@@ -14,6 +14,20 @@ export function createManifest(locale: Locale) {
     background_color: "#0c0d10",
     display: "standalone",
     start_url: "/app",
+    screenshots: [
+      {
+        src: "/pwa-screenshot-desktop.png",
+        sizes: "1280x720",
+        type: "image/png",
+        form_factor: "wide",
+      },
+      {
+        src: "/pwa-screenshot-mobile.png",
+        sizes: "390x843",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+    ],
     shortcuts: [
       {
         name: m.common_search({}, { locale }),

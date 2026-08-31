@@ -39,4 +39,21 @@ describe("localized PWA manifest", () => {
       fr.shortcuts.map((shortcut) => shortcut.url),
     );
   });
+
+  it("includes representative desktop and mobile screenshots", () => {
+    expect(createManifest("en").screenshots).toEqual([
+      {
+        src: "/pwa-screenshot-desktop.png",
+        sizes: "1280x720",
+        type: "image/png",
+        form_factor: "wide",
+      },
+      {
+        src: "/pwa-screenshot-mobile.png",
+        sizes: "390x843",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+    ]);
+  });
 });
