@@ -1,12 +1,14 @@
 import type { PublicConfigDto } from "@loomkeep/shared";
 import { Controller, Get } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { isSocialEnabled } from "../social/social.config";
+import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
 
 // which optional surfaces (e.g. social) to render.
 @Public()
@@ -18,6 +20,7 @@ export class PublicConfigController {
   ) {}
 
   @Get()
+  @ApiOkResponse({ type: PublicConfigResponseDto })
   async get(): Promise<PublicConfigDto> {
     const raw = await readFile(join(process.cwd(), "package.json"), "utf-8");
     const { version } = JSON.parse(raw) as { version: string };

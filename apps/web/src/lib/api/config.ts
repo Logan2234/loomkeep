@@ -1,9 +1,7 @@
-import type { PublicConfigDto } from "@loomkeep/shared";
 import { appConfig } from "../config.svelte";
-import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
-const getPublicConfig = (): Promise<PublicConfigDto> =>
-  request<PublicConfigDto>("/config", { withAuth: false });
+const getPublicConfig = () => typedRequest("/config", { withAuth: false });
 
 /**
  * Loads the deployment's public config into the global store at startup.
