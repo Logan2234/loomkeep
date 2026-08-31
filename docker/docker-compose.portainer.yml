@@ -14,7 +14,7 @@ services:
     # for that release) — if OAuth login still fails after this bump, the
     # fallback is a Caddy-side proxy in front of Cloudflare's userinfo
     # endpoint that rewrites Content-Type before Portainer ever sees it.
-    image: portainer/portainer-ce:2.44.0
+    image: portainer/portainer-ce:2.45.0
     restart: unless-stopped
     logging:
       driver: json-file
