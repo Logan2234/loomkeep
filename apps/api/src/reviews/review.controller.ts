@@ -1,10 +1,12 @@
 import {
   ErrorCode,
   type MyReviewDto,
+  type ReviewBatchResultDto,
   type ReviewDto,
   type ReviewRevisionDto,
   ReviewTargetType,
-  type ReviewVoteValue,
+  type ReviewUnvoteResultDto,
+  type ReviewVoteResultDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -17,6 +19,7 @@ import {
   Put,
   UseGuards,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import {
   CurrentUser,
   type JwtPayload,
@@ -27,6 +30,12 @@ import {
   BatchDeleteReviewsBody,
   BatchVisibilityBody,
 } from "./dto/batch-reviews.dto";
+import { MyReviewResponseDto } from "./dto/my-review-response.dto";
+import { ReviewBatchResultResponseDto } from "./dto/review-batch-result-response.dto";
+import { ReviewResponseDto } from "./dto/review-response.dto";
+import { ReviewRevisionResponseDto } from "./dto/review-revision-response.dto";
+import { ReviewUnvoteResultResponseDto } from "./dto/review-unvote-result-response.dto";
+import { ReviewVoteResultResponseDto } from "./dto/review-vote-result-response.dto";
 import { UpsertReviewBody } from "./dto/upsert-review.dto";
 import { VoteReviewBody } from "./dto/vote-review.dto";
 import { ReviewService } from "./review.service";
@@ -51,23 +60,26 @@ export class ReviewController {
   // --- Own reviews: NOT social-gated (rating your own items always works). ---
 
   @Get("me")
+  @ApiOkResponse({ type: MyReviewResponseDto, isArray: true })
   listMine(@CurrentUser() user: JwtPayload): Promise<MyReviewDto[]> {
     return this.reviews.listMine(user.sub);
   }
 
   @Post("me/batch/delete")
+  @ApiCreatedResponse({ type: ReviewBatchResultResponseDto })
   async removeMany(
     @CurrentUser() user: JwtPayload,
     @Body() body: BatchDeleteReviewsBody,
-  ): Promise<{ count: number }> {
+  ): Promise<ReviewBatchResultDto> {
     return { count: await this.reviews.removeMany(user.sub, body.ids) };
   }
 
   @Post("me/batch/visibility")
+  @ApiCreatedResponse({ type: ReviewBatchResultResponseDto })
   async setVisibilityMany(
     @CurrentUser() user: JwtPayload,
     @Body() body: BatchVisibilityBody,
-  ): Promise<{ count: number }> {
+  ): Promise<ReviewBatchResultDto> {
     return {
       count: await this.reviews.setVisibilityMany(
         user.sub,
@@ -78,6 +90,7 @@ export class ReviewController {
   }
 
   @Get("me/:type/:id")
+  @ApiOkResponse({ type: ReviewResponseDto, nullable: true })
   getMine(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
@@ -87,6 +100,7 @@ export class ReviewController {
   }
 
   @Put("me/:type/:id")
+  @ApiOkResponse({ type: ReviewResponseDto })
   upsert(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
@@ -106,6 +120,7 @@ export class ReviewController {
   }
 
   @Get("me/:type/:id/revisions")
+  @ApiOkResponse({ type: ReviewRevisionResponseDto, isArray: true })
   revisions(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
@@ -118,6 +133,7 @@ export class ReviewController {
 
   @Get(":type/:id")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: ReviewResponseDto, isArray: true })
   listForTarget(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
@@ -130,20 +146,22 @@ export class ReviewController {
 
   @Put(":reviewId/vote")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: ReviewVoteResultResponseDto })
   vote(
     @CurrentUser() user: JwtPayload,
     @Param("reviewId") reviewId: string,
     @Body() body: VoteReviewBody,
-  ): Promise<{ score: number; myVote: ReviewVoteValue }> {
+  ): Promise<ReviewVoteResultDto> {
     return this.reviews.vote(user.sub, reviewId, body.value);
   }
 
   @Delete(":reviewId/vote")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: ReviewUnvoteResultResponseDto })
   unvote(
     @CurrentUser() user: JwtPayload,
     @Param("reviewId") reviewId: string,
-  ): Promise<{ score: number }> {
+  ): Promise<ReviewUnvoteResultDto> {
     return this.reviews.unvote(user.sub, reviewId);
   }
 }

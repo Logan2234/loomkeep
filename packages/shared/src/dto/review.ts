@@ -53,3 +53,19 @@ export interface UpsertReviewDto {
   text?: string | null;
   visibility?: ReviewVisibility;
 }
+
+/** Count of reviews affected by a bulk delete/visibility change. */
+export interface ReviewBatchResultDto {
+  count: number;
+}
+
+/** Result of casting (or replacing) a vote on someone else's review. */
+export interface ReviewVoteResultDto {
+  score: number;
+  myVote: ReviewVoteValue;
+}
+
+/** Result of removing the viewer's vote on a review. */
+export interface ReviewUnvoteResultDto {
+  score: number;
+}
