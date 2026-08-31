@@ -1,6 +1,9 @@
-import type { AdminPushSendResponseDto } from "@loomkeep/shared";
+import type {
+  AdminPushSendOutcomeDto,
+  AdminPushSendResponseDto,
+} from "@loomkeep/shared";
 
-class AdminPushSendOutcomeResponseDto {
+class AdminPushSendOutcomeResponseDto implements AdminPushSendOutcomeDto {
   userAgent!: string | null;
   ok!: boolean;
   error?: string;

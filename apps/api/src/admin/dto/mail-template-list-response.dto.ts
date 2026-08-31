@@ -1,13 +1,17 @@
-import type { MailTemplateListResponseDto } from "@loomkeep/shared";
+import type {
+  MailTemplateFieldDto,
+  MailTemplateInfoDto,
+  MailTemplateListResponseDto,
+} from "@loomkeep/shared";
 
-class MailTemplateFieldResponseDto {
+class MailTemplateFieldResponseDto implements MailTemplateFieldDto {
   key!: string;
   label!: string;
   default!: string;
   multiline?: boolean;
 }
 
-class MailTemplateInfoResponseDto {
+class MailTemplateInfoResponseDto implements MailTemplateInfoDto {
   key!: string;
   label!: string;
   fields!: MailTemplateFieldResponseDto[];

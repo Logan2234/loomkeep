@@ -1,6 +1,10 @@
-import type { AdminCacheItemDetailDto, Domain } from "@loomkeep/shared";
+import type {
+  AdminCacheExternalIdDto,
+  AdminCacheItemDetailDto,
+  Domain,
+} from "@loomkeep/shared";
 
-class AdminCacheExternalIdResponseDto {
+class AdminCacheExternalIdResponseDto implements AdminCacheExternalIdDto {
   source!: string;
   externalId!: string;
 }

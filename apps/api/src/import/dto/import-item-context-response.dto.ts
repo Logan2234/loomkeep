@@ -9,14 +9,14 @@ type GameContext = Extract<ImportItemContext, { kind: "game" }>;
 type SeriesContext = Extract<ImportItemContext, { kind: "series" }>;
 type MovieContext = Extract<ImportItemContext, { kind: "movie" }>;
 
-export class BookImportContextResponseDto implements BookContext {
+class BookImportContextResponseDto implements BookContext {
   @ApiProperty({ enum: ["book"] })
   kind!: "book";
 
   rating!: number | null;
 }
 
-export class GameImportContextResponseDto implements GameContext {
+class GameImportContextResponseDto implements GameContext {
   @ApiProperty({ enum: ["game"] })
   kind!: "game";
 
@@ -25,7 +25,7 @@ export class GameImportContextResponseDto implements GameContext {
   unknownTitle?: boolean;
 }
 
-export class SeriesImportContextResponseDto implements SeriesContext {
+class SeriesImportContextResponseDto implements SeriesContext {
   @ApiProperty({ enum: ["series"] })
   kind!: "series";
 
@@ -34,7 +34,7 @@ export class SeriesImportContextResponseDto implements SeriesContext {
   favorite!: boolean;
 }
 
-export class MovieImportContextResponseDto implements MovieContext {
+class MovieImportContextResponseDto implements MovieContext {
   @ApiProperty({ enum: ["movie"] })
   kind!: "movie";
 
