@@ -1,60 +1,22 @@
 import type {
-  AdminAccountsSectionDto,
-  AdminBackupFileContentDto,
-  AdminBackupFileDto,
   AdminBackupRestoreRequestDto,
-  AdminCacheDeleteOrphansResultDto,
-  AdminCacheItemDetailDto,
-  AdminCacheListResponseDto,
-  AdminCacheResyncStaleResultDto,
   AdminCacheSort,
-  AdminCatalogueSectionDto,
-  AdminImportRunDto,
-  AdminImportSummaryDto,
-  AdminNewAccountsTrendDto,
-  AdminOverviewDto,
-  AdminPushBroadcastResponseDto,
-  AdminPushDeviceDto,
-  AdminPushSendResponseDto,
-  AdminPushSummaryDto,
-  AdminReportsSummaryDto,
-  AdminSecuritySummaryDto,
-  AdminSocialActivityTrendDto,
-  AdminSocialSectionDto,
-  AdminSystemSectionDto,
-  AdminUserCommentDto,
-  AdminUserDto,
-  AdminUserFilter,
-  AdminUserLibraryStatsDto,
-  AdminUserOptionDto,
-  AdminUserPlanDto,
-  AdminUserRoleDto,
   Domain,
-  JobListResponseDto,
   JobStatus,
-  MailTemplateListResponseDto,
   MailTemplatePreviewDto,
   ModerationLegalBasis,
-  MyListDto,
-  MyReviewDto,
   NewsletterSendDto,
-  PagedResult,
   Plan,
-  ReportDto,
   Role,
-  SchemaGraphResponseDto,
-  SecurityEventDto,
   SecurityEventType,
   SendAdminBroadcastPushRequestDto,
   SendAdminTestPushRequestDto,
   SendTestEmailRequestDto,
-  ServiceStatusResponseDto,
-  SessionDto,
   TrendPeriod,
   UserDataExportDto,
-  UserSummaryDto,
 } from "@loomkeep/shared";
 import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
 export interface ModerationReasonBody {
   reasonText: string;
@@ -62,12 +24,14 @@ export interface ModerationReasonBody {
   tosClause: string;
 }
 
-export const getAdminServices = (): Promise<ServiceStatusResponseDto> =>
-  request("/admin/services");
+export const getAdminServices = () => typedRequest("/admin/services");
 
-export const getAdminEmailTemplates =
-  (): Promise<MailTemplateListResponseDto> => request("/admin/emails");
+export const getAdminEmailTemplates = () => typedRequest("/admin/emails");
 
+// Not migrated: the query is a fully dynamic Record<string, string> (one
+// entry per template field), which @Query() overrides: Record<...> doesn't
+// give the swagger plugin anything to describe — typedRequest sees no query
+// shape at all for this route.
 export function getAdminEmailPreview(
   key: string,
   values: Record<string, string> = {},
@@ -81,165 +45,151 @@ export const sendAdminTestEmail = (
   key: string,
   body: SendTestEmailRequestDto,
 ): Promise<void> =>
-  request(`/admin/emails/${key}/test`, { method: "POST", body });
+  typedRequest("/admin/emails/{key}/test", {
+    method: "POST",
+    params: { key },
+    body,
+  });
 
-export const sendAdminTestPush = (
-  body: SendAdminTestPushRequestDto,
-): Promise<AdminPushSendResponseDto> =>
-  request("/admin/push/test", { method: "POST", body });
+export const sendAdminTestPush = (body: SendAdminTestPushRequestDto) =>
+  typedRequest("/admin/push/test", { method: "POST", body });
 
-export function getAdminPushDevices(
-  email: string,
-): Promise<AdminPushDeviceDto[]> {
-  const params = new URLSearchParams({ email });
-  return request(`/admin/push/devices?${params}`);
+export function getAdminPushDevices(email: string) {
+  return typedRequest("/admin/push/devices", { query: { email } });
 }
 
-export const getAdminPushSummary = (): Promise<AdminPushSummaryDto> =>
-  request("/admin/push/summary");
+export const getAdminPushSummary = () => typedRequest("/admin/push/summary");
 
 export const sendAdminBroadcastPush = (
   body: SendAdminBroadcastPushRequestDto,
-): Promise<AdminPushBroadcastResponseDto> =>
-  request("/admin/push/broadcast", { method: "POST", body });
+) => typedRequest("/admin/push/broadcast", { method: "POST", body });
 
-export const getAdminSchema = (): Promise<SchemaGraphResponseDto> =>
-  request("/admin/schema");
+export const getAdminSchema = () => typedRequest("/admin/schema");
 
-export const getAdminOverview = (): Promise<AdminOverviewDto> =>
-  request("/admin/overview");
+export const getAdminOverview = () => typedRequest("/admin/overview");
 
 /** "Comptes & engagement" section of /admin/stats. */
-export const getAdminAccountsStats = (): Promise<AdminAccountsSectionDto> =>
-  request("/admin/stats/accounts");
+export const getAdminAccountsStats = () =>
+  typedRequest("/admin/stats/accounts");
 
-export const getAdminNewAccountsTrend = (
-  period: TrendPeriod,
-): Promise<AdminNewAccountsTrendDto> =>
-  request(`/admin/stats/accounts/new?period=${period}`);
+export const getAdminNewAccountsTrend = (period: TrendPeriod) =>
+  typedRequest("/admin/stats/accounts/new", { query: { period } });
 
 /** "Catalogue & cache" section of /admin/stats. */
-export const getAdminCatalogueStats = (): Promise<AdminCatalogueSectionDto> =>
-  request("/admin/stats/catalogue");
+export const getAdminCatalogueStats = () =>
+  typedRequest("/admin/stats/catalogue");
 
-export const getAdminSocialStats = (): Promise<AdminSocialSectionDto> =>
-  request("/admin/stats/social");
+export const getAdminSocialStats = () => typedRequest("/admin/stats/social");
 
-export const getAdminSocialActivityTrend = (
-  period: TrendPeriod,
-): Promise<AdminSocialActivityTrendDto> =>
-  request(`/admin/stats/social/activity?period=${period}`);
+export const getAdminSocialActivityTrend = (period: TrendPeriod) =>
+  typedRequest("/admin/stats/social/activity", { query: { period } });
 
 /** "Système" section of /admin/stats. */
-export const getAdminSystemStats = (): Promise<AdminSystemSectionDto> =>
-  request("/admin/stats/system");
+export const getAdminSystemStats = () => typedRequest("/admin/stats/system");
 
-export const getAdminJobs = (): Promise<JobListResponseDto> =>
-  request("/admin/jobs");
+export const getAdminJobs = () => typedRequest("/admin/jobs");
 
 /** Triggers a job immediately (both are idempotent). */
 export const runAdminJob = (key: string): Promise<void> =>
-  request(`/admin/jobs/${key}/run`, { method: "POST" });
+  typedRequest("/admin/jobs/{key}/run", { method: "POST", params: { key } });
 
 /** Registered accounts, filterable by search/role/verification/activity, paginated. */
 export function getAdminUsers(
   filters: {
     search?: string;
-    filter?: AdminUserFilter;
+    filter?: "all" | "admin" | "unverified" | "never";
     page?: number;
     limit?: number;
   } = {},
-): Promise<PagedResult<AdminUserDto>> {
-  const params = new URLSearchParams();
-  if (filters.search) params.set("search", filters.search);
-  if (filters.filter && filters.filter !== "all")
-    params.set("filter", filters.filter);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/admin/users${suffix}`);
+) {
+  return typedRequest("/admin/users", {
+    query: {
+      search: filters.search,
+      filter:
+        filters.filter && filters.filter !== "all" ? filters.filter : undefined,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+    },
+  });
 }
 
-export const getAdminUserOptions = (): Promise<AdminUserOptionDto[]> =>
-  request("/admin/users/options");
+export const getAdminUserOptions = () => typedRequest("/admin/users/options");
 
-export const getAdminUserLibraryStats = (
-  userId: string,
-): Promise<AdminUserLibraryStatsDto> =>
-  request(`/admin/users/${userId}/library-stats`);
+export const getAdminUserLibraryStats = (userId: string) =>
+  typedRequest("/admin/users/{userId}/library-stats", { params: { userId } });
 
-export const getAdminUserSessions = (userId: string): Promise<SessionDto[]> =>
-  request(`/admin/users/${userId}/sessions`);
+export const getAdminUserSessions = (userId: string) =>
+  typedRequest("/admin/users/{userId}/sessions", { params: { userId } });
 
 export const revokeAdminUserSession = (
   userId: string,
   sessionId: string,
 ): Promise<void> =>
-  request(`/admin/users/${userId}/sessions/${sessionId}`, {
+  typedRequest("/admin/users/{userId}/sessions/{sessionId}", {
     method: "DELETE",
+    params: { userId, sessionId },
   });
 
 export const revokeAllAdminUserSessions = (userId: string): Promise<void> =>
-  request(`/admin/users/${userId}/sessions`, { method: "DELETE" });
+  typedRequest("/admin/users/{userId}/sessions", {
+    method: "DELETE",
+    params: { userId },
+  });
 
-export const updateAdminUserRole = (
-  userId: string,
-  role: Role,
-): Promise<AdminUserRoleDto> =>
-  request(`/admin/users/${userId}/role`, {
+export const updateAdminUserRole = (userId: string, role: Role) =>
+  typedRequest("/admin/users/{userId}/role", {
     method: "PATCH",
+    params: { userId },
     body: { role },
   });
 
-export const updateAdminUserPlan = (
-  userId: string,
-  plan: Plan,
-): Promise<AdminUserPlanDto> =>
-  request(`/admin/users/${userId}/plan`, {
+export const updateAdminUserPlan = (userId: string, plan: Plan) =>
+  typedRequest("/admin/users/{userId}/plan", {
     method: "PATCH",
+    params: { userId },
     body: { plan },
   });
 
+// Not migrated: UserDataExportDto is too deeply nested to type for now (see
+// the comment on UsersController#exportData) — the API response itself is
+// still untyped in Swagger, so there's nothing for typedRequest to read yet.
 export const getAdminUserExport = (
   userId: string,
 ): Promise<UserDataExportDto> => request(`/admin/users/${userId}/export`);
 
 /** Reviews the account has written, with resolved targets — for the user drawer shortcut. */
-export const getAdminUserReviews = (userId: string): Promise<MyReviewDto[]> =>
-  request(`/admin/users/${userId}/reviews`);
+export const getAdminUserReviews = (userId: string) =>
+  typedRequest("/admin/users/{userId}/reviews", { params: { userId } });
 
-export const getAdminUserComments = (
-  userId: string,
-): Promise<AdminUserCommentDto[]> => request(`/admin/users/${userId}/comments`);
+export const getAdminUserComments = (userId: string) =>
+  typedRequest("/admin/users/{userId}/comments", { params: { userId } });
 
 /** Accepted followers of the account (admin view, bypasses visibility). */
-export const getAdminUserFollowers = (
-  userId: string,
-): Promise<UserSummaryDto[]> => request(`/admin/users/${userId}/followers`);
+export const getAdminUserFollowers = (userId: string) =>
+  typedRequest("/admin/users/{userId}/followers", { params: { userId } });
 
 /** Accounts this user follows (admin view, bypasses visibility). */
-export const getAdminUserFollowing = (
-  userId: string,
-): Promise<UserSummaryDto[]> => request(`/admin/users/${userId}/following`);
+export const getAdminUserFollowing = (userId: string) =>
+  typedRequest("/admin/users/{userId}/following", { params: { userId } });
 
 /** Reports filed against this account, directly or via a comment they authored. */
-export const getAdminUserReportsAgainst = (
-  userId: string,
-): Promise<ReportDto[]> => request(`/admin/users/${userId}/reports-against`);
+export const getAdminUserReportsAgainst = (userId: string) =>
+  typedRequest("/admin/users/{userId}/reports-against", { params: { userId } });
 
 /** Every list the account owns, regardless of visibility (admin view). */
-export const getAdminUserLists = (userId: string): Promise<MyListDto[]> =>
-  request(`/admin/users/${userId}/lists`);
+export const getAdminUserLists = (userId: string) =>
+  typedRequest("/admin/users/{userId}/lists", { params: { userId } });
 
 export const resendAdminUserVerification = (userId: string): Promise<void> =>
-  request(`/admin/users/${userId}/resend-verification`, {
+  typedRequest("/admin/users/{userId}/resend-verification", {
     method: "POST",
+    params: { userId },
   });
 
 export const sendAdminUserPasswordReset = (userId: string): Promise<void> =>
-  request(`/admin/users/${userId}/reset-password-link`, {
+  typedRequest("/admin/users/{userId}/reset-password-link", {
     method: "POST",
+    params: { userId },
   });
 
 /** Permanently deletes an account and all its data. Irreversible. */
@@ -247,25 +197,31 @@ export const deleteAdminUser = (
   userId: string,
   reason: ModerationReasonBody,
 ): Promise<void> =>
-  request(`/admin/users/${userId}`, { method: "DELETE", body: reason });
+  typedRequest("/admin/users/{userId}", {
+    method: "DELETE",
+    params: { userId },
+    body: reason,
+  });
 
 export const getAdminNewsletterSends = (): Promise<NewsletterSendDto[]> =>
   request("/admin/newsletter");
 
-export const getAdminBackupFiles = (): Promise<AdminBackupFileDto[]> =>
-  request("/admin/backup/files");
+export const getAdminBackupFiles = () => typedRequest("/admin/backup/files");
 
-export const getAdminBackupFile = (
-  id: string,
-): Promise<AdminBackupFileContentDto> => request(`/admin/backup/files/${id}`);
+export const getAdminBackupFile = (id: string) =>
+  typedRequest("/admin/backup/files/{id}", { params: { id } });
 
 export const deleteAdminBackupFile = (id: string): Promise<void> =>
-  request(`/admin/backup/files/${id}`, { method: "DELETE" });
+  typedRequest("/admin/backup/files/{id}", {
+    method: "DELETE",
+    params: { id },
+  });
 
 /** Irreversible. */
 export const restoreAdminBackup = (
   body: AdminBackupRestoreRequestDto,
-): Promise<void> => request("/admin/backup/restore", { method: "POST", body });
+): Promise<void> =>
+  typedRequest("/admin/backup/restore", { method: "POST", body });
 
 export function getAdminCache(filters: {
   domain: Domain;
@@ -274,47 +230,55 @@ export function getAdminCache(filters: {
   orphans?: boolean;
   page?: number;
   limit?: number;
-}): Promise<AdminCacheListResponseDto> {
-  const params = new URLSearchParams({ domain: filters.domain });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.sort) params.set("sort", filters.sort);
-  if (filters.orphans) params.set("orphans", "true");
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-  return request(`/admin/cache?${params}`);
+}) {
+  return typedRequest("/admin/cache", {
+    query: {
+      domain: filters.domain,
+      search: filters.search,
+      sort: filters.sort,
+      orphans: filters.orphans ? "true" : undefined,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+    },
+  });
 }
 
 /** Full detail of one cached item (external ids, metadata, media seasons). */
-export const getAdminCacheItem = (
-  domain: Domain,
-  id: string,
-): Promise<AdminCacheItemDetailDto> => request(`/admin/cache/${domain}/${id}`);
+export const getAdminCacheItem = (domain: Domain, id: string) =>
+  typedRequest("/admin/cache/{domain}/{id}", { params: { domain, id } });
 
 /** Forces a re-sync of one cached item from its canonical source, bypassing the TTL. */
 export const resyncAdminCacheItem = (
   domain: Domain,
   id: string,
 ): Promise<void> =>
-  request(`/admin/cache/${domain}/${id}/resync`, { method: "POST" });
+  typedRequest("/admin/cache/{domain}/{id}/resync", {
+    method: "POST",
+    params: { domain, id },
+  });
 
 /** Re-syncs every stale (>24h) item in a domain in one pass. */
-export const resyncAdminCacheStale = (
-  domain: Domain,
-): Promise<AdminCacheResyncStaleResultDto> =>
-  request(`/admin/cache/${domain}/resync-stale`, { method: "POST" });
+export const resyncAdminCacheStale = (domain: Domain) =>
+  typedRequest("/admin/cache/{domain}/resync-stale", {
+    method: "POST",
+    params: { domain },
+  });
 
 /** Deletes an orphaned cached item (no account references it). 409 if referenced. */
 export const deleteAdminCacheItem = (
   domain: Domain,
   id: string,
 ): Promise<void> =>
-  request(`/admin/cache/${domain}/${id}`, { method: "DELETE" });
+  typedRequest("/admin/cache/{domain}/{id}", {
+    method: "DELETE",
+    params: { domain, id },
+  });
 
-export const deleteAdminCacheOrphans = (
-  domain: Domain,
-): Promise<AdminCacheDeleteOrphansResultDto> =>
-  request(`/admin/cache/${domain}/orphans`, { method: "DELETE" });
+export const deleteAdminCacheOrphans = (domain: Domain) =>
+  typedRequest("/admin/cache/{domain}/orphans", {
+    method: "DELETE",
+    params: { domain },
+  });
 
 /** Past import commits across every account, filterable by source/status/account, paginated. */
 export function getAdminImportRuns(
@@ -325,23 +289,23 @@ export function getAdminImportRuns(
     page?: number;
     limit?: number;
   } = {},
-): Promise<PagedResult<AdminImportRunDto>> {
-  const params = new URLSearchParams();
-  if (filters.source) params.set("source", filters.source);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.userId) params.set("userId", filters.userId);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/admin/imports${suffix}`);
+) {
+  return typedRequest("/admin/imports", {
+    query: {
+      source: filters.source,
+      status: filters.status,
+      userId: filters.userId,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+    },
+  });
 }
 
-export const getAdminImportSummary = (): Promise<AdminImportSummaryDto> =>
-  request("/admin/imports/summary");
+export const getAdminImportSummary = () =>
+  typedRequest("/admin/imports/summary");
 
-export const getAdminSecuritySummary = (): Promise<AdminSecuritySummaryDto> =>
-  request("/admin/security/summary");
+export const getAdminSecuritySummary = () =>
+  typedRequest("/admin/security/summary");
 
 export function getAdminSecurityEvents(
   filters: {
@@ -350,15 +314,15 @@ export function getAdminSecurityEvents(
     page?: number;
     limit?: number;
   } = {},
-): Promise<PagedResult<SecurityEventDto>> {
-  const params = new URLSearchParams();
-  if (filters.type) params.set("type", filters.type);
-  if (filters.identifier) params.set("identifier", filters.identifier);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/admin/security${suffix}`);
+) {
+  return typedRequest("/admin/security", {
+    query: {
+      type: filters.type,
+      identifier: filters.identifier,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+    },
+  });
 }
 
 /** The comment/review/user moderation queue, filterable by status/reporter, paginated. */
@@ -369,30 +333,30 @@ export function getAdminReports(
     limit?: number;
     reporterId?: string;
   } = {},
-): Promise<PagedResult<ReportDto>> {
-  const params = new URLSearchParams();
-  if (filters.status) params.set("status", filters.status);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-  if (filters.reporterId) params.set("reporterId", filters.reporterId);
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/admin/reports${suffix}`);
+) {
+  return typedRequest("/admin/reports", {
+    query: {
+      status: filters.status,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+      reporterId: filters.reporterId,
+    },
+  });
 }
 
-export const getAdminReportsSummary = (): Promise<AdminReportsSummaryDto> =>
-  request("/admin/reports/summary");
+export const getAdminReportsSummary = () =>
+  typedRequest("/admin/reports/summary");
 
-export function getAdminReportsPendingCount(): Promise<{ count: number }> {
-  return request("/admin/reports/pending-count");
-}
+export const getAdminReportsPendingCount = () =>
+  typedRequest("/admin/reports/pending-count");
 
 export const resolveAdminReport = (
   id: string,
   status: "RESOLVED" | "DISMISSED",
 ): Promise<void> =>
-  request(`/admin/reports/${id}/resolve`, {
+  typedRequest("/admin/reports/{id}/resolve", {
     method: "POST",
+    params: { id },
     body: { status },
   });
 
@@ -401,7 +365,8 @@ export const takeDownAdminReport = (
   id: string,
   reason: ModerationReasonBody,
 ): Promise<void> =>
-  request(`/admin/reports/${id}/take-down`, {
+  typedRequest("/admin/reports/{id}/take-down", {
     method: "POST",
+    params: { id },
     body: reason,
   });

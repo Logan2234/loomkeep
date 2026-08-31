@@ -13,9 +13,12 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";
 import { MailService } from "../mail/mail.service";
 import { AdminOnly } from "./admin-only.decorator";
+import { MailTemplateListResponseResponseDto } from "./dto/mail-template-list-response.dto";
+import { MailTemplatePreviewResponseDto } from "./dto/mail-template-preview-response.dto";
 import { SendTestEmailDto } from "./dto/send-test-email.dto";
 
 /** Transactional email gallery: template listing, preview and test-send. */
@@ -26,6 +29,7 @@ export class AdminEmailsController {
 
   /** Every template available in the email gallery. */
   @Get("emails")
+  @ApiOkResponse({ type: MailTemplateListResponseResponseDto })
   listEmailTemplates(): MailTemplateListResponseDto {
     return {
       templates: this.mail.listTemplates(),
@@ -39,6 +43,7 @@ export class AdminEmailsController {
    * field's default, e.g. `?displayName=A+very+long+name…`.
    */
   @Get("emails/:key/preview")
+  @ApiOkResponse({ type: MailTemplatePreviewResponseDto })
   previewEmailTemplate(
     @Param("key") key: string,
     @Query() overrides: Record<string, string>,

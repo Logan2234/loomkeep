@@ -6,11 +6,16 @@ import {
   type AdminPushSummaryDto,
 } from "@loomkeep/shared";
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";
 import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { groupByUserAgentFamily } from "./admin-push.util";
+import { AdminPushBroadcastResultResponseDto } from "./dto/admin-push-broadcast-response.dto";
+import { AdminPushDeviceResponseDto } from "./dto/admin-push-device-response.dto";
+import { AdminPushSendResultResponseDto } from "./dto/admin-push-send-response.dto";
+import { AdminPushSummaryResponseDto } from "./dto/admin-push-summary-response.dto";
 import { SendAdminBroadcastPushDto } from "./dto/send-admin-broadcast-push.dto";
 import { SendAdminTestPushDto } from "./dto/send-admin-test-push.dto";
 
@@ -30,6 +35,7 @@ export class AdminPushController {
    * dead-subscription count to report against it.
    */
   @Get("push/summary")
+  @ApiOkResponse({ type: AdminPushSummaryResponseDto })
   async getPushSummary(): Promise<AdminPushSummaryDto> {
     const [rows, accounts] = await Promise.all([
       this.prisma.pushSubscription.findMany({ select: { userAgent: true } }),
@@ -48,6 +54,7 @@ export class AdminPushController {
 
   /** Devices the account matching `email` has an active push subscription on. */
   @Get("push/devices")
+  @ApiOkResponse({ type: AdminPushDeviceResponseDto, isArray: true })
   async listPushDevices(
     @Query("email") email: string,
   ): Promise<AdminPushDeviceDto[]> {
@@ -62,6 +69,7 @@ export class AdminPushController {
 
   /** Sends a sample push to every device of the account matching `email`. */
   @Post("push/test")
+  @ApiCreatedResponse({ type: AdminPushSendResultResponseDto })
   async sendAdminTestPush(
     @Body() dto: SendAdminTestPushDto,
   ): Promise<AdminPushSendResponseDto> {
@@ -81,6 +89,7 @@ export class AdminPushController {
 
   /** Sends one push to every device subscribed on the instance, across every account. */
   @Post("push/broadcast")
+  @ApiCreatedResponse({ type: AdminPushBroadcastResultResponseDto })
   async broadcastAdminPush(
     @Body() dto: SendAdminBroadcastPushDto,
   ): Promise<AdminPushBroadcastResponseDto> {

@@ -13,6 +13,9 @@ import "reflect-metadata";
 // falls back to a generic per-field message. This test turns that gap into
 // a build failure instead.
 describe("validation constraint registry stays in sync with the DTOs", () => {
+  // Dynamically imports every *.dto.ts file in the app — the growing count
+  // of response DTOs (no validators of their own, but still imported here)
+  // pushed this past the default 5s timeout.
   it("covers every class-validator constraint name used across all DTOs", async () => {
     const dtoFiles = findDtoFiles(join(__dirname, ".."));
     const usedNames = new Set<string>();
@@ -49,7 +52,7 @@ describe("validation constraint registry stays in sync with the DTOs", () => {
     const missing = [...usedNames].filter((name) => !registered.has(name));
 
     expect(missing).toEqual([]);
-  });
+  }, 20_000);
 });
 
 function findDtoFiles(dir: string): string[] {

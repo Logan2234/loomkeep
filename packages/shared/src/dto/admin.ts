@@ -61,7 +61,7 @@ export interface ServiceStatusResponseDto {
 }
 
 /** One editable sample-data field for a gallery template (e.g. a recipient's display name). */
-interface MailTemplateFieldDto {
+export interface MailTemplateFieldDto {
   key: string;
   label: string;
   default: string;
@@ -70,7 +70,7 @@ interface MailTemplateFieldDto {
 }
 
 /** One entry in the admin email-template gallery. */
-interface MailTemplateInfoDto {
+export interface MailTemplateInfoDto {
   key: string;
   label: string;
   fields: MailTemplateFieldDto[];
@@ -104,7 +104,7 @@ export interface SendAdminTestPushRequestDto {
 }
 
 /** Outcome of the push send to one of the account's subscribed devices. */
-interface AdminPushSendOutcomeDto {
+export interface AdminPushSendOutcomeDto {
   userAgent: string | null;
   ok: boolean;
   /** Present when `ok` is false (rejected/expired subscription, send error…). */
@@ -243,7 +243,7 @@ export interface AdminCacheListResponseDto extends PagedResult<AdminCacheItemDto
 }
 
 /** One external identifier a cached item carries (its source + id in that source). */
-interface AdminCacheExternalIdDto {
+export interface AdminCacheExternalIdDto {
   source: string;
   externalId: string;
 }
@@ -492,4 +492,15 @@ export interface AdminPushSummaryDto {
   accounts: number;
   /** Most devices first. */
   byUserAgent: AdminPushUserAgentStatDto[];
+}
+
+/** `GET /public-stats/summary` response — minimal, cheap counters for the Homepage widget. */
+export interface PublicStatsSummaryDto {
+  status: "ok";
+  userCount: number;
+  openReports: number;
+  newUsers7d: number;
+  /** "<healthy>/<total>" of live (non comingSoon) external services. */
+  operational: string;
+  gitSha: string;
 }

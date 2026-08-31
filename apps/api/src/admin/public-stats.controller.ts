@@ -1,7 +1,10 @@
+import type { PublicStatsSummaryDto } from "@loomkeep/shared";
 import { Controller, Get, UseGuards } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { Public } from "../auth/decorators/public.decorator";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
+import { PublicStatsSummaryResponseDto } from "./dto/public-stats-summary-response.dto";
 import { PublicStatsGuard } from "./public-stats.guard";
 
 /**
@@ -19,14 +22,8 @@ export class PublicStatsController {
   ) {}
 
   @Get("summary")
-  async getSummary(): Promise<{
-    status: "ok";
-    userCount: number;
-    openReports: number;
-    newUsers7d: number;
-    operational: string;
-    gitSha: string;
-  }> {
+  @ApiOkResponse({ type: PublicStatsSummaryResponseDto })
+  async getSummary(): Promise<PublicStatsSummaryDto> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     // Four independent counts, all cheap (indexed or table-scan-on-small-
