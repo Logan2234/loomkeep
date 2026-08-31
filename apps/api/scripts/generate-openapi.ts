@@ -18,6 +18,7 @@ import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const DIST_APP_MODULE = join(__dirname, "../dist/src/app.module.js");
 
@@ -29,8 +30,7 @@ async function main() {
     process.exit(1);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { AppModule } = require(DIST_APP_MODULE);
+  const { AppModule } = await import(pathToFileURL(DIST_APP_MODULE).href);
 
   const app = await NestFactory.create(AppModule, new FastifyAdapter(), {
     logger: false,
@@ -53,7 +53,6 @@ async function main() {
   );
 
   await app.close();
-  console.log("Wrote apps/api/openapi.json");
   process.exit(0);
 }
 

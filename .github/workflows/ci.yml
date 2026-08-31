@@ -239,34 +239,10 @@ jobs:
     if: needs.changes.outputs.lint == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # api/web import the shared package through its dist/, so without this
-      # knip can't resolve those imports and reports every exported DTO in
-      # packages/shared as unused.
-      - run: pnpm build:package
-      - run: pnpm --filter @loomkeep/web generate:paraglide
-      - run: pnpm knip
-
-  # apps/web's Docker build compiles apps/web in total isolation — no API,
-  # no database reachable from inside `docker build` — so it can't run
-  # generate:openapi itself the way lint-test-web does. This job produces
-  # apps/api/openapi.json once (the one input generate:api-types needs) and
-  # hands it to whichever web image build needs it as an artifact; the web
-  # Dockerfile then runs generate:api-types against that static file, no
-  # network access required during the image build itself.
-  openapi-artifact:
-    needs: changes
-    if: |
-      needs.changes.outputs.web == 'true' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
+    # Needed for the same reason as lint-test-web's Postgres service: knip
+    # resolves apps/web/src/lib/api/generated/typed-request.ts's import of
+    # the generated schema.d.ts, which needs the API to build far enough for
+    # generate:openapi to run (Prisma connects on module init).
     services:
       postgres:
         image: postgres:18
@@ -293,15 +269,32 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # api/web import the shared package through its dist/, so without this
+      # knip can't resolve those imports and reports every exported DTO in
+      # packages/shared as unused.
       - run: pnpm build:package
-      - run: pnpm --filter @loomkeep/api exec prisma generate
-      - run: pnpm --filter @loomkeep/api build
-      - run: pnpm --filter @loomkeep/api generate:openapi
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: openapi-json
-          path: apps/api/openapi.json
-          retention-days: 1
+      - run: pnpm --filter @loomkeep/web generate:paraglide
+      - name: Generate typed API client
+        run: |
+          pnpm --filter @loomkeep/api exec prisma generate
+          pnpm --filter @loomkeep/api build
+          pnpm --filter @loomkeep/api generate:openapi
+          pnpm --filter @loomkeep/web generate:api-types
+      - run: pnpm knip
+
+  # apps/web's Docker build compiles apps/web in total isolation — no API,
+  # no database reachable from inside `docker build` — so it can't run
+  # generate:openapi itself the way lint-test-web does. This job produces
+  # apps/api/openapi.json once (the one input generate:api-types needs) and
+  # hands it to whichever web image build needs it as an artifact; the web
+  # Dockerfile then runs generate:api-types against that static file, no
+  # network access required during the image build itself.
+  openapi-artifact:
+    needs: changes
+    if: |
+      needs.changes.outputs.web == 'true' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    uses: ./.github/workflows/generate-openapi-artifact.yml
 
   # PR/manual-dispatch validation only — build without pushing, to catch a
   # broken Dockerfile before merge. Skipped on a push to main: docker-push
