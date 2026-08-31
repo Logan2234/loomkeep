@@ -249,5 +249,6 @@
   "common_wait_seconds": "Patiente {seconds}s",
   "common_view_all_count": "Tout voir — {count}",
   "common_day_count_short": "{days} j",
-  "common_image_large": "Image en grand"
+  "common_image_large": "Image en grand",
+  "common_camera_unavailable": "Accès à la caméra refusé ou indisponible."
 }

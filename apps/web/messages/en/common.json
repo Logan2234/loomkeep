@@ -249,5 +249,6 @@
   "common_wait_seconds": "Wait {seconds}s",
   "common_view_all_count": "View all — {count}",
   "common_day_count_short": "{days} d",
-  "common_image_large": "Enlarged image"
+  "common_image_large": "Enlarged image",
+  "common_camera_unavailable": "Camera access denied or unavailable."
 }

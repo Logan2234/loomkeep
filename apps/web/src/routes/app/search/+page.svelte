@@ -109,22 +109,22 @@
   // Musique has no search-by criteria of its own yet.
   const MEDIA_TYPE_OPTIONS: { label: string; value: MediaType | undefined }[] =
     [
-      { label: "Tout", value: undefined },
-      { label: "Films", value: "MOVIE" },
-      { label: "Séries", value: "SERIES" },
-      { label: "Animés", value: "ANIME" },
+      { label: m.common_all(), value: undefined },
+      { label: m.media_movies(), value: "MOVIE" },
+      { label: m.media_series_plural(), value: "SERIES" },
+      { label: m.media_anime(), value: "ANIME" },
     ];
   type BookMode = "title" | "author" | "isbn";
   const BOOK_MODE_OPTIONS: { label: string; value: BookMode }[] = [
-    { label: "Titre", value: "title" },
-    { label: "Auteur", value: "author" },
-    { label: "ISBN", value: "isbn" },
+    { label: m.common_title(), value: "title" },
+    { label: m.book_author(), value: "author" },
+    { label: m.book_isbn(), value: "isbn" },
   ];
   type GameMode = "title" | "studio" | "franchise";
   const GAME_MODE_OPTIONS: { label: string; value: GameMode }[] = [
-    { label: "Titre", value: "title" },
-    { label: "Studio", value: "studio" },
-    { label: "Franchise", value: "franchise" },
+    { label: m.common_title(), value: "title" },
+    { label: m.media_studio(), value: "studio" },
+    { label: m.game_franchise(), value: "franchise" },
   ];
 
   let mediaType = $state<MediaType | undefined>(undefined);
@@ -141,12 +141,13 @@
   );
   const filterLabel = $derived(
     domain === Domain.MEDIA
-      ? (MEDIA_TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ?? "Tout")
+      ? (MEDIA_TYPE_OPTIONS.find((o) => o.value === mediaType)?.label ??
+          m.common_all())
       : domain === Domain.BOOKS
         ? (BOOK_MODE_OPTIONS.find((o) => o.value === bookMode)?.label ??
-          "Titre")
+          m.common_title())
         : (GAME_MODE_OPTIONS.find((o) => o.value === gameMode)?.label ??
-          "Titre"),
+          m.common_title()),
   );
 
   function closeFilter() {

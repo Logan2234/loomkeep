@@ -1,6 +1,6 @@
 # Internationalisation : suivi et audit des catalogues
 
-État observé le 31 août 2026, sur la branche `codex/fix-i18n-catalog-consistency`.
+État observé le 31 août 2026, publié sur la branche `codex/complete-frontend-i18n`.
 
 Ce document consigne le travail restant et l'audit initial, puis son traitement.
 **Le nettoyage des catalogues et la migration des composants sont appliqués.**
@@ -29,7 +29,7 @@ statistiques, infobulles, accessibilité et navigation des images.
 - `settings_mfa_recovery_regenerate_action` a été promue en
   `common_regenerate` ; `media_status_watching` est devenue
   `library_status_in_progress`. Leurs consommateurs ont été mis à jour.
-- Le contrôle parcourt les 106 composants Svelte : aucun texte statique
+- Le contrôle parcourt les 107 composants Svelte : aucun texte statique
   utilisateur non migré n'y est détecté. Les initiales de marque et le marqueur
   de version sont explicitement exemptés.
 - Les cinq groupes de textes identiques volontairement distincts de l'audit
@@ -39,8 +39,8 @@ statistiques, infobulles, accessibilité et navigation des images.
 
 | Catalogue     | Clés par langue après migration |
 | ------------- | ------------------------------: |
-| `common.json` |                             250 |
-| `other.json`  |                            1491 |
+| `common.json` |                             251 |
+| `other.json`  |                            1494 |
 | `errors.json` |                             156 |
 
 ### Ce qu'il reste côté frontend
@@ -573,3 +573,20 @@ composants, décrite dans la section 10.
 - Cette passe modifie uniquement le frontend et ce suivi. Les modifications API
   de la section 11 étaient déjà présentes ; aucun email ni push n'a été modifié
   ou envoyé ici.
+
+## 13. Intégration avec main avant publication
+
+- La PR précédente #163 étant fusionnée, cette suite est publiée dans une
+  nouvelle PR basée sur main, sans réintroduire les anciens changements.
+- La nouvelle interface de recherche et le scanner ISBN arrivés sur main sont
+  conservés. Les traductions des filtres déplacés dans la page de recherche
+  réutilisent les clés existantes ; seul le libellé de franchise est ajouté.
+- Les deux scanners réutilisent désormais `common_camera_unavailable` au lieu
+  de conserver deux copies identiques de la même erreur.
+- Deux tests supplémentaires reproduisaient les libellés en dur et le message
+  caméra non partagé avant correction. La suite frontend passe désormais
+  **88 tests dans 17 fichiers**, sur les 107 composants présents après mise à jour.
+- Les dépendances sont synchronisées avec le lockfile de main sans ajout propre
+  à cette PR. Le contrat OpenAPI et les fichiers Paraglide sont régénérés.
+- La recette visuelle des pages privées reste à effectuer avec une session
+  administrateur. Les emails et push restent dans le ticket backend séparé.

@@ -91,7 +91,7 @@
         <div
           class="bg-surface-2 text-dim absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm">
           <Icon name="camera" class="h-8 w-8" />
-          {m.scan_isbn_camera_denied()}
+          {m.common_camera_unavailable()}
         </div>
       {/if}
     </div>

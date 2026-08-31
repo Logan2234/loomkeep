@@ -5,6 +5,20 @@ const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), "utf8");
 
 describe("remaining frontend translation regressions", () => {
+  it("localizes the filters moved into the search page", () => {
+    const text = source("./routes/app/search/+page.svelte");
+    expect(text).not.toMatch(/label:\s*"/);
+    expect(text).not.toMatch(/\?\?\s*"(?:Tout|Titre)"/);
+  });
+
+  it("shares the camera access message between scanners", () => {
+    for (const component of ["ScanProfileModal", "ScanIsbnModal"]) {
+      expect(source(`./lib/components/${component}.svelte`)).toContain(
+        "m.common_camera_unavailable()",
+      );
+    }
+  });
+
   it("renders notification wording through a localized presenter", () => {
     const text = source("./lib/components/NotificationBell.svelte");
     expect(text.includes("{n.title}")).toBe(false);

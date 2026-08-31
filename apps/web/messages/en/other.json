@@ -190,10 +190,8 @@
   "reviews_section_vote_down": "Downvote",
   "scan_profile_title": "Scan a profile",
   "scan_profile_invalid_code": "This code doesn't match a Loomkeep profile.",
-  "scan_profile_camera_denied": "Camera access denied or unavailable.",
   "scan_profile_hint": "Point the camera at someone else's profile QR code.",
   "scan_isbn_title": "Scan an ISBN",
-  "scan_isbn_camera_denied": "Camera access denied or unavailable.",
   "scan_isbn_hint": "Point the camera at the barcode on the back of the book.",
   "share_profile_title": "Share profile",
   "share_profile_hint": "Scan with a phone's camera to open this profile directly.",
@@ -1494,5 +1492,6 @@
   "stats_books_average_page": "avg. {pages} page",
   "stats_distinct_author": "{count} distinct author",
   "stats_social_review_length_one": "avg. length {count} character",
-  "stats_social_public_list": "{count} public"
+  "stats_social_public_list": "{count} public",
+  "game_franchise": "Franchise"
 }
