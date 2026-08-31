@@ -1,10 +1,10 @@
 {
+  "$schema": "https://inlang.com/schema/inlang-message-format",
   "common_device": "Appareil",
   "common_ip_address": "Adresse IP",
   "common_token": "Jeton",
   "common_old_email": "Ancienne adresse email",
   "common_favorite": "Favori",
-  "$schema": "https://inlang.com/schema/inlang-message-format",
   "common_cancel": "Annuler",
   "common_save": "Enregistrer",
   "common_save_loading": "Enregistrement…",
