@@ -1,23 +1,18 @@
 import type {
-  MyReviewDto,
-  ReviewDto,
-  ReviewRevisionDto,
   ReviewTargetType,
   ReviewVisibility,
   ReviewVoteValue,
   UpsertReviewDto,
 } from "@loomkeep/shared";
-import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
-export const getMyReviews = (): Promise<MyReviewDto[]> =>
-  request("/reviews/me");
+export const getMyReviews = () => typedRequest("/reviews/me");
 
 /** The current user's own review for a target, or null. Always available. */
-export const getMyReview = (
-  targetType: ReviewTargetType,
-  targetId: string,
-): Promise<ReviewDto | null> =>
-  request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`);
+export const getMyReview = (targetType: ReviewTargetType, targetId: string) =>
+  typedRequest("/reviews/me/{type}/{id}", {
+    params: { type: targetType, id: targetId },
+  });
 
 /**
  * Others' reviews for a target, visibility-filtered (social-gated server-side —
@@ -26,16 +21,19 @@ export const getMyReview = (
 export const getReviewsForTarget = (
   targetType: ReviewTargetType,
   targetId: string,
-): Promise<ReviewDto[]> =>
-  request(`/reviews/${targetType}/${encodeURIComponent(targetId)}`);
+) =>
+  typedRequest("/reviews/{type}/{id}", {
+    params: { type: targetType, id: targetId },
+  });
 
 export const upsertReview = (
   targetType: ReviewTargetType,
   targetId: string,
   body: UpsertReviewDto,
-): Promise<ReviewDto> =>
-  request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`, {
+) =>
+  typedRequest("/reviews/me/{type}/{id}", {
     method: "PUT",
+    params: { type: targetType, id: targetId },
     body,
   });
 
@@ -43,46 +41,51 @@ export const deleteReview = (
   targetType: ReviewTargetType,
   targetId: string,
 ): Promise<void> =>
-  request(`/reviews/me/${targetType}/${encodeURIComponent(targetId)}`, {
+  typedRequest("/reviews/me/{type}/{id}", {
     method: "DELETE",
+    params: { type: targetType, id: targetId },
   });
 
 export const getReviewRevisions = (
   targetType: ReviewTargetType,
   targetId: string,
-): Promise<ReviewRevisionDto[]> =>
-  request(
-    `/reviews/me/${targetType}/${encodeURIComponent(targetId)}/revisions`,
-  );
+) =>
+  typedRequest("/reviews/me/{type}/{id}/revisions", {
+    params: { type: targetType, id: targetId },
+  });
 
 /** Bulk-delete the given reviews (by review id). Returns the count deleted. */
-export function batchDeleteReviews(ids: string[]): Promise<{ count: number }> {
-  return request("/reviews/me/batch/delete", { method: "POST", body: { ids } });
+export function batchDeleteReviews(ids: string[]) {
+  return typedRequest("/reviews/me/batch/delete", {
+    method: "POST",
+    body: { ids },
+  });
 }
 
 /** Bulk-set the audience of the given reviews. Returns the count updated. */
 export function batchSetReviewVisibility(
   ids: string[],
   visibility: ReviewVisibility,
-): Promise<{ count: number }> {
-  return request("/reviews/me/batch/visibility", {
+) {
+  return typedRequest("/reviews/me/batch/visibility", {
     method: "POST",
     body: { ids, visibility },
   });
 }
 
 /** Casts (or replaces) the viewer's vote on someone else's review. */
-export function voteReview(
-  reviewId: string,
-  value: ReviewVoteValue,
-): Promise<{ score: number; myVote: ReviewVoteValue }> {
-  return request(`/reviews/${reviewId}/vote`, {
+export function voteReview(reviewId: string, value: ReviewVoteValue) {
+  return typedRequest("/reviews/{reviewId}/vote", {
     method: "PUT",
+    params: { reviewId },
     body: { value },
   });
 }
 
 /** Removes the viewer's vote on a review, if any. */
-export function unvoteReview(reviewId: string): Promise<{ score: number }> {
-  return request(`/reviews/${reviewId}/vote`, { method: "DELETE" });
+export function unvoteReview(reviewId: string) {
+  return typedRequest("/reviews/{reviewId}/vote", {
+    method: "DELETE",
+    params: { reviewId },
+  });
 }
