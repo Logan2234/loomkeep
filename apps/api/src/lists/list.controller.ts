@@ -20,6 +20,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import {
   CurrentUser,
   type JwtPayload,
@@ -29,6 +30,11 @@ import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { AddListItemBody } from "./dto/add-list-item.dto";
 import { AddListMemberBody } from "./dto/add-list-member.dto";
 import { CreateListBody } from "./dto/create-list.dto";
+import { ListDetailResponseDto } from "./dto/list-detail-response.dto";
+import { ListItemResponseDto } from "./dto/list-item-response.dto";
+import { ListMemberResponseDto } from "./dto/list-member-response.dto";
+import { ListResponseDto } from "./dto/list-response.dto";
+import { MyListResponseDto } from "./dto/my-list-response.dto";
 import { ReorderListItemsBody } from "./dto/reorder-list-items.dto";
 import { UpdateListBody } from "./dto/update-list.dto";
 import { ListService } from "./list.service";
@@ -42,11 +48,13 @@ export class ListController {
   // Owned + editor lists — feeds "Ajouter à une liste" on a work's page, so an
   // editor can add to a shared list, not just their own.
   @Get("editable")
+  @ApiOkResponse({ type: MyListResponseDto, isArray: true })
   listEditable(@CurrentUser() user: JwtPayload): Promise<MyListDto[]> {
     return this.lists.listEditable(user.sub);
   }
 
   @Post()
+  @ApiCreatedResponse({ type: ListResponseDto })
   create(
     @CurrentUser() user: JwtPayload,
     @Body() body: CreateListBody,
@@ -77,6 +85,7 @@ export class ListController {
   // Owner or editor (ListMember) — "me" as in "a list I can edit", not
   // strictly "a list I own".
   @Get("me/:id")
+  @ApiOkResponse({ type: ListDetailResponseDto })
   getMine(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
@@ -85,6 +94,7 @@ export class ListController {
   }
 
   @Put(":id")
+  @ApiOkResponse({ type: ListResponseDto })
   update(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
@@ -102,6 +112,7 @@ export class ListController {
   }
 
   @Post(":id/items")
+  @ApiCreatedResponse({ type: ListItemResponseDto })
   addItem(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
@@ -139,6 +150,7 @@ export class ListController {
 
   @Get(":id/members")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: ListMemberResponseDto, isArray: true })
   listMembers(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
@@ -148,6 +160,7 @@ export class ListController {
 
   @Post(":id/members")
   @UseGuards(SocialFeatureGuard)
+  @ApiCreatedResponse({ type: ListMemberResponseDto })
   addMember(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
@@ -170,6 +183,7 @@ export class ListController {
 
   @Get("user/:username")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: MyListResponseDto, isArray: true })
   listForUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -179,6 +193,7 @@ export class ListController {
 
   @Get(":id")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: ListDetailResponseDto })
   async getForViewer(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
