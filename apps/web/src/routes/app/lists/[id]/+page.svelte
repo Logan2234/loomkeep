@@ -31,8 +31,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const KIND_LABEL: Record<string, string> = {
-    RANKED: "Classement",
-    COLLECTION: "Collection",
+    RANKED: m.lists_kind_ranked(),
+    COLLECTION: m.lists_kind_collection(),
   };
   const VISIBILITY_LABEL: Record<string, string> = {
     PRIVATE: m.common_private(),
@@ -83,9 +83,7 @@
   const list = $derived(listQuery.data);
   const loading = $derived(listQuery.loading);
   const error = $derived(
-    notFoundAfterFallback
-      ? "Liste introuvable ou non accessible."
-      : listQuery.error,
+    notFoundAfterFallback ? m.list_unavailable() : listQuery.error,
   );
 
   const role = $derived(list?.viewerRole ?? "VIEWER");
@@ -289,11 +287,11 @@
     {#if dragItems.length === 0}
       <EmptyState class="mt-6">
         <p class="font-display text-lg font-bold">
-          {canEditList ? "Liste vide" : "Cette liste est vide"}
+          {canEditList ? m.list_empty_title() : m.list_empty()}
         </p>
         {#if canEditList}
           <p class="mt-1 text-sm">
-            Ajoute une œuvre depuis sa page avec « Ajouter à une liste ».
+            {m.list_empty_hint()}
           </p>
         {/if}
       </EmptyState>
@@ -331,8 +329,8 @@
             {#if canEditList}
               <button
                 class="text-dim hover:text-danger hover:bg-danger/10 mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"
-                aria-label="Retirer de la liste"
-                title="Retirer de la liste"
+                aria-label={m.list_item_remove()}
+                title={m.list_item_remove()}
                 disabled={removingId === item.id}
                 onclick={() => removeItem(item.id)}>
                 <Icon name="trash" class="h-4 w-4" />

@@ -17,6 +17,8 @@ interface PushPayload {
   title: string;
   body: string;
   url: string;
+  /** Language of the server-generated text, when provided by the sender. */
+  locale?: string;
 }
 
 // A "new episode" push from the API: show a notification carrying the deep link.
@@ -31,7 +33,7 @@ self.addEventListener("push", (event) => {
       badge: "/favicon.svg",
       data: { url: payload.url },
       dir: "auto",
-      lang: "fr",
+      lang: payload.locale,
       tag: "loomkeep",
     }),
   );

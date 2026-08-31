@@ -29,10 +29,8 @@ export async function initAuth(): Promise<void> {
   try {
     auth.user = await typedRequest("/users/me");
 
-    // Sync-across-devices seam: only "fr" exists today (isLocale guards
-    // against a stale/foreign value), so this never actually fires yet —
-    // wired ahead of a second locale shipping, no reload needed since we're
-    // already mid-startup.
+    // Keep the locale selected on another device. isLocale guards against a
+    // stale or foreign value; no reload is needed during startup.
     if (isLocale(auth.user.locale) && auth.user.locale !== getLocale()) {
       setLocale(auth.user.locale, { reload: false });
     }

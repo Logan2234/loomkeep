@@ -78,9 +78,7 @@
   });
   const detail = $derived(gameQuery.data);
   const error = $derived(
-    adultBlocked
-      ? "Ce jeu est réservé aux comptes ayant activé le contenu pour adultes (réglages)."
-      : gameQuery.error,
+    adultBlocked ? m.game_adult_restricted() : gameQuery.error,
   );
 
   const entry = $derived(detail?.entry ?? null);
@@ -189,7 +187,7 @@
       <button
         type="button"
         class="block w-full cursor-zoom-in"
-        aria-label="Agrandir l'image"
+        aria-label={m.common_enlarge_image()}
         onclick={() => openLightbox(detail?.backdropUrl ?? null)}>
         <img
           src={detail.backdropUrl}
@@ -208,7 +206,7 @@
       <button
         type="button"
         class="absolute top-1/2 left-1/2 z-20 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
-        aria-label="Voir la bande-annonce"
+        aria-label={m.media_watch_trailer()}
         onclick={openTrailer}>
         <Icon name="play" class="pointer-events-none h-7 w-7" />
       </button>
@@ -233,7 +231,7 @@
             class="border-border w-32 shrink-0 overflow-hidden rounded-xl border shadow-lg md:w-44 {detail.coverUrl
               ? 'cursor-zoom-in'
               : ''}"
-            aria-label="Agrandir l'image"
+            aria-label={m.common_enlarge_image()}
             onclick={() => openLightbox(detail?.coverUrl ?? null)}>
             <Poster src={detail.coverUrl} title={detail.title} />
           </button>
@@ -242,7 +240,7 @@
             <div class="flex flex-wrap items-center gap-2">
               <span
                 class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                Jeu
+                {m.game_type()}
               </span>
               {#if detail.isAdult}
                 <span
@@ -251,7 +249,7 @@
                 </span>
               {/if}
               {#each detail.ageRatingImageUrls as url (url)}
-                <img src={url} alt="Classification d'âge" class="h-6 rounded" />
+                <img src={url} alt={m.game_age_rating()} class="h-6 rounded" />
               {/each}
               {#if entry}
                 <span
@@ -326,7 +324,7 @@
                   : '-rotate-90'}" />
               <span
                 class="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
-                Histoire
+                {m.game_story()}
               </span>
             </button>
             {#if historyOpen}
@@ -346,7 +344,8 @@
               class="btn btn-primary"
               disabled={saving}
               onclick={() => addMut.mutate()}>
-              <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
+              <Icon name="plus" class="h-4 w-4" />
+              {m.library_add()}
             </button>
           </div>
         {:else}
@@ -371,12 +370,12 @@
 
             <NoteField
               value={entry.notes}
-              placeholder="Un boss, une astuce, ta config…"
+              placeholder={m.game_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <div class="flex items-center justify-between gap-2">
               <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                Temps de jeu
+                {m.game_playtime()}
               </span>
               <div class="flex items-center gap-1.5">
                 <input
@@ -384,7 +383,7 @@
                   min="0"
                   step="0.5"
                   inputmode="decimal"
-                  aria-label="Temps de jeu en heures"
+                  aria-label={m.game_playtime_hours()}
                   class="input w-20 text-right text-sm"
                   disabled={saving}
                   value={Math.round((entry.playtimeMinutes / 60) * 10) / 10}
@@ -400,7 +399,7 @@
                       );
                     }
                   }} />
-                <span class="text-dim text-xs">h</span>
+                <span class="text-dim text-xs">{m.common_hours_short()}</span>
               </div>
             </div>
 
@@ -424,7 +423,7 @@
                 <div class="flex items-center justify-between gap-2">
                   <span
                     class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    Relectures{#if entry.replays.length > 0}
+                    {m.game_replays()}{#if entry.replays.length > 0}
                       &nbsp;· {entry.replays.length}{/if}
                   </span>
                   {#if entry.status === "COMPLETED"}
@@ -433,7 +432,7 @@
                       class="link-accent text-xs disabled:opacity-50"
                       disabled={saving}
                       onclick={() => addReplayMut.mutate()}>
-                      + J'ai refait ce jeu
+                      {m.game_add_replay()}
                     </button>
                   {/if}
                 </div>
@@ -447,7 +446,7 @@
                         <button
                           type="button"
                           class="hover:text-danger"
-                          aria-label="Supprimer cette relecture"
+                          aria-label={m.game_delete_replay()}
                           disabled={saving}
                           onclick={() => removeReplayMut.mutate(replay.id)}>
                           {m.common_delete()}
@@ -470,12 +469,12 @@
 
         <RelatedCarousel
           title={detail.franchiseName
-            ? `Dans la franchise ${detail.franchiseName}`
-            : "Même franchise"}
+            ? m.game_franchise_title({ name: detail.franchiseName })
+            : m.game_same_franchise()}
           items={toCarouselItems(detail.franchiseGames, "/app/games")} />
 
         <RelatedCarousel
-          title="Titres similaires"
+          title={m.media_similar_titles()}
           items={toCarouselItems(detail.similarGames, "/app/games")} />
 
         {#if entry}
@@ -498,7 +497,7 @@
           <dl class="mt-3 flex flex-col gap-3">
             {#if detail && detail.developers.length > 0}
               <div>
-                <dt class="timecode text-xs">Développeur</dt>
+                <dt class="timecode text-xs">{m.media_developer()}</dt>
                 <dd class="mt-0.5 text-sm">
                   {detail.developers.join(", ")}
                 </dd>
@@ -506,7 +505,7 @@
             {/if}
             {#if detail && detail.publishers.length > 0}
               <div>
-                <dt class="timecode text-xs">Éditeur</dt>
+                <dt class="timecode text-xs">{m.media_publisher()}</dt>
                 <dd class="mt-0.5 text-sm">
                   {detail.publishers.join(", ")}
                 </dd>
@@ -514,13 +513,13 @@
             {/if}
             {#if detail && detail.gameModes.length > 0}
               <div>
-                <dt class="timecode text-xs">Modes de jeu</dt>
+                <dt class="timecode text-xs">{m.game_play_modes()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.gameModes.join(", ")}</dd>
               </div>
             {/if}
             {#if detail && detail.playerPerspectives.length > 0}
               <div>
-                <dt class="timecode text-xs">Vue</dt>
+                <dt class="timecode text-xs">{m.game_view()}</dt>
                 <dd class="mt-0.5 text-sm">
                   {detail.playerPerspectives.join(", ")}
                 </dd>
@@ -528,7 +527,7 @@
             {/if}
             {#if detail && detail.multiplayerModes.length > 0}
               <div>
-                <dt class="timecode text-xs">Multijoueur</dt>
+                <dt class="timecode text-xs">{m.game_multiplayer()}</dt>
                 <dd class="mt-0.5 text-sm">
                   {detail.multiplayerModes.join(", ")}
                 </dd>
@@ -541,7 +540,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="btn-text btn-text-underline text-accent hover:text-accent mt-0.5">
-                Site officiel ↗
+                {m.media_official_site()}
               </a>
             {/if}
           </dl>
@@ -557,8 +556,8 @@
 
   {#if confirmRemove}
     <ConfirmationModal
-      title="Retirer de ma bibliothèque"
-      message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
+      title={m.tracking_remove()}
+      message={m.library_remove_message({ title: detail.title })}
       confirmLabel={m.common_remove()}
       danger
       busy={removeMut.loading}
@@ -570,7 +569,7 @@
     <Lightbox
       images={galleryImages}
       video={detail.trailerVideoId
-        ? { videoId: detail.trailerVideoId, alt: "Bande-annonce" }
+        ? { videoId: detail.trailerVideoId, alt: m.media_trailer() }
         : null}
       bind:index={lightboxIndex}
       onClose={() => (lightboxOpen = false)} />

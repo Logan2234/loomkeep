@@ -13,11 +13,11 @@
   import { Domain, isDormant } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
-    { label: "En cours", value: "WATCHING" },
-    { label: "À voir", value: "PLANNED" },
-    { label: "Terminé", value: "COMPLETED" },
-    { label: "En pause", value: "DORMANT" },
-    { label: "Abandonné", value: "DROPPED" },
+    { label: m.media_status_watching(), value: "WATCHING" },
+    { label: m.media_status_planned(), value: "PLANNED" },
+    { label: m.media_status_completed(), value: "COMPLETED" },
+    { label: m.media_status_paused(), value: "DORMANT" },
+    { label: m.media_status_dropped(), value: "DROPPED" },
   ];
 
   const STATUS_LABELS = Object.fromEntries(
@@ -25,13 +25,13 @@
   ) as Record<string, string>;
 
   const SORTS = [
-    { label: "Vu récemment", value: "recent" },
-    { label: "Ajout récent", value: "added" },
+    { label: m.media_sort_watched(), value: "recent" },
+    { label: m.library_sort_added(), value: "added" },
     { label: m.common_title(), value: "title" },
-    { label: "Note", value: "rating" },
-    { label: "Progression", value: "progress" },
-    { label: "Terminé récemment", value: "finished" },
-    { label: "Commencé récemment", value: "started" },
+    { label: m.library_rating(), value: "rating" },
+    { label: m.stats_progression(), value: "progress" },
+    { label: m.library_sort_finished(), value: "finished" },
+    { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
 
@@ -67,7 +67,10 @@
 <LibraryBrowser
   icon="tv"
   title={m.common_Media()}
-  subtitle={(n) => `${n} titre${n > 1 ? "s" : ""}`}
+  subtitle={(n) =>
+    n === 1
+      ? m.media_library_count_one({ count: n })
+      : m.media_library_count_many({ count: n })}
   noun="titre"
   domain={Domain.MEDIA}
   {load}
@@ -89,9 +92,10 @@
         {#if entry.progress}
           <ProgressBar value={pct(entry)} />
           <span class="timecode text-xs">
-            {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes} ép.
+            {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
+            {m.media_episode_short()}
             {#if isDormant(entry)}
-              <span class="text-dim">· ⏸ En pause</span>
+              <span class="text-dim">{m.media_paused_suffix()}</span>
             {/if}
           </span>
         {:else}

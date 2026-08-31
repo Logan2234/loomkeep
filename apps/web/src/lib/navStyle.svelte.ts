@@ -1,4 +1,5 @@
 import { browser } from "$app/environment";
+import { m } from "$lib/paraglide/messages";
 
 const STORAGE_KEY = "tl-nav-style";
 
@@ -9,18 +10,18 @@ export const NAV_STYLE_META: Record<
   { label: string; blurb: string; premium: boolean }
 > = {
   marquee: {
-    label: "Marquee",
-    blurb: "Le rail actuel, avec un repère qui glisse d'un item à l'autre.",
+    label: m.nav_style_marquee(),
+    blurb: m.nav_style_marquee_description(),
     premium: false,
   },
   dock: {
-    label: "Dock",
-    blurb: "Un dock flottant détaché du bord, icônes seules.",
+    label: m.nav_style_dock(),
+    blurb: m.nav_style_dock_description(),
     premium: true,
   },
   board: {
-    label: "Programme",
-    blurb: "Un rail fin qui déploie un annuaire au survol.",
+    label: m.nav_style_board(),
+    blurb: m.nav_style_board_description(),
     premium: true,
   },
 };

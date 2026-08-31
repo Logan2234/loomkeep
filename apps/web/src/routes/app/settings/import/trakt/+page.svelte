@@ -7,7 +7,7 @@
   {#snippet intro()}
     {m.settings_import_trakt_intro()}
     <code class="bg-bg rounded px-1.5 py-0.5 font-mono text-xs">.zip</code>
-    de ton export Trakt (<a
+    {m.settings_import_trakt_export_suffix()}<a
       href="https://trakt.tv/settings/data"
       target="_blank"
       rel="noopener noreferrer"

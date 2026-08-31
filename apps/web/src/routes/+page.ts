@@ -3,6 +3,6 @@
 // build time — it differs between loomkeep.app, a self-hoster's NAS and
 // localhost. `url.origin` at request time is correct everywhere, and rendering
 // one static page per hit costs nothing next to shipping a wrong canonical.
-// The legal pages have no such need and stay prerendered (legal/+layout.ts).
+// Request-time rendering also negotiates the visitor's preferred language.
 export const ssr = true;
 export const prerender = false;

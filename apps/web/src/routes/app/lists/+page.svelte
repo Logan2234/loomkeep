@@ -10,6 +10,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { getLocale } from "$lib/paraglide/runtime.js";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const KIND_LABEL: Record<string, string> = {
@@ -69,7 +70,7 @@
         case "itemCount":
           return b.itemCount - a.itemCount;
         case "title":
-          return a.title.localeCompare(b.title, "fr");
+          return a.title.localeCompare(b.title, getLocale());
         default:
           return b.updatedAt.localeCompare(a.updatedAt);
       }
@@ -111,7 +112,7 @@
           onChange={(v) => (kindFilter = v)} />
         {#if appConfig.socialEnabled}
           <Combobox
-            label="Visibilité"
+            label={m.lists_visibility()}
             multiselect
             options={VISIBILITY_OPTIONS}
             values={visibilityFilter}

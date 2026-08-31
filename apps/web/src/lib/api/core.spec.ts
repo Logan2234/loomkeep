@@ -87,4 +87,29 @@ describe("request() → GlitchTip reporting", () => {
       tags: { requestId: undefined },
     });
   });
+
+  it("sends the selected locale to initialize a new account consistently", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response("{}"));
+    vi.stubGlobal("fetch", fetch);
+    const request = await loadRequest(undefined);
+    const runtime = await import("../paraglide/runtime.js");
+    const original = runtime.getLocale;
+    runtime.overwriteGetLocale(() => "fr");
+
+    try {
+      await request("/auth/register", {
+        method: "POST",
+        body: {},
+        withAuth: false,
+      });
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({ "Accept-Language": "fr" }),
+        }),
+      );
+    } finally {
+      runtime.overwriteGetLocale(original);
+    }
+  });
 });

@@ -2,10 +2,10 @@ import { m } from "$lib/paraglide/messages";
 
 export const GAME_OWNERSHIP_STATUS_OPTIONS = [
   { value: "NONE", label: m.common_none() },
-  { value: "PHYSICAL", label: "Physique" },
-  { value: "DIGITAL", label: "Numérique" },
-  { value: "SUBSCRIPTION", label: "Abonnement" },
-  { value: "BORROWED", label: "Emprunté" },
+  { value: "PHYSICAL", label: m.ownership_physical() },
+  { value: "DIGITAL", label: m.ownership_digital() },
+  { value: "SUBSCRIPTION", label: m.ownership_subscription() },
+  { value: "BORROWED", label: m.ownership_borrowed() },
 ];
 
 export const GAME_OWNERSHIP_SOURCES: Record<string, string[]> = {
@@ -27,10 +27,10 @@ export const GAME_OWNERSHIP_SOURCES: Record<string, string[]> = {
 
 export const BOOK_OWNERSHIP_STATUS_OPTIONS = [
   { value: "NONE", label: m.common_none() },
-  { value: "PHYSICAL", label: "Physique" },
-  { value: "DIGITAL", label: "Numérique (ebook)" },
-  { value: "AUDIO", label: "Audio" },
-  { value: "BORROWED", label: "Emprunté" },
+  { value: "PHYSICAL", label: m.ownership_physical() },
+  { value: "DIGITAL", label: m.ownership_ebook() },
+  { value: "AUDIO", label: m.ownership_audio() },
+  { value: "BORROWED", label: m.ownership_borrowed() },
 ];
 
 export const BOOK_OWNERSHIP_SOURCES: Record<string, string[]> = {
@@ -40,10 +40,10 @@ export const BOOK_OWNERSHIP_SOURCES: Record<string, string[]> = {
 
 export const MEDIA_OWNERSHIP_STATUS_OPTIONS = [
   { value: "NONE", label: m.common_none() },
-  { value: "PHYSICAL", label: "Physique" },
-  { value: "DIGITAL", label: "Numérique" },
-  { value: "STREAMING", label: "Streaming" },
-  { value: "BORROWED", label: "Emprunté/loué" },
+  { value: "PHYSICAL", label: m.ownership_physical() },
+  { value: "DIGITAL", label: m.ownership_digital() },
+  { value: "STREAMING", label: m.ownership_streaming() },
+  { value: "BORROWED", label: m.ownership_borrowed_rented() },
 ];
 
 export const MEDIA_OWNERSHIP_SOURCES: Record<string, string[]> = {
@@ -53,10 +53,10 @@ export const MEDIA_OWNERSHIP_SOURCES: Record<string, string[]> = {
 
 export const MUSIC_OWNERSHIP_STATUS_OPTIONS = [
   { value: "NONE", label: m.common_none() },
-  { value: "PHYSICAL", label: "Physique (vinyle, CD)" },
-  { value: "DIGITAL", label: "Numérique" },
-  { value: "STREAMING", label: "Streaming" },
-  { value: "BORROWED", label: "Emprunté" },
+  { value: "PHYSICAL", label: m.ownership_physical_music() },
+  { value: "DIGITAL", label: m.ownership_digital() },
+  { value: "STREAMING", label: m.ownership_streaming() },
+  { value: "BORROWED", label: m.ownership_borrowed() },
 ];
 
 export const MUSIC_OWNERSHIP_SOURCES: Record<string, string[]> = {

@@ -173,7 +173,7 @@
             class="border-border w-32 shrink-0 overflow-hidden rounded-xl border shadow-lg md:w-44 {detail.coverUrl
               ? 'cursor-zoom-in'
               : ''}"
-            aria-label="Agrandir l'image"
+            aria-label={m.common_enlarge_image()}
             onclick={() => detail?.coverUrl && (lightboxOpen = true)}>
             <Poster src={detail.coverUrl} title={detail.title} />
           </button>
@@ -262,7 +262,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="link-accent inline-flex items-center gap-1 text-sm">
-                Voir sur Open Library ↗
+                {m.book_open_library_link()}
               </a>
             {/if}
             {#if detail.readOnlineUrl}
@@ -271,7 +271,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="link-accent inline-flex items-center gap-1 text-sm">
-                Lire en ligne ↗
+                {m.book_read_online()}
               </a>
             {/if}
             {#each detail.externalLinks as link (link.label)}
@@ -293,7 +293,8 @@
               class="btn btn-primary"
               disabled={saving}
               onclick={() => addMut.mutate()}>
-              <Icon name="plus" class="h-4 w-4" /> Ajouter à ma bibliothèque
+              <Icon name="plus" class="h-4 w-4" />
+              {m.library_add()}
             </button>
           </div>
         {:else}
@@ -317,9 +318,9 @@
             <!-- Reading progress: page position, with a bar when the total is known. -->
             <div class="flex flex-col gap-2">
               <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-                >Progression de lecture</span>
+                >{m.book_reading_progress()}</span>
               <div class="text-dim flex items-center gap-2 text-sm">
-                <span>Page</span>
+                <span>{m.book_page()}</span>
                 <input
                   type="number"
                   min="0"
@@ -348,7 +349,7 @@
 
             <NoteField
               value={entry.notes}
-              placeholder="Une phrase, une note de lecture…"
+              placeholder={m.book_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <hr class="border-border" />
@@ -371,7 +372,7 @@
                 <div class="flex items-center justify-between gap-2">
                   <span
                     class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    Relectures{#if entry.replays.length > 0}
+                    {m.book_rereads()}{#if entry.replays.length > 0}
                       &nbsp;· {entry.replays.length}{/if}
                   </span>
                   {#if entry.status === "READ"}
@@ -380,7 +381,7 @@
                       class="link-accent text-xs disabled:opacity-50"
                       disabled={saving}
                       onclick={() => addReplayMut.mutate()}>
-                      + J'ai relu ce livre
+                      {m.book_add_reread()}
                     </button>
                   {/if}
                 </div>
@@ -394,7 +395,7 @@
                         <button
                           type="button"
                           class="hover:text-danger"
-                          aria-label="Supprimer cette relecture"
+                          aria-label={m.book_delete_reread()}
                           disabled={saving}
                           onclick={() => removeReplayMut.mutate(replay.id)}>
                           {m.common_delete()}
@@ -409,7 +410,7 @@
         {/if}
 
         <RelatedCarousel
-          title="Du même auteur"
+          title={m.book_same_author()}
           items={toCarouselItems(detail.sameAuthorBooks, "/app/books")} />
 
         <!-- Details panel, mobile position: after "Mon suivi". -->
@@ -439,37 +440,37 @@
           <dl class="mt-3 flex flex-col gap-3">
             {#if detail?.publisher}
               <div>
-                <dt class="timecode text-xs">Éditeur</dt>
+                <dt class="timecode text-xs">{m.media_publisher()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.publisher}</dd>
               </div>
             {/if}
             {#if detail?.pageCount}
               <div>
-                <dt class="timecode text-xs">Pages</dt>
+                <dt class="timecode text-xs">{m.book_pages()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.pageCount}</dd>
               </div>
             {/if}
             {#if detail?.series}
               <div>
-                <dt class="timecode text-xs">Collection</dt>
+                <dt class="timecode text-xs">{m.book_collection()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.series}</dd>
               </div>
             {/if}
             {#if detail?.language}
               <div>
-                <dt class="timecode text-xs">Langue</dt>
+                <dt class="timecode text-xs">{m.book_language()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.language}</dd>
               </div>
             {/if}
             {#if detail?.isbn}
               <div>
-                <dt class="timecode text-xs">ISBN</dt>
+                <dt class="timecode text-xs">{m.book_isbn()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.isbn}</dd>
               </div>
             {/if}
             {#if detail?.editionCount}
               <div>
-                <dt class="timecode text-xs">Éditions</dt>
+                <dt class="timecode text-xs">{m.book_editions()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.editionCount}</dd>
               </div>
             {/if}
@@ -486,8 +487,8 @@
 
   {#if confirmRemove}
     <ConfirmationModal
-      title="Retirer de ma bibliothèque"
-      message={`Retirer « ${detail.title} » de ta bibliothèque ? Ta progression, ta critique, tes commentaires et ta note seront supprimés.`}
+      title={m.tracking_remove()}
+      message={m.library_remove_message({ title: detail.title })}
       confirmLabel={m.common_remove()}
       danger
       busy={removeMut.loading}

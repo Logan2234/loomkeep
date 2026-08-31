@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages.js";
   import { getAdminNewsletterSends } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -18,11 +19,11 @@
 <div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="sparkles"
-    title="Newsletter"
-    subtitle="Envoyée automatiquement à chaque publication d'une note de version sur Quackback — rien à faire ici, cette page n'est qu'un historique." />
+    title={m.settings_communications_newsletter_label()}
+    subtitle={m.admin_newsletter_subtitle()} />
 
   <section class="card p-5 md:p-6">
-    <h2 class="font-display mb-3 text-lg font-bold">Envois</h2>
+    <h2 class="font-display mb-3 text-lg font-bold">{m.admin_sends()}</h2>
 
     {#if loadError}
       <Banner variant="error">{loadError}</Banner>
@@ -43,8 +44,11 @@
               </p>
               <p class="timecode text-xs">
                 {formatDateTime(send.sentAt, DATETIME_NUMERIC_OPTIONS)} ·
-                {send.recipientCount}
-                destinataire{send.recipientCount > 1 ? "s" : ""}
+                {send.recipientCount === 1
+                  ? m.admin_recipient_count_one({ count: send.recipientCount })
+                  : m.admin_recipient_count_many({
+                      count: send.recipientCount,
+                    })}
               </p>
             </div>
           </li>
@@ -52,7 +56,7 @@
       </ul>
     {:else}
       <p class="text-dim py-6 text-center text-sm">
-        Aucun envoi pour l'instant.
+        {m.admin_newsletter_empty()}
       </p>
     {/if}
   </section>

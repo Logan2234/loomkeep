@@ -75,12 +75,12 @@
   let avatarLightbox = $state(false);
 
   const ACTIVITY_SECTIONS: { kind: ActivityKind; label: string }[] = [
-    { kind: "reviews", label: "Reviews" },
-    { kind: "comments", label: "Commentaires" },
-    { kind: "following", label: "Abonnements" },
-    { kind: "followers", label: "Abonnés" },
-    { kind: "lists", label: "Listes" },
-    { kind: "reports", label: "Signalements reçus" },
+    { kind: "reviews", label: m.admin_users_reviews() },
+    { kind: "comments", label: m.admin_social_total_comments() },
+    { kind: "following", label: m.profile_connections_following_title() },
+    { kind: "followers", label: m.profile_connections_followers_title() },
+    { kind: "lists", label: m.profile_lists_title() },
+    { kind: "reports", label: m.admin_users_reports_received() },
   ];
 
   const usersKey = $derived(keys.admin.users({ query: queryFilter, filter }));
@@ -255,7 +255,7 @@
     onSuccess: (_data, displayName) => {
       showDeleteModal = false;
       selectedId = null;
-      toast.success(`Compte de ${displayName} supprimé.`);
+      toast.success(m.admin_users_deleted({ name: displayName }));
     },
     invalidates: [usersKey],
     coveredFields: ["reasonText", "legalBasis", "tosClause"],
@@ -285,7 +285,7 @@
   const activityLabel = (u: AdminUserDto): string =>
     u.lastActiveAt
       ? formatDate(u.lastActiveAt, DAY_MONTH_TIME_OPTIONS)
-      : "Jamais connecté";
+      : m.admin_users_never_logged_in();
 
   function activityDotClass(u: AdminUserDto): string {
     if (!u.lastActiveAt) return "border border-dim";
@@ -297,8 +297,8 @@
   const FILTERS: { value: AdminUserFilter; label: string }[] = [
     { value: "all", label: m.common_all() },
     { value: "admin", label: m.common_admin() },
-    { value: "unverified", label: "Non vérifié" },
-    { value: "never", label: "Jamais connecté" },
+    { value: "unverified", label: m.admin_users_unverified() },
+    { value: "never", label: m.admin_users_never_logged_in() },
   ];
 </script>
 
@@ -310,15 +310,15 @@
 <div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="user"
-    title="Utilisateurs"
-    subtitle="Comptes enregistrés, sessions et accès." />
+    title={m.admin_users_title()}
+    subtitle={m.admin_users_subtitle()} />
 
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <input
       type="text"
       bind:value={query}
       oninput={onQueryInput}
-      placeholder="Filtrer par email, identifiant ou nom…"
+      placeholder={m.admin_users_search()}
       class="border-border bg-surface w-full max-w-xs rounded-lg border px-3 py-2 text-sm" />
     <Combobox
       label={m.common_filter()}
@@ -338,8 +338,10 @@
           <tr
             class="border-border text-dim border-b text-left text-xs font-semibold uppercase">
             <th class="px-4 py-2.5">{m.common_account()}</th>
-            <th class="hidden px-4 py-2.5 sm:table-cell">Actif</th>
-            <th class="hidden px-4 py-2.5 md:table-cell">Créé</th>
+            <th class="hidden px-4 py-2.5 sm:table-cell"
+              >{m.profile_activity_summary_prefix()}</th>
+            <th class="hidden px-4 py-2.5 md:table-cell"
+              >{m.admin_users_created()}</th>
           </tr>
         </thead>
         <tbody>
@@ -366,13 +368,13 @@
                       {#if u.plan === "PREMIUM"}
                         <span
                           class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
-                          Premium
+                          {m.common_premium()}
                         </span>
                       {/if}
                       {#if !u.emailVerified}
                         <span
                           class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
-                          Non vérifié
+                          {m.admin_users_unverified()}
                         </span>
                       {/if}
                     </div>
@@ -399,8 +401,8 @@
       {#if users.length === 0}
         <p class="text-dim px-4 py-6 text-center text-sm">
           {query.trim() || filter !== "all"
-            ? "Aucun compte ne correspond à ce filtre."
-            : "Aucun compte enregistré."}
+            ? m.admin_users_empty_filter()
+            : m.admin_users_empty()}
         </p>
       {/if}
     </div>
@@ -410,7 +412,9 @@
         class="btn btn-ghost mt-4 w-full"
         disabled={usersQuery.isFetchingNextPage}
         onclick={() => usersQuery.fetchNextPage()}>
-        {usersQuery.isFetchingNextPage ? m.common_loading() : "Charger plus"}
+        {usersQuery.isFetchingNextPage
+          ? m.common_loading()
+          : m.common_load_more()}
       </button>
     {/if}
   {/if}
@@ -431,7 +435,7 @@
         <div class="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            aria-label="Voir l'avatar en grand"
+            aria-label={m.admin_users_enlarge_avatar()}
             onclick={() => (avatarLightbox = true)}
             class="cursor-zoom-in">
             <Avatar
@@ -451,7 +455,7 @@
             <a
               href="/app/u/{selected.username}"
               class="btn-text text-accent mt-0.5">
-              Voir le profil public →
+              {m.admin_users_public_profile()}
             </a>
           </div>
         </div>
@@ -473,22 +477,23 @@
       {#if selected.inactivityWarningSentAt}
         <p
           class="border-warning/40 bg-warning/10 text-warning mb-4 rounded-lg border px-3 py-2 text-xs">
-          Relance inactivité envoyée le {formatDate(
-            selected.inactivityWarningSentAt,
-          )} — suppression automatique si le compte reste inactif (LK-C06).
+          {m.admin_users_inactivity_reminder()}
+          {formatDate(selected.inactivityWarningSentAt)}
+          {m.admin_users_inactivity_deletion()}
         </p>
       {/if}
 
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Identité
+          {m.admin_users_identity()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
         <label
           class="border-border flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"
           for="role-admin">
-          <span class="text-fg font-semibold">Administrateur</span>
+          <span class="text-fg font-semibold"
+            >{m.admin_users_administrator()}</span>
           <input
             id="role-admin"
             type="checkbox"
@@ -501,7 +506,7 @@
         </label>
         {#if selected.id === auth.user?.id && selected.role === "ADMIN"}
           <p class="text-dim mt-1.5 text-xs">
-            Tu ne peux pas retirer ton propre accès admin.
+            {m.admin_users_self_demote_hint()}
           </p>
         {/if}
         {#if roleMut.error}
@@ -512,13 +517,13 @@
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Plan
+          {m.admin_users_plan()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
         <label
           class="border-border flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"
           for="plan-select">
-          <span class="text-fg font-semibold">Premium</span>
+          <span class="text-fg font-semibold">{m.common_premium()}</span>
           <select
             id="plan-select"
             class="border-border bg-surface-2 text-fg rounded-md border px-2 py-1 text-sm"
@@ -526,13 +531,12 @@
             disabled={planMut.loading}
             onchange={(e) =>
               planMut.mutate(e.currentTarget.value as "FREE" | "PREMIUM")}>
-            <option value="FREE">Gratuit</option>
-            <option value="PREMIUM">Premium</option>
+            <option value="FREE">{m.admin_users_free()}</option>
+            <option value="PREMIUM">{m.common_premium()}</option>
           </select>
         </label>
         <p class="text-dim mt-1.5 text-xs">
-          Pas de facturation branchée — octroi manuel uniquement (voir
-          docs/adr/0001-open-core-agpl.md).
+          {m.admin_users_manual_plan()}
         </p>
         {#if planMut.error}
           <p class="text-danger mt-1.5 text-xs">{planMut.error}</p>
@@ -542,7 +546,7 @@
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Accès
+          {m.admin_users_access()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
         {#if sessionsQuery.loading}
@@ -558,16 +562,17 @@
                 class="border-border flex items-center gap-2 rounded-lg border px-3 py-2">
                 <div class="min-w-0 flex-1">
                   <p class="text-fg truncate text-xs font-semibold">
-                    {s.userAgent ?? "Appareil inconnu"}
+                    {s.userAgent ?? m.settings_sessions_unknown_device()}
                   </p>
                   <p class="text-dim text-[0.65rem]">
-                    Actif {formatDate(s.lastUsedAt, DAY_MONTH_TIME_OPTIONS)}
+                    {m.profile_activity_summary_prefix()}
+                    {formatDate(s.lastUsedAt, DAY_MONTH_TIME_OPTIONS)}
                   </p>
                 </div>
                 <button
                   onclick={() => revokeMut.mutate(s.id)}
                   disabled={revokeMut.loading && revokeMut.variables === s.id}
-                  aria-label="Révoquer cette session"
+                  aria-label={m.admin_users_revoke_session()}
                   class="text-dim hover:bg-danger/10 hover:text-danger shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
                   <Icon name="trash" class="h-4 w-4" />
                 </button>
@@ -578,18 +583,18 @@
             <button
               class="btn btn-danger btn-sm w-full"
               onclick={() => (showRevokeAllConfirm = true)}>
-              Révoquer toutes les sessions
+              {m.admin_users_revoke_all()}
             </button>
           {/if}
         {:else}
-          <p class="text-dim text-sm">Aucune session active.</p>
+          <p class="text-dim text-sm">{m.admin_users_no_sessions()}</p>
         {/if}
       </section>
 
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Activité sociale
+          {m.admin_social_activity_title()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
         {#if activityLoading}
@@ -624,7 +629,7 @@
           <div class="skeleton h-28 rounded-lg"></div>
         {:else if libraryStats}
           <div class="grid grid-cols-3 gap-2">
-            {#each [{ label: "Films", value: libraryStats.movies }, { label: "Séries", value: libraryStats.series }, { label: "Anime", value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: "Albums", value: libraryStats.music }] as stat (stat.label)}
+            {#each [{ label: m.media_movies(), value: libraryStats.movies }, { label: m.media_series_plural(), value: libraryStats.series }, { label: m.media_anime(), value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: m.landing_salle_music_label(), value: libraryStats.music }] as stat (stat.label)}
               <div
                 class="border-border rounded-lg border px-2 py-2 text-center">
                 <p class="font-display text-base font-bold">{stat.value}</p>
@@ -633,17 +638,19 @@
             {/each}
           </div>
           <p class="text-dim mt-2 text-right text-xs">
-            {libraryStats.total} élément{libraryStats.total !== 1 ? "s" : ""}
+            {libraryStats.total === 1
+              ? m.admin_library_item_count_one({ count: libraryStats.total })
+              : m.admin_library_item_count_many({ count: libraryStats.total })}
           </p>
         {:else}
-          <p class="text-dim text-sm">Statistiques indisponibles.</p>
+          <p class="text-dim text-sm">{m.admin_users_stats_unavailable()}</p>
         {/if}
       </section>
 
       <section class="mb-5">
         <h3
           class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Données
+          {m.admin_users_data()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
         <div class="flex gap-2">
@@ -652,7 +659,7 @@
             disabled={exportMut.loading}
             class="btn btn-ghost btn-sm flex-1">
             <Icon name="download" class="mr-1 inline h-3.5 w-3.5" />
-            Exporter
+            {m.admin_users_export()}
           </button>
           <a
             href="/app/admin/communications?tab=push&email={encodeURIComponent(
@@ -660,7 +667,7 @@
             )}"
             class="btn btn-ghost btn-sm flex-1 text-center">
             <Icon name="bell" class="mr-1 inline h-3.5 w-3.5" />
-            Push test
+            {m.admin_users_push_test()}
           </a>
         </div>
         {#if exportMut.error}
@@ -672,7 +679,7 @@
         class="border-danger/40 bg-danger/5 mt-auto rounded-xl border p-3">
         <h3
           class="text-danger mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
-          Zone sensible
+          {m.admin_users_sensitive_area()}
           <span class="bg-danger/40 h-px flex-1"></span>
         </h3>
         <div class="flex flex-col gap-2">
@@ -682,26 +689,23 @@
             class="btn btn-ghost btn-sm w-full">
             {verifyMut.loading
               ? m.common_sending()
-              : "Renvoyer l'email de vérification"}
+              : m.settings_resend_verification_email()}
           </button>
           <button
             onclick={() => resetMut.mutate()}
             disabled={resetMut.loading}
             class="btn btn-ghost btn-sm w-full">
-            {resetMut.loading
-              ? m.common_sending()
-              : "Envoyer un lien de réinitialisation"}
+            {resetMut.loading ? m.common_sending() : m.admin_users_send_reset()}
           </button>
           {#if selected.id === auth.user?.id}
             <p class="text-dim text-xs">
-              Utilise la suppression de compte depuis /settings pour ton propre
-              compte.
+              {m.admin_users_self_delete_hint()}
             </p>
           {:else}
             <button
               onclick={openDeleteModal}
               class="btn btn-danger btn-sm w-full">
-              Supprimer le compte
+              {m.settings_delete_account_modal_title()}
             </button>
           {/if}
         </div>
@@ -711,7 +715,7 @@
 {/if}
 
 {#if activeModal === "reviews"}
-  <Modal title="Reviews" onclose={() => (activeModal = null)}>
+  <Modal title={m.admin_users_reviews()} onclose={() => (activeModal = null)}>
     <ul class="space-y-2">
       {#each reviews as r (r.id)}
         <li class="border-border rounded-lg border p-3 text-sm">
@@ -720,7 +724,7 @@
               >{r.target.title}</a>
           {:else}
             <span class="font-semibold"
-              >{r.target?.title ?? "Œuvre supprimée"}</span>
+              >{r.target?.title ?? m.admin_users_deleted_work()}</span>
           {/if}
           <span class="text-dim ml-2 text-xs">{r.rating}/10</span>
           {#if r.text}
@@ -731,7 +735,9 @@
     </ul>
   </Modal>
 {:else if activeModal === "comments"}
-  <Modal title="Commentaires" onclose={() => (activeModal = null)}>
+  <Modal
+    title={m.admin_social_total_comments()}
+    onclose={() => (activeModal = null)}>
     <ul class="space-y-2">
       {#each comments as c (c.id)}
         <li class="border-border rounded-lg border p-3 text-sm">
@@ -749,7 +755,9 @@
   </Modal>
 {:else if activeModal === "followers" || activeModal === "following"}
   <Modal
-    title={activeModal === "followers" ? "Abonnés" : "Abonnements"}
+    title={activeModal === "followers"
+      ? m.profile_connections_followers_title()
+      : m.profile_connections_following_title()}
     onclose={() => (activeModal = null)}>
     <ul class="space-y-1">
       {#each activeModal === "followers" ? followers : following as u (u.id)}
@@ -769,16 +777,17 @@
     </ul>
   </Modal>
 {:else if activeModal === "lists"}
-  <Modal title="Listes" onclose={() => (activeModal = null)}>
+  <Modal title={m.profile_lists_title()} onclose={() => (activeModal = null)}>
     <ul class="space-y-2">
       {#each lists as l (l.id)}
         <li class="border-border rounded-lg border p-3 text-sm">
           <div class="flex items-center gap-2">
             <span class="text-fg font-semibold">{l.title}</span>
-            <span class="text-dim text-xs">· {l.itemCount} élément(s)</span>
+            <span class="text-dim text-xs"
+              >· {l.itemCount} {m.admin_items_suffix()}</span>
             {#if l.role === "EDITOR"}
               <span class="text-dim text-xs"
-                >· Invité par {l.author.displayName}</span>
+                >{m.admin_users_invited_by()} {l.author.displayName}</span>
             {/if}
           </div>
           <p class="text-dim mt-0.5 text-xs">
@@ -789,7 +798,9 @@
     </ul>
   </Modal>
 {:else if activeModal === "reports"}
-  <Modal title="Signalements reçus" onclose={() => (activeModal = null)}>
+  <Modal
+    title={m.admin_users_reports_received()}
+    onclose={() => (activeModal = null)}>
     <ul class="space-y-2">
       {#each reportsAgainst as r (r.id)}
         <li class="border-border rounded-lg border p-3 text-sm">
@@ -826,9 +837,9 @@
 
 {#if showRevokeAllConfirm && selected}
   <ConfirmationModal
-    title="Révoquer toutes les sessions ?"
-    message={`Tous les appareils connectés de ${selected.displayName} seront déconnectés. Le compte devra se reconnecter partout.`}
-    confirmLabel="Révoquer tout"
+    title={m.admin_users_revoke_all_title()}
+    message={m.admin_users_revoke_all_message({ name: selected.displayName })}
+    confirmLabel={m.admin_users_revoke_all_confirm()}
     danger
     busy={revokeAllMut.loading}
     onConfirm={() => revokeAllMut.mutate()}
@@ -846,19 +857,19 @@
       aria-modal="true"
       class="card relative z-10 w-full max-w-md rounded-t-2xl p-5 sm:rounded-2xl">
       <h3 class="font-display text-danger mb-3 text-lg font-bold">
-        Supprimer le compte
+        {m.settings_delete_account_modal_title()}
       </h3>
       <p class="text-dim text-sm">
-        Le compte de <strong class="text-fg">{selected.displayName}</strong> et toutes
-        ses données (bibliothèques, historique, notifications) seront définitivement
-        supprimés. Cette action est irréversible.
+        {m.admin_users_delete_intro()}
+        <strong class="text-fg">{selected.displayName}</strong>
+        {m.admin_users_delete_warning()}
       </p>
       <p class="text-dim mt-3 text-sm">
-        Pour confirmer, tape
+        {m.admin_users_confirm_type()}
         <code
           class="bg-surface-2 text-fg rounded px-1.5 py-0.5 text-xs font-bold"
           >{selected.username}</code>
-        ci-dessous.
+        {m.admin_confirmation_below()}
       </p>
       <input
         type="text"
@@ -868,12 +879,10 @@
         class="border-border bg-surface mt-3 w-full rounded-lg border px-3 py-2 text-sm" />
 
       <p class="text-dim mt-4 text-xs">
-        L'exposé des motifs suivant est envoyé par email au compte (art. 17 DSA)
-        — aucune notification in-app n'est possible, le compte n'existe plus
-        après suppression.
+        {m.admin_users_statement_description()}
       </p>
       <label class="mt-2 block text-sm font-semibold" for="delete-reason">
-        Faits retenus
+        {m.admin_moderation_facts()}
       </label>
       <textarea
         id="delete-reason"
@@ -881,10 +890,9 @@
         disabled={deleteMut.loading}
         rows="3"
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-        placeholder="Ce qui justifie la suppression, en clair pour l'utilisateur."
-      ></textarea>
+        placeholder={m.admin_users_reason_placeholder()}></textarea>
       <label class="mt-3 block text-sm font-semibold" for="delete-basis">
-        Fondement
+        {m.admin_moderation_basis()}
       </label>
       <select
         id="delete-basis"
@@ -897,7 +905,7 @@
       </select>
       {#if deleteLegalBasis === "TOS_BREACH"}
         <label class="mt-3 block text-sm font-semibold" for="delete-clause">
-          Clause CGU
+          {m.admin_moderation_terms_clause()}
         </label>
         <input
           id="delete-clause"
@@ -905,7 +913,7 @@
           bind:value={deleteTosClause}
           disabled={deleteMut.loading}
           class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-          placeholder="§9 — Signalement et modération" />
+          placeholder={m.admin_users_clause_placeholder()} />
       {/if}
 
       {#if deleteMut.error}
@@ -932,7 +940,9 @@
             deleteConfirmText !== selected.username ||
             !deleteReasonText.trim()}
           onclick={() => deleteMut.mutate(selected.displayName)}>
-          {deleteMut.loading ? "Suppression…" : "Supprimer définitivement"}
+          {deleteMut.loading
+            ? m.settings_delete_account_deleting()
+            : m.settings_delete_account_confirm()}
         </button>
       </div>
     </div>

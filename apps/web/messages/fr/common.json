@@ -159,5 +159,16 @@
   "common_details": "Détails",
   "common_unknown": "Inconnu",
   "common_default": "Par défaut",
-  "common_import": "Import"
+  "common_import": "Import",
+  "common_today_short": "Auj.",
+  "common_reload": "Recharger",
+  "common_load_more": "Charger plus",
+  "common_optional_parentheses": "(optionnel)",
+  "common_enlarge_image": "Agrandir l'image",
+  "common_select_all": "Tout sélectionner",
+  "common_hours_short": "h",
+  "common_byte_short": "o",
+  "common_kilobyte_short": "Ko",
+  "common_megabyte_short": "Mo",
+  "common_gigabyte_short": "Go"
 }

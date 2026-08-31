@@ -21,8 +21,10 @@
   "common_settings": "Settings",
   "common_loom": "loom",
   "common_Loom": "Loom",
+  "common_LOOM": "LOOM",
   "common_keep": "keep",
   "common_Keep": "Keep",
+  "common_KEEP": "KEEP",
   "common_loomkeep": "Loomkeep",
   "common_status": "Status",
   "common_coming_soon": "Coming soon",
@@ -157,5 +159,16 @@
   "common_details": "Details",
   "common_unknown": "Unknown",
   "common_default": "Default",
-  "common_import": "Import"
+  "common_import": "Import",
+  "common_today_short": "Today",
+  "common_reload": "Reload",
+  "common_load_more": "Load more",
+  "common_optional_parentheses": "(optional)",
+  "common_enlarge_image": "Enlarge image",
+  "common_select_all": "Select all",
+  "common_hours_short": "h",
+  "common_byte_short": "B",
+  "common_kilobyte_short": "KB",
+  "common_megabyte_short": "MB",
+  "common_gigabyte_short": "GB"
 }

@@ -94,8 +94,8 @@
 <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
   <PageHeader
     icon="star"
-    title="Mes reviews"
-    subtitle="Toutes vos notes et critiques, à gérer d'un seul endroit." />
+    title={m.profile_reviews_title()}
+    subtitle={m.reviews_page_subtitle()} />
 
   {#if loading}
     <div class="space-y-2">
@@ -111,9 +111,9 @@
     </div>
   {:else if reviews.length === 0}
     <EmptyState>
-      <p class="font-display text-lg font-bold">Aucune review pour l'instant</p>
+      <p class="font-display text-lg font-bold">{m.reviews_empty()}</p>
       <p class="mt-1 text-sm">
-        Notez une œuvre depuis sa page pour la retrouver ici.
+        {m.reviews_empty_hint()}
       </p>
     </EmptyState>
   {:else}
@@ -127,14 +127,14 @@
           checked={allSelected}
           onchange={toggleAll} />
         {selected.length > 0
-          ? `${selected.length} sélectionnée${selected.length > 1 ? "s" : ""}`
-          : "Tout sélectionner"}
+          ? m.reviews_selection_count({ count: selected.length })
+          : m.common_select_all()}
       </label>
 
       {#if selected.length > 0}
         <div class="ml-auto flex flex-wrap items-center gap-2">
           {#if appConfig.socialEnabled}
-            <span class="text-dim text-xs">Portée :</span>
+            <span class="text-dim text-xs">{m.reviews_scope()}</span>
             <button
               class="chip"
               disabled={batchBusy}
@@ -153,7 +153,7 @@
               class="btn btn-danger btn-sm"
               disabled={batchBusy}
               onclick={() => batchDeleteMut.mutate()}>
-              Confirmer la suppression
+              {m.reviews_confirm_delete()}
             </button>
           {:else}
             <button
@@ -173,7 +173,7 @@
           <input
             type="checkbox"
             class="accent-accent h-4 w-4 shrink-0"
-            aria-label="Sélectionner cette review"
+            aria-label={m.reviews_select()}
             checked={selected.includes(review.id)}
             onchange={() => toggleSelected(review.id)} />
 
@@ -240,7 +240,7 @@
 
 {#if editing}
   <ReviewFormModal
-    title={editing.target?.title ?? "Modifier la review"}
+    title={editing.target?.title ?? m.reviews_edit()}
     targetType={editing.targetType}
     targetId={editing.targetId}
     review={editing}

@@ -23,7 +23,7 @@
     "clean:dev": "rm -rf build node_modules .svelte-kit",
     "dev": "vite dev",
     "build": "vite build",
-    "generate:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy cookie baseLocale",
+    "generate:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy cookie preferredLanguage baseLocale",
     "generate:api-types": "openapi-typescript ../api/openapi.json -o src/lib/api/generated/schema.d.ts",
     "lint": "eslint",
     "lint:fix": "eslint --fix",

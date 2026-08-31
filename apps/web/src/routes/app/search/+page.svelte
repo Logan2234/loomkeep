@@ -53,7 +53,9 @@
   let query = $state(page.url.searchParams.get("query") ?? "");
   let domain = $state<Domain>(initialDomain);
 
-  const placeholder = $derived(`Chercher ${DOMAIN_HINT[domain]}…`);
+  const placeholder = $derived(
+    m.search_placeholder({ domain: DOMAIN_HINT[domain] }),
+  );
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
   const comingSoon = $derived(DOMAINS[domain]?.comingSoon ?? false);
