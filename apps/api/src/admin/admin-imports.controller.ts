@@ -5,10 +5,14 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import { Controller, Get, Query } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildImportSummary } from "./admin-imports.util";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdminImportRunResponseDto } from "./dto/admin-import-run-response.dto";
+import { AdminImportSummaryResponseDto } from "./dto/admin-import-summary-response.dto";
 
 const PAGE_SIZE = 50;
 const STATUSES: JobStatus[] = ["SUCCESS", "FAILURE"];
@@ -25,6 +29,7 @@ export class AdminImportsController {
    * scrolls or filters.
    */
   @Get("imports/summary")
+  @ApiOkResponse({ type: AdminImportSummaryResponseDto })
   async getImportSummary(): Promise<AdminImportSummaryDto> {
     const [success, failure, bySource] = await Promise.all([
       this.prisma.importRun.count({ where: { status: "SUCCESS" } }),
@@ -49,6 +54,7 @@ export class AdminImportsController {
 
   /** Most recent commits first, filterable by source/status/account and paginated. */
   @Get("imports")
+  @ApiOkResponse({ type: PagedResponseDto(AdminImportRunResponseDto) })
   async listImportRuns(
     @Query("source") source?: string,
     @Query("status") status?: string,

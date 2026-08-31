@@ -1,10 +1,10 @@
 {
+  "$schema": "https://inlang.com/schema/inlang-message-format",
   "common_device": "Device",
   "common_ip_address": "IP address",
   "common_token": "Token",
   "common_old_email": "Previous email",
   "common_favorite": "Favorite",
-  "$schema": "https://inlang.com/schema/inlang-message-format",
   "common_cancel": "Cancel",
   "common_save": "Save",
   "common_save_loading": "Saving…",

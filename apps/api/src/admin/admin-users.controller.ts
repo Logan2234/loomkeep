@@ -31,24 +31,38 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { SessionResponseDto } from "../auth/dto/session-response.dto";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { MyListResponseDto } from "../lists/dto/my-list-response.dto";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
+import { ReportResponseDto } from "../reports/dto/report-response.dto";
 import { ModerationDecisionService } from "../reports/moderation-decision.service";
 import { ReportService } from "../reports/report.service";
+import { MyReviewResponseDto } from "../reviews/dto/my-review-response.dto";
 import { ReviewService } from "../reviews/review.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { FollowService } from "../social/follow.service";
 import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
+import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
+import { AdminUserLibraryStatsResponseDto } from "./dto/admin-user-library-stats-response.dto";
+import { AdminUserOptionResponseDto } from "./dto/admin-user-option-response.dto";
+import { AdminUserPlanResponseDto } from "./dto/admin-user-plan-response.dto";
+import { AdminUserResponseDto } from "./dto/admin-user-response.dto";
+import { AdminUserRoleResponseDto } from "./dto/admin-user-role-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
@@ -78,6 +92,7 @@ export class AdminUsersController {
    * search (email/username/displayName) and by role/verification/activity, paginated.
    */
   @Get("users")
+  @ApiOkResponse({ type: PagedResponseDto(AdminUserResponseDto) })
   async listUsers(
     @Query("search") search?: string,
     @Query("filter") filter?: string,
@@ -151,6 +166,7 @@ export class AdminUsersController {
    * endpoint above, which now only returns one page at a time.
    */
   @Get("users/options")
+  @ApiOkResponse({ type: AdminUserOptionResponseDto, isArray: true })
   async listUserOptions(): Promise<AdminUserOptionDto[]> {
     const users = await this.prisma.user.findMany({
       orderBy: { displayName: "asc" },
@@ -166,6 +182,7 @@ export class AdminUsersController {
    * them on next login, but not before).
    */
   @Patch("users/:userId/role")
+  @ApiOkResponse({ type: AdminUserRoleResponseDto })
   async updateUserRole(
     @Param("userId") userId: string,
     @Body() dto: UpdateAdminUserRoleDto,
@@ -193,6 +210,7 @@ export class AdminUsersController {
    * source ADMIN_GRANT (see EntitlementService#setPlan).
    */
   @Patch("users/:userId/plan")
+  @ApiOkResponse({ type: AdminUserPlanResponseDto })
   async updateUserPlan(
     @Param("userId") userId: string,
     @Body() dto: UpdateAdminUserPlanDto,
@@ -203,18 +221,21 @@ export class AdminUsersController {
 
   /** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */
   @Get("users/:userId/export")
+  @ApiOkResponse({ type: UserDataExportResponseDto })
   getUserExport(@Param("userId") userId: string): Promise<UserDataExportDto> {
     return this.dataExport.buildExport(userId);
   }
 
   /** Reviews the account has written, with resolved targets. */
   @Get("users/:userId/reviews")
+  @ApiOkResponse({ type: MyReviewResponseDto, isArray: true })
   getUserReviews(@Param("userId") userId: string): Promise<MyReviewDto[]> {
     return this.reviews.listMine(userId);
   }
 
   /** Comments the account has authored (excluding deleted). */
   @Get("users/:userId/comments")
+  @ApiOkResponse({ type: AdminUserCommentResponseDto, isArray: true })
   getUserComments(
     @Param("userId") userId: string,
   ): Promise<AdminUserCommentDto[]> {
@@ -223,18 +244,21 @@ export class AdminUsersController {
 
   /** Accepted followers of the account. Bypasses visibility — admin-only view. */
   @Get("users/:userId/followers")
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
   getUserFollowers(@Param("userId") userId: string): Promise<UserSummaryDto[]> {
     return this.follows.listFollowers(userId);
   }
 
   /** Accounts this user follows (accepted). Bypasses visibility — admin-only view. */
   @Get("users/:userId/following")
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
   getUserFollowing(@Param("userId") userId: string): Promise<UserSummaryDto[]> {
     return this.follows.listFollowing(userId);
   }
 
   /** Reports filed against this account, directly or against a comment they authored. */
   @Get("users/:userId/reports-against")
+  @ApiOkResponse({ type: ReportResponseDto, isArray: true })
   getUserReportsAgainst(@Param("userId") userId: string): Promise<ReportDto[]> {
     return this.reports.listAgainstUser(userId);
   }
@@ -245,12 +269,14 @@ export class AdminUsersController {
    * apart from invited-as-editor.
    */
   @Get("users/:userId/lists")
+  @ApiOkResponse({ type: MyListResponseDto, isArray: true })
   getUserLists(@Param("userId") userId: string): Promise<MyListDto[]> {
     return this.lists.listEditable(userId);
   }
 
   /** Compact library breakdown for the account drawer. */
   @Get("users/:userId/library-stats")
+  @ApiOkResponse({ type: AdminUserLibraryStatsResponseDto })
   async getUserLibraryStats(
     @Param("userId") userId: string,
   ): Promise<AdminUserLibraryStatsDto> {
@@ -282,6 +308,7 @@ export class AdminUsersController {
 
   /** Signed-in devices for one account, most recently active first. */
   @Get("users/:userId/sessions")
+  @ApiOkResponse({ type: SessionResponseDto, isArray: true })
   listUserSessions(@Param("userId") userId: string): Promise<SessionDto[]> {
     return this.authService.listSessions(userId);
   }

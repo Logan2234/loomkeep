@@ -21,14 +21,20 @@ import {
   Query,
   Res,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
+import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
+import { EntryEpisodesResponseResponseDto } from "./dto/entry-episodes-response.dto";
+import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
+import { LibraryEntryResponseDto } from "./dto/library-entry-response.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
@@ -42,6 +48,7 @@ export class LibraryController {
   ) {}
 
   @Get()
+  @ApiOkResponse({ type: PagedResponseDto(LibraryEntryResponseDto) })
   async listEntries(
     @CurrentUser() user: JwtPayload,
     @Query("q") q?: string,
@@ -69,6 +76,7 @@ export class LibraryController {
   }
 
   @Put()
+  @ApiOkResponse({ type: LibraryEntryResponseDto })
   upsertEntry(
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpsertEntryDto,
@@ -77,6 +85,7 @@ export class LibraryController {
   }
 
   @Get("calendar")
+  @ApiOkResponse({ type: CalendarEntryResponseDto, isArray: true })
   getCalendar(@CurrentUser() user: JwtPayload): Promise<CalendarEntryDto[]> {
     return this.libraryService.getCalendar(user.sub);
   }
@@ -109,6 +118,7 @@ export class LibraryController {
   }
 
   @Get("entries/:id")
+  @ApiOkResponse({ type: LibraryEntryResponseDto })
   getEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -117,6 +127,7 @@ export class LibraryController {
   }
 
   @Patch("entries/:id")
+  @ApiOkResponse({ type: LibraryEntryResponseDto })
   updateEntry(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -136,6 +147,7 @@ export class LibraryController {
 
   /** Log a completed rewatch (a completion beyond the entry's first one). */
   @Post("entries/:id/replays")
+  @ApiCreatedResponse({ type: LibraryEntryResponseDto })
   addReplay(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -154,6 +166,7 @@ export class LibraryController {
   }
 
   @Get("entries/:id/episodes")
+  @ApiOkResponse({ type: EntryEpisodesResponseResponseDto })
   getEntryEpisodes(
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
@@ -162,6 +175,7 @@ export class LibraryController {
   }
 
   @Post("episodes/:episodeId/watches")
+  @ApiCreatedResponse({ type: EpisodeWatchResponseDto })
   watchEpisode(
     @CurrentUser() user: JwtPayload,
     @Param("episodeId") episodeId: string,

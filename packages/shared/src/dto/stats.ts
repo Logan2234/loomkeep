@@ -113,7 +113,7 @@ export interface VideoTypeSplitDto {
   minutes: number;
 }
 
-interface VideoFilmExtremeDto {
+export interface VideoFilmExtremeDto {
   title: string;
   minutes: number;
   href: string;
@@ -165,7 +165,7 @@ export interface RatingByGroupDto {
   count: number;
 }
 
-interface GameTopEntryDto {
+export interface GameTopEntryDto {
   title: string;
   minutes: number;
   href: string;
@@ -187,13 +187,13 @@ export interface GameStatsDto {
   avgRatingByGenre: RatingByGroupDto[];
 }
 
-interface BookExtremeDto {
+export interface BookExtremeDto {
   title: string;
   pages: number;
   href: string;
 }
 
-interface AuthorPagesDto {
+export interface AuthorPagesDto {
   author: string;
   pages: number;
 }

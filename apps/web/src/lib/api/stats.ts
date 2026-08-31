@@ -1,58 +1,41 @@
 import type {
-  BookStatsDto,
-  GameStatsDto,
-  MusicStatsDto,
-  SocialStatsDto,
   StatsDomain,
-  StatsOverviewDto,
   StatsWindow,
-  StatsWorkDto,
-  VideoStatsDto,
-  VideoTemporalDto,
   WatchStaleness,
 } from "@loomkeep/shared";
-import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
-export const getStatsOverview = (
-  domain: StatsDomain | "ALL" = "ALL",
-): Promise<StatsOverviewDto> =>
-  request(`/stats/overview?${new URLSearchParams({ domain })}`);
+export const getStatsOverview = (domain: StatsDomain | "ALL" = "ALL") =>
+  typedRequest("/stats/overview", { query: { domain } });
 
 export const getStatsWorksByRating = (
   domain: StatsDomain | "ALL",
   rating: number,
-): Promise<StatsWorkDto[]> =>
-  request(
-    `/stats/works?${new URLSearchParams({ domain, rating: String(rating) })}`,
-  );
+) =>
+  typedRequest("/stats/works", {
+    query: { domain, rating: String(rating) },
+  });
 
 export const getStatsWorksByDecade = (
   domain: StatsDomain | "ALL",
   decade: number,
-): Promise<StatsWorkDto[]> =>
-  request(
-    `/stats/works?${new URLSearchParams({ domain, decade: String(decade) })}`,
-  );
+) =>
+  typedRequest("/stats/works", {
+    query: { domain, decade: String(decade) },
+  });
 
-export const getVideoStats = (): Promise<VideoStatsDto> =>
-  request("/stats/video");
+export const getVideoStats = () => typedRequest("/stats/video");
 
-export const getVideoSeries = (kind: WatchStaleness): Promise<StatsWorkDto[]> =>
-  request(`/stats/video/series?${new URLSearchParams({ kind })}`);
+export const getVideoSeries = (kind: WatchStaleness) =>
+  typedRequest("/stats/video/series", { query: { kind } });
 
-export const getGameStats = (): Promise<GameStatsDto> =>
-  request("/stats/games");
+export const getGameStats = () => typedRequest("/stats/games");
 
-export const getBookStats = (): Promise<BookStatsDto> =>
-  request("/stats/books");
+export const getBookStats = () => typedRequest("/stats/books");
 
-export const getMusicStats = (): Promise<MusicStatsDto> =>
-  request("/stats/music");
+export const getMusicStats = () => typedRequest("/stats/music");
 
-export const getVideoTemporal = (
-  period: StatsWindow = "ALL",
-): Promise<VideoTemporalDto> =>
-  request(`/stats/video/temporal?${new URLSearchParams({ period })}`);
+export const getVideoTemporal = (period: StatsWindow = "ALL") =>
+  typedRequest("/stats/video/temporal", { query: { period } });
 
-export const getSocialStats = (): Promise<SocialStatsDto> =>
-  request("/stats/social");
+export const getSocialStats = () => typedRequest("/stats/social");

@@ -1,17 +1,11 @@
 import type {
-  MusicDetailDto,
-  MusicEntryDto,
-  MusicSearchResponseDto,
-  PagedResult,
   UpdateMusicEntryDto,
   UpsertMusicEntryDto,
 } from "@loomkeep/shared";
-import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
-export function searchMusic(query: string): Promise<MusicSearchResponseDto> {
-  const params = new URLSearchParams({ q: query });
-  return request(`/music/search?${params}`);
-}
+export const searchMusic = (query: string) =>
+  typedRequest("/music/search", { query: { q: query } });
 
 export interface ListMusicFilters {
   query?: string;
@@ -22,36 +16,36 @@ export interface ListMusicFilters {
   page?: number;
 }
 
-export function listMusic(
-  filters: ListMusicFilters = {},
-): Promise<PagedResult<MusicEntryDto>> {
-  const params = new URLSearchParams();
-  if (filters.query) params.set("q", filters.query);
-  if (filters.favorite) params.set("favorite", "true");
-  for (const s of filters.statuses ?? []) params.append("status", s);
-  if (filters.sort) params.set("sort", filters.sort);
-  if (filters.order) params.set("order", filters.order);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/music${suffix}`);
+export function listMusic(filters: ListMusicFilters = {}) {
+  return typedRequest("/music", {
+    query: {
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+      sort: filters.sort,
+      order: filters.order,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+    },
+  });
 }
 
-export const getMusicDetail = (
-  source: string,
-  sourceId: string,
-): Promise<MusicDetailDto> =>
-  request(`/music/${source.toLowerCase()}/${sourceId}`);
+export const getMusicDetail = (source: string, sourceId: string) =>
+  typedRequest("/music/{source}/{sourceId}", {
+    params: { source: source.toLowerCase(), sourceId },
+  });
 
-export const upsertMusicEntry = (
-  body: UpsertMusicEntryDto,
-): Promise<MusicEntryDto> => request("/music", { method: "PUT", body });
+export const upsertMusicEntry = (body: UpsertMusicEntryDto) =>
+  typedRequest("/music", { method: "PUT", body });
 
-export const updateMusicEntry = (
-  entryId: string,
-  body: UpdateMusicEntryDto,
-): Promise<MusicEntryDto> =>
-  request(`/music/entries/${entryId}`, { method: "PATCH", body });
+export const updateMusicEntry = (entryId: string, body: UpdateMusicEntryDto) =>
+  typedRequest("/music/entries/{id}", {
+    method: "PATCH",
+    params: { id: entryId },
+    body,
+  });
 
 export const deleteMusicEntry = (entryId: string): Promise<void> =>
-  request(`/music/entries/${entryId}`, { method: "DELETE" });
+  typedRequest("/music/entries/{id}", {
+    method: "DELETE",
+    params: { id: entryId },
+  });

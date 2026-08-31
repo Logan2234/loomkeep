@@ -1,20 +1,13 @@
 import type {
-  BookDetailDto,
-  BookEntryDto,
-  BookSearchResponseDto,
-  PagedResult,
-  ReadingGoalDto,
   UpdateBookEntryDto,
   UpsertBookEntryDto,
   UpsertReadingGoalDto,
 } from "@loomkeep/shared";
 import { getLocale } from "../paraglide/runtime.js";
-import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
-export function searchBooks(query: string): Promise<BookSearchResponseDto> {
-  const params = new URLSearchParams({ q: query, lang: getLocale() });
-  return request(`/books/search?${params}`);
-}
+export const searchBooks = (query: string) =>
+  typedRequest("/books/search", { query: { q: query, lang: getLocale() } });
 
 export interface ListBooksFilters {
   query?: string;
@@ -25,55 +18,57 @@ export interface ListBooksFilters {
   page?: number;
 }
 
-export function listBooks(
-  filters: ListBooksFilters = {},
-): Promise<PagedResult<BookEntryDto>> {
-  const params = new URLSearchParams();
-  if (filters.query) params.set("q", filters.query);
-  if (filters.favorite) params.set("favorite", "true");
-  for (const s of filters.statuses ?? []) params.append("status", s);
-  if (filters.sort) params.set("sort", filters.sort);
-  if (filters.order) params.set("order", filters.order);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/books${suffix}`);
+export function listBooks(filters: ListBooksFilters = {}) {
+  return typedRequest("/books", {
+    query: {
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+      sort: filters.sort,
+      order: filters.order,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+    },
+  });
 }
 
-export function getBookDetail(
-  source: string,
-  sourceId: string,
-): Promise<BookDetailDto> {
-  const params = new URLSearchParams({ lang: getLocale() });
-  return request(`/books/${source.toLowerCase()}/${sourceId}?${params}`);
+export function getBookDetail(source: string, sourceId: string) {
+  return typedRequest("/books/{source}/{sourceId}", {
+    params: { source: source.toLowerCase(), sourceId },
+    query: { lang: getLocale() },
+  });
 }
 
-export const upsertBookEntry = (
-  body: UpsertBookEntryDto,
-): Promise<BookEntryDto> => request("/books", { method: "PUT", body });
+export const upsertBookEntry = (body: UpsertBookEntryDto) =>
+  typedRequest("/books", { method: "PUT", body });
 
-export const updateBookEntry = (
-  entryId: string,
-  body: UpdateBookEntryDto,
-): Promise<BookEntryDto> =>
-  request(`/books/entries/${entryId}`, { method: "PATCH", body });
+export const updateBookEntry = (entryId: string, body: UpdateBookEntryDto) =>
+  typedRequest("/books/entries/{id}", {
+    method: "PATCH",
+    params: { id: entryId },
+    body,
+  });
 
 export const deleteBookEntry = (entryId: string): Promise<void> =>
-  request(`/books/entries/${entryId}`, { method: "DELETE" });
+  typedRequest("/books/entries/{id}", {
+    method: "DELETE",
+    params: { id: entryId },
+  });
 
-export const addBookReplay = (entryId: string): Promise<BookEntryDto> =>
-  request(`/books/entries/${entryId}/replays`, {
+export const addBookReplay = (entryId: string) =>
+  typedRequest("/books/entries/{id}/replays", {
     method: "POST",
+    params: { id: entryId },
     body: {},
   });
 
 export const deleteBookReplay = (replayId: string): Promise<void> =>
-  request(`/books/replays/${replayId}`, { method: "DELETE" });
+  typedRequest("/books/replays/{id}", {
+    method: "DELETE",
+    params: { id: replayId },
+  });
 
-export const getReadingGoal = (year: number): Promise<ReadingGoalDto> =>
-  request(`/books/reading-goal?year=${year}`);
+export const getReadingGoal = (year: number) =>
+  typedRequest("/books/reading-goal", { query: { year: String(year) } });
 
-export const upsertReadingGoal = (
-  body: UpsertReadingGoalDto,
-): Promise<ReadingGoalDto> =>
-  request("/books/reading-goal", { method: "PUT", body });
+export const upsertReadingGoal = (body: UpsertReadingGoalDto) =>
+  typedRequest("/books/reading-goal", { method: "PUT", body });

@@ -1,17 +1,8 @@
-import type {
-  GameDetailDto,
-  GameEntryDto,
-  GameSearchResponseDto,
-  PagedResult,
-  UpdateGameEntryDto,
-  UpsertGameEntryDto,
-} from "@loomkeep/shared";
-import { request } from "./core";
+import type { UpdateGameEntryDto, UpsertGameEntryDto } from "@loomkeep/shared";
+import { typedRequest } from "./generated/typed-request";
 
-export function searchGames(query: string): Promise<GameSearchResponseDto> {
-  const params = new URLSearchParams({ q: query });
-  return request(`/games/search?${params}`);
-}
+export const searchGames = (query: string) =>
+  typedRequest("/games/search", { query: { q: query } });
 
 export interface ListGamesFilters {
   query?: string;
@@ -22,45 +13,49 @@ export interface ListGamesFilters {
   page?: number;
 }
 
-export function listGames(
-  filters: ListGamesFilters = {},
-): Promise<PagedResult<GameEntryDto>> {
-  const params = new URLSearchParams();
-  if (filters.query) params.set("q", filters.query);
-  if (filters.favorite) params.set("favorite", "true");
-  for (const s of filters.statuses ?? []) params.append("status", s);
-  if (filters.sort) params.set("sort", filters.sort);
-  if (filters.order) params.set("order", filters.order);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  const suffix = params.size > 0 ? `?${params}` : "";
-  return request(`/games${suffix}`);
+export function listGames(filters: ListGamesFilters = {}) {
+  return typedRequest("/games", {
+    query: {
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+      sort: filters.sort,
+      order: filters.order,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+    },
+  });
 }
 
-export const getGameDetail = (
-  source: string,
-  sourceId: string,
-): Promise<GameDetailDto> =>
-  request(`/games/${source.toLowerCase()}/${sourceId}`);
+export const getGameDetail = (source: string, sourceId: string) =>
+  typedRequest("/games/{source}/{sourceId}", {
+    params: { source: source.toLowerCase(), sourceId },
+  });
 
-export const upsertGameEntry = (
-  body: UpsertGameEntryDto,
-): Promise<GameEntryDto> => request("/games", { method: "PUT", body });
+export const upsertGameEntry = (body: UpsertGameEntryDto) =>
+  typedRequest("/games", { method: "PUT", body });
 
-export const updateGameEntry = (
-  entryId: string,
-  body: UpdateGameEntryDto,
-): Promise<GameEntryDto> =>
-  request(`/games/entries/${entryId}`, { method: "PATCH", body });
+export const updateGameEntry = (entryId: string, body: UpdateGameEntryDto) =>
+  typedRequest("/games/entries/{id}", {
+    method: "PATCH",
+    params: { id: entryId },
+    body,
+  });
 
 export const deleteGameEntry = (entryId: string): Promise<void> =>
-  request(`/games/entries/${entryId}`, { method: "DELETE" });
+  typedRequest("/games/entries/{id}", {
+    method: "DELETE",
+    params: { id: entryId },
+  });
 
-export const addGameReplay = (entryId: string): Promise<GameEntryDto> =>
-  request(`/games/entries/${entryId}/replays`, {
+export const addGameReplay = (entryId: string) =>
+  typedRequest("/games/entries/{id}/replays", {
     method: "POST",
+    params: { id: entryId },
     body: {},
   });
 
 export const deleteGameReplay = (replayId: string): Promise<void> =>
-  request(`/games/replays/${replayId}`, { method: "DELETE" });
+  typedRequest("/games/replays/{id}", {
+    method: "DELETE",
+    params: { id: replayId },
+  });

@@ -29,7 +29,7 @@ export interface WatchProviderDto {
 }
 
 /** Where to watch, split by offer type, for one region. */
-interface WatchProvidersDto {
+export interface WatchProvidersDto {
   flatrate: WatchProviderDto[];
   rent: WatchProviderDto[];
   buy: WatchProviderDto[];
@@ -89,7 +89,7 @@ export interface RatingDto {
 }
 
 /** An official/external link (streaming, official site…), from AniList. */
-interface ExternalLinkDto {
+export interface ExternalLinkDto {
   /** Site name, e.g. "Crunchyroll", "Official Site". */
   name: string;
   url: string;
@@ -163,7 +163,7 @@ export interface MediaDetailsDto extends MediaSummaryDto {
 }
 
 /** One episode on the unified media page, carrying the user's watch history. */
-interface MediaDetailEpisodeDto {
+export interface MediaDetailEpisodeDto {
   /** null until the media is persisted (i.e. not yet in anyone's library). */
   id: string | null;
   number: number;

@@ -119,9 +119,9 @@ describe("notification presentation", () => {
     ]) {
       expect(
         notificationText(
-          notification(type, "Texte de l’utilisateur", "Titre original"),
+          notification(type, "Texte de l'utilisateur", "Titre original"),
         ),
-      ).toEqual({ title: "Titre original", body: "Texte de l’utilisateur" });
+      ).toEqual({ title: "Titre original", body: "Texte de l'utilisateur" });
     }
 
     expect(

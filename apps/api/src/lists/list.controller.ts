@@ -62,7 +62,14 @@ export class ListController {
     return this.lists.create(user.sub, body);
   }
 
+  // ListMembershipDto is a dynamic dictionary keyed by list id (value = item
+  // id) — no fixed key set to enumerate as named properties (unlike e.g.
+  // ImportAvailabilityResponseDto's known-source keys), so this documents
+  // the shape directly via a raw schema instead of a response DTO class.
   @Get("me/membership")
+  @ApiOkResponse({
+    schema: { type: "object", additionalProperties: { type: "string" } },
+  })
   membershipFor(
     @CurrentUser() user: JwtPayload,
     @Query("targetType") targetType: string,

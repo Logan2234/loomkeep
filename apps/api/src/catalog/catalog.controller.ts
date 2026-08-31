@@ -9,13 +9,18 @@ import {
   SearchResponseDto,
 } from "@loomkeep/shared";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
+import { CastDetailResponseDto } from "./dto/cast-detail-response.dto";
+import { MediaExtrasResponseDto } from "./dto/media-extras-response.dto";
+import { MediaSummaryResponseDto } from "./dto/media-summary-response.dto";
 import { SearchQueryDto } from "./dto/search-query.dto";
 import { MediaItemService } from "./media-item.service";
 import { rankBySearchRelevance } from "./search-ranking";
@@ -34,6 +39,7 @@ export class CatalogController {
    * unless the account opted in and is confirmed 18+.
    */
   @Get("search")
+  @ApiOkResponse({ type: PagedResponseDto(MediaSummaryResponseDto) })
   async search(
     @CurrentUser() user: JwtPayload,
     @Query() query: SearchQueryDto,
@@ -77,6 +83,7 @@ export class CatalogController {
 
   /** Live detail of a cast entity (TMDB person, or AniList staff) for the media-page modal. */
   @Get(":source/person/:id")
+  @ApiOkResponse({ type: CastDetailResponseDto })
   async getPerson(
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,
@@ -104,6 +111,7 @@ export class CatalogController {
 
   /** Live extras (where to watch, cast, similar) — nothing is persisted. */
   @Get(":source/:id/extras")
+  @ApiOkResponse({ type: MediaExtrasResponseDto })
   async getExtras(
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,

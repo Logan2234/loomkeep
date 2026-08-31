@@ -33,3 +33,8 @@ export interface ReportDto {
   /** Null if the underlying target was since deleted. */
   target: ReportTargetSummaryDto | null;
 }
+
+/** `GET /admin/reports/pending-count` response. */
+export interface ReportPendingCountDto {
+  count: number;
+}

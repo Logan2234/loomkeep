@@ -20,6 +20,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
@@ -28,6 +29,10 @@ import { GameItemService } from "../games/game-item.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdminCacheDeleteOrphansResultResponseDto } from "./dto/admin-cache-delete-orphans-result-response.dto";
+import { AdminCacheItemDetailResponseDto } from "./dto/admin-cache-item-detail-response.dto";
+import { AdminCacheListResultResponseDto } from "./dto/admin-cache-list-response.dto";
+import { AdminCacheResyncStaleResultResponseDto } from "./dto/admin-cache-resync-stale-result-response.dto";
 
 const PAGE_SIZE = 50;
 const STALE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -86,6 +91,7 @@ export class AdminCacheController {
    * actions (those counts ignore search/orphans so they reflect the whole domain).
    */
   @Get("cache")
+  @ApiOkResponse({ type: AdminCacheListResultResponseDto })
   async list(
     @Query("domain") domain: string,
     @Query("search") search?: string,
@@ -200,6 +206,7 @@ export class AdminCacheController {
 
   /** Cache-state detail of one item (freshness, external ids, media seasons, in-app link). */
   @Get("cache/:domain/:id")
+  @ApiOkResponse({ type: AdminCacheItemDetailResponseDto })
   async detail(
     @Param("domain") domain: string,
     @Param("id") id: string,
@@ -346,6 +353,7 @@ export class AdminCacheController {
 
   /** Re-syncs every stale (>24h) item in a domain in one pass. */
   @Post("cache/:domain/resync-stale")
+  @ApiCreatedResponse({ type: AdminCacheResyncStaleResultResponseDto })
   async resyncStale(
     @Param("domain") domain: string,
   ): Promise<AdminCacheResyncStaleResultDto> {
@@ -375,6 +383,7 @@ export class AdminCacheController {
    * the `:id` delete so "orphans" isn't swallowed as an id.
    */
   @Delete("cache/:domain/orphans")
+  @ApiOkResponse({ type: AdminCacheDeleteOrphansResultResponseDto })
   async removeOrphans(
     @Param("domain") domain: string,
   ): Promise<AdminCacheDeleteOrphansResultDto> {

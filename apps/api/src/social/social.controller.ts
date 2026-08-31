@@ -20,6 +20,7 @@ import {
   type JwtPayload,
   CurrentUser,
 } from "../auth/decorators/current-user.decorator";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
@@ -43,6 +44,7 @@ export class SocialController {
 
   /** Home feed: aggregated milestones from the users you follow. */
   @Get("feed")
+  @ApiOkResponse({ type: PagedResponseDto(ActivityEventResponseDto) })
   feed(
     @CurrentUser() user: JwtPayload,
     @Query("page") page?: string,
@@ -61,6 +63,7 @@ export class SocialController {
 
   /** A user's detailed activity timeline (visibility-filtered). */
   @Get("users/:username/activity")
+  @ApiOkResponse({ type: PagedResponseDto(ActivityEventResponseDto) })
   async userActivity(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,

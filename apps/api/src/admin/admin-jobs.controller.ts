@@ -7,6 +7,7 @@ import {
   Param,
   Post,
 } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
@@ -16,6 +17,7 @@ import { ReportService } from "../reports/report.service";
 import { InactiveAccountService } from "../users/inactive-account.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { BackupService } from "./backup.service";
+import { JobListResponseResponseDto } from "./dto/job-list-response.dto";
 
 /** Scheduled jobs: run history and manual triggering. */
 @AdminOnly()
@@ -32,6 +34,7 @@ export class AdminJobsController {
 
   /** Every known scheduled job, with its recent run history. */
   @Get("jobs")
+  @ApiOkResponse({ type: JobListResponseResponseDto })
   async listJobs(): Promise<JobListResponseDto> {
     return { jobs: await this.jobRuns.listJobs() };
   }

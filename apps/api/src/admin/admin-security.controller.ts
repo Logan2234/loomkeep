@@ -5,12 +5,16 @@ import type {
   SecurityEventType,
 } from "@loomkeep/shared";
 import { Controller, Get, Query } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import {
   SECURITY_EVENT_PAGE_SIZE,
   SecurityEventService,
 } from "../security/security-event.service";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdminSecuritySummaryResponseDto } from "./dto/admin-security-summary-response.dto";
+import { SecurityEventResponseDto } from "./dto/security-event-response.dto";
 
 const SECURITY_EVENT_TYPES: SecurityEventType[] = [
   "USER_REGISTERED",
@@ -29,12 +33,14 @@ export class AdminSecurityController {
 
   /** Failed-login pressure over 24 h / 7 j / 30 j, for the page header. */
   @Get("security/summary")
+  @ApiOkResponse({ type: AdminSecuritySummaryResponseDto })
   getSecuritySummary(): Promise<AdminSecuritySummaryDto> {
     return this.securityEvents.summary();
   }
 
   /** Sensitive account actions, filterable by type/identifier and paginated. */
   @Get("security")
+  @ApiOkResponse({ type: PagedResponseDto(SecurityEventResponseDto) })
   getSecurityEvents(
     @Query("type") type?: string,
     @Query("identifier") identifier?: string,

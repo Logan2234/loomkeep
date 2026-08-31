@@ -4,6 +4,7 @@ import {
   type AdminReportsSummaryDto,
   type PagedResult,
   type ReportDto,
+  type ReportPendingCountDto,
   type ReportStatus,
 } from "@loomkeep/shared";
 import {
@@ -15,15 +16,19 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
+import { ReportPendingCountResponseDto } from "../reports/dto/report-pending-count-response.dto";
+import { ReportResponseDto } from "../reports/dto/report-response.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
 import { ModerationDecisionService } from "../reports/moderation-decision.service";
 import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
@@ -33,6 +38,7 @@ import {
   medianResolutionHours,
   rankReporters,
 } from "./admin-social-stats.util";
+import { AdminReportsSummaryResponseDto } from "./dto/admin-reports-summary-response.dto";
 
 const STATUSES: ReportStatus[] = ["PENDING", "RESOLVED", "DISMISSED"];
 
@@ -48,6 +54,7 @@ export class AdminReportsController {
   ) {}
 
   @Get()
+  @ApiOkResponse({ type: PagedResponseDto(ReportResponseDto) })
   list(
     @Query("status") status?: string,
     @Query("page") page?: string,
@@ -71,6 +78,7 @@ export class AdminReportsController {
    * on the same numbers.
    */
   @Get("summary")
+  @ApiOkResponse({ type: AdminReportsSummaryResponseDto })
   async summary(): Promise<AdminReportsSummaryDto> {
     const [pending, resolved, dismissed, closed, byReporter] =
       await Promise.all([
@@ -119,7 +127,8 @@ export class AdminReportsController {
   }
 
   @Get("pending-count")
-  async pendingCount(): Promise<{ count: number }> {
+  @ApiOkResponse({ type: ReportPendingCountResponseDto })
+  async pendingCount(): Promise<ReportPendingCountDto> {
     return { count: await this.reports.pendingCount() };
   }
 
