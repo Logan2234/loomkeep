@@ -15,12 +15,18 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import {
   type JwtPayload,
   CurrentUser,
 } from "../auth/decorators/current-user.decorator";
+import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
+import { ActivityEventResponseDto } from "./dto/activity-event-response.dto";
+import { FollowRequestResponseDto } from "./dto/follow-request-response.dto";
+import { RelationshipResponseDto } from "./dto/relationship-response.dto";
+import { SocialProfileResponseDto } from "./dto/social-profile-response.dto";
 import { FollowService } from "./follow.service";
 import { ProfileService } from "./profile.service";
 import { SocialFeatureGuard } from "./social-feature.guard";
@@ -48,6 +54,7 @@ export class SocialController {
 
   /** A short home-page teaser of the home feed. */
   @Get("feed/preview")
+  @ApiOkResponse({ type: ActivityEventResponseDto, isArray: true })
   feedPreview(@CurrentUser() user: JwtPayload): Promise<ActivityEventDto[]> {
     return this.activity.homePreview(user.sub);
   }
@@ -76,6 +83,7 @@ export class SocialController {
   }
 
   @Get("requests")
+  @ApiOkResponse({ type: FollowRequestResponseDto, isArray: true })
   requests(@CurrentUser() user: JwtPayload): Promise<FollowRequestDto[]> {
     return this.follow.listRequests(user.sub);
   }
@@ -98,6 +106,7 @@ export class SocialController {
 
   /** A user's followers (gated like their profile content). */
   @Get("users/:username/followers")
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
   userFollowers(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -107,6 +116,7 @@ export class SocialController {
 
   /** Accounts a user follows (gated like their profile content). */
   @Get("users/:username/following")
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
   userFollowing(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -115,6 +125,7 @@ export class SocialController {
   }
 
   @Get("users/:username")
+  @ApiOkResponse({ type: SocialProfileResponseDto })
   profile(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -123,6 +134,7 @@ export class SocialController {
   }
 
   @Post("users/:username/follow")
+  @ApiCreatedResponse({ type: RelationshipResponseDto })
   followUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -131,6 +143,7 @@ export class SocialController {
   }
 
   @Delete("users/:username/follow")
+  @ApiOkResponse({ type: RelationshipResponseDto })
   unfollowUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -139,6 +152,7 @@ export class SocialController {
   }
 
   @Post("users/:username/block")
+  @ApiCreatedResponse({ type: RelationshipResponseDto })
   blockUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,
@@ -147,6 +161,7 @@ export class SocialController {
   }
 
   @Delete("users/:username/block")
+  @ApiOkResponse({ type: RelationshipResponseDto })
   unblockUser(
     @CurrentUser() user: JwtPayload,
     @Param("username") username: string,

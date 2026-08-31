@@ -1,59 +1,61 @@
-import type {
-  FollowRequestDto,
-  GhostSwitchImpactDto,
-  RelationshipDto,
-  SocialProfileDto,
-  UpdateVisibilitySettingsDto,
-  UserSummaryDto,
-  VisibilitySettingsDto,
-} from "@loomkeep/shared";
-import { request } from "./core";
+import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared";
+import { typedRequest } from "./generated/typed-request";
 
-export const getProfile = (username: string): Promise<SocialProfileDto> =>
-  request(`/social/users/${encodeURIComponent(username)}`);
+export const getProfile = (username: string) =>
+  typedRequest("/social/users/{username}", { params: { username } });
 
-export const followUser = (username: string): Promise<RelationshipDto> =>
-  request(`/social/users/${encodeURIComponent(username)}/follow`, {
+export const followUser = (username: string) =>
+  typedRequest("/social/users/{username}/follow", {
     method: "POST",
+    params: { username },
   });
 
-export const unfollowUser = (username: string): Promise<RelationshipDto> =>
-  request(`/social/users/${encodeURIComponent(username)}/follow`, {
+export const unfollowUser = (username: string) =>
+  typedRequest("/social/users/{username}/follow", {
     method: "DELETE",
+    params: { username },
   });
 
-export const blockUser = (username: string): Promise<RelationshipDto> =>
-  request(`/social/users/${encodeURIComponent(username)}/block`, {
+export const blockUser = (username: string) =>
+  typedRequest("/social/users/{username}/block", {
     method: "POST",
+    params: { username },
   });
 
-export const unblockUser = (username: string): Promise<RelationshipDto> =>
-  request(`/social/users/${encodeURIComponent(username)}/block`, {
+export const unblockUser = (username: string) =>
+  typedRequest("/social/users/{username}/block", {
     method: "DELETE",
+    params: { username },
   });
 
-export const getFollowRequests = (): Promise<FollowRequestDto[]> =>
-  request("/social/requests");
+export const getFollowRequests = () => typedRequest("/social/requests");
 
 export const acceptFollowRequest = (id: string): Promise<void> =>
-  request(`/social/requests/${id}/accept`, { method: "POST" });
+  typedRequest("/social/requests/{id}/accept", {
+    method: "POST",
+    params: { id },
+  });
 
 export const rejectFollowRequest = (id: string): Promise<void> =>
-  request(`/social/requests/${id}/reject`, { method: "POST" });
+  typedRequest("/social/requests/{id}/reject", {
+    method: "POST",
+    params: { id },
+  });
 
-export const getUserFollowers = (username: string): Promise<UserSummaryDto[]> =>
-  request(`/social/users/${encodeURIComponent(username)}/followers`);
+export const getUserFollowers = (username: string) =>
+  typedRequest("/social/users/{username}/followers", {
+    params: { username },
+  });
 
-export const getUserFollowing = (username: string): Promise<UserSummaryDto[]> =>
-  request(`/social/users/${encodeURIComponent(username)}/following`);
+export const getUserFollowing = (username: string) =>
+  typedRequest("/social/users/{username}/following", {
+    params: { username },
+  });
 
-export const getPrivacySettings = (): Promise<VisibilitySettingsDto> =>
-  request("/social/me/privacy");
+export const getPrivacySettings = () => typedRequest("/social/me/privacy");
 
-export const updatePrivacySettings = (
-  body: UpdateVisibilitySettingsDto,
-): Promise<VisibilitySettingsDto> =>
-  request("/social/me/privacy", { method: "PATCH", body });
+export const updatePrivacySettings = (body: UpdateVisibilitySettingsDto) =>
+  typedRequest("/social/me/privacy", { method: "PATCH", body });
 
-export const getGhostSwitchImpact = (): Promise<GhostSwitchImpactDto> =>
-  request("/social/me/privacy/ghost-impact");
+export const getGhostSwitchImpact = () =>
+  typedRequest("/social/me/privacy/ghost-impact");
