@@ -13,6 +13,7 @@ import type {
 } from "@loomkeep/shared";
 import { Domain, ErrorCode, STATS_DOMAINS } from "@loomkeep/shared";
 import { Controller, Get, HttpStatus, Query, UseGuards } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
@@ -20,6 +21,14 @@ import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { DomainGateService } from "../users/domain-gate.service";
+import { BookStatsResponseDto } from "./dto/book-stats-response.dto";
+import { GameStatsResponseDto } from "./dto/game-stats-response.dto";
+import { MusicStatsResponseDto } from "./dto/music-stats-response.dto";
+import { SocialStatsResponseDto } from "./dto/social-stats-response.dto";
+import { StatsOverviewResponseDto } from "./dto/stats-overview-response.dto";
+import { StatsWorkResponseDto } from "./dto/stats-work-response.dto";
+import { VideoStatsResponseDto } from "./dto/video-stats-response.dto";
+import { VideoTemporalResponseDto } from "./dto/video-temporal-response.dto";
 import { StatsService } from "./stats.service";
 
 const DOMAIN_CHOICES = ["ALL", ...STATS_DOMAINS] as const;
@@ -35,6 +44,7 @@ export class StatsController {
   ) {}
 
   @Get("overview")
+  @ApiOkResponse({ type: StatsOverviewResponseDto })
   async getOverview(
     @CurrentUser() user: JwtPayload,
     @Query("domain") domainParam = "ALL",
@@ -50,6 +60,7 @@ export class StatsController {
   }
 
   @Get("works")
+  @ApiOkResponse({ type: StatsWorkResponseDto, isArray: true })
   async getWorks(
     @CurrentUser() user: JwtPayload,
     @Query("domain") domainParam = "ALL",
@@ -67,6 +78,7 @@ export class StatsController {
   }
 
   @Get("video")
+  @ApiOkResponse({ type: VideoStatsResponseDto })
   async getVideoStats(@CurrentUser() user: JwtPayload): Promise<VideoStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);
@@ -74,6 +86,7 @@ export class StatsController {
   }
 
   @Get("video/series")
+  @ApiOkResponse({ type: StatsWorkResponseDto, isArray: true })
   async getVideoSeries(
     @CurrentUser() user: JwtPayload,
     @Query("kind") kindParam: string,
@@ -88,6 +101,7 @@ export class StatsController {
   }
 
   @Get("video/temporal")
+  @ApiOkResponse({ type: VideoTemporalResponseDto })
   async getVideoTemporal(
     @CurrentUser() user: JwtPayload,
     @Query("period") periodParam = "ALL",
@@ -103,6 +117,7 @@ export class StatsController {
   }
 
   @Get("games")
+  @ApiOkResponse({ type: GameStatsResponseDto })
   async getGameStats(@CurrentUser() user: JwtPayload): Promise<GameStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);
@@ -110,6 +125,7 @@ export class StatsController {
   }
 
   @Get("books")
+  @ApiOkResponse({ type: BookStatsResponseDto })
   async getBookStats(@CurrentUser() user: JwtPayload): Promise<BookStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);
@@ -117,6 +133,7 @@ export class StatsController {
   }
 
   @Get("music")
+  @ApiOkResponse({ type: MusicStatsResponseDto })
   async getMusicStats(@CurrentUser() user: JwtPayload): Promise<MusicStatsDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);
@@ -125,6 +142,7 @@ export class StatsController {
 
   @Get("social")
   @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: SocialStatsResponseDto })
   async getSocialStats(
     @CurrentUser() user: JwtPayload,
   ): Promise<SocialStatsDto> {
