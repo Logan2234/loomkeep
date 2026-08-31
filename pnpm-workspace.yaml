@@ -48,3 +48,30 @@ minimumReleaseAgeExclude:
   - find-my-way@9.6.1
   - js-yaml@4.3.1 || 5.2.2
   - brace-expansion@1.1.17 || 1.1.18
+  - "@nestjs/terminus@12.0.0"
+  - "@sentry/core@10.73.0"
+  - "@sentry/node-core@10.73.0"
+  - "@sentry/node@10.73.0"
+  - "@sentry/opentelemetry@10.73.0"
+  - "@sentry/server-utils@10.73.0"
+  - nestjs-pino@5.0.0
+  - nodemailer@9.1.0
+  - "@sentry/browser-utils@10.73.0"
+  - "@sentry/browser@10.73.0"
+  - "@sentry/cloudflare@10.73.0"
+  - "@sentry/feedback@10.73.0"
+  - "@sentry/replay-canvas@10.73.0"
+  - "@sentry/replay@10.73.0"
+  - "@sentry/svelte@10.73.0"
+  - "@sentry/sveltekit@10.73.0"
+  - "@typescript-eslint/eslint-plugin@8.69.0"
+  - "@typescript-eslint/parser@8.69.0"
+  - "@typescript-eslint/project-service@8.69.0"
+  - "@typescript-eslint/scope-manager@8.69.0"
+  - "@typescript-eslint/tsconfig-utils@8.69.0"
+  - "@typescript-eslint/type-utils@8.69.0"
+  - "@typescript-eslint/types@8.69.0"
+  - "@typescript-eslint/typescript-estree@8.69.0"
+  - "@typescript-eslint/utils@8.69.0"
+  - "@typescript-eslint/visitor-keys@8.69.0"
+  - typescript-eslint@8.69.0

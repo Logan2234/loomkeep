@@ -14,6 +14,7 @@ import { AllExceptionsFilter } from "./common/all-exceptions.filter";
 import { CommonModule } from "./common/common.module";
 import { loggerOptions } from "./common/logger.config";
 import { RuntimeConfigModule } from "./config/config.module";
+import { validateEnv } from "./config/env.validation";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
 import { HealthModule } from "./health/health.module";
@@ -40,6 +41,7 @@ import { UsersModule } from "./users/users.module";
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env", "../../.env"],
+      validate: validateEnv,
     }),
     LoggerModule.forRoot(loggerOptions),
     ScheduleModule.forRoot(),

@@ -7,6 +7,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
+  clearScreen: false,
   plugins: [
     tailwindcss(),
     // Keep existing routes without locale prefixes. Explicit choices win,
