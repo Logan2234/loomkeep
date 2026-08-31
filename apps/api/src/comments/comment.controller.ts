@@ -18,6 +18,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import {
   CurrentUser,
@@ -29,6 +30,8 @@ import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { COMMENT_PAGE_SIZE, CommentService } from "./comment.service";
+import { CommentCountResponseDto } from "./dto/comment-count-response.dto";
+import { CommentResponseDto } from "./dto/comment-response.dto";
 import { CreateCommentBody } from "./dto/create-comment.dto";
 import { ReactCommentBody } from "./dto/react-comment.dto";
 import { UpdateCommentBody } from "./dto/update-comment.dto";
@@ -56,6 +59,7 @@ export class CommentController {
   ) {}
 
   @Get(":type/:id/count")
+  @ApiOkResponse({ type: CommentCountResponseDto })
   count(
     @Param("type") type: string,
     @Param("id") id: string,
@@ -88,6 +92,7 @@ export class CommentController {
   // and replies back-to-back.
   @Throttle({ default: { limit: 1, ttl: 5_000 } })
   @Post()
+  @ApiCreatedResponse({ type: CommentResponseDto })
   create(
     @CurrentUser() user: JwtPayload,
     @Body() body: CreateCommentBody,
@@ -96,6 +101,7 @@ export class CommentController {
   }
 
   @Put(":id")
+  @ApiOkResponse({ type: CommentResponseDto })
   update(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
