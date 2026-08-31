@@ -220,6 +220,9 @@
   <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center">
     <input
       type="text"
+      name="query"
+      aria-label={m.admin_cache_search()}
+      enterkeyhint="search"
       bind:value={searchInput}
       oninput={onSearchInput}
       placeholder={m.admin_cache_search()}

@@ -6,9 +6,14 @@ config();
 
 import "./instrument";
 
+import helmet from "@fastify/helmet";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import { FastifyAdapter } from "@nestjs/platform-fastify";
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from "@nestjs/platform-fastify";
+import * as Sentry from "@sentry/node";
 import { Logger } from "nestjs-pino";
 import { readFile } from "node:fs/promises";
 import { join } from "path";
@@ -26,7 +31,7 @@ if (!process.env.WEB_ORIGIN) {
 const webOrigin: string = process.env.WEB_ORIGIN;
 
 async function bootstrap() {
-  const app = await NestFactory.create(
+  const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     // TV Time import posts several CSV files as a JSON body; the default 1 MB
     // Fastify limit is too small for a full watch history.
@@ -78,6 +83,14 @@ async function bootstrap() {
   );
 
   app.useLogger(app.get(Logger));
+  // Lets onModuleDestroy hooks (Prisma disconnect, log flush...) run on
+  // SIGTERM — otherwise a Docker redeploy kills the process before they fire.
+  app.enableShutdownHooks();
+  // Base docker-compose.yml (self-host, no Caddy) exposes the API directly,
+  // so it can't rely solely on the edge's security headers (see Caddyfile) —
+  // CSP stays off: Swagger UI (dev-only, below) needs inline scripts/styles,
+  // and the API otherwise only serves JSON.
+  await app.register(helmet, { contentSecurityPolicy: false });
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
     new ValidationPipe({
@@ -91,11 +104,14 @@ async function bootstrap() {
   // regardless (the nest-cli swagger plugin injects it into every compiled
   // file using @Api* decorators), but the UI itself is still gated to dev.
   if (isDev) {
-    const raw = await readFile(join(process.cwd(), "package.json"), "utf-8");
+    // __dirname-relative, not cwd-relative: cwd depends on how the process
+    // was launched, __dirname (apps/api/src, ts-node's own file location in
+    // dev) doesn't.
+    const raw = await readFile(join(__dirname, "../package.json"), "utf-8");
     const { version } = JSON.parse(raw) as { version: string };
 
     const { SwaggerModule, DocumentBuilder } = await import("@nestjs/swagger");
-    const config = new DocumentBuilder()
+    const swaggerConfig = new DocumentBuilder()
       .setTitle("Loomkeep API")
       .setDescription("REST API contract")
       .setVersion(version)
@@ -105,7 +121,7 @@ async function bootstrap() {
     SwaggerModule.setup(
       "swagger",
       app,
-      SwaggerModule.createDocument(app, config),
+      SwaggerModule.createDocument(app, swaggerConfig),
     );
   }
 
@@ -114,4 +130,11 @@ async function bootstrap() {
   await app.listen(3000, "0.0.0.0");
 }
 
-void bootstrap();
+bootstrap().catch(async (err: unknown) => {
+  // Sentry.init() only runs in production with a DSN set (see instrument.ts)
+  // — captureException/flush are safe no-ops otherwise.
+  Sentry.captureException(err);
+  await Sentry.flush(2000);
+  console.error(err);
+  process.exit(1);
+});

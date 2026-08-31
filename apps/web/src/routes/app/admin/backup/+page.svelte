@@ -279,6 +279,7 @@
     <input
       bind:this={fileInput}
       type="file"
+      name="backup"
       accept=".sql"
       class="hidden"
       onchange={onFileSelected} />
@@ -328,6 +329,7 @@
       </p>
       <input
         type="text"
+        name="confirmation"
         bind:value={confirmText}
         disabled={restoreMut.loading}
         placeholder={CONFIRM_PHRASE}

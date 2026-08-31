@@ -92,8 +92,11 @@
       <input
         id="list-title"
         type="text"
+        name="title"
         class="input"
+        minlength="1"
         maxlength={100}
+        required
         placeholder={m.lists_title_placeholder()}
         bind:value={title} />
     </div>
@@ -107,7 +110,9 @@
       </label>
       <textarea
         id="list-description"
+        name="description"
         class="input min-h-16 resize-y"
+        rows="3"
         maxlength={500}
         bind:value={description}></textarea>
     </div>

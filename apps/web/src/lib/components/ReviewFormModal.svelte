@@ -110,7 +110,9 @@
       </label>
       <textarea
         id="review-text"
+        name="text"
         class="input min-h-24 resize-y"
+        rows="4"
         placeholder={m.reviews_text_placeholder()}
         maxlength={REVIEW_TEXT_MAX_LENGTH}
         bind:value={formText}></textarea>

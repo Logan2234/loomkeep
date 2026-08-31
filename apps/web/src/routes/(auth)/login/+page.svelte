@@ -136,17 +136,30 @@
           <h1 class="font-display text-xl font-bold">{m.auth_login_title()}</h1>
           <input
             type="text"
+            name="identifier"
+            autocomplete="name"
+            autocapitalize="words"
+            enterkeyhint="next"
+            aria-label={m.auth_login_identifier_placeholder()}
+            aria-invalid={loginMut.fieldErrors.identifier ? "true" : undefined}
+            aria-describedby={loginMut.fieldErrors.identifier
+              ? "login-identifier-error"
+              : undefined}
             placeholder={m.auth_login_identifier_placeholder()}
             bind:value={identifier}
             required
             class="input" />
           {#if loginMut.fieldErrors.identifier}
-            <p class="text-danger -mt-2 text-xs">
+            <p id="login-identifier-error" class="text-danger -mt-2 text-xs">
               {loginMut.fieldErrors.identifier}
             </p>
           {/if}
           <PasswordInput
             placeholder={m.common_password()}
+            name="password"
+            ariaLabel={m.common_password()}
+            autocomplete="current-password"
+            enterkeyhint="go"
             bind:value={password}
             required />
           <p class="text-dim -mt-2 text-right text-sm">
@@ -248,8 +261,14 @@
             </span>
             <input
               type="text"
+              name="code"
               inputmode={selectedMethod === "recovery" ? "text" : "numeric"}
+              autocomplete={selectedMethod === "recovery"
+                ? undefined
+                : "one-time-code"}
               maxlength={selectedMethod === "recovery" ? 11 : 6}
+              required
+              enterkeyhint="done"
               class="input font-mono text-lg tracking-[0.3em]"
               placeholder={selectedMethod === "recovery"
                 ? "XXXXX-XXXXX"

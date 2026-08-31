@@ -326,6 +326,7 @@
                   {#if f.multiline}
                     <textarea
                       id="field-{f.key}"
+                      name={f.key}
                       value={fieldValues[f.key] ?? f.default}
                       oninput={(e) =>
                         onFieldInput(f.key, e.currentTarget.value)}
@@ -336,6 +337,7 @@
                     <input
                       id="field-{f.key}"
                       type="text"
+                      name={f.key}
                       value={fieldValues[f.key] ?? f.default}
                       oninput={(e) =>
                         onFieldInput(f.key, e.currentTarget.value)}
@@ -400,6 +402,9 @@
           <div class="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
             <input
               type="email"
+              name="testTo"
+              autocomplete="email"
+              enterkeyhint="send"
               bind:value={testTo}
               placeholder={m.admin_communications_recipient_placeholder()}
               disabled={!smtpConfigured}
@@ -469,6 +474,7 @@
           <input
             id="admin-push-title"
             type="text"
+            name="pushTitle"
             bind:value={pushTitle}
             placeholder="Loomkeep (admin)"
             maxlength="100"
@@ -483,6 +489,7 @@
           </label>
           <textarea
             id="admin-push-body"
+            name="pushBody"
             bind:value={pushBody}
             placeholder={m.admin_communications_test_placeholder()}
             maxlength="500"
@@ -578,6 +585,7 @@
           <input
             id="admin-broadcast-title"
             type="text"
+            name="broadcastTitle"
             bind:value={broadcastTitle}
             placeholder="Loomkeep (admin)"
             maxlength="100"
@@ -592,6 +600,7 @@
           </label>
           <textarea
             id="admin-broadcast-body"
+            name="broadcastBody"
             bind:value={broadcastBody}
             placeholder={m.admin_communications_broadcast_placeholder()}
             maxlength="500"

@@ -13,6 +13,7 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -462,6 +463,7 @@
         ondrop={onDrop}>
         <input
           type="file"
+          name="file"
           accept={descriptor.input.accept}
           class="hidden"
           onchange={onFile} />
@@ -479,6 +481,8 @@
     {:else}
       <input
         type="text"
+        name="identifier"
+        enterkeyhint="done"
         placeholder={descriptor.input.placeholder ?? m.common_identifier()}
         bind:value={inputValue}
         onkeydown={(e) => e.key === "Enter" && analyze()}
@@ -580,6 +584,8 @@
           class="border-danger/30 bg-danger/5 text-danger flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium">
           <input
             type="checkbox"
+            name="overwrite"
+            value="true"
             bind:checked={overwrite}
             class="accent-danger" />
           {m.import_overwrite_data()}
@@ -651,6 +657,8 @@
         <div class="flex items-center gap-3">
           <input
             type="checkbox"
+            name="itemKeys"
+            value={item.key}
             class="accent-accent h-4 w-4 shrink-0"
             checked={on}
             disabled={!match}
@@ -690,15 +698,14 @@
             </button>
           {/if}
           {#if statusOptions.length > 0}
-            <select
-              class="input h-8 w-auto shrink-0 py-0 text-xs"
+            <Combobox
+              label={m.common_status()}
+              name="status"
+              options={statusOptions}
+              values={[statuses.get(item.key) ?? statusOptions[0].value]}
               disabled={!on}
-              value={statuses.get(item.key) ?? statusOptions[0].value}
-              onchange={(e) => statuses.set(item.key, e.currentTarget.value)}>
-              {#each statusOptions as s (s.value)}
-                <option value={s.value}>{s.label}</option>
-              {/each}
-            </select>
+              onChange={(v) =>
+                statuses.set(item.key, v[0] ?? statusOptions[0].value)} />
           {/if}
         </div>
 
@@ -711,6 +718,10 @@
               }}
               class="mb-2 flex gap-2">
               <input
+                type="text"
+                name="matchQuery"
+                aria-label={m.import_match_search()}
+                enterkeyhint="search"
                 class="input flex-1"
                 placeholder={m.import_match_search()}
                 bind:value={searchQuery} />

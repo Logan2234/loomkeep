@@ -153,6 +153,9 @@
 
   <input
     type="text"
+    name="identifier"
+    aria-label={m.admin_security_search()}
+    enterkeyhint="search"
     bind:value={identifierInput}
     oninput={onIdentifierInput}
     placeholder={m.admin_security_search()}

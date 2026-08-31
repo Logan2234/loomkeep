@@ -86,7 +86,9 @@
   {#if presets && showCustomInput}
     <input
       type="text"
+      name="source"
       class="input"
+      maxlength="100"
       placeholder={m.ownership_source_placeholder()}
       value={customText}
       onchange={commitCustom} />

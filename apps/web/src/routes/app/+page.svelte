@@ -34,8 +34,8 @@
     NextEpisodeDto,
   } from "@loomkeep/shared";
   import { Domain } from "@loomkeep/shared";
-  import { tick } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { tick } from "svelte";
 
   const queryClient = useQueryClient();
 
@@ -304,7 +304,10 @@
         {/if}
 
         {#if gamesOn}
-          <section class="card p-4">
+          <section
+            class="card p-4 {booksOn
+              ? 'sm:col-span-1 lg:col-span-2'
+              : 'sm:col-span-2 lg:col-span-3'}">
             <div class="mb-3 flex items-center justify-between">
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">

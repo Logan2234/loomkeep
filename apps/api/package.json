@@ -37,6 +37,7 @@
     "spelunk": "ts-node ./scripts/graph.ts"
   },
   "dependencies": {
+    "@fastify/helmet": "^13.1.1",
     "@loomkeep/shared": "workspace:*",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.0",
@@ -70,6 +71,7 @@
     "@nestjs/cli": "^12.0.0",
     "@nestjs/schematics": "^12.0.0",
     "@nestjs/testing": "^12.0.1",
+    "@swc/cli": "^0.8.1",
     "@swc/core": "^1.16.1",
     "@types/node": "^26.4.0",
     "@types/nodemailer": "^8.0.1",

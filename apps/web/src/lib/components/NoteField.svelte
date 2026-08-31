@@ -17,7 +17,9 @@
     >{m.notefield_label()}</span>
 
   <textarea
+    name="notes"
     rows="3"
+    maxlength="5000"
     {placeholder}
     class="input bg-surface-2 min-h-16.5 rounded-l-sm text-sm"
     value={value ?? ""}

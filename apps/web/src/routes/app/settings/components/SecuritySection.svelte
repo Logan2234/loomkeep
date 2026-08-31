@@ -303,8 +303,12 @@
           </span>
           <input
             type="text"
+            name="username"
             class="input"
+            minlength="1"
             maxlength="50"
+            autocomplete="username"
+            required
             bind:value={usernameInput}
             oninput={onUsernameInput} />
         </label>
@@ -360,7 +364,10 @@
               >{m.settings_new_email_label()}</span>
             <input
               type="email"
+              name="email"
               class="input"
+              autocomplete="email"
+              required
               placeholder={auth.user?.email}
               bind:value={emailInput} />
             <p class="text-dim mt-1.5 text-xs">
@@ -372,7 +379,11 @@
               {m.common_current_password()}
             </span>
             <PasswordInput
+              name="currentPassword"
               autocomplete="current-password"
+              enterkeyhint="next"
+              minlength={1}
+              required
               bind:value={emailPasswordInput} />
           </label>
           {#if emailError}
@@ -408,8 +419,13 @@
               >{m.common_code()}</span>
             <input
               type="text"
+              name="code"
               inputmode="numeric"
+              autocomplete="one-time-code"
+              minlength="6"
               maxlength="6"
+              required
+              enterkeyhint="done"
               class="input"
               placeholder="123456"
               bind:value={emailCodeInput} />
@@ -452,7 +468,11 @@
             {m.common_current_password()}
           </span>
           <PasswordInput
+            name="currentPassword"
             autocomplete="current-password"
+            enterkeyhint="next"
+            minlength={1}
+            required
             bind:value={currentPasswordInput} />
         </label>
         <label class="block">
@@ -460,8 +480,12 @@
             {m.common_new_password()}
           </span>
           <PasswordInput
+            name="newPassword"
             autocomplete="new-password"
+            enterkeyhint="next"
             minlength={8}
+            maxlength={72}
+            required
             bind:value={newPasswordInput} />
           <div class="mt-2">
             <PasswordRequirements value={newPasswordInput} />
@@ -472,7 +496,12 @@
             {m.settings_confirm_password_label()}
           </span>
           <PasswordInput
+            name="confirmPassword"
             autocomplete="new-password"
+            enterkeyhint="done"
+            minlength={8}
+            maxlength={72}
+            required
             bind:value={confirmPasswordInput} />
         </label>
         {#if passwordError}

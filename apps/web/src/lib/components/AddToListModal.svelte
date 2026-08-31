@@ -94,6 +94,8 @@
               : ''}">
             <input
               type="checkbox"
+              name="listIds"
+              value={list.id}
               class="accent-accent h-4 w-4 shrink-0"
               checked={!!itemIdByList[list.id]}
               onchange={() => toggle(list)} />

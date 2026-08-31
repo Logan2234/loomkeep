@@ -240,6 +240,9 @@
     </span>
     <input
       type="search"
+      name="query"
+      aria-label={m.library_filter_placeholder()}
+      enterkeyhint="search"
       placeholder={m.library_filter_placeholder()}
       value={query}
       oninput={(e) => {

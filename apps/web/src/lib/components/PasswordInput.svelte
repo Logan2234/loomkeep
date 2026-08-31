@@ -5,16 +5,25 @@
   let {
     value = $bindable(""),
     placeholder,
+    name,
+    ariaLabel,
     required = false,
     minlength,
+    maxlength,
     autocomplete,
+    enterkeyhint,
     class: extraClass = "",
   }: {
     value?: string;
     placeholder?: string;
+    name?: string;
+    ariaLabel?: string;
     required?: boolean;
     minlength?: number;
+    maxlength?: number;
     autocomplete?: "current-password" | "new-password";
+    enterkeyhint?:
+      "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     class?: string;
   } = $props();
 
@@ -25,10 +34,14 @@
   <input
     type={visible ? "text" : "password"}
     class="input pr-10 {extraClass}"
+    {name}
+    aria-label={ariaLabel}
     {placeholder}
     {required}
     {minlength}
+    {maxlength}
     {autocomplete}
+    {enterkeyhint}
     bind:value />
   <button
     type="button"

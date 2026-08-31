@@ -76,12 +76,15 @@
       </span>
       <input
         type="date"
+        name="birthDate"
+        autocomplete="bday"
         class="input"
         max={todayIso}
+        aria-describedby="birth-date-description"
         bind:value={birthDate}
         onchange={saveBirthDate} />
     </label>
-    <p class="text-dim mt-1.5 text-xs">
+    <p id="birth-date-description" class="text-dim mt-1.5 text-xs">
       {m.settings_birthdate_description()}
     </p>
     {#if birthDateStatus === "saving"}

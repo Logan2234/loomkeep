@@ -55,8 +55,10 @@
       <input
         id="reading-goal-target"
         type="number"
+        name="target"
         min="1"
         max="1000"
+        required
         class="input"
         bind:value={draft} />
     </label>
