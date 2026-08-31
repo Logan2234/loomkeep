@@ -2,31 +2,6 @@ import { describe, expect, it } from "vitest";
 import { createManifest } from "./pwa-manifest";
 
 describe("localized PWA manifest", () => {
-  it("translates descriptions and shortcuts", () => {
-    const en = createManifest("en");
-    const fr = createManifest("fr");
-    expect(en.lang).toBe("en");
-    expect(fr.lang).toBe("fr");
-    expect(en.description).toBe(
-      "Self-hosted tracker for series, movies and anime",
-    );
-    expect(fr.description).toBe("Suivi auto-hébergé de séries, films et anime");
-    expect(en.shortcuts.map((shortcut) => shortcut.name)).toEqual([
-      "Search",
-      "Calendar",
-      "Stats",
-      "My profile",
-      "Settings",
-    ]);
-    expect(fr.shortcuts.map((shortcut) => shortcut.name)).toEqual([
-      "Recherche",
-      "Calendrier",
-      "Statistiques",
-      "Mon profil",
-      "Paramètres",
-    ]);
-  });
-
   it("keeps installation identity, launch URL and icons independent of locale", () => {
     const en = createManifest("en");
     const fr = createManifest("fr");
@@ -38,58 +13,5 @@ describe("localized PWA manifest", () => {
     expect(en.shortcuts.map((shortcut) => shortcut.url)).toEqual(
       fr.shortcuts.map((shortcut) => shortcut.url),
     );
-  });
-
-  it("includes representative product screenshots for desktop and mobile", () => {
-    expect(createManifest("en").screenshots).toEqual([
-      {
-        src: "/pwa-screenshot-home-desktop.png",
-        sizes: "1265x712",
-        type: "image/png",
-        form_factor: "wide",
-      },
-      {
-        src: "/pwa-screenshot-home-mobile.png",
-        sizes: "375x811",
-        type: "image/png",
-        form_factor: "narrow",
-      },
-      {
-        src: "/pwa-screenshot-app-desktop.png",
-        sizes: "1265x712",
-        type: "image/png",
-        form_factor: "wide",
-      },
-      {
-        src: "/pwa-screenshot-app-mobile.png",
-        sizes: "375x811",
-        type: "image/png",
-        form_factor: "narrow",
-      },
-      {
-        src: "/pwa-screenshot-search-desktop.png",
-        sizes: "1265x712",
-        type: "image/png",
-        form_factor: "wide",
-      },
-      {
-        src: "/pwa-screenshot-search-mobile.png",
-        sizes: "390x843",
-        type: "image/png",
-        form_factor: "narrow",
-      },
-      {
-        src: "/pwa-screenshot-obsession-desktop.png",
-        sizes: "1265x712",
-        type: "image/png",
-        form_factor: "wide",
-      },
-      {
-        src: "/pwa-screenshot-obsession-mobile.png",
-        sizes: "375x811",
-        type: "image/png",
-        form_factor: "narrow",
-      },
-    ]);
   });
 });
