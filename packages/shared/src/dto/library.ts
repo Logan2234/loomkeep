@@ -103,7 +103,7 @@ export interface EpisodeWatchDto {
 }
 
 /** Persisted episode enriched with the current user's watch count. */
-interface EpisodeWithWatchesDto {
+export interface EpisodeWithWatchesDto {
   id: string;
   number: number;
   title: string | null;
@@ -111,7 +111,7 @@ interface EpisodeWithWatchesDto {
   watchCount: number;
 }
 
-interface SeasonWithWatchesDto {
+export interface SeasonWithWatchesDto {
   id: string;
   number: number;
   title: string | null;

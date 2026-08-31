@@ -61,7 +61,13 @@ function buildQueryString(query: Record<string, unknown> | undefined): string {
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined) params.set(key, String(value));
+    if (value === undefined) continue;
+
+    if (Array.isArray(value)) {
+      for (const v of value) params.append(key, String(v));
+    } else {
+      params.set(key, String(value));
+    }
   }
 
   const qs = params.toString();

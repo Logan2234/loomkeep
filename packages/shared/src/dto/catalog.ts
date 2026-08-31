@@ -163,7 +163,7 @@ export interface MediaDetailsDto extends MediaSummaryDto {
 }
 
 /** One episode on the unified media page, carrying the user's watch history. */
-interface MediaDetailEpisodeDto {
+export interface MediaDetailEpisodeDto {
   /** null until the media is persisted (i.e. not yet in anyone's library). */
   id: string | null;
   number: number;

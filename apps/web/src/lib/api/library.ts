@@ -1,13 +1,10 @@
 import type {
-  CalendarEntryDto,
-  EpisodeWatchDto,
   LibraryEntryDto,
   MediaType,
-  PagedResult,
   UpsertLibraryEntryDto,
 } from "@loomkeep/shared";
 import { getLocale } from "../paraglide/runtime.js";
-import { request } from "./core";
+import { typedRequest } from "./generated/typed-request";
 
 export interface ListLibraryFilters {
   query?: string;
@@ -20,24 +17,23 @@ export interface ListLibraryFilters {
   page?: number;
 }
 
-export function listLibrary(
-  filters: ListLibraryFilters = {},
-): Promise<PagedResult<LibraryEntryDto>> {
-  const params = new URLSearchParams({ lang: getLocale() });
-  if (filters.query) params.set("q", filters.query);
-  if (filters.favorite) params.set("favorite", "true");
-  for (const s of filters.statuses ?? []) params.append("status", s);
-  for (const t of filters.types ?? []) params.append("type", t);
-  if (filters.sort) params.set("sort", filters.sort);
-  if (filters.order) params.set("order", filters.order);
-  if (filters.page && filters.page > 1)
-    params.set("page", String(filters.page));
-  return request(`/library?${params}`);
+export function listLibrary(filters: ListLibraryFilters = {}) {
+  return typedRequest("/library", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+      type: filters.types,
+      sort: filters.sort,
+      order: filters.order,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+    },
+  });
 }
 
-export const upsertLibraryEntry = (
-  body: UpsertLibraryEntryDto,
-): Promise<LibraryEntryDto> => request("/library", { method: "PUT", body });
+export const upsertLibraryEntry = (body: UpsertLibraryEntryDto) =>
+  typedRequest("/library", { method: "PUT", body });
 
 export const updateLibraryEntry = (
   entryId: string,
@@ -52,49 +48,66 @@ export const updateLibraryEntry = (
       | "ownershipSource"
     >
   >,
-): Promise<LibraryEntryDto> =>
-  request(`/library/entries/${entryId}`, { method: "PATCH", body });
+) =>
+  typedRequest("/library/entries/{id}", {
+    method: "PATCH",
+    params: { id: entryId },
+    body,
+  });
 
 export const deleteLibraryEntry = (entryId: string): Promise<void> =>
-  request(`/library/entries/${entryId}`, { method: "DELETE" });
+  typedRequest("/library/entries/{id}", {
+    method: "DELETE",
+    params: { id: entryId },
+  });
 
 // Movies only.
-export const addLibraryReplay = (entryId: string): Promise<LibraryEntryDto> =>
-  request(`/library/entries/${entryId}/replays`, {
+export const addLibraryReplay = (entryId: string) =>
+  typedRequest("/library/entries/{id}/replays", {
     method: "POST",
+    params: { id: entryId },
     body: {},
   });
 
 export const deleteLibraryReplay = (replayId: string): Promise<void> =>
-  request(`/library/replays/${replayId}`, { method: "DELETE" });
+  typedRequest("/library/replays/{id}", {
+    method: "DELETE",
+    params: { id: replayId },
+  });
 
-export const watchEpisode = (episodeId: string): Promise<EpisodeWatchDto> =>
-  request(`/library/episodes/${episodeId}/watches`, {
+export const watchEpisode = (episodeId: string) =>
+  typedRequest("/library/episodes/{episodeId}/watches", {
     method: "POST",
+    params: { episodeId },
     body: {},
   });
 
 /** Mark every not-yet-watched episode of a season as watched. */
 export const watchSeason = (seasonId: string): Promise<void> =>
-  request(`/library/seasons/${seasonId}/watches`, { method: "POST" });
+  typedRequest("/library/seasons/{seasonId}/watches", {
+    method: "POST",
+    params: { seasonId },
+  });
 
 /** Mark all regular episodes up to and including this one (specials excluded). */
 export const watchThrough = (episodeId: string): Promise<void> =>
-  request(`/library/episodes/${episodeId}/watch-through`, {
+  typedRequest("/library/episodes/{episodeId}/watch-through", {
     method: "POST",
+    params: { episodeId },
   });
 
 /** Undo the most recent watch of an episode (unwatches it at a single watch). */
 export const unwatchEpisode = (episodeId: string): Promise<void> =>
-  request(`/library/episodes/${episodeId}/watches`, {
+  typedRequest("/library/episodes/{episodeId}/watches", {
     method: "DELETE",
+    params: { episodeId },
   });
 
 /** Clear every watch (all rewatches included) for every episode of a season. */
 export const unwatchSeason = (seasonId: string): Promise<void> =>
-  request(`/library/seasons/${seasonId}/watches`, {
+  typedRequest("/library/seasons/{seasonId}/watches", {
     method: "DELETE",
+    params: { seasonId },
   });
 
-export const getCalendar = (): Promise<CalendarEntryDto[]> =>
-  request("/library/calendar");
+export const getCalendar = () => typedRequest("/library/calendar");

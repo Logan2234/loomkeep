@@ -37,6 +37,18 @@ describe("typedRequest", () => {
     expect(params.has("type")).toBe(false);
   });
 
+  it("repeats the key for an array query value instead of joining it", async () => {
+    const { typedRequest } = await import("./typed-request");
+
+    await typedRequest("/library", {
+      query: { status: ["WATCHING", "PLANNED"] },
+    });
+
+    const [url] = request.mock.calls[0] as [string];
+    const params = new URLSearchParams(url.split("?")[1]);
+    expect(params.getAll("status")).toEqual(["WATCHING", "PLANNED"]);
+  });
+
   it("combines interpolated path params with a query string", async () => {
     const { typedRequest } = await import("./typed-request");
 

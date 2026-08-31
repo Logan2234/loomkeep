@@ -1,9 +1,11 @@
 import type { MediaDetailDto } from "@loomkeep/shared";
 import { ErrorCode, Locale, MediaType } from "@loomkeep/shared";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { MediaDetailResponseDto } from "./dto/media-detail-response.dto";
 import { LibraryService } from "./library.service";
 
 /**
@@ -17,6 +19,7 @@ export class MediaController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @Get(":type/:id")
+  @ApiOkResponse({ type: MediaDetailResponseDto })
   getMediaDetail(
     @CurrentUser() user: JwtPayload,
     @Param("type") typeParam: string,
