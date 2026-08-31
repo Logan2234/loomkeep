@@ -20,7 +20,15 @@ permissions:
   contents: read
 
 jobs:
+  # apps/web/Dockerfile needs a static apps/api/openapi.json to generate its
+  # typed API client from (no live API reachable from inside `docker build`)
+  # — see ci.yml's identical need for the full reasoning. Shared with ci.yml
+  # as a reusable workflow rather than duplicated, since both need it as-is.
+  openapi-artifact:
+    uses: ./.github/workflows/generate-openapi-artifact.yml
+
   scan:
+    needs: openapi-artifact
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,6 +42,12 @@ jobs:
             dockerfile: apps/web/Dockerfile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download OpenAPI document
+        if: matrix.name == 'web'
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: openapi-json
+          path: apps/api
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
       - name: build ${{ matrix.name }} image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7

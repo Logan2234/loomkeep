@@ -1,0 +1,48 @@
+name: Generate OpenAPI artifact
+
+# Reusable workflow, called from ci.yml and trivy.yml: both need
+# apps/api/openapi.json to build the web Docker image (generate:api-types'
+# one input), and neither can produce it from inside `docker build` itself —
+# no live API or database reachable there. See the comment on ci.yml's
+# openapi-artifact job for the full reasoning.
+on:
+  workflow_call: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loomkeep
+          POSTGRES_PASSWORD: loomkeep
+          POSTGRES_DB: loomkeep
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://loomkeep:loomkeep@localhost:5432/loomkeep?schema=public
+      JWT_ACCESS_SECRET: ci-test-access-secret
+      JWT_REFRESH_SECRET: ci-test-refresh-secret
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:package
+      - run: pnpm --filter @loomkeep/api exec prisma generate
+      - run: pnpm --filter @loomkeep/api build
+      - run: pnpm --filter @loomkeep/api generate:openapi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: openapi-json
+          path: apps/api/openapi.json
+          retention-days: 1

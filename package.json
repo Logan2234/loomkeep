@@ -42,6 +42,7 @@
     "dev": "pnpm build:package && pnpm --parallel --filter \"./apps/*\" dev",
     "build:package": "pnpm --filter \"./packages/*\" build",
     "build": "pnpm build:package && pnpm --filter \"./apps/*\" build",
+    "generate": "pnpm build:package && pnpm --filter @loomkeep/api build && pnpm --filter @loomkeep/api generate:openapi && pnpm --filter @loomkeep/web generate:api-types",
     "test": "pnpm --filter \"./apps/*\" test",
     "lint": "pnpm --recursive --no-bail lint",
     "lint:fix": "pnpm --recursive --no-bail lint:fix",

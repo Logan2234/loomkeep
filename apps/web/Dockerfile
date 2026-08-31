@@ -11,7 +11,18 @@ RUN pnpm install --frozen-lockfile --filter @loomkeep/web...
 
 COPY packages/shared packages/shared
 COPY apps/web apps/web
-RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web build
+
+# The typed API client (apps/web/src/lib/api/generated/schema.d.ts) is
+# generated, not committed — derived here from a static apps/api/openapi.json
+# rather than a live API (unreachable from inside `docker build`). CI's
+# openapi-artifact job produces that file before this Dockerfile builds (see
+# .github/workflows/ci.yml); building this image from source directly
+# (self-hosters normally just pull the published image instead, see
+# docker/README.md) needs it produced the same way first: from the repo
+# root, `pnpm --filter @loomkeep/api build && pnpm --filter @loomkeep/api
+# generate:openapi`.
+COPY apps/api/openapi.json apps/api/openapi.json
+RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web generate:api-types && pnpm --filter @loomkeep/web build
 
 # adapter-node's SSR build doesn't safely bundle every server-side dependency
 # into build/ — @loomkeep/shared (a linked workspace package, see the

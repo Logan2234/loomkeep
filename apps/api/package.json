@@ -27,6 +27,7 @@
     "start:prod": "node dist/src/main",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
+    "generate:openapi": "ts-node -r tsconfig-paths/register scripts/generate-openapi.ts",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",

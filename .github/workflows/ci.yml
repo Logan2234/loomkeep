@@ -63,6 +63,29 @@ jobs:
     permissions:
       contents: read
       security-events: write
+    # The typed API client (apps/web/src/lib/api/generated/schema.d.ts) is
+    # generated, not committed (see .gitignore) — regenerating it needs the
+    # API's OpenAPI document, which in turn needs the compiled app to boot
+    # far enough to build (Prisma connects on module init), hence Postgres
+    # here even though this job never runs API tests.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loomkeep
+          POSTGRES_PASSWORD: loomkeep
+          POSTGRES_DB: loomkeep
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://loomkeep:loomkeep@localhost:5432/loomkeep?schema=public
+      JWT_ACCESS_SECRET: ci-test-access-secret
+      JWT_REFRESH_SECRET: ci-test-refresh-secret
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
@@ -72,6 +95,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
+      - name: Generate Paraglide types
+        run: pnpm --filter @loomkeep/web generate:paraglide
+      - name: Generate typed API client
+        run: |
+          pnpm --filter @loomkeep/api exec prisma generate
+          pnpm --filter @loomkeep/api build
+          pnpm --filter @loomkeep/api generate:openapi
+          pnpm --filter @loomkeep/web generate:api-types
       # Installed here rather than kept as a permanent devDependency: it's
       # only ever invoked via --format in this one step, and knip has no way
       # to see that CLI-flag usage, so a committed devDependency just sits
@@ -80,8 +111,6 @@ jobs:
         run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
       - name: ESLint
         run: pnpm --filter @loomkeep/web lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
-      - name: Generate Paraglide types
-        run: pnpm --filter @loomkeep/web generate:paraglide
       - name: svelte-check
         run: pnpm --filter @loomkeep/web check
       - name: Web unit tests (with coverage)
@@ -210,6 +239,28 @@ jobs:
     if: needs.changes.outputs.lint == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
+    # Needed for the same reason as lint-test-web's Postgres service: knip
+    # resolves apps/web/src/lib/api/generated/typed-request.ts's import of
+    # the generated schema.d.ts, which needs the API to build far enough for
+    # generate:openapi to run (Prisma connects on module init).
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: loomkeep
+          POSTGRES_PASSWORD: loomkeep
+          POSTGRES_DB: loomkeep
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://loomkeep:loomkeep@localhost:5432/loomkeep?schema=public
+      JWT_ACCESS_SECRET: ci-test-access-secret
+      JWT_REFRESH_SECRET: ci-test-refresh-secret
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
@@ -223,15 +274,37 @@ jobs:
       # packages/shared as unused.
       - run: pnpm build:package
       - run: pnpm --filter @loomkeep/web generate:paraglide
+      - name: Generate typed API client
+        run: |
+          pnpm --filter @loomkeep/api exec prisma generate
+          pnpm --filter @loomkeep/api build
+          pnpm --filter @loomkeep/api generate:openapi
+          pnpm --filter @loomkeep/web generate:api-types
       - run: pnpm knip
+
+  # apps/web's Docker build compiles apps/web in total isolation — no API,
+  # no database reachable from inside `docker build` — so it can't run
+  # generate:openapi itself the way lint-test-web does. This job produces
+  # apps/api/openapi.json once (the one input generate:api-types needs) and
+  # hands it to whichever web image build needs it as an artifact; the web
+  # Dockerfile then runs generate:api-types against that static file, no
+  # network access required during the image build itself.
+  openapi-artifact:
+    needs: changes
+    if: |
+      needs.changes.outputs.web == 'true' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    uses: ./.github/workflows/generate-openapi-artifact.yml
 
   # PR/manual-dispatch validation only — build without pushing, to catch a
   # broken Dockerfile before merge. Skipped on a push to main: docker-push
   # below builds the same images there (and pushes), so running this too
   # would just build api/web a second time for nothing.
   docker-build-images:
-    needs: changes
+    needs: [changes, openapi-artifact]
     if: |
+      always() &&
+      (needs.openapi-artifact.result == 'success' || needs.openapi-artifact.result == 'skipped') &&
       (needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true') &&
       !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
@@ -244,6 +317,12 @@ jobs:
             dockerfile: apps/web/Dockerfile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download OpenAPI document
+        if: matrix.name == 'web' && needs.changes.outputs.web == 'true'
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: openapi-json
+          path: apps/api
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
       - name: build ${{ matrix.name }} image
         if: needs.changes.outputs[matrix.name] == 'true'
@@ -265,7 +344,7 @@ jobs:
   # `docker-build` name, always reports, and goes red when a leg does — the
   # failing leg stays individually visible as its own check.
   docker-build:
-    needs: docker-build-images
+    needs: [docker-build-images, openapi-artifact]
     # always(), not !cancelled(): a cancelled build must still report here (as
     # a failure) rather than leave the status unreported.
     if: always()
@@ -273,10 +352,14 @@ jobs:
     steps:
       # `skipped` passes — a PR touching neither apps/api nor apps/web has no
       # image to build. Result is read through an `if:` rather than
-      # interpolated into a shell script.
+      # interpolated into a shell script. openapi-artifact failing outright
+      # (not just being skipped as not-needed) has to fail this check too:
+      # docker-build-images' own `if:` treats that as "skip", which would
+      # otherwise read as green here.
       - if: |
-          needs.docker-build-images.result != 'success' &&
-          needs.docker-build-images.result != 'skipped'
+          (needs.docker-build-images.result != 'success' && needs.docker-build-images.result != 'skipped') ||
+          needs.openapi-artifact.result == 'failure' ||
+          needs.openapi-artifact.result == 'cancelled'
         run: exit 1
 
   # Pushes to GHCR so deploy.yml (and self-hosters) can `pull` a pre-built
@@ -288,6 +371,12 @@ jobs:
   # `docker compose pull` on the VPS would have nothing to fetch. api/web
   # build on separate runners (matrix) rather than sequentially in one job.
   docker-push:
+    # Depends on openapi-artifact (whose own `if:` already runs it on every
+    # main push) via plain `needs`, not `always()`: unlike docker-build-images
+    # above, both legs here are meant to stay in lockstep (see the comment
+    # above this job), so a failed artifact should block pushing either image
+    # rather than pushing a web image built without one.
+    needs: openapi-artifact
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -302,6 +391,12 @@ jobs:
             dockerfile: apps/web/Dockerfile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download OpenAPI document
+        if: matrix.name == 'web'
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: openapi-json
+          path: apps/api
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v3
         with:

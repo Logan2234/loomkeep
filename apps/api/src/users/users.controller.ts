@@ -26,6 +26,7 @@ import {
   Res,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import type { FastifyReply } from "fastify";
@@ -46,13 +47,20 @@ import { isAdult } from "./age.util";
 import { matchesMimeType } from "./avatar.util";
 import { CsvExportService } from "./csv-export.service";
 import { DataExportService } from "./data-export.service";
+import { AccountDeletionSummaryResponseDto } from "./dto/account-deletion-summary-response.dto";
+import { CalendarTokenResponseDto } from "./dto/calendar-token-response.dto";
 import { ChangeEmailDto } from "./dto/change-email.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
+import { CsvExportResponseDto } from "./dto/csv-export-response.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
+import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
 import { UploadAvatarDto } from "./dto/upload-avatar.dto";
+import { UserResponseDto } from "./dto/user-response.dto";
+import { UsernameAvailabilityResponseDto } from "./dto/username-availability-response.dto";
+import { WidgetTokenResponseDto } from "./dto/widget-token-response.dto";
 import { signWidgetToken } from "./widget-token.util";
 
 // Decoded byte ceiling for an uploaded avatar — base64 for this is checked by
@@ -78,6 +86,7 @@ export class UsersController {
   ) {}
 
   @Get("me")
+  @ApiOkResponse({ type: UserResponseDto })
   async getMe(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
@@ -102,6 +111,7 @@ export class UsersController {
    * every call rather than cached, since it always expires quickly anyway.
    */
   @Get("me/widget-token")
+  @ApiOkResponse({ type: WidgetTokenResponseDto })
   async getWidgetToken(
     @CurrentUser() payload: JwtPayload,
   ): Promise<WidgetTokenDto> {
@@ -154,6 +164,7 @@ export class UsersController {
 
   /** Replaces the account's profile picture. */
   @Patch("me/avatar")
+  @ApiOkResponse({ type: UserResponseDto })
   async uploadAvatar(
     @CurrentUser() payload: JwtPayload,
     @Body() dto: UploadAvatarDto,
@@ -189,6 +200,7 @@ export class UsersController {
 
   /** Clears the profile picture — the client falls back to the identicon. */
   @Delete("me/avatar")
+  @ApiOkResponse({ type: UserResponseDto })
   async deleteAvatar(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: payload.sub },
@@ -197,7 +209,11 @@ export class UsersController {
     return toUserDto(user);
   }
 
-  /** Full portable dump of the account's data (GDPR "download my data"). */
+  /**
+   * Full portable dump of the account's data (GDPR "download my data").
+   * ~30 nested types (see packages/shared/src/dto/data-export.ts) — too much
+   * to mirror by hand for one lightly-used export endpoint. Left untyped.
+   */
   @Get("me/export")
   exportData(@CurrentUser() payload: JwtPayload): Promise<UserDataExportDto> {
     return this.dataExport.buildExport(payload.sub);
@@ -209,6 +225,7 @@ export class UsersController {
    * user hid from their own nav is still theirs to export.
    */
   @Get("me/export.csv")
+  @ApiOkResponse({ type: CsvExportResponseDto })
   async exportCsv(
     @CurrentUser() payload: JwtPayload,
     @Query("domain") domainParam: string,
@@ -225,6 +242,7 @@ export class UsersController {
    * for the matching check on the feed itself.
    */
   @Get("me/calendar-token")
+  @ApiOkResponse({ type: CalendarTokenResponseDto })
   async getCalendarToken(
     @CurrentUser() payload: JwtPayload,
   ): Promise<CalendarTokenDto> {
@@ -249,6 +267,7 @@ export class UsersController {
 
   /** Issues a new token, invalidating any previously shared .ics link. Premium. */
   @Post("me/calendar-token/regenerate")
+  @ApiCreatedResponse({ type: CalendarTokenResponseDto })
   async regenerateCalendarToken(
     @CurrentUser() payload: JwtPayload,
   ): Promise<CalendarTokenDto> {
@@ -268,6 +287,7 @@ export class UsersController {
    * lock: `showLock = flag on && !isPremium`.
    */
   @Get("me/entitlement")
+  @ApiOkResponse({ type: EntitlementResponseDto })
   async getMyEntitlement(
     @CurrentUser() payload: JwtPayload,
   ): Promise<EntitlementDto> {
@@ -287,6 +307,7 @@ export class UsersController {
 
   /** Marks the mandatory first-run onboarding wizard as done. Idempotent. */
   @Post("me/complete-onboarding")
+  @ApiCreatedResponse({ type: UserResponseDto })
   async completeOnboarding(
     @CurrentUser() payload: JwtPayload,
   ): Promise<UserDto> {
@@ -303,6 +324,7 @@ export class UsersController {
    * matches LEGAL_VERSION.
    */
   @Post("me/accept-terms")
+  @ApiCreatedResponse({ type: UserResponseDto })
   async acceptTerms(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: payload.sub },
@@ -315,6 +337,7 @@ export class UsersController {
   }
 
   @Patch("me")
+  @ApiOkResponse({ type: UserResponseDto })
   async updateMe(
     @CurrentUser() payload: JwtPayload,
     @Body() dto: UpdateUserDto,
@@ -469,6 +492,7 @@ export class UsersController {
 
   /** Consumes the code sent by changeEmail() and applies the new address. */
   @Patch("me/email/confirm")
+  @ApiOkResponse({ type: UserResponseDto })
   async confirmEmailChange(
     @CurrentUser() payload: JwtPayload,
     @Body() dto: ConfirmEmailChangeDto,
@@ -587,6 +611,7 @@ export class UsersController {
    * (SetNull) instead since their content is visible to other users.
    */
   @Get("me/deletion-summary")
+  @ApiOkResponse({ type: AccountDeletionSummaryResponseDto })
   async deletionSummary(
     @CurrentUser() payload: JwtPayload,
   ): Promise<AccountDeletionSummaryDto> {
@@ -676,6 +701,7 @@ export class UsersController {
 
   /** Live check backing the debounced availability hint in the username form. */
   @Get("me/username-availability")
+  @ApiOkResponse({ type: UsernameAvailabilityResponseDto })
   async checkUsernameAvailability(
     @CurrentUser() payload: JwtPayload,
     @Query("value") value?: string,
@@ -693,6 +719,7 @@ export class UsersController {
 
   /** Re-validates uniqueness server-side — the debounced check is a hint, not the source of truth. */
   @Patch("me/username")
+  @ApiOkResponse({ type: UserResponseDto })
   async updateUsername(
     @CurrentUser() payload: JwtPayload,
     @Body() dto: UpdateUsernameDto,

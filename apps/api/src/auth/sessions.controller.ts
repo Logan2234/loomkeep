@@ -8,10 +8,12 @@ import {
   Param,
   Query,
 } from "@nestjs/common";
+import { ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";
 import { AuthService } from "./auth.service";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
+import { SessionResponseDto } from "./dto/session-response.dto";
 
 /**
  * Manage the user's signed-in devices. Lives outside the (@Public) AuthController
@@ -22,6 +24,7 @@ export class SessionsController {
   constructor(private readonly authService: AuthService) {}
 
   @Get()
+  @ApiOkResponse({ type: SessionResponseDto, isArray: true })
   listSessions(@CurrentUser() payload: JwtPayload): Promise<SessionDto[]> {
     return this.authService.listSessions(payload.sub);
   }
