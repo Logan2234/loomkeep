@@ -11,9 +11,12 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
+import { NotificationFeedResponseDto } from "./dto/notification-feed-response.dto";
+import { PushPublicKeyResponseDto } from "./dto/push-public-key-response.dto";
 import { PushSubscriptionDto } from "./dto/push-subscription.dto";
 import { NotificationService } from "./notification.service";
 import { PushService } from "./push.service";
@@ -27,6 +30,7 @@ export class NotificationController {
 
   @Public()
   @Get("push/public-key")
+  @ApiOkResponse({ type: PushPublicKeyResponseDto })
   publicKey(): PushPublicKeyDto {
     return { publicKey: this.push.publicKey() };
   }
@@ -57,12 +61,14 @@ export class NotificationController {
   }
 
   @Post("scan")
+  @ApiCreatedResponse({ type: NotificationFeedResponseDto })
   async scan(@CurrentUser() user: JwtPayload): Promise<NotificationFeedDto> {
     await this.notifications.scan(user.sub);
     return this.notifications.feed(user.sub);
   }
 
   @Get()
+  @ApiOkResponse({ type: NotificationFeedResponseDto })
   feed(@CurrentUser() user: JwtPayload): Promise<NotificationFeedDto> {
     return this.notifications.feed(user.sub);
   }

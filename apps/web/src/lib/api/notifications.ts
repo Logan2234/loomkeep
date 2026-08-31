@@ -1,38 +1,33 @@
-import type {
-  NotificationFeedDto,
-  PushPublicKeyDto,
-  PushSubscriptionRequestDto,
-} from "@loomkeep/shared";
-import { request } from "./core";
+import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
+import { typedRequest } from "./generated/typed-request";
 
 // --- Notifications ---
 
 /** Detect new episodes of tracked shows, then return the refreshed feed. */
-export const scanNotifications = (): Promise<NotificationFeedDto> =>
-  request("/notifications/scan", { method: "POST" });
+export const scanNotifications = () =>
+  typedRequest("/notifications/scan", { method: "POST" });
 
-export const getNotifications = (): Promise<NotificationFeedDto> =>
-  request("/notifications");
+export const getNotifications = () => typedRequest("/notifications");
 
 export const markNotificationsRead = (): Promise<void> =>
-  request("/notifications/read", { method: "POST" });
+  typedRequest("/notifications/read", { method: "POST" });
 
 export const markNotificationRead = (id: string): Promise<void> =>
-  request(`/notifications/${id}/read`, { method: "PATCH" });
+  typedRequest("/notifications/{id}/read", { method: "PATCH", params: { id } });
 
 // --- Web Push ---
 
 /** VAPID public key; empty string when the server has push disabled. */
-export const getPushPublicKey = (): Promise<PushPublicKeyDto> =>
-  request("/notifications/push/public-key", { withAuth: false });
+export const getPushPublicKey = () =>
+  typedRequest("/notifications/push/public-key", { withAuth: false });
 
 export const subscribePush = (
   body: PushSubscriptionRequestDto,
 ): Promise<void> =>
-  request("/notifications/push/subscribe", { method: "POST", body });
+  typedRequest("/notifications/push/subscribe", { method: "POST", body });
 
 export const unsubscribePush = (endpoint: string): Promise<void> =>
-  request("/notifications/push/subscribe", {
+  typedRequest("/notifications/push/subscribe", {
     method: "DELETE",
     body: { endpoint },
   });
