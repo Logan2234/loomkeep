@@ -19,7 +19,7 @@ describe("XP_RULES", () => {
   });
 
   it("marks the discussion reasons as socialGated, and nothing else", () => {
-    const gated = new Set([
+    const gated = new Set<XpReason>([
       XpReason.COMMENT_POSTED,
       XpReason.REVIEW_VOTE_RECEIVED,
       XpReason.COMMENT_REACTION_RECEIVED,
@@ -37,7 +37,7 @@ describe("XP_RULES", () => {
     // IMPORT_COMPLETED dedup per domain, PROFILE_COMPLETED per user,
     // ONBOARDING_STEP/ACHIEVEMENT_UNLOCKED per step/achievement id — so the
     // XpEntry unique constraint alone prevents a repeat, no dailyCap needed.
-    const uncapped = new Set([
+    const uncapped = new Set<XpReason>([
       XpReason.DOMAIN_STARTED,
       XpReason.IMPORT_COMPLETED,
       XpReason.ONBOARDING_STEP,

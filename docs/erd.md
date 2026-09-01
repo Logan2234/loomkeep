@@ -931,6 +931,22 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime updatedAt
     }
 
+
+  "XpEntry" {
+    String id "🗝️"
+    String reason
+    String sourceType
+    String sourceId
+    Int amount
+    DateTime createdAt
+    }
+
+
+  "UserScore" {
+    Int xp
+    DateTime updatedAt
+    }
+
     "UserEntitlement" |o--|| "User" : "user"
     "UserEntitlement" |o--|| "Plan" : "enum:plan"
     "UserEntitlement" |o--|o "EntitlementSource" : "enum:source"
@@ -1040,4 +1056,6 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "MusicEntry" |o--|| "MusicOwnershipStatus" : "enum:ownershipStatus"
     "MusicEntry" }o--|| "User" : "user"
     "MusicEntry" }o--|| "MusicItem" : "musicItem"
+    "XpEntry" }o--|| "User" : "user"
+    "UserScore" |o--|| "User" : "user"
 ```
