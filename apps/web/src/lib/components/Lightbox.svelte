@@ -110,6 +110,7 @@
         class="h-full w-full"
         src={`https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`}
         title={video.alt}
+        referrerpolicy="strict-origin-when-cross-origin"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen>
       </iframe>
