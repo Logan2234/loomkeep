@@ -80,6 +80,7 @@ function makeService() {
     prisma as unknown as PrismaService,
     {} as never,
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
+    { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }

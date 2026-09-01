@@ -3,6 +3,7 @@ import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
 import { GamesModule } from "../games/games.module";
+import { GamificationModule } from "../gamification/gamification.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { ImportJobService } from "./import-job.service";
@@ -31,6 +32,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     UsersModule,
     ReviewsModule,
     EntitlementModule,
+    GamificationModule,
   ],
   controllers: [ImportController],
   providers: [

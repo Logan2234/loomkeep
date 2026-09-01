@@ -4,9 +4,19 @@ import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
+
+// Stubbed no-op, same pattern as library.service.spec.ts (G1).
+function stubXp(): XpService {
+  return {
+    award: vi.fn(),
+    awardMany: vi.fn(),
+    revokeBySource: vi.fn(),
+  } as unknown as XpService;
+}
 
 function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
   return {
@@ -55,6 +65,7 @@ describe("ImportJobService translatable failures", () => {
         {
           isEffectivelyPremium: vi.fn().mockResolvedValue(true),
         } as unknown as EntitlementService,
+        stubXp(),
       );
       const started = await service.startAnalyze("u1", "steam", { input: "" });
       await vi.waitFor(() => {
@@ -81,6 +92,7 @@ describe("ImportJobService.getAvailability", () => {
       {} as PrismaService,
       config as unknown as ConfigService,
       { isEffectivelyPremium: vi.fn() } as unknown as EntitlementService,
+      stubXp(),
     );
 
     const availability = service.getAvailability();
@@ -112,6 +124,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       prisma,
       {} as unknown as ConfigService,
       entitlements,
+      stubXp(),
     );
     return { service, prisma };
   }
@@ -167,11 +180,95 @@ describe("ImportJobService.getQuota", () => {
       prisma,
       {} as unknown as ConfigService,
       {} as unknown as EntitlementService,
+      stubXp(),
     );
 
     await expect(service.getQuota("u1")).resolves.toEqual({
       MEDIA: true,
       BOOKS: true,
     });
+  });
+});
+
+describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
+  function makeCommitService(commitImpl: ImportReq["commit"]) {
+    const source = fakeSource("tvtime");
+    source.commit = commitImpl;
+    const importRunCreate = vi.fn().mockResolvedValue({});
+    const prisma = {
+      importRun: { create: importRunCreate },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const service = new ImportJobService(
+      [source],
+      prisma,
+      {} as unknown as ConfigService,
+      {
+        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
+      xp,
+    );
+    return { service, xp, importRunCreate };
+  }
+
+  // commit() only accepts a jobId that already has an analyzed plan attached
+  // (set by startAnalyze) — seeded directly into the service's private job
+  // map here rather than driving a full analyze pass through each test.
+  function seedAnalyzedJob(service: ImportJobService, jobId: string): void {
+    (service as unknown as { jobs: Map<string, unknown> }).jobs.set(jobId, {
+      id: jobId,
+      userId: "u1",
+      sourceId: "tvtime",
+      kind: "analyze",
+      status: "completed",
+      progress: { done: 0, total: 0 },
+      plan: { groups: [] },
+      report: null,
+      error: null,
+      errorCode: null,
+      startedAt: Date.now(),
+      finishedAt: Date.now(),
+      parsed: {},
+    });
+  }
+
+  it("awards IMPORT_COMPLETED once a commit succeeds, even with zero items imported", async () => {
+    const { service, xp } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(xp.award).toHaveBeenCalledWith(
+        "u1",
+        "IMPORT_COMPLETED",
+        Domain.MEDIA,
+      );
+    });
+    expect(service.getJob("u1", job.id).status).toBe("completed");
+  });
+
+  it("does not award IMPORT_COMPLETED when the commit fails", async () => {
+    const { service, xp, importRunCreate } = makeCommitService(async () => {
+      throw new Error("boom");
+    });
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      // recordRun (which would call xp.award) has finished once the audit
+      // log write it always makes has happened, success or failure.
+      expect(importRunCreate).toHaveBeenCalled();
+    });
+    expect(service.getJob("u1", job.id).status).toBe("failed");
+    expect(xp.award).not.toHaveBeenCalled();
   });
 });

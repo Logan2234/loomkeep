@@ -1,12 +1,22 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { ListService } from "./list.service";
+
+// Stubbed no-op, same pattern as library.service.spec.ts (G1).
+function stubXp(): XpService {
+  return {
+    award: vi.fn(),
+    awardMany: vi.fn(),
+    revokeBySource: vi.fn(),
+  } as unknown as XpService;
+}
 
 const VIEWER = "viewer";
 
@@ -83,6 +93,7 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
   }
 
@@ -198,6 +209,7 @@ describe("ListService.listForUser — editor lists on a profile", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
     return { svc };
   }
@@ -243,6 +255,7 @@ describe("ListService.addItem", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
     return { svc, create, activity };
   }
@@ -298,6 +311,7 @@ describe("ListService.reorder", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
     return { svc, listItemUpdate, listUpdateMany };
   }
@@ -369,6 +383,7 @@ describe("ListService.canEdit (via getEditable)", () => {
       fakeConfig(opts.socialEnabled ?? true),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
   }
 
@@ -434,6 +449,7 @@ describe("ListService member management — owner only", () => {
       fakeConfig(),
       fakeFlags(),
       notifications,
+      stubXp(),
     );
     return { svc, create, notifications };
   }
@@ -494,6 +510,7 @@ describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
     return { svc, listUpdate, listMemberDelete };
   }
@@ -545,6 +562,7 @@ describe("ListService — activity emission on create/share", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
     return { svc, activity };
   }
@@ -598,6 +616,7 @@ describe("ListService — Figurant can't share a list", () => {
       fakeConfig(),
       fakeFlags(),
       fakeNotifications(),
+      stubXp(),
     );
     return { svc, create, update };
   }
@@ -616,5 +635,38 @@ describe("ListService — Figurant can't share a list", () => {
     const { svc, update } = make();
     await svc.update("u1", "l1", { visibility: "FRIENDS" as never });
     expect(update.mock.calls[0][0].data.visibility).toBe("PRIVATE");
+  });
+});
+
+describe("ListService — XP wiring", () => {
+  it("awards LIST_CREATED on create and revokes it on remove", async () => {
+    const row = listRow({ userId: "u1" });
+    const prisma = {
+      list: {
+        create: vi.fn().mockResolvedValue(row),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      user: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ defaultListVisibility: "PRIVATE" }),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      fakeConfig(),
+      fakeFlags(),
+      fakeNotifications(),
+      xp,
+    );
+
+    await svc.create("u1", { title: "Top 10", kind: "RANKED" as never });
+    expect(xp.award).toHaveBeenCalledWith("u1", "LIST_CREATED", "l1");
+
+    await svc.remove("u1", "l1");
+    expect(xp.revokeBySource).toHaveBeenCalledWith("List", ["l1"]);
   });
 });

@@ -8,13 +8,16 @@ import {
   type ReviewTargetSummaryDto,
   ReviewTargetType,
   type ReviewVisibility,
-  type ReviewVoteValue,
+  ReviewVoteValue,
   type UpsertReviewDto,
   type UserSummaryDto,
+  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { wordCount } from "../gamification/xp-verifiers";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
@@ -58,7 +61,34 @@ export class ReviewService {
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
+    private readonly xp: XpService,
   ) {}
+
+  /**
+   * Awards the rating/critique XP for a Review write — WORK_RATED always,
+   * plus REVIEW_WRITTEN/REVIEW_DETAILED independently once `text` crosses
+   * their word thresholds (not mutually exclusive: a long review earns
+   * both). Shared by `upsert` (the full editor, which sets text) and
+   * `setRating` (rating-only, which preserves whatever text already exists)
+   * so both write paths credit consistently — `wordCount` is the same
+   * function the nightly reconciliation verifier uses, so live award and
+   * reconciliation can never disagree on the threshold.
+   */
+  private async awardReviewRatingXp(
+    userId: string,
+    reviewId: string,
+    text: string | null,
+  ): Promise<void> {
+    await this.xp.award(userId, XpReason.WORK_RATED, reviewId);
+
+    if (wordCount(text) >= 40) {
+      await this.xp.award(userId, XpReason.REVIEW_WRITTEN, reviewId);
+    }
+
+    if (wordCount(text) >= 150) {
+      await this.xp.award(userId, XpReason.REVIEW_DETAILED, reviewId);
+    }
+  }
 
   private toDto(
     row: ReviewRow,
@@ -162,11 +192,27 @@ export class ReviewService {
       );
     }
 
-    await this.prisma.reviewVote.upsert({
+    const voteRow = await this.prisma.reviewVote.upsert({
       where: { reviewId_userId: { reviewId, userId: viewerId } },
       update: { value },
       create: { reviewId, userId: viewerId, value },
     });
+
+    // Credited to the review's author, never the voter — and only for UP
+    // (the barème excludes DOWN entirely). A DOWN->UP flip re-awards (the
+    // vote row's id is stable across the upsert, so this recreates the
+    // XpEntry an earlier UP->DOWN would have revoked); an UP->DOWN flip
+    // reclaims the credit immediately rather than waiting for the nightly
+    // reconciliation — this is a frequent, user-visible transition.
+    if (value === ReviewVoteValue.UP && review.userId) {
+      await this.xp.award(
+        review.userId,
+        XpReason.REVIEW_VOTE_RECEIVED,
+        voteRow.id,
+      );
+    } else {
+      await this.xp.revokeBySource("ReviewVote", [voteRow.id]);
+    }
 
     const info = await this.voteInfo(reviewId, viewerId);
     return { score: info.score, myVote: value };
@@ -174,9 +220,21 @@ export class ReviewService {
 
   /** Removes the viewer's vote on a review, if any. */
   async unvote(viewerId: string, reviewId: string): Promise<{ score: number }> {
+    // Looked up before the delete so revokeBySource still has the id to
+    // work with afterwards.
+    const existing = await this.prisma.reviewVote.findUnique({
+      where: { reviewId_userId: { reviewId, userId: viewerId } },
+      select: { id: true, value: true },
+    });
+
     await this.prisma.reviewVote.deleteMany({
       where: { reviewId, userId: viewerId },
     });
+
+    if (existing?.value === ReviewVoteValue.UP) {
+      await this.xp.revokeBySource("ReviewVote", [existing.id]);
+    }
+
     const { score } = await this.voteInfo(reviewId, viewerId);
     return { score };
   }
@@ -245,6 +303,7 @@ export class ReviewService {
     }
 
     await this.emitReviewed(userId, targetType, targetId, dto.rating);
+    await this.awardReviewRatingXp(userId, row.id, text);
 
     const [author, votes] = await Promise.all([
       this.author(userId),
@@ -262,6 +321,9 @@ export class ReviewService {
     const { count } = await this.prisma.review.deleteMany({
       where: { id: { in: ids }, userId },
     });
+    // One call clears WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED for every
+    // deleted review, regardless of reason (see XpService.revokeBySource).
+    await this.xp.revokeBySource("Review", ids);
     return count;
   }
 
@@ -288,11 +350,20 @@ export class ReviewService {
     targetType: ReviewTargetType,
     targetId: string,
   ): Promise<void> {
+    // Looked up before the delete so revokeBySource still has the id to
+    // work with afterwards (same [G1] rule as every other cancellation path).
+    const existing = await this.prisma.review.findUnique({
+      where: { userId_targetType_targetId: { userId, targetType, targetId } },
+      select: { id: true },
+    });
+
     const { count } = await this.prisma.review.deleteMany({
       where: { userId, targetType, targetId },
     });
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+
+    if (existing) await this.xp.revokeBySource("Review", [existing.id]);
   }
 
   /** The edit history of the user's own review (newest first). */
@@ -603,9 +674,17 @@ export class ReviewService {
     rating: number | null,
   ): Promise<void> {
     if (rating === null) {
+      // Looked up before the delete so revokeBySource still has the id to
+      // work with afterwards — this is the "structural deletion" case (see
+      // the [G1b] plan), unlike a mere text shortening on update below.
+      const existing = await this.prisma.review.findUnique({
+        where: { userId_targetType_targetId: { userId, targetType, targetId } },
+        select: { id: true },
+      });
       await this.prisma.review.deleteMany({
         where: { userId, targetType, targetId },
       });
+      if (existing) await this.xp.revokeBySource("Review", [existing.id]);
       return;
     }
 
@@ -613,6 +692,9 @@ export class ReviewService {
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
       select: { rating: true, text: true },
     });
+
+    let reviewId: string;
+    let text: string | null;
 
     if (existing) {
       if (existing.rating === rating) return;
@@ -623,6 +705,8 @@ export class ReviewService {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating, text: existing.text },
       });
+      reviewId = row.id;
+      text = existing.text;
     } else {
       const user = await this.prisma.user.findUniqueOrThrow({
         where: { id: userId },
@@ -640,9 +724,14 @@ export class ReviewService {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating },
       });
+      reviewId = row.id;
+      text = null;
     }
 
     await this.emitReviewed(userId, targetType, targetId, rating);
+    // Not revoked here on a text shortening — see awardReviewRatingXp's doc
+    // comment; the nightly reconciliation is the safety net for that case.
+    await this.awardReviewRatingXp(userId, reviewId, text);
   }
 
   /**
