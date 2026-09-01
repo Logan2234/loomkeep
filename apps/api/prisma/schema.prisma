@@ -568,6 +568,8 @@ model User {
   moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
   entitlement                UserEntitlement?
   subscriptions              Subscription[]
+  xpEntries                  XpEntry[]
+  score                      UserScore?
 
   @@index([lastActiveAt])
 }
@@ -1586,4 +1588,62 @@ model MusicEntry {
   musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, musicItemId])
+}
+
+// --- Gamification (G1) — XP ledger, level curve, barème. ---
+// The level curve (xpForLevel/levelForXp) and the full barème (amount/cap/
+// source per reason) live in packages/shared/src/level.ts and xp-rules.ts —
+// pure data/functions shared with the web, kept out of Prisma entirely.
+
+// One credited (or reversed-by-deletion) unit of XP. Append-only by design
+// (see the [G1] plan's "attribution explicite + réconciliation de contrôle"
+// decision): a reversal deletes the row outright rather than writing a
+// negative entry or a revokedAt — re-crediting the same source always starts
+// from a fresh row, so cycling a source (mark watched, unwatch, rewatch)
+// never manufactures XP. Admin adjustments ([B8], not this ticket) will be
+// the one exception: distinct rows, never deleted.
+model XpEntry {
+  id     String @id @default(cuid())
+  userId String
+  // Mirror of packages/shared/src/enums.ts XpReason. String, not a Prisma
+  // enum, so a new reason needs no migration (same rationale as
+  // ActivityEvent.type).
+  reason String
+  // Table the gain is anchored to ("EpisodeWatch", "LibraryEntry", "DOMAIN"…
+  // — see XpRule.sourceType in xp-rules.ts) and that row's id. Together with
+  // reason they make crediting idempotent (the unique constraint below) and
+  // let the nightly reconciliation job re-verify each entry still has a live
+  // source. Non-nullable: Postgres treats NULLs as distinct in a unique
+  // index, so a nullable sourceId would let the same (userId, reason) pair
+  // be credited unboundedly instead of being caught by the constraint — a
+  // gain with no real anchor uses a synthetic source instead (sourceType:
+  // "DOMAIN", sourceId: the domain name) rather than going nullable.
+  sourceType String
+  sourceId   String
+  // Denormalised from XpRule.amount at grant time, so the ledger stays
+  // readable (and reconciliation-stable) after a future barème change —
+  // re-tuning an amount must never retroactively rewrite history.
+  amount    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reason, sourceType, sourceId])
+  @@index([userId, createdAt])
+}
+
+// Materialised sum of the user's XpEntry rows, kept only for cheap
+// leaderboard ordering ([G7]) — never written by hand, always recomputed
+// from XpEntry via aggregate(_sum) (see XpService.recomputeScore). Same
+// "derived per-user projection in its own table" shape as UserEntitlement.
+// No peakXp: level is derived from the current xp in both directions (see
+// the [G1] plan) so revoking XP always lowers the level back down too.
+model UserScore {
+  userId    String   @id
+  xp        Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([xp])
 }

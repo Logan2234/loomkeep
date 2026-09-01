@@ -1,6 +1,7 @@
 import { DigestCadence, NotificationType } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { localParts } from "../common/local-day.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -53,28 +54,6 @@ function pushBody(period: Period, items: DigestItem[]): string {
   const tier = items.length === 1 ? "one" : items.length === 2 ? "two" : "many";
   const variants = PUSH_VARIANTS[tier];
   return variants[Math.floor(Math.random() * variants.length)](period, items);
-}
-
-/** Local hour (0-23) and abbreviated weekday ("Mon", "Tue"…) in `timezone`, or null if it's not a valid IANA zone. */
-function localParts(
-  timezone: string,
-  now: Date,
-): { hour: number; weekday: string } | null {
-  try {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      hour: "numeric",
-      hour12: false,
-      weekday: "short",
-    }).formatToParts(now);
-    const hourStr = parts.find((p) => p.type === "hour")?.value;
-    const weekday = parts.find((p) => p.type === "weekday")?.value;
-    if (!hourStr || !weekday) return null;
-    // Some ICU builds render local midnight as "24" with hour12:false.
-    return { hour: Number(hourStr) % 24, weekday };
-  } catch {
-    return null;
-  }
 }
 
 /**

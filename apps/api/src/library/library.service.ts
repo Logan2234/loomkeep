@@ -17,6 +17,7 @@ import {
   ErrorCode,
   isDormant,
   ReviewTargetType,
+  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
@@ -31,6 +32,7 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
@@ -148,6 +150,7 @@ export class LibraryService {
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
     private readonly entitlements: EntitlementService,
+    private readonly xp: XpService,
   ) {}
 
   /** First touch of a media persists it (on-demand cache), then upserts the entry. */
@@ -396,6 +399,15 @@ export class LibraryService {
       ...episodeIds,
     ];
 
+    // Loaded before the transaction so revokeBySource has something to work
+    // with once the watches are gone — see the [G1] plan: XP writes never
+    // happen inside a $transaction (no side effect in the lock, same as
+    // `activity.emit` elsewhere in this file, always awaited after one).
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: episodeIds } },
+      select: { id: true },
+    });
+
     await this.prisma.$transaction([
       this.prisma.episodeWatch.deleteMany({
         where: { userId, episodeId: { in: episodeIds } },
@@ -413,6 +425,11 @@ export class LibraryService {
       }),
       this.prisma.libraryEntry.delete({ where: { id: entryId } }),
     ]);
+
+    await this.xp.revokeBySource(
+      "EpisodeWatch",
+      watches.map((w) => w.id),
+    );
   }
 
   /**
@@ -571,6 +588,8 @@ export class LibraryService {
       },
     });
 
+    await this.xp.award(userId, XpReason.EPISODE_WATCHED, watch.id);
+
     await this.syncFinishedAt(
       userId,
       episode.season.mediaItemId,
@@ -653,9 +672,21 @@ export class LibraryService {
       select: { id: true },
     });
 
+    // Loaded before the deleteMany so revokeBySource still has the ids to
+    // work with afterwards (see the [G1] plan: never award/revoke inside a
+    // transaction, and here there's nothing left to look up post-delete).
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
+      select: { id: true },
+    });
+
     await this.prisma.episodeWatch.deleteMany({
       where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
     });
+    await this.xp.revokeBySource(
+      "EpisodeWatch",
+      watches.map((w) => w.id),
+    );
     await this.syncFinishedAt(
       userId,
       season.mediaItemId,
@@ -724,7 +755,11 @@ export class LibraryService {
     );
   }
 
-  /** Create a watch for each of the given episodes the user hasn't watched yet. */
+  /**
+   * Create a watch for each of the given episodes the user hasn't watched
+   * yet, and credit EPISODE_WATCHED for each newly created watch (the batch
+   * still respects the daily cap — see `XpService.awardMany`).
+   */
   private async markUnwatched(
     userId: string,
     episodeIds: string[],
@@ -736,12 +771,20 @@ export class LibraryService {
       select: { episodeId: true },
     });
     const watchedIds = new Set(watched.map((w) => w.episodeId));
-    const toCreate = episodeIds
-      .filter((id) => !watchedIds.has(id))
-      .map((id) => ({ userId, episodeId: id }));
+    const newEpisodeIds = episodeIds.filter((id) => !watchedIds.has(id));
+    const toCreate = newEpisodeIds.map((id) => ({ userId, episodeId: id }));
 
     if (toCreate.length > 0) {
       await this.prisma.episodeWatch.createMany({ data: toCreate });
+      const created = await this.prisma.episodeWatch.findMany({
+        where: { userId, episodeId: { in: newEpisodeIds } },
+        select: { id: true },
+      });
+      await this.xp.awardMany(
+        userId,
+        XpReason.EPISODE_WATCHED,
+        created.map((w) => w.id),
+      );
     }
   }
 
@@ -827,6 +870,7 @@ export class LibraryService {
     }
 
     await this.prisma.episodeWatch.delete({ where: { id: latest.id } });
+    await this.xp.revokeBySource("EpisodeWatch", [latest.id]);
     await this.syncFinishedAt(
       userId,
       latest.episode.season.mediaItemId,

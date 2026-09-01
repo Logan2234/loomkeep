@@ -13,6 +13,14 @@ export interface PublicConfigDto {
   socialEnabled: boolean;
 
   /**
+   * Whether the gamification system (XP, levels, achievements — G1+) is
+   * enabled on this deployment. Driven by the API's `GAMIFICATION_ENABLED`
+   * env var, on by default on the hosted build. When false, `XpService.award`
+   * is a no-op and the web hides every gamification surface.
+   */
+  gamificationEnabled: boolean;
+
+  /**
    * Whether new sign-ups are accepted on this deployment. Driven by the
    * API's `REGISTRATION_ENABLED` env var (on by default). When false, the
    * web hides the sign-up link/route and the API rejects `POST

@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { isGamificationEnabled } from "../gamification/gamification.config";
 import { isSocialEnabled } from "../social/social.config";
 import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
 
@@ -27,6 +28,7 @@ export class PublicConfigController {
 
     return {
       socialEnabled: isSocialEnabled(this.config, this.flags),
+      gamificationEnabled: isGamificationEnabled(this.config, this.flags),
       registrationEnabled: isRegistrationEnabled(this.config, this.flags),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
       adminMfaEnforced: this.config.get<string>("NODE_ENV") === "production",

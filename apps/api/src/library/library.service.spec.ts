@@ -1,11 +1,22 @@
 import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
+
+// Stubbed no-op — the [G1] wiring itself is covered by xp.service.spec.ts,
+// these tests only need LibraryService to not blow up calling it.
+function stubXp(): XpService {
+  return {
+    award: vi.fn(),
+    awardMany: vi.fn(),
+    revokeBySource: vi.fn(),
+  } as unknown as XpService;
+}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -123,6 +134,7 @@ function makeService(
     reviews,
     { emit: vi.fn() } as unknown as ActivityService,
     {} as EntitlementService,
+    stubXp(),
   );
   return { service, prisma, mediaItemService };
 }
@@ -296,6 +308,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       reviews,
       activity,
       {} as EntitlementService,
+      stubXp(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -342,6 +355,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       reviews,
       activity,
       {} as EntitlementService,
+      stubXp(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -394,6 +408,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as ReviewService,
       activity,
       {} as EntitlementService,
+      stubXp(),
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -451,6 +466,7 @@ describe("LibraryService.unwatchSeason", () => {
       {} as ReviewService,
       activity,
       {} as EntitlementService,
+      stubXp(),
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -476,6 +492,7 @@ describe("LibraryService.unwatchSeason", () => {
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
+      stubXp(),
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -505,7 +522,14 @@ describe("LibraryService.deleteEntry", () => {
         delete: libraryEntryDelete,
       },
       season: { findMany: vi.fn().mockResolvedValue(seasons) },
-      episodeWatch: { deleteMany: episodeWatchDeleteMany },
+      episodeWatch: {
+        // Loaded before the transaction (see deleteEntry) so revokeBySource
+        // has ids to work with — same rows the transaction below deletes.
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "w1" }, { id: "w2" }, { id: "w3" }]),
+        deleteMany: episodeWatchDeleteMany,
+      },
       review: { deleteMany: reviewDeleteMany },
       comment: { updateMany: commentUpdateMany },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -518,6 +542,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
+      stubXp(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -554,7 +579,10 @@ describe("LibraryService.deleteEntry", () => {
         delete: vi.fn().mockResolvedValue({}),
       },
       season: { findMany: vi.fn().mockResolvedValue([]) },
-      episodeWatch: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      episodeWatch: {
+        findMany: vi.fn().mockResolvedValue([]),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
       review: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
       comment: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -567,6 +595,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
+      stubXp(),
     );
 
     await expect(
@@ -591,6 +620,7 @@ describe("LibraryService.getCalendarIcs", () => {
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
       entitlements,
+      stubXp(),
     );
   }
 
