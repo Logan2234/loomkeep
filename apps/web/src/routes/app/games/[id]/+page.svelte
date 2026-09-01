@@ -380,6 +380,7 @@
               <div class="flex items-center gap-1.5">
                 <input
                   type="number"
+                  name="playtimeHours"
                   min="0"
                   step="0.5"
                   inputmode="decimal"

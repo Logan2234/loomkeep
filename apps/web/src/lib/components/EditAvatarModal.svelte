@@ -207,6 +207,7 @@
     <input
       bind:this={fileInput}
       type="file"
+      name="avatar"
       accept="image/png,image/jpeg,image/webp"
       class="hidden"
       onchange={onFileSelected} />

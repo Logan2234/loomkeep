@@ -227,6 +227,9 @@
       <div class="guichet-input-wrap">
         <input
           type="search"
+          name="query"
+          aria-label={placeholder}
+          enterkeyhint="search"
           {placeholder}
           bind:value={query}
           onkeydown={handleSearchKeydown}

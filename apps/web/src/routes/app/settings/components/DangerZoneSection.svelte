@@ -139,7 +139,11 @@
           {m.settings_delete_account_password_label()}
         </span>
         <PasswordInput
+          name="currentPassword"
           autocomplete="current-password"
+          enterkeyhint="done"
+          minlength={1}
+          required
           bind:value={deletePasswordInput} />
       </label>
       {#if deleteMut.error}

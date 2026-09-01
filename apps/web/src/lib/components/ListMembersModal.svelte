@@ -60,7 +60,11 @@
     <div class="flex gap-2">
       <input
         type="text"
+        name="username"
         class="input flex-1"
+        minlength="1"
+        required
+        enterkeyhint="done"
         placeholder={m.common_username()}
         bind:value={username}
         onkeydown={(e) => e.key === "Enter" && add()} />

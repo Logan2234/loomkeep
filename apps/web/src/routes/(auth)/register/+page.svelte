@@ -66,30 +66,52 @@
         </h1>
         <input
           type="text"
+          name="displayName"
+          minlength="1"
+          maxlength="50"
+          aria-label={m.common_username()}
+          aria-invalid={registerMut.fieldErrors.displayName
+            ? "true"
+            : undefined}
+          aria-describedby={registerMut.fieldErrors.displayName
+            ? "register-display-name-error"
+            : undefined}
           placeholder={m.common_username()}
           bind:value={displayName}
           required
           class="input" />
         {#if registerMut.fieldErrors.displayName}
-          <p class="text-danger -mt-2 text-xs">
+          <p id="register-display-name-error" class="text-danger -mt-2 text-xs">
             {registerMut.fieldErrors.displayName}
           </p>
         {/if}
         <input
           type="email"
+          name="email"
+          autocomplete="email"
+          aria-label={m.common_email()}
+          aria-invalid={registerMut.fieldErrors.email ? "true" : undefined}
+          aria-describedby={registerMut.fieldErrors.email
+            ? "register-email-error"
+            : undefined}
           placeholder={m.common_email()}
           bind:value={email}
           required
           class="input" />
         {#if registerMut.fieldErrors.email}
-          <p class="text-danger -mt-2 text-xs">
+          <p id="register-email-error" class="text-danger -mt-2 text-xs">
             {registerMut.fieldErrors.email}
           </p>
         {/if}
         <PasswordInput
           placeholder={m.common_password()}
+          name="password"
+          ariaLabel={m.common_password()}
+          autocomplete="new-password"
+          enterkeyhint="done"
           bind:value={password}
           minlength={8}
+          maxlength={72}
           required />
         <PasswordRequirements value={password} />
         {#if turnstileSiteKey}
@@ -103,6 +125,8 @@
         <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
           <input
             type="checkbox"
+            name="acceptedTerms"
+            value="true"
             bind:checked={acceptedTerms}
             required
             class="mt-0.5" />
@@ -132,6 +156,8 @@
         <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
           <input
             type="checkbox"
+            name="certifiedAge"
+            value="true"
             bind:checked={certifiedAge}
             required
             class="mt-0.5" />

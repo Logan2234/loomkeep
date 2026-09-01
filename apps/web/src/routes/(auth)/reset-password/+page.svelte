@@ -62,14 +62,24 @@
           <form onsubmit={submit} class="flex flex-col gap-4">
             <PasswordInput
               placeholder={m.common_new_password()}
+              name="newPassword"
+              ariaLabel={m.common_new_password()}
+              autocomplete="new-password"
+              enterkeyhint="next"
               bind:value={newPassword}
               minlength={8}
+              maxlength={72}
               required />
             <PasswordRequirements value={newPassword} />
             <PasswordInput
               placeholder={m.auth_reset_password_confirm_placeholder()}
+              name="confirmPassword"
+              ariaLabel={m.auth_reset_password_confirm_placeholder()}
+              autocomplete="new-password"
+              enterkeyhint="done"
               bind:value={confirmPassword}
               minlength={8}
+              maxlength={72}
               required />
             {#if error}<p class="text-danger text-sm">{error}</p>{/if}
             <button

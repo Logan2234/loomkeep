@@ -123,6 +123,7 @@
         class="text-dim flex cursor-pointer items-center gap-2 text-sm select-none">
         <input
           type="checkbox"
+          name="selectAll"
           class="accent-accent h-4 w-4"
           checked={allSelected}
           onchange={toggleAll} />
@@ -172,6 +173,8 @@
         <li class="card flex items-center gap-3 p-3">
           <input
             type="checkbox"
+            name="selectedReviews"
+            value={review.id}
             class="accent-accent h-4 w-4 shrink-0"
             aria-label={m.reviews_select()}
             checked={selected.includes(review.id)}

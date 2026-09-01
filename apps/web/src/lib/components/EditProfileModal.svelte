@@ -44,7 +44,9 @@
         >{m.common_display_name()}</span>
       <input
         type="text"
+        name="displayName"
         class="input"
+        minlength="1"
         maxlength="50"
         bind:value={displayName} />
     </label>
@@ -53,7 +55,9 @@
       <label class="block">
         <span class="mb-1.5 block text-sm font-semibold">{m.common_bio()}</span>
         <textarea
+          name="bio"
           class="input min-h-20 resize-y"
+          rows="3"
           maxlength="500"
           placeholder={m.profile_bio_placeholder()}
           bind:value={bio}></textarea>

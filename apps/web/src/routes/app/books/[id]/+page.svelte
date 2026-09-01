@@ -323,8 +323,10 @@
                 <span>{m.book_page()}</span>
                 <input
                   type="number"
+                  name="currentPage"
                   min="0"
                   max={detail.pageCount ?? undefined}
+                  aria-label={m.book_reading_progress()}
                   class="input w-24"
                   value={entry.currentPage || ""}
                   onchange={(e) => {

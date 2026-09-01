@@ -27,7 +27,13 @@
       {m.terms_reacceptance_body()}
     </p>
     <label class="text-dim flex items-start gap-2 text-sm leading-relaxed">
-      <input type="checkbox" bind:checked required class="mt-0.5" />
+      <input
+        type="checkbox"
+        name="acceptedTerms"
+        value="true"
+        bind:checked
+        required
+        class="mt-0.5" />
       <span>
         {m.auth_register_accept_terms_prefix()}
         <a

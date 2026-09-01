@@ -332,22 +332,26 @@
     </label>
     <textarea
       id="takedown-reason"
+      name="reasonText"
       bind:value={takeDownReasonText}
       rows="3"
       class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
       placeholder={m.admin_reports_reason_placeholder()}></textarea>
 
-    <label class="mt-3 block text-sm font-semibold" for="takedown-basis">
+    <span class="mt-3 block text-sm font-semibold">
       {m.admin_moderation_basis()}
-    </label>
-    <select
-      id="takedown-basis"
-      bind:value={takeDownLegalBasis}
-      class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm">
-      {#each Object.entries(MODERATION_LEGAL_BASIS_LABELS) as [value, label] (value)}
-        <option {value}>{label}</option>
-      {/each}
-    </select>
+    </span>
+    <Combobox
+      label={m.admin_moderation_basis()}
+      name="legalBasis"
+      options={Object.entries(MODERATION_LEGAL_BASIS_LABELS).map(
+        ([value, label]) => ({
+          label,
+          value,
+        }),
+      )}
+      values={[takeDownLegalBasis]}
+      onChange={(v) => (takeDownLegalBasis = v[0] as ModerationLegalBasis)} />
 
     {#if takeDownLegalBasis === "TOS_BREACH"}
       <label class="mt-3 block text-sm font-semibold" for="takedown-clause">
@@ -356,6 +360,7 @@
       <input
         id="takedown-clause"
         type="text"
+        name="tosClause"
         bind:value={takeDownTosClause}
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
         placeholder={m.moderation_terms_conduct()} />

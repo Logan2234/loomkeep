@@ -12,6 +12,8 @@
     multiselect = false,
     searchable = false,
     searchPlaceholder = "Rechercher…",
+    name,
+    disabled = false,
     onChange,
   }: {
     label: string;
@@ -21,6 +23,8 @@
     /** Adds a text filter at the top of the panel. Single-select only. */
     searchable?: boolean;
     searchPlaceholder?: string;
+    name?: string;
+    disabled?: boolean;
     onChange: (values: string[]) => void;
   } = $props();
 
@@ -40,6 +44,13 @@
         )
       : options,
   );
+  const accessibleLabel = $derived(
+    multiselect
+      ? triggerText
+      : selectedOption
+        ? `${label}: ${selectedOption.label}`
+        : label,
+  );
 
   function choose(value: string, close: () => void) {
     if (multiselect) {
@@ -55,6 +66,12 @@
   }
 </script>
 
+{#if name}
+  {#each values as value (`${name}:${value}`)}
+    <input type="hidden" {name} {value} {disabled} />
+  {/each}
+{/if}
+
 <Dropdown role="listbox" class="min-w-48">
   {#snippet trigger({ open, toggle })}
     <button
@@ -65,6 +82,8 @@
         : 'border-border text-dim hover:text-fg'}"
       aria-haspopup="listbox"
       aria-expanded={open}
+      aria-label={accessibleLabel}
+      {disabled}
       onclick={(e) => {
         if (!open) {
           query = "";
@@ -87,6 +106,8 @@
           bind:this={searchInput}
           bind:value={query}
           type="text"
+          aria-label={searchPlaceholder}
+          enterkeyhint="search"
           placeholder={searchPlaceholder}
           class="border-border bg-surface-2 w-full rounded-md border px-2 py-1 text-sm" />
       </div>

@@ -295,8 +295,13 @@
           </span>
           <input
             type="text"
+            name="code"
             inputmode="numeric"
+            autocomplete="one-time-code"
+            minlength="6"
             maxlength="6"
+            required
+            enterkeyhint="done"
             class="input font-mono text-lg tracking-[0.3em]"
             placeholder="000000"
             bind:value={totpCodeInput} />
@@ -342,7 +347,11 @@
           {m.common_current_password()}
         </span>
         <PasswordInput
+          name="currentPassword"
           autocomplete="current-password"
+          enterkeyhint="done"
+          minlength={1}
+          required
           bind:value={disablePasswordInput} />
       </label>
       {#if totpDisableMut.error}

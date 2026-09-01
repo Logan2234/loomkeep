@@ -96,6 +96,9 @@
       </span>
       <input
         type="search"
+        name="query"
+        aria-label={m.lists_search_placeholder()}
+        enterkeyhint="search"
         placeholder={m.lists_search_placeholder()}
         bind:value={query}
         class="input pl-10" />

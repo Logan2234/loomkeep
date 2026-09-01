@@ -41,12 +41,22 @@
           <form onsubmit={submit} class="flex flex-col gap-4">
             <input
               type="email"
+              name="email"
+              autocomplete="email"
+              enterkeyhint="send"
+              aria-label={m.common_email()}
+              aria-invalid={submitMut.fieldErrors.email ? "true" : undefined}
+              aria-describedby={submitMut.fieldErrors.email
+                ? "forgot-password-email-error"
+                : undefined}
               placeholder={m.common_email()}
               bind:value={email}
               required
               class="input" />
             {#if submitMut.fieldErrors.email}
-              <p class="text-danger -mt-2 text-xs">
+              <p
+                id="forgot-password-email-error"
+                class="text-danger -mt-2 text-xs">
                 {submitMut.fieldErrors.email}
               </p>
             {/if}

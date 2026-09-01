@@ -484,8 +484,13 @@
               <div class="relative min-w-32 flex-1">
                 <input
                   type="text"
+                  name="commentText"
+                  aria-label={m.common_edit()}
                   class="input pr-14 text-sm"
+                  minlength="1"
                   maxlength={COMMENT_TEXT_MAX_LENGTH}
+                  required
+                  enterkeyhint="send"
                   bind:value={editText}
                   onkeydown={(e) => e.key === "Enter" && submitEdit(c.id)} />
                 <span
@@ -518,6 +523,7 @@
               <div class="relative min-w-32 flex-1">
                 <input
                   type="text"
+                  name="replyText"
                   class="input pr-14 text-sm"
                   placeholder={!c.author
                     ? m.comment_reply_placeholder()
@@ -525,6 +531,9 @@
                       ? m.comment_reply_to({ name: c.author.displayName })
                       : m.comment_reply_to({ name: `@${c.author.username}` })}
                   maxlength={COMMENT_TEXT_MAX_LENGTH}
+                  minlength="1"
+                  required
+                  enterkeyhint="send"
                   bind:value={replyText}
                   onkeydown={(e) => e.key === "Enter" && submitReply(c.id)} />
                 <span
@@ -604,9 +613,13 @@
         <div class="relative min-w-32 flex-1">
           <input
             type="text"
+            name="commentText"
             class="input pr-14 text-sm"
             placeholder={m.comment_add_placeholder()}
             maxlength={COMMENT_TEXT_MAX_LENGTH}
+            minlength="1"
+            required
+            enterkeyhint="send"
             bind:value={newText}
             onkeydown={(e) => e.key === "Enter" && submitTop()} />
           <span
@@ -733,6 +746,7 @@
                 <input
                   type="radio"
                   name="report-motif"
+                  value={motif}
                   class="accent-accent h-4 w-4 shrink-0"
                   checked={reportMotif === motif}
                   onchange={() => (reportMotif = motif)} />
@@ -745,7 +759,12 @@
 
       {#if reportCategory}
         <textarea
+          name="reason"
+          aria-label={reportIsOther
+            ? m.report_reason_placeholder()
+            : m.report_detail_placeholder()}
           class="input min-h-20 resize-y text-sm"
+          rows="3"
           placeholder={reportIsOther
             ? m.report_reason_placeholder()
             : m.report_detail_placeholder()}

@@ -316,6 +316,9 @@
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <input
       type="text"
+      name="query"
+      aria-label={m.admin_users_search()}
+      enterkeyhint="search"
       bind:value={query}
       oninput={onQueryInput}
       placeholder={m.admin_users_search()}
@@ -497,6 +500,8 @@
           <input
             id="role-admin"
             type="checkbox"
+            name="role"
+            value="ADMIN"
             class="accent-accent h-4 w-4 shrink-0"
             checked={selected.role === "ADMIN"}
             disabled={roleMut.loading ||
@@ -520,21 +525,20 @@
           {m.admin_users_plan()}
           <span class="bg-border h-px flex-1"></span>
         </h3>
-        <label
-          class="border-border flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"
-          for="plan-select">
+        <div
+          class="border-border flex items-center justify-between gap-2 rounded-lg border p-3 text-sm">
           <span class="text-fg font-semibold">{m.common_premium()}</span>
-          <select
-            id="plan-select"
-            class="border-border bg-surface-2 text-fg rounded-md border px-2 py-1 text-sm"
-            value={selected.plan}
+          <Combobox
+            label={m.common_premium()}
+            name="plan"
+            options={[
+              { label: m.admin_users_free(), value: "FREE" },
+              { label: m.common_premium(), value: "PREMIUM" },
+            ]}
+            values={[selected.plan]}
             disabled={planMut.loading}
-            onchange={(e) =>
-              planMut.mutate(e.currentTarget.value as "FREE" | "PREMIUM")}>
-            <option value="FREE">{m.admin_users_free()}</option>
-            <option value="PREMIUM">{m.common_premium()}</option>
-          </select>
-        </label>
+            onChange={(v) => planMut.mutate(v[0] as "FREE" | "PREMIUM")} />
+        </div>
         <p class="text-dim mt-1.5 text-xs">
           {m.admin_users_manual_plan()}
         </p>
@@ -871,6 +875,7 @@
       </p>
       <input
         type="text"
+        name="confirmation"
         bind:value={deleteConfirmText}
         disabled={deleteMut.loading}
         placeholder={selected.username}
@@ -884,23 +889,27 @@
       </label>
       <textarea
         id="delete-reason"
+        name="reasonText"
         bind:value={deleteReasonText}
         disabled={deleteMut.loading}
         rows="3"
         class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
         placeholder={m.admin_users_reason_placeholder()}></textarea>
-      <label class="mt-3 block text-sm font-semibold" for="delete-basis">
+      <span class="mt-3 block text-sm font-semibold">
         {m.admin_moderation_basis()}
-      </label>
-      <select
-        id="delete-basis"
-        bind:value={deleteLegalBasis}
+      </span>
+      <Combobox
+        label={m.admin_moderation_basis()}
+        name="legalBasis"
+        options={Object.entries(MODERATION_LEGAL_BASIS_LABELS).map(
+          ([value, label]) => ({
+            label,
+            value,
+          }),
+        )}
+        values={[deleteLegalBasis]}
         disabled={deleteMut.loading}
-        class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm">
-        {#each Object.entries(MODERATION_LEGAL_BASIS_LABELS) as [value, label] (value)}
-          <option {value}>{label}</option>
-        {/each}
-      </select>
+        onChange={(v) => (deleteLegalBasis = v[0] as ModerationLegalBasis)} />
       {#if deleteLegalBasis === "TOS_BREACH"}
         <label class="mt-3 block text-sm font-semibold" for="delete-clause">
           {m.admin_moderation_terms_clause()}
@@ -908,6 +917,7 @@
         <input
           id="delete-clause"
           type="text"
+          name="tosClause"
           bind:value={deleteTosClause}
           disabled={deleteMut.loading}
           class="border-border bg-surface mt-1 w-full rounded-lg border px-3 py-2 text-sm"
