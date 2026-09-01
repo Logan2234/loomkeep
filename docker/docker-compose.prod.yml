@@ -15,6 +15,7 @@ services:
     environment:
       NODE_ENV: production
       WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?set MFA_ENCRYPTION_KEY in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       # Safe because Caddy is always the one hop in front of the API here.
       TRUST_PROXY: "true"
