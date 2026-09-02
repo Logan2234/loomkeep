@@ -141,15 +141,21 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
       }),
     );
 
-    const first = await service.confirmTotp("user-1", code);
+    const first = await service.confirmTotp("user-1", code, "session-1");
     expect(first.recoveryCodes).toHaveLength(RECOVERY_CODE_COUNT);
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
+      where: { userId: "user-1", id: { not: "session-1" } },
     });
 
-    const second = await service.setEmailMfaEnabled("user-1", true);
+    const second = await service.setEmailMfaEnabled(
+      "user-1",
+      true,
+      "session-1",
+    );
     expect(second.recoveryCodes).toBeUndefined();
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledTimes(2);
+    expect(prisma.refreshToken.deleteMany).toHaveBeenLastCalledWith({
+      where: { userId: "user-1", id: { not: "session-1" } },
+    });
   });
 
   it("confirmTotp rejects an invalid code", async () => {
@@ -185,14 +191,14 @@ describe("MfaService.disableTotp", () => {
       makeUser({ passwordHash: await bcrypt.hash("correct", 4) }),
     );
 
-    await service.disableTotp("user-1", "correct");
+    await service.disableTotp("user-1", "correct", "session-1");
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
     });
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
+      where: { userId: "user-1", id: { not: "session-1" } },
     });
   });
 });

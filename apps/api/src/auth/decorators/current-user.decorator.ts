@@ -5,6 +5,8 @@ export interface JwtPayload {
   /** User ID. */
   sub: string;
   email: string;
+  /** Stable server-side session ID. */
+  sid?: string;
 }
 
 export interface AuthenticatedRequest extends FastifyRequest {

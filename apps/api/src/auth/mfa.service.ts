@@ -73,6 +73,7 @@ export class MfaService {
   async confirmTotp(
     userId: string,
     code: string,
+    currentSessionId?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -97,14 +98,18 @@ export class MfaService {
         where: { id: userId },
         data: { mfaTotpEnabled: true },
       }),
-      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
 
     const recoveryCodes = await this.ensureRecoveryCodes(userId);
     return { recoveryCodes };
   }
 
-  async disableTotp(userId: string, currentPassword: string): Promise<void> {
+  async disableTotp(
+    userId: string,
+    currentPassword: string,
+    currentSessionId?: string,
+  ): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
     });
@@ -121,20 +126,21 @@ export class MfaService {
         where: { id: userId },
         data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
       }),
-      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
   }
 
   async setEmailMfaEnabled(
     userId: string,
     enabled: boolean,
+    currentSessionId?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
         data: { mfaEmailEnabled: enabled },
       }),
-      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
 
     const recoveryCodes = enabled
@@ -163,10 +169,14 @@ export class MfaService {
   }
 
   /** Generates a fresh batch of 10, deleting any existing ones first. */
-  async regenerateRecoveryCodes(userId: string): Promise<string[]> {
+  async regenerateRecoveryCodes(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<string[]> {
     const codes = await this.generateRecoveryCodes(userId, {
       deleteExisting: true,
       revokeSessions: true,
+      currentSessionId,
     });
     return codes;
   }
@@ -182,6 +192,7 @@ export class MfaService {
     return this.generateRecoveryCodes(userId, {
       deleteExisting: false,
       revokeSessions: false,
+      currentSessionId: undefined,
     });
   }
 
@@ -190,7 +201,12 @@ export class MfaService {
     {
       deleteExisting,
       revokeSessions,
-    }: { deleteExisting: boolean; revokeSessions: boolean },
+      currentSessionId,
+    }: {
+      deleteExisting: boolean;
+      revokeSessions: boolean;
+      currentSessionId?: string;
+    },
   ): Promise<string[]> {
     const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () =>
       generateRecoveryCode(),
@@ -207,11 +223,19 @@ export class MfaService {
         this.prisma.mfaRecoveryCode.create({ data: { userId, codeHash } }),
       ),
       ...(revokeSessions
-        ? [this.prisma.refreshToken.deleteMany({ where: { userId } })]
+        ? [this.deleteOtherSessionsQuery(userId, currentSessionId)]
         : []),
     ]);
 
     return codes;
+  }
+
+  private deleteOtherSessionsQuery(userId: string, currentSessionId?: string) {
+    return this.prisma.refreshToken.deleteMany({
+      where: currentSessionId
+        ? { userId, id: { not: currentSessionId } }
+        : { userId },
+    });
   }
 
   /** Normalizes (strips separators, uppercases), matches, and deletes the consumed row. */
