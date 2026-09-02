@@ -23,7 +23,7 @@ export class PublicConfigController {
   @Get()
   @ApiOkResponse({ type: PublicConfigResponseDto })
   async get(): Promise<PublicConfigDto> {
-    const raw = await readFile(join(process.cwd(), "package.json"), "utf-8");
+    const raw = await readFile(join(__dirname, "../../package.json"), "utf-8");
     const { version } = JSON.parse(raw) as { version: string };
 
     return {

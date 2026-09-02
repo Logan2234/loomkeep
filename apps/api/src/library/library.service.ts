@@ -33,6 +33,8 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import {
   isSeasonComplete,
   isSeriesComplete,
@@ -156,6 +158,7 @@ export class LibraryService {
     private readonly activity: ActivityService,
     private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /** First touch of a media persists it (on-demand cache), then upserts the entry. */
@@ -219,6 +222,10 @@ export class LibraryService {
       entry.status === "COMPLETED"
     ) {
       await this.xp.award(userId, XpReason.MOVIE_WATCHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.MOVIE_WATCHED],
+      );
     }
 
     // The /10 rating lives in Review (the single source of truth).
@@ -386,6 +393,10 @@ export class LibraryService {
       entry.status === "COMPLETED"
     ) {
       await this.xp.award(userId, XpReason.MOVIE_WATCHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.MOVIE_WATCHED],
+      );
     }
 
     if (dto.rating !== undefined) {
@@ -646,6 +657,10 @@ export class LibraryService {
     });
 
     await this.xp.award(userId, XpReason.EPISODE_WATCHED, watch.id);
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.EPISODE_WATCHED],
+    );
     await this.syncSeasonAndSeriesXp(userId, [episode.seasonId]);
 
     await this.syncFinishedAt(

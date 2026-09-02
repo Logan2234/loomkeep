@@ -7,6 +7,7 @@ export const JOB_KEYS = {
   BACKUP: "backup.run",
   INACTIVE_ACCOUNTS_SCAN: "users.inactiveAccountsScan",
   GAMIFICATION_RECONCILE: "gamification.reconcile",
+  GAMIFICATION_ACHIEVEMENTS_SWEEP: "gamification.achievementsSweep",
 } as const;
 
 export type JobKey = (typeof JOB_KEYS)[keyof typeof JOB_KEYS];
@@ -24,6 +25,8 @@ export const JOB_HEALTHCHECK_ENV: Record<JobKey, string> = {
   [JOB_KEYS.BACKUP]: "HEALTHCHECKS_BACKUP_URL",
   [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: "HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL",
   [JOB_KEYS.GAMIFICATION_RECONCILE]: "HEALTHCHECKS_GAMIFICATION_RECONCILE_URL",
+  [JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP]:
+    "HEALTHCHECKS_GAMIFICATION_ACHIEVEMENTS_SWEEP_URL",
 };
 
 /** Display metadata for the admin "Jobs & tâches" page. */
@@ -57,5 +60,9 @@ export const JOB_REGISTRY: Record<JobKey, { label: string; schedule: string }> =
     [JOB_KEYS.GAMIFICATION_RECONCILE]: {
       label: "Réconciliation XP (contrôle d'intégrité)",
       schedule: "Tous les jours à 4h",
+    },
+    [JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP]: {
+      label: "Balayage des succès (filet de sécurité)",
+      schedule: "Tous les jours à 5h",
     },
   };

@@ -617,6 +617,14 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     }
 
 
+  "ConsumedRefreshToken" {
+    String id "🗝️"
+    String tokenHash
+    DateTime expiresAt
+    DateTime createdAt
+    }
+
+
   "UserDevice" {
     String id "🗝️"
     String deviceKey
@@ -948,6 +956,14 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime updatedAt
     }
 
+
+  "UserAchievement" {
+    String id "🗝️"
+    String key
+    DateTime unlockedAt
+    DateTime displayedAt "❓"
+    }
+
     "UserEntitlement" |o--|| "User" : "user"
     "UserEntitlement" |o--|| "Plan" : "enum:plan"
     "UserEntitlement" |o--|o "EntitlementSource" : "enum:source"
@@ -1008,6 +1024,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "Notification" }o--|| "User" : "user"
     "ActivityEvent" }o--|| "User" : "user"
     "RefreshToken" }o--|| "User" : "user"
+    "ConsumedRefreshToken" }o--|| "RefreshToken" : "session"
     "UserDevice" }o--|| "User" : "user"
     "UserToken" |o--|| "UserTokenType" : "enum:type"
     "UserToken" }o--|| "User" : "user"
@@ -1059,4 +1076,5 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "MusicEntry" }o--|| "MusicItem" : "musicItem"
     "XpEntry" }o--|| "User" : "user"
     "UserScore" |o--|| "User" : "user"
+    "UserAchievement" }o--|| "User" : "user"
 ```

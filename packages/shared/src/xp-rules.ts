@@ -10,8 +10,9 @@ import { XpReason } from "./enums";
  * `dailyCap` is omitted only for a reason that is inherently unique by
  * nature (a one-off milestone, e.g. DOMAIN_STARTED) — every repeatable
  * reason carries one, calibrated to what's physically plausible in a day.
- * `amount` is omitted only for ADMIN_ADJUSTMENT, whose signed amount is
- * chosen per grant by an admin, not fixed here.
+ * `amount` is omitted only for ADMIN_ADJUSTMENT (signed, chosen per grant by
+ * an admin) and ACHIEVEMENT_UNLOCKED (varies by achievement tier) — both
+ * pass `XpService.award`'s `amountOverride` instead of a fixed value here.
  */
 export interface XpRule {
   reason: XpReason;
@@ -194,14 +195,12 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     sourceType: "User",
     socialGated: false,
   },
-  // Reserved for G2 — no caller in this ticket. Amount varies by achievement
-  // tier (50/150/400); XpService.award always takes the amount from this
-  // registry, so G2 will need a per-grant override path this single number
-  // can't express — left as a note for that ticket, not solved here. Unique
-  // per achievement id, so no dailyCap.
+  // [G2]: amount varies by achievement tier — like ADMIN_ADJUSTMENT below,
+  // no fixed `amount` here. AchievementService always passes
+  // XpService.award's `amountOverride` (the definition's own `xpAward`)
+  // instead. Unique per achievement id, so no dailyCap.
   ACHIEVEMENT_UNLOCKED: {
     reason: XpReason.ACHIEVEMENT_UNLOCKED,
-    amount: 50,
     sourceType: "UserAchievement",
     socialGated: false,
   },

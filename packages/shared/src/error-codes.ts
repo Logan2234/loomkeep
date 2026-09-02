@@ -157,6 +157,9 @@ export const ErrorCode = {
   ImportArchiveMissingFiles: "import.archive_missing_files",
   ImportArchiveMalformed: "import.archive_malformed",
 
+  // gamification
+  GamificationAchievementNotFound: "gamification.achievement_not_found",
+
   // cross-cutting — owned by the infra rather than a single domain
   ValidationFailed: "validation.failed",
   InvalidParam: "validation.invalid_param",
