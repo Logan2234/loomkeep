@@ -24,6 +24,8 @@
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
   import EditProfileModal from "$lib/components/EditProfileModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import LevelBadge from "$lib/components/LevelBadge.svelte";
+  import LevelCard from "$lib/components/LevelCard.svelte";
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -400,6 +402,9 @@
               days={profile.activityStats.visible
                 ? profile.activityStats.streakDays
                 : undefined} />
+            {#if appConfig.gamificationEnabled}
+              <LevelBadge xp={profile.xp} />
+            {/if}
             {#if selfManage}
               <button
                 type="button"
@@ -465,6 +470,12 @@
           </div>
         </div>
       </div>
+
+      {#if appConfig.gamificationEnabled && profile.xp !== null}
+        <div class="mt-5">
+          <LevelCard xp={profile.xp} />
+        </div>
+      {/if}
 
       {#if rel && !rel.isSelf}
         <!-- Own row below the avatar/info block instead of sharing it — the

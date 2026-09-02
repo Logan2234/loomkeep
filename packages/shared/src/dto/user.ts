@@ -79,6 +79,12 @@ export interface UserDto {
   mfaTotpEnabled: boolean;
   /** Whether email-code-based MFA is active. See LK-C17. */
   mfaEmailEnabled: boolean;
+  /**
+   * Opt-out from showing gamification progression (level/XP) to other
+   * viewers — the owner always sees their own progress regardless. See
+   * `SocialProfileDto.xp`.
+   */
+  hideProgression: boolean;
 }
 
 export interface UpdateUserRequestDto {
@@ -103,6 +109,8 @@ export interface UpdateUserRequestDto {
   defaultListVisibility?: ListVisibility;
   /** UI language (Paraglide locale code). */
   locale?: Locale;
+  /** See `UserDto.hideProgression`. */
+  hideProgression?: boolean;
 }
 
 export interface UpdateUsernameRequestDto {

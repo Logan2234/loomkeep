@@ -35,4 +35,5 @@ export class UserResponseDto implements UserDto {
   acceptedTermsVersion!: string | null;
   mfaTotpEnabled!: boolean;
   mfaEmailEnabled!: boolean;
+  hideProgression!: boolean;
 }

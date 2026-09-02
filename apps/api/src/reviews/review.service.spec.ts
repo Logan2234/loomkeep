@@ -1,9 +1,19 @@
+import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
+import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { ReviewService } from "./review.service";
+
+// Not exercised by most of these tests — kept plain so isGamificationEnabled
+// resolves to `false` (config unset, flag fallback false), matching the
+// deployment default.
+const CONFIG = { get: vi.fn() } as unknown as ConfigService;
+const FLAGS = {
+  isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
+} as unknown as FeatureFlagsService;
 
 const VIEWER = "viewer";
 
@@ -26,6 +36,7 @@ function review(
       username: author.id,
       displayName: author.id,
       profileAccess: author.profileAccess,
+      hideProgression: false,
     },
   };
 }
@@ -51,6 +62,7 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
       findMany: vi.fn().mockResolvedValue([]),
     },
     episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+    userScore: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const visibility = {
     getRelation: vi.fn((_v: string, target: { id: string }) =>
@@ -58,7 +70,7 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
     ),
   } as unknown as VisibilityService;
   const activity = { emit: vi.fn() } as unknown as ActivityService;
-  return new ReviewService(prisma, visibility, activity);
+  return new ReviewService(prisma, visibility, activity, CONFIG, FLAGS);
 }
 
 describe("ReviewService.listForTarget", () => {
@@ -159,10 +171,11 @@ function makeForWrite(
         .mockResolvedValue({ defaultReviewVisibility: "FRIENDS" }),
     },
     episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
+    userScore: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
-  const svc = new ReviewService(prisma, visibility, activity);
+  const svc = new ReviewService(prisma, visibility, activity, CONFIG, FLAGS);
   return { svc, revisionCreate };
 }
 
@@ -221,6 +234,8 @@ function makeForVoting(opts: {
     prisma,
     {} as unknown as VisibilityService,
     {} as unknown as ActivityService,
+    CONFIG,
+    FLAGS,
   );
   return { svc, upsert, deleteMany };
 }

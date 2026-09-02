@@ -31,6 +31,14 @@ export interface UserSummaryDto {
    * badge". Never set for an anonymized (Figurant) author.
    */
   streakDays?: number;
+  /**
+   * Total XP, for the small level pastille shown next to a pseudo (reviews,
+   * comments, profile) — same precedent as `streakDays`. Only populated
+   * where the caller actually computes it; the level itself is derived
+   * client-side via `levelProgress()`. Never set for an anonymized
+   * (Figurant) author.
+   */
+  xp?: number;
 }
 
 /** Live counts of what a switch to Figurant mode would immediately affect. */
@@ -103,6 +111,14 @@ export interface SocialProfileDto {
   relationship: RelationshipDto;
   domains: ProfileDomainStatDto[];
   activityStats: ProfileActivityStatsDto;
+  /**
+   * Total XP, for the level/progress display (see `LevelCard` on the web —
+   * the level itself derives client-side via `levelProgress()`, never sent
+   * precomputed). `null` means: gamification disabled on this instance, OR
+   * the viewer lacks the right to see it, OR the target has set
+   * `hideProgression` — never `null` for the owner viewing their own profile.
+   */
+  xp: number | null;
   /** Reviews with a visibility the viewer may see (own-scope, like List). */
   reviewsCount: number;
   /** Comments are public by nature — capped only by profile reachability. */

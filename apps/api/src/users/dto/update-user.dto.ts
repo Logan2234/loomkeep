@@ -99,4 +99,8 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsIn(ALLOWED_LOCALES)
   locale?: Locale;
+
+  @IsOptional()
+  @IsBoolean()
+  hideProgression?: boolean;
 }

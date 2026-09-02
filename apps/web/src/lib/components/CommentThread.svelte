@@ -13,6 +13,7 @@
   import { auth } from "$lib/auth.svelte";
   import FocusOverlay from "$lib/components/FocusOverlay.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import {
     REPORT_CATEGORY_HINTS,
@@ -44,6 +45,7 @@
   import Combobox from "./Combobox.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
+  import LevelBadge from "./LevelBadge.svelte";
   import Modal from "./Modal.svelte";
   import StreakBadge from "./StreakBadge.svelte";
 
@@ -455,6 +457,9 @@
                 {c.author.displayName}
               </a>
               <StreakBadge days={c.author.streakDays} />
+              {#if appConfig.gamificationEnabled}
+                <LevelBadge xp={c.author.xp} />
+              {/if}
             {/if}
             <RelativeTime iso={c.createdAt} class="timecode text-xs" />
             {#if c.edited}

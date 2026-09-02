@@ -431,6 +431,11 @@ model User {
   birthDate                  DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
   allowAdultContent          Boolean          @default(false)
+  // Opt-out from showing gamification progression (level/XP) to OTHER
+  // viewers — the owner always sees their own real progress regardless.
+  // Same gating role as GHOST/anonymized for the streak badge, but a
+  // standing user preference rather than a mode switch.
+  hideProgression            Boolean          @default(false)
   // Communication preferences: cadence at which each channel delivers the
   // "new episode" digest. See DigestCadence.
   notifyEmail                DigestCadence    @default(WEEKLY)
