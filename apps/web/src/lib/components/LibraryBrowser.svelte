@@ -37,6 +37,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import type { Domain, MediaType, PagedResult } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
+  import { untrack } from "svelte";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
 
@@ -132,6 +133,15 @@
   // only patches the raw history entry without updating SvelteKit's own
   // router state, so `page.url` (and therefore the filters read back from it)
   // stays stale when the browser later navigates back to that entry.
+  //
+  // `page.url.pathname` is read via `untrack` deliberately: this function
+  // runs inside the `$effect` below, and Svelte tracks every reactive read
+  // that happens during an effect's synchronous execution — including ones
+  // buried in a called function, not just ones written directly in the
+  // effect body. Reading it untracked keeps the effect's dependencies to
+  // exactly the six filter/sort fields it's meant to react to; without this,
+  // `goto()` (which updates `page.url`) makes the effect see its own output
+  // as a fresh dependency change and re-fire itself, forever.
   function syncUrl() {
     const params = new URLSearchParams();
     if (queryFilter) params.set("q", queryFilter);
@@ -141,7 +151,7 @@
     if (sort !== defaultSort) params.set("sort", sort);
     if (reversed) params.set("order", "asc");
     const qs = params.toString();
-    void goto(qs ? `?${qs}` : page.url.pathname, {
+    void goto(qs ? `?${qs}` : untrack(() => page.url.pathname), {
       replaceState: true,
       noScroll: true,
       keepFocus: true,
