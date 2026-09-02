@@ -1,6 +1,8 @@
 import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
@@ -16,6 +18,14 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+// Stubbed no-op — the [G2] wiring itself is covered by achievement.service.spec.ts,
+// these tests only need LibraryService to not blow up calling it.
+function stubAchievements(): AchievementService {
+  return {
+    evaluate: vi.fn(),
+  } as unknown as AchievementService;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -135,6 +145,7 @@ function makeService(
     { emit: vi.fn() } as unknown as ActivityService,
     {} as EntitlementService,
     stubXp(),
+    stubAchievements(),
   );
   return { service, prisma, mediaItemService };
 }
@@ -309,6 +320,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       activity,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -356,6 +368,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       activity,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -413,6 +426,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       activity,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -475,6 +489,7 @@ describe("LibraryService.unwatchSeason", () => {
       activity,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -501,6 +516,7 @@ describe("LibraryService.unwatchSeason", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -554,6 +570,7 @@ describe("LibraryService.deleteEntry", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -610,6 +627,7 @@ describe("LibraryService.deleteEntry", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await expect(
@@ -635,6 +653,7 @@ describe("LibraryService.getCalendarIcs", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       entitlements,
       stubXp(),
+      stubAchievements(),
     );
   }
 
@@ -694,6 +713,7 @@ describe("LibraryService — XP wiring", () => {
       },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const achievements = stubAchievements();
 
     const service = new LibraryService(
       prisma,
@@ -709,6 +729,7 @@ describe("LibraryService — XP wiring", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       xp,
+      achievements,
     );
 
     await service.upsertEntry("user-1", {
@@ -721,6 +742,51 @@ describe("LibraryService — XP wiring", () => {
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "entry-1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "MEDIA");
     expect(xp.award).toHaveBeenCalledWith("user-1", "MOVIE_WATCHED", "entry-1");
+    expect(achievements.evaluate).toHaveBeenCalledWith(
+      "user-1",
+      ACHIEVEMENT_KEYS_BY_XP_REASON.MOVIE_WATCHED,
+    );
+  });
+
+  it("awards MOVIE_WATCHED and evaluates achievements on updateEntry's COMPLETED transition", async () => {
+    const findUnique = vi
+      .fn()
+      .mockResolvedValue({ userId: "user-1", status: "PLANNED", favorite: false });
+    const update = vi
+      .fn()
+      .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
+    const prisma = {
+      libraryEntry: { findUnique, update },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      episodeWatch: {
+        findMany: vi.fn().mockResolvedValue([]),
+        aggregate: vi.fn().mockResolvedValue({ _max: { watchedAt: null } }),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const achievements = stubAchievements();
+
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      { getRating: vi.fn().mockResolvedValue(null) } as unknown as ReviewService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      {} as EntitlementService,
+      xp,
+      achievements,
+    );
+
+    await service.updateEntry("user-1", "entry-1", {
+      status: "COMPLETED",
+      finishedAt: "2026-08-01T00:00:00.000Z",
+    } as never);
+
+    expect(xp.award).toHaveBeenCalledWith("user-1", "MOVIE_WATCHED", "entry-1");
+    expect(achievements.evaluate).toHaveBeenCalledWith(
+      "user-1",
+      ACHIEVEMENT_KEYS_BY_XP_REASON.MOVIE_WATCHED,
+    );
   });
 
   it("does not award WORK_ADDED/DOMAIN_STARTED on an update (before !== null)", async () => {
@@ -737,6 +803,7 @@ describe("LibraryService — XP wiring", () => {
       },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const achievements = stubAchievements();
 
     const service = new LibraryService(
       prisma,
@@ -752,6 +819,7 @@ describe("LibraryService — XP wiring", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       xp,
+      achievements,
     );
 
     await service.upsertEntry("user-1", {
@@ -804,6 +872,7 @@ describe("LibraryService — XP wiring", () => {
       },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const achievements = stubAchievements();
 
     const service = new LibraryService(
       prisma,
@@ -815,6 +884,7 @@ describe("LibraryService — XP wiring", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       xp,
+      achievements,
     );
 
     await service.addReplay("user-1", "entry-1", {} as never);
@@ -876,6 +946,7 @@ describe("LibraryService — XP wiring", () => {
       },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const achievements = stubAchievements();
 
     const service = new LibraryService(
       prisma,
@@ -885,6 +956,7 @@ describe("LibraryService — XP wiring", () => {
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       xp,
+      achievements,
     );
 
     await service.watchEpisode("user-1", "ep2", {} as never);
@@ -893,6 +965,10 @@ describe("LibraryService — XP wiring", () => {
       "user-1",
       "SEASON_COMPLETED",
       "season-1",
+    );
+    expect(achievements.evaluate).toHaveBeenCalledWith(
+      "user-1",
+      ACHIEVEMENT_KEYS_BY_XP_REASON.EPISODE_WATCHED,
     );
   });
 });

@@ -8,9 +8,16 @@ describe("XP_RULES", () => {
     }
   });
 
-  it("defines a fixed amount for every reason except ADMIN_ADJUSTMENT", () => {
+  it("defines a fixed amount for every reason except ADMIN_ADJUSTMENT/ACHIEVEMENT_UNLOCKED", () => {
+    // Both pass XpService.award's amountOverride instead — see xp-rules.ts's
+    // doc comment on ACHIEVEMENT_UNLOCKED.
+    const noFixedAmount = new Set<XpReason>([
+      XpReason.ADMIN_ADJUSTMENT,
+      XpReason.ACHIEVEMENT_UNLOCKED,
+    ]);
+
     for (const rule of Object.values(XP_RULES)) {
-      if (rule.reason === XpReason.ADMIN_ADJUSTMENT) {
+      if (noFixedAmount.has(rule.reason)) {
         expect(rule.amount).toBeUndefined();
       } else {
         expect(rule.amount).toBeGreaterThan(0);

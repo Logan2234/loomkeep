@@ -177,6 +177,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       {
         isEffectivelyPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      stubXp(),
     );
 
     await service.startAnalyze("u1", "tvtime", { input: "" });

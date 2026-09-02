@@ -1,0 +1,190 @@
+import { ErrorCode, type PendingAchievementDto, XpReason } from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Cron } from "@nestjs/schedule";
+import { Prisma } from "@prisma/client";
+import { AppException } from "../../common/app.exception";
+import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
+import { JOB_KEYS } from "../../jobs/job-keys";
+import { JobRunService } from "../../jobs/job-run.service";
+import { PrismaService } from "../../prisma/prisma.service";
+import { isSocialEnabled } from "../../social/social.config";
+import { isGamificationEnabled } from "../gamification.config";
+import { XpService } from "../xp.service";
+import {
+  ACHIEVEMENT_LIST,
+  ACHIEVEMENTS,
+  type AchievementDefinition,
+} from "./registry";
+
+/**
+ * Unlocks achievements — the engine behind the registry declared in
+ * `registry.ts`. Achievements are permanent: once a `UserAchievement` row
+ * exists, `evaluate()` never re-checks or removes it, unlike `XpService`'s
+ * ledger (see the [G2] plan — a trophy isn't taken back because the
+ * underlying activity later changes).
+ */
+@Injectable()
+export class AchievementService {
+  private readonly logger = new Logger(AchievementService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly flags: FeatureFlagsService,
+    private readonly xp: XpService,
+    private readonly jobRuns: JobRunService,
+  ) {}
+
+  /**
+   * Re-checks and unlocks achievements for `userId` — every definition in
+   * the registry, or only `keys` when a caller already knows which ones a
+   * just-credited XP reason can affect (see ACHIEVEMENT_KEYS_BY_XP_REASON).
+   * No-ops entirely when gamification is off.
+   */
+  async evaluate(userId: string, keys?: string[]): Promise<void> {
+    if (!isGamificationEnabled(this.config, this.flags)) return;
+
+    const definitions = keys
+      ? keys
+          .map((key) => ACHIEVEMENTS[key])
+          .filter((d): d is AchievementDefinition => d !== undefined)
+      : ACHIEVEMENT_LIST;
+
+    for (const definition of definitions) {
+      await this.evaluateOne(userId, definition);
+    }
+  }
+
+  private async evaluateOne(
+    userId: string,
+    definition: AchievementDefinition,
+  ): Promise<void> {
+    if (definition.socialGated && !isSocialEnabled(this.config, this.flags))
+      return;
+
+    const already = await this.prisma.userAchievement.findUnique({
+      where: { userId_key: { userId, key: definition.key } },
+      select: { id: true },
+    });
+    if (already) return;
+
+    const result = await definition.check(this.prisma, userId);
+    if (!result.unlocked) return;
+
+    let created;
+    try {
+      created = await this.prisma.userAchievement.create({
+        data: { userId, key: definition.key },
+      });
+    } catch (err) {
+      // A concurrent evaluate() call (live wiring racing the nightly sweep,
+      // or two live sites in the same request) hits the unique constraint —
+      // expected under concurrency, not an error. No XP credit in this case:
+      // the call that actually created the row already credited it.
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        this.logger.debug(
+          `Achievement ${definition.key} already unlocked for user ${userId} (concurrent)`,
+        );
+        return;
+      }
+      throw err;
+    }
+
+    await this.xp.award(
+      userId,
+      XpReason.ACHIEVEMENT_UNLOCKED,
+      created.id,
+      definition.xpAward,
+    );
+  }
+
+  /**
+   * Unlocked achievements the [G6] unlock-bubble UI hasn't shown yet, oldest
+   * first (the order the bubble sequence should play them in). Empty list
+   * rather than an error when gamification is off.
+   */
+  async pending(userId: string): Promise<PendingAchievementDto[]> {
+    if (!isGamificationEnabled(this.config, this.flags)) return [];
+
+    const rows = await this.prisma.userAchievement.findMany({
+      where: { userId, displayedAt: null },
+      orderBy: { unlockedAt: "asc" },
+    });
+    if (rows.length === 0) return [];
+
+    // xpAwarded isn't stored on UserAchievement (see the [G2] plan) — looked
+    // up from the XpEntry each unlock created.
+    const xpEntries = await this.prisma.xpEntry.findMany({
+      where: {
+        sourceType: "UserAchievement",
+        sourceId: { in: rows.map((r) => r.id) },
+      },
+      select: { sourceId: true, amount: true },
+    });
+    const xpBySourceId = new Map(xpEntries.map((e) => [e.sourceId, e.amount]));
+
+    return rows.map((r) => ({
+      id: r.id,
+      key: r.key,
+      unlockedAt: r.unlockedAt.toISOString(),
+      xpAwarded: xpBySourceId.get(r.id) ?? 0,
+    }));
+  }
+
+  /**
+   * Marks one achievement as shown by the unlock-bubble UI. Idempotent (a
+   * second call is a no-op) and scoped to `userId` — a mismatch or unknown
+   * id both 404, never revealing whether the id belongs to someone else.
+   */
+  async markDisplayed(userId: string, id: string): Promise<void> {
+    const achievement = await this.prisma.userAchievement.findUnique({
+      where: { id },
+      select: { userId: true, displayedAt: true },
+    });
+    if (!achievement || achievement.userId !== userId) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.GamificationAchievementNotFound,
+      );
+    }
+    if (achievement.displayedAt !== null) return;
+
+    await this.prisma.userAchievement.update({
+      where: { id },
+      data: { displayedAt: new Date() },
+    });
+  }
+
+  /**
+   * Nightly safety net: re-evaluates every achievement for every user. This
+   * is what catches anything not wired to a live award site (see the [G2]
+   * plan) — including, on its first run after deploy, every existing
+   * account's history, with no separate backfill script needed (`check()`
+   * never cares whether a row came from live use or an import).
+   *
+   * Full sweep, every user, no activity-based targeting: acceptable while
+   * the registry only has two achievement families (see the [G2] plan) —
+   * targeting active users only should be revisited once [G3]'s full
+   * catalogue makes this loop expensive, not solved preemptively here.
+   */
+  @Cron("0 5 * * *")
+  async runAchievementsSweepJob(): Promise<string> {
+    return this.jobRuns.record(
+      JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
+      () => this.sweepAllUsers(),
+      (summary) => summary,
+    );
+  }
+
+  private async sweepAllUsers(): Promise<string> {
+    const users = await this.prisma.user.findMany({ select: { id: true } });
+    for (const user of users) {
+      await this.evaluate(user.id);
+    }
+    return `Swept ${users.length} user(s)`;
+  }
+}

@@ -575,6 +575,7 @@ model User {
   subscriptions              Subscription[]
   xpEntries                  XpEntry[]
   score                      UserScore?
+  achievements               UserAchievement[]
 
   @@index([lastActiveAt])
 }
@@ -1667,4 +1668,30 @@ model UserScore {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([xp])
+}
+
+// One row per unlocked achievement. Definitions live in code
+// (apps/api/src/gamification/achievements/registry.ts), never in the
+// database — a self-host install must never need seeding. Achievements are
+// never revoked once unlocked, unlike XpEntry: a trophy isn't taken back
+// because you later removed the title that earned it.
+model UserAchievement {
+  id     String @id @default(cuid())
+  userId String
+  // Stable key matching a registry entry — string, not a Prisma enum, so a
+  // new achievement needs no migration (same rationale as XpEntry.reason).
+  // Each tier of a tiered achievement is its own key (e.g.
+  // "cinephile_bronze"/"cinephile_silver"/"cinephile_gold"), not a shared
+  // row with a tier column.
+  key        String
+  unlockedAt DateTime  @default(now())
+  // Null until the [G6] unlock-bubble UI has shown this achievement to the
+  // user once — set by PATCH /achievements/:id/displayed. Independent of
+  // unlockedAt: an unlock can happen server-side (a live action, or the
+  // nightly sweep) while the user isn't even in the app.
+  displayedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
 }

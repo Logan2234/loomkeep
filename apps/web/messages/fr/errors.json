@@ -57,6 +57,7 @@
   "apierr_import_archive_unreadable": "L'archive est illisible.",
   "apierr_import_archive_missing_files": "Il manque des fichiers requis dans l'archive.",
   "apierr_import_archive_malformed": "L'archive est illisible — un de ses fichiers est mal formé.",
+  "apierr_gamification_achievement_not_found": "Ce succès est introuvable.",
   "apierr_validation_invalid_param": "Paramètre invalide.",
   "apierr_validation_failed": "Le formulaire contient des erreurs.",
   "apierr_internal_error": "Une erreur inattendue s'est produite.",

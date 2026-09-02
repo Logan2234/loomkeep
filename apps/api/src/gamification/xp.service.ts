@@ -42,20 +42,27 @@ export class XpService {
    * every caller fire-and-forgets this the same way `ActivityService.emit`
    * is used elsewhere, so a disabled flag or an exhausted cap is never an
    * error.
+   *
+   * `amountOverride` is the one exception to the barème being fixed-amount:
+   * XpReason.ACHIEVEMENT_UNLOCKED has no `amount` in XP_RULES (it varies by
+   * achievement tier), so `AchievementService` passes the unlocked
+   * definition's own `xpAward` here instead. Every other caller omits it.
    */
   async award(
     userId: string,
     reason: XpReason,
     sourceId: string,
+    amountOverride?: number,
   ): Promise<void> {
     if (!isGamificationEnabled(this.config, this.flags)) return;
 
     const rule = XP_RULES[reason];
     if (rule.socialGated && !isSocialEnabled(this.config, this.flags)) return;
-    // Only ADMIN_ADJUSTMENT (B8, not this ticket) has no fixed amount — its
-    // callers will set XpEntry.amount directly rather than going through
-    // this registry-driven path.
-    if (rule.amount === undefined) return;
+    // Only ADMIN_ADJUSTMENT (B8, not this ticket) has no fixed amount and no
+    // override — its callers will set XpEntry.amount directly rather than
+    // going through this registry-driven path.
+    const amount = amountOverride ?? rule.amount;
+    if (amount === undefined) return;
 
     if (rule.dailyCap !== undefined) {
       const reached = await this.dailyCapReached(userId, reason, rule.dailyCap);
@@ -69,7 +76,7 @@ export class XpService {
           reason,
           sourceType: rule.sourceType,
           sourceId,
-          amount: rule.amount,
+          amount,
         },
       });
     } catch (err) {

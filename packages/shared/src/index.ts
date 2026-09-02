@@ -11,6 +11,7 @@ export * from "./dto/config";
 export * from "./dto/data-export";
 export * from "./dto/entitlement";
 export * from "./dto/game";
+export * from "./dto/gamification";
 export * from "./dto/import";
 export * from "./dto/library";
 export * from "./dto/list";
