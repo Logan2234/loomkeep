@@ -5,6 +5,8 @@ import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
 import { AppException } from "../common/app.exception";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_ON_TOTP_ENABLED } from "../gamification/achievements/registry";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { BCRYPT_ROUNDS } from "./auth.service";
@@ -22,6 +24,7 @@ export class MfaService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mail: MailService,
+    private readonly achievements: AchievementService,
   ) {}
 
   private getEncryptionKey(): Buffer {
@@ -102,6 +105,7 @@ export class MfaService {
     ]);
 
     const recoveryCodes = await this.ensureRecoveryCodes(userId);
+    await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_TOTP_ENABLED);
     return { recoveryCodes };
   }
 

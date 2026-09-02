@@ -916,6 +916,10 @@ export class LibraryService {
 
       if (complete) {
         await this.xp.award(userId, XpReason.SERIES_COMPLETED, entry.id);
+        await this.achievements.evaluate(
+          userId,
+          ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SERIES_COMPLETED],
+        );
       } else {
         await this.xp.revokeBySource("LibraryEntry", [entry.id]);
       }

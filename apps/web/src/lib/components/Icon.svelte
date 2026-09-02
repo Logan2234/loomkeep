@@ -212,5 +212,38 @@
   {:else if name === "play"}
     <circle cx="12" cy="12" r="9" />
     <path d="M10 8.3v7.4l6.5-3.7Z" fill="currentColor" stroke="none" />
+  {:else if name === "trophy"}
+    <path d="M8 4h8v6a4 4 0 0 1-8 0Z" />
+    <path d="M8 5H5a3 3 0 0 0 3 5M16 5h3a3 3 0 0 1-3 5" />
+    <path d="M12 14v3M9 21h6M9.5 21c0-2.5 1-3.5 2.5-4 1.5.5 2.5 1.5 2.5 4" />
+  {:else if name === "flame"}
+    <path
+      d="M12 2c1 3-3 4-3 8a3 3 0 0 0 6 0c1.5 1 2 2.8 2 4.5A5.5 5.5 0 0 1 6 14.5C6 9 12 7 12 2Z" />
+  {:else if name === "compass"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="m15 9-2 6-6 2 2-6Z" fill="currentColor" stroke="none" />
+  {:else if name === "hourglass"}
+    <path d="M6 3h12M6 21h12" />
+    <path
+      d="M7 3c0 4.5 4 6 5 8-1 2-5 3.5-5 8h10c0-4.5-4-6-5-8 1-2 5-3.5 5-8Z" />
+  {:else if name === "mask"}
+    <path d="M4 8c2-1.5 5-2 8-2s6 .5 8 2c0 6-3 11-8 11S4 14 4 8Z" />
+    <circle cx="9" cy="10" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="10" r="1.3" fill="currentColor" stroke="none" />
+    <path d="M9.5 15c1.7 1 3.3 1 5 0" />
+  {:else if name === "footprint"}
+    <path
+      d="M9.5 3c-2 0-3 2-3 4.5S8 12 8 15a3 3 0 0 1-1.5 5c2 1 5 .5 5.5-2 .5-2-1-4-1-7 0-3.5 1-8-1.5-8Z" />
+    <circle cx="10" cy="4.2" r="1.1" fill="currentColor" stroke="none" />
+  {:else if name === "shooting-star"}
+    <path d="M14 3l1.6 4.4 4.4 1.6-4.4 1.6L14 15l-1.6-4.4L8 9l4.4-1.6Z" />
+    <path d="M3 21 9 15M3 16l3 0M8 21l0-3" />
+  {:else if name === "circle-arrow"}
+    <path d="M20 12a8 8 0 1 1-3.2-6.4" />
+    <path d="M20 3v4.5H15.5" />
+  {:else if name === "pumpkin"}
+    <path d="M12 3v3" />
+    <path d="M4 13c0-4 3.5-7 8-7s8 3 8 7-3.5 8-8 8-8-4-8-8Z" />
+    <path d="M12 6v15M8.5 7.5c-1 2-1 11 0 13M15.5 7.5c1 2 1 11 0 13" />
   {/if}
 </svg>

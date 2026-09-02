@@ -1,6 +1,7 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -16,6 +17,10 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+function stubAchievements(): AchievementService {
+  return { evaluate: vi.fn() } as unknown as AchievementService;
 }
 
 const VIEWER = "viewer";
@@ -94,6 +99,7 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
   }
 
@@ -210,6 +216,7 @@ describe("ListService.listForUser — editor lists on a profile", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
     return { svc };
   }
@@ -256,6 +263,7 @@ describe("ListService.addItem", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
     return { svc, create, activity };
   }
@@ -312,6 +320,7 @@ describe("ListService.reorder", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
     return { svc, listItemUpdate, listUpdateMany };
   }
@@ -384,6 +393,7 @@ describe("ListService.canEdit (via getEditable)", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
   }
 
@@ -450,6 +460,7 @@ describe("ListService member management — owner only", () => {
       fakeFlags(),
       notifications,
       stubXp(),
+      stubAchievements(),
     );
     return { svc, create, notifications };
   }
@@ -511,6 +522,7 @@ describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
     return { svc, listUpdate, listMemberDelete };
   }
@@ -555,6 +567,7 @@ describe("ListService — activity emission on create/share", () => {
       },
     } as unknown as PrismaService;
     const activity = { emit: vi.fn() } as unknown as ActivityService;
+    const achievements = stubAchievements();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -563,8 +576,9 @@ describe("ListService — activity emission on create/share", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      achievements,
     );
-    return { svc, activity };
+    return { svc, activity, achievements };
   }
 
   it("emits LIST_CREATED on create", async () => {
@@ -575,12 +589,34 @@ describe("ListService — activity emission on create/share", () => {
     );
   });
 
+  it("evaluates first_list/curator_* on create", async () => {
+    const { svc, achievements } = make();
+    await svc.create("u1", { title: "Top 10", kind: "RANKED" as never });
+    expect(achievements.evaluate).toHaveBeenCalledWith("u1", [
+      "first_list",
+      "curator_bronze",
+      "curator_silver",
+      "curator_gold",
+    ]);
+  });
+
   it("emits LIST_SHARED only when visibility moves off PRIVATE", async () => {
     const { svc, activity } = make();
     await svc.update("u1", "l1", { visibility: "FRIENDS" as never });
     expect(activity.emit).toHaveBeenCalledWith(
       expect.objectContaining({ type: "LIST_SHARED" }),
     );
+  });
+
+  it("evaluates first_list/curator_* when a list is shared", async () => {
+    const { svc, achievements } = make();
+    await svc.update("u1", "l1", { visibility: "FRIENDS" as never });
+    expect(achievements.evaluate).toHaveBeenCalledWith("u1", [
+      "first_list",
+      "curator_bronze",
+      "curator_silver",
+      "curator_gold",
+    ]);
   });
 
   it("does not emit LIST_SHARED for a non-visibility update", async () => {
@@ -617,6 +653,7 @@ describe("ListService — Figurant can't share a list", () => {
       fakeFlags(),
       fakeNotifications(),
       stubXp(),
+      stubAchievements(),
     );
     return { svc, create, update };
   }
@@ -661,6 +698,7 @@ describe("ListService — XP wiring", () => {
       fakeFlags(),
       fakeNotifications(),
       xp,
+      stubAchievements(),
     );
 
     await svc.create("u1", { title: "Top 10", kind: "RANKED" as never });

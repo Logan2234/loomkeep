@@ -16,6 +16,8 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { resolveWorkHref } from "../common/work-href.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { XpService } from "../gamification/xp.service";
@@ -80,6 +82,7 @@ export class CommentService {
     private readonly xp: XpService,
     private readonly config: ConfigService,
     private readonly flags: FeatureFlagsService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /**
@@ -268,6 +271,13 @@ export class CommentService {
     if ((row.text?.trim().length ?? 0) >= 15) {
       await this.xp.award(authorId, XpReason.COMMENT_POSTED, row.id);
     }
+
+    // first_comment/chatterbox_*/icebreaker unlock off any posted comment,
+    // independent of the 15-char XP threshold above.
+    await this.achievements.evaluate(
+      authorId,
+      ACHIEVEMENT_KEYS_ON_COMMENT_POSTED,
+    );
 
     const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),

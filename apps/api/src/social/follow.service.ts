@@ -8,6 +8,8 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/registry";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -27,6 +29,7 @@ export class FollowService {
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
     private readonly notifications: NotificationService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /**
@@ -134,6 +137,17 @@ export class FollowService {
         dedupeKey: `follow:${viewerId}`,
         urlToActor: true,
       });
+      // has_friends/one_sided depend on the follower's own following/follower
+      // sets; followers_* depend on the followee's follower count — both
+      // sides may unlock something from the same accepted follow.
+      await this.achievements.evaluate(
+        viewerId,
+        ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+      );
+      await this.achievements.evaluate(
+        target.id,
+        ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+      );
     } else {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW_REQUEST,
@@ -183,6 +197,15 @@ export class FollowService {
       dedupeKey: `accept:${userId}`,
       urlToActor: true,
     });
+
+    await this.achievements.evaluate(
+      follow.followerId,
+      ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+    );
   }
 
   /**

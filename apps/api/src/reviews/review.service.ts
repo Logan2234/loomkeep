@@ -18,6 +18,11 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import {
+  ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
+  ACHIEVEMENT_KEYS_ON_REVIEW_WRITTEN,
+} from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { wordCount } from "../gamification/xp-verifiers";
@@ -72,6 +77,7 @@ export class ReviewService {
     private readonly xp: XpService,
     private readonly config: ConfigService,
     private readonly flags: FeatureFlagsService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /**
@@ -220,6 +226,10 @@ export class ReviewService {
         XpReason.REVIEW_VOTE_RECEIVED,
         voteRow.id,
       );
+      await this.achievements.evaluate(
+        review.userId,
+        ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
+      );
     } else {
       await this.xp.revokeBySource("ReviewVote", [voteRow.id]);
     }
@@ -314,6 +324,14 @@ export class ReviewService {
 
     await this.emitReviewed(userId, targetType, targetId, dto.rating);
     await this.awardReviewRatingXp(userId, row.id, text);
+
+    // first_take unlocks off the review's creation, not every edit.
+    if (!existing) {
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_ON_REVIEW_WRITTEN,
+      );
+    }
 
     const [author, votes] = await Promise.all([
       this.author(userId),
@@ -753,6 +771,13 @@ export class ReviewService {
       });
       reviewId = row.id;
       text = null;
+
+      // first_take unlocks off the review's creation, not every rating edit
+      // (the `existing` branch above never reaches here).
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_ON_REVIEW_WRITTEN,
+      );
     }
 
     await this.emitReviewed(userId, targetType, targetId, rating);

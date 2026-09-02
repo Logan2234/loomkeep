@@ -4,6 +4,7 @@ import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
@@ -16,6 +17,10 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+function stubAchievements(): AchievementService {
+  return { evaluate: vi.fn() } as unknown as AchievementService;
 }
 
 function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
@@ -66,6 +71,7 @@ describe("ImportJobService translatable failures", () => {
           isEffectivelyPremium: vi.fn().mockResolvedValue(true),
         } as unknown as EntitlementService,
         stubXp(),
+        stubAchievements(),
       );
       const started = await service.startAnalyze("u1", "steam", { input: "" });
       await vi.waitFor(() => {
@@ -93,6 +99,7 @@ describe("ImportJobService.getAvailability", () => {
       config as unknown as ConfigService,
       { isEffectivelyPremium: vi.fn() } as unknown as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     const availability = service.getAvailability();
@@ -125,6 +132,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       {} as unknown as ConfigService,
       entitlements,
       stubXp(),
+      stubAchievements(),
     );
     return { service, prisma };
   }
@@ -178,6 +186,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
         isEffectivelyPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await service.startAnalyze("u1", "tvtime", { input: "" });
@@ -203,6 +212,7 @@ describe("ImportJobService.getQuota", () => {
       {} as unknown as ConfigService,
       {} as unknown as EntitlementService,
       stubXp(),
+      stubAchievements(),
     );
 
     await expect(service.getQuota("u1")).resolves.toEqual({
@@ -229,6 +239,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
         isEffectivelyPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
       xp,
+      stubAchievements(),
     );
     return { service, xp, importRunCreate };
   }

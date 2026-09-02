@@ -55,4 +55,15 @@ export type IconName =
   | "sparkles"
   | "lock"
   | "warning"
-  | "play";
+  | "play"
+  // [G3] achievement glyphs — a reusable base set (see apps/web/DESIGN.md and
+  // the [G3] plan's "Artwork" section), never a bespoke badge per achievement.
+  | "trophy"
+  | "flame"
+  | "compass"
+  | "hourglass"
+  | "mask"
+  | "footprint"
+  | "shooting-star"
+  | "circle-arrow"
+  | "pumpkin";

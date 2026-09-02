@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import {
@@ -32,5 +33,14 @@ export class AchievementsController {
     @Param("id") id: string,
   ): Promise<void> {
     await this.achievements.markDisplayed(user.sub, id);
+  }
+
+  /** "curious_cat" signal — see AchievementService.markVersionLinkClicked. */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("signals/version-link")
+  async signalVersionLinkClicked(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    await this.achievements.markVersionLinkClicked(user.sub);
   }
 }

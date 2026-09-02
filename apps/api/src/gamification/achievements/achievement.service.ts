@@ -16,6 +16,7 @@ import { isSocialEnabled } from "../../social/social.config";
 import { isGamificationEnabled } from "../gamification.config";
 import { XpService } from "../xp.service";
 import {
+  ACHIEVEMENT_KEYS_ON_VERSION_LINK_CLICKED,
   ACHIEVEMENT_LIST,
   ACHIEVEMENTS,
   type AchievementDefinition,
@@ -106,6 +107,20 @@ export class AchievementService {
       created.id,
       definition.xpAward,
     );
+  }
+
+  /**
+   * "curious_cat" signal: records that the user has clicked the version-
+   * number link (home/settings) — the one achievement with no other
+   * persisted trace of its triggering action (see the [G3] plan). Idempotent
+   * (a second call is a cheap no-op update, never re-credits).
+   */
+  async markVersionLinkClicked(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { clickedVersionLink: true },
+    });
+    await this.evaluate(userId, ACHIEVEMENT_KEYS_ON_VERSION_LINK_CLICKED);
   }
 
   /**

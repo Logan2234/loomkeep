@@ -1,6 +1,7 @@
 import type { ConfigService } from "@nestjs/config";
 import { type Mock, vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -15,6 +16,10 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+function stubAchievements(): AchievementService {
+  return { evaluate: vi.fn() } as unknown as AchievementService;
 }
 
 const AUTHOR = {
@@ -139,6 +144,7 @@ function make(
 
   const notifications = { create: vi.fn() } as unknown as NotificationService;
   const xp = stubXp();
+  const achievements = stubAchievements();
 
   return {
     svc: new CommentService(
@@ -148,10 +154,12 @@ function make(
       xp,
       CONFIG,
       FLAGS,
+      achievements,
     ),
     prisma,
     notifications,
     xp,
+    achievements,
   };
 }
 
@@ -277,6 +285,28 @@ describe("CommentService.list — blocking", () => {
 });
 
 describe("CommentService.create", () => {
+  it("evaluates the comment-family achievements after posting, regardless of the XP length threshold", async () => {
+    const { svc, achievements } = make({
+      comment: {
+        create: vi.fn().mockResolvedValue(commentRow({ id: "c1", text: "hi" })), // under the 15-char XP threshold
+      },
+    });
+
+    await svc.create("viewer", {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "hi",
+    });
+
+    expect(achievements.evaluate).toHaveBeenCalledWith("viewer", [
+      "first_comment",
+      "chatterbox_bronze",
+      "chatterbox_silver",
+      "chatterbox_gold",
+      "icebreaker",
+    ]);
+  });
+
   it("rejects replying to a reply (flat + one level only)", async () => {
     const { svc } = make({
       comment: {

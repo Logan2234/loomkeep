@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { ActivityService } from "./activity.service";
 import { FollowService } from "./follow.service";
@@ -11,7 +12,7 @@ import { VisibilityService } from "./visibility.service";
 // P4 social graph, profiles, search and privacy. Every route is gated behind
 // SOCIAL_ENABLED via SocialFeatureGuard on the controllers.
 @Module({
-  imports: [NotificationModule],
+  imports: [NotificationModule, GamificationModule],
   controllers: [SocialController, PrivacyController],
   providers: [
     VisibilityService,

@@ -6,6 +6,7 @@
     listGames,
     listLibrary,
     listMusic,
+    signalVersionLinkClicked,
     updateLibraryEntry,
     watchEpisode,
   } from "$lib/api/client";
@@ -563,6 +564,7 @@
             href={GITHUB_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
+            onclick={() => signalVersionLinkClicked()}
             class="btn-text font-normal">
             {m.app_version({ version: appConfig.version })}
             {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}

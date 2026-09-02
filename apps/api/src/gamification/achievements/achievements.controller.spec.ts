@@ -6,6 +6,7 @@ function makeController() {
   const achievements = {
     pending: vi.fn().mockResolvedValue([]),
     markDisplayed: vi.fn(),
+    markVersionLinkClicked: vi.fn(),
   } as unknown as AchievementService;
 
   const controller = new AchievementsController(achievements);
@@ -55,5 +56,15 @@ describe("AchievementsController.markDisplayed", () => {
     await expect(
       controller.markDisplayed(USER, "achievement-1"),
     ).rejects.toThrow();
+  });
+});
+
+describe("AchievementsController.signalVersionLinkClicked", () => {
+  it("delegates to AchievementService.markVersionLinkClicked, scoped to the current user", async () => {
+    const { controller, achievements } = makeController();
+
+    await controller.signalVersionLinkClicked(USER);
+
+    expect(achievements.markVersionLinkClicked).toHaveBeenCalledWith("user-1");
   });
 });

@@ -63,7 +63,11 @@ function makeService(configValues: Record<string, string> = {}) {
     episodeWatch: { findFirst: vi.fn().mockResolvedValue(null) },
     libraryEntry: { count: vi.fn().mockResolvedValue(0) },
     xpEntry: { findMany: vi.fn().mockResolvedValue([]) },
-    user: { findMany: vi.fn().mockResolvedValue([]) },
+    user: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue({ clickedVersionLink: false }),
+      update: vi.fn().mockResolvedValue({}),
+    },
   } as unknown as PrismaService;
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
   const flags = makeFlags();
@@ -160,6 +164,40 @@ describe("AchievementService.evaluate", () => {
       where: { userId_key: { userId: "user-1", key: "first_episode" } },
       select: { id: true },
     });
+  });
+});
+
+describe("AchievementService.markVersionLinkClicked", () => {
+  it("sets the flag then evaluates curious_cat", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      clickedVersionLink: true,
+    });
+
+    await service.markVersionLinkClicked("user-1");
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { clickedVersionLink: true },
+    });
+    expect(prisma.userAchievement.findUnique).toHaveBeenCalledWith({
+      where: { userId_key: { userId: "user-1", key: "curious_cat" } },
+      select: { id: true },
+    });
+  });
+
+  it("is idempotent — recalling it never re-credits an already-unlocked curious_cat", async () => {
+    const { service, prisma, xp } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+
+    await service.markVersionLinkClicked("user-1");
+    await service.markVersionLinkClicked("user-1");
+
+    expect(prisma.user.update).toHaveBeenCalledTimes(2);
+    expect(prisma.userAchievement.create).not.toHaveBeenCalled();
+    expect(xp.award).not.toHaveBeenCalled();
   });
 });
 

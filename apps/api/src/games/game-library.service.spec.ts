@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
@@ -12,6 +13,10 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+function stubAchievements(): AchievementService {
+  return { evaluate: vi.fn() } as unknown as AchievementService;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -70,6 +75,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
       emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService,
     stubXp(),
+    stubAchievements(),
   );
   return { service, prisma };
 }
@@ -159,6 +165,7 @@ describe("GameLibraryService.deleteEntry", () => {
         emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
+      stubAchievements(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -205,6 +212,7 @@ describe("GameLibraryService — XP wiring", () => {
       reviews,
       activity,
       xp,
+      stubAchievements(),
     );
 
     await service.upsertEntry("user-1", {
@@ -249,6 +257,7 @@ describe("GameLibraryService — XP wiring", () => {
       reviews,
       activity,
       xp,
+      stubAchievements(),
     );
 
     await service.addReplay("user-1", "e1", {} as never);

@@ -11,6 +11,7 @@ export * from "./comments";
 export * from "./config";
 export * from "./core";
 export * from "./games";
+export * from "./gamification";
 export * from "./import";
 export * from "./library";
 export * from "./lists";
