@@ -1,8 +1,19 @@
 import { vi } from "vitest";
+import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
+
+// Stubbed no-op, same pattern as library.service.spec.ts (G1) — the XP
+// wiring's actual crediting/reasons is asserted below via these mocks.
+function stubXp(): XpService {
+  return {
+    award: vi.fn(),
+    awardMany: vi.fn(),
+    revokeBySource: vi.fn(),
+  } as unknown as XpService;
+}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -61,6 +72,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     {
       emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService,
+    stubXp(),
   );
   return { service, prisma };
 }
@@ -131,10 +143,15 @@ describe("BookLibraryService.deleteEntry", () => {
         }),
         delete: bookEntryDelete,
       },
-      review: { deleteMany: reviewDeleteMany },
+      review: {
+        findMany: vi.fn().mockResolvedValue([]),
+        deleteMany: reviewDeleteMany,
+      },
       comment: { updateMany: commentUpdateMany },
+      bookReplay: { findMany: vi.fn().mockResolvedValue([]) },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
+    const xp = stubXp();
 
     const service = new BookLibraryService(
       prisma,
@@ -144,6 +161,7 @@ describe("BookLibraryService.deleteEntry", () => {
       {
         emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
+      xp,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -156,6 +174,8 @@ describe("BookLibraryService.deleteEntry", () => {
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
+    expect(xp.revokeBySource).toHaveBeenCalledWith("BookEntry", ["entry-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
   });
 });
 
@@ -195,6 +215,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       {} as AgeGateService,
       reviews,
       activity,
+      stubXp(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -238,6 +259,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       {} as AgeGateService,
       reviews,
       activity,
+      stubXp(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -290,6 +312,7 @@ describe("BookLibraryService reading goal", () => {
       {} as AgeGateService,
       {} as import("../reviews/review.service").ReviewService,
       {} as unknown as import("../social/activity.service").ActivityService,
+      stubXp(),
     );
   }
 
@@ -362,5 +385,152 @@ describe("BookLibraryService reading goal", () => {
       create: { userId: "user-1", year: 2026, target: 25 },
     });
     expect(result).toEqual({ year: 2026, target: 25, completed: 6 });
+  });
+});
+
+describe("BookLibraryService — XP wiring", () => {
+  const reviews = {
+    getRating: vi.fn().mockResolvedValue(null),
+    setRating: vi.fn(),
+  } as unknown as import("../reviews/review.service").ReviewService;
+  const activity = {
+    emit: vi.fn(),
+  } as unknown as import("../social/activity.service").ActivityService;
+
+  it("awards WORK_ADDED and DOMAIN_STARTED only on true first creation, not on update", async () => {
+    const findUnique = vi
+      .fn()
+      // upsertEntry's own "before" lookup: null -> a true creation
+      .mockResolvedValueOnce(null)
+      // syncFinishedAt's post-write lookup
+      .mockResolvedValueOnce({ status: "TO_READ", finishedAt: null });
+    const upsert = vi
+      .fn()
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "TO_READ" });
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = {
+      bookEntry: { findUnique, upsert, count },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+
+    const service = new BookLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "book-1" }),
+      } as unknown as BookItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "OPEN_LIBRARY",
+      sourceId: "ol-1",
+      status: "TO_READ",
+    } as never);
+
+    expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
+    expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "BOOKS");
+
+    // A subsequent update (before !== null) must not re-award either.
+    xp.award = vi.fn();
+    findUnique
+      .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
+      .mockResolvedValueOnce({ status: "TO_READ", finishedAt: null });
+
+    await service.upsertEntry("user-1", {
+      source: "OPEN_LIBRARY",
+      sourceId: "ol-1",
+      status: "TO_READ",
+    } as never);
+
+    expect(xp.award).not.toHaveBeenCalledWith(
+      "user-1",
+      "WORK_ADDED",
+      expect.anything(),
+    );
+    expect(xp.award).not.toHaveBeenCalledWith(
+      "user-1",
+      "DOMAIN_STARTED",
+      expect.anything(),
+    );
+  });
+
+  it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
+    const findUnique = vi
+      .fn()
+      .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
+      .mockResolvedValueOnce({ status: "READ", finishedAt: new Date() });
+    const upsert = vi
+      .fn()
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "READ" });
+    const prisma = {
+      bookEntry: { findUnique, upsert, count: vi.fn().mockResolvedValue(1) },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+
+    const service = new BookLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "book-1" }),
+      } as unknown as BookItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "OPEN_LIBRARY",
+      sourceId: "ol-1",
+      status: "READ",
+    } as never);
+
+    expect(xp.award).toHaveBeenCalledWith("user-1", "BOOK_FINISHED", "e1");
+  });
+
+  it("awards BOOK_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
+    const findUnique = vi
+      .fn()
+      .mockResolvedValueOnce({ id: "e1", userId: "user-1" }); // assertEntryOwnership
+    const bookEntryFindUniqueOrThrow = vi
+      .fn()
+      .mockResolvedValue(makeRow({ id: "e1" }));
+    const replayCreate = vi.fn().mockResolvedValue({ id: "replay-1" });
+    const prisma = {
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: bookEntryFindUniqueOrThrow,
+      },
+      bookReplay: {
+        create: replayCreate,
+        findUnique: vi.fn().mockResolvedValue({
+          id: "replay-1",
+          bookEntry: { userId: "user-1" },
+        }),
+        delete: vi.fn().mockResolvedValue({}),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+
+    const service = new BookLibraryService(
+      prisma,
+      {} as BookItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+    );
+
+    await service.addReplay("user-1", "e1", {} as never);
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_REPLAYED",
+      "replay-1",
+    );
+
+    await service.deleteReplay("user-1", "replay-1");
+    expect(xp.revokeBySource).toHaveBeenCalledWith("BookReplay", ["replay-1"]);
   });
 });

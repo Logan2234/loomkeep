@@ -28,7 +28,12 @@ export type XpVerifier = (
   userId: string,
 ) => Promise<boolean>;
 
-function wordCount(text: string | null | undefined): number {
+/**
+ * Word count used by both the reconciliation verifiers below and the live
+ * award sites (review.service.ts) — a single implementation so the two can
+ * never silently disagree on the REVIEW_WRITTEN/REVIEW_DETAILED thresholds.
+ */
+export function wordCount(text: string | null | undefined): number {
   if (!text) return 0;
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -41,7 +46,7 @@ function wordCount(text: string | null | undefined): number {
  * here would create a module cycle: LibraryModule already imports
  * GamificationModule for XpService).
  */
-async function allAiredEpisodesWatched(
+export async function allAiredEpisodesWatched(
   prisma: PrismaService,
   userId: string,
   episodes: { id: string; airDate: Date | null }[],
@@ -61,6 +66,54 @@ async function allAiredEpisodesWatched(
   return aired.every((e) => watchedIds.has(e.id));
 }
 
+/**
+ * Whether `seasonId` is complete for `userId` — the same check the
+ * SEASON_COMPLETED verifier below runs during nightly reconciliation,
+ * exported so `LibraryService` can award/revoke it live right after a watch
+ * change without duplicating the "what counts as complete" rule.
+ */
+export async function isSeasonComplete(
+  prisma: PrismaService,
+  userId: string,
+  seasonId: string,
+): Promise<boolean> {
+  const season = await prisma.season.findUnique({
+    where: { id: seasonId },
+    select: { number: true, episodes: { select: { id: true, airDate: true } } },
+  });
+  // Season 0 (specials) is excluded from progress everywhere else in the
+  // app (see LibraryService.computeProgress) — never a valid completion.
+  if (!season || season.number === 0) return false;
+  return allAiredEpisodesWatched(prisma, userId, season.episodes);
+}
+
+/**
+ * Whether the whole series behind `libraryEntryId` is complete for `userId`
+ * — see `isSeasonComplete` above for why this is shared rather than
+ * reimplemented at the live award site.
+ */
+export async function isSeriesComplete(
+  prisma: PrismaService,
+  userId: string,
+  libraryEntryId: string,
+): Promise<boolean> {
+  const entry = await prisma.libraryEntry.findUnique({
+    where: { id: libraryEntryId },
+    select: { mediaItemId: true, mediaItem: { select: { status: true } } },
+  });
+  if (!entry || !isAiringFinished(entry.mediaItem.status)) return false;
+
+  const seasons = await prisma.season.findMany({
+    where: { mediaItemId: entry.mediaItemId, number: { gt: 0 } },
+    select: { episodes: { select: { id: true, airDate: true } } },
+  });
+  return allAiredEpisodesWatched(
+    prisma,
+    userId,
+    seasons.flatMap((s) => s.episodes),
+  );
+}
+
 export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
   EPISODE_WATCHED: async (prisma, sourceId) =>
     (await prisma.episodeWatch.findUnique({ where: { id: sourceId } })) !==
@@ -77,40 +130,11 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
   MOVIE_REPLAYED: async (prisma, sourceId) =>
     (await prisma.movieReplay.findUnique({ where: { id: sourceId } })) !== null,
 
-  SEASON_COMPLETED: async (prisma, sourceId, userId) => {
-    const season = await prisma.season.findUnique({
-      where: { id: sourceId },
-      select: {
-        number: true,
-        episodes: { select: { id: true, airDate: true } },
-      },
-    });
-    // Season 0 (specials) is excluded from progress everywhere else in the
-    // app (see LibraryService.computeProgress) — never a valid completion.
-    if (!season || season.number === 0) return false;
-    return allAiredEpisodesWatched(prisma, userId, season.episodes);
-  },
+  SEASON_COMPLETED: async (prisma, sourceId, userId) =>
+    isSeasonComplete(prisma, userId, sourceId),
 
-  SERIES_COMPLETED: async (prisma, sourceId, userId) => {
-    const entry = await prisma.libraryEntry.findUnique({
-      where: { id: sourceId },
-      select: {
-        mediaItemId: true,
-        mediaItem: { select: { status: true } },
-      },
-    });
-    if (!entry || !isAiringFinished(entry.mediaItem.status)) return false;
-
-    const seasons = await prisma.season.findMany({
-      where: { mediaItemId: entry.mediaItemId, number: { gt: 0 } },
-      select: { episodes: { select: { id: true, airDate: true } } },
-    });
-    return allAiredEpisodesWatched(
-      prisma,
-      userId,
-      seasons.flatMap((s) => s.episodes),
-    );
-  },
+  SERIES_COMPLETED: async (prisma, sourceId, userId) =>
+    isSeriesComplete(prisma, userId, sourceId),
 
   GAME_FINISHED: async (prisma, sourceId) => {
     const entry = await prisma.gameEntry.findUnique({

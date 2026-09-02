@@ -1,11 +1,21 @@
 import type { ConfigService } from "@nestjs/config";
 import { type Mock, vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { CommentService } from "./comment.service";
+
+// Stubbed no-op, same pattern as library.service.spec.ts (G1).
+function stubXp(): XpService {
+  return {
+    award: vi.fn(),
+    awardMany: vi.fn(),
+    revokeBySource: vi.fn(),
+  } as unknown as XpService;
+}
 
 const AUTHOR = {
   id: "author",
@@ -80,7 +90,8 @@ function make(
     commentReaction: {
       findMany: vi.fn().mockResolvedValue([]),
       count: vi.fn().mockResolvedValue(0),
-      upsert: vi.fn(),
+      upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }),
+      findUnique: vi.fn().mockResolvedValue(null),
       deleteMany: vi.fn(),
       ...overrides.reaction,
     },
@@ -127,11 +138,20 @@ function make(
   } as unknown as VisibilityService;
 
   const notifications = { create: vi.fn() } as unknown as NotificationService;
+  const xp = stubXp();
 
   return {
-    svc: new CommentService(prisma, visibility, notifications, CONFIG, FLAGS),
+    svc: new CommentService(
+      prisma,
+      visibility,
+      notifications,
+      xp,
+      CONFIG,
+      FLAGS,
+    ),
     prisma,
     notifications,
+    xp,
   };
 }
 
@@ -522,5 +542,89 @@ describe("CommentService.react", () => {
     });
     await svc.react("someone", "c1", "LIKE" as never);
     expect(notifications.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("CommentService — XP wiring", () => {
+  it("awards COMMENT_POSTED only when the trimmed text reaches 15 characters", async () => {
+    const { svc, xp } = make({
+      comment: {
+        create: vi
+          .fn()
+          .mockResolvedValue(commentRow({ id: "c1", text: "too short" })),
+      },
+    });
+    await svc.create("author", {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "too short",
+    });
+    expect(xp.award).not.toHaveBeenCalled();
+
+    const { svc: svc2, xp: xp2 } = make({
+      comment: {
+        create: vi
+          .fn()
+          .mockResolvedValue(
+            commentRow({ id: "c2", text: "this comment is long enough" }),
+          ),
+      },
+    });
+    await svc2.create("author", {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "this comment is long enough",
+    });
+    expect(xp2.award).toHaveBeenCalledWith("author", "COMMENT_POSTED", "c2");
+  });
+
+  it("revokes COMMENT_POSTED on remove", async () => {
+    const { svc, xp } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(commentRow({ id: "c1", authorId: "author" })),
+        update: vi.fn().mockResolvedValue({}),
+      },
+    });
+    await svc.remove("author", "c1");
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Comment", ["c1"]);
+  });
+
+  it("credits COMMENT_REACTION_RECEIVED to the comment's author, never the reactor", async () => {
+    const { svc, xp } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+        }),
+      },
+      reaction: { upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }) },
+    });
+    await svc.react("reactor", "c1", "LIKE" as never);
+    expect(xp.award).toHaveBeenCalledWith(
+      "author",
+      "COMMENT_REACTION_RECEIVED",
+      "reaction-1",
+    );
+    expect(xp.award).not.toHaveBeenCalledWith(
+      "reactor",
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("revokes COMMENT_REACTION_RECEIVED on unreact", async () => {
+    const { svc, xp } = make({
+      reaction: {
+        findUnique: vi.fn().mockResolvedValue({ id: "reaction-1" }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    });
+    await svc.unreact("reactor", "c1");
+    expect(xp.revokeBySource).toHaveBeenCalledWith("CommentReaction", [
+      "reaction-1",
+    ]);
   });
 });

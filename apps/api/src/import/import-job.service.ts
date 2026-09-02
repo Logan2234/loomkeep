@@ -8,12 +8,13 @@ import type {
   ImportReport,
   ImportSource,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode } from "@loomkeep/shared";
+import { Domain, ErrorCode, XpReason } from "@loomkeep/shared";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   IMPORT_SOURCES,
@@ -60,6 +61,7 @@ export class ImportJobService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly entitlements: EntitlementService,
+    private readonly xp: XpService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -301,11 +303,13 @@ export class ImportJobService {
     job: JobRecord,
     overwrite: boolean,
   ): Promise<void> {
+    const domain = this.sourceOrThrow(job.sourceId).searchDomain;
+
     await this.prisma.importRun.create({
       data: {
         userId,
         sourceId: job.sourceId,
-        domain: this.sourceOrThrow(job.sourceId).searchDomain,
+        domain,
         status: job.status === "failed" ? "FAILURE" : "SUCCESS",
         itemCount: job.progress.total,
         overwrite,
@@ -317,6 +321,17 @@ export class ImportJobService {
         finishedAt: new Date(job.finishedAt ?? Date.now()),
       },
     });
+
+    // One-off milestone per domain, deduped by the XpEntry unique
+    // constraint (see XP_RULES.IMPORT_COMPLETED) — a re-import or overwrite
+    // on the same domain simply no-ops here. Credited even when the run
+    // imported zero rows (an empty library, or everything already present):
+    // this is a forfeit for connecting the source, not a per-item reward.
+    // `commit()` is the single call site for every ImportReq implementation
+    // (media/Steam/book-csv), so this is the one place that needs the hook.
+    if (job.status === "completed") {
+      await this.xp.award(userId, XpReason.IMPORT_COMPLETED, domain);
+    }
   }
 
   private progressFor(job: JobRecord): ProgressReporter {

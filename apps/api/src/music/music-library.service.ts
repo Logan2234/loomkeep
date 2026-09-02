@@ -5,7 +5,14 @@ import type {
   MusicSource,
   PagedResult,
 } from "@loomkeep/shared";
-import { ActivityType, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import {
+  ActivityType,
+  Domain,
+  ErrorCode,
+  MusicStatus,
+  ReviewTargetType,
+  XpReason,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   MusicStatus as DbMusicStatus,
@@ -16,6 +23,7 @@ import type {
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
@@ -96,6 +104,7 @@ export class MusicLibraryService {
     private readonly musicItemService: MusicItemService,
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
+    private readonly xp: XpService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a music entry write. */
@@ -171,6 +180,24 @@ export class MusicLibraryService {
       prevFavorite: before?.favorite ?? false,
       nextFavorite: entry.favorite,
     });
+
+    if (before === null) {
+      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
+      const domainEntryCount = await this.prisma.musicEntry.count({
+        where: { userId },
+      });
+
+      if (domainEntryCount === 1) {
+        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.MUSIC);
+      }
+    }
+
+    if (
+      before?.status !== MusicStatus.LISTENED &&
+      entry.status === MusicStatus.LISTENED
+    ) {
+      await this.xp.award(userId, XpReason.ALBUM_LISTENED, entry.id);
+    }
 
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
@@ -296,6 +323,13 @@ export class MusicLibraryService {
       nextFavorite: entry.favorite,
     });
 
+    if (
+      before?.status !== MusicStatus.LISTENED &&
+      entry.status === MusicStatus.LISTENED
+    ) {
+      await this.xp.award(userId, XpReason.ALBUM_LISTENED, entry.id);
+    }
+
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
         userId,
@@ -324,6 +358,15 @@ export class MusicLibraryService {
   async deleteEntry(userId: string, entryId: string): Promise<void> {
     const entry = await this.assertEntryOwnership(userId, entryId);
 
+    // Loaded before the transaction — it deletes this Review outright (not
+    // via ReviewService, which handles its own XP revocation) —
+    // WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED would otherwise linger
+    // until the next nightly reconciliation.
+    const reviews = await this.prisma.review.findMany({
+      where: { userId, targetId: entry.musicItemId },
+      select: { id: true },
+    });
+
     await this.prisma.$transaction([
       this.prisma.review.deleteMany({
         where: { userId, targetId: entry.musicItemId },
@@ -338,6 +381,13 @@ export class MusicLibraryService {
       }),
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
+
+    await this.xp.revokeBySource("MusicEntry", [entryId]); // ALBUM_LISTENED
+    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
+    await this.xp.revokeBySource(
+      "Review",
+      reviews.map((r) => r.id),
+    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
   }
 
   /**

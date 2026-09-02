@@ -9,6 +9,7 @@ import {
   ErrorCode,
   NotificationType,
   ProfileAccess,
+  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -17,6 +18,7 @@ import { resolveWorkHref } from "../common/work-href.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
+import { XpService } from "../gamification/xp.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
@@ -75,6 +77,7 @@ export class CommentService {
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
     private readonly notifications: NotificationService,
+    private readonly xp: XpService,
     private readonly config: ConfigService,
     private readonly flags: FeatureFlagsService,
   ) {}
@@ -258,6 +261,14 @@ export class CommentService {
 
     await this.notifyOnCreate(authorId, row, parent);
 
+    // Checked here rather than left to award() (which credits blindly) —
+    // unlike the review text-length case, a too-short comment is a frequent,
+    // immediate scenario, not a rare edge case worth deferring to the
+    // nightly reconciliation.
+    if ((row.text?.trim().length ?? 0) >= 15) {
+      await this.xp.award(authorId, XpReason.COMMENT_POSTED, row.id);
+    }
+
     const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
       fetchStreaksByUser(this.prisma, [authorId]),
@@ -329,6 +340,7 @@ export class CommentService {
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.CommentForbidden);
 
     await this.softDelete(id, false);
+    await this.xp.revokeBySource("Comment", [id]);
   }
 
   /**
@@ -344,6 +356,7 @@ export class CommentService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
     await this.softDelete(id, true);
+    await this.xp.revokeBySource("Comment", [id]);
     return { authorId: existing.authorId, text: existing.text };
   }
 
@@ -367,19 +380,40 @@ export class CommentService {
     if (!comment || comment.deletedAt)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
-    await this.prisma.commentReaction.upsert({
+    const reaction = await this.prisma.commentReaction.upsert({
       where: { commentId_userId: { commentId, userId } },
       update: { emote },
       create: { commentId, userId, emote },
     });
 
+    // Credited to the comment's author, never the reactor — no UP/DOWN
+    // distinction here (unlike ReviewVote), the barème has no exclusion.
+    if (comment.authorId) {
+      await this.xp.award(
+        comment.authorId,
+        XpReason.COMMENT_REACTION_RECEIVED,
+        reaction.id,
+      );
+    }
+
     await this.maybeNotifyReactionThreshold(commentId, comment.authorId);
   }
 
   async unreact(userId: string, commentId: string): Promise<void> {
+    // Looked up before the delete so revokeBySource still has the id to
+    // work with afterwards.
+    const existing = await this.prisma.commentReaction.findUnique({
+      where: { commentId_userId: { commentId, userId } },
+      select: { id: true },
+    });
+
     await this.prisma.commentReaction.deleteMany({
       where: { commentId, userId },
     });
+
+    if (existing) {
+      await this.xp.revokeBySource("CommentReaction", [existing.id]);
+    }
   }
 
   // --- internals ---

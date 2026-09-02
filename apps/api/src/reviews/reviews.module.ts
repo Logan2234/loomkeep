@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { GamificationModule } from "../gamification/gamification.module";
 import { SocialModule } from "../social/social.module";
 import { ReviewController } from "./review.controller";
 import { ReviewService } from "./review.service";
@@ -9,7 +10,7 @@ import { ReviewService } from "./review.service";
 // the domain modules (which already import ReviewsModule) can inject the shared
 // ActivityService for feed emission.
 @Module({
-  imports: [SocialModule],
+  imports: [SocialModule, GamificationModule],
   controllers: [ReviewController],
   providers: [ReviewService],
   exports: [ReviewService, SocialModule],
