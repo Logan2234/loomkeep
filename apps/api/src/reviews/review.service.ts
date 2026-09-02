@@ -14,8 +14,12 @@ import {
   XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { isGamificationEnabled } from "../gamification/gamification.config";
+import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { wordCount } from "../gamification/xp-verifiers";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -53,6 +57,10 @@ const AUTHOR_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
+  // Only ever used locally to build the withXp gating map below — never
+  // forwarded to toUserSummaryDto/the client (that would leak the setting
+  // itself, not just its effect).
+  hideProgression: true,
 } as const;
 
 @Injectable()
@@ -62,6 +70,8 @@ export class ReviewService {
     private readonly visibility: VisibilityService,
     private readonly activity: ActivityService,
     private readonly xp: XpService,
+    private readonly config: ConfigService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   /**
@@ -585,17 +595,34 @@ export class ReviewService {
     const authorIds = rows
       .map((r) => r.user?.id)
       .filter((id): id is string => !!id);
-    const [voteMap, streakMap] = await Promise.all([
+    const uniqueAuthorIds = [...new Set(authorIds)];
+    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
+    const [voteMap, streakMap, xpMap] = await Promise.all([
       this.voteInfoBatch(
         rows.map((r) => r.id),
         viewerId,
       ),
-      fetchStreaksByUser(this.prisma, [...new Set(authorIds)]),
+      fetchStreaksByUser(this.prisma, uniqueAuthorIds),
+      fetchXpByUser(this.prisma, uniqueAuthorIds),
     ]);
+    // Same rows AUTHOR_SELECT already fetched for profileAccess/anonymized —
+    // reused here instead of a second query (see xp-lookup.util.ts's doc
+    // comment on withXp).
+    const hideProgressionByUser = new Map(
+      rows
+        .filter((r) => r.user)
+        .map((r) => [r.user!.id, r.user!.hideProgression]),
+    );
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };
-    const withStreak = (author: UserSummaryDto): UserSummaryDto =>
-      withStreakDays(author, streakMap);
+    const withBadges = (author: UserSummaryDto): UserSummaryDto =>
+      withXp(
+        withStreakDays(author, streakMap),
+        viewerId,
+        xpMap,
+        gamificationEnabled,
+        hideProgressionByUser,
+      );
 
     const visible: ReviewDto[] = [];
 
@@ -610,7 +637,7 @@ export class ReviewService {
       const author = toUserSummaryDto(row.user);
 
       if (author.id === viewerId) {
-        visible.push(this.toDto(row, withStreak(author), votesFor(row.id)));
+        visible.push(this.toDto(row, withBadges(author), votesFor(row.id)));
         continue;
       }
 
@@ -622,7 +649,7 @@ export class ReviewService {
         visible.push(
           this.toDto(
             row,
-            withStreak(anonymizeAuthor(author, viewerId, targetType, targetId)),
+            withBadges(anonymizeAuthor(author, viewerId, targetType, targetId)),
             votesFor(row.id),
           ),
         );
@@ -769,16 +796,20 @@ export class ReviewService {
   }
 
   private async author(userId: string): Promise<UserSummaryDto> {
-    const [user, streaks] = await Promise.all([
+    const [user, streaks, xpMap] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({
         where: { id: userId },
         select: AUTHOR_SELECT,
       }),
       fetchStreaksByUser(this.prisma, [userId]),
+      fetchXpByUser(this.prisma, [userId]),
     ]);
-    return {
-      ...toUserSummaryDto(user),
-      streakDays: streaks.get(userId),
-    };
+    return withXp(
+      { ...toUserSummaryDto(user), streakDays: streaks.get(userId) },
+      userId,
+      xpMap,
+      isGamificationEnabled(this.config, this.flags),
+      new Map([[userId, user.hideProgression]]),
+    );
   }
 }

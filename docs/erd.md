@@ -394,6 +394,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     String username
     DateTime birthDate "❓"
     Boolean allowAdultContent
+    Boolean hideProgression
     DigestCadence notifyEmail
     DigestCadence notifyPush
     String timezone

@@ -427,6 +427,7 @@ export class UsersController {
         defaultReviewVisibility: dto.defaultReviewVisibility,
         defaultListVisibility: dto.defaultListVisibility,
         locale: dto.locale as string,
+        hideProgression: dto.hideProgression,
       },
     });
     return toUserDto(user);

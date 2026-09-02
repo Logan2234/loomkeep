@@ -18,6 +18,7 @@
   } from "@loomkeep/shared";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
+  import LevelBadge from "./LevelBadge.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
   import StreakBadge from "./StreakBadge.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -238,6 +239,9 @@
                       class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
                       {review.author.displayName}
                       <StreakBadge days={review.author.streakDays} />
+                      {#if appConfig.gamificationEnabled}
+                        <LevelBadge xp={review.author.xp} />
+                      {/if}
                     </p>
                     <p class="timecode truncate text-xs">
                       @{review.author.username}

@@ -16,6 +16,7 @@ export class SocialProfileResponseDto implements SocialProfileDto {
   relationship!: RelationshipResponseDto;
   domains!: ProfileDomainStatResponseDto[];
   activityStats!: ProfileActivityStatsResponseDto;
+  xp!: number | null;
   reviewsCount!: number;
   commentsCount!: number;
   listsCount!: number;

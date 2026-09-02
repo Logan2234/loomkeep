@@ -1,4 +1,6 @@
+import type { ConfigService } from "@nestjs/config";
 import { type Mock, vi } from "vitest";
+import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -20,7 +22,16 @@ const AUTHOR = {
   username: "author",
   displayName: "Author",
   profileAccess: "PUBLIC",
+  hideProgression: false,
 };
+
+// Not exercised by most of these tests — kept plain so isGamificationEnabled
+// resolves to `false` (config unset, flag fallback false), matching the
+// deployment default.
+const CONFIG = { get: vi.fn() } as unknown as ConfigService;
+const FLAGS = {
+  isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
+} as unknown as FeatureFlagsService;
 
 function relation(over: Partial<ViewerRelation> = {}): ViewerRelation {
   return {
@@ -117,6 +128,7 @@ function make(
     gameItem: { findUnique: vi.fn().mockResolvedValue(null) },
     bookItem: { findUnique: vi.fn().mockResolvedValue(null) },
     musicItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    userScore: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 
   const visibility = {
@@ -129,7 +141,14 @@ function make(
   const xp = stubXp();
 
   return {
-    svc: new CommentService(prisma, visibility, notifications, xp),
+    svc: new CommentService(
+      prisma,
+      visibility,
+      notifications,
+      xp,
+      CONFIG,
+      FLAGS,
+    ),
     prisma,
     notifications,
     xp,
