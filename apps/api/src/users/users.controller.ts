@@ -590,10 +590,15 @@ export class UsersController {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: payload.sub },
-      data: { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS) },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: payload.sub },
+        data: {
+          passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
+        },
+      }),
+      this.prisma.refreshToken.deleteMany({ where: { userId: payload.sub } }),
+    ]);
     await this.mail.sendPasswordChanged(current.email);
     await this.security.record({
       type: "PASSWORD_CHANGED",

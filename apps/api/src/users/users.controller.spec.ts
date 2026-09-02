@@ -520,6 +520,10 @@ describe("UsersController — changePassword", () => {
         }),
         update: vi.fn(),
       },
+      refreshToken: {
+        deleteMany: vi.fn(),
+      },
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
     mail = { sendPasswordChanged: vi.fn() } as unknown as MailService;
     hibp = {
@@ -577,7 +581,7 @@ describe("UsersController — changePassword", () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it("updates the password hash and notifies the user on success", async () => {
+  it("updates the password, revokes every session and notifies the user", async () => {
     await controller.changePassword(jwtPayload(userId), {
       currentPassword: "correct-password",
       newPassword: "Brand-new-pass1",
@@ -588,6 +592,9 @@ describe("UsersController — changePassword", () => {
     expect(
       await bcrypt.compare("Brand-new-pass1", updateArgs.data.passwordHash),
     ).toBe(true);
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { userId },
+    });
     expect(mail.sendPasswordChanged).toHaveBeenCalledWith("alice@example.com");
   });
 });

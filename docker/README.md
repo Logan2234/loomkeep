@@ -67,7 +67,7 @@ Depends on whether Cloudflare Access is in front (public instance,
 
 Not a compose override — a DNS-level choice plus two small pieces of app
 code. See root README "Cloudflare" and "Bot protection" for dashboard setup.
-`TRUST_PROXY` (`apps/api/src/main.ts`) and `TurnstileService`
+`TRUST_PROXY_HOPS` (`apps/api/src/main.ts`) and `TurnstileService`
 (`apps/api/src/auth/turnstile.service.ts`) are the two integration points.
 
 ## Maintenance mode

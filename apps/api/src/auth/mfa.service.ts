@@ -92,12 +92,16 @@ export class MfaService {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { mfaTotpEnabled: true },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { mfaTotpEnabled: true },
+      }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+    ]);
 
-    return { recoveryCodes: await this.ensureRecoveryCodes(userId) };
+    const recoveryCodes = await this.ensureRecoveryCodes(userId);
+    return { recoveryCodes };
   }
 
   async disableTotp(userId: string, currentPassword: string): Promise<void> {
@@ -112,23 +116,31 @@ export class MfaService {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
+      }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+    ]);
   }
 
   async setEmailMfaEnabled(
     userId: string,
     enabled: boolean,
   ): Promise<{ recoveryCodes?: string[] }> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { mfaEmailEnabled: enabled },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { mfaEmailEnabled: enabled },
+      }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+    ]);
 
-    if (!enabled) return {};
-    return { recoveryCodes: await this.ensureRecoveryCodes(userId) };
+    const recoveryCodes = enabled
+      ? await this.ensureRecoveryCodes(userId)
+      : undefined;
+    return { recoveryCodes };
   }
 
   async getMfaStatus(userId: string): Promise<{
@@ -152,7 +164,11 @@ export class MfaService {
 
   /** Generates a fresh batch of 10, deleting any existing ones first. */
   async regenerateRecoveryCodes(userId: string): Promise<string[]> {
-    return this.generateRecoveryCodes(userId, { deleteExisting: true });
+    const codes = await this.generateRecoveryCodes(userId, {
+      deleteExisting: true,
+      revokeSessions: true,
+    });
+    return codes;
   }
 
   /** Only generates if the user has none yet — called when a first MFA method is enabled. */
@@ -163,12 +179,18 @@ export class MfaService {
       where: { userId },
     });
     if (existing > 0) return undefined;
-    return this.generateRecoveryCodes(userId, { deleteExisting: false });
+    return this.generateRecoveryCodes(userId, {
+      deleteExisting: false,
+      revokeSessions: false,
+    });
   }
 
   private async generateRecoveryCodes(
     userId: string,
-    { deleteExisting }: { deleteExisting: boolean },
+    {
+      deleteExisting,
+      revokeSessions,
+    }: { deleteExisting: boolean; revokeSessions: boolean },
   ): Promise<string[]> {
     const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () =>
       generateRecoveryCode(),
@@ -184,6 +206,9 @@ export class MfaService {
       ...hashed.map((codeHash) =>
         this.prisma.mfaRecoveryCode.create({ data: { userId, codeHash } }),
       ),
+      ...(revokeSessions
+        ? [this.prisma.refreshToken.deleteMany({ where: { userId } })]
+        : []),
     ]);
 
     return codes;

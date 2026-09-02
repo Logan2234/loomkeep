@@ -56,6 +56,9 @@ function makeService() {
         },
       ),
     },
+    refreshToken: {
+      deleteMany: vi.fn(),
+    },
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   } as unknown as PrismaService;
 
@@ -72,7 +75,7 @@ describe("MfaService recovery codes", () => {
   // bcryptjs hashes all 10 codes in parallel — pure-JS bcrypt is CPU-bound
   // enough that this can flirt with the default 5s timeout under load.
   it("generates 10 codes of 10 chars using only unambiguous characters", async () => {
-    const { service } = makeService();
+    const { service, prisma } = makeService();
     const codes = await service.regenerateRecoveryCodes("user-1");
 
     expect(codes).toHaveLength(RECOVERY_CODE_COUNT);
@@ -81,6 +84,10 @@ describe("MfaService recovery codes", () => {
       expect(code).toHaveLength(10);
       expect(code).toMatch(/^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{10}$/);
     }
+
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+    });
   }, 15_000);
 
   it("consumes a matching recovery code and deletes it (single-use)", async () => {
@@ -136,9 +143,13 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
 
     const first = await service.confirmTotp("user-1", code);
     expect(first.recoveryCodes).toHaveLength(RECOVERY_CODE_COUNT);
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+    });
 
     const second = await service.setEmailMfaEnabled("user-1", true);
     expect(second.recoveryCodes).toBeUndefined();
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledTimes(2);
   });
 
   it("confirmTotp rejects an invalid code", async () => {
@@ -179,6 +190,9 @@ describe("MfaService.disableTotp", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: { mfaTotpEnabled: false, mfaTotpSecretEnc: null },
+    });
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
     });
   });
 });

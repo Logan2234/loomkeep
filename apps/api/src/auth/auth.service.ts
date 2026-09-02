@@ -24,6 +24,12 @@ import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import {
+  JWT_ACCESS_AUDIENCE,
+  JWT_ALGORITHM,
+  JWT_ISSUER,
+  JWT_REFRESH_AUDIENCE,
+} from "./jwt.constants";
 import { MfaService } from "./mfa.service";
 import { isRegistrationEnabled } from "./registration.config";
 import { TurnstileService } from "./turnstile.service";
@@ -413,6 +419,9 @@ export class AuthService {
     try {
       await this.jwtService.verifyAsync(refreshToken, {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
+        algorithms: [JWT_ALGORITHM],
+        issuer: JWT_ISSUER,
+        audience: JWT_REFRESH_AUDIENCE,
       });
     } catch {
       throw new AppException(
@@ -422,12 +431,34 @@ export class AuthService {
     }
 
     const tokenHash = hashToken(refreshToken);
+    await this.prisma.consumedRefreshToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
     const stored = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
     });
 
-    if (!stored || stored.expiresAt < new Date()) {
+    if (!stored) {
+      const consumed = await this.prisma.consumedRefreshToken.findUnique({
+        where: { tokenHash },
+        select: { sessionId: true },
+      });
+
+      if (consumed) {
+        await this.prisma.refreshToken.deleteMany({
+          where: { id: consumed.sessionId },
+        });
+      }
+
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidRefreshToken,
+      );
+    }
+
+    if (stored.expiresAt < new Date()) {
+      await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } });
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthInvalidRefreshToken,
@@ -435,18 +466,43 @@ export class AuthService {
     }
 
     const signed = await this.signTokens(stored.user);
-    await this.prisma.$transaction([
-      this.prisma.refreshToken.update({
-        where: { id: stored.id },
+    const rotated = await this.prisma.$transaction(async (tx) => {
+      const update = await tx.refreshToken.updateMany({
+        where: { id: stored.id, tokenHash },
         data: {
           tokenHash: hashToken(signed.refreshToken),
           jti: signed.jti,
           expiresAt: signed.expiresAt,
           lastUsedAt: new Date(),
         },
-      }),
-      this.touchActivityQuery(stored.user.id),
-    ]);
+      });
+
+      if (update.count !== 1) {
+        await tx.refreshToken.deleteMany({ where: { id: stored.id } });
+        return false;
+      }
+
+      await tx.consumedRefreshToken.create({
+        data: {
+          sessionId: stored.id,
+          tokenHash,
+          expiresAt: stored.expiresAt,
+        },
+      });
+      await tx.user.update({
+        where: { id: stored.user.id },
+        data: { lastActiveAt: new Date(), inactivityWarningSentAt: null },
+      });
+      return true;
+    });
+
+    if (!rotated) {
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidRefreshToken,
+      );
+    }
+
     return {
       accessToken: signed.accessToken,
       refreshToken: signed.refreshToken,
@@ -635,6 +691,9 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
       expiresIn: ACCESS_TOKEN_TTL,
+      algorithm: JWT_ALGORITHM,
+      issuer: JWT_ISSUER,
+      audience: JWT_ACCESS_AUDIENCE,
     });
     // jti makes each refresh token unique even when issued within the same second,
     // and identifies the session row.
@@ -644,6 +703,9 @@ export class AuthService {
       {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
         expiresIn: `${REFRESH_TOKEN_TTL_DAYS}d`,
+        algorithm: JWT_ALGORITHM,
+        issuer: JWT_ISSUER,
+        audience: JWT_REFRESH_AUDIENCE,
       },
     );
 

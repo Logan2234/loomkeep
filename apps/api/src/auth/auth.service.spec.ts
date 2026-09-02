@@ -70,6 +70,12 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
       findUnique: vi.fn(),
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      deleteMany: vi.fn(),
+    },
+    consumedRefreshToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
       deleteMany: vi.fn(),
     },
     userDevice: {
@@ -88,7 +94,11 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
       findUnique: vi.fn(),
       deleteMany: vi.fn(),
     },
-    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
+    $transaction: vi.fn((operation: unknown) =>
+      typeof operation === "function"
+        ? operation(prisma)
+        : Promise.all(operation as Promise<unknown>[]),
+    ),
   } as unknown as PrismaService;
 
   const jwtService = {
@@ -572,6 +582,39 @@ describe("AuthService.refresh", () => {
     });
   });
 
+  it("revokes the token family when a consumed refresh token is replayed", async () => {
+    const { service, prisma } = makeService();
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
+    (prisma.consumedRefreshToken.findUnique as Mock).mockResolvedValue({
+      sessionId: "rt-1",
+    });
+
+    await expect(service.refresh("replayed-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidRefreshToken,
+    });
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { id: "rt-1" },
+    });
+  });
+
+  it("revokes the token family when a concurrent rotation loses the compare-and-swap", async () => {
+    const { service, prisma } = makeService();
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
+      id: "rt-1",
+      tokenHash: hashToken("old-token"),
+      expiresAt: new Date(Date.now() + 1000),
+      user: makeUser(),
+    });
+    (prisma.refreshToken.updateMany as Mock).mockResolvedValue({ count: 0 });
+
+    await expect(service.refresh("old-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidRefreshToken,
+    });
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { id: "rt-1" },
+    });
+  });
+
   it("throws AppException(auth.invalid_refresh_token) when the stored session already expired", async () => {
     const { service, prisma } = makeService();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
@@ -586,7 +629,7 @@ describe("AuthService.refresh", () => {
   });
 
   it("rotates the stored token in place and returns a fresh pair", async () => {
-    const { service, prisma } = makeService();
+    const { service, prisma, jwtService } = makeService();
     const user = makeUser();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
@@ -599,12 +642,34 @@ describe("AuthService.refresh", () => {
 
     expect(tokens.accessToken).toBeTruthy();
     expect(tokens.refreshToken).toBeTruthy();
-    expect(prisma.refreshToken.update).toHaveBeenCalledWith(
+    expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "rt-1" },
+        where: { id: "rt-1", tokenHash: hashToken("old-token") },
         data: expect.objectContaining({
           tokenHash: hashToken(tokens.refreshToken),
         }),
+      }),
+    );
+    expect(prisma.consumedRefreshToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sessionId: "rt-1",
+        tokenHash: hashToken("old-token"),
+      }),
+    });
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith(
+      "old-token",
+      expect.objectContaining({
+        algorithms: ["HS256"],
+        issuer: "loomkeep-api",
+        audience: "loomkeep-refresh",
+      }),
+    );
+    expect(jwtService.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: user.id }),
+      expect.objectContaining({
+        algorithm: "HS256",
+        issuer: "loomkeep-api",
+        audience: "loomkeep-web",
       }),
     );
   });

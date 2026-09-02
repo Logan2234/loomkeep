@@ -177,21 +177,18 @@ for zero cost. One-time dashboard setup, no code:
 request Caddy sees comes from Cloudflare's edge, not the actual visitor —
 without adjustment, rate-limiting (`ThrottlerGuard`) and `@Ip()` would see
 Cloudflare's IP for every request instead of the real one. This is already
-handled: the API only trusts `X-Forwarded-For` when `TRUST_PROXY=true`
-(set automatically by `docker-compose.prod.yml`, since Caddy is always the
-one hop in front there — see `src/main.ts`). Self-host without the prod
+handled: the API trusts one `X-Forwarded-For` hop when
+`TRUST_PROXY_HOPS=1` (set automatically by `docker-compose.prod.yml`, since
+Caddy is always the one hop in front there — see `src/main.ts`). Self-host without the prod
 override leaves it off by default, since nothing there guarantees a proxy
 sits in front of the API.
 
-**Residual risk worth locking down** (manual, outside this repo): the base
-`docker-compose.yml` still publishes the API's port directly
-(`3000:3000`), so if that port is reachable from the internet on the VPS,
-someone could bypass Cloudflare and Caddy entirely, hitting the API
-directly and forging `X-Forwarded-For` themselves — `TRUST_PROXY=true`
-alone doesn't protect against that. Two independent ways to close it: your
-cloud provider's own firewall/security group only allowing 22/80/443 in
+The production override removes the API and web host-port publications, so
+only Caddy exposes ports 80/443. Keep the cloud provider's own
+firewall/security group limited to 22/80/443 as defense in depth
 (not just the VPS's OS-level `ufw`/`iptables` — Docker is known to
-sometimes bypass `ufw` rules by writing to `iptables` directly), and/or a
+sometimes bypass `ufw` rules by writing to `iptables` directly). You can
+also add a
 Caddy `remote_ip` matcher only accepting connections from
 [Cloudflare's published IP ranges](https://www.cloudflare.com/ips/),
 rejecting everything else with a 403. Not wired into this repo's Caddyfile

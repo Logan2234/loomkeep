@@ -39,6 +39,32 @@ describe("readZipEntries", () => {
       /not a zip/i,
     );
   });
+
+  it("rejects an entry whose declared uncompressed size exceeds the limit", () => {
+    const zip = makeZip([{ name: "large.csv", content: "small" }]);
+    const centralHeader = zip.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+    zip.writeUInt32LE(32 * 1024 * 1024 + 1, centralHeader + 24);
+
+    expect(() => readZipEntries(zip, new Set(["large.csv"]))).toThrow(
+      /uncompressed/i,
+    );
+  });
+
+  it("bounds inflation even when the declared size is dishonest", () => {
+    const zip = makeZip([
+      {
+        name: "dishonest.csv",
+        content: "x".repeat(32 * 1024 * 1024 + 1),
+        method: 8,
+      },
+    ]);
+    const centralHeader = zip.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+    zip.writeUInt32LE(1, centralHeader + 24);
+
+    expect(() => readZipEntries(zip, new Set(["dishonest.csv"]))).toThrow(
+      /uncompressed/i,
+    );
+  }, 15_000);
 });
 
 describe("readZipEntriesMatching", () => {

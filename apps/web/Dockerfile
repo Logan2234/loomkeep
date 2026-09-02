@@ -47,6 +47,14 @@ RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web generate
 RUN pnpm --filter @loomkeep/web deploy --prod --legacy /app/deploy
 
 FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3
+RUN apk upgrade --no-cache \
+  && rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx \
+    /usr/local/bin/corepack \
+    /usr/local/bin/pnpm \
+    /usr/local/bin/yarn
 WORKDIR /app
 COPY --from=build /app/packages/shared ./packages/shared
 COPY --from=build /app/deploy ./deploy

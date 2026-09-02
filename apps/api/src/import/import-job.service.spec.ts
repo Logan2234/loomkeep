@@ -164,6 +164,27 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       }),
     );
   });
+
+  it("rejects a second concurrent import for the same user", async () => {
+    const source = fakeSource("tvtime");
+    source.buildPlan = vi.fn(() => new Promise<never>(() => undefined));
+    const service = new ImportJobService(
+      [source],
+      {
+        importRun: { findFirst: vi.fn().mockResolvedValue(null) },
+      } as unknown as PrismaService,
+      {} as ConfigService,
+      {
+        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
+    );
+
+    await service.startAnalyze("u1", "tvtime", { input: "" });
+
+    await expect(
+      service.startAnalyze("u1", "tvtime", { input: "" }),
+    ).rejects.toBeInstanceOf(AppException);
+  });
 });
 
 describe("ImportJobService.getQuota", () => {

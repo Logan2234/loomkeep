@@ -7,18 +7,20 @@
 # (see README "Public hosting (VPS)").
 services:
   web:
+    ports: !reset []
     environment:
       NODE_ENV: production
       PUBLIC_API_URL: https://${DOMAIN:?set DOMAIN in .env}/api
 
   api:
+    ports: !reset []
     environment:
       NODE_ENV: production
       WEB_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
       MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?set MFA_ENCRYPTION_KEY in .env}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      # Safe because Caddy is always the one hop in front of the API here.
-      TRUST_PROXY: "true"
+      # Caddy is the single trusted hop; API/web ports are not host-published.
+      TRUST_PROXY_HOPS: "1"
       # Public instance — turn social features on.
       SOCIAL_ENABLED: "true"
 

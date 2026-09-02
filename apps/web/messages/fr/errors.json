@@ -47,6 +47,7 @@
   "apierr_import_job_forbidden": "Cet import appartient à un autre compte.",
   "apierr_import_job_source_mismatch": "La source de l'import ne correspond pas.",
   "apierr_import_job_no_analysis": "Cet import n'a pas encore été analysé.",
+  "apierr_import_job_already_running": "Un autre import est déjà en cours. Attendez sa fin avant d'en démarrer un nouveau.",
   "apierr_import_unknown_source": "Source d'import inconnue.",
   "apierr_import_free_quota_exceeded": "Un import gratuit par domaine — passe premium pour réimporter dans ce domaine.",
   "apierr_import_source_unavailable": "La source d'import est momentanément indisponible, réessaie dans un instant.",
