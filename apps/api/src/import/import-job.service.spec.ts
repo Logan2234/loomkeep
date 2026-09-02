@@ -154,7 +154,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
 
   it("rejects a second concurrent import for the same user", async () => {
     const source = fakeSource("tvtime");
-    source.buildPlan = vi.fn(() => new Promise(() => undefined));
+    source.buildPlan = vi.fn(() => new Promise<never>(() => undefined));
     const service = new ImportJobService(
       [source],
       {
