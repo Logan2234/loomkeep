@@ -12,6 +12,7 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
+  import Switch from "$lib/components/Switch.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { m } from "$lib/paraglide/messages.js";
@@ -215,6 +216,16 @@
     reviewVisibilityMut.mutate(v);
   }
 
+  const hideProgressionMut = createApiMutation(() => ({
+    mutate: (hideProgression: boolean) => updateMe({ hideProgression }),
+    errorToast: true,
+  }));
+
+  function toggleHideProgression() {
+    if (!auth.user) return;
+    hideProgressionMut.mutate(!auth.user.hideProgression);
+  }
+
   let isPrivate = $derived(settings?.profileAccess !== ProfileAccess.PUBLIC);
 
   // Only domains the user actually kept visible (see enabledDomains on
@@ -345,6 +356,23 @@
           </div>
         </div>
       {/if}
+    {/if}
+
+    {#if appConfig.gamificationEnabled && auth.user}
+      <div class="border-border mt-5 border-t pt-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="font-semibold">{m.settings_hide_progression()}</p>
+            <p class="text-dim text-sm">
+              {m.settings_hide_progression_desc()}
+            </p>
+          </div>
+          <Switch
+            label={m.settings_hide_progression()}
+            checked={auth.user.hideProgression}
+            onChange={toggleHideProgression} />
+        </div>
+      </div>
     {/if}
 
     <p class="text-dim mt-4 text-xs">

@@ -775,5 +775,6 @@ export function toUserDto(user: User): UserDto {
     acceptedTermsVersion: user.acceptedTermsVersion,
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,
+    hideProgression: user.hideProgression,
   };
 }

@@ -11,7 +11,10 @@ import {
   VisibilityFacet,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
 import { runtimeFor } from "../stats/video-stats.util";
 import {
@@ -49,6 +52,8 @@ export class ProfileService {
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
     private readonly follow: FollowService,
+    private readonly config: ConfigService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   /** Builds a user's profile as seen by `viewerId`, or 404 if not reachable. */
@@ -66,6 +71,7 @@ export class ProfileService {
         profileAccess: true,
         createdAt: true,
         avatarUpdatedAt: true,
+        hideProgression: true,
       },
     });
     if (!target)
@@ -101,6 +107,7 @@ export class ProfileService {
         relationship: this.visibility.toRelationshipDto(relation),
         domains: [],
         activityStats: EMPTY_ACTIVITY_STATS,
+        xp: null,
         reviewsCount: 0,
         commentsCount: 0,
         listsCount: 0,
@@ -146,9 +153,21 @@ export class ProfileService {
       relation,
     );
 
-    const [activityStats, reviewsCount, commentsCount, listsCount] =
+    // Same gate as activityStats — the owner always sees their real
+    // progress; anyone else needs both the ACTIVITY facet visible and the
+    // target's own `hideProgression` preference off. `UserScore` is only
+    // read when gamification is actually on, so a self-hoster running with
+    // it off never pays that query.
+    const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
+    const xpVisible =
+      relation.isSelf || (activityVisible && !target.hideProgression);
+
+    const [activityStats, xp, reviewsCount, commentsCount, listsCount] =
       await Promise.all([
         this.computeActivityStats(target.id, activityVisible),
+        gamificationEnabled && xpVisible
+          ? this.fetchRealXp(target.id)
+          : Promise.resolve(null),
         this.countOwnVisible(
           this.prisma.review.findMany({
             where: { userId: target.id },
@@ -183,11 +202,20 @@ export class ProfileService {
       relationship: this.visibility.toRelationshipDto(relation),
       domains,
       activityStats,
+      xp,
       reviewsCount,
       commentsCount,
       listsCount,
       locked: false,
     };
+  }
+
+  /** A user's total XP, or 0 if they have no `UserScore` row yet (see `fetchXpByUser`). */
+  private async fetchRealXp(userId: string): Promise<number> {
+    const score = await this.prisma.userScore.findUnique({
+      where: { userId },
+    });
+    return score?.xp ?? 0;
   }
 
   /**
