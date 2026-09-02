@@ -6,7 +6,14 @@ import type {
   GameSource,
   PagedResult,
 } from "@loomkeep/shared";
-import { ActivityType, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import {
+  ActivityType,
+  Domain,
+  ErrorCode,
+  GameStatus,
+  ReviewTargetType,
+  XpReason,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   GameStatus as DbGameStatus,
@@ -18,6 +25,7 @@ import type {
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
@@ -109,6 +117,7 @@ export class GameLibraryService {
     private readonly ageGate: AgeGateService,
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
+    private readonly xp: XpService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
@@ -184,6 +193,24 @@ export class GameLibraryService {
       prevFavorite: before?.favorite ?? false,
       nextFavorite: entry.favorite,
     });
+
+    if (before === null) {
+      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
+      const domainEntryCount = await this.prisma.gameEntry.count({
+        where: { userId },
+      });
+
+      if (domainEntryCount === 1) {
+        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.GAMES);
+      }
+    }
+
+    if (
+      before?.status !== GameStatus.COMPLETED &&
+      entry.status === GameStatus.COMPLETED
+    ) {
+      await this.xp.award(userId, XpReason.GAME_FINISHED, entry.id);
+    }
 
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
@@ -306,6 +333,13 @@ export class GameLibraryService {
       nextFavorite: entry.favorite,
     });
 
+    if (
+      before?.status !== GameStatus.COMPLETED &&
+      entry.status === GameStatus.COMPLETED
+    ) {
+      await this.xp.award(userId, XpReason.GAME_FINISHED, entry.id);
+    }
+
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
         userId,
@@ -334,6 +368,22 @@ export class GameLibraryService {
   async deleteEntry(userId: string, entryId: string): Promise<void> {
     const entry = await this.assertEntryOwnership(userId, entryId);
 
+    // Loaded before the transaction — GameReplay cascades at the DB level,
+    // so its ids would otherwise be gone by the time revokeBySource needs
+    // them (same [G1] rule as library.service.ts's deleteEntry).
+    const replays = await this.prisma.gameReplay.findMany({
+      where: { gameEntryId: entryId },
+      select: { id: true },
+    });
+    // Same reason: the transaction below deletes this Review outright (not
+    // via ReviewService, which handles its own XP revocation) —
+    // WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED would otherwise linger
+    // until the next nightly reconciliation.
+    const reviews = await this.prisma.review.findMany({
+      where: { userId, targetId: entry.gameItemId },
+      select: { id: true },
+    });
+
     await this.prisma.$transaction([
       this.prisma.review.deleteMany({
         where: { userId, targetId: entry.gameItemId },
@@ -348,6 +398,17 @@ export class GameLibraryService {
       }),
       this.prisma.gameEntry.delete({ where: { id: entryId } }),
     ]);
+
+    await this.xp.revokeBySource("GameEntry", [entryId]); // GAME_FINISHED
+    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
+    await this.xp.revokeBySource(
+      "GameReplay",
+      replays.map((r) => r.id),
+    );
+    await this.xp.revokeBySource(
+      "Review",
+      reviews.map((r) => r.id),
+    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
   }
 
   /** Log a completed replay (a completion beyond the entry's first one). */
@@ -358,12 +419,13 @@ export class GameLibraryService {
   ): Promise<GameEntryDto> {
     await this.assertEntryOwnership(userId, entryId);
 
-    await this.prisma.gameReplay.create({
+    const replay = await this.prisma.gameReplay.create({
       data: {
         gameEntryId: entryId,
         finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
       },
     });
+    await this.xp.award(userId, XpReason.GAME_REPLAYED, replay.id);
 
     const entry = await this.prisma.gameEntry.findUniqueOrThrow({
       where: { id: entryId },
@@ -410,6 +472,7 @@ export class GameLibraryService {
     }
 
     await this.prisma.gameReplay.delete({ where: { id: replayId } });
+    await this.xp.revokeBySource("GameReplay", [replayId]);
   }
 
   /**

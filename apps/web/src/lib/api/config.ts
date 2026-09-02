@@ -11,6 +11,7 @@ export async function initConfig(): Promise<void> {
   try {
     const config = await getPublicConfig();
     appConfig.socialEnabled = config.socialEnabled;
+    appConfig.gamificationEnabled = config.gamificationEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
     appConfig.erdEnabled = config.erdEnabled;
     appConfig.adminMfaEnforced = config.adminMfaEnforced;
@@ -18,6 +19,7 @@ export async function initConfig(): Promise<void> {
     appConfig.gitSha = config.gitSha;
   } catch {
     appConfig.socialEnabled = false;
+    appConfig.gamificationEnabled = false;
     appConfig.registrationEnabled = false;
     appConfig.erdEnabled = false;
     appConfig.adminMfaEnforced = true;

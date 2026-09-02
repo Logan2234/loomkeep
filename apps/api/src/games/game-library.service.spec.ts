@@ -1,8 +1,18 @@
 import { vi } from "vitest";
+import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
+
+// Stubbed no-op, same pattern as library.service.spec.ts (G1).
+function stubXp(): XpService {
+  return {
+    award: vi.fn(),
+    awardMany: vi.fn(),
+    revokeBySource: vi.fn(),
+  } as unknown as XpService;
+}
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -59,6 +69,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     {
       emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService,
+    stubXp(),
   );
   return { service, prisma };
 }
@@ -129,10 +140,15 @@ describe("GameLibraryService.deleteEntry", () => {
         }),
         delete: gameEntryDelete,
       },
-      review: { deleteMany: reviewDeleteMany },
+      review: {
+        findMany: vi.fn().mockResolvedValue([]),
+        deleteMany: reviewDeleteMany,
+      },
       comment: { updateMany: commentUpdateMany },
+      gameReplay: { findMany: vi.fn().mockResolvedValue([]) },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
+    const xp = stubXp();
 
     const service = new GameLibraryService(
       prisma,
@@ -142,6 +158,7 @@ describe("GameLibraryService.deleteEntry", () => {
       {
         emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
+      xp,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -154,5 +171,94 @@ describe("GameLibraryService.deleteEntry", () => {
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(gameEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
+    expect(xp.revokeBySource).toHaveBeenCalledWith("GameEntry", ["entry-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
+  });
+});
+
+describe("GameLibraryService — XP wiring", () => {
+  const reviews = {
+    getRating: vi.fn().mockResolvedValue(null),
+    setRating: vi.fn(),
+  } as unknown as import("../reviews/review.service").ReviewService;
+  const activity = {
+    emit: vi.fn(),
+  } as unknown as import("../social/activity.service").ActivityService;
+
+  it("awards WORK_ADDED + DOMAIN_STARTED on creation only, and GAME_FINISHED on the COMPLETED transition", async () => {
+    const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation
+    const upsert = vi
+      .fn()
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "COMPLETED" });
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = {
+      gameEntry: { findUnique, upsert, count },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+
+    const service = new GameLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "game-1" }),
+      } as unknown as GameItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "IGDB",
+      sourceId: "igdb-1",
+      status: "COMPLETED",
+    } as never);
+
+    expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
+    expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "GAMES");
+    expect(xp.award).toHaveBeenCalledWith("user-1", "GAME_FINISHED", "e1");
+  });
+
+  it("awards GAME_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
+    const findUnique = vi
+      .fn()
+      .mockResolvedValueOnce({ id: "e1", userId: "user-1" });
+    const gameEntryFindUniqueOrThrow = vi
+      .fn()
+      .mockResolvedValue(makeRow({ id: "e1" }));
+    const replayCreate = vi.fn().mockResolvedValue({ id: "replay-1" });
+    const prisma = {
+      gameEntry: {
+        findUnique,
+        findUniqueOrThrow: gameEntryFindUniqueOrThrow,
+      },
+      gameReplay: {
+        create: replayCreate,
+        findUnique: vi.fn().mockResolvedValue({
+          id: "replay-1",
+          gameEntry: { userId: "user-1" },
+        }),
+        delete: vi.fn().mockResolvedValue({}),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+
+    const service = new GameLibraryService(
+      prisma,
+      {} as GameItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+    );
+
+    await service.addReplay("user-1", "e1", {} as never);
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "GAME_REPLAYED",
+      "replay-1",
+    );
+
+    await service.deleteReplay("user-1", "replay-1");
+    expect(xp.revokeBySource).toHaveBeenCalledWith("GameReplay", ["replay-1"]);
   });
 });

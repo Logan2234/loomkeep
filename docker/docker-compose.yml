@@ -69,6 +69,7 @@ services:
       HEALTHCHECKS_REPORTS_DIGEST_URL: ${HEALTHCHECKS_REPORTS_DIGEST_URL:-}
       HEALTHCHECKS_BACKUP_URL: ${HEALTHCHECKS_BACKUP_URL:-}
       HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL: ${HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL:-}
+      HEALTHCHECKS_GAMIFICATION_RECONCILE_URL: ${HEALTHCHECKS_GAMIFICATION_RECONCILE_URL:-}
       # Homepage dashboard's user-count widget auth — see docker-compose.homepage.yml.
       HOMEPAGE_STATS_API_KEY: ${HOMEPAGE_STATS_API_KEY:-}
       # Quackback feedback widget SSO token signing — must match Quackback's own widget settings.

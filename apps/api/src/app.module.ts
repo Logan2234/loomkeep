@@ -17,6 +17,7 @@ import { RuntimeConfigModule } from "./config/config.module";
 import { validateEnv } from "./config/env.validation";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
+import { GamificationModule } from "./gamification/gamification.module";
 import { HealthModule } from "./health/health.module";
 import { ImportModule } from "./import/import.module";
 import { LibraryModule } from "./library/library.module";
@@ -58,6 +59,7 @@ import { UsersModule } from "./users/users.module";
     UsersModule,
     CatalogModule,
     GamesModule,
+    GamificationModule,
     BooksModule,
     MusicModule,
     LibraryModule,

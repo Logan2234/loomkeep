@@ -6,6 +6,7 @@ export const JOB_KEYS = {
   REPORTS_DIGEST: "reports.digest",
   BACKUP: "backup.run",
   INACTIVE_ACCOUNTS_SCAN: "users.inactiveAccountsScan",
+  GAMIFICATION_RECONCILE: "gamification.reconcile",
 } as const;
 
 export type JobKey = (typeof JOB_KEYS)[keyof typeof JOB_KEYS];
@@ -22,6 +23,7 @@ export const JOB_HEALTHCHECK_ENV: Record<JobKey, string> = {
   [JOB_KEYS.REPORTS_DIGEST]: "HEALTHCHECKS_REPORTS_DIGEST_URL",
   [JOB_KEYS.BACKUP]: "HEALTHCHECKS_BACKUP_URL",
   [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: "HEALTHCHECKS_INACTIVE_ACCOUNTS_SCAN_URL",
+  [JOB_KEYS.GAMIFICATION_RECONCILE]: "HEALTHCHECKS_GAMIFICATION_RECONCILE_URL",
 };
 
 /** Display metadata for the admin "Jobs & tâches" page. */
@@ -51,5 +53,9 @@ export const JOB_REGISTRY: Record<JobKey, { label: string; schedule: string }> =
     [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: {
       label: "Comptes inactifs (relance + suppression)",
       schedule: "Tous les jours à 5h",
+    },
+    [JOB_KEYS.GAMIFICATION_RECONCILE]: {
+      label: "Réconciliation XP (contrôle d'intégrité)",
+      schedule: "Tous les jours à 4h",
     },
   };

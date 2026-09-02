@@ -35,6 +35,21 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ SOCIAL_ENABLED: "true" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: true,
+      gamificationEnabled: false,
+      registrationEnabled: true,
+      erdEnabled: false,
+      adminMfaEnforced: false,
+      version: "9.9.9",
+      gitSha: "unknown",
+    });
+  });
+
+  it('reports gamificationEnabled=true only when GAMIFICATION_ENABLED is exactly "true"', async () => {
+    delete process.env.GIT_SHA;
+    const { controller } = makeController({ GAMIFICATION_ENABLED: "true" });
+    await expect(controller.get()).resolves.toEqual({
+      socialEnabled: false,
+      gamificationEnabled: true,
       registrationEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
@@ -48,6 +63,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
@@ -61,6 +77,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ SOCIAL_ENABLED: "1" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
@@ -74,6 +91,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ REGISTRATION_ENABLED: "false" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: false,
       erdEnabled: false,
       adminMfaEnforced: false,
@@ -87,6 +105,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,
@@ -100,6 +119,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ NODE_ENV: "development" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: true,
       erdEnabled: true,
       adminMfaEnforced: false,
@@ -113,6 +133,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({ NODE_ENV: "production" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: true,
@@ -126,6 +147,7 @@ describe("PublicConfigController", () => {
     const { controller } = makeController({});
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
+      gamificationEnabled: false,
       registrationEnabled: true,
       erdEnabled: false,
       adminMfaEnforced: false,

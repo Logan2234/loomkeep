@@ -616,3 +616,46 @@ export type ListVisibility =
 
 export const Locale = ["fr", "en"] as const;
 export type Locale = (typeof Locale)[number];
+
+// ---------------------------------------------------------------------------
+// Gamification (G1). Mirrors `apps/api/prisma/schema.prisma`'s `XpEntry.reason`
+// — a plain String column there, not a Prisma enum (same rationale as
+// `ActivityEvent.type`: a new reason needs no migration). The full barème
+// (amount/cap/source per reason) lives in `xp-rules.ts`, not here.
+// ---------------------------------------------------------------------------
+
+/**
+ * Every source of XP the app can credit. See `xp-rules.ts` for the amount,
+ * daily cap and source table backing each one. A few are declared here but
+ * not wired to any caller yet (ONBOARDING_STEP: G8, PROFILE_COMPLETED: no
+ * ticket yet, ACHIEVEMENT_UNLOCKED: G2, ADMIN_ADJUSTMENT: B8) — the enum is
+ * the barème's full shape from day one, so later tickets only add a call
+ * site, never touch this list.
+ */
+export const XpReason = {
+  EPISODE_WATCHED: "EPISODE_WATCHED",
+  MOVIE_WATCHED: "MOVIE_WATCHED",
+  MOVIE_REPLAYED: "MOVIE_REPLAYED",
+  SEASON_COMPLETED: "SEASON_COMPLETED",
+  SERIES_COMPLETED: "SERIES_COMPLETED",
+  GAME_FINISHED: "GAME_FINISHED",
+  GAME_REPLAYED: "GAME_REPLAYED",
+  BOOK_FINISHED: "BOOK_FINISHED",
+  BOOK_REPLAYED: "BOOK_REPLAYED",
+  ALBUM_LISTENED: "ALBUM_LISTENED",
+  WORK_ADDED: "WORK_ADDED",
+  DOMAIN_STARTED: "DOMAIN_STARTED",
+  WORK_RATED: "WORK_RATED",
+  REVIEW_WRITTEN: "REVIEW_WRITTEN",
+  REVIEW_DETAILED: "REVIEW_DETAILED",
+  COMMENT_POSTED: "COMMENT_POSTED",
+  REVIEW_VOTE_RECEIVED: "REVIEW_VOTE_RECEIVED",
+  COMMENT_REACTION_RECEIVED: "COMMENT_REACTION_RECEIVED",
+  LIST_CREATED: "LIST_CREATED",
+  IMPORT_COMPLETED: "IMPORT_COMPLETED",
+  ONBOARDING_STEP: "ONBOARDING_STEP",
+  PROFILE_COMPLETED: "PROFILE_COMPLETED",
+  ACHIEVEMENT_UNLOCKED: "ACHIEVEMENT_UNLOCKED",
+  ADMIN_ADJUSTMENT: "ADMIN_ADJUSTMENT",
+} as const;
+export type XpReason = (typeof XpReason)[keyof typeof XpReason];

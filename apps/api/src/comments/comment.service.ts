@@ -9,10 +9,16 @@ import {
   ErrorCode,
   NotificationType,
   ProfileAccess,
+  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { resolveWorkHref } from "../common/work-href.util";
+import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { isGamificationEnabled } from "../gamification/gamification.config";
+import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
+import { XpService } from "../gamification/xp.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
@@ -32,6 +38,10 @@ const AUTHOR_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
+  // Only ever used locally to build the withXp gating map below — never
+  // forwarded to toUserSummaryDto/the client (that would leak the setting
+  // itself, not just its effect).
+  hideProgression: true,
 } as const;
 
 type CommentAuthor = {
@@ -40,6 +50,7 @@ type CommentAuthor = {
   displayName: string;
   profileAccess: ProfileAccess;
   avatarUpdatedAt: Date | null;
+  hideProgression: boolean;
 };
 
 type CommentRow = {
@@ -66,6 +77,9 @@ export class CommentService {
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
     private readonly notifications: NotificationService,
+    private readonly xp: XpService,
+    private readonly config: ConfigService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   /**
@@ -112,13 +126,31 @@ export class CommentService {
     const authorIds = allComments
       .map((c) => c.author?.id)
       .filter((id): id is string => !!id);
-    const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
+    const uniqueAuthorIds = [...new Set(authorIds)];
+    const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
       this.loadReactions(viewerId, allIds),
-      fetchStreaksByUser(this.prisma, [...new Set(authorIds)]),
+      fetchStreaksByUser(this.prisma, uniqueAuthorIds),
+      fetchXpByUser(this.prisma, uniqueAuthorIds),
     ]);
+    // Same rows AUTHOR_SELECT already fetched for profileAccess/anonymized —
+    // reused here instead of a second query (see xp-lookup.util.ts's doc
+    // comment on withXp).
+    const hideProgressionByUser = new Map(
+      allComments
+        .filter((c) => c.author)
+        .map((c) => [c.author!.id, c.author!.hideProgression]),
+    );
 
     const toDtoWithMask = async (row: CommentRow): Promise<CommentDto> =>
-      this.toDto(row, reactionMap, myReactionMap, viewerId, streakMap);
+      this.toDto(
+        row,
+        reactionMap,
+        myReactionMap,
+        viewerId,
+        streakMap,
+        xpMap,
+        hideProgressionByUser,
+      );
 
     const repliesByParent = new Map<string, CommentRow[]>();
 
@@ -229,16 +261,30 @@ export class CommentService {
 
     await this.notifyOnCreate(authorId, row, parent);
 
-    const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
+    // Checked here rather than left to award() (which credits blindly) —
+    // unlike the review text-length case, a too-short comment is a frequent,
+    // immediate scenario, not a rare edge case worth deferring to the
+    // nightly reconciliation.
+    if ((row.text?.trim().length ?? 0) >= 15) {
+      await this.xp.award(authorId, XpReason.COMMENT_POSTED, row.id);
+    }
+
+    const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
       fetchStreaksByUser(this.prisma, [authorId]),
+      fetchXpByUser(this.prisma, [authorId]),
     ]);
+    const hideProgressionByUser = new Map(
+      row.author ? [[row.author.id, row.author.hideProgression]] : [],
+    );
     const dto = await this.toDto(
       row,
       reactionMap,
       myReactionMap,
       authorId,
       streakMap,
+      xpMap,
+      hideProgressionByUser,
     );
     dto.replies = [];
     return dto;
@@ -264,16 +310,22 @@ export class CommentService {
       include: { author: { select: AUTHOR_SELECT } },
     });
 
-    const [[reactionMap, myReactionMap], streakMap] = await Promise.all([
+    const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
       fetchStreaksByUser(this.prisma, [authorId]),
+      fetchXpByUser(this.prisma, [authorId]),
     ]);
+    const hideProgressionByUser = new Map(
+      row.author ? [[row.author.id, row.author.hideProgression]] : [],
+    );
     const dto = await this.toDto(
       row,
       reactionMap,
       myReactionMap,
       authorId,
       streakMap,
+      xpMap,
+      hideProgressionByUser,
     );
     dto.replies = [];
     return dto;
@@ -288,6 +340,7 @@ export class CommentService {
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.CommentForbidden);
 
     await this.softDelete(id, false);
+    await this.xp.revokeBySource("Comment", [id]);
   }
 
   /**
@@ -303,6 +356,7 @@ export class CommentService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
     await this.softDelete(id, true);
+    await this.xp.revokeBySource("Comment", [id]);
     return { authorId: existing.authorId, text: existing.text };
   }
 
@@ -326,19 +380,40 @@ export class CommentService {
     if (!comment || comment.deletedAt)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
-    await this.prisma.commentReaction.upsert({
+    const reaction = await this.prisma.commentReaction.upsert({
       where: { commentId_userId: { commentId, userId } },
       update: { emote },
       create: { commentId, userId, emote },
     });
 
+    // Credited to the comment's author, never the reactor — no UP/DOWN
+    // distinction here (unlike ReviewVote), the barème has no exclusion.
+    if (comment.authorId) {
+      await this.xp.award(
+        comment.authorId,
+        XpReason.COMMENT_REACTION_RECEIVED,
+        reaction.id,
+      );
+    }
+
     await this.maybeNotifyReactionThreshold(commentId, comment.authorId);
   }
 
   async unreact(userId: string, commentId: string): Promise<void> {
+    // Looked up before the delete so revokeBySource still has the id to
+    // work with afterwards.
+    const existing = await this.prisma.commentReaction.findUnique({
+      where: { commentId_userId: { commentId, userId } },
+      select: { id: true },
+    });
+
     await this.prisma.commentReaction.deleteMany({
       where: { commentId, userId },
     });
+
+    if (existing) {
+      await this.xp.revokeBySource("CommentReaction", [existing.id]);
+    }
   }
 
   // --- internals ---
@@ -406,6 +481,8 @@ export class CommentService {
     myReactionMap: Map<string, CommentEmote>,
     viewerId: string,
     streakMap: Map<string, number>,
+    xpMap: Map<string, number>,
+    hideProgressionByUser: Map<string, boolean>,
   ): Promise<CommentDto> {
     const masked = row.deletedAt
       ? false
@@ -425,14 +502,20 @@ export class CommentService {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       author: row.author
-        ? withStreakDays(
-            anonymizeAuthor(
-              toUserSummaryDto(row.author),
-              viewerId,
-              row.targetType,
-              row.targetId,
+        ? withXp(
+            withStreakDays(
+              anonymizeAuthor(
+                toUserSummaryDto(row.author),
+                viewerId,
+                row.targetType,
+                row.targetId,
+              ),
+              streakMap,
             ),
-            streakMap,
+            viewerId,
+            xpMap,
+            isGamificationEnabled(this.config, this.flags),
+            hideProgressionByUser,
           )
         : null,
       reactions: reactionMap.get(row.id) ?? [],

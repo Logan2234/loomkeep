@@ -1,23 +1,11 @@
 import type { EntryStatus, MediaType, ProgressDto } from "@loomkeep/shared";
+import { isAiringFinished } from "../catalog/airing-status.util";
 
-/**
- * Source airing-status strings that mean "the show is over, no more episodes
- * are coming" — TMDB uses "Ended"/"Canceled", AniList "FINISHED"/"CANCELLED".
- * Anything else (Returning Series, RELEASING, NOT_YET_RELEASED, HIATUS…) is
- * treated as still airing.
- */
-const FINISHED_AIRING_STATUSES = new Set([
-  "ENDED",
-  "CANCELED",
-  "CANCELLED",
-  "FINISHED",
-]);
-
-/** Normalise a free-form source airing status to "has finished airing". */
-export function normalizeAiringFinished(status: string | null): boolean {
-  if (!status) return false;
-  return FINISHED_AIRING_STATUSES.has(status.toUpperCase());
-}
+// Re-exported under this module's original name — the logic itself now
+// lives in catalog/airing-status.util.ts (see there for the rationale),
+// shared with the gamification module's SEASON_COMPLETED/SERIES_COMPLETED
+// verifiers so both agree on the same "has finished airing" answer.
+export { isAiringFinished as normalizeAiringFinished };
 
 /**
  * Effective library status. DROPPED is a manual override that wins over

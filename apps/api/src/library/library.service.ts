@@ -14,9 +14,11 @@ import type {
 } from "@loomkeep/shared";
 import {
   ActivityType,
+  Domain,
   ErrorCode,
   isDormant,
   ReviewTargetType,
+  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
@@ -31,6 +33,11 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import {
+  isSeasonComplete,
+  isSeriesComplete,
+} from "../gamification/xp-verifiers";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { classifyStatusTransition } from "../social/activity-transition.util";
@@ -148,6 +155,7 @@ export class LibraryService {
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
     private readonly entitlements: EntitlementService,
+    private readonly xp: XpService,
   ) {}
 
   /** First touch of a media persists it (on-demand cache), then upserts the entry. */
@@ -190,6 +198,28 @@ export class LibraryService {
       prevFavorite: before?.favorite ?? false,
       nextFavorite: entry.favorite,
     });
+
+    if (before === null) {
+      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
+      // Counted only on a true first insert (not every update) — see the
+      // [G1b] plan. A user's very first MEDIA entry also earns the
+      // one-off DOMAIN_STARTED milestone.
+      const domainEntryCount = await this.prisma.libraryEntry.count({
+        where: { userId },
+      });
+
+      if (domainEntryCount === 1) {
+        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.MEDIA);
+      }
+    }
+
+    if (
+      mediaItem.type === "MOVIE" &&
+      before?.status !== "COMPLETED" &&
+      entry.status === "COMPLETED"
+    ) {
+      await this.xp.award(userId, XpReason.MOVIE_WATCHED, entry.id);
+    }
 
     // The /10 rating lives in Review (the single source of truth).
     if (dto.rating !== undefined) {
@@ -350,6 +380,14 @@ export class LibraryService {
       nextFavorite: entry.favorite,
     });
 
+    if (
+      entry.mediaItem.type === "MOVIE" &&
+      before?.status !== "COMPLETED" &&
+      entry.status === "COMPLETED"
+    ) {
+      await this.xp.award(userId, XpReason.MOVIE_WATCHED, entry.id);
+    }
+
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
         userId,
@@ -396,6 +434,23 @@ export class LibraryService {
       ...episodeIds,
     ];
 
+    // Loaded before the transaction so revokeBySource has something to work
+    // with once the watches are gone — see the [G1] plan: XP writes never
+    // happen inside a $transaction (no side effect in the lock, same as
+    // `activity.emit` elsewhere in this file, always awaited after one).
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: episodeIds } },
+      select: { id: true },
+    });
+    // Same reason: the transaction below deletes these Reviews outright
+    // (not via ReviewService.setRating/remove, which handle their own XP
+    // revocation) — WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED would
+    // otherwise linger until the next nightly reconciliation.
+    const reviews = await this.prisma.review.findMany({
+      where: { userId, targetId: { in: targetIds } },
+      select: { id: true },
+    });
+
     await this.prisma.$transaction([
       this.prisma.episodeWatch.deleteMany({
         where: { userId, episodeId: { in: episodeIds } },
@@ -413,6 +468,25 @@ export class LibraryService {
       }),
       this.prisma.libraryEntry.delete({ where: { id: entryId } }),
     ]);
+
+    await this.xp.revokeBySource(
+      "EpisodeWatch",
+      watches.map((w) => w.id),
+    );
+    // Cleans MOVIE_WATCHED and SERIES_COMPLETED (both sourceType
+    // "LibraryEntry") in one call — intentional: deleting a whole entry
+    // must wipe every reason anchored to it, unlike unwatching a single
+    // season/episode, which only ever revokes its own reason.
+    await this.xp.revokeBySource("LibraryEntry", [entryId]);
+    await this.xp.revokeBySource("Entry", [entryId]); // WORK_ADDED
+    await this.xp.revokeBySource(
+      "Season",
+      seasons.map((s) => s.id),
+    );
+    await this.xp.revokeBySource(
+      "Review",
+      reviews.map((r) => r.id),
+    ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
   }
 
   /**
@@ -571,6 +645,9 @@ export class LibraryService {
       },
     });
 
+    await this.xp.award(userId, XpReason.EPISODE_WATCHED, watch.id);
+    await this.syncSeasonAndSeriesXp(userId, [episode.seasonId]);
+
     await this.syncFinishedAt(
       userId,
       episode.season.mediaItemId,
@@ -653,9 +730,22 @@ export class LibraryService {
       select: { id: true },
     });
 
+    // Loaded before the deleteMany so revokeBySource still has the ids to
+    // work with afterwards (see the [G1] plan: never award/revoke inside a
+    // transaction, and here there's nothing left to look up post-delete).
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
+      select: { id: true },
+    });
+
     await this.prisma.episodeWatch.deleteMany({
       where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
     });
+    await this.xp.revokeBySource(
+      "EpisodeWatch",
+      watches.map((w) => w.id),
+    );
+    await this.syncSeasonAndSeriesXp(userId, [seasonId]);
     await this.syncFinishedAt(
       userId,
       season.mediaItemId,
@@ -724,7 +814,11 @@ export class LibraryService {
     );
   }
 
-  /** Create a watch for each of the given episodes the user hasn't watched yet. */
+  /**
+   * Create a watch for each of the given episodes the user hasn't watched
+   * yet, and credit EPISODE_WATCHED for each newly created watch (the batch
+   * still respects the daily cap — see `XpService.awardMany`).
+   */
   private async markUnwatched(
     userId: string,
     episodeIds: string[],
@@ -736,12 +830,80 @@ export class LibraryService {
       select: { episodeId: true },
     });
     const watchedIds = new Set(watched.map((w) => w.episodeId));
-    const toCreate = episodeIds
-      .filter((id) => !watchedIds.has(id))
-      .map((id) => ({ userId, episodeId: id }));
+    const newEpisodeIds = episodeIds.filter((id) => !watchedIds.has(id));
+    const toCreate = newEpisodeIds.map((id) => ({ userId, episodeId: id }));
 
     if (toCreate.length > 0) {
       await this.prisma.episodeWatch.createMany({ data: toCreate });
+      const created = await this.prisma.episodeWatch.findMany({
+        where: { userId, episodeId: { in: newEpisodeIds } },
+        select: { id: true },
+      });
+      await this.xp.awardMany(
+        userId,
+        XpReason.EPISODE_WATCHED,
+        created.map((w) => w.id),
+      );
+
+      // Grouped by season, not per-episode, so a whole-season/whole-series
+      // mark-through only checks completion once per season involved.
+      const touchedSeasons = await this.prisma.episode.findMany({
+        where: { id: { in: newEpisodeIds } },
+        distinct: ["seasonId"],
+        select: { seasonId: true },
+      });
+      await this.syncSeasonAndSeriesXp(
+        userId,
+        touchedSeasons.map((e) => e.seasonId),
+      );
+    }
+  }
+
+  /**
+   * Re-derives SEASON_COMPLETED/SERIES_COMPLETED after a watch change
+   * touching `seasonIds`, awarding or revoking each as needed. Reuses
+   * `isSeasonComplete`/`isSeriesComplete` from xp-verifiers.ts — the same
+   * completion rule the nightly reconciliation checks — so this live path
+   * and that sweep can never disagree. Called once per batch of episodes
+   * touched (never per individual episode), grouped by the distinct
+   * seasons/series involved.
+   */
+  private async syncSeasonAndSeriesXp(
+    userId: string,
+    seasonIds: string[],
+  ): Promise<void> {
+    const uniqueSeasonIds = [...new Set(seasonIds)];
+    if (uniqueSeasonIds.length === 0) return;
+
+    const seasons = await this.prisma.season.findMany({
+      where: { id: { in: uniqueSeasonIds } },
+      select: { id: true, mediaItemId: true },
+    });
+
+    for (const season of seasons) {
+      const complete = await isSeasonComplete(this.prisma, userId, season.id);
+
+      if (complete) {
+        await this.xp.award(userId, XpReason.SEASON_COMPLETED, season.id);
+      } else {
+        await this.xp.revokeBySource("Season", [season.id]);
+      }
+    }
+
+    const mediaItemIds = [...new Set(seasons.map((s) => s.mediaItemId))];
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: { userId, mediaItemId: { in: mediaItemIds } },
+      select: { id: true },
+    });
+
+    for (const entry of entries) {
+      const complete = await isSeriesComplete(this.prisma, userId, entry.id);
+
+      if (complete) {
+        await this.xp.award(userId, XpReason.SERIES_COMPLETED, entry.id);
+      } else {
+        await this.xp.revokeBySource("LibraryEntry", [entry.id]);
+      }
     }
   }
 
@@ -827,6 +989,8 @@ export class LibraryService {
     }
 
     await this.prisma.episodeWatch.delete({ where: { id: latest.id } });
+    await this.xp.revokeBySource("EpisodeWatch", [latest.id]);
+    await this.syncSeasonAndSeriesXp(userId, [latest.episode.seasonId]);
     await this.syncFinishedAt(
       userId,
       latest.episode.season.mediaItemId,
@@ -1091,12 +1255,13 @@ export class LibraryService {
       );
     }
 
-    await this.prisma.movieReplay.create({
+    const replay = await this.prisma.movieReplay.create({
       data: {
         libraryEntryId: entryId,
         finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
       },
     });
+    await this.xp.award(userId, XpReason.MOVIE_REPLAYED, replay.id);
 
     await this.activity.emit({
       userId,
@@ -1131,6 +1296,7 @@ export class LibraryService {
     }
 
     await this.prisma.movieReplay.delete({ where: { id: replayId } });
+    await this.xp.revokeBySource("MovieReplay", [replayId]);
   }
 
   /**

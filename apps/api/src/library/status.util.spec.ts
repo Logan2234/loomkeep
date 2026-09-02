@@ -1,24 +1,8 @@
-import { deriveStatus, normalizeAiringFinished } from "./status.util";
+import { deriveStatus } from "./status.util";
 
-describe("normalizeAiringFinished", () => {
-  it("treats TMDB/AniList finished statuses as finished", () => {
-    for (const s of ["Ended", "Canceled", "FINISHED", "CANCELLED"]) {
-      expect(normalizeAiringFinished(s)).toBe(true);
-    }
-  });
-
-  it("treats ongoing/unknown statuses as not finished", () => {
-    for (const s of [
-      "Returning Series",
-      "RELEASING",
-      "NOT_YET_RELEASED",
-      "HIATUS",
-      null,
-    ]) {
-      expect(normalizeAiringFinished(s)).toBe(false);
-    }
-  });
-});
+// normalizeAiringFinished (re-exported here from catalog/airing-status.util)
+// is covered by catalog/airing-status.util.spec.ts — no need to duplicate
+// its cases against this module's own re-export.
 
 describe("deriveStatus", () => {
   const progress = (watched: number, total: number) => ({
