@@ -72,11 +72,7 @@ pnpm --filter @loomkeep/api test:e2e       # full API flow; needs the dev Postgr
                                             # runs in an isolated "e2e" schema
 
 pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
-pnpm --filter @loomkeep/api spelunk        # visualize this package's module dependency graph
-                                            # as Mermaid (writes ../../docs/modules.md at the
-                                            # repo root) — `graph` runs the same script
-pnpm --filter @loomkeep/api clean          # removes dist/ and tsconfig.build.tsbuildinfo
-pnpm --filter @loomkeep/api clean:dev      # clean + removes node_modules
+pnpm --filter @loomkeep/api clean          # removes all generated files
 ```
 
 Unit tests stub all HTTP calls, so they run offline; `TMDB_API_TOKEN` empty

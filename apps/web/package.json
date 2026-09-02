@@ -19,8 +19,7 @@
     "directory": "apps/web"
   },
   "scripts": {
-    "clean": "rm -rf build",
-    "clean:dev": "rm -rf build node_modules .svelte-kit",
+    "clean": "rm -rf build node_modules .svelte-kit coverage",
     "dev": "vite dev",
     "build": "vite build",
     "generate:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy cookie preferredLanguage baseLocale",

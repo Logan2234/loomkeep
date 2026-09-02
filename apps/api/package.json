@@ -20,8 +20,7 @@
   },
   "scripts": {
     "build": "nest build",
-    "clean": "rm -rf dist tsconfig.build.tsbuildinfo",
-    "clean:dev": "rm -rf dist tsconfig.build.tsbuildinfo node_modules",
+    "clean": "rm -rf dist coverage coverage-e2e backups node_modules openapi.json",
     "dev": "nest start --watch",
     "start": "nest start",
     "start:prod": "node dist/src/main",
@@ -32,9 +31,8 @@
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.mts",
     "test:e2e:cov": "vitest run --config ./vitest.config.e2e.mts --coverage",
-    "graph": "ts-node -r tsconfig-paths/register scripts/graph.ts",
-    "check": "tsc --noEmit -p tsconfig.json",
-    "spelunk": "ts-node ./scripts/graph.ts"
+    "graph": "pnpm exec ts-node -r tsconfig-paths/register scripts/graph.ts",
+    "check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@fastify/helmet": "^13.1.1",
@@ -77,7 +75,6 @@
     "@types/supertest": "^7.2.1",
     "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "^4.1.11",
-    "nestjs-spelunker": "^1.3.2",
     "pino-pretty": "^13.1.3",
     "prisma-erd-generator": "^3.2.1",
     "supertest": "^7.2.2",

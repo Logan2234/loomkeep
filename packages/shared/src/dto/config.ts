@@ -29,8 +29,8 @@ export interface PublicConfigDto {
   registrationEnabled: boolean;
 
   /**
-   * Whether the admin "Schéma" page (DB ERD + module graph) has content to
-   * show. The underlying `docs/erd.md`/`docs/modules.md` are dev-only
+   * Whether the admin "Schéma" page (DB ERD) has content to
+   * show. The underlying `docs/erd.md` is dev-only
    * artifacts, never generated in the Docker build (see `DISABLE_ERD` in
    * `apps/api/Dockerfile` and the `erd` generator in `schema.prisma`) — this
    * mirrors that by reading the API's own `NODE_ENV`.

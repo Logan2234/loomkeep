@@ -178,9 +178,6 @@ importers:
       "@vitest/coverage-v8":
         specifier: ^4.1.11
         version: 4.1.11(vitest@4.1.11)
-      nestjs-spelunker:
-        specifier: ^1.3.2
-        version: 1.3.2(@nestjs/common@12.0.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.0.1(@nestjs/common@12.0.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))
       pino-pretty:
         specifier: ^13.1.3
         version: 13.1.3
@@ -2504,18 +2501,6 @@ packages:
         integrity: sha512-gOBg5YHMfZy+TfHArfVogwgfBeQnKbbGo3pSUyK/gSI0AVu+pEiDVcKlQb0D8Mg1LNRZILZ6XG8I5dJ4KuAd9Q==,
       }
     engines: { node: ^20.17.0 || >=22.9.0 }
-
-  "@ogma/common@1.2.0":
-    resolution:
-      {
-        integrity: sha512-y2GHkT4t3B9CoI7ELfgZXeMHiiOC/X4XvdeqYLbP5A3keop7fANzjd5pQdtyYQvdQ0lPzcHJiMvOGkIINZHZHQ==,
-      }
-
-  "@ogma/styler@1.1.0":
-    resolution:
-      {
-        integrity: sha512-OtwJ8Ump3sKEAv2DIUi+R2G2Y5v3cEzqRO/sH11MTWikAhac31GZR/xzU+3BoPRT0u8oIob7N5dtOKTdPhqq3w==,
-      }
 
   "@opentelemetry/api-logs@0.220.0":
     resolution:
@@ -10317,15 +10302,6 @@ packages:
       pino-http: ^11.0.0
       rxjs: ^7.1.0
 
-  nestjs-spelunker@1.3.2:
-    resolution:
-      {
-        integrity: sha512-tVQZvPvlYNRW9PFkl2dj/hCEzUjC/NbJdayhnr/0dBuebFu4fqJNICPQF1BWJgK8GxJARe1kvDAw/GoyvINvOA==,
-      }
-    peerDependencies:
-      "@nestjs/common": ">6.11.0"
-      "@nestjs/core": ">6.11.0"
-
   netmask@2.1.1:
     resolution:
       {
@@ -15222,12 +15198,6 @@ snapshots:
 
   "@npmcli/redact@4.0.0": {}
 
-  "@ogma/common@1.2.0": {}
-
-  "@ogma/styler@1.1.0":
-    dependencies:
-      "@ogma/common": 1.2.0
-
   "@opentelemetry/api-logs@0.220.0":
     dependencies:
       "@opentelemetry/api": 1.9.1
@@ -20009,12 +19979,6 @@ snapshots:
       pino: 10.3.1
       pino-http: 11.0.0
       rxjs: 7.8.2
-
-  nestjs-spelunker@1.3.2(@nestjs/common@12.0.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.0.1(@nestjs/common@12.0.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)):
-    dependencies:
-      "@nestjs/common": 12.0.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
-      "@nestjs/core": 12.0.1(@nestjs/common@12.0.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      "@ogma/styler": 1.1.0
 
   netmask@2.1.1: {}
 

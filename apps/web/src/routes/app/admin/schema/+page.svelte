@@ -10,16 +10,12 @@
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
-  // Direct-URL access outside dev: the underlying docs/erd.md and
-  // docs/modules.md are never generated in the Docker build (DISABLE_ERD),
+  // Direct-URL access outside dev: the underlying docs/erd.md
+  // is never generated in the Docker build (DISABLE_ERD),
   // so there's nothing to show — bounce to the admin home instead.
   $effect(() => {
     if (!appConfig.erdEnabled) void goto("/app/admin");
   });
-
-  type Tab = "erd" | "modules";
-
-  let tab = $state<Tab>("erd");
 
   const schemaQuery = createApiQuery(() => ({
     key: keys.admin.schema(),
@@ -29,22 +25,6 @@
   const data = $derived(schemaQuery.data);
   const loading = $derived(schemaQuery.loading);
   const error = $derived(schemaQuery.error);
-
-  const TABS: { value: Tab; label: string; regenerate: string }[] = [
-    {
-      value: "erd",
-      label: m.admin_schema_tab_database(),
-      regenerate: "pnpm --filter @loomkeep/api exec prisma generate",
-    },
-    {
-      value: "modules",
-      label: m.admin_schema_tab_modules(),
-      regenerate: "pnpm --filter @loomkeep/api run graph",
-    },
-  ];
-
-  const active = $derived(TABS.find((t) => t.value === tab)!);
-  const activeGraph = $derived(tab === "erd" ? data?.erd : data?.modules);
 </script>
 
 <div class="px-5 py-6 md:px-8 md:py-10">
@@ -54,23 +34,12 @@
     subtitle={m.admin_schema_subtitle()}
     class="mb-6" />
 
-  <div class="mb-5 flex flex-wrap gap-2">
-    {#each TABS as t (t.value)}
-      <button
-        class="chip"
-        class:chip-on={tab === t.value}
-        onclick={() => (tab = t.value)}>
-        {t.label}
-      </button>
-    {/each}
-  </div>
-
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if loading && !data}
     <div class="card h-64 animate-pulse"></div>
-  {:else if activeGraph}
-    <MermaidDiagram code={activeGraph} />
+  {:else if data?.erd}
+    <MermaidDiagram code={data.erd} />
   {:else}
     <div class="card text-dim p-6 text-sm">
       <p>
@@ -78,7 +47,7 @@
       </p>
       <p class="mt-3">{m.admin_schema_regenerate_hint()}</p>
       <pre
-        class="border-border bg-surface-2 text-fg mt-2 overflow-x-auto rounded-lg border p-3 text-xs">{active.regenerate}</pre>
+        class="border-border bg-surface-2 text-fg mt-2 overflow-x-auto rounded-lg border p-3 text-xs">pnpm --filter @loomkeep/api exec prisma generate</pre>
       <p class="mt-3">{m.admin_schema_refresh_hint()}</p>
     </div>
   {/if}

@@ -6,7 +6,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": ["package.json"],
+    "assets": ["../package.json"],
     "plugins": ["@nestjs/swagger"],
     "manualRestart": false,
     "builder": "tsc",

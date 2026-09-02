@@ -32,8 +32,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "clean": "rm -rf dist",
-    "clean:dev": "rm -rf dist node_modules",
+    "clean": "rm -rf dist node_modules",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint",
     "lint:fix": "eslint --fix",

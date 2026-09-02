@@ -260,11 +260,8 @@ export class AdminService {
 
   /** Reads the two locally-generated architecture diagrams, `null` when absent. */
   async getSchemaGraphs(): Promise<SchemaGraphResponseDto> {
-    const [erd, modules] = await Promise.all([
-      this.readGraph("erd.md"),
-      this.readGraph("modules.md"),
-    ]);
-    return { erd, modules };
+    const erd = await this.readGraph("erd.md");
+    return { erd };
   }
 
   private async readGraph(filename: string): Promise<string | null> {
