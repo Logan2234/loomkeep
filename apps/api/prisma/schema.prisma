@@ -1006,9 +1006,25 @@ model RefreshToken {
   lastUsedAt DateTime @default(now())
   createdAt  DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consumedTokens ConsumedRefreshToken[]
 
   @@index([userId])
+}
+
+// Hashes of already-rotated refresh tokens. A replay identifies the durable
+// session family and revokes it without retaining any bearer token in clear.
+model ConsumedRefreshToken {
+  id        String   @id @default(cuid())
+  sessionId String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  session RefreshToken @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([expiresAt])
 }
 
 // Durable record of every device a user has ever logged in from, independent

@@ -14,6 +14,11 @@ import type {
   JwtPayload,
 } from "../decorators/current-user.decorator";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
+import {
+  JWT_ACCESS_AUDIENCE,
+  JWT_ALGORITHM,
+  JWT_ISSUER,
+} from "../jwt.constants";
 
 /** Global guard: every route requires a Bearer access token unless marked @Public(). */
 @Injectable()
@@ -51,6 +56,9 @@ export class JwtAuthGuard implements CanActivate {
     try {
       request.user = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
+        algorithms: [JWT_ALGORITHM],
+        issuer: JWT_ISSUER,
+        audience: JWT_ACCESS_AUDIENCE,
       });
     } catch {
       throw new AppException(

@@ -22,11 +22,14 @@ const METHOD_STORED = 0;
 const METHOD_DEFLATE = 8;
 
 const ZIP64_SENTINEL = 0xffffffff;
+const MAX_ENTRY_UNCOMPRESSED_BYTES = 32 * 1024 * 1024;
+const MAX_TOTAL_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
 
 interface CentralEntry {
   name: string;
   method: number;
   compressedSize: number;
+  uncompressedSize: number;
   localHeaderOffset: number;
 }
 
@@ -41,11 +44,18 @@ export function readZipEntries(
 ): Map<string, string> {
   const wantedLower = new Set([...wanted].map((n) => n.toLowerCase()));
   const result = new Map<string, string>();
+  let extractedBytes = 0;
 
   for (const entry of readCentralDirectory(buf)) {
     const base = baseName(entry.name).toLowerCase();
     if (!wantedLower.has(base) || result.has(base)) continue;
-    result.set(base, decodeEntry(buf, entry));
+    const decoded = decodeEntry(
+      buf,
+      entry,
+      MAX_TOTAL_UNCOMPRESSED_BYTES - extractedBytes,
+    );
+    extractedBytes += decoded.length;
+    result.set(base, decoded.toString("utf8"));
   }
 
   return result;
@@ -62,11 +72,18 @@ export function readZipEntriesMatching(
   predicate: (baseNameLower: string) => boolean,
 ): Map<string, string> {
   const result = new Map<string, string>();
+  let extractedBytes = 0;
 
   for (const entry of readCentralDirectory(buf)) {
     const base = baseName(entry.name).toLowerCase();
     if (!predicate(base)) continue;
-    result.set(base, decodeEntry(buf, entry));
+    const decoded = decodeEntry(
+      buf,
+      entry,
+      MAX_TOTAL_UNCOMPRESSED_BYTES - extractedBytes,
+    );
+    extractedBytes += decoded.length;
+    result.set(base, decoded.toString("utf8"));
   }
 
   return result;
@@ -97,6 +114,7 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
 
     const method = buf.readUInt16LE(pos + 10);
     const compressedSize = buf.readUInt32LE(pos + 20);
+    const uncompressedSize = buf.readUInt32LE(pos + 24);
     const nameLen = buf.readUInt16LE(pos + 28);
     const extraLen = buf.readUInt16LE(pos + 30);
     const commentLen = buf.readUInt16LE(pos + 32);
@@ -104,13 +122,20 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
 
     if (
       compressedSize === ZIP64_SENTINEL ||
+      uncompressedSize === ZIP64_SENTINEL ||
       localHeaderOffset === ZIP64_SENTINEL
     ) {
       throw new Error("ZIP64 archives are not supported");
     }
 
     const name = buf.toString("utf8", pos + 46, pos + 46 + nameLen);
-    entries.push({ name, method, compressedSize, localHeaderOffset });
+    entries.push({
+      name,
+      method,
+      compressedSize,
+      uncompressedSize,
+      localHeaderOffset,
+    });
     pos += 46 + nameLen + extraLen + commentLen;
   }
 
@@ -118,7 +143,19 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
 }
 
 /** Locate an entry's compressed data and inflate/copy it into UTF-8 text. */
-function decodeEntry(buf: Buffer, entry: CentralEntry): string {
+function decodeEntry(
+  buf: Buffer,
+  entry: CentralEntry,
+  remainingBytes: number,
+): Buffer {
+  if (entry.uncompressedSize > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+    throw new Error(`ZIP entry ${entry.name} exceeds the uncompressed limit`);
+  }
+
+  if (entry.uncompressedSize > remainingBytes) {
+    throw new Error("ZIP entries exceed the total uncompressed limit");
+  }
+
   const lh = entry.localHeaderOffset;
 
   if (buf.readUInt32LE(lh) !== LOCAL_SIGNATURE) {
@@ -129,12 +166,35 @@ function decodeEntry(buf: Buffer, entry: CentralEntry): string {
   const nameLen = buf.readUInt16LE(lh + 26);
   const extraLen = buf.readUInt16LE(lh + 28);
   const dataStart = lh + 30 + nameLen + extraLen;
-  const data = buf.subarray(dataStart, dataStart + entry.compressedSize);
+  const dataEnd = dataStart + entry.compressedSize;
 
-  if (entry.method === METHOD_STORED) return data.toString("utf8");
+  if (dataEnd > buf.length) {
+    throw new Error(`Corrupt ZIP: truncated data for ${entry.name}`);
+  }
+
+  const data = buf.subarray(dataStart, dataEnd);
+
+  if (entry.method === METHOD_STORED) return data;
 
   if (entry.method === METHOD_DEFLATE) {
-    return inflateRawSync(data).toString("utf8");
+    try {
+      return inflateRawSync(data, {
+        maxOutputLength: Math.min(MAX_ENTRY_UNCOMPRESSED_BYTES, remainingBytes),
+      });
+    } catch (error) {
+      if (
+        error instanceof RangeError ||
+        (error instanceof Error &&
+          (error as NodeJS.ErrnoException).code === "ERR_BUFFER_TOO_LARGE")
+      ) {
+        throw new Error(
+          `ZIP entry ${entry.name} exceeds the uncompressed limit`,
+          { cause: error },
+        );
+      }
+
+      throw error;
+    }
   }
 
   throw new Error(

@@ -24,6 +24,7 @@ import {
 
 /** Completed jobs are dropped from memory after this delay. */
 const JOB_RETENTION_MS = 60 * 60 * 1000;
+const MAX_RETAINED_JOBS_PER_USER = 20;
 
 interface JobRecord {
   id: string;
@@ -120,6 +121,8 @@ export class ImportJobService {
     dto: ImportAnalyzeRequest,
   ): Promise<ImportJobDto> {
     this.pruneOldJobs();
+    this.assertNoRunningJob(userId);
+    this.pruneExcessJobs(userId);
     const source = this.sourceOrThrow(sourceId);
     await this.assertImportAllowed(userId, source.searchDomain);
 
@@ -156,6 +159,8 @@ export class ImportJobService {
     dto: ImportCommitRequest,
   ): ImportJobDto {
     this.pruneOldJobs();
+    this.assertNoRunningJob(userId);
+    this.pruneExcessJobs(userId);
     const source = this.sourceOrThrow(sourceId);
 
     const analyzed = this.jobs.get(jobId);
@@ -361,6 +366,30 @@ export class ImportJobService {
       if (job.finishedAt !== null && job.finishedAt < cutoff) {
         this.jobs.delete(id);
       }
+    }
+  }
+
+  private assertNoRunningJob(userId: string): void {
+    if (
+      [...this.jobs.values()].some(
+        (job) => job.userId === userId && job.status === "running",
+      )
+    ) {
+      throw new AppException(
+        HttpStatus.TOO_MANY_REQUESTS,
+        ErrorCode.ImportJobAlreadyRunning,
+      );
+    }
+  }
+
+  private pruneExcessJobs(userId: string): void {
+    const completed = [...this.jobs.values()]
+      .filter((job) => job.userId === userId && job.finishedAt !== null)
+      .sort((a, b) => (a.finishedAt ?? 0) - (b.finishedAt ?? 0));
+
+    while (completed.length >= MAX_RETAINED_JOBS_PER_USER) {
+      const oldest = completed.shift();
+      if (oldest) this.jobs.delete(oldest.id);
     }
   }
 }

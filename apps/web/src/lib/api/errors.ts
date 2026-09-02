@@ -172,6 +172,8 @@ const MESSAGES = {
   [ErrorCode.ImportJobSourceMismatch]: () =>
     m.apierr_import_job_source_mismatch(),
   [ErrorCode.ImportJobNoAnalysis]: () => m.apierr_import_job_no_analysis(),
+  [ErrorCode.ImportJobAlreadyRunning]: () =>
+    m.apierr_import_job_already_running(),
   [ErrorCode.ImportUnknownSource]: () => m.apierr_import_unknown_source(),
   [ErrorCode.ImportFreeQuotaExceeded]: () =>
     m.apierr_import_free_quota_exceeded(),

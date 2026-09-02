@@ -146,6 +146,7 @@ export const ErrorCode = {
   ImportJobForbidden: "import.job_forbidden",
   ImportJobSourceMismatch: "import.job_source_mismatch",
   ImportJobNoAnalysis: "import.job_no_analysis",
+  ImportJobAlreadyRunning: "import.job_already_running",
   ImportUnknownSource: "import.unknown_source",
   ImportFreeQuotaExceeded: "import.free_quota_exceeded",
   ImportSourceUnavailable: "import.source_unavailable",

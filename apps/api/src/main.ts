@@ -29,6 +29,21 @@ if (!process.env.WEB_ORIGIN) {
 }
 
 const webOrigin: string = process.env.WEB_ORIGIN;
+const trustProxyHops = process.env.TRUST_PROXY_HOPS
+  ? Number(process.env.TRUST_PROXY_HOPS)
+  : false;
+
+if (
+  trustProxyHops !== false &&
+  (!Number.isInteger(trustProxyHops) || trustProxyHops < 1)
+) {
+  throw new Error("TRUST_PROXY_HOPS must be a positive integer when set.");
+}
+
+const trustProxy =
+  trustProxyHops === false
+    ? false
+    : (_address: string, hop: number) => hop < trustProxyHops;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -37,15 +52,10 @@ async function bootstrap() {
     // Fastify limit is too small for a full watch history.
     new FastifyAdapter({
       bodyLimit: 25 * 1024 * 1024,
-      // Off by default: trusting X-Forwarded-For is only safe when every
-      // request truly passes through a controlled proxy first. Self-host
-      // (base docker-compose.yml, no Caddy) exposes the API directly, so a
-      // client could set X-Forwarded-For itself and spoof its IP for
-      // rate-limiting/@Ip() purposes — hence opt-in via TRUST_PROXY, set to
-      // "true" only in docker-compose.prod.yml (Caddy always sits in front
-      // there). See docker/README.md "Cloudflare" for the residual risk of
-      // the API's port still being reachable directly, bypassing Caddy.
-      trustProxy: process.env.TRUST_PROXY === "true",
+      // Production has exactly one controlled hop (Caddy). A hop count keeps
+      // Fastify from trusting an arbitrary-length forwarded chain, while the
+      // production Compose override removes direct API port publication.
+      trustProxy,
     }),
     {
       // Nest's built-in console logger is replaced by nestjs-pino below
