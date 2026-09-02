@@ -465,7 +465,7 @@ export class AuthService {
       );
     }
 
-    const signed = await this.signTokens(stored.user);
+    const signed = await this.signTokens(stored.user, stored.id);
     const rotated = await this.prisma.$transaction(async (tx) => {
       const update = await tx.refreshToken.updateMany({
         where: { id: stored.id, tokenHash },
@@ -680,13 +680,20 @@ export class AuthService {
   }
 
   /** Signs a fresh access/refresh pair. Persistence is the caller's job. */
-  private async signTokens(user: User): Promise<{
+  private async signTokens(
+    user: User,
+    sessionId: string,
+  ): Promise<{
     accessToken: string;
     refreshToken: string;
     jti: string;
     expiresAt: Date;
   }> {
-    const payload: JwtPayload = { sub: user.id, email: user.email };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      sid: sessionId,
+    };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
@@ -776,12 +783,14 @@ export class AuthService {
     user: User,
     userAgent?: string,
   ): Promise<AuthTokensDto> {
-    const signed = await this.signTokens(user);
+    const sessionId = randomUUID();
+    const signed = await this.signTokens(user, sessionId);
     await this.prisma.refreshToken.deleteMany({
       where: { userId: user.id, userAgent: userAgent ?? null },
     });
     await this.prisma.refreshToken.create({
       data: {
+        id: sessionId,
         userId: user.id,
         tokenHash: hashToken(signed.refreshToken),
         jti: signed.jti,

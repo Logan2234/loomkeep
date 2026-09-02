@@ -665,7 +665,7 @@ describe("AuthService.refresh", () => {
       }),
     );
     expect(jwtService.signAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ sub: user.id }),
+      expect.objectContaining({ sub: user.id, sid: "rt-1" }),
       expect.objectContaining({
         algorithm: "HS256",
         issuer: "loomkeep-api",

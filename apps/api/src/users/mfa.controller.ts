@@ -43,7 +43,7 @@ export class MfaController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: ConfirmTotpDto,
   ): Promise<ConfirmTotpResponseDto> {
-    return this.mfaService.confirmTotp(payload.sub, dto.code);
+    return this.mfaService.confirmTotp(payload.sub, dto.code, payload.sid);
   }
 
   @Post("totp/disable")
@@ -51,7 +51,11 @@ export class MfaController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: DisableTotpDto,
   ): Promise<void> {
-    await this.mfaService.disableTotp(payload.sub, dto.currentPassword);
+    await this.mfaService.disableTotp(
+      payload.sub,
+      dto.currentPassword,
+      payload.sid,
+    );
   }
 
   @Patch("email")
@@ -60,7 +64,11 @@ export class MfaController {
     @CurrentUser() payload: JwtPayload,
     @Body() dto: SetEmailMfaDto,
   ): Promise<SetEmailMfaResponseDto> {
-    return this.mfaService.setEmailMfaEnabled(payload.sub, dto.enabled);
+    return this.mfaService.setEmailMfaEnabled(
+      payload.sub,
+      dto.enabled,
+      payload.sid,
+    );
   }
 
   // Authenticated-only, but still a sensitive/spammy-if-abused action.
@@ -71,7 +79,10 @@ export class MfaController {
     @CurrentUser() payload: JwtPayload,
   ): Promise<RegenerateRecoveryCodesResponseDto> {
     return {
-      codes: await this.mfaService.regenerateRecoveryCodes(payload.sub),
+      codes: await this.mfaService.regenerateRecoveryCodes(
+        payload.sub,
+        payload.sid,
+      ),
     };
   }
 }
