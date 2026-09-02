@@ -48,9 +48,9 @@ describe("AchievementsController.markDisplayed", () => {
 
   it("propagates the 404 AchievementService throws for someone else's achievement", async () => {
     const { controller, achievements } = makeController();
-    (
-      achievements.markDisplayed as ReturnType<typeof vi.fn>
-    ).mockRejectedValue(new Error("not found"));
+    (achievements.markDisplayed as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("not found"),
+    );
 
     await expect(
       controller.markDisplayed(USER, "achievement-1"),

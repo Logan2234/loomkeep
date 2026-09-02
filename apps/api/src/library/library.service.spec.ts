@@ -749,9 +749,11 @@ describe("LibraryService — XP wiring", () => {
   });
 
   it("awards MOVIE_WATCHED and evaluates achievements on updateEntry's COMPLETED transition", async () => {
-    const findUnique = vi
-      .fn()
-      .mockResolvedValue({ userId: "user-1", status: "PLANNED", favorite: false });
+    const findUnique = vi.fn().mockResolvedValue({
+      userId: "user-1",
+      status: "PLANNED",
+      favorite: false,
+    });
     const update = vi
       .fn()
       .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
@@ -770,7 +772,9 @@ describe("LibraryService — XP wiring", () => {
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
-      { getRating: vi.fn().mockResolvedValue(null) } as unknown as ReviewService,
+      {
+        getRating: vi.fn().mockResolvedValue(null),
+      } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
       {} as EntitlementService,
       xp,

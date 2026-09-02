@@ -193,6 +193,8 @@ const MESSAGES = {
   [ErrorCode.ValidationFailed]: () => m.apierr_validation_failed(),
   [ErrorCode.InternalError]: () => m.apierr_internal_error(),
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
+  [ErrorCode.GamificationAchievementNotFound]: () =>
+    m.apierr_gamification_achievement_not_found(),
 } satisfies Record<ErrorCode, () => string>;
 
 /**

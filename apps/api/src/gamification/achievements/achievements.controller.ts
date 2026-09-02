@@ -1,5 +1,12 @@
 import type { PendingAchievementDto } from "@loomkeep/shared";
-import { Controller, Get, HttpCode, HttpStatus, Param, Patch } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+} from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import {
   CurrentUser,

@@ -1,5 +1,5 @@
-import { defineConfig, includeIgnoreFile } from "eslint/config";
 import svelte from "eslint-plugin-svelte";
+import { defineConfig, includeIgnoreFile } from "eslint/config";
 import path from "path";
 import ts from "typescript-eslint";
 import { baseConfig } from "../../eslint.config.base.mjs";

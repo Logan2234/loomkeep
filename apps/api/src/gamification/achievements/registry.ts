@@ -101,8 +101,9 @@ export const ACHIEVEMENT_LIST: AchievementDefinition[] =
  * AchievementService.evaluate's callers in LibraryService). Reasons with no
  * achievement depending on them are simply absent.
  */
-export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<Record<XpReason, string[]>> =
-  {
-    EPISODE_WATCHED: ["first_episode"],
-    MOVIE_WATCHED: ["cinephile_bronze", "cinephile_silver", "cinephile_gold"],
-  };
+export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
+  Record<XpReason, string[]>
+> = {
+  EPISODE_WATCHED: ["first_episode"],
+  MOVIE_WATCHED: ["cinephile_bronze", "cinephile_silver", "cinephile_gold"],
+};

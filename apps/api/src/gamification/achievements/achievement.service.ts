@@ -1,4 +1,8 @@
-import { ErrorCode, type PendingAchievementDto, XpReason } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  XpReason,
+  type PendingAchievementDto,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
@@ -73,6 +77,7 @@ export class AchievementService {
     if (!result.unlocked) return;
 
     let created;
+
     try {
       created = await this.prisma.userAchievement.create({
         data: { userId, key: definition.key },
@@ -91,6 +96,7 @@ export class AchievementService {
         );
         return;
       }
+
       throw err;
     }
 
@@ -145,12 +151,14 @@ export class AchievementService {
       where: { id },
       select: { userId: true, displayedAt: true },
     });
+
     if (!achievement || achievement.userId !== userId) {
       throw new AppException(
         HttpStatus.NOT_FOUND,
         ErrorCode.GamificationAchievementNotFound,
       );
     }
+
     if (achievement.displayedAt !== null) return;
 
     await this.prisma.userAchievement.update({
@@ -182,9 +190,11 @@ export class AchievementService {
 
   private async sweepAllUsers(): Promise<string> {
     const users = await this.prisma.user.findMany({ select: { id: true } });
+
     for (const user of users) {
       await this.evaluate(user.id);
     }
+
     return `Swept ${users.length} user(s)`;
   }
 }
