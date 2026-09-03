@@ -17,18 +17,15 @@ export interface PendingAchievementDto {
  * so a secret achievement still carries a real family and shows, masked, in
  * its own section.
  */
-export const ACHIEVEMENT_FAMILIES = [
-  "volume",
-  "ritual",
-  "exploration",
-  "completion",
-  "seasonal",
-  "social",
-  "account",
-  "misc",
-] as const;
-
-export type AchievementFamily = (typeof ACHIEVEMENT_FAMILIES)[number];
+export type AchievementFamily =
+  | "volume"
+  | "ritual"
+  | "exploration"
+  | "completion"
+  | "seasonal"
+  | "social"
+  | "account"
+  | "misc";
 
 /**
  * Explicit tier of one entry of a tiered family. Never derived by parsing a
