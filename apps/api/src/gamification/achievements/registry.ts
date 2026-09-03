@@ -105,7 +105,7 @@ export const checkEpisodeWatcherTier = (target: number) =>
     target,
   );
 
-export const checkSeriesFinisherTier = (target: number) =>
+const checkSeriesFinisherTier = (target: number) =>
   checkCountTier(
     (prisma, userId) =>
       prisma.libraryEntry.count({
@@ -118,14 +118,14 @@ export const checkSeriesFinisherTier = (target: number) =>
     target,
   );
 
-export const checkBookFinisherTier = (target: number) =>
+const checkBookFinisherTier = (target: number) =>
   checkCountTier(
     (prisma, userId) =>
       prisma.bookEntry.count({ where: { userId, status: "READ" } }),
     target,
   );
 
-export const checkGameFinisherTier = (target: number) =>
+const checkGameFinisherTier = (target: number) =>
   checkCountTier(
     (prisma, userId) =>
       prisma.gameEntry.count({ where: { userId, status: "COMPLETED" } }),
