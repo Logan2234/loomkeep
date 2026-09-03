@@ -25,6 +25,9 @@
   --color-stat-games: var(--stat-games);
   --color-stat-books: var(--stat-books);
   --color-stat-music: var(--stat-music);
+  --color-tier-bronze: var(--tier-bronze);
+  --color-tier-silver: var(--tier-silver);
+  --color-tier-gold: var(--tier-gold);
 
   --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
   --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;
@@ -60,6 +63,11 @@
   --stat-games: #0e8f9e;
   --stat-books: #c7508e;
   --stat-music: #3e6fc9;
+  /* Achievement tiers ([G5]). One ring color per tier, never reused for
+     anything else — same rule as the per-domain stat hues above. */
+  --tier-bronze: #8a5423;
+  --tier-silver: #6e7683;
+  --tier-gold: #96570a;
   color-scheme: light;
 }
 
@@ -82,6 +90,9 @@
   --stat-games: #1f9dae;
   --stat-books: #d866a0;
   --stat-music: #6e97e0;
+  --tier-bronze: #b87333;
+  --tier-silver: #a8b0bd;
+  --tier-gold: #f5b841;
   color-scheme: dark;
 }
 

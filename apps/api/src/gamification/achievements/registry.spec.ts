@@ -866,3 +866,40 @@ describe("checkCuriousCat", () => {
     await expect(checkCuriousCat()).resolves.toEqual({ unlocked: false });
   });
 });
+
+describe("registry metadata", () => {
+  it("gives every entry a family, secrets included", () => {
+    const familyless = ACHIEVEMENT_LIST.filter((d) => !d.family).map(
+      (d) => d.key,
+    );
+
+    expect(familyless).toEqual([]);
+  });
+
+  it("declares a tier on exactly the tiered entries", () => {
+    const mismatched = ACHIEVEMENT_LIST.filter(
+      (d) => Boolean(d.tierOf) !== Boolean(d.tier),
+    ).map((d) => d.key);
+
+    expect(mismatched).toEqual([]);
+  });
+
+  // The tier is an explicit field precisely so nothing has to parse the key,
+  // but the two must still agree — a mismatch would mean a copy/paste slip
+  // in the registry.
+  it("keeps the declared tier consistent with the key suffix", () => {
+    const mismatched = ACHIEVEMENT_LIST.filter(
+      (d) => d.tier && !d.key.endsWith(`_${d.tier}`),
+    ).map((d) => d.key);
+
+    expect(mismatched).toEqual([]);
+  });
+
+  it("keys every entry of ACHIEVEMENTS by its own key", () => {
+    const mismatched = Object.entries(ACHIEVEMENTS)
+      .filter(([key, definition]) => key !== definition.key)
+      .map(([key]) => key);
+
+    expect(mismatched).toEqual([]);
+  });
+});

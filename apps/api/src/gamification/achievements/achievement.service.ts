@@ -1,6 +1,7 @@
 import {
   ErrorCode,
   XpReason,
+  type AchievementDto,
   type PendingAchievementDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
@@ -140,6 +141,78 @@ export class AchievementService {
     if (already) return;
 
     await this.grant(userId, definition);
+  }
+
+  /**
+   * The whole catalogue projected for `userId` — one entry per registry key,
+   * unlocked or not, for the [G5] achievements screen. Empty list rather
+   * than an error when gamification is off (the web gates on
+   * `appConfig.gamificationEnabled`, so no extra guard here — same shape as
+   * `pending()`).
+   *
+   * A locked secret is returned masked (see `AchievementDto`): its `check()`
+   * is never even run, since nothing about it may reach the client.
+   */
+  async list(userId: string): Promise<AchievementDto[]> {
+    if (!isGamificationEnabled(this.config, this.flags)) return [];
+
+    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const unlockedRows = await this.prisma.userAchievement.findMany({
+      where: { userId },
+      select: { key: true, unlockedAt: true },
+    });
+    const unlockedAtByKey = new Map(
+      unlockedRows.map((r) => [r.key, r.unlockedAt]),
+    );
+
+    // A socialGated entry can never unlock with social off (evaluateOne
+    // skips it), so showing it would only advertise a surface this instance
+    // doesn't have — same reasoning as SocialFeatureGuard's 404.
+    const definitions = ACHIEVEMENT_LIST.filter(
+      (d) => socialEnabled || !d.socialGated,
+    );
+
+    return Promise.all(
+      definitions.map((definition) =>
+        this.project(userId, definition, unlockedAtByKey.get(definition.key)),
+      ),
+    );
+  }
+
+  private async project(
+    userId: string,
+    definition: AchievementDefinition,
+    unlockedAt: Date | undefined,
+  ): Promise<AchievementDto> {
+    const unlocked = unlockedAt !== undefined;
+
+    if (definition.secret && !unlocked) {
+      return {
+        key: null,
+        family: definition.family,
+        tierOf: null,
+        tier: null,
+        xpAward: null,
+        secret: true,
+        unlocked: false,
+        unlockedAt: null,
+        progress: null,
+      };
+    }
+
+    const result = await definition.check(this.prisma, userId);
+
+    return {
+      key: definition.key,
+      family: definition.family,
+      tierOf: definition.tierOf ?? null,
+      tier: definition.tier ?? null,
+      xpAward: definition.xpAward,
+      secret: definition.secret ?? false,
+      unlocked,
+      unlockedAt: unlockedAt?.toISOString() ?? null,
+      progress: result.progress ?? null,
+    };
   }
 
   /**

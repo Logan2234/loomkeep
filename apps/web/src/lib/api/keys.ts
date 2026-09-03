@@ -10,6 +10,9 @@ export const keys = {
       ["stats", "video-temporal", period] as const,
     overview: (domain: string) => ["stats", "overview", domain] as const,
   },
+  gamification: {
+    achievements: () => ["gamification", "achievements"] as const,
+  },
   books: {
     detail: (source: string, sourceId: string) =>
       ["books", "detail", source, sourceId] as const,

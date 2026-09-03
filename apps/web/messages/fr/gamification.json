@@ -51,9 +51,9 @@
   "gamification_decades_gold_description": "15 décennies différentes explorées.",
 
   "gamification_genres_name": "Touche-à-tout",
-  "gamification_genres_bronze_description": "10 genres différents explorés.",
-  "gamification_genres_silver_description": "20 genres différents explorés.",
-  "gamification_genres_gold_description": "30 genres différents explorés.",
+  "gamification_genres_bronze_description": "25 genres différents explorés.",
+  "gamification_genres_silver_description": "75 genres différents explorés.",
+  "gamification_genres_gold_description": "150 genres différents explorés.",
 
   "gamification_omnivore_name": "Omnivore",
   "gamification_omnivore_description": "Au moins un titre dans chaque domaine tracké.",
@@ -151,5 +151,45 @@
   "gamification_first_take_description": "A été le premier à écrire une review sur une œuvre donnée.",
 
   "gamification_curious_cat_name": "Curieux",
-  "gamification_curious_cat_description": "A cliqué sur le numéro de version."
+  "gamification_curious_cat_description": "A cliqué sur le numéro de version.",
+
+  "gamification_page_title": "Succès",
+  "gamification_page_subtitle": "Votre collection, famille par famille.",
+  "gamification_my_achievements": "Mes succès",
+
+  "gamification_hero_total": "/ {total} succès",
+  "gamification_hero_progress_label": "Progression du catalogue",
+  "gamification_hero_xp": "{xp} XP gagnés",
+  "gamification_hero_secrets": "{found} secrets trouvés sur {total}",
+  "gamification_hero_recent": "Derniers déblocages",
+  "gamification_hero_recent_none": "Rien de débloqué pour l'instant",
+
+  "gamification_family_volume": "Volume",
+  "gamification_family_ritual": "Rituel",
+  "gamification_family_exploration": "Exploration",
+  "gamification_family_completion": "Complétion",
+  "gamification_family_seasonal": "Saisonnier",
+  "gamification_family_social": "Social",
+  "gamification_family_account": "Compte",
+  "gamification_family_misc": "Divers",
+  "gamification_family_score": "{unlocked} sur {total} débloqués",
+
+  "gamification_tier_bronze": "Bronze",
+  "gamification_tier_silver": "Argent",
+  "gamification_tier_gold": "Or",
+  "gamification_tier_single": "Palier unique",
+  "gamification_stamp_unlocked": "Débloqué",
+  "gamification_xp_unknown": "? XP",
+  "gamification_xp_award": "+{xp} XP",
+  "gamification_pips_title": "{earned} paliers obtenus sur {total}",
+  "gamification_details_label": "Détail des paliers",
+
+  "gamification_note_unlocked_on": "{tier} obtenu le {date}.",
+  "gamification_note_unlocked_single": "Débloqué le {date}.",
+  "gamification_note_remaining": "Encore {count} avant le palier {tier}.",
+  "gamification_note_remaining_simple": "Encore {count} avant le déblocage.",
+  "gamification_note_secret": "Nom, condition et récompense se révèlent au déblocage.",
+  "gamification_drawer_close": "Fermer",
+  "gamification_disabled": "La progression est désactivée sur cette instance.",
+  "gamification_empty": "Aucun succès à afficher."
 }

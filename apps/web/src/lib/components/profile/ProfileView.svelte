@@ -37,6 +37,7 @@
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
@@ -523,6 +524,27 @@
              past sm: it's a "point your phone at theirs" action that doesn't
              make sense on a laptop. -->
         <div class="absolute top-5 right-5 flex gap-1.5 md:top-6 md:right-6">
+          {#if appConfig.gamificationEnabled}
+            <!-- [G5] the single doorway to /app/achievements, deliberately
+                 dumb (no counter, no badge): [G9]'s equipped showcase is
+                 expected to replace it. Own profile only — the page shows
+                 your achievements and nobody else's. -->
+            <a
+              href="/app/achievements"
+              class="border-border text-dim hover:bg-surface-2 hover:text-fg relative grid h-9 w-9 place-items-center rounded-full border"
+              title={m.gamification_my_achievements()}
+              aria-label={m.gamification_my_achievements()}>
+              <Icon name="trophy" class="h-4 w-4" />
+              {#if isFeatureNew("achievements")}
+                <!-- A dot, not the full "Nouveau" pill: the pill is sized for
+                     a labelled row and swamps a 36px round button. -->
+                <span
+                  class="bg-accent border-surface absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2"
+                  aria-hidden="true">
+                </span>
+              {/if}
+            </a>
+          {/if}
           <button
             type="button"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"

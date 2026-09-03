@@ -1,4 +1,4 @@
-import type { PendingAchievementDto } from "@loomkeep/shared";
+import type { AchievementDto, PendingAchievementDto } from "@loomkeep/shared";
 import {
   Controller,
   Get,
@@ -14,11 +14,19 @@ import {
   type JwtPayload,
 } from "../../auth/decorators/current-user.decorator";
 import { AchievementService } from "./achievement.service";
+import { AchievementResponseDto } from "./dto/achievement-response.dto";
 import { PendingAchievementResponseDto } from "./dto/pending-achievement-response.dto";
 
 @Controller("achievements")
 export class AchievementsController {
   constructor(private readonly achievements: AchievementService) {}
+
+  /** The whole catalogue, projected for the current user — the [G5] screen. */
+  @Get()
+  @ApiOkResponse({ type: AchievementResponseDto, isArray: true })
+  list(@CurrentUser() user: JwtPayload): Promise<AchievementDto[]> {
+    return this.achievements.list(user.sub);
+  }
 
   @Get("pending")
   @ApiOkResponse({ type: PendingAchievementResponseDto, isArray: true })

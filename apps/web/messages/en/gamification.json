@@ -51,9 +51,9 @@
   "gamification_decades_gold_description": "15 different decades explored.",
 
   "gamification_genres_name": "Jack of All Genres",
-  "gamification_genres_bronze_description": "10 different genres explored.",
-  "gamification_genres_silver_description": "20 different genres explored.",
-  "gamification_genres_gold_description": "30 different genres explored.",
+  "gamification_genres_bronze_description": "25 different genres explored.",
+  "gamification_genres_silver_description": "75 different genres explored.",
+  "gamification_genres_gold_description": "150 different genres explored.",
 
   "gamification_omnivore_name": "Omnivore",
   "gamification_omnivore_description": "At least one title tracked in every domain.",
@@ -151,5 +151,45 @@
   "gamification_first_take_description": "Was the first to write a review on a given title.",
 
   "gamification_curious_cat_name": "Curious",
-  "gamification_curious_cat_description": "Clicked the version number."
+  "gamification_curious_cat_description": "Clicked the version number.",
+
+  "gamification_page_title": "Achievements",
+  "gamification_page_subtitle": "Your collection, family by family.",
+  "gamification_my_achievements": "My achievements",
+
+  "gamification_hero_total": "/ {total} achievements",
+  "gamification_hero_progress_label": "Catalogue progress",
+  "gamification_hero_xp": "{xp} XP earned",
+  "gamification_hero_secrets": "{found} of {total} secrets found",
+  "gamification_hero_recent": "Latest unlocks",
+  "gamification_hero_recent_none": "Nothing unlocked yet",
+
+  "gamification_family_volume": "Volume",
+  "gamification_family_ritual": "Ritual",
+  "gamification_family_exploration": "Exploration",
+  "gamification_family_completion": "Completion",
+  "gamification_family_seasonal": "Seasonal",
+  "gamification_family_social": "Social",
+  "gamification_family_account": "Account",
+  "gamification_family_misc": "Miscellaneous",
+  "gamification_family_score": "{unlocked} of {total} unlocked",
+
+  "gamification_tier_bronze": "Bronze",
+  "gamification_tier_silver": "Silver",
+  "gamification_tier_gold": "Gold",
+  "gamification_tier_single": "Single tier",
+  "gamification_stamp_unlocked": "Unlocked",
+  "gamification_xp_unknown": "? XP",
+  "gamification_xp_award": "+{xp} XP",
+  "gamification_pips_title": "{earned} of {total} tiers earned",
+  "gamification_details_label": "Tier breakdown",
+
+  "gamification_note_unlocked_on": "{tier} earned on {date}.",
+  "gamification_note_unlocked_single": "Unlocked on {date}.",
+  "gamification_note_remaining": "{count} to go before the {tier} tier.",
+  "gamification_note_remaining_simple": "{count} to go before unlocking.",
+  "gamification_note_secret": "Name, condition and reward are revealed on unlock.",
+  "gamification_drawer_close": "Close",
+  "gamification_disabled": "Progression is disabled on this instance.",
+  "gamification_empty": "No achievements to show."
 }

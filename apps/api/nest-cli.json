@@ -11,5 +11,8 @@
     "manualRestart": false,
     "builder": "tsc",
     "tsConfigPath": "tsconfig.build.json"
+  },
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval"
   }
 }
