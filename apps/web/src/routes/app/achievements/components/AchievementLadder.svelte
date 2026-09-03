@@ -10,6 +10,8 @@
 
   let { group }: { group: AchievementGroup } = $props();
 
+  const note = $derived(contextNote(group));
+
   const FILL: Record<AchievementTier, string> = {
     bronze: "border-tier-bronze bg-tier-bronze",
     silver: "border-tier-silver bg-tier-silver",
@@ -43,6 +45,12 @@
   {/each}
 </div>
 
-<p class="border-border text-dim mt-2 border-t pt-2 text-xs">
-  {contextNote(group)}
-</p>
+{#if note.length > 0}
+  <p class="border-border text-dim mt-2 border-t pt-2 text-xs">
+    <!-- Dim sentence, bright values: the date and the count are what the note
+       is actually there to say. -->
+    {#each note as segment, index (index)}{#if segment.strong}<b
+          class="text-fg font-semibold">{segment.text}</b
+        >{:else}{segment.text}{/if}{/each}
+  </p>
+{/if}

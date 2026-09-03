@@ -291,7 +291,16 @@ export function checkDecadesTier(target: number) {
   };
 }
 
-/** Distinct genres across every domain the user has tracked (any status). */
+/**
+ * Distinct genres across every domain the user has tracked (any status).
+ *
+ * Thresholds here are high (25/75/150) because this set is not a curated
+ * taxonomy: TMDB and IGDB ship a couple dozen genres each, but Open Library
+ * contributes free-form *subjects*, so a book-heavy library crosses a
+ * hundred distinct values without being especially diverse. See the note in
+ * the [G5] review — narrowing this to media/games would make the figure
+ * comparable between users, at the cost of ignoring books entirely.
+ */
 async function distinctGenres(
   prisma: PrismaService,
   userId: string,
@@ -1209,7 +1218,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     tierOf: "genres",
     tier: "bronze",
     xpAward: 50,
-    check: checkGenresTier(10),
+    check: checkGenresTier(25),
   },
   genres_silver: {
     key: "genres_silver",
@@ -1217,7 +1226,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     tierOf: "genres",
     tier: "silver",
     xpAward: 150,
-    check: checkGenresTier(20),
+    check: checkGenresTier(75),
   },
   genres_gold: {
     key: "genres_gold",
@@ -1225,7 +1234,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     tierOf: "genres",
     tier: "gold",
     xpAward: 400,
-    check: checkGenresTier(30),
+    check: checkGenresTier(150),
   },
   omnivore: {
     key: "omnivore",

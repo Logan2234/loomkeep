@@ -48,46 +48,50 @@
   let openGroup = $state<AchievementGroup | null>(null);
 </script>
 
-<PageHeader
-  icon="trophy"
-  title={m.gamification_page_title()}
-  subtitle={m.gamification_page_subtitle()} />
+<!-- Same width container as the other app pages (see routes/app/+page.svelte):
+     the layout itself constrains nothing. -->
+<div class="mx-auto max-w-6xl px-5 pt-6 pb-56 md:px-8 md:pt-10 md:pb-64">
+  <PageHeader
+    icon="trophy"
+    title={m.gamification_page_title()}
+    subtitle={m.gamification_page_subtitle()} />
 
-{#if !appConfig.gamificationEnabled}
-  <EmptyState>{m.gamification_disabled()}</EmptyState>
-{:else if achievementsQuery.error}
-  <Banner variant="error">{achievementsQuery.error}</Banner>
-{:else if achievementsQuery.loading}
-  <div class="skeleton h-24 rounded-xl"></div>
-{:else if list.length === 0}
-  <EmptyState>{m.gamification_empty()}</EmptyState>
-{:else}
-  <AchievementsHero {summary} />
+  {#if !appConfig.gamificationEnabled}
+    <EmptyState>{m.gamification_disabled()}</EmptyState>
+  {:else if achievementsQuery.error}
+    <Banner variant="error">{achievementsQuery.error}</Banner>
+  {:else if achievementsQuery.loading}
+    <div class="skeleton h-24 rounded-xl"></div>
+  {:else if list.length === 0}
+    <EmptyState>{m.gamification_empty()}</EmptyState>
+  {:else}
+    <AchievementsHero {summary} />
 
-  {#each sections as section (section.family)}
-    <div class="flex items-center gap-3 pt-8 pb-3">
-      <span
-        class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
-        {familyLabel(section.family)}
-      </span>
-      <span class="bg-border h-px flex-1"></span>
-      <span class="timecode text-xs">
-        {m.gamification_family_score({
-          unlocked: formatNumber(section.unlockedEntries),
-          total: formatNumber(section.totalEntries),
-        })}
-      </span>
-    </div>
+    {#each sections as section (section.family)}
+      <div class="flex items-center gap-3 pt-8 pb-3">
+        <span
+          class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
+          {familyLabel(section.family)}
+        </span>
+        <span class="bg-border h-px flex-1"></span>
+        <span class="timecode text-xs">
+          {m.gamification_family_score({
+            unlocked: formatNumber(section.unlockedEntries),
+            total: formatNumber(section.totalEntries),
+          })}
+        </span>
+      </div>
 
-    <div class="achievement-grid grid grid-cols-2 gap-2.5 md:grid-cols-3">
-      {#each section.groups as group (group.id)}
-        <AchievementCard
-          {group}
-          onselect={compact ? () => (openGroup = group) : undefined} />
-      {/each}
-    </div>
-  {/each}
-{/if}
+      <div class="achievement-grid grid grid-cols-2 gap-2.5 md:grid-cols-3">
+        {#each section.groups as group (group.id)}
+          <AchievementCard
+            {group}
+            onselect={compact ? () => (openGroup = group) : undefined} />
+        {/each}
+      </div>
+    {/each}
+  {/if}
+</div>
 
 {#if compact && openGroup}
   <AchievementDrawer group={openGroup} onclose={() => (openGroup = null)} />
@@ -95,10 +99,19 @@
 
 <style>
   /* Reading one card dims its family siblings, so the grid stops competing
-     for attention — desktop only, where the unfold panel exists at all. */
+     for attention — desktop only, where the unfold panel exists at all.
+     Keyed off `:has(a hovered card)` rather than the grid's own `:hover`:
+     the grid is as wide as the section even when its last row is half empty,
+     and hovering that empty space used to dim everything for nothing. The
+     `:not(:hover)` matters as much: `:has()` takes the specificity of its
+     argument, so without it this rule outranks the one below and dims the
+     card being read — panel included, letting the row beneath show through
+     it. */
   @media (min-width: 768px) {
-    .achievement-grid:hover > :global(.achievement-card),
-    .achievement-grid:focus-within > :global(.achievement-card) {
+    .achievement-grid:has(> :global(.achievement-card:hover))
+      > :global(.achievement-card:not(:hover)),
+    .achievement-grid:has(> :global(.achievement-card:focus-visible))
+      > :global(.achievement-card:not(:focus-visible)) {
       opacity: 0.4;
     }
 

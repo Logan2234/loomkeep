@@ -25,11 +25,14 @@
   const GLYPH = { sm: "h-4 w-4", md: "h-5 w-5", lg: "h-6 w-6" };
 
   const ring = $derived(tier ? RING[tier] : "border-border text-dim");
+  // Earned badges sit at full strength, unearned ones recede — the contrast
+  // between the two is what makes a family's state readable at a glance.
+  const strength = $derived(tier ? "" : "opacity-45");
 </script>
 
 <span
   class="bg-bg grid shrink-0 place-items-center rounded-full border-2 {BOX[
     size
-  ]} {ring}">
+  ]} {ring} {strength}">
   <Icon name={icon} class={GLYPH[size]} />
 </span>

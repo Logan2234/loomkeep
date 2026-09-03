@@ -29,7 +29,6 @@
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Modal from "$lib/components/Modal.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
@@ -537,8 +536,11 @@
               aria-label={m.gamification_my_achievements()}>
               <Icon name="trophy" class="h-4 w-4" />
               {#if isFeatureNew("achievements")}
-                <span class="absolute -top-1.5 -right-1.5">
-                  <NewBadge />
+                <!-- A dot, not the full "Nouveau" pill: the pill is sized for
+                     a labelled row and swamps a 36px round button. -->
+                <span
+                  class="bg-accent border-surface absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2"
+                  aria-hidden="true">
                 </span>
               {/if}
             </a>
