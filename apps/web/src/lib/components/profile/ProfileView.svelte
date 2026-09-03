@@ -29,6 +29,7 @@
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
@@ -37,6 +38,7 @@
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
@@ -523,6 +525,24 @@
              past sm: it's a "point your phone at theirs" action that doesn't
              make sense on a laptop. -->
         <div class="absolute top-5 right-5 flex gap-1.5 md:top-6 md:right-6">
+          {#if appConfig.gamificationEnabled}
+            <!-- [G5] the single doorway to /app/achievements, deliberately
+                 dumb (no counter, no badge): [G9]'s equipped showcase is
+                 expected to replace it. Own profile only — the page shows
+                 your achievements and nobody else's. -->
+            <a
+              href="/app/achievements"
+              class="border-border text-dim hover:bg-surface-2 hover:text-fg relative grid h-9 w-9 place-items-center rounded-full border"
+              title={m.gamification_my_achievements()}
+              aria-label={m.gamification_my_achievements()}>
+              <Icon name="trophy" class="h-4 w-4" />
+              {#if isFeatureNew("achievements")}
+                <span class="absolute -top-1.5 -right-1.5">
+                  <NewBadge />
+                </span>
+              {/if}
+            </a>
+          {/if}
           <button
             type="button"
             class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"

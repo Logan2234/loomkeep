@@ -212,6 +212,9 @@
   {:else if name === "play"}
     <circle cx="12" cy="12" r="9" />
     <path d="M10 8.3v7.4l6.5-3.7Z" fill="currentColor" stroke="none" />
+  {:else if name === "question"}
+    <path d="M9.3 9a2.8 2.8 0 1 1 3.4 3.2c-.8.3-1.2 1-1.2 1.8v.5" />
+    <path d="M11.5 18h.01" />
   {:else if name === "trophy"}
     <path d="M8 4h8v6a4 4 0 0 1-8 0Z" />
     <path d="M8 5H5a3 3 0 0 0 3 5M16 5h3a3 3 0 0 1-3 5" />

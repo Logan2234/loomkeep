@@ -1,4 +1,8 @@
-import { XpReason } from "@loomkeep/shared";
+import {
+  XpReason,
+  type AchievementFamily,
+  type AchievementTier,
+} from "@loomkeep/shared";
 import { localDay, localParts } from "../../common/local-day.util";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { decadeOf } from "../../stats/decade.util";
@@ -19,6 +23,10 @@ export interface AchievementCheckResult {
  */
 export interface AchievementDefinition {
   key: string;
+  // Which section of the [G5] achievements screen this belongs to. Every
+  // entry has one, secrets included — "secret" is an orthogonal trait, never
+  // a family (see the [G5] design notes).
+  family: AchievementFamily;
   // XP credited via XpReason.ACHIEVEMENT_UNLOCKED when this unlocks — varies
   // by rarity, see xp-rules.ts's note on this reason. Passed as
   // XpService.award's amountOverride — this reason has no fixed amount in
@@ -29,6 +37,9 @@ export interface AchievementDefinition {
   // display grouping later (G3/G5), not used by the engine itself in this
   // ticket.
   tierOf?: string;
+  // Which tier of its `tierOf` family this entry is — declared explicitly,
+  // never derived by parsing the key's suffix. Absent on untiered entries.
+  tier?: AchievementTier;
   // [G3]: the slot shows even before unlock, the name/description stay
   // hidden until then (enforced by the G5 screen, not here).
   secret?: boolean;
@@ -991,24 +1002,31 @@ export async function checkCuriousCat(): Promise<AchievementCheckResult> {
 export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   first_episode: {
     key: "first_episode",
+    family: "volume",
     xpAward: 50,
     check: checkFirstEpisode,
   },
   cinephile_bronze: {
     key: "cinephile_bronze",
+    family: "volume",
     tierOf: "cinephile",
+    tier: "bronze",
     xpAward: 50,
     check: checkCinephileTier(10),
   },
   cinephile_silver: {
     key: "cinephile_silver",
+    family: "volume",
     tierOf: "cinephile",
+    tier: "silver",
     xpAward: 150,
     check: checkCinephileTier(50),
   },
   cinephile_gold: {
     key: "cinephile_gold",
+    family: "volume",
     tierOf: "cinephile",
+    tier: "gold",
     xpAward: 400,
     check: checkCinephileTier(200),
   },
@@ -1016,96 +1034,141 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   // --- Volume ---
   episode_watcher_bronze: {
     key: "episode_watcher_bronze",
+    family: "volume",
     tierOf: "episode_watcher",
+    tier: "bronze",
     xpAward: 50,
     check: checkEpisodeWatcherTier(100),
   },
   episode_watcher_silver: {
     key: "episode_watcher_silver",
+    family: "volume",
     tierOf: "episode_watcher",
+    tier: "silver",
     xpAward: 150,
     check: checkEpisodeWatcherTier(500),
   },
   episode_watcher_gold: {
     key: "episode_watcher_gold",
+    family: "volume",
     tierOf: "episode_watcher",
+    tier: "gold",
     xpAward: 400,
     check: checkEpisodeWatcherTier(2000),
   },
   series_finisher_bronze: {
     key: "series_finisher_bronze",
+    family: "volume",
     tierOf: "series_finisher",
+    tier: "bronze",
     xpAward: 50,
     check: checkSeriesFinisherTier(10),
   },
   series_finisher_silver: {
     key: "series_finisher_silver",
+    family: "volume",
     tierOf: "series_finisher",
+    tier: "silver",
     xpAward: 150,
     check: checkSeriesFinisherTier(30),
   },
   series_finisher_gold: {
     key: "series_finisher_gold",
+    family: "volume",
     tierOf: "series_finisher",
+    tier: "gold",
     xpAward: 400,
     check: checkSeriesFinisherTier(75),
   },
   book_finisher_bronze: {
     key: "book_finisher_bronze",
+    family: "volume",
     tierOf: "book_finisher",
+    tier: "bronze",
     xpAward: 50,
     check: checkBookFinisherTier(10),
   },
   book_finisher_silver: {
     key: "book_finisher_silver",
+    family: "volume",
     tierOf: "book_finisher",
+    tier: "silver",
     xpAward: 150,
     check: checkBookFinisherTier(50),
   },
   book_finisher_gold: {
     key: "book_finisher_gold",
+    family: "volume",
     tierOf: "book_finisher",
+    tier: "gold",
     xpAward: 400,
     check: checkBookFinisherTier(150),
   },
   game_finisher_bronze: {
     key: "game_finisher_bronze",
+    family: "volume",
     tierOf: "game_finisher",
+    tier: "bronze",
     xpAward: 50,
     check: checkGameFinisherTier(10),
   },
   game_finisher_silver: {
     key: "game_finisher_silver",
+    family: "volume",
     tierOf: "game_finisher",
+    tier: "silver",
     xpAward: 150,
     check: checkGameFinisherTier(30),
   },
   game_finisher_gold: {
     key: "game_finisher_gold",
+    family: "volume",
     tierOf: "game_finisher",
+    tier: "gold",
     xpAward: 400,
     check: checkGameFinisherTier(75),
   },
 
   // --- Rituel ---
-  marathon: { key: "marathon", xpAward: 150, check: checkMarathon },
-  night_owl: { key: "night_owl", xpAward: 50, check: checkNightOwl },
-  early_bird: { key: "early_bird", xpAward: 50, check: checkEarlyBird },
+  marathon: {
+    key: "marathon",
+    family: "ritual",
+    xpAward: 150,
+    check: checkMarathon,
+  },
+  night_owl: {
+    key: "night_owl",
+    family: "ritual",
+    xpAward: 50,
+    check: checkNightOwl,
+  },
+  early_bird: {
+    key: "early_bird",
+    family: "ritual",
+    xpAward: 50,
+    check: checkEarlyBird,
+  },
   streak_bronze: {
     key: "streak_bronze",
+    family: "ritual",
     tierOf: "streak",
+    tier: "bronze",
     xpAward: 50,
     check: checkStreakTier(7),
   },
   streak_silver: {
     key: "streak_silver",
+    family: "ritual",
     tierOf: "streak",
+    tier: "silver",
     xpAward: 150,
     check: checkStreakTier(30),
   },
   streak_gold: {
     key: "streak_gold",
+    family: "ritual",
     tierOf: "streak",
+    tier: "gold",
     xpAward: 400,
     check: checkStreakTier(365),
   },
@@ -1115,58 +1178,92 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   // NOT implemented here — see the [G3] implementation summary: no country-
   // of-origin field is captured anywhere in the catalog schema
   // (MediaItem/GameItem/BookItem), and adding one is a new persisted field
-  // beyond this ticket's scope (it would need a new persisted field).
+  // beyond what [G3] set out to do — pick it up in its own ticket.
   decades_bronze: {
     key: "decades_bronze",
+    family: "exploration",
     tierOf: "decades",
+    tier: "bronze",
     xpAward: 50,
     check: checkDecadesTier(5),
   },
   decades_silver: {
     key: "decades_silver",
+    family: "exploration",
     tierOf: "decades",
+    tier: "silver",
     xpAward: 150,
     check: checkDecadesTier(10),
   },
   decades_gold: {
     key: "decades_gold",
+    family: "exploration",
     tierOf: "decades",
+    tier: "gold",
     xpAward: 400,
     check: checkDecadesTier(15),
   },
   genres_bronze: {
     key: "genres_bronze",
+    family: "exploration",
     tierOf: "genres",
+    tier: "bronze",
     xpAward: 50,
     check: checkGenresTier(10),
   },
   genres_silver: {
     key: "genres_silver",
+    family: "exploration",
     tierOf: "genres",
+    tier: "silver",
     xpAward: 150,
     check: checkGenresTier(20),
   },
   genres_gold: {
     key: "genres_gold",
+    family: "exploration",
     tierOf: "genres",
+    tier: "gold",
     xpAward: 400,
     check: checkGenresTier(30),
   },
-  omnivore: { key: "omnivore", xpAward: 150, check: checkOmnivore },
+  omnivore: {
+    key: "omnivore",
+    family: "exploration",
+    xpAward: 150,
+    check: checkOmnivore,
+  },
 
   // --- Complétion ---
-  big_screen: { key: "big_screen", xpAward: 400, check: checkBigScreen },
-  well_rounded: { key: "well_rounded", xpAward: 150, check: checkWellRounded },
+  big_screen: {
+    key: "big_screen",
+    family: "completion",
+    xpAward: 400,
+    check: checkBigScreen,
+  },
+  well_rounded: {
+    key: "well_rounded",
+    family: "completion",
+    xpAward: 150,
+    check: checkWellRounded,
+  },
 
   // --- Saisonnier / temporel ---
-  halloween: { key: "halloween", xpAward: 50, check: checkHalloween },
+  halloween: {
+    key: "halloween",
+    family: "seasonal",
+    xpAward: 50,
+    check: checkHalloween,
+  },
   contemporary: {
     key: "contemporary",
+    family: "seasonal",
     xpAward: 150,
     check: checkContemporary,
   },
   new_year_finish: {
     key: "new_year_finish",
+    family: "seasonal",
     xpAward: 50,
     secret: true,
     check: checkNewYearFinish,
@@ -1175,99 +1272,123 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   // --- Social ---
   first_comment: {
     key: "first_comment",
+    family: "social",
     xpAward: 50,
     socialGated: true,
     check: checkFirstComment,
   },
   chatterbox_bronze: {
     key: "chatterbox_bronze",
+    family: "social",
     tierOf: "chatterbox",
+    tier: "bronze",
     xpAward: 50,
     socialGated: true,
     check: checkChatterboxTier(20),
   },
   chatterbox_silver: {
     key: "chatterbox_silver",
+    family: "social",
     tierOf: "chatterbox",
+    tier: "silver",
     xpAward: 150,
     socialGated: true,
     check: checkChatterboxTier(100),
   },
   chatterbox_gold: {
     key: "chatterbox_gold",
+    family: "social",
     tierOf: "chatterbox",
+    tier: "gold",
     xpAward: 400,
     socialGated: true,
     check: checkChatterboxTier(500),
   },
   crowd_favorite: {
     key: "crowd_favorite",
+    family: "social",
     xpAward: 150,
     socialGated: true,
     check: checkCrowdFavorite,
   },
   standing_ovation: {
     key: "standing_ovation",
+    family: "social",
     xpAward: 150,
     socialGated: true,
     check: checkStandingOvation,
   },
   first_list: {
     key: "first_list",
+    family: "social",
     xpAward: 50,
     socialGated: true,
     check: checkFirstList,
   },
   curator_bronze: {
     key: "curator_bronze",
+    family: "social",
     tierOf: "curator",
+    tier: "bronze",
     xpAward: 50,
     socialGated: true,
     check: checkCuratorTier(3),
   },
   curator_silver: {
     key: "curator_silver",
+    family: "social",
     tierOf: "curator",
+    tier: "silver",
     xpAward: 150,
     socialGated: true,
     check: checkCuratorTier(10),
   },
   curator_gold: {
     key: "curator_gold",
+    family: "social",
     tierOf: "curator",
+    tier: "gold",
     xpAward: 400,
     socialGated: true,
     check: checkCuratorTier(25),
   },
   followers_bronze: {
     key: "followers_bronze",
+    family: "social",
     tierOf: "followers",
+    tier: "bronze",
     xpAward: 50,
     socialGated: true,
     check: checkFollowersTier(1),
   },
   followers_silver: {
     key: "followers_silver",
+    family: "social",
     tierOf: "followers",
+    tier: "silver",
     xpAward: 150,
     socialGated: true,
     check: checkFollowersTier(10),
   },
   followers_gold: {
     key: "followers_gold",
+    family: "social",
     tierOf: "followers",
+    tier: "gold",
     xpAward: 400,
     socialGated: true,
     check: checkFollowersTier(100),
   },
   has_friends: {
     key: "has_friends",
+    family: "social",
     xpAward: 50,
     socialGated: true,
     check: checkHasFriends,
   },
   one_sided: {
     key: "one_sided",
+    family: "social",
     xpAward: 50,
     secret: true,
     socialGated: true,
@@ -1275,28 +1396,45 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   },
 
   // --- Compte ---
-  locked_down: { key: "locked_down", xpAward: 50, check: checkLockedDown },
+  locked_down: {
+    key: "locked_down",
+    family: "account",
+    xpAward: 50,
+    check: checkLockedDown,
+  },
   member_since_bronze: {
     key: "member_since_bronze",
+    family: "account",
     tierOf: "member_since",
+    tier: "bronze",
     xpAward: 50,
     check: checkMemberSinceTier(30),
   },
   member_since_silver: {
     key: "member_since_silver",
+    family: "account",
     tierOf: "member_since",
+    tier: "silver",
     xpAward: 150,
     check: checkMemberSinceTier(365),
   },
   member_since_gold: {
     key: "member_since_gold",
+    family: "account",
     tierOf: "member_since",
+    tier: "gold",
     xpAward: 400,
     check: checkMemberSinceTier(365 * 5),
   },
-  fresh_start: { key: "fresh_start", xpAward: 50, check: checkFreshStart },
+  fresh_start: {
+    key: "fresh_start",
+    family: "account",
+    xpAward: 50,
+    check: checkFreshStart,
+  },
   profile_complete: {
     key: "profile_complete",
+    family: "account",
     xpAward: 50,
     check: checkProfileComplete,
   },
@@ -1304,67 +1442,82 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   // --- Autres ---
   no_favorites: {
     key: "no_favorites",
+    family: "misc",
     xpAward: 150,
     secret: true,
     check: checkNoFavorites,
   },
   full_inventory: {
     key: "full_inventory",
+    family: "completion",
     xpAward: 150,
     check: checkFullInventory,
   },
 
   // --- Secrets ---
+  // Every one of these still carries a real family: "secret" is an
+  // orthogonal trait, never a section of the [G5] screen.
   guilty_pleasure: {
     key: "guilty_pleasure",
+    family: "completion",
     xpAward: 150,
     secret: true,
     check: checkGuiltyPleasure,
   },
   hidden_gem: {
     key: "hidden_gem",
+    family: "exploration",
     xpAward: 400,
     secret: true,
     check: checkHiddenGem,
   },
   full_circle: {
     key: "full_circle",
+    family: "ritual",
     xpAward: 150,
     secret: true,
     check: checkFullCircle,
   },
   anniversary: {
     key: "anniversary",
+    family: "seasonal",
     xpAward: 150,
     secret: true,
     check: checkAnniversary,
   },
+  // Ritual rather than seasonal: it rewards the rhythm of coming back, not
+  // a date on the calendar.
   welcome_back: {
     key: "welcome_back",
+    family: "ritual",
     xpAward: 150,
     secret: true,
     check: checkWelcomeBack,
   },
   double_life: {
     key: "double_life",
+    family: "misc",
     xpAward: 150,
     secret: true,
     check: checkDoubleLife,
   },
   icebreaker: {
     key: "icebreaker",
+    family: "social",
     xpAward: 400,
     secret: true,
     check: checkIcebreaker,
   },
   first_take: {
     key: "first_take",
+    family: "social",
     xpAward: 400,
     secret: true,
     check: checkFirstTake,
   },
   curious_cat: {
     key: "curious_cat",
+    family: "misc",
     xpAward: 50,
     secret: true,
     check: checkCuriousCat,

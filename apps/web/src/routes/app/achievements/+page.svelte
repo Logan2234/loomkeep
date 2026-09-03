@@ -1,0 +1,114 @@
+<script lang="ts">
+  // [G5] the achievements screen — own achievements only, no other user's
+  // page (see the [G5] design notes: 44+ conditions together read as a
+  // behavioural fingerprint). Auth comes from the app/ layout nesting.
+  import { getAchievements } from "$lib/api/gamification";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
+  import Banner from "$lib/components/Banner.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import PageHeader from "$lib/components/PageHeader.svelte";
+  import { appConfig } from "$lib/config.svelte";
+  import { formatNumber } from "$lib/format";
+  import { m } from "$lib/paraglide/messages.js";
+  import {
+    groupAchievements,
+    sectionsByFamily,
+    summarize,
+    type AchievementGroup,
+  } from "./achievements";
+  import AchievementCard from "./components/AchievementCard.svelte";
+  import AchievementDrawer from "./components/AchievementDrawer.svelte";
+  import AchievementsHero from "./components/AchievementsHero.svelte";
+  import { familyLabel } from "./labels";
+
+  const achievementsQuery = createApiQuery(() => ({
+    key: keys.gamification.achievements(),
+    fetch: getAchievements,
+    enabled: appConfig.gamificationEnabled,
+  }));
+
+  const list = $derived(achievementsQuery.data ?? []);
+  const summary = $derived(summarize(list));
+  const sections = $derived(sectionsByFamily(groupAchievements(list)));
+
+  // The drawer is the compact-viewport path only. Drawer.svelte is already
+  // `md:hidden`, but it also locks page scroll on mount — so it must not be
+  // mounted at all on a wide viewport, hence the media query rather than CSS
+  // alone.
+  let compact = $state(false);
+  $effect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const sync = () => (compact = query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  });
+
+  let openGroup = $state<AchievementGroup | null>(null);
+</script>
+
+<PageHeader
+  icon="trophy"
+  title={m.gamification_page_title()}
+  subtitle={m.gamification_page_subtitle()} />
+
+{#if !appConfig.gamificationEnabled}
+  <EmptyState>{m.gamification_disabled()}</EmptyState>
+{:else if achievementsQuery.error}
+  <Banner variant="error">{achievementsQuery.error}</Banner>
+{:else if achievementsQuery.loading}
+  <div class="skeleton h-24 rounded-xl"></div>
+{:else if list.length === 0}
+  <EmptyState>{m.gamification_empty()}</EmptyState>
+{:else}
+  <AchievementsHero {summary} />
+
+  {#each sections as section (section.family)}
+    <div class="flex items-center gap-3 pt-8 pb-3">
+      <span
+        class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
+        {familyLabel(section.family)}
+      </span>
+      <span class="bg-border h-px flex-1"></span>
+      <span class="timecode text-xs">
+        {m.gamification_family_score({
+          unlocked: formatNumber(section.unlockedEntries),
+          total: formatNumber(section.totalEntries),
+        })}
+      </span>
+    </div>
+
+    <div class="achievement-grid grid grid-cols-2 gap-2.5 md:grid-cols-3">
+      {#each section.groups as group (group.id)}
+        <AchievementCard
+          {group}
+          onselect={compact ? () => (openGroup = group) : undefined} />
+      {/each}
+    </div>
+  {/each}
+{/if}
+
+{#if compact && openGroup}
+  <AchievementDrawer group={openGroup} onclose={() => (openGroup = null)} />
+{/if}
+
+<style>
+  /* Reading one card dims its family siblings, so the grid stops competing
+     for attention — desktop only, where the unfold panel exists at all. */
+  @media (min-width: 768px) {
+    .achievement-grid:hover > :global(.achievement-card),
+    .achievement-grid:focus-within > :global(.achievement-card) {
+      opacity: 0.4;
+    }
+
+    .achievement-grid > :global(.achievement-card:hover),
+    .achievement-grid > :global(.achievement-card:focus-visible),
+    .achievement-grid > :global(.achievement-card:focus-within) {
+      opacity: 1;
+      z-index: 5;
+      border-color: var(--accent);
+      box-shadow: 0 18px 44px rgb(0 0 0 / 0.28);
+    }
+  }
+</style>
