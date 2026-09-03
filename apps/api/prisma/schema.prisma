@@ -539,13 +539,6 @@ model User {
   mfaTotpSecretEnc           String?
   mfaEmailEnabled            Boolean          @default(false)
 
-  // [G3] "curious_cat" achievement: set once the user has clicked the version
-  // number link (home/settings) — the one achievement in the catalogue with
-  // no other persisted trace of the action (see POST
-  // /achievements/signals/version-link). check() just reads this boolean,
-  // same "state-derived" shape as every other achievement.
-  clickedVersionLink         Boolean          @default(false)
-
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
   refreshTokens              RefreshToken[]

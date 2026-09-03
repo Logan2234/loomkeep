@@ -860,15 +860,9 @@ describe("checkIcebreaker / checkFirstTake (per-target 'first' family)", () => {
 });
 
 describe("checkCuriousCat", () => {
-  it("reflects User.clickedVersionLink", async () => {
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({ clickedVersionLink: true }),
-      },
-    } as unknown as PrismaService;
-
-    await expect(checkCuriousCat(prisma, "user-1")).resolves.toEqual({
-      unlocked: true,
-    });
+  // Event-granted, not state-derived: the nightly sweep must never unlock it
+  // on its own — only markVersionLinkClicked does.
+  it("never unlocks on its own", async () => {
+    await expect(checkCuriousCat()).resolves.toEqual({ unlocked: false });
   });
 });

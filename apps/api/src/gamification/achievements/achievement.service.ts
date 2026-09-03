@@ -16,7 +16,6 @@ import { isSocialEnabled } from "../../social/social.config";
 import { isGamificationEnabled } from "../gamification.config";
 import { XpService } from "../xp.service";
 import {
-  ACHIEVEMENT_KEYS_ON_VERSION_LINK_CLICKED,
   ACHIEVEMENT_LIST,
   ACHIEVEMENTS,
   type AchievementDefinition,
@@ -77,6 +76,19 @@ export class AchievementService {
     const result = await definition.check(this.prisma, userId);
     if (!result.unlocked) return;
 
+    await this.grant(userId, definition);
+  }
+
+  /**
+   * Creates the unlock row and credits its XP. Shared by the check-driven
+   * path (evaluateOne) and the event-driven one (markVersionLinkClicked), so
+   * both get the same concurrency handling and the same "XP only if this
+   * call actually created the row" guarantee.
+   */
+  private async grant(
+    userId: string,
+    definition: AchievementDefinition,
+  ): Promise<void> {
     let created;
 
     try {
@@ -110,17 +122,24 @@ export class AchievementService {
   }
 
   /**
-   * "curious_cat" signal: records that the user has clicked the version-
-   * number link (home/settings) — the one achievement with no other
-   * persisted trace of its triggering action (see the [G3] plan). Idempotent
-   * (a second call is a cheap no-op update, never re-credits).
+   * "curious_cat" signal: the user clicked the version-number link
+   * (home/settings). The only event-granted achievement in the catalogue —
+   * the click leaves no other trace in the data model, so there is nothing
+   * for a check() to re-derive it from, and the UserAchievement row is
+   * itself the record that it happened. Idempotent: the unique constraint on
+   * (userId, key) makes a second call a no-op that never re-credits XP.
    */
   async markVersionLinkClicked(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { clickedVersionLink: true },
+    if (!isGamificationEnabled(this.config, this.flags)) return;
+
+    const definition = ACHIEVEMENTS.curious_cat;
+    const already = await this.prisma.userAchievement.findUnique({
+      where: { userId_key: { userId, key: definition.key } },
+      select: { id: true },
     });
-    await this.evaluate(userId, ACHIEVEMENT_KEYS_ON_VERSION_LINK_CLICKED);
+    if (already) return;
+
+    await this.grant(userId, definition);
   }
 
   /**

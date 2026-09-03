@@ -425,7 +425,6 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     Boolean mfaTotpEnabled
     String mfaTotpSecretEnc "❓"
     Boolean mfaEmailEnabled
-    Boolean clickedVersionLink
     }
 
 

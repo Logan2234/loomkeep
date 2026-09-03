@@ -972,16 +972,20 @@ export async function checkFirstTake(
   return { unlocked: false };
 }
 
-/** "curious_cat": clicked the version-number link at least once (POST /achievements/signals/version-link). */
-export async function checkCuriousCat(
-  prisma: PrismaService,
-  userId: string,
-): Promise<AchievementCheckResult> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { clickedVersionLink: true },
-  });
-  return { unlocked: user?.clickedVersionLink === true };
+/**
+ * "curious_cat": clicked the version-number link (home/settings). The one
+ * event-granted entry of the catalogue — the click leaves no trace anywhere
+ * in the data model, so there is no state to derive it from. It is unlocked
+ * directly by AchievementService.markVersionLinkClicked (POST
+ * /achievements/signals/version-link), and the UserAchievement row is the
+ * record that it happened.
+ *
+ * Always false here on purpose: evaluateOne only ever calls check() on an
+ * achievement that is not yet unlocked, so returning false keeps the nightly
+ * sweep from ever granting this one on its own.
+ */
+export async function checkCuriousCat(): Promise<AchievementCheckResult> {
+  return { unlocked: false };
 }
 
 export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
@@ -1111,7 +1115,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   // NOT implemented here — see the [G3] implementation summary: no country-
   // of-origin field is captured anywhere in the catalog schema
   // (MediaItem/GameItem/BookItem), and adding one is a new persisted field
-  // beyond this ticket's single approved migration (User.clickedVersionLink).
+  // beyond this ticket's scope (it would need a new persisted field).
   decades_bronze: {
     key: "decades_bronze",
     tierOf: "decades",
@@ -1500,4 +1504,3 @@ export const ACHIEVEMENT_KEYS_ON_LIST_CREATED = [
   "curator_gold",
 ];
 export const ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED = ["fresh_start"];
-export const ACHIEVEMENT_KEYS_ON_VERSION_LINK_CLICKED = ["curious_cat"];
