@@ -1,5 +1,6 @@
 import { NotificationType } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { FollowService } from "./follow.service";
@@ -54,11 +55,15 @@ function makeService(opts: {
   } as unknown as VisibilityService;
 
   const notifications = { create } as unknown as NotificationService;
+  const achievements = {
+    evaluate: vi.fn().mockResolvedValue(undefined),
+  } as unknown as AchievementService;
 
   return {
-    service: new FollowService(prisma, visibility, notifications),
+    service: new FollowService(prisma, visibility, notifications, achievements),
     prisma,
     create,
+    achievements,
   };
 }
 
@@ -73,6 +78,31 @@ describe("FollowService notifications", () => {
         dedupeKey: "follow:viewer",
       }),
     );
+  });
+
+  it("evaluates the follow-family achievements for both sides once a follow is accepted", async () => {
+    const { service, achievements } = makeService({ targetAccess: "PUBLIC" });
+    await service.follow("viewer", "alice");
+    expect(achievements.evaluate).toHaveBeenCalledWith("viewer", [
+      "has_friends",
+      "one_sided",
+      "followers_bronze",
+      "followers_silver",
+      "followers_gold",
+    ]);
+    expect(achievements.evaluate).toHaveBeenCalledWith("target", [
+      "has_friends",
+      "one_sided",
+      "followers_bronze",
+      "followers_silver",
+      "followers_gold",
+    ]);
+  });
+
+  it("does not evaluate achievements for a pending (not yet accepted) request", async () => {
+    const { service, achievements } = makeService({ targetAccess: "PRIVATE" });
+    await service.follow("viewer", "alice");
+    expect(achievements.evaluate).not.toHaveBeenCalled();
   });
 
   it("posts a FOLLOW_REQUEST notification when requesting a private profile", async () => {

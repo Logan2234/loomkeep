@@ -26,6 +26,8 @@ import type {
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -141,6 +143,7 @@ export class BookLibraryService {
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
     private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a book entry write. */
@@ -235,6 +238,10 @@ export class BookLibraryService {
       entry.status === BookStatus.READ
     ) {
       await this.xp.award(userId, XpReason.BOOK_FINISHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.BOOK_FINISHED],
+      );
     }
 
     if (dto.rating !== undefined) {
@@ -369,6 +376,10 @@ export class BookLibraryService {
       entry.status === BookStatus.READ
     ) {
       await this.xp.award(userId, XpReason.BOOK_FINISHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.BOOK_FINISHED],
+      );
     }
 
     if (dto.rating !== undefined) {

@@ -1,6 +1,7 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
@@ -15,6 +16,10 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+function stubAchievements(): AchievementService {
+  return { evaluate: vi.fn() } as unknown as AchievementService;
 }
 
 // Not exercised by most of these tests — kept plain so isGamificationEnabled
@@ -87,6 +92,7 @@ function make(rows: unknown[], relations: Record<string, ViewerRelation>) {
     stubXp(),
     CONFIG,
     FLAGS,
+    stubAchievements(),
   );
 }
 
@@ -196,6 +202,7 @@ function makeForWrite(
   const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
   const xp = stubXp();
+  const achievements = stubAchievements();
   const svc = new ReviewService(
     prisma,
     visibility,
@@ -203,8 +210,9 @@ function makeForWrite(
     xp,
     CONFIG,
     FLAGS,
+    achievements,
   );
-  return { svc, revisionCreate, xp };
+  return { svc, revisionCreate, xp, achievements };
 }
 
 describe("ReviewService.upsert — revision snapshotting", () => {
@@ -212,6 +220,24 @@ describe("ReviewService.upsert — revision snapshotting", () => {
     const { svc, revisionCreate } = makeForWrite(null);
     await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
     expect(revisionCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("evaluates first_take on a brand-new review, not on an edit", async () => {
+    const { svc: fresh, achievements: freshAchievements } = makeForWrite(null);
+    await fresh.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+    expect(freshAchievements.evaluate).toHaveBeenCalledWith("u1", [
+      "first_take",
+    ]);
+
+    const { svc: edited, achievements: editedAchievements } = makeForWrite({
+      rating: 6,
+      text: null,
+    });
+    await edited.upsert("u1", "MEDIA" as never, "m1", {
+      rating: 8,
+      text: null,
+    });
+    expect(editedAchievements.evaluate).not.toHaveBeenCalled();
   });
 
   it("creates a revision when rating or text changed", async () => {
@@ -262,6 +288,7 @@ function makeForVoting(opts: {
     },
   } as unknown as PrismaService;
   const xp = stubXp();
+  const achievements = stubAchievements();
   const svc = new ReviewService(
     prisma,
     {} as unknown as VisibilityService,
@@ -269,8 +296,9 @@ function makeForVoting(opts: {
     xp,
     CONFIG,
     FLAGS,
+    achievements,
   );
-  return { svc, upsert, deleteMany, xp };
+  return { svc, upsert, deleteMany, xp, achievements };
 }
 
 describe("ReviewService.vote", () => {
@@ -279,6 +307,21 @@ describe("ReviewService.vote", () => {
     await expect(svc.vote("author", "r1", "UP" as never)).rejects.toThrow(
       "You cannot vote on your own review",
     );
+  });
+
+  it("evaluates crowd_favorite/standing_ovation for the review's author on an UP vote, never on DOWN", async () => {
+    const { svc, achievements } = makeForVoting({ reviewOwnerId: "author" });
+    await svc.vote("voter", "r1", "UP" as never);
+    expect(achievements.evaluate).toHaveBeenCalledWith("author", [
+      "crowd_favorite",
+      "standing_ovation",
+    ]);
+
+    const { svc: downSvc, achievements: downAchievements } = makeForVoting({
+      reviewOwnerId: "author",
+    });
+    await downSvc.vote("voter", "r1", "DOWN" as never);
+    expect(downAchievements.evaluate).not.toHaveBeenCalled();
   });
 
   it("upserts the vote and returns the resulting score", async () => {

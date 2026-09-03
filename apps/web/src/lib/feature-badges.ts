@@ -20,6 +20,7 @@ const SHIPPED: Record<string, string> = {
   "notification-digest": "2026-08-25",
   "nav-styles": "2026-08-26",
   mfa: "2026-08-26",
+  achievements: "2026-09-03",
 };
 
 export function isFeatureNew(key: keyof typeof SHIPPED): boolean {

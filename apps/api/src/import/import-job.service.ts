@@ -14,6 +14,8 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -63,6 +65,7 @@ export class ImportJobService {
     private readonly config: ConfigService,
     private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -336,6 +339,10 @@ export class ImportJobService {
     // (media/Steam/book-csv), so this is the one place that needs the hook.
     if (job.status === "completed") {
       await this.xp.award(userId, XpReason.IMPORT_COMPLETED, domain);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED,
+      );
     }
   }
 

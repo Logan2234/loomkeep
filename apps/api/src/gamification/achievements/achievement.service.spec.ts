@@ -63,7 +63,11 @@ function makeService(configValues: Record<string, string> = {}) {
     episodeWatch: { findFirst: vi.fn().mockResolvedValue(null) },
     libraryEntry: { count: vi.fn().mockResolvedValue(0) },
     xpEntry: { findMany: vi.fn().mockResolvedValue([]) },
-    user: { findMany: vi.fn().mockResolvedValue([]) },
+    user: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue({ timezone: "Europe/Paris" }),
+      update: vi.fn().mockResolvedValue({}),
+    },
   } as unknown as PrismaService;
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
   const flags = makeFlags();
@@ -160,6 +164,49 @@ describe("AchievementService.evaluate", () => {
       where: { userId_key: { userId: "user-1", key: "first_episode" } },
       select: { id: true },
     });
+  });
+});
+
+describe("AchievementService.markVersionLinkClicked", () => {
+  it("grants curious_cat directly, without asking its check()", async () => {
+    const { service, prisma, xp } = makeService();
+    (prisma.userAchievement.create as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+
+    await service.markVersionLinkClicked("user-1");
+
+    expect(prisma.userAchievement.create).toHaveBeenCalledWith({
+      data: { userId: "user-1", key: "curious_cat" },
+    });
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "ACHIEVEMENT_UNLOCKED",
+      "achievement-1",
+      50,
+    );
+  });
+
+  it("is idempotent — recalling it never re-credits an already-unlocked curious_cat", async () => {
+    const { service, prisma, xp } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+
+    await service.markVersionLinkClicked("user-1");
+    await service.markVersionLinkClicked("user-1");
+
+    expect(prisma.userAchievement.create).not.toHaveBeenCalled();
+    expect(xp.award).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when gamification is disabled", async () => {
+    const { service, prisma } = makeService({ GAMIFICATION_ENABLED: "false" });
+
+    await service.markVersionLinkClicked("user-1");
+
+    expect(prisma.userAchievement.findUnique).not.toHaveBeenCalled();
+    expect(prisma.userAchievement.create).not.toHaveBeenCalled();
   });
 });
 

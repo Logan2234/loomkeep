@@ -25,6 +25,8 @@ import type {
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -118,6 +120,7 @@ export class GameLibraryService {
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
     private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
@@ -210,6 +213,10 @@ export class GameLibraryService {
       entry.status === GameStatus.COMPLETED
     ) {
       await this.xp.award(userId, XpReason.GAME_FINISHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.GAME_FINISHED],
+      );
     }
 
     if (dto.rating !== undefined) {
@@ -338,6 +345,10 @@ export class GameLibraryService {
       entry.status === GameStatus.COMPLETED
     ) {
       await this.xp.award(userId, XpReason.GAME_FINISHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.GAME_FINISHED],
+      );
     }
 
     if (dto.rating !== undefined) {

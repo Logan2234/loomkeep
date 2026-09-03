@@ -1,6 +1,7 @@
 import {
   ErrorCode,
   XpReason,
+  type AchievementDto,
   type PendingAchievementDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
@@ -76,6 +77,19 @@ export class AchievementService {
     const result = await definition.check(this.prisma, userId);
     if (!result.unlocked) return;
 
+    await this.grant(userId, definition);
+  }
+
+  /**
+   * Creates the unlock row and credits its XP. Shared by the check-driven
+   * path (evaluateOne) and the event-driven one (markVersionLinkClicked), so
+   * both get the same concurrency handling and the same "XP only if this
+   * call actually created the row" guarantee.
+   */
+  private async grant(
+    userId: string,
+    definition: AchievementDefinition,
+  ): Promise<void> {
     let created;
 
     try {
@@ -106,6 +120,99 @@ export class AchievementService {
       created.id,
       definition.xpAward,
     );
+  }
+
+  /**
+   * "curious_cat" signal: the user clicked the version-number link
+   * (home/settings). The only event-granted achievement in the catalogue —
+   * the click leaves no other trace in the data model, so there is nothing
+   * for a check() to re-derive it from, and the UserAchievement row is
+   * itself the record that it happened. Idempotent: the unique constraint on
+   * (userId, key) makes a second call a no-op that never re-credits XP.
+   */
+  async markVersionLinkClicked(userId: string): Promise<void> {
+    if (!isGamificationEnabled(this.config, this.flags)) return;
+
+    const definition = ACHIEVEMENTS.curious_cat;
+    const already = await this.prisma.userAchievement.findUnique({
+      where: { userId_key: { userId, key: definition.key } },
+      select: { id: true },
+    });
+    if (already) return;
+
+    await this.grant(userId, definition);
+  }
+
+  /**
+   * The whole catalogue projected for `userId` — one entry per registry key,
+   * unlocked or not, for the [G5] achievements screen. Empty list rather
+   * than an error when gamification is off (the web gates on
+   * `appConfig.gamificationEnabled`, so no extra guard here — same shape as
+   * `pending()`).
+   *
+   * A locked secret is returned masked (see `AchievementDto`): its `check()`
+   * is never even run, since nothing about it may reach the client.
+   */
+  async list(userId: string): Promise<AchievementDto[]> {
+    if (!isGamificationEnabled(this.config, this.flags)) return [];
+
+    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const unlockedRows = await this.prisma.userAchievement.findMany({
+      where: { userId },
+      select: { key: true, unlockedAt: true },
+    });
+    const unlockedAtByKey = new Map(
+      unlockedRows.map((r) => [r.key, r.unlockedAt]),
+    );
+
+    // A socialGated entry can never unlock with social off (evaluateOne
+    // skips it), so showing it would only advertise a surface this instance
+    // doesn't have — same reasoning as SocialFeatureGuard's 404.
+    const definitions = ACHIEVEMENT_LIST.filter(
+      (d) => socialEnabled || !d.socialGated,
+    );
+
+    return Promise.all(
+      definitions.map((definition) =>
+        this.project(userId, definition, unlockedAtByKey.get(definition.key)),
+      ),
+    );
+  }
+
+  private async project(
+    userId: string,
+    definition: AchievementDefinition,
+    unlockedAt: Date | undefined,
+  ): Promise<AchievementDto> {
+    const unlocked = unlockedAt !== undefined;
+
+    if (definition.secret && !unlocked) {
+      return {
+        key: null,
+        family: definition.family,
+        tierOf: null,
+        tier: null,
+        xpAward: null,
+        secret: true,
+        unlocked: false,
+        unlockedAt: null,
+        progress: null,
+      };
+    }
+
+    const result = await definition.check(this.prisma, userId);
+
+    return {
+      key: definition.key,
+      family: definition.family,
+      tierOf: definition.tierOf ?? null,
+      tier: definition.tier ?? null,
+      xpAward: definition.xpAward,
+      secret: definition.secret ?? false,
+      unlocked,
+      unlockedAt: unlockedAt?.toISOString() ?? null,
+      progress: result.progress ?? null,
+    };
   }
 
   /**

@@ -19,6 +19,8 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -71,6 +73,7 @@ export class ListService {
     private readonly flags: FeatureFlagsService,
     private readonly notifications: NotificationService,
     private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {}
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
@@ -127,6 +130,7 @@ export class ListService {
     // socialGated in the barème — award() itself no-ops when SOCIAL_ENABLED
     // is off, so no flag check needed here.
     await this.xp.award(userId, XpReason.LIST_CREATED, row.id);
+    await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_LIST_CREATED);
 
     return this.toDto(row, await this.author(userId));
   }
@@ -189,6 +193,10 @@ export class ListService {
         targetId: row.id,
         homeFeed: true,
       });
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_ON_LIST_CREATED,
+      );
     }
 
     return this.toDto(row, await this.author(existing.userId));

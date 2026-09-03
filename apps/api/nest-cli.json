@@ -5,11 +5,14 @@
   "language": "ts",
   "sourceRoot": "src",
   "compilerOptions": {
-    "deleteOutDir": true,
+    "deleteOutDir": false,
     "assets": ["../package.json"],
     "plugins": ["@nestjs/swagger"],
     "manualRestart": false,
     "builder": "tsc",
     "tsConfigPath": "tsconfig.build.json"
+  },
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval"
   }
 }

@@ -1,0 +1,195 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "gamification_secret_locked_name": "???",
+  "gamification_secret_locked_description": "Succès secret — le contenu reste caché jusqu'au déblocage.",
+
+  "gamification_first_episode_name": "Premier pas",
+  "gamification_first_episode_description": "A regardé son tout premier épisode.",
+
+  "gamification_cinephile_name": "Cinéphile",
+  "gamification_cinephile_bronze_description": "10 films vus.",
+  "gamification_cinephile_silver_description": "50 films vus.",
+  "gamification_cinephile_gold_description": "200 films vus.",
+
+  "gamification_episode_watcher_name": "Spectateur assidu",
+  "gamification_episode_watcher_bronze_description": "100 épisodes vus.",
+  "gamification_episode_watcher_silver_description": "500 épisodes vus.",
+  "gamification_episode_watcher_gold_description": "2000 épisodes vus.",
+
+  "gamification_series_finisher_name": "Grand final",
+  "gamification_series_finisher_bronze_description": "10 séries terminées.",
+  "gamification_series_finisher_silver_description": "30 séries terminées.",
+  "gamification_series_finisher_gold_description": "75 séries terminées.",
+
+  "gamification_book_finisher_name": "Dévoreur de pages",
+  "gamification_book_finisher_bronze_description": "10 livres terminés.",
+  "gamification_book_finisher_silver_description": "50 livres terminés.",
+  "gamification_book_finisher_gold_description": "150 livres terminés.",
+
+  "gamification_game_finisher_name": "Fin du jeu",
+  "gamification_game_finisher_bronze_description": "10 jeux terminés.",
+  "gamification_game_finisher_silver_description": "30 jeux terminés.",
+  "gamification_game_finisher_gold_description": "75 jeux terminés.",
+
+  "gamification_marathon_name": "Marathon",
+  "gamification_marathon_description": "10 épisodes vus le même jour.",
+
+  "gamification_night_owl_name": "Noctambule",
+  "gamification_night_owl_description": "Un film ou un épisode vu entre 2h et 4h du matin.",
+
+  "gamification_early_bird_name": "Lève-tôt",
+  "gamification_early_bird_description": "Un film ou un épisode vu entre 5h et 7h du matin.",
+
+  "gamification_streak_name": "Fidèle au poste",
+  "gamification_streak_bronze_description": "7 jours de suite avec une activité.",
+  "gamification_streak_silver_description": "30 jours de suite avec une activité.",
+  "gamification_streak_gold_description": "365 jours de suite avec une activité.",
+
+  "gamification_decades_name": "Voyageur du temps",
+  "gamification_decades_bronze_description": "5 décennies différentes explorées.",
+  "gamification_decades_silver_description": "10 décennies différentes explorées.",
+  "gamification_decades_gold_description": "15 décennies différentes explorées.",
+
+  "gamification_genres_name": "Touche-à-tout",
+  "gamification_genres_bronze_description": "25 genres différents explorés.",
+  "gamification_genres_silver_description": "75 genres différents explorés.",
+  "gamification_genres_gold_description": "150 genres différents explorés.",
+
+  "gamification_omnivore_name": "Omnivore",
+  "gamification_omnivore_description": "Au moins un titre dans chaque domaine tracké.",
+
+  "gamification_big_screen_name": "Grand écran",
+  "gamification_big_screen_description": "5 séries de 5 saisons ou plus, terminées.",
+
+  "gamification_well_rounded_name": "Équilibriste",
+  "gamification_well_rounded_description": "10 titres ou plus terminés, dans 4 domaines différents.",
+
+  "gamification_halloween_name": "Soirée d'horreur",
+  "gamification_halloween_description": "Un film ou une série d'horreur vu en octobre.",
+
+  "gamification_contemporary_name": "Contemporain",
+  "gamification_contemporary_description": "Un film sorti l'année de votre propre naissance.",
+
+  "gamification_new_year_finish_name": "Bonne résolution",
+  "gamification_new_year_finish_description": "Termine une œuvre le 1er janvier.",
+
+  "gamification_first_comment_name": "Premier mot",
+  "gamification_first_comment_description": "A posté son premier commentaire.",
+
+  "gamification_chatterbox_name": "Bavard",
+  "gamification_chatterbox_bronze_description": "20 commentaires postés.",
+  "gamification_chatterbox_silver_description": "100 commentaires postés.",
+  "gamification_chatterbox_gold_description": "500 commentaires postés.",
+
+  "gamification_crowd_favorite_name": "Chouchou du public",
+  "gamification_crowd_favorite_description": "20 votes positifs reçus au total sur ses reviews.",
+
+  "gamification_standing_ovation_name": "Standing ovation",
+  "gamification_standing_ovation_description": "20 votes positifs reçus sur une seule review.",
+
+  "gamification_first_list_name": "Premier tri",
+  "gamification_first_list_description": "A créé et partagé sa première liste.",
+
+  "gamification_curator_name": "Curateur",
+  "gamification_curator_bronze_description": "3 listes créées.",
+  "gamification_curator_silver_description": "10 listes créées.",
+  "gamification_curator_gold_description": "25 listes créées.",
+
+  "gamification_followers_name": "Public conquis",
+  "gamification_followers_bronze_description": "1 abonné.",
+  "gamification_followers_silver_description": "10 abonnés.",
+  "gamification_followers_gold_description": "100 abonnés.",
+
+  "gamification_has_friends_name": "A des amis",
+  "gamification_has_friends_description": "Au moins une relation réciproque (suivi mutuel).",
+
+  "gamification_one_sided_name": "Sens unique",
+  "gamification_one_sided_description": "Suit quelqu'un qui ne le suit pas en retour.",
+
+  "gamification_locked_down_name": "Compte blindé",
+  "gamification_locked_down_description": "Double authentification (TOTP) activée.",
+
+  "gamification_member_since_name": "Vieux de la vieille",
+  "gamification_member_since_bronze_description": "Membre depuis 1 mois.",
+  "gamification_member_since_silver_description": "Membre depuis 1 an.",
+  "gamification_member_since_gold_description": "Membre depuis 5 ans.",
+
+  "gamification_fresh_start_name": "Nouveau départ",
+  "gamification_fresh_start_description": "Premier import réussi.",
+
+  "gamification_profile_complete_name": "Portrait complet",
+  "gamification_profile_complete_description": "Avatar et bio renseignés.",
+
+  "gamification_no_favorites_name": "Cœur de pierre",
+  "gamification_no_favorites_description": "100 titres trackés ou plus, aucun mis en favori.",
+
+  "gamification_full_inventory_name": "L'inventaire complet",
+  "gamification_full_inventory_description": "A utilisé chaque statut de possession au moins une fois.",
+
+  "gamification_guilty_pleasure_name": "Assumé",
+  "gamification_guilty_pleasure_description": "Une série entière notée 1 à 3, terminée.",
+
+  "gamification_hidden_gem_name": "Perle rare",
+  "gamification_hidden_gem_description": "Un titre tracké par vous, et personne d'autre sur l'instance.",
+
+  "gamification_full_circle_name": "Boucle bouclée",
+  "gamification_full_circle_description": "Revoit ou refinit le tout premier titre jamais tracké.",
+
+  "gamification_anniversary_name": "Jour J",
+  "gamification_anniversary_description": "Une action loggée pile un an (ou plus) après la création du compte.",
+
+  "gamification_welcome_back_name": "Retour de flamme",
+  "gamification_welcome_back_description": "Reprend une activité après 6 mois d'inactivité ou plus.",
+
+  "gamification_double_life_name": "Double vie",
+  "gamification_double_life_description": "Figurant actuel, avec au moins une review ou un commentaire existant.",
+
+  "gamification_icebreaker_name": "Brise-glace",
+  "gamification_icebreaker_description": "A été le premier à commenter une œuvre donnée.",
+
+  "gamification_first_take_name": "Premier avis",
+  "gamification_first_take_description": "A été le premier à écrire une review sur une œuvre donnée.",
+
+  "gamification_curious_cat_name": "Curieux",
+  "gamification_curious_cat_description": "A cliqué sur le numéro de version.",
+
+  "gamification_page_title": "Succès",
+  "gamification_page_subtitle": "Votre collection, famille par famille.",
+  "gamification_my_achievements": "Mes succès",
+
+  "gamification_hero_total": "/ {total} succès",
+  "gamification_hero_progress_label": "Progression du catalogue",
+  "gamification_hero_xp": "{xp} XP gagnés",
+  "gamification_hero_secrets": "{found} secrets trouvés sur {total}",
+  "gamification_hero_recent": "Derniers déblocages",
+  "gamification_hero_recent_none": "Rien de débloqué pour l'instant",
+
+  "gamification_family_volume": "Volume",
+  "gamification_family_ritual": "Rituel",
+  "gamification_family_exploration": "Exploration",
+  "gamification_family_completion": "Complétion",
+  "gamification_family_seasonal": "Saisonnier",
+  "gamification_family_social": "Social",
+  "gamification_family_account": "Compte",
+  "gamification_family_misc": "Divers",
+  "gamification_family_score": "{unlocked} sur {total} débloqués",
+
+  "gamification_tier_bronze": "Bronze",
+  "gamification_tier_silver": "Argent",
+  "gamification_tier_gold": "Or",
+  "gamification_tier_single": "Palier unique",
+  "gamification_stamp_unlocked": "Débloqué",
+  "gamification_xp_unknown": "? XP",
+  "gamification_xp_award": "+{xp} XP",
+  "gamification_pips_title": "{earned} paliers obtenus sur {total}",
+  "gamification_details_label": "Détail des paliers",
+
+  "gamification_note_unlocked_on": "{tier} obtenu le {date}.",
+  "gamification_note_unlocked_single": "Débloqué le {date}.",
+  "gamification_note_remaining": "Encore {count} avant le palier {tier}.",
+  "gamification_note_remaining_simple": "Encore {count} avant le déblocage.",
+  "gamification_note_secret": "Nom, condition et récompense se révèlent au déblocage.",
+  "gamification_drawer_close": "Fermer",
+  "gamification_disabled": "La progression est désactivée sur cette instance.",
+  "gamification_empty": "Aucun succès à afficher."
+}

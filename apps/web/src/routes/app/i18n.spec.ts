@@ -4,9 +4,11 @@ import { parse } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
 import enCommon from "../../../messages/en/common.json";
 import enErrors from "../../../messages/en/errors.json";
+import enGamification from "../../../messages/en/gamification.json";
 import enOther from "../../../messages/en/other.json";
 import frCommon from "../../../messages/fr/common.json";
 import frErrors from "../../../messages/fr/errors.json";
+import frGamification from "../../../messages/fr/gamification.json";
 import frOther from "../../../messages/fr/other.json";
 
 const routeDirectory = fileURLToPath(new URL("./", import.meta.url));
@@ -23,8 +25,8 @@ const routes = readdirSync(routeDirectory, {
     ),
   }));
 const catalogs: Record<string, Record<string, string>> = {
-  fr: { ...frCommon, ...frErrors, ...frOther },
-  en: { ...enCommon, ...enErrors, ...enOther },
+  fr: { ...frCommon, ...frErrors, ...frGamification, ...frOther },
+  en: { ...enCommon, ...enErrors, ...enGamification, ...enOther },
 };
 const textAttributes = new Set([
   "title",

@@ -4,6 +4,7 @@ import * as bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
 import { vi, type Mock } from "vitest";
+import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { encryptTotpSecret } from "./mfa-crypto.util";
@@ -67,8 +68,15 @@ function makeService() {
   } as unknown as ConfigService;
 
   const mail = {} as unknown as MailService;
+  const achievements = {
+    evaluate: vi.fn().mockResolvedValue(undefined),
+  } as unknown as AchievementService;
 
-  return { service: new MfaService(prisma, configService, mail), prisma };
+  return {
+    service: new MfaService(prisma, configService, mail, achievements),
+    prisma,
+    achievements,
+  };
 }
 
 describe("MfaService recovery codes", () => {
@@ -156,6 +164,28 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     expect(prisma.refreshToken.deleteMany).toHaveBeenLastCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
     });
+  });
+
+  it("evaluates locked_down right after a TOTP confirmation", async () => {
+    const { service, prisma, achievements } = makeService();
+    const secret = new Secret({ size: 20 });
+    const totp = new TOTP({ secret, algorithm: "SHA1", digits: 6, period: 30 });
+    const code = totp.generate();
+
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
+      makeUser({
+        mfaTotpSecretEnc: encryptTotpSecret(
+          secret.base32,
+          Buffer.from(ENCRYPTION_KEY, "base64"),
+        ),
+      }),
+    );
+
+    await service.confirmTotp("user-1", code, "session-1");
+
+    expect(achievements.evaluate).toHaveBeenCalledWith("user-1", [
+      "locked_down",
+    ]);
   });
 
   it("confirmTotp rejects an invalid code", async () => {
