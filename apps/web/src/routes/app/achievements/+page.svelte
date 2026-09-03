@@ -53,6 +53,7 @@
 <div class="mx-auto max-w-6xl px-5 pt-6 pb-56 md:px-8 md:pt-10 md:pb-64">
   <PageHeader
     icon="trophy"
+    back="/app/profile"
     title={m.gamification_page_title()}
     subtitle={m.gamification_page_subtitle()} />
 

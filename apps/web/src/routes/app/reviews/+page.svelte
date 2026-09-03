@@ -94,6 +94,7 @@
 <div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
   <PageHeader
     icon="star"
+    back="/app/profile"
     title={m.profile_reviews_title()}
     subtitle={m.reviews_page_subtitle()} />
 

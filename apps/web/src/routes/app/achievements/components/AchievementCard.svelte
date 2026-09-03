@@ -156,6 +156,7 @@
     transition:
       opacity 170ms ease,
       border-color 170ms ease,
+      border-radius 170ms ease,
       box-shadow 170ms ease;
   }
 
