@@ -16,7 +16,7 @@
 import { prefersReducedMotion } from "$lib/motion";
 
 /** One achievement unlock the API hasn't been told we displayed yet. */
-export interface AchievementUnlock {
+interface AchievementUnlock {
   kind: "achievement";
   /** `UserAchievement.id` — what PATCH /achievements/:id/displayed takes. */
   id: string;
@@ -28,7 +28,7 @@ export interface AchievementUnlock {
  * A level crossed since the last visit. Rides the same queue as achievement
  * unlocks — it is the same bubble with another skin, not a second mechanism.
  */
-export interface LevelUnlock {
+interface LevelUnlock {
   kind: "level";
   id: string;
   level: number;
@@ -47,7 +47,7 @@ export const HOLD_MS = 4200;
 /** Shortened hold once a run gets long — a backlog shouldn't hold the app hostage. */
 export const HOLD_RUSHED_MS = 2200;
 /** 0-based index of the first rushed bubble, i.e. the 4th of a run. */
-export const RUSH_FROM = 3;
+const RUSH_FROM = 3;
 
 /** `playedBefore` = how many bubbles already played in the current run. */
 export function holdFor(playedBefore: number): number {
