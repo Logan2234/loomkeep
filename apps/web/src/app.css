@@ -167,6 +167,12 @@ body {
   .btn-icon {
     @apply text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
   }
+  /* Same affordances as `.btn-icon`, in the larger bordered form the profile
+     header uses for its standalone actions. Those five buttons hand-rolled
+     their classes and so lost the transition and the press feedback. */
+  .btn-icon-bordered {
+    @apply border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
+  }
   /* Compact modifier for `.btn`, used in dense rows (table actions, batch
      toolbars). Was referenced across the app but never defined. */
   .btn-sm {

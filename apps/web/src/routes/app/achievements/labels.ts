@@ -141,18 +141,29 @@ export interface NoteSegment {
 }
 
 // Renders a one-placeholder message as three segments, so the value it
-// carries can be emphasised against the dim sentence around it. Passing a
-// sentinel through the message and splitting on it keeps the translations as
-// whole, natural sentences — no prefix/suffix fragments for a translator to
-// reassemble, and no guessing where the value landed.
-const SENTINEL = "";
+// carries can be emphasised against the dim sentence around it. Keeps the
+// translations as whole, natural sentences rather than prefix/suffix
+// fragments a translator would have to reassemble.
+//
+// The marker is plain ASCII on purpose: an earlier version used a NUL
+// character, which a source-file edit silently turned into an empty string —
+// and `split("")` splits per character, so the note rendered as "E8n".
+// Hence the guard below: anything unexpected falls back to the plain
+// sentence, unemphasised but correct.
+const MARKER = "<<@>>";
 
 function emphasise(
   render: (value: string) => string,
   value: string,
 ): NoteSegment[] {
-  const [before, after = ""] = render(SENTINEL).split(SENTINEL);
-  return [{ text: before }, { text: value, strong: true }, { text: after }];
+  const parts = render(MARKER).split(MARKER);
+  if (parts.length !== 2) return [{ text: render(value) }];
+
+  return [
+    { text: parts[0] },
+    { text: value, strong: true },
+    { text: parts[1] },
+  ];
 }
 
 export function contextNote(group: AchievementGroup): NoteSegment[] {

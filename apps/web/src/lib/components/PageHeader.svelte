@@ -35,7 +35,7 @@
       {#if back}
         <a
           href={back}
-          class="text-dim hover:text-fg -ml-1 shrink-0"
+          class="text-dim hover:text-fg -ml-1 shrink-0 transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
           aria-label={m.common_back()}>
           <Icon name="chevron-left" class="h-6 w-6" />
         </a>

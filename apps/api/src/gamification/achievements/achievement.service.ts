@@ -50,34 +50,42 @@ export class AchievementService {
   async evaluate(userId: string, keys?: string[]): Promise<void> {
     if (!isGamificationEnabled(this.config, this.flags)) return;
 
-    const definitions = keys
-      ? keys
-          .map((key) => ACHIEVEMENTS[key])
-          .filter((d): d is AchievementDefinition => d !== undefined)
-      : ACHIEVEMENT_LIST;
+    const socialEnabled = isSocialEnabled(this.config, this.flags);
+    const definitions = (
+      keys
+        ? keys
+            .map((key) => ACHIEVEMENTS[key])
+            .filter((d): d is AchievementDefinition => d !== undefined)
+        : ACHIEVEMENT_LIST
+    ).filter((d) => socialEnabled || !d.socialGated);
 
-    for (const definition of definitions) {
-      await this.evaluateOne(userId, definition);
-    }
-  }
+    if (definitions.length === 0) return;
 
-  private async evaluateOne(
-    userId: string,
-    definition: AchievementDefinition,
-  ): Promise<void> {
-    if (definition.socialGated && !isSocialEnabled(this.config, this.flags))
-      return;
-
-    const already = await this.prisma.userAchievement.findUnique({
-      where: { userId_key: { userId, key: definition.key } },
-      select: { id: true },
+    // One lookup for the whole batch, not one per candidate. Marking an
+    // episode watched re-evaluates 18 achievements; asking the database
+    // "is this one already unlocked?" 18 times in a row, then running each
+    // check() sequentially, is what made that request take about a second.
+    const unlockedRows = await this.prisma.userAchievement.findMany({
+      where: { userId, key: { in: definitions.map((d) => d.key) } },
+      select: { key: true },
     });
-    if (already) return;
+    const unlocked = new Set(unlockedRows.map((r) => r.key));
+    const candidates = definitions.filter((d) => !unlocked.has(d.key));
+    if (candidates.length === 0) return;
 
-    const result = await definition.check(this.prisma, userId);
-    if (!result.unlocked) return;
+    // check() is read-only and each one is independent, so they overlap.
+    // Granting stays sequential: it writes, and the XP ledger is the one
+    // place where ordering is worth more than a few milliseconds.
+    const checks = await Promise.all(
+      candidates.map(async (definition) => ({
+        definition,
+        result: await definition.check(this.prisma, userId),
+      })),
+    );
 
-    await this.grant(userId, definition);
+    for (const { definition, result } of checks) {
+      if (result.unlocked) await this.grant(userId, definition);
+    }
   }
 
   /**

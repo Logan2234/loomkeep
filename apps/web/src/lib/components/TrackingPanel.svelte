@@ -25,8 +25,13 @@
   } = $props();
 </script>
 
+<!-- This block appearing *is* the confirmation that a work joined the
+     library — before it, the page only had a button. It lands with a slight
+     overshoot so the arrival registers as an event rather than a reflow. -->
 <div
-  class="border-border bg-surface mt-6 flex max-w-xl flex-col gap-4 rounded-xl border p-4">
+  class="tracking-panel border-border bg-surface mt-6 flex max-w-xl flex-col gap-4 rounded-xl border p-4 {reduced
+    ? ''
+    : 'tracking-panel-enter'}">
   <!-- Block header: label + favourite pinned top-right. -->
   <div class="flex items-center justify-between gap-2">
     <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
@@ -63,3 +68,20 @@
     </button>
   </div>
 </div>
+
+<style>
+  .tracking-panel-enter {
+    animation: tracking-panel-enter 320ms cubic-bezier(0.2, 1.4, 0.4, 1);
+  }
+
+  @keyframes tracking-panel-enter {
+    from {
+      transform: scale(0.94);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+</style>

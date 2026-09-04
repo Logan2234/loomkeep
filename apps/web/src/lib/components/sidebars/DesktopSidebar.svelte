@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
-  import { page } from "$app/state";
+  import { navigating, page } from "$app/state";
   import { getAdminReportsPendingCount } from "$lib/api/client";
   import { logout } from "$lib/api/auth";
   import { keys } from "$lib/api/keys";
@@ -25,6 +25,15 @@
     browser ? localStorage.getItem("tl-rail-pinned") === "true" : false,
   );
   let hovered = $state(false);
+
+  // A rail link swaps the page under a stationary cursor, which can fire
+  // mouseleave with no mouseenter to follow — the rail would collapse with
+  // the mouse still on it. A leave mid-navigation says nothing about where
+  // the pointer actually is.
+  function onRailLeave() {
+    if (navigating.to) return;
+    hovered = false;
+  }
   let expanded = $derived(pinned || hovered);
 
   let { children } = $props();
@@ -115,7 +124,7 @@
     class="border-border bg-surface sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
     {expanded ? 'w-60' : 'w-16'}"
     onmouseenter={() => (hovered = true)}
-    onmouseleave={() => (hovered = false)}>
+    onmouseleave={onRailLeave}>
     <div class="mb-2 flex items-center justify-between overflow-hidden">
       <a href="/app" class="flex min-w-0 items-center overflow-hidden">
         <span

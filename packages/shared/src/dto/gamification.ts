@@ -54,3 +54,12 @@ export interface AchievementDto {
   unlockedAt: string | null;
   progress: { current: number; target: number } | null;
 }
+
+/**
+ * The viewer's own progression total. `xp` is null when GAMIFICATION_ENABLED
+ * is off. Served by the gamification module rather than the social profile,
+ * so a SOCIAL_ENABLED=false instance still has levels ("solo first").
+ */
+export interface MyProgressionDto {
+  xp: number | null;
+}

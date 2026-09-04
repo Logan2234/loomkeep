@@ -71,7 +71,7 @@
         {#if !isMovie && nextEpisode && !isDropped}
           <button
             type="button"
-            class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full disabled:opacity-50"
+            class="bg-accent text-accent-fg grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-50"
             disabled={continuing}
             title={`${m.common_continue()} S${String(nextEpisode.seasonNumber).padStart(2, "0")}E${String(
               nextEpisode.episodeNumber,

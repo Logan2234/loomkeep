@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { login, resendMfaEmailCode, verifyMfaLogin } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import FieldError from "$lib/components/FieldError.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
@@ -149,11 +150,9 @@
             bind:value={identifier}
             required
             class="input" />
-          {#if loginMut.fieldErrors.identifier}
-            <p id="login-identifier-error" class="text-danger -mt-2 text-xs">
-              {loginMut.fieldErrors.identifier}
-            </p>
-          {/if}
+          <FieldError
+            id="login-identifier-error"
+            message={loginMut.fieldErrors.identifier} />
           <PasswordInput
             placeholder={m.common_password()}
             name="password"

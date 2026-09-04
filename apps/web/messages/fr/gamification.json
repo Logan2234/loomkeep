@@ -154,7 +154,7 @@
   "gamification_curious_cat_description": "A cliqué sur le numéro de version.",
 
   "gamification_page_title": "Succès",
-  "gamification_page_subtitle": "Votre collection, famille par famille.",
+  "gamification_page_subtitle": "Tout ce qu'il y a à décrocher, et ce qu'il vous en reste.",
   "gamification_my_achievements": "Mes succès",
 
   "gamification_hero_total": "/ {total} succès",
@@ -190,6 +190,10 @@
   "gamification_note_remaining_simple": "Encore {count} avant le déblocage.",
   "gamification_note_secret": "Nom, condition et récompense se révèlent au déblocage.",
   "gamification_drawer_close": "Fermer",
+  "gamification_bubble_unlocked": "Succès débloqué",
+  "gamification_bubble_level_reached": "Niveau atteint",
+  "gamification_bubble_level_title": "Niveau {level}",
+  "gamification_bubble_dismiss": "Masquer",
   "gamification_disabled": "La progression est désactivée sur cette instance.",
   "gamification_empty": "Aucun succès à afficher."
 }

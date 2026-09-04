@@ -12,6 +12,8 @@ export const keys = {
   },
   gamification: {
     achievements: () => ["gamification", "achievements"] as const,
+    pending: () => ["gamification", "pending"] as const,
+    progression: () => ["gamification", "progression"] as const,
   },
   books: {
     detail: (source: string, sourceId: string) =>

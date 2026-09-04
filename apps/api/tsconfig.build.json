@@ -7,6 +7,8 @@
     "dist",
     "**/*spec.ts",
     "**/*.test.ts",
-    "coverage"
+    "coverage",
+    "coverage-e2e",
+    "backups"
   ]
 }

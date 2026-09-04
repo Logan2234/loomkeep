@@ -17,6 +17,7 @@
   // a landmark role of its own, and may not be repurposed as a button).
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { formatNumber } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";
   import {
@@ -31,11 +32,31 @@
   let {
     group,
     onselect,
+    highlighted = false,
   }: {
     group: AchievementGroup;
     /** Set only on compact viewports, where a tap opens the drawer. */
     onselect?: () => void;
+    /** The card the [G6] bubble deep-linked to: scrolled to and flashed once. */
+    highlighted?: boolean;
   } = $props();
+
+  // The flash fades on its own — a highlight that stays on would read as a
+  // permanent state of the card rather than "here, this one".
+  const FLASH_MS = 2400;
+  let node = $state<HTMLDivElement | null>(null);
+  let flashing = $state(false);
+  $effect(() => {
+    if (!highlighted || !node) return;
+
+    node.scrollIntoView({
+      block: "center",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+    flashing = true;
+    const timer = setTimeout(() => (flashing = false), FLASH_MS);
+    return () => clearTimeout(timer);
+  });
 
   // The card speaks for the tier still to earn — its threshold is what the
   // rail counts towards and its reward is the XP on offer. Once every tier
@@ -64,9 +85,12 @@
 <!-- Focusable without being interactive on desktop, on purpose: the card
      isn't clickable there (hovering already reveals everything), but the
      tier ladder has to stay reachable for someone who doesn't use a mouse,
-     and `:focus-within` is what opens it. -->
+     and `:focus-visible` is what opens it. -->
 <div
-  class="achievement-card card relative flex min-h-40 flex-col gap-2 overflow-visible p-3.5"
+  bind:this={node}
+  class="achievement-card card relative flex min-h-40 flex-col gap-2 overflow-visible p-3.5 {flashing
+    ? 'achievement-flash'
+    : ''}"
   role={onselect ? "button" : undefined}
   tabindex="0"
   aria-label={achievementName(focusEntry)}
@@ -121,7 +145,7 @@
 
 <style>
   /* Closed by default; the card's own hover/focus opens it. Kept out of
-     Tailwind utilities because it needs `:hover`/`:focus-within` on the card
+     Tailwind utilities because it needs `:hover`/`:focus-visible` on the card
      to drive a *descendant*, which utility classes can't express.
      prefers-reduced-motion is handled globally in app.css. */
   .achievement-unfold {
@@ -143,9 +167,12 @@
       opacity 130ms ease;
   }
 
+  /* `:focus-within` is deliberately absent: it also matches the focus a
+     mouse click leaves behind, which kept the ladder open after the cursor
+     had moved away. `:focus-visible` is the one that means "arrived here by
+     keyboard", which is the case this needs to serve. */
   .achievement-card:hover .achievement-unfold,
-  .achievement-card:focus-visible .achievement-unfold,
-  .achievement-card:focus-within .achievement-unfold {
+  .achievement-card:focus-visible .achievement-unfold {
     max-height: 22rem;
     padding: 0.7rem 0.75rem 0.8rem;
     opacity: 1;
@@ -160,11 +187,29 @@
       box-shadow 170ms ease;
   }
 
+  /* The deep-linked card announces itself, then lets go. Ring + border only:
+     anything moving would fight the cascade of bars filling around it.
+     prefers-reduced-motion is handled globally in app.css. */
+  .achievement-flash {
+    animation: achievement-flash 2.4s ease-out;
+  }
+
+  @keyframes achievement-flash {
+    0%,
+    45% {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 34%, transparent);
+    }
+    100% {
+      border-color: var(--border);
+      box-shadow: 0 0 0 3px transparent;
+    }
+  }
+
   /* The open card and its panel read as one object — no seam, no leftover
      rounding between them. */
   .achievement-card:hover,
-  .achievement-card:focus-visible,
-  .achievement-card:focus-within {
+  .achievement-card:focus-visible {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }

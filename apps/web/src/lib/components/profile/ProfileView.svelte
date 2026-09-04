@@ -3,6 +3,7 @@
   import {
     blockUser,
     followUser,
+    getMyProfile,
     getProfile,
     getUserFollowers,
     getUserFollowing,
@@ -20,6 +21,7 @@
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
+  import CountFlash from "$lib/components/CountFlash.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
   import EditProfileModal from "$lib/components/EditProfileModal.svelte";
@@ -78,9 +80,17 @@
   // the (possibly new) username actually lands — see the $effect below.
   let notFound = $state(false);
 
+  // Your own profile has its own endpoint outside the social module, which
+  // is the only one reachable when SOCIAL_ENABLED is off. Same payload, so
+  // nothing below this line needs to know which one answered.
+  const isOwnProfile = $derived(auth.user?.username === username);
+
   const profileQuery = createApiQuery(() => ({
     key: keys.profile.detail(username),
-    fetch: () => getProfile(username),
+    fetch: () =>
+      isOwnProfile && !appConfig.socialEnabled
+        ? getMyProfile()
+        : getProfile(username),
     onError: (err) => {
       notFound = err instanceof ApiError && err.status === 404;
     },
@@ -402,6 +412,9 @@
             <StreakBadge
               days={profile.activityStats.visible
                 ? profile.activityStats.streakDays
+                : undefined}
+              trackKey={rel?.isSelf && auth.user
+                ? `streak:${auth.user.id}`
                 : undefined} />
             {#if appConfig.gamificationEnabled}
               <LevelBadge xp={profile.xp} />
@@ -450,8 +463,9 @@
               type="button"
               class="hover:text-fg"
               onclick={() => openConnections("followers")}>
-              <span class="timecode text-fg text-lg font-bold"
-                >{profile.followerCount}</span>
+              <CountFlash
+                value={profile.followerCount}
+                class="timecode text-fg text-lg font-bold" />
               <span class="text-dim ml-1 text-xs tracking-wide uppercase"
                 >{profile.followerCount > 1
                   ? m.profile_followers_plural()
@@ -479,11 +493,14 @@
       {/if}
 
       {#if rel && !rel.isSelf}
-        <!-- Own row below the avatar/info block instead of sharing it — the
-             card is capped at max-w-3xl, and buttons competing with the info
-             column for that width squeezed it down to almost nothing (forced
-             the follower/following figures to wrap onto separate lines). -->
-        <div class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5">
+        <!-- Top-right of the card from `sm` up, positioned absolutely: these
+             buttons used to sit in the header row and squeezed the info
+             column badly enough to wrap the follower figures onto separate
+             lines. Taking them out of the flow is what lets them live in the
+             corner without competing for that width again. Below `sm` they
+             stay a row under the block, where there is no corner to spare. -->
+        <div
+          class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5 sm:absolute sm:top-5 sm:right-5 sm:mt-0 sm:border-t-0 sm:pt-0 md:top-6 md:right-6">
           {#if rel.blocking}
             <button class="btn btn-ghost" disabled={busy} onclick={toggleBlock}>
               {m.common_unblock()}
@@ -531,7 +548,7 @@
                  your achievements and nobody else's. -->
             <a
               href="/app/achievements"
-              class="border-border text-dim hover:bg-surface-2 hover:text-fg relative grid h-9 w-9 place-items-center rounded-full border"
+              class="btn-icon-bordered relative"
               title={m.gamification_my_achievements()}
               aria-label={m.gamification_my_achievements()}>
               <Icon name="trophy" class="h-4 w-4" />
@@ -547,7 +564,7 @@
           {/if}
           <button
             type="button"
-            class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
+            class="btn-icon-bordered"
             title={m.share_profile_title()}
             aria-label={m.share_profile_title()}
             onclick={() => (shareModalOpen = true)}>
@@ -555,7 +572,7 @@
           </button>
           <button
             type="button"
-            class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border sm:hidden"
+            class="btn-icon-bordered sm:hidden"
             title={m.scan_profile_title()}
             aria-label={m.scan_profile_title()}
             onclick={() => (scanModalOpen = true)}>
@@ -563,7 +580,7 @@
           </button>
           <a
             href="/app/settings"
-            class="border-border text-dim hover:bg-surface-2 hover:text-fg grid h-9 w-9 place-items-center rounded-full border"
+            class="btn-icon-bordered"
             title={m.common_settings()}
             aria-label={m.common_settings()}>
             <Icon name="gear" class="h-4 w-4" />

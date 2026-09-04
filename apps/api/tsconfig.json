@@ -12,5 +12,18 @@
     "noFallthroughCasesInSwitch": true,
     "rootDir": "./",
     "types": ["node", "vitest/globals"]
+  },
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval",
+    "watchDirectory": "fixedPollingInterval",
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/*spec.ts",
+      "**/*.test.ts",
+      "coverage",
+      "coverage-e2e",
+      "backups",
+      "dist"
+    ]
   }
 }

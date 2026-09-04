@@ -369,7 +369,8 @@
       {#each items as entry (keyOf(entry))}
         <div
           animate:flip={{ duration: reduced ? 0 : 250 }}
-          in:fade|global={{ duration: reduced ? 0 : 150 }}>
+          in:fade|global={{ duration: reduced ? 0 : 150 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}>
           {@render card(entry)}
         </div>
       {/each}

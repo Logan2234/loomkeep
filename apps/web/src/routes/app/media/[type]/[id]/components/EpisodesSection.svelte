@@ -25,7 +25,7 @@
     ReviewTargetType,
   } from "@loomkeep/shared";
   import { SvelteDate, SvelteSet } from "svelte/reactivity";
-  import { slide } from "svelte/transition";
+  import { fly, slide } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
 
@@ -83,6 +83,26 @@
     season.episodes.length > 0 &&
     season.episodes.every((ep) => ep.watchCount > 0);
 
+  // Which season just crossed into "fully watched", cleared on its own. Keyed
+  // by number rather than a boolean so re-finishing another season while the
+  // first is still showing swaps the message instead of stacking.
+  const FINISHED_MS = 2600;
+  let justFinished = $state<number | null>(null);
+  let watchedBefore = new Map<number, boolean>();
+  $effect(() => {
+    for (const season of seasons) {
+      const done = seasonWatched(season);
+      const was = watchedBefore.get(season.number);
+      watchedBefore.set(season.number, done);
+      if (was === false && done) justFinished = season.number;
+    }
+  });
+  $effect(() => {
+    if (justFinished === null) return;
+    const timer = setTimeout(() => (justFinished = null), FINISHED_MS);
+    return () => clearTimeout(timer);
+  });
+
   const seasonWatchedCount = (season: MediaDetailSeasonDto) =>
     season.episodes.filter((e) => e.watchCount > 0).length;
 
@@ -121,12 +141,28 @@
     return days === 1 ? m.common_tomorrow() : m.media_airing_in_days({ days });
   }
 
+  // [G6] point 5: the tick that lands when an episode is marked. This is the
+  // most repeated action in the app, and it's what makes the season bar's
+  // move (and its completion accent, on the last episode) read as one
+  // gesture rather than two unrelated redraws. Gated on "the episode that
+  // was just marked" so a page load doesn't pop every tick already there.
+  const CHECK_POP_MS = 420;
+  let justWatchedId = $state<string | null>(null);
+
+  function popCheck(episodeId: string) {
+    justWatchedId = episodeId;
+    setTimeout(() => {
+      if (justWatchedId === episodeId) justWatchedId = null;
+    }, CHECK_POP_MS);
+  }
+
   async function markWatched(episodeId: string) {
     busyEpisodeId = episodeId;
     onError("");
     try {
       await watchEpisode(episodeId);
       await reload();
+      popCheck(episodeId);
     } catch (err) {
       onError(resolveApiError(err));
     } finally {
@@ -250,13 +286,6 @@
               {seasonWatchedCount(season)}/{season.episodes.length}
             </span>
           {/if}
-          {#if entry && season.id && seasonWatched(season)}
-            <span
-              class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-              <Icon name="check" class="h-4 w-4" />
-              {m.media_season_watched()}
-            </span>
-          {/if}
           {#if entry && season.id}
             <button
               class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
@@ -344,6 +373,22 @@
             height="h-0.75"
             track="bg-border"
             class="mt-2 w-full" />
+          {#if justFinished === season.number}
+            <!-- The glowing bar alone read as "the fill stopped moving". The
+                 congratulation is said in words, once, where the click
+                 happened — not as a bubble: finishing a season often unlocks
+                 an achievement too, and one gesture must not produce two
+                 notifications competing at the top of the screen. -->
+            <p
+              class="text-accent mt-1.5 flex items-center gap-1.5 text-xs font-bold"
+              transition:fly|global={{
+                y: reduced ? 0 : -6,
+                duration: reduced ? 0 : 220,
+              }}>
+              <Icon name="trophy" class="h-3.5 w-3.5" />
+              {m.media_season_finished()}
+            </p>
+          {/if}
         {/if}
       </div>
       {#if expanded}
@@ -366,7 +411,12 @@
                 {#if watched && episode.id}
                   <span
                     class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-                    <Icon name="check" class="h-4 w-4" />
+                    <span
+                      class="inline-flex {justWatchedId === episode.id
+                        ? 'episode-check-pop'
+                        : ''}">
+                      <Icon name="check" class="h-4 w-4" />
+                    </span>
                     {formatDate(
                       episode.watches[0].watchedAt,
                       DATE_MEDIUM_OPTIONS,
@@ -497,3 +547,27 @@
       compact />
   </Modal>
 {/if}
+
+<style>
+  /* Tight and short on purpose: this fires several times a session, so it
+     has to read as a confirmation, not a celebration — no bounce past the
+     overshoot, no confetti. prefers-reduced-motion is handled globally in
+     app.css. */
+  .episode-check-pop {
+    animation: episode-check-pop 400ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  @keyframes episode-check-pop {
+    0% {
+      transform: scale(0.45);
+      opacity: 0.3;
+    }
+    55% {
+      transform: scale(1.22);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+</style>
