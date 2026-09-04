@@ -8,7 +8,7 @@ import type {
 } from "@loomkeep/shared";
 
 /** Section order of the page. Mirrors ACHIEVEMENT_FAMILIES on the API side. */
-const FAMILY_ORDER: AchievementFamily[] = [
+export const FAMILY_ORDER: AchievementFamily[] = [
   "volume",
   "ritual",
   "exploration",

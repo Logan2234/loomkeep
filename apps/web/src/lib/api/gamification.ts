@@ -1,4 +1,8 @@
-import type { AchievementDto } from "@loomkeep/shared";
+import type {
+  AchievementDto,
+  MyProgressionDto,
+  PendingAchievementDto,
+} from "@loomkeep/shared";
 import { request } from "./core";
 
 /**
@@ -27,4 +31,41 @@ export function signalVersionLinkClicked(): void {
       // unlock this time, nothing the user needs to see or retry.
     },
   );
+}
+
+/**
+ * Unlocks the [G6] bubble hasn't shown yet (`displayedAt IS NULL`), oldest
+ * first — the order the sequence plays them in. Shipped by [G2]; nothing
+ * about it is new here. Empty when GAMIFICATION_ENABLED is off.
+ *
+ * Note that this is *self*-addressed data: `hideProgression` is deliberately
+ * not consulted anywhere on this path. That setting hides your progression
+ * from *other viewers* (see `withXp()` in the API's xp-lookup.util.ts) — the
+ * owner always sees their own, and a bubble only ever speaks to its owner.
+ */
+export function getPendingAchievements(): Promise<PendingAchievementDto[]> {
+  return request<PendingAchievementDto[]>("/achievements/pending");
+}
+
+/**
+ * Marks one unlock as shown. Fire-and-forget for the same reason as
+ * signalVersionLinkClicked: the bubble must never wait on the network to
+ * move on. The endpoint is idempotent and the row simply stays pending on
+ * failure, so the worst case is the bubble replaying at the next app open.
+ */
+export function markAchievementDisplayed(id: string): void {
+  request(`/achievements/${id}/displayed`, { method: "PATCH" }).catch(() => {
+    // See above — a failed mark costs one replay, nothing the user can act on.
+  });
+}
+
+/**
+ * The viewer's own XP total. Served by the gamification module rather than
+ * read off the social profile: everything under /social is behind
+ * SocialFeatureGuard, and the "solo first" guardrail requires levels to keep
+ * working on a SOCIAL_ENABLED=false instance. `xp` is null when
+ * gamification itself is off; the level is derived client-side.
+ */
+export function getMyProgression(): Promise<MyProgressionDto> {
+  return request<MyProgressionDto>("/gamification/me");
 }

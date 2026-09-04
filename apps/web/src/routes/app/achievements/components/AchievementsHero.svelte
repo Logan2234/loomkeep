@@ -1,8 +1,7 @@
 <script lang="ts">
-  // The band above the grid: how much of the catalogue is done, what it has
-  // paid out, and the three most recent unlocks as stacked medallions.
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { PERCENT_OPTIONS, formatNumber, formatRelative } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { AchievementTier } from "@loomkeep/shared";
   import type { CatalogueSummary } from "../achievements";
@@ -13,10 +12,31 @@
 
   const latest = $derived(summary.recent[0] ?? null);
 
-  // The band's three medallions are a decorative descending set — gold to
-  // bronze by position, not by the tier each unlock happens to carry. It
-  // reads as a podium; per-unlock tiers are the grid's job.
   const STACK_RINGS: AchievementTier[] = ["gold", "silver", "bronze"];
+
+  const reduced = prefersReducedMotion();
+  let shown = $state(0);
+  let counted = false;
+  $effect(() => {
+    const target = summary.unlocked;
+
+    if (counted || reduced || target === 0) {
+      shown = target;
+      counted = true;
+      return;
+    }
+
+    counted = true;
+    const start = performance.now();
+    let raf = requestAnimationFrame(function step(now: number) {
+      const t = Math.min(1, (now - start) / 500);
+      // Ease-out: fast off the mark, settling onto the final figure.
+      shown = Math.round(target * (1 - (1 - t) ** 3));
+      if (t < 1) raf = requestAnimationFrame(step);
+    });
+
+    return () => cancelAnimationFrame(raf);
+  });
 </script>
 
 <section
@@ -24,7 +44,7 @@
   <div class="flex items-baseline gap-2">
     <span
       class="font-display text-fg text-4xl leading-none font-extrabold tabular-nums">
-      {formatNumber(summary.unlocked)}
+      {formatNumber(shown)}
     </span>
     <span class="timecode text-sm">
       {m.gamification_hero_total({ total: formatNumber(summary.total) })}

@@ -2,6 +2,7 @@
   // [G5] the achievements screen — own achievements only, no other user's
   // page (see the [G5] design notes: 44+ conditions together read as a
   // behavioural fingerprint). Auth comes from the app/ layout nesting.
+  import { page } from "$app/state";
   import { getAchievements } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -12,6 +13,7 @@
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
+    FAMILY_ORDER,
     groupAchievements,
     sectionsByFamily,
     summarize,
@@ -46,6 +48,12 @@
   });
 
   let openGroup = $state<AchievementGroup | null>(null);
+
+  // [G6] point 6: the unlock bubble deep-links here naming the achievement it
+  // just announced, so the page can point at its card instead of dropping the
+  // reader in front of the whole catalogue. The parameter stays in the URL —
+  // the flash is a one-shot animation, so a reload simply replays it.
+  const highlightKey = $derived(page.url.searchParams.get("unlocked"));
 </script>
 
 <!-- Same width container as the other app pages (see routes/app/+page.svelte):
@@ -62,7 +70,24 @@
   {:else if achievementsQuery.error}
     <Banner variant="error">{achievementsQuery.error}</Banner>
   {:else if achievementsQuery.loading}
+    <!-- The families are known before the data is: naming them keeps the
+         page's shape while it loads, instead of a bar and a void. Counts are
+         left out — those really do depend on the response. -->
     <div class="skeleton h-24 rounded-xl"></div>
+    {#each FAMILY_ORDER.slice(0, 2) as family (family)}
+      <div class="flex items-center gap-3 pt-8 pb-3">
+        <span
+          class="text-dim text-[0.65rem] font-semibold tracking-widest uppercase">
+          {familyLabel(family)}
+        </span>
+        <span class="bg-border h-px flex-1"></span>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 md:grid-cols-3">
+        {#each Array.from({ length: 6 }, (_, i) => i) as slot (slot)}
+          <div class="skeleton h-40 rounded-xl"></div>
+        {/each}
+      </div>
+    {/each}
   {:else if list.length === 0}
     <EmptyState>{m.gamification_empty()}</EmptyState>
   {:else}
@@ -87,6 +112,8 @@
         {#each section.groups as group (group.id)}
           <AchievementCard
             {group}
+            highlighted={highlightKey !== null &&
+              group.entries.some((entry) => entry.key === highlightKey)}
             onselect={compact ? () => (openGroup = group) : undefined} />
         {/each}
       </div>

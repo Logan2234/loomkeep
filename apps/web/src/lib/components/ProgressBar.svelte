@@ -53,6 +53,28 @@
       cancelAnimationFrame(raf2);
     };
   });
+
+  // [G6] point 3: reaching the end gets a brief accent — the bar already
+  // animates its width, this is what turns "the fill stopped moving" into
+  // "that's finished". It is what marks a season/series completed, so it
+  // lives on the shared bar rather than at one call site: every rail that
+  // fills up (a tier's progress, a reading goal) earns the same beat.
+  //
+  // Only a *transition* to 100 counts — a bar that mounts already full has
+  // nothing to celebrate, hence the null first pass.
+  const COMPLETE_TOTAL_MS = 820;
+  let completing = $state(false);
+  let previous: number | null = null;
+  $effect(() => {
+    const target = clamped;
+    const justCompleted = previous !== null && previous < 100 && target >= 100;
+    previous = target;
+    if (!justCompleted) return;
+
+    completing = true;
+    const timer = setTimeout(() => (completing = false), COMPLETE_TOTAL_MS);
+    return () => clearTimeout(timer);
+  });
 </script>
 
 <div
@@ -60,7 +82,9 @@
     ? 'rounded-full'
     : ''} {cls}">
   <div
-    class="progress-fill {fillClass} h-full {rounded ? 'rounded-full' : ''}"
+    class="progress-fill {fillClass} h-full {rounded
+      ? 'rounded-full'
+      : ''} {completing ? 'progress-complete' : ''}"
     style="width: {displayValue}%; {fillStyle}"
     {title}>
   </div>
@@ -71,5 +95,25 @@
      transition/animation duration near-zero). */
   .progress-fill {
     transition: width 300ms ease-out;
+  }
+
+  /* Delayed by the width transition above, so the accent lands as the fill
+     reaches the end rather than racing it. Brightness + a short glow, no
+     scaling: the bar must not shift the layout around it. */
+  .progress-complete {
+    animation: progress-complete 520ms ease-out 300ms;
+  }
+
+  @keyframes progress-complete {
+    0% {
+      filter: none;
+    }
+    35% {
+      filter: brightness(1.45)
+        drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+    }
+    100% {
+      filter: none;
+    }
   }
 </style>

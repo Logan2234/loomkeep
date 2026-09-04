@@ -100,9 +100,9 @@ describe("AchievementService.evaluate", () => {
 
   it("does not even call check() when the achievement is already unlocked", async () => {
     const { service, prisma } = makeService();
-    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
-      id: "achievement-1",
-    });
+    (prisma.userAchievement.findMany as Mock).mockResolvedValue([
+      { key: "first_episode" },
+    ]);
 
     await service.evaluate("user-1", ["first_episode"]);
 
@@ -157,12 +157,14 @@ describe("AchievementService.evaluate", () => {
 
     await service.evaluate("user-1", ["first_episode"]);
 
-    // Only first_episode's own uniqueness check runs — cinephile's tiers
-    // and the socialGated test fixture are skipped entirely.
-    expect(prisma.userAchievement.findUnique).toHaveBeenCalledTimes(1);
-    expect(prisma.userAchievement.findUnique).toHaveBeenCalledWith({
-      where: { userId_key: { userId: "user-1", key: "first_episode" } },
-      select: { id: true },
+    // One batched lookup for the whole set, scoped to the named keys —
+    // cinephile's tiers and the socialGated fixture never reach the query.
+    // It used to be one findUnique per candidate, which is what made marking
+    // an episode watched (18 keys) take about a second.
+    expect(prisma.userAchievement.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.userAchievement.findMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", key: { in: ["first_episode"] } },
+      select: { key: true },
     });
   });
 });

@@ -36,6 +36,28 @@ export class XpService {
   ) {}
 
   /**
+   * The signed-in user's own XP total, or null when gamification is off.
+   *
+   * Deliberately lives here rather than being read off the social profile
+   * endpoint: the "solo first" guardrail says XP, levels and achievements
+   * work with SOCIAL_ENABLED=false, and everything under SocialController
+   * is behind SocialFeatureGuard. Reading your own progression must not go
+   * through the social surface.
+   *
+   * Returns the total only — the level is never stored or served, it is
+   * derived client-side from this by `levelForXp` (see the [G1] plan).
+   */
+  async myXp(userId: string): Promise<number | null> {
+    if (!isGamificationEnabled(this.config, this.flags)) return null;
+
+    const score = await this.prisma.userScore.findUnique({
+      where: { userId },
+      select: { xp: true },
+    });
+    return score?.xp ?? 0;
+  }
+
+  /**
    * Credits one XP entry for `reason`/`sourceId`, if the feature is on, the
    * rule isn't social-gated behind a disabled SOCIAL_ENABLED, and the day's
    * cap for this (userId, reason) isn't already reached. No-ops otherwise —

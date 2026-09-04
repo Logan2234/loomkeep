@@ -37,17 +37,30 @@
     onBoundary ? 0 : (filledExact - filled) * 100,
   );
 
+  const CASCADE_STEP_MS = 45;
+  let lit = $state(false);
+  $effect(() => {
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => (lit = true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  });
+
   const CELL_BASE =
-    "h-3.5 flex-1 rounded-[3px] border transition-[background,border-color] motion-reduce:transition-none";
+    "h-3.5 flex-1 overflow-hidden rounded-[3px] border transition-[background,border-color] duration-300 motion-reduce:transition-none";
   const CELL_CLASS: Record<"filled" | "current" | "empty", string> = {
     empty: `${CELL_BASE} border-border bg-surface-2`,
-    current: `${CELL_BASE} border-accent`,
+    current: `${CELL_BASE} border-accent bg-surface-2`,
     filled: `${CELL_BASE} border-accent bg-accent shadow-[0_0_10px_color-mix(in_srgb,var(--accent)_55%,transparent)]`,
   };
 </script>
 
 <div
-  class="border-border bg-surface rounded-2xl border px-6 py-[22px] shadow-[0_1px_2px_rgba(28,23,18,.06),0_8px_24px_rgba(28,23,18,.05)] dark:shadow-[0_1px_2px_rgba(0,0,0,.4),0_12px_32px_rgba(0,0,0,.35)]">
+  class="border-border bg-surface rounded-2xl border px-6 py-5.5 shadow-[0_1px_2px_rgba(28,23,18,.06),0_8px_24px_rgba(28,23,18,.05)] dark:shadow-[0_1px_2px_rgba(0,0,0,.4),0_12px_32px_rgba(0,0,0,.35)]">
   <div
     class="mb-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
     <p class="font-display text-[26px] font-extrabold">
@@ -64,10 +77,16 @@
   <div class="flex gap-1">
     {#each cells as cell, i (i)}
       <div
-        class={CELL_CLASS[cell]}
-        style={cell === "current"
-          ? `background: linear-gradient(90deg, var(--accent) ${currentFillPct}%, var(--surface-2) ${currentFillPct}%)`
-          : undefined}>
+        class={CELL_CLASS[lit ? cell : "empty"]}
+        style="transition-delay: {i * CASCADE_STEP_MS}ms">
+        {#if cell === "current"}
+          <span
+            class="bg-accent block h-full transition-[width] duration-200 motion-reduce:transition-none"
+            style="width: {lit
+              ? currentFillPct
+              : 0}%; transition-delay: {(filled + 1) * CASCADE_STEP_MS}ms">
+          </span>
+        {/if}
       </div>
     {/each}
   </div>

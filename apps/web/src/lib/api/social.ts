@@ -1,8 +1,22 @@
-import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared";
+import type {
+  SocialProfileDto,
+  UpdateVisibilitySettingsDto,
+} from "@loomkeep/shared";
+import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getProfile = (username: string) =>
   typedRequest("/social/users/{username}", { params: { username } });
+
+/**
+ * Your own profile, served by the users module rather than the social one:
+ * everything under /social is behind SocialFeatureGuard, so on a
+ * SOCIAL_ENABLED=false instance `getProfile` 404s and the profile page —
+ * level, XP, streak, per-domain counts, none of it social — had nothing to
+ * render. Same payload either way.
+ */
+export const getMyProfile = () =>
+  request<SocialProfileDto>("/users/me/profile");
 
 export const followUser = (username: string) =>
   typedRequest("/social/users/{username}/follow", {

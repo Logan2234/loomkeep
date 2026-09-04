@@ -182,71 +182,69 @@
     {#if isFeatureNew("mfa")}<NewBadge />{/if}
   </h2>
 
-  {#if status}
-    <div class="divide-border divide-y">
-      <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
-        <div class="flex items-start gap-3">
-          <Icon name="qr-code" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p class="font-semibold">{m.auth_mfa_totp_label()}</p>
-            <p class="text-dim text-sm">{m.settings_mfa_totp_desc()}</p>
-          </div>
+  <div class="divide-border divide-y">
+    <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
+      <div class="flex items-start gap-3">
+        <Icon name="qr-code" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p class="font-semibold">{m.auth_mfa_totp_label()}</p>
+          <p class="text-dim text-sm">{m.settings_mfa_totp_desc()}</p>
         </div>
-        <Switch
-          label={m.auth_mfa_totp_label()}
-          checked={status.totpEnabled}
-          onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
       </div>
-
-      <div
-        class="flex items-center justify-between gap-4 {hasAnyMfa
-          ? 'py-3'
-          : 'pt-3'}">
-        <div class="flex items-start gap-3">
-          <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p class="font-semibold">{m.auth_mfa_email_label()}</p>
-            <p class="text-dim text-sm">{m.settings_mfa_email_desc()}</p>
-          </div>
-        </div>
-        <Switch
-          label={m.auth_mfa_email_label()}
-          checked={status.emailEnabled}
-          onChange={onToggleEmail} />
-      </div>
-
-      {#if hasAnyMfa}
-        <div class="flex items-center justify-between gap-4 pt-3">
-          <div>
-            <p class="font-semibold">
-              {m.settings_mfa_recovery_title()}
-
-              {#if status.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD}
-                <span
-                  class="text-warning shrink-0"
-                  aria-hidden="true"
-                  title={m.settings_mfa_recovery_low_warning({
-                    count: status.recoveryCodesRemaining,
-                  })}>
-                  <Icon name="warning" class="ml-1 inline h-5 w-5" />
-                </span>
-                <span class="sr-only"
-                  >{m.settings_mfa_recovery_low_warning({
-                    count: status.recoveryCodesRemaining,
-                  })}</span>
-              {/if}
-            </p>
-            <p class="text-dim text-sm">{m.settings_mfa_recovery_hint()}</p>
-          </div>
-          <button
-            class="link-accent shrink-0 text-sm"
-            onclick={() => (openModal = "recovery-regenerate-confirm")}>
-            {m.common_regenerate()}
-          </button>
-        </div>
-      {/if}
+      <Switch
+        label={m.auth_mfa_totp_label()}
+        checked={status?.totpEnabled || false}
+        onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
     </div>
-  {/if}
+
+    <div
+      class="flex items-center justify-between gap-4 {hasAnyMfa
+        ? 'py-3'
+        : 'pt-3'}">
+      <div class="flex items-start gap-3">
+        <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p class="font-semibold">{m.auth_mfa_email_label()}</p>
+          <p class="text-dim text-sm">{m.settings_mfa_email_desc()}</p>
+        </div>
+      </div>
+      <Switch
+        label={m.auth_mfa_email_label()}
+        checked={status?.emailEnabled || false}
+        onChange={onToggleEmail} />
+    </div>
+
+    {#if hasAnyMfa}
+      <div class="flex items-center justify-between gap-4 pt-3">
+        <div>
+          <p class="font-semibold">
+            {m.settings_mfa_recovery_title()}
+
+            {#if status && status.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD}
+              <span
+                class="text-warning shrink-0"
+                aria-hidden="true"
+                title={m.settings_mfa_recovery_low_warning({
+                  count: status.recoveryCodesRemaining,
+                })}>
+                <Icon name="warning" class="ml-1 inline h-5 w-5" />
+              </span>
+              <span class="sr-only"
+                >{m.settings_mfa_recovery_low_warning({
+                  count: status.recoveryCodesRemaining,
+                })}</span>
+            {/if}
+          </p>
+          <p class="text-dim text-sm">{m.settings_mfa_recovery_hint()}</p>
+        </div>
+        <button
+          class="link-accent shrink-0 text-sm"
+          onclick={() => (openModal = "recovery-regenerate-confirm")}>
+          {m.common_regenerate()}
+        </button>
+      </div>
+    {/if}
+  </div>
 </section>
 
 {#if openModal === "totp-setup"}

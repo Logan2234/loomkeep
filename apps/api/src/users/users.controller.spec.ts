@@ -11,6 +11,7 @@ import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
+import type { ProfileService } from "../social/profile.service";
 import type { AccountDeletionService } from "./account-deletion.service";
 import type { CsvExportService } from "./csv-export.service";
 import type { DataExportService } from "./data-export.service";
@@ -62,6 +63,7 @@ describe("UsersController — email change", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
@@ -286,6 +288,7 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
@@ -361,6 +364,7 @@ describe("UsersController — updateMe newsletter opt-in timestamp", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   }
@@ -449,6 +453,7 @@ describe("UsersController — uploadAvatar", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
@@ -540,6 +545,7 @@ describe("UsersController — changePassword", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
@@ -630,6 +636,7 @@ describe("UsersController — deleteAccount", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       accountDeletion,
     );
   });
@@ -691,6 +698,7 @@ describe("UsersController — deletionSummary", () => {
       {
         hasPremium: vi.fn().mockResolvedValue(true),
       } as unknown as EntitlementService,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   });
@@ -748,6 +756,7 @@ describe("UsersController.getMyEntitlement", () => {
       {} as unknown as ConfigService,
       { isPasswordPwned: vi.fn() } as unknown as HibpService,
       entitlements,
+      { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
     );
   }

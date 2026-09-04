@@ -154,7 +154,7 @@
   "gamification_curious_cat_description": "Clicked the version number.",
 
   "gamification_page_title": "Achievements",
-  "gamification_page_subtitle": "Your collection, family by family.",
+  "gamification_page_subtitle": "Everything there is to earn, and what you have left.",
   "gamification_my_achievements": "My achievements",
 
   "gamification_hero_total": "/ {total} achievements",
@@ -190,6 +190,10 @@
   "gamification_note_remaining_simple": "{count} to go before unlocking.",
   "gamification_note_secret": "Name, condition and reward are revealed on unlock.",
   "gamification_drawer_close": "Close",
+  "gamification_bubble_unlocked": "Achievement unlocked",
+  "gamification_bubble_level_reached": "Level reached",
+  "gamification_bubble_level_title": "Level {level}",
+  "gamification_bubble_dismiss": "Dismiss",
   "gamification_disabled": "Progression is disabled on this instance.",
   "gamification_empty": "No achievements to show."
 }

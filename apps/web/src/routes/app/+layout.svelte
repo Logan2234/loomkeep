@@ -20,6 +20,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import UnlockBubble from "./components/UnlockBubble.svelte";
 
   const queryClient = useQueryClient();
 
@@ -69,6 +70,9 @@
 
 {#if bootstrap.ready && auth.isLoggedIn}
   <NotificationBell />
+  <!-- Mounting *is* the trigger for [G6]'s unlock sequence: entering the app
+       is the only moment a bubble plays. -->
+  <UnlockBubble />
   <WidgetIdentify />
 
   <div class="hidden md:block">

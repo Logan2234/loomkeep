@@ -8,6 +8,7 @@ import {
   type CalendarTokenDto,
   type CsvExportDto,
   type EntitlementDto,
+  type SocialProfileDto,
   type UserDataExportDto,
   type WidgetTokenDto,
 } from "@loomkeep/shared";
@@ -42,6 +43,8 @@ import { EntitlementService } from "../entitlements/entitlement.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { SocialProfileResponseDto } from "../social/dto/social-profile-response.dto";
+import { ProfileService } from "../social/profile.service";
 import { AccountDeletionService } from "./account-deletion.service";
 import { isAdult } from "./age.util";
 import { matchesMimeType } from "./avatar.util";
@@ -83,6 +86,7 @@ export class UsersController {
     private readonly config: ConfigService,
     private readonly hibp: HibpService,
     private readonly entitlements: EntitlementService,
+    private readonly profiles: ProfileService,
     private readonly accountDeletion: AccountDeletionService,
   ) {}
 
@@ -111,6 +115,33 @@ export class UsersController {
    * instead of asking the visitor to type in their own email. Re-signed on
    * every call rather than cached, since it always expires quickly anyway.
    */
+  /**
+   * Your own profile. Deliberately served here rather than through
+   * `GET /social/users/:username`: that whole controller sits behind
+   * `SocialFeatureGuard`, so on a SOCIAL_ENABLED=false instance the profile
+   * page — level, XP, streak, per-domain counts, none of them social — had
+   * no endpoint at all and rendered as "not found".
+   */
+  @Get("me/profile")
+  @ApiOkResponse({ type: SocialProfileResponseDto })
+  async getMyProfile(
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<SocialProfileDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { username: true },
+    });
+
+    if (!user) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.UserAccountNotFound,
+      );
+    }
+
+    return this.profiles.getProfile(payload.sub, user.username);
+  }
+
   @Get("me/widget-token")
   @ApiOkResponse({ type: WidgetTokenResponseDto })
   async getWidgetToken(
@@ -159,6 +190,13 @@ export class UsersController {
 
     reply
       .header("Cache-Control", "public, max-age=31536000, immutable")
+      // helmet is registered app-wide and defaults to
+      // `Cross-Origin-Resource-Policy: same-origin`, which blocks this image
+      // whenever the web app is served from another origin — the dev setup
+      // (:5173 calling :3000) and any deployment where the API is on its own
+      // host. Firefox reports it as NS_ERROR_DOM_CORP_FAILED. Relaxed here
+      // only: an avatar is a public image, unlike every JSON response.
+      .header("Cross-Origin-Resource-Policy", "cross-origin")
       .type(user.avatarMimeType)
       .send(user.avatar);
   }

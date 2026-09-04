@@ -13,7 +13,12 @@ async function loadRequest(dsn: string | undefined) {
   return request;
 }
 
-describe("request() → GlitchTip reporting", () => {
+// Each case calls loadRequest(), which resets the module registry and
+// re-imports ./core — pulling the whole $env/paraglide graph through the
+// SvelteKit transform again. That costs seconds when the rest of the suite
+// is competing for workers, and the 5s default made this block fail
+// intermittently depending on scheduling, not on anything it asserts.
+describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
   beforeEach(() => {
     captureException.mockClear();
   });

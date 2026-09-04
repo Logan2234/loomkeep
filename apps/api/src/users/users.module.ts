@@ -6,6 +6,7 @@ import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SecurityModule } from "../security/security.module";
+import { SocialModule } from "../social/social.module";
 import { AccountDeletionService } from "./account-deletion.service";
 import { AgeGateService } from "./age-gate.service";
 import { CsvExportService } from "./csv-export.service";
@@ -24,6 +25,7 @@ import { UsersController } from "./users.controller";
     ListsModule,
     EntitlementModule,
     JobsModule,
+    SocialModule,
   ],
   controllers: [UsersController, MfaController],
   providers: [

@@ -17,6 +17,7 @@
   // a landmark role of its own, and may not be repurposed as a button).
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { formatNumber } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";
   import {
@@ -31,11 +32,31 @@
   let {
     group,
     onselect,
+    highlighted = false,
   }: {
     group: AchievementGroup;
     /** Set only on compact viewports, where a tap opens the drawer. */
     onselect?: () => void;
+    /** The card the [G6] bubble deep-linked to: scrolled to and flashed once. */
+    highlighted?: boolean;
   } = $props();
+
+  // The flash fades on its own — a highlight that stays on would read as a
+  // permanent state of the card rather than "here, this one".
+  const FLASH_MS = 2400;
+  let node = $state<HTMLDivElement | null>(null);
+  let flashing = $state(false);
+  $effect(() => {
+    if (!highlighted || !node) return;
+
+    node.scrollIntoView({
+      block: "center",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+    flashing = true;
+    const timer = setTimeout(() => (flashing = false), FLASH_MS);
+    return () => clearTimeout(timer);
+  });
 
   // The card speaks for the tier still to earn — its threshold is what the
   // rail counts towards and its reward is the XP on offer. Once every tier
@@ -66,7 +87,10 @@
      tier ladder has to stay reachable for someone who doesn't use a mouse,
      and `:focus-within` is what opens it. -->
 <div
-  class="achievement-card card relative flex min-h-40 flex-col gap-2 overflow-visible p-3.5"
+  bind:this={node}
+  class="achievement-card card relative flex min-h-40 flex-col gap-2 overflow-visible p-3.5 {flashing
+    ? 'achievement-flash'
+    : ''}"
   role={onselect ? "button" : undefined}
   tabindex="0"
   aria-label={achievementName(focusEntry)}
@@ -158,6 +182,25 @@
       border-color 170ms ease,
       border-radius 170ms ease,
       box-shadow 170ms ease;
+  }
+
+  /* The deep-linked card announces itself, then lets go. Ring + border only:
+     anything moving would fight the cascade of bars filling around it.
+     prefers-reduced-motion is handled globally in app.css. */
+  .achievement-flash {
+    animation: achievement-flash 2.4s ease-out;
+  }
+
+  @keyframes achievement-flash {
+    0%,
+    45% {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 34%, transparent);
+    }
+    100% {
+      border-color: var(--border);
+      box-shadow: 0 0 0 3px transparent;
+    }
   }
 
   /* The open card and its panel read as one object — no seam, no leftover
