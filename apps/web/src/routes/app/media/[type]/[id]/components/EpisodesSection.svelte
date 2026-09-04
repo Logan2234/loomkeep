@@ -262,7 +262,7 @@
         role="button"
         tabindex="0"
         aria-expanded={expanded}
-        class="bg-surface-2 font-display cursor-pointer rounded-[inherit] px-4 py-2.5 font-semibold [&::-webkit-details-marker]:hidden {expanded
+        class="font-display relative cursor-pointer rounded-[inherit] px-4 pt-2.5 pb-3 font-semibold [&::-webkit-details-marker]:hidden {expanded
           ? 'border-border rounded-b-none border-b'
           : ''}"
         onclick={() => toggleSeason(season.number)}
@@ -370,9 +370,10 @@
           )}
           <ProgressBar
             value={seasonPct}
-            height="h-0.75"
+            height="h-1"
             track="bg-border"
-            class="mt-2 w-full" />
+            rounded={false}
+            class="absolute inset-x-0 bottom-0" />
           {#if justFinished === season.number}
             <!-- The glowing bar alone read as "the fill stopped moving". The
                  congratulation is said in words, once, where the click

@@ -3,6 +3,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -33,8 +34,11 @@
   <section class="card p-4">
     <div class="mb-4 flex items-baseline justify-between">
       <p class="timecode text-xs uppercase">{m.home_activity_title()}</p>
-      <a href="/app/feed" class="btn-text">
+      <a href="/app/feed" class="btn-text group">
         {m.home_activity_view_feed()}
+        <Icon
+          name="arrow-right"
+          class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </a>
     </div>
     <ul class="flex flex-col gap-2">

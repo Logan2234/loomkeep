@@ -43,6 +43,9 @@ const JOB_LABELS = {
   "reports.digest": () => m.admin_job_reports_digest(),
   "backup.run": () => m.admin_job_backup(),
   "users.inactiveAccountsScan": () => m.admin_job_inactive_accounts(),
+  "gamification.reconcile": () => m.admin_job_gamification_reconcile(),
+  "gamification.achievementsSweep": () =>
+    m.admin_job_gamification_achievements_sweep(),
 };
 
 export function adminJobLabel(key: string): string {
@@ -64,6 +67,10 @@ export function adminJobSchedule(key: string): string | null {
     case "backup.run":
       return m.admin_job_daily_at({ time: "03:00" });
     case "users.inactiveAccountsScan":
+      return m.admin_job_daily_at({ time: "05:00" });
+    case "gamification.reconcile":
+      return m.admin_job_daily_at({ time: "04:00" });
+    case "gamification.achievementsSweep":
       return m.admin_job_daily_at({ time: "05:00" });
     default:
       return null;

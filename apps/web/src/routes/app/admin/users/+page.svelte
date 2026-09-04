@@ -457,8 +457,11 @@
             </p>
             <a
               href="/app/u/{selected.username}"
-              class="btn-text text-accent mt-0.5">
+              class="btn-text text-accent group mt-0.5">
               {m.admin_users_public_profile()}
+              <Icon
+                name="arrow-right"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
         </div>
