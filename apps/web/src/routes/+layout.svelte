@@ -40,6 +40,11 @@
   onNavigate((navigation) => {
     if (!document.startViewTransition) return;
 
+    // A filter writes its state into the query string, which is still a
+    // navigation — crossfading there blinks the page while the user stays
+    // exactly where they are. Only a change of route counts.
+    if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
+
     return new Promise((resolve) => {
       document.startViewTransition(async () => {
         resolve();

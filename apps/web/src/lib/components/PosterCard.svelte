@@ -29,7 +29,11 @@
 </script>
 
 <div
-  class="card group hover:border-accent relative transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
+  class="card poster-card group hover:border-accent relative overflow-hidden transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
+  <!-- Projector light catching the card as the cursor passes: the "Séance"
+       identity's own vocabulary, and the cheapest way to make a grid feel
+       alive. Decorative, and never in the way of the link above it. -->
+  <span class="poster-shine" aria-hidden="true"></span>
   <a {href} class="absolute inset-0 z-1" aria-label={title}></a>
   <Poster {src} {title} />
   <div class="flex flex-col gap-1.5 p-3">
@@ -66,3 +70,36 @@
     </button>
   {/if}
 </div>
+
+<style>
+  .poster-shine {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    background: linear-gradient(
+      100deg,
+      transparent,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent
+    );
+    transform: translateX(-160%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .poster-card:hover .poster-shine {
+    animation: poster-sweep 700ms ease-out;
+  }
+
+  @keyframes poster-sweep {
+    to {
+      transform: translateX(360%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .poster-card:hover .poster-shine {
+      animation: none;
+    }
+  }
+</style>

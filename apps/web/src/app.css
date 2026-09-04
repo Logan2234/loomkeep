@@ -343,6 +343,25 @@ body {
   animation: none;
 }
 
+/* Without this the browser tweens the group between the outgoing and the
+   incoming height and stretches both snapshots to fit, so a short page
+   replacing a long one arrives visibly squashed and settles afterwards.
+   Fixing the group's size and drawing each snapshot at its natural scale
+   leaves a plain crossfade. */
+::view-transition-group(route-content-desktop),
+::view-transition-group(route-content-mobile) {
+  animation: none;
+}
+
+::view-transition-old(route-content-desktop),
+::view-transition-new(route-content-desktop),
+::view-transition-old(route-content-mobile),
+::view-transition-new(route-content-mobile) {
+  height: 100%;
+  object-fit: none;
+  object-position: top center;
+}
+
 ::view-transition-old(route-content-desktop),
 ::view-transition-old(route-content-mobile) {
   animation: view-fade-out 90ms ease-out both;
