@@ -247,7 +247,12 @@
                 <Icon name="tv" class="text-accent h-4 w-4" />
                 {m.common_Media()} · {m.home_media_to_watch()}
               </h2>
-              <a href="/app/media" class="btn-text">{m.common_see_more()} →</a>
+              <a href="/app/media" class="btn-text group">
+                {m.common_see_more()}
+                <Icon
+                  name="arrow-right"
+                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </a>
             </div>
             <div class="p-4">
               {#if toWatch.length > 0}
@@ -315,7 +320,12 @@
                 <Icon name="gamepad" class="text-accent h-4 w-4" />
                 {m.common_Games()} · {m.home_games_playing()}
               </h2>
-              <a href="/app/games" class="btn-text">{m.common_see()} →</a>
+              <a href="/app/games" class="btn-text group">
+                {m.common_see()}
+                <Icon
+                  name="arrow-right"
+                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </a>
             </div>
             {#if playingGames.length > 0}
               <Carousel items={playingGames} keyOf={(e) => e.id}>
@@ -354,7 +364,12 @@
                 <Icon name="book" class="text-accent h-4 w-4" />
                 {m.common_Books()} · {m.home_books_reading()}
               </h2>
-              <a href="/app/books" class="btn-text">{m.common_see()} →</a>
+              <a href="/app/books" class="btn-text group">
+                {m.common_see()}
+                <Icon
+                  name="arrow-right"
+                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </a>
             </div>
             {#if readingBooks.length > 0}
               <ul class="divide-border divide-y">
@@ -406,7 +421,12 @@
                 <Icon name="music" class="text-accent h-4 w-4" />
                 {m.common_Music()} · {m.home_music_listening()}
               </h2>
-              <a href="/app/music" class="btn-text">{m.common_see()} →</a>
+              <a href="/app/music" class="btn-text group">
+                {m.common_see()}
+                <Icon
+                  name="arrow-right"
+                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </a>
             </div>
             {#if toListenAlbums.length > 0}
               <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
@@ -459,8 +479,12 @@
                 <Icon name="calendar" class="text-accent h-4 w-4" />
                 {m.home_this_week()}
               </h2>
-              <a href="/app/calendar" class="btn-text"
-                >{m.common_calendar()} →</a>
+              <a href="/app/calendar" class="btn-text group">
+                {m.common_calendar()}
+                <Icon
+                  name="arrow-right"
+                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </a>
             </div>
             {#if week.length > 0}
               <ul class="divide-border divide-y">

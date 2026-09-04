@@ -244,6 +244,8 @@
   {:else if name === "circle-arrow"}
     <path d="M20 12a8 8 0 1 1-3.2-6.4" />
     <path d="M20 3v4.5H15.5" />
+  {:else if name === "arrow-right"}
+    <path d="M4 12h16M13 5l7 7-7 7" />
   {:else if name === "pumpkin"}
     <path d="M12 3v3" />
     <path d="M4 13c0-4 3.5-7 8-7s8 3 8 7-3.5 8-8 8-8-4-8-8Z" />

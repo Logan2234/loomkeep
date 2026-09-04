@@ -68,4 +68,5 @@ export type IconName =
   | "footprint"
   | "shooting-star"
   | "circle-arrow"
+  | "arrow-right"
   | "pumpkin";

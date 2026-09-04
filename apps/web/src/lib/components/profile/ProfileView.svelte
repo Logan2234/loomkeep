@@ -730,8 +730,11 @@
           </p>
           <a
             href="/app/stats"
-            class="btn-text text-accent hover:text-accent mt-0.5">
+            class="btn-text text-accent hover:text-accent group mt-0.5">
             {m.profile_activity_view_stats()}
+            <Icon
+              name="arrow-right"
+              class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </a>
         </div>
       </div>
