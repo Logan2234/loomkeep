@@ -21,6 +21,7 @@
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
+  import CountFlash from "$lib/components/CountFlash.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
   import EditProfileModal from "$lib/components/EditProfileModal.svelte";
@@ -462,8 +463,9 @@
               type="button"
               class="hover:text-fg"
               onclick={() => openConnections("followers")}>
-              <span class="timecode text-fg text-lg font-bold"
-                >{profile.followerCount}</span>
+              <CountFlash
+                value={profile.followerCount}
+                class="timecode text-fg text-lg font-bold" />
               <span class="text-dim ml-1 text-xs tracking-wide uppercase"
                 >{profile.followerCount > 1
                   ? m.profile_followers_plural()

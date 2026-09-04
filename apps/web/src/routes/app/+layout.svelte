@@ -78,22 +78,22 @@
   <div class="hidden md:block">
     {#if effectiveNavStyle === "dock"}
       <ProjectorDockDesktop>
-        {@render children()}
+        <div class="route-content-desktop">{@render children()}</div>
       </ProjectorDockDesktop>
     {:else if effectiveNavStyle === "board"}
       <ProgrammeBoardDesktop>
-        {@render children()}
+        <div class="route-content-desktop">{@render children()}</div>
       </ProgrammeBoardDesktop>
     {:else}
       <DesktopSidebar>
-        {@render children()}
+        <div class="route-content-desktop">{@render children()}</div>
       </DesktopSidebar>
     {/if}
   </div>
 
   <div class="md:hidden">
     <MobileLayout navStyle={effectiveNavStyle}>
-      {@render children()}
+      <div class="route-content-mobile">{@render children()}</div>
     </MobileLayout>
   </div>
 

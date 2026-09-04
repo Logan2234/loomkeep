@@ -60,6 +60,9 @@
   class="grid auto-cols-min grid-flow-col {gapClass} overflow-x-auto pb-1"
   role="img"
   aria-label={m.stats_activity_heatmap()}>
+  <!-- Keyed on the data itself so switching period crossfades the grid
+       instead of swapping 90 cells in place. Only the swap animates: the
+       first render has nothing to fade from. -->
   {#each weeks as week, wi (wi)}
     <div class="grid grid-rows-7 {gapClass}">
       {#each week as day, di (di)}

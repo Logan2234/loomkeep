@@ -1,6 +1,7 @@
 <script lang="ts">
   import { forgotPassword } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import FieldError from "$lib/components/FieldError.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -53,13 +54,9 @@
               bind:value={email}
               required
               class="input" />
-            {#if submitMut.fieldErrors.email}
-              <p
-                id="forgot-password-email-error"
-                class="text-danger -mt-2 text-xs">
-                {submitMut.fieldErrors.email}
-              </p>
-            {/if}
+            <FieldError
+              id="forgot-password-email-error"
+              message={submitMut.fieldErrors.email} />
             {#if submitMut.error}
               <p class="text-danger text-sm">{submitMut.error}</p>
             {/if}

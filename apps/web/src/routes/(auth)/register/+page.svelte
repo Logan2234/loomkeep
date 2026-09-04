@@ -3,6 +3,7 @@
   import { env } from "$env/dynamic/public";
   import { register } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import FieldError from "$lib/components/FieldError.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -80,11 +81,9 @@
           bind:value={displayName}
           required
           class="input" />
-        {#if registerMut.fieldErrors.displayName}
-          <p id="register-display-name-error" class="text-danger -mt-2 text-xs">
-            {registerMut.fieldErrors.displayName}
-          </p>
-        {/if}
+        <FieldError
+          id="register-display-name-error"
+          message={registerMut.fieldErrors.displayName} />
         <input
           type="email"
           name="email"
@@ -98,11 +97,9 @@
           bind:value={email}
           required
           class="input" />
-        {#if registerMut.fieldErrors.email}
-          <p id="register-email-error" class="text-danger -mt-2 text-xs">
-            {registerMut.fieldErrors.email}
-          </p>
-        {/if}
+        <FieldError
+          id="register-email-error"
+          message={registerMut.fieldErrors.email} />
         <PasswordInput
           placeholder={m.common_password()}
           name="password"
@@ -148,11 +145,7 @@
             >.
           </span>
         </label>
-        {#if registerMut.fieldErrors.acceptedTerms}
-          <p class="text-danger -mt-2 text-xs">
-            {registerMut.fieldErrors.acceptedTerms}
-          </p>
-        {/if}
+        <FieldError message={registerMut.fieldErrors.acceptedTerms} />
         <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
           <input
             type="checkbox"
@@ -163,11 +156,7 @@
             class="mt-0.5" />
           <span>{m.auth_register_certify_age()}</span>
         </label>
-        {#if registerMut.fieldErrors.certifiedAge}
-          <p class="text-danger -mt-2 text-xs">
-            {registerMut.fieldErrors.certifiedAge}
-          </p>
-        {/if}
+        <FieldError message={registerMut.fieldErrors.certifiedAge} />
         <button
           type="submit"
           class="btn btn-primary"

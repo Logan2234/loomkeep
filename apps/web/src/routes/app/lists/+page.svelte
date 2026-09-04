@@ -9,9 +9,12 @@
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale } from "$lib/paraglide/runtime.js";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: m.lists_kind_ranked(),
@@ -80,6 +83,8 @@
   function handleCreated() {
     void queryClient.invalidateQueries({ queryKey: keys.lists.editable() });
   }
+
+  const reduced = prefersReducedMotion();
 </script>
 
 <div class="mx-auto max-w-4xl px-4 py-6 md:py-8">
@@ -152,7 +157,12 @@
       </button>
 
       {#each filtered as list (list.id)}
-        <a href="/app/lists/{list.id}" class="group">
+        <a
+          href="/app/lists/{list.id}"
+          class="group"
+          animate:flip={{ duration: reduced ? 0 : 250 }}
+          in:fade|global={{ duration: reduced ? 0 : 150 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}>
           <div
             class="card group-hover:border-accent overflow-hidden transition-colors">
             <ListCoverGrid images={list.previewImageUrls} title={list.title} />

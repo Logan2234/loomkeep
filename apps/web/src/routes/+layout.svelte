@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import { env } from "$env/dynamic/public";
   import { bootstrap } from "$lib/bootstrap.svelte";
@@ -28,6 +29,23 @@
 
   $effect(() => {
     navStyle.init();
+  });
+
+  // Cross-fade between routes instead of the hard cut the app had. Uses the
+  // browser's own View Transitions API rather than a wrapper transition: it
+  // captures the outgoing page as a snapshot, so nothing has to stay mounted
+  // and no layout is measured twice. Unsupported browsers navigate exactly as
+  // before. The animation itself is declared in app.css, which is also where
+  // prefers-reduced-motion turns it off.
+  onNavigate((navigation) => {
+    if (!document.startViewTransition) return;
+
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
   });
 </script>
 
