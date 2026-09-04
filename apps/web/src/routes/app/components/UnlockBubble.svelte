@@ -38,8 +38,8 @@
   import { levelForXp } from "@loomkeep/shared";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-  import { achievementName, entryIcon } from "../achievements/labels";
   import AchievementMedallion from "../achievements/components/AchievementMedallion.svelte";
+  import { achievementName, entryIcon } from "../achievements/labels";
 
   const reduced = prefersReducedMotion();
 
@@ -133,23 +133,8 @@
     }
   });
 
-  // Fixed offsets rather than random ones: the burst is the same every time,
-  // which is what keeps it feeling designed instead of noisy.
-  const SPARKS = [
-    { id: 0, x: "-58px", y: "-26px", delay: 0 },
-    { id: 1, x: "-24px", y: "-38px", delay: 60 },
-    { id: 2, x: "18px", y: "-40px", delay: 30 },
-    { id: 3, x: "54px", y: "-22px", delay: 90 },
-    { id: 4, x: "-44px", y: "22px", delay: 120 },
-    { id: 5, x: "40px", y: "26px", delay: 75 },
-  ];
-
   const entry = $derived(
     current?.kind === "achievement" ? (byKey.get(current.key) ?? null) : null,
-  );
-
-  const isGold = $derived(
-    !reduced && current?.kind === "achievement" && entry?.tier === "gold",
   );
 
   function open() {
@@ -210,19 +195,6 @@
       <!-- A single sweep of light across the card, once, just after it lands
            — the "something was won" beat. Purely decorative. -->
       <span class="unlock-shine" aria-hidden="true"></span>
-
-      {#if isGold}
-        <!-- Reserved for gold, the rarest tier in the catalogue. If every
-             unlock sparkled, nothing would: this is the one that earns it. -->
-        <span class="unlock-sparks" aria-hidden="true">
-          {#each SPARKS as spark (spark.id)}
-            <span
-              class="unlock-spark"
-              style="--spark-x: {spark.x}; --spark-y: {spark.y}; --spark-delay: {spark.delay}ms"
-            ></span>
-          {/each}
-        </span>
-      {/if}
 
       <span class="unlock-medal shrink-0">
         {#if current.kind === "achievement" && entry}
@@ -334,38 +306,6 @@
     to {
       transform: scale(1) rotate(0);
       opacity: 1;
-    }
-  }
-
-  .unlock-sparks {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-  }
-
-  .unlock-spark {
-    position: absolute;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--accent);
-    opacity: 0;
-    animation: unlock-spark 900ms ease-out var(--spark-delay) backwards;
-  }
-
-  @keyframes unlock-spark {
-    0% {
-      transform: translate(0, 0) scale(0.3);
-      opacity: 0;
-    }
-    30% {
-      opacity: 1;
-    }
-    100% {
-      transform: translate(var(--spark-x), var(--spark-y)) scale(0);
-      opacity: 0;
     }
   }
 

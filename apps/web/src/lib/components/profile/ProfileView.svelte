@@ -22,7 +22,6 @@
   import Banner from "$lib/components/Banner.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
   import CountFlash from "$lib/components/CountFlash.svelte";
-  import ConfirmAction from "$lib/components/ConfirmAction.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
   import EditProfileModal from "$lib/components/EditProfileModal.svelte";
@@ -514,9 +513,7 @@
                   : 'btn-primary'}"
                 disabled={busy}
                 onclick={toggleFollow}>
-                <ConfirmAction done={!!rel.following}>
-                  {followLabel}
-                </ConfirmAction>
+                {followLabel}
               </button>
             {/if}
             <button

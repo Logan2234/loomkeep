@@ -144,8 +144,7 @@
     }
 
     .achievement-grid > :global(.achievement-card:hover),
-    .achievement-grid > :global(.achievement-card:focus-visible),
-    .achievement-grid > :global(.achievement-card:focus-within) {
+    .achievement-grid > :global(.achievement-card:focus-visible) {
       opacity: 1;
       z-index: 5;
       border-color: var(--accent);

@@ -6,6 +6,7 @@
   import { auth } from "$lib/auth.svelte";
   import { trackBackHistory } from "$lib/backNav.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import RouteFade from "$lib/components/RouteFade.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
@@ -78,22 +79,22 @@
   <div class="hidden md:block">
     {#if effectiveNavStyle === "dock"}
       <ProjectorDockDesktop>
-        <div class="route-content-desktop">{@render children()}</div>
+        <RouteFade>{@render children()}</RouteFade>
       </ProjectorDockDesktop>
     {:else if effectiveNavStyle === "board"}
       <ProgrammeBoardDesktop>
-        <div class="route-content-desktop">{@render children()}</div>
+        <RouteFade>{@render children()}</RouteFade>
       </ProgrammeBoardDesktop>
     {:else}
       <DesktopSidebar>
-        <div class="route-content-desktop">{@render children()}</div>
+        <RouteFade>{@render children()}</RouteFade>
       </DesktopSidebar>
     {/if}
   </div>
 
   <div class="md:hidden">
     <MobileLayout navStyle={effectiveNavStyle}>
-      <div class="route-content-mobile">{@render children()}</div>
+      <RouteFade>{@render children()}</RouteFade>
     </MobileLayout>
   </div>
 

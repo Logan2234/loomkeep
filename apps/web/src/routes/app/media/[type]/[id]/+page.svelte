@@ -672,13 +672,15 @@
           {/if}
         {/each}
         {#if extras.watchProviders.link}
-          <a
-            href={extras.watchProviders.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="timecode text-dim hover:text-accent w-full text-[0.6rem] hover:underline">
-            {m.media_tmdb_france()}
-          </a>
+          <div class="w-full">
+            <a
+              href={extras.watchProviders.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-text btn-text-underline timecode hover:text-accent text-[0.6rem] decoration-1">
+              {m.media_tmdb_france()}
+            </a>
+          </div>
         {:else}
           <span class="timecode text-dim w-full text-[0.6rem]"
             >{m.media_france()}</span>

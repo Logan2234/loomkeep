@@ -26,10 +26,10 @@
   );
   let hovered = $state(false);
 
-  // Clicking a rail link swaps the page under the cursor, and the pointer
-  // never moves — so the browser fires mouseleave and no mouseenter follows.
-  // The rail would collapse while the mouse is still on it. A leave during a
-  // navigation says nothing about where the pointer is.
+  // A rail link swaps the page under a stationary cursor, which can fire
+  // mouseleave with no mouseenter to follow — the rail would collapse with
+  // the mouse still on it. A leave mid-navigation says nothing about where
+  // the pointer actually is.
   function onRailLeave() {
     if (navigating.to) return;
     hovered = false;

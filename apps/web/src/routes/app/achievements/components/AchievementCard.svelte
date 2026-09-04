@@ -85,7 +85,7 @@
 <!-- Focusable without being interactive on desktop, on purpose: the card
      isn't clickable there (hovering already reveals everything), but the
      tier ladder has to stay reachable for someone who doesn't use a mouse,
-     and `:focus-within` is what opens it. -->
+     and `:focus-visible` is what opens it. -->
 <div
   bind:this={node}
   class="achievement-card card relative flex min-h-40 flex-col gap-2 overflow-visible p-3.5 {flashing
@@ -145,7 +145,7 @@
 
 <style>
   /* Closed by default; the card's own hover/focus opens it. Kept out of
-     Tailwind utilities because it needs `:hover`/`:focus-within` on the card
+     Tailwind utilities because it needs `:hover`/`:focus-visible` on the card
      to drive a *descendant*, which utility classes can't express.
      prefers-reduced-motion is handled globally in app.css. */
   .achievement-unfold {
@@ -167,9 +167,12 @@
       opacity 130ms ease;
   }
 
+  /* `:focus-within` is deliberately absent: it also matches the focus a
+     mouse click leaves behind, which kept the ladder open after the cursor
+     had moved away. `:focus-visible` is the one that means "arrived here by
+     keyboard", which is the case this needs to serve. */
   .achievement-card:hover .achievement-unfold,
-  .achievement-card:focus-visible .achievement-unfold,
-  .achievement-card:focus-within .achievement-unfold {
+  .achievement-card:focus-visible .achievement-unfold {
     max-height: 22rem;
     padding: 0.7rem 0.75rem 0.8rem;
     opacity: 1;
@@ -206,8 +209,7 @@
   /* The open card and its panel read as one object — no seam, no leftover
      rounding between them. */
   .achievement-card:hover,
-  .achievement-card:focus-visible,
-  .achievement-card:focus-within {
+  .achievement-card:focus-visible {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
