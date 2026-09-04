@@ -1,8 +1,4 @@
-import type {
-  SocialProfileDto,
-  UpdateVisibilitySettingsDto,
-} from "@loomkeep/shared";
-import { request } from "./core";
+import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 export const getProfile = (username: string) =>
@@ -16,7 +12,9 @@ export const getProfile = (username: string) =>
  * render. Same payload either way.
  */
 export const getMyProfile = () =>
-  request<SocialProfileDto>("/users/me/profile");
+  typedRequest("/users/me/profile", {
+    method: "GET",
+  });
 
 export const followUser = (username: string) =>
   typedRequest("/social/users/{username}/follow", {
