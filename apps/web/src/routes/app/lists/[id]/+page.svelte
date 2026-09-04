@@ -90,6 +90,7 @@
   const canEditList = $derived(role === "OWNER" || role === "EDITOR");
   const isOwner = $derived(role === "OWNER");
   let removingId = $state<string | null>(null);
+  let reordering = $state(false);
 
   // Local, reorderable copy of the items — svelte-dnd-action mutates this
   // directly during a drag; resets to the query's own items whenever those
@@ -150,9 +151,10 @@
 
   async function handleDndFinalize(e: CustomEvent<{ items: ListItemDto[] }>) {
     dragItems = e.detail.items;
-    if (!list) return;
+    if (!list || reordering) return;
     const listId = list.id;
     const expectedUpdatedAt = list.updatedAt;
+    reordering = true;
     patchList({ items: dragItems });
     try {
       await reorderListItems(
@@ -160,13 +162,16 @@
         dragItems.map((i) => i.id),
         expectedUpdatedAt,
       );
+      await queryClient.refetchQueries({ queryKey: detailKey });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         conflictNotice = true;
-        void queryClient.refetchQueries({ queryKey: detailKey });
+        await queryClient.refetchQueries({ queryKey: detailKey });
         return;
       }
       throw err;
+    } finally {
+      reordering = false;
     }
   }
 
@@ -300,7 +305,7 @@
         class="mt-6 flex flex-col gap-2"
         use:dndzone={{
           items: dragItems,
-          dragDisabled: !canEditList,
+          dragDisabled: !canEditList || reordering,
           flipDurationMs: 150,
         }}
         onconsider={handleDndConsider}
