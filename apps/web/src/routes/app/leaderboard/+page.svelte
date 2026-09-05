@@ -17,11 +17,36 @@
   import { m } from "$lib/paraglide/messages.js";
   import {
     levelForXp,
+    type LeaderboardEntryDto,
     type LeaderboardPeriod,
     type LeaderboardScope,
   } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
+
+  // Podium tint for the top 3 — a left-to-right fade, same tier colors as
+  // the achievements medallions (text-tier-gold/silver/bronze). The viewer's
+  // own row overrides this even at rank 1: "this is you" outranks "this is
+  // gold" as the thing to notice.
+  function rankTextClass(entry: LeaderboardEntryDto): string {
+    if (entry.isViewer) return "text-accent";
+    if (entry.rank === 1) return "text-tier-gold";
+    if (entry.rank === 2) return "text-tier-silver";
+    if (entry.rank === 3) return "text-tier-bronze";
+    return "text-fg";
+  }
+
+  function rowClass(entry: LeaderboardEntryDto): string {
+    if (entry.isViewer)
+      return "bg-accent/10 shadow-[inset_2px_0_0_0_var(--color-accent)]";
+    if (entry.rank === 1)
+      return "bg-linear-to-r from-tier-gold/15 to-transparent hover:from-tier-gold/20";
+    if (entry.rank === 2)
+      return "bg-linear-to-r from-tier-silver/15 to-transparent hover:from-tier-silver/20";
+    if (entry.rank === 3)
+      return "bg-linear-to-r from-tier-bronze/15 to-transparent hover:from-tier-bronze/20";
+    return "hover:bg-surface-2";
+  }
 
   let scope = $state<LeaderboardScope>("global");
   let period = $state<LeaderboardPeriod>("month");
@@ -94,17 +119,16 @@
     {:else if entries.length === 0 && !viewerOutsideTop}
       <EmptyState>{m.gamification_leaderboard_empty()}</EmptyState>
     {:else}
-      <div class="card divide-border divide-y overflow-hidden">
+      <div class="card divide-border divide-y divide-dashed overflow-hidden">
         {#each entries as entry, i (entry.id)}
           <a
             href="/app/u/{entry.username}"
-            class="flex items-center gap-3 px-3.5 py-2.5 {entry.isViewer
-              ? 'bg-accent/10'
-              : 'hover:bg-surface-2'}"
+            class="flex items-center gap-3 px-3.5 py-2.5 {rowClass(entry)}"
             animate:flip={{ duration: reduced ? 0 : 200 }}
             in:fade|global={{ duration: reduced ? 0 : 120 }}
             out:fade|global={{ duration: reduced ? 0 : 100 }}>
-            <span class="text-fg w-7 text-center text-lg font-bold">
+            <span
+              class="w-7 text-center text-lg font-bold {rankTextClass(entry)}">
               {i > 0 && entries[i - 1].rank === entry.rank ? "–" : entry.rank}
             </span>
             <Avatar seed={entry.username} url={entry.avatarUrl} size={34} />
