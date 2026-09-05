@@ -1,6 +1,16 @@
 import { paraglideMiddleware } from "$lib/paraglide/server.js";
 import type { Handle } from "@sveltejs/kit";
 
+// Caddy (docker/Caddyfile) sets these same two headers at the edge for the
+// hosted VPS, but a self-host install running this container directly
+// (no reverse proxy, or one without equivalent headers) would otherwise
+// ship with neither - set them here too so the app is protected either way.
+// CSP stays out of scope here (see docker/Caddyfile's Report-Only comment).
+const SECURITY_HEADERS = {
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+};
+
 export const handle: Handle = ({ event, resolve }) =>
   paraglideMiddleware(event.request, async ({ request, locale }) => {
     event.request = request;
@@ -9,5 +19,10 @@ export const handle: Handle = ({ event, resolve }) =>
         html.replaceAll("%paraglide.lang%", locale),
     });
     response.headers.append("Vary", "Accept-Language, Cookie");
+
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+      response.headers.set(name, value);
+    }
+
     return response;
   });

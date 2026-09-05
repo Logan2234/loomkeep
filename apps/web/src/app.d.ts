@@ -1,3 +1,10 @@
+// Vite's own ambient types (vite/client.d.ts) declare `*.ico` but not the
+// `?inline` variant used by favicon.ico's +server.ts route.
+declare module "*.ico?inline" {
+  const src: string;
+  export default src;
+}
+
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
