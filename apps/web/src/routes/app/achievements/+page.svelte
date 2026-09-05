@@ -34,6 +34,10 @@
   const list = $derived(achievementsQuery.data ?? []);
   const summary = $derived(summarize(list));
   const sections = $derived(sectionsByFamily(groupAchievements(list)));
+  // [G9] Threaded down to every card/drawer so each equip control knows
+  // whether the showcase is already full — computed once here rather than
+  // re-counting per card.
+  const equippedCount = $derived(list.filter((a) => a.equipped).length);
 
   // The drawer is the compact-viewport path only. Drawer.svelte is already
   // `md:hidden`, but it also locks page scroll on mount — so it must not be
@@ -114,6 +118,7 @@
         {#each section.groups as group (group.id)}
           <AchievementCard
             {group}
+            {equippedCount}
             highlighted={highlightKey !== null &&
               group.entries.some((entry) => entry.key === highlightKey)}
             onselect={compact ? () => (openGroup = group) : undefined} />
@@ -124,7 +129,10 @@
 </div>
 
 {#if compact && openGroup}
-  <AchievementDrawer group={openGroup} onclose={() => (openGroup = null)} />
+  <AchievementDrawer
+    group={openGroup}
+    {equippedCount}
+    onclose={() => (openGroup = null)} />
 {/if}
 
 <style>

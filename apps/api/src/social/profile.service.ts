@@ -1,4 +1,5 @@
 import {
+  type AchievementDto,
   Domain,
   ErrorCode,
   type ListVisibility,
@@ -14,6 +15,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
 import { runtimeFor } from "../stats/video-stats.util";
@@ -72,6 +74,7 @@ export class ProfileService {
         createdAt: true,
         avatarUpdatedAt: true,
         hideProgression: true,
+        equippedBadgeKeys: true,
       },
     });
     if (!target)
@@ -108,6 +111,7 @@ export class ProfileService {
         domains: [],
         activityStats: EMPTY_ACTIVITY_STATS,
         xp: null,
+        equippedBadges: [],
         reviewsCount: 0,
         commentsCount: 0,
         listsCount: 0,
@@ -162,32 +166,41 @@ export class ProfileService {
     const xpVisible =
       relation.isSelf || (activityVisible && !target.hideProgression);
 
-    const [activityStats, xp, reviewsCount, commentsCount, listsCount] =
-      await Promise.all([
-        this.computeActivityStats(target.id, activityVisible),
-        gamificationEnabled && xpVisible
-          ? this.fetchRealXp(target.id)
-          : Promise.resolve(null),
-        this.countOwnVisible(
-          this.prisma.review.findMany({
-            where: { userId: target.id },
-            select: { visibility: true },
-          }),
-          target.profileAccess,
-          relation,
-        ),
-        this.prisma.comment.count({
-          where: { authorId: target.id, deletedAt: null },
+    const [
+      activityStats,
+      xp,
+      equippedBadges,
+      reviewsCount,
+      commentsCount,
+      listsCount,
+    ] = await Promise.all([
+      this.computeActivityStats(target.id, activityVisible),
+      gamificationEnabled && xpVisible
+        ? this.fetchRealXp(target.id)
+        : Promise.resolve(null),
+      gamificationEnabled && xpVisible
+        ? this.fetchEquippedBadges(target.id, target.equippedBadgeKeys)
+        : Promise.resolve([]),
+      this.countOwnVisible(
+        this.prisma.review.findMany({
+          where: { userId: target.id },
+          select: { visibility: true },
         }),
-        this.countOwnVisible(
-          this.prisma.list.findMany({
-            where: { userId: target.id },
-            select: { visibility: true },
-          }),
-          target.profileAccess,
-          relation,
-        ),
-      ]);
+        target.profileAccess,
+        relation,
+      ),
+      this.prisma.comment.count({
+        where: { authorId: target.id, deletedAt: null },
+      }),
+      this.countOwnVisible(
+        this.prisma.list.findMany({
+          where: { userId: target.id },
+          select: { visibility: true },
+        }),
+        target.profileAccess,
+        relation,
+      ),
+    ]);
 
     return {
       id: target.id,
@@ -203,6 +216,7 @@ export class ProfileService {
       domains,
       activityStats,
       xp,
+      equippedBadges,
       reviewsCount,
       commentsCount,
       listsCount,
@@ -216,6 +230,48 @@ export class ProfileService {
       where: { userId },
     });
     return score?.xp ?? 0;
+  }
+
+  /**
+   * [G9] Projects the target's equipped keys into full `AchievementDto`s for
+   * the profile showcase. A key with no matching `UserAchievement` row (the
+   * unlock was somehow reversed, or the registry entry no longer exists) is
+   * dropped rather than shown half-populated — equipping already guarantees
+   * "unlocked and not secret" at write time, this is just re-deriving the
+   * display shape, not re-validating the business rule.
+   */
+  private async fetchEquippedBadges(
+    userId: string,
+    keys: string[],
+  ): Promise<AchievementDto[]> {
+    if (keys.length === 0) return [];
+
+    const rows = await this.prisma.userAchievement.findMany({
+      where: { userId, key: { in: keys } },
+      select: { key: true, unlockedAt: true },
+    });
+    const unlockedAtByKey = new Map(rows.map((r) => [r.key, r.unlockedAt]));
+
+    return keys.flatMap((key): AchievementDto[] => {
+      const definition = ACHIEVEMENTS[key];
+      const unlockedAt = unlockedAtByKey.get(key);
+      if (!definition || !unlockedAt) return [];
+
+      return [
+        {
+          key: definition.key,
+          family: definition.family,
+          tierOf: definition.tierOf ?? null,
+          tier: definition.tier ?? null,
+          xpAward: definition.xpAward,
+          secret: false,
+          unlocked: true,
+          unlockedAt: unlockedAt.toISOString(),
+          progress: null,
+          equipped: true,
+        },
+      ];
+    });
   }
 
   /**

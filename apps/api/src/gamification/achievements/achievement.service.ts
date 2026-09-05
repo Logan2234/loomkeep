@@ -1,5 +1,6 @@
 import {
   ErrorCode,
+  MAX_EQUIPPED_BADGES,
   XpReason,
   type AchievementDto,
   type PendingAchievementDto,
@@ -165,13 +166,17 @@ export class AchievementService {
     if (!isGamificationEnabled(this.config, this.flags)) return [];
 
     const socialEnabled = isSocialEnabled(this.config, this.flags);
-    const unlockedRows = await this.prisma.userAchievement.findMany({
-      where: { userId },
-      select: { key: true, unlockedAt: true },
-    });
+    const [unlockedRows, equippedKeys] = await Promise.all([
+      this.prisma.userAchievement.findMany({
+        where: { userId },
+        select: { key: true, unlockedAt: true },
+      }),
+      this.equippedKeys(userId),
+    ]);
     const unlockedAtByKey = new Map(
       unlockedRows.map((r) => [r.key, r.unlockedAt]),
     );
+    const equipped = new Set(equippedKeys);
 
     // A socialGated entry can never unlock with social off (evaluateOne
     // skips it), so showing it would only advertise a surface this instance
@@ -182,7 +187,12 @@ export class AchievementService {
 
     return Promise.all(
       definitions.map((definition) =>
-        this.project(userId, definition, unlockedAtByKey.get(definition.key)),
+        this.project(
+          userId,
+          definition,
+          unlockedAtByKey.get(definition.key),
+          equipped.has(definition.key),
+        ),
       ),
     );
   }
@@ -191,6 +201,7 @@ export class AchievementService {
     userId: string,
     definition: AchievementDefinition,
     unlockedAt: Date | undefined,
+    equipped: boolean,
   ): Promise<AchievementDto> {
     const unlocked = unlockedAt !== undefined;
 
@@ -205,6 +216,7 @@ export class AchievementService {
         unlocked: false,
         unlockedAt: null,
         progress: null,
+        equipped: false,
       };
     }
 
@@ -220,7 +232,90 @@ export class AchievementService {
       unlocked,
       unlockedAt: unlockedAt?.toISOString() ?? null,
       progress: result.progress ?? null,
+      equipped,
     };
+  }
+
+  private async equippedKeys(userId: string): Promise<string[]> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { equippedBadgeKeys: true },
+    });
+    return user?.equippedBadgeKeys ?? [];
+  }
+
+  /**
+   * [G9] Adds `key` to the viewer's badge showcase — idempotent (equipping an
+   * already-equipped key is a no-op, not an error). Rejects a secret
+   * achievement outright: the whole point of "secret" is that unlocking it
+   * doesn't have to mean showing it, and equipping is the one action that
+   * would put it on display for every visitor. Never auto-picks or replaces
+   * anything on the caller's behalf (see the ticket's design-discussion
+   * comment) — a full showcase must be explicitly thinned by `unequip`
+   * first.
+   */
+  async equip(userId: string, key: string): Promise<string[]> {
+    const definition = ACHIEVEMENTS[key];
+
+    if (!definition) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.GamificationAchievementNotFound,
+      );
+    }
+
+    const unlocked = await this.prisma.userAchievement.findUnique({
+      where: { userId_key: { userId, key } },
+      select: { id: true },
+    });
+
+    if (!unlocked) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.GamificationAchievementNotFound,
+      );
+    }
+
+    if (definition.secret) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.GamificationBadgeSecret,
+        undefined,
+        "Cannot equip a secret achievement",
+      );
+    }
+
+    const current = await this.equippedKeys(userId);
+    if (current.includes(key)) return current;
+
+    if (current.length >= MAX_EQUIPPED_BADGES) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.GamificationBadgeLimitReached,
+        undefined,
+        `Cannot equip more than ${MAX_EQUIPPED_BADGES} badges at once`,
+      );
+    }
+
+    const next = [...current, key];
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { equippedBadgeKeys: next },
+    });
+    return next;
+  }
+
+  /** [G9] Removes `key` from the viewer's badge showcase. Idempotent. */
+  async unequip(userId: string, key: string): Promise<string[]> {
+    const current = await this.equippedKeys(userId);
+    if (!current.includes(key)) return current;
+
+    const next = current.filter((k) => k !== key);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { equippedBadgeKeys: next },
+    });
+    return next;
   }
 
   /**

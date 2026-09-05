@@ -19,6 +19,7 @@
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
+  import BadgeShowcase from "$lib/components/BadgeShowcase.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Carousel from "$lib/components/Carousel.svelte";
   import CountFlash from "$lib/components/CountFlash.svelte";
@@ -493,6 +494,12 @@
             leaderboardHref={selfManage && appConfig.socialEnabled
               ? "/app/leaderboard"
               : undefined} />
+        </div>
+        <!-- [G9] Same gate as xp above (equippedBadges is empty whenever xp
+             would have been null) — renders nothing at all when the viewer
+             has nothing equipped, per the ticket's zero-footprint rule. -->
+        <div class="mt-3">
+          <BadgeShowcase badges={profile.equippedBadges} />
         </div>
       {/if}
 

@@ -109,7 +109,7 @@
   {#if leaderboardHref}
     <a
       href={leaderboardHref}
-      class="border-border text-dim hover:text-fg mt-4 flex items-center justify-between gap-2 border-t pt-3.5 text-sm font-semibold">
+      class="btn-text border-border mt-4 flex items-center justify-between gap-2 border-t pt-3.5 text-sm">
       <span class="flex items-center gap-2">
         <Icon name="crown" class="h-4 w-4" />
         {m.gamification_view_leaderboard()}

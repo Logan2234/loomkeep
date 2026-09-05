@@ -4,6 +4,7 @@ import type {
   VisibilityAudience,
   VisibilityFacet,
 } from "../enums";
+import type { AchievementDto } from "./gamification";
 import type { LabelCountDto } from "./stats";
 
 /** Minimal identity of a user, for lists (followers, following, requests). */
@@ -119,6 +120,15 @@ export interface SocialProfileDto {
    * `hideProgression` — never `null` for the owner viewing their own profile.
    */
   xp: number | null;
+  /**
+   * [G9] Up to `MAX_EQUIPPED_BADGES` unlocked, non-secret achievements the
+   * target chose to show — an empty array both when nothing is equipped and
+   * whenever `xp` above would be null (same visibility rule, reused exactly
+   * rather than a parallel check: gamification off, viewer not allowed to see
+   * progression, or `hideProgression`). Never render a placeholder for the
+   * empty case — the ticket requires zero footprint, not an empty slot.
+   */
+  equippedBadges: AchievementDto[];
   /** Reviews with a visibility the viewer may see (own-scope, like List). */
   reviewsCount: number;
   /** Comments are public by nature — capped only by profile reachability. */

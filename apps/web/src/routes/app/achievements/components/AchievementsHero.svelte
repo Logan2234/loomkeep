@@ -6,7 +6,7 @@
   import type { AchievementTier } from "@loomkeep/shared";
   import type { CatalogueSummary } from "../achievements";
   import { achievementName, entryIcon } from "../labels";
-  import AchievementMedallion from "./AchievementMedallion.svelte";
+  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
 
   let { summary }: { summary: CatalogueSummary } = $props();
 
