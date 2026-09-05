@@ -1,6 +1,7 @@
 import type { AchievementDto, PendingAchievementDto } from "@loomkeep/shared";
 import {
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -50,5 +51,23 @@ export class AchievementsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<void> {
     await this.achievements.markVersionLinkClicked(user.sub);
+  }
+
+  /** [G9] Adds `key` to the viewer's badge showcase. Returns the new set. */
+  @Post(":key/equip")
+  equip(
+    @CurrentUser() user: JwtPayload,
+    @Param("key") key: string,
+  ): Promise<string[]> {
+    return this.achievements.equip(user.sub, key);
+  }
+
+  /** [G9] Removes `key` from the viewer's badge showcase. Returns the new set. */
+  @Delete(":key/equip")
+  unequip(
+    @CurrentUser() user: JwtPayload,
+    @Param("key") key: string,
+  ): Promise<string[]> {
+    return this.achievements.unequip(user.sub, key);
   }
 }

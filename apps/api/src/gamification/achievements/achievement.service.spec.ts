@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
@@ -295,5 +296,106 @@ describe("AchievementService.markDisplayed", () => {
       service.markDisplayed("user-1", "achievement-1"),
     ).resolves.toBeUndefined();
     expect(prisma.userAchievement.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("AchievementService.equip/unequip", () => {
+  it("equips an unlocked, non-secret achievement", async () => {
+    const { service, prisma } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      equippedBadgeKeys: [],
+    });
+
+    await expect(service.equip("user-1", "first_episode")).resolves.toEqual([
+      "first_episode",
+    ]);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { equippedBadgeKeys: ["first_episode"] },
+    });
+  });
+
+  it("is idempotent when the key is already equipped", async () => {
+    const { service, prisma } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      equippedBadgeKeys: ["first_episode"],
+    });
+
+    await expect(service.equip("user-1", "first_episode")).resolves.toEqual([
+      "first_episode",
+    ]);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("404s when the achievement isn't unlocked", async () => {
+    const { service, prisma } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue(null);
+
+    await expect(
+      service.equip("user-1", "first_episode"),
+    ).rejects.toMatchObject({
+      code: ErrorCode.GamificationAchievementNotFound,
+    });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a secret achievement — equipping it would put it on display", async () => {
+    const { service, prisma } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+
+    await expect(service.equip("user-1", "curious_cat")).rejects.toMatchObject({
+      code: ErrorCode.GamificationBadgeSecret,
+    });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a 4th badge once 3 are already equipped, without auto-swapping any of them", async () => {
+    const { service, prisma } = makeService();
+    (prisma.userAchievement.findUnique as Mock).mockResolvedValue({
+      id: "achievement-1",
+    });
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      equippedBadgeKeys: ["a", "b", "c"],
+    });
+
+    await expect(
+      service.equip("user-1", "first_episode"),
+    ).rejects.toMatchObject({ code: ErrorCode.GamificationBadgeLimitReached });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("unequips a key that's currently equipped", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      equippedBadgeKeys: ["first_episode", "cinephile_bronze"],
+    });
+
+    await expect(service.unequip("user-1", "first_episode")).resolves.toEqual([
+      "cinephile_bronze",
+    ]);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { equippedBadgeKeys: ["cinephile_bronze"] },
+    });
+  });
+
+  it("unequip is a no-op when the key isn't equipped", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue({
+      equippedBadgeKeys: ["cinephile_bronze"],
+    });
+
+    await expect(service.unequip("user-1", "first_episode")).resolves.toEqual([
+      "cinephile_bronze",
+    ]);
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

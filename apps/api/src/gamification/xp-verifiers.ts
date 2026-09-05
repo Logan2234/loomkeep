@@ -46,7 +46,7 @@ export function wordCount(text: string | null | undefined): number {
  * here would create a module cycle: LibraryModule already imports
  * GamificationModule for XpService).
  */
-export async function allAiredEpisodesWatched(
+async function allAiredEpisodesWatched(
   prisma: PrismaService,
   userId: string,
   episodes: { id: string; airDate: Date | null }[],

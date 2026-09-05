@@ -1,4 +1,5 @@
 import type { ProfileAccess, SocialProfileDto } from "@loomkeep/shared";
+import { AchievementResponseDto } from "../../gamification/achievements/dto/achievement-response.dto";
 import { ProfileActivityStatsResponseDto } from "./profile-activity-stats-response.dto";
 import { ProfileDomainStatResponseDto } from "./profile-domain-stat-response.dto";
 import { RelationshipResponseDto } from "./relationship-response.dto";
@@ -17,6 +18,7 @@ export class SocialProfileResponseDto implements SocialProfileDto {
   domains!: ProfileDomainStatResponseDto[];
   activityStats!: ProfileActivityStatsResponseDto;
   xp!: number | null;
+  equippedBadges!: AchievementResponseDto[];
   reviewsCount!: number;
   commentsCount!: number;
   listsCount!: number;

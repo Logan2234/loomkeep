@@ -183,6 +183,10 @@
   "gamification_xp_award": "+{xp} XP",
   "gamification_pips_title": "{earned} paliers obtenus sur {total}",
   "gamification_details_label": "Détail des paliers",
+  "gamification_equip_badge": "Équiper ce badge",
+  "gamification_unequip_badge": "Retirer ce badge",
+  "gamification_badge_limit_reached": "Vitrine pleine — retire d'abord un badge pour en équiper un autre.",
+  "gamification_badge_equipped": "Équipé",
 
   "gamification_note_unlocked_on": "{tier} obtenu le {date}.",
   "gamification_note_unlocked_single": "Débloqué le {date}.",

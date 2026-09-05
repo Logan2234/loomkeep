@@ -183,6 +183,10 @@
   "gamification_xp_award": "+{xp} XP",
   "gamification_pips_title": "{earned} of {total} tiers earned",
   "gamification_details_label": "Tier breakdown",
+  "gamification_equip_badge": "Equip this badge",
+  "gamification_unequip_badge": "Unequip this badge",
+  "gamification_badge_limit_reached": "Showcase full — unequip a badge first to equip another one.",
+  "gamification_badge_equipped": "Equipped",
 
   "gamification_note_unlocked_on": "{tier} earned on {date}.",
   "gamification_note_unlocked_single": "Unlocked on {date}.",

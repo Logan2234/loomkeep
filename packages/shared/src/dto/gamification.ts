@@ -53,7 +53,21 @@ export interface AchievementDto {
   unlocked: boolean;
   unlockedAt: string | null;
   progress: { current: number; target: number } | null;
+  /**
+   * [G9] Whether this exact key is currently in the viewer's own showcase.
+   * Always false for a masked secret (it can never be equipped — see
+   * `MAX_EQUIPPED_BADGES`'s doc) and for anyone else's achievement list, since
+   * `GET /achievements` only ever returns the viewer's own.
+   */
+  equipped: boolean;
 }
+
+/**
+ * [G9] How many badges a showcase can hold at once. Shared so the API's
+ * validation and the web's "equip" button disabled-state agree on the same
+ * number without either hardcoding it.
+ */
+export const MAX_EQUIPPED_BADGES = 3;
 
 /**
  * The viewer's own progression total. `xp` is null when GAMIFICATION_ENABLED

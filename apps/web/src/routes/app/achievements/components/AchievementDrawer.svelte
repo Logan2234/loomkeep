@@ -10,14 +10,16 @@
     groupIcon,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
-  import AchievementMedallion from "./AchievementMedallion.svelte";
+  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
 
   let {
     group,
     onclose,
+    equippedCount,
   }: {
     group: AchievementGroup;
     onclose: () => void;
+    equippedCount: number;
   } = $props();
 
   const focusEntry = $derived(group.next ?? group.entries.at(-1)!);
@@ -42,7 +44,7 @@
     <div
       class="border-border rounded-lg border p-3"
       aria-label={m.gamification_details_label()}>
-      <AchievementLadder {group} />
+      <AchievementLadder {group} {equippedCount} />
     </div>
 
     <button type="button" class="btn btn-ghost w-full" onclick={onclose}>
