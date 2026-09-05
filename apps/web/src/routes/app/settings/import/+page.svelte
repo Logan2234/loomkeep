@@ -5,6 +5,7 @@
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
+  import PageHeader from "$lib/components/PageHeader.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
@@ -59,20 +60,10 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-  <div class="mb-6 flex items-center gap-3">
-    <a
-      href="/app/settings"
-      class="text-dim hover:text-fg"
-      aria-label={m.common_back()}>
-      <Icon name="chevron-left" class="h-5 w-5" />
-    </a>
-    <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-      {m.common_import()}
-    </h1>
-  </div>
-  <p class="text-dim mb-8 max-w-xl text-sm">
-    {m.settings_import_description()}
-  </p>
+  <PageHeader
+    title={m.common_import()}
+    subtitle={m.settings_import_description()}
+    back="/app/settings" />
 
   <div class="flex flex-col gap-8">
     {#each Object.entries(groups) as [domain, sources] (domain)}

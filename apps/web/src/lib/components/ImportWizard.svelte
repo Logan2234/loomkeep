@@ -49,6 +49,7 @@
     importReportLabel,
     importReportSubtitle,
   } from "./import-presentation";
+  import PageHeader from "./PageHeader.svelte";
 
   // `intro` holds the source-specific export instructions (markup, hence a
   // snippet rather than a config field); everything else comes from `source`.
@@ -423,17 +424,9 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-  <div class="mb-6 flex items-center gap-3">
-    <a
-      href="/app/settings/import"
-      class="text-dim hover:text-fg"
-      aria-label={m.common_back()}>
-      <Icon name="chevron-left" class="h-5 w-5" />
-    </a>
-    <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-      {m.import_title({ source: descriptor.label })}
-    </h1>
-  </div>
+  <PageHeader
+    title={m.import_title({ source: descriptor.label })}
+    back="/app/settings/import" />
 
   {#if error}
     <Banner variant="error" class="mb-4">{error}</Banner>
