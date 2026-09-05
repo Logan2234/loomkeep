@@ -11,6 +11,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import PageHeader from "$lib/components/PageHeader.svelte";
   import { formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
@@ -51,20 +52,11 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-  <div class="mb-6 flex items-center gap-3">
-    <a
-      href="/app/settings"
-      class="text-dim hover:text-fg"
-      aria-label={m.common_back()}>
-      <Icon name="chevron-left" class="h-5 w-5" />
-    </a>
-    <h1 class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-      {m.settings_sessions_title()}
-    </h1>
-  </div>
-  <p class="text-dim mb-8 max-w-xl text-sm">
-    {m.settings_sessions_description()}
-  </p>
+  <PageHeader
+    title={m.settings_sessions_title()}
+    subtitle={m.settings_sessions_description()}
+    icon="monitor"
+    back="/app/settings" />
 
   {#if loading}
     <CardRowSkeleton count={3} />

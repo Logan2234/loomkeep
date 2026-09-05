@@ -39,6 +39,7 @@
         (item) =>
           (!item.domain || isDomainEnabled(item.domain)) &&
           (!item.social || appConfig.socialEnabled) &&
+          (!item.gamification || appConfig.gamificationEnabled) &&
           !item.comingSoon,
       ),
     ),

@@ -14,6 +14,7 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { VisibilityService } from "./visibility.service";
+import { computeIsFriend } from "./visibility.util";
 
 const USER_SUMMARY_SELECT = {
   id: true,
@@ -369,5 +370,38 @@ export class FollowService {
       select: { followee: { select: USER_SUMMARY_SELECT } },
     });
     return rows.map((r) => toUserSummaryDto(r.followee));
+  }
+
+  /**
+   * Every user id `userId` is a friend of, per `computeIsFriend` — a PRIVATE
+   * account followed (their acceptance already means friend-level), or a
+   * PUBLIC account followed back. Two queries, not one per candidate: the
+   * [G7] friends-scoped leaderboard is the first caller that needs the whole
+   * set at once rather than a single pairwise relation.
+   */
+  async listFriendIds(userId: string): Promise<string[]> {
+    const [followees, followers] = await Promise.all([
+      this.prisma.follow.findMany({
+        where: { followerId: userId, status: "ACCEPTED" },
+        select: {
+          followeeId: true,
+          followee: { select: { profileAccess: true } },
+        },
+      }),
+      this.prisma.follow.findMany({
+        where: { followeeId: userId, status: "ACCEPTED" },
+        select: { followerId: true },
+      }),
+    ]);
+    const followsMe = new Set(followers.map((f) => f.followerId));
+    return followees
+      .filter((f) =>
+        computeIsFriend(
+          f.followee.profileAccess,
+          true,
+          followsMe.has(f.followeeId),
+        ),
+      )
+      .map((f) => f.followeeId);
   }
 }

@@ -208,7 +208,9 @@
           <p class="text-dim text-sm">{m.common_username()}</p>
           <p class="font-semibold">{auth.user.username}</p>
         </div>
-        <button class="link-accent text-sm" onclick={openUsernameModal}>
+        <button
+          class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+          onclick={openUsernameModal}>
           {m.common_edit()}
         </button>
       </div>
@@ -241,7 +243,7 @@
               class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <button
                 type="button"
-                class="link-accent"
+                class="btn-text btn-text-underline text-accent hover:text-accent decoration-1"
                 onclick={resendVerification}
                 disabled={resendVerificationMut.loading ||
                   verificationCooldown > 0}>
@@ -264,7 +266,9 @@
           {/if}
         </div>
 
-        <button class="link-accent shrink-0 text-sm" onclick={openEmailModal}>
+        <button
+          class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+          onclick={openEmailModal}>
           {m.common_edit()}
         </button>
       </div>
@@ -273,7 +277,9 @@
           <p class="text-dim text-sm">{m.common_password()}</p>
           <p class="font-semibold tracking-widest">••••••••</p>
         </div>
-        <button class="link-accent text-sm" onclick={openPasswordModal}>
+        <button
+          class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+          onclick={openPasswordModal}>
           {m.common_edit()}
         </button>
       </div>
@@ -282,7 +288,9 @@
           <p class="text-dim text-sm">{m.settings_sessions_title()}</p>
           <p class="font-semibold">{m.settings_open_sessions_description()}</p>
         </div>
-        <a href="/app/settings/sessions" class="link-accent text-sm">
+        <a
+          class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+          href="/app/settings/sessions">
           {m.common_manage()}
         </a>
       </div>

@@ -56,10 +56,7 @@ export type IconName =
   | "lock"
   | "warning"
   | "play"
-  // [G3] achievement glyphs — a reusable base set (see apps/web/DESIGN.md and
-  // the [G3] plan's "Artwork" section), never a bespoke badge per achievement.
   | "trophy"
-  // [G5]: the masked medallion of a still-locked secret achievement.
   | "question"
   | "flame"
   | "compass"
@@ -69,4 +66,5 @@ export type IconName =
   | "shooting-star"
   | "circle-arrow"
   | "arrow-right"
-  | "pumpkin";
+  | "pumpkin"
+  | "crown";

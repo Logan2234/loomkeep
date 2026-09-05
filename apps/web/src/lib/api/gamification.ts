@@ -1,4 +1,9 @@
-import type { AchievementDto } from "@loomkeep/shared";
+import type {
+  AchievementDto,
+  LeaderboardDto,
+  LeaderboardPeriod,
+  LeaderboardScope,
+} from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 export function getAchievements() {
@@ -22,4 +27,13 @@ export function markAchievementDisplayed(id: string) {
 
 export function getMyProgression() {
   return typedRequest("/gamification/me");
+}
+
+export function getLeaderboard(
+  scope: LeaderboardScope,
+  period: LeaderboardPeriod,
+) {
+  return typedRequest("/leaderboard", {
+    query: { scope, period },
+  }) as Promise<LeaderboardDto>;
 }

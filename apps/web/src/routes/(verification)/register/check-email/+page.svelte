@@ -70,8 +70,8 @@
       <div class="card flex flex-col gap-5 p-7">
         <div class="text-center">
           <div
-            class="bg-accent/10 text-accent mx-auto mb-5 flex items-center justify-center rounded-full">
-            <Icon name="check" class="h-14 w-14" />
+            class="bg-accent/10 text-accent mb-5 inline-flex items-center justify-center rounded-full p-2">
+            <Icon name="check" class="h-12 w-12" />
           </div>
 
           <h1 class="font-display text-xl font-bold">

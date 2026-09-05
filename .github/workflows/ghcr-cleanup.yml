@@ -1,0 +1,34 @@
+name: GHCR cleanup
+
+on:
+  schedule:
+    # Weekly is plenty — untagged versions only pile up one push to main at a
+    # time (docker-push in ci.yml), never in bulk.
+    - cron: "12 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      # Every push to main tags both loomkeep-api and loomkeep-web with
+      # `latest` and the commit's short SHA (see ci.yml's docker-push job) —
+      # nothing is ever pushed genuinely untagged by that job itself. What
+      # accumulates as "untagged" in the package view is Buildx's build
+      # provenance/SBOM attestation manifests, one extra per pushed image.
+      # GHCR has no built-in expiry for a personal-account package (that's an
+      # org-only setting), so without this, they'd sit there forever. This
+      # action understands the referrer/attestation relationship and only
+      # removes what nothing else points to — a plain "delete anything
+      # untagged" approach would be unsafe here.
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          package: loomkeep-api,loomkeep-web
+          delete-untagged: true
+          delete-orphaned-images: true
+          registry-url: "https://ghcr.io"

@@ -8,6 +8,7 @@
   type IconName = ComponentProps<typeof Icon>["name"];
 
   import { m } from "$lib/paraglide/messages.js";
+  import NewBadge from "./NewBadge.svelte";
 
   let {
     icon,
@@ -15,6 +16,7 @@
     subtitle,
     actions,
     back,
+    isNew = false,
     class: cls = "mb-8",
   }: {
     icon?: IconName;
@@ -24,6 +26,8 @@
     /** Where the "<" leads. Set on pages reached from another one (the
      * profile hub, a settings sub-page), omitted on nav destinations. */
     back?: string;
+    /** Shows a "Nouveau" pill next to the title — see feature-badges.ts. */
+    isNew?: boolean;
     class?: string;
   } = $props();
 </script>
@@ -42,6 +46,7 @@
       {/if}
       {#if icon}<Icon name={icon} class="text-accent h-7 w-7" />{/if}
       {title}
+      {#if isNew}<NewBadge />{/if}
     </h1>
     {#if subtitle}
       <p class="text-dim mt-1">{subtitle}</p>
