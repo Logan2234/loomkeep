@@ -480,7 +480,7 @@
                 aria-pressed={on}
                 onclick={() => toggle(salle.id)}
                 class="group grid w-full items-baseline gap-x-6 gap-y-1 py-6 text-left duration-200 hover:pl-3 md:grid-cols-[1.5rem_2fr_3fr_1fr]"
-                class:opacity-45={!on}>
+                class:opacity-90={!on}>
                 <span
                   class="row-span-2 grid h-5 w-5 shrink-0 place-items-center self-center rounded-md border transition-colors md:row-span-1"
                   style={on && salle.color
