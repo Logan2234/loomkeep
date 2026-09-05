@@ -226,8 +226,7 @@ export const MAIL_COPY = {
       thisWeek: "cette semaine",
       oneSubject: (title) => `Nouvel épisode : ${title}`,
       oneIntro: (period) => `Un épisode t'attend ${period}.`,
-      severalSubject: (count, period) =>
-        `${count} nouveaux épisodes ${period}`,
+      severalSubject: (count, period) => `${count} nouveaux épisodes ${period}`,
       severalIntro: (period) => `Voici ce qui sort ${period}.`,
       manySubject: (count, period) => `${count} sorties ${period}`,
       manyIntro: (count, period) =>

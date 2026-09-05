@@ -355,9 +355,13 @@ describe("MailService template gallery", () => {
 
   it("localizes dates but leaves newsletter copy as authored", () => {
     const service = new MailService(quota);
-    const inactivity = service.renderTemplatePreview("inactivityWarning", "en", {
-      deletionDate: "2028-08-15",
-    });
+    const inactivity = service.renderTemplatePreview(
+      "inactivityWarning",
+      "en",
+      {
+        deletionDate: "2028-08-15",
+      },
+    );
     const newsletter = service.renderTemplatePreview("newsletter", "en", {
       title: "Version été",
       content: "Contenu éditorial inchangé.",
@@ -403,10 +407,10 @@ describe("MailService template gallery", () => {
     });
 
     const service = new MailService(quota);
-    const sent = await service.sendTemplateTest(
-      "does-not-exist",
-      { email: "test@example.com", locale: "fr" },
-    );
+    const sent = await service.sendTemplateTest("does-not-exist", {
+      email: "test@example.com",
+      locale: "fr",
+    });
 
     expect(sent).toBe(false);
   });

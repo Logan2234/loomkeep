@@ -68,10 +68,10 @@ export class ModerationDecisionService {
     await this.mail.sendModerationDecision(
       { email: input.subjectEmail, locale: input.subjectLocale },
       {
-      measure: input.measure,
-      reasonText: input.reasonText,
-      legalBasis: input.legalBasis,
-      tosClause: input.tosClause,
+        measure: input.measure,
+        reasonText: input.reasonText,
+        legalBasis: input.legalBasis,
+        tosClause: input.tosClause,
       },
     );
 

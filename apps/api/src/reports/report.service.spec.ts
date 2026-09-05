@@ -319,12 +319,10 @@ describe("ReportService.sendDailyDigest", () => {
     const { svc, prisma, mail } = make({
       report: { count: vi.fn().mockResolvedValue(2) },
       user: {
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            { email: "a@x.com", locale: "fr" },
-            { email: "b@x.com", locale: "en" },
-          ]),
+        findMany: vi.fn().mockResolvedValue([
+          { email: "a@x.com", locale: "fr" },
+          { email: "b@x.com", locale: "en" },
+        ]),
       },
     });
     const sent = await svc.sendDailyDigest();

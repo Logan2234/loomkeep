@@ -188,13 +188,7 @@ export class MailService {
       // recipient/subscription to mint one for. No real Quackback HTML to
       // preview here either, so this always exercises the Markdown fallback.
       build: (locale, v) =>
-        this.buildNewsletter(
-          locale,
-          v.title,
-          v.content,
-          "",
-          "preview-token",
-        ),
+        this.buildNewsletter(locale, v.title, v.content, "", "preview-token"),
     },
     episodeDigest: {
       label: "Digest de sorties (email)",
@@ -466,7 +460,10 @@ export class MailService {
     });
   }
 
-  async sendMfaEmailCode(recipient: MailRecipient, code: string): Promise<void> {
+  async sendMfaEmailCode(
+    recipient: MailRecipient,
+    code: string,
+  ): Promise<void> {
     const locale = resolveMailLocale(recipient.locale);
     await this.send({
       to: recipient.email,
@@ -485,7 +482,10 @@ export class MailService {
     });
   }
 
-  async sendVerifyEmail(recipient: MailRecipient, token: string): Promise<void> {
+  async sendVerifyEmail(
+    recipient: MailRecipient,
+    token: string,
+  ): Promise<void> {
     const locale = resolveMailLocale(recipient.locale);
     await this.send({
       to: recipient.email,
@@ -555,7 +555,10 @@ export class MailService {
     await this.send({
       to: recipient.email,
       replyTo: "contact@loomkeep.app",
-      ...this.buildModerationDecision(resolveMailLocale(recipient.locale), input),
+      ...this.buildModerationDecision(
+        resolveMailLocale(recipient.locale),
+        input,
+      ),
     });
   }
 
@@ -579,7 +582,10 @@ export class MailService {
     });
   }
 
-  private buildReportsDigest(locale: Locale, pendingCount: number): TemplateBody {
+  private buildReportsDigest(
+    locale: Locale,
+    pendingCount: number,
+  ): TemplateBody {
     const copy = MAIL_COPY[locale].reportsDigest;
     const url = `${this.webOrigin}/app/admin/reports`;
     return {
@@ -600,12 +606,15 @@ export class MailService {
    * is only meaningful when legalBasis is TOS_BREACH — ILLEGAL_CONTENT states
    * the illegality ground instead.
    */
-  private buildModerationDecision(locale: Locale, input: {
-    measure: ModerationMeasure;
-    reasonText: string;
-    legalBasis: ModerationLegalBasis;
-    tosClause: string;
-  }): TemplateBody {
+  private buildModerationDecision(
+    locale: Locale,
+    input: {
+      measure: ModerationMeasure;
+      reasonText: string;
+      legalBasis: ModerationLegalBasis;
+      tosClause: string;
+    },
+  ): TemplateBody {
     const copy = MAIL_COPY[locale].moderation;
     const variant =
       input.measure === ModerationMeasure.COMMENT_REMOVED
@@ -637,7 +646,10 @@ export class MailService {
    * naming the exact date the account is due for automatic deletion (36
    * months of inactivity) unless the account is used again before then.
    */
-  private buildInactivityWarning(locale: Locale, deletionDate: Date): TemplateBody {
+  private buildInactivityWarning(
+    locale: Locale,
+    deletionDate: Date,
+  ): TemplateBody {
     const copy = MAIL_COPY[locale].inactivity;
     const formattedDate = new Intl.DateTimeFormat(dateLocale(locale), {
       dateStyle: "long",

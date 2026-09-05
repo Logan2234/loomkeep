@@ -320,7 +320,9 @@ describe("AuthService.register", () => {
     );
 
     expect(prisma.user.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ locale: "en" }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ locale: "en" }),
+      }),
     );
     expect(mail.sendWelcome).toHaveBeenCalledWith(
       expect.objectContaining({ email: "alice@example.com", locale: "en" }),
