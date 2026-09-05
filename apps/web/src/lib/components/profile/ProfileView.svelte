@@ -488,7 +488,11 @@
 
       {#if appConfig.gamificationEnabled && profile.xp !== null}
         <div class="mt-5">
-          <LevelCard xp={profile.xp} />
+          <LevelCard
+            xp={profile.xp}
+            leaderboardHref={selfManage && appConfig.socialEnabled
+              ? "/app/leaderboard"
+              : undefined} />
         </div>
       {/if}
 

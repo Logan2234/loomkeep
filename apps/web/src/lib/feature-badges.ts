@@ -21,6 +21,7 @@ const SHIPPED: Record<string, string> = {
   "nav-styles": "2026-08-26",
   mfa: "2026-08-26",
   achievements: "2026-09-03",
+  leaderboard: "2026-09-05",
 };
 
 export function isFeatureNew(key: keyof typeof SHIPPED): boolean {

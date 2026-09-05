@@ -195,6 +195,8 @@ const MESSAGES = {
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
   [ErrorCode.GamificationAchievementNotFound]: () =>
     m.apierr_gamification_achievement_not_found(),
+  [ErrorCode.GamificationFeatureDisabled]: () =>
+    m.apierr_gamification_feature_disabled(),
 } satisfies Record<ErrorCode, () => string>;
 
 /**

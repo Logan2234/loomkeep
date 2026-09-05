@@ -10,6 +10,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
@@ -63,7 +64,8 @@
     icon="trophy"
     back="/app/profile"
     title={m.gamification_page_title()}
-    subtitle={m.gamification_page_subtitle()} />
+    subtitle={m.gamification_page_subtitle()}
+    isNew={isFeatureNew("achievements")} />
 
   {#if !appConfig.gamificationEnabled}
     <EmptyState>{m.gamification_disabled()}</EmptyState>

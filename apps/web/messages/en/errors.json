@@ -58,6 +58,7 @@
   "apierr_import_archive_missing_files": "The archive is missing required files.",
   "apierr_import_archive_malformed": "The archive couldn't be read — one of its files is malformed.",
   "apierr_gamification_achievement_not_found": "This achievement could not be found.",
+  "apierr_gamification_feature_disabled": "This feature isn't available on this instance.",
   "apierr_validation_invalid_param": "Invalid parameter.",
   "apierr_validation_failed": "The form contains errors.",
   "apierr_internal_error": "Something went wrong.",

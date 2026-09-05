@@ -195,5 +195,17 @@
   "gamification_bubble_level_title": "Level {level}",
   "gamification_bubble_dismiss": "Dismiss",
   "gamification_disabled": "Progression is disabled on this instance.",
-  "gamification_empty": "No achievements to show."
+  "gamification_empty": "No achievements to show.",
+
+  "gamification_leaderboard_title": "Leaderboard",
+  "gamification_leaderboard_subtitle": "Who's earning the most XP, among friends or across the whole instance.",
+  "gamification_leaderboard_tab_global": "Global",
+  "gamification_leaderboard_tab_friends": "Friends",
+  "gamification_leaderboard_period_month": "This month",
+  "gamification_leaderboard_period_year": "This year",
+  "gamification_leaderboard_xp": "{xp} XP",
+  "gamification_leaderboard_you": "You",
+  "gamification_leaderboard_disabled": "The leaderboard isn't available on this instance.",
+  "gamification_leaderboard_empty": "Nobody has earned XP this period yet.",
+  "gamification_view_leaderboard": "View leaderboard"
 }
