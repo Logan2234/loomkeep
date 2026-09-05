@@ -95,3 +95,7 @@ overrides:
   cookie@<0.7.0: ^0.7.0
   mysql2@<3.22.0: ^3.22.0
   nanoid@<3.3.18: ^3.3.18
+  # @nestjs/platform-fastify@12.0.1 resolves its own fastify range to 5.12.1
+  # independently of the direct 5.12.3 dependency above, so TypeScript sees
+  # two incompatible FastifyInstance types in main.ts. Force one version.
+  fastify: ^5.12.3
