@@ -15,7 +15,7 @@
     type AchievementTier,
   } from "@loomkeep/shared";
   import type { AchievementGroup } from "../achievements";
-  import { contextNote, tierLabel } from "../labels";
+  import { achievementDescription, contextNote, tierLabel } from "../labels";
 
   let {
     group,
@@ -68,10 +68,15 @@
           ? FILL[entry.tier ?? 'gold']
           : 'border-border bg-surface-2'}">
       </i>
-      <span
-        class="text-xs {entry.unlocked || current ? 'text-fg' : 'text-dim'}">
-        {tierLabel(entry.tier)}
-      </span>
+      <Tooltip text={achievementDescription(entry)} placement="bottom">
+        <span
+          class="cursor-help text-xs underline decoration-dotted underline-offset-2 {entry.unlocked ||
+          current
+            ? 'text-fg'
+            : 'text-dim'}">
+          {tierLabel(entry.tier)}
+        </span>
+      </Tooltip>
       <span class="timecode text-xs {current ? 'text-accent' : ''}">
         {entry.progress ? formatNumber(entry.progress.target) : "1"}
       </span>

@@ -12,8 +12,13 @@ import { ApiProperty } from "@nestjs/swagger";
  * class fields for the plugin to read, so it generated both as optional,
  * which then made the whole `AchievementDto` un-assignable wherever a
  * stricter caller (the [G9] profile showcase) needed the real shared type.
+ * Deliberately not exported: nothing outside this file references it, and
+ * `AchievementResponseDto` below only needs it as a type for `@ApiProperty` —
+ * exporting it would fail both the response-DTO `implements` convention test
+ * (no matching shared-package interface exists for a bare progress shape)
+ * and knip's unused-export check.
  */
-export class AchievementProgressResponseDto {
+class AchievementProgressResponseDto {
   current!: number;
   target!: number;
 }
