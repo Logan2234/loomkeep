@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Dev-only seeder. Meant to run against an empty (freshly `migrate reset`)
  * database — it does not clean up existing rows.
@@ -1153,23 +1152,23 @@ async function main() {
     ],
   });
 
-  console.log("Seed terminé :");
-  console.log(
+  console.warn("Seed terminé :");
+  console.warn(
     `  - ${users.length} utilisateurs (dont ${logan.email} / Lolo2234)`,
   );
-  console.log(`  - Bibliothèques média/jeux/livres/musique remplies`);
-  console.log(
+  console.warn(`  - Bibliothèques média/jeux/livres/musique remplies`);
+  console.warn(
     `  - Social : follows, reviews, commentaires, signalements, listes`,
   );
-  console.log(
+  console.warn(
     `  - Admin, jobs, appareils, sécurité, imports, sauvegardes peuplés`,
   );
-  console.log("Comptes :");
-  console.log(`  - ${logan.email} / Lolo2234 (admin)`);
-  console.log(`  - ${loganSfr.email} / Lolo2234`);
-  console.log(`  - ${alice.email} / Password123!`);
-  console.log(`  - ${bob.email} / Password123!`);
-  console.log(`  - ${chloe.email} / Password123!`);
+  console.warn("Comptes :");
+  console.warn(`  - ${logan.email} / Lolo2234 (admin)`);
+  console.warn(`  - ${loganSfr.email} / Lolo2234`);
+  console.warn(`  - ${alice.email} / Password123!`);
+  console.warn(`  - ${bob.email} / Password123!`);
+  console.warn(`  - ${chloe.email} / Password123!`);
 }
 
 main()
