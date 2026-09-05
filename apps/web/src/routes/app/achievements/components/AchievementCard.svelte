@@ -15,6 +15,7 @@
   // role rather than a real <button> (whose content model forbids the flow
   // content inside: the progress bar, the ladder) or an <article> (which has
   // a landmark role of its own, and may not be repurposed as a button).
+  import Icon from "$lib/components/Icon.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { formatNumber } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
@@ -76,6 +77,11 @@
   const earned = $derived(group.entries.filter((e) => e.unlocked).at(-1));
   const xpEntry = $derived(earned ?? focusEntry);
 
+  // [G9] Whichever tier of this family is currently in the profile showcase,
+  // if any — surfaced right on the card (not just inside the hover-only
+  // ladder) so it can actually be found and unequipped without opening it.
+  const equippedEntry = $derived(group.entries.find((e) => e.equipped));
+
   function onkeydown(event: KeyboardEvent) {
     if (!onselect) return;
     if (event.key !== "Enter" && event.key !== " ") return;
@@ -100,7 +106,17 @@
   onclick={onselect}
   {onkeydown}>
   <div class="flex items-start justify-between gap-2.5">
-    <AchievementMedallion icon={groupIcon(group)} tier={group.reachedTier} />
+    <div class="relative">
+      <AchievementMedallion icon={groupIcon(group)} tier={group.reachedTier} />
+      {#if equippedEntry}
+        <span
+          class="bg-accent text-accent-fg border-surface absolute -top-1 -right-1 grid h-4.5 w-4.5 place-items-center rounded-full border-2"
+          title={m.gamification_badge_equipped()}
+          aria-label={m.gamification_badge_equipped()}>
+          <Icon name="pin-filled" class="h-2.5 w-2.5" />
+        </span>
+      {/if}
+    </div>
     <TierPips entries={group.entries} />
   </div>
 

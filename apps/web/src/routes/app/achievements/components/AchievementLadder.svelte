@@ -6,6 +6,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
@@ -34,6 +35,7 @@
     invalidates: [keys.gamification.achievements()],
     errorToast: true,
   }));
+
   const unequipMut = createApiMutation<string, string[]>(() => ({
     mutate: (key) => unequipAchievement(key),
     invalidates: [keys.gamification.achievements()],
@@ -79,23 +81,33 @@
           : m.gamification_xp_award({ xp: formatNumber(entry.xpAward) })}
       </span>
       {#if canEquip}
-        <button
-          type="button"
-          class="text-dim hover:text-fg disabled:pointer-events-none disabled:opacity-30 {entry.equipped
-            ? 'text-accent hover:text-accent'
-            : ''}"
-          disabled={busy(entry.key) || (!entry.equipped && atLimit)}
-          title={entry.equipped
-            ? m.gamification_unequip_badge()
-            : atLimit
-              ? m.gamification_badge_limit_reached()
-              : m.gamification_equip_badge()}
-          aria-label={entry.equipped
-            ? m.gamification_unequip_badge()
-            : m.gamification_equip_badge()}
-          onclick={() => toggle(entry)}>
-          <Icon name={entry.equipped ? "pin-filled" : "pin"} class="h-3 w-3" />
-        </button>
+        {@const label = entry.equipped
+          ? m.gamification_unequip_badge()
+          : m.gamification_equip_badge()}
+        {@const blocked = !entry.equipped && atLimit}
+        {#if blocked}
+          <Tooltip text={m.gamification_badge_limit_reached()}>
+            <button type="button" class="equip-btn" disabled aria-label={label}>
+              <Icon name="pin" class="h-3 w-3" />
+            </button>
+          </Tooltip>
+        {:else}
+          <button
+            type="button"
+            class="equip-btn {entry.equipped ? 'equip-btn-on' : ''} {busy(
+              entry.key,
+            )
+              ? 'animate-pulse'
+              : ''}"
+            disabled={busy(entry.key)}
+            title={label}
+            aria-label={label}
+            onclick={() => toggle(entry)}>
+            <Icon
+              name={entry.equipped ? "pin-filled" : "pin"}
+              class="h-3 w-3" />
+          </button>
+        {/if}
       {:else}
         <span></span>
       {/if}
@@ -112,3 +124,44 @@
         >{:else}{segment.text}{/if}{/each}
   </p>
 {/if}
+
+<style>
+  .equip-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.25rem;
+    width: 1.25rem;
+    border-radius: 999px;
+    color: var(--dim);
+    transition:
+      background-color 150ms ease,
+      color 150ms ease,
+      transform 100ms ease;
+  }
+
+  .equip-btn:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--fg);
+    transform: scale(1.05);
+  }
+
+  .equip-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .equip-btn:disabled {
+    opacity: 0.35;
+  }
+
+  .equip-btn-on {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .equip-btn-on:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--accent-fg);
+    filter: brightness(1.1);
+  }
+</style>
