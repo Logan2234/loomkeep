@@ -281,14 +281,80 @@ describe("AuthService.register", () => {
         data: expect.objectContaining({ type: "EMAIL_VERIFICATION" }),
       }),
     );
-    expect(mail.sendWelcome).toHaveBeenCalledWith("alice@example.com", "Alice");
+    expect(mail.sendWelcome).toHaveBeenCalledWith(
+      { email: "alice@example.com", locale: "en" },
+      "Alice",
+    );
     expect(mail.sendVerifyEmail).toHaveBeenCalledWith(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "en" },
       expect.any(String),
     );
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "USER_REGISTERED",
+      }),
+    );
+  });
+
+  it("uses the explicit page locale instead of the header fallback", async () => {
+    const { service, prisma, mail } = makeService();
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    (prisma.user.create as Mock).mockImplementation(
+      async ({ data }: { data: Partial<User> }) => makeUser(data),
+    );
+
+    await service.register(
+      {
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+        acceptedTerms: true,
+        certifiedAge: true,
+        locale: "en",
+      },
+      undefined,
+      undefined,
+      "fr",
+    );
+
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ locale: "en" }),
+      }),
+    );
+    expect(mail.sendWelcome).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "alice@example.com", locale: "en" }),
+      "Alice",
+    );
+  });
+
+  it("falls back to Accept-Language for clients that do not send a locale", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    (prisma.user.create as Mock).mockImplementation(
+      async ({ data }: { data: Partial<User> }) => makeUser(data),
+    );
+
+    await service.register(
+      {
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+        acceptedTerms: true,
+        certifiedAge: true,
+      },
+      undefined,
+      undefined,
+      "fr-FR,fr;q=0.9,en;q=0.8",
+    );
+
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ locale: "fr" }),
       }),
     );
   });
@@ -422,7 +488,7 @@ describe("AuthService.login", () => {
       }),
     );
     expect(mail.sendNewDeviceLogin).toHaveBeenCalledWith(
-      user.email,
+      { email: user.email, locale: user.locale },
       "Chrome · Windows",
       "203.0.113.42",
     );
@@ -760,7 +826,7 @@ describe("AuthService.requestPasswordReset", () => {
     expect(createArgs.data.type).toBe("PASSWORD_RESET");
 
     expect(mail.sendPasswordResetLink).toHaveBeenCalledWith(
-      user.email,
+      { email: user.email, locale: user.locale },
       expect.any(String),
     );
     const [, token] = (mail.sendPasswordResetLink as Mock).mock.calls[0];
@@ -843,7 +909,10 @@ describe("AuthService.resetPassword", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
     });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith(user.email);
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
+      email: user.email,
+      locale: user.locale,
+    });
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "PASSWORD_RESET",
@@ -899,7 +968,7 @@ describe("AuthService.resendVerificationEmail", () => {
       }),
     );
     expect(mail.sendVerifyEmail).toHaveBeenCalledWith(
-      user.email,
+      { email: user.email, locale: user.locale },
       expect.any(String),
     );
   });
@@ -999,7 +1068,7 @@ describe("AuthService.login — MFA challenge (LK-C17)", () => {
     });
 
     expect(mail.sendMfaEmailCode).toHaveBeenCalledWith(
-      user.email,
+      { email: user.email, locale: user.locale },
       expect.stringMatching(/^\d{6}$/),
     );
     expect(result).toMatchObject({ availableMethods: ["email", "recovery"] });
@@ -1057,7 +1126,7 @@ describe("AuthService.resendMfaEmailCode", () => {
     await service.resendMfaEmailCode("challenge-1");
 
     expect(mail.sendMfaEmailCode).toHaveBeenCalledWith(
-      user.email,
+      { email: user.email, locale: user.locale },
       expect.stringMatching(/^\d{6}$/),
     );
     expect(prisma.mfaLoginChallenge.update).toHaveBeenCalledWith(

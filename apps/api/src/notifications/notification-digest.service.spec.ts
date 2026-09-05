@@ -14,6 +14,7 @@ const jobRunsStub = {
 const user = {
   id: "u1",
   email: "alice@example.com",
+  locale: "en",
   timezone: "Europe/Paris",
 };
 
@@ -102,7 +103,7 @@ describe("NotificationDigestService.runDigests", () => {
 
     expect(sent).toBe(1);
     expect(mail.sendEpisodeDigest).toHaveBeenCalledWith(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "en" },
       [
         {
           title: "Severance",
@@ -191,7 +192,7 @@ describe("NotificationDigestService.runDigests", () => {
     });
     expect(await dueService.runDigests()).toBe(1);
     expect(dueMail.sendEpisodeDigest).toHaveBeenCalledWith(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "en" },
       expect.any(Array),
       "weekly",
     );

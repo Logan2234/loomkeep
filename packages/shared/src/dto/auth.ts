@@ -1,9 +1,12 @@
+import type { Locale } from "../enums";
 import type { UserDto } from "./user";
 
 export interface RegisterRequestDto {
   email: string;
   password: string;
   displayName: string;
+  /** Locale selected on the signup page. Older clients may omit it. */
+  locale?: Locale;
   /** Must be `true` — the account isn't created otherwise. */
   acceptedTerms: boolean;
   /** Must be `true` — self-certification of the 15+ minimum age, the account isn't created otherwise. */

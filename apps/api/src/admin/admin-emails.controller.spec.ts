@@ -36,12 +36,30 @@ describe("AdminEmailsController", () => {
     );
   });
 
+  it("passes the selected locale separately from template overrides", () => {
+    const { controller, mail } = makeController();
+    (mail.renderTemplatePreview as Mock).mockReturnValue({
+      subject: "Welcome",
+      html: "<html></html>",
+      text: "Welcome",
+    });
+
+    controller.previewEmailTemplate("welcome", {
+      locale: "en",
+      displayName: "Alice",
+    });
+
+    expect(mail.renderTemplatePreview).toHaveBeenCalledWith("welcome", "en", {
+      displayName: "Alice",
+    });
+  });
+
   it("rejects test-send when SMTP isn't configured", async () => {
     const { controller, mail } = makeController();
     (mail.isConfigured as Mock).mockReturnValue(false);
 
     await expect(
-      controller.sendTestEmail("welcome", { to: "a@b.com" }),
+      controller.sendTestEmail("welcome", { to: "a@b.com", locale: "fr" }),
     ).rejects.toThrow(AppException);
     expect(mail.sendTemplateTest).not.toHaveBeenCalled();
   });
@@ -51,7 +69,24 @@ describe("AdminEmailsController", () => {
     (mail.sendTemplateTest as Mock).mockResolvedValue(false);
 
     await expect(
-      controller.sendTestEmail("nope", { to: "a@b.com" }),
+      controller.sendTestEmail("nope", { to: "a@b.com", locale: "fr" }),
     ).rejects.toThrow(AppException);
+  });
+
+  it("sends the test email in the selected locale", async () => {
+    const { controller, mail } = makeController();
+    (mail.sendTemplateTest as Mock).mockResolvedValue(true);
+
+    await controller.sendTestEmail("welcome", {
+      to: "a@b.com",
+      locale: "en",
+      values: { displayName: "Alice" },
+    });
+
+    expect(mail.sendTemplateTest).toHaveBeenCalledWith(
+      "welcome",
+      { email: "a@b.com", locale: "en" },
+      { displayName: "Alice" },
+    );
   });
 });

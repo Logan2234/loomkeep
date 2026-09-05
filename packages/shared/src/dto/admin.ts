@@ -1,4 +1,4 @@
-import type { Domain, Plan, Role, SecurityEventType } from "../enums";
+import type { Domain, Locale, Plan, Role, SecurityEventType } from "../enums";
 import type { PagedResult } from "./pagination";
 
 /** Which app area a dependency powers, for grouping in the admin services page. */
@@ -91,6 +91,7 @@ export interface MailTemplatePreviewDto {
 
 export interface SendTestEmailRequestDto {
   to: string;
+  locale: Locale;
   /** Overrides for the template's editable sample fields, by field key. */
   values?: Record<string, string>;
 }

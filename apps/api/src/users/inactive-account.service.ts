@@ -63,15 +63,15 @@ export class InactiveAccountService {
         lastActiveAt: { lte: monthsAgo(WARNING_AFTER_MONTHS) },
         inactivityWarningSentAt: null,
       },
-      select: { id: true, email: true, lastActiveAt: true },
+      select: { id: true, email: true, locale: true, lastActiveAt: true },
     });
 
     for (const user of candidates) {
       // lastActiveAt can't be null here — it's filtered by `lte` above.
       const deletionDate = addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS);
       await this.mail.sendInactivityWarning(
-        user.email,
-        deletionDate.toLocaleDateString("fr-FR"),
+        { email: user.email, locale: user.locale },
+        deletionDate,
       );
       await this.prisma.user.update({
         where: { id: user.id },

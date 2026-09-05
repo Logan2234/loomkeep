@@ -106,7 +106,7 @@ export class AuthService {
         passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
         displayName: dto.displayName,
         username: await this.generateUniqueUsername(dto.displayName),
-        locale: detectLocale(acceptLanguage),
+        locale: dto.locale ?? detectLocale(acceptLanguage),
         acceptedTermsAt: new Date(),
         acceptedTermsVersion: LEGAL_VERSION,
         certifiedAgeAt: new Date(),
@@ -123,8 +123,9 @@ export class AuthService {
         expiresAt: new Date(Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000),
       },
     });
-    await this.mail.sendWelcome(user.email, user.displayName);
-    await this.mail.sendVerifyEmail(user.email, verifyToken);
+    const recipient = { email: user.email, locale: user.locale };
+    await this.mail.sendWelcome(recipient, user.displayName);
+    await this.mail.sendVerifyEmail(recipient, verifyToken);
     await this.security.record({
       type: "USER_REGISTERED",
       userId: user.id,
@@ -207,7 +208,10 @@ export class AuthService {
         },
       }),
     ]);
-    await this.mail.sendVerifyEmail(user.email, verifyToken);
+    await this.mail.sendVerifyEmail(
+      { email: user.email, locale: user.locale },
+      verifyToken,
+    );
   }
 
   /** Accepts either the email or the username as the login identifier. */
@@ -260,7 +264,10 @@ export class AuthService {
       emailCodeExpiresAt = new Date(
         Date.now() + MFA_EMAIL_CODE_TTL_MINUTES * 60_000,
       );
-      await this.mail.sendMfaEmailCode(user.email, code);
+      await this.mail.sendMfaEmailCode(
+        { email: user.email, locale: user.locale },
+        code,
+      );
     }
 
     const challenge = await this.prisma.mfaLoginChallenge.create({
@@ -315,7 +322,10 @@ export class AuthService {
         ),
       },
     });
-    await this.mail.sendMfaEmailCode(challenge.user.email, code);
+    await this.mail.sendMfaEmailCode(
+      { email: challenge.user.email, locale: challenge.user.locale },
+      code,
+    );
   }
 
   /**
@@ -397,8 +407,11 @@ export class AuthService {
     const tokens = await this.startSession(promoted, userAgent);
 
     if (isNewDevice) {
-      const label = deviceLabel(userAgent) ?? "Appareil inconnu";
-      await this.mail.sendNewDeviceLogin(promoted.email, label, ip ?? null);
+      await this.mail.sendNewDeviceLogin(
+        { email: promoted.email, locale: promoted.locale },
+        deviceLabel(userAgent),
+        ip ?? null,
+      );
       await this.security.record({
         type: "NEW_DEVICE_LOGIN",
         userId: promoted.id,
@@ -583,7 +596,10 @@ export class AuthService {
         },
       }),
     ]);
-    await this.mail.sendPasswordResetLink(user.email, token);
+    await this.mail.sendPasswordResetLink(
+      { email: user.email, locale: user.locale },
+      token,
+    );
   }
 
   /**
@@ -630,7 +646,10 @@ export class AuthService {
         where: { userId: stored.userId },
       }),
     ]);
-    await this.mail.sendPasswordChanged(stored.user.email);
+    await this.mail.sendPasswordChanged({
+      email: stored.user.email,
+      locale: stored.user.locale,
+    });
     await this.security.record({
       type: "PASSWORD_RESET",
       userId: stored.userId,

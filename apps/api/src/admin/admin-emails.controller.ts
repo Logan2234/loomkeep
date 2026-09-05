@@ -46,9 +46,10 @@ export class AdminEmailsController {
   @ApiOkResponse({ type: MailTemplatePreviewResponseDto })
   previewEmailTemplate(
     @Param("key") key: string,
-    @Query() overrides: Record<string, string>,
+    @Query() query: Record<string, string>,
   ): MailTemplatePreviewDto {
-    const preview = this.mail.renderTemplatePreview(key, overrides);
+    const { locale = "fr", ...overrides } = query;
+    const preview = this.mail.renderTemplatePreview(key, locale, overrides);
     if (!preview)
       throw new AppException(
         HttpStatus.NOT_FOUND,
@@ -71,7 +72,11 @@ export class AdminEmailsController {
       );
     }
 
-    const sent = await this.mail.sendTemplateTest(key, dto.to, dto.values);
+    const sent = await this.mail.sendTemplateTest(
+      key,
+      { email: dto.to, locale: dto.locale },
+      dto.values,
+    );
     if (!sent)
       throw new AppException(
         HttpStatus.NOT_FOUND,

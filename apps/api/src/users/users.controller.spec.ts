@@ -104,7 +104,7 @@ describe("UsersController — email change", () => {
 
     it("creates a pending request and emails the code, without touching User.email", async () => {
       (prisma.user.findUnique as Mock)
-        .mockResolvedValueOnce({ id: userId, passwordHash }) // current user
+        .mockResolvedValueOnce({ id: userId, passwordHash, locale: "en" }) // current user
         .mockResolvedValueOnce(null); // no email collision
 
       await controller.changeEmail(jwtPayload(userId), {
@@ -125,7 +125,7 @@ describe("UsersController — email change", () => {
         }),
       );
       expect(mail.sendEmailChangeCode).toHaveBeenCalledWith(
-        "new@example.com",
+        { email: "new@example.com", locale: "en" },
         expect.stringMatching(/^\d{6}$/),
       );
     });
@@ -148,6 +148,7 @@ describe("UsersController — email change", () => {
       (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,
         email: "old@example.com",
+        locale: "fr",
         passwordHash,
       });
       (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
@@ -182,6 +183,7 @@ describe("UsersController — email change", () => {
       expect(mail.sendEmailChanged).toHaveBeenCalledWith(
         "old@example.com",
         "new@example.com",
+        "fr",
       );
     });
 
@@ -521,6 +523,7 @@ describe("UsersController — changePassword", () => {
         findUnique: vi.fn().mockResolvedValue({
           id: userId,
           email: "alice@example.com",
+          locale: "fr",
           passwordHash,
         }),
         update: vi.fn(),
@@ -601,7 +604,10 @@ describe("UsersController — changePassword", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId },
     });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith("alice@example.com");
+    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
+      email: "alice@example.com",
+      locale: "fr",
+    });
   });
 });
 

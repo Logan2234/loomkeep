@@ -3,6 +3,7 @@ import type {
   AdminCacheSort,
   Domain,
   JobStatus,
+  Locale,
   MailTemplatePreviewDto,
   ModerationLegalBasis,
   Plan,
@@ -32,9 +33,10 @@ export const getAdminEmailTemplates = () => typedRequest("/admin/emails");
 // shape at all for this route.
 export function getAdminEmailPreview(
   key: string,
+  locale: Locale,
   values: Record<string, string> = {},
 ): Promise<MailTemplatePreviewDto> {
-  const params = new URLSearchParams(values);
+  const params = new URLSearchParams({ locale, ...values });
   const suffix = params.size > 0 ? `?${params}` : "";
   return request(`/admin/emails/${key}/preview${suffix}`);
 }

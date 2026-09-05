@@ -167,7 +167,7 @@ export class AdminReportsController {
       if (authorId) {
         const author = await this.prisma.user.findUnique({
           where: { id: authorId },
-          select: { email: true, username: true },
+          select: { email: true, locale: true, username: true },
         });
 
         if (author) {
@@ -177,6 +177,7 @@ export class AdminReportsController {
             targetId: report.targetId,
             subjectUserId: authorId,
             subjectEmail: author.email,
+            subjectLocale: author.locale,
             subjectUsername: author.username,
             legalBasis: body.legalBasis,
             reasonCategory: report.category,

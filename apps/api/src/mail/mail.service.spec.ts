@@ -25,7 +25,10 @@ describe("MailService", () => {
     delete process.env.SMTP_PASS;
 
     const service = new MailService(quota);
-    await service.sendWelcome("alice@example.com", "Alice");
+    await service.sendWelcome(
+      { email: "alice@example.com", locale: "fr" },
+      "Alice",
+    );
 
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
   });
@@ -42,7 +45,10 @@ describe("MailService", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    await service.sendPasswordResetLink("alice@example.com", "tok123");
+    await service.sendPasswordResetLink(
+      { email: "alice@example.com", locale: "fr" },
+      "tok123",
+    );
 
     expect(nodemailer.createTransport).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -72,7 +78,10 @@ describe("MailService", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    await service.sendEmailChangeCode("alice@example.com", "123456");
+    await service.sendEmailChangeCode(
+      { email: "alice@example.com", locale: "fr" },
+      "123456",
+    );
 
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -96,7 +105,7 @@ describe("MailService", () => {
 
     const service = new MailService(quota);
     await service.sendNewDeviceLogin(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "fr" },
       "<script>alert(1)</script>",
       "1.2.3.4",
     );
@@ -117,7 +126,7 @@ describe("MailService", () => {
 
     const service = new MailService(quota);
     await expect(
-      service.sendPasswordChanged("alice@example.com"),
+      service.sendPasswordChanged({ email: "alice@example.com", locale: "fr" }),
     ).resolves.toBeUndefined();
   });
 
@@ -131,7 +140,10 @@ describe("MailService", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    await service.sendPasswordChanged("alice@example.com");
+    await service.sendPasswordChanged({
+      email: "alice@example.com",
+      locale: "fr",
+    });
 
     const { html } = sendMail.mock.calls[0][0];
     expect(html).toContain("https://loomkeep.example/forgot-password");
@@ -147,7 +159,11 @@ describe("MailService", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    await service.sendNewDeviceLogin("alice@example.com", "Chrome", null);
+    await service.sendNewDeviceLogin(
+      { email: "alice@example.com", locale: "fr" },
+      "Chrome",
+      null,
+    );
 
     const { html } = sendMail.mock.calls[0][0];
     expect(html).toContain("https://loomkeep.example/app/settings#securite");
@@ -162,7 +178,7 @@ describe("MailService", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    await service.sendEmailChanged("old@example.com", "new@example.com");
+    await service.sendEmailChanged("old@example.com", "new@example.com", "fr");
 
     const oldAddressCall = sendMail.mock.calls.find(
       (call) => call[0].to === "old@example.com",
@@ -180,7 +196,10 @@ describe("MailService", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    await service.sendWelcome("alice@example.com", "Alice");
+    await service.sendWelcome(
+      { email: "alice@example.com", locale: "fr" },
+      "Alice",
+    );
 
     const { html } = sendMail.mock.calls[0][0];
     expect(html).toContain("https://loomkeep.example/app");
@@ -197,7 +216,7 @@ describe("MailService", () => {
 
     const service = new MailService(quota);
     await service.sendNewsletter(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "fr" },
       "Loomkeep 1.4.0",
       "content",
       "",
@@ -224,7 +243,7 @@ describe("MailService", () => {
 
     const service = new MailService(quota);
     await service.sendNewsletter(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "fr" },
       "Loomkeep 1.7.0",
       "## New\n\n- Only the start of the changelog fits in a 200-char preview",
       "<h2>New</h2><p>The full body, including a section past the 200-char preview cutoff.</p>",
@@ -246,7 +265,7 @@ describe("MailService", () => {
 
     const service = new MailService(quota);
     await service.sendNewsletter(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "fr" },
       "Loomkeep 1.7.0",
       "## New\n\n- Rendered from Markdown",
       "",
@@ -299,6 +318,61 @@ describe("MailService template gallery", () => {
     expect(preview?.html).toContain("Loomkeep");
   });
 
+  it("renders the same template in the requested locale", () => {
+    const service = new MailService(quota);
+
+    const french = service.renderTemplatePreview("welcome", "fr");
+    const english = service.renderTemplatePreview("welcome", "en");
+
+    expect(french?.subject).toBe("Bienvenue sur Loomkeep");
+    expect(french?.html).toContain('<html lang="fr">');
+    expect(english?.subject).toBe("Welcome to Loomkeep");
+    expect(english?.html).toContain('<html lang="en">');
+    expect(english?.text).toContain("Your Loomkeep account was created");
+  });
+
+  it("renders every gallery template in English", () => {
+    const service = new MailService(quota);
+
+    for (const template of service.listTemplates()) {
+      const preview = service.renderTemplatePreview(template.key, "en");
+      expect(preview, template.key).not.toBeNull();
+      expect(preview?.html, template.key).toContain('<html lang="en">');
+    }
+  });
+
+  it("keeps editorial moderation content as authored", () => {
+    const service = new MailService(quota);
+    const preview = service.renderTemplatePreview("moderationDecision", "en", {
+      reasonText: "Texte libre rédigé par la modération.",
+      tosClause: "Article 7 — Conduite",
+    });
+
+    expect(preview?.text).toContain("Texte libre rédigé par la modération.");
+    expect(preview?.text).toContain("Article 7 — Conduite");
+    expect(preview?.text).toContain("This decision was made by a moderator");
+  });
+
+  it("localizes dates but leaves newsletter copy as authored", () => {
+    const service = new MailService(quota);
+    const inactivity = service.renderTemplatePreview(
+      "inactivityWarning",
+      "en",
+      {
+        deletionDate: "2028-08-15",
+      },
+    );
+    const newsletter = service.renderTemplatePreview("newsletter", "en", {
+      title: "Version été",
+      content: "Contenu éditorial inchangé.",
+    });
+
+    expect(inactivity?.text).toContain("August 15, 2028");
+    expect(newsletter?.subject).toBe("Loomkeep — Version été");
+    expect(newsletter?.text).toContain("Contenu éditorial inchangé.");
+    expect(newsletter?.text).toContain("You are receiving this email");
+  });
+
   it("returns null for an unknown template key", () => {
     const service = new MailService(quota);
     expect(service.renderTemplatePreview("does-not-exist")).toBeNull();
@@ -313,7 +387,10 @@ describe("MailService template gallery", () => {
     (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
 
     const service = new MailService(quota);
-    const sent = await service.sendTemplateTest("welcome", "test@example.com");
+    const sent = await service.sendTemplateTest("welcome", {
+      email: "test@example.com",
+      locale: "fr",
+    });
 
     expect(sent).toBe(true);
     expect(sendMail).toHaveBeenCalledWith(
@@ -330,10 +407,10 @@ describe("MailService template gallery", () => {
     });
 
     const service = new MailService(quota);
-    const sent = await service.sendTemplateTest(
-      "does-not-exist",
-      "test@example.com",
-    );
+    const sent = await service.sendTemplateTest("does-not-exist", {
+      email: "test@example.com",
+      locale: "fr",
+    });
 
     expect(sent).toBe(false);
   });

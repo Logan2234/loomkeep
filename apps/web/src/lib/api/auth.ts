@@ -51,7 +51,7 @@ async function loadEntitlement(): Promise<void> {
 export async function register(body: RegisterRequestDto): Promise<void> {
   const result = await typedRequest("/auth/register", {
     method: "POST",
-    body,
+    body: { ...body, locale: getLocale() },
     withAuth: false,
   });
   auth.setTokens(result.tokens);
