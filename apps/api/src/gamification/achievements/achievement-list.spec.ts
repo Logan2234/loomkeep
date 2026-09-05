@@ -55,6 +55,9 @@ vi.mock("./registry", async (importOriginal) => {
 function makeService(configValues: Record<string, string> = {}) {
   const prisma = {
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({ equippedBadgeKeys: [] }),
+    },
   } as unknown as PrismaService;
   const config = {
     get: vi.fn(
@@ -107,6 +110,7 @@ describe("AchievementService.list", () => {
       unlocked: false,
       unlockedAt: null,
       progress: null,
+      equipped: false,
     });
     // The key alone would reveal the achievement (the web resolves its name
     // from an i18n catalogue indexed by it), so nothing may leak — not even
@@ -149,6 +153,7 @@ describe("AchievementService.list", () => {
       unlocked: false,
       unlockedAt: null,
       progress: { current: 68, target: 200 },
+      equipped: false,
     });
   });
 

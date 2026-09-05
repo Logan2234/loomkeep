@@ -436,6 +436,13 @@ model User {
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
   hideProgression            Boolean          @default(false)
+  // [G9] Up to 3 unlocked, non-secret achievement keys shown as a badge
+  // showcase on the profile — always an explicit choice, never auto-picked
+  // (see the ticket's design-discussion comment). A key here freezes the
+  // tier the user equipped, not "whatever tier is highest now": a tiered
+  // achievement's tiers are separate keys already (cinephile_bronze vs
+  // cinephile_gold), so equipping one just picks a key like any other.
+  equippedBadgeKeys          String[]         @default([])
   // Communication preferences: cadence at which each channel delivers the
   // "new episode" digest. See DigestCadence.
   notifyEmail                DigestCadence    @default(WEEKLY)

@@ -59,6 +59,8 @@
   "apierr_import_archive_malformed": "L'archive est illisible, un de ses fichiers est mal formé.",
   "apierr_gamification_achievement_not_found": "Ce succès est introuvable.",
   "apierr_gamification_feature_disabled": "Cette fonctionnalité n'est pas disponible sur cette instance.",
+  "apierr_gamification_badge_secret": "Un succès secret ne peut pas être équipé.",
+  "apierr_gamification_badge_limit_reached": "Vitrine pleine — retire d'abord un badge pour en équiper un autre.",
   "apierr_validation_invalid_param": "Paramètre invalide.",
   "apierr_validation_failed": "Le formulaire contient des erreurs.",
   "apierr_internal_error": "Une erreur inattendue s'est produite.",

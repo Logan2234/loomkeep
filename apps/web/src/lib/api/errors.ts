@@ -197,6 +197,10 @@ const MESSAGES = {
     m.apierr_gamification_achievement_not_found(),
   [ErrorCode.GamificationFeatureDisabled]: () =>
     m.apierr_gamification_feature_disabled(),
+  [ErrorCode.GamificationBadgeSecret]: () =>
+    m.apierr_gamification_badge_secret(),
+  [ErrorCode.GamificationBadgeLimitReached]: () =>
+    m.apierr_gamification_badge_limit_reached(),
 } satisfies Record<ErrorCode, () => string>;
 
 /**

@@ -26,19 +26,22 @@
     groupIcon,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
-  import AchievementMedallion from "./AchievementMedallion.svelte";
+  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
   import TierPips from "./TierPips.svelte";
 
   let {
     group,
     onselect,
     highlighted = false,
+    equippedCount,
   }: {
     group: AchievementGroup;
     /** Set only on compact viewports, where a tap opens the drawer. */
     onselect?: () => void;
     /** The card the [G6] bubble deep-linked to: scrolled to and flashed once. */
     highlighted?: boolean;
+    /** [G9] Total badges currently equipped, across the whole catalogue. */
+    equippedCount: number;
   } = $props();
 
   // The flash fades on its own — a highlight that stays on would read as a
@@ -139,7 +142,7 @@
 
   <div
     class="achievement-unfold border-accent bg-surface-2 absolute -right-px -left-px z-10 hidden overflow-hidden border border-t-0 md:block">
-    <AchievementLadder {group} />
+    <AchievementLadder {group} {equippedCount} />
   </div>
 </div>
 

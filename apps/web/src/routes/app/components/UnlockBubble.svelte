@@ -38,7 +38,7 @@
   import { levelForXp } from "@loomkeep/shared";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-  import AchievementMedallion from "../achievements/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
   import { achievementName, entryIcon } from "../achievements/labels";
 
   const reduced = prefersReducedMotion();

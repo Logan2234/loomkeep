@@ -25,6 +25,20 @@ export function markAchievementDisplayed(id: string) {
   });
 }
 
+export function equipAchievement(key: string) {
+  return typedRequest("/achievements/{key}/equip", {
+    method: "POST",
+    params: { key },
+  }) as Promise<string[]>;
+}
+
+export function unequipAchievement(key: string) {
+  return typedRequest("/achievements/{key}/equip", {
+    method: "DELETE",
+    params: { key },
+  }) as Promise<string[]>;
+}
+
 export function getMyProgression() {
   return typedRequest("/gamification/me");
 }
