@@ -42,32 +42,32 @@
   /* Light — "le programme" (warm manila paper). Cards are pure white so they
      lift cleanly off the cream shell; the border carries the separation,
      not background saturation — a saturated bg read as dirty/kraft. */
-  --bg: #f2ebdc;
+  --bg: #f7f5f3;
   --surface: #ffffff;
-  --surface-2: #ece3ce;
-  --border: #d9cba9;
+  --surface-2: #edeae3;
+  --border: #d3c7a8;
   --fg: #1c1712;
   --dim: #6b6354;
-  --accent: #96570a;
+  --accent: #8e620b;
   --accent-fg: #ffffff;
   --btn: #1c1712;
   --btn-fg: #ffffff;
-  --success: #2fa070;
-  --danger: #c9445e;
-  --warning: #c1650f;
+  --success: #257e58;
+  --danger: #c73c57;
+  --warning: #ab590d;
   /* Stats: one hue per domain, fixed order, CVD-validated — never cycled,
      never reused for anything else. Sub-splits within a domain (e.g.
      movie/series/anime) tint this hue rather than borrowing another
      domain's color. */
-  --stat-media: #b07e10;
-  --stat-games: #0e8f9e;
-  --stat-books: #c7508e;
-  --stat-music: #3e6fc9;
+  --stat-media: #91680d;
+  --stat-games: #0c7a87;
+  --stat-books: #be3d80;
+  --stat-music: #3b6dc8;
   /* Achievement tiers ([G5]). One ring color per tier, never reused for
      anything else — same rule as the per-domain stat hues above. */
   --tier-bronze: #8a5423;
-  --tier-silver: #6e7683;
-  --tier-gold: #96570a;
+  --tier-silver: #68707c;
+  --tier-gold: #8e620b;
   color-scheme: light;
 }
 
