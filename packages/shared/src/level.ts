@@ -25,8 +25,17 @@
  * quadratic and the linear formula meet without a seam — verified by
  * `level.util.spec.ts`'s continuity test around that boundary.
  */
+/**
+ * @public Not read anywhere else in this repo yet (`xpForLevel`/
+ * `levelProgress` below are the API every current caller actually uses) —
+ * kept exported for whoever wants the raw curve constants directly (e.g. a
+ * settings page explaining "how leveling works"). Flagged as unused by knip
+ * otherwise; this tag is a standing call to keep it, not delete it.
+ */
 export const LEVEL_BASE = 100;
+/** @public See `LEVEL_BASE`. */
 export const LEVEL_STEP = 12;
+/** @public See `LEVEL_BASE`. */
 export const LEVEL_CAP_COST = 1000;
 // Level whose outgoing step first hits LEVEL_CAP_COST: 100 + 12×75 = 1000.
 export const LEVEL_CAP_LEVEL = 75;

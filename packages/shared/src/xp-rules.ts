@@ -214,5 +214,11 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   },
 };
 
-/** `XP_RULES` as an array, for iteration (registries, reconciliation, tests). */
+/**
+ * `XP_RULES` as an array, for iteration (registries, reconciliation, tests).
+ * @public No current caller — kept for whoever needs to iterate every rule
+ * (e.g. a future admin page listing the barème, or a reconciliation script).
+ * Flagged as unused by knip otherwise; this tag is a standing call to keep
+ * it, not delete it.
+ */
 export const XP_RULE_LIST: XpRule[] = Object.values(XP_RULES);
