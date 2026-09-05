@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import Banner from "$lib/components/Banner.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import ImportWizard from "$lib/components/ImportWizard.svelte";
+  import PageHeader from "$lib/components/PageHeader.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   const code = page.url.searchParams.get("code");
@@ -17,18 +17,10 @@
   </ImportWizard>
 {:else}
   <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-    <div class="mb-6 flex items-center gap-3">
-      <a
-        href="/app/settings/import"
-        class="text-dim hover:text-fg"
-        aria-label={m.common_back()}>
-        <Icon name="chevron-left" class="h-5 w-5" />
-      </a>
-      <h1
-        class="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
-        {m.settings_import_simkl_title()}
-      </h1>
-    </div>
+    <PageHeader
+      title={m.settings_import_simkl_title()}
+      back="/app/settings/import" />
+
     <Banner variant="error">
       {oauthError === "access_denied"
         ? m.settings_import_simkl_cancelled()
