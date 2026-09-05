@@ -123,7 +123,9 @@
         {#each entries as entry, i (entry.id)}
           <a
             href="/app/u/{entry.username}"
-            class="flex items-center gap-3 px-3.5 py-2.5 {rowClass(entry)}"
+            class="flex items-center gap-3 px-3.5 py-2.5 transition-colors duration-150 {rowClass(
+              entry,
+            )}"
             animate:flip={{ duration: reduced ? 0 : 200 }}
             in:fade|global={{ duration: reduced ? 0 : 120 }}
             out:fade|global={{ duration: reduced ? 0 : 100 }}>
@@ -149,8 +151,13 @@
                 {levelForXp(entry.xp)}
               </span>
             </span>
-            <span class="timecode text-sm">
-              {m.gamification_leaderboard_xp({ xp: formatNumber(entry.xp) })}
+            <span class="timecode text-right">
+              <span class="text-fg text-base font-bold">
+                {formatNumber(entry.xp)}
+              </span>
+              <span class="text-dim text-xs">
+                {m.gamification_leaderboard_xp_unit()}
+              </span>
             </span>
           </a>
         {/each}
@@ -175,10 +182,13 @@
               {viewerOutsideTop.displayName}
             </span>
           </span>
-          <span class="timecode text-sm">
-            {m.gamification_leaderboard_xp({
-              xp: formatNumber(viewerOutsideTop.xp),
-            })}
+          <span class="timecode text-right">
+            <span class="text-fg text-base font-bold">
+              {formatNumber(viewerOutsideTop.xp)}
+            </span>
+            <span class="text-dim text-xs">
+              {m.gamification_leaderboard_xp_unit()}
+            </span>
           </span>
         </div>
       {/if}
