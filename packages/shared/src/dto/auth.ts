@@ -1,5 +1,5 @@
-import type { UserDto } from "./user";
 import type { Locale } from "../enums";
+import type { UserDto } from "./user";
 
 export interface RegisterRequestDto {
   email: string;
