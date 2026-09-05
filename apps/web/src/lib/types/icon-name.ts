@@ -69,4 +69,7 @@ export type IconName =
   | "shooting-star"
   | "circle-arrow"
   | "arrow-right"
-  | "pumpkin";
+  | "pumpkin"
+  // [G7] leaderboard — deliberately distinct from "trophy" (achievements)
+  // and "stats" (three ascending bars): a crown reads as "ranked" on sight.
+  | "crown";

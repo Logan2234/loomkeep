@@ -245,7 +245,7 @@
               </div>
             {/if}
 
-            {#each section.items.filter((item) => (!item.domain || isDomainEnabled(item.domain)) && (!item.social || appConfig.socialEnabled)) as item (item.href)}
+            {#each section.items.filter((item) => (!item.domain || isDomainEnabled(item.domain)) && (!item.social || appConfig.socialEnabled) && (!item.gamification || appConfig.gamificationEnabled)) as item (item.href)}
               {#if item.comingSoon}
                 <!-- Planned domain: non-clickable, with a "Bientôt" badge. -->
                 <div

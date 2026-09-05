@@ -63,3 +63,54 @@ export interface AchievementDto {
 export interface MyProgressionDto {
   xp: number | null;
 }
+
+/** [G7] Which population a leaderboard ranks. */
+export type LeaderboardScope = "global" | "friends";
+
+/**
+ * [G7] The window a leaderboard sums XP over — calendar month or calendar
+ * year in the server's clock, recomputed live from the ledger rather than a
+ * snapshot (see the ticket: no snapshot table needed for the MVP).
+ */
+export type LeaderboardPeriod = "month" | "year";
+
+/**
+ * [G7] One ranked row. Deliberately lean, not a `UserSummaryDto`: it carries
+ * no `profileAccess`, so a PRIVATE row is never distinguishable from a
+ * PUBLIC one — the leaderboard shows a pseudo and nothing else, ever.
+ *
+ * `level` is never sent — same rule as everywhere else in gamification: the
+ * client derives it from `xp` via `levelProgress()`.
+ *
+ * `avatarUrl` is null (client falls back to the identicon) whenever the row
+ * is a PRIVATE account the viewer isn't friends with, regardless of whether
+ * they uploaded a real photo — see the [G7] plan for why this is a stricter
+ * rule than the profile page (which shows a PRIVATE stranger's real avatar).
+ *
+ * `rank` follows SQL `RANK()` semantics: tied rows share the same number and
+ * the next distinct rank skips ahead by the tie's size (1, 2, 2, 4 — not
+ * 1, 2, 2, 3). The UI shows the number only on the first of a tied group (by
+ * account age) and a dash on the rest — recomputed client-side by comparing
+ * consecutive entries, not carried as a field.
+ */
+export interface LeaderboardEntryDto {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  xp: number;
+  rank: number;
+  isViewer: boolean;
+}
+
+/**
+ * [G7] `entries` is capped at the top 100 (no pagination for the MVP).
+ * `viewerOutsideTop` carries the viewer's own row only when it did NOT make
+ * that cut — when it did, the viewer's row is already in `entries` (flagged
+ * `isViewer`) and this is null, so the UI never shows both at once. Also
+ * null when the viewer has zero XP for the period (not ranked yet).
+ */
+export interface LeaderboardDto {
+  entries: LeaderboardEntryDto[];
+  viewerOutsideTop: LeaderboardEntryDto | null;
+}

@@ -15,6 +15,8 @@ interface NavItem {
   comingSoon?: boolean;
   /** Masqué tant que la dimension sociale (P4) n'est pas activée sur le déploiement. */
   social?: boolean;
+  /** Masqué tant que GAMIFICATION_ENABLED n'est pas activé sur le déploiement. */
+  gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
   newBadgeKey?: string;
 }
@@ -108,6 +110,15 @@ export const NAVIGATION: NavSection[] = [
         match: (p) => p.startsWith("/app/stats"),
       },
       {
+        href: "/app/leaderboard",
+        label: m.nav_leaderboard(),
+        icon: "crown",
+        social: true,
+        gamification: true,
+        match: (p) => p.startsWith("/app/leaderboard"),
+        newBadgeKey: "leaderboard",
+      },
+      {
         href: "/app/feed",
         label: m.nav_feed(),
         icon: "activity",
@@ -142,6 +153,7 @@ export type MobileNavId =
   | "boardgames"
   | "calendar"
   | "stats"
+  | "leaderboard"
   | "feed"
   | "profile"
   | "settings"
@@ -161,6 +173,8 @@ export interface MobileDestination {
   adminOnly?: boolean;
   /** Hidden until the social features (P4) are enabled on the deployment. */
   social?: boolean;
+  /** Hidden until GAMIFICATION_ENABLED is enabled on the deployment. */
+  gamification?: boolean;
   /** Key into feature-badges.ts — shows a "Nouveau" dot while its window is open. */
   newBadgeKey?: string;
 }
@@ -254,6 +268,16 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     icon: "stats",
     match: (p) => p.startsWith("/app/stats"),
   },
+  leaderboard: {
+    id: "leaderboard",
+    href: "/app/leaderboard",
+    label: m.nav_leaderboard(),
+    icon: "crown",
+    social: true,
+    gamification: true,
+    match: (p) => p.startsWith("/app/leaderboard"),
+    newBadgeKey: "leaderboard",
+  },
   feed: {
     id: "feed",
     href: "/app/feed",
@@ -294,7 +318,7 @@ const MENU_GROUPS: { label: string; ids: MobileNavId[] }[] = [
   },
   {
     label: m.nav_section_tracking(),
-    ids: ["calendar", "stats", "feed"],
+    ids: ["calendar", "stats", "leaderboard", "feed"],
   },
   {
     label: m.common_account(),
@@ -332,12 +356,15 @@ interface MobileGateOptions {
   isAdmin: boolean;
   /** Whether social features are enabled on this deployment (default false). */
   socialEnabled?: boolean;
+  /** Whether gamification is enabled on this deployment (default false). */
+  gamificationEnabled?: boolean;
 }
 
 const isVisible = (d: MobileDestination, opts: MobileGateOptions): boolean =>
   (!d.domain || opts.isDomainEnabled(d.domain)) &&
   (!d.adminOnly || opts.isAdmin) &&
-  (!d.social || !!opts.socialEnabled);
+  (!d.social || !!opts.socialEnabled) &&
+  (!d.gamification || !!opts.gamificationEnabled);
 
 // Resolve the ordered bottom-bar ids into visible destinations, dropping any
 //  gated out by the user's enabled domains / admin role. Coming-soon entries

@@ -31,6 +31,7 @@
       isDomainEnabled,
       isAdmin: auth.isAdmin,
       socialEnabled: appConfig.socialEnabled,
+      gamificationEnabled: appConfig.gamificationEnabled,
     }),
   );
 

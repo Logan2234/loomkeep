@@ -159,6 +159,7 @@ export const ErrorCode = {
 
   // gamification
   GamificationAchievementNotFound: "gamification.achievement_not_found",
+  GamificationFeatureDisabled: "gamification.feature_disabled",
 
   // cross-cutting — owned by the infra rather than a single domain
   ValidationFailed: "validation.failed",

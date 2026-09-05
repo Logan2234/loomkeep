@@ -195,5 +195,17 @@
   "gamification_bubble_level_title": "Niveau {level}",
   "gamification_bubble_dismiss": "Masquer",
   "gamification_disabled": "La progression est désactivée sur cette instance.",
-  "gamification_empty": "Aucun succès à afficher."
+  "gamification_empty": "Aucun succès à afficher.",
+
+  "gamification_leaderboard_title": "Classement",
+  "gamification_leaderboard_subtitle": "Qui cumule le plus d'XP, entre amis ou sur toute l'instance.",
+  "gamification_leaderboard_tab_global": "Global",
+  "gamification_leaderboard_tab_friends": "Amis",
+  "gamification_leaderboard_period_month": "Ce mois-ci",
+  "gamification_leaderboard_period_year": "Cette année",
+  "gamification_leaderboard_xp": "{xp} XP",
+  "gamification_leaderboard_you": "Toi",
+  "gamification_leaderboard_disabled": "Le classement n'est pas disponible sur cette instance.",
+  "gamification_leaderboard_empty": "Personne n'a encore gagné d'XP sur cette période.",
+  "gamification_view_leaderboard": "Voir le classement"
 }
