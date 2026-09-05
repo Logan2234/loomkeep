@@ -41,6 +41,7 @@ describe("InactiveAccountService.scan", () => {
         {
           id: "user-1",
           email: "alice@example.com",
+          locale: "en",
           lastActiveAt: new Date("2024-01-01T00:00:00.000Z"),
         },
       ])
@@ -53,11 +54,11 @@ describe("InactiveAccountService.scan", () => {
         lastActiveAt: { lte: expect.any(Date) },
         inactivityWarningSentAt: null,
       },
-      select: { id: true, email: true, lastActiveAt: true },
+      select: { id: true, email: true, locale: true, lastActiveAt: true },
     });
     expect(mail.sendInactivityWarning).toHaveBeenCalledWith(
-      "alice@example.com",
-      "01/01/2027",
+      { email: "alice@example.com", locale: "en" },
+      new Date("2027-01-01T00:00:00.000Z"),
     );
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },

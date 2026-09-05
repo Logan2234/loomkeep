@@ -524,7 +524,10 @@ export class UsersController {
         },
       }),
     ]);
-    await this.mail.sendEmailChangeCode(dto.newEmail, code);
+    await this.mail.sendEmailChangeCode(
+      { email: dto.newEmail, locale: current.locale },
+      code,
+    );
   }
 
   /** Consumes the code sent by changeEmail() and applies the new address. */
@@ -588,7 +591,11 @@ export class UsersController {
         where: { userId: payload.sub },
       }),
     ]);
-    await this.mail.sendEmailChanged(current.email, stored.newEmail);
+    await this.mail.sendEmailChanged(
+      current.email,
+      stored.newEmail,
+      current.locale,
+    );
     await this.security.record({
       type: "EMAIL_CHANGED",
       userId: payload.sub,
@@ -637,7 +644,10 @@ export class UsersController {
       }),
       this.prisma.refreshToken.deleteMany({ where: { userId: payload.sub } }),
     ]);
-    await this.mail.sendPasswordChanged(current.email);
+    await this.mail.sendPasswordChanged({
+      email: current.email,
+      locale: current.locale,
+    });
     await this.security.record({
       type: "PASSWORD_CHANGED",
       userId: payload.sub,

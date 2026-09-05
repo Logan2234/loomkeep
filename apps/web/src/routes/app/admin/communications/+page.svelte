@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Locale } from "@loomkeep/shared";
   // Merges the former /admin/emails and /admin/push pages: same admin gesture
   // on two channels (preview/test-send a template vs. test/broadcast a push),
   // now two tabs of one page instead of two nav entries.
@@ -29,8 +30,10 @@
     adminTemplateFieldLabel,
   } from "$lib/constants/admin-presentation";
   import { m } from "$lib/paraglide/messages";
+  import { getLocale } from "$lib/paraglide/runtime";
 
   type Tab = "email" | "push";
+  const emailLocales: Locale[] = ["fr", "en"];
   let tab = $state<Tab>(
     page.url.searchParams.get("tab") === "push" ? "push" : "email",
   );
@@ -70,6 +73,7 @@
   let previewDebounce: ReturnType<typeof setTimeout> | undefined;
 
   let testTo = $state("");
+  let emailLocale = $state<Locale>(getLocale());
 
   function selectTemplate(key: string) {
     selectedKey = key;
@@ -91,7 +95,11 @@
     if (!selectedKey) return;
     previewLoading = true;
     try {
-      const preview = await getAdminEmailPreview(selectedKey, fieldValues);
+      const preview = await getAdminEmailPreview(
+        selectedKey,
+        emailLocale,
+        fieldValues,
+      );
       previewSubject = preview.subject;
       previewHtml = preview.html;
       previewText = preview.text;
@@ -113,7 +121,11 @@
 
   const sendTestEmailMut = createApiMutation(() => ({
     mutate: () =>
-      sendAdminTestEmail(selectedKey!, { to: testTo, values: fieldValues }),
+      sendAdminTestEmail(selectedKey!, {
+        to: testTo,
+        locale: emailLocale,
+        values: fieldValues,
+      }),
     coveredFields: ["to"],
     successToast: () => m.admin_communications_email_sent_to({ email: testTo }),
   }));
@@ -314,6 +326,27 @@
         </div>
 
         <div class="min-w-0 space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="text-dim text-xs font-semibold"
+              >{m.common_language()}</span>
+            <div class="flex gap-1">
+              {#each emailLocales as locale (locale)}
+                <button
+                  type="button"
+                  class="chip"
+                  class:chip-on={emailLocale === locale}
+                  onclick={() => {
+                    emailLocale = locale;
+                    void loadPreview();
+                  }}>
+                  {locale === "fr"
+                    ? m.common_language_fr()
+                    : m.common_language_en()}
+                </button>
+              {/each}
+            </div>
+          </div>
+
           {#if selectedTemplate && selectedTemplate.fields.length > 0}
             <div class="card grid gap-3 p-4 sm:grid-cols-2">
               {#each selectedTemplate.fields as f (f.key)}

@@ -1,5 +1,7 @@
 import type { RegisterRequestDto } from "@loomkeep/shared";
 import {
+  Locale,
+  type Locale as LocaleCode,
   PASSWORD_DIGIT_RE,
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
@@ -7,6 +9,7 @@ import {
 import {
   Equals,
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   Matches,
@@ -37,6 +40,10 @@ export class RegisterDto implements RegisterRequestDto {
   @MinLength(1)
   @MaxLength(50)
   displayName!: string;
+
+  @IsOptional()
+  @IsIn(Locale)
+  locale?: LocaleCode;
 
   @Equals(true, { message: "terms of service must be accepted" })
   acceptedTerms!: boolean;

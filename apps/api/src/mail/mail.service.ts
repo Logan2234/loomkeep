@@ -1,7 +1,17 @@
-import { ModerationLegalBasis, ModerationMeasure } from "@loomkeep/shared";
+import {
+  type Locale,
+  ModerationLegalBasis,
+  ModerationMeasure,
+} from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import nodemailer, { Transporter } from "nodemailer";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
+import { dateLocale, MAIL_COPY, resolveMailLocale } from "./mail.i18n";
+
+export interface MailRecipient {
+  email: string;
+  locale: string;
+}
 
 interface SendArgs {
   to: string;
@@ -23,7 +33,7 @@ export interface MailTemplateField {
   multiline?: boolean;
 }
 
-/** Escapes text pulled from Quackback content before it's placed in HTML. */
+/** Escapes dynamic text before it is placed in HTML. */
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -101,30 +111,30 @@ export class MailService {
     {
       label: string;
       fields: MailTemplateField[];
-      build: (values: Record<string, string>) => TemplateBody;
+      build: (locale: Locale, values: Record<string, string>) => TemplateBody;
     }
   > = {
     welcome: {
       label: "Bienvenue",
       fields: [{ key: "displayName", label: "Nom", default: "Alice" }],
-      build: (v) => this.buildWelcome(v.displayName),
+      build: (locale, v) => this.buildWelcome(locale, v.displayName),
     },
     verifyEmail: {
       label: "Confirmation d'email",
       fields: [
         { key: "token", label: "Token", default: "sample-verify-token" },
       ],
-      build: (v) => this.buildVerifyEmail(v.token),
+      build: (locale, v) => this.buildVerifyEmail(locale, v.token),
     },
     passwordResetLink: {
       label: "Lien de réinitialisation",
       fields: [{ key: "token", label: "Token", default: "sample-reset-token" }],
-      build: (v) => this.buildPasswordResetLink(v.token),
+      build: (locale, v) => this.buildPasswordResetLink(locale, v.token),
     },
     passwordChanged: {
       label: "Mot de passe modifié",
       fields: [],
-      build: () => this.buildPasswordChanged(),
+      build: (locale) => this.buildPasswordChanged(locale),
     },
     emailChangedOld: {
       label: "Email modifié (ancienne adresse)",
@@ -135,7 +145,7 @@ export class MailService {
           default: "nouvelle@example.com",
         },
       ],
-      build: (v) => this.buildEmailChangedOld(v.newEmail),
+      build: (locale, v) => this.buildEmailChangedOld(locale, v.newEmail),
     },
     emailChangedNew: {
       label: "Email modifié (nouvelle adresse)",
@@ -146,17 +156,17 @@ export class MailService {
           default: "ancienne@example.com",
         },
       ],
-      build: (v) => this.buildEmailChangedNew(v.oldEmail),
+      build: (locale, v) => this.buildEmailChangedNew(locale, v.oldEmail),
     },
     emailChangeCode: {
       label: "Code de confirmation d'email",
       fields: [{ key: "code", label: "Code", default: "482913" }],
-      build: (v) => this.buildEmailChangeCode(v.code),
+      build: (locale, v) => this.buildEmailChangeCode(locale, v.code),
     },
     mfaEmailCode: {
       label: "Code MFA (connexion)",
       fields: [{ key: "code", label: "Code", default: "482913" }],
-      build: (v) => this.buildMfaEmailCode(v.code),
+      build: (locale, v) => this.buildMfaEmailCode(locale, v.code),
     },
     newsletter: {
       label: "Newsletter (nouveautés)",
@@ -177,8 +187,14 @@ export class MailService {
       // Sample token — the gallery renders out of band, with no real
       // recipient/subscription to mint one for. No real Quackback HTML to
       // preview here either, so this always exercises the Markdown fallback.
-      build: (v) =>
-        this.buildNewsletter(v.title, v.content, "", "preview-token"),
+      build: (locale, v) =>
+        this.buildNewsletter(
+          locale,
+          v.title,
+          v.content,
+          "",
+          "preview-token",
+        ),
     },
     episodeDigest: {
       label: "Digest de sorties (email)",
@@ -186,7 +202,7 @@ export class MailService {
         { key: "itemCount", label: "Nombre d'épisodes (1-6)", default: "1" },
         { key: "period", label: "Période (daily ou weekly)", default: "daily" },
       ],
-      build: (v) => {
+      build: (locale, v) => {
         const count = Math.max(1, Math.min(6, Number(v.itemCount) || 1));
         const sampleTitles = [
           "One Piece",
@@ -202,6 +218,7 @@ export class MailService {
           url: "/app/media/series/12345",
         }));
         return this.buildEpisodeDigest(
+          locale,
           items,
           v.period === "weekly" ? "weekly" : "daily",
         );
@@ -216,7 +233,8 @@ export class MailService {
           default: "3",
         },
       ],
-      build: (v) => this.buildReportsDigest(Number(v.pendingCount) || 0),
+      build: (locale, v) =>
+        this.buildReportsDigest(locale, Number(v.pendingCount) || 0),
     },
     newDeviceLogin: {
       label: "Nouvelle connexion (appareil inconnu)",
@@ -228,7 +246,8 @@ export class MailService {
         },
         { key: "ip", label: "Adresse IP", default: "203.0.113.42" },
       ],
-      build: (v) => this.buildNewDeviceLogin(v.deviceLabel, v.ip || null),
+      build: (locale, v) =>
+        this.buildNewDeviceLogin(locale, v.deviceLabel, v.ip || null),
     },
     inactivityWarning: {
       label: "Relance compte inactif (LK-C06)",
@@ -236,10 +255,11 @@ export class MailService {
         {
           key: "deletionDate",
           label: "Date de suppression prévue",
-          default: "15/08/2028",
+          default: "2028-08-15",
         },
       ],
-      build: (v) => this.buildInactivityWarning(v.deletionDate),
+      build: (locale, v) =>
+        this.buildInactivityWarning(locale, new Date(v.deletionDate)),
     },
     moderationDecision: {
       label: "Décision de modération (DSA art. 17)",
@@ -266,8 +286,8 @@ export class MailService {
           default: "§7 — Règles de conduite",
         },
       ],
-      build: (v) =>
-        this.buildModerationDecision({
+      build: (locale, v) =>
+        this.buildModerationDecision(locale, {
           measure:
             v.measure === ModerationMeasure.ACCOUNT_DELETED
               ? ModerationMeasure.ACCOUNT_DELETED
@@ -343,24 +363,31 @@ export class MailService {
    */
   renderTemplatePreview(
     key: string,
+    locale: string = "fr",
     overrides?: Record<string, string>,
   ): TemplateBody | null {
     const template = this.templates[key];
     if (!template) return null;
-    return template.build(this.resolveFieldValues(template.fields, overrides));
+    return template.build(
+      resolveMailLocale(locale),
+      this.resolveFieldValues(template.fields, overrides),
+    );
   }
 
   /** Sends one template, rendered with the same (possibly overridden) sample data as the preview, to `to`. */
   async sendTemplateTest(
     key: string,
-    to: string,
+    recipient: MailRecipient,
     overrides?: Record<string, string>,
   ): Promise<boolean> {
     const template = this.templates[key];
     if (!template) return false;
     await this.send({
-      to,
-      ...template.build(this.resolveFieldValues(template.fields, overrides)),
+      to: recipient.email,
+      ...template.build(
+        resolveMailLocale(recipient.locale),
+        this.resolveFieldValues(template.fields, overrides),
+      ),
     });
     return true;
   }
@@ -379,43 +406,91 @@ export class MailService {
     return values;
   }
 
-  async sendPasswordResetLink(to: string, token: string): Promise<void> {
-    await this.send({ to, ...this.buildPasswordResetLink(token) });
+  async sendPasswordResetLink(
+    recipient: MailRecipient,
+    token: string,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildPasswordResetLink(locale, token),
+    });
   }
 
-  async sendPasswordChanged(to: string): Promise<void> {
-    await this.send({ to, ...this.buildPasswordChanged() });
+  async sendPasswordChanged(recipient: MailRecipient): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildPasswordChanged(locale),
+    });
   }
 
   async sendNewDeviceLogin(
-    to: string,
-    deviceLabel: string,
+    recipient: MailRecipient,
+    deviceLabel: string | null,
     ip: string | null,
   ): Promise<void> {
-    await this.send({ to, ...this.buildNewDeviceLogin(deviceLabel, ip) });
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildNewDeviceLogin(locale, deviceLabel, ip),
+    });
   }
 
-  async sendEmailChanged(oldEmail: string, newEmail: string): Promise<void> {
+  async sendEmailChanged(
+    oldEmail: string,
+    newEmail: string,
+    localeValue: string,
+  ): Promise<void> {
+    const locale = resolveMailLocale(localeValue);
     await Promise.all([
-      this.send({ to: oldEmail, ...this.buildEmailChangedOld(newEmail) }),
-      this.send({ to: newEmail, ...this.buildEmailChangedNew(oldEmail) }),
+      this.send({
+        to: oldEmail,
+        ...this.buildEmailChangedOld(locale, newEmail),
+      }),
+      this.send({
+        to: newEmail,
+        ...this.buildEmailChangedNew(locale, oldEmail),
+      }),
     ]);
   }
 
-  async sendEmailChangeCode(to: string, code: string): Promise<void> {
-    await this.send({ to, ...this.buildEmailChangeCode(code) });
+  async sendEmailChangeCode(
+    recipient: MailRecipient,
+    code: string,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildEmailChangeCode(locale, code),
+    });
   }
 
-  async sendMfaEmailCode(to: string, code: string): Promise<void> {
-    await this.send({ to, ...this.buildMfaEmailCode(code) });
+  async sendMfaEmailCode(recipient: MailRecipient, code: string): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildMfaEmailCode(locale, code),
+    });
   }
 
-  async sendWelcome(to: string, displayName: string): Promise<void> {
-    await this.send({ to, ...this.buildWelcome(displayName) });
+  async sendWelcome(
+    recipient: MailRecipient,
+    displayName: string,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildWelcome(locale, displayName),
+    });
   }
 
-  async sendVerifyEmail(to: string, token: string): Promise<void> {
-    await this.send({ to, ...this.buildVerifyEmail(token) });
+  async sendVerifyEmail(recipient: MailRecipient, token: string): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildVerifyEmail(locale, token),
+    });
   }
 
   /**
@@ -423,16 +498,27 @@ export class MailService {
    * which is the only caller and already guarantees `items` is non-empty.
    */
   async sendEpisodeDigest(
-    to: string,
+    recipient: MailRecipient,
     items: { title: string; body: string; url: string }[],
     period: "daily" | "weekly",
   ): Promise<void> {
-    await this.send({ to, ...this.buildEpisodeDigest(items, period) });
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildEpisodeDigest(locale, items, period),
+    });
   }
 
   /** Daily admin-only summary of pending moderation reports. Only sent when `pendingCount > 0`. */
-  async sendReportsDigest(to: string, pendingCount: number): Promise<void> {
-    await this.send({ to, ...this.buildReportsDigest(pendingCount) });
+  async sendReportsDigest(
+    recipient: MailRecipient,
+    pendingCount: number,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildReportsDigest(locale, pendingCount),
+    });
   }
 
   /**
@@ -441,8 +527,15 @@ export class MailService {
    * automatic purge). Sent regardless of `notifyEmail` — this is a retention
    * notice, not a marketing/feature email.
    */
-  async sendInactivityWarning(to: string, deletionDate: string): Promise<void> {
-    await this.send({ to, ...this.buildInactivityWarning(deletionDate) });
+  async sendInactivityWarning(
+    recipient: MailRecipient,
+    deletionDate: Date,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildInactivityWarning(locale, deletionDate),
+    });
   }
 
   /**
@@ -451,7 +544,7 @@ export class MailService {
    * own text — the default `from` is a no-reply address.
    */
   async sendModerationDecision(
-    to: string,
+    recipient: MailRecipient,
     input: {
       measure: ModerationMeasure;
       reasonText: string;
@@ -460,23 +553,24 @@ export class MailService {
     },
   ): Promise<void> {
     await this.send({
-      to,
+      to: recipient.email,
       replyTo: "contact@loomkeep.app",
-      ...this.buildModerationDecision(input),
+      ...this.buildModerationDecision(resolveMailLocale(recipient.locale), input),
     });
   }
 
   /** Release newsletter — sent automatically when a changelog entry is published on Quackback (see NewsletterService). */
   async sendNewsletter(
-    to: string,
+    recipient: MailRecipient,
     title: string,
     contentPreview: string,
     contentHtml: string,
     unsubscribeToken: string,
   ): Promise<void> {
     await this.send({
-      to,
+      to: recipient.email,
       ...this.buildNewsletter(
+        resolveMailLocale(recipient.locale),
         title,
         contentPreview,
         contentHtml,
@@ -485,16 +579,17 @@ export class MailService {
     });
   }
 
-  private buildReportsDigest(pendingCount: number): TemplateBody {
+  private buildReportsDigest(locale: Locale, pendingCount: number): TemplateBody {
+    const copy = MAIL_COPY[locale].reportsDigest;
     const url = `${this.webOrigin}/app/admin/reports`;
-    const label = pendingCount > 1 ? "signalements" : "signalement";
     return {
-      subject: `${pendingCount} ${label} en attente de modération`,
-      text: `${pendingCount} ${label} en attente de modération sur Loomkeep.\n\n${url}`,
+      subject: copy.subject(pendingCount),
+      text: `${copy.sentence(pendingCount)}\n\n${url}`,
       html: this.wrapEmail(
-        "Signalements en attente",
-        `<p><strong>${pendingCount}</strong> ${label} en attente de modération.</p>
-         ${this.button(url, "Voir la file de modération")}`,
+        locale,
+        copy.heading,
+        `<p>${copy.sentence(pendingCount).replace(String(pendingCount), `<strong>${pendingCount}</strong>`)}</p>
+         ${this.button(url, copy.button)}`,
       ),
     };
   }
@@ -505,35 +600,34 @@ export class MailService {
    * is only meaningful when legalBasis is TOS_BREACH — ILLEGAL_CONTENT states
    * the illegality ground instead.
    */
-  private buildModerationDecision(input: {
+  private buildModerationDecision(locale: Locale, input: {
     measure: ModerationMeasure;
     reasonText: string;
     legalBasis: ModerationLegalBasis;
     tosClause: string;
   }): TemplateBody {
-    const measureLabel =
+    const copy = MAIL_COPY[locale].moderation;
+    const variant =
       input.measure === ModerationMeasure.COMMENT_REMOVED
-        ? "le retrait d'un de tes commentaires"
-        : "la suppression de ton compte Loomkeep";
-    const subject =
-      input.measure === ModerationMeasure.COMMENT_REMOVED
-        ? "Un de tes commentaires a été retiré"
-        : "Ton compte Loomkeep a été supprimé";
+        ? copy.comment
+        : copy.account;
     const basisText =
       input.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
-        ? "ce contenu nous paraît manifestement illégal"
-        : `ce contenu ou ce comportement enfreint nos Conditions Générales d'Utilisation (${input.tosClause})`;
+        ? copy.illegalBasis
+        : copy.tosBasis(input.tosClause);
+    const intro = copy.intro(variant.measure);
 
     return {
-      subject,
-      text: `Nous avons pris une mesure de modération concernant ton compte : ${measureLabel}.\n\nFaits retenus : ${input.reasonText}\n\nFondement : ${basisText}.\n\nCette décision a été prise par un modérateur, pas par un système automatisé.\n\nTu peux la contester en répondant directement à cet e-mail ou en écrivant à contact@loomkeep.app.`,
+      subject: variant.subject,
+      text: `${intro}\n\n${copy.factsLabel}: ${input.reasonText}\n\n${copy.basisLabel}: ${basisText}.\n\n${copy.humanDecision}\n\n${copy.appeal}`,
       html: this.wrapEmail(
-        subject,
-        `<p>Nous avons pris une mesure de modération concernant ton compte : <strong>${escapeHtml(measureLabel)}</strong>.</p>
-         <p><strong>Faits retenus :</strong> ${escapeHtml(input.reasonText)}</p>
-         <p><strong>Fondement :</strong> ${escapeHtml(basisText)}.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Cette décision a été prise par un modérateur, pas par un système automatisé.</p>
-         <p>Tu peux la contester en répondant directement à cet e-mail ou en écrivant à <a href="mailto:contact@loomkeep.app">contact@loomkeep.app</a>.</p>`,
+        locale,
+        variant.subject,
+        `<p>${escapeHtml(intro)}</p>
+         <p><strong>${escapeHtml(copy.factsLabel)}:</strong> ${escapeHtml(input.reasonText)}</p>
+         <p><strong>${escapeHtml(copy.basisLabel)}:</strong> ${escapeHtml(basisText)}.</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.humanDecision)}</p>
+         <p>${escapeHtml(copy.appeal).replace("contact@loomkeep.app", '<a href="mailto:contact@loomkeep.app">contact@loomkeep.app</a>')}</p>`,
       ),
     };
   }
@@ -543,36 +637,45 @@ export class MailService {
    * naming the exact date the account is due for automatic deletion (36
    * months of inactivity) unless the account is used again before then.
    */
-  private buildInactivityWarning(deletionDate: string): TemplateBody {
+  private buildInactivityWarning(locale: Locale, deletionDate: Date): TemplateBody {
+    const copy = MAIL_COPY[locale].inactivity;
+    const formattedDate = new Intl.DateTimeFormat(dateLocale(locale), {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(deletionDate);
     const url = `${this.webOrigin}/login`;
     return {
-      subject: "Ton compte Loomkeep sera supprimé pour inactivité",
-      text: `Ton compte Loomkeep est inactif depuis 24 mois. Conformément à notre politique de conservation des données, il sera définitivement supprimé le ${deletionDate} si tu ne te reconnectes pas avant cette date.\n\nPour le conserver, connecte-toi simplement une fois :\n\n${url}`,
+      subject: copy.subject,
+      text: `${copy.text(formattedDate)}\n\n${url}`,
       html: this.wrapEmail(
-        "Ton compte sera bientôt supprimé",
-        `<p>Ton compte Loomkeep est inactif depuis 24 mois.</p>
-         <p>Conformément à notre politique de conservation des données, il sera <strong>définitivement supprimé le ${escapeHtml(deletionDate)}</strong> si tu ne te reconnectes pas avant cette date.</p>
-         ${this.button(url, "Me reconnecter")}
-         <p style="color:${COLOR_MUTED};font-size:13px;">Une simple connexion suffit à annuler cette suppression.</p>`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         <p>${escapeHtml(copy.policy(formattedDate))}</p>
+         ${this.button(url, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.hint)}</p>`,
       ),
     };
   }
 
-  private buildPasswordResetLink(token: string): TemplateBody {
+  private buildPasswordResetLink(locale: Locale, token: string): TemplateBody {
+    const copy = MAIL_COPY[locale].passwordReset;
     const url = `${this.webOrigin}/reset-password?token=${token}`;
     return {
-      subject: "Réinitialise ton mot de passe Loomkeep",
-      text: `Un lien de réinitialisation a été demandé pour ton compte Loomkeep.\n\n${url}\n\nCe lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
+      subject: copy.subject,
+      text: `${copy.intro}\n\n${url}\n\n${copy.expiry}`,
       html: this.wrapEmail(
-        "Réinitialise ton mot de passe",
-        `<p>Un lien de réinitialisation a été demandé pour ton compte Loomkeep.</p>
-         ${this.button(url, "Réinitialiser mon mot de passe")}
-         <p style="color:${COLOR_MUTED};font-size:13px;">Ce lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         ${this.button(url, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry)}</p>`,
       ),
     };
   }
 
-  private buildPasswordChanged(): TemplateBody {
+  private buildPasswordChanged(locale: Locale): TemplateBody {
+    const copy = MAIL_COPY[locale].passwordChanged;
     // The old password no longer works, so a link into the app (which needs
     // a session) would be a dead end for the "it wasn't me" case — the
     // account may already be compromised. The reset flow works regardless,
@@ -581,22 +684,26 @@ export class MailService {
       this.umamiLink(UMAMI_LINK_SLUG_PASSWORD_CHANGED) ??
       `${this.webOrigin}/forgot-password`;
     return {
-      subject: "Ton mot de passe Loomkeep a été modifié",
-      text: `Le mot de passe de ton compte Loomkeep vient d'être changé. Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : réinitialise immédiatement ton mot de passe.\n\n${url}`,
+      subject: copy.subject,
+      text: `${copy.intro} ${copy.warning}\n\n${url}`,
       html: this.wrapEmail(
-        "Mot de passe modifié",
-        `<p>Le mot de passe de ton compte Loomkeep vient d'être changé.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : réinitialise immédiatement ton mot de passe.</p>
-         ${this.button(url, "Réinitialiser mon mot de passe")}`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
+         ${this.button(url, copy.button)}`,
       ),
     };
   }
 
   private buildNewDeviceLogin(
-    deviceLabel: string,
+    locale: Locale,
+    deviceLabelValue: string | null,
     ip: string | null,
   ): TemplateBody {
-    const ipSuffix = ip ? ` (IP ${escapeHtml(ip)})` : "";
+    const copy = MAIL_COPY[locale].newDevice;
+    const deviceLabel = deviceLabelValue ?? copy.unknownDevice;
+    const ipSuffix = ip ? ` (IP ${ip})` : "";
     const ipTextSuffix = ip ? ` (IP ${ip})` : "";
     // Unlike password-changed/email-changed, the account likely isn't
     // compromised yet here — just an unrecognized device gained access — so
@@ -606,96 +713,109 @@ export class MailService {
       this.umamiLink(UMAMI_LINK_SLUG_NEW_DEVICE_LOGIN) ??
       `${this.webOrigin}/app/settings#securite`;
     return {
-      subject: "Nouvelle connexion à ton compte Loomkeep",
-      text: `Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : ${deviceLabel}${ipTextSuffix}. Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.\n\n${url}`,
+      subject: copy.subject,
+      text: `${copy.intro(deviceLabel, ipTextSuffix)} ${copy.warning}\n\n${url}`,
       html: this.wrapEmail(
-        "Nouvelle connexion détectée",
-        `<p>Une connexion vient d'avoir lieu sur ton compte Loomkeep depuis un appareil non reconnu : <strong>${escapeHtml(deviceLabel)}</strong>${ipSuffix}.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si ce n'est pas toi, change ton mot de passe immédiatement et déconnecte les autres appareils depuis Réglages > Sécurité.</p>
-         ${this.button(url, "Ouvrir mes réglages de sécurité")}`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(deviceLabel, ipSuffix))}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
+         ${this.button(url, copy.button)}`,
       ),
     };
   }
 
-  private buildEmailChangedOld(newEmail: string): TemplateBody {
+  private buildEmailChangedOld(locale: Locale, newEmail: string): TemplateBody {
+    const copy = MAIL_COPY[locale].emailChangedOld;
     // The account's login email has already changed (and possibly the
     // password too, if compromised), so a link into the app or a reset flow
     // tied to either address can't be assumed to reach the real owner —
     // direct contact is the only reliable path here.
     const url = "mailto:contact@loomkeep.app";
     return {
-      subject: "L'email de ton compte Loomkeep a changé",
-      text: `L'adresse email de ton compte Loomkeep a été changée pour ${newEmail}. Si tu n'es pas à l'origine de cette action, contacte-nous immédiatement : ${url}`,
+      subject: copy.subject,
+      text: `${copy.intro(newEmail)} ${copy.warning} ${url}`,
       html: this.wrapEmail(
-        "Adresse email modifiée",
-        `<p>L'adresse email de ton compte Loomkeep a été changée pour <strong>${newEmail}</strong>.</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Si tu n'es pas à l'origine de cette action, ton compte est peut-être compromis : contacte-nous immédiatement.</p>
-         ${this.button(url, "Nous contacter")}`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(newEmail))}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.warning)}</p>
+         ${this.button(url, copy.button)}`,
       ),
     };
   }
 
-  private buildEmailChangedNew(oldEmail: string): TemplateBody {
+  private buildEmailChangedNew(locale: Locale, oldEmail: string): TemplateBody {
+    const copy = MAIL_COPY[locale].emailChangedNew;
     return {
-      subject: "Cette adresse est maintenant liée à ton compte Loomkeep",
-      text: `Cette adresse est désormais l'email de connexion de ton compte Loomkeep (précédemment ${oldEmail}).`,
+      subject: copy.subject,
+      text: copy.intro(oldEmail),
       html: this.wrapEmail(
-        "Adresse email confirmée",
-        `<p>Cette adresse est désormais l'email de connexion de ton compte Loomkeep (précédemment ${oldEmail}).</p>`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(oldEmail))}</p>`,
       ),
     };
   }
 
-  private buildEmailChangeCode(code: string): TemplateBody {
+  private buildEmailChangeCode(locale: Locale, code: string): TemplateBody {
+    const copy = MAIL_COPY[locale].emailChangeCode;
     return {
-      subject: "Confirme ta nouvelle adresse email Loomkeep",
-      text: `Voici ton code de confirmation : ${code}\n\nCe code expire dans 15 minutes. Si tu n'es pas à l'origine de cette demande, ignore cet email.`,
+      subject: copy.subject,
+      text: `${copy.intro} ${code}\n\n${copy.expiry}`,
       html: this.wrapEmail(
-        "Confirme ton adresse email",
-        `<p>Voici ton code de confirmation :</p>
-         <p style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR_ACCENT};text-align:center;margin:24px 0;">${code}</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Ce code expire dans 15 minutes. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         <p style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR_ACCENT};text-align:center;margin:24px 0;">${escapeHtml(code)}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry)}</p>`,
       ),
     };
   }
 
-  private buildMfaEmailCode(code: string): TemplateBody {
+  private buildMfaEmailCode(locale: Locale, code: string): TemplateBody {
+    const copy = MAIL_COPY[locale].mfaCode;
     return {
-      subject: "Ton code de connexion Loomkeep",
-      text: `Voici ton code de connexion : ${code}\n\nCe code expire dans 10 minutes. Si tu n'es pas à l'origine de cette tentative de connexion, ignore cet email et vérifie ton mot de passe.`,
+      subject: copy.subject,
+      text: `${copy.intro} ${code}\n\n${copy.expiry}`,
       html: this.wrapEmail(
-        "Ton code de connexion",
-        `<p>Voici ton code de connexion :</p>
-         <p style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR_ACCENT};text-align:center;margin:24px 0;">${code}</p>
-         <p style="color:${COLOR_MUTED};font-size:13px;">Ce code expire dans 10 minutes. Si tu n'es pas à l'origine de cette tentative de connexion, ignore cet email et vérifie ton mot de passe.</p>`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         <p style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:${COLOR_ACCENT};text-align:center;margin:24px 0;">${escapeHtml(code)}</p>
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry)}</p>`,
       ),
     };
   }
 
-  private buildWelcome(displayName: string): TemplateBody {
+  private buildWelcome(locale: Locale, displayName: string): TemplateBody {
+    const copy = MAIL_COPY[locale].welcome;
     const url =
       this.umamiLink(UMAMI_LINK_SLUG_WELCOME) ?? `${this.webOrigin}/app`;
     return {
-      subject: "Bienvenue sur Loomkeep",
-      text: `Bienvenue ${displayName} ! Ton compte Loomkeep a été créé avec succès.\n\n${url}`,
+      subject: copy.subject,
+      text: `${copy.intro(displayName)}\n\n${url}`,
       html: this.wrapEmail(
-        "Bienvenue sur Loomkeep",
-        `<p>Bienvenue <strong>${displayName}</strong> ! Ton compte Loomkeep a été créé avec succès.</p>
-         ${this.button(url, "Ouvrir Loomkeep")}`,
+        locale,
+        copy.subject,
+        `<p>${escapeHtml(copy.intro(displayName))}</p>
+         ${this.button(url, copy.button)}`,
       ),
     };
   }
 
-  private buildVerifyEmail(token: string): TemplateBody {
+  private buildVerifyEmail(locale: Locale, token: string): TemplateBody {
+    const copy = MAIL_COPY[locale].verifyEmail;
     const url = `${this.webOrigin}/verify-email?token=${token}`;
     return {
-      subject: "Confirme ton adresse email Loomkeep",
-      text: `Confirme ton adresse email en ouvrant ce lien :\n\n${url}\n\nCe lien expire dans 24h.`,
+      subject: copy.subject,
+      text: `${copy.intro}\n\n${url}\n\n${copy.expiry}`,
       html: this.wrapEmail(
-        "Confirme ton adresse email",
-        `<p>Confirme ton adresse email en cliquant sur le bouton ci-dessous.</p>
-         ${this.button(url, "Confirmer mon email")}
-         <p style="color:${COLOR_MUTED};font-size:13px;">Ce lien expire dans 24h.</p>`,
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro)}</p>
+         ${this.button(url, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry)}</p>`,
       ),
     };
   }
@@ -707,10 +827,12 @@ export class MailService {
    * changes the "aujourd'hui"/"cette semaine" framing.
    */
   private buildEpisodeDigest(
+    locale: Locale,
     items: { title: string; body: string; url: string }[],
     period: "daily" | "weekly",
   ): TemplateBody {
-    const periodLabel = period === "daily" ? "aujourd'hui" : "cette semaine";
+    const copy = MAIL_COPY[locale].episodeDigest;
+    const periodLabel = period === "daily" ? copy.today : copy.thisWeek;
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
       `${this.webOrigin}/app/settings#communications`;
@@ -718,7 +840,7 @@ export class MailService {
     const listHtml = items
       .map(
         (i) =>
-          `<p style="margin:0 0 16px;"><a href="${this.webOrigin}${i.url}" style="color:${COLOR_TEXT};font-weight:600;text-decoration:none;">${i.title}</a><br/><span style="color:${COLOR_MUTED};font-size:13px;">${i.body}</span></p>`,
+          `<p style="margin:0 0 16px;"><a href="${this.webOrigin}${i.url}" style="color:${COLOR_TEXT};font-weight:600;text-decoration:none;">${escapeHtml(i.title)}</a><br/><span style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(i.body)}</span></p>`,
       )
       .join("");
     const listText = items
@@ -729,32 +851,35 @@ export class MailService {
     let intro: string;
 
     if (items.length === 1) {
-      subject = `Nouvel épisode : ${items[0].title}`;
-      intro = `Un épisode t'attend ${periodLabel}.`;
+      subject = copy.oneSubject(items[0].title);
+      intro = copy.oneIntro(periodLabel);
     } else if (items.length <= 4) {
-      subject = `${items.length} nouveaux épisodes ${periodLabel}`;
-      intro = `Voici ce qui sort ${periodLabel}.`;
+      subject = copy.severalSubject(items.length, periodLabel);
+      intro = copy.severalIntro(periodLabel);
     } else {
-      subject = `${items.length} sorties ${periodLabel}`;
-      intro = `Grosse fournée : ${items.length} épisodes sortent ${periodLabel}.`;
+      subject = copy.manySubject(items.length, periodLabel);
+      intro = copy.manyIntro(items.length, periodLabel);
     }
 
     return {
       subject,
-      text: `${intro}\n\n${listText}\n\nGérer mes notifications : ${prefsUrl}`,
+      text: `${intro}\n\n${listText}\n\n${copy.preferences}: ${prefsUrl}`,
       html: this.wrapEmail(
+        locale,
         subject,
-        `<p>${intro}</p>${listHtml}<p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;"><a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes notifications</a></p>`,
+        `<p>${escapeHtml(intro)}</p>${listHtml}<p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;"><a href="${prefsUrl}" style="color:${COLOR_MUTED};">${escapeHtml(copy.preferences)}</a></p>`,
       ),
     };
   }
 
   private buildNewsletter(
+    locale: Locale,
     title: string,
     contentPreview: string,
     contentHtml: string,
     unsubscribeToken: string,
   ): TemplateBody {
+    const copy = MAIL_COPY[locale].newsletter;
     const entryUrl =
       this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_CHANGELOG) ??
       "https://feedback.loomkeep.app/changelog";
@@ -782,13 +907,14 @@ export class MailService {
 
     return {
       subject: `Loomkeep — ${title}`,
-      text: `${title}\n\n${contentText}\n\n${entryUrl}\n\nTu reçois cet email car tu es abonné aux nouveautés. Gérer mes préférences : ${prefsUrl}\nSe désinscrire : ${unsubscribeUrl}`,
+      text: `${title}\n\n${contentText}\n\n${entryUrl}\n\n${copy.reason} ${copy.preferences}: ${prefsUrl}\n${copy.unsubscribe}: ${unsubscribeUrl}`,
       html: this.wrapEmail(
+        locale,
         title,
         `${bodyHtml}
-         ${this.button(entryUrl, "Voir sur le changelog")}
-         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">Tu reçois cet email car tu es abonné aux nouveautés · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">Gérer mes préférences</a> · <a href="${unsubscribeUrl}" style="color:${COLOR_MUTED};">Se désinscrire</a></p>`,
-        "Nouvelle version",
+         ${this.button(entryUrl, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:12px;margin-top:24px;text-align:center;">${escapeHtml(copy.reason)} · <a href="${prefsUrl}" style="color:${COLOR_MUTED};">${escapeHtml(copy.preferences)}</a> · <a href="${unsubscribeUrl}" style="color:${COLOR_MUTED};">${escapeHtml(copy.unsubscribe)}</a></p>`,
+        copy.eyebrow,
       ),
     };
   }
@@ -859,8 +985,17 @@ export class MailService {
    * (see DESIGN.md), degrading to a generic monospace font in mail clients
    * that don't ship Space Mono.
    */
-  private wrapEmail(title: string, bodyHtml: string, eyebrow?: string): string {
-    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOR_BG};padding:32px 0;font-family:Arial,Helvetica,sans-serif;">
+  private wrapEmail(
+    locale: Locale,
+    title: string,
+    bodyHtml: string,
+    eyebrow?: string,
+  ): string {
+    return `<!doctype html>
+<html lang="${locale}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOR_BG};padding:32px 0;font-family:Arial,Helvetica,sans-serif;">
   <tr>
     <td align="center">
       <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background:${COLOR_SURFACE};border:1px solid ${COLOR_BORDER};border-radius:12px;overflow:hidden;">
@@ -873,10 +1008,10 @@ export class MailService {
           <td style="padding:32px;color:${COLOR_TEXT};font-size:15px;line-height:1.6;">
             ${
               eyebrow
-                ? `<p style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${COLOR_ACCENT};margin:0 0 8px;">${eyebrow}</p>`
+                ? `<p style="font-family:'Courier New',monospace;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${COLOR_ACCENT};margin:0 0 8px;">${escapeHtml(eyebrow)}</p>`
                 : ""
             }
-            <h1 style="font-size:19px;margin:0 0 16px;color:${COLOR_ACCENT};">${title}</h1>
+            <h1 style="font-size:19px;margin:0 0 16px;color:${COLOR_ACCENT};">${escapeHtml(title)}</h1>
             ${bodyHtml}
           </td>
         </tr>
@@ -888,7 +1023,9 @@ export class MailService {
       </table>
     </td>
   </tr>
-</table>`;
+</table>
+</body>
+</html>`;
   }
 
   /** The Umami Link short-URL for a slug, or undefined when no base URL is configured. */
@@ -901,7 +1038,7 @@ export class MailService {
   /** Email-safe button: a styled `<a>`, since `<button>` is unreliable across mail clients. */
   private button(url: string, label: string): string {
     return `<p style="text-align:center;margin:24px 0;">
-      <a href="${url}" style="display:inline-block;background:${COLOR_ACCENT};color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:8px;">${label}</a>
+      <a href="${escapeHtml(url)}" style="display:inline-block;background:${COLOR_ACCENT};color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:8px;">${escapeHtml(label)}</a>
     </p>`;
   }
 

@@ -16,11 +16,13 @@ describe("NewsletterService.handleChangelogPublished", () => {
     recipients: {
       id: string;
       email: string;
+      locale: string;
       newsletterUnsubscribeToken: string | null;
     }[] = [
       {
         id: "user_1",
         email: "a@example.com",
+        locale: "en",
         newsletterUnsubscribeToken: null,
       },
     ],
@@ -64,7 +66,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       data: { newsletterUnsubscribeToken: expect.any(String) },
     });
     expect(mail.sendNewsletter).toHaveBeenCalledWith(
-      "a@example.com",
+      { email: "a@example.com", locale: "en" },
       "Loomkeep 1.3.0",
       "content",
       "<p>content</p>",
@@ -81,6 +83,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       {
         id: "user_1",
         email: "a@example.com",
+        locale: "en",
         newsletterUnsubscribeToken: "existing-token",
       },
     ]);
@@ -98,7 +101,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
 
     expect(prisma.user.update).not.toHaveBeenCalled();
     expect(mail.sendNewsletter).toHaveBeenCalledWith(
-      "a@example.com",
+      { email: "a@example.com", locale: "en" },
       "Loomkeep 1.3.0",
       "content",
       "<p>content</p>",

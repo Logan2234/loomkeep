@@ -396,6 +396,7 @@ export class AdminUsersController {
       targetId: userId,
       subjectUserId: userId,
       subjectEmail: user.email,
+      subjectLocale: user.locale,
       subjectUsername: user.username,
       legalBasis: body.legalBasis,
       reasonText: body.reasonText,

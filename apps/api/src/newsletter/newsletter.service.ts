@@ -81,7 +81,12 @@ export class NewsletterService {
   ): Promise<void> {
     const recipients = await this.prisma.user.findMany({
       where: { notifyNewsletter: true },
-      select: { id: true, email: true, newsletterUnsubscribeToken: true },
+      select: {
+        id: true,
+        email: true,
+        locale: true,
+        newsletterUnsubscribeToken: true,
+      },
     });
 
     await Promise.all(
@@ -91,7 +96,7 @@ export class NewsletterService {
           r.newsletterUnsubscribeToken,
         );
         await this.mail.sendNewsletter(
-          r.email,
+          { email: r.email, locale: r.locale },
           title,
           contentPreview,
           contentHtml,

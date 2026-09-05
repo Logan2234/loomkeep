@@ -17,6 +17,7 @@ export interface RecordModerationDecisionInput {
   targetId: string;
   subjectUserId: string;
   subjectEmail: string;
+  subjectLocale: string;
   subjectUsername: string;
   legalBasis: ModerationLegalBasis;
   reasonCategory?: ReportCategory | null;
@@ -64,12 +65,15 @@ export class ModerationDecisionService {
       },
     });
 
-    await this.mail.sendModerationDecision(input.subjectEmail, {
+    await this.mail.sendModerationDecision(
+      { email: input.subjectEmail, locale: input.subjectLocale },
+      {
       measure: input.measure,
       reasonText: input.reasonText,
       legalBasis: input.legalBasis,
       tosClause: input.tosClause,
-    });
+      },
+    );
 
     if (input.measure !== ModerationMeasure.ACCOUNT_DELETED) {
       await this.notifications.create({

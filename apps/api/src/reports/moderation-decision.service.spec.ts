@@ -27,6 +27,7 @@ const BASE_INPUT = {
   targetId: "c1",
   subjectUserId: "u1",
   subjectEmail: "alice@example.com",
+  subjectLocale: "en",
   subjectUsername: "alice",
   legalBasis: "TOS_BREACH" as const,
   reasonText: "Insultes répétées.",
@@ -55,7 +56,7 @@ describe("ModerationDecisionService.record", () => {
       }),
     });
     expect(mail.sendModerationDecision).toHaveBeenCalledWith(
-      "alice@example.com",
+      { email: "alice@example.com", locale: "en" },
       expect.objectContaining({
         measure: "COMMENT_REMOVED",
         reasonText: "Insultes répétées.",

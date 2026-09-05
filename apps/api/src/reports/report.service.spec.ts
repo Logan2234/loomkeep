@@ -321,7 +321,10 @@ describe("ReportService.sendDailyDigest", () => {
       user: {
         findMany: vi
           .fn()
-          .mockResolvedValue([{ email: "a@x.com" }, { email: "b@x.com" }]),
+          .mockResolvedValue([
+            { email: "a@x.com", locale: "fr" },
+            { email: "b@x.com", locale: "en" },
+          ]),
       },
     });
     const sent = await svc.sendDailyDigest();
@@ -329,7 +332,13 @@ describe("ReportService.sendDailyDigest", () => {
     expect(prisma.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { role: "ADMIN" } }),
     );
-    expect(mail.sendReportsDigest).toHaveBeenCalledWith("a@x.com", 2);
-    expect(mail.sendReportsDigest).toHaveBeenCalledWith("b@x.com", 2);
+    expect(mail.sendReportsDigest).toHaveBeenCalledWith(
+      { email: "a@x.com", locale: "fr" },
+      2,
+    );
+    expect(mail.sendReportsDigest).toHaveBeenCalledWith(
+      { email: "b@x.com", locale: "en" },
+      2,
+    );
   });
 });

@@ -99,6 +99,7 @@ export class NotificationDigestService {
       select: {
         id: true,
         email: true,
+        locale: true,
         notifyEmail: true,
         notifyPush: true,
         timezone: true,
@@ -138,7 +139,7 @@ export class NotificationDigestService {
 
   /** Returns 1 if a digest was sent on this channel, 0 otherwise. */
   private async deliverChannel(
-    user: { id: string; email: string; timezone: string },
+    user: { id: string; email: string; locale: string; timezone: string },
     channel: Channel,
     stored: DigestCadence,
   ): Promise<number> {
@@ -177,7 +178,11 @@ export class NotificationDigestService {
       effective === DigestCadence.DAILY ? "daily" : "weekly";
 
     if (channel === "email") {
-      await this.mail.sendEpisodeDigest(user.email, items, period);
+      await this.mail.sendEpisodeDigest(
+        { email: user.email, locale: user.locale },
+        items,
+        period,
+      );
     } else {
       await this.push.sendToUser(user.id, {
         title: "Loomkeep",

@@ -264,11 +264,16 @@ export class ReportService {
 
     const admins = await this.prisma.user.findMany({
       where: { role: "ADMIN" },
-      select: { email: true },
+      select: { email: true, locale: true },
     });
 
     await Promise.all(
-      admins.map((a) => this.mail.sendReportsDigest(a.email, pending)),
+      admins.map((a) =>
+        this.mail.sendReportsDigest(
+          { email: a.email, locale: a.locale },
+          pending,
+        ),
+      ),
     );
 
     return admins.length;
