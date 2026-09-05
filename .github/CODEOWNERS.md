@@ -1,0 +1,3 @@
+# CODEOWNERS
+
+-       @Logan2234

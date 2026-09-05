@@ -1,8 +1,12 @@
 # Security Policy
 
-Loomkeep is a self-hosted, single-owner project — there's no hosted
-multi-tenant instance to protect, but a vulnerability in the code still
-matters for anyone self-hosting it.
+Loomkeep ships two ways: self-hosted (your own PostgreSQL, your own data),
+and as a hosted instance at [loomkeep.app](https://loomkeep.app) with real
+user accounts — registration, auth, and personal data (watch history,
+reviews, social graph) that a vulnerability could actually expose. Both
+matter: a report against the hosted instance is treated like a real
+multi-tenant incident, and a report against the self-hosted path is treated
+as something every self-hoster's data depends on.
 
 ## Supported versions
 
