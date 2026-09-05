@@ -7926,12 +7926,6 @@ packages:
         integrity: sha512-reZ8wce5VNCcufIt9AVtzZa3L4u1j8esikn7OEgHWLVpRpL5R7Y2+Xzj70OUkv5zDfzUAxXZT6cu4Rt0zr3EKA==,
       }
 
-  fastify@5.12.3:
-    resolution:
-      {
-        integrity: sha512-reZ8wce5VNCcufIt9AVtzZa3L4u1j8esikn7OEgHWLVpRpL5R7Y2+Xzj70OUkv5zDfzUAxXZT6cu4Rt0zr3EKA==,
-      }
-
   fastq@1.20.1:
     resolution:
       {
