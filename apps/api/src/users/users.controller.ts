@@ -25,8 +25,6 @@ import {
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import type { User } from "@prisma/client";
-import * as bcrypt from "bcryptjs";
 import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
