@@ -57,6 +57,10 @@ const CONSTRAINT_MESSAGES = {
     m.valerr_array_max_size({ max: asNumber(params?.[0]) }),
   arrayNotEmpty: () => m.valerr_array_not_empty(),
   arrayUnique: () => m.valerr_array_unique(),
+  // Never actually reaches a human — the endpoint comes from the browser's
+  // own PushManager.subscribe(), not a typed field — but every constraint a
+  // DTO uses still needs an entry here (see the guard tests).
+  isPushEndpoint: () => m.valerr_is_push_endpoint(),
 } satisfies Record<
   ValidationConstraintName,
   (params?: ConstraintParam[]) => string
@@ -92,6 +96,7 @@ export const VALERR_MESSAGE_KEYS = [
   "valerr_array_max_size",
   "valerr_array_not_empty",
   "valerr_array_unique",
+  "valerr_is_push_endpoint",
   // Not produced by CONSTRAINT_MESSAGES itself — the fallback for a
   // constraint name it doesn't recognize (see fieldError() below).
   "valerr_generic",

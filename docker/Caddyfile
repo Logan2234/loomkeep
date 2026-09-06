@@ -32,6 +32,14 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# No camera/mic/geolocation/payment/USB feature is used anywhere in the
+		# app — denying them outright means an injected or compromised script
+		# can't invoke one via an embedded/child context either.
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		# Isolates this app's window from cross-origin windows it opens or is
+		# opened by — no popup/postMessage flow anywhere in the app relies on
+		# sharing a browsing context group.
+		Cross-Origin-Opener-Policy "same-origin"
 		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://stats.loomkeep.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://loomkeep.app https://stats.loomkeep.app; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
 	}
 

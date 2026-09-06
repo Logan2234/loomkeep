@@ -286,6 +286,8 @@
   "settings_mfa_totp_disable_title": "Désactiver l'application d'authentification",
   "settings_mfa_totp_disable_hint": "Confirme ton mot de passe pour désactiver cette méthode.",
   "settings_mfa_email_desc": "Reçois un code à usage unique par email à chaque connexion.",
+  "settings_mfa_email_disable_title": "Désactiver le code par email",
+  "settings_mfa_email_disable_hint": "Confirme ton mot de passe pour désactiver cette méthode.",
   "settings_mfa_recovery_title": "Codes de secours",
   "settings_mfa_recovery_hint": "À utiliser si tu perds l'accès à ta méthode habituelle. Chaque code ne fonctionne qu'une fois.",
   "settings_mfa_recovery_low_warning": "Il ne te reste que {count} codes de secours, pense à en régénérer.",

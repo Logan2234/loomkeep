@@ -89,12 +89,38 @@ export function readZipEntriesMatching(
   return result;
 }
 
+/**
+ * Bounds-checked reads — every offset threaded through this file (the central
+ * directory offset, per-entry name/extra/comment lengths, a local header
+ * offset) comes straight from the archive's own bytes, so a corrupt or
+ * adversarial ZIP can point them anywhere. Node's raw `buf.readUInt32LE`
+ * throws an untyped RangeError past the buffer's end (LK-S12) — routing every
+ * such read through here keeps every failure a plain, catchable `Error` with
+ * a message consistent with the rest of this file's "Corrupt ZIP: …" style,
+ * regardless of what a future caller does or doesn't wrap in a try/catch.
+ */
+function readU16(buf: Buffer, pos: number): number {
+  if (pos < 0 || pos + 2 > buf.length) {
+    throw new Error("Corrupt ZIP: read past end of archive");
+  }
+
+  return buf.readUInt16LE(pos);
+}
+
+function readU32(buf: Buffer, pos: number): number {
+  if (pos < 0 || pos + 4 > buf.length) {
+    throw new Error("Corrupt ZIP: read past end of archive");
+  }
+
+  return buf.readUInt32LE(pos);
+}
+
 /** Walk the central directory, yielding one descriptor per stored file. */
 function readCentralDirectory(buf: Buffer): CentralEntry[] {
   const eocd = findEocd(buf);
-  const total = buf.readUInt16LE(eocd + 10);
-  const cdSize = buf.readUInt32LE(eocd + 12);
-  const cdOffset = buf.readUInt32LE(eocd + 16);
+  const total = readU16(buf, eocd + 10);
+  const cdSize = readU32(buf, eocd + 12);
+  const cdOffset = readU32(buf, eocd + 16);
 
   if (
     total === 0xffff ||
@@ -108,17 +134,17 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
   let pos = cdOffset;
 
   for (let i = 0; i < total; i++) {
-    if (buf.readUInt32LE(pos) !== CENTRAL_SIGNATURE) {
+    if (readU32(buf, pos) !== CENTRAL_SIGNATURE) {
       throw new Error("Corrupt ZIP: bad central directory signature");
     }
 
-    const method = buf.readUInt16LE(pos + 10);
-    const compressedSize = buf.readUInt32LE(pos + 20);
-    const uncompressedSize = buf.readUInt32LE(pos + 24);
-    const nameLen = buf.readUInt16LE(pos + 28);
-    const extraLen = buf.readUInt16LE(pos + 30);
-    const commentLen = buf.readUInt16LE(pos + 32);
-    const localHeaderOffset = buf.readUInt32LE(pos + 42);
+    const method = readU16(buf, pos + 10);
+    const compressedSize = readU32(buf, pos + 20);
+    const uncompressedSize = readU32(buf, pos + 24);
+    const nameLen = readU16(buf, pos + 28);
+    const extraLen = readU16(buf, pos + 30);
+    const commentLen = readU16(buf, pos + 32);
+    const localHeaderOffset = readU32(buf, pos + 42);
 
     if (
       compressedSize === ZIP64_SENTINEL ||
@@ -126,6 +152,10 @@ function readCentralDirectory(buf: Buffer): CentralEntry[] {
       localHeaderOffset === ZIP64_SENTINEL
     ) {
       throw new Error("ZIP64 archives are not supported");
+    }
+
+    if (pos + 46 + nameLen > buf.length) {
+      throw new Error("Corrupt ZIP: truncated central directory entry");
     }
 
     const name = buf.toString("utf8", pos + 46, pos + 46 + nameLen);
@@ -158,13 +188,13 @@ function decodeEntry(
 
   const lh = entry.localHeaderOffset;
 
-  if (buf.readUInt32LE(lh) !== LOCAL_SIGNATURE) {
+  if (readU32(buf, lh) !== LOCAL_SIGNATURE) {
     throw new Error(`Corrupt ZIP: bad local header for ${entry.name}`);
   }
 
   // The local header's own name/extra lengths can differ from the central one.
-  const nameLen = buf.readUInt16LE(lh + 26);
-  const extraLen = buf.readUInt16LE(lh + 28);
+  const nameLen = readU16(buf, lh + 26);
+  const extraLen = readU16(buf, lh + 28);
   const dataStart = lh + 30 + nameLen + extraLen;
   const dataEnd = dataStart + entry.compressedSize;
 
@@ -210,7 +240,7 @@ function findEocd(buf: Buffer): number {
   const minPos = Math.max(0, buf.length - (0xffff + 22));
 
   for (let pos = buf.length - 22; pos >= minPos; pos--) {
-    if (buf.readUInt32LE(pos) === EOCD_SIGNATURE) return pos;
+    if (readU32(buf, pos) === EOCD_SIGNATURE) return pos;
   }
 
   throw new Error("Not a ZIP archive: no end-of-central-directory record");

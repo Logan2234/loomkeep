@@ -118,6 +118,8 @@ const MESSAGES = {
   [ErrorCode.NewsletterWebhookUnauthorized]: () =>
     m.apierr_newsletter_webhook_unauthorized(),
   [ErrorCode.NotificationNotFound]: () => m.apierr_notifications_not_found(),
+  [ErrorCode.NotificationPushEndpointTaken]: () =>
+    m.apierr_notifications_push_endpoint_taken(),
   [ErrorCode.ReportReasonRequired]: () => m.apierr_reports_reason_required(),
   [ErrorCode.ReportInvalidMotif]: () => m.apierr_reports_invalid_motif(),
   [ErrorCode.ReportNotFound]: () => m.apierr_reports_not_found(),

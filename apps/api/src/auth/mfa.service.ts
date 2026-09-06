@@ -16,6 +16,10 @@ export const RECOVERY_CODE_COUNT = 10;
 const RECOVERY_CODE_LENGTH = 10;
 // Excludes ambiguous characters (0/O, 1/I/L) so codes are easy to read/type back.
 const RECOVERY_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+/** Shape of a normalized recovery code — lets verifyRecoveryCode() bail before any bcrypt.compare() on input that plainly isn't one (LK-S07). */
+const RECOVERY_CODE_PATTERN = new RegExp(
+  `^[${RECOVERY_CODE_ALPHABET}]{${RECOVERY_CODE_LENGTH}}$`,
+);
 const TOTP_ISSUER = "Loomkeep";
 
 @Injectable()
@@ -268,6 +272,13 @@ export class MfaService {
   /** Normalizes (strips separators, uppercases), matches, and deletes the consumed row. */
   async verifyRecoveryCode(userId: string, rawCode: string): Promise<boolean> {
     const normalized = rawCode.replace(/[\s-]/g, "").toUpperCase();
+
+    // A 6-digit TOTP/email code can never be a 10-character recovery code —
+    // bailing here avoids up to RECOVERY_CODE_COUNT bcrypt.compare() calls
+    // (12 rounds each) per rejected login attempt, which verifyMfaLogin()'s
+    // `||` chain otherwise falls through to on every wrong TOTP/email guess.
+    if (!RECOVERY_CODE_PATTERN.test(normalized)) return false;
+
     const rows = await this.prisma.mfaRecoveryCode.findMany({
       where: { userId },
     });
