@@ -1,9 +1,5 @@
 import type { GameSource, GameSummaryDto, RatingDto } from "@loomkeep/shared";
-
-interface ProviderGameExternalId {
-  source: GameSource;
-  externalId: string;
-}
+import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one game, in canonical form. */
 export interface ProviderGameDetails {
@@ -27,7 +23,7 @@ export interface ProviderGameDetails {
   franchiseName: string | null;
   /** IGDB's own user rating + critic aggregate, when known. */
   ratings: RatingDto[];
-  externalIds: ProviderGameExternalId[];
+  externalIds: ProviderExternalId<GameSource>[];
   /** Deeper narrative summary, distinct from `overview`, when IGDB has one. */
   storyline: string | null;
   /** YouTube video id for a trailer, when IGDB lists one. */

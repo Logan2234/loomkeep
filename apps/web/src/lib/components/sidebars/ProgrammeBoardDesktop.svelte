@@ -5,10 +5,7 @@
   // a small amber pin-light instead of a background highlight.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { getAdminReportsPendingCount } from "$lib/api/client";
   import { logout } from "$lib/api/auth";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -16,36 +13,29 @@
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { NAVIGATION } from "$lib/navigation";
+  import { visibleNavSections } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
 
   let { children } = $props();
 
   let open = $state(false);
 
-  const reportsPendingQuery = createApiQuery(() => ({
-    key: keys.admin.reportsPendingCount(),
-    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
-    refetchInterval: 20_000,
-    enabled: auth.isAdmin,
-  }));
-  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
+  const reportsPending = useReportsPendingCount();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const profileHref = $derived(
     appConfig.socialEnabled ? "/app/profile" : "/app/settings",
   );
   const visibleSections = $derived(
-    NAVIGATION.map((section) => ({
-      label: section.label,
-      items: section.items.filter(
-        (item) =>
-          (!item.domain || isDomainEnabled(item.domain)) &&
-          (!item.social || appConfig.socialEnabled) &&
-          (!item.gamification || appConfig.gamificationEnabled) &&
-          !item.comingSoon,
-      ),
-    })).filter((section) => section.items.length > 0),
+    visibleNavSections(
+      {
+        isDomainEnabled,
+        socialEnabled: appConfig.socialEnabled,
+        gamificationEnabled: appConfig.gamificationEnabled,
+      },
+      { includeComingSoon: false },
+    ),
   );
 
   async function signOut() {
@@ -160,10 +150,10 @@
                 ? 'bg-[#f5b841] shadow-[0_0_6px_1px_#f5b841]'
                 : 'bg-white/15'}"></span>
             {item.label}
-            {#if item.href === "/app/admin/reports" && reportsPending > 0}
+            {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
               <span
                 class="ml-auto rounded-full bg-[#f5b841] px-1.5 text-[0.6rem] font-bold text-[#1a1406]">
-                {reportsPending > 9 ? "9+" : reportsPending}
+                {reportsPending.count > 9 ? "9+" : reportsPending.count}
               </span>
             {/if}
           </a>
