@@ -275,6 +275,30 @@ describe("MailService", () => {
     const { html } = sendMail.mock.calls[0][0];
     expect(html).toContain("Rendered from Markdown");
   });
+
+  it("renders common Quackback emoji aliases in a Markdown fallback", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      { email: "alice@example.com", locale: "fr" },
+      "Loomkeep 1.8.0",
+      "## :sparkles: New\n\n- :wrench: Improved\n\n## :bug: Fixes",
+      "",
+      "unsub-token-123",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).toContain("✨ New");
+    expect(html).toContain("🔧 Improved");
+    expect(html).toContain("🐛 Fixes");
+    expect(html).not.toContain(":sparkles:");
+  });
 });
 
 describe("MailService template gallery", () => {
