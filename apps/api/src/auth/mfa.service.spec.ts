@@ -131,6 +131,19 @@ describe("MfaService recovery codes", () => {
       false,
     );
   }, 20_000);
+
+  // LK-S07: verifyMfaLogin()'s `||` chain falls through to verifyRecoveryCode()
+  // on every wrong TOTP/email guess — without this short-circuit, a 6-digit
+  // code that plainly can't be a 10-character recovery code still cost up to
+  // RECOVERY_CODE_COUNT bcrypt.compare() calls at BCRYPT_ROUNDS=12.
+  it("rejects input that isn't shaped like a recovery code without touching the database", async () => {
+    const { service, prisma } = makeService();
+
+    await expect(service.verifyRecoveryCode("user-1", "123456")).resolves.toBe(
+      false,
+    );
+    expect(prisma.mfaRecoveryCode.findMany).not.toHaveBeenCalled();
+  });
 });
 
 describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generation timing", () => {
@@ -158,6 +171,7 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     const second = await service.setEmailMfaEnabled(
       "user-1",
       true,
+      undefined,
       "session-1",
     );
     expect(second.recoveryCodes).toBeUndefined();
@@ -229,6 +243,68 @@ describe("MfaService.disableTotp", () => {
     });
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
+    });
+  });
+});
+
+// LK-S06: disabling email MFA used to need nothing but a valid access token —
+// no password check at all, unlike disableTotp() above.
+describe("MfaService.setEmailMfaEnabled — disabling", () => {
+  it("rejects with the wrong current password and leaves the flag untouched", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
+      makeUser({
+        mfaEmailEnabled: true,
+        passwordHash: await bcrypt.hash("correct", 4),
+      }),
+    );
+
+    await expect(
+      service.setEmailMfaEnabled("user-1", false, "wrong"),
+    ).rejects.toThrow();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects with no password provided at all", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
+      makeUser({
+        mfaEmailEnabled: true,
+        passwordHash: await bcrypt.hash("correct", 4),
+      }),
+    );
+
+    await expect(
+      service.setEmailMfaEnabled("user-1", false, undefined),
+    ).rejects.toThrow();
+  });
+
+  it("clears the flag on a correct password", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
+      makeUser({
+        mfaEmailEnabled: true,
+        passwordHash: await bcrypt.hash("correct", 4),
+      }),
+    );
+
+    await service.setEmailMfaEnabled("user-1", false, "correct", "session-1");
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { mfaEmailEnabled: false },
+    });
+  });
+
+  it("never checks the password when enabling", async () => {
+    const { service, prisma } = makeService();
+
+    await service.setEmailMfaEnabled("user-1", true, undefined, "session-1");
+
+    expect(prisma.user.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { mfaEmailEnabled: true },
     });
   });
 });

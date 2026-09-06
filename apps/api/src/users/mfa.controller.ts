@@ -67,6 +67,7 @@ export class MfaController {
     return this.mfaService.setEmailMfaEnabled(
       payload.sub,
       dto.enabled,
+      dto.currentPassword,
       payload.sid,
     );
   }

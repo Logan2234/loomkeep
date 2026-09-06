@@ -1,6 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import webpush from "web-push";
+import { AppException } from "../common/app.exception";
 import { PrismaService } from "../prisma/prisma.service";
+import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
 export interface PushPayload {
   title: string;
@@ -54,6 +57,22 @@ export class PushService {
     auth: string,
     userAgent?: string,
   ): Promise<void> {
+    // An endpoint belongs to the browser that issued it — never transfer it
+    // from one account to another (it would silently cut off the original
+    // owner's notifications). Endpoints are unguessable opaque tokens, but
+    // the check costs nothing and closes the gap regardless.
+    const existing = await this.prisma.pushSubscription.findUnique({
+      where: { endpoint },
+      select: { userId: true },
+    });
+
+    if (existing && existing.userId !== userId) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.NotificationPushEndpointTaken,
+      );
+    }
+
     await this.prisma.pushSubscription.upsert({
       where: { endpoint },
       update: { userId, p256dh, auth, userAgent },
@@ -93,6 +112,18 @@ export class PushService {
 
     return Promise.all(
       subscriptions.map(async (sub): Promise<PushSendOutcome> => {
+        // Rows created before IsPushEndpoint existed were never validated —
+        // filter here too, not just at subscribe(), so a pre-existing
+        // malicious endpoint can't still be used for SSRF.
+        if (!isAllowedPushEndpoint(sub.endpoint)) {
+          await this.prisma.pushSubscription.delete({ where: { id: sub.id } });
+          return {
+            userAgent: sub.userAgent,
+            ok: false,
+            error: "Unsupported push service endpoint",
+          };
+        }
+
         try {
           await webpush.sendNotification(
             {

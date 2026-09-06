@@ -74,7 +74,12 @@ export class BackupService {
    */
   async restore(sql: string): Promise<void> {
     await this.run("psql", ["--set", "ON_ERROR_STOP=1"], sql);
-    await this.run("pnpm", ["exec", "prisma", "migrate", "deploy"]);
+    // Same local binary the Dockerfile's own CMD calls directly (dist/src's
+    // sibling node_modules/.bin) — the runtime image deliberately strips
+    // every package manager (pnpm included, see apps/api/Dockerfile), so
+    // `pnpm exec` would ENOENT here in production, after psql already
+    // replaced the database.
+    await this.run("node_modules/.bin/prisma", ["migrate", "deploy"]);
   }
 
   /** Daily 3h dump to disk, pruned to the {@link KEEP} most recent. Also the manual "Sauvegarder maintenant" trigger. */

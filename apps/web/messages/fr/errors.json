@@ -107,6 +107,7 @@
   "apierr_newsletter_invalid_unsubscribe_link": "Ce lien de désabonnement est invalide.",
   "apierr_newsletter_webhook_unauthorized": "Requête non autorisée.",
   "apierr_notifications_not_found": "Cette notification est introuvable.",
+  "apierr_notifications_push_endpoint_taken": "Cet appareil est déjà associé à un autre compte.",
   "apierr_reports_reason_required": "Un détail est requis pour la catégorie « Autre ».",
   "apierr_reports_invalid_motif": "Ce motif ne correspond pas à cette catégorie.",
   "apierr_reports_not_found": "Ce signalement est introuvable.",
@@ -160,5 +161,6 @@
   "valerr_array_min_size": "Doit contenir au moins {min} élément(s).",
   "valerr_array_max_size": "Doit contenir au plus {max} élément(s).",
   "valerr_array_not_empty": "Ne peut pas être vide.",
-  "valerr_array_unique": "Chaque élément doit être unique."
+  "valerr_array_unique": "Chaque élément doit être unique.",
+  "valerr_is_push_endpoint": "Ce service de notifications n'est pas pris en charge."
 }

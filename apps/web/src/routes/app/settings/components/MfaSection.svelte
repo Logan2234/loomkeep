@@ -28,6 +28,7 @@
   type MfaModal =
     | "totp-setup"
     | "totp-disable"
+    | "email-disable"
     | "recovery-regenerate-confirm"
     | "recovery-reveal"
     | null;
@@ -120,18 +121,52 @@
     totpDisableMut.mutate();
   }
 
-  // --- Email MFA (direct toggle, no confirmation modal) ---
-  const emailMfaMut = createApiMutation(() => ({
-    mutate: (next: boolean) => setEmailMfa({ enabled: next }),
+  // --- Email MFA enable (direct toggle, no confirmation modal — turning a
+  // second factor on never needs to prove identity beyond the session
+  // itself) ---
+  const emailMfaEnableMut = createApiMutation(() => ({
+    mutate: () => setEmailMfa({ enabled: true }),
     errorToast: true,
-    onSuccess: ({ recoveryCodes }, next) => {
-      patchStatus({ emailEnabled: next });
+    onSuccess: ({ recoveryCodes }) => {
+      patchStatus({ emailEnabled: true });
       if (recoveryCodes) openRecoveryReveal(recoveryCodes);
     },
   }));
 
+  // --- Email MFA disable (password confirmation, same reasoning as TOTP:
+  // removing a second factor needs proof of identity — LK-S06) ---
+  let emailDisablePasswordInput = $state("");
+
+  function openEmailDisable() {
+    emailDisablePasswordInput = "";
+    emailMfaDisableMut.reset();
+    openModal = "email-disable";
+  }
+
+  const emailMfaDisableMut = createApiMutation(() => ({
+    mutate: () =>
+      setEmailMfa({
+        enabled: false,
+        currentPassword: emailDisablePasswordInput,
+      }),
+    coveredFields: ["currentPassword"],
+    onSuccess: () => {
+      patchStatus({ emailEnabled: false });
+      openModal = null;
+      toast.success(m.common_disable());
+    },
+  }));
+
+  function confirmEmailDisable() {
+    emailMfaDisableMut.mutate();
+  }
+
   function onToggleEmail(next: boolean) {
-    emailMfaMut.mutate(next);
+    if (next) {
+      emailMfaEnableMut.mutate();
+    } else {
+      openEmailDisable();
+    }
   }
 
   // --- Recovery codes ---
@@ -364,6 +399,47 @@
           class="btn btn-danger"
           disabled={totpDisableMut.loading || !disablePasswordInput}>
           {totpDisableMut.loading
+            ? m.common_save_loading()
+            : m.common_disable()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "email-disable"}
+  <Modal title={m.settings_mfa_email_disable_title()} onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmEmailDisable();
+      }}>
+      <p class="text-sm">{m.settings_mfa_email_disable_hint()}</p>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.common_current_password()}
+        </span>
+        <PasswordInput
+          name="currentPassword"
+          autocomplete="current-password"
+          enterkeyhint="done"
+          minlength={1}
+          required
+          bind:value={emailDisablePasswordInput} />
+      </label>
+      {#if emailMfaDisableMut.error}
+        <p class="text-danger text-sm">{emailMfaDisableMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-danger"
+          disabled={emailMfaDisableMut.loading || !emailDisablePasswordInput}>
+          {emailMfaDisableMut.loading
             ? m.common_save_loading()
             : m.common_disable()}
         </button>

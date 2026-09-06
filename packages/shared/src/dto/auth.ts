@@ -103,6 +103,8 @@ export interface DisableTotpRequestDto {
 
 export interface SetEmailMfaRequestDto {
   enabled: boolean;
+  /** Required only when disabling — enabling a second factor never reduces account security. */
+  currentPassword?: string;
 }
 
 export interface SetEmailMfaResponseDto {

@@ -28,6 +28,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import type { FastifyReply } from "fastify";
@@ -476,6 +477,10 @@ export class UsersController {
    * identifier. Doesn't change the email yet — sends a confirmation code to
    * the new address; see confirmEmailChange().
    */
+  // Every call bcrypt.compare()s the current password (requireVerifiedUser)
+  // — the global 60/min default let a stolen access token burn 60 bcrypt
+  // hashes/min against it (LK-S10).
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/email")
   async changeEmail(
@@ -531,6 +536,7 @@ export class UsersController {
   }
 
   /** Consumes the code sent by changeEmail() and applies the new address. */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Patch("me/email/confirm")
   @ApiOkResponse({ type: UserResponseDto })
   async confirmEmailChange(
@@ -605,6 +611,8 @@ export class UsersController {
     return toUserDto(user);
   }
 
+  // Same reasoning as changeEmail() above — bcrypt.compare() on every call.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/password")
   async changePassword(

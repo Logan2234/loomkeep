@@ -28,6 +28,7 @@ export const VALIDATION_CONSTRAINT_NAMES = [
   "arrayMaxSize",
   "arrayNotEmpty",
   "arrayUnique",
+  "isPushEndpoint",
 ] as const;
 
 export type ValidationConstraintName =
