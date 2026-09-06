@@ -7,6 +7,9 @@ import { AppException } from "../common/app.exception";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 
+const QUACKBACK_CHANGELOG_API_URL =
+  "https://feedback.loomkeep.app/api/v1/changelog";
+
 @Injectable()
 export class NewsletterService {
   private readonly logger = new Logger(NewsletterService.name);
@@ -42,6 +45,7 @@ export class NewsletterService {
 
     void this.sendAndFinalize(
       reserved.id,
+      quackbackChangelogId,
       title,
       contentPreview,
       contentHtml,
@@ -75,10 +79,16 @@ export class NewsletterService {
 
   private async sendAndFinalize(
     id: string,
+    quackbackChangelogId: string,
     title: string,
     contentPreview: string,
     contentHtml: string,
   ): Promise<void> {
+    const content = await this.resolveContent(
+      quackbackChangelogId,
+      contentPreview,
+      contentHtml,
+    );
     const recipients = await this.prisma.user.findMany({
       where: { notifyNewsletter: true },
       select: {
@@ -98,8 +108,8 @@ export class NewsletterService {
         await this.mail.sendNewsletter(
           { email: r.email, locale: r.locale },
           title,
-          contentPreview,
-          contentHtml,
+          content.preview,
+          content.html,
           token,
         );
       }),
@@ -109,6 +119,48 @@ export class NewsletterService {
       where: { id },
       data: { recipientCount: recipients.length },
     });
+  }
+
+  private async resolveContent(
+    changelogId: string,
+    contentPreview: string,
+    contentHtml: string,
+  ): Promise<{ preview: string; html: string }> {
+    if (contentHtml) {
+      return { preview: contentPreview, html: contentHtml };
+    }
+
+    const apiKey = process.env.QUACKBACK_API_KEY;
+    if (!apiKey) {
+      this.logger.warn(
+        `Quackback did not include the full content for ${changelogId}, and QUACKBACK_API_KEY is not configured`,
+      );
+      return { preview: contentPreview, html: contentHtml };
+    }
+
+    try {
+      const response = await fetch(
+        `${QUACKBACK_CHANGELOG_API_URL}/${encodeURIComponent(changelogId)}`,
+        { headers: { Authorization: `Bearer ${apiKey}` } },
+      );
+      if (!response.ok) {
+        throw new Error(`Quackback returned HTTP ${response.status}`);
+      }
+
+      const payload: unknown = await response.json();
+      const content = (payload as { data?: { content?: unknown } }).data
+        ?.content;
+      if (typeof content !== "string" || !content) {
+        throw new Error("Quackback returned no changelog content");
+      }
+
+      return { preview: content, html: contentHtml };
+    } catch (err) {
+      this.logger.warn(
+        `Could not load the complete Quackback changelog ${changelogId}: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+      return { preview: contentPreview, html: contentHtml };
+    }
   }
 
   /**

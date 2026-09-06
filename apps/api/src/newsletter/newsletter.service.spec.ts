@@ -109,6 +109,51 @@ describe("NewsletterService.handleChangelogPublished", () => {
     );
   });
 
+  it("loads the complete changelog when Quackback only sends its preview", async () => {
+    const { service, prisma, mail } = makeService();
+    (prisma.newsletterSend.create as Mock).mockResolvedValue({
+      id: "send_1",
+    });
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        data: { content: "## :sparkles: New\n\n- The complete release note" },
+      }),
+    });
+    const previousApiKey = process.env.QUACKBACK_API_KEY;
+    process.env.QUACKBACK_API_KEY = "quackback-api-key";
+    vi.stubGlobal("fetch", fetch);
+
+    try {
+      await service.handleChangelogPublished(
+        "changelog_1",
+        "Loomkeep 1.8.0",
+        "Only the preview",
+        "",
+      );
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(fetch).toHaveBeenCalledWith(
+        "https://feedback.loomkeep.app/api/v1/changelog/changelog_1",
+        { headers: { Authorization: "Bearer quackback-api-key" } },
+      );
+      expect(mail.sendNewsletter).toHaveBeenCalledWith(
+        { email: "a@example.com", locale: "en" },
+        "Loomkeep 1.8.0",
+        "## :sparkles: New\n\n- The complete release note",
+        "",
+        expect.any(String),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      if (previousApiKey === undefined) {
+        delete process.env.QUACKBACK_API_KEY;
+      } else {
+        process.env.QUACKBACK_API_KEY = previousApiKey;
+      }
+    }
+  });
+
   it("is a no-op when the changelog entry was already reserved (retried webhook delivery)", async () => {
     const { service, prisma, mail } = makeService();
     (prisma.newsletterSend.create as Mock).mockRejectedValue(
