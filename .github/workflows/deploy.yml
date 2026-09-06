@@ -69,3 +69,5 @@ jobs:
               echo "docker compose up -d failed (attempt $attempt/3), retrying in 5s..."
               sleep 5
             done
+            docker image prune -a -f --filter "until=168h"
+            docker builder prune -f --filter "until=168h"
