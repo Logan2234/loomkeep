@@ -129,6 +129,7 @@
   "apierr_user_csv_export_unavailable": "CSV export isn't available for this domain yet.",
   "apierr_user_account_not_found": "This account could not be found.",
   "apierr_user_domain_disabled": "This domain is disabled on your account.",
+  "apierr_user_active_domain_required": "At least one available domain must remain active.",
   "apierr_user_avatar_not_found": "This avatar could not be found.",
   "apierr_user_premium_required": "This feature is reserved for premium accounts.",
   "apierr_user_birth_date_future": "The birth date can't be in the future.",

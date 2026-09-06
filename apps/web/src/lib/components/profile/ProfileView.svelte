@@ -57,7 +57,6 @@
     MEDIA: m.common_Media(),
     GAMES: m.common_Games(),
     BOOKS: m.common_Books(),
-    MUSIC: m.common_Music(),
     PODCASTS: m.common_Podcasts(),
     BOARDGAMES: m.common_Boardgames(),
   };
@@ -66,7 +65,6 @@
     MEDIA: "/app/media",
     GAMES: "/app/games",
     BOOKS: "/app/books",
-    MUSIC: "/app/music",
   };
 
   const queryClient = useQueryClient();

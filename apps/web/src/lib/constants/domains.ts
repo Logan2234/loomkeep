@@ -9,7 +9,11 @@ export const DOMAINS: Record<
   [Domain.MEDIA]: { label: m.common_Media(), icon: "tv" },
   [Domain.GAMES]: { label: m.common_Games(), icon: "gamepad" },
   [Domain.BOOKS]: { label: m.common_Books(), icon: "book" },
-  [Domain.MUSIC]: { label: m.common_Music(), icon: "music" },
+  [Domain.MUSIC]: {
+    label: m.common_Music(),
+    icon: "music",
+    comingSoon: true,
+  },
   [Domain.PODCASTS]: {
     label: m.common_Podcasts(),
     icon: "podcast",

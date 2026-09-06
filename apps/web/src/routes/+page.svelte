@@ -51,9 +51,9 @@
       id: "music",
       label: m.common_albums,
       detail: m.landing_salle_music_detail,
-      catalog: "MusicBrainz",
-      color: "var(--stat-music)",
-      shipped: true,
+      catalog: m.common_coming_soon(),
+      color: null,
+      shipped: false,
     },
     {
       id: "podcasts",

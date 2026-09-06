@@ -619,7 +619,7 @@
   "settings_change_password_title": "Changer le mot de passe",
   "settings_domains_description": "Choisis les univers présents dans ton app. Ce que tu masques disparaît de la navigation.",
   "settings_domain_temporarily_unavailable": "Temporairement indisponible.",
-  "settings_domain_last_required": "Au moins un domaine doit rester actif.",
+  "settings_domain_last_required": "Au moins un domaine disponible doit rester actif.",
   "settings_appearance_description": "Configure l'apparence de l'application.",
   "settings_nav_style_label": "Style de navigation",
   "settings_nav_style_description": "Change la mise en forme du rail et de la barre du bas. « Marquee » est inclus ; les deux autres sont réservés aux comptes premium.",

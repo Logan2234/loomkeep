@@ -191,7 +191,7 @@ export class CommentService {
   /** Comments authored by a user, for the admin user drawer's "Commentaires" shortcut. */
   async listByAuthor(authorId: string): Promise<AdminUserCommentDto[]> {
     const rows = await this.prisma.comment.findMany({
-      where: { authorId, deletedAt: null },
+      where: { authorId, deletedAt: null, targetType: { not: "MUSIC" } },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: {
@@ -250,6 +250,9 @@ export class CommentService {
     // (e.g. MUSIC, never masked) diverge from the thread it actually lives in.
     const targetType = parent?.targetType ?? body.targetType;
     const targetId = parent?.targetId ?? body.targetId;
+    if (targetType === "MUSIC") {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    }
     const spoilerTag = targetType === "MUSIC" ? false : !!body.spoilerTag;
 
     const row = await this.prisma.comment.create({
@@ -309,6 +312,8 @@ export class CommentService {
   ): Promise<CommentDto> {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
     if (!existing || existing.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    if (existing.targetType === "MUSIC")
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
     if (existing.authorId !== authorId)
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.CommentForbidden);
@@ -387,9 +392,11 @@ export class CommentService {
   ): Promise<void> {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
-      select: { id: true, deletedAt: true, authorId: true },
+      select: { id: true, deletedAt: true, authorId: true, targetType: true },
     });
     if (!comment || comment.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    if (comment.targetType === "MUSIC")
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
     const reaction = await this.prisma.commentReaction.upsert({

@@ -218,7 +218,7 @@ export interface AdminCacheItemDto {
   canonicalSource: string;
   lastSyncedAt: string;
   createdAt: string;
-  /** Distinct library/game/book/music entries pointing at this item, across every account. */
+  /** Distinct library/game/book entries pointing at this item, across every account. */
   referenceCount: number;
   /** Past the 24h refresh TTL. */
   stale: boolean;
@@ -306,7 +306,6 @@ export interface AdminUserLibraryStatsDto {
   anime: number;
   games: number;
   books: number;
-  music: number;
   total: number;
 }
 

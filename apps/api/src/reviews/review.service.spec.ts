@@ -269,6 +269,7 @@ describe("ReviewService.upsert — revision snapshotting", () => {
 
 function makeForVoting(opts: {
   reviewOwnerId: string;
+  reviewTargetType?: string;
   grouped?: { reviewId: string; value: string; _count: { _all: number } }[];
   existingVote?: { id: string; value: string } | null;
 }) {
@@ -277,7 +278,10 @@ function makeForVoting(opts: {
   const findUnique = vi.fn().mockResolvedValue(opts.existingVote ?? null);
   const prisma = {
     review: {
-      findUnique: vi.fn().mockResolvedValue({ userId: opts.reviewOwnerId }),
+      findUnique: vi.fn().mockResolvedValue({
+        userId: opts.reviewOwnerId,
+        targetType: opts.reviewTargetType ?? "MEDIA",
+      }),
     },
     reviewVote: {
       upsert,
@@ -302,6 +306,16 @@ function makeForVoting(opts: {
 }
 
 describe("ReviewService.vote", () => {
+  it("does not allow a new vote on a parked Music review", async () => {
+    const { svc, upsert } = makeForVoting({
+      reviewOwnerId: "author",
+      reviewTargetType: "MUSIC",
+    });
+
+    await expect(svc.vote("viewer", "r1", "UP" as never)).rejects.toThrow();
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it("rejects voting on your own review", async () => {
     const { svc } = makeForVoting({ reviewOwnerId: "author" });
     await expect(svc.vote("author", "r1", "UP" as never)).rejects.toThrow(

@@ -346,17 +346,16 @@ describe("checkDecadesTier / checkGenresTier (exploration family)", () => {
 });
 
 describe("checkOmnivore", () => {
-  it("unlocks only once all 4 domains have at least one tracked entry", async () => {
+  it("unlocks once every active domain has at least one tracked entry", async () => {
     const prisma = {
       libraryEntry: { count: vi.fn().mockResolvedValue(1) },
       gameEntry: { count: vi.fn().mockResolvedValue(1) },
       bookEntry: { count: vi.fn().mockResolvedValue(1) },
-      musicEntry: { count: vi.fn().mockResolvedValue(0) },
     } as unknown as PrismaService;
 
     await expect(checkOmnivore(prisma, "user-1")).resolves.toEqual({
-      unlocked: false,
-      progress: { current: 3, target: 4 },
+      unlocked: true,
+      progress: { current: 3, target: 3 },
     });
   });
 });
@@ -383,17 +382,16 @@ describe("checkBigScreen", () => {
 });
 
 describe("checkWellRounded", () => {
-  it("counts how many of the 4 domains reach 10+ finished titles", async () => {
+  it("counts how many active domains reach 10+ finished titles", async () => {
     const prisma = {
       libraryEntry: { count: vi.fn().mockResolvedValue(10) },
       gameEntry: { count: vi.fn().mockResolvedValue(10) },
       bookEntry: { count: vi.fn().mockResolvedValue(10) },
-      musicEntry: { count: vi.fn().mockResolvedValue(10) },
     } as unknown as PrismaService;
 
     await expect(checkWellRounded(prisma, "user-1")).resolves.toEqual({
       unlocked: true,
-      progress: { current: 4, target: 4 },
+      progress: { current: 3, target: 3 },
     });
   });
 });

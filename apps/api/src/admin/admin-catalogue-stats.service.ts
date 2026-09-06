@@ -17,7 +17,7 @@ import {
 import { cumulativeBucketize, trendBucketStarts } from "./admin-stats.util";
 
 // Mirrors the 24h refresh TTL in MediaItemService — a freshness proxy only.
-// Games/books/music have no periodic refresh cron, so their staleness stays
+// Games/books have no periodic refresh cron, so their staleness stays
 // null rather than being invented from `lastSyncedAt`.
 const MEDIA_SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -52,11 +52,10 @@ export class AdminCatalogueStatsService {
     const now = new Date();
     const starts = trendBucketStarts(GROWTH_PERIOD, now);
 
-    const [media, games, books, music, refs] = await Promise.all([
+    const [media, games, books, refs] = await Promise.all([
       this.mediaRow(starts),
       this.domainRow(Domain.GAMES, this.prisma.gameItem, starts),
       this.domainRow(Domain.BOOKS, this.prisma.bookItem, starts),
-      this.domainRow(Domain.MUSIC, this.prisma.musicItem, starts),
       this.references(),
     ]);
 
@@ -66,7 +65,7 @@ export class AdminCatalogueStatsService {
 
     return {
       generatedAt: now.toISOString(),
-      byDomain: [media, games, books, music],
+      byDomain: [media, games, books],
       popular: rankPopularWorks(await this.popularWorks(refs)),
       sharedPercent,
       orphanCount,
@@ -122,21 +121,20 @@ export class AdminCatalogueStatsService {
    * questions at once (popularity ranking, mutualisation, orphans), which is
    * why it isn't folded into the per-domain rows above.
    */
-  private async references(): Promise<Record<StatsDomain, DomainReferences>> {
+  private async references(): Promise<
+    Record<StatsDomain, DomainReferences>
+  > {
     const [
       mediaItems,
       gameItems,
       bookItems,
-      musicItems,
       mediaGroups,
       gameGroups,
       bookGroups,
-      musicGroups,
     ] = await Promise.all([
       this.prisma.mediaItem.count(),
       this.prisma.gameItem.count(),
       this.prisma.bookItem.count(),
-      this.prisma.musicItem.count(),
       this.prisma.libraryEntry.groupBy({
         by: ["mediaItemId"],
         _count: { _all: true },
@@ -147,10 +145,6 @@ export class AdminCatalogueStatsService {
       }),
       this.prisma.bookEntry.groupBy({
         by: ["bookItemId"],
-        _count: { _all: true },
-      }),
-      this.prisma.musicEntry.groupBy({
-        by: ["musicItemId"],
         _count: { _all: true },
       }),
     ]);
@@ -179,10 +173,6 @@ export class AdminCatalogueStatsService {
         bookItems,
         bookGroups.map((g) => ({ id: g.bookItemId, entries: g._count._all })),
       ),
-      [Domain.MUSIC]: reduce(
-        musicItems,
-        musicGroups.map((g) => ({ id: g.musicItemId, entries: g._count._all })),
-      ),
     };
   }
 
@@ -194,7 +184,7 @@ export class AdminCatalogueStatsService {
     const entriesOf = (domain: StatsDomain, id: string) =>
       refs[domain].top.find((t) => t.id === id)?.entries ?? 0;
 
-    const [media, games, books, music] = await Promise.all([
+    const [media, games, books] = await Promise.all([
       this.prisma.mediaItem.findMany({
         where: { id: { in: ids(Domain.MEDIA) } },
         select: { id: true, title: true },
@@ -206,10 +196,6 @@ export class AdminCatalogueStatsService {
       this.prisma.bookItem.findMany({
         where: { id: { in: ids(Domain.BOOKS) } },
         select: { id: true, title: true },
-      }),
-      this.prisma.musicItem.findMany({
-        where: { id: { in: ids(Domain.MUSIC) } },
-        select: { id: true, title: true, artists: true },
       }),
     ]);
 
@@ -228,12 +214,6 @@ export class AdminCatalogueStatsService {
         domain: Domain.BOOKS,
         title: b.title,
         entries: entriesOf(Domain.BOOKS, b.id),
-      })),
-      // Albums need their artist to be identifiable ("Radiohead — OK Computer").
-      ...music.map((m) => ({
-        domain: Domain.MUSIC,
-        title: m.artists[0] ? `${m.artists[0]} — ${m.title}` : m.title,
-        entries: entriesOf(Domain.MUSIC, m.id),
       })),
     ];
   }

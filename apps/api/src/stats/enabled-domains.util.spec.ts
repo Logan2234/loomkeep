@@ -4,7 +4,7 @@ describe("filterEnabledDomains", () => {
   it("returns every enabled stats domain for ALL", () => {
     expect(
       filterEnabledDomains("ALL", ["MEDIA", "GAMES", "BOOKS", "MUSIC"]),
-    ).toEqual(["MEDIA", "GAMES", "BOOKS", "MUSIC"]);
+    ).toEqual(["MEDIA", "GAMES", "BOOKS"]);
   });
 
   it("excludes domains the user disabled, for ALL", () => {

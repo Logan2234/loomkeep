@@ -51,16 +51,6 @@ export async function resolveWorkHref(
       return sourceId ? `/app/books/${sourceId}` : null;
     }
 
-    case "MUSIC": {
-      const item = await prisma.musicItem.findUnique({
-        where: { id: targetId },
-        select: CANONICAL_INCLUDE,
-      });
-      if (!item) return null;
-      const sourceId = canonicalExternalId(item, item.externalIds);
-      return sourceId ? `/app/music/${sourceId}` : null;
-    }
-
     default:
       return null;
   }

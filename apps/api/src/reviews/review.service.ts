@@ -194,9 +194,11 @@ export class ReviewService {
   ): Promise<{ score: number; myVote: ReviewVoteValue }> {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
-      select: { userId: true },
+      select: { userId: true, targetType: true },
     });
     if (!review)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+    if (review.targetType === ReviewTargetType.MUSIC)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
 
     if (review.userId === viewerId) {
@@ -419,7 +421,7 @@ export class ReviewService {
   /** Every review the current user has written (newest first), with targets. */
   async listMine(userId: string): Promise<MyReviewDto[]> {
     const rows = await this.prisma.review.findMany({
-      where: { userId },
+      where: { userId, targetType: { not: ReviewTargetType.MUSIC } },
       orderBy: { updatedAt: "desc" },
     });
     const [author, targets, voteMap] = await Promise.all([
@@ -550,29 +552,6 @@ export class ReviewService {
       );
     }
 
-    const musicIds = idsByType.get(ReviewTargetType.MUSIC);
-
-    if (musicIds?.length) {
-      const items = await this.prisma.musicItem.findMany({
-        where: { id: { in: musicIds } },
-        select: {
-          id: true,
-          title: true,
-          coverUrl: true,
-          ...canonicalExternalIdInclude,
-        },
-      });
-      add(
-        ReviewTargetType.MUSIC,
-        items.map((i) => ({
-          id: i.id,
-          title: i.title,
-          image: i.coverUrl,
-          href: this.detailHref("music", canonicalExternalId(i, i.externalIds)),
-        })),
-      );
-    }
-
     return map;
   }
 
@@ -582,7 +561,7 @@ export class ReviewService {
    * null when the source id is missing (no browsable target).
    */
   private detailHref(
-    domain: "media" | "games" | "books" | "music",
+    domain: "media" | "games" | "books",
     sourceId: string,
     mediaType?: string,
   ): string | null {

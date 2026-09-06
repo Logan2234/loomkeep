@@ -20,7 +20,7 @@
   function toggleDomain(id: Domain) {
     if (!auth.user) return;
     const next = toggleDomainSelection(auth.user.enabledDomains, id);
-    if (next === auth.user.enabledDomains) return; // last domain, refused
+    if (next === auth.user.enabledDomains) return; // last available domain, refused
     toggleDomainMut.mutate(next);
   }
 </script>
@@ -36,7 +36,12 @@
     <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
       {#each Object.entries(DOMAINS) as [id, d] (id)}
         {@const on = auth.user.enabledDomains.includes(id as Domain)}
-        {@const isLast = on && auth.user.enabledDomains.length === 1}
+        {@const isLast =
+          on &&
+          !d.comingSoon &&
+          auth.user.enabledDomains.filter(
+            (domain) => !DOMAINS[domain].comingSoon,
+          ).length === 1}
         {@const inMaintenance = liveFlags.isEnabled(`MAINTENANCE_${id}`)}
         {@const showLock =
           !on &&

@@ -1,6 +1,6 @@
 /**
  * Decorative poster wall behind the hero — real cover art from the same
- * providers the app queries live (TMDB, AniList, Open Library, MusicBrainz),
+ * providers the app queries live (TMDB, AniList, Open Library),
  * not invented artwork. Games have no public, key-free cover source, so they
  * fall back to Poster's gradient like they do in the real library.
  */

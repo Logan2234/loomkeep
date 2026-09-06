@@ -1,17 +1,18 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { bootstrap } from "$lib/bootstrap.svelte";
-  import { isDomainEnabled } from "$lib/domains";
+  import { isDomainAvailable } from "$lib/domains";
   import { Domain } from "@loomkeep/shared";
 
   let { children } = $props();
 
-  // Covers both the user's own `enabledDomains` and a deployment-wide
-  // MAINTENANCE_MUSIC flag (see isDomainEnabled) — same redirect either way,
-  // so a disabled domain's pages are unreachable, not just hidden from nav.
+  // A parked domain remains visible as "Bientôt" in navigation, but its old
+  // routes must still be unreachable when opened from history or a saved URL.
   $effect(() => {
-    if (bootstrap.ready && !isDomainEnabled(Domain.MUSIC)) void goto("/app");
+    if (bootstrap.ready && !isDomainAvailable(Domain.MUSIC)) void goto("/app");
   });
 </script>
 
-{@render children()}
+{#if bootstrap.ready && isDomainAvailable(Domain.MUSIC)}
+  {@render children()}
+{/if}

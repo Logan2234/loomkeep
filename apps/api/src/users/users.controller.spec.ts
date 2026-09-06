@@ -321,6 +321,14 @@ describe("UsersController — updateMe mobile nav shortcuts", () => {
 
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
+
+  it("rejects a selection containing only parked domains without writing", async () => {
+    await expect(
+      controller.updateMe(jwtPayload(userId), { enabledDomains: ["MUSIC"] }),
+    ).rejects.toMatchObject({ code: ErrorCode.UserActiveDomainRequired });
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
 });
 
 describe("UsersController — updateMe newsletter opt-in timestamp", () => {

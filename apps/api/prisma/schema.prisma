@@ -22,10 +22,10 @@ enum MediaType {
 }
 
 // Top-level content domain a user can compose their app from. MEDIA groups
-// MOVIE/SERIES/ANIME; BOOKS/GAMES/MUSIC each have their own screens (search,
-// library, stats). `User.enabledDomains` drives the nav (see web isDomainEnabled).
-// PODCASTS/BOARDGAMES are planned P3 placeholders — no backing tables yet,
-// surfaced as "coming soon" and kept out of the enabledDomains default (opt-in).
+// MOVIE/SERIES/ANIME; BOOKS/GAMES each have their own screens (search, library,
+// stats). `User.enabledDomains` drives the nav (see web isDomainEnabled).
+// MUSIC/PODCASTS/BOARDGAMES are parked placeholders surfaced as "coming soon".
+// Music rows stay in the schema to preserve existing user data until it resumes.
 enum Domain {
   MEDIA
   BOOKS

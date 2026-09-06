@@ -39,7 +39,7 @@ import { ReorderListItemsBody } from "./dto/reorder-list-items.dto";
 import { UpdateListBody } from "./dto/update-list.dto";
 import { ListService } from "./list.service";
 
-const LIST_ITEM_TARGET_TYPES: string[] = ["MEDIA", "GAME", "BOOK", "MUSIC"];
+const LIST_ITEM_TARGET_TYPES: string[] = ["MEDIA", "GAME", "BOOK"];
 
 @Controller("lists")
 export class ListController {
@@ -125,6 +125,13 @@ export class ListController {
     @Param("id") id: string,
     @Body() body: AddListItemBody,
   ): Promise<ListItemDto> {
+    if (!LIST_ITEM_TARGET_TYPES.includes(body.targetType)) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ListInvalidMembershipTarget,
+      );
+    }
+
     return this.lists.addItem(user.sub, id, body);
   }
 

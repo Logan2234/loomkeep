@@ -92,7 +92,6 @@
       <li>OMDb ;</li>
       <li>IGDB ;</li>
       <li>Open Library ;</li>
-      <li>MusicBrainz.</li>
     </ul>
     <p>
       Ces services disposent de leurs propres conditions d'utilisation, licences

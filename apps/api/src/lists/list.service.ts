@@ -222,8 +222,14 @@ export class ListService {
       where: { OR: [{ userId }, { members: { some: { userId } } }] },
       orderBy: { updatedAt: "desc" },
       include: {
-        items: { orderBy: { position: "asc" }, take: PREVIEW_ITEM_COUNT },
-        _count: { select: { items: true } },
+        items: {
+          where: { targetType: { not: "MUSIC" } },
+          orderBy: { position: "asc" },
+          take: PREVIEW_ITEM_COUNT,
+        },
+        _count: {
+          select: { items: { where: { targetType: { not: "MUSIC" } } } },
+        },
       },
     });
 
@@ -296,10 +302,13 @@ export class ListService {
 
     const listInclude = {
       items: {
+        where: { targetType: { not: "MUSIC" } },
         orderBy: { position: "asc" as const },
         take: PREVIEW_ITEM_COUNT,
       },
-      _count: { select: { items: true } },
+      _count: {
+        select: { items: { where: { targetType: { not: "MUSIC" } } } },
+      },
     };
 
     const [ownRows, editorRows] = await Promise.all([
@@ -689,13 +698,14 @@ export class ListService {
       where: { id },
       include: { items: { orderBy: { position: "asc" } } },
     });
+    const items = row.items.filter((item) => item.targetType !== "MUSIC");
     const [author, targets] = await Promise.all([
       this.author(row.userId),
-      this.resolveTargets(row.items),
+      this.resolveTargets(items),
     ]);
     return {
       ...this.toDto(row, author),
-      items: row.items.map((i) => this.toItemDto(i, targets)),
+      items: items.map((i) => this.toItemDto(i, targets)),
       viewerRole,
     };
   }
@@ -721,7 +731,9 @@ export class ListService {
   private async buildPreviews(
     rows: { id: string; items: { targetType: string; targetId: string }[] }[],
   ): Promise<Map<string, string[]>> {
-    const targets = await this.resolveTargets(rows.flatMap((r) => r.items));
+    const targets = await this.resolveTargets(
+      rows.flatMap((r) => r.items.filter((item) => item.targetType !== "MUSIC")),
+    );
     const map = new Map<string, string[]>();
 
     for (const r of rows) {
@@ -849,34 +861,11 @@ export class ListService {
       );
     }
 
-    const musicIds = idsByType.get("MUSIC");
-
-    if (musicIds?.length) {
-      const items = await this.prisma.musicItem.findMany({
-        where: { id: { in: musicIds } },
-        select: {
-          id: true,
-          title: true,
-          coverUrl: true,
-          ...canonicalExternalIdInclude,
-        },
-      });
-      add(
-        "MUSIC",
-        items.map((i) => ({
-          id: i.id,
-          title: i.title,
-          image: i.coverUrl,
-          href: this.detailHref("music", canonicalExternalId(i, i.externalIds)),
-        })),
-      );
-    }
-
     return map;
   }
 
   private detailHref(
-    domain: "media" | "games" | "books" | "music",
+    domain: "media" | "games" | "books",
     sourceId: string,
     mediaType?: string,
   ): string | null {

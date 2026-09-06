@@ -633,7 +633,7 @@
           <div class="skeleton h-28 rounded-lg"></div>
         {:else if libraryStats}
           <div class="grid grid-cols-3 gap-2">
-            {#each [{ label: m.media_movies(), value: libraryStats.movies }, { label: m.media_series_plural(), value: libraryStats.series }, { label: m.media_anime(), value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: m.common_albums(), value: libraryStats.music }] as stat (stat.label)}
+            {#each [{ label: m.media_movies(), value: libraryStats.movies }, { label: m.media_series_plural(), value: libraryStats.series }, { label: m.media_anime(), value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }] as stat (stat.label)}
               <div
                 class="border-border rounded-lg border px-2 py-2 text-center">
                 <p class="font-display text-base font-bold">{stat.value}</p>

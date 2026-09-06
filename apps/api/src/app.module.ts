@@ -23,7 +23,6 @@ import { ImportModule } from "./import/import.module";
 import { LibraryModule } from "./library/library.module";
 import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
-import { MusicModule } from "./music/music.module";
 import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -61,7 +60,6 @@ import { UsersModule } from "./users/users.module";
     GamesModule,
     GamificationModule,
     BooksModule,
-    MusicModule,
     LibraryModule,
     ImportModule,
     NotificationModule,

@@ -141,8 +141,9 @@
   // or the early-access ones on a free account) would still show a row here
   // even though it's absent everywhere else in the app.
   const visibleDomainEntries = $derived(
-    Object.entries(DOMAINS).filter(([id]) =>
-      auth.user?.enabledDomains.includes(id as Domain),
+    Object.entries(DOMAINS).filter(
+      ([id, domain]) =>
+        !domain.comingSoon && auth.user?.enabledDomains.includes(id as Domain),
     ) as [Domain, (typeof DOMAINS)[Domain]][],
   );
 </script>

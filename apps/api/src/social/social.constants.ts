@@ -2,13 +2,12 @@ import { Domain, VisibilityFacet } from "@loomkeep/shared";
 
 /**
  * Content domains that actually back a library (and thus a visibility matrix).
- * Excludes the PODCASTS/BOARDGAMES placeholders (no tables yet).
+ * Excludes parked and placeholder domains, even when historical rows remain.
  */
 export const SOCIAL_DOMAINS: Domain[] = [
   Domain.MEDIA,
   Domain.GAMES,
   Domain.BOOKS,
-  Domain.MUSIC,
 ];
 
 /** The passive-content facets a user tunes per domain. */

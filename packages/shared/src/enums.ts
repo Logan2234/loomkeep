@@ -3,15 +3,15 @@
 
 /**
  * Top-level content domain a user can compose their app from. MEDIA groups
- * MOVIE/SERIES/ANIME; BOOKS, GAMES and MUSIC have their own screens (search,
- * library, stats, imports). `User.enabledDomains` records which ones the user
- * keeps visible — the nav filters on it today (see web `isDomainEnabled`);
- * search and notification filtering still follow.
+ * MOVIE/SERIES/ANIME; BOOKS and GAMES have their own screens (search, library,
+ * stats, imports). `User.enabledDomains` records which ones the user keeps
+ * visible — the nav filters on it today (see web `isDomainEnabled`); search
+ * and notification filtering still follow.
  *
- * PODCASTS and BOARDGAMES (board games — distinct from GAMES, i.e. video games)
- * are placeholders for a planned P3 extension: no screens or catalogue tables
- * back them yet, they surface everywhere as "coming soon" and are off by
- * default (never in the `enabledDomains` default), opt-in from /settings.
+ * MUSIC, PODCASTS and BOARDGAMES (board games — distinct from GAMES, i.e.
+ * video games) are parked placeholders: they surface as "coming soon" and
+ * are excluded from operational routes. Existing Music data is deliberately
+ * retained until the domain resumes.
  */
 export const Domain = {
   MEDIA: "MEDIA",
@@ -22,6 +22,20 @@ export const Domain = {
   BOARDGAMES: "BOARDGAMES",
 } as const;
 export type Domain = (typeof Domain)[keyof typeof Domain];
+
+/**
+ * Domains announced in the interface but deliberately unavailable until their
+ * catalogue and library experiences are ready. Their persisted data remains
+ * intact so an unfinished domain can be resumed without a migration.
+ */
+export const COMING_SOON_DOMAINS: readonly Domain[] = [
+  Domain.MUSIC,
+  Domain.PODCASTS,
+  Domain.BOARDGAMES,
+];
+
+export const isComingSoonDomain = (domain: Domain): boolean =>
+  COMING_SOON_DOMAINS.includes(domain);
 
 /**
  * Early-access domains, gated behind premium regardless of the user's own

@@ -337,19 +337,18 @@ export function checkGenresTier(target: number) {
   };
 }
 
-/** "omnivore": at least one tracked title (any status) in every one of the 4 tracked domains. */
+/** "omnivore": at least one tracked title (any status) in every active domain. */
 export async function checkOmnivore(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const [media, games, books, music] = await Promise.all([
+  const [media, games, books] = await Promise.all([
     prisma.libraryEntry.count({ where: { userId } }),
     prisma.gameEntry.count({ where: { userId } }),
     prisma.bookEntry.count({ where: { userId } }),
-    prisma.musicEntry.count({ where: { userId } }),
   ]);
-  const current = [media, games, books, music].filter((c) => c > 0).length;
-  return { unlocked: current === 4, progress: { current, target: 4 } };
+  const current = [media, games, books].filter((c) => c > 0).length;
+  return { unlocked: current === 3, progress: { current, target: 3 } };
 }
 
 // --- Complétion ---
@@ -378,21 +377,19 @@ export async function checkBigScreen(
 }
 
 /**
- * "well_rounded": 10+ finished titles in each of 4 different domains — the
- * "well_rounded" of the [G3] plan's Domain set (MEDIA/GAMES/BOOKS/MUSIC).
+ * "well_rounded": 10+ finished titles in each active domain.
  */
 export async function checkWellRounded(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const [media, games, books, music] = await Promise.all([
+  const [media, games, books] = await Promise.all([
     prisma.libraryEntry.count({ where: { userId, status: "COMPLETED" } }),
     prisma.gameEntry.count({ where: { userId, status: "COMPLETED" } }),
     prisma.bookEntry.count({ where: { userId, status: "READ" } }),
-    prisma.musicEntry.count({ where: { userId, status: "LISTENED" } }),
   ]);
-  const current = [media, games, books, music].filter((c) => c >= 10).length;
-  return { unlocked: current >= 4, progress: { current, target: 4 } };
+  const current = [media, games, books].filter((c) => c >= 10).length;
+  return { unlocked: current >= 3, progress: { current, target: 3 } };
 }
 
 // --- Saisonnier / temporel ---

@@ -2,7 +2,7 @@
 - Loomkeep:
     - App:
         href: https://loomkeep.app
-        description: Series, movies, anime, games, books, music
+        description: Series, movies, anime, games, books
         icon: https://loomkeep.app/apple-touch-icon.png
         siteMonitor: http://web:3000
     - Admin:

@@ -129,6 +129,7 @@ export const ErrorCode = {
   UserCsvExportUnavailable: "user.csv_export_unavailable",
   UserAccountNotFound: "user.account_not_found",
   UserDomainDisabled: "user.domain_disabled",
+  UserActiveDomainRequired: "user.active_domain_required",
   UserAvatarNotFound: "user.avatar_not_found",
   UserPremiumRequired: "user.premium_required",
   UserBirthDateFuture: "user.birth_date_future",

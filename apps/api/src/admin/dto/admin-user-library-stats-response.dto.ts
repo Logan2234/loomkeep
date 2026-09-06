@@ -6,6 +6,5 @@ export class AdminUserLibraryStatsResponseDto implements AdminUserLibraryStatsDt
   anime!: number;
   games!: number;
   books!: number;
-  music!: number;
   total!: number;
 }

@@ -2,6 +2,7 @@ import {
   Domain,
   ErrorCode,
   LEGAL_VERSION,
+  isComingSoonDomain,
   UserDto,
   UsernameAvailabilityDto,
   type AccountDeletionSummaryDto,
@@ -445,6 +446,18 @@ export class UsersController {
         ErrorCode.UserMobileNavMissingMenu,
         undefined,
         'mobileNavShortcuts must include the "menu" launcher',
+      );
+    }
+
+    if (
+      dto.enabledDomains &&
+      !dto.enabledDomains.some((domain) => !isComingSoonDomain(domain))
+    ) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserActiveDomainRequired,
+        undefined,
+        "At least one available domain must remain enabled",
       );
     }
 

@@ -85,11 +85,11 @@ describe("DomainGateService", () => {
   });
 
   describe("premium-gated domains", () => {
-    it("allows a premium-gated domain for a premium user", async () => {
+    it("excludes a parked domain even for a premium user", async () => {
       const service = makeService([Domain.MEDIA, Domain.MUSIC], [], true);
       await expect(
         service.assertEnabled("u1", Domain.MUSIC),
-      ).resolves.toBeUndefined();
+      ).rejects.toBeInstanceOf(AppException);
     });
 
     it("throws 403 for a premium-gated domain the user enabled, but isn't premium", async () => {
@@ -108,6 +108,13 @@ describe("DomainGateService", () => {
       await expect(service.getEnabledDomains("u1")).resolves.toEqual([
         Domain.MEDIA,
         Domain.BOOKS,
+      ]);
+    });
+
+    it("excludes a parked domain from the enabled-domain list", async () => {
+      const service = makeService([Domain.MEDIA, Domain.MUSIC], [], true);
+      await expect(service.getEnabledDomains("u1")).resolves.toEqual([
+        Domain.MEDIA,
       ]);
     });
 

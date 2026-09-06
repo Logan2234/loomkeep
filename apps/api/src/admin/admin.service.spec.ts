@@ -49,9 +49,9 @@ describe("AdminService.getServicesStatus", () => {
       reachable: null,
       detail: "Clé absente",
     });
-    // AniList, Open Library and MusicBrainz are keyless, so they are still
-    // probed; but no keyed probe ran here.
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    // AniList and Open Library are keyless and live, while MusicBrainz is
+    // parked and must never be probed.
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("marks a configured service healthy on a 2xx probe", async () => {

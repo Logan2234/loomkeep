@@ -32,7 +32,12 @@
     },
     { domain: Domain.BOOKS, label: m.common_Books(), slug: "books" },
     { domain: Domain.GAMES, label: m.common_Games(), slug: "games" },
-    { domain: Domain.MUSIC, label: m.common_Music(), slug: "music" },
+    {
+      domain: Domain.MUSIC,
+      label: m.common_Music(),
+      slug: "music",
+      comingSoon: true,
+    },
     {
       domain: Domain.PODCASTS,
       label: m.common_Podcasts(),

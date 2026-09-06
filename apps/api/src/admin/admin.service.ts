@@ -192,21 +192,14 @@ export class AdminService {
         // User-Agent and reasonable batching instead of enforcing a ceiling.
       },
       {
-        // Keyless (like AniList), but the sole music source — so it's required
-        // for the Musique area even though there's no key to be missing.
+        // The music catalogue is parked with the rest of its user experience.
+        // Keep its provider visible to admins as planned, but never probe it.
         key: "musicbrainz",
         label: "MusicBrainz",
         area: "Musique",
-        required: true,
+        required: false,
         envKeys: [],
-        probe: (signal) =>
-          this.ping(
-            "https://musicbrainz.org/ws/2/release-group/?query=test&fmt=json&limit=1",
-            {
-              signal,
-              headers: { "User-Agent": this.userAgent() },
-            },
-          ),
+        comingSoon: true,
       },
       {
         key: "smtp",

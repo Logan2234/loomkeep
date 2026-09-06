@@ -7,7 +7,6 @@ import { GamesModule } from "../games/games.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
-import { MusicModule } from "../music/music.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { ReportsModule } from "../reports/reports.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -44,7 +43,6 @@ import { PublicStatsGuard } from "./public-stats.guard";
     CatalogModule,
     GamesModule,
     BooksModule,
-    MusicModule,
     JobsModule,
     SecurityModule,
     UsersModule,

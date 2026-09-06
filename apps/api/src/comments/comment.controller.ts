@@ -38,7 +38,10 @@ import { ReactCommentBody } from "./dto/react-comment.dto";
 import { UpdateCommentBody } from "./dto/update-comment.dto";
 
 function parseTarget(type: string): CommentTargetTypeT {
-  if (!(Object.values(CommentTargetType) as string[]).includes(type)) {
+  if (
+    type === CommentTargetType.MUSIC ||
+    !(Object.values(CommentTargetType) as string[]).includes(type)
+  ) {
     throw new AppException(
       HttpStatus.BAD_REQUEST,
       ErrorCode.CommentUnknownTargetType,

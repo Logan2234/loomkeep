@@ -72,7 +72,8 @@ export const NAVIGATION: NavSection[] = [
         label: m.common_Music(),
         icon: "music",
         domain: Domain.MUSIC,
-        match: (p) => p.startsWith("/app/music"),
+        comingSoon: true,
+        match: () => false,
       },
       {
         href: "/app/podcasts",
@@ -232,7 +233,8 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     label: m.common_Music(),
     icon: "music",
     domain: Domain.MUSIC,
-    match: (p) => p.startsWith("/app/music"),
+    comingSoon: true,
+    match: () => false,
   },
   podcasts: {
     id: "podcasts",
@@ -344,7 +346,6 @@ const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "media",
   "games",
   "books",
-  "music",
   "calendar",
   "stats",
   "settings",
@@ -383,8 +384,8 @@ export const resolveBottomShortcuts = (
 export const resolveShortcutChoices = (
   opts: MobileGateOptions,
 ): MobileDestination[] =>
-  BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter((d) =>
-    isVisible(d, opts),
+  BOTTOM_SHORTCUT_CHOICES.map((id) => MOBILE_DESTINATIONS[id]).filter(
+    (d) => !d.comingSoon && isVisible(d, opts),
   );
 
 // Launcher sheet groups with their visible destinations (coming-soon kept —

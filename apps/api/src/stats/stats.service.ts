@@ -80,7 +80,6 @@ const TARGET_TYPE: Record<StatsDomain, ReviewTargetType> = {
   MEDIA: "MEDIA",
   GAMES: "GAME",
   BOOKS: "BOOK",
-  MUSIC: "MUSIC",
 };
 
 /**
@@ -352,9 +351,6 @@ export class StatsService {
             break;
           case "BOOKS":
             result.set("BOOKS", await this.fetchBookRows(userId));
-            break;
-          case "MUSIC":
-            result.set("MUSIC", await this.fetchMusicRows(userId));
             break;
         }
       }),

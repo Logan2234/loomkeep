@@ -17,7 +17,6 @@
   import GameStatsSection from "$lib/components/stats/GameStatsSection.svelte";
   import HistogramBars from "$lib/components/stats/HistogramBars.svelte";
   import InsufficientDataNotice from "$lib/components/stats/InsufficientDataNotice.svelte";
-  import MusicStatsSection from "$lib/components/stats/MusicStatsSection.svelte";
   import PeriodFilter from "$lib/components/stats/PeriodFilter.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
@@ -36,6 +35,7 @@
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
+  import { isDomainAvailable } from "$lib/domains";
   import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
@@ -48,7 +48,7 @@
   type Choice = "ALL" | StatsDomain;
 
   const enabledDomains = $derived<StatsDomain[]>(
-    STATS_DOMAINS.filter((d) => auth.user?.enabledDomains?.includes(d) ?? true),
+    STATS_DOMAINS.filter((d) => isDomainAvailable(d)),
   );
 
   // Gates the "deep analysis" stats (rankings, distributions, temporal
@@ -303,14 +303,6 @@
         locked={statsLocked} />
     {/if}
 
-    {#if showSection("MUSIC")}
-      <SectionLabel
-        label="{m.common_Music()}{m.stats_detail_suffix()}"
-        class="mt-10" />
-      <MusicStatsSection
-        musicBreakdown={breakdownOf("MUSIC")}
-        locked={statsLocked} />
-    {/if}
 
     <!-- Entirely premium sections come last: a free account sees plenty of
          real content first, rather than landing on a locked block right

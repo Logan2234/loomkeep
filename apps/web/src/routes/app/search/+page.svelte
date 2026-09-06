@@ -319,9 +319,7 @@
   {#if comingSoon}
     <div
       class="border-border text-dim flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-14 text-center">
-      <Icon
-        name={domain === Domain.PODCASTS ? "podcast" : "boardgame"}
-        class="text-dim/60 h-8 w-8" />
+      <Icon name={DOMAINS[domain].icon} class="text-dim/60 h-8 w-8" />
       <p class="text-fg font-semibold">{m.common_coming_soon()}</p>
       <p class="max-w-xs text-sm">
         {m.search_coming_soon_desc()}

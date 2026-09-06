@@ -16,9 +16,6 @@ export const STATS_DOMAIN_LABEL: Record<StatsDomain, string> = {
   get BOOKS() {
     return m.common_Books();
   },
-  get MUSIC() {
-    return m.common_Music();
-  },
 };
 
 // CSS var name (see app.css) carrying this domain's validated stat hue.
@@ -26,7 +23,6 @@ export const STATS_DOMAIN_COLOR_VAR: Record<StatsDomain, string> = {
   MEDIA: "var(--stat-media)",
   GAMES: "var(--stat-games)",
   BOOKS: "var(--stat-books)",
-  MUSIC: "var(--stat-music)",
 };
 
 // The shared status funnel (dim to-do → amber in-progress → green done → red

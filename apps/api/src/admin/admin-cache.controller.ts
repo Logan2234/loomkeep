@@ -26,7 +26,6 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { parsePageQuery } from "../common/pagination.util";
 import { GameItemService } from "../games/game-item.service";
-import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminCacheDeleteOrphansResultResponseDto } from "./dto/admin-cache-delete-orphans-result-response.dto";
@@ -36,10 +35,10 @@ import { AdminCacheResyncStaleResultResponseDto } from "./dto/admin-cache-resync
 
 const PAGE_SIZE = 50;
 const STALE_TTL_MS = 24 * 60 * 60 * 1000;
-const DOMAINS = ["MEDIA", "GAMES", "BOOKS", "MUSIC"] as const;
+const DOMAINS = ["MEDIA", "GAMES", "BOOKS"] as const;
 type CacheDomain = (typeof DOMAINS)[number];
 
-/** An item with no library/game/book/music entry pointing at it, across every account. */
+/** An item with no library/game/book entry pointing at it, across every account. */
 const ORPHAN_WHERE = { entries: { none: {} } } as const;
 
 /**
@@ -55,7 +54,6 @@ const TARGET_TYPE: Record<CacheDomain, string> = {
   MEDIA: "MEDIA",
   GAMES: "GAME",
   BOOKS: "BOOK",
-  MUSIC: "MUSIC",
 };
 
 /** Ordering shared by every domain — the field names all exist on each model. */
@@ -82,7 +80,6 @@ export class AdminCacheController {
     private readonly mediaItems: MediaItemService,
     private readonly gameItems: GameItemService,
     private readonly bookItems: BookItemService,
-    private readonly musicItems: MusicItemService,
   ) {}
 
   /**
@@ -184,23 +181,6 @@ export class AdminCacheController {
         };
       }
 
-      case "MUSIC": {
-        const [rows, total, staleTotal, orphanTotal] = await Promise.all([
-          this.prisma.musicItem.findMany(findArgs),
-          this.prisma.musicItem.count({ where }),
-          this.prisma.musicItem.count({ where: staleWhere }),
-          this.prisma.musicItem.count({ where: ORPHAN_WHERE }),
-        ]);
-        return {
-          total,
-          hasMore: skip + rows.length < total,
-          staleTotal,
-          orphanTotal,
-          items: rows.map((r) =>
-            this.toDto("MUSIC", r, r.coverUrl, r._count.entries),
-          ),
-        };
-      }
     }
   }
 
@@ -304,30 +284,6 @@ export class AdminCacheController {
         });
       }
 
-      case "MUSIC": {
-        const item = await this.prisma.musicItem.findUnique({
-          where: { id },
-          include: {
-            externalIds: true,
-            _count: { select: { entries: true } },
-          },
-        });
-        if (!item)
-          throw new AppException(
-            HttpStatus.NOT_FOUND,
-            ErrorCode.AdminCacheItemNotFound,
-          );
-        const sourceId = this.canonicalId(
-          item.canonicalSource,
-          item.externalIds,
-        );
-        return this.toDetailDto("MUSIC", item, item.coverUrl, {
-          externalIds: item.externalIds,
-          referenceCount: item._count.entries,
-          detailPath: `/app/music/${sourceId}`,
-          seasons: [],
-        });
-      }
     }
   }
 
@@ -389,47 +345,50 @@ export class AdminCacheController {
   ): Promise<AdminCacheDeleteOrphansResultDto> {
     const cacheDomain = this.domainOrThrow(domain);
 
-    const orphanIds: string[] =
-      cacheDomain === "MEDIA"
-        ? (
-            await this.prisma.mediaItem.findMany({
-              where: ORPHAN_WHERE,
-              select: { id: true },
-            })
-          ).map((o) => o.id)
-        : cacheDomain === "GAMES"
-          ? (
-              await this.prisma.gameItem.findMany({
-                where: ORPHAN_WHERE,
-                select: { id: true },
-              })
-            ).map((o) => o.id)
-          : cacheDomain === "BOOKS"
-            ? (
-                await this.prisma.bookItem.findMany({
-                  where: ORPHAN_WHERE,
-                  select: { id: true },
-                })
-              ).map((o) => o.id)
-            : (
-                await this.prisma.musicItem.findMany({
-                  where: ORPHAN_WHERE,
-                  select: { id: true },
-                })
-              ).map((o) => o.id);
+    let orphanIds: string[] = [];
+    switch (cacheDomain) {
+      case "MEDIA":
+        orphanIds = (
+          await this.prisma.mediaItem.findMany({
+            where: ORPHAN_WHERE,
+            select: { id: true },
+          })
+        ).map((item) => item.id);
+        break;
+      case "GAMES":
+        orphanIds = (
+          await this.prisma.gameItem.findMany({
+            where: ORPHAN_WHERE,
+            select: { id: true },
+          })
+        ).map((item) => item.id);
+        break;
+      case "BOOKS":
+        orphanIds = (
+          await this.prisma.bookItem.findMany({
+            where: ORPHAN_WHERE,
+            select: { id: true },
+          })
+        ).map((item) => item.id);
+        break;
+    }
 
     const withContent = await this.idsWithContent(cacheDomain, orphanIds);
     const deletable = orphanIds.filter((id) => !withContent.has(id));
     const where = { id: { in: deletable } };
 
-    const { count } =
-      cacheDomain === "MEDIA"
-        ? await this.prisma.mediaItem.deleteMany({ where })
-        : cacheDomain === "GAMES"
-          ? await this.prisma.gameItem.deleteMany({ where })
-          : cacheDomain === "BOOKS"
-            ? await this.prisma.bookItem.deleteMany({ where })
-            : await this.prisma.musicItem.deleteMany({ where });
+    let count = 0;
+    switch (cacheDomain) {
+      case "MEDIA":
+        ({ count } = await this.prisma.mediaItem.deleteMany({ where }));
+        break;
+      case "GAMES":
+        ({ count } = await this.prisma.gameItem.deleteMany({ where }));
+        break;
+      case "BOOKS":
+        ({ count } = await this.prisma.bookItem.deleteMany({ where }));
+        break;
+    }
 
     return { deleted: count, skipped: withContent.size };
   }
@@ -439,7 +398,7 @@ export class AdminCacheController {
    * items 409 — a delete would strand another user's library/watch history.
    * Same 409 when a review/comment/activity row still targets it: those
    * outlive a library entry today (only MEDIA's own `deleteEntry` cleans
-   * them up on removal, games/books/music don't yet — see admin memory),
+   * them up on removal, games/books don't yet — see admin memory),
    * so an orphan can still carry content the delete would otherwise orphan
    * forever (no FK, nothing else would ever clean it up).
    */
@@ -484,9 +443,6 @@ export class AdminCacheController {
         return;
       case "BOOKS":
         await this.prisma.bookItem.delete({ where: { id } });
-        return;
-      case "MUSIC":
-        await this.prisma.musicItem.delete({ where: { id } });
         return;
     }
   }
@@ -566,22 +522,24 @@ export class AdminCacheController {
         return this.gameItems.forceRefresh(id);
       case "BOOKS":
         return this.bookItems.forceRefresh(id);
-      case "MUSIC":
-        return this.musicItems.forceRefresh(id);
     }
   }
 
   private async staleIds(domain: CacheDomain): Promise<string[]> {
     const where = { lastSyncedAt: { lt: this.staleBefore() } };
     const select = { id: true };
-    const rows =
-      domain === "MEDIA"
-        ? await this.prisma.mediaItem.findMany({ where, select })
-        : domain === "GAMES"
-          ? await this.prisma.gameItem.findMany({ where, select })
-          : domain === "BOOKS"
-            ? await this.prisma.bookItem.findMany({ where, select })
-            : await this.prisma.musicItem.findMany({ where, select });
+    let rows: { id: string }[] = [];
+    switch (domain) {
+      case "MEDIA":
+        rows = await this.prisma.mediaItem.findMany({ where, select });
+        break;
+      case "GAMES":
+        rows = await this.prisma.gameItem.findMany({ where, select });
+        break;
+      case "BOOKS":
+        rows = await this.prisma.bookItem.findMany({ where, select });
+        break;
+    }
     return rows.map((r) => r.id);
   }
 
@@ -615,13 +573,6 @@ export class AdminCacheController {
         return item ? item._count.entries : null;
       }
 
-      case "MUSIC": {
-        const item = await this.prisma.musicItem.findUnique({
-          where: { id },
-          include: { _count: { select: { entries: true } } },
-        });
-        return item ? item._count.entries : null;
-      }
     }
   }
 

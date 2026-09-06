@@ -163,7 +163,7 @@ describe("AdminUsersController.listUsers", () => {
 });
 
 describe("AdminUsersController.getUserLibraryStats", () => {
-  it("counts every persisted library domain, splitting media by type", async () => {
+  it("counts every active library domain, splitting media by type", async () => {
     const { controller, prisma } = makeController();
     (prisma.libraryEntry.count as Mock)
       .mockResolvedValueOnce(3)
@@ -171,7 +171,6 @@ describe("AdminUsersController.getUserLibraryStats", () => {
       .mockResolvedValueOnce(2);
     (prisma.gameEntry.count as Mock).mockResolvedValue(4);
     (prisma.bookEntry.count as Mock).mockResolvedValue(6);
-    (prisma.musicEntry.count as Mock).mockResolvedValue(1);
 
     await expect(controller.getUserLibraryStats("user-2")).resolves.toEqual({
       movies: 3,
@@ -179,8 +178,7 @@ describe("AdminUsersController.getUserLibraryStats", () => {
       anime: 2,
       games: 4,
       books: 6,
-      music: 1,
-      total: 21,
+      total: 20,
     });
 
     expect(prisma.libraryEntry.count).toHaveBeenCalledWith({

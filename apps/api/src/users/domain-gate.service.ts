@@ -1,4 +1,9 @@
-import { Domain, ErrorCode, PREMIUM_DOMAINS } from "@loomkeep/shared";
+import {
+  Domain,
+  ErrorCode,
+  isComingSoonDomain,
+  PREMIUM_DOMAINS,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
@@ -47,7 +52,9 @@ export class DomainGateService {
     });
 
     const enabled = (user?.enabledDomains ?? []).filter(
-      (domain) => !this.flags.isEnabled(`MAINTENANCE_${domain}`),
+      (domain) =>
+        !isComingSoonDomain(domain) &&
+        !this.flags.isEnabled(`MAINTENANCE_${domain}`),
     );
 
     if (!enabled.some((domain) => PREMIUM_DOMAINS.includes(domain))) {

@@ -542,6 +542,22 @@ describe("CommentService.adminRemove", () => {
 });
 
 describe("CommentService.react", () => {
+  it("does not allow a new reaction on a parked Music comment", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MUSIC",
+        }),
+      },
+    });
+
+    await expect(svc.react("someone", "c1", "LIKE" as never)).rejects.toThrow();
+    expect(prisma.commentReaction.upsert).not.toHaveBeenCalled();
+  });
+
   it("notifies the author once the reaction count reaches the threshold", async () => {
     const { svc, notifications } = make({
       comment: {

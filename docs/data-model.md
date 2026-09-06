@@ -60,13 +60,13 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 | `BookReplay`     | Une relecture complétée au-delà de la première lecture d'un `BookEntry`.         |
 | `ReadingGoal`    | Objectif annuel de lecture (nombre de livres) d'un `User` pour une année donnée. |
 
-## Musique
+## Musique (en pause)
 
 | Table             | Description                                                  |
 | ----------------- | ------------------------------------------------------------ |
-| `MusicItem`       | Album mis en cache localement dès qu'un `User` le référence. |
-| `MusicExternalId` | ID externe (MusicBrainz) rattaché à un `MusicItem`.          |
-| `MusicEntry`      | Entrée de bibliothèque reliant un `User` à un `MusicItem`.   |
+| `MusicItem`       | Album précédemment mis en cache, conservé pendant la mise en pause. |
+| `MusicExternalId` | ID externe (MusicBrainz) rattaché à un `MusicItem`.                |
+| `MusicEntry`      | Entrée historique reliant un `User` à un `MusicItem`.              |
 
 ## Import
 

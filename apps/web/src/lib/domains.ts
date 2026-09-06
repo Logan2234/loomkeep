@@ -25,16 +25,22 @@ export function isDomainEnabled(domain: Domain): boolean {
   return enabled ? enabled.includes(domain) : true;
 }
 
+/** Whether a domain currently has a usable library/search experience. */
+export function isDomainAvailable(domain: Domain): boolean {
+  return isDomainEnabled(domain) && !DOMAINS[domain].comingSoon;
+}
+
 /**
- * Toggles `id` in `current`, refusing to drop the last remaining domain —
+ * Toggles `id` in `current`, refusing to drop the last available domain —
  * used by both the settings "Domaines" section and the onboarding wizard's
- * domain step so the "at least one" rule can't drift between the two.
+ * domain step so the "at least one usable domain" rule can't drift between
+ * the client and API.
  * Rebuilds in canonical order so the stored list stays tidy.
  */
 export function toggleDomainSelection(current: Domain[], id: Domain): Domain[] {
   const has = current.includes(id);
-  if (has && current.length === 1) return current;
-  return Object.keys(DOMAINS).filter((d) =>
+  const next = Object.keys(DOMAINS).filter((d) =>
     d === id ? !has : current.includes(d as Domain),
   ) as Domain[];
+  return next.some((domain) => !DOMAINS[domain].comingSoon) ? next : current;
 }

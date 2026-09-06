@@ -24,7 +24,7 @@
   import ReadingGoalDashboardCard from "$lib/components/ReadingGoalDashboardCard.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
-  import { isDomainEnabled } from "$lib/domains";
+  import { isDomainAvailable, isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
@@ -43,13 +43,14 @@
   const mediaOn = $derived(isDomainEnabled(Domain.MEDIA));
   const gamesOn = $derived(isDomainEnabled(Domain.GAMES));
   const booksOn = $derived(isDomainEnabled(Domain.BOOKS));
-  const musicOn = $derived(isDomainEnabled(Domain.MUSIC));
-  // Podcasts/Jeux de société have no screens yet — surfaced as a dimmed
-  // "Bientôt" teaser here for consistency with the nav rail/menu sheet, but
-  // only once the user has actually opted into one of the two (they're
-  // off by default, unlike the other 4 domains).
+  const musicOn = $derived(isDomainAvailable(Domain.MUSIC));
+  // Music, podcasts and board games have no usable screens yet — surfaced as
+  // a dimmed "Bientôt" teaser here for consistency with the nav rail/menu sheet, but
+  // only once the user has actually opted into one (they are off by default).
   const soonOn = $derived(
-    isDomainEnabled(Domain.PODCASTS) || isDomainEnabled(Domain.BOARDGAMES),
+    [Domain.MUSIC, Domain.PODCASTS, Domain.BOARDGAMES].some(
+      isDomainEnabled,
+    ),
   );
 
   let resuming = $state<string | null>(null); // entry id being resumed
@@ -455,7 +456,7 @@
           <section
             class="border-border flex flex-col justify-center gap-1 rounded-xl border border-dashed p-4 opacity-70">
             <p class="font-display text-sm font-bold">
-              🎧 {m.common_Podcasts()} &amp; 🎲 {m.common_Boardgames()}
+              🎵 {m.common_Music()} · 🎧 {m.common_Podcasts()} &amp; 🎲 {m.common_Boardgames()}
             </p>
             <p class="text-dim text-xs">{m.home_coming_soon()}</p>
             <span

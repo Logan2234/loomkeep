@@ -2,14 +2,13 @@ import { Domain, type MediaType } from "../enums";
 
 /**
  * The domains covered by the stats feature today. A subset of `Domain`:
- * PODCASTS/BOARDGAMES are scaffolded but have no catalogue data yet, so they
- * stay out of stats aggregation until their own increment.
+ * Parked and placeholder domains stay out of stats aggregation until their
+ * own increment is ready.
  */
 export const STATS_DOMAINS = [
   Domain.MEDIA,
   Domain.GAMES,
   Domain.BOOKS,
-  Domain.MUSIC,
 ] as const;
 export type StatsDomain = (typeof STATS_DOMAINS)[number];
 

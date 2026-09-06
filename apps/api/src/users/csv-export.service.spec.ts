@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain, ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
@@ -123,7 +123,7 @@ describe("CsvExportService.buildCsv", () => {
     );
   });
 
-  it("builds a MUSIC CSV", async () => {
+  it("rejects a CSV export for the parked MUSIC domain", async () => {
     const service = makeService("musicEntry", [
       {
         status: "LISTENED",
@@ -143,11 +143,8 @@ describe("CsvExportService.buildCsv", () => {
       },
     ]);
 
-    const csv = await service.buildCsv("user-1", Domain.MUSIC);
-    const [, row] = csv.split("\r\n");
-
-    expect(row).toBe(
-      "Discovery,Daft Punk,LISTENED,10,,true,,2026-02-01,NONE,,2001-03-12,Electronic",
+    await expect(service.buildCsv("user-1", Domain.MUSIC)).rejects.toEqual(
+      expect.objectContaining({ code: ErrorCode.UserCsvExportUnavailable }),
     );
   });
 

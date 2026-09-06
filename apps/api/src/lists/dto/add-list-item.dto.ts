@@ -7,7 +7,6 @@ const LIST_ITEM_TARGET_TYPES: ListItemTargetType[] = [
   "MEDIA",
   "GAME",
   "BOOK",
-  "MUSIC",
 ];
 
 export class AddListItemBody {

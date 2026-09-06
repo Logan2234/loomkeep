@@ -28,12 +28,11 @@ export class CsvExportService {
         return this.buildGamesCsv(userId);
       case Domain.BOOKS:
         return this.buildBooksCsv(userId);
-      case Domain.MUSIC:
-        return this.buildMusicCsv(userId);
       case Domain.PODCASTS:
       case Domain.BOARDGAMES:
-        // Planned domains with no backing tables yet — the UI keeps their CSV
-        // buttons disabled, so this only guards a hand-crafted request.
+      case Domain.MUSIC:
+        // Parked domains — the UI keeps their CSV buttons disabled, so this
+        // only guards a hand-crafted request.
         throw new AppException(
           HttpStatus.BAD_REQUEST,
           ErrorCode.UserCsvExportUnavailable,

@@ -55,7 +55,6 @@
       <li>anime ;</li>
       <li>livres ;</li>
       <li>jeux vidéo ;</li>
-      <li>musique ;</li>
       <li>
         et, selon les fonctionnalités disponibles, d'autres catégories de
         contenus culturels.
@@ -356,7 +355,7 @@
     </p>
     <p>
       Selon la catégorie concernée, ces services peuvent notamment inclure TMDB,
-      AniList, OMDb, IGDB, Open Library et MusicBrainz.
+      AniList, OMDb, IGDB et Open Library.
     </p>
     <p>
       Loomkeep n'est pas propriétaire des bases de données ou contenus fournis

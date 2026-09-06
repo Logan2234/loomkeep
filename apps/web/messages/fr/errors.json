@@ -129,6 +129,7 @@
   "apierr_user_csv_export_unavailable": "L'export CSV n'est pas encore disponible pour ce domaine.",
   "apierr_user_account_not_found": "Ce compte est introuvable.",
   "apierr_user_domain_disabled": "Ce domaine est désactivé sur ton compte.",
+  "apierr_user_active_domain_required": "Au moins un domaine disponible doit rester actif.",
   "apierr_user_avatar_not_found": "Cet avatar est introuvable.",
   "apierr_user_premium_required": "Cette fonctionnalité est réservée aux comptes premium.",
   "apierr_user_birth_date_future": "La date de naissance ne peut pas être dans le futur.",

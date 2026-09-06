@@ -3,7 +3,6 @@
   import {
     ANILIST_API,
     IGDB_API,
-    MUSICBRAINZ_API,
     OMDB_API,
     OPENLIBRARY_API,
     TMDB_API,
@@ -46,12 +45,6 @@
       name: "Open Library",
       href: OPENLIBRARY_API,
       notice: m.settings_datasources_openlibrary_notice(),
-    },
-    {
-      brand: "musicbrainz",
-      name: "MusicBrainz",
-      href: MUSICBRAINZ_API,
-      notice: m.settings_datasources_musicbrainz_notice(),
     },
   ];
 </script>

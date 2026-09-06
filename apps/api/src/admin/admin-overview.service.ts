@@ -28,7 +28,6 @@ export class AdminOverviewService {
       media,
       games,
       books,
-      music,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: { gte: weekStart } } }),
@@ -37,7 +36,6 @@ export class AdminOverviewService {
       this.prisma.mediaItem.count(),
       this.prisma.gameItem.count(),
       this.prisma.bookItem.count(),
-      this.prisma.musicItem.count(),
     ]);
 
     return {
@@ -45,7 +43,7 @@ export class AdminOverviewService {
       newAccountsThisWeek,
       accountsWithPush,
       pushDevices,
-      cachedItems: media + games + books + music,
+      cachedItems: media + games + books,
     };
   }
 }

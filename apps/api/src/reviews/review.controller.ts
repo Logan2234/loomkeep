@@ -41,7 +41,10 @@ import { VoteReviewBody } from "./dto/vote-review.dto";
 import { ReviewService } from "./review.service";
 
 function parseTarget(type: string): ReviewTargetType {
-  if (!(Object.values(ReviewTargetType) as string[]).includes(type)) {
+  if (
+    type === ReviewTargetType.MUSIC ||
+    !(Object.values(ReviewTargetType) as string[]).includes(type)
+  ) {
     throw new AppException(
       HttpStatus.BAD_REQUEST,
       ErrorCode.ReviewUnknownTargetType,

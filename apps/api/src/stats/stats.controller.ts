@@ -1,7 +1,6 @@
 import type {
   BookStatsDto,
   GameStatsDto,
-  MusicStatsDto,
   SocialStatsDto,
   StatsDomain,
   StatsOverviewDto,
@@ -23,7 +22,6 @@ import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BookStatsResponseDto } from "./dto/book-stats-response.dto";
 import { GameStatsResponseDto } from "./dto/game-stats-response.dto";
-import { MusicStatsResponseDto } from "./dto/music-stats-response.dto";
 import { SocialStatsResponseDto } from "./dto/social-stats-response.dto";
 import { StatsOverviewResponseDto } from "./dto/stats-overview-response.dto";
 import { StatsWorkResponseDto } from "./dto/stats-work-response.dto";
@@ -130,14 +128,6 @@ export class StatsController {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     const premium = await this.entitlements.isEffectivelyPremium(user.sub);
     return this.statsService.getBookStats(user.sub, premium);
-  }
-
-  @Get("music")
-  @ApiOkResponse({ type: MusicStatsResponseDto })
-  async getMusicStats(@CurrentUser() user: JwtPayload): Promise<MusicStatsDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
-    const premium = await this.entitlements.isEffectivelyPremium(user.sub);
-    return this.statsService.getMusicStats(user.sub, premium);
   }
 
   @Get("social")

@@ -316,7 +316,6 @@
       <li>OMDb ;</li>
       <li>IGDB ;</li>
       <li>Open Library ;</li>
-      <li>MusicBrainz.</li>
     </ul>
     <p>
       Les recherches de catalogue sont effectuées par l'application et ne
@@ -680,7 +679,7 @@
       </li>
       <li>
         les fournisseurs de données et d'images de catalogue basés hors UE
-        (notamment TMDB, IGDB, Open Library et MusicBrainz), qui reçoivent l'IP
+        (notamment TMDB, IGDB et Open Library), qui reçoivent l'IP
         du visiteur lors des recherches et de l'affichage des jaquettes (voir
         section 6) ;
       </li>

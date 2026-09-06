@@ -24,7 +24,6 @@
     Domain.MEDIA,
     Domain.GAMES,
     Domain.BOOKS,
-    Domain.MUSIC,
   ];
 
   const STEPS = [

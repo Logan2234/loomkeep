@@ -148,6 +148,8 @@ const MESSAGES = {
     m.apierr_user_csv_export_unavailable(),
   [ErrorCode.UserAccountNotFound]: () => m.apierr_user_account_not_found(),
   [ErrorCode.UserDomainDisabled]: () => m.apierr_user_domain_disabled(),
+  [ErrorCode.UserActiveDomainRequired]: () =>
+    m.apierr_user_active_domain_required(),
   [ErrorCode.UserAvatarNotFound]: () => m.apierr_user_avatar_not_found(),
   [ErrorCode.UserPremiumRequired]: () => m.apierr_user_premium_required(),
   [ErrorCode.UserBirthDateFuture]: () => m.apierr_user_birth_date_future(),

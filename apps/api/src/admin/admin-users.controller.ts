@@ -280,7 +280,7 @@ export class AdminUsersController {
   async getUserLibraryStats(
     @Param("userId") userId: string,
   ): Promise<AdminUserLibraryStatsDto> {
-    const [movies, series, anime, games, books, music] = await Promise.all([
+    const [movies, series, anime, games, books] = await Promise.all([
       this.prisma.libraryEntry.count({
         where: { userId, mediaItem: { type: "MOVIE" } },
       }),
@@ -292,7 +292,6 @@ export class AdminUsersController {
       }),
       this.prisma.gameEntry.count({ where: { userId } }),
       this.prisma.bookEntry.count({ where: { userId } }),
-      this.prisma.musicEntry.count({ where: { userId } }),
     ]);
 
     return {
@@ -301,8 +300,7 @@ export class AdminUsersController {
       anime,
       games,
       books,
-      music,
-      total: movies + series + anime + games + books + music,
+      total: movies + series + anime + games + books,
     };
   }
 

@@ -619,7 +619,7 @@
   "settings_change_password_title": "Change password",
   "settings_domains_description": "Choose which content types appear in your app. Hidden ones disappear from navigation.",
   "settings_domain_temporarily_unavailable": "Temporarily unavailable.",
-  "settings_domain_last_required": "At least one domain must stay active.",
+  "settings_domain_last_required": "At least one available domain must stay active.",
   "settings_appearance_description": "Customize how your app looks.",
   "settings_nav_style_label": "Navigation style",
   "settings_nav_style_description": "Change how the sidebar and bottom bar look. \"Marquee\" is included; the other two are for premium members.",

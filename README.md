@@ -25,13 +25,13 @@
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Logan2234?logo=github&style=for-the-badge)](https://github.com/sponsors/Logan2234)
 [![Liberapay](https://img.shields.io/liberapay/patrons/loomkeep.svg?logo=liberapay&style=for-the-badge)](https://liberapay.com/loomkeep/donate)
 
-Self-hosted tracker for **series, movies, anime, games, books and music** —
+Self-hosted tracker for **series, movies, anime, games and books** —
 with optional friends/reviews/comments social features. Built as a TV Time
 replacement you fully own: your data lives in your own PostgreSQL, catalogues
 come live from [TMDB](https://www.themoviedb.org/) (movies & series),
 [AniList](https://anilist.co/) (anime), [IGDB](https://www.igdb.com/) (games),
-[Open Library](https://openlibrary.org/) (books) and
-[MusicBrainz](https://musicbrainz.org/) (music).
+[Open Library](https://openlibrary.org/) (books). Music is currently parked as
+coming soon while its experience is completed.
 
 ## Stack
 

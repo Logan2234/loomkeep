@@ -73,6 +73,8 @@ export class ActivityService {
    * action that triggered it, so this swallows and logs its own errors.
    */
   async emit(input: EmitActivityInput): Promise<void> {
+    if (input.domain === "MUSIC") return;
+
     try {
       const snap = await this.resolveSnapshot(input.targetType, input.targetId);
       if (!snap) return;
@@ -116,6 +118,7 @@ export class ActivityService {
       where: {
         userId: { in: followeeIds },
         homeFeed: true,
+        domain: { not: "MUSIC" },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
@@ -143,7 +146,7 @@ export class ActivityService {
     limit = FEED_PAGE_SIZE,
   ): Promise<PagedResult<ActivityEventDto>> {
     const rows = await this.prisma.activityEvent.findMany({
-      where: { userId: target.id },
+      where: { userId: target.id, domain: { not: "MUSIC" } },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit + 1,
@@ -379,20 +382,6 @@ export class ActivityService {
           title: i.title,
           imageUrl: i.coverUrl,
           href: src ? `/app/books/${src}` : null,
-        };
-      }
-
-      case "MUSIC": {
-        const i = await this.prisma.musicItem.findUnique({
-          where: { id: targetId },
-          select: { title: true, coverUrl: true, ...withIds },
-        });
-        if (!i) return null;
-        const src = canonicalExternalId(i, i.externalIds);
-        return {
-          title: i.title,
-          imageUrl: i.coverUrl,
-          href: src ? `/app/music/${src}` : null,
         };
       }
 
