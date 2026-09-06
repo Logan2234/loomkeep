@@ -15,7 +15,7 @@ import type {
 // TMDB's terms forbid using its API as an image host — never download/cache
 // these and serve them from Loomkeep's own infra. URLs are only ever handed
 // to the client, which loads them straight from image.tmdb.org.
-export const IMG = "https://image.tmdb.org/t/p";
+const IMG = "https://image.tmdb.org/t/p";
 
 export interface TmdbMovieResult {
   id: number;
@@ -34,7 +34,7 @@ export interface TmdbTvResult {
   poster_path?: string | null;
 }
 
-export interface TmdbExternalIds {
+interface TmdbExternalIds {
   imdb_id?: string | null;
   tvdb_id?: number | null;
 }
@@ -59,29 +59,29 @@ export interface TmdbTvDetails extends TmdbTvResult {
   seasons?: { season_number: number; name?: string | null }[];
 }
 
-export interface TmdbCrewMember {
+interface TmdbCrewMember {
   id: number;
   name: string;
   job?: string;
 }
 
-export interface TmdbVideo {
+interface TmdbVideo {
   site: string; // "YouTube" | "Vimeo" | …
   type: string; // "Trailer" | "Teaser" | "Clip" | …
   key: string; // YouTube video id.
   official?: boolean;
 }
 
-export interface TmdbReleaseDate {
+interface TmdbReleaseDate {
   certification?: string;
 }
 
-export interface TmdbReleaseDatesResult {
+interface TmdbReleaseDatesResult {
   iso_3166_1: string;
   release_dates: TmdbReleaseDate[];
 }
 
-export interface TmdbContentRatingsResult {
+interface TmdbContentRatingsResult {
   iso_3166_1: string;
   rating: string;
 }
@@ -94,12 +94,12 @@ export interface TmdbSeasonDetails {
   }[];
 }
 
-export interface TmdbWatchProvider {
+interface TmdbWatchProvider {
   provider_name: string;
   logo_path?: string | null;
 }
 
-export interface TmdbWatchRegion {
+interface TmdbWatchRegion {
   link?: string;
   flatrate?: TmdbWatchProvider[];
   rent?: TmdbWatchProvider[];
@@ -137,7 +137,7 @@ export interface TmdbExtras {
 const MAX_GALLERY_IMAGES = 12;
 
 /** One entry of a person's `combined_credits.cast` (movie or TV role). */
-export type TmdbCreditItem = (TmdbMovieResult | TmdbTvResult) & {
+type TmdbCreditItem = (TmdbMovieResult | TmdbTvResult) & {
   media_type: "movie" | "tv";
   popularity?: number;
 };
@@ -189,7 +189,7 @@ export function toTvSummary(tv: TmdbTvResult): MediaSummaryDto {
   };
 }
 
-export function toExternalIds(
+function toExternalIds(
   tmdbId: string,
   ids?: TmdbExternalIds,
 ): ProviderExternalId[] {
