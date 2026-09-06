@@ -10,7 +10,6 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
@@ -28,7 +27,7 @@
   type MfaModal =
     | "totp-setup"
     | "totp-disable"
-    | "email-disable"
+    | "email-confirm"
     | "recovery-regenerate-confirm"
     | "recovery-reveal"
     | null;
@@ -100,6 +99,8 @@
 
   // --- TOTP disable ---
   let disablePasswordInput = $state("");
+  let sensitivePasswordInput = $state("");
+  let pendingEmailEnabled = $state(false);
 
   function openTotpDisable() {
     disablePasswordInput = "";
@@ -121,52 +122,34 @@
     totpDisableMut.mutate();
   }
 
-  // --- Email MFA enable (direct toggle, no confirmation modal — turning a
-  // second factor on never needs to prove identity beyond the session
-  // itself) ---
-  const emailMfaEnableMut = createApiMutation(() => ({
-    mutate: () => setEmailMfa({ enabled: true }),
-    errorToast: true,
-    onSuccess: ({ recoveryCodes }) => {
-      patchStatus({ emailEnabled: true });
-      if (recoveryCodes) openRecoveryReveal(recoveryCodes);
-    },
-  }));
-
-  // --- Email MFA disable (password confirmation, same reasoning as TOTP:
-  // removing a second factor needs proof of identity — LK-S06) ---
-  let emailDisablePasswordInput = $state("");
-
-  function openEmailDisable() {
-    emailDisablePasswordInput = "";
-    emailMfaDisableMut.reset();
-    openModal = "email-disable";
-  }
-
-  const emailMfaDisableMut = createApiMutation(() => ({
-    mutate: () =>
-      setEmailMfa({
-        enabled: false,
-        currentPassword: emailDisablePasswordInput,
-      }),
+  const emailMfaMut = createApiMutation(() => ({
+    mutate: (input: { enabled: boolean; currentPassword: string }) =>
+      setEmailMfa(input),
     coveredFields: ["currentPassword"],
-    onSuccess: () => {
-      patchStatus({ emailEnabled: false });
-      openModal = null;
-      toast.success(m.common_disable());
+    errorToast: true,
+    onSuccess: ({ recoveryCodes }, input) => {
+      patchStatus({ emailEnabled: input.enabled });
+      sensitivePasswordInput = "";
+      if (recoveryCodes) {
+        openRecoveryReveal(recoveryCodes);
+      } else {
+        openModal = null;
+      }
     },
   }));
-
-  function confirmEmailDisable() {
-    emailMfaDisableMut.mutate();
-  }
 
   function onToggleEmail(next: boolean) {
-    if (next) {
-      emailMfaEnableMut.mutate();
-    } else {
-      openEmailDisable();
-    }
+    pendingEmailEnabled = next;
+    sensitivePasswordInput = "";
+    emailMfaMut.reset();
+    openModal = "email-confirm";
+  }
+
+  function confirmEmailMfa() {
+    emailMfaMut.mutate({
+      enabled: pendingEmailEnabled,
+      currentPassword: sensitivePasswordInput,
+    });
   }
 
   // --- Recovery codes ---
@@ -184,13 +167,19 @@
     errorToast: true,
     onSuccess: ({ codes }) => {
       patchStatus({ recoveryCodesRemaining: codes.length });
+      sensitivePasswordInput = "";
       openRecoveryReveal(codes);
     },
-    onError: () => (openModal = null),
   }));
 
+  function openRecoveryRegenerate() {
+    sensitivePasswordInput = "";
+    regenerateMut.reset();
+    openModal = "recovery-regenerate-confirm";
+  }
+
   function confirmRegenerate() {
-    regenerateMut.mutate();
+    regenerateMut.mutate({ currentPassword: sensitivePasswordInput });
   }
 
   async function copyAllCodes() {
@@ -203,6 +192,7 @@
     `${code.slice(0, 5)}-${code.slice(5)}`;
 
   function closeModal() {
+    sensitivePasswordInput = "";
     openModal = null;
   }
 
@@ -274,7 +264,7 @@
         </div>
         <button
           class="link-accent shrink-0 text-sm"
-          onclick={() => (openModal = "recovery-regenerate-confirm")}>
+          onclick={openRecoveryRegenerate}>
           {m.common_regenerate()}
         </button>
       </div>
@@ -407,15 +397,15 @@
   </Modal>
 {/if}
 
-{#if openModal === "email-disable"}
-  <Modal title={m.settings_mfa_email_disable_title()} onclose={closeModal}>
+{#if openModal === "email-confirm"}
+  <Modal title={m.auth_mfa_email_label()} onclose={closeModal}>
     <form
       class="flex flex-col gap-3"
       onsubmit={(e) => {
         e.preventDefault();
-        confirmEmailDisable();
+        confirmEmailMfa();
       }}>
-      <p class="text-sm">{m.settings_mfa_email_disable_hint()}</p>
+      <p class="text-sm">{m.settings_mfa_email_desc()}</p>
       <label class="block">
         <span class="mb-1.5 block text-sm font-semibold">
           {m.common_current_password()}
@@ -426,10 +416,53 @@
           enterkeyhint="done"
           minlength={1}
           required
-          bind:value={emailDisablePasswordInput} />
+          bind:value={sensitivePasswordInput} />
       </label>
-      {#if emailMfaDisableMut.error}
-        <p class="text-danger text-sm">{emailMfaDisableMut.error}</p>
+      {#if emailMfaMut.error}
+        <p class="text-danger text-sm">{emailMfaMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={emailMfaMut.loading || !sensitivePasswordInput}>
+          {emailMfaMut.loading ? m.common_save_loading() : m.common_confirm()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "recovery-regenerate-confirm"}
+  <Modal
+    title={m.settings_mfa_recovery_regenerate_confirm_title()}
+    onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmRegenerate();
+      }}>
+      <p class="text-sm">
+        {m.settings_mfa_recovery_regenerate_confirm_message()}
+      </p>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.common_current_password()}
+        </span>
+        <PasswordInput
+          name="currentPassword"
+          autocomplete="current-password"
+          enterkeyhint="done"
+          minlength={1}
+          required
+          bind:value={sensitivePasswordInput} />
+      </label>
+      {#if regenerateMut.error}
+        <p class="text-danger text-sm">{regenerateMut.error}</p>
       {/if}
       <div class="mt-2 flex justify-end gap-2">
         <button type="button" class="btn btn-ghost" onclick={closeModal}>
@@ -438,25 +471,14 @@
         <button
           type="submit"
           class="btn btn-danger"
-          disabled={emailMfaDisableMut.loading || !emailDisablePasswordInput}>
-          {emailMfaDisableMut.loading
+          disabled={regenerateMut.loading || !sensitivePasswordInput}>
+          {regenerateMut.loading
             ? m.common_save_loading()
-            : m.common_disable()}
+            : m.common_regenerate()}
         </button>
       </div>
     </form>
   </Modal>
-{/if}
-
-{#if openModal === "recovery-regenerate-confirm"}
-  <ConfirmationModal
-    title={m.settings_mfa_recovery_regenerate_confirm_title()}
-    message={m.settings_mfa_recovery_regenerate_confirm_message()}
-    confirmLabel={m.common_regenerate()}
-    danger
-    busy={regenerateMut.loading}
-    onConfirm={confirmRegenerate}
-    onCancel={closeModal} />
 {/if}
 
 {#if openModal === "recovery-reveal"}

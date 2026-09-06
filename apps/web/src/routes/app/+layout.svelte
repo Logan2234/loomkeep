@@ -15,7 +15,6 @@
   import ProjectorDockDesktop from "$lib/components/sidebars/ProjectorDockDesktop.svelte";
   import TermsReacceptance from "$lib/components/TermsReacceptance.svelte";
   import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { navStyle } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { LEGAL_VERSION } from "@loomkeep/shared";
@@ -32,9 +31,7 @@
   // fall back to the free "Marquee" rail whenever the flag is on and the
   // account isn't premium, regardless of what's still saved in
   // localStorage (e.g. a lapsed subscription).
-  const navStyleLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const navStyleLocked = $derived(auth.isPremiumLocked);
   const effectiveNavStyle = $derived(
     navStyleLocked ? "marquee" : navStyle.choice,
   );

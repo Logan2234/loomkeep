@@ -19,7 +19,6 @@
   import Poster from "$lib/components/Poster.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
@@ -81,9 +80,7 @@
     fetch: getImportQuota,
   }));
   const quotaUsed = $derived(quotaQuery.data?.[descriptor.domain] === true);
-  const premiumLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const premiumLocked = $derived(auth.isPremiumLocked);
 
   const DOMAIN_TO_HREF = {
     [Domain.MEDIA]: "/app/media",

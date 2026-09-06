@@ -5,6 +5,7 @@ import type { AchievementService } from "../gamification/achievements/achievemen
 import type { XpService } from "../gamification/xp.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { BlockService } from "../social/block.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { CommentService } from "./comment.service";
@@ -145,6 +146,7 @@ function make(
   const notifications = { create: vi.fn() } as unknown as NotificationService;
   const xp = stubXp();
   const achievements = stubAchievements();
+  const blocks = new BlockService(prisma);
 
   return {
     svc: new CommentService(
@@ -155,6 +157,7 @@ function make(
       CONFIG,
       FLAGS,
       achievements,
+      blocks,
     ),
     prisma,
     notifications,

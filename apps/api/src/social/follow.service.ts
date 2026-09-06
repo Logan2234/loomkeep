@@ -13,6 +13,7 @@ import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievement
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { BlockService } from "./block.service";
 import { VisibilityService } from "./visibility.service";
 import { computeIsFriend } from "./visibility.util";
 
@@ -31,6 +32,7 @@ export class FollowService {
     private readonly visibility: VisibilityService,
     private readonly notifications: NotificationService,
     private readonly achievements: AchievementService,
+    private readonly blocks: BlockService,
   ) {}
 
   /**
@@ -57,11 +59,7 @@ export class FollowService {
         );
       }
 
-      const blocked = await this.prisma.block.findUnique({
-        where: {
-          blockerId_blockedId: { blockerId: target.id, blockedId: viewerId },
-        },
-      });
+      const blocked = await this.blocks.isBlocked(target.id, viewerId);
       if (blocked)
         throw new AppException(
           HttpStatus.NOT_FOUND,
@@ -103,11 +101,7 @@ export class FollowService {
     }
 
     // If the viewer blocked the target, they must unblock first.
-    const blocking = await this.prisma.block.findUnique({
-      where: {
-        blockerId_blockedId: { blockerId: viewerId, blockedId: target.id },
-      },
-    });
+    const blocking = await this.blocks.isBlocked(viewerId, target.id);
     if (blocking)
       throw new AppException(
         HttpStatus.BAD_REQUEST,

@@ -11,12 +11,14 @@ import { encryptTotpSecret } from "./mfa-crypto.util";
 import { MfaService, RECOVERY_CODE_COUNT } from "./mfa.service";
 
 const ENCRYPTION_KEY = randomBytes(32).toString("base64");
+const CURRENT_PASSWORD = "correct";
+const CURRENT_PASSWORD_HASH = bcrypt.hashSync(CURRENT_PASSWORD, 4);
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: "user-1",
     email: "alice@example.com",
-    passwordHash: "irrelevant",
+    passwordHash: CURRENT_PASSWORD_HASH,
     mfaTotpEnabled: false,
     mfaTotpSecretEnc: null,
     mfaEmailEnabled: false,
@@ -30,7 +32,7 @@ function makeService() {
 
   const prisma = {
     user: {
-      findUniqueOrThrow: vi.fn(),
+      findUniqueOrThrow: vi.fn().mockResolvedValue(makeUser()),
       update: vi.fn(),
     },
     mfaRecoveryCode: {
@@ -84,7 +86,10 @@ describe("MfaService recovery codes", () => {
   // enough that this can flirt with the default 5s timeout under load.
   it("generates 10 codes of 10 chars using only unambiguous characters", async () => {
     const { service, prisma } = makeService();
-    const codes = await service.regenerateRecoveryCodes("user-1");
+    const codes = await service.regenerateRecoveryCodes(
+      "user-1",
+      CURRENT_PASSWORD,
+    );
 
     expect(codes).toHaveLength(RECOVERY_CODE_COUNT);
 
@@ -100,7 +105,10 @@ describe("MfaService recovery codes", () => {
 
   it("consumes a matching recovery code and deletes it (single-use)", async () => {
     const { service } = makeService();
-    const [code] = await service.regenerateRecoveryCodes("user-1");
+    const [code] = await service.regenerateRecoveryCodes(
+      "user-1",
+      CURRENT_PASSWORD,
+    );
 
     await expect(service.verifyRecoveryCode("user-1", code)).resolves.toBe(
       true,
@@ -113,7 +121,10 @@ describe("MfaService recovery codes", () => {
 
   it("normalizes separators and case before matching", async () => {
     const { service } = makeService();
-    const [code] = await service.regenerateRecoveryCodes("user-1");
+    const [code] = await service.regenerateRecoveryCodes(
+      "user-1",
+      CURRENT_PASSWORD,
+    );
     const dashed = `${code.slice(0, 5)}-${code.slice(5)}`.toLowerCase();
 
     await expect(service.verifyRecoveryCode("user-1", dashed)).resolves.toBe(
@@ -123,8 +134,11 @@ describe("MfaService recovery codes", () => {
 
   it("regenerate deletes the old batch entirely rather than keeping it alongside", async () => {
     const { service, prisma } = makeService();
-    const [firstCode] = await service.regenerateRecoveryCodes("user-1");
-    await service.regenerateRecoveryCodes("user-1");
+    const [firstCode] = await service.regenerateRecoveryCodes(
+      "user-1",
+      CURRENT_PASSWORD,
+    );
+    await service.regenerateRecoveryCodes("user-1", CURRENT_PASSWORD);
 
     expect(prisma.mfaRecoveryCode.deleteMany).toHaveBeenCalledTimes(2);
     await expect(service.verifyRecoveryCode("user-1", firstCode)).resolves.toBe(
@@ -171,13 +185,33 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     const second = await service.setEmailMfaEnabled(
       "user-1",
       true,
-      undefined,
+      CURRENT_PASSWORD,
       "session-1",
     );
     expect(second.recoveryCodes).toBeUndefined();
     expect(prisma.refreshToken.deleteMany).toHaveBeenLastCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
     });
+  });
+
+  it("rejects an incorrect password before changing email MFA", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(makeUser());
+
+    await expect(
+      service.setEmailMfaEnabled("user-1", true, "wrong", "session-1"),
+    ).rejects.toMatchObject({ code: "auth.current_password_incorrect" });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects an incorrect password before regenerating recovery codes", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(makeUser());
+
+    await expect(
+      service.regenerateRecoveryCodes("user-1", "wrong", "session-1"),
+    ).rejects.toMatchObject({ code: "auth.current_password_incorrect" });
+    expect(prisma.mfaRecoveryCode.create).not.toHaveBeenCalled();
   });
 
   it("evaluates locked_down right after a TOTP confirmation", async () => {
@@ -248,63 +282,28 @@ describe("MfaService.disableTotp", () => {
 });
 
 // LK-S06: disabling email MFA used to need nothing but a valid access token —
-// no password check at all, unlike disableTotp() above.
+// no password check at all, unlike disableTotp() above. #195 (merged to main
+// while this branch was in flight) shipped the same fix more broadly —
+// assertCurrentPassword() now runs unconditionally in setEmailMfaEnabled(),
+// covering both directions — see the "rejects an incorrect password before
+// changing email MFA" test above for the negative-path coverage.
 describe("MfaService.setEmailMfaEnabled — disabling", () => {
-  it("rejects with the wrong current password and leaves the flag untouched", async () => {
-    const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
-      makeUser({
-        mfaEmailEnabled: true,
-        passwordHash: await bcrypt.hash("correct", 4),
-      }),
-    );
-
-    await expect(
-      service.setEmailMfaEnabled("user-1", false, "wrong"),
-    ).rejects.toThrow();
-    expect(prisma.user.update).not.toHaveBeenCalled();
-  });
-
-  it("rejects with no password provided at all", async () => {
-    const { service, prisma } = makeService();
-    (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
-      makeUser({
-        mfaEmailEnabled: true,
-        passwordHash: await bcrypt.hash("correct", 4),
-      }),
-    );
-
-    await expect(
-      service.setEmailMfaEnabled("user-1", false, undefined),
-    ).rejects.toThrow();
-  });
-
   it("clears the flag on a correct password", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue(
-      makeUser({
-        mfaEmailEnabled: true,
-        passwordHash: await bcrypt.hash("correct", 4),
-      }),
+      makeUser({ mfaEmailEnabled: true }),
     );
 
-    await service.setEmailMfaEnabled("user-1", false, "correct", "session-1");
+    await service.setEmailMfaEnabled(
+      "user-1",
+      false,
+      CURRENT_PASSWORD,
+      "session-1",
+    );
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: { mfaEmailEnabled: false },
-    });
-  });
-
-  it("never checks the password when enabling", async () => {
-    const { service, prisma } = makeService();
-
-    await service.setEmailMfaEnabled("user-1", true, undefined, "session-1");
-
-    expect(prisma.user.findUniqueOrThrow).not.toHaveBeenCalled();
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { mfaEmailEnabled: true },
     });
   });
 });

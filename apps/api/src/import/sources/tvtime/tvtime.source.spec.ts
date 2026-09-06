@@ -7,6 +7,7 @@ import type {
 import { vi } from "vitest";
 import { ImportJobService } from "../../import-job.service";
 import { makeZip } from "../../make-zip";
+import { MediaMatchResolver } from "../media/media-match-resolver";
 import { TvTimeImportSource } from "./tvtime.source";
 
 // Two watched episodes of one show (TVDB 100), plus a never-started show (200).
@@ -76,10 +77,11 @@ function makeService() {
     findSeriesSummaryByTvdbId: vi.fn().mockResolvedValue(null),
     search: vi.fn().mockResolvedValue([]),
   };
+  const matchResolver = new MediaMatchResolver(tmdb as never);
   const source = new TvTimeImportSource(
     prisma as never,
     mediaItemService as never,
-    tmdb as never,
+    matchResolver,
     {} as never,
   );
   const service = new ImportJobService(

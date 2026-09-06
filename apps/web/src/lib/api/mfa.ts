@@ -1,6 +1,7 @@
 import type {
   ConfirmTotpRequestDto,
   DisableTotpRequestDto,
+  RegenerateRecoveryCodesRequestDto,
   SetEmailMfaRequestDto,
 } from "@loomkeep/shared";
 import { auth } from "../auth.svelte";
@@ -34,5 +35,10 @@ export async function setEmailMfa(body: SetEmailMfaRequestDto) {
   return result;
 }
 
-export const regenerateRecoveryCodes = () =>
-  typedRequest("/users/me/mfa/recovery-codes/regenerate", { method: "POST" });
+export const regenerateRecoveryCodes = (
+  body: RegenerateRecoveryCodesRequestDto,
+) =>
+  typedRequest("/users/me/mfa/recovery-codes/regenerate", {
+    method: "POST",
+    body,
+  });

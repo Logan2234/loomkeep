@@ -363,6 +363,7 @@ export interface AdminBackupFileContentDto {
 /** Replaces the entire instance database with a previously downloaded dump. */
 export interface AdminBackupRestoreRequestDto {
   sql: string;
+  currentPassword: string;
 }
 
 /** One sensitive account action, as listed on the admin "Sécurité" page. */

@@ -111,12 +111,6 @@ export class UsersController {
   }
 
   /**
-   * Signs a short-lived (5 min) SSO token for Quackback's feedback widget
-   * "Verified identity only" mode — the widget trusts this signature
-   * instead of asking the visitor to type in their own email. Re-signed on
-   * every call rather than cached, since it always expires quickly anyway.
-   */
-  /**
    * Your own profile. Deliberately served here rather than through
    * `GET /social/users/:username`: that whole controller sits behind
    * `SocialFeatureGuard`, so on a SOCIAL_ENABLED=false instance the profile
@@ -143,6 +137,12 @@ export class UsersController {
     return this.profiles.getProfile(payload.sub, user.username);
   }
 
+  /**
+   * Signs a short-lived (5 min) SSO token for Quackback's feedback widget
+   * "Verified identity only" mode — the widget trusts this signature
+   * instead of asking the visitor to type in their own email. Re-signed on
+   * every call rather than cached, since it always expires quickly anyway.
+   */
   @Get("me/widget-token")
   @ApiOkResponse({ type: WidgetTokenResponseDto })
   async getWidgetToken(

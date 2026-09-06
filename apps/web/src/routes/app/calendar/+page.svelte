@@ -14,15 +14,12 @@
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
 
-  const calendarLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const calendarLocked = $derived(auth.isPremiumLocked);
 
   let showSubscribeModal = $state(false);
 

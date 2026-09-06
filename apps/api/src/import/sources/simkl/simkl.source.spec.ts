@@ -2,10 +2,10 @@ import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ImportJobService } from "../../import-job.service";
+import { MediaMatchResolver } from "../media/media-match-resolver";
 import { SimklImportSource } from "./simkl.source";
 
 const originalFetch = global.fetch;
@@ -67,10 +67,11 @@ function makeService() {
     get: vi.fn().mockReturnValue(undefined),
   };
   const quota = { record: vi.fn() };
+  const matchResolver = new MediaMatchResolver(tmdb as never);
   const source = new SimklImportSource(
     prisma as never,
     mediaItemService as unknown as MediaItemService,
-    tmdb as unknown as TmdbProvider,
+    matchResolver,
     {} as never,
     config as unknown as ConfigService,
     quota as unknown as QuotaTrackerService,
