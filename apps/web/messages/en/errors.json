@@ -107,6 +107,7 @@
   "apierr_newsletter_invalid_unsubscribe_link": "This unsubscribe link is invalid.",
   "apierr_newsletter_webhook_unauthorized": "Unauthorized request.",
   "apierr_notifications_not_found": "This notification could not be found.",
+  "apierr_notifications_push_endpoint_taken": "This device is already linked to another account.",
   "apierr_reports_reason_required": "A detail is required for the 'Other' category.",
   "apierr_reports_invalid_motif": "This reason doesn't match the category.",
   "apierr_reports_not_found": "This report could not be found.",
@@ -160,5 +161,6 @@
   "valerr_array_min_size": "Must contain at least {min} item(s).",
   "valerr_array_max_size": "Must contain at most {max} item(s).",
   "valerr_array_not_empty": "Can't be empty.",
-  "valerr_array_unique": "Each item must be unique."
+  "valerr_array_unique": "Each item must be unique.",
+  "valerr_is_push_endpoint": "This notification service isn't supported."
 }

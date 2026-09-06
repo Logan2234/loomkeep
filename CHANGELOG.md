@@ -12,6 +12,53 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.8.0 — Gamification, complete localization, and security hardening
+
+- **Gamification is now a broad product surface.** An append-only
+  XP ledger and materialized score power the shared level curve and the full
+  cross-domain reward schedule, with live awards at every supported action
+  and a nightly reconciliation job as an integrity backstop. Progress appears
+  on profiles with the same privacy controls as activity, and the entire
+  module remains gated by `GAMIFICATION_ENABLED` for self-hosters.
+- **Achievements span evaluation, presentation, and reward feedback.** The
+  code-defined catalogue contains 66 tier entries collapsed into roughly 42
+  cards, masks locked secrets server-side, and has its own responsive
+  `/app/achievements` screen. Unlocks and level-ups now run through an ordered
+  animation queue; users can also explicitly equip up to three non-secret
+  achievement tiers on their profile without automatic or privacy-sensitive
+  defaults.
+- **A new XP leaderboard** ranks the current month or year globally or among
+  friends, with shared ranks for ties, a top-100 cut plus the viewer's own row,
+  and privacy-aware avatar handling. It is gated by both the social and
+  gamification feature switches.
+- **French/English coverage is complete across the frontend and transactional
+  email.** Translation catalogues were consolidated and audited, PWA startup
+  now honors the selected locale, and generated manifest screenshots show
+  real product views. The domain search control was also redesigned as
+  keyboard-accessible tabs, with studio/franchise search for games and ISBN
+  search for books.
+- **The generated API contract now covers substantially more of the app.**
+  Response DTOs and typed web requests were expanded across auth, config,
+  notifications, reviews, social, lists, comments, admin, catalog, and the
+  library domains, including typed query strings and convention tests that
+  keep the OpenAPI boundary honest.
+- **Security-sensitive flows were hardened after an internal audit.** Push
+  endpoints are restricted to known providers to close an SSRF path;
+  password checks now protect sensitive account and admin actions; login and
+  MFA verification avoid timing and recovery-code abuse; sensitive endpoints
+  have dedicated throttles; malformed ZIP offsets and oversized imports are
+  rejected; backup restores call the runtime Prisma binary correctly; and
+  both SvelteKit and Caddy emit additional isolation/security headers.
+- **CI and dependency gates were modernized.** Lighthouse, Pa11y, and ZAP run
+  against disposable stacks and publish useful results, Codecov combines the
+  API unit/E2E and web suites by flag, Vitest moved to v5, vulnerable
+  transitive dependencies were constrained, Corepack was pinned, and
+  workflow permissions were narrowed.
+- Fixed the library-list navigation loop, concurrent list reordering, broken
+  cross-origin avatar delivery, reward-context rendering, and health-check
+  regressions; reusable component extraction and smaller presentation helpers
+  reduced duplication without changing unrelated behavior.
+
 ## 1.7.0 — MFA, premium entitlements, and translatable API errors
 
 - **MFA for all users (LK-C17)**: TOTP and email one-time codes, independently

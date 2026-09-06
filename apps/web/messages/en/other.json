@@ -286,6 +286,8 @@
   "settings_mfa_totp_disable_title": "Disable the authenticator app",
   "settings_mfa_totp_disable_hint": "Confirm your password to disable this method.",
   "settings_mfa_email_desc": "Get a one-time code by email on every login.",
+  "settings_mfa_email_disable_title": "Disable the email code",
+  "settings_mfa_email_disable_hint": "Confirm your password to disable this method.",
   "settings_mfa_recovery_title": "Recovery codes",
   "settings_mfa_recovery_hint": "Use these if you lose access to your usual method. Each code works only once.",
   "settings_mfa_recovery_low_warning": "Only {count} recovery codes left, consider regenerating them.",

@@ -39,6 +39,17 @@ const REFRESH_TOKEN_TTL_DAYS = 30;
 const RESET_TOKEN_TTL_MINUTES = 60;
 const VERIFY_TOKEN_TTL_HOURS = 24;
 export const BCRYPT_ROUNDS = 12;
+/**
+ * Compared against when the login identifier doesn't match any account, so
+ * the response time no longer depends on whether it exists (LK-S09) — without
+ * this, login()'s `||` short-circuit skipped bcrypt.compare() entirely for an
+ * unknown identifier, answering in a fraction of the ~250ms a real account
+ * takes and making account enumeration trivial by timing alone.
+ */
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  "loomkeep-timing-equalizer",
+  BCRYPT_ROUNDS,
+);
 const MFA_CHALLENGE_TTL_MINUTES = 10;
 const MFA_EMAIL_CODE_TTL_MINUTES = 10;
 const MAX_MFA_CHALLENGE_ATTEMPTS = 5;
@@ -224,7 +235,12 @@ export class AuthService {
       where: { OR: [{ email: dto.identifier }, { username: dto.identifier }] },
     });
 
-    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    const passwordOk = await bcrypt.compare(
+      dto.password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
+
+    if (!user || !passwordOk) {
       await this.security.record({
         type: "LOGIN_FAILED",
         userId: user?.id ?? null,

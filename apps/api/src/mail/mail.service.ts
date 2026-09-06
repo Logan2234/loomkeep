@@ -42,6 +42,19 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
+const QUACKBACK_EMOJI_ALIASES: Record<string, string> = {
+  sparkles: "✨",
+  wrench: "🔧",
+  bug: "🐛",
+};
+
+function renderQuackbackEmojiAliases(text: string): string {
+  return text.replace(
+    /:(sparkles|wrench|bug):/g,
+    (_match, name: string) => QUACKBACK_EMOJI_ALIASES[name],
+  );
+}
+
 /** Bold/italic/link inline spans within a line — the rest is passed through as-is. */
 function renderInline(text: string): string {
   return escapeHtml(text)
@@ -915,7 +928,7 @@ export class MailService {
     // content, reached only through the signed webhook).
     const { html: fallbackHtml, text: contentText } =
       this.renderChangelogMarkdown(contentPreview);
-    const bodyHtml = contentHtml || fallbackHtml;
+    const bodyHtml = renderQuackbackEmojiAliases(contentHtml) || fallbackHtml;
 
     return {
       subject: `Loomkeep — ${title}`,
@@ -958,7 +971,7 @@ export class MailService {
       listItems = [];
     };
 
-    for (const rawLine of markdown.split("\n")) {
+    for (const rawLine of renderQuackbackEmojiAliases(markdown).split("\n")) {
       const line = rawLine.trim();
 
       if (line.length === 0) continue;

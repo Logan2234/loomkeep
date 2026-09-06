@@ -77,6 +77,8 @@ services:
       QUACKBACK_WIDGET_SECRET: ${QUACKBACK_WIDGET_SECRET:-}
       # Quackback's "Changelog Published" webhook signing secret — see .env.example.
       QUACKBACK_CHANGELOG_WEBHOOK_SECRET: ${QUACKBACK_CHANGELOG_WEBHOOK_SECRET:-}
+      # Reads the complete changelog when an older Quackback webhook only sends a preview.
+      QUACKBACK_API_KEY: ${QUACKBACK_API_KEY:-}
       # Umami Link base URL for trackable email CTAs — empty disables click tracking.
       UMAMI_LINKS_BASE_URL: ${UMAMI_LINKS_BASE_URL:-}
     volumes:

@@ -65,6 +65,30 @@ describe("readZipEntries", () => {
       /uncompressed/i,
     );
   }, 15_000);
+
+  // LK-S12: every offset walked here comes from the archive's own bytes, so
+  // a corrupted or adversarial ZIP can point one anywhere. Before the bounds
+  // checks, these raised an untyped Node RangeError instead of the same
+  // "Corrupt ZIP: …" Error every other malformed-input case throws.
+  it("rejects a central directory offset pointing past the end of the archive", () => {
+    const zip = makeZip([{ name: "a.csv", content: "hello" }]);
+    const eocd = zip.indexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+    zip.writeUInt32LE(zip.length + 1_000, eocd + 16);
+
+    expect(() => readZipEntries(zip, new Set(["a.csv"]))).toThrow(
+      /corrupt zip/i,
+    );
+  });
+
+  it("rejects a local header offset pointing past the end of the archive", () => {
+    const zip = makeZip([{ name: "a.csv", content: "hello" }]);
+    const centralHeader = zip.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+    zip.writeUInt32LE(zip.length + 1_000, centralHeader + 42);
+
+    expect(() => readZipEntries(zip, new Set(["a.csv"]))).toThrow(
+      /corrupt zip/i,
+    );
+  });
 });
 
 describe("readZipEntriesMatching", () => {
