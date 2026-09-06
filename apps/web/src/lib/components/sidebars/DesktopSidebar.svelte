@@ -2,10 +2,7 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { navigating, page } from "$app/state";
-  import { getAdminReportsPendingCount } from "$lib/api/client";
   import { logout } from "$lib/api/auth";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -15,8 +12,9 @@
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { prefersReducedMotion } from "$lib/motion";
-  import { NAVIGATION } from "$lib/navigation";
+  import { visibleNavSections } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
   import { scale } from "svelte/transition";
 
   const reduced = prefersReducedMotion();
@@ -38,15 +36,16 @@
 
   let { children } = $props();
 
-  const reportsPendingQuery = createApiQuery(() => ({
-    key: keys.admin.reportsPendingCount(),
-    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
-    refetchInterval: 20_000,
-    enabled: auth.isAdmin,
-  }));
-  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
+  const reportsPending = useReportsPendingCount();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
+  const visibleSections = $derived(
+    visibleNavSections({
+      isDomainEnabled,
+      socialEnabled: appConfig.socialEnabled,
+      gamificationEnabled: appConfig.gamificationEnabled,
+    }),
+  );
 
   // "Mon profil" only exists when social is enabled — self-host without it
   // still needs a way to the account settings from the sidebar footer.
@@ -210,15 +209,15 @@
                 : 'text-dim hover:bg-surface-2 hover:text-fg'}">
               <span class="relative grid h-10 w-10 shrink-0 place-items-center">
                 <Icon name={item.icon} class="h-5 w-5" />
-                {#if item.href === "/app/admin/reports" && reportsPending > 0}
-                  {#key reportsPending}
+                {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                  {#key reportsPending.count}
                     <span
                       in:scale|global={{
                         duration: reduced ? 0 : 200,
                         start: 0.5,
                       }}
                       class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                      {reportsPending > 9 ? "9+" : reportsPending}
+                      {reportsPending.count > 9 ? "9+" : reportsPending.count}
                     </span>
                   {/key}
                 {/if}
@@ -232,7 +231,7 @@
             </a>
           {/each}
         {:else}
-          {#each NAVIGATION as section (section.label)}
+          {#each visibleSections as section (section.label)}
             {#if section.label && expanded}
               <div
                 class="text-dim px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-widest whitespace-nowrap uppercase">
@@ -245,7 +244,7 @@
               </div>
             {/if}
 
-            {#each section.items.filter((item) => (!item.domain || isDomainEnabled(item.domain)) && (!item.social || appConfig.socialEnabled) && (!item.gamification || appConfig.gamificationEnabled)) as item (item.href)}
+            {#each section.items as item (item.href)}
               {#if item.comingSoon}
                 <!-- Planned domain: non-clickable, with a "Bientôt" badge. -->
                 <div

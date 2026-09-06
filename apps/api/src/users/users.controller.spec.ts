@@ -1,776 +1,201 @@
-import { ErrorCode } from "@loomkeep/shared";
-
-import type { ConfigService } from "@nestjs/config";
-import * as bcrypt from "bcryptjs";
-import { vi, type Mock } from "vitest";
-import { hashToken } from "../auth/auth.service";
+import { vi } from "vitest";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
-import { AppException } from "../common/app.exception";
-import type { HibpService } from "../common/hibp.service";
-import type { EntitlementService } from "../entitlements/entitlement.service";
-import type { MailService } from "../mail/mail.service";
-import type { PrismaService } from "../prisma/prisma.service";
-import type { SecurityEventService } from "../security/security-event.service";
-import type { ProfileService } from "../social/profile.service";
-import type { AccountDeletionService } from "./account-deletion.service";
-import type { CsvExportService } from "./csv-export.service";
-import type { DataExportService } from "./data-export.service";
 import { UsersController } from "./users.controller";
+import type { UsersService } from "./users.service";
 
+// The controller is a pure HTTP adapter over UsersService — business-logic
+// coverage (email change, password rules, avatar validation, deletion
+// summary, etc.) lives in users.service.spec.ts. This only checks that each
+// route delegates to the right service method with the right arguments.
 function jwtPayload(sub: string): JwtPayload {
   return { sub, email: `${sub}@example.com` };
 }
 
-describe("UsersController — email change", () => {
+function makeController() {
+  const users = {
+    getMe: vi.fn(),
+    getMyProfile: vi.fn(),
+    getWidgetToken: vi.fn(),
+    getAvatar: vi.fn().mockResolvedValue({
+      avatar: Buffer.from("img"),
+      avatarMimeType: "image/png",
+    }),
+    uploadAvatar: vi.fn(),
+    deleteAvatar: vi.fn(),
+    exportData: vi.fn(),
+    exportCsv: vi.fn(),
+    getCalendarToken: vi.fn(),
+    regenerateCalendarToken: vi.fn(),
+    getMyEntitlement: vi.fn(),
+    completeOnboarding: vi.fn(),
+    acceptTerms: vi.fn(),
+    updateMe: vi.fn(),
+    changeEmail: vi.fn(),
+    confirmEmailChange: vi.fn(),
+    changePassword: vi.fn(),
+    deletionSummary: vi.fn(),
+    deleteAccount: vi.fn(),
+    checkUsernameAvailability: vi.fn(),
+    updateUsername: vi.fn(),
+  } as unknown as UsersService;
+  return { controller: new UsersController(users), users };
+}
+
+function fakeReply() {
+  const reply = {
+    header: vi.fn().mockReturnThis(),
+    type: vi.fn().mockReturnThis(),
+    send: vi.fn().mockReturnThis(),
+  };
+  return reply as unknown as import("fastify").FastifyReply;
+}
+
+describe("UsersController — delegation to UsersService", () => {
   const userId = "user-1";
-  let prisma: PrismaService;
-  let mail: MailService;
-  let controller: UsersController;
-  let passwordHash: string;
+  const payload = jwtPayload(userId);
 
-  beforeEach(async () => {
-    passwordHash = await bcrypt.hash("correct-password", 4);
-    prisma = {
-      user: {
-        findUnique: vi.fn(),
-        update: vi.fn(),
-      },
-      emailChangeRequest: {
-        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-        create: vi.fn().mockResolvedValue({}),
-        update: vi.fn().mockResolvedValue({}),
-        findFirst: vi.fn(),
-      },
-      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
-    } as unknown as PrismaService;
-    mail = {
-      sendEmailChangeCode: vi.fn(),
-      sendEmailChanged: vi.fn(),
-    } as unknown as MailService;
-    const security = { record: vi.fn() };
-    const dataExport = { buildExport: vi.fn() };
-    const csvExport = { buildCsv: vi.fn() };
-    controller = new UsersController(
-      prisma,
-      mail,
-      security as unknown as SecurityEventService,
-      dataExport as unknown as DataExportService,
-      csvExport as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      {
-        isPasswordPwned: vi.fn().mockResolvedValue(false),
-      } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
-    );
+  it("getMe", () => {
+    const { controller, users } = makeController();
+    void controller.getMe(payload);
+    expect(users.getMe).toHaveBeenCalledWith(userId);
   });
 
-  describe("changeEmail", () => {
-    it("rejects an incorrect current password without creating a request", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        passwordHash,
-      });
-
-      await expect(
-        controller.changeEmail(jwtPayload(userId), {
-          newEmail: "new@example.com",
-          currentPassword: "wrong",
-        }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
-    });
-
-    it("rejects submitting the current email unchanged", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        email: "current@example.com",
-        passwordHash,
-      });
-
-      await expect(
-        controller.changeEmail(jwtPayload(userId), {
-          newEmail: "current@example.com",
-          currentPassword: "correct-password",
-        }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.emailChangeRequest.create).not.toHaveBeenCalled();
-    });
-
-    it("creates a pending request and emails the code, without touching User.email", async () => {
-      (prisma.user.findUnique as Mock)
-        .mockResolvedValueOnce({ id: userId, passwordHash, locale: "en" }) // current user
-        .mockResolvedValueOnce(null); // no email collision
-
-      await controller.changeEmail(jwtPayload(userId), {
-        newEmail: "new@example.com",
-        currentPassword: "correct-password",
-      });
-
-      expect(prisma.user.update).not.toHaveBeenCalled();
-      expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
-        where: { userId },
-      });
-      expect(prisma.emailChangeRequest.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            userId,
-            newEmail: "new@example.com",
-          }),
-        }),
-      );
-      expect(mail.sendEmailChangeCode).toHaveBeenCalledWith(
-        { email: "new@example.com", locale: "en" },
-        expect.stringMatching(/^\d{6}$/),
-      );
-    });
+  it("getMyProfile", () => {
+    const { controller, users } = makeController();
+    void controller.getMyProfile(payload);
+    expect(users.getMyProfile).toHaveBeenCalledWith(userId);
   });
 
-  describe("confirmEmailChange", () => {
-    function pendingRequest(overrides: Partial<Record<string, unknown>> = {}) {
-      return {
-        id: "req-1",
-        userId,
-        newEmail: "new@example.com",
-        codeHash: hashToken("123456"),
-        attempts: 0,
-        expiresAt: new Date(Date.now() + 60_000),
-        ...overrides,
-      };
-    }
-
-    it("applies the new email and notifies both addresses on a correct code", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        email: "old@example.com",
-        locale: "fr",
-        passwordHash,
-      });
-      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
-        pendingRequest(),
-      );
-      (prisma.user.update as Mock).mockResolvedValueOnce({
-        id: userId,
-        email: "new@example.com",
-        displayName: "Alice",
-        username: "alice",
-        birthDate: null,
-        allowAdultContent: false,
-        notifyEmail: false,
-        notifyPush: false,
-        emailVerified: false,
-        role: "USER",
-        enabledDomains: [],
-        createdAt: new Date(),
-      });
-
-      await controller.confirmEmailChange(jwtPayload(userId), {
-        code: "123456",
-      });
-
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: userId },
-        data: { email: "new@example.com" },
-      });
-      expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
-        where: { userId },
-      });
-      expect(mail.sendEmailChanged).toHaveBeenCalledWith(
-        "old@example.com",
-        "new@example.com",
-        "fr",
-      );
-    });
-
-    it("rejects a wrong code and increments attempts", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        passwordHash,
-      });
-      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
-        pendingRequest(),
-      );
-
-      await expect(
-        controller.confirmEmailChange(jwtPayload(userId), { code: "000000" }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.emailChangeRequest.update).toHaveBeenCalledWith({
-        where: { id: "req-1" },
-        data: { attempts: { increment: 1 } },
-      });
-      expect(prisma.user.update).not.toHaveBeenCalled();
-    });
-
-    it("deletes the request after the max number of failed attempts", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        passwordHash,
-      });
-      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
-        pendingRequest({ attempts: 4 }),
-      );
-
-      await expect(
-        controller.confirmEmailChange(jwtPayload(userId), { code: "000000" }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
-        where: { userId },
-      });
-      expect(prisma.emailChangeRequest.update).not.toHaveBeenCalled();
-    });
-
-    it("rejects an expired code", async () => {
-      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
-        id: userId,
-        passwordHash,
-      });
-      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
-        pendingRequest({ expiresAt: new Date(Date.now() - 1_000) }),
-      );
-
-      await expect(
-        controller.confirmEmailChange(jwtPayload(userId), { code: "123456" }),
-      ).rejects.toBeInstanceOf(AppException);
-
-      expect(prisma.user.update).not.toHaveBeenCalled();
-    });
-  });
-});
-
-describe("UsersController — updateMe mobile nav shortcuts", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let controller: UsersController;
-
-  // Minimal stored user returned by prisma.user.update, enough for toUserDto.
-  function updatedUser(mobileNavShortcuts: string[]) {
-    return {
-      id: userId,
-      email: "alice@example.com",
-      username: "alice",
-      displayName: "Alice",
-      birthDate: null,
-      allowAdultContent: false,
-      notifyEmail: false,
-      notifyPush: false,
-      emailVerified: false,
-      role: "USER",
-      enabledDomains: ["MEDIA"],
-      mobileNavShortcuts,
-      createdAt: new Date(),
-    };
-  }
-
-  beforeEach(() => {
-    prisma = {
-      user: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ birthDate: null, allowAdultContent: false }),
-        update: vi.fn(),
-      },
-    } as unknown as PrismaService;
-    controller = new UsersController(
-      prisma,
-      {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      {
-        isPasswordPwned: vi.fn().mockResolvedValue(false),
-      } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
-    );
+  it("getWidgetToken", () => {
+    const { controller, users } = makeController();
+    void controller.getWidgetToken(payload);
+    expect(users.getWidgetToken).toHaveBeenCalledWith(userId, payload.email);
   });
 
-  it("persists a valid ordered list that includes the menu launcher", async () => {
-    const shortcuts = ["home", "menu", "account"];
-    (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser(shortcuts));
+  it("getAvatar streams the resolved buffer with the public-image headers", async () => {
+    const { controller, users } = makeController();
+    const reply = fakeReply();
 
-    const dto = await controller.updateMe(jwtPayload(userId), {
-      mobileNavShortcuts: shortcuts,
-    });
+    await controller.getAvatar("target-id", reply);
 
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: userId },
-        data: expect.objectContaining({ mobileNavShortcuts: shortcuts }),
-      }),
-    );
-    expect(dto.mobileNavShortcuts).toEqual(shortcuts);
+    expect(users.getAvatar).toHaveBeenCalledWith("target-id");
+    expect(reply.type).toHaveBeenCalledWith("image/png");
+    expect(reply.send).toHaveBeenCalledWith(Buffer.from("img"));
   });
 
-  it("rejects a list missing the required menu launcher without writing", async () => {
-    await expect(
-      controller.updateMe(jwtPayload(userId), {
-        mobileNavShortcuts: ["home", "search", "account"],
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(prisma.user.update).not.toHaveBeenCalled();
-  });
-});
-
-describe("UsersController — updateMe newsletter opt-in timestamp", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let controller: UsersController;
-
-  function makeController(currentNotifyNewsletter: boolean) {
-    prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          birthDate: null,
-          allowAdultContent: false,
-          notifyNewsletter: currentNotifyNewsletter,
-        }),
-        update: vi.fn().mockResolvedValue({
-          id: userId,
-          email: "alice@example.com",
-          username: "alice",
-          displayName: "Alice",
-          birthDate: null,
-          allowAdultContent: false,
-          notifyEmail: false,
-          notifyPush: false,
-          emailVerified: false,
-          role: "USER",
-          enabledDomains: ["MEDIA"],
-          mobileNavShortcuts: [],
-          createdAt: new Date(),
-        }),
-      },
-    } as unknown as PrismaService;
-    controller = new UsersController(
-      prisma,
-      {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      {
-        isPasswordPwned: vi.fn().mockResolvedValue(false),
-      } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
-    );
-  }
-
-  it("stamps newsletterOptInAt on the false → true transition", async () => {
-    makeController(false);
-
-    await controller.updateMe(jwtPayload(userId), { notifyNewsletter: true });
-
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: expect.any(Date) }),
-      }),
-    );
+  it("uploadAvatar", () => {
+    const { controller, users } = makeController();
+    const dto = { mimeType: "image/png", data: "abc" } as const;
+    void controller.uploadAvatar(payload, dto);
+    expect(users.uploadAvatar).toHaveBeenCalledWith(userId, dto);
   });
 
-  it("leaves newsletterOptInAt untouched when already opted in", async () => {
-    makeController(true);
-
-    await controller.updateMe(jwtPayload(userId), { notifyNewsletter: true });
-
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: undefined }),
-      }),
-    );
+  it("deleteAvatar", () => {
+    const { controller, users } = makeController();
+    void controller.deleteAvatar(payload);
+    expect(users.deleteAvatar).toHaveBeenCalledWith(userId);
   });
 
-  it("leaves newsletterOptInAt untouched on opt-out", async () => {
-    makeController(true);
-
-    await controller.updateMe(jwtPayload(userId), {
-      notifyNewsletter: false,
-    });
-
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: undefined }),
-      }),
-    );
-  });
-});
-
-describe("UsersController — uploadAvatar", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let controller: UsersController;
-
-  const PNG_MAGIC = Buffer.from([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-  ]);
-
-  function updatedUser() {
-    return {
-      id: userId,
-      email: "alice@example.com",
-      username: "alice",
-      displayName: "Alice",
-      birthDate: null,
-      allowAdultContent: false,
-      notifyEmail: false,
-      notifyPush: false,
-      emailVerified: false,
-      role: "USER",
-      enabledDomains: ["MEDIA"],
-      mobileNavShortcuts: [],
-      createdAt: new Date(),
-      avatarUpdatedAt: new Date(),
-    };
-  }
-
-  beforeEach(() => {
-    prisma = {
-      user: { update: vi.fn() },
-    } as unknown as PrismaService;
-    controller = new UsersController(
-      prisma,
-      {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      {
-        isPasswordPwned: vi.fn().mockResolvedValue(false),
-      } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
-    );
+  it("exportData", () => {
+    const { controller, users } = makeController();
+    void controller.exportData(payload);
+    expect(users.exportData).toHaveBeenCalledWith(userId);
   });
 
-  it("stores a valid PNG upload and cache-busts avatarUrl", async () => {
-    (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser());
-
-    const dto = await controller.uploadAvatar(jwtPayload(userId), {
-      mimeType: "image/png",
-      data: PNG_MAGIC.toString("base64"),
-    });
-
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: userId },
-        data: expect.objectContaining({ avatarMimeType: "image/png" }),
-      }),
-    );
-    expect(dto.avatarUrl).toContain(`/users/${userId}/avatar`);
+  it("exportCsv", () => {
+    const { controller, users } = makeController();
+    void controller.exportCsv(payload, "MEDIA");
+    expect(users.exportCsv).toHaveBeenCalledWith(userId, "MEDIA");
   });
 
-  it("rejects a payload whose bytes don't match the declared mime type", async () => {
-    await expect(
-      controller.uploadAvatar(jwtPayload(userId), {
-        mimeType: "image/png",
-        data: Buffer.from("not an image").toString("base64"),
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-    await expect(
-      controller.uploadAvatar(jwtPayload(userId), {
-        mimeType: "image/png",
-        data: Buffer.from("not an image").toString("base64"),
-      }),
-    ).rejects.toMatchObject({ code: ErrorCode.UserAvatarInvalidType });
-
-    expect(prisma.user.update).not.toHaveBeenCalled();
+  it("getCalendarToken", () => {
+    const { controller, users } = makeController();
+    void controller.getCalendarToken(payload);
+    expect(users.getCalendarToken).toHaveBeenCalledWith(userId);
   });
 
-  it("rejects an oversized decoded payload", async () => {
-    const huge = Buffer.concat([PNG_MAGIC, Buffer.alloc(3 * 1024 * 1024)]);
-
-    await expect(
-      controller.uploadAvatar(jwtPayload(userId), {
-        mimeType: "image/png",
-        data: huge.toString("base64"),
-      }),
-    ).rejects.toMatchObject({ code: ErrorCode.UserAvatarTooLarge });
-
-    expect(prisma.user.update).not.toHaveBeenCalled();
-  });
-});
-
-describe("UsersController — changePassword", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let mail: MailService;
-  let hibp: HibpService;
-  let controller: UsersController;
-  let passwordHash: string;
-
-  beforeEach(async () => {
-    passwordHash = await bcrypt.hash("correct-password", 4);
-    prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: userId,
-          email: "alice@example.com",
-          locale: "fr",
-          passwordHash,
-        }),
-        update: vi.fn(),
-      },
-      refreshToken: {
-        deleteMany: vi.fn(),
-      },
-      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
-    } as unknown as PrismaService;
-    mail = { sendPasswordChanged: vi.fn() } as unknown as MailService;
-    hibp = {
-      isPasswordPwned: vi.fn().mockResolvedValue(false),
-    } as unknown as HibpService;
-    controller = new UsersController(
-      prisma,
-      mail,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      hibp,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
-    );
+  it("regenerateCalendarToken", () => {
+    const { controller, users } = makeController();
+    void controller.regenerateCalendarToken(payload);
+    expect(users.regenerateCalendarToken).toHaveBeenCalledWith(userId);
   });
 
-  it("rejects an incorrect current password without checking HIBP", async () => {
-    await expect(
-      controller.changePassword(jwtPayload(userId), {
-        currentPassword: "wrong",
-        newPassword: "Brand-new-pass1",
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(hibp.isPasswordPwned).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+  it("getMyEntitlement", () => {
+    const { controller, users } = makeController();
+    void controller.getMyEntitlement(payload);
+    expect(users.getMyEntitlement).toHaveBeenCalledWith(userId);
   });
 
-  it("rejects a new password identical to the current one without checking HIBP", async () => {
-    await expect(
-      controller.changePassword(jwtPayload(userId), {
-        currentPassword: "correct-password",
-        newPassword: "correct-password",
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(hibp.isPasswordPwned).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+  it("completeOnboarding", () => {
+    const { controller, users } = makeController();
+    void controller.completeOnboarding(payload);
+    expect(users.completeOnboarding).toHaveBeenCalledWith(userId);
   });
 
-  it("rejects a new password that has appeared in a known data breach", async () => {
-    (hibp.isPasswordPwned as Mock).mockResolvedValue(true);
-
-    await expect(
-      controller.changePassword(jwtPayload(userId), {
-        currentPassword: "correct-password",
-        newPassword: "Brand-new-pass1",
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(prisma.user.update).not.toHaveBeenCalled();
+  it("acceptTerms", () => {
+    const { controller, users } = makeController();
+    void controller.acceptTerms(payload);
+    expect(users.acceptTerms).toHaveBeenCalledWith(userId);
   });
 
-  it("updates the password, revokes every session and notifies the user", async () => {
-    await controller.changePassword(jwtPayload(userId), {
-      currentPassword: "correct-password",
-      newPassword: "Brand-new-pass1",
-    });
-
-    const updateArgs = (prisma.user.update as Mock).mock.calls[0][0];
-    expect(updateArgs.where).toEqual({ id: userId });
-    expect(
-      await bcrypt.compare("Brand-new-pass1", updateArgs.data.passwordHash),
-    ).toBe(true);
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId },
-    });
-    expect(mail.sendPasswordChanged).toHaveBeenCalledWith({
-      email: "alice@example.com",
-      locale: "fr",
-    });
-  });
-});
-
-describe("UsersController — deleteAccount", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let accountDeletion: AccountDeletionService;
-  let controller: UsersController;
-
-  beforeEach(async () => {
-    const passwordHash = await bcrypt.hash("correct-password", 4);
-    prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: userId,
-          email: "alice@example.com",
-          passwordHash,
-        }),
-      },
-    } as unknown as PrismaService;
-    accountDeletion = {
-      deleteAccount: vi.fn(),
-    } as unknown as AccountDeletionService;
-    controller = new UsersController(
-      prisma,
-      {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      { isPasswordPwned: vi.fn() } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      accountDeletion,
-    );
+  it("updateMe", () => {
+    const { controller, users } = makeController();
+    const dto = { displayName: "Alice" };
+    void controller.updateMe(payload, dto);
+    expect(users.updateMe).toHaveBeenCalledWith(userId, dto);
   });
 
-  it("rejects an incorrect current password without deleting anything", async () => {
-    await expect(
-      controller.deleteAccount(jwtPayload(userId), {
-        currentPassword: "wrong",
-      }),
-    ).rejects.toBeInstanceOf(AppException);
-
-    expect(accountDeletion.deleteAccount).not.toHaveBeenCalled();
+  it("changeEmail", () => {
+    const { controller, users } = makeController();
+    const dto = { newEmail: "new@example.com", currentPassword: "pw" };
+    void controller.changeEmail(payload, dto);
+    expect(users.changeEmail).toHaveBeenCalledWith(userId, dto);
   });
 
-  it("delegates to AccountDeletionService", async () => {
-    await controller.deleteAccount(jwtPayload(userId), {
-      currentPassword: "correct-password",
-    });
-
-    expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
+  it("confirmEmailChange", () => {
+    const { controller, users } = makeController();
+    const dto = { code: "123456" };
+    void controller.confirmEmailChange(payload, dto, "some-ua");
+    expect(users.confirmEmailChange).toHaveBeenCalledWith(
       userId,
-      expect.any(String),
-      undefined,
-    );
-  });
-});
-
-describe("UsersController — deletionSummary", () => {
-  const userId = "user-1";
-  let prisma: PrismaService;
-  let controller: UsersController;
-
-  beforeEach(() => {
-    prisma = {
-      libraryEntry: { count: vi.fn().mockResolvedValue(0) },
-      episodeWatch: { count: vi.fn().mockResolvedValue(0) },
-      gameEntry: { count: vi.fn().mockResolvedValue(0) },
-      bookEntry: { count: vi.fn().mockResolvedValue(0) },
-      musicEntry: { count: vi.fn().mockResolvedValue(0) },
-      list: { count: vi.fn().mockResolvedValue(0) },
-      notification: { count: vi.fn().mockResolvedValue(0) },
-      follow: { count: vi.fn().mockResolvedValue(0) },
-      block: { count: vi.fn().mockResolvedValue(0) },
-      activityEvent: { count: vi.fn().mockResolvedValue(0) },
-      review: { count: vi.fn().mockResolvedValue(0) },
-      comment: { count: vi.fn().mockResolvedValue(0) },
-      report: { count: vi.fn().mockResolvedValue(0) },
-    } as unknown as PrismaService;
-    controller = new UsersController(
-      prisma,
-      {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      {
-        isPasswordPwned: vi.fn().mockResolvedValue(false),
-      } as unknown as HibpService,
-      {
-        hasPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      dto,
+      "some-ua",
     );
   });
 
-  it("returns every category, even at zero, split between deleted and anonymized", async () => {
-    const summary = await controller.deletionSummary(jwtPayload(userId));
-
-    expect(summary.deleted.map((r) => r.category)).toEqual([
-      "LIBRARY",
-      "WATCH_HISTORY",
-      "GAMES",
-      "BOOKS",
-      "MUSIC",
-      "LISTS",
-      "NOTIFICATIONS",
-      "FOLLOWS",
-      "BLOCKS",
-      "ACTIVITY",
-    ]);
-    expect(summary.anonymized.map((r) => r.category)).toEqual([
-      "REVIEWS",
-      "COMMENTS",
-      "REPORTS",
-    ]);
-    expect(summary.deleted.every((r) => r.count === 0)).toBe(true);
-    expect(summary.anonymized.every((r) => r.count === 0)).toBe(true);
+  it("changePassword", () => {
+    const { controller, users } = makeController();
+    const dto = { currentPassword: "old", newPassword: "new" };
+    void controller.changePassword(payload, dto, "some-ua");
+    expect(users.changePassword).toHaveBeenCalledWith(userId, dto, "some-ua");
   });
 
-  it("sums both follow directions into a single FOLLOWS count", async () => {
-    (prisma.follow.count as Mock)
-      .mockResolvedValueOnce(3) // followers
-      .mockResolvedValueOnce(5); // following
+  it("deletionSummary", () => {
+    const { controller, users } = makeController();
+    void controller.deletionSummary(payload);
+    expect(users.deletionSummary).toHaveBeenCalledWith(userId);
+  });
 
-    const summary = await controller.deletionSummary(jwtPayload(userId));
+  it("deleteAccount", () => {
+    const { controller, users } = makeController();
+    const dto = { currentPassword: "pw" };
+    void controller.deleteAccount(payload, dto, "some-ua");
+    expect(users.deleteAccount).toHaveBeenCalledWith(userId, dto, "some-ua");
+  });
 
-    expect(summary.deleted.find((r) => r.category === "FOLLOWS")?.count).toBe(
-      8,
+  it("checkUsernameAvailability", () => {
+    const { controller, users } = makeController();
+    void controller.checkUsernameAvailability(payload, "alice");
+    expect(users.checkUsernameAvailability).toHaveBeenCalledWith(
+      userId,
+      "alice",
     );
   });
-});
 
-describe("UsersController.getMyEntitlement", () => {
-  const userId = "user-1";
-
-  function makeController(hasPremium: boolean) {
-    const entitlements = {
-      hasPremium: vi.fn().mockResolvedValue(hasPremium),
-    } as unknown as EntitlementService;
-    return new UsersController(
-      {} as unknown as PrismaService,
-      {} as unknown as MailService,
-      { record: vi.fn() } as unknown as SecurityEventService,
-      {} as unknown as DataExportService,
-      {} as unknown as CsvExportService,
-      {} as unknown as ConfigService,
-      { isPasswordPwned: vi.fn() } as unknown as HibpService,
-      entitlements,
-      { getProfile: vi.fn() } as unknown as ProfileService,
-      { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
-    );
-  }
-
-  it("returns the user's real plan, not the premium-features-gated effective status", async () => {
-    const controller = makeController(false);
-    await expect(
-      controller.getMyEntitlement(jwtPayload(userId)),
-    ).resolves.toEqual({ isPremium: false });
+  it("updateUsername", () => {
+    const { controller, users } = makeController();
+    const dto = { username: "alice2" };
+    void controller.updateUsername(payload, dto);
+    expect(users.updateUsername).toHaveBeenCalledWith(userId, dto);
   });
 });

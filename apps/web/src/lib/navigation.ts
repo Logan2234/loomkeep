@@ -26,7 +26,7 @@ export interface NavSection {
   items: NavItem[];
 }
 
-export const NAVIGATION: NavSection[] = [
+const NAVIGATION: NavSection[] = [
   {
     items: [
       {
@@ -128,6 +128,44 @@ export const NAVIGATION: NavSection[] = [
     ],
   },
 ];
+
+interface NavGateOptions {
+  isDomainEnabled: (domain: Domain) => boolean;
+  socialEnabled: boolean;
+  gamificationEnabled: boolean;
+}
+
+const isNavItemVisible = (item: NavItem, opts: NavGateOptions): boolean =>
+  (!item.domain || opts.isDomainEnabled(item.domain)) &&
+  (!item.social || opts.socialEnabled) &&
+  (!item.gamification || opts.gamificationEnabled);
+
+/**
+ * `NAVIGATION` sections filtered to what's visible on this deployment/user.
+ * `includeComingSoon` defaults to true (the desktop rail renders a planned
+ * domain dimmed with a "Bientôt" badge); the board/dock/mobile-bar skins have
+ * no room for a non-clickable tile and pass `false` to drop it entirely.
+ */
+export function visibleNavSections(
+  opts: NavGateOptions,
+  { includeComingSoon = true }: { includeComingSoon?: boolean } = {},
+): NavSection[] {
+  return NAVIGATION.map((section) => ({
+    label: section.label,
+    items: section.items.filter(
+      (item) =>
+        isNavItemVisible(item, opts) && (includeComingSoon || !item.comingSoon),
+    ),
+  })).filter((section) => section.items.length > 0);
+}
+
+/** Flat counterpart of {@link visibleNavSections}, for skins with no section grouping. */
+export function visibleNavItems(
+  opts: NavGateOptions,
+  filterOpts?: { includeComingSoon?: boolean },
+): NavItem[] {
+  return visibleNavSections(opts, filterOpts).flatMap((s) => s.items);
+}
 
 // ---------------------------------------------------------------------------
 // Mobile navigation

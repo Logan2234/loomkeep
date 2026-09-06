@@ -1,9 +1,5 @@
 import type { BookSource, BookSummaryDto, RatingDto } from "@loomkeep/shared";
-
-interface ProviderBookExternalId {
-  source: BookSource;
-  externalId: string;
-}
+import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one book, in canonical form. */
 export interface ProviderBookDetails {
@@ -20,7 +16,7 @@ export interface ProviderBookDetails {
   sameAuthorBooks: BookSummaryDto[];
   /** The source's own average rating, when known. */
   ratings: RatingDto[];
-  externalIds: ProviderBookExternalId[];
+  externalIds: ProviderExternalId<BookSource>[];
   /** Number of editions Open Library has catalogued for the work. */
   editionCount: number | null;
   /** ISBN of the picked edition, when known. */

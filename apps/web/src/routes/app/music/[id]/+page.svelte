@@ -7,7 +7,6 @@
     upsertMusicEntry,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
@@ -36,6 +35,7 @@
     MUSIC_STATUS_META as STATUS_META,
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import { MONTH_YEAR_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -113,35 +113,21 @@
     return hours > 0 ? `${hours} h ${minutes} min` : `${minutes} min`;
   }
 
-  const addMut = createApiMutation(() => ({
-    mutate: () => {
-      const d = detail!;
-      return upsertMusicEntry({
+  const { addMut, patchMut, removeMut } = createEntryTrackingMutations({
+    detailKey: () => detailKey,
+    detail: () => detail,
+    entryId: () => entry?.id,
+    upsert: (d) =>
+      upsertMusicEntry({
         source: d.source,
         sourceId: d.sourceId,
         status: "TO_LISTEN",
-      });
-    },
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const patchMut = createApiMutation(() => ({
-    mutate: (changes: Parameters<typeof updateMusicEntry>[1]) =>
-      updateMusicEntry(entry!.id, changes),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeMut = createApiMutation(() => ({
-    mutate: () => deleteMusicEntry(entry!.id),
-    onSuccess: () => {
-      confirmRemove = false;
-    },
-    successToast: m.tracking_removed_toast(),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
+      }),
+    update: (id, changes: Parameters<typeof updateMusicEntry>[1]) =>
+      updateMusicEntry(id, changes),
+    remove: (id) => deleteMusicEntry(id),
+    onRemoveSuccess: () => (confirmRemove = false),
+  });
 
   const saving = $derived(addMut.loading || patchMut.loading);
 </script>

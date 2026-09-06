@@ -16,6 +16,7 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
+  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -202,48 +203,25 @@
     await queryClient.refetchQueries({ queryKey: detailKey });
   }
 
-  const addMut = createApiMutation(() => ({
-    mutate: () => {
-      const d = detail!;
-      return upsertLibraryEntry({
-        source: d.source,
-        sourceId: d.sourceId,
-        type: d.type,
-        status: "PLANNED",
-      });
-    },
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const patchMut = createApiMutation(() => ({
-    mutate: (changes: Parameters<typeof updateLibraryEntry>[1]) =>
-      updateLibraryEntry(entry!.id, changes),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeMut = createApiMutation(() => ({
-    mutate: () => deleteLibraryEntry(entry!.id),
-    onSuccess: () => {
-      confirmRemove = false;
-    },
-    successToast: m.tracking_removed_toast(),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const addReplayMut = createApiMutation(() => ({
-    mutate: () => addLibraryReplay(entry!.id),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeReplayMut = createApiMutation(() => ({
-    mutate: (replayId: string) => deleteLibraryReplay(replayId),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
+  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
+    createEntryTrackingMutations({
+      detailKey: () => detailKey,
+      detail: () => detail,
+      entryId: () => entry?.id,
+      upsert: (d) =>
+        upsertLibraryEntry({
+          source: d.source,
+          sourceId: d.sourceId,
+          type: d.type,
+          status: "PLANNED",
+        }),
+      update: (id, changes: Parameters<typeof updateLibraryEntry>[1]) =>
+        updateLibraryEntry(id, changes),
+      remove: (id) => deleteLibraryEntry(id),
+      addReplay: (id) => addLibraryReplay(id),
+      removeReplay: (replayId) => deleteLibraryReplay(replayId),
+      onRemoveSuccess: () => (confirmRemove = false),
+    });
 
   const saving = $derived(
     addMut.loading ||

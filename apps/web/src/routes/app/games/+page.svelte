@@ -1,6 +1,5 @@
 <script lang="ts">
   import { listGames } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
   import { updateGameEntry } from "$lib/api/games";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
@@ -10,8 +9,8 @@
     GAME_STATUS_LABELS,
     GAME_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { toggleFavorite } from "$lib/favorite-toggle";
   import { m } from "$lib/paraglide/messages";
-  import { toast } from "$lib/toast.svelte";
   import { Domain, type GameEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = GAME_STATUS_ORDER.map((value) => ({
@@ -28,16 +27,6 @@
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
-
-  async function toggleFavorite(entry: GameEntryDto, next: boolean) {
-    entry.favorite = next; // optimistic
-    try {
-      await updateGameEntry(entry.id, { favorite: next });
-    } catch (err) {
-      entry.favorite = !next;
-      toast.error(resolveApiError(err));
-    }
-  }
 
   const load = (params: LibraryLoadParams) =>
     listGames({
@@ -73,7 +62,10 @@
       src={entry.game.coverUrl}
       title={entry.game.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
+      onToggleFavorite={(next) =>
+        toggleFavorite(entry, next, (n) =>
+          updateGameEntry(entry.id, { favorite: n }),
+        )}>
       {#snippet meta()}
         <span class="timecode text-xs">
           {GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}

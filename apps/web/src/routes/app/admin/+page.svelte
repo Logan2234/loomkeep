@@ -9,7 +9,6 @@
     getAdminBackupFiles,
     getAdminJobs,
     getAdminOverview,
-    getAdminReportsPendingCount,
     getAdminServices,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
@@ -22,6 +21,7 @@
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
+  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
   import type { ServiceStatusDto } from "@loomkeep/shared";
 
   // ---- best-effort: a failed fetch just leaves that card/metric blank
@@ -43,17 +43,12 @@
     key: keys.admin.backups(),
     fetch: getAdminBackupFiles,
   }));
-  const reportsPendingQuery = createApiQuery(() => ({
-    key: keys.admin.reportsPendingCount(),
-    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
-    refetchInterval: 20_000,
-  }));
+  const reportsPending = useReportsPendingCount();
 
   const overview = $derived(overviewQuery.data);
   const services = $derived(servicesQuery.data?.services ?? null);
   const jobs = $derived(jobsQuery.data);
   const backups = $derived(backupsQuery.data);
-  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
 
   const usersTotal = $derived(overview?.accounts ?? null);
   const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);
@@ -111,8 +106,8 @@
           ? m.common_item_count_many({ count: formatNumber(cacheTotal) })
           : undefined,
       "/app/admin/reports":
-        reportsPending > 0
-          ? m.admin_reports_pending_count({ count: reportsPending })
+        reportsPending.count > 0
+          ? m.admin_reports_pending_count({ count: reportsPending.count })
           : m.admin_up_to_date(),
     };
   });
@@ -241,19 +236,19 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {reportsPending > 0
+          class="h-1.5 w-1.5 rounded-full {reportsPending.count > 0
             ? 'bg-danger'
             : 'bg-success'}"></span>
         {m.admin_social_reports_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {formatNumber(reportsPending)}
+        {formatNumber(reportsPending.count)}
       </span>
       <span
-        class="text-xs {reportsPending > 0
+        class="text-xs {reportsPending.count > 0
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {reportsPending > 0
+        {reportsPending.count > 0
           ? m.admin_moderation_pending()
           : m.admin_up_to_date()}
       </span>
@@ -283,10 +278,10 @@
               <div class="min-w-0 flex-1">
                 <span class="text-fg flex items-center gap-2 font-semibold">
                   {item.label}
-                  {#if item.href === "/app/admin/reports" && reportsPending > 0}
+                  {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
                     <span
                       class="bg-accent text-accent-fg rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold">
-                      {reportsPending}
+                      {reportsPending.count}
                     </span>
                   {:else if item.href === "/app/admin/services" && servicesDegraded > 0}
                     <span

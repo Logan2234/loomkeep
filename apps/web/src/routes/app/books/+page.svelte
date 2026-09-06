@@ -1,7 +1,6 @@
 <script lang="ts">
   import { updateBookEntry } from "$lib/api/books";
   import { listBooks } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
@@ -12,8 +11,8 @@
     BOOK_STATUS_LABELS,
     BOOK_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { toggleFavorite } from "$lib/favorite-toggle";
   import { m } from "$lib/paraglide/messages";
-  import { toast } from "$lib/toast.svelte";
   import { Domain, type BookEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = BOOK_STATUS_ORDER.map((value) => ({
@@ -41,16 +40,6 @@
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
-
-  async function toggleFavorite(entry: BookEntryDto, next: boolean) {
-    entry.favorite = next; // optimistic
-    try {
-      await updateBookEntry(entry.id, { favorite: next });
-    } catch (err) {
-      entry.favorite = !next;
-      toast.error(resolveApiError(err));
-    }
-  }
 
   const load = (params: LibraryLoadParams) =>
     listBooks({
@@ -89,7 +78,10 @@
       src={entry.book.coverUrl}
       title={entry.book.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
+      onToggleFavorite={(next) =>
+        toggleFavorite(entry, next, (n) =>
+          updateBookEntry(entry.id, { favorite: n }),
+        )}>
       {#snippet meta()}
         {#if entry.book.pageCount}
           <ProgressBar value={pct(entry)} />

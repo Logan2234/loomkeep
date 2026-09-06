@@ -1,6 +1,5 @@
 <script lang="ts">
   import { listMusic } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
   import { updateMusicEntry } from "$lib/api/music";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
@@ -10,8 +9,8 @@
     MUSIC_STATUS_LABELS,
     MUSIC_STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { toggleFavorite } from "$lib/favorite-toggle";
   import { m } from "$lib/paraglide/messages";
-  import { toast } from "$lib/toast.svelte";
   import { Domain, type MusicEntryDto } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = MUSIC_STATUS_ORDER.map((value) => ({
@@ -27,16 +26,6 @@
     { label: m.music_sort_listened(), value: "finished" },
     { label: m.common_status(), value: "status" },
   ];
-
-  async function toggleFavorite(entry: MusicEntryDto, next: boolean) {
-    entry.favorite = next; // optimistic
-    try {
-      await updateMusicEntry(entry.id, { favorite: next });
-    } catch (err) {
-      entry.favorite = !next;
-      toast.error(resolveApiError(err));
-    }
-  }
 
   const load = (params: LibraryLoadParams) =>
     listMusic({
@@ -72,7 +61,10 @@
       src={entry.album.coverUrl}
       title={entry.album.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
+      onToggleFavorite={(next) =>
+        toggleFavorite(entry, next, (n) =>
+          updateMusicEntry(entry.id, { favorite: n }),
+        )}>
       {#snippet meta()}
         <span class="timecode text-xs">
           {MUSIC_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
