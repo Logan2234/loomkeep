@@ -137,8 +137,11 @@ export class MfaService {
   async setEmailMfaEnabled(
     userId: string,
     enabled: boolean,
+    currentPassword: string,
     currentSessionId?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
+    await this.assertCurrentPassword(userId, currentPassword);
+
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
@@ -175,8 +178,11 @@ export class MfaService {
   /** Generates a fresh batch of 10, deleting any existing ones first. */
   async regenerateRecoveryCodes(
     userId: string,
+    currentPassword: string,
     currentSessionId?: string,
   ): Promise<string[]> {
+    await this.assertCurrentPassword(userId, currentPassword);
+
     const codes = await this.generateRecoveryCodes(userId, {
       deleteExisting: true,
       revokeSessions: true,
@@ -240,6 +246,23 @@ export class MfaService {
         ? { userId, id: { not: currentSessionId } }
         : { userId },
     });
+  }
+
+  private async assertCurrentPassword(
+    userId: string,
+    currentPassword: string,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthCurrentPasswordIncorrect,
+      );
+    }
   }
 
   /** Normalizes (strips separators, uppercases), matches, and deletes the consumed row. */

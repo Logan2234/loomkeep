@@ -16,6 +16,7 @@ import { ConfirmTotpDto } from "./dto/confirm-totp.dto";
 import { DisableTotpDto } from "./dto/disable-totp.dto";
 import { MfaStatusResponseDto } from "./dto/mfa-status-response.dto";
 import { RegenerateRecoveryCodesResultDto } from "./dto/regenerate-recovery-codes-response.dto";
+import { RegenerateRecoveryCodesDto } from "./dto/regenerate-recovery-codes.dto";
 import { SetEmailMfaResultDto } from "./dto/set-email-mfa-response.dto";
 import { SetEmailMfaDto } from "./dto/set-email-mfa.dto";
 import { TotpSetupResponseDto } from "./dto/totp-setup-response.dto";
@@ -67,6 +68,7 @@ export class MfaController {
     return this.mfaService.setEmailMfaEnabled(
       payload.sub,
       dto.enabled,
+      dto.currentPassword,
       payload.sid,
     );
   }
@@ -77,10 +79,12 @@ export class MfaController {
   @ApiCreatedResponse({ type: RegenerateRecoveryCodesResultDto })
   async regenerateRecoveryCodes(
     @CurrentUser() payload: JwtPayload,
+    @Body() dto: RegenerateRecoveryCodesDto,
   ): Promise<RegenerateRecoveryCodesResponseDto> {
     return {
       codes: await this.mfaService.regenerateRecoveryCodes(
         payload.sub,
+        dto.currentPassword,
         payload.sid,
       ),
     };

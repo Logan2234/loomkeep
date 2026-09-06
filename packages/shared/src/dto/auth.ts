@@ -103,6 +103,7 @@ export interface DisableTotpRequestDto {
 
 export interface SetEmailMfaRequestDto {
   enabled: boolean;
+  currentPassword: string;
 }
 
 export interface SetEmailMfaResponseDto {
@@ -111,6 +112,10 @@ export interface SetEmailMfaResponseDto {
 
 export interface RegenerateRecoveryCodesResponseDto {
   codes: string[];
+}
+
+export interface RegenerateRecoveryCodesRequestDto {
+  currentPassword: string;
 }
 
 /** One active refresh-token session, i.e. one signed-in device. */

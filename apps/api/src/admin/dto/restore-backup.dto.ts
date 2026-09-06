@@ -5,4 +5,8 @@ export class RestoreBackupDto implements AdminBackupRestoreRequestDto {
   @IsString()
   @MinLength(1)
   sql!: string;
+
+  @IsString()
+  @MinLength(1)
+  currentPassword!: string;
 }
