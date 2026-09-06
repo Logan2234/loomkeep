@@ -1,7 +1,7 @@
 {
   "name": "@loomkeep/shared",
   "description": "Types, enums and DTOs shared between the Loomkeep API and web app",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "author": {
     "name": "Logan WILLEM",
     "email": "loganwi322.dev@gmail.com"
