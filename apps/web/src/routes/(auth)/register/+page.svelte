@@ -4,8 +4,8 @@
   import { register } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import FieldError from "$lib/components/FieldError.svelte";
+  import AuthShell from "$lib/components/AuthShell.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
   import Turnstile from "$lib/components/Turnstile.svelte";
@@ -49,137 +49,123 @@
   }
 </script>
 
-<div class="flex min-h-screen flex-col">
-  <div class="flex flex-1 items-center justify-center px-4 py-12">
-    <div class="w-full max-w-sm">
-      <div class="mb-8 text-center">
-        <p class="font-display text-3xl font-extrabold tracking-tight">
-          {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
-        </p>
-        <p class="text-dim mt-2 text-sm">
-          {m.auth_register_tagline()}
-        </p>
-      </div>
+<AuthShell>
+  {#snippet tagline()}{m.auth_register_tagline()}{/snippet}
 
-      <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
-        <h1 class="font-display text-xl font-bold">
-          {m.common_register()}
-        </h1>
-        <input
-          type="text"
-          name="displayName"
-          minlength="1"
-          maxlength="50"
-          aria-label={m.common_username()}
-          aria-invalid={registerMut.fieldErrors.displayName
-            ? "true"
-            : undefined}
-          aria-describedby={registerMut.fieldErrors.displayName
-            ? "register-display-name-error"
-            : undefined}
-          placeholder={m.common_username()}
-          bind:value={displayName}
-          required
-          class="input" />
-        <FieldError
-          id="register-display-name-error"
-          message={registerMut.fieldErrors.displayName} />
-        <input
-          type="email"
-          name="email"
-          autocomplete="email"
-          aria-label={m.common_email()}
-          aria-invalid={registerMut.fieldErrors.email ? "true" : undefined}
-          aria-describedby={registerMut.fieldErrors.email
-            ? "register-email-error"
-            : undefined}
-          placeholder={m.common_email()}
-          bind:value={email}
-          required
-          class="input" />
-        <FieldError
-          id="register-email-error"
-          message={registerMut.fieldErrors.email} />
-        <PasswordInput
-          placeholder={m.common_password()}
-          name="password"
-          ariaLabel={m.common_password()}
-          autocomplete="new-password"
-          enterkeyhint="done"
-          bind:value={password}
-          minlength={8}
-          maxlength={72}
-          required />
-        <PasswordRequirements value={password} />
-        {#if turnstileSiteKey}
-          <Turnstile
-            siteKey={turnstileSiteKey}
-            onVerify={(token) => (turnstileToken = token)} />
-        {/if}
-        {#if registerMut.error}
-          <Banner variant="error">{registerMut.error}</Banner>
-        {/if}
-        <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
-          <input
-            type="checkbox"
-            name="acceptedTerms"
-            value="true"
-            bind:checked={acceptedTerms}
-            required
-            class="mt-0.5" />
-          <span>
-            {m.auth_register_accept_terms_prefix()}
-            <a
-              href="/legal/terms-of-service"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn-text btn-text-underline text-accent hover:text-accent"
-              >{m.common_terms()}</a>
-            {m.auth_register_accept_terms_and()}
-            <a
-              href="/legal/privacy-policy"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn-text btn-text-underline text-accent hover:text-accent"
-              >{m.common_privacy()}</a
-            >.
-          </span>
-        </label>
-        <FieldError message={registerMut.fieldErrors.acceptedTerms} />
-        <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
-          <input
-            type="checkbox"
-            name="certifiedAge"
-            value="true"
-            bind:checked={certifiedAge}
-            required
-            class="mt-0.5" />
-          <span>{m.auth_register_certify_age()}</span>
-        </label>
-        <FieldError message={registerMut.fieldErrors.certifiedAge} />
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={registerMut.loading ||
-            !displayName ||
-            !email ||
-            !isPasswordValid(password) ||
-            !acceptedTerms ||
-            !certifiedAge ||
-            (!!turnstileSiteKey && !turnstileToken)}>
-          {registerMut.loading
-            ? m.auth_register_action_loading()
-            : m.auth_register_action()}
-        </button>
-        <p class="text-dim text-center text-sm">
-          {m.auth_already_registered()}
-          <a
-            href="/login"
-            class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
-            >{m.common_login()}</a>
-        </p>
-      </form>
-    </div>
-  </div>
-  <LegalLinks />
-</div>
+  <form onsubmit={submit} class="card flex flex-col gap-4 p-7">
+    <h1 class="font-display text-xl font-bold">
+      {m.common_register()}
+    </h1>
+    <input
+      type="text"
+      name="displayName"
+      minlength="1"
+      maxlength="50"
+      aria-label={m.common_username()}
+      aria-invalid={registerMut.fieldErrors.displayName ? "true" : undefined}
+      aria-describedby={registerMut.fieldErrors.displayName
+        ? "register-display-name-error"
+        : undefined}
+      placeholder={m.common_username()}
+      bind:value={displayName}
+      required
+      class="input" />
+    <FieldError
+      id="register-display-name-error"
+      message={registerMut.fieldErrors.displayName} />
+    <input
+      type="email"
+      name="email"
+      autocomplete="email"
+      aria-label={m.common_email()}
+      aria-invalid={registerMut.fieldErrors.email ? "true" : undefined}
+      aria-describedby={registerMut.fieldErrors.email
+        ? "register-email-error"
+        : undefined}
+      placeholder={m.common_email()}
+      bind:value={email}
+      required
+      class="input" />
+    <FieldError
+      id="register-email-error"
+      message={registerMut.fieldErrors.email} />
+    <PasswordInput
+      placeholder={m.common_password()}
+      name="password"
+      ariaLabel={m.common_password()}
+      autocomplete="new-password"
+      enterkeyhint="done"
+      bind:value={password}
+      minlength={8}
+      maxlength={72}
+      required />
+    <PasswordRequirements value={password} />
+    {#if turnstileSiteKey}
+      <Turnstile
+        siteKey={turnstileSiteKey}
+        onVerify={(token) => (turnstileToken = token)} />
+    {/if}
+    {#if registerMut.error}
+      <Banner variant="error">{registerMut.error}</Banner>
+    {/if}
+    <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
+      <input
+        type="checkbox"
+        name="acceptedTerms"
+        value="true"
+        bind:checked={acceptedTerms}
+        required
+        class="mt-0.5" />
+      <span>
+        {m.auth_register_accept_terms_prefix()}
+        <a
+          href="/legal/terms-of-service"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-text btn-text-underline text-accent hover:text-accent"
+          >{m.common_terms()}</a>
+        {m.auth_register_accept_terms_and()}
+        <a
+          href="/legal/privacy-policy"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-text btn-text-underline text-accent hover:text-accent"
+          >{m.common_privacy()}</a
+        >.
+      </span>
+    </label>
+    <FieldError message={registerMut.fieldErrors.acceptedTerms} />
+    <label class="text-dim flex items-start gap-2 text-xs leading-relaxed">
+      <input
+        type="checkbox"
+        name="certifiedAge"
+        value="true"
+        bind:checked={certifiedAge}
+        required
+        class="mt-0.5" />
+      <span>{m.auth_register_certify_age()}</span>
+    </label>
+    <FieldError message={registerMut.fieldErrors.certifiedAge} />
+    <button
+      type="submit"
+      class="btn btn-primary"
+      disabled={registerMut.loading ||
+        !displayName ||
+        !email ||
+        !isPasswordValid(password) ||
+        !acceptedTerms ||
+        !certifiedAge ||
+        (!!turnstileSiteKey && !turnstileToken)}>
+      {registerMut.loading
+        ? m.auth_register_action_loading()
+        : m.auth_register_action()}
+    </button>
+    <p class="text-dim text-center text-sm">
+      {m.auth_already_registered()}
+      <a
+        href="/login"
+        class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+        >{m.common_login()}</a>
+    </p>
+  </form>
+</AuthShell>

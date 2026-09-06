@@ -2,13 +2,13 @@ import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { MediaItemService } from "../../../catalog/media-item.service";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { AppException } from "../../../common/app.exception";
 import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";
 import { MediaImportSource } from "../media/media-import.source";
+import { MediaMatchResolver } from "../media/media-match-resolver";
 import { buildImportMovies, buildImportShows } from "./parse-simkl";
 import type { SimklAllItemsResponse } from "./simkl-api.types";
 import { simklRedirectUri } from "./simkl-oauth.util";
@@ -38,12 +38,12 @@ export class SimklImportSource extends MediaImportSource<SimklParsed> {
   constructor(
     prisma: PrismaService,
     mediaItemService: MediaItemService,
-    tmdb: TmdbProvider,
+    matchResolver: MediaMatchResolver,
     reviews: ReviewService,
     private readonly configService: ConfigService,
     private readonly quota: QuotaTrackerService,
   ) {
-    super(prisma, mediaItemService, tmdb, reviews);
+    super(prisma, mediaItemService, matchResolver, reviews);
   }
 
   parseInput(input: string): SimklParsed {

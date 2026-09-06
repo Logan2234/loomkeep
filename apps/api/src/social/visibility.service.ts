@@ -7,6 +7,7 @@ import type {
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { BlockService } from "./block.service";
 import {
   computeIsFriend,
   DEFAULT_FACET_AUDIENCE,
@@ -33,7 +34,10 @@ const NO_RELATION = (
  */
 @Injectable()
 export class VisibilityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly blocks: BlockService,
+  ) {}
 
   /** Resolves the viewer's relationship to a target. */
   async getRelation(
@@ -69,14 +73,7 @@ export class VisibilityService {
           },
         },
       }),
-      this.prisma.block.findMany({
-        where: {
-          OR: [
-            { blockerId: viewerId, blockedId: target.id },
-            { blockerId: target.id, blockedId: viewerId },
-          ],
-        },
-      }),
+      this.blocks.findBlocksBetween(viewerId, target.id),
     ]);
 
     const blocking = blocks.some((b) => b.blockerId === viewerId);

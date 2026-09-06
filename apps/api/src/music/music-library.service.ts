@@ -22,6 +22,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -490,8 +491,4 @@ function toEntryDto(
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
   };
-}
-
-function toDateOrNull(value: string | null): Date | null {
-  return value === null ? null : new Date(value);
 }

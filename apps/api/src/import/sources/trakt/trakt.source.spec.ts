@@ -2,6 +2,7 @@ import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { vi } from "vitest";
 import { ImportJobService } from "../../import-job.service";
 import { makeZip } from "../../make-zip";
+import { MediaMatchResolver } from "../media/media-match-resolver";
 import { TraktImportSource } from "./trakt.source";
 
 const HISTORY = JSON.stringify([
@@ -60,10 +61,11 @@ function makeService() {
     findMovieSummaryByImdbId: vi.fn().mockResolvedValue(null),
     search: vi.fn().mockResolvedValue([]),
   };
+  const matchResolver = new MediaMatchResolver(tmdb as never);
   const source = new TraktImportSource(
     prisma as never,
     mediaItemService as never,
-    tmdb as never,
+    matchResolver,
     {} as never,
   );
   const service = new ImportJobService(

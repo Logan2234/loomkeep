@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import type { AuthTokensDto, UserDto } from "@loomkeep/shared";
+import { liveFlags } from "./feature-flags-live.svelte";
 
 const STORAGE_KEY = "loomkeep.tokens";
 
@@ -21,6 +22,16 @@ class AuthState {
 
   /** Whether the current user has the ADMIN role (gates /admin). */
   isAdmin = $derived(this.user?.role === "ADMIN");
+
+  /**
+   * Whether premium-only UI should render its locked state: the
+   * `premium-features` flag is on (the plan is being enforced) and this
+   * account isn't premium. Centralized so every gated screen agrees on the
+   * same rule instead of recomputing it locally.
+   */
+  isPremiumLocked = $derived(
+    liveFlags.isEnabled("premium-features") && !this.isPremium,
+  );
 
   /**
    * The `jti` of the current refresh token, read from its (unverified) payload.

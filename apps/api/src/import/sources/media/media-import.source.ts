@@ -1,13 +1,11 @@
 import type {
   CatalogSource,
   EntryStatus,
-  ImportMatch,
   ImportPlan,
   ImportPlanGroup,
   ImportPlanItem,
   ImportReport,
   ImportSource,
-  MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
 import {
@@ -18,7 +16,6 @@ import {
 import { Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { MediaItemService } from "../../../catalog/media-item.service";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
@@ -32,6 +29,7 @@ import type {
   ImportShow,
   ParsedImport,
 } from "../../media-import-model";
+import { MediaMatchResolver } from "./media-match-resolver";
 
 /** A catalogue match resolved to its required media type, ready to write. */
 type ResolvedMatch = {
@@ -83,7 +81,7 @@ export abstract class MediaImportSource<
   constructor(
     protected readonly prisma: PrismaService,
     protected readonly mediaItemService: MediaItemService,
-    protected readonly tmdb: TmdbProvider,
+    protected readonly matchResolver: MediaMatchResolver,
     protected readonly reviews: ReviewService,
   ) {}
 
@@ -118,7 +116,7 @@ export abstract class MediaImportSource<
       parsed.shows,
       RESOLVE_CONCURRENCY,
       async (show) => {
-        const match = await this.resolveShowMatch(show);
+        const match = await this.matchResolver.resolveShow(show);
         progress.tick();
         return match;
       },
@@ -158,7 +156,7 @@ export abstract class MediaImportSource<
       parsed.movies,
       RESOLVE_CONCURRENCY,
       async (movie) => {
-        const match = await this.resolveMovieMatch(movie);
+        const match = await this.matchResolver.resolveMovie(movie);
         progress.tick();
         return match;
       },
@@ -325,79 +323,6 @@ export abstract class MediaImportSource<
     }
 
     return matchByKey.get(key) ?? null;
-  }
-
-  /**
-   * Resolve a show to a catalogue match: a TMDB id (when the source has one)
-   * settles it in a single call; otherwise fall back to TVDB, then IMDb.
-   */
-  private async resolveShowMatch(
-    show: ImportShow,
-  ): Promise<ImportMatch | null> {
-    const { tmdb, tvdb, imdb } = show.externalIds;
-
-    if (tmdb) {
-      try {
-        return toMatch(await this.tmdb.getSeriesSummaryByTmdbId(tmdb));
-      } catch {
-        // Stale/removed id — fall through to the next external id.
-      }
-    }
-
-    if (tvdb) {
-      try {
-        const summary = await this.tmdb.findSeriesSummaryByTvdbId(tvdb);
-        if (summary) return toMatch(summary);
-      } catch {
-        // Fall through.
-      }
-    }
-
-    if (imdb) {
-      try {
-        const summary = await this.tmdb.findSeriesSummaryByImdbId(imdb);
-        if (summary) return toMatch(summary);
-      } catch {
-        // Fall through.
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Resolve a movie to a catalogue match: TMDB id, then IMDb id, then a
-   * confident title/year search as a last resort (TV Time carries neither id).
-   */
-  private async resolveMovieMatch(
-    movie: ImportMovie,
-  ): Promise<ImportMatch | null> {
-    const { tmdb, imdb } = movie.externalIds;
-
-    if (tmdb) {
-      try {
-        return toMatch(await this.tmdb.getMovieSummaryByTmdbId(tmdb));
-      } catch {
-        // Fall through.
-      }
-    }
-
-    if (imdb) {
-      try {
-        const summary = await this.tmdb.findMovieSummaryByImdbId(imdb);
-        if (summary) return toMatch(summary);
-      } catch {
-        // Fall through.
-      }
-    }
-
-    try {
-      const summaries = await this.tmdb.search(movie.title, "MOVIE");
-      const match = pickMovie(summaries, movie.title, movie.year);
-      return match ? toMatch(match) : null;
-    } catch {
-      return null;
-    }
   }
 
   /** Write one show against an already-resolved catalogue match. */
@@ -678,17 +603,6 @@ function indexPlanMatches(plan: ImportPlan): Map<string, ResolvedMatch> {
   return byKey;
 }
 
-function toMatch(summary: MediaSummaryDto): ImportMatch {
-  return {
-    source: summary.source,
-    sourceId: summary.sourceId,
-    type: summary.type,
-    title: summary.title,
-    year: summary.year,
-    coverUrl: summary.posterUrl,
-  };
-}
-
 /** Earliest and latest watch dates; finishedAt only makes sense when complete. */
 function watchWindow(
   show: ImportShow,
@@ -703,34 +617,4 @@ function watchWindow(
     startedAt: dates[0],
     finishedAt: completed ? dates[dates.length - 1] : null,
   };
-}
-
-/**
- * Confident movie match only: exact (case-insensitive) title, preferring a
- * matching year. Exports carry original-language titles while TMDB's `title`
- * is localized (en-US), so we also accept a hit on `originalTitle`. Anything
- * fuzzier is left for manual validation.
- */
-function pickMovie(
-  summaries: MediaSummaryDto[],
-  title: string,
-  year: number | null,
-): MediaSummaryDto | null {
-  const norm = (s: string) => s.toLowerCase().trim();
-  const query = norm(title);
-  const exact = summaries.filter(
-    (s) =>
-      norm(s.title) === query ||
-      (s.originalTitle !== null && norm(s.originalTitle || "") === query),
-  );
-  if (exact.length === 0) return null;
-
-  if (year !== null) {
-    const sameYear = exact.find(
-      (s) => s.year !== null && Math.abs(s.year - year) <= 1,
-    );
-    if (sameYear) return sameYear;
-  }
-
-  return exact[0];
 }

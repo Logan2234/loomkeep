@@ -2,7 +2,7 @@
   import { forgotPassword } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import FieldError from "$lib/components/FieldError.svelte";
-  import LegalLinks from "$lib/components/LegalLinks.svelte";
+  import AuthShell from "$lib/components/AuthShell.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
   let email = $state("");
@@ -20,69 +20,59 @@
   }
 </script>
 
-<div class="flex min-h-screen flex-col">
-  <div class="flex flex-1 items-center justify-center px-4 py-12">
-    <div class="w-full max-w-sm">
-      <div class="mb-8 text-center">
-        <p class="font-display text-3xl font-extrabold tracking-tight">
-          {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
-        </p>
-        <p class="text-dim mt-2 text-sm">{m.auth_forgot_password_tagline()}</p>
-      </div>
+<AuthShell>
+  {#snippet tagline()}{m.auth_forgot_password_tagline()}{/snippet}
 
-      <div class="card flex flex-col gap-4 p-7">
-        <h1 class="font-display text-xl font-bold">
-          {m.auth_forgot_password_title()}
-        </h1>
+  <div class="card flex flex-col gap-4 p-7">
+    <h1 class="font-display text-xl font-bold">
+      {m.auth_forgot_password_title()}
+    </h1>
 
-        {#if !submitted}
-          <p class="text-dim text-sm">
-            {m.auth_forgot_password_body()}
-          </p>
-          <form onsubmit={submit} class="flex flex-col gap-4">
-            <input
-              type="email"
-              name="email"
-              autocomplete="email"
-              enterkeyhint="send"
-              aria-label={m.common_email()}
-              aria-invalid={submitMut.fieldErrors.email ? "true" : undefined}
-              aria-describedby={submitMut.fieldErrors.email
-                ? "forgot-password-email-error"
-                : undefined}
-              placeholder={m.common_email()}
-              bind:value={email}
-              required
-              class="input" />
-            <FieldError
-              id="forgot-password-email-error"
-              message={submitMut.fieldErrors.email} />
-            {#if submitMut.error}
-              <p class="text-danger text-sm">{submitMut.error}</p>
-            {/if}
-            <button
-              type="submit"
-              class="btn btn-primary"
-              disabled={submitMut.loading}>
-              {submitMut.loading
-                ? m.common_sending()
-                : m.auth_forgot_password_action()}
-            </button>
-          </form>
-        {:else}
-          <p class="text-dim text-sm">
-            {m.auth_forgot_password_sent()}
-          </p>
+    {#if !submitted}
+      <p class="text-dim text-sm">
+        {m.auth_forgot_password_body()}
+      </p>
+      <form onsubmit={submit} class="flex flex-col gap-4">
+        <input
+          type="email"
+          name="email"
+          autocomplete="email"
+          enterkeyhint="send"
+          aria-label={m.common_email()}
+          aria-invalid={submitMut.fieldErrors.email ? "true" : undefined}
+          aria-describedby={submitMut.fieldErrors.email
+            ? "forgot-password-email-error"
+            : undefined}
+          placeholder={m.common_email()}
+          bind:value={email}
+          required
+          class="input" />
+        <FieldError
+          id="forgot-password-email-error"
+          message={submitMut.fieldErrors.email} />
+        {#if submitMut.error}
+          <p class="text-danger text-sm">{submitMut.error}</p>
         {/if}
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={submitMut.loading}>
+          {submitMut.loading
+            ? m.common_sending()
+            : m.auth_forgot_password_action()}
+        </button>
+      </form>
+    {:else}
+      <p class="text-dim text-sm">
+        {m.auth_forgot_password_sent()}
+      </p>
+    {/if}
 
-        <p class="text-center">
-          <a
-            href="/login"
-            class="btn-text btn-text-underline hover:text-accent text-sm"
-            >{m.auth_back_to_login()}</a>
-        </p>
-      </div>
-    </div>
+    <p class="text-center">
+      <a
+        href="/login"
+        class="btn-text btn-text-underline hover:text-accent text-sm"
+        >{m.auth_back_to_login()}</a>
+    </p>
   </div>
-  <LegalLinks />
-</div>
+</AuthShell>

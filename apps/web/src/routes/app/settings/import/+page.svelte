@@ -11,7 +11,6 @@
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import {
@@ -54,9 +53,7 @@
   );
   const quota = $derived<ImportQuotaDto>(quotaQuery.data ?? {});
 
-  const premiumLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const premiumLocked = $derived(auth.isPremiumLocked);
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">

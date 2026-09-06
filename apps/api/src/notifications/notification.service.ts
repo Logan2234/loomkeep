@@ -23,6 +23,11 @@ import {
 const WINDOW_DAYS = 14;
 /** Most recent notifications returned in the feed. */
 const FEED_LIMIT = 50;
+/** Kinds excluded from the bell feed: NEW_EPISODE (push/email only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). */
+const FEED_EXCLUDED_TYPES = [
+  NotificationType.NEW_EPISODE,
+  NotificationType.FOLLOW_REQUEST,
+];
 
 /** Digest body: `S1E2 · Title` (title suffix only when known). */
 function notificationBody(n: NewEpisodeNotification): string {
@@ -245,12 +250,7 @@ export class NotificationService {
     const rows = await this.prisma.notification.findMany({
       where: {
         userId,
-        type: {
-          notIn: [
-            NotificationType.NEW_EPISODE,
-            NotificationType.FOLLOW_REQUEST,
-          ],
-        },
+        type: { notIn: FEED_EXCLUDED_TYPES },
       },
       orderBy: { createdAt: "desc" },
       take: FEED_LIMIT,
@@ -262,12 +262,7 @@ export class NotificationService {
     await this.prisma.notification.deleteMany({
       where: {
         userId,
-        type: {
-          notIn: [
-            NotificationType.NEW_EPISODE,
-            NotificationType.FOLLOW_REQUEST,
-          ],
-        },
+        type: { notIn: FEED_EXCLUDED_TYPES },
       },
     });
   }

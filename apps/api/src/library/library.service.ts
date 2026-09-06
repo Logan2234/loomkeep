@@ -31,6 +31,7 @@ import type {
 } from "@prisma/client";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -1501,10 +1502,6 @@ function toMediaItemDto(
     canonicalSource: media.canonicalSource,
     sourceId: canonicalExternalId(media, media.externalIds),
   };
-}
-
-function toDateOrNull(value: string | null): Date | null {
-  return value === null ? null : new Date(value);
 }
 
 function toReplayDto(replay: MovieReplay): MovieReplayDto {

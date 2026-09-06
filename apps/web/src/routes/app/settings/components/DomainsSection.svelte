@@ -11,9 +11,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
 
-  const premiumLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const premiumLocked = $derived(auth.isPremiumLocked);
 
   const toggleDomainMut = createApiMutation(() => ({
     mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
