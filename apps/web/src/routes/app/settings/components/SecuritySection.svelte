@@ -9,6 +9,8 @@
   } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
+  import { Cooldown } from "$lib/cooldown.svelte";
+  import { debounce } from "$lib/debounce";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
@@ -20,18 +22,16 @@
   type SecurityModal = "username" | "email" | "password" | null;
 
   let openModal = $state<SecurityModal>(null);
-  let verificationCooldown = $state(0);
-  let verificationCooldownTimer: ReturnType<typeof setInterval> | undefined;
+  const verificationCooldown = new Cooldown();
 
   function closeModal() {
-    clearTimeout(usernameCheckTimer);
+    checkUsernameAvailability.cancel();
     openModal = null;
   }
 
   let usernameInput = $state("");
   type UsernameCheck = "idle" | "checking" | "available" | "taken" | "error";
   let usernameCheck = $state<UsernameCheck>("idle");
-  let usernameCheckTimer: ReturnType<typeof setTimeout> | undefined;
 
   function openUsernameModal() {
     usernameInput = auth.user?.username ?? "";
@@ -42,24 +42,26 @@
 
   // Debounced availability check, keyed on the current input value so a slow
   // response can never clobber the status of a value the user has since edited.
+  const checkUsernameAvailability = debounce(async (value: string) => {
+    try {
+      const { available } = await checkUsernameAvailable(value);
+      if (usernameInput.trim() === value) {
+        usernameCheck = available ? "available" : "taken";
+      }
+    } catch {
+      if (usernameInput.trim() === value) usernameCheck = "error";
+    }
+  }, 400);
+
   function onUsernameInput() {
-    clearTimeout(usernameCheckTimer);
     const value = usernameInput.trim();
     if (!value || value === auth.user?.username) {
       usernameCheck = "idle";
+      checkUsernameAvailability.cancel();
       return;
     }
     usernameCheck = "checking";
-    usernameCheckTimer = setTimeout(async () => {
-      try {
-        const { available } = await checkUsernameAvailable(value);
-        if (usernameInput.trim() === value) {
-          usernameCheck = available ? "available" : "taken";
-        }
-      } catch {
-        if (usernameInput.trim() === value) usernameCheck = "error";
-      }
-    }, 400);
+    checkUsernameAvailability.call(value);
   }
 
   const saveUsernameMut = createApiMutation(() => ({
@@ -130,23 +132,13 @@
   const resendVerificationMut = createApiMutation(() => ({
     mutate: resendVerificationEmail,
     errorToast: true,
-    onSuccess: () => {
-      verificationCooldown = 60;
-      clearInterval(verificationCooldownTimer);
-      verificationCooldownTimer = setInterval(() => {
-        verificationCooldown -= 1;
-        if (verificationCooldown <= 0) {
-          clearInterval(verificationCooldownTimer);
-          verificationCooldownTimer = undefined;
-        }
-      }, 1000);
-    },
+    onSuccess: () => verificationCooldown.start(60),
   }));
 
   function resendVerification() {
     if (
       resendVerificationMut.loading ||
-      verificationCooldown > 0 ||
+      verificationCooldown.remaining > 0 ||
       auth.user?.emailVerified
     ) {
       return;
@@ -246,11 +238,13 @@
                 class="btn-text btn-text-underline text-accent hover:text-accent decoration-1"
                 onclick={resendVerification}
                 disabled={resendVerificationMut.loading ||
-                  verificationCooldown > 0}>
+                  verificationCooldown.remaining > 0}>
                 {#if resendVerificationMut.loading}
                   {m.common_sending()}
-                {:else if verificationCooldown > 0}
-                  {m.common_resend_cooldown({ seconds: verificationCooldown })}
+                {:else if verificationCooldown.remaining > 0}
+                  {m.common_resend_cooldown({
+                    seconds: verificationCooldown.remaining,
+                  })}
                 {:else}
                   {m.settings_resend_verification_email()}
                 {/if}

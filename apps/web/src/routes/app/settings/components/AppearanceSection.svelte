@@ -11,7 +11,6 @@
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import type { MobileDestination } from "$lib/navigation";
   import {
     DEFAULT_BOTTOM_SHORTCUTS,
@@ -28,9 +27,7 @@
   import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
 
-  const navStyleLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const navStyleLocked = $derived(auth.isPremiumLocked);
 
   const MIN = 3;
   const MAX = 7;

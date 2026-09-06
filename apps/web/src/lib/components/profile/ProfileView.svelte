@@ -19,28 +19,22 @@
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
-  import BadgeShowcase from "$lib/components/BadgeShowcase.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import Carousel from "$lib/components/Carousel.svelte";
-  import CountFlash from "$lib/components/CountFlash.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
   import EditProfileModal from "$lib/components/EditProfileModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import LevelBadge from "$lib/components/LevelBadge.svelte";
-  import LevelCard from "$lib/components/LevelCard.svelte";
-  import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
-  import Modal from "$lib/components/Modal.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
+  import ProfileConnectionsModal from "$lib/components/profile/ProfileConnectionsModal.svelte";
+  import ProfileHeader from "$lib/components/profile/ProfileHeader.svelte";
+  import ProfileListsSection from "$lib/components/profile/ProfileListsSection.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
   import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
-  import StreakBadge from "$lib/components/StreakBadge.svelte";
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type {
@@ -377,236 +371,24 @@
       </Banner>
     {/if}
 
-    <!-- Billing block: the person credited, handle set like a film credit. -->
-    <section class="card relative p-5 md:p-6">
-      <!-- Reserve room on wider screens so the name/handle/meta text (which
-           sits beside the avatar there, not below it) never runs under the
-           icon cluster floating top-right — see below. -->
-      <div
-        class="flex flex-col gap-5 sm:flex-row sm:items-start {selfManage
-          ? 'sm:pr-40'
-          : ''}">
-        <div class="relative shrink-0 self-start">
-          <button
-            type="button"
-            class="cursor-zoom-in"
-            aria-label={m.profile_avatar_zoom()}
-            onclick={() => (avatarZoomed = true)}>
-            <Avatar seed={profile.username} url={profile.avatarUrl} size={80} />
-          </button>
-          {#if selfManage}
-            <button
-              type="button"
-              class="bg-accent text-accent-fg border-surface absolute -right-1 -bottom-1 grid h-7 w-7 place-items-center rounded-full border-2"
-              aria-label={m.profile_avatar_change()}
-              onclick={() => (avatarModalOpen = true)}>
-              <Icon name="camera" class="h-3.5 w-3.5" />
-            </button>
-          {/if}
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <h1
-              class="font-display truncate text-2xl font-extrabold md:text-3xl">
-              {profile.displayName}
-            </h1>
-            <StreakBadge
-              days={profile.activityStats.visible
-                ? profile.activityStats.streakDays
-                : undefined}
-              trackKey={rel?.isSelf && auth.user
-                ? `streak:${auth.user.id}`
-                : undefined} />
-            {#if appConfig.gamificationEnabled}
-              <LevelBadge xp={profile.xp} />
-            {/if}
-            {#if selfManage}
-              <button
-                type="button"
-                class="text-dim hover:text-fg hover:bg-surface-2 rounded-full p-1"
-                aria-label={m.profile_edit()}
-                onclick={() => (editProfileModalOpen = true)}>
-                <Icon name="edit" class="h-3.5 w-3.5" />
-              </button>
-            {:else if rel?.isFriend}
-              <span class="chip chip-on py-1! text-xs"
-                >{m.common_friends()}</span>
-            {:else if rel?.followsYou}
-              <span class="chip py-1! text-xs">{m.profile_follows_you()}</span>
-            {/if}
-          </div>
-          <p
-            class="text-dim mt-0.5 flex flex-wrap items-center gap-x-2 text-sm">
-            <span class="timecode">@{profile.username}</span>
-            {#if selfManage && auth.user}
-              <span aria-hidden="true">·</span>
-              <span>{auth.user.email}</span>
-            {/if}
-          </p>
-          <p class="text-dim mt-1 flex flex-wrap items-center gap-x-2 text-sm">
-            <span
-              >{profile.profileAccess === "PUBLIC"
-                ? m.profile_status_public()
-                : profile.profileAccess === "PRIVATE"
-                  ? m.profile_status_private()
-                  : m.profile_ghost()}</span>
-            <span aria-hidden="true">·</span>
-            <span>{m.profile_member_since({ date: memberSince })}</span>
-          </p>
-          {#if profile.bio}
-            <p class="mt-3 text-sm leading-relaxed">{profile.bio}</p>
-          {/if}
-
-          <!-- Credits: followers / following as quiet mono figures, clickable
-               to list who they are. -->
-          <div class="mt-4 flex flex-wrap gap-6">
-            <button
-              type="button"
-              class="hover:text-fg"
-              onclick={() => openConnections("followers")}>
-              <CountFlash
-                value={profile.followerCount}
-                class="timecode text-fg text-lg font-bold" />
-              <span class="text-dim ml-1 text-xs tracking-wide uppercase"
-                >{profile.followerCount > 1
-                  ? m.profile_followers_plural()
-                  : m.profile_followers_singular()}</span>
-            </button>
-            <button
-              type="button"
-              class="hover:text-fg"
-              onclick={() => openConnections("following")}>
-              <span class="timecode text-fg text-lg font-bold"
-                >{profile.followingCount}</span>
-              <span class="text-dim ml-1 text-xs tracking-wide uppercase"
-                >{profile.followingCount > 1
-                  ? m.profile_following_plural()
-                  : m.profile_following_singular()}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {#if appConfig.gamificationEnabled && profile.xp !== null}
-        <div class="mt-5">
-          <LevelCard
-            xp={profile.xp}
-            leaderboardHref={selfManage && appConfig.socialEnabled
-              ? "/app/leaderboard"
-              : undefined} />
-        </div>
-        <!-- [G9] Same gate as xp above (equippedBadges is empty whenever xp
-             would have been null) — renders nothing at all when the viewer
-             has nothing equipped, per the ticket's zero-footprint rule. -->
-        <div class="mt-3">
-          <BadgeShowcase badges={profile.equippedBadges} />
-        </div>
-      {/if}
-
-      {#if rel && !rel.isSelf}
-        <!-- Top-right of the card from `sm` up, positioned absolutely: these
-             buttons used to sit in the header row and squeezed the info
-             column badly enough to wrap the follower figures onto separate
-             lines. Taking them out of the flow is what lets them live in the
-             corner without competing for that width again. Below `sm` they
-             stay a row under the block, where there is no corner to spare. -->
-        <div
-          class="border-border mt-5 flex flex-wrap gap-2 border-t pt-5 sm:absolute sm:top-5 sm:right-5 sm:mt-0 sm:border-t-0 sm:pt-0 md:top-6 md:right-6">
-          {#if rel.blocking}
-            <button class="btn btn-ghost" disabled={busy} onclick={toggleBlock}>
-              {m.common_unblock()}
-            </button>
-          {:else}
-            {#if !ghostCantFollow}
-              <button
-                class="btn {rel.following || rel.requested
-                  ? 'btn-ghost'
-                  : 'btn-primary'}"
-                disabled={busy}
-                onclick={toggleFollow}>
-                {followLabel}
-              </button>
-            {/if}
-            <button
-              class="btn btn-ghost"
-              disabled={busy}
-              title={m.common_block()}
-              aria-label={m.common_block()}
-              onclick={toggleBlock}>
-              {m.common_block()}
-            </button>
-          {/if}
-        </div>
-      {:else if rel?.isSelf && publicView}
-        <!-- Your own profile, viewed the way anyone else sees it — no
-             self-management here, just a way back to the real thing. -->
-        <a
-          href="/app/profile"
-          class="border-border text-dim hover:bg-surface-2 hover:text-fg absolute top-5 right-5 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold md:top-6 md:right-6">
-          <Icon name="chevron-left" class="h-3.5 w-3.5" />
-          {m.profile_back_to_own()}
-        </a>
-      {:else if selfManage}
-        <!-- Icon-only, top-right of the card, flush with its own padding —
-             lighter than a labelled button row/grid. Scanning is dropped
-             past sm: it's a "point your phone at theirs" action that doesn't
-             make sense on a laptop. -->
-        <div class="absolute top-5 right-5 flex gap-1.5 md:top-6 md:right-6">
-          {#if appConfig.gamificationEnabled}
-            <!-- [G5] the single doorway to /app/achievements, deliberately
-                 dumb (no counter, no badge): [G9]'s equipped showcase is
-                 expected to replace it. Own profile only — the page shows
-                 your achievements and nobody else's. -->
-            <a
-              href="/app/achievements"
-              class="btn-icon-bordered relative"
-              title={m.gamification_my_achievements()}
-              aria-label={m.gamification_my_achievements()}>
-              <Icon name="trophy" class="h-4 w-4" />
-              {#if isFeatureNew("achievements")}
-                <!-- A dot, not the full "Nouveau" pill: the pill is sized for
-                     a labelled row and swamps a 36px round button. -->
-                <span
-                  class="bg-accent border-surface absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2"
-                  aria-hidden="true">
-                </span>
-              {/if}
-            </a>
-          {/if}
-          <button
-            type="button"
-            class="btn-icon-bordered"
-            title={m.share_profile_title()}
-            aria-label={m.share_profile_title()}
-            onclick={() => (shareModalOpen = true)}>
-            <Icon name="share" class="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            class="btn-icon-bordered sm:hidden"
-            title={m.scan_profile_title()}
-            aria-label={m.scan_profile_title()}
-            onclick={() => (scanModalOpen = true)}>
-            <Icon name="camera" class="h-4 w-4" />
-          </button>
-          <a
-            href="/app/settings"
-            class="btn-icon-bordered"
-            title={m.common_settings()}
-            aria-label={m.common_settings()}>
-            <Icon name="gear" class="h-4 w-4" />
-          </a>
-          <button
-            type="button"
-            class="border-danger/40 text-danger hover:bg-danger/10 grid h-9 w-9 place-items-center rounded-full border"
-            title={m.common_logout()}
-            aria-label={m.common_logout()}
-            onclick={signOut}>
-            <Icon name="logout" class="h-4 w-4" />
-          </button>
-        </div>
-      {/if}
-    </section>
+    <ProfileHeader
+      {profile}
+      {rel}
+      {selfManage}
+      {publicView}
+      {busy}
+      {followLabel}
+      {ghostCantFollow}
+      {memberSince}
+      onToggleFollow={toggleFollow}
+      onToggleBlock={toggleBlock}
+      onSignOut={signOut}
+      onOpenAvatarZoom={() => (avatarZoomed = true)}
+      onOpenAvatarModal={() => (avatarModalOpen = true)}
+      onOpenEditProfile={() => (editProfileModalOpen = true)}
+      onOpenShareModal={() => (shareModalOpen = true)}
+      onOpenScanModal={() => (scanModalOpen = true)}
+      onOpenConnections={openConnections} />
 
     <!-- Per-domain library, gated by the viewer's visibility. -->
     <SectionLabel label={m.common_library()} class="mt-8 mb-3" />
@@ -752,74 +534,11 @@
     {/if}
 
     {#if appConfig.socialEnabled && listTiles.length > 0}
-      <section class="mt-10">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="font-display text-xl font-bold">
-            {m.common_lists()}
-          </h2>
-          {#if selfManage && lists.length > 0}
-            <a
-              href="/app/lists"
-              class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold md:hidden">
-              {m.common_manage()}
-              <Icon name="chevron-right" class="h-4 w-4" />
-            </a>
-          {/if}
-        </div>
-        <div class="flex items-stretch gap-4">
-          {#if selfManage && lists.length > 0}
-            <a
-              href="/app/lists"
-              class="mt-2 hidden w-28 shrink-0 sm:w-32 md:block">
-              <div
-                class="card hover:border-accent text-dim hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 transition-colors">
-                <Icon name="list" class="h-6 w-6" />
-                <span class="text-xs font-semibold">{m.common_view_all()}</span>
-              </div>
-            </a>
-          {/if}
-          <div class="min-w-0 flex-1">
-            <Carousel items={listTiles} keyOf={(item) => item.key}>
-              {#snippet card(item)}
-                {#if item.kind === "create"}
-                  <button
-                    type="button"
-                    onclick={() => (creatingList = true)}
-                    class="w-28 self-start sm:w-32">
-                    <div
-                      class="card text-dim hover:border-accent hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 border-dashed transition-colors">
-                      <Icon name="plus" class="h-6 w-6" />
-                      <span class="text-xs font-semibold"
-                        >{m.common_create()}</span>
-                    </div>
-                  </button>
-                {:else}
-                  <a
-                    href="/app/lists/{item.list.id}"
-                    class="block w-28 sm:w-32">
-                    <div
-                      class="card hover:border-accent overflow-hidden transition-colors">
-                      <ListCoverGrid
-                        images={item.list.previewImageUrls}
-                        title={item.list.title} />
-                    </div>
-                    <p class="mt-1.5 truncate text-xs font-semibold">
-                      {item.list.title}
-                    </p>
-                    {#if item.list.role === "EDITOR"}
-                      <p class="text-dim truncate text-[0.65rem]">
-                        {m.list_owned_by_editor({
-                          name: item.list.author.displayName,
-                        })}
-                      </p>
-                    {/if}
-                  </a>
-                {/if}
-              {/snippet}
-            </Carousel>
-          </div>
-        </div>
-      </section>
+      <ProfileListsSection
+        {listTiles}
+        {selfManage}
+        hasOwnLists={lists.length > 0}
+        onCreateList={() => (creatingList = true)} />
     {/if}
 
     {#if selfManage}
@@ -832,47 +551,11 @@
 </div>
 
 {#if connectionsKind}
-  <Modal
-    title={connectionsKind === "followers"
-      ? m.profile_connections_followers_title()
-      : m.profile_connections_following_title()}
-    onclose={() => (connectionsKind = null)}>
-    {#if connectionsLoading}
-      <div class="space-y-3">
-        {#each { length: 4 } as _, i (i)}
-          <div class="flex items-center gap-3">
-            <div class="skeleton h-9 w-9 rounded-full"></div>
-            <div class="skeleton h-4 w-32 rounded"></div>
-          </div>
-        {/each}
-      </div>
-    {:else if connections.length === 0}
-      <p class="text-dim text-sm">
-        {connectionsKind === "followers"
-          ? m.profile_connections_empty_followers()
-          : m.profile_connections_empty_following()}
-      </p>
-    {:else}
-      <ul class="max-h-96 space-y-1 overflow-y-auto">
-        {#each connections as u (u.id)}
-          <li>
-            <a
-              href={`/app/u/${u.username}`}
-              class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2"
-              onclick={() => (connectionsKind = null)}>
-              <Avatar seed={u.username} url={u.avatarUrl} size={36} />
-              <span class="min-w-0">
-                <span class="block truncate text-sm font-semibold"
-                  >{u.displayName}</span>
-                <span class="timecode block truncate text-xs"
-                  >@{u.username}</span>
-              </span>
-            </a>
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </Modal>
+  <ProfileConnectionsModal
+    kind={connectionsKind}
+    {connections}
+    loading={connectionsLoading}
+    onClose={() => (connectionsKind = null)} />
 {/if}
 
 {#if confirmBlock && profile}

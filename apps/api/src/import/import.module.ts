@@ -11,6 +11,7 @@ import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
+import { MediaMatchResolver } from "./sources/media/media-match-resolver";
 import { SimklImportSource } from "./sources/simkl/simkl.source";
 import { SteamImportSource } from "./sources/steam/steam.source";
 import { TraktImportSource } from "./sources/trakt/trakt.source";
@@ -37,6 +38,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
   controllers: [ImportController],
   providers: [
     ImportJobService,
+    MediaMatchResolver,
     TvTimeImportSource,
     TraktImportSource,
     SimklImportSource,

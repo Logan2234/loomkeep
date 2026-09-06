@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { ActivityService } from "./activity.service";
+import { BlockService } from "./block.service";
 import { FollowService } from "./follow.service";
 import { LeaderboardController } from "./leaderboard/leaderboard.controller";
 import { LeaderboardService } from "./leaderboard/leaderboard.service";
@@ -21,6 +22,7 @@ import { VisibilityService } from "./visibility.service";
   imports: [NotificationModule, GamificationModule],
   controllers: [SocialController, PrivacyController, LeaderboardController],
   providers: [
+    BlockService,
     VisibilityService,
     FollowService,
     ProfileService,
@@ -28,6 +30,12 @@ import { VisibilityService } from "./visibility.service";
     ActivityService,
     LeaderboardService,
   ],
-  exports: [VisibilityService, ActivityService, FollowService, ProfileService],
+  exports: [
+    BlockService,
+    VisibilityService,
+    ActivityService,
+    FollowService,
+    ProfileService,
+  ],
 })
 export class SocialModule {}

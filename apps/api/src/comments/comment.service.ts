@@ -23,6 +23,7 @@ import { fetchXpByUser, withXp } from "../gamification/xp-lookup.util";
 import { XpService } from "../gamification/xp.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { BlockService } from "../social/block.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
 import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
@@ -83,6 +84,7 @@ export class CommentService {
     private readonly config: ConfigService,
     private readonly flags: FeatureFlagsService,
     private readonly achievements: AchievementService,
+    private readonly blocks: BlockService,
   ) {}
 
   /**
@@ -588,16 +590,7 @@ export class CommentService {
     actorId: string,
     recipientId: string,
   ): Promise<boolean> {
-    const block = await this.prisma.block.findFirst({
-      where: {
-        OR: [
-          { blockerId: actorId, blockedId: recipientId },
-          { blockerId: recipientId, blockedId: actorId },
-        ],
-      },
-      select: { id: true },
-    });
-    return !block;
+    return !(await this.blocks.isBlockedEitherWay(actorId, recipientId));
   }
 
   private async notify(

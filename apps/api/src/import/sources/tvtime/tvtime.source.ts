@@ -1,7 +1,6 @@
 import { ErrorCode, type TvTimeImportFilesDto } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { AppException } from "../../../common/app.exception";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
@@ -12,6 +11,7 @@ import type {
 } from "../../media-import-model";
 import { readZipEntries } from "../../zip";
 import { MediaImportSource } from "../media/media-import.source";
+import { MediaMatchResolver } from "../media/media-match-resolver";
 import {
   parseTvTimeExport,
   type ParsedMovie,
@@ -38,10 +38,10 @@ export class TvTimeImportSource extends MediaImportSource<ParsedImport> {
   constructor(
     prisma: PrismaService,
     mediaItemService: MediaItemService,
-    tmdb: TmdbProvider,
+    matchResolver: MediaMatchResolver,
     reviews: ReviewService,
   ) {
-    super(prisma, mediaItemService, tmdb, reviews);
+    super(prisma, mediaItemService, matchResolver, reviews);
   }
 
   parseInput(input: string): ParsedImport {

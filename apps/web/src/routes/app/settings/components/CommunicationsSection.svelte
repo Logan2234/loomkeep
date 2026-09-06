@@ -7,14 +7,11 @@
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import { DigestCadence } from "@loomkeep/shared";
 
-  const dailyLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const dailyLocked = $derived(auth.isPremiumLocked);
 
   // A locale change always does a full page reload (see setLocale), so
   // resolving these once at init — rather than re-evaluating m.xxx() per

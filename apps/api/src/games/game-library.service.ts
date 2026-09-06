@@ -24,6 +24,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
@@ -592,8 +593,4 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
 
 function toReplayDto(replay: GameReplay): GameReplayDto {
   return { id: replay.id, finishedAt: replay.finishedAt.toISOString() };
-}
-
-function toDateOrNull(value: string | null): Date | null {
-  return value === null ? null : new Date(value);
 }

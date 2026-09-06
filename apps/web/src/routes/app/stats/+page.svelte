@@ -36,7 +36,6 @@
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
-  import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
@@ -57,9 +56,7 @@
   // redacts the advanced fields server-side for a non-premium account (see
   // feature plan); this flag only drives which sections show a fake/blurred
   // preview instead of the (already-empty) real data.
-  const statsLocked = $derived(
-    liveFlags.isEnabled("premium-features") && !auth.isPremium,
-  );
+  const statsLocked = $derived(auth.isPremiumLocked);
 
   let selected = $state<Choice>("ALL");
   // Narrows the "Activité dans le temps" weekday/hour curves only — see

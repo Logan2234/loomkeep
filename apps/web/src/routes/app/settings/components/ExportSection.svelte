@@ -2,19 +2,10 @@
   import { exportMyData, exportMyDataCsv } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { downloadBlob } from "$lib/download";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { Domain } from "@loomkeep/shared";
-
-  function downloadBlob(content: string, mimeType: string, filename: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   const exportMut = createApiMutation(() => ({
     mutate: exportMyData,

@@ -3,6 +3,7 @@ import { vi, type Mock } from "vitest";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { BlockService } from "./block.service";
 import { FollowService } from "./follow.service";
 import type { VisibilityService } from "./visibility.service";
 
@@ -59,8 +60,16 @@ function makeService(opts: {
     evaluate: vi.fn().mockResolvedValue(undefined),
   } as unknown as AchievementService;
 
+  const blocks = new BlockService(prisma);
+
   return {
-    service: new FollowService(prisma, visibility, notifications, achievements),
+    service: new FollowService(
+      prisma,
+      visibility,
+      notifications,
+      achievements,
+      blocks,
+    ),
     prisma,
     create,
     achievements,

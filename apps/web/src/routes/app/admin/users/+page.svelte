@@ -28,6 +28,8 @@
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
+  import { debounce } from "$lib/debounce";
+  import { downloadBlob } from "$lib/download";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -110,12 +112,11 @@
   // change (which invalidates usersKey) refreshes the open drawer for free.
   const selected = $derived(users.find((u) => u.id === selectedId) ?? null);
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
+  const queryFilterDebounce = debounce(() => {
+    queryFilter = query.trim();
+  }, 300);
   function onQueryInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      queryFilter = query.trim();
-    }, 300);
+    queryFilterDebounce.call();
   }
 
   function activityCount(kind: ActivityKind): number {
@@ -221,15 +222,11 @@
   const exportMut = createApiMutation(() => ({
     mutate: () => getAdminUserExport(selectedId!),
     onSuccess: (data) => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `loomkeep-export-${selected!.username}-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(
+        JSON.stringify(data, null, 2),
+        "application/json",
+        `loomkeep-export-${selected!.username}-${new Date().toISOString().slice(0, 10)}.json`,
+      );
     },
   }));
 
