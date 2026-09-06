@@ -26,7 +26,7 @@ export interface NavSection {
   items: NavItem[];
 }
 
-export const NAVIGATION: NavSection[] = [
+const NAVIGATION: NavSection[] = [
   {
     items: [
       {
