@@ -29,6 +29,18 @@
     PASSWORD_RESET: m.admin_security_password_reset(),
     LOGIN_FAILED: m.admin_security_login_failed(),
     NEW_DEVICE_LOGIN: m.admin_security_new_device(),
+    MFA_TOTP_ENABLED: m.admin_security_mfa_totp_enabled(),
+    MFA_TOTP_DISABLED: m.admin_security_mfa_totp_disabled(),
+    MFA_EMAIL_ENABLED: m.admin_security_mfa_email_enabled(),
+    MFA_EMAIL_DISABLED: m.admin_security_mfa_email_disabled(),
+    MFA_WEBAUTHN_ADDED: m.admin_security_mfa_webauthn_added(),
+    MFA_WEBAUTHN_REMOVED: m.admin_security_mfa_webauthn_removed(),
+    MFA_PASSWORDLESS_ENABLED: m.admin_security_mfa_passwordless_enabled(),
+    MFA_PASSWORDLESS_DISABLED: m.admin_security_mfa_passwordless_disabled(),
+    MFA_RECOVERY_CODES_REGENERATED:
+      m.admin_security_mfa_recovery_codes_regenerated(),
+    MFA_RECOVERY_CODE_USED: m.admin_security_mfa_recovery_code_used(),
+    MFA_CHALLENGE_LOCKED: m.admin_security_mfa_challenge_locked(),
   };
 
   const TYPE_COLORS: Record<SecurityEventType, string> = {
@@ -39,6 +51,17 @@
     PASSWORD_RESET: "border-accent/40 bg-accent/10 text-accent",
     LOGIN_FAILED: "border-danger/40 bg-danger/10 text-danger",
     NEW_DEVICE_LOGIN: "border-accent/40 bg-accent/10 text-accent",
+    MFA_TOTP_ENABLED: "border-success/40 bg-success/10 text-success",
+    MFA_TOTP_DISABLED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_EMAIL_ENABLED: "border-success/40 bg-success/10 text-success",
+    MFA_EMAIL_DISABLED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_WEBAUTHN_ADDED: "border-success/40 bg-success/10 text-success",
+    MFA_WEBAUTHN_REMOVED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_PASSWORDLESS_ENABLED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_PASSWORDLESS_DISABLED: "border-success/40 bg-success/10 text-success",
+    MFA_RECOVERY_CODES_REGENERATED: "border-accent/40 bg-accent/10 text-accent",
+    MFA_RECOVERY_CODE_USED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_CHALLENGE_LOCKED: "border-danger/40 bg-danger/10 text-danger",
   };
 
   const TYPE_OPTIONS = [

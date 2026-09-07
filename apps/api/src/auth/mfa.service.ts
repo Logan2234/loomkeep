@@ -9,6 +9,7 @@ import { AchievementService } from "../gamification/achievements/achievement.ser
 import { ACHIEVEMENT_KEYS_ON_TOTP_ENABLED } from "../gamification/achievements/registry";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { SecurityEventService } from "../security/security-event.service";
 import { BCRYPT_ROUNDS } from "./auth.service";
 import { decryptTotpSecret, encryptTotpSecret } from "./mfa-crypto.util";
 
@@ -29,6 +30,7 @@ export class MfaService {
     private readonly configService: ConfigService,
     private readonly mail: MailService,
     private readonly achievements: AchievementService,
+    private readonly security: SecurityEventService,
   ) {}
 
   private getEncryptionKey(): Buffer {
@@ -81,6 +83,7 @@ export class MfaService {
     userId: string,
     code: string,
     currentSessionId?: string,
+    userAgent?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -110,6 +113,11 @@ export class MfaService {
 
     const recoveryCodes = await this.ensureRecoveryCodes(userId);
     await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_TOTP_ENABLED);
+    await this.security.record({
+      type: "MFA_TOTP_ENABLED",
+      userId,
+      userAgent,
+    });
     return { recoveryCodes };
   }
 
@@ -117,6 +125,7 @@ export class MfaService {
     userId: string,
     currentPassword: string,
     currentSessionId?: string,
+    userAgent?: string,
   ): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -136,6 +145,11 @@ export class MfaService {
       }),
       this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
+    await this.security.record({
+      type: "MFA_TOTP_DISABLED",
+      userId,
+      userAgent,
+    });
   }
 
   async setEmailMfaEnabled(
@@ -143,6 +157,7 @@ export class MfaService {
     enabled: boolean,
     currentPassword: string,
     currentSessionId?: string,
+    userAgent?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
     await this.assertCurrentPassword(userId, currentPassword);
 
@@ -157,6 +172,11 @@ export class MfaService {
     const recoveryCodes = enabled
       ? await this.ensureRecoveryCodes(userId)
       : undefined;
+    await this.security.record({
+      type: enabled ? "MFA_EMAIL_ENABLED" : "MFA_EMAIL_DISABLED",
+      userId,
+      userAgent,
+    });
     return { recoveryCodes };
   }
 
@@ -184,6 +204,7 @@ export class MfaService {
     userId: string,
     currentPassword: string,
     currentSessionId?: string,
+    userAgent?: string,
   ): Promise<string[]> {
     await this.assertCurrentPassword(userId, currentPassword);
 
@@ -191,6 +212,11 @@ export class MfaService {
       deleteExisting: true,
       revokeSessions: true,
       currentSessionId,
+    });
+    await this.security.record({
+      type: "MFA_RECOVERY_CODES_REGENERATED",
+      userId,
+      userAgent,
     });
     return codes;
   }

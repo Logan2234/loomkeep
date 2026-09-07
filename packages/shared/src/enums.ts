@@ -303,6 +303,21 @@ export const SecurityEventType = {
   PASSWORD_RESET: "PASSWORD_RESET",
   LOGIN_FAILED: "LOGIN_FAILED",
   NEW_DEVICE_LOGIN: "NEW_DEVICE_LOGIN",
+  MFA_TOTP_ENABLED: "MFA_TOTP_ENABLED",
+  MFA_TOTP_DISABLED: "MFA_TOTP_DISABLED",
+  MFA_EMAIL_ENABLED: "MFA_EMAIL_ENABLED",
+  MFA_EMAIL_DISABLED: "MFA_EMAIL_DISABLED",
+  MFA_WEBAUTHN_ADDED: "MFA_WEBAUTHN_ADDED",
+  MFA_WEBAUTHN_REMOVED: "MFA_WEBAUTHN_REMOVED",
+  MFA_PASSWORDLESS_ENABLED: "MFA_PASSWORDLESS_ENABLED",
+  MFA_PASSWORDLESS_DISABLED: "MFA_PASSWORDLESS_DISABLED",
+  MFA_RECOVERY_CODES_REGENERATED: "MFA_RECOVERY_CODES_REGENERATED",
+  // The 2nd factor fell back to a recovery code during login — signals every
+  // other configured MFA method was unavailable/bypassed for this sign-in.
+  MFA_RECOVERY_CODE_USED: "MFA_RECOVERY_CODE_USED",
+  // A pending MfaLoginChallenge was deleted for exceeding MAX_MFA_CHALLENGE_ATTEMPTS —
+  // the 2nd-factor equivalent of LOGIN_FAILED's brute-force signal.
+  MFA_CHALLENGE_LOCKED: "MFA_CHALLENGE_LOCKED",
 } as const;
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];

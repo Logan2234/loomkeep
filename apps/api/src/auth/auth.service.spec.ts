@@ -15,6 +15,7 @@ import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
 import type { MfaService } from "./mfa.service";
 import type { TurnstileService } from "./turnstile.service";
+import type { WebauthnService } from "./webauthn.service";
 
 /** Login tests here all use non-MFA accounts, so the result is always the AuthResult branch. */
 function asAuthResult(result: LoginResponseDto): AuthResult {
@@ -149,6 +150,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     verifyRecoveryCode: vi.fn().mockResolvedValue(false),
   } as unknown as MfaService;
 
+  const webauthn = {
+    hasCredentials: vi.fn().mockResolvedValue(false),
+  } as unknown as WebauthnService;
+
   const service = new AuthService(
     prisma,
     jwtService,
@@ -159,6 +164,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     hibp,
     flags,
     mfa,
+    webauthn,
   );
 
   return {
