@@ -5,18 +5,14 @@
   import { m } from "$lib/paraglide/messages.js";
   import { levelProgress, xpForLevel } from "@loomkeep/shared";
 
-  // "Reel" design ("bobine qui se charge" — validated in the "Trois séances"
-  // artifact): 10 fixed cells, one lights up proportionally as the current
-  // level fills up. xpForCurrentLevel is the total cost of the level the
-  // user is currently in (xpForLevel(level+1) - xpForLevel(level)), used
-  // both for the "x / y XP" line and for sizing the cells.
   let {
     xp,
     leaderboardHref,
+    achievementsHref,
   }: {
     xp: number;
-    /** [G7] Own profile only — a stranger's XP card doesn't link anywhere. */
     leaderboardHref?: string;
+    achievementsHref?: string;
   } = $props();
 
   const progress = $derived(levelProgress(xp));
@@ -29,9 +25,6 @@
 
   const CELL_COUNT = 10;
 
-  // filled: cells entirely lit. current: the one cell mid-fill (its
-  // --fill-pct), skipped when pctInLevel lands exactly on a cell boundary —
-  // that cell is then fully filled instead, not a 0%/100% "current" cell.
   const filledExact = $derived(pctInLevel * CELL_COUNT);
   const filled = $derived(Math.floor(filledExact));
   const onBoundary = $derived(Number.isInteger(filledExact));
@@ -69,13 +62,9 @@
   };
 </script>
 
-<div
-  class="border-border bg-surface relative rounded-2xl border px-6 py-5.5 shadow-[0_1px_2px_rgba(28,23,18,.06),0_8px_24px_rgba(28,23,18,.05)] dark:shadow-[0_1px_2px_rgba(0,0,0,.4),0_12px_32px_rgba(0,0,0,.35)]">
+<div class="relative">
   {#if leaderboardHref && isFeatureNew("leaderboard")}
-    <!-- Poking over the card's own top edge, rather than inline next to the
-         footer link's label — a ribbon announcing the card grew a new
-         feature, not a tag on the link itself. -->
-    <span class="absolute -top-2.5 right-5"><NewBadge /></span>
+    <span class="absolute -top-2.5 -right-2"><NewBadge /></span>
   {/if}
   <div
     class="mb-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -106,15 +95,28 @@
       </div>
     {/each}
   </div>
-  {#if leaderboardHref}
-    <a
-      href={leaderboardHref}
-      class="btn-text border-border mt-4 flex items-center justify-between gap-2 border-t pt-3.5 text-sm">
-      <span class="flex items-center gap-2">
-        <Icon name="crown" class="h-4 w-4" />
-        {m.gamification_view_leaderboard()}
-      </span>
-      <Icon name="chevron-right" class="h-3.5 w-3.5" />
-    </a>
+  {#if leaderboardHref || achievementsHref}
+    <div
+      class="border-border mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t pt-3.5 text-sm">
+      {#if achievementsHref}
+        <a href={achievementsHref} class="btn-text relative">
+          <Icon name="trophy" class="h-4 w-4" />
+          {m.gamification_my_achievements()}
+          {#if isFeatureNew("achievements")}
+            <span
+              class="bg-accent border-surface absolute -top-1 -right-2 h-2 w-2 rounded-full border-2"
+              aria-hidden="true">
+            </span>
+          {/if}
+        </a>
+      {/if}
+      {#if leaderboardHref}
+        <a href={leaderboardHref} class="btn-text">
+          <Icon name="crown" class="h-4 w-4" />
+          {m.gamification_view_leaderboard()}
+          <Icon name="chevron-right" class="h-3.5 w-3.5" />
+        </a>
+      {/if}
+    </div>
   {/if}
 </div>

@@ -12,7 +12,7 @@
 
 **Status in production** </br>
 [![healthchecks.io](https://healthchecks.io/badge/e006c4d6-231b-434f-8357-4fa7ab/CWqULdZN.svg)](https://healthchecks.io/)
-[![Uptime](https://img.shields.io/uptimerobot/status/m803690521-ce3fa37e29f1160d9104e331)](https://stats.uptimerobot.com/3nvxkigZ8T)
+[![Uptime](https://badge.uptimerobot.com/psp/e1c67613d49507a70212caebf47e783d.svg?style=logo&theme=dark)](https://stats.uptimerobot.com/3nvxkigZ8T?utm_source=status_badge&utm_medium=referral)
 
 **Project** </br>
 [![License](https://img.shields.io/github/license/Logan2234/loomkeep)](LICENSE)

@@ -1,51 +1,12 @@
 <script lang="ts">
+  import { activityPhrase, activityRating } from "$lib/activity-phrase";
   import Avatar from "$lib/components/Avatar.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
-  import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto } from "@loomkeep/shared";
 
   let { event }: { event: ActivityEventDto } = $props();
 
-  // Localized action phrase for an event. PROGRESS/LIST_ITEM_ADDED use their
-  // aggregated count.
-  function phrase(e: ActivityEventDto): string {
-    switch (e.type) {
-      case "ADDED":
-        return m.activity_added();
-      case "STARTED":
-        return m.activity_started();
-      case "FINISHED":
-        return m.activity_finished();
-      case "DROPPED":
-        return m.activity_dropped();
-      case "REWATCHED":
-        return m.activity_rewatched();
-      case "FAVORITED":
-        return m.activity_favorited();
-      case "REVIEWED":
-        return m.activity_reviewed();
-      case "PROGRESS":
-        return e.count > 1
-          ? m.activity_progress_count({ count: e.count })
-          : m.activity_progress();
-      case "LIST_CREATED":
-        return m.activity_list_created();
-      case "LIST_ITEM_ADDED":
-        return e.count > 1
-          ? m.activity_list_item_added_count({ count: e.count })
-          : m.activity_list_item_added();
-      case "LIST_SHARED":
-        return m.activity_list_shared();
-      default:
-        return m.activity_updated();
-    }
-  }
-
-  const rating = $derived(
-    event.type === "REVIEWED" && typeof event.data.rating === "number"
-      ? event.data.rating
-      : null,
-  );
+  const rating = $derived(activityRating(event));
 </script>
 
 <li class="card flex items-center gap-3 p-3">
@@ -60,7 +21,7 @@
         class="font-semibold hover:underline">
         {event.actor.displayName}
       </a>
-      <span class="text-dim">{phrase(event)}</span>
+      <span class="text-dim">{activityPhrase(event)}</span>
       {#if event.href}
         <a href={event.href} class="hover:text-accent font-medium">
           {event.title}
