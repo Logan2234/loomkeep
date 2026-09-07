@@ -1,3 +1,3 @@
 # CODEOWNERS
 
--       @Logan2234
+*       @Logan2234
