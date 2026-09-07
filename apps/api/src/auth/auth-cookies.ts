@@ -42,10 +42,7 @@ export function clearAuthCookies(reply: FastifyReply): void {
   ]);
 }
 
-export function readAuthCookie(
-  request: FastifyRequest,
-  name: string,
-): string | null {
+function readAuthCookie(request: FastifyRequest, name: string): string | null {
   const raw = request.headers.cookie;
   if (!raw) return null;
 

@@ -134,7 +134,6 @@ export class AuthController {
     const refreshToken = readRefreshCookie(request);
 
     if (!refreshToken) {
-      clearAuthCookies(reply);
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthInvalidRefreshToken,

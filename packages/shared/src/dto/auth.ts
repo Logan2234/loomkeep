@@ -26,6 +26,11 @@ export interface AuthTokensDto {
   refreshToken: string;
 }
 
+/** Successful registration and completed MFA-login response. */
+export interface AuthResultResponseDto {
+  user: UserDto;
+}
+
 export interface ChangeEmailRequestDto {
   newEmail: string;
   currentPassword: string;
