@@ -23,17 +23,16 @@
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EditAvatarModal from "$lib/components/EditAvatarModal.svelte";
   import EditProfileModal from "$lib/components/EditProfileModal.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import ProfileActivity from "$lib/components/ProfileActivity.svelte";
   import ProfileConnectionsModal from "$lib/components/profile/ProfileConnectionsModal.svelte";
   import ProfileHeader from "$lib/components/profile/ProfileHeader.svelte";
+  import ProfileLibrarySection from "$lib/components/profile/ProfileLibrarySection.svelte";
   import ProfileListsSection from "$lib/components/profile/ProfileListsSection.svelte";
+  import ProfileStatsCard from "$lib/components/profile/ProfileStatsCard.svelte";
   import ProfileReviews from "$lib/components/ProfileReviews.svelte";
   import ScanProfileModal from "$lib/components/ScanProfileModal.svelte";
   import ShareProfileModal from "$lib/components/ShareProfileModal.svelte";
-  import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
-  import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { formatDate, MONTH_YEAR_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
@@ -43,6 +42,8 @@
     SocialProfileDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import LevelCard from "../LevelCard.svelte";
+  import BadgeShowcase from "../BadgeShowcase.svelte";
 
   // Shared body for both /u/[username] (any profile, including your own —
   // read-only there even for yourself) and /profile (your own, with the
@@ -52,22 +53,6 @@
     username,
     publicView = false,
   }: { username: string; publicView?: boolean } = $props();
-
-  const DOMAIN_LABEL: Record<string, string> = {
-    MEDIA: m.common_Media(),
-    GAMES: m.common_Games(),
-    BOOKS: m.common_Books(),
-    MUSIC: m.common_Music(),
-    PODCASTS: m.common_Podcasts(),
-    BOARDGAMES: m.common_Boardgames(),
-  };
-
-  const DOMAIN_HREF: Record<string, string> = {
-    MEDIA: "/app/media",
-    GAMES: "/app/games",
-    BOOKS: "/app/books",
-    MUSIC: "/app/music",
-  };
 
   const queryClient = useQueryClient();
 
@@ -137,29 +122,6 @@
 
   let memberSince = $derived(
     profile ? formatDate(profile.createdAt, MONTH_YEAR_OPTIONS) : "",
-  );
-
-  const FULL_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  };
-
-  let firstActivity = $derived(
-    profile?.activityStats.firstActivityAt
-      ? formatDate(profile.activityStats.firstActivityAt, FULL_DATE_OPTIONS)
-      : null,
-  );
-  let watchDays = $derived(
-    profile ? Math.round(profile.activityStats.totalMinutes / 1440) : 0,
-  );
-  // The heatmap teaser spans the last 90 days — count the days with any
-  // activity in it, rather than the mockup's "cette année" wording (which
-  // assumed a full-year window this teaser deliberately isn't).
-  let activeRecentDays = $derived(
-    profile
-      ? profile.activityStats.heatmap.filter((d) => d.count > 0).length
-      : 0,
   );
 
   // The primary action label reflects the relationship + the target's access.
@@ -299,7 +261,7 @@
   }
 </script>
 
-<div class="mx-auto max-w-3xl px-4 py-6 md:py-8">
+<div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
   {#if loading}
     <div class="card p-6">
       <div class="flex items-center gap-4">
@@ -371,182 +333,93 @@
       </Banner>
     {/if}
 
-    <ProfileHeader
-      {profile}
-      {rel}
-      {selfManage}
-      {publicView}
-      {busy}
-      {followLabel}
-      {ghostCantFollow}
-      {memberSince}
-      onToggleFollow={toggleFollow}
-      onToggleBlock={toggleBlock}
-      onSignOut={signOut}
-      onOpenAvatarZoom={() => (avatarZoomed = true)}
-      onOpenAvatarModal={() => (avatarModalOpen = true)}
-      onOpenEditProfile={() => (editProfileModalOpen = true)}
-      onOpenShareModal={() => (shareModalOpen = true)}
-      onOpenScanModal={() => (scanModalOpen = true)}
-      onOpenConnections={openConnections} />
-
-    <!-- Per-domain library, gated by the viewer's visibility. -->
-    <SectionLabel label={m.common_library()} class="mt-8 mb-3" />
-    <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {#each profile.domains as d (d.domain)}
-        {@const href = selfManage ? DOMAIN_HREF[d.domain] : undefined}
-        <svelte:element
-          this={href ? "a" : "div"}
-          {href}
-          class="card p-4 {href
-            ? 'hover:border-accent transition-colors'
-            : ''}">
-          <p class="text-dim text-xs font-semibold tracking-wide uppercase">
-            {DOMAIN_LABEL[d.domain] ?? d.domain}
-          </p>
-          {#if d.visible}
-            <p class="timecode text-fg mt-1 text-2xl font-bold">{d.count}</p>
-            <p class="text-dim text-xs">
-              {d.count > 1 ? m.library_title_many() : m.library_title_one()}
-            </p>
-            {#if d.favorites > 0}
-              <p
-                class="text-accent mt-1.5 flex items-center gap-1 text-xs font-bold">
-                ♥ {d.favorites}
-                {d.favorites > 1
-                  ? m.profile_favorite_many()
-                  : m.profile_favorite_one()}
-              </p>
-            {/if}
-          {:else}
-            <p class="text-dim mt-1 text-sm">{m.common_private()}</p>
-          {/if}
-        </svelte:element>
-      {/each}
-    </section>
-
-    <!-- Cross-domain video figures + social counters, gated the same way as
-         the streak above (activityStats: MEDIA Activité facet; social counts:
-         each type's own visibility rule). -->
-    {#if (profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null || profile.activityStats.topGenres.length > 0)) || profile.reviewsCount > 0 || profile.commentsCount > 0 || profile.listsCount > 0}
-      <SectionLabel label={m.profile_stats_section()} class="mt-8 mb-3" />
-
-      {#if profile.activityStats.visible && (watchDays > 0 || profile.activityStats.mostActiveYear !== null)}
-        <div
-          class="border-border flex flex-wrap overflow-hidden rounded-xl border">
-          {#if watchDays > 0}
-            <div class="border-border min-w-35 flex-1 border-r border-b p-3.5">
-              <p class="font-display text-xl font-extrabold tracking-tight">
-                {watchDays}<span class="text-dim text-xs font-bold">
-                  {m.common_days_short()}</span>
-              </p>
-              <p class="text-dim mt-0.5 text-xs">
-                {m.profile_watch_time_cumulative()}
-              </p>
-            </div>
-          {/if}
-          {#if profile.activityStats.mostActiveYear !== null}
-            <div class="min-w-35 flex-1 border-b p-3.5">
-              <p class="font-display text-xl font-extrabold tracking-tight">
-                {profile.activityStats.mostActiveYear}
-              </p>
-              <p class="text-dim mt-0.5 text-xs">
-                {m.profile_most_active_year()}
-              </p>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      {#if profile.activityStats.topGenres.length > 0}
-        <div class="mt-2.5 flex flex-wrap gap-1.5">
-          {#each profile.activityStats.topGenres as g (g.label)}
-            <span
-              class="bg-surface-2 border-border rounded-full border px-2.5 py-1 text-xs">
-              {g.label}<b class="timecode ml-1 font-normal">{g.count}</b>
-            </span>
-          {/each}
-        </div>
-      {/if}
-
-      {#if profile.reviewsCount > 0 || profile.commentsCount > 0 || profile.listsCount > 0}
-        <div
-          class="border-border mt-3 flex flex-wrap gap-5 border-t pt-3 text-sm">
-          {#if profile.reviewsCount > 0}
-            <div>
-              <span class="timecode text-fg font-bold"
-                >{profile.reviewsCount}</span>
-              <span class="text-dim ml-1 text-xs"
-                >{profile.reviewsCount > 1
-                  ? m.profile_reviews_count_plural()
-                  : m.profile_reviews_count_singular()}</span>
-            </div>
-          {/if}
-          {#if profile.commentsCount > 0}
-            <div>
-              <span class="timecode text-fg font-bold"
-                >{profile.commentsCount}</span>
-              <span class="text-dim ml-1 text-xs"
-                >{m.profile_comments_count()}</span>
-            </div>
-          {/if}
-          {#if profile.listsCount > 0}
-            <div>
-              <span class="timecode text-fg font-bold"
-                >{profile.listsCount}</span>
-              <span class="text-dim ml-1 text-xs"
-                >{profile.listsCount > 1
-                  ? m.profile_lists_count_plural()
-                  : m.profile_lists_count_singular()}</span>
-            </div>
-          {/if}
-        </div>
-      {/if}
-    {/if}
-
-    <!-- Mini activity heatmap teaser (video-only) — the card itself isn't a
-         link, only the "voir tout" line is, matching the mockup. -->
-    {#if profile.activityStats.visible && profile.activityStats.heatmap.some((d) => d.count > 0)}
-      <SectionLabel label={m.common_activity()} class="mt-8 mb-3" />
-      <div class="card flex flex-wrap items-center gap-3.5 p-4">
-        <CalendarHeatmap
-          days={profile.activityStats.heatmap}
-          legend={false}
-          compact />
-        <div class="text-sm">
-          <p>
-            {m.common_active()}
-            <b class="font-bold"
-              >{m.profile_activity_days({ days: activeRecentDays })}</b>
-            {m.profile_activity_summary_suffix()}{#if firstActivity}
-              {m.profile_activity_first_trace({ date: firstActivity })}{/if}
-          </p>
-          <a
-            href="/app/stats"
-            class="btn-text text-accent hover:text-accent group mt-0.5">
-            {m.profile_activity_view_stats()}
-            <Icon
-              name="arrow-right"
-              class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </a>
-        </div>
-      </div>
-    {/if}
-
-    {#if appConfig.socialEnabled && listTiles.length > 0}
-      <ProfileListsSection
-        {listTiles}
+    <!-- Identity + progression, side by side: two cards of matching chrome
+         rather than one card that grows to swallow the other. No
+         items-start — the row stretches both to the taller card's height
+         (grid's default), so whichever one has less content (no bio, no
+         equipped badges…) still reaches the same bottom edge instead of
+         leaving a gap before the next section. Collapses to a single
+         column — no explicit lg:grid-cols-* — whenever there's no
+         progression panel to sit beside (gamification off, or xp withheld). -->
+    {@const xp = profile.xp}
+    <div
+      class="grid gap-5 lg:gap-7 {appConfig.gamificationEnabled && xp !== null
+        ? 'lg:grid-cols-[1fr_358px]'
+        : ''}">
+      <ProfileHeader
+        {profile}
+        {rel}
         {selfManage}
-        hasOwnLists={lists.length > 0}
-        onCreateList={() => (creatingList = true)} />
-    {/if}
+        {publicView}
+        {busy}
+        {followLabel}
+        {ghostCantFollow}
+        {memberSince}
+        onToggleFollow={toggleFollow}
+        onToggleBlock={toggleBlock}
+        onSignOut={signOut}
+        onOpenAvatarZoom={() => (avatarZoomed = true)}
+        onOpenAvatarModal={() => (avatarModalOpen = true)}
+        onOpenEditProfile={() => (editProfileModalOpen = true)}
+        onOpenShareModal={() => (shareModalOpen = true)}
+        onOpenScanModal={() => (scanModalOpen = true)}
+        onOpenConnections={openConnections} />
+      {#if appConfig.gamificationEnabled && xp !== null}
+        <!-- justify-center rather than pinning content to the top (or the
+             badges to the bottom via mt-auto): when the row stretches this
+             card taller than its own content — a bare level, no equipped
+             badges — the spare height splits evenly above and below instead
+             of stranding the badge row far from everything else. -->
+        <aside class="card flex flex-col justify-center p-5 md:p-6">
+          <LevelCard
+            {xp}
+            leaderboardHref={selfManage && appConfig.socialEnabled
+              ? "/app/leaderboard"
+              : undefined}
+            achievementsHref={selfManage ? "/app/achievements" : undefined} />
+          <div class="mt-3">
+            <BadgeShowcase badges={profile.equippedBadges} />
+          </div>
+        </aside>
+      {/if}
+    </div>
 
-    {#if selfManage}
-      <ProfileReviews />
-    {/if}
+    <!-- Wide column: what the viewer produces. Narrow column: what they're
+         measured on. Every section is its own grid item (not nested inside
+         a wide-column wrapper) so mobile can order them independently of
+         where they land on desktop: "En chiffres" reads right after the
+         library there, not stranded at the very bottom under activity —
+         `order-*` drives the single mobile column, `lg:col-start-*` +
+         `lg:row-span-*` place them into the two desktop columns instead. -->
+    <div class="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_358px] lg:gap-7">
+      <div class="order-1 lg:order-0 lg:col-start-1">
+        <ProfileLibrarySection domains={profile.domains} {selfManage} />
+      </div>
 
-    <!-- Recent activity (visibility-filtered server-side; self-hides if empty). -->
-    <ProfileActivity username={profile.username} />
+      <div class="order-2 lg:order-0 lg:col-start-2 lg:row-span-4">
+        <ProfileStatsCard {profile} />
+      </div>
+
+      {#if appConfig.socialEnabled && listTiles.length > 0}
+        <div class="order-3 lg:order-0 lg:col-start-1">
+          <ProfileListsSection
+            {listTiles}
+            {selfManage}
+            hasOwnLists={lists.length > 0}
+            onCreateList={() => (creatingList = true)} />
+        </div>
+      {/if}
+
+      {#if selfManage}
+        <div class="order-4 lg:order-0 lg:col-start-1">
+          <ProfileReviews />
+        </div>
+      {/if}
+
+      <div class="order-5 lg:order-0 lg:col-start-1">
+        <ProfileActivity username={profile.username} />
+      </div>
+    </div>
   {/if}
 </div>
 

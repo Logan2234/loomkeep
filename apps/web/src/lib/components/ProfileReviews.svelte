@@ -3,13 +3,10 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
 
-  // Preview of the current user's own reviews, shown on their profile (own
-  // view only — "Mes reviews" isn't a public surface). Mirrors the "Listes"
-  // section above it: a few recent items plus a "Gérer" link to the full
-  // management page, which stays out of the nav.
   const PREVIEW_COUNT = 3;
 
   const TYPE_LABEL: Record<string, string> = {
@@ -21,6 +18,15 @@
     EPISODE: m.common_episode(),
   };
 
+  const TYPE_HUE: Record<string, string> = {
+    MEDIA: "var(--stat-media)",
+    SEASON: "var(--stat-media)",
+    EPISODE: "var(--stat-media)",
+    GAME: "var(--stat-games)",
+    BOOK: "var(--stat-books)",
+    MUSIC: "var(--stat-music)",
+  };
+
   const reviewsQuery = createApiQuery(() => ({
     key: keys.profile.myReviews(),
     fetch: getMyReviews,
@@ -30,21 +36,21 @@
 </script>
 
 {#if !reviewsQuery.loading && reviews.length > 0}
-  <section class="mt-10">
-    <div class="mb-3 flex items-center justify-between">
-      <h2 class="font-display text-xl font-bold">
-        {m.profile_reviews_title()}
-      </h2>
-      <a
-        href="/app/reviews"
-        class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold">
-        {m.common_manage()}
-        <Icon name="chevron-right" class="h-4 w-4" />
-      </a>
-    </div>
-    <ul class="space-y-2">
+  <section>
+    <ProfileSectionHeading label={m.profile_reviews_title()}>
+      {#snippet action()}
+        <a
+          href="/app/reviews"
+          class="text-dim hover:text-accent flex items-center gap-1 text-xs font-semibold whitespace-nowrap">
+          {m.common_manage()}
+          <Icon name="chevron-right" class="h-3.5 w-3.5" />
+        </a>
+      {/snippet}
+    </ProfileSectionHeading>
+    <ul class="divide-border/70 flex flex-col divide-y">
       {#each reviews as review (review.id)}
-        <li class="card flex items-center gap-3 p-3">
+        <li
+          class="hover:bg-surface-2 -mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors">
           <svelte:element
             this={review.target?.href ? "a" : "div"}
             href={review.target?.href ?? undefined}
@@ -55,10 +61,12 @@
               <img
                 src={review.target.imageUrl}
                 alt=""
-                class="h-16 w-12 shrink-0 rounded object-cover" />
+                class="h-16 w-12 shrink-0 rounded-md object-cover" />
             {:else}
+              {@const hue = TYPE_HUE[review.targetType] ?? "var(--dim)"}
               <div
-                class="bg-surface-2 text-dim flex h-16 w-12 shrink-0 items-center justify-center rounded font-mono text-xs">
+                class="flex h-16 w-12 shrink-0 items-center justify-center rounded-md font-mono text-sm font-bold"
+                style="background: linear-gradient(155deg, color-mix(in srgb, {hue} 55%, var(--surface-2)), color-mix(in srgb, {hue} 12%, var(--surface-2))); color: color-mix(in srgb, {hue} 85%, var(--fg));">
                 {TYPE_LABEL[review.targetType]?.[0] ?? "?"}
               </div>
             {/if}
