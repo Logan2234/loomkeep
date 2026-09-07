@@ -1,4 +1,4 @@
-import { ErrorCode, type LoginResponseDto } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
@@ -17,7 +17,9 @@ import type { MfaService } from "./mfa.service";
 import type { TurnstileService } from "./turnstile.service";
 
 /** Login tests here all use non-MFA accounts, so the result is always the AuthResult branch. */
-function asAuthResult(result: LoginResponseDto): AuthResult {
+function asAuthResult(
+  result: Awaited<ReturnType<AuthService["login"]>>,
+): AuthResult {
   if (result.mfaRequired) {
     throw new Error("Expected a completed login, got an MFA challenge");
   }
