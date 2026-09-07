@@ -456,9 +456,13 @@
         la langue choisie ;
       </li>
       <li>
-        un stockage local (<code>localStorage</code>) contenant les jetons de
-        connexion, le thème choisi (clair/sombre) et l'état replié/déplié de la
-        barre latérale.
+        deux cookies de connexion <code>HttpOnly</code>, strictement
+        nécessaires, non accessibles par JavaScript et supprimés à la
+        déconnexion ;
+      </li>
+      <li>
+        un stockage local (<code>localStorage</code>) contenant le thème choisi
+        (clair/sombre) et l'état replié/déplié de la barre latérale.
       </li>
     </ul>
     <p>Aucun de ces éléments n'est utilisé à des fins de suivi publicitaire.</p>

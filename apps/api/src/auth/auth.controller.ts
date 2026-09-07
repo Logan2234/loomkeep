@@ -1,4 +1,8 @@
-import type { AuthTokensDto, LoginResponseDto } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  type LoginResponseDto,
+  type UserDto,
+} from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -7,6 +11,8 @@ import {
   HttpStatus,
   Ip,
   Post,
+  Req,
+  Res,
 } from "@nestjs/common";
 import {
   ApiCreatedResponse,
@@ -15,7 +21,14 @@ import {
   getSchemaPath,
 } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import { AuthResult, AuthService } from "./auth.service";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import { AppException } from "../common/app.exception";
+import {
+  clearAuthCookies,
+  readRefreshCookie,
+  setAuthCookies,
+} from "./auth-cookies";
+import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { AuthResultResponseDto } from "./dto/auth-result-response.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
@@ -25,7 +38,6 @@ import {
 } from "./dto/login-response.dto";
 import { LoginDto } from "./dto/login.dto";
 import { MfaVerifyDto } from "./dto/mfa-verify.dto";
-import { RefreshDto } from "./dto/refresh.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { ResendMfaEmailCodeDto } from "./dto/resend-mfa-email-code.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
@@ -43,13 +55,21 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiCreatedResponse({ type: AuthResultResponseDto })
   @Post("register")
-  register(
+  async register(
     @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
     @Headers("accept-language") acceptLanguage?: string,
-  ): Promise<AuthResult> {
-    return this.authService.register(dto, userAgent, ip, acceptLanguage);
+  ): Promise<{ user: UserDto }> {
+    const result = await this.authService.register(
+      dto,
+      userAgent,
+      ip,
+      acceptLanguage,
+    );
+    setAuthCookies(reply, result.tokens);
+    return { user: result.user };
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
@@ -64,12 +84,17 @@ export class AuthController {
     },
   })
   @Post("login")
-  login(
+  async login(
     @Body() dto: LoginDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
   ): Promise<LoginResponseDto> {
-    return this.authService.login(dto, userAgent, ip);
+    const result = await this.authService.login(dto, userAgent, ip);
+    if (result.mfaRequired) return result;
+
+    setAuthCookies(reply, result.tokens);
+    return { mfaRequired: false, user: result.user };
   }
 
   // Same budget as login — this is its natural continuation for MFA-enabled accounts.
@@ -79,15 +104,18 @@ export class AuthController {
   @Post("mfa/verify")
   async mfaVerify(
     @Body() dto: MfaVerifyDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
     @Headers("user-agent") userAgent?: string,
     @Ip() ip?: string,
-  ): Promise<AuthResult> {
-    return this.authService.verifyMfaLogin(
+  ): Promise<{ user: UserDto }> {
+    const result = await this.authService.verifyMfaLogin(
       dto.challengeId,
       dto.code,
       userAgent,
       ip,
     );
+    setAuthCookies(reply, result.tokens);
+    return { user: result.user };
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -97,16 +125,40 @@ export class AuthController {
     await this.authService.resendMfaEmailCode(dto.challengeId);
   }
 
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post("refresh")
-  async refresh(@Body() dto: RefreshDto): Promise<{ tokens: AuthTokensDto }> {
-    return { tokens: await this.authService.refresh(dto.refreshToken) };
+  async refresh(
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<void> {
+    const refreshToken = readRefreshCookie(request);
+
+    if (!refreshToken) {
+      clearAuthCookies(reply);
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidRefreshToken,
+      );
+    }
+
+    try {
+      setAuthCookies(reply, await this.authService.refresh(refreshToken));
+    } catch (error) {
+      if (!(error instanceof AppException)) throw error;
+      clearAuthCookies(reply);
+      throw error;
+    }
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("logout")
-  async logout(@Body() dto: RefreshDto): Promise<void> {
-    await this.authService.logout(dto.refreshToken);
+  async logout(
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<void> {
+    const refreshToken = readRefreshCookie(request);
+    if (refreshToken) await this.authService.logout(refreshToken);
+    clearAuthCookies(reply);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })

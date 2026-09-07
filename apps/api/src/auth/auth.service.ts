@@ -59,6 +59,10 @@ export interface AuthResult {
   tokens: AuthTokensDto;
 }
 
+type LoginResult =
+  | Extract<LoginResponseDto, { mfaRequired: true }>
+  | ({ mfaRequired: false } & AuthResult);
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -230,7 +234,7 @@ export class AuthService {
     dto: LoginDto,
     userAgent?: string,
     ip?: string,
-  ): Promise<LoginResponseDto> {
+  ): Promise<LoginResult> {
     const user = await this.prisma.user.findFirst({
       where: { OR: [{ email: dto.identifier }, { username: dto.identifier }] },
     });
@@ -270,7 +274,9 @@ export class AuthService {
    * "email" at the method-choice step (see resendMfaEmailCode(), reused for
    * both the initial send and any later resend).
    */
-  private async startMfaChallenge(user: User): Promise<LoginResponseDto> {
+  private async startMfaChallenge(
+    user: User,
+  ): Promise<Extract<LoginResponseDto, { mfaRequired: true }>> {
     let emailCodeHash: string | undefined;
     let emailCodeExpiresAt: Date | undefined;
 
@@ -551,7 +557,10 @@ export class AuthService {
    * removed, so they'd otherwise pile up here as phantom "connected" devices
    * across app restarts — prune them first.
    */
-  async listSessions(userId: string): Promise<SessionDto[]> {
+  async listSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<SessionDto[]> {
     await this.prisma.refreshToken.deleteMany({
       where: { userId, expiresAt: { lt: new Date() } },
     });
@@ -563,6 +572,7 @@ export class AuthService {
     return sessions.map((s) => ({
       id: s.id,
       jti: s.jti,
+      isCurrent: s.id === currentSessionId,
       userAgent: s.userAgent,
       createdAt: s.createdAt.toISOString(),
       lastUsedAt: s.lastUsedAt.toISOString(),
@@ -576,10 +586,13 @@ export class AuthService {
     });
   }
 
-  /** Revokes every session except the current device (identified by its jti). */
-  async revokeOtherSessions(userId: string, exceptJti: string): Promise<void> {
+  /** Revokes every session except the current device. */
+  async revokeOtherSessions(
+    userId: string,
+    currentSessionId: string,
+  ): Promise<void> {
     await this.prisma.refreshToken.deleteMany({
-      where: { userId, jti: { not: exceptJti } },
+      where: { userId, id: { not: currentSessionId } },
     });
   }
 

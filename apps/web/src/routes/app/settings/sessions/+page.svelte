@@ -7,7 +7,6 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
@@ -15,9 +14,6 @@
   import { formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
-
-  // The device we're browsing from, so it's never offered for revocation.
-  const currentJti = auth.currentSessionJti;
 
   const sessionsQuery = createApiQuery(() => ({
     key: keys.sessions.all(),
@@ -36,9 +32,7 @@
     mutate: () =>
       confirmTarget?.kind === "one"
         ? revokeSession(confirmTarget.session.id)
-        : currentJti
-          ? revokeOtherSessions(currentJti)
-          : Promise.resolve(),
+        : revokeOtherSessions(),
     invalidates: [keys.sessions.all()],
     onSuccess: () => (confirmTarget = null),
   }));
@@ -48,7 +42,7 @@
     revokeMut.mutate();
   }
 
-  let hasOthers = $derived(sessions.some((s) => s.jti !== currentJti));
+  let hasOthers = $derived(sessions.some((s) => !s.isCurrent));
 </script>
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
@@ -65,7 +59,7 @@
   {:else}
     <div class="card divide-border divide-y">
       {#each sessions as session (session.id)}
-        {@const isCurrent = session.jti === currentJti}
+        {@const isCurrent = session.isCurrent}
         <div class="flex items-center gap-4 p-4">
           <Icon name="monitor" class="text-dim h-6 w-6 shrink-0" />
           <div class="min-w-0 flex-1">

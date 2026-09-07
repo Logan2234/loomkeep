@@ -760,6 +760,33 @@ describe("AuthService.refresh", () => {
 });
 
 describe("AuthService.listSessions", () => {
+  it("marks the signed cookie session as current without exposing its token", async () => {
+    const { service, prisma } = makeService();
+    const now = new Date();
+    (prisma.refreshToken.findMany as Mock).mockResolvedValue([
+      {
+        id: "current-session",
+        jti: "refresh-jti",
+        userAgent: "Browser",
+        createdAt: now,
+        lastUsedAt: now,
+      },
+    ]);
+
+    await expect(
+      service.listSessions("user-1", "current-session"),
+    ).resolves.toEqual([
+      {
+        id: "current-session",
+        jti: "refresh-jti",
+        isCurrent: true,
+        userAgent: "Browser",
+        createdAt: now.toISOString(),
+        lastUsedAt: now.toISOString(),
+      },
+    ]);
+  });
+
   it("prunes expired sessions before listing, so dead ones don't linger as phantom devices", async () => {
     const { service, prisma } = makeService();
     (prisma.refreshToken.findMany as Mock).mockResolvedValue([]);
@@ -783,6 +810,18 @@ describe("AuthService.revokeAllSessions", () => {
 
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1" },
+    });
+  });
+});
+
+describe("AuthService.revokeOtherSessions", () => {
+  it("keeps the session identified by the signed access-token sid", async () => {
+    const { service, prisma } = makeService();
+
+    await service.revokeOtherSessions("user-1", "current-session");
+
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", id: { not: "current-session" } },
     });
   });
 });

@@ -2,7 +2,7 @@ import { initAuth, initConfig } from "./api/client";
 import { liveFlags } from "./feature-flags-live.svelte";
 
 /**
- * One-shot client bootstrap: restore the session from localStorage and load
+ * One-shot client bootstrap: restore the session from HttpOnly cookies and load
  * the public runtime config (social/registration flags).
  *
  * This lives in its own module rather than the root layout because three

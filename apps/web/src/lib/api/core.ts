@@ -1,9 +1,5 @@
 import { env } from "$env/dynamic/public";
-import type {
-  ApiErrorBody,
-  AuthTokensDto,
-  PagedResult,
-} from "@loomkeep/shared";
+import type { ApiErrorBody, PagedResult } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import * as Sentry from "@sentry/sveltekit";
 import { auth } from "../auth.svelte";
@@ -34,7 +30,7 @@ export class ApiError extends Error {
 interface RequestOptions {
   method?: string;
   body?: unknown;
-  /** Set to false for auth endpoints. */
+  /** Set to false when a failed request must not trigger token refresh. */
   withAuth?: boolean;
 }
 
@@ -51,16 +47,13 @@ export async function request<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  if (options.withAuth !== false && auth.accessToken) {
-    headers.Authorization = `Bearer ${auth.accessToken}`;
-  }
-
   let response: Response;
 
   try {
     response = await fetch(`${API_URL}${path}`, {
       method: options.method ?? "GET",
       headers,
+      credentials: "include",
       body:
         options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
@@ -78,12 +71,7 @@ export async function request<T>(
   }
 
   // Expired access token: try one refresh, then replay the request.
-  if (
-    response.status === 401 &&
-    options.withAuth !== false &&
-    !retried &&
-    auth.refreshToken
-  ) {
+  if (response.status === 401 && options.withAuth !== false && !retried) {
     const refreshed = await tryRefresh();
 
     if (refreshed) {
@@ -173,16 +161,11 @@ function tryRefresh(): Promise<boolean> {
 
 async function doRefresh(): Promise<boolean> {
   try {
-    const { tokens } = await request<{ tokens: AuthTokensDto }>(
+    await request<void>(
       "/auth/refresh",
-      {
-        method: "POST",
-        body: { refreshToken: auth.refreshToken },
-        withAuth: false,
-      },
+      { method: "POST", withAuth: false },
       true,
     );
-    auth.setTokens(tokens);
     return true;
   } catch {
     return false;

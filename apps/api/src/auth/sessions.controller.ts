@@ -1,4 +1,4 @@
-import { ErrorCode, type SessionDto } from "@loomkeep/shared";
+import type { SessionDto } from "@loomkeep/shared";
 import {
   Controller,
   Delete,
@@ -6,10 +6,8 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  Query,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
-import { AppException } from "../common/app.exception";
 import { AuthService } from "./auth.service";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -26,24 +24,15 @@ export class SessionsController {
   @Get()
   @ApiOkResponse({ type: SessionResponseDto, isArray: true })
   listSessions(@CurrentUser() payload: JwtPayload): Promise<SessionDto[]> {
-    return this.authService.listSessions(payload.sub);
+    return this.authService.listSessions(payload.sub, payload.sid);
   }
 
-  /** Revokes every other device, keeping the current one (identified by its jti). */
+  /** Revokes every other device, keeping the current signed-in session. */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete()
-  async revokeOthers(
-    @CurrentUser() payload: JwtPayload,
-    @Query("except") exceptJti?: string,
-  ): Promise<void> {
-    if (!exceptJti) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.AuthMissingExceptParam,
-      );
-    }
-
-    await this.authService.revokeOtherSessions(payload.sub, exceptJti);
+  async revokeOthers(@CurrentUser() payload: JwtPayload): Promise<void> {
+    if (!payload.sid) return this.authService.revokeAllSessions(payload.sub);
+    await this.authService.revokeOtherSessions(payload.sub, payload.sid);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

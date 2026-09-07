@@ -1,3 +1,4 @@
+import { browser } from "$app/environment";
 import type {
   AccountDeletionSummaryDto,
   ChangeEmailRequestDto,
@@ -20,8 +21,11 @@ import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
 export async function initAuth(): Promise<void> {
-  auth.loadTokens();
-  if (!auth.accessToken) return;
+  if (browser) {
+    // Tokens written by previous releases are no longer used after the
+    // HttpOnly-cookie migration, so remove the durable XSS-readable copy.
+    localStorage.removeItem("loomkeep.tokens");
+  }
 
   try {
     auth.user = await typedRequest("/users/me");
@@ -54,7 +58,6 @@ export async function register(body: RegisterRequestDto): Promise<void> {
     body: { ...body, locale: getLocale() },
     withAuth: false,
   });
-  auth.setTokens(result.tokens);
   auth.user = result.user;
   await loadEntitlement();
 }
@@ -105,7 +108,6 @@ export async function login(body: LoginRequestDto): Promise<LoginResponseDto> {
   });
 
   if (!result.mfaRequired) {
-    auth.setTokens(result.tokens);
     auth.user = result.user;
     await loadEntitlement();
   }
@@ -119,7 +121,6 @@ export async function verifyMfaLogin(body: MfaVerifyRequestDto): Promise<void> {
     body,
     withAuth: false,
   });
-  auth.setTokens(result.tokens);
   auth.user = result.user;
   await loadEntitlement();
 }
@@ -240,21 +241,14 @@ export const getSessions = () => typedRequest("/auth/sessions");
 export const revokeSession = (id: string): Promise<void> =>
   typedRequest("/auth/sessions/{id}", { method: "DELETE", params: { id } });
 
-/** Revokes every session except the current device (kept via its jti). */
-export const revokeOtherSessions = (exceptJti: string): Promise<void> =>
-  typedRequest("/auth/sessions", {
-    method: "DELETE",
-    query: { except: exceptJti },
-  });
+/** Revokes every session except the current signed-in device. */
+export const revokeOtherSessions = (): Promise<void> =>
+  typedRequest("/auth/sessions", { method: "DELETE" });
 
 export async function logout(): Promise<void> {
-  if (auth.refreshToken) {
-    await typedRequest("/auth/logout", {
-      method: "POST",
-      body: { refreshToken: auth.refreshToken },
-      withAuth: false,
-    }).catch(() => undefined);
-  }
+  await typedRequest("/auth/logout", { method: "POST", withAuth: false }).catch(
+    () => undefined,
+  );
 
   auth.clear();
 }
