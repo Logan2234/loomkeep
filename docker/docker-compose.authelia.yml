@@ -7,7 +7,7 @@
 # Copy the two *.example files next to this one and fill them in.
 services:
   authelia:
-    image: authelia/authelia:4.39.20
+    image: authelia/authelia:4.39.22
     restart: unless-stopped
     logging:
       driver: json-file
