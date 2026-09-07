@@ -2,6 +2,7 @@
   import Carousel from "$lib/components/Carousel.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
+  import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { MyListDto } from "@loomkeep/shared";
 
@@ -22,20 +23,19 @@
   } = $props();
 </script>
 
-<section class="mt-10">
-  <div class="mb-3 flex items-center justify-between">
-    <h2 class="font-display text-xl font-bold">
-      {m.common_lists()}
-    </h2>
-    {#if selfManage && hasOwnLists}
-      <a
-        href="/app/lists"
-        class="text-dim hover:text-accent flex items-center gap-1 text-sm font-semibold md:hidden">
-        {m.common_manage()}
-        <Icon name="chevron-right" class="h-4 w-4" />
-      </a>
-    {/if}
-  </div>
+<section>
+  <ProfileSectionHeading label={m.common_lists()}>
+    {#snippet action()}
+      {#if selfManage && hasOwnLists}
+        <a
+          href="/app/lists"
+          class="text-dim hover:text-accent flex items-center gap-1 text-xs font-semibold whitespace-nowrap md:hidden">
+          {m.common_manage()}
+          <Icon name="chevron-right" class="h-3.5 w-3.5" />
+        </a>
+      {/if}
+    {/snippet}
+  </ProfileSectionHeading>
   <div class="flex items-stretch gap-4">
     {#if selfManage && hasOwnLists}
       <a href="/app/lists" class="mt-2 hidden w-28 shrink-0 sm:w-32 md:block">
