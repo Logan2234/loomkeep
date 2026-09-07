@@ -114,6 +114,8 @@ export interface WebauthnRegistrationVerifyRequestDto {
 
 export interface WebauthnRegistrationVerifyResponseDto {
   credential: WebauthnCredentialDto;
+  /** Only present when this is the account's first-ever MFA method — same convention as ConfirmTotpResponseDto. */
+  recoveryCodes?: string[];
 }
 
 export interface RemoveWebauthnCredentialRequestDto {

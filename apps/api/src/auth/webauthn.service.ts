@@ -24,6 +24,7 @@ import * as bcrypt from "bcryptjs";
 import { AppException } from "../common/app.exception";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { MfaService } from "./mfa.service";
 
 const RP_NAME = "Loomkeep";
 /** Ceremony window — matches the other short-lived challenge tables (MfaLoginChallenge, EmailChangeRequest). */
@@ -41,6 +42,7 @@ export class WebauthnService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly security: SecurityEventService,
+    private readonly mfa: MfaService,
   ) {}
 
   /** WEB_ORIGIN is the browser-facing origin (comma-separated) — see main.ts's CORS setup. Its hostname doubles as the WebAuthn RP ID, so self-hosters need no extra config. */
@@ -130,7 +132,7 @@ export class WebauthnService {
   async verifyRegistration(
     userId: string,
     dto: WebauthnRegistrationVerifyRequestDto,
-  ): Promise<WebauthnCredentialDto> {
+  ): Promise<{ credential: WebauthnCredentialDto; recoveryCodes?: string[] }> {
     const challenge = await this.prisma.webauthnChallenge.findUnique({
       where: { id: dto.webauthnChallengeId },
     });
@@ -196,7 +198,11 @@ export class WebauthnService {
       detail: row.name,
     });
 
-    return toCredentialDto(row);
+    // A passkey is just as valid a "first MFA method" as TOTP/email — the
+    // account needs the same fallback in case the key is lost or breaks.
+    const recoveryCodes = await this.mfa.ensureRecoveryCodes(userId);
+
+    return { credential: toCredentialDto(row), recoveryCodes };
   }
 
   async removeCredential(

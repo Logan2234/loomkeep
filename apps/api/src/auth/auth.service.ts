@@ -271,11 +271,12 @@ export class AuthService {
   /**
    * Creates the pending-MFA record after a successful password check. The
    * email code is only sent right away when email is the *sole* method —
-   * if TOTP is also available, sending eagerly would burn a send for a code
-   * the user might never use (they may well pick TOTP instead). In that
-   * case the code is only generated/sent once the user actually picks
-   * "email" at the method-choice step (see resendMfaEmailCode(), reused for
-   * both the initial send and any later resend).
+   * if TOTP or WebAuthn is also available, sending eagerly would burn a
+   * send for a code the user might never use (they may well pick TOTP or
+   * their security key instead). In that case the code is only
+   * generated/sent once the user actually picks "email" at the
+   * method-choice step (see resendMfaEmailCode(), reused for both the
+   * initial send and any later resend).
    */
   private async startMfaChallenge(
     user: User,
@@ -284,7 +285,7 @@ export class AuthService {
     let emailCodeHash: string | undefined;
     let emailCodeExpiresAt: Date | undefined;
 
-    if (user.mfaEmailEnabled && !user.mfaTotpEnabled) {
+    if (user.mfaEmailEnabled && !user.mfaTotpEnabled && !webauthnAllowed) {
       const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
       emailCodeHash = hashToken(code);
       emailCodeExpiresAt = new Date(

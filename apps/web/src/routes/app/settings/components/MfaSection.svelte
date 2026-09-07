@@ -212,15 +212,19 @@
 
   const webauthnAddMut = createApiMutation(() => ({
     mutate: (name: string) => registerWebauthnCredential(name),
-    onSuccess: (credential) => {
+    onSuccess: ({ credential, recoveryCodes }) => {
       patchStatus({
         webauthnCredentials: [
           ...(status?.webauthnCredentials ?? []),
           credential,
         ],
       });
-      openModal = null;
-      toast.success(m.settings_mfa_webauthn_added_toast());
+      if (recoveryCodes) {
+        openRecoveryReveal(recoveryCodes);
+      } else {
+        openModal = null;
+        toast.success(m.settings_mfa_webauthn_added_toast());
+      }
     },
   }));
 
@@ -307,7 +311,10 @@
   }
 
   const hasAnyMfa = $derived(
-    !!status && (status.totpEnabled || status.emailEnabled),
+    !!status &&
+      (status.totpEnabled ||
+        status.emailEnabled ||
+        status.webauthnCredentials.length > 0),
   );
 </script>
 
@@ -332,10 +339,7 @@
         onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
     </div>
 
-    <div
-      class="flex items-center justify-between gap-4 {hasAnyMfa
-        ? 'py-3'
-        : 'pt-3'}">
+    <div class="flex items-center justify-between gap-4 py-3">
       <div class="flex items-start gap-3">
         <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
         <div>
@@ -369,7 +373,7 @@
             disabled={!webauthnSecureContext}
             onclick={openWebauthnAdd}>
             <Icon name="plus" class="h-4 w-4" />
-            {m.settings_mfa_webauthn_add()}
+            {m.common_add()}
           </button>
         </div>
 
@@ -413,12 +417,13 @@
               </div>
             {/each}
           </div>
-        {:else if status}
-          <p class="text-dim mt-2 text-sm">{m.settings_mfa_webauthn_empty()}</p>
         {/if}
       </div>
 
-      <div class="flex items-center justify-between gap-4 py-3">
+      <div
+        class="flex items-center justify-between gap-4 {hasAnyMfa
+          ? 'py-3'
+          : 'pt-3'}">
         <div class="flex items-start gap-3">
           <Icon name="lock" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
           <div>

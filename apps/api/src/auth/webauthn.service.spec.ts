@@ -8,6 +8,7 @@ import * as bcrypt from "bcryptjs";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
+import type { MfaService } from "./mfa.service";
 import { WebauthnService } from "./webauthn.service";
 
 const CURRENT_PASSWORD = "correct";
@@ -163,11 +164,15 @@ function makeService() {
   } as unknown as ConfigService;
 
   const security = { record: vi.fn() } as unknown as SecurityEventService;
+  const mfa = {
+    ensureRecoveryCodes: vi.fn().mockResolvedValue(undefined),
+  } as unknown as MfaService;
 
   return {
-    service: new WebauthnService(prisma, configService, security),
+    service: new WebauthnService(prisma, configService, security, mfa),
     prisma,
     security,
+    mfa,
     credentials,
     users,
   };
@@ -198,7 +203,7 @@ describe("WebauthnService.verifyRegistration", () => {
       "alice@example.com",
     );
 
-    const credential = await service.verifyRegistration("user-1", {
+    const { credential } = await service.verifyRegistration("user-1", {
       webauthnChallengeId,
       response: {} as never,
       name: "YubiKey bureau",
@@ -209,6 +214,44 @@ describe("WebauthnService.verifyRegistration", () => {
     expect(security.record).toHaveBeenCalledWith(
       expect.objectContaining({ type: "MFA_WEBAUTHN_ADDED", userId: "user-1" }),
     );
+  });
+
+  // Regression: a passkey used to be registered without ever generating
+  // recovery codes, so an account whose only MFA method was WebAuthn had no
+  // fallback at all if the key was lost — unlike TOTP/email, which both call
+  // ensureRecoveryCodes() on first confirmation.
+  it("generates recovery codes as it would for a first TOTP/email confirmation", async () => {
+    const { service, mfa } = makeService();
+    const { verifyRegistrationResponse } =
+      await import("@simplewebauthn/server");
+    vi.mocked(verifyRegistrationResponse).mockResolvedValueOnce({
+      verified: true,
+      registrationInfo: {
+        credential: {
+          id: "credential-id-1",
+          publicKey: new Uint8Array([1, 2, 3]),
+          counter: 0,
+          transports: ["usb"],
+        },
+        credentialDeviceType: "singleDevice",
+        credentialBackedUp: false,
+      },
+    } as never);
+    vi.mocked(mfa.ensureRecoveryCodes).mockResolvedValueOnce(["AAAAA-BBBBB"]);
+
+    const { webauthnChallengeId } = await service.registrationOptions(
+      "user-1",
+      "alice@example.com",
+      "alice@example.com",
+    );
+    const { recoveryCodes } = await service.verifyRegistration("user-1", {
+      webauthnChallengeId,
+      response: {} as never,
+      name: "YubiKey bureau",
+    });
+
+    expect(mfa.ensureRecoveryCodes).toHaveBeenCalledWith("user-1");
+    expect(recoveryCodes).toEqual(["AAAAA-BBBBB"]);
   });
 });
 

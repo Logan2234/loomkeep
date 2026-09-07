@@ -303,8 +303,6 @@
   "settings_mfa_recovery_acknowledge": "J'ai noté mes codes",
   "settings_mfa_webauthn_label": "Clé de sécurité",
   "settings_mfa_webauthn_desc": "Clé physique (YubiKey) ou biométrie de l'appareil — résiste au phishing.",
-  "settings_mfa_webauthn_add": "Ajouter",
-  "settings_mfa_webauthn_empty": "Aucune clé enregistrée pour l'instant.",
   "settings_mfa_webauthn_unsupported": "Nécessite une connexion sécurisée (HTTPS) — indisponible sur cette installation.",
   "settings_mfa_webauthn_added_at": "Ajoutée le {date}",
   "settings_mfa_webauthn_used_at": "Utilisée le {date}",

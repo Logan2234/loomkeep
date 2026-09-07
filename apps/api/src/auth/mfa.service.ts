@@ -221,10 +221,13 @@ export class MfaService {
     return codes;
   }
 
-  /** Only generates if the user has none yet — called when a first MFA method is enabled. */
-  private async ensureRecoveryCodes(
-    userId: string,
-  ): Promise<string[] | undefined> {
+  /**
+   * Only generates if the user has none yet — called when a first MFA
+   * method is enabled. Public: also called from WebauthnService, since
+   * registering the first passkey is just as much a "first MFA method"
+   * moment as confirming TOTP or turning on email MFA.
+   */
+  async ensureRecoveryCodes(userId: string): Promise<string[] | undefined> {
     const existing = await this.prisma.mfaRecoveryCode.count({
       where: { userId },
     });

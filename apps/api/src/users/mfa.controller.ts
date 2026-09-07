@@ -142,16 +142,11 @@ export class MfaController {
 
   @Post("webauthn/register-verify")
   @ApiCreatedResponse({ type: WebauthnRegistrationVerifyResultDto })
-  async registerWebauthnVerify(
+  registerWebauthnVerify(
     @CurrentUser() payload: JwtPayload,
     @Body() dto: WebauthnRegistrationVerifyDto,
   ): Promise<WebauthnRegistrationVerifyResponseDto> {
-    return {
-      credential: await this.webauthnService.verifyRegistration(
-        payload.sub,
-        dto,
-      ),
-    };
+    return this.webauthnService.verifyRegistration(payload.sub, dto);
   }
 
   @Delete("webauthn/:credentialId")

@@ -178,6 +178,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     hibp,
     flags,
     mfa,
+    webauthn,
   };
 }
 
@@ -1110,6 +1111,31 @@ describe("AuthService.login — MFA challenge (LK-C17)", () => {
         }),
       }),
     );
+  });
+
+  // Regression: the eager-send guard originally only checked mfaTotpEnabled,
+  // so an account with email + a security key (no TOTP) still got an
+  // unwanted email code on every login even when the user meant to use
+  // their key instead.
+  it("does NOT send the email code when WebAuthn is also enabled — only once the user picks email", async () => {
+    const { service, prisma, mail, webauthn } = makeService();
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash, mfaEmailEnabled: true });
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.mfaLoginChallenge.create as Mock).mockResolvedValue({
+      id: "challenge-1",
+    });
+    (webauthn.hasCredentials as Mock).mockResolvedValue(true);
+
+    const result = await service.login({
+      identifier: "alice@example.com",
+      password: "correct-password",
+    });
+
+    expect(mail.sendMfaEmailCode).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      availableMethods: ["email", "webauthn", "recovery"],
+    });
   });
 });
 

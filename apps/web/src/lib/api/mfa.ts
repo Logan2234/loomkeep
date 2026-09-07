@@ -5,7 +5,7 @@ import type {
   RemoveWebauthnCredentialRequestDto,
   SetEmailMfaRequestDto,
   SetPasswordlessRequestDto,
-  WebauthnCredentialDto,
+  WebauthnRegistrationVerifyResponseDto,
 } from "@loomkeep/shared";
 import {
   startRegistration,
@@ -53,7 +53,7 @@ export const regenerateRecoveryCodes = (
 /** Runs the full "add a passkey" ceremony: fetch options, prompt the browser, verify. */
 export async function registerWebauthnCredential(
   name: string,
-): Promise<WebauthnCredentialDto> {
+): Promise<WebauthnRegistrationVerifyResponseDto> {
   const { webauthnChallengeId, options } = await typedRequest(
     "/users/me/mfa/webauthn/register-options",
     { method: "POST" },
@@ -62,11 +62,10 @@ export async function registerWebauthnCredential(
     // Swagger reflects this opaque field as `{}` — see auth.ts's identical cast.
     optionsJSON: options as unknown as PublicKeyCredentialCreationOptionsJSON,
   });
-  const { credential } = await typedRequest(
-    "/users/me/mfa/webauthn/register-verify",
-    { method: "POST", body: { webauthnChallengeId, response, name } },
-  );
-  return credential;
+  return typedRequest("/users/me/mfa/webauthn/register-verify", {
+    method: "POST",
+    body: { webauthnChallengeId, response, name },
+  });
 }
 
 export const removeWebauthnCredential = (

@@ -3,4 +3,5 @@ import { WebauthnCredentialResponseDto } from "./webauthn-credential-response.dt
 
 export class WebauthnRegistrationVerifyResultDto implements WebauthnRegistrationVerifyResponseDto {
   credential!: WebauthnCredentialResponseDto;
+  recoveryCodes?: string[];
 }
