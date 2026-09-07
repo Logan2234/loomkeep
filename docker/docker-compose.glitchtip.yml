@@ -38,7 +38,7 @@ x-glitchtip-environment: &glitchtip-environment
 
 services:
   glitchtip-valkey:
-    image: valkey/valkey:9.1.1-alpine
+    image: valkey/valkey:9.1.2-alpine
     restart: unless-stopped
     logging: *glitchtip-logging
 
