@@ -11,6 +11,7 @@
   import { isFeatureNew } from "$lib/feature-badges";
   import { visibleNavItems } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import NotificationTab from "./NotificationTab.svelte";
 
   const items = $derived(
     visibleNavItems(
@@ -37,7 +38,6 @@
     px-2 pt-2
     pb-[calc(0.5rem+env(safe-area-inset-bottom))]
     backdrop-blur
-    md:hidden
   ">
   {#each items as item (item.href)}
     {@const active = item.match(page.url.pathname)}
@@ -65,6 +65,10 @@
     <Icon name="menu" class="h-5 w-5" />
     {m.common_menu()}
   </button>
+
+  <NotificationTab
+    slotClass="h-5 w-5"
+    rootClass="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-2 text-[0.6rem]" />
 </nav>
 
 <style>

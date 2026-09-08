@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { auth } from "$lib/auth.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
@@ -48,16 +49,8 @@
     },
     { id: "import", label: m.common_import() },
     { id: "export", label: m.common_export() },
-    {
-      id: "aide",
-      label: `${m.common_help()} & ${m.common_feedback()}`,
-      newBadgeKey: "help-feedback",
-    },
-    {
-      id: "soutien",
-      label: m.settings_section_support(),
-      newBadgeKey: "support",
-    },
+    { id: "aide", label: `${m.common_help()} & ${m.common_feedback()}` },
+    { id: "soutien", label: m.settings_section_support() },
     { id: "sources-donnees", label: m.settings_datasources_title() },
     { id: "danger", label: m.settings_danger_zone_title() },
   ];
@@ -67,6 +60,28 @@
 
   let containerEl = $state<HTMLElement | null>(null);
   let activeId = $state(SECTIONS[0].id);
+  let compactTocEl = $state<HTMLElement | null>(null);
+
+  // Deep links like /app/settings#aide (the home page's "Aide & Feedback"
+  // shortcut) can't rely on the browser resolving the fragment: these routes
+  // are SPA-rendered, so #aide doesn't exist in the DOM yet when the
+  // navigation lands. Resolve it once the sections are mounted.
+  $effect(() => {
+    const id = page.url.hash.slice(1);
+    if (!id || !containerEl) return;
+    if (!SECTIONS.some((s) => s.id === id)) return;
+    requestAnimationFrame(() => scrollToSection(id));
+  });
+
+  // The compact TOC is a horizontal scroller, so the active chip has to be
+  // brought into view as the scroll-spy advances or the bar stops telling
+  // you where you are.
+  $effect(() => {
+    const chip = compactTocEl?.querySelector<HTMLElement>(
+      `[data-toc-id="${activeId}"]`,
+    );
+    chip?.scrollIntoView({ block: "nearest", inline: "center" });
+  });
 
   function scrollToSection(id: string) {
     document
@@ -124,6 +139,32 @@
     class="mb-6" />
 
   {#if auth.user}
+    <!-- Under lg the sidebar TOC is hidden, which left a 5000px+ page with no
+         way to jump: same sections as a sticky scroller instead. -->
+    <nav
+      bind:this={compactTocEl}
+      aria-label={m.common_settings()}
+      class="bg-bg/95 border-border no-scrollbar sticky top-0 z-20 -mx-5 mb-4 flex snap-x gap-2 overflow-x-auto border-b px-5 py-2.5 backdrop-blur md:-mx-8 md:px-8 lg:hidden">
+      {#each visibleSections as s (s.id)}
+        <button
+          type="button"
+          data-toc-id={s.id}
+          onclick={() => scrollToSection(s.id)}
+          aria-current={activeId === s.id ? "true" : undefined}
+          class="chip shrink-0 snap-center text-[0.7rem] whitespace-nowrap {activeId ===
+          s.id
+            ? 'chip-on'
+            : ''}">
+          {s.label}
+          {#if s.newBadgeKey && isFeatureNew(s.newBadgeKey)}
+            <span
+              class="bg-accent ml-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+              aria-hidden="true"></span>
+          {/if}
+        </button>
+      {/each}
+    </nav>
+
     <div class="mb-6 lg:grid lg:grid-cols-[180px_1fr] lg:gap-10">
       <nav class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
         <ul class="border-border space-y-1 border-l">
@@ -151,7 +192,11 @@
         </ul>
       </nav>
 
-      <div bind:this={containerEl} class="min-w-0">
+      <!-- scroll-mt clears the compact TOC bar, which is sticky over the
+           top of whichever section it jumps to. -->
+      <div
+        bind:this={containerEl}
+        class="min-w-0 [&>[data-section-id]]:scroll-mt-16 lg:[&>[data-section-id]]:scroll-mt-0">
         <div id="securite" data-section-id="securite">
           <SecuritySection />
         </div>

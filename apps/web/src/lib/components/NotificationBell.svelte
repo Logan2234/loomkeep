@@ -8,11 +8,12 @@
   // "read" state, a row's presence *is* the unread signal.
   //
   // Desktop docks it top-right (the rail owns the left edge, so the corner is
-  // free). Mobile docks it bottom-right instead, just above the fixed tab bar
-  // — the bottom is already where every other mobile control lives (tab bar,
-  // Menu launcher sheet), and it keeps the button in thumb reach. Opening it
-  // there rises a Drawer bottom sheet instead of a dropdown, matching the
-  // Menu launcher's own pattern.
+  // free) and opens a dropdown. In the compact shell there is no floating
+  // button at all: BottomNavigation renders the bell as its own tab and asks
+  // this component to open, via the same CustomEvent idiom the Menu launcher
+  // uses. A floating button there covered page content on every screen (the
+  // home page's "nothing in progress" line, the settings rows, a detail
+  // page's synopsis) since nothing reserved space for it.
   import {
     getNotifications,
     markNotificationRead,
@@ -31,6 +32,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
   import { fade, scale, slide } from "svelte/transition";
+  import { layout } from "$lib/layout.svelte";
   import Avatar from "./Avatar.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
@@ -80,6 +82,15 @@
   function close() {
     open = false;
   }
+
+  // The compact shell has no button of its own here — BottomNavigation owns
+  // the bell tab and asks to open, same idiom as MenuSheet's toggle event.
+  $effect(() => {
+    const handler = () => void toggle();
+    window.addEventListener("mobile-notifications-toggle", handler);
+    return () =>
+      window.removeEventListener("mobile-notifications-toggle", handler);
+  });
 
   async function accept(req: FollowRequestDto) {
     busy = req.id;
@@ -144,46 +155,44 @@
   });
 </script>
 
-<div
-  class="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom)+0.75rem)] z-40 md:top-4 md:right-4 md:bottom-auto">
-  <button
-    bind:this={buttonEl}
-    type="button"
-    onclick={toggle}
-    aria-label={m.common_notifications()}
-    aria-expanded={open}
-    class="border-border bg-surface/90 hover:border-accent/40 relative grid h-11 w-11 place-items-center rounded-full border shadow-lg backdrop-blur transition-colors md:shadow-sm">
-    <Icon
-      name="bell"
-      class="h-5 w-5 {open ? 'text-accent' : 'text-dim'} transition-colors" />
-    {#if total > 0}
-      {#key total}
-        <!-- Keyed on the count so the badge pops on every change, not just
-             its first appearance. -->
-        <span
-          in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}
-          class="bg-accent text-accent-fg ring-surface absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[0.65rem] font-bold ring-2">
-          {total > 9 ? "9+" : total}
-        </span>
-      {/key}
-    {/if}
-  </button>
-
-  {#if open}
-    <!-- Desktop dropdown -->
-    <div
-      bind:this={panelEl}
-      transition:fade={{ duration: 100 }}
-      role="dialog"
+{#if !layout.compact}
+  <div class="fixed top-4 right-4 z-40">
+    <button
+      bind:this={buttonEl}
+      type="button"
+      onclick={toggle}
       aria-label={m.common_notifications()}
-      class="border-border bg-surface absolute top-[calc(100%+0.5rem)] right-0 hidden max-h-[min(32rem,80vh)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border shadow-xl md:flex">
-      {@render content()}
-    </div>
-  {/if}
-</div>
+      aria-expanded={open}
+      class="border-border bg-surface/90 hover:border-accent/40 relative grid h-11 w-11 place-items-center rounded-full border shadow-sm backdrop-blur transition-colors">
+      <Icon
+        name="bell"
+        class="h-5 w-5 {open ? 'text-accent' : 'text-dim'} transition-colors" />
+      {#if total > 0}
+        {#key total}
+          <!-- Keyed on the count so the badge pops on every change, not just
+               its first appearance. -->
+          <span
+            in:scale|global={{ duration: reduced ? 0 : 200, start: 0.5 }}
+            class="bg-accent text-accent-fg ring-surface absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[0.65rem] font-bold ring-2">
+            {total > 9 ? "9+" : total}
+          </span>
+        {/key}
+      {/if}
+    </button>
 
-{#if open}
-  <!-- Mobile bottom sheet -->
+    {#if open}
+      <div
+        bind:this={panelEl}
+        transition:fade={{ duration: 100 }}
+        role="dialog"
+        aria-label={m.common_notifications()}
+        class="border-border bg-surface absolute top-[calc(100%+0.5rem)] right-0 flex max-h-[min(32rem,80svh)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border shadow-xl">
+        {@render content()}
+      </div>
+    {/if}
+  </div>
+{:else if open}
+  <!-- Compact shell: opened from BottomNavigation's bell tab. -->
   <Drawer onclose={close} labelledby="notif-drawer-title">
     <div
       bind:this={drawerContentEl}

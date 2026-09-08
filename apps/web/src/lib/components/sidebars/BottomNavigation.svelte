@@ -9,6 +9,7 @@
     resolveBottomShortcuts,
   } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import NotificationTab from "./NotificationTab.svelte";
 
   // The user's stored order (falls back to the default set), gated by enabled
   // domains / admin role at render time — a shortcut for a since-disabled domain
@@ -39,7 +40,6 @@
     pt-2
     pb-[calc(0.4rem+env(safe-area-inset-bottom))]
     backdrop-blur
-    md:hidden
   ">
   {#each items as item (item.id)}
     {#if item.id === "menu"}
@@ -86,6 +86,8 @@
       </a>
     {/if}
   {/each}
+
+  <NotificationTab />
 </nav>
 
 <style>

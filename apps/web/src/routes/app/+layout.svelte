@@ -10,6 +10,7 @@
   import NotificationBell from "$lib/components/NotificationBell.svelte";
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
+  import { layout } from "$lib/layout.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
   import ProgrammeBoardDesktop from "$lib/components/sidebars/ProgrammeBoardDesktop.svelte";
   import ProjectorDockDesktop from "$lib/components/sidebars/ProjectorDockDesktop.svelte";
@@ -72,27 +73,27 @@
   <UnlockBubble />
   <WidgetIdentify />
 
-  <div class="hidden md:block">
-    {#if effectiveNavStyle === "dock"}
-      <ProjectorDockDesktop>
-        {@render children()}
-      </ProjectorDockDesktop>
-    {:else if effectiveNavStyle === "board"}
-      <ProgrammeBoardDesktop>
-        {@render children()}
-      </ProgrammeBoardDesktop>
-    {:else}
-      <DesktopSidebar>
-        {@render children()}
-      </DesktopSidebar>
-    {/if}
-  </div>
-
-  <div class="md:hidden">
+  <!-- Exactly one shell is mounted: rendering both and hiding one in CSS
+       duplicated every `id` on the page, which broke `#section` anchors and
+       `aria-describedby`. See layout.svelte.ts for why the choice isn't a
+       plain `md:` width breakpoint. -->
+  {#if layout.compact}
     <MobileLayout navStyle={effectiveNavStyle}>
       {@render children()}
     </MobileLayout>
-  </div>
+  {:else if effectiveNavStyle === "dock"}
+    <ProjectorDockDesktop>
+      {@render children()}
+    </ProjectorDockDesktop>
+  {:else if effectiveNavStyle === "board"}
+    <ProgrammeBoardDesktop>
+      {@render children()}
+    </ProgrammeBoardDesktop>
+  {:else}
+    <DesktopSidebar>
+      {@render children()}
+    </DesktopSidebar>
+  {/if}
 
   {#if needsTermsReacceptance}
     <TermsReacceptance />

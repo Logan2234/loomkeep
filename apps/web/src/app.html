@@ -3,7 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to
+         anything but 0 on notched iOS; the bottom bar, drawers and modals
+         all pad themselves with it. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"

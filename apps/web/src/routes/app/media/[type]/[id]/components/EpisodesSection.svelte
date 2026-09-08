@@ -394,104 +394,118 @@
           {#each season.episodes as episode (episode.number)}
             {@const watched = episode.watchCount > 0}
             <li class="border-border border-b last:border-b-0">
-              <div class="flex items-center gap-3 px-4 py-2.5">
-                <span class="timecode w-14 shrink-0 text-sm">
-                  S{String(season.number).padStart(2, "0")}E{String(
-                    episode.number,
-                  ).padStart(2, "0")}
-                </span>
-                <span class="min-w-0 flex-1 truncate text-sm">
-                  {episode.title ?? `${m.common_episode()} ${episode.number}`}
-                  {#if episode.watchCount > 1}
-                    <span class="text-success">×{episode.watchCount}</span>
-                  {/if}
-                </span>
-                {#if watched && episode.id}
-                  <span
-                    class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
-                    <span
-                      class="inline-flex {justWatchedId === episode.id
-                        ? 'episode-check-pop'
-                        : ''}">
-                      <Icon name="check" class="h-4 w-4" />
-                    </span>
-                    {formatDate(
-                      episode.watches[0].watchedAt,
-                      DATE_MEDIUM_OPTIONS,
-                    )}
+              <!-- One row on a wide viewport, two stacked lines on a phone: the
+                   number, the watched-on date and up to four action buttons
+                   left the title a few dozen pixels at 375px, and nothing at
+                   all once an episode was watched. -->
+              <div
+                class="flex flex-col gap-1.5 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3">
+                <div class="flex min-w-0 items-center gap-3">
+                  <span class="timecode w-14 shrink-0 text-sm">
+                    S{String(season.number).padStart(2, "0")}E{String(
+                      episode.number,
+                    ).padStart(2, "0")}
                   </span>
-                {/if}
-                {#if entry && episode.id}
-                  <button
-                    class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                    aria-label={m.media_episode_review()}
-                    onclick={() => {
-                      reviewTarget = {
-                        type: "EPISODE",
-                        id: episode.id!,
-                        label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
-                      };
-                    }}>
-                    <Icon name="star" class="h-4 w-4" />
-                  </button>
-                {/if}
-                {#if entry && appConfig.socialEnabled && episode.id}
-                  <button
-                    class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                    aria-label={m.media_episode_comments()}
-                    onclick={() => {
-                      commentTarget = {
-                        type: "EPISODE",
-                        id: episode.id!,
-                        label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
-                      };
-                    }}>
-                    <Icon name="message" class="h-4 w-4" />
-                  </button>
-                {/if}
-                {#if entry && episode.id}
-                  {@const upcoming = !watched && upcomingLabel(episode.airDate)}
-                  {#if upcoming}
+                  <span class="min-w-0 flex-1 truncate text-sm">
+                    {episode.title ?? `${m.common_episode()} ${episode.number}`}
+                    {#if episode.watchCount > 1}
+                      <span class="text-success">×{episode.watchCount}</span>
+                    {/if}
+                  </span>
+                </div>
+
+                <!-- pl-17 lines the second line up under the title (w-14 slot
+                     plus the gap); on sm+ it collapses to the right edge. -->
+                <div
+                  class="flex items-center gap-1 pl-17 sm:ml-auto sm:gap-1 sm:pl-0">
+                  {#if watched && episode.id}
                     <span
-                      class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
-                      title={m.media_not_aired()}>
-                      {upcoming}
+                      class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
+                      <span
+                        class="inline-flex {justWatchedId === episode.id
+                          ? 'episode-check-pop'
+                          : ''}">
+                        <Icon name="check" class="h-4 w-4" />
+                      </span>
+                      {formatDate(
+                        episode.watches[0].watchedAt,
+                        DATE_MEDIUM_OPTIONS,
+                      )}
                     </span>
-                  {:else if watched}
-                    <!-- Rare, secondary actions on an already-watched episode:
-                       two quiet icon buttons rather than a hidden menu. -->
-                    <div class="flex shrink-0 items-center gap-1">
-                      <button
-                        class="btn-icon"
-                        title={m.media_rewatch()}
-                        aria-label={m.media_rewatch()}
-                        disabled={episodeBusy(episode.id!)}
-                        onclick={() => markWatched(episode.id!)}>
-                        <Icon name="refresh" class="h-4 w-4" />
-                      </button>
-                      <button
-                        class="btn-icon hover:text-danger"
-                        title={m.media_undo_watch()}
-                        aria-label={m.media_undo_watch()}
-                        disabled={episodeBusy(episode.id!)}
-                        onclick={() => markUnwatch(episode.id!)}>
-                        <Icon name="x" class="h-4 w-4" />
-                      </button>
-                    </div>
-                  {:else}
+                  {/if}
+                  {#if entry && episode.id}
                     <button
-                      class="btn btn-primary btn-sm shrink-0"
-                      disabled={episodeBusy(episode.id!)}
-                      onclick={() =>
-                        requestMarkWatched(
-                          season.number,
-                          episode.number,
-                          episode.id!,
-                        )}>
-                      {m.media_mark_watched_short()}
+                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                      aria-label={m.media_episode_review()}
+                      onclick={() => {
+                        reviewTarget = {
+                          type: "EPISODE",
+                          id: episode.id!,
+                          label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
+                        };
+                      }}>
+                      <Icon name="star" class="h-4 w-4" />
                     </button>
                   {/if}
-                {/if}
+                  {#if entry && appConfig.socialEnabled && episode.id}
+                    <button
+                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                      aria-label={m.media_episode_comments()}
+                      onclick={() => {
+                        commentTarget = {
+                          type: "EPISODE",
+                          id: episode.id!,
+                          label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
+                        };
+                      }}>
+                      <Icon name="message" class="h-4 w-4" />
+                    </button>
+                  {/if}
+                  {#if entry && episode.id}
+                    {@const upcoming =
+                      !watched && upcomingLabel(episode.airDate)}
+                    {#if upcoming}
+                      <span
+                        class="border-border text-dim shrink-0 rounded-lg border px-2.5 py-1 text-xs"
+                        title={m.media_not_aired()}>
+                        {upcoming}
+                      </span>
+                    {:else if watched}
+                      <!-- Rare, secondary actions on an already-watched episode:
+                       two quiet icon buttons rather than a hidden menu. -->
+                      <div class="flex shrink-0 items-center gap-1">
+                        <button
+                          class="btn-icon"
+                          title={m.media_rewatch()}
+                          aria-label={m.media_rewatch()}
+                          disabled={episodeBusy(episode.id!)}
+                          onclick={() => markWatched(episode.id!)}>
+                          <Icon name="refresh" class="h-4 w-4" />
+                        </button>
+                        <button
+                          class="btn-icon hover:text-danger"
+                          title={m.media_undo_watch()}
+                          aria-label={m.media_undo_watch()}
+                          disabled={episodeBusy(episode.id!)}
+                          onclick={() => markUnwatch(episode.id!)}>
+                          <Icon name="x" class="h-4 w-4" />
+                        </button>
+                      </div>
+                    {:else}
+                      <button
+                        class="btn btn-primary btn-sm shrink-0"
+                        disabled={episodeBusy(episode.id!)}
+                        onclick={() =>
+                          requestMarkWatched(
+                            season.number,
+                            episode.number,
+                            episode.id!,
+                          )}>
+                        {m.media_mark_watched_short()}
+                      </button>
+                    {/if}
+                  {/if}
+                </div>
               </div>
             </li>
           {/each}

@@ -4,6 +4,7 @@
   import { bootstrap } from "$lib/bootstrap.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { toIntlLocale } from "$lib/constants/language-to-locale";
+  import { layout } from "$lib/layout.svelte";
   import { navStyle } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
@@ -28,6 +29,10 @@
 
   $effect(() => {
     navStyle.init();
+  });
+
+  $effect(() => {
+    layout.init();
   });
 </script>
 
