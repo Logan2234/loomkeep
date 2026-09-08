@@ -188,7 +188,8 @@
   <PageHeader
     icon="database"
     title={m.admin_cache_title()}
-    subtitle={m.admin_cache_subtitle()} />
+    subtitle={m.admin_cache_subtitle()}
+    back="/app/admin" />
 
   <div class="mb-3 flex flex-wrap items-center gap-2">
     {#each Object.entries(DOMAINS) as [id, d] (id)}

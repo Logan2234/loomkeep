@@ -868,8 +868,6 @@
   "admin_confirmation_below": "below.",
   "admin_backup_restoring": "Restoring…",
   "admin_backup_restore_confirm": "Restore permanently",
-  "admin_backup_interval": "Median interval",
-  "admin_backup_retained": "Retained backups",
   "admin_backup_created": "Backup generated.",
   "admin_backup_deleted": "Backup deleted.",
   "admin_backup_restored": "Database restored.",

@@ -93,6 +93,9 @@ const UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS = "newsletter-notifs";
 
 @Injectable()
 export class MailService {
+  /** Most recent SMTP verification failure, consumed by the admin health probe. */
+  lastVerificationError: string | undefined;
+
   private readonly logger = new Logger(MailService.name);
   private readonly transporter: Transporter | null;
   private readonly from: string;
@@ -343,12 +346,15 @@ export class MailService {
    * throwing — the admin status page treats it as "down".
    */
   async verifyConnection(): Promise<boolean> {
+    this.lastVerificationError = undefined;
     if (!this.transporter) return false;
 
     try {
       await this.transporter.verify();
       return true;
     } catch (error) {
+      this.lastVerificationError =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`SMTP verify failed: ${String(error)}`);
       return false;
     }

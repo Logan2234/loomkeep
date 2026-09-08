@@ -71,7 +71,8 @@
   <PageHeader
     icon="calendar"
     title={m.admin_jobs_title()}
-    subtitle={m.admin_jobs_subtitle()}>
+    subtitle={m.admin_jobs_subtitle()}
+    back="/app/admin">
     {#snippet actions()}
       <button
         onclick={() =>

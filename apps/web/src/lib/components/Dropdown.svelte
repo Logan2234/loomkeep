@@ -51,7 +51,10 @@
   <button
     class="fixed inset-0 z-30 cursor-default"
     aria-label={m.common_close()}
-    onclick={close}></button>
+    onclick={(e) => {
+      e.stopPropagation();
+      close();
+    }}></button>
   <div
     {role}
     style="top: {panelPos.top}px; {placement === 'bottom-end'

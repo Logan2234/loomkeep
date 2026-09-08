@@ -216,19 +216,162 @@
     subtitle={m.home_subtitle()} />
 
   {#if loading}
-    <div class="mb-10 flex flex-col gap-10">
-      <div>
-        <div class="skeleton mb-4 h-3 w-20 rounded"></div>
-        <div class="skeleton mb-3 h-6 w-32 rounded"></div>
-        <div class="flex gap-4 overflow-hidden">
-          {#each { length: 4 } as _, j (j)}
-            <div class="w-32 shrink-0 sm:w-36">
-              <div class="skeleton aspect-2/3 w-full rounded-xl"></div>
-              <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <div class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {#if mediaOn}
+          <section class="card sm:col-span-2 lg:col-span-3">
+            <div class="flex items-center justify-between p-4 pb-0">
+              <div class="skeleton h-5 w-48 rounded"></div>
+              <div class="skeleton h-4 w-16 rounded"></div>
+            </div>
+            <div class="flex gap-3 overflow-hidden p-4">
+              {#each { length: 5 } as _, j (j)}
+                <div class="w-28 shrink-0">
+                  <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
+                  <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+                  <div class="skeleton mt-2 h-1 w-full rounded"></div>
+                  <div class="skeleton mt-2 h-7 w-full rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if gamesOn}
+          <section
+            class="card p-4 {booksOn
+              ? 'sm:col-span-1 lg:col-span-2'
+              : 'sm:col-span-2 lg:col-span-3'}">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="skeleton h-5 w-44 rounded"></div>
+              <div class="skeleton h-4 w-12 rounded"></div>
+            </div>
+            <div class="flex gap-3 overflow-hidden">
+              {#each { length: 4 } as _, j (j)}
+                <div class="w-24 shrink-0">
+                  <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
+                  <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+                  <div class="skeleton mt-1 h-2 w-1/2 rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if booksOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="skeleton h-5 w-40 rounded"></div>
+              <div class="skeleton h-4 w-12 rounded"></div>
+            </div>
+            <div class="space-y-3">
+              {#each { length: 3 } as _, j (j)}
+                <div class="flex items-center gap-3">
+                  <div class="skeleton h-12 w-8 shrink-0 rounded-md"></div>
+                  <div class="min-w-0 flex-1">
+                    <div class="skeleton h-3 w-4/5 rounded"></div>
+                    <div class="skeleton mt-2 h-1 w-2/3 rounded"></div>
+                    <div class="skeleton mt-2 h-2 w-1/3 rounded"></div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if musicOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="skeleton h-5 w-44 rounded"></div>
+              <div class="skeleton h-4 w-12 rounded"></div>
+            </div>
+            <div class="flex gap-3 overflow-hidden">
+              {#each { length: 3 } as _, j (j)}
+                <div class="w-24 shrink-0">
+                  <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
+                  <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if soonOn}
+          <section class="border-border rounded-xl border border-dashed p-4">
+            <div class="skeleton h-4 w-40 rounded"></div>
+            <div class="skeleton mt-2 h-3 w-3/4 rounded"></div>
+            <div class="skeleton mt-3 h-4 w-16 rounded-full"></div>
+          </section>
+        {/if}
+
+        {#if appConfig.socialEnabled}
+          <section class="card sm:col-span-2 lg:col-span-3">
+            <div class="flex items-center justify-between p-4 pb-0">
+              <div class="skeleton h-3 w-24 rounded"></div>
+              <div class="skeleton h-4 w-20 rounded"></div>
+            </div>
+            <div class="space-y-3 p-4">
+              {#each { length: 3 } as _, j (j)}
+                <div class="flex items-center gap-3">
+                  <div class="skeleton h-8 w-8 shrink-0 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="skeleton h-3 w-2/5 rounded"></div>
+                    <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+                  </div>
+                  <div class="skeleton h-3 w-12 rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+      </div>
+
+      <aside class="flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
+        {#if mediaOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="skeleton h-5 w-32 rounded"></div>
+              <div class="skeleton h-4 w-16 rounded"></div>
+            </div>
+            <div class="space-y-3">
+              {#each { length: 3 } as _, j (j)}
+                <div class="flex items-center gap-3">
+                  <div class="skeleton h-12 w-8 shrink-0 rounded-md"></div>
+                  <div class="min-w-0 flex-1">
+                    <div class="skeleton h-3 w-4/5 rounded"></div>
+                    <div class="skeleton mt-2 h-2 w-1/2 rounded"></div>
+                  </div>
+                  <div class="skeleton h-5 w-8 rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if booksOn}
+          <section class="card p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="skeleton h-5 w-36 rounded"></div>
+              <div class="skeleton h-4 w-10 rounded"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="skeleton h-10 w-10 shrink-0 rounded-full"></div>
+              <div class="skeleton h-5 w-20 rounded"></div>
+            </div>
+            <div class="skeleton mt-3 h-3 w-4/5 rounded"></div>
+          </section>
+        {/if}
+
+        <section class="card space-y-2 p-2">
+          {#each { length: 7 } as _, j (j)}
+            <div class="flex items-center gap-3 p-2.5">
+              <div class="skeleton h-5 w-5 shrink-0 rounded"></div>
+              <div class="skeleton h-3 flex-1 rounded"></div>
+              <div class="skeleton h-4 w-4 shrink-0 rounded"></div>
             </div>
           {/each}
-        </div>
-      </div>
+        </section>
+      </aside>
     </div>
   {:else}
     <!-- Two independent grids side by side on desktop, not one shared

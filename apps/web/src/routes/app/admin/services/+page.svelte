@@ -160,7 +160,8 @@
   <PageHeader
     icon="monitor"
     title={m.admin_services_title()}
-    subtitle={m.admin_services_subtitle()}>
+    subtitle={m.admin_services_subtitle()}
+    back="/app/admin">
     {#snippet actions()}
       <button
         onclick={() =>
@@ -175,10 +176,50 @@
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if loading && !services}
-    <div class="space-y-3">
-      {#each { length: 5 } as _, i (i)}
-        <div class="card h-16 animate-pulse"></div>
-      {/each}
+    <div class="animate-pulse">
+      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+        {#each { length: 3 } as _, i (i)}
+          <div class="card h-20 space-y-3 p-4">
+            <div class="skeleton h-6 w-1/2 rounded"></div>
+            <div class="skeleton h-3 w-3/4 rounded"></div>
+          </div>
+        {/each}
+      </div>
+      <div class="mb-6 grid gap-3.5 lg:grid-cols-2">
+        {#each { length: 2 } as _, i (i)}
+          <div class="card space-y-4 p-4">
+            <div class="skeleton h-3 w-2/5 rounded"></div>
+            {#each { length: 4 } as _, j (j)}
+              <div class="space-y-2">
+                <div class="flex justify-between gap-4">
+                  <div class="skeleton h-4 w-1/3 rounded"></div>
+                  <div class="skeleton h-4 w-1/5 rounded"></div>
+                </div>
+                <div class="skeleton h-2 w-full rounded"></div>
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </div>
+      <div class="space-y-8">
+        {#each { length: 3 } as _, i (i)}
+          <section>
+            <div class="skeleton mb-2 h-3 w-16 rounded"></div>
+            <div class="border-border overflow-hidden rounded-xl border">
+              {#each { length: 3 } as _, j (j)}
+                <div
+                  class="border-border bg-surface flex h-[72px] items-center gap-4 border-b px-4 last:border-b-0">
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <div class="skeleton h-4 w-1/3 rounded"></div>
+                    <div class="skeleton h-3 w-2/3 rounded"></div>
+                  </div>
+                  <div class="skeleton h-6 w-14 rounded-full"></div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/each}
+      </div>
     </div>
   {:else}
     <KpiStrip tiles={kpis} />

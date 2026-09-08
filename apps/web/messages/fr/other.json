@@ -868,8 +868,6 @@
   "admin_confirmation_below": "ci-dessous.",
   "admin_backup_restoring": "Restauration…",
   "admin_backup_restore_confirm": "Restaurer définitivement",
-  "admin_backup_interval": "Intervalle médian",
-  "admin_backup_retained": "Sauvegardes conservées",
   "admin_backup_created": "Sauvegarde générée.",
   "admin_backup_deleted": "Sauvegarde supprimée.",
   "admin_backup_restored": "Base de données restaurée.",

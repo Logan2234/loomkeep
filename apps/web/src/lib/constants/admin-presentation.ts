@@ -32,7 +32,11 @@ export function adminServiceLabel(key: string, label: string): string {
 export function adminServiceDetail(service: ServiceStatusDto): string | null {
   if (service.comingSoon) return null;
   if (!service.configured) return m.admin_service_missing_key();
-  if (service.reachable === false) return m.admin_service_unreachable();
+
+  if (service.reachable === false) {
+    return service.detail ?? m.admin_service_unreachable();
+  }
+
   return null;
 }
 
