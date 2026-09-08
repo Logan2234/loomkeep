@@ -545,6 +545,11 @@ model User {
   mfaTotpEnabled             Boolean          @default(false)
   mfaTotpSecretEnc           String?
   mfaEmailEnabled            Boolean          @default(false)
+  // True only lets login skip the password step outright — enforced in
+  // WebauthnService, not by this column alone: it must never be true while
+  // the user has zero WebauthnCredential rows (checked whenever a credential
+  // is removed).
+  passwordlessEnabled        Boolean          @default(false)
 
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
@@ -552,6 +557,8 @@ model User {
   devices                    UserDevice[]
   mfaRecoveryCodes           MfaRecoveryCode[]
   mfaLoginChallenges         MfaLoginChallenge[]
+  webauthnCredentials        WebauthnCredential[]
+  webauthnChallenges         WebauthnChallenge[]
   notifications              Notification[]
   pushSubscriptions          PushSubscription[]
   gameEntries                GameEntry[]
@@ -1094,6 +1101,17 @@ enum SecurityEventType {
   PASSWORD_RESET
   LOGIN_FAILED
   NEW_DEVICE_LOGIN
+  MFA_TOTP_ENABLED
+  MFA_TOTP_DISABLED
+  MFA_EMAIL_ENABLED
+  MFA_EMAIL_DISABLED
+  MFA_WEBAUTHN_ADDED
+  MFA_WEBAUTHN_REMOVED
+  MFA_PASSWORDLESS_ENABLED
+  MFA_PASSWORDLESS_DISABLED
+  MFA_RECOVERY_CODES_REGENERATED
+  MFA_RECOVERY_CODE_USED
+  MFA_CHALLENGE_LOCKED
 }
 
 // One sensitive account action, for the admin "Sécurité" page. userId is
@@ -1245,7 +1263,61 @@ model MfaLoginChallenge {
   expiresAt          DateTime
   createdAt          DateTime @default(now())
 
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Set only when a WebAuthn credential is used as this challenge's 2nd
+  // factor — see WebauthnChallenge.mfaLoginChallengeId.
+  webauthnChallenge WebauthnChallenge?
+
+  @@index([userId])
+}
+
+// A registered passkey/security key. Unlike the TOTP secret, publicKey needs
+// no encryption at rest — it only ever verifies a signature, never produces
+// one, so its disclosure alone can't authenticate anyone.
+model WebauthnCredential {
+  id            String    @id @default(cuid())
+  userId        String
+  // The authenticator-issued credential id (base64url), used to match an
+  // incoming assertion back to this row and to build the login-time
+  // allowCredentials list.
+  credentialId  String    @unique
+  publicKey     Bytes
+  // Signature counter reported by the authenticator, expected to strictly
+  // increase on every use — a stagnant or lower value on a later login
+  // signals a cloned authenticator (standard WebAuthn clone detection).
+  counter       BigInt    @default(0)
+  // "singleDevice" (roaming key, e.g. YubiKey) vs "multiDevice" (synced
+  // passkey, e.g. iCloud Keychain/Google Password Manager) — informational,
+  // shown in the settings list.
+  deviceType    String
+  backedUp      Boolean   @default(false)
+  transports    String[]
+  // User-supplied label so the settings list stays identifiable ("YubiKey bureau").
+  name          String
+  createdAt     DateTime  @default(now())
+  lastUsedAt    DateTime?
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Short-lived WebAuthn ceremony challenge, covering every case where no
+// MfaLoginChallenge exists yet: adding a credential from settings (already
+// authenticated) and a passwordless login (no password verified at all).
+// The one case where a password *was* already verified — the MFA step of a
+// classic login — links back via mfaLoginChallengeId instead of duplicating
+// MfaLoginChallenge's totpAllowed/emailAllowed shape for a third method.
+model WebauthnChallenge {
+  id                  String   @id @default(cuid())
+  userId              String
+  challenge           String
+  mfaLoginChallengeId String?  @unique
+  expiresAt           DateTime
+  createdAt           DateTime @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mfaLoginChallenge MfaLoginChallenge? @relation(fields: [mfaLoginChallengeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

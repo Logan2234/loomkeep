@@ -1,3 +1,9 @@
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from "@simplewebauthn/browser";
 import type { Locale } from "../enums";
 import type { UserDto } from "./user";
 
@@ -59,7 +65,7 @@ export interface VerifyEmailRequestDto {
 }
 
 /** Which MFA method(s) a login challenge accepts, given what the account has enabled. */
-export type MfaMethod = "totp" | "email" | "recovery";
+export type MfaMethod = "totp" | "email" | "webauthn" | "recovery";
 
 /** Discriminated on `mfaRequired` — false carries the same shape `login()` always returned. */
 export type LoginResponseDto =
@@ -80,6 +86,80 @@ export interface MfaStatusDto {
   totpEnabled: boolean;
   emailEnabled: boolean;
   recoveryCodesRemaining: number;
+  webauthnCredentials: WebauthnCredentialDto[];
+  /** Only ever true while `webauthnCredentials` is non-empty. */
+  passwordlessEnabled: boolean;
+}
+
+export interface WebauthnCredentialDto {
+  id: string;
+  name: string;
+  deviceType: "singleDevice" | "multiDevice";
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** Step 1 of adding a passkey from settings: server-generated attestation challenge. */
+export interface WebauthnRegistrationOptionsDto {
+  webauthnChallengeId: string;
+  options: PublicKeyCredentialCreationOptionsJSON;
+}
+
+export interface WebauthnRegistrationVerifyRequestDto {
+  webauthnChallengeId: string;
+  response: RegistrationResponseJSON;
+  /** User-chosen label, e.g. "YubiKey bureau". */
+  name: string;
+}
+
+export interface WebauthnRegistrationVerifyResponseDto {
+  credential: WebauthnCredentialDto;
+  /** Only present when this is the account's first-ever MFA method — same convention as ConfirmTotpResponseDto. */
+  recoveryCodes?: string[];
+}
+
+export interface RemoveWebauthnCredentialRequestDto {
+  currentPassword: string;
+}
+
+export interface RemoveWebauthnCredentialResponseDto {
+  /** True when removing this credential left zero — `passwordlessEnabled` was force-disabled server-side. */
+  passwordlessDisabled: boolean;
+}
+
+export interface SetPasswordlessRequestDto {
+  enabled: boolean;
+  currentPassword: string;
+}
+
+/** Step 1 of the WebAuthn 2nd factor at login: given a pending `MfaLoginChallenge`, the assertion challenge. */
+export interface WebauthnMfaOptionsRequestDto {
+  challengeId: string;
+}
+
+export interface WebauthnMfaOptionsResponseDto {
+  webauthnChallengeId: string;
+  options: PublicKeyCredentialRequestOptionsJSON;
+}
+
+export interface WebauthnMfaVerifyRequestDto {
+  webauthnChallengeId: string;
+  response: AuthenticationResponseJSON;
+}
+
+/** Step 1 of a passwordless login: no password involved, so the account is looked up by identifier alone. */
+export interface WebauthnLoginOptionsRequestDto {
+  identifier: string;
+}
+
+export interface WebauthnLoginOptionsResponseDto {
+  webauthnChallengeId: string;
+  options: PublicKeyCredentialRequestOptionsJSON;
+}
+
+export interface WebauthnLoginVerifyRequestDto {
+  webauthnChallengeId: string;
+  response: AuthenticationResponseJSON;
 }
 
 export interface TotpSetupDto {

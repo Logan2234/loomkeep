@@ -24,6 +24,11 @@ export const ErrorCode = {
   AuthMissingAccessToken: "auth.missing_access_token",
   AuthInvalidAccessToken: "auth.invalid_access_token",
   AuthMissingExceptParam: "auth.missing_except_param",
+  AuthWebauthnChallengeExpired: "auth.webauthn_challenge_expired",
+  AuthWebauthnVerificationFailed: "auth.webauthn_verification_failed",
+  AuthWebauthnCredentialNotFound: "auth.webauthn_credential_not_found",
+  AuthPasswordlessRequiresCredential: "auth.passwordless_requires_credential",
+  AuthPasswordlessNotEligible: "auth.passwordless_not_eligible",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",

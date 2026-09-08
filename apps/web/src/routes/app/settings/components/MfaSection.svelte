@@ -4,7 +4,10 @@
     disableTotp,
     getMfaStatus,
     regenerateRecoveryCodes,
+    registerWebauthnCredential,
+    removeWebauthnCredential,
     setEmailMfa,
+    setPasswordless,
     setupTotp,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
@@ -16,13 +19,22 @@
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
-  import type { MfaStatusDto } from "@loomkeep/shared";
+  import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
+  import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
   import { useQueryClient } from "@tanstack/svelte-query";
   import QRCode from "qrcode";
 
   const RECOVERY_CODES_LOW_THRESHOLD = 2;
+
+  // WebAuthn additionally needs a secure context (HTTPS, or localhost) — a
+  // self-host without TLS in front (docker-compose.yml's bare default, no
+  // Caddy) fails that even when the browser itself supports the API.
+  const webauthnBrowserSupported = browserSupportsWebAuthn();
+  const webauthnSecureContext =
+    typeof window !== "undefined" && window.isSecureContext;
 
   type MfaModal =
     | "totp-setup"
@@ -30,6 +42,9 @@
     | "email-confirm"
     | "recovery-regenerate-confirm"
     | "recovery-reveal"
+    | "webauthn-add"
+    | "webauthn-remove"
+    | "passwordless-confirm"
     | null;
 
   let openModal = $state<MfaModal>(null);
@@ -191,13 +206,115 @@
   const groupCode = (code: string): string =>
     `${code.slice(0, 5)}-${code.slice(5)}`;
 
+  // --- WebAuthn credentials ---
+  let webauthnNameInput = $state("");
+  let pendingRemoveCredential = $state<WebauthnCredentialDto | null>(null);
+
+  const webauthnAddMut = createApiMutation(() => ({
+    mutate: (name: string) => registerWebauthnCredential(name),
+    onSuccess: ({ credential, recoveryCodes }) => {
+      patchStatus({
+        webauthnCredentials: [
+          ...(status?.webauthnCredentials ?? []),
+          credential,
+        ],
+      });
+      if (recoveryCodes) {
+        openRecoveryReveal(recoveryCodes);
+      } else {
+        openModal = null;
+        toast.success(m.settings_mfa_webauthn_added_toast());
+      }
+    },
+  }));
+
+  function openWebauthnAdd() {
+    webauthnNameInput = "";
+    webauthnAddMut.reset();
+    openModal = "webauthn-add";
+  }
+
+  function confirmWebauthnAdd() {
+    webauthnAddMut.mutate(webauthnNameInput.trim());
+  }
+
+  const webauthnRemoveMut = createApiMutation(() => ({
+    mutate: () =>
+      removeWebauthnCredential(pendingRemoveCredential!.id, {
+        currentPassword: sensitivePasswordInput,
+      }),
+    coveredFields: ["currentPassword"],
+    onSuccess: (result) => {
+      patchStatus({
+        webauthnCredentials: (status?.webauthnCredentials ?? []).filter(
+          (c) => c.id !== pendingRemoveCredential?.id,
+        ),
+        ...(result.passwordlessDisabled ? { passwordlessEnabled: false } : {}),
+      });
+      sensitivePasswordInput = "";
+      openModal = null;
+      toast.success(
+        result.passwordlessDisabled
+          ? m.settings_mfa_webauthn_removed_passwordless_disabled_toast()
+          : m.settings_mfa_webauthn_removed_toast(),
+      );
+    },
+  }));
+
+  function openWebauthnRemove(credential: WebauthnCredentialDto) {
+    pendingRemoveCredential = credential;
+    sensitivePasswordInput = "";
+    webauthnRemoveMut.reset();
+    openModal = "webauthn-remove";
+  }
+
+  function confirmWebauthnRemove() {
+    webauthnRemoveMut.mutate();
+  }
+
+  // --- Passwordless sign-in ---
+  let pendingPasswordlessEnabled = $state(false);
+
+  const passwordlessMut = createApiMutation(() => ({
+    mutate: () =>
+      setPasswordless({
+        enabled: pendingPasswordlessEnabled,
+        currentPassword: sensitivePasswordInput,
+      }),
+    coveredFields: ["currentPassword"],
+    onSuccess: () => {
+      patchStatus({ passwordlessEnabled: pendingPasswordlessEnabled });
+      sensitivePasswordInput = "";
+      openModal = null;
+      toast.success(
+        pendingPasswordlessEnabled
+          ? m.settings_mfa_passwordless_enabled_toast()
+          : m.settings_mfa_passwordless_disabled_toast(),
+      );
+    },
+  }));
+
+  function onTogglePasswordless(next: boolean) {
+    pendingPasswordlessEnabled = next;
+    sensitivePasswordInput = "";
+    passwordlessMut.reset();
+    openModal = "passwordless-confirm";
+  }
+
+  function confirmPasswordless() {
+    passwordlessMut.mutate();
+  }
+
   function closeModal() {
     sensitivePasswordInput = "";
     openModal = null;
   }
 
   const hasAnyMfa = $derived(
-    !!status && (status.totpEnabled || status.emailEnabled),
+    !!status &&
+      (status.totpEnabled ||
+        status.emailEnabled ||
+        status.webauthnCredentials.length > 0),
   );
 </script>
 
@@ -222,10 +339,7 @@
         onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
     </div>
 
-    <div
-      class="flex items-center justify-between gap-4 {hasAnyMfa
-        ? 'py-3'
-        : 'pt-3'}">
+    <div class="flex items-center justify-between gap-4 py-3">
       <div class="flex items-start gap-3">
         <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
         <div>
@@ -238,6 +352,96 @@
         checked={status?.emailEnabled || false}
         onChange={onToggleEmail} />
     </div>
+
+    {#if webauthnBrowserSupported}
+      <div class="py-3">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <Icon name="key" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p class="font-semibold">{m.settings_mfa_webauthn_label()}</p>
+              <p class="text-dim text-sm">
+                {webauthnSecureContext
+                  ? m.settings_mfa_webauthn_desc()
+                  : m.settings_mfa_webauthn_unsupported()}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm shrink-0"
+            disabled={!webauthnSecureContext}
+            onclick={openWebauthnAdd}>
+            <Icon name="plus" class="h-4 w-4" />
+            {m.common_add()}
+          </button>
+        </div>
+
+        {#if status && status.webauthnCredentials.length > 0}
+          <div
+            class="border-border divide-border mt-3 divide-y rounded-lg border border-dashed">
+            {#each status.webauthnCredentials as credential (credential.id)}
+              <div class="flex items-center gap-3 px-3 py-2.5">
+                <span
+                  class="bg-surface-2 text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg">
+                  <Icon name="key" class="h-4 w-4" />
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold">
+                    {credential.name}
+                  </p>
+                  <p
+                    class="text-dim font-mono text-[0.68rem] tracking-wide uppercase">
+                    {credential.lastUsedAt
+                      ? m.settings_mfa_webauthn_used_at({
+                          date: formatDate(
+                            credential.lastUsedAt,
+                            DATE_MEDIUM_OPTIONS,
+                          ),
+                        })
+                      : m.settings_mfa_webauthn_added_at({
+                          date: formatDate(
+                            credential.createdAt,
+                            DATE_MEDIUM_OPTIONS,
+                          ),
+                        })}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="btn-icon shrink-0"
+                  aria-label={m.common_delete()}
+                  onclick={() => openWebauthnRemove(credential)}>
+                  <Icon name="trash" class="h-4 w-4" />
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <div
+        class="flex items-center justify-between gap-4 {hasAnyMfa
+          ? 'py-3'
+          : 'pt-3'}">
+        <div class="flex items-start gap-3">
+          <Icon name="lock" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p class="font-semibold">{m.settings_mfa_passwordless_label()}</p>
+            <p class="text-dim text-sm">
+              {status && status.webauthnCredentials.length > 0
+                ? m.settings_mfa_passwordless_desc()
+                : m.settings_mfa_passwordless_needs_credential()}
+            </p>
+          </div>
+        </div>
+        <Switch
+          label={m.settings_mfa_passwordless_label()}
+          checked={status?.passwordlessEnabled || false}
+          disabled={!status || status.webauthnCredentials.length === 0}
+          onChange={onTogglePasswordless} />
+      </div>
+    {/if}
 
     {#if hasAnyMfa}
       <div class="flex items-center justify-between gap-4 pt-3">
@@ -430,6 +634,128 @@
           class="btn btn-primary"
           disabled={emailMfaMut.loading || !sensitivePasswordInput}>
           {emailMfaMut.loading ? m.common_save_loading() : m.common_confirm()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "webauthn-add"}
+  <Modal title={m.settings_mfa_webauthn_name_title()} onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmWebauthnAdd();
+      }}>
+      <p class="text-sm">{m.settings_mfa_webauthn_name_hint()}</p>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.settings_mfa_webauthn_name_label()}
+        </span>
+        <input
+          type="text"
+          name="name"
+          required
+          maxlength="60"
+          enterkeyhint="done"
+          class="input"
+          bind:value={webauthnNameInput} />
+      </label>
+      {#if webauthnAddMut.error}
+        <p class="text-danger text-sm">{webauthnAddMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={webauthnAddMut.loading || !webauthnNameInput.trim()}>
+          {webauthnAddMut.loading ? m.common_save_loading() : m.common_next()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "webauthn-remove"}
+  <Modal title={m.settings_mfa_webauthn_remove_title()} onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmWebauthnRemove();
+      }}>
+      <p class="text-sm">{m.settings_mfa_webauthn_remove_hint()}</p>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.common_current_password()}
+        </span>
+        <PasswordInput
+          name="currentPassword"
+          autocomplete="current-password"
+          enterkeyhint="done"
+          minlength={1}
+          required
+          bind:value={sensitivePasswordInput} />
+      </label>
+      {#if webauthnRemoveMut.error}
+        <p class="text-danger text-sm">{webauthnRemoveMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-danger"
+          disabled={webauthnRemoveMut.loading || !sensitivePasswordInput}>
+          {webauthnRemoveMut.loading
+            ? m.common_save_loading()
+            : m.common_delete()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "passwordless-confirm"}
+  <Modal title={m.settings_mfa_passwordless_label()} onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmPasswordless();
+      }}>
+      <p class="text-sm">{m.settings_mfa_passwordless_confirm_hint()}</p>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.common_current_password()}
+        </span>
+        <PasswordInput
+          name="currentPassword"
+          autocomplete="current-password"
+          enterkeyhint="done"
+          minlength={1}
+          required
+          bind:value={sensitivePasswordInput} />
+      </label>
+      {#if passwordlessMut.error}
+        <p class="text-danger text-sm">{passwordlessMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={passwordlessMut.loading || !sensitivePasswordInput}>
+          {passwordlessMut.loading
+            ? m.common_save_loading()
+            : m.common_confirm()}
         </button>
       </div>
     </form>

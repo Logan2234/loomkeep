@@ -7,6 +7,7 @@ import { vi, type Mock } from "vitest";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { SecurityEventService } from "../security/security-event.service";
 import { encryptTotpSecret } from "./mfa-crypto.util";
 import { MfaService, RECOVERY_CODE_COUNT } from "./mfa.service";
 
@@ -73,11 +74,19 @@ function makeService() {
   const achievements = {
     evaluate: vi.fn().mockResolvedValue(undefined),
   } as unknown as AchievementService;
+  const security = { record: vi.fn() } as unknown as SecurityEventService;
 
   return {
-    service: new MfaService(prisma, configService, mail, achievements),
+    service: new MfaService(
+      prisma,
+      configService,
+      mail,
+      achievements,
+      security,
+    ),
     prisma,
     achievements,
+    security,
   };
 }
 
