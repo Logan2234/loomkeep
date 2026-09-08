@@ -2,6 +2,8 @@ import {
   ErrorCode,
   type LoginResponseDto,
   type UserDto,
+  WebauthnLoginOptionsResponseDto,
+  WebauthnMfaOptionsResponseDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -42,6 +44,12 @@ import { RegisterDto } from "./dto/register.dto";
 import { ResendMfaEmailCodeDto } from "./dto/resend-mfa-email-code.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
+import { WebauthnLoginOptionsResultDto } from "./dto/webauthn-login-options-response.dto";
+import { WebauthnLoginOptionsDto } from "./dto/webauthn-login-options.dto";
+import { WebauthnLoginVerifyDto } from "./dto/webauthn-login-verify.dto";
+import { WebauthnMfaOptionsResultDto } from "./dto/webauthn-mfa-options-response.dto";
+import { WebauthnMfaOptionsDto } from "./dto/webauthn-mfa-options.dto";
+import { WebauthnMfaVerifyDto } from "./dto/webauthn-mfa-verify.dto";
 
 @Public()
 @Controller("auth")
@@ -123,6 +131,67 @@ export class AuthController {
   @Post("mfa/resend-email-code")
   async mfaResendEmailCode(@Body() dto: ResendMfaEmailCodeDto): Promise<void> {
     await this.authService.resendMfaEmailCode(dto.challengeId);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: WebauthnMfaOptionsResultDto })
+  @Post("mfa/webauthn/options")
+  mfaWebauthnOptions(
+    @Body() dto: WebauthnMfaOptionsDto,
+  ): Promise<WebauthnMfaOptionsResponseDto> {
+    return this.authService.startWebauthnMfaChallenge(dto.challengeId);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: AuthResultResponseDto })
+  @Post("mfa/webauthn/verify")
+  async mfaWebauthnVerify(
+    @Body() dto: WebauthnMfaVerifyDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+    @Headers("user-agent") userAgent?: string,
+    @Ip() ip?: string,
+  ): Promise<{ user: UserDto }> {
+    const result = await this.authService.verifyWebauthnMfaLogin(
+      dto.webauthnChallengeId,
+      dto.response,
+      userAgent,
+      ip,
+    );
+    setAuthCookies(reply, result.tokens);
+    return { user: result.user };
+  }
+
+  // Same budget as login — this is its alternate entry point, no password involved.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: WebauthnLoginOptionsResultDto })
+  @Post("webauthn/login-options")
+  webauthnLoginOptions(
+    @Body() dto: WebauthnLoginOptionsDto,
+  ): Promise<WebauthnLoginOptionsResponseDto> {
+    return this.authService.passwordlessLoginOptions(dto.identifier);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: AuthResultResponseDto })
+  @Post("webauthn/login-verify")
+  async webauthnLoginVerify(
+    @Body() dto: WebauthnLoginVerifyDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+    @Headers("user-agent") userAgent?: string,
+    @Ip() ip?: string,
+  ): Promise<{ user: UserDto }> {
+    const result = await this.authService.passwordlessLoginVerify(
+      dto.webauthnChallengeId,
+      dto.response,
+      userAgent,
+      ip,
+    );
+    setAuthCookies(reply, result.tokens);
+    return { user: result.user };
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

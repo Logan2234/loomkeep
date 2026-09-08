@@ -16,6 +16,10 @@ import type {
   UserDto,
   WidgetTokenDto,
 } from "@loomkeep/shared";
+import {
+  startAuthentication,
+  type PublicKeyCredentialRequestOptionsJSON,
+} from "@simplewebauthn/browser";
 import { auth } from "../auth.svelte";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
@@ -131,6 +135,47 @@ export const resendMfaEmailCode = (challengeId: string): Promise<void> =>
     body: { challengeId },
     withAuth: false,
   });
+
+/** Runs the WebAuthn 2nd-factor ceremony for a pending login challenge and completes the login. */
+export async function verifyWebauthnMfaLogin(
+  challengeId: string,
+): Promise<void> {
+  const { webauthnChallengeId, options } = await typedRequest(
+    "/auth/mfa/webauthn/options",
+    { method: "POST", body: { challengeId }, withAuth: false },
+  );
+  const response = await startAuthentication({
+    // The API's Swagger reflection can't describe this opaque third-party
+    // JSON blob field-by-field, so openapi-typescript widens it to `{}` —
+    // the runtime payload is exactly a PublicKeyCredentialRequestOptionsJSON.
+    optionsJSON: options as unknown as PublicKeyCredentialRequestOptionsJSON,
+  });
+  const result = await typedRequest("/auth/mfa/webauthn/verify", {
+    method: "POST",
+    body: { webauthnChallengeId, response },
+    withAuth: false,
+  });
+  auth.user = result.user;
+  await loadEntitlement();
+}
+
+/** Full passwordless login: no password step at all, the passkey is the whole factor. */
+export async function loginWithPasskey(identifier: string): Promise<void> {
+  const { webauthnChallengeId, options } = await typedRequest(
+    "/auth/webauthn/login-options",
+    { method: "POST", body: { identifier }, withAuth: false },
+  );
+  const response = await startAuthentication({
+    optionsJSON: options as unknown as PublicKeyCredentialRequestOptionsJSON,
+  });
+  const result = await typedRequest("/auth/webauthn/login-verify", {
+    method: "POST",
+    body: { webauthnChallengeId, response },
+    withAuth: false,
+  });
+  auth.user = result.user;
+  await loadEntitlement();
+}
 
 export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {
   const user = await typedRequest("/users/me", { method: "PATCH", body });

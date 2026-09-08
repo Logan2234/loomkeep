@@ -252,5 +252,8 @@
     <path d="M12 6v15M8.5 7.5c-1 2-1 11 0 13M15.5 7.5c1 2 1 11 0 13" />
   {:else if name === "crown"}
     <path d="M4 18 4 10 8 13 12 6 16 13 20 10 20 18 Z" />
+  {:else if name === "key"}
+    <circle cx="8" cy="8" r="4.2" />
+    <path d="M11 11l9 9M16 16l2.5-2.5M18.5 18.5 21 16" />
   {/if}
 </svg>

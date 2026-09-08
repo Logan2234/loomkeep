@@ -1,7 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { login, resendMfaEmailCode, verifyMfaLogin } from "$lib/api/client";
+  import {
+    login,
+    loginWithPasskey,
+    resendMfaEmailCode,
+    verifyMfaLogin,
+    verifyWebauthnMfaLogin,
+  } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import FieldError from "$lib/components/FieldError.svelte";
   import AuthShell from "$lib/components/AuthShell.svelte";
@@ -42,11 +48,17 @@
         const primaryMethods = result.availableMethods.filter(
           (method) => method !== "recovery",
         );
-        if (primaryMethods.length === 1) {
+        if (primaryMethods.length === 1 && primaryMethods[0] !== "webauthn") {
           selectedMethod = primaryMethods[0];
           step = "code";
         } else {
           step = "choose-method";
+          // A lone webauthn option has nothing to "choose" — fire the
+          // browser prompt right away, the choose-method screen stays as
+          // the place to show its loading/error/retry state.
+          if (primaryMethods.length === 1 && primaryMethods[0] === "webauthn") {
+            chooseMethod("webauthn");
+          }
         }
         return;
       }
@@ -81,9 +93,29 @@
       return;
     }
 
+    if (method === "webauthn") {
+      // No code screen for webauthn — the browser prompt is the whole
+      // interaction, so stay on choose-method to show its state.
+      step = "choose-method";
+      webauthnMfaMut.mutate();
+      return;
+    }
+
     selectedMethod = method;
     step = "code";
   }
+
+  const webauthnMfaMut = createApiMutation(() => ({
+    mutate: () => verifyWebauthnMfaLogin(challengeId),
+    onSuccess: () =>
+      goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
+  }));
+
+  const passwordlessMut = createApiMutation(() => ({
+    mutate: () => loginWithPasskey(identifier.trim()),
+    onSuccess: () =>
+      goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
+  }));
 
   const verifyMut = createApiMutation(() => ({
     mutate: () => verifyMfaLogin({ challengeId, code: codeInput.trim() }),
@@ -154,6 +186,19 @@
       <button type="submit" class="btn btn-primary" disabled={loginMut.loading}>
         {loginMut.loading ? m.auth_login_action_loading() : m.common_login()}
       </button>
+      <button
+        type="button"
+        class="btn-text btn-text-underline text-dim hover:text-fg self-center text-sm"
+        disabled={!identifier.trim() || passwordlessMut.loading}
+        onclick={() => passwordlessMut.mutate()}>
+        <Icon name="key" class="h-4 w-4" />
+        {passwordlessMut.loading
+          ? m.auth_mfa_webauthn_waiting()
+          : m.auth_passwordless_login()}
+      </button>
+      {#if passwordlessMut.error}
+        <Banner variant="error">{passwordlessMut.error}</Banner>
+      {/if}
       {#if appConfig.registrationEnabled}
         <p class="text-dim text-center text-sm">
           {m.auth_no_account()}
@@ -206,9 +251,31 @@
             </span>
           </button>
         {/if}
+        {#if availableMethods.includes("webauthn")}
+          <button
+            type="button"
+            class="border-border hover:border-accent hover:bg-accent/5 flex items-center gap-3 rounded-xl border p-4 text-left transition-colors disabled:pointer-events-none disabled:opacity-50"
+            disabled={webauthnMfaMut.loading}
+            onclick={() => chooseMethod("webauthn")}>
+            <Icon name="key" class="text-accent h-6 w-6 shrink-0" />
+            <span>
+              <span class="block font-semibold">
+                {m.auth_mfa_webauthn_label()}
+              </span>
+              <span class="text-dim block text-sm">
+                {webauthnMfaMut.loading
+                  ? m.auth_mfa_webauthn_waiting()
+                  : m.auth_mfa_choose_method_webauthn_desc()}
+              </span>
+            </span>
+          </button>
+        {/if}
       </div>
       {#if sendEmailCodeMut.error}
         <Banner variant="error">{sendEmailCodeMut.error}</Banner>
+      {/if}
+      {#if webauthnMfaMut.error}
+        <Banner variant="error">{webauthnMfaMut.error}</Banner>
       {/if}
       <button
         type="button"

@@ -9,6 +9,7 @@ import { MfaService } from "./mfa.service";
 import { SessionsController } from "./sessions.controller";
 import { TurnstileService } from "./turnstile.service";
 import { VerificationController } from "./verification.controller";
+import { WebauthnService } from "./webauthn.service";
 
 @Module({
   // Secrets are provided per sign/verify call (access vs refresh), so no default here.
@@ -19,7 +20,7 @@ import { VerificationController } from "./verification.controller";
     GamificationModule,
   ],
   controllers: [AuthController, SessionsController, VerificationController],
-  providers: [AuthService, TurnstileService, MfaService],
-  exports: [AuthService, MfaService],
+  providers: [AuthService, TurnstileService, MfaService, WebauthnService],
+  exports: [AuthService, MfaService, WebauthnService],
 })
 export class AuthModule {}

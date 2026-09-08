@@ -41,6 +41,16 @@ const MESSAGES = {
     m.apierr_auth_invalid_access_token(),
   [ErrorCode.AuthMissingExceptParam]: () =>
     m.apierr_auth_missing_except_param(),
+  [ErrorCode.AuthWebauthnChallengeExpired]: () =>
+    m.apierr_auth_webauthn_challenge_expired(),
+  [ErrorCode.AuthWebauthnVerificationFailed]: () =>
+    m.apierr_auth_webauthn_verification_failed(),
+  [ErrorCode.AuthWebauthnCredentialNotFound]: () =>
+    m.apierr_auth_webauthn_credential_not_found(),
+  [ErrorCode.AuthPasswordlessRequiresCredential]: () =>
+    m.apierr_auth_passwordless_requires_credential(),
+  [ErrorCode.AuthPasswordlessNotEligible]: () =>
+    m.apierr_auth_passwordless_not_eligible(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>

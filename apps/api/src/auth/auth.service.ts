@@ -5,12 +5,15 @@ import type {
   MfaMethod,
   SessionDto,
   UserDto,
+  WebauthnLoginOptionsResponseDto,
+  WebauthnMfaOptionsResponseDto,
 } from "@loomkeep/shared";
 import { deviceLabel, ErrorCode, LEGAL_VERSION } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { User } from "@prisma/client";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
@@ -33,6 +36,7 @@ import {
 import { MfaService } from "./mfa.service";
 import { isRegistrationEnabled } from "./registration.config";
 import { TurnstileService } from "./turnstile.service";
+import { WebauthnService } from "./webauthn.service";
 
 const ACCESS_TOKEN_TTL = "15m";
 const REFRESH_TOKEN_TTL_DAYS = 30;
@@ -75,6 +79,7 @@ export class AuthService {
     private readonly hibp: HibpService,
     private readonly flags: FeatureFlagsService,
     private readonly mfa: MfaService,
+    private readonly webauthn: WebauthnService,
   ) {}
 
   async register(
@@ -257,8 +262,10 @@ export class AuthService {
       );
     }
 
-    if (user.mfaTotpEnabled || user.mfaEmailEnabled) {
-      return this.startMfaChallenge(user);
+    const webauthnAllowed = await this.webauthn.hasCredentials(user.id);
+
+    if (user.mfaTotpEnabled || user.mfaEmailEnabled || webauthnAllowed) {
+      return this.startMfaChallenge(user, webauthnAllowed);
     }
 
     const result = await this.completeLogin(user, userAgent, ip);
@@ -268,19 +275,21 @@ export class AuthService {
   /**
    * Creates the pending-MFA record after a successful password check. The
    * email code is only sent right away when email is the *sole* method —
-   * if TOTP is also available, sending eagerly would burn a send for a code
-   * the user might never use (they may well pick TOTP instead). In that
-   * case the code is only generated/sent once the user actually picks
-   * "email" at the method-choice step (see resendMfaEmailCode(), reused for
-   * both the initial send and any later resend).
+   * if TOTP or WebAuthn is also available, sending eagerly would burn a
+   * send for a code the user might never use (they may well pick TOTP or
+   * their security key instead). In that case the code is only
+   * generated/sent once the user actually picks "email" at the
+   * method-choice step (see resendMfaEmailCode(), reused for both the
+   * initial send and any later resend).
    */
   private async startMfaChallenge(
     user: User,
+    webauthnAllowed: boolean,
   ): Promise<Extract<LoginResponseDto, { mfaRequired: true }>> {
     let emailCodeHash: string | undefined;
     let emailCodeExpiresAt: Date | undefined;
 
-    if (user.mfaEmailEnabled && !user.mfaTotpEnabled) {
+    if (user.mfaEmailEnabled && !user.mfaTotpEnabled && !webauthnAllowed) {
       const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
       emailCodeHash = hashToken(code);
       emailCodeExpiresAt = new Date(
@@ -306,6 +315,7 @@ export class AuthService {
     const availableMethods: MfaMethod[] = [
       ...(user.mfaTotpEnabled ? (["totp"] as const) : []),
       ...(user.mfaEmailEnabled ? (["email"] as const) : []),
+      ...(webauthnAllowed ? (["webauthn"] as const) : []),
       "recovery",
     ];
 
@@ -380,22 +390,31 @@ export class AuthService {
       );
     }
 
-    const verified =
-      (challenge.totpAllowed &&
-        /^\d{6}$/.test(rawCode) &&
-        challenge.user.mfaTotpSecretEnc !== null &&
-        this.mfa.validateTotpCode(challenge.user.mfaTotpSecretEnc, rawCode)) ||
-      (challenge.emailAllowed &&
-        challenge.emailCodeHash !== null &&
-        challenge.emailCodeExpiresAt !== null &&
-        challenge.emailCodeExpiresAt >= new Date() &&
-        challenge.emailCodeHash === hashToken(rawCode)) ||
+    const totpVerified =
+      challenge.totpAllowed &&
+      /^\d{6}$/.test(rawCode) &&
+      challenge.user.mfaTotpSecretEnc !== null &&
+      this.mfa.validateTotpCode(challenge.user.mfaTotpSecretEnc, rawCode);
+    const emailVerified =
+      challenge.emailAllowed &&
+      challenge.emailCodeHash !== null &&
+      challenge.emailCodeExpiresAt !== null &&
+      challenge.emailCodeExpiresAt >= new Date() &&
+      challenge.emailCodeHash === hashToken(rawCode);
+    const recoveryVerified =
+      !totpVerified &&
+      !emailVerified &&
       (await this.mfa.verifyRecoveryCode(challenge.userId, rawCode));
 
-    if (!verified) {
+    if (!totpVerified && !emailVerified && !recoveryVerified) {
       if (challenge.attempts + 1 >= MAX_MFA_CHALLENGE_ATTEMPTS) {
         await this.prisma.mfaLoginChallenge.delete({
           where: { id: challenge.id },
+        });
+        await this.security.record({
+          type: "MFA_CHALLENGE_LOCKED",
+          userId: challenge.userId,
+          userAgent,
         });
         throw new AppException(
           HttpStatus.UNAUTHORIZED,
@@ -414,7 +433,93 @@ export class AuthService {
     }
 
     await this.prisma.mfaLoginChallenge.delete({ where: { id: challenge.id } });
+
+    if (recoveryVerified) {
+      await this.security.record({
+        type: "MFA_RECOVERY_CODE_USED",
+        userId: challenge.userId,
+        userAgent,
+      });
+    }
+
     return this.completeLogin(challenge.user, userAgent, ip);
+  }
+
+  /** Options for the WebAuthn 2nd factor of a pending (password-verified) login challenge. */
+  async startWebauthnMfaChallenge(
+    challengeId: string,
+  ): Promise<WebauthnMfaOptionsResponseDto> {
+    const challenge = await this.prisma.mfaLoginChallenge.findUnique({
+      where: { id: challengeId },
+    });
+
+    if (!challenge || challenge.expiresAt < new Date()) {
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidMfaChallenge,
+      );
+    }
+
+    return this.webauthn.createMfaChallenge(challenge.userId, challenge.id);
+  }
+
+  /** Verifies the WebAuthn 2nd factor and completes the login, mirroring verifyMfaLogin(). */
+  async verifyWebauthnMfaLogin(
+    webauthnChallengeId: string,
+    response: AuthenticationResponseJSON,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<AuthResult> {
+    const { user, mfaLoginChallengeId } =
+      await this.webauthn.verifyLoginAssertion(webauthnChallengeId, response);
+
+    if (!mfaLoginChallengeId) {
+      // Shouldn't happen — the MFA-step endpoint only ever creates challenges
+      // linked to an MfaLoginChallenge — but fail closed rather than complete
+      // a login this challenge was never meant to authorize.
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidMfaChallenge,
+      );
+    }
+
+    await this.prisma.mfaLoginChallenge.deleteMany({
+      where: { id: mfaLoginChallengeId },
+    });
+    return this.completeLogin(user, userAgent, ip);
+  }
+
+  /** Options for a passwordless login — no password check at all, gated on `passwordlessEnabled`. */
+  async passwordlessLoginOptions(
+    identifier: string,
+  ): Promise<WebauthnLoginOptionsResponseDto> {
+    const options = await this.webauthn.passwordlessOptions(identifier);
+
+    if (!options) {
+      // Same response whether the account doesn't exist or simply isn't
+      // passwordless-eligible — mirrors login()'s DUMMY_PASSWORD_HASH
+      // enumeration guard.
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthPasswordlessNotEligible,
+      );
+    }
+
+    return options;
+  }
+
+  /** Verifies a passwordless login's WebAuthn assertion and completes it directly — the key itself is the whole factor, there's no separate MFA step. */
+  async passwordlessLoginVerify(
+    webauthnChallengeId: string,
+    response: AuthenticationResponseJSON,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<AuthResult> {
+    const { user } = await this.webauthn.verifyLoginAssertion(
+      webauthnChallengeId,
+      response,
+    );
+    return this.completeLogin(user, userAgent, ip);
   }
 
   /** Promotion, device recording, activity touch, and session issuance shared by login() and verifyMfaLogin(). */
