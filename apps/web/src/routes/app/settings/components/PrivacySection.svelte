@@ -267,19 +267,17 @@
     {/if}
 
     {#if appConfig.gamificationEnabled && auth.user}
-      <div class="border-border mt-5 border-t pt-5">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="font-semibold">{m.settings_hide_progression()}</p>
-            <p class="text-dim text-sm">
-              {m.settings_hide_progression_desc()}
-            </p>
-          </div>
-          <Switch
-            label={m.settings_hide_progression()}
-            checked={auth.user.hideProgression}
-            onChange={toggleHideProgression} />
+      <div class="mt-5 flex items-center justify-between gap-4">
+        <div>
+          <p class="font-semibold">{m.settings_hide_progression()}</p>
+          <p class="text-dim text-sm">
+            {m.settings_hide_progression_desc()}
+          </p>
         </div>
+        <Switch
+          label={m.settings_hide_progression()}
+          checked={auth.user.hideProgression}
+          onChange={toggleHideProgression} />
       </div>
     {/if}
 
