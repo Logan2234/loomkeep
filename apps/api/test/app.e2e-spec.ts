@@ -80,6 +80,15 @@ const tmdbStub = {
   getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
 };
 
+function authCookies(response: {
+  headers: { "set-cookie"?: string | string[] };
+}): string {
+  const cookies = response.headers["set-cookie"];
+  if (!Array.isArray(cookies))
+    throw new Error("Expected authentication cookies");
+  return cookies.map((cookie) => cookie.split(";", 1)[0]).join("; ");
+}
+
 describe("Loomkeep API (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
@@ -91,8 +100,7 @@ describe("Loomkeep API (e2e)", () => {
     acceptedTerms: true,
     certifiedAge: true,
   };
-  let accessToken: string;
-  let refreshToken: string;
+  let sessionCookies: string;
   let entryId: string;
   let firstEpisodeId: string;
   let firstSeasonId: string;
@@ -140,7 +148,7 @@ describe("Loomkeep API (e2e)", () => {
       email: user.email,
       displayName: "E2E",
     });
-    expect(response.body.tokens.accessToken).toBeDefined();
+    expect(authCookies(response)).toContain("loomkeep_access=");
   });
 
   it("rejects a duplicate email", () => {
@@ -180,15 +188,14 @@ describe("Loomkeep API (e2e)", () => {
       .expect(400);
   });
 
-  it("logs in and returns tokens", async () => {
+  it("logs in and returns HttpOnly cookies", async () => {
     const response = await request(http)
       .post("/api/auth/login")
       .send({ identifier: user.email, password: user.password })
       .expect(200);
 
-    accessToken = response.body.tokens.accessToken;
-    refreshToken = response.body.tokens.refreshToken;
-    expect(accessToken).toBeDefined();
+    sessionCookies = authCookies(response);
+    expect(response.body.tokens).toBeUndefined();
   });
 
   it("rejects unauthenticated access to the library", () => {
@@ -198,7 +205,7 @@ describe("Loomkeep API (e2e)", () => {
   it("returns the profile of the authenticated user", async () => {
     const response = await request(http)
       .get("/api/users/me")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     expect(response.body).toMatchObject({
@@ -214,7 +221,7 @@ describe("Loomkeep API (e2e)", () => {
   it("records re-acceptance of the CGU", async () => {
     const response = await request(http)
       .post("/api/users/me/accept-terms")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(201);
 
     expect(response.body.acceptedTermsVersion).toEqual(expect.any(String));
@@ -223,7 +230,7 @@ describe("Loomkeep API (e2e)", () => {
   it("updates enabled domains and rejects an empty list", async () => {
     const patched = await request(http)
       .patch("/api/users/me")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ enabledDomains: ["MEDIA"] })
       .expect(200);
     expect(patched.body.enabledDomains).toEqual(["MEDIA"]);
@@ -231,14 +238,14 @@ describe("Loomkeep API (e2e)", () => {
     // At least one domain must remain; an empty list is rejected by the DTO.
     await request(http)
       .patch("/api/users/me")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ enabledDomains: [] })
       .expect(400);
 
     // Restore the default so later tests see a normal account.
     await request(http)
       .patch("/api/users/me")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ enabledDomains: ["MEDIA", "BOOKS", "GAMES"] })
       .expect(200);
   });
@@ -246,7 +253,7 @@ describe("Loomkeep API (e2e)", () => {
   it("searches the catalog (stubbed providers)", async () => {
     const response = await request(http)
       .get("/api/catalog/search?q=test&type=ANIME")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     expect(response.body.items).toEqual([ANIME_SUMMARY]);
@@ -255,7 +262,7 @@ describe("Loomkeep API (e2e)", () => {
   it("tracks a media: first touch persists it with seasons and episodes", async () => {
     const response = await request(http)
       .put("/api/library")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({
         source: "ANILIST",
         sourceId: "4242",
@@ -279,7 +286,7 @@ describe("Loomkeep API (e2e)", () => {
   it("lists the library with the new entry", async () => {
     const response = await request(http)
       .get("/api/library?type=ANIME")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     expect(response.body.items).toHaveLength(1);
@@ -289,7 +296,7 @@ describe("Loomkeep API (e2e)", () => {
   it("exposes the persisted episodes of the entry", async () => {
     const response = await request(http)
       .get(`/api/library/entries/${entryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     expect(response.body.seasons).toHaveLength(1);
@@ -302,13 +309,13 @@ describe("Loomkeep API (e2e)", () => {
   it("marks an episode as watched and updates progress", async () => {
     await request(http)
       .post(`/api/library/episodes/${firstEpisodeId}/watches`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({})
       .expect(201);
 
     const entry = await request(http)
       .get(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(entry.body.progress).toMatchObject({
       watchedEpisodes: 1,
@@ -320,19 +327,19 @@ describe("Loomkeep API (e2e)", () => {
   it("supports rewatches: same episode again bumps the count, not the progress", async () => {
     await request(http)
       .post(`/api/library/episodes/${firstEpisodeId}/watches`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ rating: 9 })
       .expect(201);
 
     const episodes = await request(http)
       .get(`/api/library/entries/${entryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(episodes.body.seasons[0].episodes[0].watchCount).toBe(2);
 
     const entry = await request(http)
       .get(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(entry.body.progress).toMatchObject({
       watchedEpisodes: 1,
@@ -345,12 +352,12 @@ describe("Loomkeep API (e2e)", () => {
     // skips episode 3, whose air date is still in the future.
     await request(http)
       .post(`/api/library/seasons/${firstSeasonId}/watches`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(204);
 
     const episodes = await request(http)
       .get(`/api/library/entries/${entryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     const eps = episodes.body.seasons[0].episodes;
     expect(eps.map((e: { watchCount: number }) => e.watchCount)).toEqual([
@@ -359,7 +366,7 @@ describe("Loomkeep API (e2e)", () => {
 
     const entry = await request(http)
       .get(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     // Episode 3 still unwatched (unaired) → WATCHING, not COMPLETED.
     expect(entry.body.status).toBe("WATCHING");
@@ -368,13 +375,13 @@ describe("Loomkeep API (e2e)", () => {
   it("rejects marking an unaired episode as watched, directly or via watch-through", async () => {
     const episodes = await request(http)
       .get(`/api/library/entries/${entryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     const futureEpisodeId = episodes.body.seasons[0].episodes[2].id;
 
     const rejected = await request(http)
       .post(`/api/library/episodes/${futureEpisodeId}/watches`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({})
       .expect(400);
 
@@ -388,14 +395,14 @@ describe("Loomkeep API (e2e)", () => {
 
     await request(http)
       .post(`/api/library/episodes/${futureEpisodeId}/watch-through`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(400);
   });
 
   it("returns upcoming episodes of tracked series in the calendar", async () => {
     const response = await request(http)
       .get("/api/library/calendar")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     // Only episode 3 has a future air date.
@@ -413,7 +420,7 @@ describe("Loomkeep API (e2e)", () => {
 
     const response = await request(http)
       .get("/api/media/anime/4242")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     expect(response.body.title).toBe("Test Anime");
@@ -426,13 +433,13 @@ describe("Loomkeep API (e2e)", () => {
   it("keeps a manual dropped override until the user resumes", async () => {
     await request(http)
       .patch(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ status: "DROPPED" })
       .expect(200);
 
     const dropped = await request(http)
       .get(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     // Override wins over the derived status.
     expect(dropped.body.status).toBe("DROPPED");
@@ -440,12 +447,12 @@ describe("Loomkeep API (e2e)", () => {
     // Resume → back to the derived status.
     await request(http)
       .patch(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ status: "WATCHING" })
       .expect(200);
     const resumed = await request(http)
       .get(`/api/library/entries/${entryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(resumed.body.status).toBe("WATCHING");
   });
@@ -454,26 +461,26 @@ describe("Loomkeep API (e2e)", () => {
     // A fresh media so earlier watches don't interfere.
     const created = await request(http)
       .put("/api/library")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .send({ source: "ANILIST", sourceId: "5555", type: "ANIME" })
       .expect(200);
     const newEntryId = created.body.id;
 
     const before = await request(http)
       .get(`/api/library/entries/${newEntryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     const eps = before.body.seasons[0].episodes;
 
     // Watch through episode 2 → episodes 1 and 2, not 3.
     await request(http)
       .post(`/api/library/episodes/${eps[1].id}/watch-through`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(204);
 
     const after = await request(http)
       .get(`/api/library/entries/${newEntryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     const counts = after.body.seasons[0].episodes.map(
       (e: { watchCount: number }) => e.watchCount,
@@ -482,7 +489,7 @@ describe("Loomkeep API (e2e)", () => {
 
     const entry = await request(http)
       .get(`/api/library/entries/${newEntryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(entry.body.progress).toMatchObject({
       watchedEpisodes: 2,
@@ -493,12 +500,12 @@ describe("Loomkeep API (e2e)", () => {
     // Undo watching episode 2 → back to 1 watched.
     await request(http)
       .delete(`/api/library/episodes/${eps[1].id}/watches`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(204);
 
     const undone = await request(http)
       .get(`/api/library/entries/${newEntryId}/episodes`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(
       undone.body.seasons[0].episodes.map(
@@ -509,7 +516,7 @@ describe("Loomkeep API (e2e)", () => {
     // #4 "Resume": next up is now episode 2 (first unwatched, released).
     const resume = await request(http)
       .get(`/api/library/entries/${newEntryId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(resume.body.progress.nextEpisode).toMatchObject({
       episodeId: eps[1].id,
@@ -519,7 +526,7 @@ describe("Loomkeep API (e2e)", () => {
     // The media detail exposes each viewing's date.
     const detail = await request(http)
       .get(`/api/media/anime/5555`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     const firstEp = detail.body.seasons[0].episodes[0];
     expect(firstEp.watches).toHaveLength(1);
@@ -529,26 +536,26 @@ describe("Loomkeep API (e2e)", () => {
   it("notifications: scan and feed respond", async () => {
     const scan = await request(http)
       .post("/api/notifications/scan")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(201);
     expect(Array.isArray(scan.body.notifications)).toBe(true);
     expect(typeof scan.body.unread).toBe("number");
 
     await request(http)
       .get("/api/notifications")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     await request(http)
       .post("/api/notifications/read")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(204);
   });
 
   it("media extras: returns where-to-watch, cast and similar", async () => {
     const res = await request(http)
       .get("/api/catalog/anilist/5555/extras?type=ANIME")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
     expect(res.body.watchProviders).toBeDefined();
     expect(Array.isArray(res.body.cast)).toBe(true);
@@ -558,7 +565,7 @@ describe("Loomkeep API (e2e)", () => {
   it("exports all account data (profile, library, watches)", async () => {
     const res = await request(http)
       .get("/api/users/me/export")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Cookie", sessionCookies)
       .expect(200);
 
     expect(res.body.exportedAt).toBeDefined();
@@ -580,29 +587,27 @@ describe("Loomkeep API (e2e)", () => {
   it("rotates refresh tokens: the old one is consumed", async () => {
     const response = await request(http)
       .post("/api/auth/refresh")
-      .send({ refreshToken })
-      .expect(200);
+      .set("Cookie", sessionCookies)
+      .expect(204);
 
-    const newRefreshToken: string = response.body.tokens.refreshToken;
-    expect(newRefreshToken).toBeDefined();
+    const oldCookies = sessionCookies;
+    sessionCookies = authCookies(response);
 
     // The consumed token must be rejected.
     await request(http)
       .post("/api/auth/refresh")
-      .send({ refreshToken })
+      .set("Cookie", oldCookies)
       .expect(401);
-
-    refreshToken = newRefreshToken;
   });
 
   it("logs out: the refresh token becomes unusable", async () => {
     await request(http)
       .post("/api/auth/logout")
-      .send({ refreshToken })
+      .set("Cookie", sessionCookies)
       .expect(204);
     await request(http)
       .post("/api/auth/refresh")
-      .send({ refreshToken })
+      .set("Cookie", sessionCookies)
       .expect(401);
   });
 
@@ -619,13 +624,12 @@ describe("Loomkeep API (e2e)", () => {
       .send(u)
       .set("user-agent", "DeviceA")
       .expect(201);
-    const tokenA: string = reg.body.tokens.accessToken;
-    const refreshA: string = reg.body.tokens.refreshToken;
+    let cookiesA = authCookies(reg);
 
     // Registration opened exactly one session, labelled with its User-Agent.
     let list = await request(http)
       .get("/api/auth/sessions")
-      .set("Authorization", `Bearer ${tokenA}`)
+      .set("Cookie", cookiesA)
       .expect(200);
     expect(list.body).toHaveLength(1);
     const original = list.body[0];
@@ -634,12 +638,12 @@ describe("Loomkeep API (e2e)", () => {
     // Rotation updates the same row in place: same id and createdAt, not a new session.
     const rot = await request(http)
       .post("/api/auth/refresh")
-      .send({ refreshToken: refreshA })
-      .expect(200);
-    const tokenA2: string = rot.body.tokens.accessToken;
+      .set("Cookie", cookiesA)
+      .expect(204);
+    cookiesA = authCookies(rot);
     list = await request(http)
       .get("/api/auth/sessions")
-      .set("Authorization", `Bearer ${tokenA2}`)
+      .set("Cookie", cookiesA)
       .expect(200);
     expect(list.body).toHaveLength(1);
     expect(list.body[0].id).toBe(original.id);
@@ -651,38 +655,34 @@ describe("Loomkeep API (e2e)", () => {
       .send({ identifier: u.email, password: u.password })
       .set("user-agent", "DeviceB")
       .expect(200);
-    const tokenB: string = login2.body.tokens.accessToken;
-    const refreshB: string = login2.body.tokens.refreshToken;
-    const jtiB: string = JSON.parse(
-      Buffer.from(refreshB.split(".")[1], "base64url").toString(),
-    ).jti;
+    const cookiesB = authCookies(login2);
 
     list = await request(http)
       .get("/api/auth/sessions")
-      .set("Authorization", `Bearer ${tokenB}`)
+      .set("Cookie", cookiesB)
       .expect(200);
     expect(list.body).toHaveLength(2);
 
-    // Revoke every other device: only DeviceB (the current jti) survives.
+    // Revoke every other device: only the current cookie session survives.
     await request(http)
-      .delete(`/api/auth/sessions?except=${jtiB}`)
-      .set("Authorization", `Bearer ${tokenB}`)
+      .delete("/api/auth/sessions")
+      .set("Cookie", cookiesB)
       .expect(204);
     list = await request(http)
       .get("/api/auth/sessions")
-      .set("Authorization", `Bearer ${tokenB}`)
+      .set("Cookie", cookiesB)
       .expect(200);
     expect(list.body).toHaveLength(1);
-    expect(list.body[0].jti).toBe(jtiB);
+    expect(list.body[0].isCurrent).toBe(true);
 
     // Revoking a single session by id works too.
     await request(http)
       .delete(`/api/auth/sessions/${list.body[0].id}`)
-      .set("Authorization", `Bearer ${tokenB}`)
+      .set("Cookie", cookiesB)
       .expect(204);
     list = await request(http)
       .get("/api/auth/sessions")
-      .set("Authorization", `Bearer ${tokenB}`)
+      .set("Cookie", cookiesB)
       .expect(200);
     expect(list.body).toHaveLength(0);
   });
@@ -700,25 +700,25 @@ describe("Loomkeep API (e2e)", () => {
       .post("/api/auth/register")
       .send(victim)
       .expect(201);
-    const token: string = registered.body.tokens.accessToken;
+    const victimCookies = authCookies(registered);
 
     // Wrong password is rejected — deletion is guarded like a credential change.
     await request(http)
       .delete("/api/users/me")
-      .set("Authorization", `Bearer ${token}`)
+      .set("Cookie", victimCookies)
       .send({ currentPassword: "wrong" })
       .expect(401);
 
     await request(http)
       .delete("/api/users/me")
-      .set("Authorization", `Bearer ${token}`)
+      .set("Cookie", victimCookies)
       .send({ currentPassword: victim.password })
       .expect(204);
 
     // The row is gone: the (still-valid) JWT now resolves to no user…
     await request(http)
       .get("/api/users/me")
-      .set("Authorization", `Bearer ${token}`)
+      .set("Cookie", victimCookies)
       .expect(404);
     // …and the credentials no longer authenticate.
     await request(http)

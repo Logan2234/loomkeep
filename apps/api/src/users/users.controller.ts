@@ -167,8 +167,8 @@ export class UsersController {
   }
 
   /**
-   * Public (no auth) so a plain `<img src>` can load it — the SPA keeps its
-   * JWT in localStorage, unreachable from an image request. Cuids are
+   * Public (no auth) so a plain `<img src>` can load it — the SPA's auth
+   * cookies are unnecessary for a public avatar. Cuids are
    * unguessable enough that this doesn't leak anything the id itself doesn't.
    */
   @Public()

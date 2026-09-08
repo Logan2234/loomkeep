@@ -82,7 +82,7 @@ async function bootstrap() {
         // Comma-separated so multiple origins can be allowed at once.
         origin: webOrigin.split(",").map((o) => o.trim()),
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
+        allowedHeaders: ["Content-Type"],
         optionsSuccessStatus: 204,
         maxAge: 3600,
         credentials: true,

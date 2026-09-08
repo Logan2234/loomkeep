@@ -32,6 +32,11 @@ export interface AuthTokensDto {
   refreshToken: string;
 }
 
+/** Successful registration and completed MFA-login response. */
+export interface AuthResultResponseDto {
+  user: UserDto;
+}
+
 export interface ChangeEmailRequestDto {
   newEmail: string;
   currentPassword: string;
@@ -70,7 +75,7 @@ export type MfaMethod = "totp" | "email" | "webauthn" | "recovery";
 /** Discriminated on `mfaRequired` — false carries the same shape `login()` always returned. */
 export type LoginResponseDto =
   | { mfaRequired: true; challengeId: string; availableMethods: MfaMethod[] }
-  | { mfaRequired: false; user: UserDto; tokens: AuthTokensDto };
+  | { mfaRequired: false; user: UserDto };
 
 export interface MfaVerifyRequestDto {
   challengeId: string;
@@ -202,10 +207,12 @@ export interface RegenerateRecoveryCodesRequestDto {
 export interface SessionDto {
   id: string;
   /**
-   * Refresh-JWT id. Not a secret (a random UUID); the client compares it to its
-   * own token's `jti` to flag which session is the current device.
+   * Refresh-JWT id. Not a secret (a random UUID); retained for session audit
+   * and server-side management, never read from a browser token.
    */
   jti: string;
+  /** True only for the session identified by the signed access cookie. */
+  isCurrent: boolean;
   /** Raw User-Agent captured at sign-in (device label); null if unknown. */
   userAgent: string | null;
   /** ISO datetime the session started (survives token rotation). */

@@ -16,16 +16,41 @@ env:
       includePaths:
         - http://localhost:18080/.*
 
+      excludePaths:
+        - http://localhost:18080/api/auth/logout
+
       authentication:
-        method: manual
+        # The web app delegates API calls to localhost:3000 in this disposable
+        # stack. Cookies are host-scoped rather than port-scoped, so the
+        # session created here is also available through the web origin.
+        method: json
+        parameters:
+          loginPageUrl: ""
+          loginRequestUrl: http://localhost:3000/api/auth/login
+          loginRequestBody: '{"identifier":"{%username%}","password":"{%password%}"}'
+        verification:
+          method: poll
+          loggedInRegex: "200 OK"
+          loggedOutRegex: "401 Unauthorized"
+          pollFrequency: 60
+          pollUnits: seconds
+          pollUrl: http://localhost:3000/api/users/me
+          pollPostData: ""
 
       sessionManagement:
         method: cookie
+
+      users:
+        - name: zap-user
+          credentials:
+            username: alice@example.com
+            password: Password123!
 
 jobs:
   - type: spider
     parameters:
       context: loomkeep
+      user: zap-user
       maxDuration: 5
 
   - type: passiveScan-wait
@@ -35,6 +60,7 @@ jobs:
   - type: activeScan
     parameters:
       context: loomkeep
+      user: zap-user
       policy: Default Policy
 
   - type: report
