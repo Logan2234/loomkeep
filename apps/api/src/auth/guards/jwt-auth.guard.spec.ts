@@ -2,12 +2,32 @@ import type { ExecutionContext } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import type { Reflector } from "@nestjs/core";
 import type { JwtService } from "@nestjs/jwt";
-import { vi } from "vitest";
+import type { FastifyReply } from "fastify";
+import { afterEach, beforeEach, vi } from "vitest";
+import { setAuthCookies } from "../auth-cookies";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
 describe("JwtAuthGuard", () => {
+  beforeEach(() => {
+    vi.stubEnv("JWT_ACCESS_SECRET", "access-secret");
+    vi.stubEnv("JWT_REFRESH_SECRET", "refresh-secret");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
   it("reads access tokens from the HttpOnly cookie", async () => {
-    const request = { headers: { cookie: "loomkeep_access=access-token" } };
+    const header = vi.fn();
+    setAuthCookies({ header } as unknown as FastifyReply, {
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+    });
+    const request = {
+      headers: {
+        cookie: (header.mock.calls[0][1] as string[])
+          .map((cookie) => cookie.split(";", 1)[0])
+          .join("; "),
+      },
+    };
     const jwtService = {
       verifyAsync: vi.fn().mockResolvedValue({
         sub: "user-1",

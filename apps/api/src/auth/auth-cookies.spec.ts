@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearAuthCookies,
   readAccessCookie,
@@ -8,33 +8,53 @@ import {
 } from "./auth-cookies";
 
 describe("auth cookies", () => {
+  beforeEach(() => {
+    vi.stubEnv("JWT_ACCESS_SECRET", "access-secret");
+    vi.stubEnv("JWT_REFRESH_SECRET", "refresh-secret");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
   it("sets HttpOnly strict cookies without exposing tokens in the response body", () => {
-    const reply = { header: vi.fn() } as unknown as FastifyReply;
+    const header = vi.fn();
+    const reply = { header } as unknown as FastifyReply;
 
     setAuthCookies(reply, {
       accessToken: "access-token",
       refreshToken: "refresh-token",
     });
 
-    expect(reply.header).toHaveBeenCalledWith("Set-Cookie", [
-      expect.stringContaining(
-        "loomkeep_access=access-token; Path=/api; Max-Age=900; HttpOnly; SameSite=Strict",
+    const cookies = header.mock.calls[0][1] as string[];
+
+    expect(cookies).toEqual([
+      expect.stringMatching(
+        /^loomkeep_access=[^;]+; Path=\/api; Max-Age=900; HttpOnly; SameSite=Strict/,
       ),
-      expect.stringContaining(
-        "loomkeep_refresh=refresh-token; Path=/api/auth; Max-Age=2592000; HttpOnly; SameSite=Strict",
+      expect.stringMatching(
+        /^loomkeep_refresh=[^;]+; Path=\/api\/auth; Max-Age=2592000; HttpOnly; SameSite=Strict/,
       ),
     ]);
+    expect(cookies.join(";")).not.toContain("access-token");
+    expect(cookies.join(";")).not.toContain("refresh-token");
+
+    const request = {
+      headers: {
+        cookie: cookies.map((cookie) => cookie.split(";", 1)[0]).join("; "),
+      },
+    } as unknown as FastifyRequest;
+    expect(readAccessCookie(request)).toBe("access-token");
+    expect(readRefreshCookie(request)).toBe("refresh-token");
   });
 
-  it("reads the access and refresh cookies independently", () => {
+  it("rejects unencrypted or tampered cookie values", () => {
     const request = {
       headers: {
         cookie: "other=value; loomkeep_access=access; loomkeep_refresh=refresh",
       },
     } as unknown as FastifyRequest;
 
-    expect(readAccessCookie(request)).toBe("access");
-    expect(readRefreshCookie(request)).toBe("refresh");
+    expect(readAccessCookie(request)).toBeNull();
+    expect(readRefreshCookie(request)).toBeNull();
   });
 
   it("expires both cookies on logout", () => {
