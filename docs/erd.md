@@ -361,6 +361,17 @@ PASSWORD_CHANGED PASSWORD_CHANGED
 PASSWORD_RESET PASSWORD_RESET
 LOGIN_FAILED LOGIN_FAILED
 NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
+MFA_TOTP_ENABLED MFA_TOTP_ENABLED
+MFA_TOTP_DISABLED MFA_TOTP_DISABLED
+MFA_EMAIL_ENABLED MFA_EMAIL_ENABLED
+MFA_EMAIL_DISABLED MFA_EMAIL_DISABLED
+MFA_WEBAUTHN_ADDED MFA_WEBAUTHN_ADDED
+MFA_WEBAUTHN_REMOVED MFA_WEBAUTHN_REMOVED
+MFA_PASSWORDLESS_ENABLED MFA_PASSWORDLESS_ENABLED
+MFA_PASSWORDLESS_DISABLED MFA_PASSWORDLESS_DISABLED
+MFA_RECOVERY_CODES_REGENERATED MFA_RECOVERY_CODES_REGENERATED
+MFA_RECOVERY_CODE_USED MFA_RECOVERY_CODE_USED
+MFA_CHALLENGE_LOCKED MFA_CHALLENGE_LOCKED
         }
 
   "UserEntitlement" {
@@ -395,6 +406,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     DateTime birthDate "❓"
     Boolean allowAdultContent
     Boolean hideProgression
+    String equippedBadgeKeys
     DigestCadence notifyEmail
     DigestCadence notifyPush
     String timezone
@@ -425,6 +437,7 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     Boolean mfaTotpEnabled
     String mfaTotpSecretEnc "❓"
     Boolean mfaEmailEnabled
+    Boolean passwordlessEnabled
     }
 
 
@@ -716,6 +729,28 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     String emailCodeHash "❓"
     DateTime emailCodeExpiresAt "❓"
     Int attempts
+    DateTime expiresAt
+    DateTime createdAt
+    }
+
+
+  "WebauthnCredential" {
+    String id "🗝️"
+    String credentialId
+    Bytes publicKey
+    BigInt counter
+    String deviceType
+    Boolean backedUp
+    String transports
+    String name
+    DateTime createdAt
+    DateTime lastUsedAt "❓"
+    }
+
+
+  "WebauthnChallenge" {
+    String id "🗝️"
+    String challenge
     DateTime expiresAt
     DateTime createdAt
     }
@@ -1035,6 +1070,9 @@ NEW_DEVICE_LOGIN NEW_DEVICE_LOGIN
     "EmailChangeRequest" }o--|| "User" : "user"
     "MfaRecoveryCode" }o--|| "User" : "user"
     "MfaLoginChallenge" }o--|| "User" : "user"
+    "WebauthnCredential" }o--|| "User" : "user"
+    "WebauthnChallenge" }o--|| "User" : "user"
+    "WebauthnChallenge" |o--|o "MfaLoginChallenge" : "mfaLoginChallenge"
     "MediaItem" |o--|| "MediaType" : "enum:type"
     "MediaItem" |o--|| "CatalogSource" : "enum:canonicalSource"
     "MediaItemTranslation" }o--|| "MediaItem" : "mediaItem"

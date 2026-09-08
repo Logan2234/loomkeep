@@ -67,4 +67,5 @@ export type IconName =
   | "circle-arrow"
   | "arrow-right"
   | "pumpkin"
-  | "crown";
+  | "crown"
+  | "key";
