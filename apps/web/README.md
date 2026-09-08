@@ -27,7 +27,7 @@ For day-to-day dev conventions shared with the API, see the root
   root after editing it.
 
 No server-side rendering: the app runs as a pure SPA (`+layout.ts`), auth
-tokens live in `localStorage`, and the API base URL comes from
+tokens live in `HttpOnly` cookies, and the API base URL comes from
 `PUBLIC_API_URL` (`$env/dynamic/public`, resolved at server start —
 Docker-friendly, no rebuild needed to point at a different API host).
 

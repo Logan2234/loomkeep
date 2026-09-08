@@ -9,6 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { AppException } from "../../common/app.exception";
+import { readAccessCookie } from "../auth-cookies";
 import type {
   AuthenticatedRequest,
   JwtPayload,
@@ -20,7 +21,7 @@ import {
   JWT_ISSUER,
 } from "../jwt.constants";
 
-/** Global guard: every route requires a Bearer access token unless marked @Public(). */
+/** Global guard: every route requires an HttpOnly access-token cookie unless marked @Public(). */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -40,11 +41,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const authHeader = request.headers.authorization;
-    const token =
-      typeof authHeader === "string" && authHeader.startsWith("Bearer ")
-        ? authHeader.slice("Bearer ".length)
-        : null;
+    const token = readAccessCookie(request);
 
     if (!token) {
       throw new AppException(

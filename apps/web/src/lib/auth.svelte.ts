@@ -1,14 +1,9 @@
-import { browser } from "$app/environment";
-import type { AuthTokensDto, UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared";
 import { liveFlags } from "./feature-flags-live.svelte";
 
-const STORAGE_KEY = "loomkeep.tokens";
-
-/** Global auth state (Svelte 5 runes). Tokens persist in localStorage. */
+/** Global auth state. Session tokens stay in HttpOnly cookies. */
 class AuthState {
   user = $state<UserDto | null>(null);
-  accessToken = $state<string | null>(null);
-  refreshToken = $state<string | null>(null);
   /** The real plan (not the `premium-features`-gated effective status) — see `getMyEntitlement`. */
   isPremium = $state(false);
 
@@ -33,56 +28,9 @@ class AuthState {
     liveFlags.isEnabled("premium-features") && !this.isPremium,
   );
 
-  /**
-   * The `jti` of the current refresh token, read from its (unverified) payload.
-   * Used to flag the current device in the sessions list. Null if unavailable.
-   */
-  get currentSessionJti(): string | null {
-    if (!this.refreshToken) return null;
-
-    try {
-      const payload = this.refreshToken.split(".")[1];
-      // base64url → base64, then decode and parse.
-      const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-      const claims = JSON.parse(json) as { jti?: string };
-      return claims.jti ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  loadTokens(): void {
-    if (!browser) return;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-
-    try {
-      const tokens = JSON.parse(raw) as AuthTokensDto;
-      this.accessToken = tokens.accessToken;
-      this.refreshToken = tokens.refreshToken;
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-
-  setTokens(tokens: AuthTokensDto): void {
-    this.accessToken = tokens.accessToken;
-    this.refreshToken = tokens.refreshToken;
-
-    if (browser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
-    }
-  }
-
   clear(): void {
     this.user = null;
-    this.accessToken = null;
-    this.refreshToken = null;
     this.isPremium = false;
-
-    if (browser) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
   }
 }
 

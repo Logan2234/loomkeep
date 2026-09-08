@@ -116,6 +116,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:package
       - run: pnpm --filter @loomkeep/api exec prisma generate
+      - run: pnpm --filter @loomkeep/api build
+      - run: pnpm --filter @loomkeep/api generate:openapi
       - name: Seed synthetic data
         env:
           DATABASE_URL: postgresql://loomkeep:ci-zap-postgres-password@localhost:5432/loomkeep?schema=public

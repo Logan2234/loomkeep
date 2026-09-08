@@ -1,7 +1,6 @@
 import type { LoginResponseDto, MfaMethod } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { UserResponseDto } from "../../users/dto/user-response.dto";
-import { AuthTokensResponseDto } from "./auth-tokens-response.dto";
 
 // LoginResponseDto is a discriminated union — the swagger plugin can't
 // infer a union directly, so each branch gets its own class and the
@@ -26,5 +25,4 @@ export class LoginSuccessResponseDto implements LoginSuccess {
   mfaRequired!: false;
 
   user!: UserResponseDto;
-  tokens!: AuthTokensResponseDto;
 }
