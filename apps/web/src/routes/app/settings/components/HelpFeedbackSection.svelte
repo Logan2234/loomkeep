@@ -1,13 +1,11 @@
 <script lang="ts">
   import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import {
     CHANGELOG_URL,
     FEEDBACK_BUG_REPORTS_URL,
     FEEDBACK_FEATURE_REQUESTS_URL,
     ROADMAP_URL,
   } from "$lib/constants/external-links";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
 
   const LINKS = [
@@ -44,9 +42,6 @@
 <section class="card mb-5 p-5 md:p-6">
   <h2 class="font-display mb-1 flex items-center gap-2 text-lg font-bold">
     {m.common_help()} & {m.common_feedback()}
-    {#if isFeatureNew("help-feedback")}
-      <NewBadge />
-    {/if}
   </h2>
   <p class="text-dim mb-4 text-sm">
     {m.settings_help_body()}

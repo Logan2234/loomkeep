@@ -399,7 +399,7 @@
                    left the title a few dozen pixels at 375px, and nothing at
                    all once an episode was watched. -->
               <div
-                class="flex flex-col gap-1.5 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3">
+                class="flex flex-col gap-1 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                   <span class="timecode w-14 shrink-0 text-sm">
                     S{String(season.number).padStart(2, "0")}E{String(
@@ -414,10 +414,10 @@
                   </span>
                 </div>
 
-                <!-- pl-17 lines the second line up under the title (w-14 slot
-                     plus the gap); on sm+ it collapses to the right edge. -->
+                <!-- Right-aligned on its own line: indenting it under the
+                     title instead left an odd gap mid-row. -->
                 <div
-                  class="flex items-center gap-1 pl-17 sm:ml-auto sm:gap-1 sm:pl-0">
+                  class="flex items-center justify-end gap-1 sm:ml-auto sm:justify-start">
                   {#if watched && episode.id}
                     <span
                       class="text-success inline-flex shrink-0 items-center gap-1 text-xs font-semibold">

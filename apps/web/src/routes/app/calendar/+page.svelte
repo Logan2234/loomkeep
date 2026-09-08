@@ -8,12 +8,10 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
@@ -93,9 +91,6 @@
           onclick={() => (showSubscribeModal = true)}>
           <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
           {m.calendar_subscribe_button()}
-          {#if isFeatureNew("calendar-subscribe")}
-            <span class="ml-1.5 inline-flex"><NewBadge /></span>
-          {/if}
         </button>
       {/snippet}
       {#if calendarLocked}

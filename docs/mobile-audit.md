@@ -30,7 +30,21 @@ dans un ticket ou une session de correction.
 **État au 8 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés sur la
 branche `fix/mobile-audit-p0-p1` et ont été retirés de ce document. M-07 est
 partiellement corrigé (requalifié P2). M-09 reste ouvert volontairement.
-M-27 et M-28 ont été découverts pendant la correction.
+M-27 et M-28 ont été découverts pendant la correction, ainsi que M-29
+(corrigé) — un débordement horizontal du profil signalé par Logan.
+
+**M-29 · Débordement horizontal du profil** (corrigé) — un titre saisi par un
+utilisateur et sans espace (nom de liste, titre d'œuvre) a une largeur
+min-content égale au mot entier : il élargissait la page bien au-delà du
+viewport et produisait un ascenseur horizontal. Deux causes cumulées, et un
+piège au passage : `break-words` (`overflow-wrap: break-word`) coupe les
+glyphes à l'affichage mais **ne réduit pas** la largeur min-content, donc il ne
+règle rien ici — il faut `wrap-anywhere` (`overflow-wrap: anywhere`). Appliqué
+au titre de repli de `Poster`, aux phrases de `ProfileActivity` et
+`ActivityItem`. Deuxième cause : les items du grid de `ProfileView` n'avaient
+pas `min-w-0`, or un item de grid vaut `min-width: auto` par défaut — le
+carrousel de listes, que `-mx-5` élargit de 40 px, poussait donc sa colonne de
+33 px. Vérifié sans débordement de 320 à 414 px.
 
 **Rectification sur M-01** (retiré) : la première rédaction affirmait qu'en
 paysage quatre destinations étaient « inaccessibles » et que deux réagissaient

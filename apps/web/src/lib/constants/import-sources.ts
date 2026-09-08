@@ -19,7 +19,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/trakt",
       input: { type: "zip", accept: ".zip" },
       noun: { one: m.library_title_one(), many: m.library_title_many() },
-      newBadgeKey: "import-trakt",
     },
     letterboxd: {
       domain: Domain.MEDIA,
@@ -38,7 +37,6 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       href: "/app/settings/import/simkl",
       input: { type: "oauth" },
       noun: { one: m.library_title_one(), many: m.library_title_many() },
-      newBadgeKey: "import-simkl",
     },
     kitsu: {
       domain: Domain.MEDIA,

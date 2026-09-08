@@ -1,6 +1,4 @@
 <script lang="ts">
-  import NewBadge from "$lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
 
   // Official brand marks (simple-icons), kept local to this section rather
@@ -71,9 +69,6 @@
 <section class="card mb-5 p-5 md:p-6">
   <h2 class="font-display mb-1 flex items-center gap-2 text-lg font-bold">
     {m.settings_support_title()}
-    {#if isFeatureNew("support")}
-      <NewBadge />
-    {/if}
   </h2>
   <p class="text-dim mb-4 text-sm">
     {m.settings_support_body()}

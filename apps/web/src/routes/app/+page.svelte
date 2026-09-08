@@ -17,7 +17,6 @@
   import Carousel from "$lib/components/Carousel.svelte";
   import HomeActivityPreview from "$lib/components/HomeActivityPreview.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
@@ -25,7 +24,6 @@
   import { appConfig } from "$lib/config.svelte";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { isDomainEnabled } from "$lib/domains";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
@@ -712,7 +710,6 @@
             <Icon name="message" class="text-accent h-5 w-5 shrink-0" />
             <span class="flex flex-1 items-center gap-2 text-sm font-semibold">
               {m.common_help()} & {m.common_feedback()}
-              {#if isFeatureNew("help-feedback")}<NewBadge />{/if}
             </span>
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
