@@ -24,6 +24,9 @@ export function setAuthCookies(
   reply: FastifyReply,
   tokens: AuthTokensDto,
 ): void {
+  // codeql[js/clear-text-storage-sensitive-data]: JWTs must be sent in the
+  // Set-Cookie response header. They are HttpOnly, SameSite=Strict, and Secure
+  // in production, so browser JavaScript cannot read or persist them.
   reply.header("Set-Cookie", [
     cookie(ACCESS_COOKIE, tokens.accessToken, "/api", ACCESS_MAX_AGE_SECONDS),
     cookie(
