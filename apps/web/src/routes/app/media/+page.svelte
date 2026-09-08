@@ -1,14 +1,13 @@
 <script lang="ts">
   import { listLibrary } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
   import { updateLibraryEntry } from "$lib/api/library";
   import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  import { toggleFavorite } from "$lib/favorite-toggle";
   import { m } from "$lib/paraglide/messages";
-  import { toast } from "$lib/toast.svelte";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
   import { Domain, isDormant } from "@loomkeep/shared";
 
@@ -40,16 +39,6 @@
     return Math.round(
       (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
     );
-  }
-
-  async function toggleFavorite(entry: LibraryEntryDto, next: boolean) {
-    entry.favorite = next; // optimistic
-    try {
-      await updateLibraryEntry(entry.id, { favorite: next });
-    } catch (err) {
-      entry.favorite = !next;
-      toast.error(resolveApiError(err));
-    }
   }
 
   const load = (params: LibraryLoadParams) =>
@@ -87,7 +76,10 @@
       src={entry.mediaItem.posterUrl}
       title={entry.mediaItem.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) => toggleFavorite(entry, next)}>
+      onToggleFavorite={(next) =>
+        toggleFavorite(entry, next, (n) =>
+          updateLibraryEntry(entry.id, { favorite: n }),
+        )}>
       {#snippet meta()}
         {#if entry.progress}
           <ProgressBar value={pct(entry)} />

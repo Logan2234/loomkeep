@@ -9,7 +9,6 @@
     upsertBookEntry,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
@@ -39,6 +38,7 @@
     BOOK_STATUS_META as STATUS_META,
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -84,47 +84,24 @@
       : 0,
   );
 
-  const addMut = createApiMutation(() => ({
-    mutate: () => {
-      const d = detail!;
-      return upsertBookEntry({
-        source: d.source,
-        sourceId: d.sourceId,
-        status: "TO_READ",
-      });
-    },
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const patchMut = createApiMutation(() => ({
-    mutate: (changes: Parameters<typeof updateBookEntry>[1]) =>
-      updateBookEntry(entry!.id, changes),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeMut = createApiMutation(() => ({
-    mutate: () => deleteBookEntry(entry!.id),
-    onSuccess: () => {
-      confirmRemove = false;
-    },
-    successToast: m.tracking_removed_toast(),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const addReplayMut = createApiMutation(() => ({
-    mutate: () => addBookReplay(entry!.id),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeReplayMut = createApiMutation(() => ({
-    mutate: (replayId: string) => deleteBookReplay(replayId),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
+  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
+    createEntryTrackingMutations({
+      detailKey: () => detailKey,
+      detail: () => detail,
+      entryId: () => entry?.id,
+      upsert: (d) =>
+        upsertBookEntry({
+          source: d.source,
+          sourceId: d.sourceId,
+          status: "TO_READ",
+        }),
+      update: (id, changes: Parameters<typeof updateBookEntry>[1]) =>
+        updateBookEntry(id, changes),
+      remove: (id) => deleteBookEntry(id),
+      addReplay: (id) => addBookReplay(id),
+      removeReplay: (replayId) => deleteBookReplay(replayId),
+      onRemoveSuccess: () => (confirmRemove = false),
+    });
 
   // Every action but "remove" shared one `saving` flag before this migration
   // (see docs/plans/centralized-api-layer.md) — kept combined here rather

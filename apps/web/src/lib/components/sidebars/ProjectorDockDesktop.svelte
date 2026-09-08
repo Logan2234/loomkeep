@@ -5,10 +5,7 @@
   // skin is deliberately icon-only, so there's nothing to expand.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { getAdminReportsPendingCount } from "$lib/api/client";
   import { logout } from "$lib/api/auth";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -16,32 +13,26 @@
   import { ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { NAVIGATION } from "$lib/navigation";
+  import { visibleNavItems } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import { useReportsPendingCount } from "$lib/reports-pending.svelte";
 
   let { children } = $props();
 
-  const reportsPendingQuery = createApiQuery(() => ({
-    key: keys.admin.reportsPendingCount(),
-    fetch: () => getAdminReportsPendingCount().then((r) => r.count),
-    refetchInterval: 20_000,
-    enabled: auth.isAdmin,
-  }));
-  const reportsPending = $derived(reportsPendingQuery.data ?? 0);
+  const reportsPending = useReportsPendingCount();
 
   const inAdmin = $derived(page.url.pathname.startsWith("/app/admin"));
   const profileHref = $derived(
     appConfig.socialEnabled ? "/app/profile" : "/app/settings",
   );
   const flatItems = $derived(
-    NAVIGATION.flatMap((section) =>
-      section.items.filter(
-        (item) =>
-          (!item.domain || isDomainEnabled(item.domain)) &&
-          (!item.social || appConfig.socialEnabled) &&
-          (!item.gamification || appConfig.gamificationEnabled) &&
-          !item.comingSoon,
-      ),
+    visibleNavItems(
+      {
+        isDomainEnabled,
+        socialEnabled: appConfig.socialEnabled,
+        gamificationEnabled: appConfig.gamificationEnabled,
+      },
+      { includeComingSoon: false },
     ),
   );
 
@@ -83,10 +74,10 @@
               ? 'bg-accent/15 text-accent'
               : 'text-dim hover:bg-surface-2 hover:text-fg'}">
             <Icon name={item.icon} class="h-5 w-5" />
-            {#if item.href === "/app/admin/reports" && reportsPending > 0}
+            {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
               <span
                 class="bg-accent text-accent-fg absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                {reportsPending > 9 ? "9+" : reportsPending}
+                {reportsPending.count > 9 ? "9+" : reportsPending.count}
               </span>
             {/if}
           </a>

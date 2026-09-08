@@ -10,7 +10,6 @@
     upsertGameEntry,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
-  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
@@ -39,6 +38,7 @@
     GAME_STATUS_META as STATUS_META,
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
+  import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
@@ -122,47 +122,24 @@
     lightboxOpen = true;
   }
 
-  const addMut = createApiMutation(() => ({
-    mutate: () => {
-      const d = detail!;
-      return upsertGameEntry({
-        source: d.source,
-        sourceId: d.sourceId,
-        status: "BACKLOG",
-      });
-    },
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const patchMut = createApiMutation(() => ({
-    mutate: (changes: Parameters<typeof updateGameEntry>[1]) =>
-      updateGameEntry(entry!.id, changes),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeMut = createApiMutation(() => ({
-    mutate: () => deleteGameEntry(entry!.id),
-    onSuccess: () => {
-      confirmRemove = false;
-    },
-    successToast: m.tracking_removed_toast(),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const addReplayMut = createApiMutation(() => ({
-    mutate: () => addGameReplay(entry!.id),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
-
-  const removeReplayMut = createApiMutation(() => ({
-    mutate: (replayId: string) => deleteGameReplay(replayId),
-    invalidates: [detailKey],
-    errorToast: true,
-  }));
+  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
+    createEntryTrackingMutations({
+      detailKey: () => detailKey,
+      detail: () => detail,
+      entryId: () => entry?.id,
+      upsert: (d) =>
+        upsertGameEntry({
+          source: d.source,
+          sourceId: d.sourceId,
+          status: "BACKLOG",
+        }),
+      update: (id, changes: Parameters<typeof updateGameEntry>[1]) =>
+        updateGameEntry(id, changes),
+      remove: (id) => deleteGameEntry(id),
+      addReplay: (id) => addGameReplay(id),
+      removeReplay: (replayId) => deleteGameReplay(replayId),
+      onRemoveSuccess: () => (confirmRemove = false),
+    });
 
   const saving = $derived(
     addMut.loading ||

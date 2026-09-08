@@ -7,6 +7,7 @@
     watchThrough,
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
@@ -41,8 +42,47 @@
     onError: (message: string) => void;
   } = $props();
 
-  let busyEpisodeId = $state<string | null>(null);
-  let busySeasonId = $state<string | null>(null);
+  const markWatchedMut = createApiMutation(() => ({
+    mutate: (episodeId: string) => watchEpisode(episodeId),
+    onSuccess: async (_data, episodeId) => {
+      await reload();
+      popCheck(episodeId);
+    },
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+  const markUnwatchMut = createApiMutation(() => ({
+    mutate: (episodeId: string) => unwatchEpisode(episodeId),
+    onSuccess: () => reload(),
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+  const confirmCatchupYesMut = createApiMutation(() => ({
+    mutate: (episodeId: string) => watchThrough(episodeId),
+    onSuccess: () => reload(),
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+  const markSeasonMut = createApiMutation(() => ({
+    mutate: (seasonId: string) => watchSeason(seasonId),
+    onSuccess: () => reload(),
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+  const confirmUnwatchSeasonMut = createApiMutation(() => ({
+    mutate: (seasonId: string) => unwatchSeason(seasonId),
+    onSuccess: async () => {
+      await reload();
+      confirmUnwatchSeasonId = null;
+    },
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+
+  /** Whether any in-flight mutation targets this episode — drives its buttons' disabled state. */
+  function episodeBusy(episodeId: string): boolean {
+    return (
+      (markWatchedMut.loading && markWatchedMut.variables === episodeId) ||
+      (markUnwatchMut.loading && markUnwatchMut.variables === episodeId) ||
+      (confirmCatchupYesMut.loading &&
+        confirmCatchupYesMut.variables === episodeId)
+    );
+  }
 
   // Collapsed by default; several seasons can be expanded independently.
   let expandedSeasons = new SvelteSet<number>();
@@ -55,7 +95,6 @@
   }
 
   let confirmUnwatchSeasonId = $state<string | null>(null);
-  let unwatchingSeasonBusy = $state(false);
 
   // "Marquer vu" on an episode with unwatched episodes before it asks first —
   // declining once means we stop asking for the rest of this page view
@@ -156,18 +195,9 @@
     }, CHECK_POP_MS);
   }
 
-  async function markWatched(episodeId: string) {
-    busyEpisodeId = episodeId;
+  function markWatched(episodeId: string) {
     onError("");
-    try {
-      await watchEpisode(episodeId);
-      await reload();
-      popCheck(episodeId);
-    } catch (err) {
-      onError(resolveApiError(err));
-    } finally {
-      busyEpisodeId = null;
-    }
+    markWatchedMut.mutate(episodeId);
   }
 
   // Entry point for the primary "Marquer vu" button — asks first if it would
@@ -182,24 +212,16 @@
     if (gap > 0 && !declinedCatchup) {
       catchup = { episodeId, count: gap };
     } else {
-      void markWatched(episodeId);
+      markWatched(episodeId);
     }
   }
 
-  async function confirmCatchupYes() {
+  function confirmCatchupYes() {
     if (!catchup) return;
     const episodeId = catchup.episodeId;
     catchup = null;
-    busyEpisodeId = episodeId;
     onError("");
-    try {
-      await watchThrough(episodeId);
-      await reload();
-    } catch (err) {
-      onError(resolveApiError(err));
-    } finally {
-      busyEpisodeId = null;
-    }
+    confirmCatchupYesMut.mutate(episodeId);
   }
 
   function confirmCatchupNo() {
@@ -207,49 +229,23 @@
     const episodeId = catchup.episodeId;
     declinedCatchup = true;
     catchup = null;
-    void markWatched(episodeId);
+    markWatched(episodeId);
   }
 
-  async function markSeason(seasonId: string) {
-    busySeasonId = seasonId;
+  function markSeason(seasonId: string) {
     onError("");
-    try {
-      await watchSeason(seasonId);
-      await reload();
-    } catch (err) {
-      onError(resolveApiError(err));
-    } finally {
-      busySeasonId = null;
-    }
+    markSeasonMut.mutate(seasonId);
   }
 
-  async function confirmUnwatchSeason() {
+  function confirmUnwatchSeason() {
     if (!confirmUnwatchSeasonId) return;
-    const seasonId = confirmUnwatchSeasonId;
-    unwatchingSeasonBusy = true;
     onError("");
-    try {
-      await unwatchSeason(seasonId);
-      await reload();
-      confirmUnwatchSeasonId = null;
-    } catch (err) {
-      onError(resolveApiError(err));
-    } finally {
-      unwatchingSeasonBusy = false;
-    }
+    confirmUnwatchSeasonMut.mutate(confirmUnwatchSeasonId);
   }
 
-  async function markUnwatch(episodeId: string) {
-    busyEpisodeId = episodeId;
+  function markUnwatch(episodeId: string) {
     onError("");
-    try {
-      await unwatchEpisode(episodeId);
-      await reload();
-    } catch (err) {
-      onError(resolveApiError(err));
-    } finally {
-      busyEpisodeId = null;
-    }
+    markUnwatchMut.mutate(episodeId);
   }
 </script>
 
@@ -339,7 +335,8 @@
                   <button
                     role="menuitem"
                     class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
-                    disabled={busySeasonId === seasonId}
+                    disabled={markSeasonMut.loading &&
+                      markSeasonMut.variables === seasonId}
                     onclick={() => {
                       close();
                       markSeason(seasonId);
@@ -468,7 +465,7 @@
                         class="btn-icon"
                         title={m.media_rewatch()}
                         aria-label={m.media_rewatch()}
-                        disabled={busyEpisodeId === episode.id}
+                        disabled={episodeBusy(episode.id!)}
                         onclick={() => markWatched(episode.id!)}>
                         <Icon name="refresh" class="h-4 w-4" />
                       </button>
@@ -476,7 +473,7 @@
                         class="btn-icon hover:text-danger"
                         title={m.media_undo_watch()}
                         aria-label={m.media_undo_watch()}
-                        disabled={busyEpisodeId === episode.id}
+                        disabled={episodeBusy(episode.id!)}
                         onclick={() => markUnwatch(episode.id!)}>
                         <Icon name="x" class="h-4 w-4" />
                       </button>
@@ -484,7 +481,7 @@
                   {:else}
                     <button
                       class="btn btn-primary btn-sm shrink-0"
-                      disabled={busyEpisodeId === episode.id}
+                      disabled={episodeBusy(episode.id!)}
                       onclick={() =>
                         requestMarkWatched(
                           season.number,
@@ -511,7 +508,7 @@
     message={m.media_catch_up_message({ count: c.count })}
     confirmLabel={m.media_catch_up_confirm()}
     cancelLabel={m.media_catch_up_cancel()}
-    busy={busyEpisodeId === c.episodeId}
+    busy={confirmCatchupYesMut.loading}
     onConfirm={confirmCatchupYes}
     onCancel={confirmCatchupNo} />
 {/if}
@@ -522,7 +519,7 @@
     message={m.media_undo_season_message()}
     confirmLabel={m.media_undo_all()}
     danger
-    busy={unwatchingSeasonBusy}
+    busy={confirmUnwatchSeasonMut.loading}
     onConfirm={confirmUnwatchSeason}
     onCancel={() => (confirmUnwatchSeasonId = null)} />
 {/if}

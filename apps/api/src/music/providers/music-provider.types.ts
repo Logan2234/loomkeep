@@ -4,11 +4,7 @@ import type {
   MusicSummaryDto,
   MusicTrackDto,
 } from "@loomkeep/shared";
-
-interface ProviderMusicExternalId {
-  source: MusicSource;
-  externalId: string;
-}
+import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one album, in canonical form. */
 export interface ProviderMusicDetails {
@@ -20,7 +16,7 @@ export interface ProviderMusicDetails {
   releaseDatePrecision: "day" | "month" | "year" | null;
   /** Other albums by the primary artist, standing in for "similar titles". */
   sameArtistAlbums: MusicSummaryDto[];
-  externalIds: ProviderMusicExternalId[];
+  externalIds: ProviderExternalId<MusicSource>[];
   tags: string[];
   disambiguation: string | null;
   externalLinks: MusicExternalLinkDto[];

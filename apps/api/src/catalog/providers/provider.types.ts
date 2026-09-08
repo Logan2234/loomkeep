@@ -6,11 +6,9 @@ import type {
   MediaSummaryDto,
   MediaType,
 } from "@loomkeep/shared";
+import type { ProviderExternalId as GenericProviderExternalId } from "../../common/provider-external-id";
 
-export interface ProviderExternalId {
-  source: MediaSource;
-  externalId: string;
-}
+export type ProviderExternalId = GenericProviderExternalId<MediaSource>;
 
 export interface ProviderEpisode {
   number: number;
