@@ -128,7 +128,7 @@ describe("PublicConfigController", () => {
     });
   });
 
-  it("reports adminMfaEnforced=true only when NODE_ENV is exactly production (LK-C17)", async () => {
+  it("reports adminMfaEnforced=true only when NODE_ENV is exactly production", async () => {
     delete process.env.GIT_SHA;
     const { controller } = makeController({ NODE_ENV: "production" });
     await expect(controller.get()).resolves.toEqual({

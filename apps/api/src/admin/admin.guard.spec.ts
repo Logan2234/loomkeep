@@ -46,7 +46,7 @@ describe("AdminGuard", () => {
     await expect(guard.canActivate(contextFor("user-1"))).resolves.toBe(true);
   });
 
-  it("rejects an admin account with no MFA method active in production (LK-C17)", async () => {
+  it("rejects an admin account with no MFA method active in production", async () => {
     const { guard } = makeGuard("ADMIN", {}, "production");
     await expect(guard.canActivate(contextFor("user-1"))).rejects.toThrow(
       AppException,

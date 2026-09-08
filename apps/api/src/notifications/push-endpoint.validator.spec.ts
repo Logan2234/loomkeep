@@ -18,7 +18,7 @@ describe("isAllowedPushEndpoint", () => {
     ).toBe(true);
   });
 
-  // LK-S02: an unrestricted endpoint reaches webpush.sendNotification() as
+  // An unrestricted endpoint reaches webpush.sendNotification() as
   // the request target, letting an authenticated user make the API server
   // POST to an arbitrary host (Docker-internal services, cloud metadata…).
   it("rejects an endpoint on a host that isn't a known push service", () => {

@@ -17,7 +17,7 @@ export const RECOVERY_CODE_COUNT = 10;
 const RECOVERY_CODE_LENGTH = 10;
 // Excludes ambiguous characters (0/O, 1/I/L) so codes are easy to read/type back.
 const RECOVERY_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
-/** Shape of a normalized recovery code — lets verifyRecoveryCode() bail before any bcrypt.compare() on input that plainly isn't one (LK-S07). */
+/** Shape of a normalized recovery code — lets verifyRecoveryCode() bail before any bcrypt.compare() on input that plainly isn't one. */
 const RECOVERY_CODE_PATTERN = new RegExp(
   `^[${RECOVERY_CODE_ALPHABET}]{${RECOVERY_CODE_LENGTH}}$`,
 );

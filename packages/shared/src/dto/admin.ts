@@ -292,7 +292,7 @@ export interface AdminUserDto {
   createdAt: string;
   /** `User.lastActiveAt` — bumped on register/login/refresh, null if never signed in. */
   lastActiveAt: string | null;
-  /** LK-C06: set once the inactivity reminder email has been sent, null otherwise. */
+  /** Set once the inactivity reminder email has been sent, null otherwise. */
   inactivityWarningSentAt: string | null;
 }
 
@@ -352,7 +352,7 @@ export interface AdminBackupFileDto {
 
 /**
  * Age-encrypted, ASCII-armored content of one persisted backup, for
- * download — never plain SQL (see LK-C20). Decrypt locally with
+ * download — never plain SQL. Decrypt locally with
  * `age -d -o dump.sql <file>` before restoring.
  */
 export interface AdminBackupFileContentDto {

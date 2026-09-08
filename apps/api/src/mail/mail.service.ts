@@ -260,7 +260,7 @@ export class MailService {
         this.buildNewDeviceLogin(locale, v.deviceLabel, v.ip || null),
     },
     inactivityWarning: {
-      label: "Relance compte inactif (LK-C06)",
+      label: "Relance compte inactif",
       fields: [
         {
           key: "deletionDate",
@@ -541,7 +541,7 @@ export class MailService {
   }
 
   /**
-   * LK-C06: warns an inactive account it will be deleted on `deletionDate`
+   * warns an inactive account it will be deleted on `deletionDate`
    * (the account-preservation notice required before InactiveAccountService's
    * automatic purge). Sent regardless of `notifyEmail` — this is a retention
    * notice, not a marketing/feature email.
@@ -661,7 +661,7 @@ export class MailService {
   }
 
   /**
-   * LK-C06: 24 months without a login/session refresh trigger this notice,
+   * 24 months without a login/session refresh trigger this notice,
    * naming the exact date the account is due for automatic deletion (36
    * months of inactivity) unless the account is used again before then.
    */

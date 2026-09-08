@@ -31,7 +31,7 @@ describe("server locale isolation", () => {
   });
 });
 
-// LK-S15: a self-host install running this container directly (no Caddy in
+// A self-host install running this container directly (no Caddy in
 // front, or one without equivalent headers) must still ship these — see
 // SECURITY_HEADERS' own comment for why they're duplicated from the Caddyfile.
 describe("security headers", () => {

@@ -33,7 +33,7 @@ const KEEP = 7;
  * it. Only the {@link KEEP} most recent are kept.
  *
  * Every dump is encrypted (age, ASCII-armored) for BACKUP_ENCRYPTION_PUBLIC_KEY
- * before it ever touches disk (LK-C20) — a plain-SQL dump on disk is the
+ * before it ever touches disk — a plain-SQL dump on disk is the
  * entire user database (emails, password hashes, birth dates, full watch
  * history) sitting in the clear. Only the *public* key lives on this
  * instance; nothing here can decrypt a dump back, by design — restoring

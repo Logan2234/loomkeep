@@ -16,7 +16,7 @@ import { PrismaService } from "../prisma/prisma.service";
  * from the DB — the JWT payload doesn't carry it, and a token issued before
  * the bootstrap promotion must still see the new grant.
  *
- * LK-C17: an admin account with no MFA method active is also rejected, with
+ * An admin account with no MFA method active is also rejected, with
  * a distinct ErrorCode.AuthMfaRequired code so the web app can show a
  * "configure your MFA" prompt instead of treating it as a plain non-admin
  * 403. This is checked live (not gated by a grace period) since there's no field

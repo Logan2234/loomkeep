@@ -75,9 +75,9 @@ export interface UserDto {
    * re-acceptance prompt.
    */
   acceptedTermsVersion: string | null;
-  /** Whether TOTP-based MFA is confirmed and active. See LK-C17. */
+  /** Whether TOTP-based MFA is confirmed and active. */
   mfaTotpEnabled: boolean;
-  /** Whether email-code-based MFA is active. See LK-C17. */
+  /** Whether email-code-based MFA is active. */
   mfaEmailEnabled: boolean;
   /**
    * Opt-out from showing gamification progression (level/XP) to other

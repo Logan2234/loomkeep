@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+
   "notif_follow_request_body": "Souhaite te suivre",
   "notif_follow_accepted_body": "A accepté ta demande",
   "notif_reactions_title": "Ton commentaire fait réagir",
@@ -35,7 +36,7 @@
   "admin_template_email_code": "Code de confirmation d'email",
   "admin_template_mfa_code": "Code MFA (connexion)",
   "admin_template_episode_digest": "Digest de sorties (email)",
-  "admin_template_inactivity": "Relance compte inactif (LK-C06)",
+  "admin_template_inactivity": "Relance compte inactif",
   "admin_template_moderation": "Décision de modération (DSA art. 17)",
   "admin_template_content": "Contenu (Markdown, comme sur Quackback)",
   "admin_template_episode_count": "Nombre d'épisodes (1-6)",
@@ -1008,7 +1009,7 @@
   "admin_users_enlarge_avatar": "Voir l'avatar en grand",
   "admin_users_public_profile": "Voir le profil public",
   "admin_users_inactivity_reminder": "Relance inactivité envoyée le",
-  "admin_users_inactivity_deletion": "— suppression automatique si le compte reste inactif (LK-C06).",
+  "admin_users_inactivity_deletion": "— suppression automatique si le compte reste inactif.",
   "admin_users_identity": "Identité",
   "admin_users_administrator": "Administrateur",
   "admin_users_self_demote_hint": "Tu ne peux pas retirer ton propre accès admin.",

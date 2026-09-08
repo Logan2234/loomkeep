@@ -46,7 +46,7 @@ describe("BackupService.restore", () => {
     process.env.DATABASE_URL = ORIGINAL_DATABASE_URL;
   });
 
-  // LK-S04: the runtime image (apps/api/Dockerfile) strips every package
+  // The runtime image (apps/api/Dockerfile) strips every package
   // manager, pnpm included — restore() must never shell out to one, or a
   // restore succeeds at replacing the database and then fails (ENOENT)
   // before migrations are reapplied.
