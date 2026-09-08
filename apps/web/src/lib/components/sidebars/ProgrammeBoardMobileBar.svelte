@@ -9,16 +9,17 @@
   import { appConfig } from "$lib/config.svelte";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { NAVIGATION } from "$lib/navigation";
+  import { visibleNavItems } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
 
   const items = $derived(
-    NAVIGATION.flatMap((section) => section.items).filter(
-      (item) =>
-        (!item.domain || isDomainEnabled(item.domain)) &&
-        (!item.social || appConfig.socialEnabled) &&
-        (!item.gamification || appConfig.gamificationEnabled) &&
-        !item.comingSoon,
+    visibleNavItems(
+      {
+        isDomainEnabled,
+        socialEnabled: appConfig.socialEnabled,
+        gamificationEnabled: appConfig.gamificationEnabled,
+      },
+      { includeComingSoon: false },
     ),
   );
 

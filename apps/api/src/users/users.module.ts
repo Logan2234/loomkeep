@@ -15,6 +15,7 @@ import { DomainGateService } from "./domain-gate.service";
 import { InactiveAccountService } from "./inactive-account.service";
 import { MfaController } from "./mfa.controller";
 import { UsersController } from "./users.controller";
+import { UsersService } from "./users.service";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UsersController } from "./users.controller";
     CsvExportService,
     AccountDeletionService,
     InactiveAccountService,
+    UsersService,
   ],
   exports: [
     AgeGateService,
