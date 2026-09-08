@@ -93,6 +93,9 @@ const UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS = "newsletter-notifs";
 
 @Injectable()
 export class MailService {
+  /** Most recent SMTP verification failure, consumed by the admin health probe. */
+  lastVerificationError: string | undefined;
+
   private readonly logger = new Logger(MailService.name);
   private readonly transporter: Transporter | null;
   private readonly from: string;
@@ -257,7 +260,7 @@ export class MailService {
         this.buildNewDeviceLogin(locale, v.deviceLabel, v.ip || null),
     },
     inactivityWarning: {
-      label: "Relance compte inactif (LK-C06)",
+      label: "Relance compte inactif",
       fields: [
         {
           key: "deletionDate",
@@ -343,12 +346,15 @@ export class MailService {
    * throwing — the admin status page treats it as "down".
    */
   async verifyConnection(): Promise<boolean> {
+    this.lastVerificationError = undefined;
     if (!this.transporter) return false;
 
     try {
       await this.transporter.verify();
       return true;
     } catch (error) {
+      this.lastVerificationError =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`SMTP verify failed: ${String(error)}`);
       return false;
     }
@@ -535,7 +541,7 @@ export class MailService {
   }
 
   /**
-   * LK-C06: warns an inactive account it will be deleted on `deletionDate`
+   * warns an inactive account it will be deleted on `deletionDate`
    * (the account-preservation notice required before InactiveAccountService's
    * automatic purge). Sent regardless of `notifyEmail` — this is a retention
    * notice, not a marketing/feature email.
@@ -655,7 +661,7 @@ export class MailService {
   }
 
   /**
-   * LK-C06: 24 months without a login/session refresh trigger this notice,
+   * 24 months without a login/session refresh trigger this notice,
    * naming the exact date the account is due for automatic deletion (36
    * months of inactivity) unless the account is used again before then.
    */

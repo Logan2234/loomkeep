@@ -210,10 +210,7 @@ describe("Loomkeep API (e2e)", () => {
 
     expect(response.body).toMatchObject({
       email: user.email,
-      // Empty until the onboarding wizard (or the settings "Domaines"
-      // section) sets at least one — see User.enabledDomains in schema.prisma.
       enabledDomains: [],
-      // Set at registration — see AuthService.register (LK-C03).
       acceptedTermsVersion: expect.any(String),
     });
   });

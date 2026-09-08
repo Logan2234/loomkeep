@@ -28,6 +28,12 @@ function extractMermaid(markdown: string): string {
 
 /** Abort a probe after this delay so one dead service can't stall the page. */
 const PROBE_TIMEOUT_MS = 5_000;
+const MAX_DIAGNOSTIC_LENGTH = 300;
+
+interface ProbeResult {
+  reachable: boolean;
+  detail?: string;
+}
 
 interface ServiceSpec {
   key: string;
@@ -44,11 +50,11 @@ interface ServiceSpec {
    */
   comingSoon?: boolean;
   /**
-   * Live probe. Resolves to `true`/`false` when it ran, or `null` when there's
-   * nothing cheap to ping (only the config presence is reported). Receives the
-   * abort signal so the request is bounded by {@link PROBE_TIMEOUT_MS}.
+   * Live probe. Returns its result and, on failure, a safe diagnostic detail.
+   * Receives the abort signal so the request is bounded by
+   * {@link PROBE_TIMEOUT_MS}.
    */
-  probe?: (signal: AbortSignal) => Promise<boolean>;
+  probe?: (signal: AbortSignal) => Promise<ProbeResult>;
   /**
    * Documented free-tier quota, when publicly known; absent otherwise (and for
    * `webPush`, which makes no outbound calls at all — see {@link QuotaTrackerService}).
@@ -215,7 +221,16 @@ export class AdminService {
         required: false,
         envKeys: ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"],
         keyUrl: "https://www.brevo.com",
-        probe: () => this.mail.verifyConnection(),
+        probe: async () => {
+          const reachable = await this.mail.verifyConnection();
+          return {
+            reachable,
+            detail: reachable
+              ? undefined
+              : (this.diagnostic(this.mail.lastVerificationError) ??
+                "Connexion ou authentification refusée"),
+          };
+        },
         // https://www.brevo.com free plan: 300 emails/day (see README "Email").
         quotaLimit: { max: 300, window: "day" },
       },
@@ -323,7 +338,7 @@ export class AdminService {
       };
     }
 
-    const configured = spec.envKeys.every((k) => Boolean(this.env(k)));
+    const configured = spec.envKeys.every((key) => Boolean(this.env(key)));
     const quota = this.quotaFieldsFor(spec, now, callRows);
 
     // Don't probe a service we know isn't configured — a required key/secret is
@@ -350,13 +365,17 @@ export class AdminService {
       const start = Date.now();
 
       try {
-        reachable = await this.withTimeout(spec.probe);
+        const result = await this.withTimeout(spec.probe);
+        reachable = result.reachable;
         latencyMs = Date.now() - start;
-        if (!reachable) detail = "Injoignable ou refusé";
-      } catch {
+        detail = result.detail;
+      } catch (error) {
         latencyMs = Date.now() - start;
         reachable = false;
-        detail = "Injoignable ou refusé";
+        detail =
+          error instanceof DOMException && error.name === "AbortError"
+            ? `Délai de réponse dépassé après ${PROBE_TIMEOUT_MS / 1_000} s`
+            : (this.diagnostic(error) ?? "Erreur réseau");
       }
     }
 
@@ -419,8 +438,8 @@ export class AdminService {
 
   /** Runs a probe under an abort-timeout, so no single service stalls the page. */
   private async withTimeout(
-    probe: (signal: AbortSignal) => Promise<boolean>,
-  ): Promise<boolean> {
+    probe: (signal: AbortSignal) => Promise<ProbeResult>,
+  ): Promise<ProbeResult> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
 
@@ -437,8 +456,85 @@ export class AdminService {
    * "the host answered". OMDb is a known exception — it replies 200 even for an
    * invalid key — but presence of the key is already reported separately.
    */
-  private async ping(url: string, init: RequestInit): Promise<boolean> {
+  private async ping(url: string, init: RequestInit): Promise<ProbeResult> {
     const response = await fetch(url, init);
-    return response.ok;
+    const diagnostic = response.ok
+      ? undefined
+      : await this.responseDiagnostic(response);
+
+    return {
+      reachable: response.ok,
+      detail: diagnostic
+        ? `HTTP ${response.status} — ${diagnostic}`
+        : `HTTP ${response.status}`,
+    };
+  }
+
+  /** Extracts the short, human-facing diagnostic commonly returned by JSON APIs. */
+  private async responseDiagnostic(
+    response: Response,
+  ): Promise<string | undefined> {
+    const contentType = response.headers?.get("content-type") ?? "";
+    const contentLength = Number(response.headers?.get("content-length"));
+
+    if (
+      !contentType.includes("application/json") ||
+      (Number.isFinite(contentLength) && contentLength > 4_096)
+    ) {
+      return undefined;
+    }
+
+    try {
+      const body: unknown = await response.json();
+      if (!body || typeof body !== "object") return undefined;
+
+      const payload = body as {
+        detail?: unknown;
+        errorDescription?: unknown;
+        error_description?: unknown;
+        message?: unknown;
+        error?: unknown;
+        errors?: unknown;
+      };
+      const nestedErrorMessage =
+        payload.error && typeof payload.error === "object"
+          ? (payload.error as { message?: unknown }).message
+          : undefined;
+      const message =
+        (Array.isArray(payload.errors)
+          ? payload.errors.find(
+              (error): error is { message: string } =>
+                Boolean(error) &&
+                typeof error === "object" &&
+                typeof (error as { message?: unknown }).message === "string",
+            )?.message
+          : undefined) ??
+        payload.message ??
+        payload.errorDescription ??
+        payload.error_description ??
+        payload.detail ??
+        nestedErrorMessage ??
+        payload.error;
+
+      return this.diagnostic(message);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Keeps third-party diagnostics useful without exposing arbitrarily long values. */
+  private diagnostic(value: unknown): string | undefined {
+    if (value instanceof Error) value = value.message;
+    if (typeof value !== "string") return undefined;
+
+    const normalized = value
+      .replace(/\s+/g, " ")
+      .replace(
+        /\b(bearer\s+|api[-_ ]?key|token|secret|password)\s*[:=]?\s*[^\s,;]+/gi,
+        "$1 [masqué]",
+      )
+      .trim();
+    if (!normalized) return undefined;
+    return normalized.slice(0, MAX_DIAGNOSTIC_LENGTH);
   }
 }

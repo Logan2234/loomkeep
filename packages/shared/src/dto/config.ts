@@ -39,7 +39,7 @@ export interface PublicConfigDto {
 
   /**
    * Whether admin accounts are actually blocked from /admin when they have
-   * no MFA method active (LK-C17) — true only when the API's `NODE_ENV` is
+   * no MFA method active — true only when the API's `NODE_ENV` is
    * `production`. Off outside production so local/staging dev doesn't
    * require setting up TOTP/email MFA (and doesn't burn the transactional
    * email quota) just to reach the admin panel; the underlying MFA feature

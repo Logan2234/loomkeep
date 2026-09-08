@@ -45,7 +45,7 @@ const VERIFY_TOKEN_TTL_HOURS = 24;
 export const BCRYPT_ROUNDS = 12;
 /**
  * Compared against when the login identifier doesn't match any account, so
- * the response time no longer depends on whether it exists (LK-S09) — without
+ * the response time no longer depends on whether it exists — without
  * this, login()'s `||` short-circuit skipped bcrypt.compare() entirely for an
  * unknown identifier, answering in a fraction of the ~250ms a real account
  * takes and making account enumeration trivial by timing alone.
@@ -876,8 +876,8 @@ export class AuthService {
   }
 
   /**
-   * Bumps `User.lastActiveAt` and clears any pending inactivity warning — see
-   * LK-C06. Called on register, login and refresh, so a session kept alive
+   * Bumps `User.lastActiveAt` and clears any pending inactivity warning.
+   * Called on register, login and refresh, so a session kept alive
    * purely by silent refresh (no re-entered credentials) still counts as
    * activity.
    */

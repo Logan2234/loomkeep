@@ -18,7 +18,7 @@ export function validateEnv(
   const missing: string[] = ALWAYS_REQUIRED.filter((key) => !env[key]);
 
   // AdminGuard enforces MFA on every admin account unconditionally once
-  // NODE_ENV=production (LK-C17) — without this key, TOTP setup throws and
+  // NODE_ENV=production — without this key, TOTP setup throws and
   // email MFA depends on SMTP being configured too, so a production admin
   // with neither can end up permanently locked out of /admin.
   if (env.NODE_ENV === "production" && !env.MFA_ENCRYPTION_KEY) {

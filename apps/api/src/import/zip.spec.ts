@@ -66,7 +66,7 @@ describe("readZipEntries", () => {
     );
   }, 15_000);
 
-  // LK-S12: every offset walked here comes from the archive's own bytes, so
+  // Every offset walked here comes from the archive's own bytes, so
   // a corrupted or adversarial ZIP can point one anywhere. Before the bounds
   // checks, these raised an untyped Node RangeError instead of the same
   // "Corrupt ZIP: …" Error every other malformed-input case throws.

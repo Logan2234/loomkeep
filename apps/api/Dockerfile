@@ -37,7 +37,7 @@ FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f
 
 # postgresql18-client matches the postgres:18-alpine server in docker-compose.yml
 # — pg_dump/psql (admin backup & restore) shell out to it via BackupService.
-# age encrypts every dump before it touches disk (LK-C20) — same service.
+# age encrypts every dump before it touches disk — same service.
 RUN apk upgrade --no-cache \
   && apk add --no-cache postgresql18-client age \
   && rm -rf /usr/local/lib/node_modules/npm \

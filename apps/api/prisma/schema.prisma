@@ -513,7 +513,7 @@ model User {
   // showing the wizard instead of the app chrome — including for accounts
   // that existed before this field shipped.
   onboardedAt                DateTime?
-  // Proof-of-consent for the CGU (LK-C03): the LEGAL_VERSION in effect when
+  // Proof-of-consent for the CGU: the LEGAL_VERSION in effect when
   // the user last accepted, and when. Null for accounts predating this field
   // (backfilled by migration to the version in effect at that time — see
   // 20260820000000_add_accepted_terms). app/+layout.svelte blocks with a
@@ -521,10 +521,10 @@ model User {
   // current LEGAL_VERSION.
   acceptedTermsAt            DateTime?
   acceptedTermsVersion       String?
-  // LK-C21: when the user self-certified being at least 15 (register.dto.ts
+  // when the user self-certified being at least 15 (register.dto.ts
   // requires it). Null for accounts predating this field.
   certifiedAgeAt             DateTime?
-  // LK-C06: last time this account did anything that proves a human is still
+  // last time this account did anything that proves a human is still
   // behind it — bumped on register, login and refresh-token rotation (not
   // just login, since a long-lived session never re-enters credentials).
   // Drives both the admin "last active" column and the inactive-account job
@@ -537,7 +537,7 @@ model User {
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt    DateTime?
 
-  // --- MFA (LK-C17) ---
+  // --- MFA ---
   // Two independently-toggleable methods; admin accounts with neither active
   // are blocked from /admin by AdminGuard. mfaTotpSecretEnc is cleared (not
   // just flagged off) when TOTP is disabled, so re-enabling always starts

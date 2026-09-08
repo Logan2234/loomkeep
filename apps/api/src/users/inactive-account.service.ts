@@ -6,7 +6,7 @@ import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountDeletionService } from "./account-deletion.service";
 
-/** LK-C06: relance à 24 mois d'inactivité, suppression à 36 mois. */
+/** Relance à 24 mois d'inactivité, suppression à 36 mois. */
 const WARNING_AFTER_MONTHS = 24;
 const DELETE_AFTER_MONTHS = 36;
 
@@ -23,8 +23,8 @@ function addMonths(date: Date, months: number): Date {
 }
 
 /**
- * CNIL-driven retention policy for dormant accounts (LK-C06,
- * privacy-policy §11): a reminder email always precedes any automatic
+ * CNIL-driven retention policy for dormant accounts
+ * (privacy-policy §11): a reminder email always precedes any automatic
  * deletion, and the warning is voided the moment the account is used again
  * (see AuthService.touchActivity, which clears inactivityWarningSentAt).
  */
@@ -94,7 +94,7 @@ export class InactiveAccountService {
     for (const user of candidates) {
       await this.accountDeletion.deleteAccount(
         user.id,
-        `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois, LK-C06)`,
+        `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois)`,
       );
       this.logger.log(`Compte ${user.id} supprimé pour inactivité`);
     }

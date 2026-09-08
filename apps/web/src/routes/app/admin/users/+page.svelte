@@ -96,7 +96,8 @@
   <PageHeader
     icon="user"
     title={m.common_users()}
-    subtitle={m.admin_users_subtitle()} />
+    subtitle={m.admin_users_subtitle()}
+    back="/app/admin" />
 
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <input

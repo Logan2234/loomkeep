@@ -32,6 +32,7 @@
     icon="library"
     title={m.admin_schema_title()}
     subtitle={m.admin_schema_subtitle()}
+    back="/app/admin"
     class="mb-6" />
 
   {#if error}

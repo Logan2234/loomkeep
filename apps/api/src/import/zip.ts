@@ -94,7 +94,7 @@ export function readZipEntriesMatching(
  * directory offset, per-entry name/extra/comment lengths, a local header
  * offset) comes straight from the archive's own bytes, so a corrupt or
  * adversarial ZIP can point them anywhere. Node's raw `buf.readUInt32LE`
- * throws an untyped RangeError past the buffer's end (LK-S12) — routing every
+ * throws an untyped RangeError past the buffer's end — routing every
  * such read through here keeps every failure a plain, catchable `Error` with
  * a message consistent with the rest of this file's "Corrupt ZIP: …" style,
  * regardless of what a future caller does or doesn't wrap in a try/catch.

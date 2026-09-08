@@ -442,7 +442,7 @@ describe("AuthService.login", () => {
     );
   });
 
-  it("bumps lastActiveAt and clears any pending inactivity warning (LK-C06)", async () => {
+  it("bumps lastActiveAt and clears any pending inactivity warning", async () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);
     const user = makeUser({ passwordHash });
@@ -749,7 +749,7 @@ describe("AuthService.refresh", () => {
     );
   });
 
-  it("bumps lastActiveAt and clears any pending inactivity warning (LK-C06)", async () => {
+  it("bumps lastActiveAt and clears any pending inactivity warning", async () => {
     const { service, prisma } = makeService();
     const user = makeUser();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
@@ -1078,7 +1078,7 @@ describe("AuthService.verifyEmail", () => {
   });
 });
 
-describe("AuthService.login — MFA challenge (LK-C17)", () => {
+describe("AuthService.login — MFA challenge", () => {
   it("returns mfaRequired without opening a session when a method is enabled", async () => {
     const { service, prisma } = makeService();
     const passwordHash = await bcrypt.hash("correct-password", 4);

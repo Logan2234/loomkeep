@@ -139,7 +139,8 @@
   <PageHeader
     icon="stats"
     title={m.admin_stats_title()}
-    subtitle={m.admin_stats_subtitle()}>
+    subtitle={m.admin_stats_subtitle()}
+    back="/app/admin">
     {#snippet actions()}
       <button
         onclick={refresh}
@@ -155,13 +156,47 @@
   {/if}
 
   {#if loading && !accounts}
-    <div class="grid gap-3.5 lg:grid-cols-2">
-      {#each { length: 4 } as _, i (i)}
-        <div class="card p-4">
-          <div class="skeleton h-4 w-1/3 rounded"></div>
-          <div class="skeleton mt-3 h-24 w-full rounded"></div>
+    <div class="animate-pulse">
+      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+        {#each { length: 5 } as _, i (i)}
+          <div class="card h-24 space-y-3 p-4">
+            <div class="skeleton h-7 w-2/5 rounded"></div>
+            <div class="skeleton h-3 w-4/5 rounded"></div>
+          </div>
+        {/each}
+      </div>
+      <section class="border-border border-t py-6">
+        <div class="skeleton mb-4 h-3 w-36 rounded"></div>
+        <div class="grid gap-3.5 lg:grid-cols-2">
+          {#each { length: 2 } as _, i (i)}
+            <div class="card h-80 space-y-5 p-4">
+              <div class="skeleton h-4 w-2/5 rounded"></div>
+              <div class="skeleton h-3 w-3/5 rounded"></div>
+              <div class="skeleton h-40 w-full rounded"></div>
+            </div>
+          {/each}
         </div>
-      {/each}
+        <div class="mt-3.5 grid gap-3.5 lg:grid-cols-3">
+          {#each { length: 3 } as _, i (i)}
+            <div class="card h-72 space-y-5 p-4">
+              <div class="skeleton h-4 w-1/2 rounded"></div>
+              <div class="skeleton h-3 w-3/4 rounded"></div>
+              {#each { length: 4 } as _, j (j)}
+                <div class="skeleton h-3 w-full rounded"></div>
+              {/each}
+            </div>
+          {/each}
+        </div>
+        <div class="mt-3.5 grid gap-3.5 lg:grid-cols-2">
+          {#each { length: 2 } as _, i (i)}
+            <div class="card h-64 space-y-5 p-4">
+              <div class="skeleton h-4 w-1/3 rounded"></div>
+              <div class="skeleton h-3 w-1/2 rounded"></div>
+              <div class="skeleton h-28 w-full rounded"></div>
+            </div>
+          {/each}
+        </div>
+      </section>
     </div>
   {:else}
     {#if kpis.length > 0}

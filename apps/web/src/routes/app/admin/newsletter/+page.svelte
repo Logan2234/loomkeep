@@ -20,7 +20,8 @@
   <PageHeader
     icon="sparkles"
     title={m.common_newsletter()}
-    subtitle={m.admin_newsletter_subtitle()} />
+    subtitle={m.admin_newsletter_subtitle()}
+    back="/app/admin" />
 
   <section class="card p-5 md:p-6">
     <h2 class="font-display mb-3 text-lg font-bold">{m.admin_sends()}</h2>

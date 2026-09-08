@@ -66,7 +66,7 @@ describe("PushService.subscribe", () => {
     expect(prisma.pushSubscription.upsert).toHaveBeenCalled();
   });
 
-  // LK-S11: the endpoint is the unique key, so without this check whoever
+  // The endpoint is the unique key, so without this check whoever
   // learns another user's endpoint could silently reassign it to their own
   // account, cutting off the original owner's notifications.
   it("rejects reassigning an endpoint already owned by another user", async () => {

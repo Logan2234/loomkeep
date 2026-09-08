@@ -18,7 +18,8 @@
   <PageHeader
     icon="mail"
     title={m.settings_section_communications()}
-    subtitle={m.admin_communications_subtitle()} />
+    subtitle={m.admin_communications_subtitle()}
+    back="/app/admin" />
 
   <div class="mb-6 flex gap-2">
     <button

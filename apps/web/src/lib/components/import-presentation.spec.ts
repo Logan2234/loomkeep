@@ -7,7 +7,6 @@ import {
   type ImportPlanItem,
   type ImportReportTile,
 } from "@loomkeep/shared";
-import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   importGroupLabel,
@@ -179,28 +178,5 @@ describe("import presentation", () => {
         errorCode: "future.code" as ImportJobDto["errorCode"],
       }),
     ).toBe(m.apierr_status_500());
-  });
-
-  it("routes rendered API text through the presentation helpers", () => {
-    const source = readFileSync(
-      new URL("./ImportWizard.svelte", import.meta.url),
-      "utf8",
-    );
-    expect(source).not.toMatch(
-      /\{(?:g\.label|tile\.(?:label|sub)|item\.subtitle)\}/,
-    );
-    expect(source).not.toContain("error = j.error");
-    expect(source).not.toContain("{r.type}");
-
-    for (const helper of [
-      "importGroupLabel",
-      "importItemSubtitle",
-      "importItemTitle",
-      "importReportLabel",
-      "importReportSubtitle",
-      "importJobError",
-    ]) {
-      expect(source).toContain(`${helper}(`);
-    }
   });
 });

@@ -155,7 +155,7 @@ describe("MfaService recovery codes", () => {
     );
   }, 20_000);
 
-  // LK-S07: verifyMfaLogin()'s `||` chain falls through to verifyRecoveryCode()
+  // verifyMfaLogin()'s `||` chain falls through to verifyRecoveryCode()
   // on every wrong TOTP/email guess — without this short-circuit, a 6-digit
   // code that plainly can't be a 10-character recovery code still cost up to
   // RECOVERY_CODE_COUNT bcrypt.compare() calls at BCRYPT_ROUNDS=12.
@@ -290,7 +290,7 @@ describe("MfaService.disableTotp", () => {
   });
 });
 
-// LK-S06: disabling email MFA used to need nothing but a valid access token —
+// disabling email MFA used to need nothing but a valid access token —
 // no password check at all, unlike disableTotp() above. #195 (merged to main
 // while this branch was in flight) shipped the same fix more broadly —
 // assertCurrentPassword() now runs unconditionally in setEmailMfaEnabled(),

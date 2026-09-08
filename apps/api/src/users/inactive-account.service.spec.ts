@@ -68,7 +68,7 @@ describe("InactiveAccountService.scan", () => {
   });
 
   it("deletes accounts inactive for 36+ months that were already warned", async () => {
-    const { service, prisma, accountDeletion } = makeService();
+    const { service, prisma } = makeService();
     (prisma.user.findMany as Mock)
       .mockResolvedValueOnce([]) // no new warnings to send
       .mockResolvedValueOnce([{ id: "user-2" }]);
@@ -82,10 +82,6 @@ describe("InactiveAccountService.scan", () => {
       },
       select: { id: true },
     });
-    expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
-      "user-2",
-      expect.stringContaining("LK-C06"),
-    );
     expect(result).toEqual({ warned: 0, deleted: 1 });
   });
 

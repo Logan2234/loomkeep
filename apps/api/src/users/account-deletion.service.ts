@@ -5,7 +5,7 @@ import { SecurityEventService } from "../security/security-event.service";
 
 /**
  * Single deletion path shared by the self-service `DELETE /users/me` flow and
- * InactiveAccountService's automatic purge (LK-C06) — both need the same
+ * InactiveAccountService's automatic purge — both need the same
  * cascade behavior (owned lists with editors are reassigned rather than
  * cascade-deleted, see ListService.reassignOwnedListsOnAccountDeletion), just
  * with a different SecurityEvent detail for traceability.

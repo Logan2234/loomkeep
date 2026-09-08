@@ -128,7 +128,8 @@
   <PageHeader
     icon="download"
     title={m.admin_imports_title()}
-    subtitle={m.admin_imports_subtitle()} />
+    subtitle={m.admin_imports_subtitle()}
+    back="/app/admin" />
 
   {#if summary}
     <KpiStrip tiles={kpis} />
@@ -138,6 +139,26 @@
         <RankBars items={sourceBars} />
       </div>
     {/if}
+  {:else if summaryQuery.loading}
+    <div class="animate-pulse">
+      <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+        {#each { length: 4 } as _, i (i)}
+          <div class="card h-20 space-y-3 p-4">
+            <div class="skeleton h-6 w-2/5 rounded"></div>
+            <div class="skeleton h-3 w-3/4 rounded"></div>
+          </div>
+        {/each}
+      </div>
+      <div class="card mb-5 space-y-4 p-4">
+        <div class="skeleton h-3 w-2/5 rounded"></div>
+        {#each { length: 3 } as _, i (i)}
+          <div class="space-y-2">
+            <div class="skeleton h-4 w-2/5 rounded"></div>
+            <div class="skeleton h-2 w-full rounded"></div>
+          </div>
+        {/each}
+      </div>
+    </div>
   {/if}
 
   <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -161,7 +182,15 @@
   {#if runsQuery.loading}
     <div class="space-y-2">
       {#each { length: 6 } as _, i (i)}
-        <div class="card h-20 animate-pulse"></div>
+        <div class="card animate-pulse p-3.5">
+          <div class="flex items-center gap-2">
+            <div class="skeleton h-6 w-16 rounded-full"></div>
+            <div class="skeleton h-4 w-20 rounded"></div>
+            <div class="skeleton h-4 w-40 rounded"></div>
+            <div class="skeleton ml-auto h-3 w-24 rounded"></div>
+          </div>
+          <div class="skeleton mt-3 h-3 w-3/5 rounded"></div>
+        </div>
       {/each}
     </div>
   {:else if runs.length === 0}

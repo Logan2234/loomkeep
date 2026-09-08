@@ -191,7 +191,7 @@ export class UsersController {
   }
 
   /**
-   * Records re-acceptance of the current CGU (LK-C03) — the blocking
+   * Records re-acceptance of the current CGU — the blocking
    * app/+layout.svelte prompt shown when acceptedTermsVersion no longer
    * matches LEGAL_VERSION.
    */
@@ -217,7 +217,7 @@ export class UsersController {
    */
   // Every call bcrypt.compare()s the current password (requireVerifiedUser)
   // — the global 60/min default let a stolen access token burn 60 bcrypt
-  // hashes/min against it (LK-S10).
+  // hashes/min against it.
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch("me/email")
