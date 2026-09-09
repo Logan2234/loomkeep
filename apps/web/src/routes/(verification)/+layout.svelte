@@ -1,5 +1,6 @@
 <script lang="ts">
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import BootSplash from "$lib/components/BootSplash.svelte";
 
   let { children } = $props();
 </script>
@@ -9,4 +10,6 @@
      `auth.user` as soon as they mount. -->
 {#if bootstrap.ready}
   {@render children()}
+{:else}
+  <BootSplash />
 {/if}

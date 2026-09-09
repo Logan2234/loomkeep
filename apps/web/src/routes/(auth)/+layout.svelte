@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { auth } from "$lib/auth.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import BootSplash from "$lib/components/BootSplash.svelte";
   import { untrack } from "svelte";
 
   let { children } = $props();
@@ -28,4 +29,6 @@
 
 {#if allowed}
   {@render children()}
+{:else}
+  <BootSplash />
 {/if}

@@ -6,6 +6,7 @@
   import { auth } from "$lib/auth.svelte";
   import { trackBackHistory } from "$lib/backNav.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import BootSplash from "$lib/components/BootSplash.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
@@ -70,7 +71,9 @@
   });
 </script>
 
-{#if bootstrap.ready && bootstrap.apiUnreachable && !auth.isLoggedIn}
+{#if !bootstrap.ready}
+  <BootSplash />
+{:else if bootstrap.apiUnreachable && !auth.isLoggedIn}
   <div
     class="flex min-h-[100svh] flex-col items-center justify-center gap-4 px-6 text-center">
     <Icon name="warning" class="text-dim h-10 w-10" />
@@ -87,7 +90,7 @@
       {m.common_retry()}
     </button>
   </div>
-{:else if bootstrap.ready && auth.isLoggedIn}
+{:else if auth.isLoggedIn}
   <NotificationBell />
   <!-- Mounting *is* the trigger for [G6]'s unlock sequence: entering the app
        is the only moment a bubble plays. -->
