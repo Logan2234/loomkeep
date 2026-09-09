@@ -419,137 +419,147 @@ enum MusicOwnershipStatus {
 }
 
 model User {
-  id                         String           @id @default(cuid())
-  email                      String           @unique
-  passwordHash               String
+  id                            String           @id @default(cuid())
+  email                         String           @unique
+  passwordHash                  String
   // Free-form label shown around the app; not unique. See `username` for the
   // unique, login-capable handle.
-  displayName                String
+  displayName                   String
   // Unique login handle (alongside email). Assigned at registration, editable
   // in Sécurité.
-  username                   String           @unique
-  birthDate                  DateTime?
+  username                      String           @unique
+  birthDate                     DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
-  allowAdultContent          Boolean          @default(false)
+  allowAdultContent             Boolean          @default(false)
   // Opt-out from showing gamification progression (level/XP) to OTHER
   // viewers — the owner always sees their own real progress regardless.
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
-  hideProgression            Boolean          @default(false)
+  hideProgression               Boolean          @default(false)
   // [G9] Up to 3 unlocked, non-secret achievement keys shown as a badge
   // showcase on the profile — always an explicit choice, never auto-picked
   // (see the ticket's design-discussion comment). A key here freezes the
   // tier the user equipped, not "whatever tier is highest now": a tiered
   // achievement's tiers are separate keys already (cinephile_bronze vs
   // cinephile_gold), so equipping one just picks a key like any other.
-  equippedBadgeKeys          String[]         @default([])
+  equippedBadgeKeys             String[]         @default([])
+  // [G8] "Première séance" gamified checklist. Steps explicitly skipped by
+  // the user (one-way — there is no "unskip"); a step's *done* state is
+  // never stored here, always re-derived live from the real data (see
+  // OnboardingService) so completing step 3 out of order still marks it
+  // done once the user reaches it. `onboardingGamifiedCompletedAt` is set
+  // once and never cleared, independent of the achievement catalogue, so a
+  // future rework of the checklist's steps never re-proposes it to someone
+  // who already finished the old one.
+  onboardingSkippedSteps        String[]         @default([])
+  onboardingGamifiedCompletedAt DateTime?
   // Communication preferences: cadence at which each channel delivers the
   // "new episode" digest. See DigestCadence.
-  notifyEmail                DigestCadence    @default(WEEKLY)
-  notifyPush                 DigestCadence    @default(WEEKLY)
+  notifyEmail                   DigestCadence    @default(WEEKLY)
+  notifyPush                    DigestCadence    @default(WEEKLY)
   // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
   // hour. Auto-detected client-side at onboarding, editable afterwards.
-  timezone                   String           @default("Europe/Paris")
+  timezone                      String           @default("Europe/Paris")
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
-  notifyNewsletter           Boolean          @default(false)
+  notifyNewsletter              Boolean          @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including
   // across a later opt-out — so it always records when consent was last given.
-  newsletterOptInAt          DateTime?
+  newsletterOptInAt             DateTime?
   // Stable per-user unsubscribe link target, lazily generated on first
   // newsletter send and reused in every subsequent one — not a
   // single-use/expiring UserToken, since minting one per recipient per send
   // would grow the token table without bound as the newsletter goes out
   // repeatedly. Low-stakes if it ever leaked (only lets someone toggle this
   // one preference off), so it's a plain unguessable string, not hashed.
-  newsletterUnsubscribeToken String?          @unique
+  newsletterUnsubscribeToken    String?          @unique
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
-  emailVerified              Boolean          @default(false)
+  emailVerified                 Boolean          @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
-  bio                        String?
+  bio                           String?
   // Profile picture, stored in-row (not on disk) so it rides along with
   // pg_dump backups like everything else. avatarMimeType/avatarUpdatedAt are
   // null together with avatar; avatarUpdatedAt also cache-busts the public
   // GET /users/:id/avatar URL.
-  avatar                     Bytes?
-  avatarMimeType             String?
-  avatarUpdatedAt            DateTime?
+  avatar                        Bytes?
+  avatarMimeType                String?
+  avatarUpdatedAt               DateTime?
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.
-  profileAccess              ProfileAccess    @default(PRIVATE)
+  profileAccess                 ProfileAccess    @default(PRIVATE)
   // Default audience applied to a new review unless overridden at publication.
-  defaultReviewVisibility    ReviewVisibility @default(FRIENDS)
+  defaultReviewVisibility       ReviewVisibility @default(FRIENDS)
   // Default audience applied to a new list unless overridden at creation.
-  defaultListVisibility      ListVisibility   @default(PRIVATE)
+  defaultListVisibility         ListVisibility   @default(PRIVATE)
   // Operational permission level (gates /admin). Separate axis from the paid
   // tier (see UserEntitlement below): an admin isn't "the highest tier".
-  role                       Role             @default(USER)
+  role                          Role             @default(USER)
   // Composition seam: content domains the user enabled. Drives the nav today;
   // search/notif filtering follow at P3. Empty by default — the onboarding
   // wizard's domain step is what actually turns these on for a new account.
-  enabledDomains             Domain[]         @default([])
+  enabledDomains                Domain[]         @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
-  mobileNavShortcuts         String[]         @default(["home", "search", "menu", "calendar", "account"])
+  mobileNavShortcuts            String[]         @default(["home", "search", "menu", "calendar", "account"])
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
   // seam.
-  locale                     String           @default("fr")
+  locale                        String           @default("fr")
   // Opaque secret for the public .ics calendar subscription URL (not hashed:
   // looked up directly by calendar apps, which can't send an Authorization
   // header). Null until first requested from Réglages > Export.
-  calendarToken              String?          @unique
-  createdAt                  DateTime         @default(now())
-  updatedAt                  DateTime         @updatedAt
+  calendarToken                 String?          @unique
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
   // Set once the mandatory first-run onboarding wizard is completed (see
   // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
   // showing the wizard instead of the app chrome — including for accounts
   // that existed before this field shipped.
-  onboardedAt                DateTime?
+  onboardedAt                   DateTime?
   // Proof-of-consent for the CGU: the LEGAL_VERSION in effect when
   // the user last accepted, and when. Null for accounts predating this field
   // (backfilled by migration to the version in effect at that time — see
   // 20260820000000_add_accepted_terms). app/+layout.svelte blocks with a
   // re-acceptance prompt when acceptedTermsVersion no longer matches the
   // current LEGAL_VERSION.
-  acceptedTermsAt            DateTime?
-  acceptedTermsVersion       String?
+  acceptedTermsAt               DateTime?
+  acceptedTermsVersion          String?
   // when the user self-certified being at least 15 (register.dto.ts
   // requires it). Null for accounts predating this field.
-  certifiedAgeAt             DateTime?
+  certifiedAgeAt                DateTime?
   // last time this account did anything that proves a human is still
   // behind it — bumped on register, login and refresh-token rotation (not
   // just login, since a long-lived session never re-enters credentials).
   // Drives both the admin "last active" column and the inactive-account job
   // below. Null only for accounts predating this field (backfilled by
   // migration from the best signal then available).
-  lastActiveAt               DateTime?
+  lastActiveAt                  DateTime?
   // Set when the inactivity reminder email is sent (see
   // InactiveAccountService); cleared back to null the moment lastActiveAt is
   // next bumped, so a returning user gets the full inactivity window again
   // instead of being deleted on the strength of a stale warning.
-  inactivityWarningSentAt    DateTime?
+  inactivityWarningSentAt       DateTime?
 
   // --- MFA ---
   // Two independently-toggleable methods; admin accounts with neither active
   // are blocked from /admin by AdminGuard. mfaTotpSecretEnc is cleared (not
   // just flagged off) when TOTP is disabled, so re-enabling always starts
   // from a fresh QR scan rather than silently reviving a stale secret.
-  mfaTotpEnabled             Boolean          @default(false)
-  mfaTotpSecretEnc           String?
-  mfaEmailEnabled            Boolean          @default(false)
+  mfaTotpEnabled      Boolean @default(false)
+  mfaTotpSecretEnc    String?
+  mfaEmailEnabled     Boolean @default(false)
   // True only lets login skip the password step outright — enforced in
   // WebauthnService, not by this column alone: it must never be true while
   // the user has zero WebauthnCredential rows (checked whenever a credential
   // is removed).
-  passwordlessEnabled        Boolean          @default(false)
+  passwordlessEnabled Boolean @default(false)
 
   entries                    LibraryEntry[]
   episodeWatches             EpisodeWatch[]
@@ -923,21 +933,21 @@ model PushSubscription {
 // (the bell shows pending requests from there, with accept/reject) — both
 // are excluded from the bell feed.
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   @default("NEW_EPISODE")
-  title     String
-  body      String?
+  id              String    @id @default(cuid())
+  userId          String
+  type            String    @default("NEW_EPISODE")
+  title           String
+  body            String?
   // Client-side deep link (e.g. /media/movie/42 or /u/alice).
-  url       String?
+  url             String?
   // Stable idempotency key so re-scans / re-follows don't duplicate a row:
   //   "episode:<episodeId>", "follow:<actorId>", "request:<actorId>",
   //   "accept:<actorId>". Null means "never deduped".
-  dedupeKey String?
+  dedupeKey       String?
   // Kind-specific extras. For NEW_EPISODE: { airDate }. For social kinds:
   // { actorUsername, actorDisplayName } (drives the Avatar + name in the feed).
-  data      Json     @default("{}")
-  createdAt DateTime @default(now())
+  data            Json      @default("{}")
+  createdAt       DateTime  @default(now())
   // Set once a NEW_EPISODE row has been included in a digest send on that
   // channel — the digest job's "pending content" query is simply "rows with
   // this null", so no separate date-window/timezone logic is needed to know
@@ -1253,15 +1263,15 @@ model MfaRecoveryCode {
 // short-TTL numeric code, not a human-chosen secret). attempts is capped the
 // same way as EmailChangeRequest.attempts (see MAX_MFA_CHALLENGE_ATTEMPTS).
 model MfaLoginChallenge {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   userId             String
-  totpAllowed        Boolean  @default(false)
-  emailAllowed       Boolean  @default(false)
+  totpAllowed        Boolean   @default(false)
+  emailAllowed       Boolean   @default(false)
   emailCodeHash      String?
   emailCodeExpiresAt DateTime?
-  attempts           Int      @default(0)
+  attempts           Int       @default(0)
   expiresAt          DateTime
-  createdAt          DateTime @default(now())
+  createdAt          DateTime  @default(now())
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Set only when a WebAuthn credential is used as this challenge's 2nd
@@ -1275,27 +1285,27 @@ model MfaLoginChallenge {
 // no encryption at rest — it only ever verifies a signature, never produces
 // one, so its disclosure alone can't authenticate anyone.
 model WebauthnCredential {
-  id            String    @id @default(cuid())
-  userId        String
+  id           String    @id @default(cuid())
+  userId       String
   // The authenticator-issued credential id (base64url), used to match an
   // incoming assertion back to this row and to build the login-time
   // allowCredentials list.
-  credentialId  String    @unique
-  publicKey     Bytes
+  credentialId String    @unique
+  publicKey    Bytes
   // Signature counter reported by the authenticator, expected to strictly
   // increase on every use — a stagnant or lower value on a later login
   // signals a cloned authenticator (standard WebAuthn clone detection).
-  counter       BigInt    @default(0)
+  counter      BigInt    @default(0)
   // "singleDevice" (roaming key, e.g. YubiKey) vs "multiDevice" (synced
   // passkey, e.g. iCloud Keychain/Google Password Manager) — informational,
   // shown in the settings list.
-  deviceType    String
-  backedUp      Boolean   @default(false)
-  transports    String[]
+  deviceType   String
+  backedUp     Boolean   @default(false)
+  transports   String[]
   // User-supplied label so the settings list stays identifiable ("YubiKey bureau").
-  name          String
-  createdAt     DateTime  @default(now())
-  lastUsedAt    DateTime?
+  name         String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1704,12 +1714,12 @@ model MusicEntry {
 // never manufactures XP. Admin adjustments ([B8], not this ticket) will be
 // the one exception: distinct rows, never deleted.
 model XpEntry {
-  id     String @id @default(cuid())
-  userId String
+  id         String   @id @default(cuid())
+  userId     String
   // Mirror of packages/shared/src/enums.ts XpReason. String, not a Prisma
   // enum, so a new reason needs no migration (same rationale as
   // ActivityEvent.type).
-  reason String
+  reason     String
   // Table the gain is anchored to ("EpisodeWatch", "LibraryEntry", "DOMAIN"…
   // — see XpRule.sourceType in xp-rules.ts) and that row's id. Together with
   // reason they make crediting idempotent (the unique constraint below) and
@@ -1724,8 +1734,8 @@ model XpEntry {
   // Denormalised from XpRule.amount at grant time, so the ledger stays
   // readable (and reconciliation-stable) after a future barème change —
   // re-tuning an amount must never retroactively rewrite history.
-  amount    Int
-  createdAt DateTime @default(now())
+  amount     Int
+  createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1755,15 +1765,15 @@ model UserScore {
 // never revoked once unlocked, unlike XpEntry: a trophy isn't taken back
 // because you later removed the title that earned it.
 model UserAchievement {
-  id     String @id @default(cuid())
-  userId String
+  id          String    @id @default(cuid())
+  userId      String
   // Stable key matching a registry entry — string, not a Prisma enum, so a
   // new achievement needs no migration (same rationale as XpEntry.reason).
   // Each tier of a tiered achievement is its own key (e.g.
   // "cinephile_bronze"/"cinephile_silver"/"cinephile_gold"), not a shared
   // row with a tier column.
-  key        String
-  unlockedAt DateTime  @default(now())
+  key         String
+  unlockedAt  DateTime  @default(now())
   // Null until the [G6] unlock-bubble UI has shown this achievement to the
   // user once — set by PATCH /achievements/:id/displayed. Independent of
   // unlockedAt: an unlock can happen server-side (a live action, or the

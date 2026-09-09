@@ -3,6 +3,8 @@ import { JobsModule } from "../jobs/jobs.module";
 import { AchievementService } from "./achievements/achievement.service";
 import { AchievementsController } from "./achievements/achievements.controller";
 import { GamificationController } from "./gamification.controller";
+import { OnboardingController } from "./onboarding/onboarding.controller";
+import { OnboardingService } from "./onboarding/onboarding.service";
 import { XpService } from "./xp.service";
 
 // G1: XP ledger + level curve. G2 adds the achievement engine (registry in
@@ -13,8 +15,12 @@ import { XpService } from "./xp.service";
 // in SocialModule instead — see the comment there.
 @Module({
   imports: [JobsModule],
-  controllers: [AchievementsController, GamificationController],
-  providers: [XpService, AchievementService],
+  controllers: [
+    AchievementsController,
+    GamificationController,
+    OnboardingController,
+  ],
+  providers: [XpService, AchievementService, OnboardingService],
   exports: [XpService, AchievementService],
 })
 export class GamificationModule {}

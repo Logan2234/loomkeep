@@ -7,6 +7,7 @@ import { localDay, localParts } from "../../common/local-day.util";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { decadeOf } from "../../stats/decade.util";
 import { computeStreak } from "../../stats/video-temporal.util";
+import { computeOnboardingDoneMap } from "../onboarding/onboarding.util";
 
 export interface AchievementCheckResult {
   unlocked: boolean;

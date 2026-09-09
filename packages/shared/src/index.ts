@@ -18,6 +18,7 @@ export * from "./dto/list";
 export * from "./dto/music";
 export * from "./dto/newsletter";
 export * from "./dto/notification";
+export * from "./dto/onboarding";
 export * from "./dto/pagination";
 export * from "./dto/push";
 export * from "./dto/report";
