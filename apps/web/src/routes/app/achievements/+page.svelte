@@ -3,6 +3,7 @@
   // page (see the [G5] design notes: 44+ conditions together read as a
   // behavioural fingerprint). Auth comes from the app/ layout nesting.
   import { page } from "$app/state";
+  import { layout } from "$lib/layout.svelte";
   import { getAchievements } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -39,18 +40,11 @@
   // re-counting per card.
   const equippedCount = $derived(list.filter((a) => a.equipped).length);
 
-  // The drawer is the compact-viewport path only. Drawer.svelte is already
-  // `md:hidden`, but it also locks page scroll on mount — so it must not be
-  // mounted at all on a wide viewport, hence the media query rather than CSS
-  // alone.
-  let compact = $state(false);
-  $effect(() => {
-    const query = window.matchMedia("(max-width: 767px)");
-    const sync = () => (compact = query.matches);
-    sync();
-    query.addEventListener("change", sync);
-    return () => query.removeEventListener("change", sync);
-  });
+  // The drawer is the compact-shell path only — it locks page scroll on
+  // mount, so it must not be mounted at all on a wide viewport. Follows the
+  // app shell (layout.svelte.ts) so a phone in landscape, which keeps the
+  // compact bar, keeps the drawer too.
+  const compact = $derived(layout.compact);
 
   let openGroup = $state<AchievementGroup | null>(null);
 

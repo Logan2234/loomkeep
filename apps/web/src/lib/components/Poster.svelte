@@ -42,7 +42,7 @@
         40) %
         360} 34% 13%));">
       <span
-        class="font-display line-clamp-3 text-xs leading-tight font-bold text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
+        class="font-display line-clamp-3 text-xs leading-tight font-bold wrap-anywhere text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
         {title}
       </span>
     </div>

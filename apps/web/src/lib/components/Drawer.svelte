@@ -138,7 +138,10 @@
 <svelte:window
   onkeydown={(e) => dismissable && e.key === "Escape" && requestClose()} />
 
-<div use:portal use:scrollLock class="contents md:hidden">
+<!-- No `md:hidden` here: the shell decides which surface mounts (see
+     layout.svelte.ts), and `scrollLock` runs on mount regardless of CSS,
+     so every caller gates this behind a condition rather than a class. -->
+<div use:portal use:scrollLock class="contents">
   <button
     class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity {visible
       ? 'opacity-100'

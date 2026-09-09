@@ -329,7 +329,10 @@
   <!-- Hero: full-bleed backdrop, title/meta/ratings overlaid, poster tucked
        in the corner. Text stays white regardless of theme — it sits on a
        photo, not on the page background. -->
-  <div class="relative h-[64vh] max-h-155 min-h-105">
+  <!-- The 26.25rem floor outgrew short viewports: a phone in landscape
+       (~430px tall) got a full-screen backdrop with the tracking controls
+       pushed below the fold, so the floor yields to the viewport there. -->
+  <div class="relative h-[64vh] max-h-155 min-h-[min(26.25rem,62svh)]">
     {#if detail.backdropUrl}
       <img src={detail.backdropUrl} alt="" class="h-full w-full object-cover" />
     {:else}

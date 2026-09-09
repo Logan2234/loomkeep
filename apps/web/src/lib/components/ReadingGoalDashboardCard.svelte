@@ -4,11 +4,9 @@
   // gauge + timecode fraction, but with room for a motivational line, since
   // the whole point of surfacing it on the home page is to nudge the reader.
   import { getReadingGoal } from "$lib/api/books";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import type { ReadingGoalDto } from "@loomkeep/shared";
   import Icon from "./Icon.svelte";
-  import NewBadge from "./NewBadge.svelte";
   import ReadingGoalEditModal from "./ReadingGoalEditModal.svelte";
   import ReadingGoalGauge from "./ReadingGoalGauge.svelte";
 
@@ -67,7 +65,6 @@
         class="btn btn-ghost gap-1.5"
         onclick={() => (editing = true)}>
         {m.reading_goal_cta_action()}
-        {#if isFeatureNew("reading-goal")}<NewBadge />{/if}
       </button>
     {/if}
   </section>

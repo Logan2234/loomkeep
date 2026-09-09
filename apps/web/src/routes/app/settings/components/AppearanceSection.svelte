@@ -161,9 +161,6 @@
   <div>
     <p class="mb-2 flex items-center gap-2 font-semibold">
       {m.common_language()}
-      {#if isFeatureNew("locale-english")}
-        <NewBadge />
-      {/if}
     </p>
     <div
       class:pointer-events-none={saveLocaleMut.loading}

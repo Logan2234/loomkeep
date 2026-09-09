@@ -102,12 +102,6 @@
         <a href={achievementsHref} class="btn-text relative">
           <Icon name="trophy" class="h-4 w-4" />
           {m.gamification_my_achievements()}
-          {#if isFeatureNew("achievements")}
-            <span
-              class="bg-accent border-surface absolute -top-1 -right-2 h-2 w-2 rounded-full border-2"
-              aria-hidden="true">
-            </span>
-          {/if}
         </a>
       {/if}
       {#if leaderboardHref}

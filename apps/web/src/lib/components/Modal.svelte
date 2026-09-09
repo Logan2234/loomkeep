@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
@@ -28,24 +29,19 @@
     overflowVisible?: boolean;
   } = $props();
 
-  // Only one of Drawer/dialog is ever mounted, picked by the same breakpoint
-  // as Tailwind's `md:` — not both at once toggled by CSS `hidden`/`md:flex`.
-  // The old always-both approach silently broke any child relying on
-  // `bind:this` (scan camera, avatar crop canvas): it grabbed whichever copy
-  // happened to mount last, regardless of which one was actually visible.
+  // Only one of Drawer/dialog is ever mounted — not both at once toggled by
+  // CSS `hidden`/`md:flex`. The old always-both approach silently broke any
+  // child relying on `bind:this` (scan camera, avatar crop canvas): it
+  // grabbed whichever copy happened to mount last, regardless of which one
+  // was actually visible.
+  //
+  // The choice follows the app shell (layout.svelte.ts) rather than a width
+  // query of its own: a phone in landscape clears 768px but leaves ~430px of
+  // height, where the centered dialog pushed its own action buttons out of
+  // view. The bottom sheet handles short viewports — it scrolls its content
+  // and can be swiped away.
   const reduced = prefersReducedMotion();
-  const QUERY = "(min-width: 768px)";
-  let isDesktop = $state(
-    typeof window !== "undefined" && window.matchMedia(QUERY).matches,
-  );
-
-  $effect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia(QUERY);
-    const onChange = () => (isDesktop = mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  });
+  const isDesktop = $derived(!layout.compact);
 </script>
 
 <!-- Mobile's Drawer already closes on Escape via its own listener. -->
@@ -81,7 +77,7 @@
       aria-modal="true"
       aria-labelledby="modal-title"
       transition:scale|global={{ duration: reduced ? 0 : 180, start: 0.9 }}
-      class="card relative z-10 max-h-[80vh] w-full overflow-scroll {wide
+      class="card relative z-10 max-h-[85svh] w-full overflow-y-auto {wide
         ? 'max-w-2xl'
         : 'max-w-md'} rounded-2xl p-5 {overflowVisible
         ? 'overflow-visible'

@@ -21,14 +21,12 @@
   import Icon from "$lib/components/Icon.svelte";
   import ListFormModal from "$lib/components/ListFormModal.svelte";
   import ListMembersModal from "$lib/components/ListMembersModal.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import type { ListDto, ListItemDto } from "@loomkeep/shared";
-  import { dndzone } from "svelte-dnd-action";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { dndzone } from "svelte-dnd-action";
 
   const KIND_LABEL: Record<string, string> = {
     RANKED: m.lists_kind_ranked(),
@@ -266,9 +264,6 @@
             class="btn btn-ghost"
             onclick={() => (managingMembers = true)}>
             {m.list_members_title()}
-            {#if isFeatureNew("collaborative-lists")}
-              <NewBadge />
-            {/if}
           </button>
         {/if}
         {#if canEditList}

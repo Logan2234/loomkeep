@@ -365,19 +365,14 @@
         onOpenScanModal={() => (scanModalOpen = true)}
         onOpenConnections={openConnections} />
       {#if appConfig.gamificationEnabled && xp !== null}
-        <!-- justify-center rather than pinning content to the top (or the
-             badges to the bottom via mt-auto): when the row stretches this
-             card taller than its own content — a bare level, no equipped
-             badges — the spare height splits evenly above and below instead
-             of stranding the badge row far from everything else. -->
-        <aside class="card flex flex-col justify-center p-5 md:p-6">
+        <aside class="card self-start p-5 md:p-6">
           <LevelCard
             {xp}
             leaderboardHref={selfManage && appConfig.socialEnabled
               ? "/app/leaderboard"
               : undefined}
             achievementsHref={selfManage ? "/app/achievements" : undefined} />
-          <div class="mt-3">
+          <div class="mt-6">
             <BadgeShowcase badges={profile.equippedBadges} />
           </div>
         </aside>
@@ -391,17 +386,18 @@
          library there, not stranded at the very bottom under activity —
          `order-*` drives the single mobile column, `lg:col-start-*` +
          `lg:row-span-*` place them into the two desktop columns instead. -->
-    <div class="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_358px] lg:gap-7">
-      <div class="order-1 lg:order-0 lg:col-start-1">
+    <div
+      class="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_358px] lg:gap-7">
+      <div class="order-1 min-w-0 lg:order-0 lg:col-start-1">
         <ProfileLibrarySection domains={profile.domains} {selfManage} />
       </div>
 
-      <div class="order-2 lg:order-0 lg:col-start-2 lg:row-span-4">
+      <div class="order-2 min-w-0 lg:order-0 lg:col-start-2 lg:row-span-4">
         <ProfileStatsCard {profile} />
       </div>
 
       {#if appConfig.socialEnabled && listTiles.length > 0}
-        <div class="order-3 lg:order-0 lg:col-start-1">
+        <div class="order-3 min-w-0 lg:order-0 lg:col-start-1">
           <ProfileListsSection
             {listTiles}
             {selfManage}
@@ -411,12 +407,12 @@
       {/if}
 
       {#if selfManage}
-        <div class="order-4 lg:order-0 lg:col-start-1">
+        <div class="order-4 min-w-0 lg:order-0 lg:col-start-1">
           <ProfileReviews />
         </div>
       {/if}
 
-      <div class="order-5 lg:order-0 lg:col-start-1">
+      <div class="order-5 min-w-0 lg:order-0 lg:col-start-1">
         <ProfileActivity username={profile.username} />
       </div>
     </div>

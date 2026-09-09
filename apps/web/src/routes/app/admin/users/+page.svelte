@@ -168,6 +168,20 @@
                       {/if}
                     </div>
                     <p class="text-dim truncate text-xs">{u.email}</p>
+
+                    <!-- The "active" and "created" columns are dropped on a
+                         phone; without this line their data was simply
+                         unreachable there. -->
+                    <p
+                      class="text-dim mt-0.5 flex items-center gap-1.5 text-xs sm:hidden">
+                      <span
+                        class="h-1.5 w-1.5 shrink-0 rounded-full {activityDotClass(
+                          u,
+                        )}"></span>
+                      {activityLabel(u)}
+                      <span aria-hidden="true">·</span>
+                      {formatDate(u.createdAt)}
+                    </p>
                   </div>
                 </div>
               </td>

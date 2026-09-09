@@ -188,9 +188,6 @@
         <div>
           <p class="flex items-center gap-2 font-semibold">
             {m.common_newsletter()}
-            {#if isFeatureNew("newsletter")}
-              <NewBadge />
-            {/if}
           </p>
           <p class="text-dim text-sm">
             {m.settings_communications_newsletter_desc()}

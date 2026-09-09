@@ -50,7 +50,7 @@
           </a>
 
           <div class="min-w-0 flex-1">
-            <p class="text-sm leading-snug">
+            <p class="text-sm leading-snug wrap-anywhere">
               <a
                 href="/app/u/{event.actor.username}"
                 class="font-semibold hover:underline">

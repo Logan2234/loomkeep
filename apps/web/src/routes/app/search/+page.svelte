@@ -11,6 +11,7 @@
   import { DOMAINS } from "$lib/constants/domains";
   import { debounce } from "$lib/debounce";
   import { isDomainEnabled } from "$lib/domains";
+  import { layout } from "$lib/layout.svelte";
   import { m } from "$lib/paraglide/messages";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
@@ -304,10 +305,10 @@
         </div>
       {/if}
 
-      {#if domain === Domain.BOOKS && barcodeSupported}
+      {#if domain === Domain.BOOKS && barcodeSupported && layout.compact}
         <button
           type="button"
-          class="guichet-scan-btn md:hidden"
+          class="guichet-scan-btn"
           aria-label={m.scan_isbn_title()}
           onclick={() => (scanOpen = true)}>
           <Icon name="camera" class="h-4 w-4" />

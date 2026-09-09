@@ -101,7 +101,6 @@ const NAVIGATION: NavSection[] = [
         icon: "calendar",
         domain: Domain.MEDIA,
         match: (p) => p.startsWith("/app/calendar"),
-        newBadgeKey: "calendar-subscribe",
       },
       {
         href: "/app/stats",
@@ -297,7 +296,6 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     icon: "calendar",
     domain: Domain.MEDIA,
     match: (p) => p.startsWith("/app/calendar"),
-    newBadgeKey: "calendar-subscribe",
   },
   stats: {
     id: "stats",

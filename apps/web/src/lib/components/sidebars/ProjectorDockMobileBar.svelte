@@ -12,6 +12,7 @@
     resolveBottomShortcuts,
   } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
+  import NotificationTab from "./NotificationTab.svelte";
 
   const items = $derived(
     resolveBottomShortcuts(
@@ -34,7 +35,6 @@
     justify-between rounded-full border
     px-2 py-2
     shadow-xl backdrop-blur
-    md:hidden
   "
   style="bottom: calc(1rem + env(safe-area-inset-bottom))">
   {#each items as item (item.id)}
@@ -77,4 +77,8 @@
       </a>
     {/if}
   {/each}
+
+  <NotificationTab
+    slotClass="h-10 w-10"
+    rootClass="flex flex-1 flex-col items-center gap-0.5 text-[0.6rem]" />
 </nav>
