@@ -211,6 +211,7 @@
   <PageHeader
     icon="home"
     title={`${greeting}${auth.user ? ", " + auth.user.displayName : ""}.`}
+    documentTitle={m.common_home()}
     subtitle={m.home_subtitle()} />
 
   {#if loading}
@@ -442,7 +443,7 @@
                   {/snippet}
                 </Carousel>
               {:else}
-                <p class="text-dim py-10 text-center text-sm">
+                <p class="text-dim py-4 text-center text-sm md:py-10">
                   {m.home_nothing_to_watch()}
                 </p>
               {/if}
@@ -490,7 +491,7 @@
                 {/snippet}
               </Carousel>
             {:else}
-              <p class="text-dim py-10 text-center text-sm">
+              <p class="text-dim py-4 text-center text-sm md:py-10">
                 {m.home_nothing_playing()}
               </p>
             {/if}
@@ -547,7 +548,7 @@
                 {/each}
               </ul>
             {:else}
-              <p class="text-dim py-6 text-center text-sm">
+              <p class="text-dim py-3 text-center text-sm md:py-6">
                 {m.home_nothing_reading()}
               </p>
             {/if}
@@ -585,7 +586,7 @@
                 {/snippet}
               </Carousel>
             {:else}
-              <p class="text-dim py-10 text-center text-sm">
+              <p class="text-dim py-4 text-center text-sm md:py-10">
                 {m.home_nothing_listening()}
               </p>
             {/if}
@@ -654,7 +655,7 @@
                 {/each}
               </ul>
             {:else}
-              <p class="text-dim py-6 text-center text-sm">
+              <p class="text-dim py-3 text-center text-sm md:py-6">
                 {m.home_nothing_this_week()}
               </p>
             {/if}
@@ -729,7 +730,7 @@
             target="_blank"
             rel="noopener noreferrer"
             onclick={() => signalVersionLinkClicked()}
-            class="btn-text font-normal">
+            class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
             {m.app_version({ version: appConfig.version })}
             {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
               <span class="opacity-60">({appConfig.gitSha})</span>

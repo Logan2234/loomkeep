@@ -22,9 +22,18 @@ import {
 } from "@simplewebauthn/browser";
 import { auth } from "../auth.svelte";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
+import { ApiError } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
-export async function initAuth(): Promise<void> {
+/**
+ * Restores the session, and reports whether the answer is trustworthy.
+ *
+ * Returns false when the API never answered (offline, VPS down, 5xx): the
+ * session is *unknown*, not invalid, so it must not be cleared — every
+ * failure used to clear it, which logged people out of a PWA on a flaky
+ * mobile connection. Only an explicit rejection (401/403) ends the session.
+ */
+export async function initAuth(): Promise<boolean> {
   if (browser) {
     // Tokens written by previous releases are no longer used after the
     // HttpOnly-cookie migration, so remove the durable XSS-readable copy.
@@ -39,12 +48,19 @@ export async function initAuth(): Promise<void> {
     if (isLocale(auth.user.locale) && auth.user.locale !== getLocale()) {
       setLocale(auth.user.locale, { reload: false });
     }
-  } catch {
+  } catch (error) {
+    const rejected =
+      error instanceof ApiError &&
+      (error.status === 401 || error.status === 403);
+
+    if (!rejected) return false;
+
     auth.clear();
-    return;
+    return true;
   }
 
   await loadEntitlement();
+  return true;
 }
 
 /** Best-effort: on failure `isPremium` stays false, the safe default. */

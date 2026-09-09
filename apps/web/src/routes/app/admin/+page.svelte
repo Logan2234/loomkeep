@@ -311,7 +311,7 @@
       href={GITHUB_REPO_URL}
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">
+      class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
       {m.app_version({ version: appConfig.version })}
       {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
         <span class="opacity-60">({appConfig.gitSha})</span>

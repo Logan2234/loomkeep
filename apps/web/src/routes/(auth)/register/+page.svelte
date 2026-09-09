@@ -49,6 +49,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>{m.common_register()} · {m.common_loomkeep()}</title>
+</svelte:head>
+
 <AuthShell>
   {#snippet tagline()}{m.auth_register_tagline()}{/snippet}
 

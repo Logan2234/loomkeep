@@ -20,6 +20,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>{m.auth_forgot_password_title()} · {m.common_loomkeep()}</title>
+</svelte:head>
+
 <AuthShell>
   {#snippet tagline()}{m.auth_forgot_password_tagline()}{/snippet}
 

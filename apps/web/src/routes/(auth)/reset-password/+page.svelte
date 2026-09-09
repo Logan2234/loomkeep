@@ -40,6 +40,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>{m.auth_forgot_password_title()} · {m.common_loomkeep()}</title>
+</svelte:head>
+
 <AuthShell>
   <div class="card flex flex-col gap-4 p-7">
     <h1 class="font-display text-xl font-bold">

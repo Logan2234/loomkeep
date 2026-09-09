@@ -832,6 +832,10 @@ async function main() {
       motif: ReportMotif.HARASSMENT_INSULTS,
       reason: "Commentaire insultant envers d'autres membres.",
       status: ReportStatus.RESOLVED,
+      // Pinned rather than left to now(): the admin dashboard derives its
+      // median handling time from resolvedAt - createdAt, which went
+      // negative when only resolvedAt was seeded.
+      createdAt: new Date("2026-04-29T09:15:00Z"),
       resolvedAt: new Date("2026-05-02"),
       resolvedById: logan.id,
     },
@@ -866,6 +870,7 @@ async function main() {
       motif: ReportMotif.SPOILER_UNTAGGED,
       reason: "Spoiler non tagué sur la saison 2.",
       status: ReportStatus.PENDING,
+      createdAt: new Date("2026-05-10T18:40:00Z"),
     },
   });
 

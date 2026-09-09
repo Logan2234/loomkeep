@@ -144,6 +144,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>{m.auth_login_title()} · {m.common_loomkeep()}</title>
+</svelte:head>
+
 <AuthShell>
   {#snippet tagline()}{m.auth_login_tagline()}{/snippet}
 

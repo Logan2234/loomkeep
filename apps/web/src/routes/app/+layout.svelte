@@ -6,6 +6,8 @@
   import { auth } from "$lib/auth.svelte";
   import { trackBackHistory } from "$lib/backNav.svelte";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import BootSplash from "$lib/components/BootSplash.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
@@ -45,7 +47,10 @@
   // the gate, so there's no route allowlist to keep in sync when a screen is
   // added. Public surfaces live outside /app (landing, (auth)/, legal/).
   $effect(() => {
-    if (bootstrap.ready && !auth.isLoggedIn)
+    // `apiUnreachable` means the session is unknown, not absent — bouncing to
+    // /login there would log people out on a dropped connection. The
+    // reconnect screen below takes over instead.
+    if (bootstrap.ready && !bootstrap.apiUnreachable && !auth.isLoggedIn)
       void goto(
         `/login?redirectTo=${encodeURIComponent(page.url.pathname + page.url.search)}`,
       );
@@ -66,7 +71,26 @@
   });
 </script>
 
-{#if bootstrap.ready && auth.isLoggedIn}
+{#if !bootstrap.ready}
+  <BootSplash />
+{:else if bootstrap.apiUnreachable && !auth.isLoggedIn}
+  <div
+    class="flex min-h-[100svh] flex-col items-center justify-center gap-4 px-6 text-center">
+    <Icon name="warning" class="text-dim h-10 w-10" />
+    <div>
+      <h1 class="font-display text-xl font-extrabold tracking-tight">
+        {m.app_offline_title()}
+      </h1>
+      <p class="text-dim mt-1 text-sm">{m.apierr_network_offline()}</p>
+    </div>
+    <button
+      type="button"
+      class="btn btn-primary"
+      onclick={() => bootstrap.retry()}>
+      {m.common_retry()}
+    </button>
+  </div>
+{:else if auth.isLoggedIn}
   <NotificationBell />
   <!-- Mounting *is* the trigger for [G6]'s unlock sequence: entering the app
        is the only moment a bubble plays. -->

@@ -132,6 +132,13 @@
   const saving = $derived(addMut.loading || patchMut.loading);
 </script>
 
+<svelte:head>
+  <title
+    >{detail
+      ? `${detail.title} · ${m.common_loomkeep()}`
+      : m.common_loomkeep()}</title>
+</svelte:head>
+
 {#if error}
   <div class="mx-auto max-w-4xl px-5 py-6 md:px-8">
     <Banner variant="error">{error}</Banner>
