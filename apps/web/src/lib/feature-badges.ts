@@ -9,7 +9,7 @@ const SHIPPED = {
   myanimelist: "2026-09-09",
 };
 
-export type FeatureBadgeKey = keyof typeof SHIPPED;
+type FeatureBadgeKey = keyof typeof SHIPPED;
 
 export function isFeatureNew(key: string): boolean {
   const shippedAt = SHIPPED[key as FeatureBadgeKey];
