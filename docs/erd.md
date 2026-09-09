@@ -407,6 +407,8 @@ MFA_CHALLENGE_LOCKED MFA_CHALLENGE_LOCKED
     Boolean allowAdultContent
     Boolean hideProgression
     String equippedBadgeKeys
+    String onboardingSkippedSteps
+    DateTime onboardingGamifiedCompletedAt "❓"
     DigestCadence notifyEmail
     DigestCadence notifyPush
     String timezone

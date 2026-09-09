@@ -120,6 +120,9 @@
   "gamification_profile_complete_name": "Full Portrait",
   "gamification_profile_complete_description": "Avatar and bio filled in.",
 
+  "gamification_premiere_seance_name": "First Session",
+  "gamification_premiere_seance_description": "Welcome checklist completed.",
+
   "gamification_no_favorites_name": "Heart of Stone",
   "gamification_no_favorites_description": "100 or more titles tracked, none ever favorited.",
 
@@ -211,5 +214,16 @@
   "gamification_leaderboard_you": "You",
   "gamification_leaderboard_disabled": "The leaderboard isn't available on this instance.",
   "gamification_leaderboard_empty": "Nobody has earned XP this period yet.",
-  "gamification_view_leaderboard": "View leaderboard"
+  "gamification_view_leaderboard": "View leaderboard",
+
+  "gamification_onboarding_checklist_title": "First Session",
+  "gamification_onboarding_step_add_title": "Add a first title",
+  "gamification_onboarding_step_mark_complete": "Mark something as finished",
+  "gamification_onboarding_step_rate": "Rate or review a work",
+  "gamification_onboarding_step_complete_profile": "Complete your profile",
+  "gamification_onboarding_step_import": "Run an import",
+  "gamification_onboarding_step_create_list": "Create a list",
+  "gamification_onboarding_step_comment": "Post a comment",
+  "gamification_onboarding_skip": "Skip",
+  "gamification_onboarding_locked": "Finish or skip the previous step to unlock this one."
 }

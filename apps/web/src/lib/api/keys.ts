@@ -16,6 +16,7 @@ export const keys = {
     progression: () => ["gamification", "progression"] as const,
     leaderboard: (scope: string, period: string) =>
       ["gamification", "leaderboard", scope, period] as const,
+    onboarding: () => ["gamification", "onboarding"] as const,
   },
   books: {
     detail: (source: string, sourceId: string) =>

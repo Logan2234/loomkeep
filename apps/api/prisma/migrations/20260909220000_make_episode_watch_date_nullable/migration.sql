@@ -1,1 +1,0 @@
-ALTER TABLE "EpisodeWatch" ALTER COLUMN "watchedAt" DROP NOT NULL;

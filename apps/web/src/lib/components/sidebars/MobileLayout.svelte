@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import OnboardingBanner from "$lib/components/onboarding/OnboardingBanner.svelte";
   import type { NavStyle } from "$lib/navStyle.svelte";
   import type { Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
@@ -19,6 +20,7 @@
       min-h-screen
       pb-[calc(4.5rem+env(safe-area-inset-bottom))]
     ">
+    <OnboardingBanner />
     {#key page.url.pathname}
       {@render children()}
     {/key}

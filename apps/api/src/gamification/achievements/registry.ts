@@ -662,6 +662,31 @@ export async function checkProfileComplete(
   return { unlocked };
 }
 
+/**
+ * "premiere_seance" (G8): every applicable step of the gamified onboarding
+ * checklist is done or skipped. Reuses `computeOnboardingDoneMap` — the
+ * exact function `OnboardingService` itself calls — plus the user's stored
+ * `onboardingSkippedSteps`, so this check and the checklist the user sees
+ * can never disagree on what counts as finished. A social step that never
+ * applied on this deployment is already recorded as skipped by
+ * `OnboardingService` before this ever runs, so this needs no feature-flag
+ * awareness of its own (see the [G8] design discussion).
+ */
+export async function checkPremiereSeance(
+  prisma: PrismaService,
+  userId: string,
+): Promise<AchievementCheckResult> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { onboardingSkippedSteps: true },
+  });
+  const doneMap = await computeOnboardingDoneMap(prisma, userId);
+  const unlocked = Object.entries(doneMap).every(
+    ([key, done]) => done || (user?.onboardingSkippedSteps ?? []).includes(key),
+  );
+  return { unlocked };
+}
+
 // --- Autres ---
 
 /**
@@ -1447,6 +1472,17 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     family: "account",
     xpAward: 50,
     check: checkProfileComplete,
+  },
+  // [G8]: the gamified onboarding checklist's own completion reward — the
+  // only XP the checklist ever grants (no step gives XP on its own, see the
+  // [B10] design discussion). Not social-gated at the definition level even
+  // though two of its steps are social-only: it must stay reachable on a
+  // SOCIAL_ENABLED=false instance too, with a smaller step count.
+  premiere_seance: {
+    key: "premiere_seance",
+    family: "account",
+    xpAward: 150,
+    check: checkPremiereSeance,
   },
 
   // --- Autres ---

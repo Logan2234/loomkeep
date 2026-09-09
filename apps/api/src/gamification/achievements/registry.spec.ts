@@ -37,12 +37,18 @@ import {
   checkNoFavorites,
   checkOmnivore,
   checkOneSided,
+  checkPremiereSeance,
   checkProfileComplete,
   checkStandingOvation,
   checkStreakTier,
   checkWelcomeBack,
   checkWellRounded,
 } from "./registry";
+
+const { computeOnboardingDoneMap } = vi.hoisted(() => ({
+  computeOnboardingDoneMap: vi.fn(),
+}));
+vi.mock("../onboarding/onboarding.util", () => ({ computeOnboardingDoneMap }));
 
 describe("checkFirstEpisode", () => {
   it("unlocks once at least one EpisodeWatch exists", async () => {
@@ -648,6 +654,73 @@ describe("checkProfileComplete", () => {
     } as unknown as PrismaService;
     await expect(checkProfileComplete(prisma, "user-1")).resolves.toEqual({
       unlocked: false,
+    });
+  });
+});
+
+describe("checkPremiereSeance", () => {
+  it("unlocks once every step is done", async () => {
+    computeOnboardingDoneMap.mockResolvedValue({
+      add_title: true,
+      mark_complete: true,
+      rate: true,
+      complete_profile: true,
+      import: true,
+      create_list: true,
+      comment: true,
+    });
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ onboardingSkippedSteps: [] }),
+      },
+    } as unknown as PrismaService;
+
+    await expect(checkPremiereSeance(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
+    });
+  });
+
+  it("stays locked while a step is neither done nor skipped", async () => {
+    computeOnboardingDoneMap.mockResolvedValue({
+      add_title: false,
+      mark_complete: true,
+      rate: true,
+      complete_profile: true,
+      import: true,
+      create_list: true,
+      comment: true,
+    });
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ onboardingSkippedSteps: [] }),
+      },
+    } as unknown as PrismaService;
+
+    await expect(checkPremiereSeance(prisma, "user-1")).resolves.toEqual({
+      unlocked: false,
+    });
+  });
+
+  it("counts a skipped step as satisfied", async () => {
+    computeOnboardingDoneMap.mockResolvedValue({
+      add_title: false,
+      mark_complete: true,
+      rate: true,
+      complete_profile: true,
+      import: true,
+      create_list: true,
+      comment: true,
+    });
+    const prisma = {
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ onboardingSkippedSteps: ["add_title"] }),
+      },
+    } as unknown as PrismaService;
+
+    await expect(checkPremiereSeance(prisma, "user-1")).resolves.toEqual({
+      unlocked: true,
     });
   });
 });

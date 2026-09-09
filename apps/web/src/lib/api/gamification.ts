@@ -3,6 +3,7 @@ import type {
   LeaderboardDto,
   LeaderboardPeriod,
   LeaderboardScope,
+  OnboardingChecklistDto,
 } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
@@ -50,4 +51,17 @@ export function getLeaderboard(
   return typedRequest("/leaderboard", {
     query: { scope, period },
   }) as Promise<LeaderboardDto>;
+}
+
+export function getOnboardingChecklist() {
+  return typedRequest(
+    "/gamification/onboarding",
+  ) as Promise<OnboardingChecklistDto>;
+}
+
+export function skipOnboardingStep(key: string) {
+  return typedRequest("/gamification/onboarding/{key}/skip", {
+    method: "POST",
+    params: { key },
+  }) as Promise<OnboardingChecklistDto>;
 }
