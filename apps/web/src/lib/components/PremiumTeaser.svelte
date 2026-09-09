@@ -11,8 +11,14 @@
 </script>
 
 <div class="relative {className}">
+  <!-- Capped on a phone: a locked section still rendered its full height of
+       blurred content, so /app/stats made you scroll through hundreds of
+       pixels you can't read. The cap keeps enough to show what's behind the
+       lock without the scroll. -->
   <div
-    class={locked ? "pointer-events-none p-2 blur-sm select-none" : ""}
+    class={locked
+      ? "pointer-events-none max-h-56 overflow-hidden p-2 blur-sm select-none md:max-h-none"
+      : ""}
     aria-hidden={locked}>
     {@render children()}
   </div>

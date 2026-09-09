@@ -179,6 +179,13 @@
   // it's a detached DOM copy purely for the delete action.
 </script>
 
+<svelte:head>
+  <title
+    >{list
+      ? `${list.title} · ${m.common_loomkeep()}`
+      : m.common_loomkeep()}</title>
+</svelte:head>
+
 {#snippet gridItem(item: ListItemDto, focused: boolean = false)}
   <svelte:element
     this={!focused && item.target?.href ? "a" : "div"}

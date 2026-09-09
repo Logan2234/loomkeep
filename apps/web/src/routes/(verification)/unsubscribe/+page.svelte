@@ -25,6 +25,10 @@
   );
 </script>
 
+<svelte:head>
+  <title>{m.newsletter_unsubscribe_title()} · {m.common_loomkeep()}</title>
+</svelte:head>
+
 <div class="flex min-h-screen items-center justify-center px-4 py-12">
   <div class="w-full max-w-sm">
     <div class="mb-8 text-center">

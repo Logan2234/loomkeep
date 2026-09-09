@@ -27,9 +27,13 @@ mobile, modale de création de liste.
 Chaque constat porte un identifiant (`M-xx`) pour pouvoir être repris tel quel
 dans un ticket ou une session de correction.
 
-**État au 8 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés sur la
-branche `fix/mobile-audit-p0-p1` et ont été retirés de ce document. M-07 est
-partiellement corrigé (requalifié P2). M-09 reste ouvert volontairement.
+**État au 9 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés
+(PR #209), puis M-15, M-16, M-21, M-23, M-24, M-25 et M-26 (PR suivante) ;
+tous retirés de ce document. M-07 est partiellement corrigé (requalifié P2).
+M-09 reste ouvert volontairement. M-14 et M-22 ont été retirés sans
+correctif : la page Schéma n'est pas exposée en production, et « Mes listes »
+/ « Mes critiques » sont volontairement accessibles depuis l'accueil et le
+profil, en mobile comme en desktop.
 M-27 et M-28 ont été découverts pendant la correction, ainsi que M-29
 (corrigé) — un débordement horizontal du profil signalé par Logan.
 
@@ -216,63 +220,6 @@ thème), et retirer les deux variantes `media` qui deviennent inutiles.
 
 ---
 
-### M-14 · `/app/admin/schema` fige le navigateur sur mobile
-
-**Fichier** : `apps/web/src/lib/components/MermaidDiagram.svelte`
-
-En portrait, la page ne rend jamais : le renderer cesse de répondre
-(`get_page_text` et les captures expirent, le thread principal reste bloqué).
-Le diagramme Mermaid du schéma complet est rendu de façon synchrone dans un
-conteneur `h-[75vh]`.
-
-**Remédiation recommandée** : vérifier d'abord si le blocage existe aussi sur
-desktop — s'il est propre au mobile, c'est un problème de coût CPU. Dans les
-deux cas, rendre le diagramme derrière un déclencheur explicite sous `md`
-(« Afficher le diagramme ») plutôt qu'au montage, et afficher un état de
-chargement pendant le rendu. La page est explicitement `devOnly`
-(`ADMIN_NAV` filtre sur `appConfig.erdEnabled`), donc l'enjeu est faible, mais
-un onglet figé est un mauvais signal.
-
----
-
-### M-15 · Titres de page absents et titre rémanent
-
-Toutes les pages sous `/app` renvoient `document.title === "Loomkeep"`. Pire,
-le titre de la page précédente persiste après navigation : après l'onboarding,
-`/app` affichait encore « Vérifiez votre email · Loomkeep » — le seul
-`<svelte:head><title>` rencontré, posé par la page de vérification.
-
-Ce n'est pas un défaut mobile à proprement parler, mais il se voit davantage
-sur mobile : c'est le texte du sélecteur d'onglets, du partage système et de
-l'historique.
-
-**Remédiation** : ajouter un `<svelte:head><title>` par route (les libellés
-existent déjà dans les catalogues Paraglide, réutiliser ceux de la navigation),
-en suivant le format déjà employé : `{page} · Loomkeep`.
-
----
-
-### M-16 · Une coupure réseau déconnecte l'utilisateur
-
-Constaté pendant l'audit : quand l'API a été momentanément injoignable, l'app
-a affiché « Impossible de contacter le serveur » sur `/login` après avoir
-redirigé depuis `/app/feed` — la session n'était pas expirée, seul le réseau
-manquait. Le pied de page affichait aussi « Loomkeep v » sans numéro et le
-bouton « Créer un compte » avait disparu, `/api/config` n'ayant pas répondu.
-
-Sur mobile (tunnel, ascenseur, bascule Wi‑Fi/4G), ce scénario est ordinaire et
-éjecter l'utilisateur de sa session est disproportionné.
-
-**Remédiation recommandée** : dans `bootstrap.svelte` / `app/+layout.svelte`,
-distinguer « non authentifié » (401 explicite de l'API) de « API injoignable »
-(erreur réseau, 5xx, timeout). Ne rediriger vers `/login` que dans le premier
-cas ; dans le second, conserver la session en mémoire et afficher un bandeau
-de reconnexion avec réessai. Vérifier au passage que
-`errorCodeToMessageKey()` couvre bien un code de type `network.unreachable`
-plutôt qu'un message générique.
-
----
-
 ### M-17 · Les bascules de domaine perdent les clics rapides
 
 **Fichiers** : `apps/web/src/lib/components/onboarding/OnboardingWizard.svelte:70-75`,
@@ -360,78 +307,11 @@ relier les cases à cocher à leur texte (`<label for>` ou englobement dans un
 
 ---
 
-## Priorité 3 — polish
-
-### M-21 · Retour mal aligné sur les titres à deux lignes
-
-Sur les sous‑pages dont le titre passe sur deux lignes en portrait
-(« Appareils connectés », « Statistiques d'instance »), le chevron de retour
-et l'icône restent centrés sur la première ligne. `PageHeader.svelte` gagnerait
-un `items-start` avec un décalage vertical fixe plutôt qu'un `items-center`.
-
-### M-22 · « Mes listes » et « Mes critiques » absents du menu mobile
-
-`resolveMenuGroups` (`navigation.ts`) ne référence ni `/app/lists` ni
-`/app/reviews` : ces deux écrans ne sont atteignables que par la carte de
-raccourcis de l'accueil. Le MenuSheet se présente pourtant comme « la
-contrepartie mobile du rail desktop ». Les ajouter au groupe « Suivi ».
-
-### M-23 · Landing : 6 329 px de hauteur en portrait, typographie du hero non adaptée au paysage
-
-En portrait, la page d'accueil publique fait 6 329 px sur un viewport de
-812 px, soit près de huit écrans, dont 2 038 px pour la seule section
-« Au programme » (six domaines empilés en colonne unique). En paysage, le
-titre du hero est dimensionné sur la largeur du viewport : à 812 px de large
-pour 375 px de haut, « Tout ce que tu as joué. » occupe à lui seul tout
-l'écran et les CTA passent sous la ligne de flottaison.
-
-**Remédiation recommandée** :
-
-- section « Au programme » : passer en grille 2 colonnes dès 375 px pour les
-  six cartes de domaine (elles sont courtes), ce qui divise la section par
-  deux ;
-- hero : borner la typographie sur la hauteur autant que sur la largeur —
-  `clamp()` avec une composante `svh`, ou une règle
-  `@media (max-height: 500px)` qui réduit d'un cran l'échelle du titre et
-  resserre le `py-20` ;
-- envisager de replier les sections de comparaison derrière un « Voir le
-  détail » sous `sm`, le motif existe déjà sur la page.
-
-### M-24 · Écrans vides trop hauts, contenu premium flouté trop long
-
-`/app` affiche des blocs vides pleine largeur (« Rien en cours de partie »,
-« Rien en cours de lecture ») pour chaque domaine activé : 1 739 px de page
-pour aucune donnée. `/app/stats` fait 7 470 px en portrait, dont une grande
-part de cartes premium floutées que l'utilisateur doit traverser au
-défilement.
-
-**Remédiation** : sur mobile, replier les domaines sans activité en une seule
-ligne cliquable plutôt qu'en carte pleine hauteur ; et regrouper les blocs
-premium sous un seul teaser dépliable au lieu de les intercaler.
-
-### M-25 · Flash de configuration au chargement
-
-Avant la réponse de `/api/config`, le pied de page affiche « Loomkeep v » sans
-numéro de version, et l'en‑tête de la landing s'affiche sans le bouton
-« Se connecter » / « Créer un compte » (dépendants de `REGISTRATION_ENABLED`,
-qui transite par `/api/config`). Réserver la place et n'afficher le libellé
-qu'une fois la valeur connue, ou servir la version au build plutôt qu'à
-l'exécution.
-
-### M-26 · Donnée aberrante sur `/app/admin/signalements`
-
-« Délai médian : **-1292.3h** ». Valeur négative, hors sujet mobile mais
-relevée au passage — le calcul du délai de traitement doit prendre une valeur
-absolue ou filtrer les signalements résolus avant leur création (données de
-seed incohérentes ?).
-
----
-
 ## Récapitulatif
 
-M-01 à M-06, M-08 et M-10 sont corrigés sur la branche
-`fix/mobile-audit-p0-p1` et retirés de ce document. M-07 est partiellement
-corrigé et requalifié P2 ; son périmètre restant est décrit ci-dessus.
+Ce qu'il reste ouvert après les deux passes de correction. M-07 est
+partiellement corrigé et requalifié P2 ; son périmètre restant est décrit
+ci-dessus.
 
 | ID   | Priorité | Sujet                                                 | Portée           |
 | ---- | -------- | ----------------------------------------------------- | ---------------- |
@@ -440,19 +320,10 @@ corrigé et requalifié P2 ; son périmètre restant est décrit ci-dessus.
 | M-11 | P2       | `vh` au lieu de `svh`/`dvh`                           | portrait+paysage |
 | M-12 | P2       | 7 raccourcis dans la barre du bas                     | portrait étroit  |
 | M-13 | P2       | `theme-color` figée                                   | PWA              |
-| M-14 | P2       | `/app/admin/schema` fige le navigateur                | portrait         |
-| M-15 | P2       | Titres de page absents / rémanents                    | global           |
-| M-16 | P2       | Coupure réseau = déconnexion                          | mobile surtout   |
 | M-17 | P2       | Bascules de domaine : clics perdus                    | mobile surtout   |
 | M-18 | P2       | Tutoiement / vouvoiement, « Mes reviews »             | global           |
 | M-19 | P2       | Typographie sous 12 px                                | portrait         |
 | M-20 | P2       | `aria-pressed`, libellés de cases à cocher            | global           |
-| M-21 | P3       | Alignement du retour sur titre à deux lignes          | portrait         |
-| M-22 | P3       | Listes / critiques absentes du menu mobile            | portrait         |
-| M-23 | P3       | Landing trop longue, hero non adapté au paysage       | portrait+paysage |
-| M-24 | P3       | Écrans vides trop hauts, premium flouté long          | portrait         |
-| M-25 | P3       | Flash de configuration                                | global           |
-| M-26 | P3       | Délai médian négatif                                  | admin            |
 | M-27 | **P0**   | Un domaine premium actif vide toute la page d'accueil | global           |
 | M-28 | P3       | Le widget Quackback recouvre la barre du bas          | portrait+paysage |
 
@@ -462,8 +333,7 @@ corrigé et requalifié P2 ; son périmètre restant est décrit ci-dessus.
    demande qu'un correctif localisé.
 2. **M-09** et **M-11** : deux passes transverses sur le design system, à
    faire en une fois plutôt que fichier par fichier.
-3. **M-15**, **M-16**, **M-17**, **M-18** : quatre correctifs indépendants,
-   sans dépendance entre eux.
+3. **M-17**, **M-18**, **M-19**, **M-20** : quatre correctifs indépendants.
 4. Le reste au fil de l'eau. **M-07** peut attendre : le bottom sheet rend la
    situation acceptable en paysage.
 

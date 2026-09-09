@@ -323,18 +323,20 @@
 </script>
 
 {#snippet primaryCta(label: string, event: string, cls: string)}
-  {#if bootstrap.ready}
-    {#if auth.isLoggedIn}
-      <a href="/app" class={cls} data-umami-event="{event}-open-app">
-        {m.landing_open_app()}
-      </a>
-    {:else if appConfig.registrationEnabled}
-      <a href="/register" class={cls} data-umami-event={event}>{label}</a>
-    {:else}
-      <a href="/login" class={cls} data-umami-event="{event}-login">
-        {m.common_login()}
-      </a>
-    {/if}
+  {#if !bootstrap.ready}
+    <!-- Holds the slot rather than leaving it empty: the button used to pop
+         in once /api/config answered, shifting the hero as it landed. -->
+    <span class="{cls} invisible" aria-hidden="true">{label}</span>
+  {:else if auth.isLoggedIn}
+    <a href="/app" class={cls} data-umami-event="{event}-open-app">
+      {m.landing_open_app()}
+    </a>
+  {:else if appConfig.registrationEnabled}
+    <a href="/register" class={cls} data-umami-event={event}>{label}</a>
+  {:else}
+    <a href="/login" class={cls} data-umami-event="{event}-login">
+      {m.common_login()}
+    </a>
   {/if}
 {/snippet}
 
@@ -370,7 +372,11 @@
           <Icon name={theme.mode === "dark" ? "sun" : "moon"} class="h-4 w-4" />
         </button>
 
-        {#if bootstrap.ready}
+        {#if !bootstrap.ready}
+          <span class="btn btn-primary invisible" aria-hidden="true">
+            {m.common_login()}
+          </span>
+        {:else}
           {#if auth.isLoggedIn}
             <a
               href="/app"
@@ -412,7 +418,7 @@
     <!-- ── Hero ────────────────────────────────────────────────────────── -->
     <section
       bind:this={heroEl}
-      class="relative flex min-h-[86svh] flex-col justify-center overflow-hidden py-20">
+      class="relative flex min-h-[86svh] flex-col justify-center overflow-hidden py-[clamp(2rem,8svh,5rem)]">
       <div
         class="absolute inset-0 grid grid-cols-3 gap-2 p-2 sm:grid-cols-5 lg:grid-cols-8"
         aria-hidden="true">
@@ -432,7 +438,7 @@
           {m.landing_hero_kicker()}
         </p>
         <h1
-          class="font-display mt-6 text-5xl leading-[0.95] font-extrabold tracking-[-0.035em] md:text-8xl">
+          class="font-display mt-6 text-[min(clamp(3rem,9vw,6rem),14svh)] leading-[0.95] font-extrabold tracking-[-0.035em]">
           {m.landing_hero_title_lead()}<br />
           {m.landing_hero_title_sub()}
           {#key verb}
@@ -471,7 +477,7 @@
           {m.landing_programme_body()}
         </p>
 
-        <ul class="border-border mt-12 border-t">
+        <ul class="border-border mt-8 border-t md:mt-12">
           {#each SALLES as salle (salle.id)}
             {@const on = picked.includes(salle.id)}
             <li class="border-border border-b">
@@ -479,7 +485,7 @@
                 type="button"
                 aria-pressed={on}
                 onclick={() => toggle(salle.id)}
-                class="group grid w-full items-baseline gap-x-6 gap-y-1 py-6 text-left duration-200 hover:pl-3 md:grid-cols-[1.5rem_2fr_3fr_1fr]"
+                class="group grid w-full items-baseline gap-x-6 gap-y-1 py-4 text-left duration-200 hover:pl-3 md:grid-cols-[1.5rem_2fr_3fr_1fr] md:py-6"
                 class:opacity-90={!on}>
                 <span
                   class="row-span-2 grid h-5 w-5 shrink-0 place-items-center self-center rounded-md border transition-colors md:row-span-1"
