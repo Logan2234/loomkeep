@@ -39,10 +39,7 @@ export function deriveStatus(
   const { watchedEpisodes, totalEpisodes } = progress;
 
   if (watchedEpisodes === 0) {
-    // MAL's On-Hold has no dedicated Loomkeep status. Keeping its mapped
-    // WATCHING state makes an explicitly paused, untouched anime visible as
-    // in progress instead of silently turning it into the watchlist.
-    return storedStatus === "WATCHING" ? "WATCHING" : "PLANNED";
+    return "PLANNED";
   }
 
   if (watchedEpisodes >= totalEpisodes) {
