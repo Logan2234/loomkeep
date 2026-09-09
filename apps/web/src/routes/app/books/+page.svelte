@@ -67,7 +67,7 @@
   sorts={SORTS}
   defaultSort="added">
   {#snippet headerActions()}
-    <ReadingGoalChip showBadge />
+    <ReadingGoalChip />
   {/snippet}
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <BookSearchPanel {query} limit={10} {onResults} />
