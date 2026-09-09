@@ -427,10 +427,12 @@
                           : ''}">
                         <Icon name="check" class="h-4 w-4" />
                       </span>
-                      {formatDate(
-                        episode.watches[0].watchedAt,
-                        DATE_MEDIUM_OPTIONS,
-                      )}
+                      {#if episode.watches[0].watchedAt}
+                        {formatDate(
+                          episode.watches[0].watchedAt,
+                          DATE_MEDIUM_OPTIONS,
+                        )}
+                      {/if}
                     </span>
                   {/if}
                   {#if entry && episode.id}

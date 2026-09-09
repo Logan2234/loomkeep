@@ -1460,7 +1460,7 @@ model EpisodeWatch {
   id        String   @id @default(cuid())
   userId    String
   episodeId String
-  watchedAt DateTime @default(now())
+  watchedAt DateTime? @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)

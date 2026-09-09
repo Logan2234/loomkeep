@@ -124,6 +124,8 @@ export interface ImportPlan {
   };
   /** Which catalogue the manual-match search hits. */
   searchDomain: Domain;
+  /** Optional media-type restriction for a source tied to one catalogue. */
+  searchMediaType?: MediaType;
 }
 
 /** One headline number in the completion report (rendered as a stat tile). */

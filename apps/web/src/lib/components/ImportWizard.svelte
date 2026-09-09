@@ -162,7 +162,9 @@
   );
 
   const isFileInput = $derived(
-    descriptor.input.type === "csv" || descriptor.input.type === "zip",
+    descriptor.input.type === "csv" ||
+      descriptor.input.type === "xml" ||
+      descriptor.input.type === "zip",
   );
   const inputReady = $derived(inputValue.trim().length > 0);
   const selectedCount = $derived(included.size);
@@ -342,7 +344,9 @@
       } else if (domain === Domain.GAMES) {
         searchResults = (await searchGames(q)).results.map(gameToMatch);
       } else {
-        searchResults = (await searchCatalog(q)).items.map(mediaToMatch);
+        searchResults = (
+          await searchCatalog(q, plan?.searchMediaType)
+        ).items.map(mediaToMatch);
       }
     } catch {
       searchResults = [];

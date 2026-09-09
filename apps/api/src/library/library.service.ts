@@ -683,7 +683,7 @@ export class LibraryService {
     return {
       id: watch.id,
       episodeId: watch.episodeId,
-      watchedAt: watch.watchedAt.toISOString(),
+      watchedAt: watch.watchedAt?.toISOString() ?? null,
     };
   }
 
@@ -991,7 +991,7 @@ export class LibraryService {
   async unwatchEpisode(userId: string, episodeId: string): Promise<void> {
     const latest = await this.prisma.episodeWatch.findFirst({
       where: { userId, episodeId },
-      orderBy: { watchedAt: "desc" },
+      orderBy: { watchedAt: { sort: "desc", nulls: "last" } },
       include: {
         episode: {
           include: {
@@ -1106,9 +1106,12 @@ export class LibraryService {
 
     for (const w of watches) {
       const mediaItemId = w.episode.season.mediaItemId;
-      const prevLast = lastWatchedByMedia.get(mediaItemId);
-      if (!prevLast || w.watchedAt > prevLast)
-        lastWatchedByMedia.set(mediaItemId, w.watchedAt);
+
+      if (w.watchedAt) {
+        const prevLast = lastWatchedByMedia.get(mediaItemId);
+        if (!prevLast || w.watchedAt > prevLast)
+          lastWatchedByMedia.set(mediaItemId, w.watchedAt);
+      }
 
       if (w.episode.season.number > 0) {
         const set = watchedRegularIdsByMedia.get(mediaItemId);
@@ -1428,7 +1431,7 @@ export class LibraryService {
           include: {
             watches: {
               where: { userId },
-              orderBy: { watchedAt: "desc" },
+              orderBy: { watchedAt: { sort: "desc", nulls: "last" } },
               select: { id: true, watchedAt: true },
             },
           },
@@ -1481,7 +1484,7 @@ export class LibraryService {
           watches: episode.watches.map((w) => ({
             id: w.id,
             episodeId: episode.id,
-            watchedAt: w.watchedAt.toISOString(),
+            watchedAt: w.watchedAt?.toISOString() ?? null,
           })),
         })),
       })),

@@ -29,10 +29,10 @@ import type {
   ImportShow,
   ParsedImport,
 } from "../../media-import-model";
-import { MediaMatchResolver } from "./media-match-resolver";
+import type { MediaImportMatchResolver } from "./media-match-resolver";
 
 /** A catalogue match resolved to its required media type, ready to write. */
-type ResolvedMatch = {
+export type ResolvedMatch = {
   source: CatalogSource;
   sourceId: string;
   type: MediaType;
@@ -77,11 +77,12 @@ export abstract class MediaImportSource<
   abstract readonly id: ImportSource;
   readonly searchDomain = Domain.MEDIA;
   readonly supportsOverwrite = true;
+  protected readonly manualSearchMediaType?: MediaType;
 
   constructor(
     protected readonly prisma: PrismaService,
     protected readonly mediaItemService: MediaItemService,
-    protected readonly matchResolver: MediaMatchResolver,
+    protected readonly matchResolver: MediaImportMatchResolver,
     protected readonly reviews: ReviewService,
   ) {}
 
@@ -210,6 +211,7 @@ export abstract class MediaImportSource<
       groups,
       counts: { total, matched: total - unresolved, unresolved, apiErrors: 0 },
       searchDomain: Domain.MEDIA,
+      searchMediaType: this.manualSearchMediaType,
     };
   }
 
@@ -307,7 +309,7 @@ export abstract class MediaImportSource<
   }
 
   /** The write target for a key: a manual override wins over the auto-match. */
-  private resolvedMatch(
+  protected resolvedMatch(
     key: string,
     decisions: CommitDecisions,
     matchByKey: Map<string, ResolvedMatch>,
@@ -315,14 +317,21 @@ export abstract class MediaImportSource<
     const override = decisions.overrides.get(key);
 
     if (override && override.type) {
-      return {
+      const match = {
         source: override.source as CatalogSource,
         sourceId: override.sourceId,
         type: override.type,
       };
+      return this.acceptsMatch(match) ? match : null;
     }
 
-    return matchByKey.get(key) ?? null;
+    const match = matchByKey.get(key) ?? null;
+    return match && this.acceptsMatch(match) ? match : null;
+  }
+
+  /** Sources may constrain manual overrides to a single catalogue. */
+  protected acceptsMatch(_match: ResolvedMatch): boolean {
+    return true;
   }
 
   /** Write one show against an already-resolved catalogue match. */
@@ -343,10 +352,11 @@ export abstract class MediaImportSource<
         match.source,
         match.sourceId,
         match.type,
-        "PLANNED",
+        show.status ?? "PLANNED",
         show,
       );
-      tally.showsWatchlist++;
+      if ((show.status ?? "PLANNED") === "PLANNED") tally.showsWatchlist++;
+      else tally.showsImported++;
       return;
     }
 
@@ -370,7 +380,9 @@ export abstract class MediaImportSource<
       );
     }
 
-    const status = entryStatusFromProgress(watchedRegular, index.totalRegular);
+    const status =
+      show.status ??
+      entryStatusFromProgress(watchedRegular, index.totalRegular);
     await this.upsertSeriesEntry(
       userId,
       match.source,
@@ -496,7 +508,7 @@ export abstract class MediaImportSource<
       data: Array.from({ length: totalWatches }, () => ({
         userId,
         episodeId,
-        watchedAt: watchedAt ?? undefined,
+        watchedAt,
       })),
     });
     return totalWatches;
@@ -521,7 +533,9 @@ export abstract class MediaImportSource<
     });
     if (!ref) return; // upsertFromSource ran just before, so this always exists.
 
-    const { startedAt, finishedAt } = watchWindow(show, status === "COMPLETED");
+    const inferredWindow = watchWindow(show, status === "COMPLETED");
+    const startedAt = show.startedAt ?? inferredWindow.startedAt;
+    const finishedAt = show.finishedAt ?? inferredWindow.finishedAt;
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = show.favorite === true;
@@ -532,6 +546,9 @@ export abstract class MediaImportSource<
         startedAt,
         finishedAt,
         favorite: favorite ? true : undefined,
+        notes: show.notes ?? undefined,
+        ownershipStatus: show.ownershipStatus,
+        ownershipSource: show.ownershipSource,
       },
       create: {
         userId,
@@ -540,6 +557,9 @@ export abstract class MediaImportSource<
         startedAt,
         finishedAt,
         favorite,
+        notes: show.notes ?? null,
+        ownershipStatus: show.ownershipStatus ?? "NONE",
+        ownershipSource: show.ownershipSource ?? null,
       },
     });
 

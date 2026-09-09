@@ -832,7 +832,7 @@ MFA_CHALLENGE_LOCKED MFA_CHALLENGE_LOCKED
 
   "EpisodeWatch" {
     String id "🗝️"
-    DateTime watchedAt
+    DateTime watchedAt "❓"
     }
 
 

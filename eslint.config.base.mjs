@@ -47,6 +47,7 @@ export function baseConfig(dirname, { browser = false } = {}) {
         eqeqeq: ["error", "always"],
         "no-console": ["warn", { allow: ["warn", "error"] }],
         "prettier/prettier": ["error", { endOfLine: "auto" }],
+        "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       },
     },
     {
