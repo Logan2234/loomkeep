@@ -7,6 +7,7 @@ import { hashToken } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { XpService } from "../gamification/xp.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
@@ -60,6 +61,7 @@ describe("UsersService — email change", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   });
 
@@ -285,6 +287,7 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   });
 
@@ -361,6 +364,7 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   }
 
@@ -448,6 +452,7 @@ describe("UsersService — uploadAvatar", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   });
 
@@ -541,6 +546,7 @@ describe("UsersService — changePassword", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   });
 
@@ -635,6 +641,7 @@ describe("UsersService — deleteAccount", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       accountDeletion,
+      { award: vi.fn() } as unknown as XpService,
     );
   });
 
@@ -695,6 +702,7 @@ describe("UsersService — deletionSummary", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   });
 
@@ -753,6 +761,7 @@ describe("UsersService.getMyEntitlement", () => {
       entitlements,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
+      { award: vi.fn() } as unknown as XpService,
     );
   }
 
