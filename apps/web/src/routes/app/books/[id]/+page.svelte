@@ -73,6 +73,15 @@
   const detail = $derived(bookQuery.data);
   const error = $derived(bookQuery.error);
 
+  // The interface-language auto-pick's own language, captured once and kept
+  // stable across manual selections — `detail.language` changes to whatever
+  // edition is currently shown, so it can't be read directly for the
+  // "Automatique (…)" label without it drifting to match the selection.
+  let autoLanguage = $state<string | null>(null);
+  $effect(() => {
+    if (!selectedEdition && detail?.language) autoLanguage = detail.language;
+  });
+
   const editionsQuery = createApiQuery(() => ({
     key: keys.books.editions(SOURCE, id),
     fetch: () => getBookEditions(SOURCE, id),
@@ -89,7 +98,7 @@
   const editionOptions = $derived([
     {
       value: "",
-      label: m.book_edition_auto({ language: detail?.language ?? "" }),
+      label: m.book_edition_auto({ language: autoLanguage ?? "" }),
     },
     ...editions
       .map((e) => ({ value: e.key, label: e.language ?? e.title }))
