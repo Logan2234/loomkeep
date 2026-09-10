@@ -19,7 +19,9 @@ export class OnboardingController {
 
   @Get()
   @ApiOkResponse({ type: OnboardingChecklistResponseDto })
-  getChecklist(@CurrentUser() user: JwtPayload): Promise<OnboardingChecklistDto> {
+  getChecklist(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<OnboardingChecklistDto> {
     return this.onboarding.getChecklist(user.sub);
   }
 

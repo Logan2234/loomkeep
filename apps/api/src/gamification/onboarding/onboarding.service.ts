@@ -1,18 +1,18 @@
 import {
+  ErrorCode,
   ONBOARDING_SOCIAL_STEPS,
   ONBOARDING_STEP_KEYS,
   type OnboardingChecklistDto,
   type OnboardingStepKey,
 } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import { PrismaService } from "../../prisma/prisma.service";
+import { isSocialEnabled } from "../../social/social.config";
 import { AchievementService } from "../achievements/achievement.service";
 import { isGamificationEnabled } from "../gamification.config";
-import { isSocialEnabled } from "../../social/social.config";
 import { computeOnboardingDoneMap } from "./onboarding.util";
 
 const COMPLETION_ACHIEVEMENT_KEY = "premiere_seance";
@@ -71,7 +71,11 @@ export class OnboardingService {
         !user.onboardingSkippedSteps.includes(key),
     );
     const skipped = inapplicable.length
-      ? await this.appendSkipped(userId, user.onboardingSkippedSteps, inapplicable)
+      ? await this.appendSkipped(
+          userId,
+          user.onboardingSkippedSteps,
+          inapplicable,
+        )
       : user.onboardingSkippedSteps;
 
     const doneMap = await computeOnboardingDoneMap(this.prisma, userId);
@@ -103,6 +107,7 @@ export class OnboardingService {
       where: { id: userId },
       select: { onboardingSkippedSteps: true },
     });
+
     if (!user.onboardingSkippedSteps.includes(key)) {
       await this.appendSkipped(userId, user.onboardingSkippedSteps, [
         key as OnboardingStepKey,
