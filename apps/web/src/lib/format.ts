@@ -173,6 +173,21 @@ export function formatRelative(iso: string, locale?: string): string {
   return formatDate(iso, DATE_OPTIONS, resolved);
 }
 
+/**
+ * A `Retry-After` delay as a phrase, e.g. "dans 1 heure", "in 5 minutes".
+ *
+ * Rounds *up* to the largest unit that fits: telling someone to come back in
+ * "3600 s" is technically right and practically useless, and rounding down
+ * would send them back before the window actually reopens.
+ */
+export function formatRetryDelay(seconds: number, locale?: string): string {
+  const relFmt = getRelativeTimeFormat(resolveLocale(locale));
+
+  if (seconds >= 3600) return relFmt.format(Math.ceil(seconds / 3600), "hour");
+  if (seconds >= 60) return relFmt.format(Math.ceil(seconds / 60), "minute");
+  return relFmt.format(Math.max(1, Math.ceil(seconds)), "second");
+}
+
 /** Byte size in the largest unit that keeps it readable, e.g. "218 Mo", "1,4 Go". */
 export function formatBytes(bytes: number): string {
   const locale = resolveLocale();

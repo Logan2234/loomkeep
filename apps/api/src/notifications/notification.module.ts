@@ -12,6 +12,6 @@ import { PushService } from "./push.service";
   imports: [MailModule, JobsModule, EntitlementModule],
   controllers: [NotificationController],
   providers: [NotificationService, NotificationDigestService, PushService],
-  exports: [PushService, NotificationService],
+  exports: [PushService, NotificationService, NotificationDigestService],
 })
 export class NotificationModule {}

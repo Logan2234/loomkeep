@@ -86,7 +86,9 @@ async function bootstrap() {
         optionsSuccessStatus: 204,
         maxAge: 3600,
         credentials: true,
-        exposedHeaders: ["Content-Disposition"],
+        // Retry-After is unreadable from JS on a cross-origin response
+        // unless exposed: without it a 429 can only say "try again soon".
+        exposedHeaders: ["Content-Disposition", "Retry-After"],
         preflightContinue: false,
       },
     },

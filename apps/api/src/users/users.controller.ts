@@ -131,8 +131,10 @@ export class UsersController {
    * Tightly throttled: one call fans out into two dozen unbounded queries and
    * serialises the whole account into a single response, so the default 60/min
    * budget is enough to take the instance down from one signed-in session.
+   * One per hour: the dump is a full snapshot, there is no reason to want a
+   * second one within the hour.
    */
-  @Throttle({ default: { limit: 2, ttl: 3_600_000 } })
+  @Throttle({ default: { limit: 1, ttl: 3_600_000 } })
   @Get("me/export")
   @ApiOkResponse({ type: UserDataExportResponseDto })
   exportData(@CurrentUser() payload: JwtPayload): Promise<UserDataExportDto> {

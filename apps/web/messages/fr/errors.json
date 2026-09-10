@@ -76,7 +76,7 @@
   "apierr_status_404": "Cet élément est introuvable.",
   "apierr_status_409": "Cette action entre en conflit avec l'état actuel.",
   "apierr_status_429": "Trop de requêtes envoyées, réessaie dans un instant.",
-  "apierr_status_429_retry": "Trop de requêtes envoyées, réessaie dans {seconds} s.",
+  "apierr_status_429_retry": "Trop de requêtes envoyées, réessaie {delay}.",
   "apierr_status_500": "Une erreur est survenue côté serveur.",
   "apierr_admin_cache_item_referenced": "Cet élément du cache est encore référencé et ne peut pas être supprimé.",
   "apierr_admin_cache_item_has_content": "Cet élément du cache contient encore du contenu et ne peut pas être supprimé.",
