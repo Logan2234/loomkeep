@@ -18,28 +18,21 @@ import { PrismaService } from "../prisma/prisma.service";
 const KEEP = 7;
 
 /**
- * Shells out to the Postgres client tools (pg_dump/psql) rather than
- * reimplementing a dump in Prisma: it's the only way to get a complete,
- * faithfully-restorable snapshot (every table, type, constraint) without
- * hand-maintaining an exporter that tracks every future migration. Plain-SQL
- * format (not pg_dump's custom binary format) so a dump travels as a normal
- * string through the same JSON request/response pattern the rest of the app
- * already uses — no multipart upload needed.
+ * Shells out to pg_dump/psql rather than reimplementing a dump in Prisma: it's
+ * the only way to get a faithfully-restorable snapshot (every table, type,
+ * constraint) without hand-maintaining an exporter that tracks every future
+ * migration. Plain-SQL rather than pg_dump's binary format, so a dump travels
+ * as a string through the same JSON pattern as the rest of the app.
  *
- * Dumps taken by the daily cron (or triggered on demand via the same method,
- * from /admin/jobs or the Sauvegarde page) are written to BACKUP_DIR — a
- * dedicated Docker volume in self-host, separate from the Postgres data
- * volume it backs up, so a corrupt DB doesn't take its own backups down with
- * it. Only the {@link KEEP} most recent are kept.
+ * Dumps go to BACKUP_DIR — a Docker volume separate from the Postgres data
+ * volume it backs up, so a corrupt DB doesn't take its own backups with it.
  *
- * Every dump is encrypted (age, ASCII-armored) for BACKUP_ENCRYPTION_PUBLIC_KEY
- * before it ever touches disk — a plain-SQL dump on disk is the
- * entire user database (emails, password hashes, birth dates, full watch
- * history) sitting in the clear. Only the *public* key lives on this
- * instance; nothing here can decrypt a dump back, by design — restoring
- * requires the operator to decrypt it themselves (`age -d`) with the
- * private key, which never touches this server, before uploading the
- * plain SQL back through {@link restore}.
+ * Each one is encrypted (age, ASCII-armored) for BACKUP_ENCRYPTION_PUBLIC_KEY
+ * before it ever touches disk: a plain dump is the whole user database
+ * (emails, password hashes, birth dates, watch history) in the clear. Only the
+ * public key lives here, so nothing on this instance can decrypt a dump back —
+ * restoring means the operator decrypts it themselves (`age -d`) with a private
+ * key that never touches this server, then uploads the SQL to {@link restore}.
  */
 @Injectable()
 export class BackupService {

@@ -22,8 +22,9 @@
  *   xpForLevel(L), L > LEVEL_CAP_LEVEL + 1: XP_AT_CAP_LEVEL + (L − LEVEL_CAP_LEVEL − 1) × LEVEL_CAP_COST
  * Both branches agree exactly at L = LEVEL_CAP_LEVEL + 1 (76): the last
  * uncapped step (level 75 → 76) already costs exactly LEVEL_CAP_COST, so the
- * quadratic and the linear formula meet without a seam — verified by
- * `level.util.spec.ts`'s continuity test around that boundary.
+ * quadratic and the linear formula meet without a seam. This continuity at
+ * the boundary is an invariant of the two formulas above, not something
+ * currently checked by a test — preserve it if either constant changes.
  */
 /**
  * @public Not read anywhere else in this repo yet (`xpForLevel`/
@@ -59,8 +60,8 @@ export function xpForLevel(level: number): number {
  * general form is 6L² + (LEVEL_BASE − 6)L − (LEVEL_BASE + xp) = 0, so the
  * 11236/94 below are (LEVEL_BASE − 6)² + 24×LEVEL_BASE and LEVEL_BASE − 6
  * for the current LEVEL_BASE=100; both need recomputing if LEVEL_BASE
- * changes again (see `level.util.spec.ts`'s round-trip test, which would
- * catch a mismatch immediately).
+ * changes again — `xpForLevel(levelForXp(xp))` should still round-trip to
+ * `xp` (up to the XP spent within the current level) after any such change.
  */
 export function levelForXp(xp: number): number {
   if (xp <= XP_AT_CAP_LEVEL) {

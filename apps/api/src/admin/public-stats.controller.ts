@@ -26,12 +26,9 @@ export class PublicStatsController {
   async getSummary(): Promise<PublicStatsSummaryDto> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Four independent counts, all cheap (indexed or table-scan-on-small-
-    // table) — deliberately not AdminStatsController's getStats(), which
-    // computes cohorts/retention too heavy for a ~10s widget poll.
-    // getServicesStatus() is the odd one out: it live-probes every external
-    // provider (TMDB, AniList, IGDB...) with no caching, so this endpoint
-    // now costs one such probe round on every ~10s Homepage poll too.
+    // getServicesStatus() is the odd one out among these four: it live-probes
+    // every external provider (TMDB, AniList, IGDB...) with no caching, so
+    // this endpoint costs one probe round on every ~10s Homepage poll.
     const [userCount, openReports, newUsers7d, { services }] =
       await Promise.all([
         this.prisma.user.count(),

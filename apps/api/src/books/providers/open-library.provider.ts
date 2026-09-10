@@ -55,22 +55,14 @@ const SEARCH_FIELDS = [
 // Left out of SEARCH_FIELDS: a work's `isbn` list can run to 700+ entries.
 const ISBN_SEARCH_FIELDS = `${SEARCH_FIELDS},isbn`;
 
-// Solr's plain `language`/`isbn`/etc. fields on the *work* doc are aggregated
-// across every edition ever catalogued — every translation, every reprint —
-// with no way to tell which array entry belongs to which edition. Picking
-// e.g. `language[0]` doesn't reliably give the edition being shown; it can
-// just as easily surface an unrelated translation's language code.
-//
-// Instead, `getDetails()` adds a nested `editions` field to the same
-// `/search.json` call, combined with `lang=` — Open Library's own relevance
-// engine then picks *one concrete edition* matching that language when one
-// exists (falling back gracefully otherwise), nested right in the response,
-// no extra request needed. Documented at
-// https://openlibrary.org/dev/docs/api/search (see "lang" and the editions
-// example). Known caveat from upstream: the language match isn't a hard
-// filter — `getDetails()` reads `editions.docs[0].language` back from
-// whatever edition Open Library actually returned rather than assuming it
-// matches `lang`.
+// The work doc's plain `language`/`isbn` fields are aggregated across every
+// edition ever catalogued, with no way to tell which entry belongs to which
+// edition — `language[0]` can just as easily be an unrelated translation.
+// Nesting `editions` in the same /search.json call with `lang=` makes Open
+// Library pick one concrete edition itself, no extra request
+// (https://openlibrary.org/dev/docs/api/search). The language match is not a
+// hard filter upstream, hence getDetails() reading `editions.docs[0].language`
+// back rather than assuming it equals `lang`.
 const DETAILS_FIELDS = `${SEARCH_FIELDS},editions,editions.key,editions.title,editions.language,editions.isbn,editions.ebook_access`;
 
 // Same trick for search results: the nested edition's own title (in the

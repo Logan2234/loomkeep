@@ -12,12 +12,8 @@ import { liveFlags } from "./feature-flags-live.svelte";
  * Also excludes any domain an admin put under deployment-wide maintenance —
  * a live `MAINTENANCE_<DOMAIN>` Unleash flag (see `liveFlags`), treated
  * exactly like the user having turned the domain off themselves. Updates
- * without a reload; the API's own `DomainGateService` gate is what actually
- * enforces this server-side.
- *
- * The nav and the global search consume it today; notification filtering will
- * reuse this same helper next. The API enforces the same gate server-side (see
- * `DomainGateService`).
+ * without a reload; this only hides UI — `DomainGateService` is what actually
+ * enforces the gate server-side.
  */
 export function isDomainEnabled(domain: Domain): boolean {
   if (liveFlags.isEnabled(`MAINTENANCE_${domain}`)) return false;
