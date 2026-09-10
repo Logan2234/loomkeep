@@ -1,10 +1,14 @@
 name: Generate OpenAPI artifact
 
-# Reusable workflow, called from ci.yml and trivy.yml: both need
-# apps/api/openapi.json to build the web Docker image (generate:api-types'
-# one input), and neither can produce it from inside `docker build` itself —
-# no live API or database reachable there. See the comment on ci.yml's
-# openapi-artifact job for the full reasoning.
+# Reusable workflow, called from ci.yml and trivy.yml. Runs the prisma
+# generate + API build + generate:openapi chain once (Prisma connects on
+# module init, hence Postgres) and uploads apps/api/openapi.json as an
+# artifact — generate:api-types' one input — for every consumer that needs
+# it: ci.yml's lint-test-web and knip jobs (which just turn it into typed API
+# client code), and the web Docker image build in both workflows, which runs
+# in total isolation (no live API or database reachable from inside
+# `docker build`) and so can't produce this document itself. See the comment
+# on ci.yml's openapi-artifact job for the full reasoning.
 on:
   workflow_call: {}
 
