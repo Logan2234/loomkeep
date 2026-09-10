@@ -125,7 +125,14 @@ export class UsersController {
     return this.users.deleteAvatar(payload.sub);
   }
 
-  /** Full portable dump of the account's data (GDPR "download my data"). */
+  /**
+   * Full portable dump of the account's data (GDPR "download my data").
+   *
+   * Tightly throttled: one call fans out into two dozen unbounded queries and
+   * serialises the whole account into a single response, so the default 60/min
+   * budget is enough to take the instance down from one signed-in session.
+   */
+  @Throttle({ default: { limit: 2, ttl: 3_600_000 } })
   @Get("me/export")
   @ApiOkResponse({ type: UserDataExportResponseDto })
   exportData(@CurrentUser() payload: JwtPayload): Promise<UserDataExportDto> {
@@ -136,7 +143,11 @@ export class UsersController {
    * Flat per-domain CSV, meant for migrating to another tool rather than the
    * GDPR dump above. Deliberately not gated by `enabledDomains` — a domain the
    * user hid from their own nav is still theirs to export.
+   *
+   * Looser than the GDPR dump above: this reads one domain at a time, so it's
+   * a fraction of the cost — but still far from free.
    */
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
   @Get("me/export.csv")
   @ApiOkResponse({ type: CsvExportResponseDto })
   exportCsv(

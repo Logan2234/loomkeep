@@ -228,9 +228,23 @@ export class IgdbProvider implements GameCatalogProvider {
     "rating, rating_count, aggregated_rating, aggregated_rating_count";
 
   async getDetails(sourceId: string): Promise<ProviderGameDetails> {
+    // Number() alone keeps the Apicalypse query safe, but a non-numeric id
+    // interpolates as `where id = NaN`, which IGDB rejects — surfacing a
+    // malformed route as "catalogue unavailable" (502) instead of a 404.
+    const id = Number(sourceId);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogItemNotFound,
+        undefined,
+        `Not an IGDB id: ${sourceId}`,
+      );
+    }
+
     const games = await this.query<IgdbGame[]>(
       "/games",
-      `fields ${IgdbProvider.DETAIL_FIELDS}; where id = ${Number(sourceId)};`,
+      `fields ${IgdbProvider.DETAIL_FIELDS}; where id = ${id};`,
     );
     const game = games[0];
 
@@ -254,7 +268,9 @@ export class IgdbProvider implements GameCatalogProvider {
   async getDetailsByIds(ids: string[]): Promise<ProviderGameDetails[]> {
     const details: ProviderGameDetails[] = [];
 
-    for (const batch of chunk(ids, 500)) {
+    // A non-numeric id would land in the query as NaN and make IGDB reject the
+    // whole batch — one bad row in an import shouldn't cost the other 499.
+    for (const batch of chunk(ids.filter(isIgdbId), 500)) {
       const idList = batch.map((id) => Number(id)).join(",");
       const games = await this.query<IgdbGame[]>(
         "/games",
@@ -274,7 +290,10 @@ export class IgdbProvider implements GameCatalogProvider {
   async matchSteamAppIds(appIds: string[]): Promise<Map<string, string>> {
     const byAppId = new Map<string, string>();
 
-    for (const batch of chunk(appIds, 500)) {
+    // Appids are quoted into an Apicalypse string literal, so anything but
+    // digits is dropped rather than escaped — Steam only ever issues numeric
+    // appids, and a stray quote would otherwise break out of the literal.
+    for (const batch of chunk(appIds.filter(isIgdbId), 500)) {
       const uidList = batch.map((id) => `"${id}"`).join(",");
       const rows = await this.query<{ game: number; uid: string }[]>(
         "/external_games",
@@ -388,20 +407,24 @@ export class IgdbProvider implements GameCatalogProvider {
       return this.token.value;
     }
 
-    const url = new URL(OAUTH_URL);
-    url.searchParams.set(
-      "client_id",
-      this.configService.getOrThrow<string>("TWITCH_CLIENT_ID"),
-    );
-    url.searchParams.set(
-      "client_secret",
-      this.configService.getOrThrow<string>("TWITCH_CLIENT_SECRET"),
-    );
-    url.searchParams.set("grant_type", "client_credentials");
+    // Credentials go in the form body, never the query string: a URL travels
+    // through every access log and proxy on the way out, and this one carries
+    // the client secret.
+    const body = new URLSearchParams({
+      client_id: this.configService.getOrThrow<string>("TWITCH_CLIENT_ID"),
+      client_secret: this.configService.getOrThrow<string>(
+        "TWITCH_CLIENT_SECRET",
+      ),
+      grant_type: "client_credentials",
+    });
 
     const token = await fetchJson<TwitchToken>(
-      url,
-      { method: "POST" },
+      OAUTH_URL,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      },
       { sourceLabel: "Twitch token" },
     );
     this.token = {
@@ -484,4 +507,9 @@ function uniqueCompanyNames(
     .filter((c) => c[role] && c.company?.name)
     .map((c) => c.company!.name);
   return [...new Set(names)];
+}
+
+/** Whether a raw id is a plausible IGDB/Steam numeric id, safe to interpolate. */
+function isIgdbId(id: string): boolean {
+  return /^\d+$/.test(id);
 }
