@@ -175,25 +175,17 @@ export function computeStreak(
   return streak;
 }
 
-// Batches {@link computeStreak} per user — one row set covering many users,
-// for the small streak badge shown next to a pseudo in reviews/comments.
-export function computeStreaksByUser(
-  watches: { userId: string; watchedAt: Date }[],
+/**
+ * Whether `now`'s calendar day already has a watch counted toward the
+ * streak — i.e. nothing more is needed before midnight for it to survive.
+ * Kept separate from `computeStreak` itself: its other two callers (the
+ * streak achievements, `StatsService`'s contribution count) have no use for
+ * this, only the profile's own activity stats do (the [G10] streak badge).
+ */
+export function isStreakSecuredToday(
+  watchedAt: Date[],
   now: Date = new Date(),
-): Map<string, number> {
-  const byUser = new Map<string, Date[]>();
-
-  for (const w of watches) {
-    const arr = byUser.get(w.userId) ?? [];
-    arr.push(w.watchedAt);
-    byUser.set(w.userId, arr);
-  }
-
-  const result = new Map<string, number>();
-
-  for (const [userId, dates] of byUser) {
-    result.set(userId, computeStreak(dates, now));
-  }
-
-  return result;
+): boolean {
+  const today = isoDate(now);
+  return watchedAt.some((d) => isoDate(d) === today);
 }

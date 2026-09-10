@@ -26,18 +26,10 @@ export interface UserSummaryDto {
    */
   anonymized?: boolean;
   /**
-   * Consecutive-day video-watch streak, for the small 🎬 badge shown next to
-   * a pseudo (profile header, reviews, comments) — Snapchat-flame style. Only
-   * populated where the caller actually computes it; absent/0 means "no
-   * badge". Never set for an anonymized (Figurant) author.
-   */
-  streakDays?: number;
-  /**
    * Total XP, for the small level pastille shown next to a pseudo (reviews,
-   * comments, profile) — same precedent as `streakDays`. Only populated
-   * where the caller actually computes it; the level itself is derived
-   * client-side via `levelProgress()`. Never set for an anonymized
-   * (Figurant) author.
+   * comments, profile). Only populated where the caller actually computes
+   * it; the level itself is derived client-side via `levelProgress()`. Never
+   * set for an anonymized (Figurant) author.
    */
   xp?: number;
 }
@@ -88,6 +80,13 @@ export interface ProfileActivityStatsDto {
   visible: boolean;
   /** Consecutive days (ending today or yesterday) with at least one watch. */
   streakDays: number;
+  /**
+   * Whether today already has a watch counted toward `streakDays` — i.e. the
+   * streak needs nothing more before midnight to survive. Lets the badge
+   * show a "you still need to watch something today" cue near the end of
+   * the day without the frontend re-deriving it from the heatmap.
+   */
+  streakSecuredToday: boolean;
   firstActivityAt: string | null;
   lastActivityAt: string | null;
   totalMinutes: number;

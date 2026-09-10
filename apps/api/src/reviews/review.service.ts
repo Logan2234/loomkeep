@@ -32,7 +32,6 @@ import { ActivityService } from "../social/activity.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
-import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
@@ -615,12 +614,11 @@ export class ReviewService {
       .filter((id): id is string => !!id);
     const uniqueAuthorIds = [...new Set(authorIds)];
     const gamificationEnabled = isGamificationEnabled(this.config, this.flags);
-    const [voteMap, streakMap, xpMap] = await Promise.all([
+    const [voteMap, xpMap] = await Promise.all([
       this.voteInfoBatch(
         rows.map((r) => r.id),
         viewerId,
       ),
-      fetchStreaksByUser(this.prisma, uniqueAuthorIds),
       fetchXpByUser(this.prisma, uniqueAuthorIds),
     ]);
     // Same rows AUTHOR_SELECT already fetched for profileAccess/anonymized —
@@ -635,7 +633,7 @@ export class ReviewService {
       voteMap.get(id) ?? { score: 0, myVote: null };
     const withBadges = (author: UserSummaryDto): UserSummaryDto =>
       withXp(
-        withStreakDays(author, streakMap),
+        author,
         viewerId,
         xpMap,
         gamificationEnabled,
@@ -821,16 +819,15 @@ export class ReviewService {
   }
 
   private async author(userId: string): Promise<UserSummaryDto> {
-    const [user, streaks, xpMap] = await Promise.all([
+    const [user, xpMap] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({
         where: { id: userId },
         select: AUTHOR_SELECT,
       }),
-      fetchStreaksByUser(this.prisma, [userId]),
       fetchXpByUser(this.prisma, [userId]),
     ]);
     return withXp(
-      { ...toUserSummaryDto(user), streakDays: streaks.get(userId) },
+      toUserSummaryDto(user),
       userId,
       xpMap,
       isGamificationEnabled(this.config, this.flags),
