@@ -1,9 +1,11 @@
 /**
- * Canonical parse model for **media** import sources (TV Time today,
- * Trakt/Letterboxd/MAL tomorrow): each parses its own export format down to
- * this shape of shows + movies, which the source's `buildPlan`/`commit` then
- * resolve and write. Books and games have their own, simpler parse models.
+ * Canonical parse model for **media** import sources: each parses its own
+ * export format down to this shape of shows + movies, which the source's
+ * `buildPlan`/`commit` then resolve and write. Books and games have their own,
+ * simpler parse models.
  */
+
+import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared";
 
 /** External identifiers a source may expose for a title (any subset). */
 type ExternalIdMap = {
@@ -34,6 +36,16 @@ export interface ImportShow {
   rating?: number | null;
   /** Marked as a favorite on the source. */
   favorite?: boolean;
+  /** Explicit source status, for sources which expose one. */
+  status?: EntryStatus;
+  /** Source-level dates, distinct from per-episode watch dates. */
+  startedAt?: Date | null;
+  finishedAt?: Date | null;
+  /** Private source note, if the source exports one. */
+  notes?: string | null;
+  /** Ownership metadata when the source has a meaningful equivalent. */
+  ownershipStatus?: MediaOwnershipStatus;
+  ownershipSource?: string | null;
 }
 
 export interface ImportMovie {

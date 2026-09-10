@@ -59,7 +59,7 @@ export interface DataExportWatch {
   seasonNumber: number;
   episodeNumber: number;
   episodeTitle: string | null;
-  watchedAt: string;
+  watchedAt: string | null;
 }
 
 /** One game library entry in a data export. */

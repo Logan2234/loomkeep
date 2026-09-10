@@ -6,15 +6,15 @@
 
   let svg = $state("");
   let error = $state<string | null>(null);
-  let scale = $state(1);
+  let scale = $state(2);
   let panX = $state(0);
   let panY = $state(0);
   let dragging = $state(false);
   let dragStart = { x: 0, y: 0, panX: 0, panY: 0 };
 
-  const ZOOM_STEP = 0.25;
-  const ZOOM_MIN = 0.25;
-  const ZOOM_MAX = 3;
+  const ZOOM_STEP = 0.5;
+  const ZOOM_MIN = 2;
+  const ZOOM_MAX = 10;
 
   // Re-render whenever the diagram source or the light/dark mode changes —
   // mermaid bakes colors into the SVG at render time, it can't be re-themed via CSS.

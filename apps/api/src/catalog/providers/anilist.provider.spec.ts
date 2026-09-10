@@ -62,6 +62,34 @@ describe("AnilistProvider", () => {
     expect(frieren?.posterUrl).toMatch(/^https:\/\//);
   });
 
+  it("resolves a MyAnimeList id through AniList's idMal field", async () => {
+    mockFetch({
+      data: {
+        Media: {
+          id: 154587,
+          title: { romaji: "Sousou no Frieren", english: "Frieren" },
+          seasonYear: 2023,
+          coverImage: { large: "https://example.com/frieren.jpg" },
+          isAdult: false,
+        },
+      },
+    });
+
+    await expect(provider.getSummaryByMalId("52991")).resolves.toMatchObject({
+      source: "ANILIST",
+      sourceId: "154587",
+      type: MediaType.ANIME,
+      title: "Frieren",
+    });
+    expect(
+      JSON.parse(
+        (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+      ),
+    ).toMatchObject({
+      variables: { idMal: 52991 },
+    });
+  });
+
   it("maps details: one generated season, episode titles from streaming episodes", async () => {
     mockFetch(fixture("anilist-details.json"));
 

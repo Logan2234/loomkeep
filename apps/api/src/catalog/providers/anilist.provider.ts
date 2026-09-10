@@ -68,6 +68,18 @@ const DETAILS_QUERY = `
   }
 `;
 
+const MAL_ID_QUERY = `
+  query ($idMal: Int) {
+    Media(idMal: $idMal, type: ANIME) {
+      id
+      title { romaji english }
+      seasonYear
+      coverImage { large }
+      isAdult
+    }
+  }
+`;
+
 const EXTRAS_QUERY = `
   query ($id: Int) {
     Media(id: $id, type: ANIME) {
@@ -186,6 +198,18 @@ export class AnilistProvider implements CatalogProvider {
     }
 
     return toMediaDetails(media);
+  }
+
+  /** Resolves a MyAnimeList anime id to its canonical AniList catalogue item. */
+  async getSummaryByMalId(malId: string): Promise<MediaSummaryDto | null> {
+    const idMal = Number(malId);
+    if (!Number.isSafeInteger(idMal) || idMal <= 0) return null;
+
+    const data = await this.query<{ Media: AnilistMedia | null }>(
+      MAL_ID_QUERY,
+      { idMal },
+    );
+    return data.Media ? toSummary(data.Media) : null;
   }
 
   // AniList exposes no streaming providers; cast = characters, similar =

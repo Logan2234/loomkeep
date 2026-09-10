@@ -6,7 +6,7 @@ export type ImportSourceDescriptor = {
   description: string;
   href: string;
   input: {
-    type: "csv" | "zip" | "steamId" | "oauth";
+    type: "csv" | "xml" | "zip" | "steamId" | "oauth";
     accept?: string;
     placeholder?: string;
   };

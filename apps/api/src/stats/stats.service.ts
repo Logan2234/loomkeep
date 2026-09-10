@@ -567,6 +567,10 @@ export class StatsService {
       ]);
 
     const regularWatches = watches.filter((w) => w.episode.season.number !== 0);
+    const datedRegularWatches = regularWatches.filter(
+      (w): w is (typeof regularWatches)[number] & { watchedAt: Date } =>
+        w.watchedAt !== null,
+    );
     const genreCounts = new Map<string, number>();
     const typeSplitRows: TypeSplitInput[] = [];
     let episodeMinutes = 0;
@@ -676,7 +680,7 @@ export class StatsService {
         ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
         moviesRewatchedCount,
         longestBingeCount: computeLongestBinge(
-          regularWatches.map((w) => w.watchedAt),
+          datedRegularWatches.map((w) => w.watchedAt),
         ),
       },
       premium,
@@ -746,10 +750,16 @@ export class StatsService {
     ]);
 
     const lastWatchedMap = lastWatchedPerMediaItem(
-      watches.map((w) => ({
-        mediaItemId: w.episode.season.mediaItemId,
-        watchedAt: w.watchedAt,
-      })),
+      watches.flatMap((w) =>
+        w.watchedAt
+          ? [
+              {
+                mediaItemId: w.episode.season.mediaItemId,
+                watchedAt: w.watchedAt,
+              },
+            ]
+          : [],
+      ),
     );
 
     const result: {
@@ -1049,7 +1059,10 @@ export class StatsService {
       },
     });
 
-    const regular = watches.filter((w) => w.episode.season.number !== 0);
+    const regular = watches.filter(
+      (w): w is (typeof watches)[number] & { watchedAt: Date } =>
+        w.episode.season.number !== 0 && w.watchedAt !== null,
+    );
     const now = new Date();
     const start = windowStart(period, now);
     const inWindow = start

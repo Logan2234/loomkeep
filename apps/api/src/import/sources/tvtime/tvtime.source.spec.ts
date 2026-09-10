@@ -16,6 +16,10 @@ const EPISODES_CSV = [
   "My Show,900,1,1,100,,2024-01-01 10:00:00",
   "My Show,901,1,2,100,,2024-01-02 10:00:00",
 ].join("\n");
+const UNDATED_EPISODES_CSV = [
+  "series_name,episode_id,season_number,episode_number,s_id,bulk_type,created_at",
+  "My Show,900,1,1,100,,",
+].join("\n");
 const SHOWS_CSV = [
   "tv_show_name,tv_show_id,nb_episodes_seen",
   "My Show,100,2",
@@ -284,6 +288,44 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       { id: "episodes" },
       { id: "movies", watchlistCount: 0 },
     ]);
+  });
+
+  it("keeps an episode watch date null when the export does not provide one", async () => {
+    const { prisma, tmdb, service } = makeService();
+    tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "500",
+      type: "SERIES",
+      title: "My Show",
+      year: 2024,
+      posterUrl: null,
+    });
+    prisma.season.findMany.mockResolvedValue([
+      { number: 1, episodes: [{ id: "e1", number: 1 }] },
+    ]);
+    prisma.mediaExternalId.findUnique.mockResolvedValue({
+      mediaItemId: "media-100",
+    });
+
+    const analyze = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({
+        episodesCsv: UNDATED_EPISODES_CSV,
+        showsCsv: SHOWS_CSV,
+      }),
+    );
+    await runToEnd(service, "u1", analyze.id);
+
+    const commit = service.commit("u1", "tvtime", analyze.id, {
+      include: ["tvdb:100"],
+    });
+    const job = await runToEnd(service, "u1", commit.id);
+
+    expect(job.status).toBe("completed");
+    expect(prisma.episodeWatch.createMany).toHaveBeenCalledWith({
+      data: [{ userId: "u1", episodeId: "e1", watchedAt: null }],
+    });
   });
 
   it("commit applies a manual override for an unresolved movie", async () => {

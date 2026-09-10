@@ -11,5 +11,5 @@ export class DataExportWatchResponseDto implements DataExportWatch {
   seasonNumber!: number;
   episodeNumber!: number;
   episodeTitle!: string | null;
-  watchedAt!: string;
+  watchedAt!: string | null;
 }

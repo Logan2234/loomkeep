@@ -3,6 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 
+/** Catalogue resolution contract shared by media import sources. */
+export interface MediaImportMatchResolver {
+  resolveShow(show: ImportShow): Promise<ImportMatch | null>;
+  resolveMovie(movie: ImportMovie): Promise<ImportMatch | null>;
+}
+
 /**
  * Resolves a media import's raw shows/movies against the TMDB catalogue.
  * Split out of {@link MediaImportSource} so the resolution rules (which
@@ -10,7 +16,7 @@ import type { ImportMovie, ImportShow } from "../../media-import-model";
  * tested in isolation from the plan/commit mechanics.
  */
 @Injectable()
-export class MediaMatchResolver {
+export class MediaMatchResolver implements MediaImportMatchResolver {
   constructor(private readonly tmdb: TmdbProvider) {}
 
   /**

@@ -269,6 +269,7 @@
     },
     { name: "Trakt", what: m.landing_import_done_trakt_what },
     { name: "Simkl", what: m.landing_import_done_simkl_what },
+    { name: "MyAnimeList", what: m.landing_import_done_myanimelist_what },
     { name: "Steam", what: m.landing_import_done_steam_what },
     { name: "Goodreads", what: m.landing_import_done_goodreads_what },
     { name: "StoryGraph", what: m.landing_import_done_storygraph_what },
