@@ -1,6 +1,7 @@
 import type { JobDto, JobRunDto } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import type { JobRun } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   JOB_HEALTHCHECK_ENV,
@@ -16,6 +17,8 @@ const RECENT_RUNS_SHOWN = 20;
 
 @Injectable()
 export class JobRunService {
+  private readonly logger = new Logger(JobRunService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -28,6 +31,11 @@ export class JobRunService {
     summarize: (result: T) => string,
   ): Promise<T> {
     const startedAt = new Date();
+    // Short correlation id, generated once per run: the only way to tie a
+    // FAILURE row on the admin "Jobs" page back to that run's actual log
+    // lines (JobRun.error has no room for a full log excerpt, only the
+    // exception itself).
+    const runId = randomUUID().split("-")[0];
 
     try {
       const result = await fn();
@@ -35,12 +43,17 @@ export class JobRunService {
       await this.ping(jobKey, true);
       return result;
     } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.logger.error(`[${runId}] Job ${jobKey} failed`, error.stack);
       await this.persist(
         jobKey,
         startedAt,
         "FAILURE",
         undefined,
-        err instanceof Error ? err.message : String(err),
+        // The run id heads the string (ties back to the log line above), and
+        // the stack's own first line (the error message) stays first so the
+        // admin page can show a one-line summary without parsing the rest.
+        `[${runId}] ${error.stack ?? error.message}`,
       );
       await this.ping(jobKey, false);
       throw err;

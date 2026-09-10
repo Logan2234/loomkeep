@@ -25,7 +25,6 @@
   import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
   import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import QRCode from "qrcode";
 
   const RECOVERY_CODES_LOW_THRESHOLD = 2;
 
@@ -78,11 +77,18 @@
     onSuccess: async (setup) => {
       totpOtpauthUri = setup.otpauthUri;
       totpSecret = setup.secret;
-      totpQrSvg = await QRCode.toString(totpOtpauthUri, {
+      // Loaded on demand: qrcode is only ever needed once the user opens the
+      // TOTP setup modal, so it stays out of the settings route's chunk.
+      const { default: QRCode } = await import("qrcode");
+      const svg = await QRCode.toString(totpOtpauthUri, {
         type: "svg",
         margin: 1,
         color: { dark: "#000000", light: "#ffffff" },
       });
+      // The modal may have been closed while the module was loading; assigning
+      // then would re-show a stale QR on the next open (openTotpSetup clears it
+      // before the mutation resolves).
+      if (openModal === "totp-setup") totpQrSvg = svg;
     },
     onError: () => (openModal = null),
   }));

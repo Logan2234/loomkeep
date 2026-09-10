@@ -1360,6 +1360,8 @@ model MediaItem {
   seasons      Season[]
   entries      LibraryEntry[]
   translations MediaItemTranslation[]
+
+  @@index([lastSyncedAt])
 }
 
 // Locale-specific title/overview/genres, for a locale other than whatever
@@ -1741,6 +1743,7 @@ model XpEntry {
 
   @@unique([userId, reason, sourceType, sourceId])
   @@index([userId, createdAt])
+  @@index([reason, id])
 }
 
 // Materialised sum of the user's XpEntry rows, kept only for cheap
