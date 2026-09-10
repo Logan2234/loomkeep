@@ -255,6 +255,148 @@ describe("OpenLibraryProvider", () => {
     expect(details.editionCount).toBe(187);
   });
 
+  it("reads publisher/pageCount from the picked edition, not the work-level aggregate", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              // The aggregate — must be ignored once the edition has its own.
+              publisher: ["J.K. Rowling"],
+              number_of_pages_median: 302,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL62190138M.json",
+        {
+          key: "/books/OL62190138M",
+          publishers: ["Houghton Mifflin"],
+          number_of_pages: 310,
+        },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.publisher).toBe("Houghton Mifflin");
+    expect(details.pageCount).toBe(310);
+  });
+
+  it("falls back to the work-level aggregate when the edition has no publisher/pageCount", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              publisher: ["George Allen & Unwin"],
+              number_of_pages_median: 310,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.publisher).toBe("George Allen & Unwin");
+    expect(details.pageCount).toBe(310);
+  });
+
+  it("falls back to parsing pagination when number_of_pages is absent", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL62190138M.json",
+        { key: "/books/OL62190138M", pagination: "396 pages" },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.pageCount).toBe(396);
+  });
+
+  it("uses the picked edition's own cover, falling back to the work's when it has none", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit", covers: [111] }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              cover_i: 222,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M", covers: [333] }],
+    ]);
+
+    const withCover = await providerWith("k").getDetails("OL27482W");
+    expect(withCover.summary.coverUrl).toBe(
+      "https://covers.openlibrary.org/b/id/333-L.jpg",
+    );
+  });
+
+  it("skips a placeholder (non-positive) cover id on the edition and falls back to the work's", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              cover_i: 14627570,
+              editions: { docs: [{ key: "/books/OL62190138M" }] },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M", covers: [-1] }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W");
+
+    expect(details.summary.coverUrl).toBe(
+      "https://covers.openlibrary.org/b/id/14627570-L.jpg",
+    );
+  });
+
   it("sends lang=en and the editions fields alongside the details query", async () => {
     const fn = mockFetchByUrl([
       ["/works/OL27482W.json", { title: "The Hobbit" }],
@@ -936,7 +1078,9 @@ describe("OpenLibraryProvider", () => {
               languages: [{ key: "/languages/eng" }],
               covers: [14627570],
             },
-            // A second English edition — dropped, the first one found wins.
+            // A second, lower-scoring English edition (no cover) — dropped,
+            // even though the kept one above already has one point less than
+            // it could (no description/pages/isbn).
             {
               key: "/books/OL11111111M",
               title: "The Hobbit (reprint)",
@@ -974,6 +1118,47 @@ describe("OpenLibraryProvider", () => {
     ]);
   });
 
+  it("prefers a later, better-filled-in edition over an earlier bare one for the same language", async () => {
+    mockFetchByUrl([
+      [
+        "/works/OL27482W/editions.json",
+        {
+          entries: [
+            // Listed first (Open Library returns newest-catalogued first),
+            // but has nothing beyond a title/language.
+            {
+              key: "/books/OL11111111M",
+              title: "The Hobbit (bare reprint)",
+              languages: [{ key: "/languages/eng" }],
+            },
+            // Listed second, but scores higher: description + cover + pages
+            // + isbn — this is the one that should win.
+            {
+              key: "/books/OL62190138M",
+              title: "The Hobbit",
+              languages: [{ key: "/languages/eng" }],
+              description: "A hobbit goes on an adventure.",
+              covers: [14627570],
+              number_of_pages: 310,
+              isbn_13: ["9780261102217"],
+            },
+          ],
+        },
+      ],
+    ]);
+
+    const editions = await providerWith("k").getEditions("OL27482W");
+
+    expect(editions).toEqual([
+      {
+        key: "OL62190138M",
+        title: "The Hobbit",
+        language: "English",
+        coverUrl: "https://covers.openlibrary.org/b/id/14627570-L.jpg",
+      },
+    ]);
+  });
+
   it("translates edition language labels into the requested lang, defaulting to English", async () => {
     mockFetchByUrl([
       ["/works/OL27482W.json", { title: "The Hobbit" }],
@@ -1005,5 +1190,89 @@ describe("OpenLibraryProvider", () => {
     const editions = await providerWith("k").getEditions("OL27482W");
 
     expect(editions).toEqual([]);
+  });
+
+  it("fetches editions.json directly, without resolving the work first, on the common (non-merged) path", async () => {
+    const fn = mockFetchByUrl([
+      [
+        "/works/OL27482W/editions.json",
+        {
+          entries: [
+            {
+              key: "/books/OL62190138M",
+              languages: [{ key: "/languages/eng" }],
+            },
+          ],
+        },
+      ],
+    ]);
+
+    await providerWith("k").getEditions("OL27482W");
+
+    // A single call — no /works/OL27482W.json to resolve redirects.
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves a merged work's redirect id when editions.json 404s on the stale id", async () => {
+    const fn = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.includes("/works/OLSTALE1W/editions.json")) {
+        return Promise.resolve(new Response("{}", { status: 404 }));
+      }
+
+      if (url.includes("/works/OLSTALE1W.json")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              type: { key: "/type/redirect" },
+              location: "/works/OL27482W",
+            }),
+            { status: 200 },
+          ),
+        );
+      }
+
+      if (url.includes("/works/OL27482W/editions.json")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              entries: [
+                {
+                  key: "/books/OL62190138M",
+                  title: "The Hobbit",
+                  languages: [{ key: "/languages/eng" }],
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+        );
+      }
+
+      // fetchWork() re-fetches the resolved id to confirm it isn't itself
+      // another redirect.
+      if (url.includes("/works/OL27482W.json")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ title: "The Hobbit" }), {
+            status: 200,
+          }),
+        );
+      }
+
+      throw new Error(`Unexpected fetch call in test: ${url}`);
+    });
+    global.fetch = fn as unknown as typeof fetch;
+
+    const editions = await providerWith("k").getEditions("OLSTALE1W");
+
+    expect(editions).toEqual([
+      {
+        key: "OL62190138M",
+        title: "The Hobbit",
+        language: "English",
+        coverUrl: null,
+      },
+    ]);
   });
 });
