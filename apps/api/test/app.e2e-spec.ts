@@ -672,16 +672,18 @@ describe("Loomkeep API (e2e)", () => {
     expect(list.body).toHaveLength(1);
     expect(list.body[0].isCurrent).toBe(true);
 
-    // Revoking a single session by id works too.
+    // Revoking a single session by id works too — and revoking your own takes
+    // effect on the very next call. The access token stays cryptographically
+    // valid for up to 15 more minutes, but JwtAuthGuard checks its `sid`
+    // against a live session, so the cookie is dead the moment the row is.
     await request(http)
       .delete(`/api/auth/sessions/${list.body[0].id}`)
       .set("Cookie", cookiesB)
       .expect(204);
-    list = await request(http)
+    await request(http)
       .get("/api/auth/sessions")
       .set("Cookie", cookiesB)
-      .expect(200);
-    expect(list.body).toHaveLength(0);
+      .expect(401);
   });
 
   it("deletes the account and wipes access to it", async () => {

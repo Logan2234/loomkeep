@@ -118,3 +118,38 @@ describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
     }
   });
 });
+
+// fetchAllPages() drains a paginated endpoint until `hasMore` goes false. Both
+// guards below exist because that condition is the server's word, not a fact.
+describe("fetchAllPages() → runaway guards", { timeout: 20_000 }, () => {
+  async function loadFetchAllPages() {
+    vi.resetModules();
+    vi.doMock("$env/dynamic/public", () => ({ env: {} }));
+    const { fetchAllPages } = await import("./core");
+    return fetchAllPages;
+  }
+
+  it("stops on an empty page even when the server still claims more", async () => {
+    const fetchAllPages = await loadFetchAllPages();
+    const fetchPage = vi.fn().mockResolvedValue({ items: [], hasMore: true });
+
+    const items = await fetchAllPages(fetchPage);
+
+    expect(items).toEqual([]);
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+  });
+
+  it("caps the number of pages and returns what it collected", async () => {
+    const fetchAllPages = await loadFetchAllPages();
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValue({ items: ["x"], hasMore: true });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const items = await fetchAllPages(fetchPage);
+
+    expect(fetchPage).toHaveBeenCalledTimes(1000);
+    expect(items).toHaveLength(1000);
+    expect(console.warn).toHaveBeenCalled();
+  });
+});

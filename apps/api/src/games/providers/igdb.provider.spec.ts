@@ -541,4 +541,26 @@ describe("IgdbProvider", () => {
     );
     expect(tokenCalls).toHaveLength(1);
   });
+  it("rejects a non-numeric id without calling IGDB", async () => {
+    const fn = mockFetchByUrl({ "id.twitch.tv": TOKEN_RESPONSE, "/games": [] });
+
+    // Interpolated as `where id = NaN`, IGDB rejects the query and the caller
+    // reads "catalogue unavailable" (502) for what is really a bad route.
+    await expect(provider.getDetails("abc")).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("sends the Twitch credentials in the body, never the query string", async () => {
+    const fn = mockFetchByUrl({ "id.twitch.tv": TOKEN_RESPONSE, "/games": [] });
+
+    await provider.search("a");
+
+    const [url, init] = fn.mock.calls.find(([u]) =>
+      String(u).includes("id.twitch.tv"),
+    )!;
+    expect(String(url)).not.toContain("client_secret");
+    expect(String((init as RequestInit).body)).toContain("client_secret=");
+  });
 });
