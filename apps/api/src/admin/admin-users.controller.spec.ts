@@ -3,6 +3,7 @@ import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -137,7 +138,10 @@ describe("AdminUsersController.listUsers", () => {
 
     // take is limit + 1 (over-fetch by one to derive hasMore).
     expect(prisma.user.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 100, take: 51 }),
+      expect.objectContaining({
+        skip: 2 * DEFAULT_PAGE_SIZE,
+        take: DEFAULT_PAGE_SIZE + 1,
+      }),
     );
   });
 
