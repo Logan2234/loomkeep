@@ -136,6 +136,20 @@ app's own `JobRun` table can't see. See root README "Job monitoring" for
 account setup. The observability override additionally scrapes
 Healthchecks.io's own metrics endpoint into Prometheus/Grafana.
 
+## Per-query Postgres metrics (`docker-compose.observability.yml`)
+
+`postgres_exporter`'s `stat_statements` collector needs the `pg_stat_statements`
+extension preloaded, which only takes effect on a Postgres restart — and,
+same pattern as "Shared Postgres for add-ons" above, the extension itself
+is only auto-created on a brand-new `db` volume
+(`observability/init-pg-stat-statements.sql`). On an already-initialized
+volume, after the observability override is deployed and `db` has
+restarted, create it once by hand:
+
+```sh
+docker compose exec db psql -U ${POSTGRES_USER:-loomkeep} -d ${POSTGRES_DB:-loomkeep} -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+```
+
 ## Error tracking (`docker-compose.glitchtip.yml`)
 
 GlitchTip — self-hosted, Sentry-API-compatible. The app reports to it via

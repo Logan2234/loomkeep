@@ -98,6 +98,16 @@ services:
       - "--path.rootfs=/rootfs"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
 
+  # Partial override of the `db` service in docker-compose.yml: preloads
+  # pg_stat_statements so postgres_exporter's stat_statements collector
+  # (below) has something to read. Requires a restart to take effect; on an
+  # already-initialized volume the extension itself also needs a one-time
+  # manual CREATE EXTENSION — see init-pg-stat-statements.sql.
+  db:
+    command: postgres -c shared_preload_libraries=pg_stat_statements
+    volumes:
+      - ./observability/init-pg-stat-statements.sql:/docker-entrypoint-initdb.d/init-pg-stat-statements.sql:ro
+
   # Reuses the app's own DB user — single-user self-host, not worth a
   # dedicated read-only monitoring role.
   postgres_exporter:
@@ -106,6 +116,15 @@ services:
     logging: *default-logging
     environment:
       DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-loomkeep}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-loomkeep}?sslmode=disable
+    command:
+      # stat_statements is disabled by default (expensive on a busy server) —
+      # fine at this instance's scale, and it's the only way to see per-query
+      # load rather than just aggregate database-level counters.
+      # include_query maps queryid to normalized SQL text (literals stripped
+      # by Postgres itself, so no parameter values leak) — without it,
+      # dashboards would only show opaque queryid numbers.
+      - "--collector.stat_statements"
+      - "--pg_stat_statements.include_query"
     depends_on:
       db:
         condition: service_healthy
