@@ -4,6 +4,7 @@ import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { CommentsModule } from "../comments/comments.module";
 import { GamesModule } from "../games/games.module";
+import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
@@ -53,6 +54,7 @@ import { PublicStatsGuard } from "./public-stats.guard";
     ReviewsModule,
     SocialModule,
     ListsModule,
+    GamificationModule,
   ],
   controllers: [
     AdminSystemController,

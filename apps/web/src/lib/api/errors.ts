@@ -1,3 +1,4 @@
+import { formatRetryDelay } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
 import { ErrorCode } from "@loomkeep/shared";
 import { ApiError } from "./core";
@@ -236,7 +237,9 @@ function statusFallback(err: ApiError): string {
   // Retry-After header, parsed in core.ts's request(). Every other status
   // fallback is a static sentence.
   if (err.status === 429 && err.retryAfterSeconds !== undefined) {
-    return m.apierr_status_429_retry({ seconds: err.retryAfterSeconds });
+    return m.apierr_status_429_retry({
+      delay: formatRetryDelay(err.retryAfterSeconds),
+    });
   }
 
   if (err.status in STATUS_MESSAGES) return STATUS_MESSAGES[err.status]();

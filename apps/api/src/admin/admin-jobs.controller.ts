@@ -10,8 +10,11 @@ import {
 import { ApiOkResponse } from "@nestjs/swagger";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { XpService } from "../gamification/xp.service";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
+import { NotificationDigestService } from "../notifications/notification-digest.service";
 import { NotificationService } from "../notifications/notification.service";
 import { ReportService } from "../reports/report.service";
 import { InactiveAccountService } from "../users/inactive-account.service";
@@ -26,10 +29,13 @@ export class AdminJobsController {
   constructor(
     private readonly jobRuns: JobRunService,
     private readonly notifications: NotificationService,
+    private readonly notificationDigests: NotificationDigestService,
     private readonly mediaItems: MediaItemService,
     private readonly reports: ReportService,
     private readonly backup: BackupService,
     private readonly inactiveAccount: InactiveAccountService,
+    private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {}
 
   /** Every known scheduled job, with its recent run history. */
@@ -39,28 +45,42 @@ export class AdminJobsController {
     return { jobs: await this.jobRuns.listJobs() };
   }
 
-  /** Triggers a job immediately (both are idempotent — safe outside its cron tick). */
+  /**
+   * What "Lancer maintenant" runs, one entry per {@link JOB_KEYS} member.
+   *
+   * Typed as a total Record rather than a switch: the admin page offers a
+   * button for every key in the registry, so a key with no runner here is a
+   * 404 the user meets at the worst possible moment. Three of them
+   * (notification digests, XP reconciliation, achievements sweep) had been in
+   * exactly that state. As a Record, adding a key to the registry without a
+   * runner no longer compiles.
+   */
+  private get runners(): Record<JobKey, () => Promise<unknown>> {
+    return {
+      [JOB_KEYS.NOTIFICATIONS_SCAN]: () => this.notifications.scanAll(),
+      [JOB_KEYS.NOTIFICATIONS_DIGEST]: () => this.notificationDigests.runDigests(),
+      [JOB_KEYS.MEDIA_REFRESH_STALE]: () => this.mediaItems.refreshStale(),
+      [JOB_KEYS.REPORTS_DIGEST]: () => this.reports.sendDailyDigest(),
+      [JOB_KEYS.BACKUP]: () => this.backup.runScheduled(),
+      [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: () => this.inactiveAccount.scan(),
+      [JOB_KEYS.GAMIFICATION_RECONCILE]: () => this.xp.runReconcileJob(),
+      [JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP]: () =>
+        this.achievements.runAchievementsSweepJob(),
+    };
+  }
+
+  /** Triggers a job immediately — every one of them is idempotent, so running it outside its cron tick is safe. */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("jobs/:key/run")
   async runJob(@Param("key") key: string): Promise<void> {
-    switch (key as JobKey) {
-      case JOB_KEYS.NOTIFICATIONS_SCAN:
-        await this.notifications.scanAll();
-        return;
-      case JOB_KEYS.MEDIA_REFRESH_STALE:
-        await this.mediaItems.refreshStale();
-        return;
-      case JOB_KEYS.REPORTS_DIGEST:
-        await this.reports.sendDailyDigest();
-        return;
-      case JOB_KEYS.BACKUP:
-        await this.backup.runScheduled();
-        return;
-      case JOB_KEYS.INACTIVE_ACCOUNTS_SCAN:
-        await this.inactiveAccount.scan();
-        return;
-      default:
-        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUnknownJob);
+    const run = this.runners[key as JobKey] as
+      | (() => Promise<unknown>)
+      | undefined;
+
+    if (!run) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUnknownJob);
     }
+
+    await run();
   }
 }

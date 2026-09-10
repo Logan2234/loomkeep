@@ -76,7 +76,7 @@
   "apierr_status_404": "This couldn't be found.",
   "apierr_status_409": "This action conflicts with the current state.",
   "apierr_status_429": "Too many requests, try again in a moment.",
-  "apierr_status_429_retry": "Too many requests, try again in {seconds}s.",
+  "apierr_status_429_retry": "Too many requests, try again {delay}.",
   "apierr_status_500": "Something went wrong on the server.",
   "apierr_admin_cache_item_referenced": "This cache item is still referenced and can't be deleted.",
   "apierr_admin_cache_item_has_content": "This cache item still has content and can't be deleted.",

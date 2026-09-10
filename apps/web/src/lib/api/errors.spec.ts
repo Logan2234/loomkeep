@@ -1,3 +1,4 @@
+import { formatRetryDelay } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
 import { ErrorCode } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
@@ -64,7 +65,7 @@ describe("resolveApiError", () => {
     );
 
     expect(resolveApiError(err)).toBe(
-      m.apierr_status_429_retry({ seconds: 30 }),
+      m.apierr_status_429_retry({ delay: formatRetryDelay(30) }),
     );
   });
 
