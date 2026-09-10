@@ -1,5 +1,4 @@
 <script lang="ts">
-  import QRCode from "qrcode";
   import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
@@ -20,11 +19,22 @@
   let copied = $state(false);
 
   $effect(() => {
-    QRCode.toString(url, {
-      type: "svg",
-      margin: 1,
-      color: { dark: "#000000", light: "#ffffff" },
-    }).then((svg) => (qrSvg = svg));
+    const target = url;
+    let cancelled = false;
+
+    (async () => {
+      const { default: QRCode } = await import("qrcode");
+      const svg = await QRCode.toString(target, {
+        type: "svg",
+        margin: 1,
+        color: { dark: "#000000", light: "#ffffff" },
+      });
+      if (!cancelled) qrSvg = svg;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   async function shareWith() {

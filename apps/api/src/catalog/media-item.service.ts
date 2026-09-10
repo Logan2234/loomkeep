@@ -6,6 +6,7 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { MediaItem } from "@prisma/client";
+import { mapWithConcurrency } from "../common/concurrency.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -18,6 +19,21 @@ import { TmdbProvider } from "./providers/tmdb.provider";
 
 // A cached media referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Upper bound on how many stale media items one cron execution refreshes.
+// The cron runs every 6h; at this cap and the concurrency below, a full
+// batch (even at the ~1req/s TMDB/AniList throttle floor) finishes well
+// within that window with headroom to spare, instead of an unbounded run
+// growing without limit as the tracked catalog grows.
+const MAX_REFRESHED_PER_RUN = 500;
+
+// Low concurrency on purpose: AniList already serializes every call behind
+// its own shared per-instance throttle (RequestThrottle, 700ms min interval —
+// see anilist.provider.ts), so raising this only queues more requests behind
+// that same throttle without finishing the batch any faster. It just lets a
+// few independent media items overlap their network latency instead of
+// refreshing one at a time.
+const REFRESH_CONCURRENCY = 3;
 
 // The language the base MediaItem row's own title/overview/genres are always
 // fetched in (providers default to English when no `lang` is passed). Only
@@ -66,28 +82,37 @@ export class MediaItemService {
         lastSyncedAt: { lt: staleBefore },
         entries: { some: { status: { not: "DROPPED" } } },
       },
+      // Most stale first, so a catalog bigger than MAX_REFRESHED_PER_RUN
+      // never starves the items that have been waiting the longest.
+      orderBy: { lastSyncedAt: "asc" },
+      take: MAX_REFRESHED_PER_RUN,
       include: { externalIds: true },
     });
 
-    let refreshed = 0;
+    const outcomes = await mapWithConcurrency(
+      items,
+      REFRESH_CONCURRENCY,
+      async (item): Promise<boolean> => {
+        const sourceId = item.externalIds.find(
+          (ext) => ext.source === item.canonicalSource,
+        )?.externalId;
+        if (!sourceId) return false;
 
-    for (const item of items) {
-      const sourceId = item.externalIds.find(
-        (ext) => ext.source === item.canonicalSource,
-      )?.externalId;
-      if (!sourceId) continue;
+        try {
+          await this.upsertFromSource(
+            item.canonicalSource as CatalogSource,
+            sourceId,
+            item.type as MediaType,
+          );
+          return true;
+        } catch (err) {
+          this.logger.error(`Refresh failed for media ${item.id}`, err);
+          return false;
+        }
+      },
+    );
 
-      try {
-        await this.upsertFromSource(
-          item.canonicalSource as CatalogSource,
-          sourceId,
-          item.type as MediaType,
-        );
-        refreshed++;
-      } catch (err) {
-        this.logger.error(`Refresh failed for media ${item.id}`, err);
-      }
-    }
+    const refreshed = outcomes.filter(Boolean).length;
 
     if (refreshed > 0) {
       this.logger.log(

@@ -59,6 +59,24 @@ describe("JobRunService.record — Healthchecks.io ping", () => {
     expect(fetchMock).toHaveBeenCalledWith(`${PING_URL}/fail`);
   });
 
+  it("stores a run id and the full stack in JobRun.error on failure", async () => {
+    const { service, prisma } = makeService();
+
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => {
+          throw new Error("boom");
+        },
+        () => "summary",
+      ),
+    ).rejects.toThrow("boom");
+
+    const data = (prisma.jobRun.create as Mock).mock.calls[0][0].data;
+    // "[<8 hex chars>] Error: boom" followed by the rest of the stack trace.
+    expect(data.error).toMatch(/^\[[0-9a-f]{8}\] Error: boom\n/);
+  });
+
   it("skips pinging when no URL is configured for the job", async () => {
     const { service } = makeService();
 

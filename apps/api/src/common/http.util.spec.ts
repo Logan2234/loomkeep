@@ -108,6 +108,23 @@ describe("fetchJson", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("calls onAttempt once per actual HTTP attempt, including retries", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(503))
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const onAttempt = vi.fn();
+
+    await fetchJson(
+      "https://example.test",
+      {},
+      { sourceLabel: "Test", onAttempt },
+    );
+
+    expect(onAttempt).toHaveBeenCalledTimes(2);
+  });
+
   it("aborts a hung request via the timeout signal", async () => {
     vi.useFakeTimers();
     global.fetch = vi.fn(

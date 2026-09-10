@@ -26,6 +26,11 @@ const MAX_ATTEMPTS = 3;
  * respond to a 429 with a `Retry-After` in the tens of seconds (an outright
  * temporary ban, not a "slow down") — waiting that out inline would just
  * trade a clean error for a client-side timeout.
+ *
+ * `onAttempt`, when given, fires once per actual HTTP attempt (including
+ * retries) — the hook a caller uses to count real requests against a
+ * provider quota (see QuotaTrackerService), as opposed to counting once per
+ * `fetchJson()` call, which would undercount a call retried on 429/5xx.
  */
 export async function fetchJson<T>(
   url: string | URL,
@@ -34,11 +39,13 @@ export async function fetchJson<T>(
     sourceLabel: string;
     notFoundMessage?: string;
     maxRetryDelayMs?: number;
+    onAttempt?: () => void;
   },
 ): Promise<T> {
   let lastStatus = 0;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    opts.onAttempt?.();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 

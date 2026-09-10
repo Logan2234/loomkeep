@@ -23,7 +23,7 @@ describe("MediaItemService.refreshStale", () => {
     return { service, prisma };
   }
 
-  it("only queries non-dropped tracked media past the sync TTL", async () => {
+  it("only queries non-dropped tracked media past the sync TTL, oldest first and capped", async () => {
     const { service, prisma } = makeService([]);
     await service.refreshStale();
     expect(prisma.mediaItem.findMany).toHaveBeenCalledWith({
@@ -31,6 +31,8 @@ describe("MediaItemService.refreshStale", () => {
         lastSyncedAt: { lt: expect.any(Date) },
         entries: { some: { status: { not: "DROPPED" } } },
       },
+      orderBy: { lastSyncedAt: "asc" },
+      take: expect.any(Number),
       include: { externalIds: true },
     });
   });
