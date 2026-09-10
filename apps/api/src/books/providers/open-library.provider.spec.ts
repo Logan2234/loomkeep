@@ -920,6 +920,10 @@ describe("OpenLibraryProvider", () => {
               title: "Le Hobbit",
               languages: [{ key: "/languages/fre" }],
             },
+            // No `languages` field at all — not a real language choice, so
+            // it must not surface as its own option (nor take the English
+            // slot instead of the edition above).
+            { key: "/books/OL33333333M", title: "The Hobbit (large print)" },
           ],
         },
       ],

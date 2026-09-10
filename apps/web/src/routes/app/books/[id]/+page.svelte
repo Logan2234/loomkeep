@@ -98,7 +98,9 @@
   const editionOptions = $derived([
     {
       value: "",
-      label: m.book_edition_auto({ language: autoLanguage ?? "" }),
+      label: autoLanguage
+        ? `${m.book_edition_auto()} (${autoLanguage})`
+        : m.book_edition_auto(),
     },
     ...editions
       .map((e) => ({ value: e.key, label: e.language ?? e.title }))

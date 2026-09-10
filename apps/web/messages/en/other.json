@@ -821,7 +821,7 @@
   "book_collection": "Collection",
   "book_isbn": "ISBN",
   "book_editions": "Editions",
-  "book_edition_auto": "Automatic ({language})",
+  "book_edition_auto": "Automatic",
   "media_cast": "Cast",
   "media_known_for": "Known for",
   "media_episodes": "Episodes",

@@ -353,7 +353,10 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * one entry per language found among the work's first
    * {@link EDITIONS_SCAN_LIMIT} catalogued editions, keeping whichever one
    * of each language is encountered first (Open Library returns no quality
-   * ranking to prefer a "better" one).
+   * ranking to prefer a "better" one). Editions with no `languages` field at
+   * all are skipped — this selector picks a *language*, and an edition that
+   * can't be labeled with one is indistinguishable from an already-listed
+   * one to a user, not a real alternative.
    */
   async getEditions(sourceId: string): Promise<BookEditionDto[]> {
     const { id } = await this.fetchWork(sourceId);
@@ -365,15 +368,13 @@ export class OpenLibraryProvider implements BookCatalogProvider {
 
     for (const edition of data?.entries ?? []) {
       const olid = idFromKey(edition.key);
-      if (!olid) continue;
-
-      const code = editionLanguageCode(edition) ?? "";
-      if (byLanguage.has(code)) continue;
+      const code = editionLanguageCode(edition);
+      if (!olid || !code || byLanguage.has(code)) continue;
 
       byLanguage.set(code, {
         key: olid,
         title: edition.title ?? "Sans titre",
-        language: languageLabel(code || undefined),
+        language: languageLabel(code),
         coverUrl: coverUrl(edition.covers?.[0]),
       });
     }
@@ -640,6 +641,20 @@ const LANGUAGE_LABELS: Record<string, string> = {
   zho: "Chinois",
   nld: "Néerlandais",
   dut: "Néerlandais",
+  cze: "Tchèque",
+  cse: "Tchèque",
+  pol: "Polonais",
+  swe: "Suédois",
+  dan: "Danois",
+  nor: "Norvégien",
+  fin: "Finnois",
+  hun: "Hongrois",
+  gre: "Grec",
+  ell: "Grec",
+  tur: "Turc",
+  ukr: "Ukrainien",
+  ara: "Arabe",
+  heb: "Hébreu",
 };
 
 function languageLabel(code: string | undefined): string | null {
