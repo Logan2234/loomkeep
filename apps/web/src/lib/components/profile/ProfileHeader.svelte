@@ -3,7 +3,6 @@
   import Avatar from "$lib/components/Avatar.svelte";
   import CountFlash from "$lib/components/CountFlash.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import LevelBadge from "$lib/components/LevelBadge.svelte";
   import StreakBadge from "$lib/components/StreakBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -82,15 +81,18 @@
             class="font-display truncate text-[26px] font-extrabold md:text-[34px]">
             {profile.displayName}
           </h1>
-          <StreakBadge
-            days={profile.activityStats.visible
-              ? profile.activityStats.streakDays
-              : undefined}
-            trackKey={rel?.isSelf && auth.user
-              ? `streak:${auth.user.id}`
-              : undefined} />
           {#if appConfig.gamificationEnabled}
-            <LevelBadge xp={profile.xp} />
+            <StreakBadge
+              days={profile.activityStats.visible
+                ? profile.activityStats.streakDays
+                : undefined}
+              securedToday={profile.activityStats.visible
+                ? profile.activityStats.streakSecuredToday
+                : undefined}
+              isSelf={!!rel?.isSelf}
+              trackKey={rel?.isSelf && auth.user
+                ? `streak:${auth.user.id}`
+                : undefined} />
           {/if}
           {#if selfManage}
             <button

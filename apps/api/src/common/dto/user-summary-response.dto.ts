@@ -7,6 +7,5 @@ export class UserSummaryResponseDto implements UserSummaryDto {
   profileAccess!: ProfileAccess;
   avatarUrl!: string | null;
   anonymized?: boolean;
-  streakDays?: number;
   xp?: number;
 }

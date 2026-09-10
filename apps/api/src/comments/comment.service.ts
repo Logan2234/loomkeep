@@ -26,7 +26,6 @@ import { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
-import { fetchStreaksByUser, withStreakDays } from "../stats/streak.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
@@ -132,9 +131,8 @@ export class CommentService {
       .map((c) => c.author?.id)
       .filter((id): id is string => !!id);
     const uniqueAuthorIds = [...new Set(authorIds)];
-    const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
+    const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
       this.loadReactions(viewerId, allIds),
-      fetchStreaksByUser(this.prisma, uniqueAuthorIds),
       fetchXpByUser(this.prisma, uniqueAuthorIds),
     ]);
     // Same rows AUTHOR_SELECT already fetched for profileAccess/anonymized —
@@ -152,7 +150,6 @@ export class CommentService {
         reactionMap,
         myReactionMap,
         viewerId,
-        streakMap,
         xpMap,
         hideProgressionByUser,
       );
@@ -281,9 +278,8 @@ export class CommentService {
       ACHIEVEMENT_KEYS_ON_COMMENT_POSTED,
     );
 
-    const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
+    const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
-      fetchStreaksByUser(this.prisma, [authorId]),
       fetchXpByUser(this.prisma, [authorId]),
     ]);
     const hideProgressionByUser = new Map(
@@ -294,7 +290,6 @@ export class CommentService {
       reactionMap,
       myReactionMap,
       authorId,
-      streakMap,
       xpMap,
       hideProgressionByUser,
     );
@@ -322,9 +317,8 @@ export class CommentService {
       include: { author: { select: AUTHOR_SELECT } },
     });
 
-    const [[reactionMap, myReactionMap], streakMap, xpMap] = await Promise.all([
+    const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
-      fetchStreaksByUser(this.prisma, [authorId]),
       fetchXpByUser(this.prisma, [authorId]),
     ]);
     const hideProgressionByUser = new Map(
@@ -335,7 +329,6 @@ export class CommentService {
       reactionMap,
       myReactionMap,
       authorId,
-      streakMap,
       xpMap,
       hideProgressionByUser,
     );
@@ -492,7 +485,6 @@ export class CommentService {
     reactionMap: Map<string, CommentReactionSummaryDto[]>,
     myReactionMap: Map<string, CommentEmote>,
     viewerId: string,
-    streakMap: Map<string, number>,
     xpMap: Map<string, number>,
     hideProgressionByUser: Map<string, boolean>,
   ): Promise<CommentDto> {
@@ -515,14 +507,11 @@ export class CommentService {
       updatedAt: row.updatedAt.toISOString(),
       author: row.author
         ? withXp(
-            withStreakDays(
-              anonymizeAuthor(
-                toUserSummaryDto(row.author),
-                viewerId,
-                row.targetType,
-                row.targetId,
-              ),
-              streakMap,
+            anonymizeAuthor(
+              toUserSummaryDto(row.author),
+              viewerId,
+              row.targetType,
+              row.targetId,
             ),
             viewerId,
             xpMap,

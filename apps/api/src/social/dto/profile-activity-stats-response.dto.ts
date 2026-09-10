@@ -4,6 +4,7 @@ import { LabelCountResponseDto } from "../../common/dto/label-count-response.dto
 export class ProfileActivityStatsResponseDto implements ProfileActivityStatsDto {
   visible!: boolean;
   streakDays!: number;
+  streakSecuredToday!: boolean;
   firstActivityAt!: string | null;
   lastActivityAt!: string | null;
   totalMinutes!: number;

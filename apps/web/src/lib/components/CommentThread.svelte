@@ -47,7 +47,6 @@
   import Icon from "./Icon.svelte";
   import LevelBadge from "./LevelBadge.svelte";
   import Modal from "./Modal.svelte";
-  import StreakBadge from "./StreakBadge.svelte";
 
   let {
     targetType,
@@ -456,7 +455,6 @@
                 class="truncate text-sm font-semibold hover:underline">
                 {c.author.displayName}
               </a>
-              <StreakBadge days={c.author.streakDays} />
               {#if appConfig.gamificationEnabled}
                 <LevelBadge xp={c.author.xp} />
               {/if}

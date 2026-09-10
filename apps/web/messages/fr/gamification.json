@@ -120,6 +120,9 @@
   "gamification_profile_complete_name": "Portrait complet",
   "gamification_profile_complete_description": "Avatar et bio renseignés.",
 
+  "gamification_premiere_seance_name": "Première séance",
+  "gamification_premiere_seance_description": "Parcours de bienvenue terminé.",
+
   "gamification_no_favorites_name": "Cœur de pierre",
   "gamification_no_favorites_description": "100 titres trackés ou plus, aucun mis en favori.",
 
@@ -211,5 +214,23 @@
   "gamification_leaderboard_you": "Toi",
   "gamification_leaderboard_disabled": "Le classement n'est pas disponible sur cette instance.",
   "gamification_leaderboard_empty": "Personne n'a encore gagné d'XP sur cette période.",
-  "gamification_view_leaderboard": "Voir le classement"
+  "gamification_view_leaderboard": "Voir le classement",
+
+  "gamification_onboarding_checklist_title": "Première séance",
+  "gamification_onboarding_step_add_title": "Ajoute un premier titre",
+  "gamification_onboarding_step_add_title_desc": "Ajoute un titre à ta bibliothèque.",
+  "gamification_onboarding_step_mark_complete": "Marque quelque chose comme terminé",
+  "gamification_onboarding_step_mark_complete_desc": "Marque une œuvre comme terminée.",
+  "gamification_onboarding_step_rate": "Note ou critique une œuvre",
+  "gamification_onboarding_step_rate_desc": "Note une œuvre, avec ou sans avis.",
+  "gamification_onboarding_step_complete_profile": "Complète ton profil",
+  "gamification_onboarding_step_complete_profile_desc": "Ajoute une photo et une bio.",
+  "gamification_onboarding_step_import": "Lance un import",
+  "gamification_onboarding_step_import_desc": "Importe ton historique depuis un tracker.",
+  "gamification_onboarding_step_create_list": "Crée une liste",
+  "gamification_onboarding_step_create_list_desc": "Regroupe des œuvres dans une liste.",
+  "gamification_onboarding_step_comment": "Poste un commentaire",
+  "gamification_onboarding_step_comment_desc": "Réagis à une critique ou une œuvre.",
+  "gamification_onboarding_skip": "Passer",
+  "gamification_onboarding_locked": "Termine ou passe l'étape précédente pour débloquer celle-ci."
 }

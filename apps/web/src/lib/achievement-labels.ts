@@ -75,6 +75,7 @@ const GROUP_ICON: Record<string, IconName> = {
   member_since: "hourglass",
   fresh_start: "download",
   profile_complete: "user",
+  premiere_seance: "flag",
   no_favorites: "eye-off",
   double_life: "mask",
   curious_cat: "search",

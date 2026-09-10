@@ -159,8 +159,7 @@
     <circle cx="4.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
     <circle cx="4.5" cy="18" r="1.3" fill="currentColor" stroke="none" />
   {:else if name === "edit"}
-    <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
-    <path d="M14 6.5 17.5 10" />
+    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
   {:else if name === "grip"}
     <circle cx="9" cy="6" r="1.2" fill="currentColor" stroke="none" />
     <circle cx="15" cy="6" r="1.2" fill="currentColor" stroke="none" />

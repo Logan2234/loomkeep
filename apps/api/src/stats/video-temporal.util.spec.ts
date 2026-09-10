@@ -4,9 +4,9 @@ import {
   computeMonthlyCounts,
   computeMonthlyMinutes,
   computeStreak,
-  computeStreaksByUser,
   computeWeekdayCounts,
   computeYearlyMinutes,
+  isStreakSecuredToday,
   mostActiveYear,
   windowStart,
 } from "./video-temporal.util";
@@ -175,26 +175,20 @@ describe("computeStreak", () => {
   });
 });
 
-describe("computeStreaksByUser", () => {
+describe("isStreakSecuredToday", () => {
   const now = new Date("2026-08-15T18:00:00Z");
   const daysAgo = (n: number) =>
     new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
 
-  it("returns an empty map for no watches", () => {
-    expect(computeStreaksByUser([], now)).toEqual(new Map());
+  it("is false with no watches", () => {
+    expect(isStreakSecuredToday([], now)).toBe(false);
   });
 
-  it("computes each user's streak independently", () => {
-    const result = computeStreaksByUser(
-      [
-        { userId: "a", watchedAt: daysAgo(0) },
-        { userId: "a", watchedAt: daysAgo(1) },
-        { userId: "b", watchedAt: daysAgo(0) },
-        { userId: "b", watchedAt: daysAgo(5) },
-      ],
-      now,
-    );
-    expect(result.get("a")).toBe(2);
-    expect(result.get("b")).toBe(1);
+  it("is true once today has a watch", () => {
+    expect(isStreakSecuredToday([daysAgo(0), daysAgo(1)], now)).toBe(true);
+  });
+
+  it("is false when the streak is only carried by yesterday so far", () => {
+    expect(isStreakSecuredToday([daysAgo(1), daysAgo(2)], now)).toBe(false);
   });
 });

@@ -23,6 +23,7 @@ import {
   computeHeatmap,
   computeStreak,
   computeYearlyMinutes,
+  isStreakSecuredToday,
   mostActiveYear,
 } from "../stats/video-temporal.util";
 import { avatarUrl } from "../users/avatar.util";
@@ -40,6 +41,7 @@ import {
 const EMPTY_ACTIVITY_STATS: ProfileActivityStatsDto = {
   visible: false,
   streakDays: 0,
+  streakSecuredToday: false,
   firstActivityAt: null,
   lastActivityAt: null,
   totalMinutes: 0,
@@ -479,6 +481,7 @@ export class ProfileService {
     return {
       visible: true,
       streakDays: computeStreak(watchDates, now),
+      streakSecuredToday: isStreakSecuredToday(watchDates, now),
       firstActivityAt: earliest(firstTimestamps)?.toISOString() ?? null,
       lastActivityAt: latest(lastTimestamps)?.toISOString() ?? null,
       totalMinutes,

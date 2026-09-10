@@ -2,12 +2,11 @@ import type { UserSummaryDto } from "@loomkeep/shared";
 import type { PrismaService } from "../prisma/prisma.service";
 
 /**
- * Fetches `UserScore.xp` for many users in one query — mirrors
- * `fetchStreaksByUser`'s batching shape (`stats/streak.util.ts`), used for
- * the small level badge next to pseudos in reviews/comments. A user with no
- * `XpEntry` yet has no `UserScore` row at all (only created on first credit,
- * see `XpService.recomputeScore`) — treated as 0, not absent, so a
- * brand-new account still shows "Niveau 1".
+ * Fetches `UserScore.xp` for many users in one query — used for the small
+ * level badge next to pseudos in reviews/comments. A user with no `XpEntry`
+ * yet has no `UserScore` row at all (only created on first credit, see
+ * `XpService.recomputeScore`) — treated as 0, not absent, so a brand-new
+ * account still shows "Niveau 1".
  */
 export async function fetchXpByUser(
   prisma: PrismaService,

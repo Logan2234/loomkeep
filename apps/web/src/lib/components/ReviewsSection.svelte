@@ -20,7 +20,6 @@
   import Icon from "./Icon.svelte";
   import LevelBadge from "./LevelBadge.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
-  import StreakBadge from "./StreakBadge.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   // Always-visible review section for a work's detail page: the viewer's own
@@ -238,7 +237,6 @@
                     <p
                       class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
                       {review.author.displayName}
-                      <StreakBadge days={review.author.streakDays} />
                       {#if appConfig.gamificationEnabled}
                         <LevelBadge xp={review.author.xp} />
                       {/if}

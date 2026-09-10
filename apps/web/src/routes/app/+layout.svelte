@@ -10,6 +10,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import NotificationBell from "$lib/components/NotificationBell.svelte";
+  import OnboardingWidget from "$lib/components/onboarding/OnboardingWidget.svelte";
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import { layout } from "$lib/layout.svelte";
@@ -96,6 +97,7 @@
        is the only moment a bubble plays. -->
   <UnlockBubble />
   <WidgetIdentify />
+  <OnboardingWidget />
 
   <!-- Exactly one shell is mounted: rendering both and hiding one in CSS
        duplicated every `id` on the page, which broke `#section` anchors and
