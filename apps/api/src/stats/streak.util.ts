@@ -28,7 +28,14 @@ export async function fetchStreaksByUser(
     select: { userId: true, watchedAt: true },
   });
 
-  return computeStreaksByUser(watches, now);
+  return computeStreaksByUser(
+    watches.flatMap((watch) =>
+      watch.watchedAt
+        ? [{ userId: watch.userId, watchedAt: watch.watchedAt }]
+        : [],
+    ),
+    now,
+  );
 }
 
 /**

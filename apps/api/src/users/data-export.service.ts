@@ -256,7 +256,7 @@ export class DataExportService {
           seasonNumber: watch.episode.season.number,
           episodeNumber: watch.episode.number,
           episodeTitle: watch.episode.title,
-          watchedAt: watch.watchedAt.toISOString(),
+          watchedAt: watch.watchedAt?.toISOString() ?? null,
         };
       }),
       games: gameEntries.map((entry) => ({

@@ -99,7 +99,7 @@ export interface UpsertLibraryEntryDto {
 export interface EpisodeWatchDto {
   id: string;
   episodeId: string;
-  watchedAt: string;
+  watchedAt: string | null;
 }
 
 /** Persisted episode enriched with the current user's watch count. */

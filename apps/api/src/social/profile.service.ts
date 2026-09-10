@@ -437,17 +437,28 @@ export class ProfileService {
     ]);
 
     const regular = watches.filter((w) => w.episode.season.number !== 0);
+    const datedRegular = regular.filter(
+      (w): w is (typeof regular)[number] & { watchedAt: Date } =>
+        w.watchedAt !== null,
+    );
     const now = new Date();
-    const watchDates = regular.map((w) => w.watchedAt);
+    const watchDates = datedRegular.map((w) => w.watchedAt);
 
-    const datedMinutes = regular.map((w) => ({
+    const watchMinutes = regular.map((w) => ({
       watchedAt: w.watchedAt,
       minutes: runtimeFor(
         w.episode.season.mediaItem.type,
         w.episode.season.mediaItem.runtimeMin,
       ),
     }));
-    const totalMinutes = datedMinutes.reduce((sum, d) => sum + d.minutes, 0);
+    const datedMinutes = datedRegular.map((w) => ({
+      watchedAt: w.watchedAt,
+      minutes: runtimeFor(
+        w.episode.season.mediaItem.type,
+        w.episode.season.mediaItem.runtimeMin,
+      ),
+    }));
+    const totalMinutes = watchMinutes.reduce((sum, d) => sum + d.minutes, 0);
 
     const genreCounts = new Map<string, number>();
 

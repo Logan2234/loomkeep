@@ -28,8 +28,12 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     myanimelist: {
       domain: Domain.MEDIA,
       label: "MyAnimeList",
-      description: m.import_source_anime_description() as string,
-    } as ImportSourceDescriptor,
+      description: m.import_source_myanimelist_description(),
+      href: "/app/settings/import/myanimelist",
+      input: { type: "xml", accept: ".xml,application/xml,text/xml" },
+      noun: { one: m.library_title_one(), many: m.library_title_many() },
+      newBadgeKey: "myanimelist",
+    },
     simkl: {
       domain: Domain.MEDIA,
       label: "Simkl",

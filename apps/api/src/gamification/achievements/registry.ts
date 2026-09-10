@@ -48,6 +48,10 @@ export interface AchievementDefinition {
   check(prisma: PrismaService, userId: string): Promise<AchievementCheckResult>;
 }
 
+function knownWatchDates(watches: { watchedAt: Date | null }[]): Date[] {
+  return watches.flatMap(({ watchedAt }) => (watchedAt ? [watchedAt] : []));
+}
+
 /** "first_episode": at least one EpisodeWatch exists for the user. */
 export async function checkFirstEpisode(
   prisma: PrismaService,
@@ -154,8 +158,8 @@ export async function checkMarathon(
 
   const perDay = new Map<string, number>();
 
-  for (const w of watches) {
-    const day = localDay(user.timezone, w.watchedAt);
+  for (const watchedAt of knownWatchDates(watches)) {
+    const day = localDay(user.timezone, watchedAt);
     if (!day) continue;
     perDay.set(day, (perDay.get(day) ?? 0) + 1);
   }
@@ -218,7 +222,7 @@ function checkHourWindow(startHour: number, endHour: number) {
       }),
       movieWatchTimestamps(prisma, userId),
     ]);
-    const dates = [...episodeWatches.map((w) => w.watchedAt), ...movieDates];
+    const dates = [...knownWatchDates(episodeWatches), ...movieDates];
     const unlocked = dates.some((d) => {
       const parts = localParts(user.timezone, d);
       return parts !== null && parts.hour >= startHour && parts.hour < endHour;
@@ -244,7 +248,7 @@ export function checkStreakTier(target: number) {
       where: { userId },
       select: { watchedAt: true },
     });
-    const current = computeStreak(watches.map((w) => w.watchedAt));
+    const current = computeStreak(knownWatchDates(watches));
     return { unlocked: current >= target, progress: { current, target } };
   };
 }
@@ -422,10 +426,7 @@ export async function checkHalloween(
       genres: { hasSome: HORROR_GENRES },
     }),
   ]);
-  const all = [
-    ...horrorEpisodeWatches.map((w) => w.watchedAt),
-    ...horrorMovieDates,
-  ];
+  const all = [...knownWatchDates(horrorEpisodeWatches), ...horrorMovieDates];
   const unlocked = all.some((d) => d.getUTCMonth() === 9); // October
   return { unlocked };
 }
@@ -889,7 +890,7 @@ export async function checkAnniversary(
   ]);
 
   const dates = [
-    ...watches.map((w) => w.watchedAt),
+    ...knownWatchDates(watches),
     ...comments.map((c) => c.createdAt),
     ...reviews.map((r) => r.createdAt),
   ];
@@ -914,11 +915,10 @@ export async function checkWelcomeBack(
 
   const GAP_MS = 182 * DAY_MS;
 
-  for (let i = 1; i < watches.length; i++) {
-    if (
-      watches[i].watchedAt.getTime() - watches[i - 1].watchedAt.getTime() >=
-      GAP_MS
-    ) {
+  const dates = knownWatchDates(watches);
+
+  for (let i = 1; i < dates.length; i++) {
+    if (dates[i].getTime() - dates[i - 1].getTime() >= GAP_MS) {
       return { unlocked: true };
     }
   }

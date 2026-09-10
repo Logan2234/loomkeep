@@ -11,7 +11,8 @@ import { TmdbProvider } from "./providers/tmdb.provider";
   imports: [UsersModule, JobsModule],
   controllers: [CatalogController],
   providers: [MediaItemService, TmdbProvider, AnilistProvider, OmdbService],
-  // TmdbProvider is exported for the TV Time import (TVDB → TMDB reconciliation).
-  exports: [MediaItemService, TmdbProvider],
+  // Providers are exported for import reconciliation; each source keeps its
+  // catalogue boundary explicit (TVDB → TMDB for TV Time, MAL → AniList).
+  exports: [MediaItemService, TmdbProvider, AnilistProvider],
 })
 export class CatalogModule {}
