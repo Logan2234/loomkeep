@@ -1,5 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus } from "@nestjs/common";
 import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
+import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
@@ -152,14 +156,14 @@ function makeService(
 
 describe("LibraryService.listEntries", () => {
   it("paginates and reports total/hasMore (movies, no episode progress)", async () => {
-    const rows = Array.from({ length: 45 }, (_, i) =>
+    const rows = Array.from({ length: DEFAULT_PAGE_SIZE + 5 }, (_, i) =>
       makeRow({ id: `e${i}`, title: `Movie ${i}` }),
     );
     const { service } = makeService(rows);
 
     const page1 = await service.listEntries("user-1", {});
-    expect(page1.items).toHaveLength(40);
-    expect(page1.total).toBe(45);
+    expect(page1.items).toHaveLength(DEFAULT_PAGE_SIZE);
+    expect(page1.total).toBe(DEFAULT_PAGE_SIZE + 5);
     expect(page1.hasMore).toBe(true);
 
     const page2 = await service.listEntries("user-1", { page: 2 });
@@ -974,5 +978,115 @@ describe("LibraryService — XP wiring", () => {
       "user-1",
       ACHIEVEMENT_KEYS_BY_XP_REASON.EPISODE_WATCHED,
     );
+  });
+});
+
+describe("LibraryService — watch endpoints require a tracked entry", () => {
+  const episode = {
+    id: "ep1",
+    seasonId: "season-1",
+    number: 1,
+    airDate: null as Date | null,
+    season: {
+      number: 1,
+      mediaItemId: "media-1",
+      mediaItem: { type: "SERIES" },
+    },
+  };
+
+  // Everything the media side needs exists in cache; only the caller's
+  // LibraryEntry is missing, which is exactly the drive-by case.
+  function makeUntrackedService() {
+    const prisma = {
+      episode: {
+        findUnique: vi.fn().mockResolvedValue(episode),
+        findMany: vi.fn().mockResolvedValue([episode]),
+      },
+      season: {
+        findUnique: vi.fn().mockResolvedValue({
+          mediaItemId: "media-1",
+          mediaItem: { type: "SERIES" },
+        }),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      episodeWatch: {
+        create: vi.fn(),
+        createMany: vi.fn(),
+        delete: vi.fn(),
+        deleteMany: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({ id: "watch-1", episode }),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      libraryEntry: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue([]),
+        update: vi.fn(),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      {} as EntitlementService,
+      xp,
+      stubAchievements(),
+    );
+    return { service, prisma, xp };
+  }
+
+  async function expectForbidden(promise: Promise<unknown>) {
+    const error: unknown = await promise.then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(AppException);
+    expect((error as AppException).code).toBe(ErrorCode.LibraryEntryForbidden);
+    expect((error as AppException).getStatus()).toBe(HttpStatus.FORBIDDEN);
+  }
+
+  it("refuses watchEpisode on a media the caller doesn't track", async () => {
+    const { service, prisma, xp } = makeUntrackedService();
+
+    await expectForbidden(service.watchEpisode("intruder", "ep1", {}));
+
+    expect(prisma.episodeWatch.create).not.toHaveBeenCalled();
+    expect(xp.award).not.toHaveBeenCalled();
+  });
+
+  it("refuses watchSeason on a media the caller doesn't track", async () => {
+    const { service, prisma, xp } = makeUntrackedService();
+
+    await expectForbidden(service.watchSeason("intruder", "season-1"));
+
+    expect(prisma.episodeWatch.createMany).not.toHaveBeenCalled();
+    expect(xp.awardMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses watchThrough on a media the caller doesn't track", async () => {
+    const { service, prisma, xp } = makeUntrackedService();
+
+    await expectForbidden(service.watchThrough("intruder", "ep1"));
+
+    expect(prisma.episodeWatch.createMany).not.toHaveBeenCalled();
+    expect(xp.awardMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses unwatchEpisode on a media the caller doesn't track", async () => {
+    const { service, prisma } = makeUntrackedService();
+
+    await expectForbidden(service.unwatchEpisode("intruder", "ep1"));
+
+    expect(prisma.episodeWatch.delete).not.toHaveBeenCalled();
+  });
+
+  it("refuses unwatchSeason on a media the caller doesn't track", async () => {
+    const { service, prisma } = makeUntrackedService();
+
+    await expectForbidden(service.unwatchSeason("intruder", "season-1"));
+
+    expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
   });
 });
