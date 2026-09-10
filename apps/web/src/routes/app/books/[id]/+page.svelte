@@ -15,6 +15,7 @@
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
@@ -82,29 +83,18 @@
     (editionsQuery.data ?? []).length > 1 ? editionsQuery.data! : [],
   );
 
-  // "" stands for the interface-language auto-pick (SegmentedStatusControl
-  // needs a non-undefined `current`).
-  const editionChoices = $derived(["", ...editions.map((e) => e.key)]);
-  const editionLabelText = $derived<Record<string, string>>(
-    Object.fromEntries(
-      editionChoices.map((key) => [
-        key,
-        key === ""
-          ? m.book_edition_auto({ language: detail?.language ?? "" })
-          : (editions.find((e) => e.key === key)?.language ?? key),
-      ]),
-    ),
-  );
-  const editionMeta = $derived<Record<string, { label: string }>>(
-    Object.fromEntries(
-      editionChoices.map((key) => [key, { label: editionLabelText[key] }]),
-    ),
-  );
-  const editionActiveClass = $derived<Record<string, string>>(
-    Object.fromEntries(
-      editionChoices.map((key) => [key, "bg-surface text-fg shadow-sm"]),
-    ),
-  );
+  // "" stands for the interface-language auto-pick. A work can have editions
+  // in a dozen+ languages (e.g. Harry Potter) — a searchable dropdown scales
+  // to that; a segmented control doesn't.
+  const editionOptions = $derived([
+    {
+      value: "",
+      label: m.book_edition_auto({ language: detail?.language ?? "" }),
+    },
+    ...editions
+      .map((e) => ({ value: e.key, label: e.language ?? e.title }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  ]);
 
   const entry = $derived(detail?.entry ?? null);
   const hasMeta = $derived(
@@ -489,15 +479,14 @@
                   {#if isFeatureNew("book-edition-selector")}<NewBadge />{/if}
                 </dt>
                 <dd class="mt-1.5">
-                  <SegmentedStatusControl
-                    statuses={editionChoices}
-                    current={selectedEdition ?? ""}
+                  <Combobox
+                    label={m.common_language()}
+                    options={editionOptions}
+                    values={[selectedEdition ?? ""]}
+                    searchable={editionOptions.length > 6}
                     disabled={bookQuery.loading}
-                    meta={editionMeta}
-                    desc={editionLabelText}
-                    activeClass={editionActiveClass}
-                    ariaLabel={m.common_language()}
-                    onSelect={(key) => (selectedEdition = key || undefined)} />
+                    onChange={([value]) =>
+                      (selectedEdition = value || undefined)} />
                 </dd>
               </div>
             {:else if detail?.language}
