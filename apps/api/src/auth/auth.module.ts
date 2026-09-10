@@ -6,6 +6,7 @@ import { SecurityModule } from "../security/security.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { MfaService } from "./mfa.service";
+import { SessionCacheService } from "./session-cache.service";
 import { SessionsController } from "./sessions.controller";
 import { TurnstileService } from "./turnstile.service";
 import { VerificationController } from "./verification.controller";
@@ -20,7 +21,15 @@ import { WebauthnService } from "./webauthn.service";
     GamificationModule,
   ],
   controllers: [AuthController, SessionsController, VerificationController],
-  providers: [AuthService, TurnstileService, MfaService, WebauthnService],
-  exports: [AuthService, MfaService, WebauthnService],
+  providers: [
+    AuthService,
+    TurnstileService,
+    MfaService,
+    WebauthnService,
+    SessionCacheService,
+  ],
+  // SessionCacheService is also exported for JwtAuthGuard, registered as a
+  // global APP_GUARD in AppModule (which imports AuthModule directly).
+  exports: [AuthService, MfaService, WebauthnService, SessionCacheService],
 })
 export class AuthModule {}
