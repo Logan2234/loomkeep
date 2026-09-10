@@ -45,6 +45,21 @@ export function stepLabel(key: OnboardingStepKey): string {
   return STEP_LABEL[key]();
 }
 
+const STEP_DESCRIPTION: Record<OnboardingStepKey, () => string> = {
+  add_title: m.gamification_onboarding_step_add_title_desc,
+  mark_complete: m.gamification_onboarding_step_mark_complete_desc,
+  rate: m.gamification_onboarding_step_rate_desc,
+  complete_profile: m.gamification_onboarding_step_complete_profile_desc,
+  import: m.gamification_onboarding_step_import_desc,
+  create_list: m.gamification_onboarding_step_create_list_desc,
+  comment: m.gamification_onboarding_step_comment_desc,
+};
+
+/** One line on how to actually clear the step — shown for current/locked, never needed once done or skipped. */
+export function stepDescription(key: OnboardingStepKey): string {
+  return STEP_DESCRIPTION[key]();
+}
+
 type OnboardingStepState = "done" | "skipped" | "current" | "locked";
 
 export interface OnboardingStepView extends OnboardingStepDto {

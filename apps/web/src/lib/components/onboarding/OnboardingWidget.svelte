@@ -1,8 +1,9 @@
 <script lang="ts">
   // [G8] Desktop half of the "Première séance" checklist: a small collapsed
-  // pill, bottom-right, that unfolds into the step list on click — see
-  // OnboardingBanner for the mobile half (a different shell entirely, not
-  // just a responsive variant of this one).
+  // ticket-stub pill, bottom-right, that unfolds into the step list on click
+  // — see OnboardingBanner for the mobile half (a different shell entirely,
+  // not just a responsive variant of this one).
+  import { afterNavigate } from "$app/navigation";
   import {
     getOnboardingChecklist,
     skipOnboardingStep,
@@ -14,11 +15,18 @@
   import { layout } from "$lib/layout.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
-  import { fade, scale } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import { deriveStepViews } from "./onboarding-checklist";
   import OnboardingChecklistRows from "./OnboardingChecklistRows.svelte";
 
   let open = $state(false);
+
+  // A step's own link is a normal client-side navigation, not a call this
+  // component makes itself — nothing else closes the popover once it lands,
+  // since this component stays mounted across the route change.
+  afterNavigate(() => {
+    open = false;
+  });
 
   const checklistQuery = createApiQuery(() => ({
     key: keys.gamification.onboarding(),
@@ -48,39 +56,61 @@
 </script>
 
 {#if steps.length > 0 && !layout.compact}
-  <!-- bottom-24 clears the Quackback feedback launcher (WidgetIdentify.svelte),
-       a fixed 48px bubble sitting ~26px off the bottom edge in the same corner. -->
-  <div class="fixed right-4 bottom-24 z-30">
+  <!-- items-end keeps the pill glued to the right edge regardless of the
+       panel's own width — a plain block stack let the panel's 18rem width
+       drag the pill along with it, so closing the panel visibly snapped the
+       pill back rightward. bottom-24 clears the Quackback feedback launcher
+       (WidgetIdentify.svelte), a fixed 48px bubble ~26px off the bottom edge
+       in the same corner. -->
+  <div class="fixed right-4 bottom-24 z-30 flex flex-col items-end gap-2">
     {#if open}
       <div
-        transition:scale={{ duration: 150, start: 0.95 }}
-        class="card border-border mb-2 w-72 border p-3 shadow-lg">
-        <div class="mb-2 flex items-center justify-between">
-          <h2 class="font-display text-sm font-bold">
-            {m.gamification_onboarding_checklist_title()}
-          </h2>
-          <button
-            type="button"
-            aria-label={m.common_close()}
-            class="text-dim hover:text-fg"
-            onclick={() => (open = false)}>
-            <Icon name="x" class="h-4 w-4" />
-          </button>
+        transition:fly={{ duration: 220, y: 12, opacity: 0 }}
+        style="transform-origin: bottom right;"
+        class="border-border bg-surface w-96 overflow-hidden rounded-2xl border shadow-2xl">
+        <div class="relative overflow-hidden px-4 pt-3.5 pb-3">
+          <!-- Letterbox hairline + a soft amber wash behind the title, the
+               same "marquee" language the rating cartouche uses elsewhere. -->
+          <div
+            class="from-accent/15 pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent">
+          </div>
+          <div class="relative flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <Icon name="flag" class="text-accent h-4 w-4" />
+              <h2 class="font-display text-sm font-bold tracking-tight">
+                {m.gamification_onboarding_checklist_title()}
+              </h2>
+            </div>
+            <button
+              type="button"
+              aria-label={m.common_close()}
+              class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full transition-colors"
+              onclick={() => (open = false)}>
+              <Icon name="x" class="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <p class="timecode text-dim relative mt-1 text-xs">
+            {done} / {steps.length}
+          </p>
         </div>
-        <OnboardingChecklistRows
-          {steps}
-          onSkip={skip}
-          busyKey={skipMut.loading ? (skipMut.variables ?? null) : null} />
+        <div class="border-border border-t p-2.5">
+          <OnboardingChecklistRows
+            {steps}
+            onSkip={skip}
+            busyKey={skipMut.loading ? (skipMut.variables ?? null) : null} />
+        </div>
       </div>
     {/if}
 
     <button
       type="button"
       onclick={() => (open = !open)}
-      transition:fade={{ duration: 150 }}
-      class="border-border bg-surface text-fg hover:bg-surface-2 flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold shadow-lg">
-      <Icon name="flag" class="h-4 w-4" />
-      {done} / {steps.length}
+      aria-expanded={open}
+      class="border-border bg-surface text-fg hover:border-accent hover:text-accent hover:shadow-accent/20 group flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl">
+      <Icon
+        name="flag"
+        class="text-dim group-hover:text-accent h-4 w-4 transition-colors duration-200" />
+      <span class="timecode">{done} / {steps.length}</span>
     </button>
   </div>
 {/if}

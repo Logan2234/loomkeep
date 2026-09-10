@@ -218,12 +218,19 @@
 
   "gamification_onboarding_checklist_title": "First Session",
   "gamification_onboarding_step_add_title": "Add a first title",
+  "gamification_onboarding_step_add_title_desc": "Add a title to your library.",
   "gamification_onboarding_step_mark_complete": "Mark something as finished",
+  "gamification_onboarding_step_mark_complete_desc": "Mark a work as finished.",
   "gamification_onboarding_step_rate": "Rate or review a work",
+  "gamification_onboarding_step_rate_desc": "Rate a work, with or without a review.",
   "gamification_onboarding_step_complete_profile": "Complete your profile",
+  "gamification_onboarding_step_complete_profile_desc": "Add a picture and a bio.",
   "gamification_onboarding_step_import": "Run an import",
+  "gamification_onboarding_step_import_desc": "Import your history from a tracker.",
   "gamification_onboarding_step_create_list": "Create a list",
+  "gamification_onboarding_step_create_list_desc": "Gather works into a list.",
   "gamification_onboarding_step_comment": "Post a comment",
+  "gamification_onboarding_step_comment_desc": "Reply to a review or a work.",
   "gamification_onboarding_skip": "Skip",
   "gamification_onboarding_locked": "Finish or skip the previous step to unlock this one."
 }
