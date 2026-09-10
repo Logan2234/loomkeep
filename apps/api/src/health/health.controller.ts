@@ -20,14 +20,24 @@ export class HealthController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /**
+   * The three indicators still decide whether the instance is healthy — the
+   * HTTP status is what Docker and Caddy read — but only the verdict goes out.
+   * Terminus's own body carries live heap/RSS byte counts, and this route is
+   * `@Public()`: that told anyone asking how much headroom the box has left.
+   *
+   * The failure path needs no equivalent treatment: Terminus throws a 503,
+   * which `AllExceptionsFilter` already reduces to a generic 5xx body.
+   */
   @Get()
   @HealthCheck()
-  check() {
-    return this.health.check([
+  async check(): Promise<{ status: string }> {
+    const result = await this.health.check([
       () => this.prismaIndicator.pingCheck("database", this.prisma),
       () =>
         this.memoryIndicator.checkHeap("memory_heap", MEMORY_THRESHOLD_BYTES),
       () => this.memoryIndicator.checkRSS("memory_rss", MEMORY_THRESHOLD_BYTES),
     ]);
+    return { status: result.status };
   }
 }
