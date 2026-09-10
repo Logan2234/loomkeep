@@ -5,6 +5,7 @@
     deleteBookEntry,
     deleteBookReplay,
     getBookDetail,
+    getBookEditions,
     updateBookEntry,
     upsertBookEntry,
   } from "$lib/api/client";
@@ -14,11 +15,13 @@
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
+  import Combobox from "$lib/components/Combobox.svelte";
   import CommentThread from "$lib/components/CommentThread.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -39,6 +42,7 @@
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -54,17 +58,54 @@
 
   let confirmRemove = $state(false);
   let lightboxOpen = $state(false);
+  // Manually picked edition (an OLID from `editionsQuery`); undefined = the
+  // interface-language auto-pick. Local to this page view — not persisted.
+  let selectedEdition = $state<string | undefined>(undefined);
 
   const id = $derived(page.params.id ?? "");
-  const detailKey = $derived(keys.books.detail(SOURCE, id));
+  const detailKey = $derived(keys.books.detail(SOURCE, id, selectedEdition));
 
   const bookQuery = createApiQuery(() => ({
     key: detailKey,
-    fetch: () => getBookDetail(SOURCE, id),
+    fetch: () => getBookDetail(SOURCE, id, selectedEdition),
     enabled: !!id,
   }));
   const detail = $derived(bookQuery.data);
   const error = $derived(bookQuery.error);
+
+  // The interface-language auto-pick's own language, captured once and kept
+  // stable across manual selections — `detail.language` changes to whatever
+  // edition is currently shown, so it can't be read directly for the
+  // "Automatique (…)" label without it drifting to match the selection.
+  let autoLanguage = $state<string | null>(null);
+  $effect(() => {
+    if (!selectedEdition && detail?.language) autoLanguage = detail.language;
+  });
+
+  const editionsQuery = createApiQuery(() => ({
+    key: keys.books.editions(SOURCE, id),
+    fetch: () => getBookEditions(SOURCE, id),
+    enabled: !!id,
+  }));
+  // Only worth showing a selector once there's an actual choice to make.
+  const editions = $derived(
+    (editionsQuery.data ?? []).length > 1 ? editionsQuery.data! : [],
+  );
+
+  // "" stands for the interface-language auto-pick. A work can have editions
+  // in a dozen+ languages (e.g. Harry Potter) — a searchable dropdown scales
+  // to that; a segmented control doesn't.
+  const editionOptions = $derived([
+    {
+      value: "",
+      label: autoLanguage
+        ? `${m.book_edition_auto()} (${autoLanguage})`
+        : m.book_edition_auto(),
+    },
+    ...editions
+      .map((e) => ({ value: e.key, label: e.language ?? e.title }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  ]);
 
   const entry = $derived(detail?.entry ?? null);
   const hasMeta = $derived(
@@ -442,7 +483,24 @@
                 <dd class="mt-0.5 text-sm">{detail.series}</dd>
               </div>
             {/if}
-            {#if detail?.language}
+            {#if editions.length > 0}
+              <div>
+                <dt class="timecode flex items-center gap-1.5 text-xs">
+                  {m.common_language()}
+                  {#if isFeatureNew("book-edition-selector")}<NewBadge />{/if}
+                </dt>
+                <dd class="mt-1.5">
+                  <Combobox
+                    label={m.common_language()}
+                    options={editionOptions}
+                    values={[selectedEdition ?? ""]}
+                    searchable={editionOptions.length > 6}
+                    disabled={bookQuery.loading}
+                    onChange={([value]) =>
+                      (selectedEdition = value || undefined)} />
+                </dd>
+              </div>
+            {:else if detail?.language}
               <div>
                 <dt class="timecode text-xs">{m.common_language()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.language}</dd>

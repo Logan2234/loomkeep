@@ -1,6 +1,7 @@
 import type { PagedResult } from "@loomkeep/shared";
 import {
   BookDetailDto,
+  BookEditionDto,
   BookEntryDto,
   BookSearchResponseDto,
   BookSource,
@@ -36,6 +37,7 @@ import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 import { AddBookReplayDto } from "./dto/add-book-replay.dto";
 import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
+import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
 import { BookSearchResultResponseDto } from "./dto/book-search-response.dto";
 import { ReadingGoalResponseDto } from "./dto/reading-goal-response.dto";
@@ -185,7 +187,32 @@ export class BooksController {
     return this.bookLibraryService.upsertReadingGoal(user.sub, dto);
   }
 
-  /** Book detail page: catalogue metadata + the user's library state. */
+  /**
+   * The distinct editions (by language) available for the manual selector.
+   * `lang`: the client's active UI locale — each edition's `language` is
+   * translated into it.
+   */
+  @Get(":source/:sourceId/editions")
+  @ApiOkResponse({ type: [BookEditionResponseDto] })
+  async getBookEditions(
+    @CurrentUser() user: JwtPayload,
+    @Param("source") sourceParam: string,
+    @Param("sourceId") sourceId: string,
+    @Query("lang") lang?: string,
+  ): Promise<BookEditionDto[]> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookItemService.getEditions(
+      parseBookSource(sourceParam),
+      sourceId,
+      safeLang(lang),
+    );
+  }
+
+  /**
+   * Book detail page: catalogue metadata + the user's library state.
+   * `edition`: an id from `getBookEditions()`, to view that edition manually
+   * instead of the one `lang` would auto-pick.
+   */
   @Get(":source/:sourceId")
   @ApiOkResponse({ type: BookDetailResponseDto })
   getBookDetail(
@@ -193,12 +220,14 @@ export class BooksController {
     @Param("source") sourceParam: string,
     @Param("sourceId") sourceId: string,
     @Query("lang") lang?: string,
+    @Query("edition") edition?: string,
   ): Promise<BookDetailDto> {
     return this.bookLibraryService.getBookDetail(
       user.sub,
       parseBookSource(sourceParam),
       sourceId,
       safeLang(lang),
+      edition,
     );
   }
 }

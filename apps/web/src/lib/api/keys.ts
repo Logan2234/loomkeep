@@ -19,8 +19,10 @@ export const keys = {
     onboarding: () => ["gamification", "onboarding"] as const,
   },
   books: {
-    detail: (source: string, sourceId: string) =>
-      ["books", "detail", source, sourceId] as const,
+    detail: (source: string, sourceId: string, edition?: string) =>
+      ["books", "detail", source, sourceId, edition] as const,
+    editions: (source: string, sourceId: string) =>
+      ["books", "editions", source, sourceId] as const,
     reading: () => ["books", "reading"] as const,
     tracked: () => ["books", "tracked"] as const,
     search: (query: string) => ["books", "search", query] as const,

@@ -1,4 +1,4 @@
-import type { RatingDto } from "@loomkeep/shared";
+import type { BookEditionDto, RatingDto } from "@loomkeep/shared";
 import { BookSource, BookSummaryDto, ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -84,6 +84,15 @@ const SEARCH_FIELDS_WITH_EDITIONS = `${SEARCH_FIELDS},editions,editions.title`;
 // own locale — see `BooksController` for where that's read from.
 const DEFAULT_LANG = "en";
 
+// `/works/{id}/editions.json` returns editions newest-catalogued first, not
+// grouped or ranked by language — verified against Harry Potter (400
+// editions, 49 languages): a limit of 50 only ever surfaces ~15 languages
+// (and can miss major ones like French entirely, since which languages got
+// a *recent* addition is arbitrary), while 500 in a single request reliably
+// surfaces all of them, still bounded to <500 KB even for a 6000-edition
+// work (the Bible). Not worth paginating further — one request either way.
+const EDITIONS_SCAN_LIMIT = 500;
+
 /** One Solr document from `/search.json` — a *work*, not an edition. */
 interface OpenLibraryDoc {
   key: string; // "/works/OL893414W".
@@ -130,9 +139,21 @@ interface OpenLibrarySearchResponse {
 /** The body of `/books/{OLID}.json` — one concrete edition, in full. */
 interface OpenLibraryEditionDetail {
   key: string; // "/books/OL62190138M".
+  title?: string;
+  covers?: number[];
   languages?: { key: string }[]; // [{ key: "/languages/eng" }].
   isbn_13?: string[];
   isbn_10?: string[];
+  // This edition's own publisher/page count — unlike the work-level Solr
+  // doc's `publisher`/`number_of_pages_median`, which are aggregates across
+  // every edition ever catalogued (verified: Harry Potter's aggregate
+  // `publisher[0]` is literally "J.K. Rowling", not a publisher).
+  publishers?: string[];
+  number_of_pages?: number;
+  // Free-form fallback when `number_of_pages` is absent (~3% of editions;
+  // e.g. "245 p.", "396 pages") — present on some editions `number_of_pages`
+  // isn't.
+  pagination?: string;
   series?: string[];
   // An edition-specific synopsis, when this edition has its own (e.g. a
   // French translation with its own back-cover text) — preferred over the
@@ -165,6 +186,11 @@ interface OpenLibraryWork {
   first_publish_date?: string;
   type?: { key?: string };
   location?: string;
+}
+
+/** The body of `/works/{id}/editions.json` — a page of raw edition records. */
+interface OpenLibraryEditionsResponse {
+  entries?: OpenLibraryEditionDetail[];
 }
 
 /**
@@ -240,10 +266,15 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     return { matches, failedIsbns };
   }
 
-  /** `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known. */
+  /**
+   * `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known.
+   * `editionKey`: an OLID from `getEditions()` — when given, that exact
+   * edition is shown instead of the one `lang` would auto-pick.
+   */
   async getDetails(
     sourceId: string,
     lang: string = DEFAULT_LANG,
+    editionKey?: string,
   ): Promise<ProviderBookDetails> {
     // A merged work resolves to another id; everything below keys off the
     // canonical one so the cache never stores the stale alias.
@@ -257,32 +288,41 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       lang,
     }).catch(() => []);
     const nestedEdition = doc?.editions?.docs?.[0];
+    // A manually picked edition overrides Solr's lang-based one; everything
+    // edition-specific below then comes straight from the targeted
+    // `/books/{OLID}.json` fetch instead of the nested Solr doc, which only
+    // ever carries the one edition `lang` matched.
+    const pickedOlid = editionKey ?? idFromKey(nestedEdition?.key);
     // One more targeted fetch for the fields the nested doc doesn't carry
     // (description override, series, first sentence, cross-reference ids) —
     // a single `/books/{OLID}.json` call, not a full editions listing.
-    const editionDetail = nestedEdition
-      ? await this.fetchEditionDetail(idFromKey(nestedEdition.key)).catch(
-          () => undefined,
-        )
-      : undefined;
+    const editionDetail = await this.fetchEditionDetail(pickedOlid).catch(
+      () => undefined,
+    );
 
+    // `editionDetail` is the same picked edition in both the auto-pick and
+    // manual-pick paths (it's fetched from `pickedOlid`, not gated on
+    // `editionKey`) — so its own title/cover apply either way, not just for
+    // an explicit pick.
     const summary = doc
-      ? this.toSummary(doc)
+      ? this.toSummary(doc, editionDetail)
       : {
           source: this.source,
           sourceId: id,
-          title: work.title ?? "Sans titre",
+          title: editionDetail?.title ?? work.title ?? "Sans titre",
           authors: [],
           year: parseYear(work.first_publish_date),
-          coverUrl: coverUrl(work.covers?.[0]),
+          coverUrl:
+            coverUrl(firstPositiveCover(editionDetail?.covers)) ??
+            coverUrl(work.covers?.[0]),
           isAdult: false,
         };
 
     // Links to the specific, concrete edition rather than the abstract work
     // page — "work" isn't a real book on Open Library, may not be in the
     // requested language, and reads oddly as a rating's destination.
-    const bookUrl = nestedEdition
-      ? `${API_URL}/books/${idFromKey(nestedEdition.key)}`
+    const bookUrl = pickedOlid
+      ? `${API_URL}/books/${pickedOlid}`
       : `${API_URL}/works/${id}`;
 
     return {
@@ -292,22 +332,107 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       // language the original cataloger wrote in, not necessarily `lang`.
       overview: description(editionDetail?.description ?? work.description),
       subtitle: work.subtitle ?? doc?.subtitle ?? null,
-      publisher: doc?.publisher?.[0] ?? null,
+      // This edition's own publisher/page count, falling back to the Solr
+      // work-doc aggregate when the edition record doesn't have one.
+      publisher: editionDetail?.publishers?.[0] ?? doc?.publisher?.[0] ?? null,
       genres: displaySubjects(doc?.subject ?? work.subjects ?? []),
-      pageCount: doc?.number_of_pages_median ?? null,
+      pageCount:
+        editionDetail?.number_of_pages ??
+        parsePagination(editionDetail?.pagination) ??
+        doc?.number_of_pages_median ??
+        null,
       releaseDate: toIsoDate(work.first_publish_date),
       website: bookUrl,
       sameAuthorBooks: await this.sameAuthorBooks(id, doc?.author_key?.[0]),
       ratings: toRatings(doc, bookUrl),
       externalIds: [{ source: this.source, externalId: id }],
       editionCount: doc?.edition_count ?? null,
-      isbn: nestedEdition?.isbn?.[0] ?? null,
+      // The direct `/books/{OLID}.json` fetch (isbn_13/isbn_10) over the
+      // Solr-nested doc's `isbn`, which is only populated on the auto-pick
+      // path — both point at the same edition either way.
+      isbn:
+        editionDetail?.isbn_13?.[0] ??
+        editionDetail?.isbn_10?.[0] ??
+        nestedEdition?.isbn?.[0] ??
+        null,
       series: editionDetail?.series?.[0] ?? null,
-      language: languageLabel(nestedEdition?.language?.[0]),
+      language: languageLabel(
+        editionLanguageCode(editionDetail) ?? nestedEdition?.language?.[0],
+        lang,
+      ),
       firstSentence: firstSentenceText(editionDetail?.first_sentence),
-      readOnlineUrl: readOnlineUrl(nestedEdition, editionDetail),
+      // Solr's `ebook_access` (public vs. borrowable) only comes back on the
+      // nested doc from the lang-based auto-pick; a manually picked edition
+      // falls back to "has an Internet Archive scan at all", a coarser but
+      // reasonable proxy since that field isn't in the raw edition record.
+      readOnlineUrl: editionKey
+        ? editionDetail?.ocaid
+          ? `https://archive.org/details/${editionDetail.ocaid}`
+          : null
+        : readOnlineUrl(nestedEdition, editionDetail),
       externalLinks: editionExternalLinks(editionDetail),
     };
+  }
+
+  /**
+   * The distinct editions (by language) available for the manual selector —
+   * one entry per language found among the work's catalogued editions,
+   * keeping the best-scoring one per language (see `editionScore`) rather
+   * than just the first encountered, since `/works/{id}/editions.json`
+   * returns editions newest-catalogued first, not ranked by quality — the
+   * first one for a language is as likely to be a bare-bones reprint with no
+   * cover or synopsis as a well-filled-in record. Editions with no
+   * `languages` field at all are skipped — this selector picks a *language*,
+   * and an edition that can't be labeled with one is indistinguishable from
+   * an already-listed one to a user, not a real alternative.
+   */
+  async getEditions(
+    sourceId: string,
+    lang: string = DEFAULT_LANG,
+  ): Promise<BookEditionDto[]> {
+    // Tried directly first — most works are never merged, so this is 1 call
+    // instead of 2. `editions.json` doesn't follow a merged work's redirect
+    // itself (verified: 404s on a stale id), so `fetchWork` is only paid for
+    // — and its own error left to propagate for a genuinely unknown id —
+    // when the direct attempt actually failed.
+    let data = await this.fetchEditionsPage(sourceId).catch(() => undefined);
+
+    if (!data) {
+      const { id } = await this.fetchWork(sourceId);
+      data = await this.fetchEditionsPage(id).catch(() => undefined);
+    }
+
+    const byLanguage = new Map<
+      string,
+      { olid: string; edition: OpenLibraryEditionDetail; score: number }
+    >();
+
+    for (const edition of data?.entries ?? []) {
+      const olid = idFromKey(edition.key);
+      const code = editionLanguageCode(edition);
+      if (!olid || !code) continue;
+
+      const score = editionScore(edition);
+      const existing = byLanguage.get(code);
+      if (existing && existing.score >= score) continue;
+
+      byLanguage.set(code, { olid, edition, score });
+    }
+
+    return [...byLanguage.entries()].map(([code, { olid, edition }]) => ({
+      key: olid,
+      title: edition.title ?? "Sans titre",
+      language: languageLabel(code, lang),
+      coverUrl: coverUrl(firstPositiveCover(edition.covers)),
+    }));
+  }
+
+  private fetchEditionsPage(
+    workId: string,
+  ): Promise<OpenLibraryEditionsResponse> {
+    return this.get<OpenLibraryEditionsResponse>(
+      `/works/${encodeURIComponent(workId)}/editions.json?limit=${EDITIONS_SCAN_LIMIT}`,
+    );
   }
 
   /** The full record for one edition — series, first sentence, cross-reference ids. */
@@ -401,17 +526,29 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     return data.docs ?? [];
   }
 
-  private toSummary(doc: OpenLibraryDoc): BookSummaryDto {
+  private toSummary(
+    doc: OpenLibraryDoc,
+    editionOverride?: OpenLibraryEditionDetail,
+  ): BookSummaryDto {
     return {
       source: this.source,
       sourceId: idFromKey(doc.key) ?? doc.key,
-      // The nested edition's own title, when one was requested and found
-      // (see SEARCH_FIELDS_WITH_EDITIONS/DETAILS_FIELDS) — closer to the
+      // A manually picked edition's own title takes priority; otherwise the
+      // nested edition's title, when one was requested and found (see
+      // SEARCH_FIELDS_WITH_EDITIONS/DETAILS_FIELDS) — closer to the
       // requested language than the work's single canonical title.
-      title: doc.editions?.docs?.[0]?.title ?? doc.title ?? "Sans titre",
+      title:
+        editionOverride?.title ??
+        doc.editions?.docs?.[0]?.title ??
+        doc.title ??
+        "Sans titre",
       authors: doc.author_name ?? [],
       year: doc.first_publish_year ?? null,
-      coverUrl: coverUrl(doc.cover_i),
+      // The picked edition's own cover, when it has one — a work's `cover_i`
+      // is a single default that doesn't follow which edition is shown.
+      coverUrl:
+        coverUrl(firstPositiveCover(editionOverride?.covers)) ??
+        coverUrl(doc.cover_i),
       // Open Library carries no maturity rating — see BookSummaryDto.isAdult.
       isAdult: false,
     };
@@ -542,30 +679,63 @@ function editionExternalLinks(
   return links;
 }
 
-// ISO 639-2 → French label, for the handful of languages a Loomkeep user is
-// realistically going to see. An unmapped code is shown as-is rather than
-// hidden, so an edition in a rarer language still displays something.
-const LANGUAGE_LABELS: Record<string, string> = {
-  eng: "Anglais",
-  fre: "Français",
-  fra: "Français",
-  spa: "Espagnol",
-  ger: "Allemand",
-  deu: "Allemand",
-  ita: "Italien",
-  por: "Portugais",
-  jpn: "Japonais",
-  rus: "Russe",
-  kor: "Coréen",
-  chi: "Chinois",
-  zho: "Chinois",
-  nld: "Néerlandais",
-  dut: "Néerlandais",
-};
+// `Intl.DisplayNames` translates a language code into the requested UI
+// locale on its own — no hand-maintained code→label table to keep in sync,
+// and it understands Open Library's ISO 639-2 codes directly (both the
+// bibliographic variant it actually returns, e.g. "fre"/"ger"/"chi", and the
+// terminology one, e.g. "fra"/"deu"/"zho") in addition to 639-1. Cached per
+// locale — constructing one isn't free and `languageLabel` runs in a loop
+// over up to `EDITIONS_SCAN_LIMIT` editions.
+const displayNamesByLocale = new Map<string, Intl.DisplayNames>();
 
-function languageLabel(code: string | undefined): string | null {
+function languageLabel(code: string | undefined, lang: string): string | null {
   if (!code) return null;
-  return LANGUAGE_LABELS[code] ?? code;
+
+  let displayNames = displayNamesByLocale.get(lang);
+
+  if (!displayNames) {
+    displayNames = new Intl.DisplayNames([lang], { type: "language" });
+    displayNamesByLocale.set(lang, displayNames);
+  }
+
+  // Throws on a code Intl can't parse as a language subtag at all (rare,
+  // malformed OL data) — shown as-is rather than hidden, so the edition
+  // still displays something.
+  try {
+    return capitalize(displayNames.of(code) ?? code);
+  } catch {
+    return code;
+  }
+}
+
+// A UI label ("Anglais"), not running prose — Intl.DisplayNames follows each
+// locale's own convention for language names in a sentence, which for French
+// is lowercase ("anglais").
+function capitalize(text: string): string {
+  return text.length > 0 ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
+/**
+ * How "worth showing" an edition record is, for picking the best one per
+ * language in `getEditions()`. Weighted toward `description` — verified
+ * that among a language's editions, whichever one happens to be picked has
+ * roughly double the chance of carrying its own (translated) synopsis when
+ * scored this way instead of just taking the first one found.
+ */
+function editionScore(edition: OpenLibraryEditionDetail): number {
+  let score = 0;
+  if (edition.description) score += 3;
+  if (firstPositiveCover(edition.covers) !== undefined) score += 2;
+  if (edition.number_of_pages) score += 1;
+  if (edition.isbn_13?.length) score += 1;
+  return score;
+}
+
+/** "/languages/eng" (from `/books/{OLID}.json`'s `languages[].key`) → "eng". */
+function editionLanguageCode(
+  edition: OpenLibraryEditionDetail | undefined,
+): string | undefined {
+  return idFromKey(edition?.languages?.[0]?.key) ?? undefined;
 }
 
 /**
@@ -632,6 +802,23 @@ function toRatings(doc: OpenLibraryDoc | undefined, url: string): RatingDto[] {
  */
 function coverUrl(coverId: number | undefined): string | null {
   return coverId ? `${COVERS_URL}/${coverId}-L.jpg` : null;
+}
+
+// Some edition records carry a placeholder id (e.g. -1) instead of omitting
+// `covers` — covers.openlibrary.org returns a 503 for those, so skip past
+// them to the first genuine one rather than emitting a broken image URL.
+function firstPositiveCover(covers: number[] | undefined): number | undefined {
+  return covers?.find((id) => id > 0);
+}
+
+/**
+ * Free-form fallback for page count when `number_of_pages` is absent —
+ * "245 p.", "396 pages", "288" have all been observed. Null for anything
+ * that doesn't start with a number rather than guessing.
+ */
+function parsePagination(pagination: string | undefined): number | null {
+  const match = /^\d+/.exec(pagination ?? "");
+  return match ? Number(match[0]) : null;
 }
 
 /** A work's description, as either a bare string or a `{ value }` text object. */
