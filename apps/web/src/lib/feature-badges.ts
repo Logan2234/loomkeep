@@ -7,6 +7,7 @@ const SHIPPED = {
   achievements: "2026-09-03",
   leaderboard: "2026-09-05",
   myanimelist: "2026-09-09",
+  "book-edition-selector": "2026-09-10",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

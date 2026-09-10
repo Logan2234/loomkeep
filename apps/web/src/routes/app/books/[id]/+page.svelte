@@ -5,6 +5,7 @@
     deleteBookEntry,
     deleteBookReplay,
     getBookDetail,
+    getBookEditions,
     updateBookEntry,
     upsertBookEntry,
   } from "$lib/api/client";
@@ -19,6 +20,7 @@
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -39,6 +41,7 @@
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
@@ -54,17 +57,54 @@
 
   let confirmRemove = $state(false);
   let lightboxOpen = $state(false);
+  // Manually picked edition (an OLID from `editionsQuery`); undefined = the
+  // interface-language auto-pick. Local to this page view — not persisted.
+  let selectedEdition = $state<string | undefined>(undefined);
 
   const id = $derived(page.params.id ?? "");
-  const detailKey = $derived(keys.books.detail(SOURCE, id));
+  const detailKey = $derived(keys.books.detail(SOURCE, id, selectedEdition));
 
   const bookQuery = createApiQuery(() => ({
     key: detailKey,
-    fetch: () => getBookDetail(SOURCE, id),
+    fetch: () => getBookDetail(SOURCE, id, selectedEdition),
     enabled: !!id,
   }));
   const detail = $derived(bookQuery.data);
   const error = $derived(bookQuery.error);
+
+  const editionsQuery = createApiQuery(() => ({
+    key: keys.books.editions(SOURCE, id),
+    fetch: () => getBookEditions(SOURCE, id),
+    enabled: !!id,
+  }));
+  // Only worth showing a selector once there's an actual choice to make.
+  const editions = $derived(
+    (editionsQuery.data ?? []).length > 1 ? editionsQuery.data! : [],
+  );
+
+  // "" stands for the interface-language auto-pick (SegmentedStatusControl
+  // needs a non-undefined `current`).
+  const editionChoices = $derived(["", ...editions.map((e) => e.key)]);
+  const editionLabelText = $derived<Record<string, string>>(
+    Object.fromEntries(
+      editionChoices.map((key) => [
+        key,
+        key === ""
+          ? m.book_edition_auto({ language: detail?.language ?? "" })
+          : (editions.find((e) => e.key === key)?.language ?? key),
+      ]),
+    ),
+  );
+  const editionMeta = $derived<Record<string, { label: string }>>(
+    Object.fromEntries(
+      editionChoices.map((key) => [key, { label: editionLabelText[key] }]),
+    ),
+  );
+  const editionActiveClass = $derived<Record<string, string>>(
+    Object.fromEntries(
+      editionChoices.map((key) => [key, "bg-surface text-fg shadow-sm"]),
+    ),
+  );
 
   const entry = $derived(detail?.entry ?? null);
   const hasMeta = $derived(
@@ -442,7 +482,25 @@
                 <dd class="mt-0.5 text-sm">{detail.series}</dd>
               </div>
             {/if}
-            {#if detail?.language}
+            {#if editions.length > 0}
+              <div>
+                <dt class="timecode flex items-center gap-1.5 text-xs">
+                  {m.common_language()}
+                  {#if isFeatureNew("book-edition-selector")}<NewBadge />{/if}
+                </dt>
+                <dd class="mt-1.5">
+                  <SegmentedStatusControl
+                    statuses={editionChoices}
+                    current={selectedEdition ?? ""}
+                    disabled={bookQuery.loading}
+                    meta={editionMeta}
+                    desc={editionLabelText}
+                    activeClass={editionActiveClass}
+                    ariaLabel={m.common_language()}
+                    onSelect={(key) => (selectedEdition = key || undefined)} />
+                </dd>
+              </div>
+            {:else if detail?.language}
               <div>
                 <dt class="timecode text-xs">{m.common_language()}</dt>
                 <dd class="mt-0.5 text-sm">{detail.language}</dd>

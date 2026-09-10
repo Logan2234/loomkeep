@@ -437,6 +437,77 @@ describe("OpenLibraryProvider", () => {
     expect(details.language).toBe("Français");
   });
 
+  it("overrides the lang-based pick with an explicit editionKey, reading title/isbn/language straight off that edition", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: {
+                docs: [
+                  {
+                    key: "/books/OL62190138M",
+                    language: ["eng"],
+                    isbn: ["9780261102217"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL99999999M.json",
+        {
+          key: "/books/OL99999999M",
+          title: "Le Hobbit",
+          languages: [{ key: "/languages/fre" }],
+          isbn_13: ["9782267011095"],
+        },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails(
+      "OL27482W",
+      "en",
+      "OL99999999M",
+    );
+
+    // Not "OL62190138M" — the lang=en Solr pick is ignored once an explicit
+    // editionKey is given.
+    expect(details.summary.title).toBe("Le Hobbit");
+    expect(details.isbn).toBe("9782267011095");
+    expect(details.language).toBe("Français");
+    expect(details.website).toBe("https://openlibrary.org/books/OL99999999M");
+  });
+
+  it("derives readOnlineUrl from ocaid alone for an explicit editionKey, since ebook_access is Solr-only", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      ["q=key%3A", { numFound: 1, docs: [HOBBIT_DOC] }],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      [
+        "/books/OL99999999M.json",
+        { key: "/books/OL99999999M", ocaid: "hobbit0000tolk" },
+      ],
+    ]);
+
+    const details = await providerWith("k").getDetails(
+      "OL27482W",
+      "en",
+      "OL99999999M",
+    );
+
+    expect(details.readOnlineUrl).toBe(
+      "https://archive.org/details/hobbit0000tolk",
+    );
+  });
+
   it("fetches series/first_sentence/identifiers from the nested edition's own /books/{olid}.json", async () => {
     mockFetchByUrl([
       ["/works/OL27482W.json", { title: "The Hobbit" }],
@@ -823,5 +894,63 @@ describe("OpenLibraryProvider", () => {
     expect(fn).toHaveBeenCalledTimes(2);
     expect(matches.size).toBe(0);
     expect(failedIsbns).toEqual(isbns.slice(0, 20));
+  });
+
+  it("lists one edition per language, from /works/{id}/editions.json", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "/works/OL27482W/editions.json",
+        {
+          entries: [
+            {
+              key: "/books/OL62190138M",
+              title: "The Hobbit",
+              languages: [{ key: "/languages/eng" }],
+              covers: [14627570],
+            },
+            // A second English edition — dropped, the first one found wins.
+            {
+              key: "/books/OL11111111M",
+              title: "The Hobbit (reprint)",
+              languages: [{ key: "/languages/eng" }],
+            },
+            {
+              key: "/books/OL22222222M",
+              title: "Le Hobbit",
+              languages: [{ key: "/languages/fre" }],
+            },
+          ],
+        },
+      ],
+    ]);
+
+    const editions = await providerWith("k").getEditions("OL27482W");
+
+    expect(editions).toEqual([
+      {
+        key: "OL62190138M",
+        title: "The Hobbit",
+        language: "Anglais",
+        coverUrl: "https://covers.openlibrary.org/b/id/14627570-L.jpg",
+      },
+      {
+        key: "OL22222222M",
+        title: "Le Hobbit",
+        language: "Français",
+        coverUrl: null,
+      },
+    ]);
+  });
+
+  it("returns an empty list when Open Library reports no editions", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      ["/works/OL27482W/editions.json", {}],
+    ]);
+
+    const editions = await providerWith("k").getEditions("OL27482W");
+
+    expect(editions).toEqual([]);
   });
 });

@@ -1,5 +1,6 @@
 import type {
   BookDetailsDto,
+  BookEditionDto,
   BookSource,
   BookSummaryDto,
 } from "@loomkeep/shared";
@@ -65,14 +66,20 @@ export class BookItemService {
 
   /**
    * Live details straight from the provider — nothing is persisted.
-   * `lang`: the signed-in user's locale, when known.
+   * `lang`: the signed-in user's locale, when known. `editionKey`: an id
+   * from `getEditions()`, to show that edition instead of `lang`'s auto-pick.
    */
   async getLiveDetails(
     source: BookSource,
     sourceId: string,
     lang?: string,
+    editionKey?: string,
   ): Promise<BookDetailsDto> {
-    const details = await this.providerFor().getDetails(sourceId, lang);
+    const details = await this.providerFor().getDetails(
+      sourceId,
+      lang,
+      editionKey,
+    );
     return {
       ...details.summary,
       overview: details.overview,
@@ -92,6 +99,14 @@ export class BookItemService {
       readOnlineUrl: details.readOnlineUrl,
       externalLinks: details.externalLinks,
     };
+  }
+
+  /** The distinct editions (by language) available for the manual selector. */
+  async getEditions(
+    source: BookSource,
+    sourceId: string,
+  ): Promise<BookEditionDto[]> {
+    return this.providerFor().getEditions(sourceId);
   }
 
   /**

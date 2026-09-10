@@ -11,6 +11,7 @@
     activeClass,
     dot,
     onSelect,
+    ariaLabel,
   }: {
     statuses: T[];
     current: T;
@@ -22,6 +23,8 @@
     // Absent by default — existing status pickers render no dot.
     dot?: Record<T, string>;
     onSelect: (status: T) => void;
+    // Defaults to "Statut" — pass one when this control picks something else.
+    ariaLabel?: string;
   } = $props();
 </script>
 
@@ -29,7 +32,7 @@
   class="border-border bg-surface-2 grid gap-1 rounded-xl border p-1"
   style="grid-template-columns: repeat({statuses.length}, minmax(0, 1fr));"
   role="group"
-  aria-label={m.common_status()}>
+  aria-label={ariaLabel ?? m.common_status()}>
   {#each statuses as status (status)}
     <button
       type="button"

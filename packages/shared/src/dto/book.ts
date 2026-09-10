@@ -23,6 +23,19 @@ export interface BookSearchResponseDto {
   results: BookSummaryDto[];
 }
 
+/**
+ * One edition of a work, offered by the manual edition selector on the book
+ * detail page. `key` is opaque — pass it back as `edition` on the detail
+ * endpoint to view that edition instead of the language-auto-picked one.
+ */
+export interface BookEditionDto {
+  key: string;
+  title: string;
+  /** Human-readable language, when known. */
+  language: string | null;
+  coverUrl: string | null;
+}
+
 /** Full book details, fetched live from the source. */
 export interface BookDetailsDto extends BookSummaryDto {
   overview: string | null;

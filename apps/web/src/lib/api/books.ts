@@ -31,10 +31,20 @@ export function listBooks(filters: ListBooksFilters = {}) {
   });
 }
 
-export function getBookDetail(source: string, sourceId: string) {
+export function getBookDetail(
+  source: string,
+  sourceId: string,
+  edition?: string,
+) {
   return typedRequest("/books/{source}/{sourceId}", {
     params: { source: source.toLowerCase(), sourceId },
-    query: { lang: getLocale() },
+    query: { lang: getLocale(), edition },
+  });
+}
+
+export function getBookEditions(source: string, sourceId: string) {
+  return typedRequest("/books/{source}/{sourceId}/editions", {
+    params: { source: source.toLowerCase(), sourceId },
   });
 }
 

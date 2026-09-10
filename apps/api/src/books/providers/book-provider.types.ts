@@ -1,4 +1,9 @@
-import type { BookSource, BookSummaryDto, RatingDto } from "@loomkeep/shared";
+import type {
+  BookEditionDto,
+  BookSource,
+  BookSummaryDto,
+  RatingDto,
+} from "@loomkeep/shared";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one book, in canonical form. */
@@ -37,6 +42,16 @@ export interface BookCatalogProvider {
   search(query: string, lang?: string): Promise<BookSummaryDto[]>;
   /** Resolve a single work by ISBN; null when the source knows none. */
   searchByIsbn(isbn: string): Promise<BookSummaryDto | null>;
-  /** `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known. */
-  getDetails(sourceId: string, lang?: string): Promise<ProviderBookDetails>;
+  /**
+   * `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known.
+   * `editionKey`: an id returned by `getEditions()` — overrides the
+   * language-based auto-pick to show that exact edition instead.
+   */
+  getDetails(
+    sourceId: string,
+    lang?: string,
+    editionKey?: string,
+  ): Promise<ProviderBookDetails>;
+  /** The distinct editions (by language) available for the manual selector. */
+  getEditions(sourceId: string): Promise<BookEditionDto[]>;
 }

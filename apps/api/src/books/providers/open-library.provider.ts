@@ -1,4 +1,4 @@
-import type { RatingDto } from "@loomkeep/shared";
+import type { BookEditionDto, RatingDto } from "@loomkeep/shared";
 import { BookSource, BookSummaryDto, ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -84,6 +84,13 @@ const SEARCH_FIELDS_WITH_EDITIONS = `${SEARCH_FIELDS},editions,editions.title`;
 // own locale — see `BooksController` for where that's read from.
 const DEFAULT_LANG = "en";
 
+// `/works/{id}/editions.json` has no way to filter by distinct language —
+// this just caps how many raw editions are scanned to build that list before
+// giving up on finding more languages. A popular work can have hundreds of
+// editions (reprints, box sets…), most of them duplicating a language
+// already seen.
+const EDITIONS_SCAN_LIMIT = 50;
+
 /** One Solr document from `/search.json` — a *work*, not an edition. */
 interface OpenLibraryDoc {
   key: string; // "/works/OL893414W".
@@ -130,6 +137,8 @@ interface OpenLibrarySearchResponse {
 /** The body of `/books/{OLID}.json` — one concrete edition, in full. */
 interface OpenLibraryEditionDetail {
   key: string; // "/books/OL62190138M".
+  title?: string;
+  covers?: number[];
   languages?: { key: string }[]; // [{ key: "/languages/eng" }].
   isbn_13?: string[];
   isbn_10?: string[];
@@ -165,6 +174,11 @@ interface OpenLibraryWork {
   first_publish_date?: string;
   type?: { key?: string };
   location?: string;
+}
+
+/** The body of `/works/{id}/editions.json` — a page of raw edition records. */
+interface OpenLibraryEditionsResponse {
+  entries?: OpenLibraryEditionDetail[];
 }
 
 /**
@@ -240,10 +254,15 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     return { matches, failedIsbns };
   }
 
-  /** `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known. */
+  /**
+   * `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known.
+   * `editionKey`: an OLID from `getEditions()` — when given, that exact
+   * edition is shown instead of the one `lang` would auto-pick.
+   */
   async getDetails(
     sourceId: string,
     lang: string = DEFAULT_LANG,
+    editionKey?: string,
   ): Promise<ProviderBookDetails> {
     // A merged work resolves to another id; everything below keys off the
     // canonical one so the cache never stores the stale alias.
@@ -257,21 +276,24 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       lang,
     }).catch(() => []);
     const nestedEdition = doc?.editions?.docs?.[0];
+    // A manually picked edition overrides Solr's lang-based one; everything
+    // edition-specific below then comes straight from the targeted
+    // `/books/{OLID}.json` fetch instead of the nested Solr doc, which only
+    // ever carries the one edition `lang` matched.
+    const pickedOlid = editionKey ?? idFromKey(nestedEdition?.key);
     // One more targeted fetch for the fields the nested doc doesn't carry
     // (description override, series, first sentence, cross-reference ids) —
     // a single `/books/{OLID}.json` call, not a full editions listing.
-    const editionDetail = nestedEdition
-      ? await this.fetchEditionDetail(idFromKey(nestedEdition.key)).catch(
-          () => undefined,
-        )
-      : undefined;
+    const editionDetail = await this.fetchEditionDetail(pickedOlid).catch(
+      () => undefined,
+    );
 
     const summary = doc
-      ? this.toSummary(doc)
+      ? this.toSummary(doc, editionKey ? editionDetail : undefined)
       : {
           source: this.source,
           sourceId: id,
-          title: work.title ?? "Sans titre",
+          title: editionDetail?.title ?? work.title ?? "Sans titre",
           authors: [],
           year: parseYear(work.first_publish_date),
           coverUrl: coverUrl(work.covers?.[0]),
@@ -281,8 +303,8 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     // Links to the specific, concrete edition rather than the abstract work
     // page — "work" isn't a real book on Open Library, may not be in the
     // requested language, and reads oddly as a rating's destination.
-    const bookUrl = nestedEdition
-      ? `${API_URL}/books/${idFromKey(nestedEdition.key)}`
+    const bookUrl = pickedOlid
+      ? `${API_URL}/books/${pickedOlid}`
       : `${API_URL}/works/${id}`;
 
     return {
@@ -301,13 +323,62 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       ratings: toRatings(doc, bookUrl),
       externalIds: [{ source: this.source, externalId: id }],
       editionCount: doc?.edition_count ?? null,
-      isbn: nestedEdition?.isbn?.[0] ?? null,
+      // A manually picked edition reads isbn/language off the direct
+      // `/books/{OLID}.json` fetch (isbn_13/isbn_10, `languages[].key`)
+      // rather than the Solr-nested doc, which only ever reflects `lang`'s
+      // auto-pick.
+      isbn: editionKey
+        ? (editionDetail?.isbn_13?.[0] ?? editionDetail?.isbn_10?.[0] ?? null)
+        : (nestedEdition?.isbn?.[0] ?? null),
       series: editionDetail?.series?.[0] ?? null,
-      language: languageLabel(nestedEdition?.language?.[0]),
+      language: editionKey
+        ? languageLabel(editionLanguageCode(editionDetail))
+        : languageLabel(nestedEdition?.language?.[0]),
       firstSentence: firstSentenceText(editionDetail?.first_sentence),
-      readOnlineUrl: readOnlineUrl(nestedEdition, editionDetail),
+      // Solr's `ebook_access` (public vs. borrowable) only comes back on the
+      // nested doc from the lang-based auto-pick; a manually picked edition
+      // falls back to "has an Internet Archive scan at all", a coarser but
+      // reasonable proxy since that field isn't in the raw edition record.
+      readOnlineUrl: editionKey
+        ? editionDetail?.ocaid
+          ? `https://archive.org/details/${editionDetail.ocaid}`
+          : null
+        : readOnlineUrl(nestedEdition, editionDetail),
       externalLinks: editionExternalLinks(editionDetail),
     };
+  }
+
+  /**
+   * The distinct editions (by language) available for the manual selector —
+   * one entry per language found among the work's first
+   * {@link EDITIONS_SCAN_LIMIT} catalogued editions, keeping whichever one
+   * of each language is encountered first (Open Library returns no quality
+   * ranking to prefer a "better" one).
+   */
+  async getEditions(sourceId: string): Promise<BookEditionDto[]> {
+    const { id } = await this.fetchWork(sourceId);
+    const data = await this.get<OpenLibraryEditionsResponse>(
+      `/works/${encodeURIComponent(id)}/editions.json?limit=${EDITIONS_SCAN_LIMIT}`,
+    ).catch(() => undefined);
+
+    const byLanguage = new Map<string, BookEditionDto>();
+
+    for (const edition of data?.entries ?? []) {
+      const olid = idFromKey(edition.key);
+      if (!olid) continue;
+
+      const code = editionLanguageCode(edition) ?? "";
+      if (byLanguage.has(code)) continue;
+
+      byLanguage.set(code, {
+        key: olid,
+        title: edition.title ?? "Sans titre",
+        language: languageLabel(code || undefined),
+        coverUrl: coverUrl(edition.covers?.[0]),
+      });
+    }
+
+    return [...byLanguage.values()];
   }
 
   /** The full record for one edition — series, first sentence, cross-reference ids. */
@@ -401,14 +472,22 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     return data.docs ?? [];
   }
 
-  private toSummary(doc: OpenLibraryDoc): BookSummaryDto {
+  private toSummary(
+    doc: OpenLibraryDoc,
+    editionOverride?: OpenLibraryEditionDetail,
+  ): BookSummaryDto {
     return {
       source: this.source,
       sourceId: idFromKey(doc.key) ?? doc.key,
-      // The nested edition's own title, when one was requested and found
-      // (see SEARCH_FIELDS_WITH_EDITIONS/DETAILS_FIELDS) — closer to the
+      // A manually picked edition's own title takes priority; otherwise the
+      // nested edition's title, when one was requested and found (see
+      // SEARCH_FIELDS_WITH_EDITIONS/DETAILS_FIELDS) — closer to the
       // requested language than the work's single canonical title.
-      title: doc.editions?.docs?.[0]?.title ?? doc.title ?? "Sans titre",
+      title:
+        editionOverride?.title ??
+        doc.editions?.docs?.[0]?.title ??
+        doc.title ??
+        "Sans titre",
       authors: doc.author_name ?? [],
       year: doc.first_publish_year ?? null,
       coverUrl: coverUrl(doc.cover_i),
@@ -566,6 +645,13 @@ const LANGUAGE_LABELS: Record<string, string> = {
 function languageLabel(code: string | undefined): string | null {
   if (!code) return null;
   return LANGUAGE_LABELS[code] ?? code;
+}
+
+/** "/languages/eng" (from `/books/{OLID}.json`'s `languages[].key`) → "eng". */
+function editionLanguageCode(
+  edition: OpenLibraryEditionDetail | undefined,
+): string | undefined {
+  return idFromKey(edition?.languages?.[0]?.key) ?? undefined;
 }
 
 /**
