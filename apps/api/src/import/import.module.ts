@@ -22,10 +22,9 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
 /**
  * The generic import framework: one controller + one async job engine, with a
  * pluggable {@link ImportReq} per source collected under {@link IMPORT_SOURCES}.
- *
- * Reuses services from the domain modules: CatalogModule (media),
- * BooksModule (BookItemService), GamesModule (GameItemService + IgdbProvider)
- * and UsersModule (AgeGateService). PrismaService/ConfigService are global.
+ * Sources reuse the domain modules' own item services rather than writing to
+ * Prisma directly, so an import goes through the same on-demand cache path a
+ * manual "track" does.
  */
 @Module({
   imports: [

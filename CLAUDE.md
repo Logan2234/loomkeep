@@ -52,10 +52,12 @@ fix does.
 
 - **On-demand cache, not a mirror.** A `MediaItem`/`GameItem`/`BookItem`/
   `MusicItem` (with children — seasons, episodes, external ids) is created
-  only when a user first tracks it, through a single entry point,
-  `MediaItemService.upsertFromSource()`. Refreshes are throttled by
-  `lastSyncedAt` (24h TTL) and never delete seasons/episodes, so
-  `EpisodeWatch` rows always keep a valid target.
+  only when a user first tracks it. Each domain replicates the same
+  pattern through its own single entry point — `MediaItemService`,
+  `GameItemService`, `BookItemService`, `MusicItemService`, each with an
+  `upsertFromSource()`. Refreshes are throttled by `lastSyncedAt` (24h TTL)
+  and never delete seasons/episodes, so `EpisodeWatch` rows always keep a
+  valid target.
 - **One provider per domain** (`apps/api/src/<domain>/providers/`): TMDB
   (movies/series) + AniList (anime) share the catalog, IGDB (games), Open
   Library (books), MusicBrainz (music). TMDB movie/TV ids are separate
@@ -69,10 +71,11 @@ fix does.
   update. `LibraryService.computeProgress` excludes season 0 (TMDB specials).
 - **Import sources** (`apps/api/src/import/sources/`) share a base class per
   domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
-  OAuth) and `BookCsvSource` (Goodreads, StoryGraph) own the common
-  analyze/resolve/commit flow — a new source only supplies its parsing.
-  Steam implements `ImportReq` directly (no shared base, single source).
-  `GET /import/availability` greys out a source when its env key is unset.
+  OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph) own the
+  common analyze/resolve/commit flow — a new source only supplies its
+  parsing. Steam implements `ImportReq` directly (no shared base, single
+  source). `GET /import/availability` greys out a source when its env key
+  is unset.
 - Shared enums (`packages/shared/src/enums.ts`) are `as const` objects
   mirrored by Prisma enums with identical values — cast at boundaries
   (`source as DbExternalSource`), don't write a mapping function.
@@ -114,10 +117,15 @@ fix does.
   each other. Adding a screen under `app/` gates it automatically — never
   reintroduce a `PUBLIC_ROUTES` array.
 - Signed-in routes run as SPA (`ssr = false` in the `app`/`(auth)`/
-  `(verification)` layouts only, never the root). Tokens in localStorage,
-  auto-refresh-and-retry on 401 in `src/lib/api/client.ts`. The API itself
-  emits `/app`-prefixed paths (push/email links) — grep `/app/` in
-  `apps/api/src` before renaming a client route.
+  `(verification)` layouts only, never the root). Tokens live in
+  encrypted (AES-256-GCM), `HttpOnly`/`SameSite=Strict` cookies
+  (`Secure` in production) set by `apps/api/src/auth/auth-cookies.ts` —
+  never in localStorage, and `JwtAuthGuard` reads only that cookie,
+  rejecting an `Authorization: Bearer` header outright. Auto-refresh-and-
+  retry on 401 lives in `src/lib/api/core.ts` (`src/lib/api/client.ts` is
+  now just a re-export barrel). The API itself emits `/app`-prefixed paths
+  (push/email links) — grep `/app/` in `apps/api/src` before renaming a
+  client route.
 - API calls go through three helpers over `@tanstack/svelte-query`
   (`apps/web/src/lib/api/{query,mutation,infinite-query}.svelte.ts`) —
   never a hand-rolled `try/catch` + local `error`/`loading` `$state`.
@@ -177,7 +185,7 @@ relationship primitive (friend = reciprocal accepted follow). Details:
 
 - Code, comments, commits: English. UI is French-first but i18n-ready via
   Paraglide — use `m()`, never hardcode a string. Sources live in
-  `apps/web/messages/{locale}/{common,errors,other}.json`.
+  `apps/web/messages/{locale}/{common,errors,gamification,other}.json`.
 - Prefer no new runtime deps (global `fetch`, Node ≥22). pnpm blocks
   postinstall scripts by default — allow-list in `pnpm-workspace.yaml`'s
   `allowBuilds`. Ask before adding one.

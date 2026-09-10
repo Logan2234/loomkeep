@@ -236,9 +236,9 @@ export const checkNightOwl = checkHourWindow(2, 4);
 export const checkEarlyBird = checkHourWindow(5, 7);
 
 /**
- * Streak tiers reuse the same episode-only streak the rest of the app
- * already shows (`stats/streak.util.ts`) — see the [G3] plan's "streak
- * transversal" decision, not redesigned here.
+ * Streak tiers reuse `computeStreak` from `stats/video-temporal.util.ts` — the
+ * same episode-only streak the profile and stats pages already show, so a
+ * badge can never disagree with the number displayed next to it.
  */
 export function checkStreakTier(target: number) {
   return async (
