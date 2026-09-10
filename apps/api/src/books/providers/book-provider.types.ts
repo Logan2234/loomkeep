@@ -52,6 +52,10 @@ export interface BookCatalogProvider {
     lang?: string,
     editionKey?: string,
   ): Promise<ProviderBookDetails>;
-  /** The distinct editions (by language) available for the manual selector. */
-  getEditions(sourceId: string): Promise<BookEditionDto[]>;
+  /**
+   * The distinct editions (by language) available for the manual selector.
+   * `lang` (ISO 639-1, e.g. "fr"): the locale each edition's `language` is
+   * translated into.
+   */
+  getEditions(sourceId: string, lang?: string): Promise<BookEditionDto[]>;
 }

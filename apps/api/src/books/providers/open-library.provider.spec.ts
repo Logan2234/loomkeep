@@ -406,6 +406,33 @@ describe("OpenLibraryProvider", () => {
     const details = await providerWith("k").getDetails("OL27482W");
 
     expect(details.isbn).toBe("9780261102217");
+    // No lang was passed — defaults to "en", so the label is in English too.
+    expect(details.language).toBe("English");
+  });
+
+  it("translates the language label into the requested lang, not hardcoded French", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "q=key%3A",
+        {
+          numFound: 1,
+          docs: [
+            {
+              ...HOBBIT_DOC,
+              editions: {
+                docs: [{ key: "/books/OL62190138M", language: ["eng"] }],
+              },
+            },
+          ],
+        },
+      ],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+      ["/books/OL62190138M.json", { key: "/books/OL62190138M" }],
+    ]);
+
+    const details = await providerWith("k").getDetails("OL27482W", "fr");
+
     expect(details.language).toBe("Anglais");
   });
 
@@ -432,9 +459,9 @@ describe("OpenLibraryProvider", () => {
 
     const details = await providerWith("k").getDetails("OL27482W");
 
-    // No French edition was requested (lang=en) — this asserts we trust the
-    // field we got back instead of hardcoding "Anglais".
-    expect(details.language).toBe("Français");
+    // No French edition was requested (lang=en, the default) — this asserts
+    // we trust the field we got back instead of assuming lang= was honoured.
+    expect(details.language).toBe("French");
   });
 
   it("overrides the lang-based pick with an explicit editionKey, reading title/isbn/language straight off that edition", async () => {
@@ -482,7 +509,7 @@ describe("OpenLibraryProvider", () => {
     // editionKey is given.
     expect(details.summary.title).toBe("Le Hobbit");
     expect(details.isbn).toBe("9782267011095");
-    expect(details.language).toBe("Français");
+    expect(details.language).toBe("French");
     expect(details.website).toBe("https://openlibrary.org/books/OL99999999M");
   });
 
@@ -929,7 +956,7 @@ describe("OpenLibraryProvider", () => {
       ],
     ]);
 
-    const editions = await providerWith("k").getEditions("OL27482W");
+    const editions = await providerWith("k").getEditions("OL27482W", "fr");
 
     expect(editions).toEqual([
       {
@@ -945,6 +972,28 @@ describe("OpenLibraryProvider", () => {
         coverUrl: null,
       },
     ]);
+  });
+
+  it("translates edition language labels into the requested lang, defaulting to English", async () => {
+    mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      [
+        "/works/OL27482W/editions.json",
+        {
+          entries: [
+            {
+              key: "/books/OL22222222M",
+              title: "Le Hobbit",
+              languages: [{ key: "/languages/fre" }],
+            },
+          ],
+        },
+      ],
+    ]);
+
+    const editions = await providerWith("k").getEditions("OL27482W");
+
+    expect(editions[0].language).toBe("French");
   });
 
   it("returns an empty list when Open Library reports no editions", async () => {

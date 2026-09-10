@@ -332,8 +332,8 @@ export class OpenLibraryProvider implements BookCatalogProvider {
         : (nestedEdition?.isbn?.[0] ?? null),
       series: editionDetail?.series?.[0] ?? null,
       language: editionKey
-        ? languageLabel(editionLanguageCode(editionDetail))
-        : languageLabel(nestedEdition?.language?.[0]),
+        ? languageLabel(editionLanguageCode(editionDetail), lang)
+        : languageLabel(nestedEdition?.language?.[0], lang),
       firstSentence: firstSentenceText(editionDetail?.first_sentence),
       // Solr's `ebook_access` (public vs. borrowable) only comes back on the
       // nested doc from the lang-based auto-pick; a manually picked edition
@@ -358,7 +358,10 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * can't be labeled with one is indistinguishable from an already-listed
    * one to a user, not a real alternative.
    */
-  async getEditions(sourceId: string): Promise<BookEditionDto[]> {
+  async getEditions(
+    sourceId: string,
+    lang: string = DEFAULT_LANG,
+  ): Promise<BookEditionDto[]> {
     const { id } = await this.fetchWork(sourceId);
     const data = await this.get<OpenLibraryEditionsResponse>(
       `/works/${encodeURIComponent(id)}/editions.json?limit=${EDITIONS_SCAN_LIMIT}`,
@@ -374,7 +377,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
       byLanguage.set(code, {
         key: olid,
         title: edition.title ?? "Sans titre",
-        language: languageLabel(code),
+        language: languageLabel(code, lang),
         coverUrl: coverUrl(edition.covers?.[0]),
       });
     }
@@ -622,44 +625,40 @@ function editionExternalLinks(
   return links;
 }
 
-// ISO 639-2 → French label, for the handful of languages a Loomkeep user is
-// realistically going to see. An unmapped code is shown as-is rather than
-// hidden, so an edition in a rarer language still displays something.
-const LANGUAGE_LABELS: Record<string, string> = {
-  eng: "Anglais",
-  fre: "Français",
-  fra: "Français",
-  spa: "Espagnol",
-  ger: "Allemand",
-  deu: "Allemand",
-  ita: "Italien",
-  por: "Portugais",
-  jpn: "Japonais",
-  rus: "Russe",
-  kor: "Coréen",
-  chi: "Chinois",
-  zho: "Chinois",
-  nld: "Néerlandais",
-  dut: "Néerlandais",
-  cze: "Tchèque",
-  cse: "Tchèque",
-  pol: "Polonais",
-  swe: "Suédois",
-  dan: "Danois",
-  nor: "Norvégien",
-  fin: "Finnois",
-  hun: "Hongrois",
-  gre: "Grec",
-  ell: "Grec",
-  tur: "Turc",
-  ukr: "Ukrainien",
-  ara: "Arabe",
-  heb: "Hébreu",
-};
+// `Intl.DisplayNames` translates a language code into the requested UI
+// locale on its own — no hand-maintained code→label table to keep in sync,
+// and it understands Open Library's ISO 639-2 codes directly (both the
+// bibliographic variant it actually returns, e.g. "fre"/"ger"/"chi", and the
+// terminology one, e.g. "fra"/"deu"/"zho") in addition to 639-1. Cached per
+// locale — constructing one isn't free and `languageLabel` runs in a loop
+// over up to `EDITIONS_SCAN_LIMIT` editions.
+const displayNamesByLocale = new Map<string, Intl.DisplayNames>();
 
-function languageLabel(code: string | undefined): string | null {
+function languageLabel(code: string | undefined, lang: string): string | null {
   if (!code) return null;
-  return LANGUAGE_LABELS[code] ?? code;
+
+  let displayNames = displayNamesByLocale.get(lang);
+
+  if (!displayNames) {
+    displayNames = new Intl.DisplayNames([lang], { type: "language" });
+    displayNamesByLocale.set(lang, displayNames);
+  }
+
+  // Throws on a code Intl can't parse as a language subtag at all (rare,
+  // malformed OL data) — shown as-is rather than hidden, so the edition
+  // still displays something.
+  try {
+    return capitalize(displayNames.of(code) ?? code);
+  } catch {
+    return code;
+  }
+}
+
+// A UI label ("Anglais"), not running prose — Intl.DisplayNames follows each
+// locale's own convention for language names in a sentence, which for French
+// is lowercase ("anglais").
+function capitalize(text: string): string {
+  return text.length > 0 ? text[0].toUpperCase() + text.slice(1) : text;
 }
 
 /** "/languages/eng" (from `/books/{OLID}.json`'s `languages[].key`) → "eng". */

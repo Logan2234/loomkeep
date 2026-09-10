@@ -187,18 +187,24 @@ export class BooksController {
     return this.bookLibraryService.upsertReadingGoal(user.sub, dto);
   }
 
-  /** The distinct editions (by language) available for the manual selector. */
+  /**
+   * The distinct editions (by language) available for the manual selector.
+   * `lang`: the client's active UI locale — each edition's `language` is
+   * translated into it.
+   */
   @Get(":source/:sourceId/editions")
   @ApiOkResponse({ type: [BookEditionResponseDto] })
   async getBookEditions(
     @CurrentUser() user: JwtPayload,
     @Param("source") sourceParam: string,
     @Param("sourceId") sourceId: string,
+    @Query("lang") lang?: string,
   ): Promise<BookEditionDto[]> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookItemService.getEditions(
       parseBookSource(sourceParam),
       sourceId,
+      safeLang(lang),
     );
   }
 

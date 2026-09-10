@@ -101,12 +101,17 @@ export class BookItemService {
     };
   }
 
-  /** The distinct editions (by language) available for the manual selector. */
+  /**
+   * The distinct editions (by language) available for the manual selector.
+   * `lang`: the signed-in user's locale, when known — each edition's
+   * `language` is translated into it.
+   */
   async getEditions(
     source: BookSource,
     sourceId: string,
+    lang?: string,
   ): Promise<BookEditionDto[]> {
-    return this.providerFor().getEditions(sourceId);
+    return this.providerFor().getEditions(sourceId, lang);
   }
 
   /**

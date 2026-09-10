@@ -45,6 +45,7 @@ export function getBookDetail(
 export function getBookEditions(source: string, sourceId: string) {
   return typedRequest("/books/{source}/{sourceId}/editions", {
     params: { source: source.toLowerCase(), sourceId },
+    query: { lang: getLocale() },
   });
 }
 
