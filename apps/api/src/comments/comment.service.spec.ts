@@ -648,6 +648,21 @@ describe("CommentService — XP wiring", () => {
     );
   });
 
+  it("credits nothing when the author reacts to their own comment", async () => {
+    const { svc, xp } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+        }),
+      },
+      reaction: { upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }) },
+    });
+    await svc.react("author", "c1", "LIKE" as never);
+    expect(xp.award).not.toHaveBeenCalled();
+  });
+
   it("revokes COMMENT_REACTION_RECEIVED on unreact", async () => {
     const { svc, xp } = make({
       reaction: {

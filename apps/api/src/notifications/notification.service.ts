@@ -247,15 +247,21 @@ export class NotificationService {
    * that exists is by definition unread — reading deletes it.
    */
   async feed(userId: string): Promise<NotificationFeedDto> {
-    const rows = await this.prisma.notification.findMany({
-      where: {
-        userId,
-        type: { notIn: FEED_EXCLUDED_TYPES },
-      },
-      orderBy: { createdAt: "desc" },
-      take: FEED_LIMIT,
-    });
-    return { notifications: rows.map(toDto), unread: rows.length };
+    const where: Prisma.NotificationWhereInput = {
+      userId,
+      type: { notIn: FEED_EXCLUDED_TYPES },
+    };
+    // Counted separately: the list is capped at FEED_LIMIT, so `rows.length`
+    // would freeze the bell badge at 50 once the user passes that many.
+    const [rows, unread] = await Promise.all([
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: FEED_LIMIT,
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
+    return { notifications: rows.map(toDto), unread };
   }
 
   async markAllRead(userId: string): Promise<void> {

@@ -14,6 +14,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -31,7 +32,10 @@ import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
 import { extractMentions } from "./mention.util";
 
-export const COMMENT_PAGE_SIZE = 20;
+// Alias kept only so CommentController's existing import still resolves —
+// the page size itself is now the shared one from pagination.util.
+export { DEFAULT_PAGE_SIZE as COMMENT_PAGE_SIZE } from "../common/pagination.util";
+
 const EXCERPT_LENGTH = 120;
 
 const AUTHOR_SELECT = {
@@ -99,7 +103,7 @@ export class CommentService {
     targetType: CommentTargetType,
     targetId: string,
     page = 1,
-    limit = COMMENT_PAGE_SIZE,
+    limit = DEFAULT_PAGE_SIZE,
   ): Promise<PagedResult<CommentDto>> {
     const rows = await this.prisma.comment.findMany({
       where: { targetType, targetId, parentId: null },
@@ -391,9 +395,10 @@ export class CommentService {
       create: { commentId, userId, emote },
     });
 
-    // Credited to the comment's author, never the reactor — no UP/DOWN
-    // distinction here (unlike ReviewVote), the barème has no exclusion.
-    if (comment.authorId) {
+    // Credited to the comment's author, never the reactor — and never at all
+    // when they are one and the same, mirroring ReviewVote's self-vote
+    // exclusion. No UP/DOWN distinction here (unlike ReviewVote).
+    if (comment.authorId && comment.authorId !== userId) {
       await this.xp.award(
         comment.authorId,
         XpReason.COMMENT_REACTION_RECEIVED,

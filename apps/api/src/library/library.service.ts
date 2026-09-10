@@ -33,6 +33,7 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
@@ -64,8 +65,6 @@ const ENTRY_INCLUDE = {
 type EntryWithMedia = Prisma.LibraryEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
-
-const PAGE_SIZE = 40;
 
 type MediaSortKey =
   | "recent"
@@ -314,7 +313,7 @@ export class LibraryService {
 
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : PAGE_SIZE;
+      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
     const start = (page - 1) * limit;
     return {
       items: filtered.slice(start, start + limit),
@@ -642,6 +641,8 @@ export class LibraryService {
       );
     }
 
+    await this.assertMediaOwnership(userId, episode.season.mediaItemId);
+
     if (episode.airDate && episode.airDate > new Date()) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
@@ -708,6 +709,8 @@ export class LibraryService {
       );
     }
 
+    await this.assertMediaOwnership(userId, season.mediaItemId);
+
     // Unreleased episodes (future airDate) are silently skipped rather than
     // blocking the whole season.
     const now = new Date();
@@ -740,6 +743,8 @@ export class LibraryService {
         "Season not found",
       );
     }
+
+    await this.assertMediaOwnership(userId, season.mediaItemId);
 
     const episodes = await this.prisma.episode.findMany({
       where: { seasonId },
@@ -788,6 +793,8 @@ export class LibraryService {
         ErrorCode.LibraryEpisodeNotFound,
       );
     }
+
+    await this.assertMediaOwnership(userId, target.season.mediaItemId);
 
     if (target.airDate && target.airDate > new Date()) {
       throw new AppException(
@@ -1008,6 +1015,8 @@ export class LibraryService {
       );
     }
 
+    await this.assertMediaOwnership(userId, latest.episode.season.mediaItemId);
+
     await this.prisma.episodeWatch.delete({ where: { id: latest.id } });
     await this.xp.revokeBySource("EpisodeWatch", [latest.id]);
     await this.syncSeasonAndSeriesXp(userId, [latest.episode.seasonId]);
@@ -1044,9 +1053,29 @@ export class LibraryService {
   }
 
   /**
-   * Season 0 holds specials on TMDB: they are watchable but excluded from the
-   * watched/total progress so "100%" means the regular run is complete.
+   * Sibling of `assertEntryOwnership` for the watch endpoints, which are
+   * addressed by episode/season id and so only know the media item. A missing
+   * entry is a 403, never an implicit "track it for them": creating one here
+   * would fire WORK_ADDED/DOMAIN_STARTED off a request that never asked to
+   * follow the work.
    */
+  private async assertMediaOwnership(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<void> {
+    const entry = await this.prisma.libraryEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId } },
+      select: { id: true },
+    });
+
+    if (!entry) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
+    }
+  }
+
   /**
    * Batched form of `computeProgress` + `lastWatchedAt` for `listEntries`:
    * that call site was doing 2-3 DB round trips *per entry* (fine for
@@ -1158,6 +1187,10 @@ export class LibraryService {
     return result;
   }
 
+  /**
+   * Season 0 holds specials on TMDB: they are watchable but excluded from the
+   * watched/total progress so "100%" means the regular run is complete.
+   */
   private async computeProgress(
     userId: string,
     mediaItemId: string,

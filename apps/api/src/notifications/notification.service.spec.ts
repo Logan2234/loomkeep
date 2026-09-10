@@ -153,6 +153,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
     const prisma = {
       notification: {
         findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
@@ -178,8 +179,9 @@ describe("NotificationService — bell feed (read = deleted)", () => {
     );
   });
 
-  it("reports every returned row as unread (existence = unread)", async () => {
+  it("reports every pending row as unread (existence = unread)", async () => {
     const { service, prisma } = makeService();
+    (prisma.notification.count as Mock).mockResolvedValueOnce(2);
     (prisma.notification.findMany as Mock).mockResolvedValueOnce([
       {
         id: "n1",
@@ -199,6 +201,25 @@ describe("NotificationService — bell feed (read = deleted)", () => {
     const feed = await service.feed("u1");
     expect(feed.unread).toBe(2);
     expect(feed.notifications).toHaveLength(2);
+  });
+
+  it("counts unread past the feed cap instead of stopping at the listed rows", async () => {
+    const { service, prisma } = makeService();
+    (prisma.notification.findMany as Mock).mockResolvedValueOnce(
+      Array.from({ length: 50 }, (_, i) => ({
+        id: `n${i}`,
+        type: "FOLLOW",
+        title: "Alice",
+        data: {},
+        createdAt: new Date(),
+      })),
+    );
+    (prisma.notification.count as Mock).mockResolvedValueOnce(137);
+
+    const feed = await service.feed("u1");
+
+    expect(feed.notifications).toHaveLength(50);
+    expect(feed.unread).toBe(137);
   });
 
   it("markRead deletes the row", async () => {
