@@ -24,6 +24,7 @@ import type {
 import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -41,8 +42,6 @@ const ENTRY_INCLUDE = {
 type EntryWithAlbum = Prisma.MusicEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
-
-const PAGE_SIZE = 40;
 
 type MusicSortKey =
   "added" | "title" | "artist" | "rating" | "finished" | "status";
@@ -262,7 +261,7 @@ export class MusicLibraryService {
 
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : PAGE_SIZE;
+      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
     const start = (page - 1) * limit;
     return {
       items: dtos.slice(start, start + limit),

@@ -24,7 +24,7 @@ import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
-import { parsePageQuery } from "../common/pagination.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { GameItemService } from "../games/game-item.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -34,7 +34,6 @@ import { AdminCacheItemDetailResponseDto } from "./dto/admin-cache-item-detail-r
 import { AdminCacheListResultResponseDto } from "./dto/admin-cache-list-response.dto";
 import { AdminCacheResyncStaleResultResponseDto } from "./dto/admin-cache-resync-stale-result-response.dto";
 
-const PAGE_SIZE = 50;
 const STALE_TTL_MS = 24 * 60 * 60 * 1000;
 const DOMAINS = ["MEDIA", "GAMES", "BOOKS", "MUSIC"] as const;
 type CacheDomain = (typeof DOMAINS)[number];
@@ -101,7 +100,7 @@ export class AdminCacheController {
     @Query("limit") limit?: string,
   ): Promise<AdminCacheListResponseDto> {
     const cacheDomain = this.domainOrThrow(domain);
-    const { skip, take } = parsePageQuery(page, limit, PAGE_SIZE);
+    const { skip, take } = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     const query = search?.trim();
     const orderBy = orderByFor((sort as AdminCacheSort) ?? "stale");
     const orphansOnly = orphans === "true";

@@ -40,7 +40,7 @@ import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
-import { parsePageQuery } from "../common/pagination.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { MyListResponseDto } from "../lists/dto/my-list-response.dto";
 import { ListService } from "../lists/list.service";
@@ -66,7 +66,6 @@ import { AdminUserRoleResponseDto } from "./dto/admin-user-role-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
-const PAGE_SIZE = 50;
 const FILTERS: AdminUserFilter[] = ["all", "admin", "unverified", "never"];
 
 /** Account administration: listing, role, data export and sessions. */
@@ -103,7 +102,7 @@ export class AdminUsersController {
       skip,
       take,
       limit: pageLimit,
-    } = parsePageQuery(page, limit, PAGE_SIZE);
+    } = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     const q = search?.trim();
     const activeFilter = FILTERS.includes(filter as AdminUserFilter)
       ? (filter as AdminUserFilter)

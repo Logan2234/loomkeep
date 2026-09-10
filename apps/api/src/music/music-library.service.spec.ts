@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { MusicItemService } from "./music-item.service";
@@ -74,14 +75,14 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
 
 describe("MusicLibraryService.listEntries", () => {
   it("paginates and reports total/hasMore", async () => {
-    const rows = Array.from({ length: 45 }, (_, i) =>
+    const rows = Array.from({ length: DEFAULT_PAGE_SIZE + 5 }, (_, i) =>
       makeRow({ id: `e${i}`, title: `Album ${i}` }),
     );
     const { service } = makeService(rows);
 
     const page1 = await service.listEntries("user-1", {});
-    expect(page1.items).toHaveLength(40);
-    expect(page1.total).toBe(45);
+    expect(page1.items).toHaveLength(DEFAULT_PAGE_SIZE);
+    expect(page1.total).toBe(DEFAULT_PAGE_SIZE + 5);
     expect(page1.hasMore).toBe(true);
 
     const page2 = await service.listEntries("user-1", { page: 2 });

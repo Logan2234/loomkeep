@@ -7,14 +7,13 @@ import type {
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { parsePageQuery } from "../common/pagination.util";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildImportSummary } from "./admin-imports.util";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdminImportRunResponseDto } from "./dto/admin-import-run-response.dto";
 import { AdminImportSummaryResponseDto } from "./dto/admin-import-summary-response.dto";
 
-const PAGE_SIZE = 50;
 const STATUSES: JobStatus[] = ["SUCCESS", "FAILURE"];
 
 /** Audit log of committed imports, across every account. */
@@ -66,7 +65,7 @@ export class AdminImportsController {
       skip,
       take,
       limit: pageLimit,
-    } = parsePageQuery(page, limit, PAGE_SIZE);
+    } = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
     const where = {
       sourceId: source?.trim() || undefined,
       status: STATUSES.includes(status as JobStatus)

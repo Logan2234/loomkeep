@@ -27,6 +27,7 @@ import type {
 import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -52,8 +53,6 @@ const ENTRY_INCLUDE = {
 type EntryWithBook = Prisma.BookEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
-
-const PAGE_SIZE = 40;
 
 type BookSortKey =
   | "added"
@@ -303,7 +302,7 @@ export class BookLibraryService {
 
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : PAGE_SIZE;
+      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
     const start = (page - 1) * limit;
     return {
       items: dtos.slice(start, start + limit),
