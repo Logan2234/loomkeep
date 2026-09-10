@@ -124,6 +124,10 @@ function reportToGlitchTip(error: ApiError): void {
   }
 }
 
+// At the standard page size of 20, this covers a 20 000-item library — far
+// past any real one, so hitting it means the server is misreporting `hasMore`.
+const MAX_DRAINED_PAGES = 1000;
+
 /**
  * Drains every page of a paginated `list*` call into one array — for the few
  * call sites (search panels' "already tracked" lookup) that need the whole
@@ -138,7 +142,20 @@ export async function fetchAllPages<T>(
   for (;;) {
     const result = await fetchPage(page);
     items.push(...result.items);
-    if (!result.hasMore) break;
+    // Two guards against a server that never stops saying `hasMore`, which
+    // would otherwise spin this loop forever: an empty page can't lead
+    // anywhere, and the cap bounds the damage of any other paging bug. Both
+    // return what was collected rather than throwing — callers use this for
+    // an "already tracked" hint, not for a decision that must be exhaustive.
+    if (!result.hasMore || result.items.length === 0) break;
+
+    if (page >= MAX_DRAINED_PAGES) {
+      console.warn(
+        `fetchAllPages stopped at ${MAX_DRAINED_PAGES} pages — the server kept reporting more.`,
+      );
+      break;
+    }
+
     page++;
   }
 

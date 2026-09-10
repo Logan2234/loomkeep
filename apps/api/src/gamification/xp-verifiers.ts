@@ -18,9 +18,12 @@ import type { PrismaService } from "../prisma/prisma.service";
  * aired episode"), and the reconciliation loop already has the entry's
  * `userId` on hand for every row it checks.
  *
- * `ADMIN_ADJUSTMENT` deliberately has no entry: it's never revoked (see the
- * [G1] plan), so `XpService.reconcile` excludes it from the loop entirely
- * rather than mapping it to an always-true verifier.
+ * `ADMIN_ADJUSTMENT` and `PROFILE_COMPLETED` deliberately have no entry:
+ * both are acquired for good once credited (see the [G1] plan for
+ * ADMIN_ADJUSTMENT; PROFILE_COMPLETED is a one-off milestone that never
+ * un-happens even if the bio/avatar is cleared later), so
+ * `XpService.reconcile` excludes them from the loop entirely rather than
+ * mapping them to an always-true verifier.
  */
 export type XpVerifier = (
   prisma: PrismaService,
@@ -246,18 +249,10 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
   LIST_CREATED: async (prisma, sourceId) =>
     (await prisma.list.findUnique({ where: { id: sourceId } })) !== null,
 
-  // Reserved, no caller in this ticket — see xp-rules.ts. `sourceId` is the
-  // user's own id, which only ever disappears alongside the XpEntry itself
-  // (onDelete: Cascade), so this check is really just future-proofing.
-  PROFILE_COMPLETED: async (prisma, sourceId) =>
-    (await prisma.user.findUnique({ where: { id: sourceId } })) !== null,
-
-  // Reserved, no caller and no backing table yet (ONBOARDING_STEP: G8 hasn't
-  // built step tracking; ACHIEVEMENT_UNLOCKED: G2 hasn't created
-  // UserAchievement). Always valid until the owning ticket adds a real
-  // check — inert today since nothing creates these entries.
-  ONBOARDING_STEP: async () => true,
+  // An unlocked achievement is never taken back, so there is nothing to
+  // re-derive here — the entry stays valid for as long as it exists.
   ACHIEVEMENT_UNLOCKED: async () => true,
 
-  // ADMIN_ADJUSTMENT deliberately omitted — see the doc comment above.
+  // ADMIN_ADJUSTMENT and PROFILE_COMPLETED deliberately omitted — see the
+  // doc comment above.
 };

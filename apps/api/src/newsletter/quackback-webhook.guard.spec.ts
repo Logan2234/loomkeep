@@ -1,7 +1,14 @@
 import type { ExecutionContext } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import { createHmac } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { QuackbackWebhookGuard } from "./quackback-webhook.guard";
+
+// Reads process.env on each call, so the env-based setup below still drives
+// every case even though the guard now goes through ConfigService.
+const envConfig = {
+  get: (key: string) => process.env[key],
+} as unknown as ConfigService;
 
 const SECRET = "test-signing-secret";
 
@@ -23,7 +30,7 @@ function contextFor(
 }
 
 describe("QuackbackWebhookGuard", () => {
-  const guard = new QuackbackWebhookGuard();
+  const guard = new QuackbackWebhookGuard(envConfig);
   const ORIGINAL_SECRET = process.env.QUACKBACK_CHANGELOG_WEBHOOK_SECRET;
   const rawBody = Buffer.from('{"id":"evt_1"}');
   const timestamp = String(Math.floor(Date.now() / 1000));

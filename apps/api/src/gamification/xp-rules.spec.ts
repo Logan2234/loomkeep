@@ -39,15 +39,13 @@ describe("XP_RULES", () => {
   });
 
   it("caps every repeatable reason, and leaves the unique milestones uncapped", () => {
-    // Milestones (see the plan's "Jalons" table, which carries no Plafond
-    // column at all): each is unique by nature — DOMAIN_STARTED/
-    // IMPORT_COMPLETED dedup per domain, PROFILE_COMPLETED per user,
-    // ONBOARDING_STEP/ACHIEVEMENT_UNLOCKED per step/achievement id — so the
-    // XpEntry unique constraint alone prevents a repeat, no dailyCap needed.
+    // Milestones are unique by nature — DOMAIN_STARTED/IMPORT_COMPLETED dedup
+    // per domain, PROFILE_COMPLETED per user, ACHIEVEMENT_UNLOCKED per
+    // achievement id — so the XpEntry unique constraint alone prevents a
+    // repeat and no dailyCap is needed.
     const uncapped = new Set<XpReason>([
       XpReason.DOMAIN_STARTED,
       XpReason.IMPORT_COMPLETED,
-      XpReason.ONBOARDING_STEP,
       XpReason.PROFILE_COMPLETED,
       XpReason.ACHIEVEMENT_UNLOCKED,
     ]);

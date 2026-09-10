@@ -38,7 +38,7 @@
     "lint:fix": "eslint --fix",
     "check": "tsc --noEmit -p tsconfig.json"
   },
-  "dependencies": {
+  "devDependencies": {
     "@simplewebauthn/browser": "^14.0.0"
   }
 }

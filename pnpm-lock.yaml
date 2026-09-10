@@ -232,9 +232,6 @@ importers:
       "@tanstack/svelte-query":
         specifier: ^6.1.48
         version: 6.1.48(svelte@5.57.0(@typescript-eslint/types@8.69.0))
-      mermaid:
-        specifier: ^11.17.2
-        version: 11.17.2
       qr-scanner:
         specifier: ^1.4.2
         version: 1.4.2
@@ -275,6 +272,9 @@ importers:
       eslint-plugin-svelte:
         specifier: ^3.23.0
         version: 3.23.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(svelte@5.57.0(@typescript-eslint/types@8.69.0))(ts-node@10.9.2(@swc/core@1.16.2(@swc/helpers@0.5.23))(@types/node@26.4.1)(typescript@6.0.3))
+      mermaid:
+        specifier: ^11.17.2
+        version: 11.17.2
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@6.0.3)
@@ -298,7 +298,7 @@ importers:
         version: 7.4.1
 
   packages/shared:
-    dependencies:
+    devDependencies:
       "@simplewebauthn/browser":
         specifier: ^14.0.0
         version: 14.0.0

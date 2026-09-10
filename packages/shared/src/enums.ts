@@ -641,11 +641,9 @@ export type Locale = (typeof Locale)[number];
 
 /**
  * Every source of XP the app can credit. See `xp-rules.ts` for the amount,
- * daily cap and source table backing each one. A few are declared here but
- * not wired to any caller yet (ONBOARDING_STEP: G8, PROFILE_COMPLETED: no
- * ticket yet, ACHIEVEMENT_UNLOCKED: G2, ADMIN_ADJUSTMENT: B8) — the enum is
- * the barème's full shape from day one, so later tickets only add a call
- * site, never touch this list.
+ * daily cap and source table backing each one. `ADMIN_ADJUSTMENT` has no
+ * automatic caller by design — it exists so an admin can correct a total by
+ * hand.
  */
 export const XpReason = {
   EPISODE_WATCHED: "EPISODE_WATCHED",
@@ -668,7 +666,6 @@ export const XpReason = {
   COMMENT_REACTION_RECEIVED: "COMMENT_REACTION_RECEIVED",
   LIST_CREATED: "LIST_CREATED",
   IMPORT_COMPLETED: "IMPORT_COMPLETED",
-  ONBOARDING_STEP: "ONBOARDING_STEP",
   PROFILE_COMPLETED: "PROFILE_COMPLETED",
   ACHIEVEMENT_UNLOCKED: "ACHIEVEMENT_UNLOCKED",
   ADMIN_ADJUSTMENT: "ADMIN_ADJUSTMENT",

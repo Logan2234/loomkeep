@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
+import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/list.module";
 import { MailModule } from "../mail/mail.module";
@@ -27,6 +28,7 @@ import { UsersService } from "./users.service";
     EntitlementModule,
     JobsModule,
     SocialModule,
+    GamificationModule,
   ],
   controllers: [UsersController, MfaController],
   providers: [
