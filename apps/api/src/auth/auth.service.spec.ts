@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
-import type { User } from "@prisma/client";
+import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import { vi, type Mock } from "vitest";
@@ -14,6 +14,7 @@ import type { SecurityEventService } from "../security/security-event.service";
 import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
 import type { MfaService } from "./mfa.service";
+import { SessionCacheService } from "./session-cache.service";
 import type { TurnstileService } from "./turnstile.service";
 import type { WebauthnService } from "./webauthn.service";
 
@@ -156,6 +157,8 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     hasCredentials: vi.fn().mockResolvedValue(false),
   } as unknown as WebauthnService;
 
+  const sessionCache = new SessionCacheService();
+
   const service = new AuthService(
     prisma,
     jwtService,
@@ -167,6 +170,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     flags,
     mfa,
     webauthn,
+    sessionCache,
   );
 
   return {
@@ -181,6 +185,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     flags,
     mfa,
     webauthn,
+    sessionCache,
   };
 }
 
@@ -253,6 +258,56 @@ describe("AuthService.register", () => {
       }),
     ).rejects.toMatchObject({ code: ErrorCode.AuthPasswordBreached });
     expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("throws AppException(auth.email_already_exists) when create() races a concurrent registration for the same email", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce(null) // email uniqueness check passes...
+      .mockResolvedValueOnce(null); // ...as does the username check
+    (prisma.user.create as Mock).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+        meta: { target: ["email"] },
+      }),
+    );
+
+    // ...but a second registration for the same email won the race and
+    // create()'s unique constraint fires instead of the findUnique() check.
+    await expect(
+      service.register({
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+        acceptedTerms: true,
+        certifiedAge: true,
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.AuthEmailAlreadyExists });
+  });
+
+  it("propagates a P2002 on a username collision instead of misreporting it as an email conflict", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    (prisma.user.create as Mock).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+        meta: { target: ["username"] },
+      }),
+    );
+
+    await expect(
+      service.register({
+        email: "alice@example.com",
+        password: "secret1234",
+        displayName: "Alice",
+        acceptedTerms: true,
+        certifiedAge: true,
+      }),
+    ).rejects.not.toMatchObject({ code: ErrorCode.AuthEmailAlreadyExists });
   });
 
   it("creates the user with a bcrypt hash, opens a session and sends welcome/verify emails", async () => {
@@ -821,6 +876,24 @@ describe("AuthService.revokeAllSessions", () => {
       where: { userId: "user-1" },
     });
   });
+
+  // SEC-07: the admin "forcer la déconnexion" action must take effect on the
+  // very next request, not after the JwtAuthGuard session cache's TTL —
+  // deleting the RefreshToken row alone isn't enough.
+  it("evicts every revoked session from the session cache", async () => {
+    const { service, prisma, sessionCache } = makeService();
+    (prisma.refreshToken.findMany as Mock).mockResolvedValue([
+      { id: "session-a" },
+      { id: "session-b" },
+    ]);
+    sessionCache.markLive("session-a");
+    sessionCache.markLive("session-b");
+
+    await service.revokeAllSessions("user-1");
+
+    expect(sessionCache.isKnownLive("session-a")).toBe(false);
+    expect(sessionCache.isKnownLive("session-b")).toBe(false);
+  });
 });
 
 describe("AuthService.revokeOtherSessions", () => {
@@ -833,6 +906,20 @@ describe("AuthService.revokeOtherSessions", () => {
       where: { userId: "user-1", id: { not: "current-session" } },
     });
   });
+
+  it("evicts the revoked sessions from the cache but keeps the current one", async () => {
+    const { service, prisma, sessionCache } = makeService();
+    (prisma.refreshToken.findMany as Mock).mockResolvedValue([
+      { id: "session-b" },
+    ]);
+    sessionCache.markLive("current-session");
+    sessionCache.markLive("session-b");
+
+    await service.revokeOtherSessions("user-1", "current-session");
+
+    expect(sessionCache.isKnownLive("session-b")).toBe(false);
+    expect(sessionCache.isKnownLive("current-session")).toBe(true);
+  });
 });
 
 describe("AuthService.logout", () => {
@@ -844,6 +931,18 @@ describe("AuthService.logout", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { tokenHash: hashToken("some-refresh-token") },
     });
+  });
+
+  it("evicts the logged-out session from the cache", async () => {
+    const { service, prisma, sessionCache } = makeService();
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
+      id: "session-a",
+    });
+    sessionCache.markLive("session-a");
+
+    await service.logout("some-refresh-token");
+
+    expect(sessionCache.isKnownLive("session-a")).toBe(false);
   });
 });
 
@@ -1321,5 +1420,48 @@ describe("AuthService.verifyMfaLogin", () => {
       where: { id: "challenge-1" },
     });
     expect(prisma.mfaLoginChallenge.update).not.toHaveBeenCalled();
+  });
+
+  it("accepts a valid emailed code, compared in constant time", async () => {
+    const { service, prisma } = makeService();
+    const user = makeUser({ mfaEmailEnabled: true });
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
+      id: "challenge-1",
+      userId: user.id,
+      totpAllowed: false,
+      emailAllowed: true,
+      emailCodeHash: hashToken("654321"),
+      emailCodeExpiresAt: new Date(Date.now() + 60_000),
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+
+    const result = await service.verifyMfaLogin("challenge-1", "654321");
+
+    expect(result.user.id).toBe(user.id);
+    expect(prisma.mfaLoginChallenge.delete).toHaveBeenCalledWith({
+      where: { id: "challenge-1" },
+    });
+  });
+
+  it("rejects a wrong emailed code", async () => {
+    const { service, prisma } = makeService();
+    const user = makeUser({ mfaEmailEnabled: true });
+    (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue({
+      id: "challenge-1",
+      userId: user.id,
+      totpAllowed: false,
+      emailAllowed: true,
+      emailCodeHash: hashToken("654321"),
+      emailCodeExpiresAt: new Date(Date.now() + 60_000),
+      attempts: 0,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+
+    await expect(
+      service.verifyMfaLogin("challenge-1", "000000"),
+    ).rejects.toMatchObject({ code: ErrorCode.AuthMfaInvalidCode });
   });
 });
