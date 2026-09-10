@@ -22,6 +22,11 @@ import { AdminOnly } from "./admin-only.decorator";
 import { BackupService } from "./backup.service";
 import { JobListResponseResponseDto } from "./dto/job-list-response.dto";
 
+/** Narrows a raw path segment to a known job key, rather than trusting it as an index. */
+function isJobKey(key: string): key is JobKey {
+  return (Object.values(JOB_KEYS) as string[]).includes(key);
+}
+
 /** Scheduled jobs: run history and manual triggering. */
 @AdminOnly()
 @Controller("admin")
@@ -58,7 +63,8 @@ export class AdminJobsController {
   private get runners(): Record<JobKey, () => Promise<unknown>> {
     return {
       [JOB_KEYS.NOTIFICATIONS_SCAN]: () => this.notifications.scanAll(),
-      [JOB_KEYS.NOTIFICATIONS_DIGEST]: () => this.notificationDigests.runDigests(),
+      [JOB_KEYS.NOTIFICATIONS_DIGEST]: () =>
+        this.notificationDigests.runDigests(),
       [JOB_KEYS.MEDIA_REFRESH_STALE]: () => this.mediaItems.refreshStale(),
       [JOB_KEYS.REPORTS_DIGEST]: () => this.reports.sendDailyDigest(),
       [JOB_KEYS.BACKUP]: () => this.backup.runScheduled(),
@@ -73,14 +79,14 @@ export class AdminJobsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("jobs/:key/run")
   async runJob(@Param("key") key: string): Promise<void> {
-    const run = this.runners[key as JobKey] as
-      | (() => Promise<unknown>)
-      | undefined;
-
-    if (!run) {
+    // Checked against the registry's own values before it ever indexes
+    // `runners`. A plain truthiness test on the lookup wouldn't do: an
+    // arbitrary path segment also reaches Object.prototype, so
+    // `jobs/constructor/run` would find a callable and dispatch to it.
+    if (!isJobKey(key)) {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUnknownJob);
     }
 
-    await run();
+    await this.runners[key]();
   }
 }
