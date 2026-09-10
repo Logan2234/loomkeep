@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { FastifyRequest } from "fastify";
 import { timingSafeEqual } from "node:crypto";
 import { AppException } from "../common/app.exception";
@@ -15,9 +16,11 @@ import { AppException } from "../common/app.exception";
  */
 @Injectable()
 export class PublicStatsGuard implements CanActivate {
+  constructor(private readonly config: ConfigService) {}
+
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
-    const expected = process.env.HOMEPAGE_STATS_API_KEY;
+    const expected = this.config.get<string>("HOMEPAGE_STATS_API_KEY");
     const provided = request.headers.authorization?.replace(/^Bearer /, "");
 
     if (!expected || !provided) {

@@ -178,16 +178,8 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     sourceType: "DOMAIN",
     socialGated: false,
   },
-  // Reserved for G8 — no caller in this ticket (see the enum's doc comment).
-  // Unique per step key (each onboarding step is only ever completed once),
-  // so no dailyCap — same reasoning as DOMAIN_STARTED above.
-  ONBOARDING_STEP: {
-    reason: XpReason.ONBOARDING_STEP,
-    amount: 20,
-    sourceType: "OnboardingStep",
-    socialGated: false,
-  },
-  // Reserved — no caller in this ticket. Unique per user (sourceId = the
+  // Credited once the user has set both a bio and an avatar (see
+  // UsersService.uploadAvatar/updateMe). Unique per user (sourceId = the
   // user's own id), so no dailyCap.
   PROFILE_COMPLETED: {
     reason: XpReason.PROFILE_COMPLETED,

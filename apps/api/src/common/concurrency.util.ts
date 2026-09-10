@@ -3,7 +3,14 @@ export function refKey(source: string, externalId: string): string {
   return `${source}|${externalId}`;
 }
 
-/** Map an array with a bounded number of in-flight async operations. */
+/**
+ * Map an array with a bounded number of in-flight async operations.
+ *
+ * The first rejection wins and is rethrown, but `Promise.all` alone doesn't
+ * stop the other workers: they keep draining the queue for a caller that has
+ * already given up, and any further rejection surfaces as an unhandled one.
+ * `failed` makes them stand down at the next iteration.
+ */
 export async function mapWithConcurrency<T, R>(
   items: T[],
   limit: number,
@@ -11,11 +18,18 @@ export async function mapWithConcurrency<T, R>(
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let cursor = 0;
+  let failed = false;
 
   async function worker(): Promise<void> {
-    while (cursor < items.length) {
+    while (cursor < items.length && !failed) {
       const index = cursor++;
-      results[index] = await fn(items[index]);
+
+      try {
+        results[index] = await fn(items[index]);
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
     }
   }
 

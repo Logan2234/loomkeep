@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { FastifyRequest } from "fastify";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { AppException } from "../common/app.exception";
@@ -19,12 +20,16 @@ const MAX_CLOCK_SKEW_SECONDS = 300;
  */
 @Injectable()
 export class QuackbackWebhookGuard implements CanActivate {
+  constructor(private readonly config: ConfigService) {}
+
   canActivate(context: ExecutionContext): boolean {
     const request = context
       .switchToHttp()
       .getRequest<FastifyRequest & { rawBody?: Buffer }>();
 
-    const secret = process.env.QUACKBACK_CHANGELOG_WEBHOOK_SECRET;
+    const secret = this.config.get<string>(
+      "QUACKBACK_CHANGELOG_WEBHOOK_SECRET",
+    );
     const signatureHeader = request.headers["x-quackback-signature"];
     const timestampHeader = request.headers["x-quackback-timestamp"];
 

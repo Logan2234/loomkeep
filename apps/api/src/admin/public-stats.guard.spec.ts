@@ -1,7 +1,14 @@
 import { ErrorCode } from "@loomkeep/shared";
 import type { ExecutionContext } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { PublicStatsGuard } from "./public-stats.guard";
+
+// Reads process.env on each call, so the env-based setup below still drives
+// every case even though the guard now goes through ConfigService.
+const envConfig = {
+  get: (key: string) => process.env[key],
+} as unknown as ConfigService;
 
 function contextFor(authorization?: string): ExecutionContext {
   return {
@@ -12,7 +19,7 @@ function contextFor(authorization?: string): ExecutionContext {
 }
 
 describe("PublicStatsGuard", () => {
-  const guard = new PublicStatsGuard();
+  const guard = new PublicStatsGuard(envConfig);
   const ORIGINAL_ENV = process.env.HOMEPAGE_STATS_API_KEY;
 
   afterEach(() => {

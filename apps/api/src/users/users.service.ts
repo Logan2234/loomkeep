@@ -4,6 +4,7 @@ import {
   LEGAL_VERSION,
   UserDto,
   UsernameAvailabilityDto,
+  XpReason,
   type AccountDeletionSummaryDto,
   type CalendarTokenDto,
   type CsvExportDto,
@@ -22,6 +23,7 @@ import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { XpService } from "../gamification/xp.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
@@ -61,6 +63,7 @@ export class UsersService {
     private readonly entitlements: EntitlementService,
     private readonly profiles: ProfileService,
     private readonly accountDeletion: AccountDeletionService,
+    private readonly xp: XpService,
   ) {}
 
   async getMe(userId: string): Promise<UserDto> {
@@ -175,6 +178,7 @@ export class UsersService {
         avatarUpdatedAt: new Date(),
       },
     });
+    await this.maybeAwardProfileCompleted(userId, user);
     return toUserDto(user);
   }
 
@@ -377,7 +381,23 @@ export class UsersService {
         hideProgression: dto.hideProgression,
       },
     });
+    await this.maybeAwardProfileCompleted(userId, user);
     return toUserDto(user);
+  }
+
+  /**
+   * Credits `PROFILE_COMPLETED` once both a bio and an avatar are set —
+   * called after every update to either. `XpService.award` is already
+   * idempotent (it swallows the unique-constraint error on a repeat), so
+   * this doesn't need to check beforehand whether it already fired.
+   */
+  private async maybeAwardProfileCompleted(
+    userId: string,
+    user: Pick<User, "avatar" | "bio">,
+  ): Promise<void> {
+    if (user.avatar && user.bio?.trim()) {
+      await this.xp.award(userId, XpReason.PROFILE_COMPLETED, userId);
+    }
   }
 
   /**
