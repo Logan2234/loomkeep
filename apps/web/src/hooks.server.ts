@@ -21,8 +21,18 @@ const SECURITY_HEADERS = {
   "Cross-Origin-Opener-Policy": "same-origin",
 };
 
-export const handle: Handle = ({ event, resolve }) =>
-  paraglideMiddleware(event.request, async ({ request, locale }) => {
+const DEV_ONLY_ROUTES = new Set(["/app/admin/components", "/app/admin/schema"]);
+
+export const handle: Handle = ({ event, resolve }) => {
+  // `/app` runs without SSR, so a page-level guard alone would still return
+  // the SPA shell with HTTP 200 on a direct production request. Refuse these
+  // internal workshops before resolution; their page loads mirror the guard
+  // for client-side navigation, where this server hook does not run.
+  if (!import.meta.env.DEV && DEV_ONLY_ROUTES.has(event.url.pathname)) {
+    return new Response(null, { status: 404 });
+  }
+
+  return paraglideMiddleware(event.request, async ({ request, locale }) => {
     event.request = request;
     const response = await resolve(event, {
       transformPageChunk: ({ html }) =>
@@ -36,3 +46,4 @@ export const handle: Handle = ({ event, resolve }) =>
 
     return response;
   });
+};

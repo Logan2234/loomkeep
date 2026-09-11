@@ -26,6 +26,7 @@
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
+  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
@@ -50,11 +51,12 @@
   // the work id (e.g. "OL893414W").
   const SOURCE = "open_library";
 
-  // Brand-ish color for the rating source (Open Library has no icon in
-  // simple-icons, so the chip carries the name alone).
   const RATING_STYLES: Record<string, string> = {
     "Open Library": "bg-[#e1dcc5] text-black",
   };
+  const RATING_BRANDS = {
+    "Open Library": "openlibrary",
+  } as const;
 
   let confirmRemove = $state(false);
   let lightboxOpen = $state(false);
@@ -257,6 +259,13 @@
                     ] ?? 'bg-surface-2 text-fg'} {r.url
                       ? 'transition-opacity hover:opacity-80'
                       : ''}">
+                    {#if RATING_BRANDS[r.source as keyof typeof RATING_BRANDS]}
+                      <ProviderMark
+                        brand={RATING_BRANDS[
+                          r.source as keyof typeof RATING_BRANDS
+                        ]}
+                        class="h-3.5 w-3.5 shrink-0" />
+                    {/if}
                     <span>{r.source}</span>
                     <span class="tabular-nums opacity-90">{r.score}</span>
                   </svelte:element>

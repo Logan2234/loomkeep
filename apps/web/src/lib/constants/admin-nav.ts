@@ -77,6 +77,14 @@ export const ADMIN_NAV: AdminNavItem[] = [
     devOnly: true,
   },
   {
+    href: "/app/admin/components",
+    label: m.admin_components_title(),
+    description: m.admin_nav_components_description(),
+    icon: "compass",
+    match: (p) => p.startsWith("/app/admin/components"),
+    devOnly: true,
+  },
+  {
     href: "/app/admin/security",
     label: m.common_security(),
     description: m.admin_nav_security_description(),
@@ -87,7 +95,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     href: "/app/admin/newsletter",
     label: m.common_newsletter(),
     description: m.admin_nav_newsletter_description(),
-    icon: "sparkles",
+    icon: "send",
     match: (p) => p.startsWith("/app/admin/newsletter"),
   },
   {
@@ -98,3 +106,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     match: (p) => p.startsWith("/app/admin/reports"),
   },
 ];
+
+export const VISIBLE_ADMIN_NAV = ADMIN_NAV.filter(
+  (item) => !item.devOnly || import.meta.env.DEV,
+);

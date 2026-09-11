@@ -512,7 +512,7 @@
         {m.import_all_matched()}
         <button
           type="button"
-          class="btn-text btn-text-underline text-accent text-sm"
+          class="link-accent text-sm"
           onclick={() => (filterUnresolved = false)}>
           {m.common_view_all()}
         </button>

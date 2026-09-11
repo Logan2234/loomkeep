@@ -13,7 +13,7 @@
   import Drawer from "$lib/components/Drawer.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { resolveMenuGroups } from "$lib/navigation";
@@ -104,7 +104,7 @@
       class="flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {#if inAdmin}
         <div class="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
+          {#each VISIBLE_ADMIN_NAV as item (item.href)}
             {@render tile(item)}
           {/each}
         </div>

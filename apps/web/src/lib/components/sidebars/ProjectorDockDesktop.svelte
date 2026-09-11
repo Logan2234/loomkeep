@@ -10,7 +10,7 @@
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { visibleNavItems } from "$lib/navigation";
@@ -63,7 +63,7 @@
         </span>
       </div>
       <div class="border-border my-1 border-t"></div>
-      {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
+      {#each VISIBLE_ADMIN_NAV as item (item.href)}
         {@const active = item.match(page.url.pathname)}
         <div class="group relative">
           <a

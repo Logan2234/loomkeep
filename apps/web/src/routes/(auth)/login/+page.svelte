@@ -181,9 +181,7 @@
         bind:value={password}
         required />
       <p class="text-dim -mt-2 text-right text-sm">
-        <a
-          href="/forgot-password"
-          class="btn-text btn-text-underline hover:text-accent text-sm"
+        <a href="/forgot-password" class="link-accent text-sm"
           >{m.auth_forgot_password()}</a>
       </p>
       {#if loginMut.error}<Banner variant="error">{loginMut.error}</Banner>{/if}
@@ -192,7 +190,7 @@
       </button>
       <button
         type="button"
-        class="btn-text btn-text-underline text-dim hover:text-fg self-center text-sm"
+        class="btn-text self-center text-sm"
         disabled={!identifier.trim() || passwordlessMut.loading}
         onclick={() => passwordlessMut.mutate()}>
         <Icon name="key" class="h-4 w-4" />
@@ -206,9 +204,7 @@
       {#if appConfig.registrationEnabled}
         <p class="text-dim text-center text-sm">
           {m.auth_no_account()}
-          <a
-            href="/register"
-            class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+          <a href="/register" class="link-accent text-sm"
             >{m.common_register()}</a>
         </p>
       {/if}
@@ -283,7 +279,7 @@
       {/if}
       <button
         type="button"
-        class="btn-text btn-text-underline text-dim hover:text-fg self-center text-sm"
+        class="btn-text self-center text-sm"
         onclick={backToCredentials}>
         {m.common_back()}
       </button>
@@ -324,7 +320,7 @@
       {#if selectedMethod === "email"}
         <button
           type="button"
-          class="btn-text btn-text-underline text-accent hover:text-accent -mt-2 text-left text-sm"
+          class="link-accent -mt-2 text-left text-sm"
           onclick={resendEmailCode}
           disabled={resendCooldown.remaining > 0}>
           {resendCooldown.remaining > 0
@@ -348,7 +344,7 @@
       <div class="flex items-center justify-between text-sm">
         <button
           type="button"
-          class="btn-text btn-text-underline text-dim hover:text-fg"
+          class="btn-text"
           onclick={() =>
             availableMethods.filter((mth) => mth !== "recovery").length > 1
               ? (step = "choose-method")
@@ -368,7 +364,7 @@
         {:else}
           <button
             type="button"
-            class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
+            class="link-accent text-sm"
             onclick={() => chooseMethod("recovery")}>
             {m.auth_mfa_use_recovery_code()}
           </button>
