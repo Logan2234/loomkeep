@@ -10,6 +10,7 @@
     "pathPattern": [
       "./messages/{locale}/common.json",
       "./messages/{locale}/errors.json",
+      "./messages/{locale}/admin.json",
       "./messages/{locale}/other.json",
       "./messages/{locale}/gamification.json"
     ]

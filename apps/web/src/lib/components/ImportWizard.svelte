@@ -10,6 +10,7 @@
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
   import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
@@ -63,7 +64,10 @@
 
   type Phase = "input" | "analyzing" | "review" | "committing" | "done";
   let phase = $state<Phase>("input");
-  let error = $state<string | null>(null);
+  // Failure of the *job itself* (reported in its polled payload), as opposed
+  // to a failed request — the mutations below carry their own translated
+  // error, and `bannerError` shows whichever is live.
+  let jobError = $state<string | null>(null);
   let showOverwriteConfirm = $state(false);
 
   // --- Input step ---
@@ -115,7 +119,7 @@
       job = j;
       if (j.status === "running") return;
       if (j.status === "failed") {
-        error = importJobError(j);
+        jobError = importJobError(j);
         phase = pollingNext === "review" ? "input" : "review";
       } else if (pollingNext === "review" && j.plan) {
         plan = j.plan;
@@ -126,7 +130,7 @@
       }
     },
     onError: (err) => {
-      error = resolveApiError(err);
+      jobError = resolveApiError(err);
     },
   }));
 
@@ -207,7 +211,7 @@
 
   async function handleFile(file: File) {
     fileError = null;
-    error = null;
+    jobError = null;
     inputValue = "";
     if (descriptor.input.type === "zip") {
       if (!file.name.toLowerCase().endsWith(".zip")) {
@@ -240,30 +244,33 @@
   }
 
   // --- Analyze / commit ---
-  async function analyze() {
-    if (!inputReady) return;
-    error = null;
-    job = null;
-    plan = null;
-    phase = "analyzing";
-
-    try {
-      const started = await analyzeImport(source, {
-        input: inputValue,
-      });
+  // Both go through createApiMutation rather than a hand-rolled try/catch:
+  // `error` is then a translated string by construction, and a double submit
+  // is ignored instead of starting a second job. The *polling* that follows
+  // still needs createApiQuery's refetchInterval — see `_jobQuery`.
+  const analyzeMut = createApiMutation(() => ({
+    mutate: () => analyzeImport(source, { input: inputValue }),
+    onSuccess: (started) => {
       analyzeJobId = started.id;
       job = started;
       pollingNext = "review";
       pollingJobId = started.id;
-    } catch (err) {
-      error = resolveApiError(err);
-      phase = "input";
-    }
+    },
+    onError: () => (phase = "input"),
+  }));
+
+  function analyze() {
+    if (!inputReady) return;
+    jobError = null;
+    job = null;
+    plan = null;
+    phase = "analyzing";
+    analyzeMut.mutate();
   }
 
   if (autoInput) {
     inputValue = autoInput;
-    void analyze();
+    analyze();
   }
 
   /** Pre-select the confidently-resolved items and their default status. */
@@ -375,7 +382,7 @@
   async function doCommit() {
     showOverwriteConfirm = false;
     if (!analyzeJobId || !plan || selectedCount === 0) return;
-    error = null;
+    jobError = null;
     phase = "committing";
 
     const statusesObj: Record<string, string> = {};
@@ -383,30 +390,37 @@
     const overrides: Record<string, ImportMatch> = {};
     for (const [k, m] of picked) if (included.has(k)) overrides[k] = m;
 
-    try {
-      const started = await commitImport(source, analyzeJobId, {
-        include: [...included],
-        statuses: statusesObj,
-        overrides: Object.fromEntries(
-          Object.entries(overrides).map(([k, m]) => [
-            k,
-            { source: m.source, sourceId: m.sourceId, type: m.type },
-          ]),
-        ),
-        overwrite,
-      });
+    commitMut.mutate({
+      include: [...included],
+      statuses: statusesObj,
+      overrides: Object.fromEntries(
+        Object.entries(overrides).map(([k, m]) => [
+          k,
+          { source: m.source, sourceId: m.sourceId, type: m.type },
+        ]),
+      ),
+      overwrite,
+    });
+  }
+
+  const commitMut = createApiMutation(() => ({
+    mutate: (body: Parameters<typeof commitImport>[2]) =>
+      commitImport(source, analyzeJobId!, body),
+    onSuccess: (started) => {
       job = started;
       pollingNext = "done";
       pollingJobId = started.id;
-    } catch (err) {
-      error = resolveApiError(err);
-      phase = "review";
-    }
-  }
+    },
+    onError: () => (phase = "review"),
+  }));
+
+  const bannerError = $derived(jobError ?? analyzeMut.error ?? commitMut.error);
 
   function reset() {
     phase = "input";
-    error = null;
+    jobError = null;
+    analyzeMut.reset();
+    commitMut.reset();
     inputValue = "";
     fileName = "";
     fileError = "";
@@ -429,8 +443,8 @@
     title={m.import_title({ source: descriptor.label })}
     back="/app/settings/import" />
 
-  {#if error}
-    <Banner variant="error" class="mb-4">{error}</Banner>
+  {#if bannerError}
+    <Banner variant="error" class="mb-4">{bannerError}</Banner>
   {:else if premiumLocked && quotaUsed}
     <Banner variant="warning" class="mb-4">{m.import_free_quota_used()}</Banner>
   {:else if premiumLocked}

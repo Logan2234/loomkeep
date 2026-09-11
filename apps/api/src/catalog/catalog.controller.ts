@@ -3,7 +3,6 @@ import {
   CatalogSource,
   Domain,
   ErrorCode,
-  Locale,
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
@@ -14,6 +13,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
@@ -138,11 +138,6 @@ function parseSource(value: string): CatalogSource {
     [CatalogSource.TMDB, CatalogSource.ANILIST],
     "catalog source",
   );
-}
-
-/** `lang` unrecognized or absent → undefined, letting the provider pick its own default. */
-function safeLang(lang: string | undefined): string | undefined {
-  return Locale.includes(lang as Locale) ? lang : undefined;
 }
 
 /** AniList only serves anime; TMDB needs the caller to disambiguate movie vs series. */
