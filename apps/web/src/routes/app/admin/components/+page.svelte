@@ -61,7 +61,7 @@
     { label: "link-accent", className: "link-accent" },
     { label: "btn-lg", className: "btn btn-primary btn-lg" },
     {
-      label: m.admin_components_button_disabled(),
+      label: m.common_unavailable(),
       className: "btn btn-primary",
       disabled: true,
     },
@@ -509,8 +509,7 @@
 {#snippet badges()}
   <div class="flex flex-wrap items-center gap-3">
     <button type="button" class="chip">{m.admin_components_chip_idle()}</button>
-    <button type="button" class="chip chip-on"
-      >{m.admin_components_chip_selected()}</button>
+    <button type="button" class="chip chip-on">{m.common_active()}</button>
     <NewBadge />
     <BetaBadge />
   </div>
@@ -519,7 +518,7 @@
 {#snippet fields()}
   <div class="grid gap-4 sm:grid-cols-3">
     <label class="space-y-1.5 text-sm font-semibold">
-      {m.admin_components_field_default()}
+      {m.common_title()}
       <input class="input mt-1.5" value={m.admin_components_field_value()} />
     </label>
     <label class="space-y-1.5 text-sm font-semibold">
@@ -606,7 +605,7 @@
       steps={[
         { id: "select", label: m.admin_components_wizard_step_select() },
         { id: "review", label: m.admin_components_wizard_step_review() },
-        { id: "finish", label: m.admin_components_wizard_step_finish() },
+        { id: "finish", label: m.common_finish() },
       ]}
       activeIndex={wizardStep}
       onBack={() => (wizardStep = Math.max(0, wizardStep - 1))}
