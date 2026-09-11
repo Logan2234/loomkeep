@@ -17,7 +17,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
@@ -118,6 +118,7 @@
       hrefs: [
         "/app/admin/cache",
         "/app/admin/schema",
+        "/app/admin/components",
         "/app/admin/backup",
         "/app/admin/imports",
       ],
@@ -144,9 +145,8 @@
     CATEGORIES.map((cat) => ({
       label: cat.label,
       items: cat.hrefs
-        .map((href) => ADMIN_NAV.find((i) => i.href === href))
-        .filter((i) => i !== undefined)
-        .filter((i) => !i.devOnly || appConfig.erdEnabled),
+        .map((href) => VISIBLE_ADMIN_NAV.find((i) => i.href === href))
+        .filter((i) => i !== undefined),
     })),
   );
 </script>

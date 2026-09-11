@@ -1,6 +1,7 @@
 <script lang="ts">
   import ProgressBar from "$lib/components/ProgressBar.svelte";
-  import { PERCENT_OPTIONS, formatNumber, formatRelative } from "$lib/format";
+  import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import { PERCENT_OPTIONS, formatNumber } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { AchievementTier } from "@loomkeep/shared";
@@ -97,7 +98,8 @@
       </span>
       <span class="font-display text-fg text-sm font-bold">
         {#if latest?.unlockedAt}
-          {achievementName(latest)} · {formatRelative(latest.unlockedAt)}
+          {achievementName(latest)} ·
+          <RelativeTime iso={latest.unlockedAt} class="timecode text-xs" />
         {:else}
           {m.gamification_hero_recent_none()}
         {/if}

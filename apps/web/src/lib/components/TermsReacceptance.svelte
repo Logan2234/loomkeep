@@ -40,8 +40,7 @@
           href="/legal/terms-of-service"
           target="_blank"
           rel="noopener noreferrer"
-          class="btn-text btn-text-underline text-accent hover:text-accent"
-          >{m.common_terms()}</a
+          class="link-accent">{m.common_terms()}</a
         >.
       </span>
     </label>

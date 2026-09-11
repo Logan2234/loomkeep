@@ -11,7 +11,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import { formatRelative } from "$lib/format";
+  import RelativeTime from "$lib/components/RelativeTime.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
 
@@ -76,12 +76,12 @@
             </p>
             <p class="text-dim text-sm">
               {m.common_active()}
-              {formatRelative(session.lastUsedAt)}
+              <RelativeTime iso={session.lastUsedAt} class="timecode" />
             </p>
           </div>
           {#if !isCurrent}
             <button
-              class="btn-text btn-text-underline text-danger shrink-0 text-sm"
+              class="btn-text text-danger hover:text-danger shrink-0 text-sm"
               onclick={() => (confirmTarget = { kind: "one", session })}>
               {m.settings_sessions_disconnect()}
             </button>

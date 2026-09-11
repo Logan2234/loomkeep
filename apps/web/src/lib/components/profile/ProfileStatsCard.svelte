@@ -113,7 +113,7 @@
           {/if}
           <a
             href="/app/stats"
-            class="btn-text text-accent hover:text-accent group mt-2.5">
+            class="link-accent group mt-2.5 inline-flex items-center gap-1 text-xs">
             {m.profile_activity_view_stats()}
             <Icon
               name="arrow-right"

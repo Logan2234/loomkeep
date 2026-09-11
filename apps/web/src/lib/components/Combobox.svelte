@@ -76,7 +76,7 @@
   {#snippet trigger({ open, toggle })}
     <button
       type="button"
-      class="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors {multiselect &&
+      class="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40 {multiselect &&
       values.length > 0
         ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
         : 'border-border text-dim hover:text-fg'}"

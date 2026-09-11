@@ -8,7 +8,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { prefersReducedMotion } from "$lib/motion";
@@ -198,7 +198,7 @@
             </div>
           {/if}
 
-          {#each ADMIN_NAV.filter((item) => !item.devOnly || appConfig.erdEnabled) as item (item.href)}
+          {#each VISIBLE_ADMIN_NAV as item (item.href)}
             {@const active = item.match(page.url.pathname)}
             <a
               href={item.href}

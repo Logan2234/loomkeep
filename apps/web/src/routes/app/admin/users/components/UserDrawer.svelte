@@ -235,7 +235,7 @@
           </p>
           <a
             href="/app/u/{user.username}"
-            class="btn-text text-accent group mt-0.5">
+            class="link-accent group mt-0.5 inline-flex items-center gap-1 text-xs">
             {m.admin_users_public_profile()}
             <Icon
               name="arrow-right"

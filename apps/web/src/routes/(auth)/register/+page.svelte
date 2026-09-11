@@ -126,15 +126,13 @@
           href="/legal/terms-of-service"
           target="_blank"
           rel="noopener noreferrer"
-          class="btn-text btn-text-underline text-accent hover:text-accent"
-          >{m.common_terms()}</a>
+          class="link-accent">{m.common_terms()}</a>
         {m.auth_register_accept_terms_and()}
         <a
           href="/legal/privacy-policy"
           target="_blank"
           rel="noopener noreferrer"
-          class="btn-text btn-text-underline text-accent hover:text-accent"
-          >{m.common_privacy()}</a
+          class="link-accent">{m.common_privacy()}</a
         >.
       </span>
     </label>
@@ -166,10 +164,7 @@
     </button>
     <p class="text-dim text-center text-sm">
       {m.auth_already_registered()}
-      <a
-        href="/login"
-        class="btn-text btn-text-underline text-accent hover:text-accent text-sm"
-        >{m.common_login()}</a>
+      <a href="/login" class="link-accent text-sm">{m.common_login()}</a>
     </p>
   </form>
 </AuthShell>
