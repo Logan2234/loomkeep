@@ -15,7 +15,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
-import { resolveWorkHref } from "../common/work-href.util";
+import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/registry";
@@ -251,6 +251,22 @@ export class CommentService {
     // (e.g. MUSIC, never masked) diverge from the thread it actually lives in.
     const targetType = parent?.targetType ?? body.targetType;
     const targetId = parent?.targetId ?? body.targetId;
+
+    // Only for a root comment: a reply inherits its parent's target, which was
+    // checked when that parent was created. Comments carry no foreign key to
+    // the work (the pair is polymorphic), so nothing else stops a made-up
+    // targetId from producing a comment attached to nothing — invisible in the
+    // UI, but real in the table and in every moderation view.
+    if (
+      !parent &&
+      !(await workTargetExists(this.prisma, targetType, targetId))
+    ) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CommentUnknownTargetType,
+      );
+    }
+
     const spoilerTag = targetType === "MUSIC" ? false : !!body.spoilerTag;
 
     const row = await this.prisma.comment.create({

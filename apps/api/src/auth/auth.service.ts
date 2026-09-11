@@ -23,6 +23,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
@@ -865,7 +866,9 @@ export class AuthService {
   private async ensureAdminRole(user: User): Promise<User> {
     const adminEmail = this.configService.get<string>("ADMIN_EMAIL");
 
-    if (!adminEmail || user.email.toLowerCase() !== adminEmail.toLowerCase()) {
+    // Stored emails are normalized (see normalizeEmail); only the env value
+    // still needs folding, since nothing validates how the operator typed it.
+    if (!adminEmail || user.email !== normalizeEmail(adminEmail)) {
       return user;
     }
 
@@ -945,15 +948,11 @@ export class AuthService {
    * purely by silent refresh (no re-entered credentials) still counts as
    * activity.
    */
-  private touchActivityQuery(userId: string) {
-    return this.prisma.user.update({
+  private async touchActivity(userId: string): Promise<void> {
+    await this.prisma.user.update({
       where: { id: userId },
       data: { lastActiveAt: new Date(), inactivityWarningSentAt: null },
     });
-  }
-
-  private async touchActivity(userId: string): Promise<void> {
-    await this.touchActivityQuery(userId);
   }
 
   /**

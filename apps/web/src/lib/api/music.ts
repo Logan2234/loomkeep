@@ -1,3 +1,4 @@
+import { getLocale } from "$lib/paraglide/runtime.js";
 import type {
   UpdateMusicEntryDto,
   UpsertMusicEntryDto,
@@ -19,6 +20,7 @@ export interface ListMusicFilters {
 export function listMusic(filters: ListMusicFilters = {}) {
   return typedRequest("/music", {
     query: {
+      lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
       status: filters.statuses,

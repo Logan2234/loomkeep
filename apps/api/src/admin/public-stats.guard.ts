@@ -3,8 +3,8 @@ import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { FastifyRequest } from "fastify";
-import { timingSafeEqual } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { secretsMatch } from "../common/secret-compare.util";
 
 /**
  * Shared-secret guard for the public-stats endpoint the Homepage dashboard
@@ -30,15 +30,7 @@ export class PublicStatsGuard implements CanActivate {
       );
     }
 
-    const expectedBuf = Buffer.from(expected);
-    const providedBuf = Buffer.from(provided);
-
-    // Lengths must match before timingSafeEqual (it throws on mismatched
-    // buffer sizes rather than returning false).
-    if (
-      expectedBuf.length !== providedBuf.length ||
-      !timingSafeEqual(expectedBuf, providedBuf)
-    ) {
+    if (!secretsMatch(expected, provided)) {
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AdminUnauthorized,

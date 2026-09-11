@@ -3,8 +3,9 @@ import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { FastifyRequest } from "fastify";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { AppException } from "../common/app.exception";
+import { secretsMatch } from "../common/secret-compare.util";
 
 const MAX_CLOCK_SKEW_SECONDS = 300;
 
@@ -61,15 +62,7 @@ export class QuackbackWebhookGuard implements CanActivate {
       .digest("hex");
     const provided = signatureHeader.replace(/^sha256=/, "");
 
-    const expectedBuf = Buffer.from(expected);
-    const providedBuf = Buffer.from(provided);
-
-    // Lengths must match before timingSafeEqual (it throws on mismatched
-    // buffer sizes rather than returning false).
-    if (
-      expectedBuf.length !== providedBuf.length ||
-      !timingSafeEqual(expectedBuf, providedBuf)
-    ) {
+    if (!secretsMatch(expected, provided)) {
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.NewsletterWebhookUnauthorized,

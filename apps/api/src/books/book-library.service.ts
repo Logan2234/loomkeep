@@ -28,6 +28,7 @@ import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import { compareTitles, timeMs } from "../common/sort.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -90,10 +91,8 @@ export interface ListEntriesFilters {
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
-}
-
-function timeMs(iso: string | null): number {
-  return iso ? new Date(iso).getTime() : 0;
+  /** The signed-in user's locale, when known — drives alphabetical collation. */
+  lang?: string;
 }
 
 function readPct(e: BookEntryDto): number {
@@ -105,14 +104,16 @@ function compareBookEntries(
   sort: BookSortKey,
   a: BookEntryDto,
   b: BookEntryDto,
+  locale: string | undefined,
 ): number {
   switch (sort) {
     case "title":
-      return a.book.title.localeCompare(b.book.title, "fr");
+      return compareTitles(a.book.title, b.book.title, locale);
     case "author":
-      return (a.book.authors[0] ?? "").localeCompare(
+      return compareTitles(
+        a.book.authors[0] ?? "",
         b.book.authors[0] ?? "",
-        "fr",
+        locale,
       );
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
@@ -296,7 +297,7 @@ export class BookLibraryService {
       : "added";
     const asc = filters.order === "asc";
     dtos.sort((a, b) => {
-      const c = compareBookEntries(sort, a, b);
+      const c = compareBookEntries(sort, a, b, filters.lang);
       return asc ? -c : c;
     });
 

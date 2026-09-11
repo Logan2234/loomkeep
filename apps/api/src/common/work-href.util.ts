@@ -65,3 +65,38 @@ export async function resolveWorkHref(
       return null;
   }
 }
+
+/**
+ * Whether `{ targetType, targetId }` names a row that actually exists.
+ *
+ * `resolveWorkHref` can't answer this: it returns null both for a missing item
+ * and for SEASON/EPISODE, which exist but have no browsable page. Callers that
+ * write polymorphic rows (comments, reviews, reports carry no foreign key)
+ * need the distinction, or a typo'd id silently creates content attached to
+ * nothing.
+ */
+export async function workTargetExists(
+  prisma: PrismaService,
+  targetType: string,
+  targetId: string,
+): Promise<boolean> {
+  const where = { id: targetId };
+  const select = { id: true };
+
+  switch (targetType) {
+    case "MEDIA":
+      return (await prisma.mediaItem.findUnique({ where, select })) !== null;
+    case "SEASON":
+      return (await prisma.season.findUnique({ where, select })) !== null;
+    case "EPISODE":
+      return (await prisma.episode.findUnique({ where, select })) !== null;
+    case "GAME":
+      return (await prisma.gameItem.findUnique({ where, select })) !== null;
+    case "BOOK":
+      return (await prisma.bookItem.findUnique({ where, select })) !== null;
+    case "MUSIC":
+      return (await prisma.musicItem.findUnique({ where, select })) !== null;
+    default:
+      return false;
+  }
+}
