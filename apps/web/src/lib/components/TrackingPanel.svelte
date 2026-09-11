@@ -61,7 +61,7 @@
   <div class="flex justify-end">
     <button
       type="button"
-      class="btn-text btn-text-underline hover:text-danger text-sm"
+      class="btn-text hover:text-danger text-sm"
       disabled={saving}
       onclick={onRemove}>
       {m.tracking_remove()}

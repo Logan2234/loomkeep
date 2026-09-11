@@ -32,6 +32,7 @@
       notice: m.settings_datasources_anilist_notice(),
     },
     {
+      brand: "omdb",
       name: "OMDb",
       href: OMDB_API,
       notice: m.settings_datasources_omdb_notice(),
@@ -43,6 +44,7 @@
       notice: m.settings_datasources_igdb_notice(),
     },
     {
+      brand: "openlibrary",
       name: "Open Library",
       href: OPENLIBRARY_API,
       notice: m.settings_datasources_openlibrary_notice(),

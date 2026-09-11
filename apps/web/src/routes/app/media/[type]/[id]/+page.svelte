@@ -665,7 +665,7 @@
               href={extras.watchProviders.link}
               target="_blank"
               rel="noopener noreferrer"
-              class="btn-text btn-text-underline timecode hover:text-accent text-[0.6rem] decoration-1">
+              class="link-accent timecode text-[0.6rem] decoration-1">
               {m.media_tmdb_france()}
             </a>
           </div>

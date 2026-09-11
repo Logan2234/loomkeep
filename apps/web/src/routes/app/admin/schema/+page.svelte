@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { getAdminSchema } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -7,15 +6,7 @@
   import Banner from "$lib/components/Banner.svelte";
   import MermaidDiagram from "$lib/components/MermaidDiagram.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
-
-  // Direct-URL access outside dev: the underlying docs/erd.md
-  // is never generated in the Docker build (DISABLE_ERD),
-  // so there's nothing to show — bounce to the admin home instead.
-  $effect(() => {
-    if (!appConfig.erdEnabled) void goto("/app/admin");
-  });
 
   const schemaQuery = createApiQuery(() => ({
     key: keys.admin.schema(),

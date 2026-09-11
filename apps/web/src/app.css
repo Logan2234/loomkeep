@@ -156,12 +156,6 @@ body {
   .btn-text {
     @apply text-dim hover:text-fg inline-flex items-center gap-1 text-xs font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50;
   }
-  /* Pair with `.btn-text` for the handful of cases needing a stronger
-     affordance: a link standing alone in running text, or a consequential
-     action (delete, sign out) that shouldn't read as quiet navigation. */
-  .btn-text-underline {
-    @apply underline decoration-transparent decoration-2 underline-offset-4 hover:decoration-current;
-  }
   /* Icon-only round action button (rewatch, follow, dismiss…) — the icon
      equivalent of `.btn-ghost`, sized for a touch target rather than text. */
   .btn-icon {
@@ -212,12 +206,8 @@ body {
   .switch-on .switch-thumb {
     @apply translate-x-[18px];
   }
-  /* Marks placeholder/mock data (dotted underline + help cursor). */
-  .mock {
-    @apply decoration-dim/50 cursor-help underline decoration-dotted underline-offset-4;
-  }
   .link-accent {
-    @apply text-accent font-semibold hover:underline;
+    @apply text-accent font-semibold underline decoration-transparent decoration-2 underline-offset-4 transition-colors hover:decoration-current disabled:pointer-events-none disabled:opacity-50;
   }
   /* Loading placeholder; pair with sizing utilities (and `rounded` when the
      real content isn't square-cornered, e.g. text-line placeholders). */

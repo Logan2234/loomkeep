@@ -524,7 +524,7 @@
                 href={detail.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="btn-text btn-text-underline text-accent hover:text-accent mt-0.5">
+                class="link-accent mt-0.5">
                 {m.media_official_site()}
               </a>
             {/if}
