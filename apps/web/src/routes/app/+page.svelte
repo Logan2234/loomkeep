@@ -420,6 +420,7 @@
                     {#if e.progress}
                       <ProgressBar
                         value={pct(e)}
+                        label={`${m.common_progress()}: ${e.mediaItem.title}`}
                         height="h-1"
                         class="mt-1"
                         title="{e.progress.watchedEpisodes} / {e.progress
@@ -531,6 +532,7 @@
                         {#if p !== null}
                           <ProgressBar
                             value={p}
+                            label={`${m.book_reading_progress()}: ${e.book.title}`}
                             height="h-1"
                             class="mt-1 max-w-32" />
                         {/if}

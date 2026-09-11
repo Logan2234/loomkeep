@@ -11,7 +11,7 @@
     values = [],
     multiselect = false,
     searchable = false,
-    searchPlaceholder = "Rechercher…",
+    searchPlaceholder,
     name,
     disabled = false,
     onChange,
@@ -32,9 +32,16 @@
   let searchInput: HTMLInputElement | undefined = $state();
 
   const selectedOption = $derived(options.find((o) => o.value === values[0]));
+  const resolvedSearchPlaceholder = $derived(
+    searchPlaceholder ?? m.common_search_placeholder(),
+  );
   const triggerText = $derived(
     multiselect
-      ? `${label} : ${values.length === 0 ? m.common_all() : values.length}`
+      ? m.common_selection_summary({
+          label,
+          selection:
+            values.length === 0 ? m.common_all() : String(values.length),
+        })
       : (selectedOption?.label ?? label),
   );
   const visibleOptions = $derived(
@@ -106,9 +113,9 @@
           bind:this={searchInput}
           bind:value={query}
           type="text"
-          aria-label={searchPlaceholder}
+          aria-label={resolvedSearchPlaceholder}
           enterkeyhint="search"
-          placeholder={searchPlaceholder}
+          placeholder={resolvedSearchPlaceholder}
           class="border-border bg-surface-2 w-full rounded-md border px-2 py-1 text-sm" />
       </div>
     {/if}

@@ -16,6 +16,7 @@
   // setTimeout, only after the local closing animation has finished, makes
   // the parent's unmount instant and unconditional — nothing left for Svelte
   // to defer.
+  import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
   import { m } from "$lib/paraglide/messages.js";
@@ -28,6 +29,7 @@
     labelledby,
     zIndex = 40,
     dismissable = true,
+    initialFocus,
   }: {
     onclose: () => void;
     children: Snippet;
@@ -39,6 +41,8 @@
     zIndex?: number;
     /** When false: no Escape/backdrop/swipe-down dismissal, no drag grabber. */
     dismissable?: boolean;
+    /** Element to focus first once the sheet content is mounted. */
+    initialFocus?: HTMLElement | null;
   } = $props();
 
   // JS transitions ignore prefers-reduced-motion, so gate duration manually.
@@ -135,22 +139,37 @@
   }
 </script>
 
-<svelte:window
-  onkeydown={(e) => dismissable && e.key === "Escape" && requestClose()} />
-
 <!-- No `md:hidden` here: the shell decides which surface mounts (see
      layout.svelte.ts), and `scrollLock` runs on mount regardless of CSS,
      so every caller gates this behind a condition rather than a class. -->
 <div use:portal use:scrollLock class="contents">
-  <button
-    class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity {visible
-      ? 'opacity-100'
-      : 'pointer-events-none opacity-0'}"
-    style="z-index: {zIndex}; transition-duration: {dur}ms"
-    aria-label={m.common_close()}
-    onclick={() => dismissable && requestClose()}></button>
+  {#if dismissable}
+    <button
+      type="button"
+      data-dialog-backdrop
+      tabindex="-1"
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity {visible
+        ? 'opacity-100'
+        : 'pointer-events-none opacity-0'}"
+      style="z-index: {zIndex}; transition-duration: {dur}ms"
+      aria-label={m.common_close()}
+      onclick={requestClose}></button>
+  {:else}
+    <div
+      data-dialog-backdrop
+      aria-hidden="true"
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity {visible
+        ? 'opacity-100'
+        : 'pointer-events-none opacity-0'}"
+      style="z-index: {zIndex}; transition-duration: {dur}ms">
+    </div>
+  {/if}
 
   <div
+    use:dialogFocus={{
+      initialFocus,
+      onEscape: dismissable ? requestClose : undefined,
+    }}
     bind:this={panelEl}
     role="dialog"
     aria-modal="true"

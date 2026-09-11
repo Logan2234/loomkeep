@@ -32,6 +32,7 @@
      through the line, sitting in a lit amber notch, and the top edge is
      perforated like a torn ticket. -->
 <nav
+  data-mobile-navigation
   class="
     border-border bg-surface/95 ticket-edge fixed inset-x-0
     bottom-0

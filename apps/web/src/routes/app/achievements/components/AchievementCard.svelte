@@ -131,6 +131,7 @@
     {#if progress && !complete}
       <ProgressBar
         value={(progress.current / progress.target) * 100}
+        label={`${m.common_progress()}: ${achievementName(focusEntry)}`}
         height="h-1"
         track="bg-border"
         rounded={false} />

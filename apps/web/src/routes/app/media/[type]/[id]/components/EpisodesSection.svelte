@@ -367,6 +367,7 @@
           )}
           <ProgressBar
             value={seasonPct}
+            label={`${m.common_progress()}: ${season.title ?? `${m.common_season()} ${season.number}`}`}
             height="h-1"
             track="bg-border"
             rounded={false}

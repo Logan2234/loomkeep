@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { dialogFocus } from "$lib/actions/dialogFocus";
+  import { scrollLock } from "$lib/actions/scrollLock";
   import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
@@ -15,6 +17,7 @@
     blur = false,
     dismissable = true,
     overflowVisible = false,
+    initialFocus,
   }: {
     title: string;
     onclose: () => void;
@@ -27,6 +30,8 @@
     /** Lets content (e.g. a decorative marker) poke outside the card's rounded
      * corners instead of being clipped by `.card`'s `overflow-hidden`. */
     overflowVisible?: boolean;
+    /** Element to focus first once the dialog content is mounted. */
+    initialFocus?: HTMLElement | null;
   } = $props();
 
   // Only one of Drawer/dialog is ever mounted — not both at once toggled by
@@ -44,14 +49,10 @@
   const isDesktop = $derived(!layout.compact);
 </script>
 
-<!-- Mobile's Drawer already closes on Escape via its own listener. -->
-<svelte:window
-  onkeydown={(e) =>
-    isDesktop && dismissable && e.key === "Escape" && onclose()} />
-
 {#snippet header(showClose: boolean)}
   {#if showClose}
     <button
+      type="button"
       class="text-dim hover:bg-surface-2 hover:text-fg absolute top-3 right-3 rounded-full p-1.5"
       aria-label={m.common_close()}
       onclick={onclose}>
@@ -66,13 +67,30 @@
 {#if isDesktop}
   <!-- Desktop: a centered dialog. Mobile's Drawer already closes on Escape. -->
   <div
+    use:scrollLock
     class={`fixed inset-0 z-60 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}>
-    <button
-      class="absolute inset-0 cursor-default bg-black/60"
-      transition:fade|global={{ duration: reduced ? 0 : 180 }}
-      aria-label={m.common_close()}
-      onclick={() => dismissable && onclose()}></button>
+    {#if dismissable}
+      <button
+        type="button"
+        data-dialog-backdrop
+        tabindex="-1"
+        class="absolute inset-0 cursor-default bg-black/60"
+        transition:fade|global={{ duration: reduced ? 0 : 180 }}
+        aria-label={m.common_close()}
+        onclick={onclose}></button>
+    {:else}
+      <div
+        data-dialog-backdrop
+        aria-hidden="true"
+        class="absolute inset-0 bg-black/60"
+        transition:fade|global={{ duration: reduced ? 0 : 180 }}>
+      </div>
+    {/if}
     <div
+      use:dialogFocus={{
+        initialFocus,
+        onEscape: dismissable ? onclose : undefined,
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -91,7 +109,12 @@
        drawer (MenuSheet) — no close cross, the swipe/backdrop tap covers it.
        Stacked above FocusOverlay (z-50) since a Modal can be opened from
        within a focused comment on touch. -->
-  <Drawer {onclose} {dismissable} labelledby="modal-title" zIndex={60}>
+  <Drawer
+    {onclose}
+    {dismissable}
+    {initialFocus}
+    labelledby="modal-title"
+    zIndex={60}>
     <div
       data-drawer-scroll
       class="relative touch-pan-y overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">

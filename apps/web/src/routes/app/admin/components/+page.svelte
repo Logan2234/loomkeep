@@ -633,7 +633,10 @@
           <span>{progress.label}</span>
           <span class="timecode">{progress.value}%</span>
         </div>
-        <ProgressBar value={progress.value} fillClass={progress.fillClass} />
+        <ProgressBar
+          value={progress.value}
+          label={progress.label}
+          fillClass={progress.fillClass} />
       </div>
     {/each}
   </div>

@@ -56,6 +56,7 @@
         </div>
         <ProgressBar
           value={(item.value / max) * 100}
+          label={`${item.label}: ${item.display ?? formatNumber(item.value)}`}
           height="h-2"
           fillClass=""
           fillStyle="background:{item.color ?? 'var(--accent)'}" />

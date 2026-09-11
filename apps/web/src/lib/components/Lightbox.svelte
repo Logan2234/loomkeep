@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { dialogFocus } from "$lib/actions/dialogFocus";
+  import { scrollLock } from "$lib/actions/scrollLock";
   import { m } from "$lib/paraglide/messages.js";
   import { prefersReducedMotion } from "$lib/motion";
   import { fade, scale } from "svelte/transition";
@@ -26,6 +28,7 @@
   const isVideoSlide = $derived(video !== null && index === 0);
   const currentImage = $derived(images[video ? index - 1 : index]);
   let touchStartX = $state<number | null>(null);
+  let closeButton = $state<HTMLButtonElement | null>(null);
   const reduced = prefersReducedMotion();
 
   function next() {
@@ -37,8 +40,7 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") onClose();
-    else if (hasMultiple && e.key === "ArrowRight") next();
+    if (hasMultiple && e.key === "ArrowRight") next();
     else if (hasMultiple && e.key === "ArrowLeft") prev();
   }
 
@@ -58,9 +60,9 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
-
 <div
+  use:scrollLock
+  use:dialogFocus={{ initialFocus: closeButton, onEscape: onClose }}
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
   in:fade={{ duration: reduced ? 0 : 140 }}
   out:fade={{ duration: reduced ? 0 : 120 }}
@@ -68,6 +70,7 @@
   aria-modal="true"
   aria-label={isVideoSlide ? m.media_trailer() : m.common_image_large()}
   tabindex="-1"
+  onkeydown={onKeydown}
   ontouchstart={onTouchStart}
   ontouchend={onTouchEnd}>
   <!-- Full-bleed backdrop button, behind the actual content below (later
@@ -75,12 +78,15 @@
        the lightbox without needing stopPropagation everywhere else. -->
   <button
     type="button"
+    data-dialog-backdrop
+    tabindex="-1"
     class="absolute inset-0"
     aria-label={m.common_close()}
     onclick={onClose}>
   </button>
 
   <button
+    bind:this={closeButton}
     type="button"
     class="absolute top-4 right-4 z-20 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60"
     aria-label={m.common_close()}
