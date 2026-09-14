@@ -1,4 +1,6 @@
-import { XP_RULES, XpReason } from "@loomkeep/shared";
+import { describe, expect, it } from "vitest";
+import { XpReason } from "./enums";
+import { XP_RULE_LIST, XP_RULES } from "./xp-rules";
 
 describe("XP_RULES", () => {
   it("has a registry entry for every XpReason", () => {
@@ -60,5 +62,12 @@ describe("XP_RULES", () => {
         expect(rule.dailyCap).toBeGreaterThan(0);
       }
     }
+  });
+
+  it("exposes the same rules as a list, for callers that iterate", () => {
+    expect(XP_RULE_LIST).toHaveLength(Object.keys(XP_RULES).length);
+    expect(XP_RULE_LIST.map((r) => r.reason).sort()).toEqual(
+      Object.values(XpReason).sort(),
+    );
   });
 });

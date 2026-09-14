@@ -19,6 +19,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
 import { ValidationException } from "./common/validation.exception";
+import { MetricsService } from "./metrics/metrics.service";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -103,6 +104,48 @@ async function bootstrap() {
   // CSP stays off: Swagger UI (dev-only, below) needs inline scripts/styles,
   // and the API otherwise only serves JSON.
   await app.register(helmet, { contentSecurityPolicy: false });
+
+  // Browsers post CSP violation reports under their own media types, neither
+  // of which Fastify parses by default — without this the collector answers
+  // 415 and the reports are lost silently, which is indistinguishable from
+  // "the policy is clean". See CspReportController.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addContentTypeParser(
+      ["application/csp-report", "application/reports+json"],
+      { parseAs: "string" },
+      (_req, body: string, done) => {
+        try {
+          done(null, JSON.parse(body));
+        } catch {
+          // Unparseable report: accept and drop rather than 400. The sender is
+          // a browser with nothing to do about the answer.
+          done(null, {});
+        }
+      },
+    );
+
+  // An onResponse hook rather than a Nest interceptor: the interceptor chain
+  // only sees requests that reach a handler, so everything a guard rejects
+  // (401s, throttled 429s) and every unmatched 404 would go unmeasured —
+  // precisely the traffic worth a graph.
+  const metrics = app.get(MetricsService);
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook("onResponse", (request, reply, done) => {
+      metrics.observeRequest(
+        request.method,
+        // The matched pattern ("/api/media/:id"), not request.url — one
+        // series per media id would grow the registry with the catalog.
+        request.routeOptions?.url,
+        reply.statusCode,
+        reply.elapsedTime,
+      );
+      done();
+    });
+
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
     new ValidationPipe({

@@ -21,6 +21,7 @@ export interface ListBooksFilters {
 export function listBooks(filters: ListBooksFilters = {}) {
   return typedRequest("/books", {
     query: {
+      lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
       status: filters.statuses,

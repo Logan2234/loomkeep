@@ -5,7 +5,9 @@
     getListMembership,
     removeListItem,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
+  import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
   import { m } from "$lib/paraglide/messages.js";
   import Icon from "./Icon.svelte";
@@ -24,55 +26,52 @@
     onClose: () => void;
   } = $props();
 
-  let lists = $state<MyListDto[]>([]);
-  let itemIdByList = $state<Record<string, string>>({});
-  let loading = $state(true);
-  let busyId = $state<string | null>(null);
   let creating = $state(false);
-  let error = $state<string | null>(null);
 
-  function load() {
-    loading = true;
-    error = null;
-    Promise.all([getEditableLists(), getListMembership(targetType, targetId)])
-      .then(([r, membership]) => {
-        lists = r;
-        itemIdByList = membership;
-      })
-      .catch((err) => (error = resolveApiError(err)))
-      .finally(() => (loading = false));
-  }
+  const membershipKey = $derived(keys.lists.membership(targetType, targetId));
 
-  $effect(load);
+  const listsQuery = createApiQuery(() => ({
+    key: keys.lists.editable(),
+    fetch: getEditableLists,
+  }));
+  const membershipQuery = createApiQuery(() => ({
+    key: membershipKey,
+    fetch: () => getListMembership(targetType, targetId),
+  }));
 
-  async function toggle(list: MyListDto) {
-    if (busyId) return;
-    busyId = list.id;
-    try {
+  const lists = $derived(listsQuery.data ?? []);
+  const itemIdByList = $derived(membershipQuery.data ?? {});
+  const loading = $derived(listsQuery.loading || membershipQuery.loading);
+  const error = $derived(listsQuery.error ?? membershipQuery.error);
+
+  // Invalidating both keys is what keeps the checkbox and the work count
+  // honest — the previous version patched them locally and swallowed every
+  // failure, so an offline toggle looked like a no-op.
+  const toggleMut = createApiMutation(() => ({
+    mutate: async ({ list }: { list: MyListDto }) => {
       const existingItemId = itemIdByList[list.id];
+
       if (existingItemId) {
         await removeListItem(list.id, existingItemId);
-        itemIdByList = { ...itemIdByList, [list.id]: "" };
-        lists = lists.map((l) =>
-          l.id === list.id ? { ...l, itemCount: l.itemCount - 1 } : l,
-        );
-      } else {
-        const item = await addListItem(list.id, targetType, targetId);
-        itemIdByList = { ...itemIdByList, [list.id]: item.id };
-        lists = lists.map((l) =>
-          l.id === list.id ? { ...l, itemCount: l.itemCount + 1 } : l,
-        );
+        return;
       }
-    } catch {
-      // Already in the list (race/stale state) — ignore, next load reconciles.
-    } finally {
-      busyId = null;
-    }
+
+      await addListItem(list.id, targetType, targetId);
+    },
+    invalidates: [keys.lists.editable(), membershipKey],
+    errorToast: true,
+  }));
+
+  const busyId = $derived(
+    toggleMut.loading ? (toggleMut.variables?.list.id ?? null) : null,
+  );
+
+  function toggle(list: MyListDto) {
+    toggleMut.mutate({ list });
   }
 
   function handleCreated() {
     creating = false;
-    load();
   }
 </script>
 

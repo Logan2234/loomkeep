@@ -1,10 +1,11 @@
 import type { MediaDetailDto } from "@loomkeep/shared";
-import { ErrorCode, Locale, MediaType } from "@loomkeep/shared";
+import { ErrorCode, MediaType } from "@loomkeep/shared";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { safeLang } from "../common/locale.util";
 import { MediaDetailResponseDto } from "./dto/media-detail-response.dto";
 import { LibraryService } from "./library.service";
 
@@ -52,9 +53,4 @@ function parseType(value: string): MediaType {
   }
 
   return upper;
-}
-
-/** `lang` unrecognized or absent → undefined, letting the provider pick its own default. */
-function safeLang(lang: string | undefined): string | undefined {
-  return Locale.includes(lang as Locale) ? lang : undefined;
 }

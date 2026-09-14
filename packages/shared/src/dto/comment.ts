@@ -35,8 +35,17 @@ export interface CommentDto {
   reactions: CommentReactionSummaryDto[];
   /** The viewer's own active reaction, or null. */
   myReaction: CommentEmote | null;
-  /** Only populated on top-level comments. */
+  /**
+   * Only populated on top-level comments, and capped: the most recent few
+   * replies (oldest-first, conversation order), not the whole thread. Fetch
+   * the rest through `GET /comments/{id}/replies`.
+   */
   replies: CommentDto[];
+  /**
+   * Total replies this comment has, so the client knows how many `replies`
+   * leaves out. Always 0 on a reply.
+   */
+  replyCount: number;
 }
 
 /** Total comment count (top-level + replies) for a target, for a collapsed toggle badge. */

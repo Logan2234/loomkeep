@@ -152,6 +152,9 @@ services:
       # Healthchecks.io read-only API key — gitignored, copied from
       # healthchecks_token.example.
       - ./observability/healthchecks_token:/etc/prometheus/secrets/healthchecks_token:ro
+      # Must hold the same value as METRICS_API_KEY in .env — gitignored,
+      # copied from metrics_token.example.
+      - ./observability/metrics_token:/etc/prometheus/secrets/metrics_token:ro
       - prometheus-data:/prometheus
     depends_on:
       - node_exporter

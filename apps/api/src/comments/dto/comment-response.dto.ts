@@ -23,4 +23,5 @@ export class CommentResponseDto implements CommentDto {
   reactions!: CommentReactionSummaryResponseDto[];
   myReaction!: CommentEmote | null;
   replies!: CommentResponseDto[];
+  replyCount!: number;
 }

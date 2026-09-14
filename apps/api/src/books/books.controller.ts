@@ -7,7 +7,6 @@ import {
   BookSource,
   Domain,
   ErrorCode,
-  Locale,
   ReadingGoalDto,
 } from "@loomkeep/shared";
 import {
@@ -28,6 +27,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { AgeGateService } from "../users/age-gate.service";
@@ -95,6 +95,7 @@ export class BooksController {
     @Query("order") order?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("lang") lang?: string,
   ): Promise<PagedResult<BookEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.listEntries(user.sub, {
@@ -105,6 +106,7 @@ export class BooksController {
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
+      lang: safeLang(lang),
     });
   }
 
@@ -234,9 +236,4 @@ export class BooksController {
 
 function parseBookSource(value: string): BookSource {
   return parseEnumParam(value, [BookSource.OPEN_LIBRARY], "book source");
-}
-
-/** `lang` unrecognized or absent → undefined, letting the provider pick its own default. */
-function safeLang(lang: string | undefined): string | undefined {
-  return Locale.includes(lang as Locale) ? lang : undefined;
 }

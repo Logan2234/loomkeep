@@ -27,6 +27,7 @@ import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import { compareTitles, timeMs } from "../common/sort.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -78,10 +79,8 @@ export interface ListEntriesFilters {
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
-}
-
-function timeMs(iso: string | null): number {
-  return iso ? new Date(iso).getTime() : 0;
+  /** The signed-in user's locale, when known — drives alphabetical collation. */
+  lang?: string;
 }
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
@@ -89,10 +88,11 @@ function compareGameEntries(
   sort: GameSortKey,
   a: GameEntryDto,
   b: GameEntryDto,
+  locale: string | undefined,
 ): number {
   switch (sort) {
     case "title":
-      return a.game.title.localeCompare(b.game.title, "fr");
+      return compareTitles(a.game.title, b.game.title, locale);
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "playtime":
@@ -271,7 +271,7 @@ export class GameLibraryService {
       : "added";
     const asc = filters.order === "asc";
     dtos.sort((a, b) => {
-      const c = compareGameEntries(sort, a, b);
+      const c = compareGameEntries(sort, a, b, filters.lang);
       return asc ? -c : c;
     });
 

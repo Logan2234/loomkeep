@@ -129,13 +129,26 @@ export class ImportJobService {
     this.assertNoRunningJob(userId);
     this.pruneExcessJobs(userId);
     const source = this.sourceOrThrow(sourceId);
-    await this.assertImportAllowed(userId, source.searchDomain);
+
+    // Registered before the first await, not after the parse: the running-job
+    // check above is only worth anything if the slot is claimed in the same
+    // synchronous turn. Otherwise two concurrent POSTs both pass it while the
+    // first is still awaiting its quota check, and the user gets two imports.
+    const job = this.newJob(userId, sourceId, "analyze", null);
+    this.jobs.set(job.id, job);
 
     let parsed: unknown;
 
     try {
+      await this.assertImportAllowed(userId, source.searchDomain);
       parsed = source.parseInput(dto.input);
     } catch (error) {
+      // Nothing ran, so the reservation must go — leaving it behind would lock
+      // the user out of importing until the retention window expires.
+      this.jobs.delete(job.id);
+
+      if (error instanceof AppException) throw error;
+
       // A malformed export is a client error, not a failed job.
       throw new AppException(
         HttpStatus.BAD_REQUEST,
@@ -145,8 +158,7 @@ export class ImportJobService {
       );
     }
 
-    const job = this.newJob(userId, sourceId, "analyze", parsed);
-    this.jobs.set(job.id, job);
+    job.parsed = parsed;
 
     const progress = this.progressFor(job);
     void this.run(job, async () => {

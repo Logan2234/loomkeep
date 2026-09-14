@@ -18,6 +18,8 @@
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import { auth } from "$lib/auth.svelte";
+  import { downloadBlob } from "$lib/download";
   import { isFeatureNew } from "$lib/feature-badges";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
@@ -211,6 +213,27 @@
 
   const groupCode = (code: string): string =>
     `${code.slice(0, 5)}-${code.slice(5)}`;
+
+  /**
+   * Plain text rather than PDF: it needs no dependency, prints fine, and is
+   * readable from a password manager's secure note — which is where these
+   * belong. Shown once and never again, so a copy-to-clipboard alone loses
+   * them to the next thing the user copies.
+   */
+  function downloadCodes() {
+    const header = [
+      m.settings_mfa_recovery_file_header({ account: auth.user?.email ?? "" }),
+      m.settings_mfa_recovery_file_generated({
+        date: formatDate(new Date().toISOString()),
+      }),
+      "",
+    ];
+    downloadBlob(
+      [...header, ...revealedCodes.map(groupCode), ""].join("\r\n"),
+      "text/plain;charset=utf-8",
+      `loomkeep-recovery-codes-${new Date().toISOString().slice(0, 10)}.txt`,
+    );
+  }
 
   // --- WebAuthn credentials ---
   let webauthnNameInput = $state("");
@@ -830,6 +853,10 @@
         {recoveryCopied
           ? m.common_copied()
           : m.settings_mfa_recovery_copy_all()}
+      </button>
+      <button class="btn btn-ghost w-full" onclick={downloadCodes}>
+        <Icon name="download" class="h-4 w-4" />
+        {m.settings_mfa_recovery_download()}
       </button>
       <button class="btn btn-primary w-full" onclick={closeModal}>
         {m.settings_mfa_recovery_acknowledge()}
