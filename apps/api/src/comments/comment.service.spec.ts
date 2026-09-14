@@ -1,5 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import { type Mock, vi } from "vitest";
+import { AppException } from "../common/app.exception";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
@@ -22,6 +23,13 @@ function stubXp(): XpService {
 function stubAchievements(): AchievementService {
   return { evaluate: vi.fn() } as unknown as AchievementService;
 }
+
+const TARGET_ROW = {
+  id: "target-1",
+  type: "SERIES",
+  canonicalSource: "TMDB",
+  externalIds: [],
+};
 
 const AUTHOR = {
   id: "author",
@@ -130,10 +138,17 @@ function make(
       findMany: vi.fn().mockResolvedValue([]),
       ...overrides.user,
     },
-    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    gameItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    bookItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    musicItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    // Present by default: create() checks the target exists before writing a
+    // comment against it (the pair is polymorphic, so nothing else would).
+    // The test for that guard overrides these back to null.
+    // Shaped for both readers of these tables: workTargetExists() only needs a
+    // row to exist, resolveWorkHref() destructures canonicalSource/externalIds.
+    // An empty externalIds keeps the href null, as it was when these mocks
+    // returned nothing at all.
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
+    gameItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
+    bookItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
+    musicItem: { findUnique: vi.fn().mockResolvedValue(TARGET_ROW) },
     userScore: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
 
@@ -288,6 +303,22 @@ describe("CommentService.list — blocking", () => {
 });
 
 describe("CommentService.create", () => {
+  it("refuses a root comment whose target does not exist", async () => {
+    const { svc, prisma } = make({
+      comment: { create: vi.fn() },
+    });
+    (prisma.mediaItem.findUnique as Mock).mockResolvedValue(null);
+
+    await expect(
+      svc.create(AUTHOR.id, {
+        targetType: "MEDIA",
+        targetId: "does-not-exist",
+        text: "a comment on nothing at all",
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+    expect(prisma.comment.create).not.toHaveBeenCalled();
+  });
+
   it("evaluates the comment-family achievements after posting, regardless of the XP length threshold", async () => {
     const { svc, achievements } = make({
       comment: {
