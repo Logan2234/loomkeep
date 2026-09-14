@@ -181,6 +181,8 @@
   <div class="group relative {wrapClass}">
     <!-- Drag-to-pan is a progressive enhancement over native scroll/touch;
          the strip's content (links/buttons) stays independently reachable. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={stripEl}
       role="region"

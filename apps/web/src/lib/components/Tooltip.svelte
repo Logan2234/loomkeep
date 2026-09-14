@@ -48,7 +48,7 @@
   let pos = $state<TooltipPosition>({
     top: 0,
     left: 0,
-    placement,
+    placement: "top",
   });
   let pointerWithin = false;
   let focusWithin = false;
@@ -114,6 +114,19 @@
     else show();
   }
 
+  function onWrapperKeydown(e: KeyboardEvent) {
+    if (
+      hasKeyboardTrigger ||
+      e.target !== e.currentTarget ||
+      (e.key !== "Enter" && e.key !== " ")
+    ) {
+      return;
+    }
+    e.preventDefault();
+    if (open) close();
+    else show();
+  }
+
   function closeOnOutsideClick() {
     if (!supportsHover) open = false;
   }
@@ -154,15 +167,19 @@
   onscroll={() => open && computePos()}
   onresize={() => open && computePos()} />
 
+<!-- The wrapper is only focusable when the snippet has no keyboard-reachable trigger. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <span
   bind:this={wrapperEl}
   class="relative {className}"
+  role={hasKeyboardTrigger ? "presentation" : "button"}
   tabindex={hasKeyboardTrigger ? undefined : 0}
   aria-describedby={hasKeyboardTrigger ? undefined : id}
   onmouseenter={onPointerEnter}
   onmouseleave={onPointerLeave}
   onfocusin={onFocusIn}
   onfocusout={onFocusOut}
+  onkeydown={onWrapperKeydown}
   onclick={tap}>
   {@render children()}
   {#if open}

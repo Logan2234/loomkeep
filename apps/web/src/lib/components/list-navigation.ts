@@ -1,7 +1,7 @@
 export type ListNavigationCommand = "next" | "previous" | "first" | "last";
 
 export function getEnabledOptionIndex(
-  options: ReadonlyArray<{ disabled?: boolean }>,
+  options: ReadonlyArray<object & { disabled?: boolean }>,
   currentIndex: number,
   command: ListNavigationCommand,
 ): number {
