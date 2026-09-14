@@ -26,7 +26,7 @@ function eventRow(over: Record<string, unknown> = {}) {
     id: "e1",
     userId: ACTOR,
     type: "PROGRESS",
-    domain: "VIDEO",
+    domain: "MEDIA",
     targetType: "MEDIA",
     targetId: "m1",
     level: "WORK",
@@ -100,7 +100,7 @@ describe("ActivityService.emit", () => {
       service.emit({
         userId: ACTOR,
         type: "PROGRESS",
-        domain: "VIDEO",
+        domain: "MEDIA",
         targetType: "MEDIA",
         targetId: "m1",
       }),
@@ -116,7 +116,7 @@ describe("ActivityService.emit", () => {
     await service.emit({
       userId: ACTOR,
       type: "PROGRESS",
-      domain: "VIDEO",
+      domain: "MEDIA",
       targetType: "MEDIA",
       targetId: "gone",
     });

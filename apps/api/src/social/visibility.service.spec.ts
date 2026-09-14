@@ -159,7 +159,7 @@ describe("VisibilityService facet audiences", () => {
     const { service, prisma } = make({});
     (prisma.visibilitySetting.findMany as Mock).mockResolvedValue([
       {
-        domain: "VIDEO",
+        domain: "MEDIA",
         facet: "LIBRARY",
         audience: VisibilityAudience.PUBLIC,
       },
@@ -167,13 +167,13 @@ describe("VisibilityService facet audiences", () => {
 
     const settings = await service.getSettingsMap("user-1");
 
-    expect(settings.get("VIDEO:LIBRARY")).toBe(VisibilityAudience.PUBLIC);
+    expect(settings.get("MEDIA:LIBRARY")).toBe(VisibilityAudience.PUBLIC);
   });
 
   it("falls back to the coded default for a facet that was never set", () => {
     const { service } = make({});
 
-    expect(service.audienceFor(new Map(), "VIDEO", "LIBRARY")).toBe(
+    expect(service.audienceFor(new Map(), "MEDIA", "LIBRARY")).toBe(
       VisibilityAudience.FRIENDS,
     );
   });
