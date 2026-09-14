@@ -56,9 +56,9 @@ function backgroundSiblings(node: HTMLElement): HTMLElement[] {
   let directSiblings = true;
 
   while (current?.parentElement) {
-    const parent = current.parentElement;
+    const parentElement: HTMLElement = current.parentElement;
 
-    for (const child of parent.children) {
+    for (const child of parentElement.children) {
       if (
         child !== current &&
         child instanceof HTMLElement &&
@@ -68,8 +68,8 @@ function backgroundSiblings(node: HTMLElement): HTMLElement[] {
       }
     }
 
-    if (parent === document.body) break;
-    current = parent;
+    if (parentElement === document.body) break;
+    current = parentElement;
     directSiblings = false;
   }
 
