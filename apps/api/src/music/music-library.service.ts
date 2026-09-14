@@ -25,6 +25,7 @@ import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import { compareTitles, timeMs } from "../common/sort.util";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -63,10 +64,8 @@ export interface ListEntriesFilters {
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
-}
-
-function timeMs(iso: string | null): number {
-  return iso ? new Date(iso).getTime() : 0;
+  /** The signed-in user's locale, when known — drives alphabetical collation. */
+  lang?: string;
 }
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
@@ -74,14 +73,16 @@ function compareMusicEntries(
   sort: MusicSortKey,
   a: MusicEntryDto,
   b: MusicEntryDto,
+  locale: string | undefined,
 ): number {
   switch (sort) {
     case "title":
-      return a.album.title.localeCompare(b.album.title, "fr");
+      return compareTitles(a.album.title, b.album.title, locale);
     case "artist":
-      return (a.album.artists[0] ?? "").localeCompare(
+      return compareTitles(
+        a.album.artists[0] ?? "",
         b.album.artists[0] ?? "",
-        "fr",
+        locale,
       );
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
@@ -255,7 +256,7 @@ export class MusicLibraryService {
       : "added";
     const asc = filters.order === "asc";
     dtos.sort((a, b) => {
-      const c = compareMusicEntries(sort, a, b);
+      const c = compareMusicEntries(sort, a, b, filters.lang);
       return asc ? -c : c;
     });
 

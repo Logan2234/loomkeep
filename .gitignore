@@ -27,6 +27,7 @@ docker/authelia/public.pem
 # Healthchecks.io read-only API key for Prometheus scraping — same
 # "commit the .example, never the real file" convention as above.
 docker/observability/healthchecks_token
+docker/observability/metrics_token
 
 # Generated OpenAPI contract (apps/api generate:openapi) and the typed
 # client derived from it (apps/web generate:api-types) — regenerated on

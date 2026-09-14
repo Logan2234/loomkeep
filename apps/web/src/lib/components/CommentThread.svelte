@@ -4,12 +4,14 @@
     createComment,
     deleteComment,
     getCommentCount,
+    getCommentReplies,
     getComments,
     reactToComment,
     reportComment,
     unreactToComment,
     updateComment,
   } from "$lib/api/client";
+  import { resolveApiError } from "$lib/api/errors";
   import { auth } from "$lib/auth.svelte";
   import FocusOverlay from "$lib/components/FocusOverlay.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
@@ -98,16 +100,16 @@
   // A deleted top-level comment only earns its tombstone when it still has
   // replies to keep attached; with none, there's nothing left to preserve so
   // it's simply dropped. A deleted reply never has children of its own, so
-  // it's always dropped — no tombstone case applies to it.
+  // it's always dropped — no tombstone case applies to it. Read from
+  // replyCount, not the embedded preview, which is only the thread's tail.
   const visibleComments = $derived(
-    comments.filter((c) => !(c.deleted && c.replies.length === 0)),
+    comments.filter((c) => !(c.deleted && c.replyCount === 0)),
   );
 
-  // Digest mode's own progressive disclosure: capped top-level list (reveals
-  // everything already loaded in one go, rather than incrementally) and a
-  // per-comment "show earlier replies" set.
+  // Digest mode's own progressive disclosure for the top-level list: capped,
+  // and revealing everything already loaded in one go rather than
+  // incrementally.
   let showAllTop = $state(false);
-  let expandedReplies = $state<Set<string>>(new Set());
   const displayedComments = $derived(
     digest && !showAllTop ? visibleComments.slice(0, 5) : visibleComments,
   );
@@ -115,8 +117,45 @@
     digest && !showAllTop ? Math.max(0, visibleComments.length - 5) : 0,
   );
 
-  function expandReplies(id: string) {
-    expandedReplies = new Set(expandedReplies).add(id);
+  // Replies beyond the preview each list page embeds: fetched on demand from
+  // /comments/{id}/replies, newest page first, accumulated per comment.
+  let loadedReplies = $state<Map<string, CommentDto[]>>(new Map());
+  let nextReplyPage = $state<Map<string, number>>(new Map());
+  let loadingReplies = $state<Set<string>>(new Set());
+
+  /**
+   * What to render under a comment: the embedded preview until "earlier
+   * replies" is used, then the accumulated pages — with the latest preview
+   * merged back in on every poll, so a reply posted meanwhile shows up
+   * without collapsing the thread.
+   */
+  function repliesOf(c: CommentDto): CommentDto[] {
+    const loaded = loadedReplies.get(c.id);
+    if (!loaded) return digest ? c.replies.slice(-2) : c.replies;
+
+    const byId = new Map([...loaded, ...c.replies].map((r) => [r.id, r]));
+    return [...byId.values()].sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    );
+  }
+
+  async function expandReplies(id: string) {
+    if (loadingReplies.has(id)) return;
+    loadingReplies = new Set(loadingReplies).add(id);
+
+    try {
+      const page = nextReplyPage.get(id) ?? 1;
+      const result = await getCommentReplies(id, page);
+      const merged = [...(loadedReplies.get(id) ?? []), ...result.items];
+      loadedReplies = new Map(loadedReplies).set(id, merged);
+      nextReplyPage = new Map(nextReplyPage).set(id, page + 1);
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    } finally {
+      const next = new Set(loadingReplies);
+      next.delete(id);
+      loadingReplies = next;
+    }
   }
 
   function invalidate() {
@@ -182,7 +221,7 @@
     if (!focusedId) return null;
     for (const c of visibleComments) {
       if (c.id === focusedId) return { comment: c, isReply: false };
-      const reply = c.replies.find((r) => r.id === focusedId);
+      const reply = repliesOf(c).find((r) => r.id === focusedId);
       if (reply) return { comment: reply, isReply: true };
     }
     return null;
@@ -650,14 +689,11 @@
         <div class="relative">
           <div class="flex flex-col gap-2">
             {#each displayedComments as c (c.id)}
-              {@const shownReplies =
-                digest && !expandedReplies.has(c.id)
-                  ? c.replies.slice(-2)
-                  : c.replies}
-              {@const hiddenReplyCount =
-                digest && !expandedReplies.has(c.id)
-                  ? Math.max(0, c.replies.length - 2)
-                  : 0}
+              {@const shownReplies = repliesOf(c)}
+              {@const hiddenReplyCount = Math.max(
+                0,
+                c.replyCount - shownReplies.length,
+              )}
               {@render commentCard(c, false)}
               {#each shownReplies as r (r.id)}
                 {#if !r.deleted}
@@ -667,7 +703,8 @@
               {#if hiddenReplyCount > 0}
                 <button
                   type="button"
-                  class="timecode ml-8 block text-left text-xs hover:underline"
+                  class="timecode ml-8 block text-left text-xs hover:underline disabled:opacity-50"
+                  disabled={loadingReplies.has(c.id)}
                   onclick={() => expandReplies(c.id)}>
                   {hiddenReplyCount === 1
                     ? m.comments_more_replies_one({ count: hiddenReplyCount })

@@ -6,6 +6,7 @@ import {
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
 } from "@loomkeep/shared";
+import { Transform } from "class-transformer";
 import {
   Equals,
   IsEmail,
@@ -16,8 +17,10 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
+import { normalizeEmail } from "../../common/email.util";
 
 export class RegisterDto implements RegisterRequestDto {
+  @Transform(({ value }) => normalizeEmail(value))
   @IsEmail()
   email!: string;
 

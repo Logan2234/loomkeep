@@ -5,7 +5,7 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const locales = ["fr", "en"] as const;
-const names = ["common", "other", "errors", "gamification"] as const;
+const names = ["common", "other", "errors", "gamification", "admin"] as const;
 const catalogs = Object.fromEntries(
   locales.map((locale) => [
     locale,

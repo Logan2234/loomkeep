@@ -34,6 +34,7 @@ import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import { compareTitles, timeMs } from "../common/sort.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
@@ -108,10 +109,6 @@ export interface ListEntriesFilters {
   lang?: string;
 }
 
-function timeMs(iso: string | null): number {
-  return iso ? new Date(iso).getTime() : 0;
-}
-
 function mediaProgressPct(entry: LibraryEntryDto): number {
   if (!entry.progress || entry.progress.totalEpisodes === 0) return 0;
   return Math.round(
@@ -124,10 +121,11 @@ function compareMediaEntries(
   sort: MediaSortKey,
   a: LibraryEntryDto,
   b: LibraryEntryDto,
+  locale: string | undefined,
 ): number {
   switch (sort) {
     case "title":
-      return a.mediaItem.title.localeCompare(b.mediaItem.title, "fr");
+      return compareTitles(a.mediaItem.title, b.mediaItem.title, locale);
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "progress":
@@ -307,7 +305,7 @@ export class LibraryService {
       : "recent";
     const asc = filters.order === "asc";
     filtered.sort((a, b) => {
-      const c = compareMediaEntries(sort, a, b);
+      const c = compareMediaEntries(sort, a, b, filters.lang);
       return asc ? -c : c;
     });
 

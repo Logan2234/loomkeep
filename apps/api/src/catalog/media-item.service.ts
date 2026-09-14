@@ -7,6 +7,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { MediaItem } from "@prisma/client";
 import { mapWithConcurrency } from "../common/concurrency.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -279,9 +280,37 @@ export class MediaItemService {
     // locale because this call site guarantees it's what's actually stored.
     // Passing `lang` through here would silently break that guarantee.
     const details = await this.providerFor(source).getDetails(sourceId, type);
-    return existingRef
-      ? this.refresh(source, sourceId, existingRef.mediaItemId, type, details)
-      : this.createFresh(source, type, details);
+
+    if (existingRef) {
+      return this.refresh(
+        source,
+        sourceId,
+        existingRef.mediaItemId,
+        type,
+        details,
+      );
+    }
+
+    try {
+      return await this.createFresh(source, type, details);
+    } catch (err) {
+      // Two requests can reach here for the same uncached media — a double
+      // click, two tabs, or an import resolving titles in parallel — since the
+      // lookup above and this insert are seconds apart across a provider call.
+      // The loser of that race violates MediaExternalId's unique constraint;
+      // the winner's row is exactly what it was about to create, so adopt it
+      // instead of failing the user's request with a 500.
+      if (!isUniqueViolation(err)) throw err;
+
+      const winner = await this.prisma.mediaExternalId.findUnique({
+        where: {
+          source_externalId_type: { source, externalId: sourceId, type },
+        },
+        include: { mediaItem: true },
+      });
+      if (winner) return winner.mediaItem;
+      throw err;
+    }
   }
 
   private async createFresh(

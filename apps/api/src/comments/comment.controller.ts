@@ -89,6 +89,28 @@ export class CommentController {
     );
   }
 
+  /**
+   * Replies to one comment, newest first. Split out of `list` (which only
+   * embeds a short preview) so a comment with hundreds of replies doesn't
+   * decide the size of the thread page.
+   *
+   * Two segments like `:type/:id` above, and matched ahead of it because
+   * Fastify's router prefers a static segment over a parametric one whatever
+   * the declaration order — `/comments/<id>/replies` never reads as
+   * `type=<id>, id=replies`.
+   */
+  @Get(":id/replies")
+  @ApiOkResponse({ type: PagedResponseDto(CommentResponseDto) })
+  listReplies(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<CommentDto>> {
+    const parsed = parsePageQuery(page, limit, COMMENT_PAGE_SIZE);
+    return this.comments.listReplies(user.sub, id, parsed.page, parsed.limit);
+  }
+
   // Anti-flood: comments (unlike reviews) have no per-target cap, so without a
   // per-user throttle a single person could post unbounded top-level comments
   // and replies back-to-back.

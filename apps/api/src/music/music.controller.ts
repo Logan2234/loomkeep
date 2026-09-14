@@ -24,6 +24,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -76,6 +77,7 @@ export class MusicController {
     @Query("order") order?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("lang") lang?: string,
   ): Promise<PagedResult<MusicEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.listEntries(user.sub, {
@@ -86,6 +88,7 @@ export class MusicController {
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
+      lang: safeLang(lang),
     });
   }
 

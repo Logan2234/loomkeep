@@ -2,10 +2,12 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parse } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
+import enAdmin from "../../../messages/en/admin.json";
 import enCommon from "../../../messages/en/common.json";
 import enErrors from "../../../messages/en/errors.json";
 import enGamification from "../../../messages/en/gamification.json";
 import enOther from "../../../messages/en/other.json";
+import frAdmin from "../../../messages/fr/admin.json";
 import frCommon from "../../../messages/fr/common.json";
 import frErrors from "../../../messages/fr/errors.json";
 import frGamification from "../../../messages/fr/gamification.json";
@@ -25,8 +27,8 @@ const routes = readdirSync(routeDirectory, {
     ),
   }));
 const catalogs: Record<string, Record<string, string>> = {
-  fr: { ...frCommon, ...frErrors, ...frGamification, ...frOther },
-  en: { ...enCommon, ...enErrors, ...enGamification, ...enOther },
+  fr: { ...frAdmin, ...frCommon, ...frErrors, ...frGamification, ...frOther },
+  en: { ...enAdmin, ...enCommon, ...enErrors, ...enGamification, ...enOther },
 };
 const textAttributes = new Set([
   "title",

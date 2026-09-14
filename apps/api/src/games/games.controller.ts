@@ -25,6 +25,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
 import { AgeGateService } from "../users/age-gate.service";
@@ -87,6 +88,7 @@ export class GamesController {
     @Query("order") order?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("lang") lang?: string,
   ): Promise<PagedResult<GameEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listEntries(user.sub, {
@@ -97,6 +99,7 @@ export class GamesController {
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
+      lang: safeLang(lang),
     });
   }
 

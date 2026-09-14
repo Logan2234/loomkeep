@@ -1,6 +1,5 @@
-# Scrape config for node_exporter + postgres_exporter + Caddy's own
-# /metrics. No app-level metrics yet — covers the host, DB, and reverse
-# proxy, not the API process itself.
+# Scrape config for the API + node_exporter + postgres_exporter + Caddy's own
+# /metrics — the host, DB, reverse proxy and the API process.
 global:
   scrape_interval: 15s
 
@@ -24,6 +23,18 @@ scrape_configs:
   - job_name: caddy
     static_configs:
       - targets: ["caddy:2019"]
+
+  # The API's own technical metrics (Node runtime + HTTP latency) — reached
+  # over the internal Docker network, never through Caddy. Bearer token read
+  # at scrape time from a gitignored file so METRICS_API_KEY stays out of
+  # this committed file; the endpoint fails closed without it.
+  - job_name: api
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ["api:3000"]
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/metrics_token
 
   # Healthchecks.io's per-project metrics endpoint — see root README "Job
   # monitoring". Bearer token read at scrape time from a gitignored file so

@@ -72,6 +72,8 @@ export const keys = {
   },
   lists: {
     editable: () => ["lists", "editable"] as const,
+    membership: (targetType: string, targetId: string) =>
+      ["lists", "membership", targetType, targetId] as const,
     forUser: (username: string) => ["lists", "for-user", username] as const,
     members: (listId: string) => ["lists", "members", listId] as const,
     detail: (listId: string) => ["lists", "detail", listId] as const,

@@ -1,3 +1,4 @@
+import { getLocale } from "$lib/paraglide/runtime.js";
 import type { UpdateGameEntryDto, UpsertGameEntryDto } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
@@ -16,6 +17,7 @@ export interface ListGamesFilters {
 export function listGames(filters: ListGamesFilters = {}) {
   return typedRequest("/games", {
     query: {
+      lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
       status: filters.statuses,
