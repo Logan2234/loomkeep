@@ -1,9 +1,14 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages";
+  import { tick } from "svelte";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
+  import {
+    getEnabledOptionIndex,
+    type ListNavigationCommand,
+  } from "./list-navigation";
 
-  type Option = { label: string; value: string };
+  type Option = { label: string; value: string; disabled?: boolean };
 
   let {
     label,
@@ -20,7 +25,7 @@
     options: Option[];
     values?: string[];
     multiselect?: boolean;
-    /** Adds a text filter at the top of the panel. Single-select only. */
+    /** Adds a text filter at the top of the panel. */
     searchable?: boolean;
     searchPlaceholder?: string;
     name?: string;
@@ -30,6 +35,9 @@
 
   let query = $state("");
   let searchInput: HTMLInputElement | undefined = $state();
+  let activeIndex = $state(-1);
+  const componentId = crypto.randomUUID();
+  const listboxId = `combobox-${componentId}-listbox`;
 
   const selectedOption = $derived(options.find((o) => o.value === values[0]));
   const resolvedSearchPlaceholder = $derived(
@@ -58,17 +66,123 @@
         ? `${label}: ${selectedOption.label}`
         : label,
   );
+  const activeOptionId = $derived(
+    activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined,
+  );
 
-  function choose(value: string, close: () => void) {
+  function choose(option: Option, close: () => void) {
+    if (option.disabled) return;
     if (multiselect) {
       onChange(
-        values.includes(value)
-          ? values.filter((v) => v !== value)
-          : [...values, value],
+        values.includes(option.value)
+          ? values.filter((value) => value !== option.value)
+          : [...values, option.value],
       );
     } else {
-      onChange([value]);
+      onChange([option.value]);
       close();
+    }
+  }
+
+  function resetActive(command: "first" | "last" = "first") {
+    const selected = visibleOptions.findIndex(
+      (option) => values.includes(option.value) && !option.disabled,
+    );
+    activeIndex =
+      command === "first" && selected >= 0
+        ? selected
+        : getEnabledOptionIndex(visibleOptions, -1, command);
+  }
+
+  function moveActive(command: ListNavigationCommand) {
+    activeIndex = getEnabledOptionIndex(visibleOptions, activeIndex, command);
+  }
+
+  function focusSearchInput() {
+    if (searchable) void tick().then(() => searchInput?.focus());
+  }
+
+  function openPanel(
+    e: Event,
+    toggle: (event: Event) => void,
+    command: "first" | "last" = "first",
+  ) {
+    query = "";
+    resetActive(command);
+    toggle(e);
+    focusSearchInput();
+  }
+
+  function chooseActive(close: () => void) {
+    const option = visibleOptions[activeIndex];
+    if (option) choose(option, close);
+  }
+
+  function onTriggerKeydown(
+    e: KeyboardEvent,
+    open: boolean,
+    toggle: (event: Event) => void,
+    close: () => void,
+  ) {
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      close();
+      return;
+    }
+
+    const command =
+      e.key === "ArrowDown"
+        ? "next"
+        : e.key === "ArrowUp"
+          ? "previous"
+          : e.key === "Home"
+            ? "first"
+            : e.key === "End"
+              ? "last"
+              : undefined;
+    if (command) {
+      e.preventDefault();
+      if (!open) {
+        openPanel(
+          e,
+          toggle,
+          command === "previous" || command === "last" ? "last" : "first",
+        );
+      } else {
+        moveActive(command);
+      }
+      return;
+    }
+
+    if (open && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      chooseActive(close);
+    }
+  }
+
+  function onSearchKeydown(e: KeyboardEvent, close: () => void) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+      return;
+    }
+
+    const command =
+      e.key === "ArrowDown"
+        ? "next"
+        : e.key === "ArrowUp"
+          ? "previous"
+          : e.key === "Home"
+            ? "first"
+            : e.key === "End"
+              ? "last"
+              : undefined;
+    if (command) {
+      e.preventDefault();
+      moveActive(command);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      chooseActive(close);
     }
   }
 </script>
@@ -79,24 +193,28 @@
   {/each}
 {/if}
 
-<Dropdown role="listbox" class="min-w-48">
-  {#snippet trigger({ open, toggle })}
+<Dropdown role="presentation" class="min-w-48">
+  {#snippet trigger({ open, toggle, close })}
     <button
       type="button"
+      role={searchable ? undefined : "combobox"}
       class="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40 {multiselect &&
       values.length > 0
         ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
         : 'border-border text-dim hover:text-fg'}"
       aria-haspopup="listbox"
       aria-expanded={open}
+      aria-controls={open ? listboxId : undefined}
+      aria-activedescendant={!searchable && open ? activeOptionId : undefined}
       aria-label={accessibleLabel}
       {disabled}
+      onkeydown={(e) => onTriggerKeydown(e, open, toggle, close)}
       onclick={(e) => {
         if (!open) {
-          query = "";
-          if (searchable) queueMicrotask(() => searchInput?.focus());
+          openPanel(e, toggle);
+        } else {
+          toggle(e);
         }
-        toggle(e);
       }}>
       {triggerText}
       <Icon
@@ -113,21 +231,41 @@
           bind:this={searchInput}
           bind:value={query}
           type="text"
+          role="combobox"
           aria-label={resolvedSearchPlaceholder}
+          aria-expanded="true"
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={activeOptionId}
           enterkeyhint="search"
           placeholder={resolvedSearchPlaceholder}
+          oninput={() => resetActive()}
+          onkeydown={(e) => onSearchKeydown(e, close)}
           class="border-border bg-surface-2 w-full rounded-md border px-2 py-1 text-sm" />
       </div>
     {/if}
-    <div class="overflow-y-auto">
-      {#each visibleOptions as o (o.value)}
+    <div
+      id={listboxId}
+      role="listbox"
+      aria-label={label}
+      aria-multiselectable={multiselect ? "true" : undefined}
+      class="overflow-y-auto">
+      {#each visibleOptions as o, index (o.value)}
         {@const on = values.includes(o.value)}
         <button
+          id={`${listboxId}-option-${index}`}
           type="button"
           role="option"
           aria-selected={on}
-          class="hover:bg-surface-2 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-40"
-          onclick={() => choose(o.value, close)}>
+          aria-disabled={o.disabled ? "true" : undefined}
+          tabindex="-1"
+          disabled={o.disabled}
+          class="hover:bg-surface-2 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-40 {index ===
+          activeIndex
+            ? 'bg-surface-2'
+            : ''}"
+          onmouseenter={() => !o.disabled && (activeIndex = index)}
+          onclick={() => choose(o, close)}>
           {#if multiselect}
             <span
               class="grid h-4 w-4 shrink-0 place-items-center rounded border {on
@@ -145,9 +283,11 @@
           </span>
         </button>
       {/each}
-      {#if searchable && visibleOptions.length === 0}
-        <p class="text-dim px-3 py-2 text-sm">{m.common_no_results()}.</p>
-      {/if}
     </div>
+    {#if searchable && visibleOptions.length === 0}
+      <p role="status" class="text-dim px-3 py-2 text-sm">
+        {m.common_no_results()}.
+      </p>
+    {/if}
   {/snippet}
 </Dropdown>

@@ -8,6 +8,7 @@
     computeDropdownPosition,
     type DropdownPosition,
   } from "./dropdown-position";
+  import { getEnabledOptionIndex } from "./list-navigation";
 
   const reduced = prefersReducedMotion();
 
@@ -19,9 +20,18 @@
     children,
   }: {
     placement?: "bottom-start" | "bottom-end";
-    role?: "menu" | "listbox";
+    role?: "menu" | "presentation";
     class?: string;
-    trigger: Snippet<[{ open: boolean; toggle: (e: MouseEvent) => void }]>;
+    trigger: Snippet<
+      [
+        {
+          open: boolean;
+          toggle: (e: Event) => void;
+          close: () => void;
+          onkeydown: (e: KeyboardEvent) => void;
+        },
+      ]
+    >;
     children: Snippet<[{ close: () => void }]>;
   } = $props();
 
@@ -76,12 +86,19 @@
     positioned = true;
   }
 
-  function toggle(e: MouseEvent) {
+  function openPanel(e: Event, focus?: "first" | "last") {
+    triggerElement = e.currentTarget as HTMLElement;
+    positioned = false;
+    open = true;
+    void tick().then(() => {
+      updatePosition();
+      if (focus) focusMenuItem(focus);
+    });
+  }
+
+  function toggle(e: Event) {
     if (!open) {
-      triggerElement = e.currentTarget as HTMLElement;
-      positioned = false;
-      open = true;
-      void tick().then(updatePosition);
+      openPanel(e, role === "menu" ? "first" : undefined);
     } else {
       close();
     }
@@ -89,6 +106,80 @@
 
   function close() {
     open = false;
+    void tick().then(() => triggerElement?.focus());
+  }
+
+  function menuItems() {
+    return Array.from(
+      panelElement?.querySelectorAll<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)',
+      ) ?? [],
+    );
+  }
+
+  function focusMenuItem(command: "next" | "previous" | "first" | "last") {
+    const items = menuItems();
+    const current = items.indexOf(document.activeElement as HTMLElement);
+    const index = getEnabledOptionIndex(items, current, command);
+    items.forEach((item) => (item.tabIndex = -1));
+    if (index >= 0) {
+      items[index].tabIndex = 0;
+      items[index].focus();
+    }
+  }
+
+  function onTriggerKeydown(e: KeyboardEvent) {
+    if (role !== "menu") return;
+    const command =
+      e.key === "ArrowDown"
+        ? "next"
+        : e.key === "ArrowUp"
+          ? "previous"
+          : e.key === "Home"
+            ? "first"
+            : e.key === "End"
+              ? "last"
+              : undefined;
+    if (!command) return;
+
+    e.preventDefault();
+    if (!open) {
+      openPanel(
+        e,
+        command === "previous" || command === "last" ? "last" : "first",
+      );
+    } else {
+      focusMenuItem(command);
+    }
+  }
+
+  function onPanelKeydown(e: KeyboardEvent) {
+    if (role !== "menu") return;
+    if (e.key === "Tab") {
+      queueMicrotask(() => (open = false));
+      return;
+    }
+    const command =
+      e.key === "ArrowDown"
+        ? "next"
+        : e.key === "ArrowUp"
+          ? "previous"
+          : e.key === "Home"
+            ? "first"
+            : e.key === "End"
+              ? "last"
+              : undefined;
+    if (!command) return;
+
+    e.preventDefault();
+    focusMenuItem(command);
+  }
+
+  function onWindowKeydown(e: KeyboardEvent) {
+    if (open && e.key === "Escape") {
+      e.preventDefault();
+      close();
+    }
   }
 
   $effect(() => {
@@ -110,11 +201,9 @@
   });
 </script>
 
-<svelte:window
-  onkeydown={(e) => e.key === "Escape" && close()}
-  onresize={updatePosition} />
+<svelte:window onkeydown={onWindowKeydown} onresize={updatePosition} />
 
-{@render trigger({ open, toggle })}
+{@render trigger({ open, toggle, close, onkeydown: onTriggerKeydown })}
 
 {#if open}
   <button
@@ -128,11 +217,12 @@
     }}></button>
   <div
     bind:this={panelElement}
-    {role}
+    role={role === "presentation" ? undefined : role}
     style="top: {panelPos.top}px; left: {panelPos.left}px; {positioned
       ? `max-width: ${panelPos.maxWidth}px; max-height: ${panelPos.maxHeight}px; transform-origin: center ${panelPos.originY};`
       : 'visibility: hidden;'}"
     transition:scale|global={{ duration: reduced ? 0 : 120, start: 0.95 }}
+    onkeydown={onPanelKeydown}
     class="border-border bg-surface fixed z-40 flex flex-col overflow-hidden rounded-lg border shadow-lg {panelClass}">
     {@render children({ close })}
   </div>

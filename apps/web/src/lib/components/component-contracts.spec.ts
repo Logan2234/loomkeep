@@ -66,4 +66,41 @@ describe("shared component contracts", () => {
     expect(source).toContain("aria-label");
     expect(source).toContain("aria-labelledby");
   });
+
+  it("keeps carousel navigation visible and usable from the keyboard", () => {
+    const source = componentSource("Carousel");
+
+    expect(source).toContain('role="region"');
+    expect(source).toContain('tabindex="0"');
+    expect(source).toContain("aria-label={label}");
+    expect(source).toContain("onkeydown={onKeydown}");
+    expect(source).toContain("focus-visible:opacity-100");
+  });
+
+  it("exposes combobox selection through one composite tab stop", () => {
+    const source = componentSource("Combobox");
+
+    expect(source).toContain('role="combobox"');
+    expect(source).toContain("aria-activedescendant");
+    expect(source).toContain("aria-multiselectable");
+    expect(source).toContain('tabindex="-1"');
+    expect(source).toContain("aria-disabled");
+  });
+
+  it("supports arrow navigation and restores focus in dropdown menus", () => {
+    const source = componentSource("Dropdown");
+
+    expect(source).toContain("onTriggerKeydown");
+    expect(source).toContain("onPanelKeydown");
+    expect(source).toContain("triggerElement?.focus()");
+  });
+
+  it("opens tooltips for keyboard focus and dismisses them with Escape", () => {
+    const source = componentSource("Tooltip");
+
+    expect(source).toContain("onfocusin={onFocusIn}");
+    expect(source).toContain("onfocusout={onFocusOut}");
+    expect(source).toContain('e.key === "Escape"');
+    expect(source).toContain('setAttribute("aria-describedby"');
+  });
 });

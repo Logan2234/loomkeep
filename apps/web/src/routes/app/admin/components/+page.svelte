@@ -716,7 +716,7 @@
 {/snippet}
 
 {#snippet carousel()}
-  <Carousel items={CAROUSEL_ITEMS} keyOf={(item) => item}>
+  <Carousel items={CAROUSEL_ITEMS} keyOf={(item) => item} label="Carousel">
     {#snippet card(title)}
       <div class="card w-32">
         <Poster {title} />

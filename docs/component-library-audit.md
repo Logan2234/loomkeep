@@ -14,33 +14,6 @@ Scope: shared UI primitives, their real application usages, visual responsive be
 
 ## P1 — shared interaction and accessibility defects
 
-### DS-002 — Rebuild Dropdown and Combobox keyboard behavior
-
-**Components:** `Dropdown`, `Combobox`.
-
-Opening a searchable combobox currently requests focus before the search input is mounted. Open the panel first, then focus after render. The backdrop must not become the first keyboard destination.
-
-Define and implement one coherent interaction contract:
-
-- remember and restore the trigger focus;
-- focus search input on opening when searchable;
-- support Escape, Enter/Space, ArrowUp/ArrowDown, Home and End;
-- expose the correct listbox/option semantics, selection state and active descendant or roving tabindex;
-- handle both single and multiselect variants without every option becoming a tab stop;
-- expose disabled options and empty search results correctly.
-
-**Regression coverage:** single, multi and searchable variants; first/last option; no result; disabled option; selection with keyboard; Escape from trigger/search/list; focus restoration; French and English strings.
-
-### DS-004 — Make Tooltip usable without a mouse
-
-**Component:** `Tooltip`.
-
-Open the tooltip on focus as well as hover; close it on focus leaving, pointer leaving and Escape. The descriptive relationship must be attached to the actual interactive trigger, not a presentational wrapper. Add collision and viewport clamping for long text.
-
-Keep touch behavior intentional: do not create a tooltip that traps touch users without an obvious dismissal path.
-
-**Regression coverage:** hover; keyboard focus; Escape; focus transfer; icon-only trigger accessible name; long translated text; mobile edge placement.
-
 ### DS-005 — Fix confirmed WCAG contrast failures
 
 **Components:** `BetaBadge`, adult badge in `Poster`, error `Banner`, OMDb `ProviderMark`.
@@ -55,16 +28,6 @@ Correct the foreground/background combinations that fail WCAG AA in one or both 
 Use semantic tokens or component-specific token pairs. Do not alter brand colors blindly; a border, background or accessible fallback treatment may be preferable for provider marks.
 
 **Regression coverage:** axe contrast checks in both themes and visual review against the Séance palette.
-
-### DS-006 — Make Carousel visibly and fully keyboard-accessible
-
-**Component:** `Carousel`.
-
-Make the carousel viewport reachable and named when its children are not independently focusable. Support ArrowLeft and ArrowRight on the viewport without interfering with interactive descendants. Show previous/next controls whenever they receive keyboard focus, not only on mouse hover. Increase dot hit areas while retaining the visual density.
-
-Review the paging calculations: current arrow movement and dot positioning use different fractions, and the rounded page count can undercount partial pages. Respect `prefers-reduced-motion` for programmatic scrolling.
-
-**Regression coverage:** keyboard navigation; focus-visible arrows; no-item/one-item/many-item variants; slides with and without links; partial last page; drag cleanup on unmount; reduced motion.
 
 ## P2 — semantic quality, responsive resilience and maintainability
 
@@ -143,12 +106,6 @@ Retain compact visuals but enlarge interactive hit areas towards 40–44 px usin
 
 **Regression coverage:** measured hitboxes on phone layouts and compact application rows.
 
-### DS-P02 — Complete multiselect Combobox ARIA
-
-**Component:** `Combobox`.
-
-As part of DS-002, expose multiselect semantics, a real listbox/option relationship and selection state. Validate the final model with NVDA/Firefox and VoiceOver/Safari; static ARIA inspection is not sufficient.
-
 ### DS-P04 — Improve RelativeTime semantics only if product value warrants it
 
 **Component:** `RelativeTime`.
@@ -156,12 +113,6 @@ As part of DS-002, expose multiselect semantics, a real listbox/option relations
 Use a semantic `<time datetime>` element. Keep the full timestamp available via accessible text/title without desktop hover color behavior. Decide separately whether live refresh is needed: it should be bounded and justified by real long-lived pages, not added automatically.
 
 **Regression coverage:** timestamp semantics and a long-open-page scenario only if refresh is introduced.
-
-### DS-P06 — Harden Carousel geometry and lifecycle handling
-
-**Component:** `Carousel`.
-
-This is implemented alongside DS-006: make dot count and movement derive from one geometry model, disable smooth scrolling under reduced motion and guarantee pointer listeners are removed if the component unmounts mid-drag.
 
 ### DS-P07 — Decide whether Wizard is truly generic
 

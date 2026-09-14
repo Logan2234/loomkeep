@@ -401,6 +401,7 @@
                 <Carousel
                   bind:this={resumeCarousel}
                   items={toWatch}
+                  label={`${m.common_Media()} · ${m.home_media_to_watch()}`}
                   keyOf={(e) => e.id}>
                   {#snippet card(e)}
                     <a
@@ -471,7 +472,10 @@
               </a>
             </div>
             {#if playingGames.length > 0}
-              <Carousel items={playingGames} keyOf={(e) => e.id}>
+              <Carousel
+                items={playingGames}
+                label={`${m.common_Games()} · ${m.home_games_playing()}`}
+                keyOf={(e) => e.id}>
                 {#snippet card(e)}
                   <a href={`/app/games/${e.game.sourceId}`} class="block w-24">
                     <div
@@ -573,7 +577,10 @@
               </a>
             </div>
             {#if toListenAlbums.length > 0}
-              <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
+              <Carousel
+                items={toListenAlbums}
+                label={`${m.common_Music()} · ${m.home_music_listening()}`}
+                keyOf={(e) => e.id}>
                 {#snippet card(e)}
                   <a href={`/app/music/${e.album.sourceId}`} class="block w-24">
                     <div
