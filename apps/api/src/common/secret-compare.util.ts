@@ -24,6 +24,14 @@ const COMPARISON_KEY = randomBytes(32);
  * Not a password primitive. These are high-entropy machine secrets (API keys,
  * HMAC signatures) compared in memory — a stored user password needs bcrypt
  * (see `BCRYPT_ROUNDS` in auth.service.ts), which is a different problem.
+ *
+ * CodeQL's `js/insufficient-password-hash` flags this: it sees a value read
+ * from config reaching a non-KDF hash and infers a password. The alert is
+ * dismissed as a false positive, and following its advice would make things
+ * worse — a deliberately slow KDF on every API request is a denial-of-service
+ * vector, and it protects nothing here since no digest is ever stored or sent.
+ * The only two callers are `PublicStatsGuard` (a machine API key) and
+ * `QuackbackWebhookGuard` (an already-computed HMAC digest); keep it that way.
  */
 export function secretsMatch(expected: string, provided: string): boolean {
   return timingSafeEqual(fingerprint(expected), fingerprint(provided));
