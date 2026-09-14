@@ -76,30 +76,88 @@ export class XpService {
     sourceId: string,
     amountOverride?: number,
   ): Promise<void> {
-    if (!isGamificationEnabled(this.config, this.flags)) return;
+    if (await this.creditEntry(userId, reason, sourceId, amountOverride)) {
+      await this.recomputeScore(userId);
+    }
+  }
+
+  /**
+   * Credits the same reason for several sources of one user (bulk watch
+   * marking). Each iteration re-checks the daily cap against what's already
+   * been credited (including earlier iterations of this same loop), so a
+   * large batch can never bypass the cap — it just stops crediting once the
+   * cap is hit.
+   *
+   * The score is resummed once at the end rather than per entry: the resum
+   * (rather than an increment) is a deliberate integrity choice, but it
+   * scans the user's whole ledger, so marking a 24-episode season used to
+   * cost 24 full sums for one final value.
+   */
+  async awardMany(
+    userId: string,
+    reason: XpReason,
+    sourceIds: string[],
+  ): Promise<void> {
+    let credited = false;
+
+    for (const sourceId of sourceIds) {
+      if (await this.creditEntry(userId, reason, sourceId)) credited = true;
+    }
+
+    if (credited) await this.recomputeScore(userId);
+  }
+
+  /**
+   * Writes one ledger row if the feature, the social gate and the daily cap
+   * all allow it. Returns whether a row was actually created — i.e. whether
+   * the caller owes a `recomputeScore`.
+   */
+  private async creditEntry(
+    userId: string,
+    reason: XpReason,
+    sourceId: string,
+    amountOverride?: number,
+  ): Promise<boolean> {
+    if (!isGamificationEnabled(this.config, this.flags)) return false;
 
     const rule = XP_RULES[reason];
-    if (rule.socialGated && !isSocialEnabled(this.config, this.flags)) return;
+    if (rule.socialGated && !isSocialEnabled(this.config, this.flags))
+      return false;
     // Only ADMIN_ADJUSTMENT (B8, not this ticket) has no fixed amount and no
     // override — its callers will set XpEntry.amount directly rather than
     // going through this registry-driven path.
     const amount = amountOverride ?? rule.amount;
-    if (amount === undefined) return;
+    if (amount === undefined) return false;
 
-    if (rule.dailyCap !== undefined) {
-      const reached = await this.dailyCapReached(userId, reason, rule.dailyCap);
-      if (reached) return;
-    }
+    const data = {
+      userId,
+      reason,
+      sourceType: rule.sourceType,
+      sourceId,
+      amount,
+    };
+    const cap = rule.dailyCap;
 
     try {
-      await this.prisma.xpEntry.create({
-        data: {
-          userId,
-          reason,
-          sourceType: rule.sourceType,
-          sourceId,
-          amount,
-        },
+      // An uncapped reason is a unique milestone: nothing to read first, and
+      // the unique constraint is what makes it idempotent.
+      if (cap === undefined) {
+        await this.prisma.xpEntry.create({ data });
+        return true;
+      }
+
+      return await this.prisma.$transaction(async (tx) => {
+        // Serialises concurrent awards for this (user, reason) pair only.
+        // Reading the day's count and then inserting is a TOCTOU otherwise:
+        // two parallel requests both see the cap as not yet reached and both
+        // credit, which the unique constraint can't catch (different
+        // sources). Released on commit/rollback, hence _xact_.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${reason}::text))`;
+
+        if (await this.dailyCapReached(tx, userId, reason, cap)) return false;
+
+        await tx.xpEntry.create({ data });
+        return true;
       });
     } catch (err) {
       // A concurrent/retried award() on the same source hits the unique
@@ -112,29 +170,10 @@ export class XpService {
         this.logger.debug(
           `XP entry already exists for ${reason}/${sourceId} (user ${userId})`,
         );
-        return;
+        return false;
       }
 
       throw err;
-    }
-
-    await this.recomputeScore(userId);
-  }
-
-  /**
-   * Credits the same reason for several sources of one user (bulk watch
-   * marking). A plain loop over `award`: each call re-checks the daily cap
-   * against what's already been credited (including earlier iterations of
-   * this same loop), so a large batch can never bypass the cap — it just
-   * stops crediting once the cap is hit.
-   */
-  async awardMany(
-    userId: string,
-    reason: XpReason,
-    sourceIds: string[],
-  ): Promise<void> {
-    for (const sourceId of sourceIds) {
-      await this.award(userId, reason, sourceId);
     }
   }
 
@@ -266,13 +305,18 @@ export class XpService {
    * whole ledger, then filtered in memory by `localDay` — simpler than
    * deriving the local midnight-to-midnight range as UTC timestamps, and
    * cheap at these volumes (a handful of rows per user/reason/day).
+   *
+   * Always called inside `creditEntry`'s advisory-locked transaction, hence
+   * the `tx` client: counting on one connection and inserting on another
+   * would put the race straight back.
    */
   private async dailyCapReached(
+    tx: Prisma.TransactionClient,
     userId: string,
     reason: XpReason,
     cap: number,
   ): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
+    const user = await tx.user.findUnique({
       where: { id: userId },
       select: { timezone: true },
     });
@@ -282,7 +326,7 @@ export class XpService {
     const today = localDay(user?.timezone ?? "UTC", now) ?? isoDay(now);
 
     const since = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-    const recent = await this.prisma.xpEntry.findMany({
+    const recent = await tx.xpEntry.findMany({
       where: { userId, reason, createdAt: { gte: since } },
       select: { createdAt: true },
     });
