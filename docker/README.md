@@ -136,6 +136,25 @@ app's own `JobRun` table can't see. See root README "Job monitoring" for
 account setup. The observability override additionally scrapes
 Healthchecks.io's own metrics endpoint into Prometheus/Grafana.
 
+## API metrics (`docker-compose.observability.yml`)
+
+The API exposes `GET /api/metrics` in Prometheus text format: Node/process
+internals (event loop, heap, GC, CPU) plus one HTTP latency histogram
+(`http_request_duration_seconds`, labelled by method, matched route pattern
+and status). Technical only — user/library figures stay in the admin
+dashboard, which reads them from Postgres rather than from a 15s-resolution
+time series.
+
+Prometheus reaches it over the internal Docker network and authenticates
+with a bearer token, so it never has to go through Caddy and the base
+`docker-compose.yml` (which publishes the API port directly, no reverse
+proxy) doesn't hand the endpoint to anyone who can reach the host. Set
+`METRICS_API_KEY` in `.env` and write the same value, with no trailing
+newline, to `docker/observability/metrics_token` (copy from
+`metrics_token.example`, gitignored — same convention as the Healthchecks.io
+token above). Left empty, the endpoint fails closed and only the `api`
+scrape target goes down.
+
 ## Per-query Postgres metrics (`docker-compose.observability.yml`)
 
 `postgres_exporter`'s `stat_statements` collector needs the `pg_stat_statements`

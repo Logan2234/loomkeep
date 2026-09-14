@@ -73,6 +73,8 @@ services:
       HEALTHCHECKS_GAMIFICATION_ACHIEVEMENTS_SWEEP_URL: ${HEALTHCHECKS_GAMIFICATION_ACHIEVEMENTS_SWEEP_URL:-}
       # Homepage dashboard's user-count widget auth — see docker-compose.homepage.yml.
       HOMEPAGE_STATS_API_KEY: ${HOMEPAGE_STATS_API_KEY:-}
+      # Prometheus scrape auth for /api/metrics — see docker-compose.observability.yml.
+      METRICS_API_KEY: ${METRICS_API_KEY:-}
       # Quackback feedback widget SSO token signing — must match Quackback's own widget settings.
       QUACKBACK_WIDGET_SECRET: ${QUACKBACK_WIDGET_SECRET:-}
       # Quackback's "Changelog Published" webhook signing secret — see .env.example.

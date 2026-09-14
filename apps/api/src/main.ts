@@ -19,6 +19,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
 import { ValidationException } from "./common/validation.exception";
+import { MetricsService } from "./metrics/metrics.service";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -124,6 +125,26 @@ async function bootstrap() {
         }
       },
     );
+
+  // An onResponse hook rather than a Nest interceptor: the interceptor chain
+  // only sees requests that reach a handler, so everything a guard rejects
+  // (401s, throttled 429s) and every unmatched 404 would go unmeasured —
+  // precisely the traffic worth a graph.
+  const metrics = app.get(MetricsService);
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook("onResponse", (request, reply, done) => {
+      metrics.observeRequest(
+        request.method,
+        // The matched pattern ("/api/media/:id"), not request.url — one
+        // series per media id would grow the registry with the catalog.
+        request.routeOptions?.url,
+        reply.statusCode,
+        reply.elapsedTime,
+      );
+      done();
+    });
 
   app.setGlobalPrefix("api");
   app.useGlobalPipes(

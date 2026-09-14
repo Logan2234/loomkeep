@@ -23,6 +23,7 @@ import { ImportModule } from "./import/import.module";
 import { LibraryModule } from "./library/library.module";
 import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
+import { MetricsModule } from "./metrics/metrics.module";
 import { MusicModule } from "./music/music.module";
 import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationModule } from "./notifications/notification.module";
@@ -72,6 +73,7 @@ import { UsersModule } from "./users/users.module";
     ListsModule,
     StatsModule,
     NewsletterModule,
+    MetricsModule,
   ],
   controllers: [],
   providers: [
