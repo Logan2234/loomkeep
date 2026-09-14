@@ -21,7 +21,7 @@ x-unleash-logging: &unleash-logging
 
 services:
   unleash:
-    image: unleashorg/unleash-server:8.1.0
+    image: unleashorg/unleash-server:8.2.0
     restart: unless-stopped
     logging: *unleash-logging
     depends_on:
