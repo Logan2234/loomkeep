@@ -716,7 +716,10 @@
 {/snippet}
 
 {#snippet carousel()}
-  <Carousel items={CAROUSEL_ITEMS} keyOf={(item) => item} label="Carousel">
+  <Carousel
+    items={CAROUSEL_ITEMS}
+    keyOf={(item) => item}
+    label={m.admin_components_carousel_label()}>
     {#snippet card(title)}
       <div class="card w-32">
         <Poster {title} />

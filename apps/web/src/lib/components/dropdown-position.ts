@@ -1,4 +1,4 @@
-export type DropdownPlacement = "bottom-start" | "bottom-end";
+type DropdownPlacement = "bottom-start" | "bottom-end";
 
 type Rect = {
   top: number;
