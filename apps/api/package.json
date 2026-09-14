@@ -71,7 +71,7 @@
     "@nestjs/schematics": "^12.0.0",
     "@nestjs/testing": "^12.0.1",
     "@swc/core": "^1.16.2",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.5.1",
     "@types/nodemailer": "^8.0.1",
     "@types/supertest": "^7.2.1",
     "@types/web-push": "^3.6.4",
@@ -81,7 +81,7 @@
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "unplugin-swc": "^1.5.11",
+    "unplugin-swc": "^1.6.0",
     "vitest": "^5.0.0"
   }
 }
