@@ -38,6 +38,14 @@ export { DEFAULT_PAGE_SIZE as COMMENT_PAGE_SIZE } from "../common/pagination.uti
 
 const EXCERPT_LENGTH = 120;
 
+/**
+ * How many replies a top-level comment carries inline in a list page. A
+ * thread has no cap on replies, so embedding all of them made one popular
+ * comment able to grow the response without bound — the rest now comes from
+ * `listReplies` on demand.
+ */
+export const REPLY_PREVIEW_LIMIT = 3;
+
 const AUTHOR_SELECT = {
   id: true,
   username: true,
@@ -75,6 +83,10 @@ type CommentRow = {
   // Null once the author's account has been deleted (authorId SetNull) —
   // the content stays, the client renders "Utilisateur supprimé".
   author: CommentAuthor | null;
+  // Only on rows read by `list`: the inline reply preview and the total the
+  // preview is a subset of.
+  replies?: CommentRow[];
+  _count?: { replies: number };
 };
 
 @Injectable()
@@ -92,11 +104,12 @@ export class CommentService {
 
   /**
    * A page of top-level comments for a target (newest first, YouTube-style),
-   * each with its replies attached (oldest first, conversation order). Rows
-   * from a blocked relationship (either direction) are dropped after the page
-   * is fetched, so a page can come back smaller than `limit` when blocks
-   * are involved — accepted, matches how listForTarget already filters
-   * reviews.
+   * each carrying only its {@link REPLY_PREVIEW_LIMIT} most recent replies
+   * (oldest first within the preview, conversation order) plus a total in
+   * `replyCount` — `listReplies` serves the rest. Rows from a blocked
+   * relationship (either direction) are dropped after the page is fetched, so
+   * a page can come back smaller than `limit` when blocks are involved —
+   * accepted, matches how listForTarget already filters reviews.
    */
   async list(
     viewerId: string,
@@ -105,7 +118,7 @@ export class CommentService {
     page = 1,
     limit = DEFAULT_PAGE_SIZE,
   ): Promise<PagedResult<CommentDto>> {
-    const rows = await this.prisma.comment.findMany({
+    const rows = (await this.prisma.comment.findMany({
       where: { targetType, targetId, parentId: null },
       // Newest first (YouTube-style) — a fresh comment is visible right away
       // instead of requiring "load more" clicks through the whole history.
@@ -113,42 +126,110 @@ export class CommentService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * limit,
       take: limit + 1,
-      include: { author: { select: AUTHOR_SELECT } },
-    });
+      include: {
+        author: { select: AUTHOR_SELECT },
+        // Negative take against an ascending order = the *last* N rows, still
+        // returned oldest-first, so the preview reads as the tail of the
+        // conversation without a second sort here.
+        replies: {
+          where: { deletedAt: null },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          take: -REPLY_PREVIEW_LIMIT,
+          include: { author: { select: AUTHOR_SELECT } },
+        },
+        _count: { select: { replies: { where: { deletedAt: null } } } },
+      },
+    })) as CommentRow[];
 
     const hasMore = rows.length > limit;
     const pageRows = rows.slice(0, limit);
     const visible = await this.filterBlocked(viewerId, pageRows);
 
-    const replyRows = visible.length
-      ? await this.prisma.comment.findMany({
-          where: { parentId: { in: visible.map((c) => c.id) } },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          include: { author: { select: AUTHOR_SELECT } },
-        })
-      : [];
-    const visibleReplies = await this.filterBlocked(viewerId, replyRows);
+    const previewRows = visible.flatMap((c) => c.replies ?? []);
+    const visibleReplies = await this.filterBlocked(viewerId, previewRows);
+    const visibleReplyIds = new Set(visibleReplies.map((r) => r.id));
 
-    const allComments = [...visible, ...visibleReplies];
-    const allIds = allComments.map((c) => c.id);
-    const authorIds = allComments
+    const toDtoWithMask = await this.dtoMapper(viewerId, [
+      ...visible,
+      ...visibleReplies,
+    ]);
+
+    const items = await Promise.all(
+      visible.map(async (c) => {
+        const dto = await toDtoWithMask(c);
+        dto.replies = await Promise.all(
+          (c.replies ?? [])
+            .filter((r) => visibleReplyIds.has(r.id))
+            .map(toDtoWithMask),
+        );
+        // Not block-filtered, unlike `replies` above: that would mean running
+        // every reply of every comment through getRelation just to subtract
+        // the few a block hides. The count can therefore read one or two high
+        // for a viewer with blocks — the reply list itself stays correct.
+        dto.replyCount = c._count?.replies ?? 0;
+        return dto;
+      }),
+    );
+
+    return { items, hasMore };
+  }
+
+  /**
+   * A page of one comment's replies, newest first — the client accumulates
+   * pages and reverses them for display, so "show earlier replies" keeps
+   * walking backwards from the preview `list` already returned instead of
+   * restarting at the top of the thread.
+   */
+  async listReplies(
+    viewerId: string,
+    parentId: string,
+    page = 1,
+    limit = DEFAULT_PAGE_SIZE,
+  ): Promise<PagedResult<CommentDto>> {
+    const rows = (await this.prisma.comment.findMany({
+      where: { parentId, deletedAt: null },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit + 1,
+      include: { author: { select: AUTHOR_SELECT } },
+    })) as CommentRow[];
+
+    const hasMore = rows.length > limit;
+    const visible = await this.filterBlocked(viewerId, rows.slice(0, limit));
+    const toDtoWithMask = await this.dtoMapper(viewerId, visible);
+
+    return { items: await Promise.all(visible.map(toDtoWithMask)), hasMore };
+  }
+
+  /**
+   * Loads the reaction and XP lookups every row in `rows` needs, once, and
+   * returns the row-to-DTO mapper closed over them — the alternative is those
+   * two queries per comment.
+   */
+  private async dtoMapper(
+    viewerId: string,
+    rows: CommentRow[],
+  ): Promise<(row: CommentRow) => Promise<CommentDto>> {
+    const authorIds = rows
       .map((c) => c.author?.id)
       .filter((id): id is string => !!id);
-    const uniqueAuthorIds = [...new Set(authorIds)];
     const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
-      this.loadReactions(viewerId, allIds),
-      fetchXpByUser(this.prisma, uniqueAuthorIds),
+      this.loadReactions(
+        viewerId,
+        rows.map((c) => c.id),
+      ),
+      fetchXpByUser(this.prisma, [...new Set(authorIds)]),
     ]);
     // Same rows AUTHOR_SELECT already fetched for profileAccess/anonymized —
     // reused here instead of a second query (see xp-lookup.util.ts's doc
     // comment on withXp).
     const hideProgressionByUser = new Map(
-      allComments
+      rows
         .filter((c) => c.author)
         .map((c) => [c.author!.id, c.author!.hideProgression]),
     );
 
-    const toDtoWithMask = async (row: CommentRow): Promise<CommentDto> =>
+    return (row) =>
       this.toDto(
         row,
         reactionMap,
@@ -157,26 +238,6 @@ export class CommentService {
         xpMap,
         hideProgressionByUser,
       );
-
-    const repliesByParent = new Map<string, CommentRow[]>();
-
-    for (const r of visibleReplies) {
-      const arr = repliesByParent.get(r.parentId!) ?? [];
-      arr.push(r);
-      repliesByParent.set(r.parentId!, arr);
-    }
-
-    const items = await Promise.all(
-      visible.map(async (c) => {
-        const dto = await toDtoWithMask(c);
-        dto.replies = await Promise.all(
-          (repliesByParent.get(c.id) ?? []).map(toDtoWithMask),
-        );
-        return dto;
-      }),
-    );
-
-    return { items, hasMore };
   }
 
   /** Total comment count (top-level + replies, deleted excluded) for a target. */
@@ -542,7 +603,9 @@ export class CommentService {
         : null,
       reactions: reactionMap.get(row.id) ?? [],
       myReaction: myReactionMap.get(row.id) ?? null,
+      // Both filled in by `list`, which is the only reader that has them.
       replies: [],
+      replyCount: 0,
     };
   }
 

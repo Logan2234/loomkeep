@@ -26,6 +26,16 @@ export const getComments = (
     query: { page: String(page) },
   });
 
+/**
+ * One comment's replies, newest first — `getComments` only embeds a short
+ * preview of each thread's tail.
+ */
+export const getCommentReplies = (id: string, page = 1) =>
+  typedRequest("/comments/{id}/replies", {
+    params: { id },
+    query: { page: String(page) },
+  });
+
 export const createComment = (body: CreateCommentDto) =>
   typedRequest("/comments", { method: "POST", body });
 

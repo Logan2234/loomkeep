@@ -9,7 +9,7 @@ import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
 import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
-import { CommentService } from "./comment.service";
+import { CommentService, REPLY_PREVIEW_LIMIT } from "./comment.service";
 
 // Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
@@ -75,6 +75,9 @@ function commentRow(over: Partial<Record<string, unknown>> = {}) {
     createdAt: new Date(),
     updatedAt: new Date(),
     author: AUTHOR,
+    // list() reads both through the nested include on its single query.
+    replies: [],
+    _count: { replies: 0 },
     ...over,
   };
 }
@@ -185,16 +188,13 @@ describe("CommentService.list — spoiler masking", () => {
   it("masks a comment its author tagged as spoiler", async () => {
     const { svc } = make({
       comment: {
-        findMany: vi
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({
-              targetType: "EPISODE",
-              targetId: "e1",
-              spoilerTag: true,
-            }),
-          ])
-          .mockResolvedValueOnce([]),
+        findMany: vi.fn().mockResolvedValueOnce([
+          commentRow({
+            targetType: "EPISODE",
+            targetId: "e1",
+            spoilerTag: true,
+          }),
+        ]),
       },
     });
     const page = await svc.list("viewer", "EPISODE" as never, "e1");
@@ -204,16 +204,13 @@ describe("CommentService.list — spoiler masking", () => {
   it("does not mask a comment without a spoiler tag", async () => {
     const { svc } = make({
       comment: {
-        findMany: vi
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({
-              targetType: "MEDIA",
-              targetId: "m1",
-              spoilerTag: false,
-            }),
-          ])
-          .mockResolvedValueOnce([]),
+        findMany: vi.fn().mockResolvedValueOnce([
+          commentRow({
+            targetType: "MEDIA",
+            targetId: "m1",
+            spoilerTag: false,
+          }),
+        ]),
       },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");
@@ -223,16 +220,13 @@ describe("CommentService.list — spoiler masking", () => {
   it("never masks MUSIC even if the row somehow carries a spoiler tag", async () => {
     const { svc } = make({
       comment: {
-        findMany: vi
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({
-              targetType: "MUSIC",
-              targetId: "al1",
-              spoilerTag: true,
-            }),
-          ])
-          .mockResolvedValueOnce([]),
+        findMany: vi.fn().mockResolvedValueOnce([
+          commentRow({
+            targetType: "MUSIC",
+            targetId: "al1",
+            spoilerTag: true,
+          }),
+        ]),
       },
     });
     const page = await svc.list("viewer", "MUSIC" as never, "al1");
@@ -244,14 +238,11 @@ describe("CommentService.list — Figurant pseudonym", () => {
   it("replaces a GHOST author's identity for another viewer", async () => {
     const { svc } = make({
       comment: {
-        findMany: vi
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({
-              author: { ...AUTHOR, id: "ghost1", profileAccess: "GHOST" },
-            }),
-          ])
-          .mockResolvedValueOnce([]),
+        findMany: vi.fn().mockResolvedValueOnce([
+          commentRow({
+            author: { ...AUTHOR, id: "ghost1", profileAccess: "GHOST" },
+          }),
+        ]),
       },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");
@@ -263,15 +254,12 @@ describe("CommentService.list — Figurant pseudonym", () => {
   it("shows the real identity to the Figurant author themself", async () => {
     const { svc } = make({
       comment: {
-        findMany: vi
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({
-              authorId: "ghost1",
-              author: { ...AUTHOR, id: "ghost1", profileAccess: "GHOST" },
-            }),
-          ])
-          .mockResolvedValueOnce([]),
+        findMany: vi.fn().mockResolvedValueOnce([
+          commentRow({
+            authorId: "ghost1",
+            author: { ...AUTHOR, id: "ghost1", profileAccess: "GHOST" },
+          }),
+        ]),
       },
     });
     const page = await svc.list("ghost1", "MEDIA" as never, "m1");
@@ -284,21 +272,109 @@ describe("CommentService.list — blocking", () => {
   it("drops comments from a blocked author", async () => {
     const { svc } = make({
       comment: {
-        findMany: vi
-          .fn()
-          .mockResolvedValueOnce([
-            commentRow({
-              id: "blocked",
-              authorId: "stranger",
-              author: { ...AUTHOR, id: "stranger" },
-            }),
-          ])
-          .mockResolvedValueOnce([]),
+        findMany: vi.fn().mockResolvedValueOnce([
+          commentRow({
+            id: "blocked",
+            authorId: "stranger",
+            author: { ...AUTHOR, id: "stranger" },
+          }),
+        ]),
       },
       relations: { stranger: relation({ blocking: true }) },
     });
     const page = await svc.list("viewer", "MEDIA" as never, "m1");
     expect(page.items).toHaveLength(0);
+  });
+});
+
+describe("CommentService.list — reply preview", () => {
+  function replies(count: number) {
+    return Array.from({ length: count }, (_, i) =>
+      commentRow({ id: `r${i}`, parentId: "c1" }),
+    );
+  }
+
+  it("embeds only the preview slice, however many replies the thread holds", async () => {
+    const { svc } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({
+            // What Prisma returns for `take: -REPLY_PREVIEW_LIMIT`: the tail
+            // only, with the real total alongside it.
+            replies: replies(REPLY_PREVIEW_LIMIT),
+            _count: { replies: 250 },
+          }),
+        ]),
+      },
+    });
+
+    const page = await svc.list("viewer", "MEDIA" as never, "m1");
+
+    expect(page.items[0].replies).toHaveLength(REPLY_PREVIEW_LIMIT);
+    expect(page.items[0].replyCount).toBe(250);
+  });
+
+  it("asks the database for the preview slice rather than the whole thread", async () => {
+    const findMany = vi.fn().mockResolvedValue([commentRow()]);
+    const { svc } = make({ comment: { findMany } });
+
+    await svc.list("viewer", "MEDIA" as never, "m1");
+
+    // The regression this guards: replies used to be fetched in a second,
+    // unbounded query, so one popular comment decided the response size.
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany.mock.calls[0][0].include.replies.take).toBe(
+      -REPLY_PREVIEW_LIMIT,
+    );
+  });
+
+  it("drops a blocked author from the preview without touching the count", async () => {
+    const { svc } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          commentRow({
+            replies: [
+              commentRow({ id: "r0", parentId: "c1" }),
+              commentRow({
+                id: "r1",
+                parentId: "c1",
+                authorId: "stranger",
+                author: { ...AUTHOR, id: "stranger" },
+              }),
+            ],
+            _count: { replies: 2 },
+          }),
+        ]),
+      },
+      relations: { stranger: relation({ blocking: true }) },
+    });
+
+    const page = await svc.list("viewer", "MEDIA" as never, "m1");
+
+    expect(page.items[0].replies.map((r) => r.id)).toEqual(["r0"]);
+    expect(page.items[0].replyCount).toBe(2);
+  });
+});
+
+describe("CommentService.listReplies", () => {
+  it("pages one thread newest-first and reports whether more remain", async () => {
+    const findMany = vi
+      .fn()
+      .mockResolvedValue([
+        commentRow({ id: "r0", parentId: "c1" }),
+        commentRow({ id: "r1", parentId: "c1" }),
+      ]);
+    const { svc } = make({ comment: { findMany } });
+
+    const page = await svc.listReplies("viewer", "c1", 1, 1);
+
+    expect(page.items.map((r) => r.id)).toEqual(["r0"]);
+    expect(page.hasMore).toBe(true);
+    expect(findMany.mock.calls[0][0].orderBy[0]).toEqual({ createdAt: "desc" });
+    expect(findMany.mock.calls[0][0].where).toEqual({
+      parentId: "c1",
+      deletedAt: null,
+    });
   });
 });
 
