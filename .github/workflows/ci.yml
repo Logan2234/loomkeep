@@ -179,6 +179,20 @@ jobs:
           files: apps/api/coverage/lcov.info
           flags: api-unit
           fail_ci_if_error: false
+      # packages/shared rides with the api job rather than getting one of its
+      # own: it is TS-only, its suite runs in under a second, and the `api`
+      # paths filter above already fires on any change under packages/shared.
+      - name: shared unit tests (with coverage)
+        run: pnpm --filter @loomkeep/shared test:cov
+      - name: upload shared coverage to Codecov
+        background: true
+        continue-on-error: true
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/shared/coverage/lcov.info
+          flags: shared-unit
+          fail_ci_if_error: false
       - name: Upload ESLint API results
         if: always()
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
