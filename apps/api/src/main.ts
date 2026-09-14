@@ -103,6 +103,28 @@ async function bootstrap() {
   // CSP stays off: Swagger UI (dev-only, below) needs inline scripts/styles,
   // and the API otherwise only serves JSON.
   await app.register(helmet, { contentSecurityPolicy: false });
+
+  // Browsers post CSP violation reports under their own media types, neither
+  // of which Fastify parses by default — without this the collector answers
+  // 415 and the reports are lost silently, which is indistinguishable from
+  // "the policy is clean". See CspReportController.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addContentTypeParser(
+      ["application/csp-report", "application/reports+json"],
+      { parseAs: "string" },
+      (_req, body: string, done) => {
+        try {
+          done(null, JSON.parse(body));
+        } catch {
+          // Unparseable report: accept and drop rather than 400. The sender is
+          // a browser with nothing to do about the answer.
+          done(null, {});
+        }
+      },
+    );
+
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
     new ValidationPipe({
