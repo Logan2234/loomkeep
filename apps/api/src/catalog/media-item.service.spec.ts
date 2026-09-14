@@ -102,6 +102,113 @@ describe("MediaItemService.refreshStale", () => {
   });
 });
 
+describe("MediaItemService episode sync", () => {
+  function makeService(stored: unknown[]) {
+    const prisma = {
+      episode: {
+        findMany: vi.fn().mockResolvedValue(stored),
+        createMany: vi.fn().mockResolvedValue({ count: 0 }),
+        update: vi.fn().mockResolvedValue({}),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    } as unknown as PrismaService;
+    const service = new MediaItemService(
+      prisma,
+      undefined as never,
+      undefined as never,
+      jobRunsStub,
+    );
+    return { service, prisma };
+  }
+
+  function sync(service: MediaItemService, episodes: unknown[]) {
+    return (
+      service as unknown as {
+        syncEpisodes: (id: string, eps: unknown[]) => Promise<void>;
+      }
+    ).syncEpisodes("season-1", episodes);
+  }
+
+  it("writes nothing when the provider listing matches what is stored", async () => {
+    // The 6-hourly cron's normal case. It used to cost one upsert per
+    // episode regardless; it now costs the single read above.
+    const { service, prisma } = makeService([
+      { number: 1, title: "Pilote", airDate: new Date("2020-01-01") },
+      { number: 2, title: "Suite", airDate: null },
+    ]);
+
+    await sync(service, [
+      { number: 1, title: "Pilote", airDate: "2020-01-01" },
+      { number: 2, title: "Suite", airDate: null },
+    ]);
+
+    expect(prisma.episode.createMany).not.toHaveBeenCalled();
+    expect(prisma.episode.update).not.toHaveBeenCalled();
+  });
+
+  it("inserts the whole missing tail in a single createMany", async () => {
+    const { service, prisma } = makeService([
+      { number: 1, title: "Pilote", airDate: null },
+    ]);
+
+    await sync(service, [
+      { number: 1, title: "Pilote", airDate: null },
+      { number: 2, title: "Deux", airDate: "2020-02-02" },
+      { number: 3, title: "Trois", airDate: null },
+    ]);
+
+    expect(prisma.episode.createMany).toHaveBeenCalledTimes(1);
+    const [[call]] = (prisma.episode.createMany as Mock).mock.calls;
+    expect(call.data.map((e: { number: number }) => e.number)).toEqual([2, 3]);
+    // A concurrent refresh of the same media can insert these first.
+    expect(call.skipDuplicates).toBe(true);
+    expect(prisma.episode.update).not.toHaveBeenCalled();
+  });
+
+  it("updates only the episodes whose title or air date moved", async () => {
+    const { service, prisma } = makeService([
+      { number: 1, title: "Ancien titre", airDate: null },
+      { number: 2, title: "Stable", airDate: new Date("2020-02-02") },
+      { number: 3, title: "Repoussé", airDate: new Date("2020-03-03") },
+    ]);
+
+    await sync(service, [
+      { number: 1, title: "Nouveau titre", airDate: null },
+      { number: 2, title: "Stable", airDate: "2020-02-02" },
+      { number: 3, title: "Repoussé", airDate: "2020-04-04" },
+    ]);
+
+    expect(prisma.episode.update).toHaveBeenCalledTimes(2);
+    const updated = (prisma.episode.update as Mock).mock.calls.map(
+      ([call]) => call.where.seasonId_number.number,
+    );
+    expect(updated.sort()).toEqual([1, 3]);
+  });
+
+  it("never deletes an episode the provider stopped listing", async () => {
+    // An EpisodeWatch has to keep a valid target even if the source
+    // reorganises its listing.
+    const { service, prisma } = makeService([
+      { number: 1, title: "Pilote", airDate: null },
+      { number: 2, title: "Retiré du catalogue", airDate: null },
+    ]);
+
+    await sync(service, [{ number: 1, title: "Pilote", airDate: null }]);
+
+    expect(prisma.episode.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.episode.update).not.toHaveBeenCalled();
+    expect(prisma.episode.createMany).not.toHaveBeenCalled();
+  });
+
+  it("does not even read when the provider lists no episode", async () => {
+    const { service, prisma } = makeService([]);
+
+    await sync(service, []);
+
+    expect(prisma.episode.findMany).not.toHaveBeenCalled();
+  });
+});
+
 const PROVIDER_DETAILS = {
   summary: {
     source: "TMDB",
