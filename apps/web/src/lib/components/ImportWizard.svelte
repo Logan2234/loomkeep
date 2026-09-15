@@ -21,6 +21,7 @@
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { formatNumber } from "$lib/format";
+  import { readImportFile } from "$lib/import-file";
   import { m } from "$lib/paraglide/messages.js";
   import {
     Domain,
@@ -226,7 +227,7 @@
       }
       inputValue = b64;
     } else {
-      inputValue = await file.text();
+      inputValue = await readImportFile(file, descriptor.input.textEncoding);
     }
     fileName = file.name;
   }
