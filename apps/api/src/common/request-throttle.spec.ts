@@ -38,6 +38,29 @@ describe("RequestThrottle", () => {
     expect(sleepSpy).toHaveBeenCalledWith(expect.any(Function), 800);
   });
 
+  it("spaces concurrent callers instead of releasing them together", async () => {
+    // The regression: each caller used to read the same lastRequestAt, sleep
+    // the same amount and fire at once — so N parallel calls cost one slot,
+    // not N. MusicBrainz bans for that.
+    vi.useFakeTimers();
+
+    try {
+      const throttle = new RequestThrottle(1000);
+      const releasedAt: number[] = [];
+      const calls = [0, 1, 2].map(() =>
+        throttle.wait().then(() => releasedAt.push(Date.now())),
+      );
+
+      await vi.advanceTimersByTimeAsync(3000);
+      await Promise.all(calls);
+
+      const start = releasedAt[0];
+      expect(releasedAt.map((t) => t - start)).toEqual([0, 1000, 2000]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("does not delay a call that comes after intervalMs has elapsed", async () => {
     let now = 0;
     vi.spyOn(Date, "now").mockImplementation(() => now);

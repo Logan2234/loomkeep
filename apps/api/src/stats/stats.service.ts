@@ -540,7 +540,9 @@ export class StatsService {
           },
         }),
         this.prisma.episodeWatch.findMany({
-          where: { userId },
+          // Season 0 (TMDB specials) never counts towards progression, so it
+          // is excluded here rather than loaded and dropped in memory.
+          where: { userId, episode: { season: { number: { not: 0 } } } },
           select: {
             watchedAt: true,
             episode: {
@@ -549,7 +551,6 @@ export class StatsService {
                 seasonId: true,
                 season: {
                   select: {
-                    number: true,
                     mediaItemId: true,
                     mediaItem: {
                       select: { type: true, genres: true, runtimeMin: true },
@@ -566,7 +567,7 @@ export class StatsService {
         }),
       ]);
 
-    const regularWatches = watches.filter((w) => w.episode.season.number !== 0);
+    const regularWatches = watches;
     const datedRegularWatches = regularWatches.filter(
       (w): w is (typeof regularWatches)[number] & { watchedAt: Date } =>
         w.watchedAt !== null,
@@ -724,30 +725,45 @@ export class StatsService {
       staleness: WatchStaleness;
     }[]
   > {
-    const [entries, watches] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
-        where: { userId, status: "WATCHING" },
-        select: {
-          mediaItem: {
-            select: {
-              id: true,
-              title: true,
-              posterUrl: true,
-              type: true,
-              canonicalSource: true,
-              externalIds: { select: { source: true, externalId: true } },
-            },
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: { userId, status: "WATCHING" },
+      select: {
+        mediaItem: {
+          select: {
+            id: true,
+            title: true,
+            posterUrl: true,
+            type: true,
+            canonicalSource: true,
+            externalIds: { select: { source: true, externalId: true } },
           },
         },
-      }),
-      this.prisma.episodeWatch.findMany({
-        where: { userId },
-        select: {
-          watchedAt: true,
-          episode: { select: { season: { select: { mediaItemId: true } } } },
-        },
-      }),
-    ]);
+      },
+    });
+
+    // Only series still in progress are ever looked up below, so the watch
+    // history is scoped to those rather than loaded whole. Sequential instead
+    // of parallel with the query above, which is what makes the scoping
+    // possible — and the second query is now a fraction of its old size.
+    const inProgressIds = entries
+      .filter((e) => e.mediaItem.type !== "MOVIE")
+      .map((e) => e.mediaItem.id);
+    const watches =
+      inProgressIds.length > 0
+        ? await this.prisma.episodeWatch.findMany({
+            where: {
+              userId,
+              watchedAt: { not: null },
+              episode: { season: { mediaItemId: { in: inProgressIds } } },
+            },
+            select: {
+              watchedAt: true,
+              episode: {
+                select: { season: { select: { mediaItemId: true } } },
+              },
+            },
+          })
+        : [];
 
     const lastWatchedMap = lastWatchedPerMediaItem(
       watches.flatMap((w) =>
@@ -1043,14 +1059,19 @@ export class StatsService {
     premium: boolean,
   ): Promise<VideoTemporalDto> {
     const watches = await this.prisma.episodeWatch.findMany({
-      where: { userId },
+      // Both conditions used to be applied in memory, over every watch the
+      // account ever recorded — the one table here that grows without bound.
+      where: {
+        userId,
+        watchedAt: { not: null },
+        episode: { season: { number: { not: 0 } } },
+      },
       select: {
         watchedAt: true,
         episode: {
           select: {
             season: {
               select: {
-                number: true,
                 mediaItem: { select: { type: true, runtimeMin: true } },
               },
             },
@@ -1059,9 +1080,12 @@ export class StatsService {
       },
     });
 
+    // Runtime-wise a no-op — the `where` above already excluded these. Prisma
+    // types `watchedAt` as nullable regardless of the filter, and this is
+    // what narrows it for everything below.
     const regular = watches.filter(
       (w): w is (typeof watches)[number] & { watchedAt: Date } =>
-        w.episode.season.number !== 0 && w.watchedAt !== null,
+        w.watchedAt !== null,
     );
     const now = new Date();
     const start = windowStart(period, now);
@@ -1135,9 +1159,11 @@ export class StatsService {
       this.prisma.commentReaction.count({
         where: { comment: { authorId: userId } },
       }),
-      this.prisma.list.findMany({
+      // Two counts, not a row per list.
+      this.prisma.list.groupBy({
+        by: ["visibility"],
         where: { userId },
-        select: { visibility: true },
+        _count: { _all: true },
       }),
       this.prisma.follow.findMany({
         where: {
@@ -1187,8 +1213,10 @@ export class StatsService {
         mostVotedReviewVotes: votesUp.length > 0 ? Math.max(...votesUp) : null,
         reactionsGiven,
         reactionsReceived,
-        listsWritten: lists.length,
-        listsPublicCount: lists.filter((l) => l.visibility === "PUBLIC").length,
+        listsWritten: sumCounts(lists),
+        listsPublicCount: sumCounts(
+          lists.filter((l) => l.visibility === "PUBLIC"),
+        ),
         newFollowersByMonth: computeMonthlyCounts(
           newFollowers.map((f) => f.createdAt),
           12,
@@ -1267,4 +1295,9 @@ export class StatsService {
 
     return result;
   }
+}
+
+/** Totals a Prisma groupBy result's `_count._all` buckets. */
+function sumCounts(groups: { _count: { _all: number } }[]): number {
+  return groups.reduce((sum, g) => sum + g._count._all, 0);
 }

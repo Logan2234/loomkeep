@@ -41,7 +41,16 @@ function makeService(configValues: Record<string, string> = {}) {
     userScore: { upsert: vi.fn().mockResolvedValue({}) },
     // Only exercised by reconcile()'s default EPISODE_WATCHED verifier.
     episodeWatch: { findUnique: vi.fn().mockResolvedValue(null) },
+    // Capped reasons credit inside a transaction (advisory lock, see
+    // creditEntry) — hand the callback the same mock so the spies below
+    // still see the writes.
+    $executeRaw: vi.fn().mockResolvedValue(1),
+    $transaction: vi.fn(),
   } as unknown as PrismaService;
+
+  (prisma.$transaction as Mock).mockImplementation(
+    (fn: (tx: PrismaService) => unknown) => fn(prisma),
+  );
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
   const flags = makeFlags();
   const jobRuns = {
@@ -126,6 +135,85 @@ describe("XpService.award", () => {
         data: expect.objectContaining({ reason: XpReason.COMMENT_POSTED }),
       }),
     );
+  });
+});
+
+describe("XpService.award — daily cap under concurrency", () => {
+  it("counts and inserts inside one advisory-locked transaction", async () => {
+    // Reading the day's count on one connection and inserting on another is
+    // a TOCTOU: two parallel awards both see the cap as not yet reached and
+    // both credit. The unique constraint can't catch it — different sources.
+    const { service, prisma } = makeService();
+
+    await service.award("user-1", XpReason.EPISODE_WATCHED, "watch-1");
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    const [[sql]] = (prisma.$executeRaw as Mock).mock.calls;
+    expect(sql.join("?")).toContain("pg_advisory_xact_lock");
+  });
+
+  it("skips the lock for a reason that has no cap", async () => {
+    // DOMAIN_STARTED is unique per (user, domain): nothing to count first,
+    // and the unique constraint already makes it idempotent. Locking it
+    // would be a transaction per milestone for nothing.
+    const { service, prisma } = makeService();
+
+    await service.award("user-1", XpReason.DOMAIN_STARTED, "SERIES");
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.xpEntry.create).toHaveBeenCalled();
+  });
+});
+
+describe("XpService.awardMany", () => {
+  it("resums the score once for the whole batch, not once per entry", async () => {
+    // recomputeScore scans the user's entire ledger. Marking a 24-episode
+    // season used to pay that 24 times over for one final value.
+    const { service, prisma } = makeService();
+
+    await service.awardMany("user-1", XpReason.EPISODE_WATCHED, [
+      "watch-1",
+      "watch-2",
+      "watch-3",
+    ]);
+
+    expect(prisma.xpEntry.create).toHaveBeenCalledTimes(3);
+    expect(prisma.xpEntry.aggregate).toHaveBeenCalledTimes(1);
+    expect(prisma.userScore.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not resum at all when nothing was credited", async () => {
+    const { service, prisma } = makeService({ GAMIFICATION_ENABLED: "false" });
+
+    await service.awardMany("user-1", XpReason.EPISODE_WATCHED, ["watch-1"]);
+
+    expect(prisma.xpEntry.create).not.toHaveBeenCalled();
+    expect(prisma.userScore.upsert).not.toHaveBeenCalled();
+  });
+
+  it("stops crediting once the day's cap is reached mid-batch", async () => {
+    const { service, prisma } = makeService();
+    const cap = 30;
+    let credited = 0;
+    // Each iteration re-reads the day's entries, so the rows written by
+    // earlier iterations have to count towards the cap.
+    (prisma.xpEntry.findMany as Mock).mockImplementation(() =>
+      Promise.resolve(
+        Array.from({ length: credited }, () => ({ createdAt: new Date() })),
+      ),
+    );
+    (prisma.xpEntry.create as Mock).mockImplementation(() => {
+      credited++;
+      return Promise.resolve({});
+    });
+
+    await service.awardMany(
+      "user-1",
+      XpReason.EPISODE_WATCHED,
+      Array.from({ length: cap + 5 }, (_, i) => `watch-${i}`),
+    );
+
+    expect(credited).toBe(cap);
   });
 });
 

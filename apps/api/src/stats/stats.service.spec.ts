@@ -7,6 +7,7 @@ import type {
   VideoStatsDto,
   VideoTemporalDto,
 } from "@loomkeep/shared";
+import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { DomainGateService } from "../users/domain-gate.service";
@@ -236,5 +237,126 @@ describe("StatsService — premium redaction", () => {
     });
     expect(redacted.newFollowersByMonth).toEqual([]);
     expect(redacted.contributionStreakDays).toBe(0);
+  });
+});
+
+// --- Query shape: what these assert is that the filtering happens in
+//     Postgres. The aggregates themselves are covered by the util specs. ---
+
+function makeServiceWith(prisma: unknown): StatsService {
+  return new StatsService(
+    prisma as PrismaService,
+    {} as unknown as ReviewService,
+    {} as unknown as DomainGateService,
+  );
+}
+
+describe("StatsService.getVideoTemporal", () => {
+  it("excludes specials and unwatched rows in the query, not in memory", async () => {
+    // EpisodeWatch is the one table that grows without bound here: loading
+    // every row the account ever recorded and then filtering it is what made
+    // this the heaviest page in the app.
+    const findMany = vi.fn().mockResolvedValue([]);
+    const service = makeServiceWith({ episodeWatch: { findMany } });
+
+    await service.getVideoTemporal("user-1", "ALL", true);
+
+    expect(findMany.mock.calls[0][0].where).toEqual({
+      userId: "user-1",
+      watchedAt: { not: null },
+      episode: { season: { number: { not: 0 } } },
+    });
+  });
+});
+
+describe("StatsService in-progress staleness", () => {
+  const SERIES = {
+    mediaItem: {
+      id: "m1",
+      title: "Série",
+      posterUrl: null,
+      type: "SERIES",
+      canonicalSource: "TMDB",
+      externalIds: [],
+    },
+  };
+
+  function make(entries: unknown[], watches: unknown[] = []) {
+    const prisma = {
+      libraryEntry: { findMany: vi.fn().mockResolvedValue(entries) },
+      episodeWatch: { findMany: vi.fn().mockResolvedValue(watches) },
+    };
+    return { service: makeServiceWith(prisma), prisma };
+  }
+
+  function run(service: StatsService) {
+    return (
+      service as unknown as {
+        fetchInProgressStaleness: (id: string) => Promise<unknown[]>;
+      }
+    ).fetchInProgressStaleness("user-1");
+  }
+
+  it("scopes the watch history to the series still in progress", async () => {
+    // It used to read every EpisodeWatch of the account to derive one date
+    // per in-progress series.
+    const { service, prisma } = make([SERIES]);
+
+    await run(service);
+
+    expect(prisma.episodeWatch.findMany.mock.calls[0][0].where).toEqual({
+      userId: "user-1",
+      watchedAt: { not: null },
+      episode: { season: { mediaItemId: { in: ["m1"] } } },
+    });
+  });
+
+  it("does not query the watch history at all with nothing in progress", async () => {
+    const { service, prisma } = make([]);
+
+    await run(service);
+
+    expect(prisma.episodeWatch.findMany).not.toHaveBeenCalled();
+  });
+
+  it("ignores movies, which have no episodes to be stale on", async () => {
+    const movie = {
+      mediaItem: { ...SERIES.mediaItem, id: "m2", type: "MOVIE" },
+    };
+    const { service, prisma } = make([SERIES, movie]);
+
+    await run(service);
+
+    expect(
+      prisma.episodeWatch.findMany.mock.calls[0][0].where.episode.season
+        .mediaItemId.in,
+    ).toEqual(["m1"]);
+  });
+});
+
+describe("StatsService.getSocialStats", () => {
+  it("totals the list counts the database grouped, rather than loading them", async () => {
+    const groupBy = vi.fn().mockResolvedValue([
+      { visibility: "PUBLIC", _count: { _all: 3 } },
+      { visibility: "PRIVATE", _count: { _all: 2 } },
+      { visibility: "UNLISTED", _count: { _all: 1 } },
+    ]);
+    const service = makeServiceWith({
+      review: { findMany: vi.fn().mockResolvedValue([]) },
+      comment: { findMany: vi.fn().mockResolvedValue([]) },
+      commentReaction: { count: vi.fn().mockResolvedValue(0) },
+      list: { groupBy },
+      follow: { findMany: vi.fn().mockResolvedValue([]) },
+    });
+
+    const dto = await service.getSocialStats("user-1", true);
+
+    expect(groupBy).toHaveBeenCalledWith({
+      by: ["visibility"],
+      where: { userId: "user-1" },
+      _count: { _all: true },
+    });
+    expect(dto.listsWritten).toBe(6);
+    expect(dto.listsPublicCount).toBe(3);
   });
 });
