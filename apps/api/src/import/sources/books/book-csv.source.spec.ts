@@ -87,6 +87,7 @@ function setup(
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
+    { emitToUser: vi.fn() } as never, // EventsGateway stub
   );
   return { service, bookItemService, upsert, createMany, deleteMany, reviews };
 }

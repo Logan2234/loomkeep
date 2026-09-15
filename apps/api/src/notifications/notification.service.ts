@@ -25,7 +25,7 @@ const WINDOW_DAYS = 14;
 /** Most recent notifications returned in the feed. */
 const FEED_LIMIT = 50;
 /** Kinds excluded from the bell feed: NEW_EPISODE (push/email only) and FOLLOW_REQUEST (superseded by the live, actionable `Follow` list). */
-const FEED_EXCLUDED_TYPES = [
+const FEED_EXCLUDED_TYPES: NotificationType[] = [
   NotificationType.NEW_EPISODE,
   NotificationType.FOLLOW_REQUEST,
 ];
