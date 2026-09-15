@@ -5,8 +5,11 @@
  */
 
 /** Parse CSV text into records keyed by the header row. */
-export function parseCsv(text: string): Record<string, string>[] {
-  const rows = parseRows(text);
+export function parseCsv(
+  text: string,
+  delimiter = ",",
+): Record<string, string>[] {
+  const rows = parseRows(text, delimiter);
   if (rows.length === 0) return [];
 
   const header = rows[0];
@@ -30,7 +33,7 @@ export function parseCsv(text: string): Record<string, string>[] {
 }
 
 /** Split CSV text into rows of raw string cells, honouring quoted fields. */
-function parseRows(text: string): string[][] {
+function parseRows(text: string, delimiter: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -56,7 +59,7 @@ function parseRows(text: string): string[][] {
 
     if (char === '"') {
       inQuotes = true;
-    } else if (char === ",") {
+    } else if (char === delimiter) {
       row.push(field);
       field = "";
     } else if (char === "\n" || char === "\r") {

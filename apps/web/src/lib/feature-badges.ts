@@ -8,6 +8,7 @@ const SHIPPED = {
   leaderboard: "2026-09-05",
   myanimelist: "2026-09-09",
   "book-edition-selector": "2026-09-10",
+  babelio: "2026-09-15",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

@@ -9,6 +9,7 @@ import { UsersModule } from "../users/users.module";
 import { ImportJobService } from "./import-job.service";
 import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
+import { BabelioImportSource } from "./sources/books/babelio.source";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
 import { MediaMatchResolver } from "./sources/media/media-match-resolver";
@@ -47,6 +48,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     MyAnimeListImportSource,
     StoryGraphImportSource,
     GoodreadsImportSource,
+    BabelioImportSource,
     SteamImportSource,
     {
       provide: IMPORT_SOURCES,
@@ -58,6 +60,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
         MyAnimeListImportSource,
         StoryGraphImportSource,
         GoodreadsImportSource,
+        BabelioImportSource,
         SteamImportSource,
       ],
     },
