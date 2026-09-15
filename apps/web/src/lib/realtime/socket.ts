@@ -2,9 +2,6 @@ import { API_URL, tryRefresh } from "$lib/api/core";
 import type { RealtimeEvent } from "@loomkeep/shared";
 import { io } from "socket.io-client";
 
-// The gateway rides socket.io's own default path (/socket.io), a sibling of
-// the `api` HTTP prefix rather than under it — see EventsGateway's class
-// comment and the Caddyfile's dedicated `handle /socket.io/*` block.
 const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");
 
 /**
@@ -25,6 +22,12 @@ export const socket = io(API_ORIGIN, {
   // connects as websocket from the very first request instead of probing
   // through polling first.
   transports: ["websocket"],
+  // Must match EventsGateway's own `path` — nesting under `/api` keeps the
+  // handshake inside the access-token cookie's `Path=/api` scope. Getting
+  // this wrong doesn't error, it just silently never sends the cookie:
+  // handleConnection rejects every connection immediately, regardless of
+  // how fresh the token is.
+  path: "/api/socket.io",
 });
 
 export function connectRealtimeSocket(): void {

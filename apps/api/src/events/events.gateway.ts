@@ -2,7 +2,10 @@ import type { RealtimeEvent } from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
+import { SkipThrottle } from "@nestjs/throttler";
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -62,7 +65,21 @@ const webOrigins = (process.env.WEB_ORIGIN ?? "")
   // a transport every client immediately fails to upgrade out of, so it's
   // turned off server-side too rather than only on the web client.
   transports: ["websocket"],
+  // The access-token cookie is scoped to `Path=/api` (see auth-cookies.ts) —
+  // socket.io's default `/socket.io` path falls outside that scope, so the
+  // browser never attaches the cookie to the handshake at all and
+  // handleConnection's auth fails on every single connection, immediately
+  // (confirmed with an instrumented WebSocket: connect → auth-reject
+  // disconnect in under 5ms, every time, independent of token freshness).
+  // Nesting under `/api` puts the handshake back in the cookie's path.
+  path: "/api/socket.io",
 })
+// The global ThrottlerGuard (APP_GUARD) runs for every context type too, and
+// tries to set rate-limit headers on a `res` that doesn't exist in a WS
+// context — crashes the same way the global JwtAuthGuard did before its own
+// `getType() !== "http"` guard. No rate limiting to lose here: a socket
+// already only exists because handleConnection's own auth accepted it.
+@SkipThrottle()
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
   private readonly expiryTimers = new Map<string, NodeJS.Timeout>();
@@ -142,7 +159,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Comments are entirely social-gated (see CommentController) — refused silently, same "don't advertise the surface" rule as the REST side. */
   @SubscribeMessage("join-comments")
   async handleJoinComments(
-    client: Socket,
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
     { targetType, targetId }: { targetType: string; targetId: string },
   ): Promise<void> {
     if (!isSocialEnabled(this.config, this.flags)) return;
@@ -151,7 +169,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage("leave-comments")
   async handleLeaveComments(
-    client: Socket,
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
     { targetType, targetId }: { targetType: string; targetId: string },
   ): Promise<void> {
     await client.leave(commentsRoom(targetType, targetId));
@@ -159,14 +178,20 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   /** Owner or editor only — the same audience ListService.canEdit grants write access to. */
   @SubscribeMessage("join-list")
-  async handleJoinList(client: Socket, listId: string): Promise<void> {
+  async handleJoinList(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() listId: string,
+  ): Promise<void> {
     const userId = client.data.userId as string | undefined;
     if (!userId || !(await this.canAccessList(userId, listId))) return;
     await client.join(listRoom(listId));
   }
 
   @SubscribeMessage("leave-list")
-  async handleLeaveList(client: Socket, listId: string): Promise<void> {
+  async handleLeaveList(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() listId: string,
+  ): Promise<void> {
     await client.leave(listRoom(listId));
   }
 

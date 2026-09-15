@@ -11,6 +11,7 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 
 function makeContext(request: unknown): ExecutionContext {
   return {
+    getType: vi.fn().mockReturnValue("http"),
     getHandler: vi.fn(),
     getClass: vi.fn(),
     switchToHttp: vi.fn().mockReturnValue({
@@ -54,6 +55,33 @@ describe("JwtAuthGuard", () => {
   });
 
   afterEach(() => vi.unstubAllEnvs());
+
+  it("passes through non-HTTP contexts untouched (EventsGateway's @SubscribeMessage handlers)", async () => {
+    const jwtService = { verifyAsync: vi.fn() } as unknown as JwtService;
+    const prisma = {
+      refreshToken: { findUnique: vi.fn() },
+    } as unknown as PrismaService;
+    const guard = new JwtAuthGuard(
+      jwtService,
+      makeConfigService(),
+      makeReflector(),
+      prisma,
+      new SessionCacheService(),
+    );
+    // A WS context has no HTTP request to read a cookie from — the socket's
+    // own connection already went through the equivalent check once, at the
+    // handshake (see EventsGateway.handleConnection). Reading the request
+    // here the way the HTTP path does is what used to crash.
+    const wsContext = {
+      getType: vi.fn().mockReturnValue("ws"),
+      getHandler: vi.fn(),
+      getClass: vi.fn(),
+      switchToHttp: vi.fn().mockReturnValue({ getRequest: vi.fn() }),
+    } as unknown as ExecutionContext;
+
+    await expect(guard.canActivate(wsContext)).resolves.toBe(true);
+    expect(jwtService.verifyAsync).not.toHaveBeenCalled();
+  });
 
   it("reads access tokens from the HttpOnly cookie", async () => {
     const request = makeCookieHeader();

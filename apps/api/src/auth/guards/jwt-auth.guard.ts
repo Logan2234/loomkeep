@@ -35,6 +35,15 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // A global APP_GUARD runs for every context type, not just HTTP routes —
+    // EventsGateway's @SubscribeMessage handlers hit this too. Its own
+    // socket already went through the equivalent check once already, at the
+    // connection handshake (EventsGateway.handleConnection reads the same
+    // cookie itself, since a WS message context has no HTTP request to read
+    // it from — context.switchToHttp().getRequest() here returns something
+    // that isn't a real request, which crashed reading its `.headers`).
+    if (context.getType() !== "http") return true;
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

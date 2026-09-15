@@ -66,17 +66,12 @@
 		header Retry-After "3600"
 	}
 
-	# NestJS mounts every route under the `api` global prefix.
+	# NestJS mounts every route under the `api` global prefix. EventsGateway
+	# (WebSocket real-time push) is nested under it too, at /api/socket.io —
+	# both to stay covered by this single block and because the access-token
+	# cookie's Path=/api scope requires it — so no dedicated handle block is
+	# needed for it; reverse_proxy forwards the WS upgrade transparently.
 	handle /api/* {
-		reverse_proxy api:3000
-	}
-
-	# EventsGateway (WebSocket real-time push) rides socket.io's own default
-	# path, outside the `api` prefix (Nest's setGlobalPrefix only covers HTTP
-	# routes, not the raw upgrade handler engine.io attaches to the server) —
-	# reverse_proxy forwards the WS upgrade transparently, no extra directive
-	# needed.
-	handle /socket.io/* {
 		reverse_proxy api:3000
 	}
 
