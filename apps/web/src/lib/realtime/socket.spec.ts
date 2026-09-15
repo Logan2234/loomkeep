@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { fakeSocket, ioMock } = vi.hoisted(() => {
+const { fakeSocket, ioMock, tryRefreshMock } = vi.hoisted(() => {
   const fakeSocket = {
     on: vi.fn(),
     off: vi.fn(),
@@ -9,10 +9,18 @@ const { fakeSocket, ioMock } = vi.hoisted(() => {
     disconnect: vi.fn(),
     connected: false,
   };
-  return { fakeSocket, ioMock: vi.fn(() => fakeSocket) };
+  return {
+    fakeSocket,
+    ioMock: vi.fn(() => fakeSocket),
+    tryRefreshMock: vi.fn(),
+  };
 });
 
 vi.mock("socket.io-client", () => ({ io: ioMock }));
+vi.mock("$lib/api/core", () => ({
+  API_URL: "http://localhost:3000/api",
+  tryRefresh: tryRefreshMock,
+}));
 
 describe("realtime socket", () => {
   beforeEach(() => {
@@ -77,5 +85,20 @@ describe("realtime socket", () => {
       "leave-comments",
       expect.anything(),
     );
+  });
+
+  it("refreshes the access token on an unexpected disconnect, but not on our own", async () => {
+    vi.resetModules();
+    await import("./socket");
+
+    const disconnectHandler = fakeSocket.on.mock.calls.find(
+      ([event]) => event === "disconnect",
+    )?.[1] as (reason: string) => void;
+
+    disconnectHandler("io server disconnect");
+    expect(tryRefreshMock).toHaveBeenCalledTimes(1);
+
+    disconnectHandler("io client disconnect");
+    expect(tryRefreshMock).toHaveBeenCalledTimes(1);
   });
 });
