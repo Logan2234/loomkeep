@@ -64,6 +64,25 @@ describe("shared component translations", () => {
     }
   });
 
+  it("localizes Combobox defaults and selection summaries", () => {
+    expect(m.common_search_placeholder({}, { locale: "fr" })).toBe(
+      "Rechercher…",
+    );
+    expect(m.common_search_placeholder({}, { locale: "en" })).toBe("Search…");
+    expect(
+      m.common_selection_summary(
+        { label: "Genres", selection: "2" },
+        { locale: "fr" },
+      ),
+    ).toBe("Genres : 2");
+    expect(
+      m.common_selection_summary(
+        { label: "Genres", selection: "2" },
+        { locale: "en" },
+      ),
+    ).toBe("Genres: 2");
+  });
+
   it("resolves shared statistics labels in the active language on each read", () => {
     const previous = getLocale;
 

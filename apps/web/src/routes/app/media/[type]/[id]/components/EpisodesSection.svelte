@@ -317,10 +317,11 @@
           {#if entry && season.id}
             {@const seasonId = season.id}
             <Dropdown placement="bottom-end" class="min-w-64">
-              {#snippet trigger({ open, toggle })}
+              {#snippet trigger({ open, toggle, onkeydown })}
                 <button
                   class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
                   aria-label={m.media_season_more_actions()}
+                  {onkeydown}
                   aria-haspopup="menu"
                   aria-expanded={open}
                   onclick={(e) => {
@@ -367,6 +368,11 @@
           )}
           <ProgressBar
             value={seasonPct}
+            label={m.common_selection_summary({
+              label: m.common_progress(),
+              selection:
+                season.title ?? `${m.common_season()} ${season.number}`,
+            })}
             height="h-1"
             track="bg-border"
             rounded={false}

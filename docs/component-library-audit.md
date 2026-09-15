@@ -14,66 +14,6 @@ Scope: shared UI primitives, their real application usages, visual responsive be
 
 ## P1 — shared interaction and accessibility defects
 
-### DS-001 — Establish a common overlay focus contract
-
-**Components:** `Modal`, `Drawer`, `FocusOverlay`, `Lightbox`.
-
-Implement a shared behavior (for example a Svelte action) that:
-
-- moves focus into the overlay when it opens, using an explicit initial target when supplied;
-- traps `Tab` and `Shift+Tab` inside the active overlay;
-- makes the page behind the overlay inert while it is open;
-- restores focus to the original trigger after close;
-- handles Escape consistently, including nested overlays and non-dismissible dialogs;
-- composes with the existing portal, transition and scroll-lock behaviors.
-
-Do not duplicate this logic in each overlay. Carefully support an overlay with no naturally focusable control and overlays opened from another overlay.
-
-**Regression coverage:** keyboard focus order; reverse tabbing; Escape; click outside; trigger restoration; no-focusable-content fallback; nested modal/drawer/lightbox; disabled initial control; close after an async action.
-
-### DS-002 — Rebuild Dropdown and Combobox keyboard behavior
-
-**Components:** `Dropdown`, `Combobox`.
-
-Opening a searchable combobox currently requests focus before the search input is mounted. Open the panel first, then focus after render. The backdrop must not become the first keyboard destination.
-
-Define and implement one coherent interaction contract:
-
-- remember and restore the trigger focus;
-- focus search input on opening when searchable;
-- support Escape, Enter/Space, ArrowUp/ArrowDown, Home and End;
-- expose the correct listbox/option semantics, selection state and active descendant or roving tabindex;
-- handle both single and multiselect variants without every option becoming a tab stop;
-- expose disabled options and empty search results correctly.
-
-**Regression coverage:** single, multi and searchable variants; first/last option; no result; disabled option; selection with keyboard; Escape from trigger/search/list; focus restoration; French and English strings.
-
-### DS-003 — Keep dropdowns within the viewport
-
-**Components:** `Dropdown`, `Combobox`.
-
-Implement placement logic that measures available space and:
-
-- flips above the trigger when the panel would overflow below;
-- clamps panel height and width to the viewport;
-- accounts for fixed mobile navigation, safe-area insets and short landscape height;
-- updates on resize and relevant scroll changes;
-- keeps the trigger-panel relationship correct for long labels and virtual keyboards.
-
-Avoid a hardcoded offset tied to the current catalogue layout.
-
-**Regression coverage:** all viewport corners; 390 x 844; 812 x 375; long options; long search result list; viewport resize; panel opened near a fixed bottom bar.
-
-### DS-004 — Make Tooltip usable without a mouse
-
-**Component:** `Tooltip`.
-
-Open the tooltip on focus as well as hover; close it on focus leaving, pointer leaving and Escape. The descriptive relationship must be attached to the actual interactive trigger, not a presentational wrapper. Add collision and viewport clamping for long text.
-
-Keep touch behavior intentional: do not create a tooltip that traps touch users without an obvious dismissal path.
-
-**Regression coverage:** hover; keyboard focus; Escape; focus transfer; icon-only trigger accessible name; long translated text; mobile edge placement.
-
 ### DS-005 — Fix confirmed WCAG contrast failures
 
 **Components:** `BetaBadge`, adult badge in `Poster`, error `Banner`, OMDb `ProviderMark`.
@@ -89,35 +29,7 @@ Use semantic tokens or component-specific token pairs. Do not alter brand colors
 
 **Regression coverage:** axe contrast checks in both themes and visual review against the Séance palette.
 
-### DS-006 — Make Carousel visibly and fully keyboard-accessible
-
-**Component:** `Carousel`.
-
-Make the carousel viewport reachable and named when its children are not independently focusable. Support ArrowLeft and ArrowRight on the viewport without interfering with interactive descendants. Show previous/next controls whenever they receive keyboard focus, not only on mouse hover. Increase dot hit areas while retaining the visual density.
-
-Review the paging calculations: current arrow movement and dot positioning use different fractions, and the rounded page count can undercount partial pages. Respect `prefers-reduced-motion` for programmatic scrolling.
-
-**Regression coverage:** keyboard navigation; focus-visible arrows; no-item/one-item/many-item variants; slides with and without links; partial last page; drag cleanup on unmount; reduced motion.
-
-### DS-P01 — Remove the fake dismiss control on non-dismissible modals
-
-**Component:** `Modal`.
-
-When `dismissable` is false, do not render a backdrop button named “Close” that does nothing. Use inert backdrop markup and make the intended modal action the keyboard path.
-
-**Regression coverage:** Terms reacceptance or equivalent non-dismissible dialog; tab order; click outside; Escape.
-
 ## P2 — semantic quality, responsive resilience and maintainability
-
-### DS-007 — Give ProgressBar a real progress semantics API
-
-**Component:** `ProgressBar`.
-
-Add `role="progressbar"`, min/max/current value and a required accessible label or labelled-by mechanism. Support a genuine indeterminate state if there is a real product use case. Do not announce every visual animation frame.
-
-Keep existing style extension props only until named variants cover repeated needs; do not migrate usages mechanically without evidence.
-
-**Regression coverage:** 0, intermediate, 100 and indeterminate values in the accessibility tree.
 
 ### DS-008 — Define SegmentedControl as a real selection control
 
@@ -161,14 +73,6 @@ Compose the shared overlay focus contract with `portal` and `scrollLock`. The pa
 
 **Regression coverage:** image gallery; YouTube/video; failed image; keyboard navigation; close restoration; mobile short landscape; nested overlay if supported.
 
-### DS-013 — Localize Combobox defaults and counters completely
-
-**Component:** `Combobox`.
-
-Replace the French default search placeholder and the hardcoded French punctuation in the source-count message with Paraglide `m()` messages. Callers that omit the placeholder must still receive the current locale.
-
-**Regression coverage:** French and English default placeholder and counter; caller-supplied placeholder.
-
 ### DS-014 — Establish an accessible loading contract for skeletons
 
 **Components:** `CardRowSkeleton`, `PosterGridSkeleton`, catalogue examples.
@@ -178,22 +82,6 @@ Skeleton primitives should be decorative (`aria-hidden`) by default. The parent 
 Do not add a new `LoadingRegion` component unless real usages demonstrate that a shared wrapper will reduce duplicated wiring.
 
 **Regression coverage:** axe checks; loading list; loading grid; region transitioning to content.
-
-### DS-015 — Correct the light theme browser chrome color
-
-**File:** `apps/web/src/lib/stores/theme.svelte.ts`.
-
-Correct the malformed `##f2ebdc` value to a valid color. Confirm the chosen value against the retained light theme token rather than treating the current design document as automatically authoritative.
-
-**Regression coverage:** unit test for light/dark theme color metadata and manual PWA/browser-chrome check.
-
-### DS-016 — Reconcile DESIGN.md and CSS tokens
-
-**Files:** `apps/web/DESIGN.md`, `apps/web/src/app.css`.
-
-The documented light colors no longer match CSS. Decide explicitly whether the shipped CSS or the document represents the approved source of truth, then update the other. Do not change production colors merely to match a stale document.
-
-If the project benefits from it, add a small generated or tested token reference; avoid an overly elaborate documentation pipeline.
 
 ### DS-017 — Add a focused interaction and accessibility test suite
 
@@ -218,20 +106,6 @@ Retain compact visuals but enlarge interactive hit areas towards 40–44 px usin
 
 **Regression coverage:** measured hitboxes on phone layouts and compact application rows.
 
-### DS-P02 — Complete multiselect Combobox ARIA
-
-**Component:** `Combobox`.
-
-As part of DS-002, expose multiselect semantics, a real listbox/option relationship and selection state. Validate the final model with NVDA/Firefox and VoiceOver/Safari; static ARIA inspection is not sufficient.
-
-### DS-P03 — Add `type="button"` to internal action buttons
-
-**Components:** `Dropdown`, `Modal`, `FocusOverlay`, `Drawer`.
-
-Explicitly type close, backdrop and menu buttons so they cannot submit a surrounding form. Keep submit behavior only where the component is intentionally a form submitter.
-
-**Regression coverage:** each primitive mounted inside a form with a submit spy.
-
 ### DS-P04 — Improve RelativeTime semantics only if product value warrants it
 
 **Component:** `RelativeTime`.
@@ -239,12 +113,6 @@ Explicitly type close, backdrop and menu buttons so they cannot submit a surroun
 Use a semantic `<time datetime>` element. Keep the full timestamp available via accessible text/title without desktop hover color behavior. Decide separately whether live refresh is needed: it should be bounded and justified by real long-lived pages, not added automatically.
 
 **Regression coverage:** timestamp semantics and a long-open-page scenario only if refresh is introduced.
-
-### DS-P06 — Harden Carousel geometry and lifecycle handling
-
-**Component:** `Carousel`.
-
-This is implemented alongside DS-006: make dot count and movement derive from one geometry model, disable smooth scrolling under reduced motion and guarantee pointer listeners are removed if the component unmounts mid-drag.
 
 ### DS-P07 — Decide whether Wizard is truly generic
 
@@ -298,19 +166,6 @@ At tablet width, the category navigation clips later sections without a clear sc
 Review whether warning should use the dedicated `--warning` token rather than the primary Séance accent. This is a visual coherence decision, not an automatic refactor: compare existing feedback usages in both themes before changing it.
 
 ## Potential new components — defer until evidence supports them
-
-### Shared `dialogFocus` action/behavior — P1
-
-This is justified because four overlays need the same focus contract. It should compose with existing `portal` and `scrollLock`, not replace them with a new overlay framework.
-
-Suggested shape:
-
-```svelte
-<div
-  use:dialogFocus={{ initialFocus, restoreFocus: true, trap: true, inertBackground: true }}
-  role="dialog"
->
-```
 
 ### `FormField` — P2, conditional
 

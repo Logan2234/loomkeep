@@ -8,13 +8,20 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
+  import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
+  import {
+    getAdjacentCarouselOffset,
+    getCarouselPageIndex,
+    getCarouselPageOffsets,
+  } from "./carousel-pagination";
   import Icon from "./Icon.svelte";
 
   let {
     items,
     keyOf,
     card,
+    label,
     gap = "gap-4",
     wrapClass = "-mx-5 md:mx-0",
     innerClass = "px-5 pt-2 pb-2 md:px-0",
@@ -23,6 +30,8 @@
     items: T[];
     keyOf: (item: T) => string;
     card: Snippet<[T]>;
+    /** Accessible name for the scrollable collection. */
+    label: string;
     /** Tailwind gap class between cards — cast strips use a tighter gap-3. */
     gap?: string;
     /** Outer negative-margin/breakpoint class, tuned to the page gutter. */
@@ -40,6 +49,7 @@
   let dragging = $state(false);
   // Coarse pointer (touch): swap the hover-only arrows for tappable page dots.
   let coarse = $state(false);
+  let hasFocusableChildren = $state(false);
   let pageCount = $state(1);
   let pageIndex = $state(0);
 
@@ -48,30 +58,51 @@
     if (!el) return;
     canScrollLeft = el.scrollLeft > 4;
     canScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 4;
-    // One "page" ≈ one viewport of cards; used only for the touch dots. Keep the
-    // count in a local — reading the `pageCount` state back here would make the
-    // measuring $effect depend on state it writes and loop forever.
-    const pages = Math.max(1, Math.round(el.scrollWidth / el.clientWidth));
-    pageCount = pages;
-    pageIndex = Math.min(pages - 1, Math.round(el.scrollLeft / el.clientWidth));
+    hasFocusableChildren = Boolean(
+      el.querySelector(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ),
+    );
+    const offsets = getCarouselPageOffsets(el.scrollWidth, el.clientWidth);
+    pageCount = offsets.length;
+    pageIndex = getCarouselPageIndex(el.scrollLeft, offsets);
   }
 
   function scrollByPage(dir: 1 | -1) {
     const el = stripEl;
     if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+    const offsets = getCarouselPageOffsets(el.scrollWidth, el.clientWidth);
+    el.scrollTo({
+      left: getAdjacentCarouselOffset(el.scrollLeft, offsets, dir),
+      behavior: reduced ? "auto" : "smooth",
+    });
   }
 
   function scrollToPage(i: number) {
     const el = stripEl;
     if (!el) return;
-    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    const offsets = getCarouselPageOffsets(el.scrollWidth, el.clientWidth);
+    el.scrollTo({
+      left: offsets[i] ?? 0,
+      behavior: reduced ? "auto" : "smooth",
+    });
   }
 
   /** Imperative reset for callers who reorder `items` (e.g. "just watched"
    * bumping an entry to the front) and want the strip back at its start. */
   export function scrollToStart() {
-    stripEl?.scrollTo({ left: 0, behavior: "smooth" });
+    stripEl?.scrollTo({ left: 0, behavior: reduced ? "auto" : "smooth" });
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      scrollByPage(-1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      scrollByPage(1);
+    }
   }
 
   $effect(() => {
@@ -119,6 +150,12 @@
     window.addEventListener("pointercancel", onPointerUp);
   }
 
+  function removePointerListeners() {
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerUp);
+  }
+
   function onPointerMove(e: PointerEvent) {
     if (!stripEl) return;
     stripEl.scrollLeft = startScroll - (e.clientX - startX);
@@ -131,9 +168,7 @@
   function onPointerUp() {
     dragging = false;
     dragged = stripEl ? Math.abs(stripEl.scrollLeft - startScroll) > 4 : false;
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerUp);
+    removePointerListeners();
   }
 
   function onClickCapture(e: MouseEvent) {
@@ -145,20 +180,26 @@
   }
 
   const reduced = prefersReducedMotion();
+  onDestroy(removePointerListeners);
 </script>
 
 {#if items.length > 0}
   <div class="group relative {wrapClass}">
     <!-- Drag-to-pan is a progressive enhancement over native scroll/touch;
          the strip's content (links/buttons) stays independently reachable. -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={stripEl}
-      class="no-scrollbar flex snap-x {gap} {innerClass} {snapPad} overflow-x-auto select-none {dragging
+      role="region"
+      aria-label={label}
+      tabindex={hasFocusableChildren ? undefined : 0}
+      class="no-scrollbar focus-visible:outline-accent flex snap-x {gap} {innerClass} {snapPad} overflow-x-auto select-none focus-visible:outline-2 focus-visible:outline-offset-2 {dragging
         ? 'cursor-grabbing'
         : 'cursor-grab'}"
       onscroll={updateEdges}
       onpointerdown={onPointerDown}
+      onkeydown={onKeydown}
       onclickcapture={onClickCapture}>
       {#each items as item (keyOf(item))}
         <div
@@ -173,7 +214,7 @@
       <button
         type="button"
         aria-label={m.common_previous()}
-        class="border-border bg-bg/90 hover:bg-surface-2 absolute top-1/2 left-2 -translate-y-1/2 rounded-full border p-1.5 opacity-0 shadow-md backdrop-blur transition-opacity group-hover:opacity-100"
+        class="border-border bg-bg/90 hover:bg-surface-2 absolute top-1/2 left-2 -translate-y-1/2 rounded-full border p-1.5 opacity-0 shadow-md backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
         onclick={() => scrollByPage(-1)}>
         <Icon name="chevron-left" class="h-4 w-4" />
       </button>
@@ -182,7 +223,7 @@
       <button
         type="button"
         aria-label={m.common_next()}
-        class="border-border bg-bg/90 hover:bg-surface-2 absolute top-1/2 right-2 -translate-y-1/2 rounded-full border p-1.5 opacity-0 shadow-md backdrop-blur transition-opacity group-hover:opacity-100"
+        class="border-border bg-bg/90 hover:bg-surface-2 absolute top-1/2 right-2 -translate-y-1/2 rounded-full border p-1.5 opacity-0 shadow-md backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
         onclick={() => scrollByPage(1)}>
         <Icon name="chevron-right" class="h-4 w-4" />
       </button>
@@ -191,16 +232,18 @@
 
   {#if coarse && pageCount > 1}
     <!-- Touch affordance: page dots (arrows are hover-only and unreachable). -->
-    <div class="mt-2 flex justify-center gap-1.5">
+    <div class="mt-1 flex justify-center gap-0.5">
       {#each { length: pageCount } as _, i (i)}
         <button
           type="button"
           aria-label={m.common_page_number({ page: i + 1 })}
           aria-current={i === pageIndex ? "true" : undefined}
           onclick={() => scrollToPage(i)}
-          class="h-1.5 rounded-full transition-all {i === pageIndex
-            ? 'bg-accent w-5'
-            : 'bg-border w-1.5'}">
+          class="grid h-8 min-w-8 place-items-center rounded-full">
+          <span
+            class="h-1.5 rounded-full transition-all {i === pageIndex
+              ? 'bg-accent w-5'
+              : 'bg-border w-1.5'}"></span>
         </button>
       {/each}
     </div>

@@ -91,6 +91,11 @@
     <div class="border-border border-b p-4 md:hidden">
       <ProgressBar
         value={((activeIndex + 1) / steps.length) * 100}
+        label={m.wizard_step_progress({
+          current: activeIndex + 1,
+          total: steps.length,
+          label: steps[activeIndex].label,
+        })}
         height="h-1"
         class="mb-2" />
       <p class="timecode text-xs">

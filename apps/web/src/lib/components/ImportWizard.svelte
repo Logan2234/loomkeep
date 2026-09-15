@@ -507,7 +507,12 @@
       <p class="mb-2 font-semibold">
         {phase === "analyzing" ? m.import_analyzing() : m.import_committing()}
       </p>
-      <ProgressBar value={progressPct} height="h-2.5" />
+      <ProgressBar
+        value={progressPct}
+        label={phase === "analyzing"
+          ? m.import_analyzing()
+          : m.import_committing()}
+        height="h-2.5" />
       {#if job}
         <p class="timecode mt-2 text-sm">
           {job.progress.done}/{job.progress.total}

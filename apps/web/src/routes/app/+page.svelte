@@ -387,7 +387,10 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="tv" class="text-accent h-4 w-4" />
-                {m.common_Media()} · {m.home_media_to_watch()}
+                {m.common_selection_summary({
+                  label: m.common_Media(),
+                  selection: m.home_media_to_watch(),
+                })}
               </h2>
               <a href="/app/media" class="btn-text group">
                 {m.common_see_more()}
@@ -401,6 +404,10 @@
                 <Carousel
                   bind:this={resumeCarousel}
                   items={toWatch}
+                  label={m.common_selection_summary({
+                    label: m.common_Media(),
+                    selection: m.home_media_to_watch(),
+                  })}
                   keyOf={(e) => e.id}>
                   {#snippet card(e)}
                     <a
@@ -420,6 +427,10 @@
                     {#if e.progress}
                       <ProgressBar
                         value={pct(e)}
+                        label={m.common_selection_summary({
+                          label: m.common_progress(),
+                          selection: e.mediaItem.title,
+                        })}
                         height="h-1"
                         class="mt-1"
                         title="{e.progress.watchedEpisodes} / {e.progress
@@ -460,7 +471,10 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="gamepad" class="text-accent h-4 w-4" />
-                {m.common_Games()} · {m.home_games_playing()}
+                {m.common_selection_summary({
+                  label: m.common_Games(),
+                  selection: m.home_games_playing(),
+                })}
               </h2>
               <a href="/app/games" class="btn-text group">
                 {m.common_see()}
@@ -470,7 +484,13 @@
               </a>
             </div>
             {#if playingGames.length > 0}
-              <Carousel items={playingGames} keyOf={(e) => e.id}>
+              <Carousel
+                items={playingGames}
+                label={m.common_selection_summary({
+                  label: m.common_Games(),
+                  selection: m.home_games_playing(),
+                })}
+                keyOf={(e) => e.id}>
                 {#snippet card(e)}
                   <a href={`/app/games/${e.game.sourceId}`} class="block w-24">
                     <div
@@ -531,6 +551,10 @@
                         {#if p !== null}
                           <ProgressBar
                             value={p}
+                            label={m.common_selection_summary({
+                              label: m.book_reading_progress(),
+                              selection: e.book.title,
+                            })}
                             height="h-1"
                             class="mt-1 max-w-32" />
                         {/if}
@@ -561,7 +585,10 @@
               <h2
                 class="font-display flex items-center gap-2 text-base font-bold">
                 <Icon name="music" class="text-accent h-4 w-4" />
-                {m.common_Music()} · {m.home_music_listening()}
+                {m.common_selection_summary({
+                  label: m.common_Music(),
+                  selection: m.home_music_listening(),
+                })}
               </h2>
               <a href="/app/music" class="btn-text group">
                 {m.common_see()}
@@ -571,7 +598,13 @@
               </a>
             </div>
             {#if toListenAlbums.length > 0}
-              <Carousel items={toListenAlbums} keyOf={(e) => e.id}>
+              <Carousel
+                items={toListenAlbums}
+                label={m.common_selection_summary({
+                  label: m.common_Music(),
+                  selection: m.home_music_listening(),
+                })}
+                keyOf={(e) => e.id}>
                 {#snippet card(e)}
                   <a href={`/app/music/${e.album.sourceId}`} class="block w-24">
                     <div

@@ -62,10 +62,11 @@
   </button>
 
   <Dropdown placement="bottom-start" class="w-52">
-    {#snippet trigger({ open, toggle })}
+    {#snippet trigger({ open, toggle, onkeydown })}
       <button
         type="button"
         class="btn btn-ghost"
+        {onkeydown}
         aria-haspopup="menu"
         aria-expanded={open}
         onclick={toggle}>

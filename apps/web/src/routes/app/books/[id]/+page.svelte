@@ -377,7 +377,10 @@
                 {/if}
               </div>
               {#if detail.pageCount}
-                <ProgressBar value={progressPct} height="h-2" />
+                <ProgressBar
+                  value={progressPct}
+                  label={m.book_reading_progress()}
+                  height="h-2" />
               {/if}
             </div>
 
