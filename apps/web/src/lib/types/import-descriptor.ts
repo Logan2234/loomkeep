@@ -9,6 +9,7 @@ export type ImportSourceDescriptor = {
     type: "csv" | "xml" | "zip" | "steamId" | "oauth";
     accept?: string;
     placeholder?: string;
+    textEncoding?: string;
   };
   noun: {
     one: string;

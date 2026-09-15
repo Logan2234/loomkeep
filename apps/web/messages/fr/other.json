@@ -538,6 +538,7 @@
   "settings_import_goodreads_hint": "(My Books → Import and export → Export Library) puis dépose le fichier .csv ici. On associe chaque livre au catalogue Open Library ; tu choisis ensuite quoi importer.",
   "settings_import_babelio_intro": "Exporte ta bibliothèque depuis Babelio ↗",
   "settings_import_babelio_hint": "(Mes livres → Fonctionnalités avancées → Exporter ma bibliothèque) puis dépose le fichier .csv ici. On associe chaque livre au catalogue Open Library ; tu choisis ensuite quoi importer.",
+  "settings_import_babelio_limits": "L’export Babelio ne contient pas les Pense-bête, les étiquettes, ni les informations de prêt ou de possession. Babelio peut aussi exporter un livre abandonné comme « Lu » : vérifie les statuts proposés avant de confirmer.",
   "settings_import_storygraph_intro": "Exporte ta bibliothèque depuis StoryGraph ↗",
   "settings_import_storygraph_hint": "(Manage Account → Export StoryGraph Library) puis dépose le fichier .csv ici. On associe chaque livre au catalogue Open Library ; tu choisis ensuite quoi importer.",
   "settings_import_trakt_intro": "Dépose l'archive .zip de ton export Trakt",

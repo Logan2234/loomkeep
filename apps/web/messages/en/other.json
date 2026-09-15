@@ -538,6 +538,7 @@
   "settings_import_goodreads_hint": "(My Books → Import and export → Export Library) then drop the .csv file here. We match each book to the Open Library catalog; you choose what to import.",
   "settings_import_babelio_intro": "Export your library from Babelio ↗",
   "settings_import_babelio_hint": "(My Books → Advanced features → Export my library) then drop the .csv file here. We match each book to the Open Library catalog; you choose what to import.",
+  "settings_import_babelio_limits": "Babelio's export does not include reminders, tags, or loan and ownership information. Babelio can also export an abandoned book as \"Read\": check the suggested statuses before confirming.",
   "settings_import_storygraph_intro": "Export your library from StoryGraph ↗",
   "settings_import_storygraph_hint": "(Manage Account → Export StoryGraph Library) then drop the .csv file here. We match each book to the Open Library catalog; you choose what to import.",
   "settings_import_trakt_intro": "Drop your Trakt export .zip file",

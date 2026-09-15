@@ -84,7 +84,11 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
       label: "Babelio",
       description: m.import_source_books_csv_description(),
       href: "/app/settings/import/babelio",
-      input: { type: "csv", accept: ".csv,text/csv" },
+      input: {
+        type: "csv",
+        accept: ".csv,text/csv",
+        textEncoding: "windows-1252",
+      },
       noun: { one: m.common_book(), many: m.common_books() },
       newBadgeKey: "babelio",
     },
