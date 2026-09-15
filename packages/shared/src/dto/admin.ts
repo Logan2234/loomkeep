@@ -166,12 +166,16 @@ export interface JobRunDto {
   error: string | null;
 }
 
-/** One background job the admin can inspect/trigger, with its recent runs. */
+/**
+ * One background job the admin can inspect/trigger, with its recent runs.
+ *
+ * Carries no label or schedule: both are presentation, derived from `key` by
+ * the web (`adminJobLabel`/`adminJobSchedule`), the same way an `ErrorCode`
+ * becomes a message. The API used to send French strings for them, which the
+ * web already ignored — an English-locale admin would have read them anyway.
+ */
 export interface JobDto {
   key: string;
-  label: string;
-  /** Cron schedule, human-readable (e.g. "Toutes les heures"). */
-  schedule: string;
   /** Most recent runs first. */
   runs: JobRunDto[];
 }
