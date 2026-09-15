@@ -1,4 +1,5 @@
 import { type Mock, vi } from "vitest";
+import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
 import type { NotificationService } from "../notifications/notification.service";
@@ -41,18 +42,23 @@ function make(
   const notifications = {
     create: vi.fn(),
   } as unknown as NotificationService;
+  const events = {
+    emitReportsCount: vi.fn(),
+    ...overrides.events,
+  } as unknown as EventsGateway;
 
   return {
-    svc: new ReportService(prisma, mail, jobRuns, notifications),
+    svc: new ReportService(prisma, mail, jobRuns, notifications, events),
     prisma,
     mail,
     notifications,
+    events,
   };
 }
 
 describe("ReportService.create", () => {
-  it("persists a report with a valid category/motif pair", async () => {
-    const { svc, prisma } = make();
+  it("persists a report with a valid category/motif pair and pushes the live admin count", async () => {
+    const { svc, prisma, events } = make();
     await svc.create(
       "reporter1",
       "COMMENT" as never,
@@ -70,6 +76,7 @@ describe("ReportService.create", () => {
         reason: null,
       },
     });
+    expect(events.emitReportsCount).toHaveBeenCalled();
   });
 
   it("persists OTHER with a trimmed reason and no motif", async () => {
@@ -224,8 +231,8 @@ describe("ReportService.resolve", () => {
     await expect(svc.resolve("admin1", "r1", "RESOLVED")).rejects.toThrow();
   });
 
-  it("marks a pending report resolved", async () => {
-    const { svc, prisma } = make();
+  it("marks a pending report resolved and pushes the live admin count", async () => {
+    const { svc, prisma, events } = make();
     await svc.resolve("admin1", "r1", "RESOLVED");
     expect(prisma.report.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -236,6 +243,7 @@ describe("ReportService.resolve", () => {
         }),
       }),
     );
+    expect(events.emitReportsCount).toHaveBeenCalled();
   });
 
   it("notifies the reporter in-app of the outcome, DSA art. 16(5)", async () => {

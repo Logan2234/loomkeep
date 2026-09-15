@@ -24,6 +24,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
   import type { ListDto, ListItemDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { dndzone } from "svelte-dnd-action";
@@ -41,6 +42,23 @@
   const id = $derived(page.params.id ?? "");
   const detailKey = $derived(keys.lists.detail(id));
   const queryClient = useQueryClient();
+
+  // Pushed live by EventsGateway (see ListService's update/addItem/removeItem/
+  // reorder/addMember/removeMember) — the server only lets an owner or editor
+  // actually join the room, so a plain viewer's join is a silent no-op. This
+  // is what turns a concurrent editor's reorder from "you find out via a 409
+  // the next time you try to save" into "the list just updates under you".
+  $effect(() => {
+    if (!id) return;
+    const leave = joinRealtimeRoom("join-list", "leave-list", id);
+    const off = onRealtimeEvent("list-updated", () => {
+      void queryClient.invalidateQueries({ queryKey: keys.lists.detail(id) });
+    });
+    return () => {
+      off();
+      leave();
+    };
+  });
 
   let editing = $state(false);
   let managingMembers = $state(false);

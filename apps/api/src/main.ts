@@ -13,6 +13,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from "@nestjs/platform-fastify";
+import { IoAdapter } from "@nestjs/platform-socket.io";
 import * as Sentry from "@sentry/node";
 import { Logger } from "nestjs-pino";
 import { readFile } from "node:fs/promises";
@@ -94,6 +95,11 @@ async function bootstrap() {
       },
     },
   );
+
+  // EventsGateway (WebSocket real-time push) rides socket.io regardless of
+  // the HTTP adapter being Fastify — IoAdapter attaches to the underlying
+  // Node http.Server, which app.getHttpServer() exposes either way.
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   app.useLogger(app.get(Logger));
   // Lets onModuleDestroy hooks (Prisma disconnect, log flush...) run on

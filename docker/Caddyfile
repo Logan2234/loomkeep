@@ -71,6 +71,15 @@
 		reverse_proxy api:3000
 	}
 
+	# EventsGateway (WebSocket real-time push) rides socket.io's own default
+	# path, outside the `api` prefix (Nest's setGlobalPrefix only covers HTTP
+	# routes, not the raw upgrade handler engine.io attaches to the server) —
+	# reverse_proxy forwards the WS upgrade transparently, no extra directive
+	# needed.
+	handle /socket.io/* {
+		reverse_proxy api:3000
+	}
+
 	handle {
 		reverse_proxy web:3000
 	}

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EventsModule } from "../events/events.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { AchievementService } from "./achievements/achievement.service";
 import { AchievementsController } from "./achievements/achievements.controller";
@@ -14,7 +15,7 @@ import { XpService } from "./xp.service";
 // ("solo first"). The [G7] leaderboard is social-gated by nature, so it lives
 // in SocialModule instead — see the comment there.
 @Module({
-  imports: [JobsModule],
+  imports: [JobsModule, EventsModule],
   controllers: [
     AchievementsController,
     GamificationController,

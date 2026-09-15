@@ -11,6 +11,7 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -46,6 +47,7 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobRuns: JobRunService,
+    private readonly events: EventsGateway,
   ) {}
 
   /**
@@ -349,7 +351,7 @@ export class NotificationService {
     dedupeKey?: string | null;
     data?: Record<string, unknown>;
   }): Promise<void> {
-    await this.prisma.notification.createMany({
+    const { count } = await this.prisma.notification.createMany({
       data: [
         {
           userId: input.userId,
@@ -363,6 +365,13 @@ export class NotificationService {
       ],
       skipDuplicates: true,
     });
+
+    // A deduped no-op, or a kind the bell feed never shows (NEW_EPISODE,
+    // FOLLOW_REQUEST — see FEED_EXCLUDED_TYPES) — nothing for the client to
+    // usefully refetch.
+    if (count > 0 && !FEED_EXCLUDED_TYPES.includes(input.type)) {
+      this.events.emitToUser(input.userId, "notification");
+    }
   }
 
   /**

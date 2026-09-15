@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { ReportsModule } from "../reports/reports.module";
@@ -15,6 +16,7 @@ import { CommentService } from "./comment.service";
     NotificationModule,
     ReportsModule,
     GamificationModule,
+    EventsModule,
   ],
   controllers: [CommentController],
   providers: [CommentService],

@@ -12,6 +12,7 @@
   import NotificationBell from "$lib/components/NotificationBell.svelte";
   import OnboardingWidget from "$lib/components/onboarding/OnboardingWidget.svelte";
   import OnboardingWizard from "$lib/components/onboarding/OnboardingWizard.svelte";
+  import RealtimeConnection from "$lib/components/RealtimeConnection.svelte";
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import { layout } from "$lib/layout.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
@@ -92,6 +93,7 @@
     </button>
   </div>
 {:else if auth.isLoggedIn}
+  <RealtimeConnection />
   <NotificationBell />
   <!-- Mounting *is* the trigger for [G6]'s unlock sequence: entering the app
        is the only moment a bubble plays. -->

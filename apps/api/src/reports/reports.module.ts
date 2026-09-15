@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EventsModule } from "../events/events.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { MailModule } from "../mail/mail.module";
 import { NotificationModule } from "../notifications/notification.module";
@@ -14,7 +15,7 @@ import { ReportService } from "./report.service";
 // notice needed) and the art. 17 statement of reasons
 // (ModerationDecisionService, email + in-app).
 @Module({
-  imports: [MailModule, JobsModule, NotificationModule],
+  imports: [MailModule, JobsModule, NotificationModule, EventsModule],
   providers: [ReportService, ModerationDecisionService],
   exports: [ReportService, ModerationDecisionService],
 })

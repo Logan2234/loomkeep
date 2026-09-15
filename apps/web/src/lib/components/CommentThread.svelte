@@ -23,6 +23,7 @@
     REPORT_CATEGORY_ORDER,
     REPORT_MOTIF_LABELS,
   } from "../constants/report-labels";
+  import { onRealtimeEvent, joinRealtimeRoom } from "$lib/realtime/socket";
   import { toast } from "$lib/toast.svelte";
   import {
     COMMENT_EMOTE_DISPLAY,
@@ -91,10 +92,25 @@
     getNextPageParam: (last, allPages) =>
       last.hasMore ? allPages.length + 1 : undefined,
     enabled: expanded,
-    // Only the currently-open thread polls, and only while the tab is active.
-    refetchInterval: 5000,
-    refetchIntervalInBackground: false,
   }));
+
+  // Pushed live by EventsGateway (see CommentService's create/update/remove/
+  // react/unreact) instead of the 5s poll this used to run while open.
+  $effect(() => {
+    if (!expanded) return;
+    const leave = joinRealtimeRoom("join-comments", "leave-comments", {
+      targetType,
+      targetId,
+    });
+    const off = onRealtimeEvent("comment-changed", () => {
+      void queryClient.invalidateQueries({ queryKey: key });
+      void queryClient.invalidateQueries({ queryKey: countKey });
+    });
+    return () => {
+      off();
+      leave();
+    };
+  });
 
   const comments = $derived(query.data?.pages.flatMap((p) => p.items) ?? []);
   // A deleted top-level comment only earns its tombstone when it still has

@@ -14,6 +14,7 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -28,6 +29,8 @@ import {
 /** Completed jobs are dropped from memory after this delay. */
 const JOB_RETENTION_MS = 60 * 60 * 1000;
 const MAX_RETAINED_JOBS_PER_USER = 20;
+/** Caps how often a live progress push goes out during a hot tick loop (a large CSV can tick thousands of times). */
+const PROGRESS_EMIT_THROTTLE_MS = 250;
 
 interface JobRecord {
   id: string;
@@ -66,6 +69,7 @@ export class ImportJobService {
     private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly events: EventsGateway,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -366,14 +370,34 @@ export class ImportJobService {
   }
 
   private progressFor(job: JobRecord): ProgressReporter {
+    let lastEmit = 0;
+
+    const emitThrottled = () => {
+      const now = Date.now();
+      if (now - lastEmit < PROGRESS_EMIT_THROTTLE_MS) return;
+      lastEmit = now;
+      this.emitProgress(job);
+    };
+
     return {
       setTotal: (total) => {
         job.progress.total = total;
+        emitThrottled();
       },
       tick: () => {
         job.progress.done++;
+        emitThrottled();
       },
     };
+  }
+
+  private emitProgress(job: JobRecord): void {
+    this.events.emitToUser(job.userId, "import-progress", {
+      jobId: job.id,
+      done: job.progress.done,
+      total: job.progress.total,
+      status: job.status,
+    });
   }
 
   /** Run the background work, flipping the job to completed/failed when done. */
@@ -397,6 +421,9 @@ export class ImportJobService {
           : ErrorCode.InternalError;
     } finally {
       job.finishedAt = Date.now();
+      // Unthrottled: the final status change is rare (once per job) and the
+      // client needs it precisely, unlike the tick stream above.
+      this.emitProgress(job);
     }
   }
 

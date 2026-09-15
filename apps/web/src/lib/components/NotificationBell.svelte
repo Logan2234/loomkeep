@@ -30,13 +30,17 @@
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "$lib/realtime/socket";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { fade, scale, slide } from "svelte/transition";
   import { layout } from "$lib/layout.svelte";
   import Avatar from "./Avatar.svelte";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
   import { notificationText } from "./notification-presentation";
+
+  const queryClient = useQueryClient();
 
   const reduced = prefersReducedMotion();
 
@@ -48,15 +52,22 @@
   let drawerContentEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
 
-  // Polls while this bell is mounted (root layout, so effectively always
-  // while logged in) — TanStack only actually polls while the tab is
-  // visible, so this replaces what used to be a manual setInterval +
-  // document.visibilityState check in +layout.svelte.
   const feedQuery = createApiQuery(() => ({
     key: keys.notifications.feed(),
     fetch: getNotifications,
-    refetchInterval: 20_000,
   }));
+
+  // Pushed live by EventsGateway (see NotificationService.create()) instead
+  // of the 20s poll this used to run — RealtimeConnection (root layout) owns
+  // the socket's connect/disconnect lifecycle and the catch-up refetch on
+  // reconnect; this only needs its own event.
+  $effect(() =>
+    onRealtimeEvent("notification", () => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.notifications.feed(),
+      });
+    }),
+  );
   const notificationItems = $derived(feedQuery.data?.notifications ?? []);
   const unread = $derived(feedQuery.data?.unread ?? 0);
 
