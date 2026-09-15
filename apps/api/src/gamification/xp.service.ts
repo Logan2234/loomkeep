@@ -250,12 +250,12 @@ export class XpService {
       if (batch.length === 0) break;
       cursor = batch[batch.length - 1].id;
 
+      // One call for the whole batch — see XpVerifier's doc comment.
+      const stillValid = await verify(this.prisma, batch);
       const staleIds: string[] = [];
 
       for (const entry of batch) {
-        const valid = await verify(this.prisma, entry.sourceId, entry.userId);
-
-        if (!valid) {
+        if (!stillValid.has(entry.id)) {
           staleIds.push(entry.id);
           affectedUserIds.add(entry.userId);
         }
