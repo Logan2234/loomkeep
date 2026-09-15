@@ -1,4 +1,4 @@
-import { API_URL } from "$lib/api/core";
+import { API_URL, tryRefresh } from "$lib/api/core";
 import type { RealtimeEvent } from "@loomkeep/shared";
 import { io } from "socket.io-client";
 
@@ -34,6 +34,16 @@ export function connectRealtimeSocket(): void {
 export function disconnectRealtimeSocket(): void {
   socket.disconnect();
 }
+
+// EventsGateway force-disconnects a socket once its connecting access token's
+// own expiry is reached (~15 min) — unlike a REST call, there's no 401 to
+// react to, so nothing would otherwise refresh the cookie before socket.io's
+// own auto-reconnect retries with the same, now-expired one. "io client
+// disconnect" is skipped: that's disconnectRealtimeSocket() itself (logout),
+// where refreshing the very session being torn down would be wrong.
+socket.on("disconnect", (reason) => {
+  if (reason !== "io client disconnect") void tryRefresh();
+});
 
 export function onRealtimeEvent<T = void>(
   event: RealtimeEvent,
