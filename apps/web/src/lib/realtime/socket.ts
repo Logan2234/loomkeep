@@ -17,6 +17,14 @@ const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");
 export const socket = io(API_ORIGIN, {
   withCredentials: true,
   autoConnect: false,
+  // @nestjs/platform-fastify's raw http.Server doesn't complete engine.io's
+  // polling→websocket upgrade handshake (the browser reports "WebSocket is
+  // closed before the connection is established", confirmed independently
+  // with curl: upgrading an existing polling session hangs after the 101,
+  // while a fresh websocket-only connection works immediately) — so this
+  // connects as websocket from the very first request instead of probing
+  // through polling first.
+  transports: ["websocket"],
 });
 
 export function connectRealtimeSocket(): void {
