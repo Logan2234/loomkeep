@@ -20,12 +20,3 @@ export interface ImportProgressEvent {
   total: number;
   status: "running" | "completed" | "failed";
 }
-
-export interface CommentChangedEvent {
-  targetType: string;
-  targetId: string;
-}
-
-export interface ListUpdatedEvent {
-  listId: string;
-}
