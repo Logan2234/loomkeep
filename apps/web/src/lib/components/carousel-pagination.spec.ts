@@ -10,6 +10,11 @@ describe("carousel pagination", () => {
     expect(getCarouselPageOffsets(220, 100)).toEqual([0, 100, 120]);
   });
 
+  it("collapses a residual page that is too close to the previous offset", () => {
+    expect(getCarouselPageOffsets(201, 100)).toEqual([0, 101]);
+    expect(getCarouselPageOffsets(105, 100)).toEqual([0]);
+  });
+
   it("collapses empty and non-scrollable strips to one page", () => {
     expect(getCarouselPageOffsets(0, 100)).toEqual([0]);
     expect(getCarouselPageOffsets(80, 100)).toEqual([0]);

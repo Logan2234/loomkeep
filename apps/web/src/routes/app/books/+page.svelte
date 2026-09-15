@@ -86,7 +86,10 @@
         {#if entry.book.pageCount}
           <ProgressBar
             value={pct(entry)}
-            label={`${m.book_reading_progress()}: ${entry.book.title}`} />
+            label={m.common_selection_summary({
+              label: m.book_reading_progress(),
+              selection: entry.book.title,
+            })} />
           <span class="timecode text-xs">
             {entry.currentPage} / {entry.book.pageCount}
             {m.book_pages_lower()}

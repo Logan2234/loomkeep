@@ -71,7 +71,7 @@ describe("shared component contracts", () => {
     const source = componentSource("Carousel");
 
     expect(source).toContain('role="region"');
-    expect(source).toContain('tabindex="0"');
+    expect(source).toContain("tabindex={hasFocusableChildren ? undefined : 0}");
     expect(source).toContain("aria-label={label}");
     expect(source).toContain("onkeydown={onKeydown}");
     expect(source).toContain("focus-visible:opacity-100");

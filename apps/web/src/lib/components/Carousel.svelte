@@ -49,6 +49,7 @@
   let dragging = $state(false);
   // Coarse pointer (touch): swap the hover-only arrows for tappable page dots.
   let coarse = $state(false);
+  let hasFocusableChildren = $state(false);
   let pageCount = $state(1);
   let pageIndex = $state(0);
 
@@ -57,6 +58,11 @@
     if (!el) return;
     canScrollLeft = el.scrollLeft > 4;
     canScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 4;
+    hasFocusableChildren = Boolean(
+      el.querySelector(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ),
+    );
     const offsets = getCarouselPageOffsets(el.scrollWidth, el.clientWidth);
     pageCount = offsets.length;
     pageIndex = getCarouselPageIndex(el.scrollLeft, offsets);
@@ -187,7 +193,7 @@
       bind:this={stripEl}
       role="region"
       aria-label={label}
-      tabindex="0"
+      tabindex={hasFocusableChildren ? undefined : 0}
       class="no-scrollbar focus-visible:outline-accent flex snap-x {gap} {innerClass} {snapPad} overflow-x-auto select-none focus-visible:outline-2 focus-visible:outline-offset-2 {dragging
         ? 'cursor-grabbing'
         : 'cursor-grab'}"

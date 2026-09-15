@@ -75,4 +75,16 @@ describe("computeDropdownPosition", () => {
       originY: "top",
     });
   });
+
+  it("keeps long menus within the established 20rem height cap", () => {
+    expect(
+      computeDropdownPosition({
+        trigger: { top: 100, right: 180, bottom: 140, left: 80 },
+        panel: { width: 200, height: 900 },
+        viewport: { top: 0, left: 0, width: 1200, height: 1000 },
+        placement: "bottom-start",
+        bottomInset: 8,
+      }).maxHeight,
+    ).toBe(320);
+  });
 });

@@ -20,7 +20,7 @@
     children: Snippet;
   } = $props();
 
-  const id = `tooltip-${crypto.randomUUID()}`;
+  const id = `tooltip-${$props.id()}`;
 
   // Touch devices have no real hover, so tapping toggles the bubble instead —
   // checked once, hover capability doesn't change mid-session. On a device
@@ -40,11 +40,10 @@
   let hasKeyboardTrigger = $state(false);
   let open = $state(false);
   let positioned = $state(false);
-  // Positioned `fixed` from the wrapper's own rect (computed at show-time,
-  // not tracked continuously) rather than `absolute` within the wrapper —
-  // same reasoning as Dropdown.svelte: a `relative` wrapper is still
-  // clipped by any ancestor's `overflow-hidden` (e.g. `.card`), which cut
-  // the bubble off whenever a tooltip sat near a section's edge.
+  // Positioned `fixed` from the wrapper's own rect rather than `absolute`
+  // within it. A `relative` wrapper is still clipped by any ancestor's
+  // `overflow-hidden` (e.g. `.card`), so scroll and viewport changes keep the
+  // fixed position synchronized while the bubble is open.
   let pos = $state<TooltipPosition>({
     top: 0,
     left: 0,
@@ -159,12 +158,25 @@
       else triggerEl?.removeAttribute("aria-describedby");
     };
   });
+
+  $effect(() => {
+    if (!open) return;
+    const viewport = window.visualViewport;
+    document.addEventListener("scroll", computePos, true);
+    viewport?.addEventListener("scroll", computePos);
+    viewport?.addEventListener("resize", computePos);
+
+    return () => {
+      document.removeEventListener("scroll", computePos, true);
+      viewport?.removeEventListener("scroll", computePos);
+      viewport?.removeEventListener("resize", computePos);
+    };
+  });
 </script>
 
 <svelte:window
   onclick={closeOnOutsideClick}
   onkeydown={onWindowKeydown}
-  onscroll={() => open && computePos()}
   onresize={() => open && computePos()} />
 
 <!-- The wrapper is only focusable when the snippet has no keyboard-reachable trigger. -->
@@ -172,6 +184,7 @@
 <span
   bind:this={wrapperEl}
   class="relative {className}"
+  data-escape-consumer={open ? "" : undefined}
   role={hasKeyboardTrigger ? "presentation" : "button"}
   tabindex={hasKeyboardTrigger ? undefined : 0}
   aria-describedby={hasKeyboardTrigger ? undefined : id}

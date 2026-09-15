@@ -139,9 +139,22 @@ export function dialogFocus(
     if (!isTopmost()) return;
 
     if (event.key === "Escape") {
+      const escapeConsumer = event
+        .composedPath()
+        .find(
+          (target): target is HTMLElement =>
+            target instanceof HTMLElement &&
+            target.hasAttribute("data-escape-consumer"),
+        );
+      if (
+        (escapeConsumer && node.contains(escapeConsumer)) ||
+        !currentOptions.onEscape
+      ) {
+        return;
+      }
       event.preventDefault();
       event.stopImmediatePropagation();
-      currentOptions.onEscape?.();
+      currentOptions.onEscape();
       return;
     }
 

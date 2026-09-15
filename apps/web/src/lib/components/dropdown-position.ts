@@ -34,6 +34,7 @@ export type DropdownPosition = {
 
 const VIEWPORT_MARGIN = 8;
 const TRIGGER_GAP = 4;
+const MAX_PANEL_HEIGHT = 320;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -61,6 +62,7 @@ export function computeDropdownPosition({
     panel.height > availableBelow && availableAbove > availableBelow;
   const maxHeight = Math.min(
     panel.height,
+    MAX_PANEL_HEIGHT,
     placeAbove ? availableAbove : availableBelow,
   );
   const anchoredLeft =

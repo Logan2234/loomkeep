@@ -20,7 +20,7 @@
     children,
   }: {
     placement?: "bottom-start" | "bottom-end";
-    role?: "menu" | "presentation";
+    role?: "menu" | "listbox" | "presentation";
     class?: string;
     trigger: Snippet<
       [
@@ -73,7 +73,7 @@
     const viewport = viewportBounds();
     const trigger = triggerElement.getBoundingClientRect();
     const panel = panelElement.getBoundingClientRect();
-    panelPos = computeDropdownPosition({
+    const nextPosition = computeDropdownPosition({
       trigger,
       panel: {
         width: Math.max(panel.width, panelElement.scrollWidth),
@@ -83,6 +83,15 @@
       placement,
       bottomInset: bottomNavigationInset(viewport),
     });
+    if (
+      nextPosition.top !== panelPos.top ||
+      nextPosition.left !== panelPos.left ||
+      nextPosition.maxWidth !== panelPos.maxWidth ||
+      nextPosition.maxHeight !== panelPos.maxHeight ||
+      nextPosition.originY !== panelPos.originY
+    ) {
+      panelPos = nextPosition;
+    }
     positioned = true;
   }
 
@@ -217,6 +226,7 @@
     }}></button>
   <div
     bind:this={panelElement}
+    data-escape-consumer
     role={role === "presentation" ? undefined : role}
     style="top: {panelPos.top}px; left: {panelPos.left}px; {positioned
       ? `max-width: ${panelPos.maxWidth}px; max-height: ${panelPos.maxHeight}px; transform-origin: center ${panelPos.originY};`

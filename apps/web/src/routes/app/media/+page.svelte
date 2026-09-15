@@ -84,7 +84,10 @@
         {#if entry.progress}
           <ProgressBar
             value={pct(entry)}
-            label={`${m.common_progress()}: ${entry.mediaItem.title}`} />
+            label={m.common_selection_summary({
+              label: m.common_progress(),
+              selection: entry.mediaItem.title,
+            })} />
           <span class="timecode text-xs">
             {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
             {m.media_episode_short()}

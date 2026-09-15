@@ -6,9 +6,20 @@ export function getCarouselPageOffsets(
 
   const maxScroll = scrollWidth - clientWidth;
   const pageCount = Math.ceil(scrollWidth / clientWidth);
-  return Array.from({ length: pageCount }, (_, index) =>
-    Math.min(index * clientWidth, maxScroll),
-  );
+  const offsets: number[] = [];
+
+  for (let index = 0; index < pageCount; index++) {
+    const offset = Math.min(index * clientWidth, maxScroll);
+    const previous = offsets.at(-1);
+
+    if (previous !== undefined && offset - previous <= 8) {
+      if (offsets.length > 1) offsets[offsets.length - 1] = offset;
+      continue;
+    }
+    offsets.push(offset);
+  }
+
+  return offsets;
 }
 
 export function getCarouselPageIndex(

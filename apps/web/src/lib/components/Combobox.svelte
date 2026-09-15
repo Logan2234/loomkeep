@@ -36,7 +36,7 @@
   let query = $state("");
   let searchInput: HTMLInputElement | undefined = $state();
   let activeIndex = $state(-1);
-  const componentId = crypto.randomUUID();
+  const componentId = $props.id();
   const listboxId = `combobox-${componentId}-listbox`;
 
   const selectedOption = $derived(options.find((o) => o.value === values[0]));
@@ -63,7 +63,10 @@
     multiselect
       ? triggerText
       : selectedOption
-        ? `${label}: ${selectedOption.label}`
+        ? m.common_selection_summary({
+            label,
+            selection: selectedOption.label,
+          })
         : label,
   );
   const activeOptionId = $derived(
@@ -207,6 +210,7 @@
       aria-controls={open ? listboxId : undefined}
       aria-activedescendant={!searchable && open ? activeOptionId : undefined}
       aria-label={accessibleLabel}
+      data-escape-consumer={open ? "" : undefined}
       {disabled}
       onkeydown={(e) => onTriggerKeydown(e, open, toggle, close)}
       onclick={(e) => {
@@ -286,7 +290,7 @@
     </div>
     {#if searchable && visibleOptions.length === 0}
       <p role="status" class="text-dim px-3 py-2 text-sm">
-        {m.common_no_results()}.
+        {m.common_no_results()}
       </p>
     {/if}
   {/snippet}

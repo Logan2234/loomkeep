@@ -368,7 +368,11 @@
           )}
           <ProgressBar
             value={seasonPct}
-            label={`${m.common_progress()}: ${season.title ?? `${m.common_season()} ${season.number}`}`}
+            label={m.common_selection_summary({
+              label: m.common_progress(),
+              selection:
+                season.title ?? `${m.common_season()} ${season.number}`,
+            })}
             height="h-1"
             track="bg-border"
             rounded={false}
