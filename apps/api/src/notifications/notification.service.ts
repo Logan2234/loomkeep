@@ -65,39 +65,171 @@ export class NotificationService {
     );
   }
 
+  /**
+   * The hourly sweep, driven by the episodes rather than by the users.
+   *
+   * It used to loop over every account with a digest enabled and run `scan`
+   * for each — one joined episode query per user per hour, almost always
+   * returning nothing. Episodes that aired in the last {@link WINDOW_DAYS}
+   * days are a small set *globally* and don't grow with the user count, so
+   * starting from them turns the whole sweep into a fixed handful of queries.
+   *
+   * `scan` itself stays as it is: one user asking for a refresh really does
+   * want the narrow query.
+   */
   private async runScanAll(): Promise<number> {
-    const users = await this.prisma.user.findMany({
+    const now = new Date();
+    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
+
+    const episodes = await this.prisma.episode.findMany({
       where: {
-        OR: [
-          { notifyPush: { not: DigestCadence.DISABLED } },
-          { notifyEmail: { not: DigestCadence.DISABLED } },
-        ],
+        airDate: { gt: since, lte: now },
+        season: { number: { gt: 0 } },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        number: true,
+        title: true,
+        airDate: true,
+        season: {
+          select: {
+            number: true,
+            mediaItemId: true,
+            mediaItem: {
+              select: {
+                title: true,
+                type: true,
+                canonicalSource: true,
+                externalIds: { select: { source: true, externalId: true } },
+              },
+            },
+          },
+        },
+      },
     });
 
-    let created = 0;
-
-    for (const { id } of users) {
-      try {
-        created += await this.scan(id);
-      } catch (err) {
-        // One user's failure must not abort the batch.
-        this.logger.error(`Notification scan failed for user ${id}`, err);
-      }
+    if (episodes.length === 0) {
+      this.logger.debug("No episode aired in the window, nothing to scan");
+      return 0;
     }
 
-    if (created > 0) {
-      this.logger.log(
-        `Created ${created} notification(s) across ${users.length} user(s)`,
+    // Who tracks those media — the digest and domain gates are the same ones
+    // `scan` applies per user, pushed into the query.
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: {
+        mediaItemId: {
+          in: [...new Set(episodes.map((e) => e.season.mediaItemId))],
+        },
+        status: { not: "DROPPED" },
+        user: {
+          OR: [
+            { notifyPush: { not: DigestCadence.DISABLED } },
+            { notifyEmail: { not: DigestCadence.DISABLED } },
+          ],
+          enabledDomains: { has: "MEDIA" },
+        },
+      },
+      select: { userId: true, mediaItemId: true, createdAt: true },
+    });
+
+    if (entries.length === 0) {
+      this.logger.debug("No tracked entry for the aired episodes");
+      return 0;
+    }
+
+    // Dedup is per (user, episode): keyed on dedupeKey alone, which is
+    // episode-scoped, so this stays bounded by what was actually notified.
+    const existing = await this.prisma.notification.findMany({
+      where: { dedupeKey: { in: episodes.map((e) => `episode:${e.id}`) } },
+      select: { userId: true, dedupeKey: true },
+    });
+    const alreadyNotified = new Set(
+      existing.map(
+        (n) => `${n.userId}|${n.dedupeKey!.slice("episode:".length)}`,
+      ),
+    );
+
+    const episodesByMediaItem = new Map<string, typeof episodes>();
+
+    for (const episode of episodes) {
+      const bucket = episodesByMediaItem.get(episode.season.mediaItemId) ?? [];
+      bucket.push(episode);
+      episodesByMediaItem.set(episode.season.mediaItemId, bucket);
+    }
+
+    const rows: Prisma.NotificationCreateManyInput[] = [];
+    const users = new Set<string>();
+
+    for (const entry of entries) {
+      const candidates = episodesByMediaItem.get(entry.mediaItemId) ?? [];
+      const toCreate = selectNewEpisodeNotifications(
+        candidates.map((e) => ({
+          episodeId: e.id,
+          // Non-null: guaranteed by the `airDate` filter above.
+          airDate: e.airDate!,
+          seasonNumber: e.season.number,
+          episodeNumber: e.number,
+          episodeTitle: e.title,
+          mediaTitle: e.season.mediaItem.title,
+          mediaType: e.season.mediaItem.type as MediaType,
+          sourceId: canonicalExternalId(
+            e.season.mediaItem,
+            e.season.mediaItem.externalIds,
+          ),
+          trackedSince: entry.createdAt,
+        })),
+        {
+          since,
+          now,
+          // The util keys on bare episode ids, so it gets this user's slice.
+          alreadyNotified: new Set(
+            candidates
+              .map((e) => e.id)
+              .filter((id) => alreadyNotified.has(`${entry.userId}|${id}`)),
+          ),
+        },
       );
-    } else {
+
+      if (toCreate.length === 0) continue;
+
+      users.add(entry.userId);
+      rows.push(...this.episodeNotificationRows(entry.userId, toCreate));
+    }
+
+    if (rows.length === 0) {
       // No new notifications is the common case; keep it at debug level so the
       // hourly run is observable when wanted without spamming prod logs.
-      this.logger.debug(`Scanned ${users.length} user(s), nothing new`);
+      this.logger.debug(
+        `Scanned ${episodes.length} aired episode(s), nothing new`,
+      );
+      return 0;
     }
 
-    return created;
+    await this.prisma.notification.createMany({
+      data: rows,
+      skipDuplicates: true,
+    });
+    this.logger.log(
+      `Created ${rows.length} notification(s) across ${users.size} user(s)`,
+    );
+
+    return rows.length;
+  }
+
+  /** The ledger rows one user's newly-aired episodes turn into. */
+  private episodeNotificationRows(
+    userId: string,
+    toCreate: NewEpisodeNotification[],
+  ): Prisma.NotificationCreateManyInput[] {
+    return toCreate.map((n) => ({
+      userId,
+      type: NotificationType.NEW_EPISODE,
+      title: n.mediaTitle,
+      body: notificationBody(n),
+      url: notificationUrl(n),
+      dedupeKey: `episode:${n.episodeId}`,
+      data: { airDate: n.airDate.toISOString() },
+    }));
   }
 
   /**
@@ -196,15 +328,7 @@ export class NotificationService {
     if (toCreate.length === 0) return 0;
 
     await this.prisma.notification.createMany({
-      data: toCreate.map((n) => ({
-        userId,
-        type: NotificationType.NEW_EPISODE,
-        title: n.mediaTitle,
-        body: notificationBody(n),
-        url: notificationUrl(n),
-        dedupeKey: `episode:${n.episodeId}`,
-        data: { airDate: n.airDate.toISOString() },
-      })),
+      data: this.episodeNotificationRows(userId, toCreate),
       skipDuplicates: true,
     });
 
