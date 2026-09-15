@@ -4,6 +4,7 @@ import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -21,6 +22,10 @@ function stubXp(): XpService {
 
 function stubAchievements(): AchievementService {
   return { evaluate: vi.fn() } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
@@ -72,6 +77,7 @@ describe("ImportJobService translatable failures", () => {
         } as unknown as EntitlementService,
         stubXp(),
         stubAchievements(),
+        stubEvents(),
       );
       const started = await service.startAnalyze("u1", "steam", { input: "" });
       await vi.waitFor(() => {
@@ -100,6 +106,7 @@ describe("ImportJobService.getAvailability", () => {
       { isEffectivelyPremium: vi.fn() } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const availability = service.getAvailability();
@@ -133,6 +140,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       entitlements,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
     return { service, prisma };
   }
@@ -187,6 +195,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.startAnalyze("u1", "tvtime", { input: "" });
@@ -213,6 +222,7 @@ describe("ImportJobService.getQuota", () => {
       {} as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await expect(service.getQuota("u1")).resolves.toEqual({
@@ -231,6 +241,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       importRun: { create: importRunCreate },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const events = stubEvents();
     const service = new ImportJobService(
       [source],
       prisma,
@@ -240,8 +251,9 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       } as unknown as EntitlementService,
       xp,
       stubAchievements(),
+      events,
     );
-    return { service, xp, importRunCreate };
+    return { service, xp, events, importRunCreate };
   }
 
   // commit() only accepts a jobId that already has an analyzed plan attached
@@ -304,6 +316,26 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     expect(service.getJob("u1", job.id).status).toBe("failed");
     expect(xp.award).not.toHaveBeenCalled();
   });
+
+  it("pushes a final live progress update to the job's owner once it settles", async () => {
+    const { service, events } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(events.emitToUser).toHaveBeenCalledWith(
+        "u1",
+        "import-progress",
+        expect.objectContaining({ jobId: job.id, status: "completed" }),
+      );
+    });
+  });
 });
 
 describe("ImportJobService — retained payloads", () => {
@@ -332,6 +364,7 @@ describe("ImportJobService — retained payloads", () => {
       } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
   }
 

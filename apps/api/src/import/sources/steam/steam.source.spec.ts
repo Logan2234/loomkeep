@@ -124,6 +124,7 @@ function build(over: Partial<Mocks> = {}): {
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
+    { emitToUser: vi.fn() } as never, // EventsGateway stub
   );
   return { service, mocks };
 }

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { SocialModule } from "../social/social.module";
@@ -9,7 +10,7 @@ import { ListService } from "./list.service";
 // your own private lists works offline); reading someone else's shared list
 // is gated by SocialFeatureGuard on the controller — same split as reviews.
 @Module({
-  imports: [SocialModule, NotificationModule, GamificationModule],
+  imports: [SocialModule, NotificationModule, GamificationModule, EventsModule],
   controllers: [ListController],
   providers: [ListService],
   exports: [ListService],

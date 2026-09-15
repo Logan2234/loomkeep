@@ -18,6 +18,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { EventsGateway } from "../events/events.gateway";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
@@ -74,6 +75,7 @@ export class ListService {
     private readonly notifications: NotificationService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly events: EventsGateway,
   ) {}
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
@@ -199,6 +201,7 @@ export class ListService {
       );
     }
 
+    this.events.emitToList(id, "list-updated");
     return this.toDto(row, await this.author(existing.userId));
   }
 
@@ -436,6 +439,7 @@ export class ListService {
       homeFeed: false,
     });
 
+    this.events.emitToList(listId, "list-updated");
     const targets = await this.resolveTargets([row]);
     return this.toItemDto(row, targets);
   }
@@ -451,6 +455,7 @@ export class ListService {
     });
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListItemNotFound);
+    this.events.emitToList(listId, "list-updated");
   }
 
   /**
@@ -505,6 +510,8 @@ export class ListService {
         await tx.listItem.update({ where: { id }, data: { position } });
       }
     });
+
+    this.events.emitToList(listId, "list-updated");
   }
 
   /** Everyone with edit access to `id`, besides the owner — owner only. */
@@ -576,6 +583,7 @@ export class ListService {
       },
     });
 
+    this.events.emitToList(id, "list-updated");
     return {
       user: toUserSummaryDto(target),
       createdAt: row.createdAt.toISOString(),
@@ -601,6 +609,7 @@ export class ListService {
         HttpStatus.NOT_FOUND,
         ErrorCode.ListMembershipNotFound,
       );
+    this.events.emitToList(id, "list-updated");
   }
 
   /**

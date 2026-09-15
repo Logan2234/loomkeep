@@ -23,6 +23,7 @@
   import { formatNumber } from "$lib/format";
   import { readImportFile } from "$lib/import-file";
   import { m } from "$lib/paraglide/messages.js";
+  import { onRealtimeEvent, socket } from "$lib/realtime/socket";
   import {
     Domain,
     type BookSummaryDto,
@@ -31,9 +32,11 @@
     type ImportMatch,
     type ImportPlan,
     type ImportPlanItem,
+    type ImportProgressEvent,
     type ImportSource,
     type MediaSummaryDto,
   } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { Snippet } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import {
@@ -79,6 +82,7 @@
   let dragOver = $state(false);
 
   const descriptor = IMPORTS_DEFINITION[source];
+  const queryClient = useQueryClient();
 
   const quotaQuery = createApiQuery(() => ({
     key: keys.import.quota(),
@@ -115,7 +119,6 @@
     key: keys.import.job(source, pollingJobId ?? ""),
     fetch: () => getImportJob(source, pollingJobId!),
     enabled: !!pollingJobId,
-    refetchInterval: (j) => (j?.status === "running" ? 1000 : false),
     onSuccess: (j) => {
       job = j;
       if (j.status === "running") return;
@@ -134,6 +137,42 @@
       jobError = resolveApiError(err);
     },
   }));
+
+  // Pushed live by EventsGateway (see ImportJobService.progressFor()/run())
+  // instead of the 1s poll this used to run. A running tick is cheap to
+  // merge straight into the cache; once the job settles, the plan/report
+  // only exist server-side, so the completion event triggers a real refetch
+  // instead of guessing at the shape.
+  $effect(() => {
+    if (!pollingJobId) return;
+    const jobId = pollingJobId;
+    const jobKey = keys.import.job(source, jobId);
+
+    const apply = (payload: ImportProgressEvent & { jobId: string }) => {
+      if (payload.jobId !== jobId) return;
+      if (payload.status !== "running") {
+        void queryClient.invalidateQueries({ queryKey: jobKey });
+        return;
+      }
+      queryClient.setQueryData<ImportJobDto>(jobKey, (old) =>
+        old
+          ? { ...old, progress: { done: payload.done, total: payload.total } }
+          : old,
+      );
+    };
+    const offEvent = onRealtimeEvent("import-progress", apply);
+
+    // A dropped connection could have swallowed a tick or the final
+    // completion event — reconnecting re-fetches the authoritative state.
+    const refetchOnReconnect = () =>
+      void queryClient.invalidateQueries({ queryKey: jobKey });
+    socket.on("connect", refetchOnReconnect);
+
+    return () => {
+      offEvent();
+      socket.off("connect", refetchOnReconnect);
+    };
+  });
 
   // --- Decisions (reactive collections, mutated in place) ---
   const included = new SvelteSet<string>();

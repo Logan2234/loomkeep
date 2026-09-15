@@ -169,7 +169,14 @@ export async function fetchAllPages<T>(
 // in-flight refresh so late callers await it instead of starting their own.
 let refreshInFlight: Promise<boolean> | null = null;
 
-function tryRefresh(): Promise<boolean> {
+/**
+ * Also called directly by the realtime socket (see socket.ts) on an
+ * unexpected disconnect: EventsGateway force-disconnects a socket once its
+ * connecting access token's own expiry is reached, and unlike a REST call
+ * there's no 401 to react to — sharing this same mutex is what keeps that
+ * case from racing an ordinary request's own refresh.
+ */
+export function tryRefresh(): Promise<boolean> {
   refreshInFlight ??= doRefresh().finally(() => {
     refreshInFlight = null;
   });

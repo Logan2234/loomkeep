@@ -1,5 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
+import type { EventsGateway } from "../../events/events.gateway";
 import type { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
@@ -79,6 +80,7 @@ function makeService(configValues: Record<string, string> = {}) {
     flags,
     {} as unknown as XpService,
     {} as unknown as JobRunService,
+    { emitToUser: vi.fn() } as unknown as EventsGateway,
   );
   return { service, prisma };
 }

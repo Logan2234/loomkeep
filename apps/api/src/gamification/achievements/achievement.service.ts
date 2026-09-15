@@ -10,6 +10,7 @@ import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
 import { AppException } from "../../common/app.exception";
+import { EventsGateway } from "../../events/events.gateway";
 import { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import { JOB_KEYS } from "../../jobs/job-keys";
 import { JobRunService } from "../../jobs/job-run.service";
@@ -40,6 +41,7 @@ export class AchievementService {
     private readonly flags: FeatureFlagsService,
     private readonly xp: XpService,
     private readonly jobRuns: JobRunService,
+    private readonly events: EventsGateway,
   ) {}
 
   /**
@@ -129,6 +131,11 @@ export class AchievementService {
       created.id,
       definition.xpAward,
     );
+
+    // Only benefits async grants (nightly sweep, an import completing while
+    // another tab is open) — a live user action already gets this instantly
+    // via its own mutation's `invalidates: [keys.gamification.pending()]`.
+    this.events.emitToUser(userId, "achievement-unlocked");
   }
 
   /**

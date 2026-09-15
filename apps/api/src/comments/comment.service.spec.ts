@@ -1,6 +1,7 @@
 import type { ConfigService } from "@nestjs/config";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import type { EventsGateway } from "../events/events.gateway";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
@@ -165,6 +166,7 @@ function make(
   const xp = stubXp();
   const achievements = stubAchievements();
   const blocks = new BlockService(prisma);
+  const events = { emitToCommentsThread: vi.fn() } as unknown as EventsGateway;
 
   return {
     svc: new CommentService(
@@ -176,11 +178,13 @@ function make(
       FLAGS,
       achievements,
       blocks,
+      events,
     ),
     prisma,
     notifications,
     xp,
     achievements,
+    events,
   };
 }
 
@@ -773,7 +777,10 @@ describe("CommentService — XP wiring", () => {
   it("revokes COMMENT_REACTION_RECEIVED on unreact", async () => {
     const { svc, xp } = make({
       reaction: {
-        findUnique: vi.fn().mockResolvedValue({ id: "reaction-1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: "reaction-1",
+          comment: { targetType: "MEDIA", targetId: "m1" },
+        }),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     });
@@ -781,5 +788,57 @@ describe("CommentService — XP wiring", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("CommentReaction", [
       "reaction-1",
     ]);
+  });
+});
+
+describe("CommentService — realtime push", () => {
+  it("notifies the target's thread when a comment is created", async () => {
+    const { svc, events } = make({
+      comment: {
+        create: vi.fn().mockResolvedValue(commentRow({ id: "c1" })),
+      },
+    });
+    await svc.create("author", {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "this comment is long enough",
+    });
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+  });
+
+  it("notifies the target's thread on react and unreact", async () => {
+    const { svc, events } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
+      },
+      reaction: {
+        upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: "reaction-1",
+          comment: { targetType: "MEDIA", targetId: "m1" },
+        }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    });
+
+    await svc.react("reactor", "c1", "LIKE" as never);
+    await svc.unreact("reactor", "c1");
+
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+    expect(events.emitToCommentsThread).toHaveBeenCalledTimes(2);
   });
 });
