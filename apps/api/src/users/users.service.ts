@@ -30,7 +30,11 @@ import { SecurityEventService } from "../security/security-event.service";
 import { ProfileService } from "../social/profile.service";
 import { AccountDeletionService } from "./account-deletion.service";
 import { isAdult } from "./age.util";
-import { matchesMimeType } from "./avatar.util";
+import {
+  matchesMimeType,
+  reencodeAvatar,
+  STORED_AVATAR_MIME_TYPE,
+} from "./avatar.util";
 import { CsvExportService } from "./csv-export.service";
 import { DataExportService } from "./data-export.service";
 import type { ChangeEmailDto } from "./dto/change-email.dto";
@@ -170,11 +174,28 @@ export class UsersService {
       );
     }
 
+    // Kept above as a cheap, precise rejection; the re-encode below is what
+    // actually guarantees what lands in the database (see reencodeAvatar).
+    let encoded: Uint8Array<ArrayBuffer>;
+
+    try {
+      encoded = await reencodeAvatar(buffer);
+    } catch {
+      // Magic bytes matched but the decoder refused it: truncated, corrupt,
+      // or a header glued onto something else.
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserAvatarInvalidType,
+        undefined,
+        "Image could not be decoded",
+      );
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        avatar: buffer,
-        avatarMimeType: dto.mimeType,
+        avatar: encoded,
+        avatarMimeType: STORED_AVATAR_MIME_TYPE,
         avatarUpdatedAt: new Date(),
       },
     });
