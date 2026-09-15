@@ -227,10 +227,7 @@
       }
       inputValue = b64;
     } else {
-      inputValue = await readImportFile(
-        file,
-        descriptor.input.textEncoding,
-      );
+      inputValue = await readImportFile(file, descriptor.input.textEncoding);
     }
     fileName = file.name;
   }
