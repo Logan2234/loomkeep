@@ -1,15 +1,19 @@
 <script lang="ts">
-  // [G6] the unlock bubble: what the app says when you come back and
-  // something happened while you were away.
+  // [G6] the unlock bubble: what the app says when something is unlocked.
   //
   // Anchored at the *top* and mounted once by app/+layout.svelte. It is
   // neither Toast.svelte (bottom-anchored, several at once, system
   // messages) nor the notification bell — [G2] settled that an unlock
   // creates no `Notification` row at all, on purpose.
   //
-  // The trigger is this component mounting, i.e. entering the app. No
-  // `visibilitychange`, no live push while the user is mid-action: a bubble
-  // dropping in over a click is exactly the interruption the design avoids.
+  // Originally mount-only ("entering the app is the trigger, no live push
+  // mid-session"), revisited once EventsGateway shipped: an achievement
+  // unlocked live now pops the bubble immediately too, via the
+  // `achievement-unlocked` WebSocket event invalidating `pending()` — the
+  // interruption concern that motivated the original mount-only rule turned
+  // out to be worth it for the instant-gratification payoff. Level-ups still
+  // only surface on mount (no server push for those, see progressionQuery
+  // below), so re-entering the app is still the only way those show up.
   import { goto } from "$app/navigation";
   import {
     getAchievements,
@@ -35,11 +39,15 @@
   } from "$lib/last-known";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "$lib/realtime/socket";
   import { levelForXp } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
   import { achievementName, entryIcon } from "../achievements/labels";
+
+  const queryClient = useQueryClient();
 
   const reduced = prefersReducedMotion();
 
@@ -70,6 +78,18 @@
     enabled,
   }));
   const pending = $derived(pendingQuery.data ?? []);
+
+  // Pushed live by EventsGateway (see AchievementService.grant()) — an
+  // achievement unlocked while the app is open pops the bubble right away
+  // instead of waiting for the next visit.
+  $effect(() => {
+    if (!enabled) return;
+    return onRealtimeEvent("achievement-unlocked", () => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.gamification.pending(),
+      });
+    });
+  });
 
   // The pending rows carry a bare key; the name, the glyph and the tier ring
   // all live on the catalogue projection, so it is fetched — only when there
