@@ -13,6 +13,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { AppException } from "../common/app.exception";
 import { resolveWorkHref } from "../common/work-href.util";
+import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -38,6 +39,7 @@ export class ReportService {
     private readonly mail: MailService,
     private readonly jobRuns: JobRunService,
     private readonly notifications: NotificationService,
+    private readonly events: EventsGateway,
   ) {}
 
   /**
@@ -88,6 +90,8 @@ export class ReportService {
         reason: reason?.trim() || null,
       },
     });
+
+    this.events.emitReportsCount();
   }
 
   async pendingCount(): Promise<number> {
@@ -167,6 +171,7 @@ export class ReportService {
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReportNotFound);
 
+    this.events.emitReportsCount();
     await this.notifyReporterOfResolution(id, status);
   }
 

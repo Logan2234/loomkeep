@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -36,6 +37,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     ReviewsModule,
     EntitlementModule,
     GamificationModule,
+    EventsModule,
   ],
   controllers: [ImportController],
   providers: [

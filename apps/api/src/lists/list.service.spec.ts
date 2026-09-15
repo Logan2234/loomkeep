@@ -1,5 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
+import type { EventsGateway } from "../events/events.gateway";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
@@ -21,6 +22,10 @@ function stubXp(): XpService {
 
 function stubAchievements(): AchievementService {
   return { evaluate: vi.fn() } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToList: vi.fn() } as unknown as EventsGateway;
 }
 
 const VIEWER = "viewer";
@@ -100,6 +105,7 @@ describe("ListService.getForViewer — own-visibility gate", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
   }
 
@@ -217,6 +223,7 @@ describe("ListService.listForUser — editor lists on a profile", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
     return { svc };
   }
@@ -255,6 +262,7 @@ describe("ListService.addItem", () => {
       mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
     const activity = { emit: vi.fn() } as unknown as ActivityService;
+    const events = stubEvents();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -264,8 +272,9 @@ describe("ListService.addItem", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      events,
     );
-    return { svc, create, activity };
+    return { svc, create, activity, events };
   }
 
   it("rejects a duplicate item", async () => {
@@ -275,8 +284,8 @@ describe("ListService.addItem", () => {
     ).rejects.toThrow("Already in this list");
   });
 
-  it("adds a new item and emits LIST_ITEM_ADDED", async () => {
-    const { svc, create, activity } = make(false);
+  it("adds a new item, emits LIST_ITEM_ADDED and pushes a live update", async () => {
+    const { svc, create, activity, events } = make(false);
     await svc.addItem("u1", "l1", { targetType: "MEDIA", targetId: "m1" });
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -286,6 +295,7 @@ describe("ListService.addItem", () => {
     expect(activity.emit).toHaveBeenCalledWith(
       expect.objectContaining({ type: "LIST_ITEM_ADDED", targetId: "l1" }),
     );
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 });
 
@@ -312,6 +322,7 @@ describe("ListService.reorder", () => {
       },
       $transaction: vi.fn((fn) => fn(tx)),
     } as unknown as PrismaService;
+    const events = stubEvents();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -321,8 +332,9 @@ describe("ListService.reorder", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      events,
     );
-    return { svc, listItemUpdate, listUpdateMany };
+    return { svc, listItemUpdate, listUpdateMany, events };
   }
 
   it("rejects an order that doesn't match the list's current items", async () => {
@@ -332,8 +344,12 @@ describe("ListService.reorder", () => {
     ).rejects.toThrow("orderedItemIds must match");
   });
 
-  it("rewrites position 0..n-1 in the given order", async () => {
-    const { svc, listItemUpdate, listUpdateMany } = make(["a", "b", "c"]);
+  it("rewrites position 0..n-1 in the given order and pushes a live update", async () => {
+    const { svc, listItemUpdate, listUpdateMany, events } = make([
+      "a",
+      "b",
+      "c",
+    ]);
     await svc.reorder("u1", "l1", ["c", "a", "b"], UPDATED_AT.toISOString());
     expect(listUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -348,14 +364,16 @@ describe("ListService.reorder", () => {
       where: { id: "b" },
       data: { position: 2 },
     });
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 
-  it("rejects with a conflict when the list changed since the client loaded it", async () => {
-    const { svc, listItemUpdate } = make(["a", "b", "c"], 0);
+  it("rejects with a conflict when the list changed since the client loaded it, and pushes no live update", async () => {
+    const { svc, listItemUpdate, events } = make(["a", "b", "c"], 0);
     await expect(
       svc.reorder("u1", "l1", ["c", "a", "b"], UPDATED_AT.toISOString()),
     ).rejects.toThrow("changed since you loaded it");
     expect(listItemUpdate).not.toHaveBeenCalled();
+    expect(events.emitToList).not.toHaveBeenCalled();
   });
 });
 
@@ -394,6 +412,7 @@ describe("ListService.canEdit (via getEditable)", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
   }
 
@@ -452,6 +471,7 @@ describe("ListService member management — owner only", () => {
       },
     } as unknown as PrismaService;
     const notifications = fakeNotifications();
+    const events = stubEvents();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -461,12 +481,13 @@ describe("ListService member management — owner only", () => {
       notifications,
       stubXp(),
       stubAchievements(),
+      events,
     );
-    return { svc, create, notifications };
+    return { svc, create, notifications, events };
   }
 
-  it("lets the owner add a member by username", async () => {
-    const { svc, create, notifications } = make("owner");
+  it("lets the owner add a member by username and pushes a live update", async () => {
+    const { svc, create, notifications, events } = make("owner");
     const member = await svc.addMember("owner", "l1", "friend");
     expect(member.user.username).toBe("friend");
     expect(create).toHaveBeenCalledWith({
@@ -478,6 +499,7 @@ describe("ListService member management — owner only", () => {
         type: "LIST_MEMBER_ADDED",
       }),
     );
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 
   it("rejects a non-owner adding a member", async () => {
@@ -487,11 +509,12 @@ describe("ListService member management — owner only", () => {
     ).rejects.toThrow();
   });
 
-  it("lets an editor remove themselves (leave)", async () => {
-    const { svc } = make("owner");
+  it("lets an editor remove themselves (leave) and pushes a live update", async () => {
+    const { svc, events } = make("owner");
     await expect(
       svc.removeMember("friend", "l1", "friend"),
     ).resolves.toBeUndefined();
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 
   it("rejects an editor removing someone else", async () => {
@@ -523,6 +546,7 @@ describe("ListService.reassignOwnedListsOnAccountDeletion", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
     return { svc, listUpdate, listMemberDelete };
   }
@@ -568,6 +592,7 @@ describe("ListService — activity emission on create/share", () => {
     } as unknown as PrismaService;
     const activity = { emit: vi.fn() } as unknown as ActivityService;
     const achievements = stubAchievements();
+    const events = stubEvents();
     const svc = new ListService(
       prisma,
       {} as VisibilityService,
@@ -577,8 +602,9 @@ describe("ListService — activity emission on create/share", () => {
       fakeNotifications(),
       stubXp(),
       achievements,
+      events,
     );
-    return { svc, activity, achievements };
+    return { svc, activity, achievements, events };
   }
 
   it("emits LIST_CREATED on create", async () => {
@@ -600,12 +626,13 @@ describe("ListService — activity emission on create/share", () => {
     ]);
   });
 
-  it("emits LIST_SHARED only when visibility moves off PRIVATE", async () => {
-    const { svc, activity } = make();
+  it("emits LIST_SHARED only when visibility moves off PRIVATE, and pushes a live update either way", async () => {
+    const { svc, activity, events } = make();
     await svc.update("u1", "l1", { visibility: "FRIENDS" as never });
     expect(activity.emit).toHaveBeenCalledWith(
       expect.objectContaining({ type: "LIST_SHARED" }),
     );
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 
   it("evaluates first_list/curator_* when a list is shared", async () => {
@@ -654,6 +681,7 @@ describe("ListService — Figurant can't share a list", () => {
       fakeNotifications(),
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
     return { svc, create, update };
   }
@@ -699,6 +727,7 @@ describe("ListService — XP wiring", () => {
       fakeNotifications(),
       xp,
       stubAchievements(),
+      stubEvents(),
     );
 
     await svc.create("u1", { title: "Top 10", kind: "RANKED" as never });

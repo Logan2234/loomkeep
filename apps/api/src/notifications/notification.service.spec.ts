@@ -1,6 +1,7 @@
 import { DigestCadence, NotificationType } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
+import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "./notification.service";
@@ -10,6 +11,8 @@ import { NotificationService } from "./notification.service";
 const jobRunsStub = {
   record: (_key: string, fn: () => Promise<unknown>) => fn(),
 } as unknown as JobRunService;
+
+const eventsStub = { emitToUser: vi.fn() } as unknown as EventsGateway;
 
 describe("NotificationService.scanAll", () => {
   const AIRED = new Date();
@@ -58,7 +61,7 @@ describe("NotificationService.scanAll", () => {
         createMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(prisma, jobRunsStub);
+    const service = new NotificationService(prisma, jobRunsStub, eventsStub);
     return { service, prisma };
   }
 
@@ -194,7 +197,7 @@ describe("NotificationService.scan", () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(prisma, jobRunsStub);
+    const service = new NotificationService(prisma, jobRunsStub, eventsStub);
     return { service, prisma };
   }
 
@@ -245,7 +248,7 @@ describe("NotificationService — bell feed (read = deleted)", () => {
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationService(prisma, jobRunsStub);
+    const service = new NotificationService(prisma, jobRunsStub, eventsStub);
     return { service, prisma };
   }
 
@@ -342,5 +345,48 @@ describe("NotificationService — bell feed (read = deleted)", () => {
         },
       },
     });
+  });
+});
+
+describe("NotificationService.create — realtime push", () => {
+  function makeService(createManyCount: number) {
+    const prisma = {
+      notification: {
+        createMany: vi.fn().mockResolvedValue({ count: createManyCount }),
+      },
+    } as unknown as PrismaService;
+    const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
+    const service = new NotificationService(prisma, jobRunsStub, events);
+    return { service, events };
+  }
+
+  it("pushes a live event for a bell-visible kind that was actually created", async () => {
+    const { service, events } = makeService(1);
+    await service.create({
+      userId: "u1",
+      type: NotificationType.FOLLOW,
+      title: "Alice te suit",
+    });
+    expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
+  });
+
+  it("skips the push when createMany deduped the row away", async () => {
+    const { service, events } = makeService(0);
+    await service.create({
+      userId: "u1",
+      type: NotificationType.FOLLOW,
+      title: "Alice te suit",
+    });
+    expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+
+  it("skips the push for a kind the bell feed never shows", async () => {
+    const { service, events } = makeService(1);
+    await service.create({
+      userId: "u1",
+      type: NotificationType.NEW_EPISODE,
+      title: "S2E5",
+    });
+    expect(events.emitToUser).not.toHaveBeenCalled();
   });
 });

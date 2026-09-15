@@ -16,6 +16,7 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
+import { EventsGateway } from "../events/events.gateway";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/registry";
@@ -100,6 +101,7 @@ export class CommentService {
     private readonly flags: FeatureFlagsService,
     private readonly achievements: AchievementService,
     private readonly blocks: BlockService,
+    private readonly events: EventsGateway,
   ) {}
 
   /**
@@ -343,6 +345,7 @@ export class CommentService {
     });
 
     await this.notifyOnCreate(authorId, row, parent);
+    this.events.emitToCommentsThread(targetType, targetId, "comment-changed");
 
     // Checked here rather than left to award() (which credits blindly) —
     // unlike the review text-length case, a too-short comment is a frequent,
@@ -397,6 +400,11 @@ export class CommentService {
       data: { text: body.text, spoilerTag, edited: true },
       include: { author: { select: AUTHOR_SELECT } },
     });
+    this.events.emitToCommentsThread(
+      existing.targetType,
+      existing.targetId,
+      "comment-changed",
+    );
 
     const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
@@ -427,6 +435,11 @@ export class CommentService {
 
     await this.softDelete(id, false);
     await this.xp.revokeBySource("Comment", [id]);
+    this.events.emitToCommentsThread(
+      existing.targetType,
+      existing.targetId,
+      "comment-changed",
+    );
   }
 
   /**
@@ -461,7 +474,13 @@ export class CommentService {
   ): Promise<void> {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
-      select: { id: true, deletedAt: true, authorId: true },
+      select: {
+        id: true,
+        deletedAt: true,
+        authorId: true,
+        targetType: true,
+        targetId: true,
+      },
     });
     if (!comment || comment.deletedAt)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
@@ -471,6 +490,11 @@ export class CommentService {
       update: { emote },
       create: { commentId, userId, emote },
     });
+    this.events.emitToCommentsThread(
+      comment.targetType,
+      comment.targetId,
+      "comment-changed",
+    );
 
     // Credited to the comment's author, never the reactor — and never at all
     // when they are one and the same, mirroring ReviewVote's self-vote
@@ -488,10 +512,14 @@ export class CommentService {
 
   async unreact(userId: string, commentId: string): Promise<void> {
     // Looked up before the delete so revokeBySource still has the id to
-    // work with afterwards.
+    // work with afterwards, and so the comment's target is known to notify
+    // its thread even once the reaction row is gone.
     const existing = await this.prisma.commentReaction.findUnique({
       where: { commentId_userId: { commentId, userId } },
-      select: { id: true },
+      select: {
+        id: true,
+        comment: { select: { targetType: true, targetId: true } },
+      },
     });
 
     await this.prisma.commentReaction.deleteMany({
@@ -500,6 +528,11 @@ export class CommentService {
 
     if (existing) {
       await this.xp.revokeBySource("CommentReaction", [existing.id]);
+      this.events.emitToCommentsThread(
+        existing.comment.targetType,
+        existing.comment.targetId,
+        "comment-changed",
+      );
     }
   }
 

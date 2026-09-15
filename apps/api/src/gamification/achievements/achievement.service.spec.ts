@@ -2,6 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
+import type { EventsGateway } from "../../events/events.gateway";
 import type { FeatureFlagsService } from "../../feature-flags/feature-flags.service";
 import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
@@ -76,14 +77,22 @@ function makeService(configValues: Record<string, string> = {}) {
   const jobRuns = {
     record: vi.fn((_key: string, fn: () => Promise<unknown>) => fn()),
   } as unknown as JobRunService;
+  const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
 
-  const service = new AchievementService(prisma, config, flags, xp, jobRuns);
-  return { service, prisma, config, flags, xp, jobRuns };
+  const service = new AchievementService(
+    prisma,
+    config,
+    flags,
+    xp,
+    jobRuns,
+    events,
+  );
+  return { service, prisma, config, flags, xp, jobRuns, events };
 }
 
 describe("AchievementService.evaluate", () => {
-  it("unlocks a satisfied achievement, credits its xpAward via amountOverride, sourced from the created row's id", async () => {
-    const { service, prisma, xp } = makeService();
+  it("unlocks a satisfied achievement, credits its xpAward via amountOverride, sourced from the created row's id, and pushes a live update", async () => {
+    const { service, prisma, xp, events } = makeService();
     (prisma.episodeWatch.findFirst as Mock).mockResolvedValue({ id: "w1" });
 
     await service.evaluate("user-1", ["first_episode"]);
@@ -96,6 +105,10 @@ describe("AchievementService.evaluate", () => {
       "ACHIEVEMENT_UNLOCKED",
       "achievement-1",
       50,
+    );
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      "achievement-unlocked",
     );
   });
 
@@ -140,8 +153,8 @@ describe("AchievementService.evaluate", () => {
     expect(xp.award).not.toHaveBeenCalled();
   });
 
-  it("credits no XP when create() hits the unique constraint (concurrent unlock)", async () => {
-    const { service, prisma, xp } = makeService();
+  it("credits no XP and pushes no live update when create() hits the unique constraint (concurrent unlock)", async () => {
+    const { service, prisma, xp, events } = makeService();
     (prisma.episodeWatch.findFirst as Mock).mockResolvedValue({ id: "w1" });
     (prisma.userAchievement.create as Mock).mockRejectedValue(
       uniqueConstraintError(),
@@ -151,6 +164,7 @@ describe("AchievementService.evaluate", () => {
       service.evaluate("user-1", ["first_episode"]),
     ).resolves.toBeUndefined();
     expect(xp.award).not.toHaveBeenCalled();
+    expect(events.emitToUser).not.toHaveBeenCalled();
   });
 
   it("evaluates only the registry entries named by `keys`", async () => {
