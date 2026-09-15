@@ -56,6 +56,12 @@ const webOrigins = (process.env.WEB_ORIGIN ?? "")
 
 @WebSocketGateway({
   cors: { origin: webOrigins, credentials: true },
+  // @nestjs/platform-fastify's raw http.Server never completes engine.io's
+  // polling→websocket upgrade handshake (confirmed with curl: it 101s then
+  // hangs, never sending the expected probe packet) — polling would just be
+  // a transport every client immediately fails to upgrade out of, so it's
+  // turned off server-side too rather than only on the web client.
+  transports: ["websocket"],
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
