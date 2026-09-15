@@ -151,7 +151,14 @@ jobs:
       - run: pnpm build:package
       - name: Install ESLint SARIF formatter
         run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
+      # Type-aware only here, never in the local hooks: building the type
+      # graph roughly doubles ESLint (31s -> 55s on apps/api), which is
+      # noise inside a 2-minute CI job and friction on every commit. Not
+      # extended to apps/web — svelte-eslint-parser with a type graph runs
+      # for tens of minutes there, so that side keeps the syntactic rules.
       - name: ESLint
+        env:
+          ESLINT_TYPE_AWARE: "true"
         run: pnpm --filter @loomkeep/api --filter @loomkeep/shared lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
       # See the script's own docstring: drops results ESLint already
       # suppressed in-source, which the formatter reports anyway.

@@ -136,6 +136,9 @@ export class ImportJobService {
     // first is still awaiting its quota check, and the user gets two imports.
     const job = this.newJob(userId, sourceId, "analyze", null);
     this.jobs.set(job.id, job);
+    // Only the newest analysis can still be committed, so no older one needs
+    // to keep its parse model alive.
+    this.releasePayloads(userId);
 
     let parsed: unknown;
 
@@ -230,12 +233,16 @@ export class ImportJobService {
         decisions,
         progress,
       );
-    }).then(() =>
-      this.recordRun(userId, job, decisions.overwrite).catch((err) => {
+    }).then(() => {
+      // Only on success: a failed commit is still retryable from the same
+      // analysis, so its payload has to survive.
+      if (job.status === "completed") this.releasePayload(analyzed);
+
+      return this.recordRun(userId, job, decisions.overwrite).catch((err) => {
         // Audit logging must never take the request path down with it.
         this.logger.error(`Failed to record import run ${job.id}`, err);
-      }),
-    );
+      });
+    });
 
     return toDto(job);
   }
@@ -390,6 +397,30 @@ export class ImportJobService {
           : ErrorCode.InternalError;
     } finally {
       job.finishedAt = Date.now();
+    }
+  }
+
+  /**
+   * Drops a finished job's parse model and plan while keeping the record
+   * itself, so the client can still read the outcome.
+   *
+   * These two are the only large fields: `parsed` is the source's whole
+   * export model, which for a media import is bounded only by Fastify's 25 MB
+   * body limit. The job record around it is a few hundred bytes, and the
+   * report the user comes back for lives there — so the retention window
+   * doesn't need shortening, the payload just shouldn't outlive its use.
+   */
+  private releasePayload(job: JobRecord): void {
+    job.parsed = null;
+    job.plan = null;
+  }
+
+  /** Same, for every one of this user's jobs that is no longer running. */
+  private releasePayloads(userId: string): void {
+    for (const job of this.jobs.values()) {
+      if (job.userId === userId && job.status !== "running") {
+        this.releasePayload(job);
+      }
     }
   }
 

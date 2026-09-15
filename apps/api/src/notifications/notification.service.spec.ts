@@ -12,60 +12,148 @@ const jobRunsStub = {
 } as unknown as JobRunService;
 
 describe("NotificationService.scanAll", () => {
-  function makeService(userIds: string[]) {
+  const AIRED = new Date();
+  const TRACKED_SINCE = new Date(AIRED.getTime() - 30 * 86_400_000);
+
+  function episodeRow(over: Record<string, unknown> = {}) {
+    return {
+      id: "ep1",
+      number: 5,
+      title: "Le dénouement",
+      airDate: AIRED,
+      season: {
+        number: 2,
+        mediaItemId: "m1",
+        mediaItem: {
+          title: "Une série",
+          type: "SERIES",
+          canonicalSource: "TMDB",
+          externalIds: [{ source: "TMDB", externalId: "42" }],
+        },
+      },
+      ...over,
+    };
+  }
+
+  function makeService(over: {
+    episodes?: unknown[];
+    entries?: unknown[];
+    existing?: unknown[];
+  }) {
     const prisma = {
-      user: {
-        findMany: vi.fn().mockResolvedValue(userIds.map((id) => ({ id }))),
+      episode: {
+        findMany: vi.fn().mockResolvedValue(over.episodes ?? [episodeRow()]),
+      },
+      libraryEntry: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue(
+            over.entries ?? [
+              { userId: "u1", mediaItemId: "m1", createdAt: TRACKED_SINCE },
+            ],
+          ),
+      },
+      notification: {
+        findMany: vi.fn().mockResolvedValue(over.existing ?? []),
+        createMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     } as unknown as PrismaService;
     const service = new NotificationService(prisma, jobRunsStub);
     return { service, prisma };
   }
 
-  it("only queries users with a channel not disabled", async () => {
-    const { service, prisma } = makeService([]);
+  it("starts from the episodes, which do not grow with the user count", async () => {
+    // The sweep used to run one joined query per account with a digest on,
+    // every hour, almost always for nothing.
+    const { service, prisma } = makeService({});
+
     await service.scanAll();
-    expect(prisma.user.findMany).toHaveBeenCalledWith({
-      where: {
-        OR: [
-          { notifyPush: { not: DigestCadence.DISABLED } },
-          { notifyEmail: { not: DigestCadence.DISABLED } },
-        ],
-      },
-      select: { id: true },
+
+    const where = (prisma.episode.findMany as Mock).mock.calls[0][0].where;
+    expect(where.season).toEqual({ number: { gt: 0 } });
+    expect(where.airDate.gt).toBeInstanceOf(Date);
+    expect(where.airDate.lte).toBeInstanceOf(Date);
+  });
+
+  it("stops after one query when nothing aired in the window", async () => {
+    const { service, prisma } = makeService({ episodes: [] });
+
+    const created = await service.scanAll();
+
+    expect(created).toBe(0);
+    expect(prisma.libraryEntry.findMany).not.toHaveBeenCalled();
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+  });
+
+  it("applies the digest and domain gates in the entry query", async () => {
+    const { service, prisma } = makeService({});
+
+    await service.scanAll();
+
+    const where = (prisma.libraryEntry.findMany as Mock).mock.calls[0][0].where;
+    expect(where.status).toEqual({ not: "DROPPED" });
+    expect(where.user.enabledDomains).toEqual({ has: "MEDIA" });
+    expect(where.user.OR).toEqual([
+      { notifyPush: { not: DigestCadence.DISABLED } },
+      { notifyEmail: { not: DigestCadence.DISABLED } },
+    ]);
+  });
+
+  it("creates one row per tracking user in a single write", async () => {
+    const { service, prisma } = makeService({
+      entries: [
+        { userId: "u1", mediaItemId: "m1", createdAt: TRACKED_SINCE },
+        { userId: "u2", mediaItemId: "m1", createdAt: TRACKED_SINCE },
+      ],
+    });
+
+    const created = await service.scanAll();
+
+    expect(created).toBe(2);
+    expect(prisma.notification.createMany).toHaveBeenCalledTimes(1);
+    const rows = (prisma.notification.createMany as Mock).mock.calls[0][0].data;
+    expect(rows.map((r: { userId: string }) => r.userId)).toEqual(["u1", "u2"]);
+    expect(rows[0]).toMatchObject({
+      type: NotificationType.NEW_EPISODE,
+      title: "Une série",
+      body: "S2E5 · Le dénouement",
+      dedupeKey: "episode:ep1",
     });
   });
 
-  it("scans every eligible user and sums the created count", async () => {
-    const { service } = makeService(["u1", "u2", "u3"]);
-    const scan = vi
-      .spyOn(service, "scan")
-      .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(0)
-      .mockResolvedValueOnce(1);
+  it("skips a user already notified without skipping the others", async () => {
+    // Dedup is per (user, episode): one user having seen it must not suppress
+    // the row for everyone else tracking the same show.
+    const { service, prisma } = makeService({
+      entries: [
+        { userId: "u1", mediaItemId: "m1", createdAt: TRACKED_SINCE },
+        { userId: "u2", mediaItemId: "m1", createdAt: TRACKED_SINCE },
+      ],
+      existing: [{ userId: "u1", dedupeKey: "episode:ep1" }],
+    });
 
     const created = await service.scanAll();
 
-    expect(created).toBe(3);
-    expect(scan).toHaveBeenCalledTimes(3);
-    expect(scan).toHaveBeenNthCalledWith(1, "u1");
-    expect(scan).toHaveBeenNthCalledWith(2, "u2");
-    expect(scan).toHaveBeenNthCalledWith(3, "u3");
+    expect(created).toBe(1);
+    const rows = (prisma.notification.createMany as Mock).mock.calls[0][0].data;
+    expect(rows[0].userId).toBe("u2");
   });
 
-  it("keeps scanning the rest of the batch when one user fails", async () => {
-    const { service } = makeService(["u1", "u2", "u3"]);
-    vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
-    const scan = vi
-      .spyOn(service, "scan")
-      .mockResolvedValueOnce(1)
-      .mockRejectedValueOnce(new Error("boom"))
-      .mockResolvedValueOnce(4);
+  it("never notifies an episode that aired before the user started tracking", async () => {
+    const { service, prisma } = makeService({
+      entries: [
+        {
+          userId: "u1",
+          mediaItemId: "m1",
+          createdAt: new Date(Date.now() + 1000),
+        },
+      ],
+    });
 
     const created = await service.scanAll();
 
-    expect(created).toBe(5);
-    expect(scan).toHaveBeenCalledTimes(3);
+    expect(created).toBe(0);
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
   });
 });
 

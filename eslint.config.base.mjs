@@ -21,8 +21,15 @@ const typeAware = process.env.ESLINT_TYPE_AWARE === "true";
 export function baseConfig(dirname, { browser = false } = {}) {
   return [
     includeIgnoreFile(gitignorePath),
-    // Config/build files aren't part of the app tsconfig — keep them out of type-aware linting.
-    { ignores: ["*.config.{js,ts,mjs,cjs}", "*.config.*.{js,ts,mjs,cjs}"] },
+    // Config/build files aren't part of the app tsconfig — keep them out of
+    // type-aware linting. `mts`/`cts` included: vitest configs use them, and
+    // the project service rejects any file the tsconfig doesn't cover.
+    {
+      ignores: [
+        "*.config.{js,ts,mts,cts,mjs,cjs}",
+        "*.config.*.{js,ts,mts,cts,mjs,cjs}",
+      ],
+    },
     js.configs.recommended,
     ts.configs.recommended,
     eslintPluginPrettierRecommended,
@@ -50,6 +57,22 @@ export function baseConfig(dirname, { browser = false } = {}) {
         "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       },
     },
+    // Only meaningful with a type graph, so gated on the same flag that
+    // builds one. Not the full recommendedTypeChecked preset: these two are
+    // the ones that pay for themselves here — the codebase is heavily async
+    // with deliberate fire-and-forget (`void this.run(…)`, `activity.emit`),
+    // which is exactly where an un-awaited promise hides.
+    ...(typeAware
+      ? [
+          {
+            files: ["**/*.ts"],
+            rules: {
+              "@typescript-eslint/no-floating-promises": "error",
+              "@typescript-eslint/no-misused-promises": "error",
+            },
+          },
+        ]
+      : []),
     {
       files: ["**/*.{js,ts,mjs,cjs}"],
       plugins: { "@stylistic": stylistic },

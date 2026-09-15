@@ -414,6 +414,14 @@ describe("UsersService — uploadAvatar", () => {
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
   ]);
 
+  // A real 1x1 PNG, not just the magic bytes: uploads are decoded and
+  // re-encoded now (see reencodeAvatar), so a bare header is rejected —
+  // which is the point of that change.
+  const PNG_1X1 = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  );
+
   function updatedUser() {
     return {
       id: userId,
@@ -456,21 +464,32 @@ describe("UsersService — uploadAvatar", () => {
     );
   });
 
-  it("stores a valid PNG upload and cache-busts avatarUrl", async () => {
+  it("stores a valid PNG upload as WebP and cache-busts avatarUrl", async () => {
     (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser());
 
     const dto = await service.uploadAvatar(userId, {
       mimeType: "image/png",
-      data: PNG_MAGIC.toString("base64"),
+      data: PNG_1X1.toString("base64"),
     });
 
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: userId },
-        data: expect.objectContaining({ avatarMimeType: "image/png" }),
-      }),
-    );
+    const { data } = (prisma.user.update as Mock).mock.calls[0][0];
+    // Stored as the re-encoder's own output, never the uploaded bytes.
+    expect(data.avatarMimeType).toBe("image/webp");
+    expect(Buffer.from(data.avatar).equals(PNG_1X1)).toBe(false);
     expect(dto.avatarUrl).toContain(`/users/${userId}/avatar`);
+  });
+
+  it("rejects a header glued onto something that isn't an image", async () => {
+    // Passes the magic-byte check, fails the decode — the polyglot case.
+    await expect(
+      service.uploadAvatar(userId, {
+        mimeType: "image/png",
+        data: Buffer.concat([
+          PNG_MAGIC,
+          Buffer.from("<script>alert(1)</script>"),
+        ]).toString("base64"),
+      }),
+    ).rejects.toThrow(AppException);
   });
 
   it("rejects a payload whose bytes don't match the declared mime type", async () => {

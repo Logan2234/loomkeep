@@ -3,12 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { JobRun } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
-import {
-  JOB_HEALTHCHECK_ENV,
-  JOB_KEYS,
-  JOB_REGISTRY,
-  type JobKey,
-} from "./job-keys";
+import { JOB_HEALTHCHECK_ENV, JOB_KEYS, type JobKey } from "./job-keys";
 
 /** Runs kept per job — bounds the table on a self-host instance running for years. */
 const RUNS_KEPT_PER_JOB = 50;
@@ -92,8 +87,6 @@ export class JobRunService {
 
     return keys.map((key, i) => ({
       key,
-      label: JOB_REGISTRY[key].label,
-      schedule: JOB_REGISTRY[key].schedule,
       runs: runsByKey[i].map(toRunDto),
     }));
   }

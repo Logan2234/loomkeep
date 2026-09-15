@@ -39,8 +39,9 @@ function makeService(configValues: Record<string, string> = {}) {
       aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
     },
     userScore: { upsert: vi.fn().mockResolvedValue({}) },
-    // Only exercised by reconcile()'s default EPISODE_WATCHED verifier.
-    episodeWatch: { findUnique: vi.fn().mockResolvedValue(null) },
+    // Only exercised by reconcile()'s default EPISODE_WATCHED verifier,
+    // which reads the whole batch in one findMany.
+    episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     // Capped reasons credit inside a transaction (advisory lock, see
     // creditEntry) — hand the callback the same mock so the spies below
     // still see the writes.
