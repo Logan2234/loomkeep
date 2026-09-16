@@ -16,7 +16,7 @@
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -461,9 +461,13 @@
             targetType="BOOK"
             targetId={entry.book.id}
             workTitle={detail.title} />
-          {#if appConfig.socialEnabled}
-            <CommentThread targetType="BOOK" targetId={entry.book.id} />
-          {/if}
+        {/if}
+        {#if appConfig.socialEnabled && detail.commentTargetId}
+          <CommentsPanel
+            targetType="BOOK"
+            targetId={detail.commentTargetId}
+            title={detail.title}
+            canParticipate={!!entry} />
         {/if}
       </div>
 

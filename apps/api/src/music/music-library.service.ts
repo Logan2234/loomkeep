@@ -421,6 +421,7 @@ export class MusicLibraryService {
 
     return {
       ...details,
+      commentTargetId: ref?.musicItemId ?? null,
       entry: entryRow
         ? toEntryDto(
             entryRow,

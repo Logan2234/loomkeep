@@ -122,8 +122,11 @@ function make(
       findUnique: vi.fn().mockResolvedValue(null),
       ...overrides.season,
     },
-    libraryEntry: {
+    episode: {
       findUnique: vi.fn().mockResolvedValue(null),
+    },
+    libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue({ id: "entry-1" }),
       ...overrides.libraryEntry,
     },
     gameEntry: {
@@ -502,8 +505,8 @@ describe("CommentService.create", () => {
     );
   });
 
-  it("does not notify a reply when the parent author blocked the commenter", async () => {
-    const { svc, notifications } = make({
+  it("rejects a reply when the parent author blocked the commenter", async () => {
+    const { svc, prisma } = make({
       comment: {
         findUnique: vi.fn().mockResolvedValue({
           id: "root1",
@@ -518,13 +521,15 @@ describe("CommentService.create", () => {
       },
       block: { findFirst: vi.fn().mockResolvedValue({ id: "b1" }) },
     });
-    await svc.create("viewer", {
-      targetType: "MEDIA" as never,
-      targetId: "m1",
-      parentId: "root1",
-      text: "thanks",
-    });
-    expect(notifications.create).not.toHaveBeenCalled();
+    await expect(
+      svc.create("viewer", {
+        targetType: "MEDIA" as never,
+        targetId: "m1",
+        parentId: "root1",
+        text: "thanks",
+      }),
+    ).rejects.toThrow();
+    expect(prisma.comment.create).not.toHaveBeenCalled();
   });
 
   it("notifies a mentioned user but not the author mentioning themselves", async () => {
@@ -653,6 +658,42 @@ describe("CommentService.adminRemove", () => {
 });
 
 describe("CommentService.react", () => {
+  it("requires the work to be tracked before reacting", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
+      },
+      libraryEntry: { findUnique: vi.fn().mockResolvedValue(null) },
+    });
+
+    await expect(svc.react("viewer", "c1", "LIKE" as never)).rejects.toThrow();
+    expect(prisma.commentReaction.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects reacting to a blocked account", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
+      },
+      block: { findFirst: vi.fn().mockResolvedValue({ id: "block-1" }) },
+    });
+
+    await expect(svc.react("viewer", "c1", "LIKE" as never)).rejects.toThrow();
+    expect(prisma.commentReaction.upsert).not.toHaveBeenCalled();
+  });
+
   it("notifies the author once the reaction count reaches the threshold", async () => {
     const { svc, notifications } = make({
       comment: {
@@ -662,6 +703,8 @@ describe("CommentService.react", () => {
             id: "c1",
             deletedAt: null,
             authorId: "author",
+            targetType: "MEDIA",
+            targetId: "m1",
           })
           .mockResolvedValueOnce({ targetType: "MEDIA", targetId: "m1" }),
       },
@@ -680,6 +723,8 @@ describe("CommentService.react", () => {
           id: "c1",
           deletedAt: null,
           authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
         }),
       },
       reaction: { count: vi.fn().mockResolvedValue(11) },
@@ -742,6 +787,8 @@ describe("CommentService — XP wiring", () => {
           id: "c1",
           deletedAt: null,
           authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
         }),
       },
       reaction: { upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }) },
@@ -766,6 +813,8 @@ describe("CommentService — XP wiring", () => {
           id: "c1",
           deletedAt: null,
           authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
         }),
       },
       reaction: { upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }) },
@@ -782,6 +831,14 @@ describe("CommentService — XP wiring", () => {
           comment: { targetType: "MEDIA", targetId: "m1" },
         }),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
       },
     });
     await svc.unreact("reactor", "c1");

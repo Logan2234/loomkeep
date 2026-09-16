@@ -12,9 +12,7 @@ describe("extractMentions", () => {
     expect(extractMentions("no mentions here")).toEqual([]);
   });
 
-  it("ignores an email-like string (no leading whitespace boundary needed, but stops at invalid chars)", () => {
-    expect(extractMentions("contact me at me@example.com")).toEqual([
-      "example",
-    ]);
+  it("ignores an email-like string", () => {
+    expect(extractMentions("contact me at me@example.com")).toEqual([]);
   });
 });

@@ -18,7 +18,7 @@
   import { goBack } from "$lib/backNav.svelte";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -715,12 +715,14 @@
         targetType="MEDIA"
         targetId={entry.mediaItem.id}
         workTitle={detail.title} />
-      {#if appConfig.socialEnabled}
-        <CommentThread
-          targetType="MEDIA"
-          targetId={entry.mediaItem.id}
-          digest />
-      {/if}
+    {/if}
+
+    {#if appConfig.socialEnabled && detail.commentTargetId}
+      <CommentsPanel
+        targetType="MEDIA"
+        targetId={detail.commentTargetId}
+        title={detail.title}
+        canParticipate={!!entry} />
     {/if}
 
     {#if extras}

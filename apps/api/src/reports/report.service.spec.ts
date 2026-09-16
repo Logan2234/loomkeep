@@ -12,6 +12,7 @@ function make(
   const prisma = {
     report: {
       create: vi.fn(),
+      findFirst: vi.fn().mockResolvedValue(null),
       count: vi.fn().mockResolvedValue(0),
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
@@ -57,8 +58,66 @@ function make(
 }
 
 describe("ReportService.create", () => {
-  it("persists a report with a valid category/motif pair and pushes the live admin count", async () => {
-    const { svc, prisma, events } = make();
+  it("rejects a missing or deleted comment", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "missing",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects reporting one's own comment", async () => {
+    const { svc } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "reporter1", deletedAt: null }),
+      },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a duplicate pending report from the same person", async () => {
+    const { svc } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+      report: { findFirst: vi.fn().mockResolvedValue({ id: "r1" }) },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("persists a report with a valid category/motif pair", async () => {
+    const { svc, prisma, events } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+    });
     await svc.create(
       "reporter1",
       "COMMENT" as never,
@@ -80,7 +139,13 @@ describe("ReportService.create", () => {
   });
 
   it("persists OTHER with a trimmed reason and no motif", async () => {
-    const { svc, prisma } = make();
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+    });
     await svc.create(
       "reporter1",
       "COMMENT" as never,

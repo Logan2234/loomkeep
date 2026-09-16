@@ -292,12 +292,13 @@ export class CommentService {
           id: true,
           authorId: true,
           parentId: true,
+          deletedAt: true,
           targetType: true,
           targetId: true,
         },
       });
 
-      if (!found || found.parentId) {
+      if (!found || found.deletedAt || found.parentId) {
         // Flat + one level: replying to a reply is rejected, the client
         // should have offered "reply" only on top-level comments.
         throw new AppException(
@@ -328,6 +329,12 @@ export class CommentService {
         HttpStatus.NOT_FOUND,
         ErrorCode.CommentUnknownTargetType,
       );
+    }
+
+    await this.ensureParticipationAllowed(authorId, targetType, targetId);
+
+    if (parent?.authorId) {
+      await this.ensureInteractionNotBlocked(authorId, parent.authorId);
     }
 
     const spoilerTag = targetType === "MUSIC" ? false : !!body.spoilerTag;
@@ -456,6 +463,11 @@ export class CommentService {
 
     await this.softDelete(id, true);
     await this.xp.revokeBySource("Comment", [id]);
+    this.events.emitToCommentsThread(
+      existing.targetType,
+      existing.targetId,
+      "comment-changed",
+    );
     return { authorId: existing.authorId, text: existing.text };
   }
 
@@ -484,6 +496,16 @@ export class CommentService {
     });
     if (!comment || comment.deletedAt)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+
+    await this.ensureParticipationAllowed(
+      userId,
+      comment.targetType as CommentTargetType,
+      comment.targetId,
+    );
+
+    if (comment.authorId) {
+      await this.ensureInteractionNotBlocked(userId, comment.authorId);
+    }
 
     const reaction = await this.prisma.commentReaction.upsert({
       where: { commentId_userId: { commentId, userId } },
@@ -522,6 +544,27 @@ export class CommentService {
       },
     });
 
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      select: {
+        deletedAt: true,
+        targetType: true,
+        targetId: true,
+        authorId: true,
+      },
+    });
+    if (!comment || comment.deletedAt)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+    await this.ensureParticipationAllowed(
+      userId,
+      comment.targetType as CommentTargetType,
+      comment.targetId,
+    );
+
+    if (comment.authorId) {
+      await this.ensureInteractionNotBlocked(userId, comment.authorId);
+    }
+
     await this.prisma.commentReaction.deleteMany({
       where: { commentId, userId },
     });
@@ -537,6 +580,103 @@ export class CommentService {
   }
 
   // --- internals ---
+
+  /** A discussion is readable to everyone, but only a tracker can join it. */
+  private async ensureParticipationAllowed(
+    userId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+  ): Promise<void> {
+    let entry: unknown = null;
+
+    switch (targetType) {
+      case "MEDIA":
+        entry = await this.prisma.libraryEntry.findUnique({
+          where: { userId_mediaItemId: { userId, mediaItemId: targetId } },
+          select: { id: true },
+        });
+        break;
+      case "GAME":
+        entry = await this.prisma.gameEntry.findUnique({
+          where: { userId_gameItemId: { userId, gameItemId: targetId } },
+          select: { id: true },
+        });
+        break;
+      case "BOOK":
+        entry = await this.prisma.bookEntry.findUnique({
+          where: { userId_bookItemId: { userId, bookItemId: targetId } },
+          select: { id: true },
+        });
+        break;
+      case "MUSIC":
+        entry = await this.prisma.musicEntry.findUnique({
+          where: { userId_musicItemId: { userId, musicItemId: targetId } },
+          select: { id: true },
+        });
+        break;
+
+      case "SEASON": {
+        const season = await this.prisma.season.findUnique({
+          where: { id: targetId },
+          select: { mediaItemId: true },
+        });
+
+        if (season) {
+          entry = await this.prisma.libraryEntry.findUnique({
+            where: {
+              userId_mediaItemId: { userId, mediaItemId: season.mediaItemId },
+            },
+            select: { id: true },
+          });
+        }
+
+        break;
+      }
+
+      case "EPISODE": {
+        const episode = await this.prisma.episode.findUnique({
+          where: { id: targetId },
+          select: { season: { select: { mediaItemId: true } } },
+        });
+
+        if (episode) {
+          entry = await this.prisma.libraryEntry.findUnique({
+            where: {
+              userId_mediaItemId: {
+                userId,
+                mediaItemId: episode.season.mediaItemId,
+              },
+            },
+            select: { id: true },
+          });
+        }
+
+        break;
+      }
+    }
+
+    if (!entry) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.CommentParticipationRequiresLibrary,
+      );
+    }
+  }
+
+  private async ensureInteractionNotBlocked(
+    actorId: string,
+    otherUserId: string,
+  ): Promise<void> {
+    if (
+      actorId !== otherUserId &&
+      (await this.blocks.isBlockedEitherWay(actorId, otherUserId))
+    ) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.CommentInteractionBlocked,
+      );
+    }
+  }
 
   private async filterBlocked(
     viewerId: string,
@@ -722,7 +862,9 @@ export class CommentService {
       type,
       title: row.author.displayName,
       body: excerpt,
-      url,
+      url: url
+        ? `${url}?comment=${row.id}&commentTarget=${row.targetType}:${row.targetId}`
+        : null,
       dedupeKey: `${type.toLowerCase()}:${row.id}:${recipientId}`,
       data: {
         actorUsername: row.author.username,
@@ -760,7 +902,9 @@ export class CommentService {
       type: NotificationType.COMMENT_REACTIONS,
       title: "Ton commentaire fait réagir",
       body: `${COMMENT_REACTION_NOTIFY_THRESHOLD} réactions`,
-      url,
+      url: url
+        ? `${url}?comment=${commentId}&commentTarget=${comment.targetType}:${comment.targetId}`
+        : null,
       dedupeKey: `reactions:${commentId}:${COMMENT_REACTION_NOTIFY_THRESHOLD}`,
     });
   }

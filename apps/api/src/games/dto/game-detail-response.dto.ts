@@ -34,5 +34,6 @@ export class GameDetailResponseDto implements GameDetailDto {
   trailerVideoId!: string | null;
   ageRatingImageUrls!: string[];
   multiplayerModes!: string[];
+  commentTargetId!: string | null;
   entry!: GameEntryResponseDto | null;
 }
