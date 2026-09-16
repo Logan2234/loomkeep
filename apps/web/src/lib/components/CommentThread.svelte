@@ -3,7 +3,6 @@
   import {
     createComment,
     deleteComment,
-    getCommentCount,
     getCommentReplies,
     getComments,
     reactToComment,
@@ -39,10 +38,10 @@
   import {
     createInfiniteQuery,
     createMutation,
-    createQuery,
     useQueryClient,
     type InfiniteData,
   } from "@tanstack/svelte-query";
+  import { tick } from "svelte";
   import { scale } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
   import Combobox from "./Combobox.svelte";
@@ -54,30 +53,22 @@
   let {
     targetType,
     targetId,
-    digest = false,
+    canParticipate = false,
+    focusCommentId = null,
   }: {
     targetType: CommentTargetType;
     targetId: string;
-    /** Media detail page ("Cinéma minimal"): always expanded, top-level
-     * comments capped at 5 and replies at the last 2, each behind a discreet
-     * mono "+N" reveal instead of the collapsed-by-default gate below. */
-    digest?: boolean;
+    /** Reading is public; writing, replying and reacting require tracking. */
+    canParticipate?: boolean;
+    /** The comment addressed by a notification link, when already in the page. */
+    focusCommentId?: string | null;
   } = $props();
 
   const queryClient = useQueryClient();
   const key = $derived(["comments", targetType, targetId] as const);
   const countKey = $derived(["comment-count", targetType, targetId] as const);
 
-  // Collapsed by default — the thread only opens on demand (see
-  // conversation with Logan, 2026-07-21: comments shouldn't dominate the
-  // detail page the way the single-per-person review does). `digest` pages
-  // opt out: they show a capped list up front instead of gating it entirely.
-  let expanded = $state(digest);
-
-  const countQuery = createQuery(() => ({
-    queryKey: countKey,
-    queryFn: () => getCommentCount(targetType, targetId),
-  }));
+  const expanded = true;
 
   const query = createInfiniteQuery<
     PagedResult<CommentDto>,
@@ -113,25 +104,27 @@
   });
 
   const comments = $derived(query.data?.pages.flatMap((p) => p.items) ?? []);
+
+  $effect(() => {
+    if (!focusCommentId || !query.data) return;
+    void tick().then(() => {
+      document.getElementById(`comment-${focusCommentId}`)?.scrollIntoView({
+        block: "center",
+      });
+    });
+  });
   // A deleted top-level comment only earns its tombstone when it still has
   // replies to keep attached; with none, there's nothing left to preserve so
   // it's simply dropped. A deleted reply never has children of its own, so
   // it's always dropped — no tombstone case applies to it. Read from
   // replyCount, not the embedded preview, which is only the thread's tail.
   const visibleComments = $derived(
-    comments.filter((c) => !(c.deleted && c.replyCount === 0)),
+    comments
+      .filter((c) => !(c.deleted && c.replyCount === 0))
+      .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
 
-  // Digest mode's own progressive disclosure for the top-level list: capped,
-  // and revealing everything already loaded in one go rather than
-  // incrementally.
-  let showAllTop = $state(false);
-  const displayedComments = $derived(
-    digest && !showAllTop ? visibleComments.slice(0, 5) : visibleComments,
-  );
-  const hiddenTopCount = $derived(
-    digest && !showAllTop ? Math.max(0, visibleComments.length - 5) : 0,
-  );
+  const displayedComments = $derived(visibleComments);
 
   // Replies beyond the preview each list page embeds: fetched on demand from
   // /comments/{id}/replies, newest page first, accumulated per comment.
@@ -147,7 +140,7 @@
    */
   function repliesOf(c: CommentDto): CommentDto[] {
     const loaded = loadedReplies.get(c.id);
-    if (!loaded) return digest ? c.replies.slice(-2) : c.replies;
+    if (!loaded) return c.replies;
 
     const byId = new Map([...loaded, ...c.replies].map((r) => [r.id, r]));
     return [...byId.values()].sort((a, b) =>
@@ -206,6 +199,7 @@
   let newSpoilerTag = $state(false);
   let replyToId = $state<string | null>(null);
   let replyText = $state("");
+  let replySpoilerTag = $state(false);
   let editingId = $state<string | null>(null);
   let editText = $state("");
   let editSpoilerTag = $state(false);
@@ -273,24 +267,39 @@
   async function submitTop() {
     const text = newText.trim();
     if (!text || cooldownRemaining > 0) return;
-    await createMut.mutateAsync({
-      targetType,
-      targetId,
-      text,
-      spoilerTag: allowSpoilerTag ? newSpoilerTag : undefined,
-    });
-    newText = "";
-    newSpoilerTag = false;
-    startCooldown();
+    try {
+      await createMut.mutateAsync({
+        targetType,
+        targetId,
+        text,
+        spoilerTag: allowSpoilerTag ? newSpoilerTag : undefined,
+      });
+      newText = "";
+      newSpoilerTag = false;
+      startCooldown();
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   async function submitReply(parentId: string) {
     const text = replyText.trim();
     if (!text || cooldownRemaining > 0) return;
-    await createMut.mutateAsync({ targetType, targetId, parentId, text });
-    replyText = "";
-    replyToId = null;
-    startCooldown();
+    try {
+      await createMut.mutateAsync({
+        targetType,
+        targetId,
+        parentId,
+        text,
+        spoilerTag: allowSpoilerTag ? replySpoilerTag : undefined,
+      });
+      replyText = "";
+      replySpoilerTag = false;
+      replyToId = null;
+      startCooldown();
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   function startEdit(c: CommentDto) {
@@ -302,23 +311,43 @@
   async function submitEdit(id: string) {
     const text = editText.trim();
     if (!text) return;
-    await updateMut.mutateAsync({
-      id,
-      text,
-      spoilerTag: allowSpoilerTag ? editSpoilerTag : undefined,
-    });
-    editingId = null;
+    try {
+      await updateMut.mutateAsync({
+        id,
+        text,
+        spoilerTag: allowSpoilerTag ? editSpoilerTag : undefined,
+      });
+      editingId = null;
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   async function confirmRemove() {
     if (!confirmDeleteId) return;
-    await deleteMut.mutateAsync(confirmDeleteId);
-    confirmDeleteId = null;
+    try {
+      await deleteMut.mutateAsync(confirmDeleteId);
+      confirmDeleteId = null;
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   async function react(id: string, emote: CommentEmote) {
     reactingId = null;
-    await reactMut.mutateAsync({ id, emote });
+    try {
+      await reactMut.mutateAsync({ id, emote });
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
+  }
+
+  async function unreact(id: string) {
+    try {
+      await unreactMut.mutateAsync(id);
+    } catch (err) {
+      toast.error(resolveApiError(err));
+    }
   }
 
   function openReport(id: string) {
@@ -367,9 +396,10 @@
           class="rounded-full px-2 py-0.5 text-xs {c.myReaction === emote
             ? 'bg-accent/20 text-accent'
             : 'bg-surface-2 text-dim hover:text-fg'}"
+          disabled={!canParticipate}
           onclick={() =>
             c.myReaction === emote
-              ? unreactMut.mutate(c.id)
+              ? unreact(c.id)
               : react(c.id, emote as CommentEmote)}>
           {glyph}
           {count > 0 ? count : ""}
@@ -387,6 +417,7 @@
       reactingId === c.id
         ? 'flex opacity-100'
         : 'hidden opacity-0 md:flex'}">
+      {#if canParticipate}
       <div class="relative">
         <button
           class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full"
@@ -409,11 +440,12 @@
           </div>
         {/if}
       </div>
+      {/if}
 
       <!-- Icon-only: title/aria-label carry the meaning instead of visible
            text, to keep the row compact. -->
       <div class="text-dim flex items-center gap-0.5">
-        {#if !isReply}
+        {#if !isReply && canParticipate}
           <button
             class="btn-icon"
             title={m.common_reply()}
@@ -422,7 +454,7 @@
             <Icon name="reply" class="h-4 w-4" />
           </button>
         {/if}
-        {#if c.author?.id === auth.user?.id}
+          {#if c.author?.id === auth.user?.id}
           <button
             class="btn-icon"
             title={m.common_edit()}
@@ -457,6 +489,7 @@
   focused: boolean = false,
 )}
   <div
+    id="comment-{c.id}"
     class="card group overflow-visible p-3 {isReply ? 'ml-8' : ''}"
     use:longpress={{
       onLongPress: () => !focused && (focusedId = c.id),
@@ -578,8 +611,27 @@
 
           {#if replyToId === c.id}
             <div class="mt-2 flex flex-wrap items-center gap-2">
+              {#if allowSpoilerTag}
+                <button
+                  type="button"
+                  aria-pressed={replySpoilerTag}
+                  title={replySpoilerTag
+                    ? m.comment_unmark_spoiler()
+                    : m.comment_mark_spoiler()}
+                  aria-label={replySpoilerTag
+                    ? m.comment_unmark_spoiler()
+                    : m.comment_mark_spoiler()}
+                  onclick={() => (replySpoilerTag = !replySpoilerTag)}
+                  class="grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors {replySpoilerTag
+                    ? 'border-accent text-accent'
+                    : 'border-border text-dim hover:bg-surface-2 hover:text-fg'}">
+                  <Icon name="eye-off" class="h-4 w-4" />
+                </button>
+              {/if}
               <div class="relative min-w-32 flex-1">
+                <label class="sr-only" for="comment-reply-{c.id}">{m.comment_reply_label()}</label>
                 <input
+                  id="comment-reply-{c.id}"
                   type="text"
                   name="replyText"
                   class="input pr-14 text-sm"
@@ -620,37 +672,10 @@
   </div>
 {/snippet}
 
-<section class="mt-6">
-  {#if digest}
-    <h2 class="font-display mb-3 text-xl font-bold">
-      {m.common_comments()}
-      {#if countQuery.data}
-        <span class="text-dim font-normal">({countQuery.data.count})</span>
-      {/if}
-    </h2>
-  {:else}
-    <button
-      type="button"
-      class="border-border hover:bg-surface-2 flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2.5"
-      onclick={() => (expanded = !expanded)}>
-      <span class="flex items-center gap-1.5 text-sm font-semibold">
-        <Icon name="message" class="h-4 w-4" />
-        {m.common_comments()}
-        {#if countQuery.data}
-          <span class="text-dim font-normal">({countQuery.data.count})</span>
-        {/if}
-      </span>
-      <Icon
-        name="chevron-right"
-        class="text-dim h-4 w-4 transition-transform {expanded
-          ? 'rotate-90'
-          : ''}" />
-    </button>
-  {/if}
-
-  {#if expanded}
-    <div class="mt-3">
-      <div class="mb-4 flex flex-wrap items-center gap-2">
+<section class="min-h-0 flex-1">
+  <div class="flex min-h-0 flex-col">
+      {#if canParticipate}
+      <div class="order-2 mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         {#if allowSpoilerTag}
           <button
             type="button"
@@ -669,7 +694,9 @@
           </button>
         {/if}
         <div class="relative min-w-32 flex-1">
+          <label class="sr-only" for="comment-add-text">{m.comment_add_label()}</label>
           <input
+            id="comment-add-text"
             type="text"
             name="commentText"
             class="input pr-14 text-sm"
@@ -696,9 +723,21 @@
             : m.common_publish()}
         </button>
       </div>
+      {:else}
+        <p class="order-2 mt-4 border-t border-border pt-4 text-sm text-dim">
+          {m.comments_track_to_participate()}
+        </p>
+      {/if}
 
       {#if query.isPending}
         <p class="text-dim text-sm">{m.common_loading()}</p>
+      {:else if query.isError}
+        <div class="text-dim flex items-center justify-between gap-3 text-sm">
+          <span>{m.comments_load_failed()}</span>
+          <button class="btn btn-ghost btn-sm" onclick={() => query.refetch()}>
+            {m.common_retry()}
+          </button>
+        </div>
       {:else if visibleComments.length === 0}
         <p class="text-dim text-sm">{m.comments_empty()}</p>
       {:else}
@@ -730,22 +769,9 @@
             {/each}
           </div>
 
-          {#if hiddenTopCount > 0}
-            <div
-              class="from-bg via-bg/90 pointer-events-none absolute inset-x-0 -bottom-2 flex h-16 items-end justify-center bg-linear-to-t to-transparent pb-1">
-              <button
-                type="button"
-                class="chip timecode pointer-events-auto"
-                onclick={() => (showAllTop = true)}>
-                {hiddenTopCount === 1
-                  ? m.comments_more_one({ count: hiddenTopCount })
-                  : m.comments_more_many({ count: hiddenTopCount })}
-              </button>
-            </div>
-          {/if}
         </div>
 
-        {#if (!digest || showAllTop) && query.hasNextPage}
+        {#if query.hasNextPage}
           <button
             class="btn btn-ghost btn-sm mt-3"
             disabled={query.isFetchingNextPage}
@@ -754,8 +780,7 @@
           </button>
         {/if}
       {/if}
-    </div>
-  {/if}
+  </div>
 </section>
 
 {#if confirmDeleteId}

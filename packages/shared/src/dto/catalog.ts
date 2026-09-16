@@ -197,5 +197,7 @@ export interface MediaDetailDto extends Omit<
   /** Normalised: the show has finished airing (no more episodes coming). */
   airingFinished: boolean;
   seasons: MediaDetailSeasonDto[];
+  /** Cached work id when a public discussion can exist; null for a live-only item. */
+  commentTargetId: string | null;
   entry: LibraryEntryDto | null;
 }

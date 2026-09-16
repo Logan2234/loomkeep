@@ -30,5 +30,6 @@ export class MusicDetailResponseDto implements MusicDetailDto {
   tracks!: MusicTrackResponseDto[];
   totalDurationMs!: number | null;
   extraCoverImages!: { url: string; type: string }[];
+  commentTargetId!: string | null;
   entry!: MusicEntryResponseDto | null;
 }

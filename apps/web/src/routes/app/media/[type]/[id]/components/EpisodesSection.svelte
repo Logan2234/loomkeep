@@ -8,7 +8,7 @@
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
   import { createApiMutation } from "$lib/api/mutation.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,7 +20,6 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
   import type {
-    CommentTargetType,
     LibraryEntryDto,
     MediaDetailSeasonDto,
     ReviewTargetType,
@@ -101,14 +100,6 @@
   // (component instance), not persisted beyond that.
   let catchup = $state<{ episodeId: string; count: number } | null>(null);
   let declinedCatchup = $state(false);
-
-  // Each season/episode has its own comment thread (per the target-type
-  // granularity), opened in a modal rather than inlined in every row.
-  let commentTarget = $state<{
-    type: CommentTargetType;
-    id: string;
-    label: string;
-  } | null>(null);
 
   // Same idea for a season/episode's own review — discreet (icon-triggered
   // modal), never inlined in the row.
@@ -298,21 +289,14 @@
               <Icon name="star" class="h-4 w-4" />
             </button>
           {/if}
-          {#if entry && appConfig.socialEnabled && season.id}
-            <button
-              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-              aria-label={m.media_season_comments()}
-              onclick={(e) => {
-                e.stopPropagation();
-                commentTarget = {
-                  type: "SEASON",
-                  id: season.id!,
-                  label:
-                    season.title ?? `${m.common_season()} ${season.number}`,
-                };
-              }}>
-              <Icon name="message" class="h-4 w-4" />
-            </button>
+          {#if appConfig.socialEnabled && season.id}
+            <span onclick={(e) => e.stopPropagation()}>
+              <CommentsPanel
+                targetType="SEASON"
+                targetId={season.id}
+                title={season.title ?? `${m.common_season()} ${season.number}`}
+                canParticipate={!!entry} />
+            </span>
           {/if}
           {#if entry && season.id}
             {@const seasonId = season.id}
@@ -449,19 +433,12 @@
                       <Icon name="star" class="h-4 w-4" />
                     </button>
                   {/if}
-                  {#if entry && appConfig.socialEnabled && episode.id}
-                    <button
-                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                      aria-label={m.media_episode_comments()}
-                      onclick={() => {
-                        commentTarget = {
-                          type: "EPISODE",
-                          id: episode.id!,
-                          label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
-                        };
-                      }}>
-                      <Icon name="message" class="h-4 w-4" />
-                    </button>
+                  {#if appConfig.socialEnabled && episode.id}
+                    <CommentsPanel
+                      targetType="EPISODE"
+                      targetId={episode.id}
+                      title={`S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`}
+                      canParticipate={!!entry} />
                   {/if}
                   {#if entry && episode.id}
                     {@const upcoming =
@@ -538,16 +515,6 @@
     busy={confirmUnwatchSeasonMut.loading}
     onConfirm={confirmUnwatchSeason}
     onCancel={() => (confirmUnwatchSeasonId = null)} />
-{/if}
-
-{#if commentTarget}
-  <Modal
-    title={m.media_comments_title({ target: commentTarget.label })}
-    onclose={() => (commentTarget = null)}>
-    <CommentThread
-      targetType={commentTarget.type}
-      targetId={commentTarget.id} />
-  </Modal>
 {/if}
 
 {#if reviewTarget}

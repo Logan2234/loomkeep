@@ -160,6 +160,7 @@ export class CommentController {
   }
 
   @Post(":id/report")
+  @Throttle({ default: { limit: 1, ttl: 5_000 } })
   report(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,

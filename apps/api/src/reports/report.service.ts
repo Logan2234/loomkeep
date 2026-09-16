@@ -80,6 +80,30 @@ export class ReportService {
       );
     }
 
+    if (targetType === "COMMENT") {
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: targetId },
+        select: { authorId: true, deletedAt: true },
+      });
+      if (!comment || comment.deletedAt) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+      }
+      if (comment.authorId === reporterId) {
+        throw new AppException(
+          HttpStatus.FORBIDDEN,
+          ErrorCode.ReportCannotReportOwnContent,
+        );
+      }
+    }
+
+    const pending = await this.prisma.report.findFirst({
+      where: { reporterId, targetType, targetId, status: "PENDING" },
+      select: { id: true },
+    });
+    if (pending) {
+      throw new AppException(HttpStatus.CONFLICT, ErrorCode.ReportAlreadyFiled);
+    }
+
     await this.prisma.report.create({
       data: {
         reporterId,

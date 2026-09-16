@@ -521,6 +521,7 @@ export class GameLibraryService {
 
     return {
       ...details,
+      commentTargetId: ref?.gameItemId ?? null,
       entry: entryRow
         ? toEntryDto(
             entryRow,

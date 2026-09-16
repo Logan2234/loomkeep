@@ -32,5 +32,6 @@ export class BookDetailResponseDto implements BookDetailDto {
   firstSentence!: string | null;
   readOnlineUrl!: string | null;
   externalLinks!: { label: string; url: string }[];
+  commentTargetId!: string | null;
   entry!: BookEntryResponseDto | null;
 }

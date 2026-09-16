@@ -53,6 +53,8 @@ export const ErrorCode = {
   CommentParentNotFound: "comment.parent_not_found",
   CommentNotFound: "comment.not_found",
   CommentForbidden: "comment.forbidden",
+  CommentParticipationRequiresLibrary: "comment.participation_requires_library",
+  CommentInteractionBlocked: "comment.interaction_blocked",
 
   // lists
   ListInvalidMembershipTarget: "lists.invalid_membership_target",
@@ -81,6 +83,8 @@ export const ErrorCode = {
   ReportReasonRequired: "reports.reason_required",
   ReportInvalidMotif: "reports.invalid_motif",
   ReportNotFound: "reports.not_found",
+  ReportAlreadyFiled: "reports.already_filed",
+  ReportCannotReportOwnContent: "reports.cannot_report_own_content",
 
   // reviews
   ReviewUnknownTargetType: "reviews.unknown_target_type",

@@ -6,6 +6,7 @@ import {
 import {
   IsBoolean,
   IsIn,
+  Matches,
   IsOptional,
   IsString,
   MaxLength,
@@ -26,6 +27,7 @@ export class CreateCommentBody {
   @IsString()
   @MinLength(1)
   @MaxLength(COMMENT_TEXT_MAX_LENGTH)
+  @Matches(/\S/)
   text!: string;
 
   @IsOptional()

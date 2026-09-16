@@ -727,9 +727,8 @@ model Comment {
   authorId       String?
   parentId       String?
   text           String?
-  // Author-set manual spoiler tag. Combined at read time with the auto
-  // progression-based gate (see CommentService) into a per-viewer "masked"
-  // hint — the raw tag itself is what the edit form prefills.
+  // Author-set manual spoiler tag. The read model maps it directly to the
+  // viewer-facing masking hint; there is no automatic progression-based gate.
   spoilerTag     Boolean           @default(false)
   edited         Boolean           @default(false)
   deletedAt      DateTime?

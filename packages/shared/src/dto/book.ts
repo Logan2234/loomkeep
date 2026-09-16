@@ -138,6 +138,8 @@ export interface UpdateBookEntryDto {
  * `entry` is null when the book is not in the library.
  */
 export interface BookDetailDto extends BookDetailsDto {
+  /** Cached work id when a public discussion can exist; null for a live-only item. */
+  commentTargetId: string | null;
   entry: BookEntryDto | null;
 }
 
