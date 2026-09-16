@@ -1,5 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import { Histogram, Registry, collectDefaultMetrics } from "prom-client";
+import {
+  Counter,
+  Gauge,
+  Histogram,
+  Registry,
+  collectDefaultMetrics,
+} from "prom-client";
+
+export type WsRejectionReason = "no_cookie" | "session_revoked" | "invalid_token";
 
 /**
  * Technical metrics for Prometheus: Node/process internals plus one HTTP
@@ -20,6 +28,23 @@ export class MetricsService {
     help: "HTTP request latency, by route and outcome",
     labelNames: ["method", "route", "status_code"] as const,
     buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 2, 5],
+    registers: [this.registry],
+  });
+
+  private readonly wsConnectionsActive = new Gauge({
+    name: "ws_connections_active",
+    help: "Currently connected EventsGateway sockets",
+    registers: [this.registry],
+  });
+
+  // Bounded to a handful of known causes (not the raw JWT error message) so
+  // a scan or a burst of malformed tokens can't mint an unbounded number of
+  // label values — this is exactly the kind of signal that would have shown
+  // the /api/socket.io cookie-path bug immediately (100% "invalid_token").
+  private readonly wsConnectionRejections = new Counter({
+    name: "ws_connection_rejections_total",
+    help: "EventsGateway connections rejected at handshake, by reason",
+    labelNames: ["reason"] as const,
     registers: [this.registry],
   });
 
@@ -53,5 +78,17 @@ export class MetricsService {
 
   render(): Promise<string> {
     return this.registry.metrics();
+  }
+
+  recordWsConnect(): void {
+    this.wsConnectionsActive.inc();
+  }
+
+  recordWsDisconnect(): void {
+    this.wsConnectionsActive.dec();
+  }
+
+  recordWsRejection(reason: WsRejectionReason): void {
+    this.wsConnectionRejections.inc({ reason });
   }
 }

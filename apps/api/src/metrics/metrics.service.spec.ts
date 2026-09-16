@@ -41,4 +41,31 @@ describe("MetricsService", () => {
 
     expect(await new MetricsService().render()).not.toContain("/api/health");
   });
+
+  it("tracks the WebSocket connection gauge up and down", async () => {
+    const metrics = new MetricsService();
+    metrics.recordWsConnect();
+    metrics.recordWsConnect();
+    metrics.recordWsDisconnect();
+
+    const output = await metrics.render();
+
+    expect(output).toContain("ws_connections_active 1");
+  });
+
+  it("counts connection rejections by reason", async () => {
+    const metrics = new MetricsService();
+    metrics.recordWsRejection("no_cookie");
+    metrics.recordWsRejection("no_cookie");
+    metrics.recordWsRejection("session_revoked");
+
+    const output = await metrics.render();
+
+    expect(output).toContain(
+      'ws_connection_rejections_total{reason="no_cookie"} 2',
+    );
+    expect(output).toContain(
+      'ws_connection_rejections_total{reason="session_revoked"} 1',
+    );
+  });
 });
