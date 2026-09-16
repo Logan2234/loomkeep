@@ -105,6 +105,10 @@ const MESSAGES = {
   [ErrorCode.CommentParentNotFound]: () => m.apierr_comment_parent_not_found(),
   [ErrorCode.CommentNotFound]: () => m.apierr_comment_not_found(),
   [ErrorCode.CommentForbidden]: () => m.apierr_comment_forbidden(),
+  [ErrorCode.CommentParticipationRequiresLibrary]: () =>
+    m.apierr_comment_participation_requires_library(),
+  [ErrorCode.CommentInteractionBlocked]: () =>
+    m.apierr_comment_interaction_blocked(),
   [ErrorCode.ListInvalidMembershipTarget]: () =>
     m.apierr_lists_invalid_membership_target(),
   [ErrorCode.ListNotFound]: () => m.apierr_lists_not_found(),
@@ -134,6 +138,9 @@ const MESSAGES = {
   [ErrorCode.ReportReasonRequired]: () => m.apierr_reports_reason_required(),
   [ErrorCode.ReportInvalidMotif]: () => m.apierr_reports_invalid_motif(),
   [ErrorCode.ReportNotFound]: () => m.apierr_reports_not_found(),
+  [ErrorCode.ReportAlreadyFiled]: () => m.apierr_reports_already_filed(),
+  [ErrorCode.ReportCannotReportOwnContent]: () =>
+    m.apierr_reports_cannot_report_own_content(),
   [ErrorCode.ReviewUnknownTargetType]: () =>
     m.apierr_reviews_unknown_target_type(),
   [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),

@@ -1429,6 +1429,7 @@ export class LibraryService {
           watches: [],
         })),
       })),
+      commentTargetId: null,
       entry: null,
     };
   }
@@ -1519,6 +1520,7 @@ export class LibraryService {
           })),
         })),
       })),
+      commentTargetId: media.id,
       entry,
     };
   }

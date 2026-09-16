@@ -559,6 +559,7 @@ export class BookLibraryService {
 
     return {
       ...details,
+      commentTargetId: ref?.bookItemId ?? null,
       entry: entryRow
         ? toEntryDto(
             entryRow,
