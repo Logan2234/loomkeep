@@ -613,6 +613,7 @@ export class ListService {
         ErrorCode.ListMembershipNotFound,
       );
     this.events.emitToList(id, "list-updated");
+    await this.events.evictFromList(id, memberUserId);
   }
 
   /**

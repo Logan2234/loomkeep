@@ -23,6 +23,10 @@ import {
 import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import {
+  MetricsService,
+  type WsRejectionReason,
+} from "../metrics/metrics.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 
@@ -32,6 +36,18 @@ const sessionRoom = (sessionId: string) => `session:${sessionId}`;
 const listRoom = (listId: string) => `list:${listId}`;
 const commentsRoom = (targetType: string, targetId: string) =>
   `comments:${targetType}:${targetId}`;
+
+// Buckets a handleConnection failure into the small, fixed set of reasons
+// MetricsService's Counter accepts — never the raw JWT error message, which
+// would mint a new label value per malformed token and defeat the point of a
+// bounded metric.
+function classifyRejection(error: unknown): WsRejectionReason {
+  if (error instanceof Error) {
+    if (error.message === "No access token cookie") return "no_cookie";
+    if (error.message === "Session revoked") return "session_revoked";
+  }
+  return "invalid_token";
+}
 
 /**
  * Single WebSocket entry point for the whole app — one connection per client,
@@ -47,12 +63,13 @@ const commentsRoom = (targetType: string, targetId: string) =>
  * endpoints enforce.
  *
  * Deliberately depends on nothing but the globally-registered PrismaService/
- * ConfigService/JwtService/FeatureFlagsService/SessionCacheService: every
- * domain module that needs to emit (notifications, reports, gamification,
- * comments, lists, import) imports this module one-directionally, so pulling
- * any of those modules in here in turn would create a cycle for no real
- * benefit — the join-time checks below only need read access to a couple of
- * tables, not the full service.
+ * ConfigService/JwtService/FeatureFlagsService/SessionCacheService, plus one
+ * real import (MetricsModule, a leaf module with no dependency of its own):
+ * every domain module that needs to emit (notifications, reports,
+ * gamification, comments, lists, import) imports this module
+ * one-directionally, so pulling any of those modules in here in turn would
+ * create a cycle for no real benefit — the join-time checks below only need
+ * read access to a couple of tables, not the full service.
  */
 // @WebSocketGateway's options are evaluated once at module-load time (before
 // Nest's DI is available to inject ConfigService), same constraint as
@@ -99,6 +116,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly prisma: PrismaService,
     private readonly flags: FeatureFlagsService,
     private readonly sessionCache: SessionCacheService,
+    private readonly metrics: MetricsService,
   ) {}
 
   /**
@@ -152,10 +170,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.id,
         setTimeout(() => client.disconnect(true), Math.max(msUntilExpiry, 0)),
       );
+      this.metrics.recordWsConnect();
     } catch (error) {
       this.logger.debug(
         `Rejecting socket ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
       );
+      this.metrics.recordWsRejection(classifyRejection(error));
       client.disconnect(true);
     }
   }
@@ -166,6 +186,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (timer) {
       clearTimeout(timer);
       this.expiryTimers.delete(client.id);
+      this.metrics.recordWsDisconnect();
     }
   }
 
@@ -241,6 +262,22 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToList(listId: string, event: RealtimeEvent): void {
     this.server.to(listRoom(listId)).emit(event);
+  }
+
+  /**
+   * Called wherever ListService.removeMember revokes edit access, so an
+   * already-open socket stops getting `list-updated` pushes for a list it
+   * can no longer read — otherwise it would keep receiving them (harmless,
+   * REST still 403/404s) until it happens to leave the room on its own.
+   * Only that one user's socket(s) leave the room; everyone else stays.
+   */
+  async evictFromList(listId: string, userId: string): Promise<void> {
+    const sockets = await this.server.in(listRoom(listId)).fetchSockets();
+    await Promise.all(
+      sockets
+        .filter((socket) => socket.data.userId === userId)
+        .map((socket) => socket.leave(listRoom(listId))),
+    );
   }
 
   emitToCommentsThread(

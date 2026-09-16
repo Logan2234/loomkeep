@@ -28,6 +28,7 @@ function stubEvents(): EventsGateway {
   return {
     emitToList: vi.fn(),
     emitToUser: vi.fn(),
+    evictFromList: vi.fn(),
   } as unknown as EventsGateway;
 }
 
@@ -518,6 +519,7 @@ describe("ListService member management — owner only", () => {
       svc.removeMember("friend", "l1", "friend"),
     ).resolves.toBeUndefined();
     expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
+    expect(events.evictFromList).toHaveBeenCalledWith("l1", "friend");
   });
 
   it("rejects an editor removing someone else", async () => {

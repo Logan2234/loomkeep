@@ -6,6 +6,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 import { setAuthCookies } from "../auth/auth-cookies";
 import { SessionCacheService } from "../auth/session-cache.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import type { MetricsService } from "../metrics/metrics.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { EventsGateway } from "./events.gateway";
 
@@ -44,6 +45,14 @@ function makeFlags(): FeatureFlagsService {
   } as unknown as FeatureFlagsService;
 }
 
+function makeMetrics(): MetricsService {
+  return {
+    recordWsConnect: vi.fn(),
+    recordWsDisconnect: vi.fn(),
+    recordWsRejection: vi.fn(),
+  } as unknown as MetricsService;
+}
+
 describe("EventsGateway.handleConnection", () => {
   beforeEach(() => {
     vi.stubEnv("JWT_ACCESS_SECRET", "access-secret");
@@ -73,38 +82,43 @@ describe("EventsGateway.handleConnection", () => {
     } as unknown as PrismaService;
     const flags = makeFlags();
     const sessionCache = new SessionCacheService();
+    const metrics = makeMetrics();
     const gateway = new EventsGateway(
       jwtService,
       makeConfig(),
       prisma,
       flags,
       sessionCache,
+      metrics,
     );
-    return { gateway, jwtService, prisma, sessionCache };
+    return { gateway, jwtService, prisma, sessionCache, metrics };
   }
 
   it("joins the user's own room on a valid cookie", async () => {
-    const { gateway } = make(null);
+    const { gateway, metrics } = make(null);
     const client = fakeSocket(cookieHeader());
 
     await gateway.handleConnection(client);
 
     expect(client.join).toHaveBeenCalledWith("user:user-1");
     expect(client.disconnect).not.toHaveBeenCalled();
+    expect(metrics.recordWsConnect).toHaveBeenCalledOnce();
   });
 
   it("disconnects a socket with no access-token cookie", async () => {
-    const { gateway } = make(null);
+    const { gateway, metrics } = make(null);
     const client = fakeSocket(undefined);
 
     await gateway.handleConnection(client);
 
     expect(client.disconnect).toHaveBeenCalledWith(true);
     expect(client.join).not.toHaveBeenCalled();
+    expect(metrics.recordWsRejection).toHaveBeenCalledWith("no_cookie");
+    expect(metrics.recordWsConnect).not.toHaveBeenCalled();
   });
 
   it("disconnects a socket whose token fails verification", async () => {
-    const { gateway, jwtService } = make(null);
+    const { gateway, jwtService, metrics } = make(null);
     (jwtService.verifyAsync as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error("invalid"),
     );
@@ -113,6 +127,7 @@ describe("EventsGateway.handleConnection", () => {
     await gateway.handleConnection(client);
 
     expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(metrics.recordWsRejection).toHaveBeenCalledWith("invalid_token");
   });
 
   it("also joins the admin reports room for an ADMIN account", async () => {
@@ -145,6 +160,26 @@ describe("EventsGateway.handleConnection", () => {
     expect(client.disconnect).toHaveBeenCalledWith(true);
   });
 
+  it("decrements the active-connections gauge once the socket disconnects", async () => {
+    const { gateway, metrics } = make(null);
+    const client = fakeSocket(cookieHeader());
+
+    await gateway.handleConnection(client);
+    gateway.handleDisconnect(client);
+
+    expect(metrics.recordWsDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it("never decrements the gauge for a socket that never authenticated", async () => {
+    const { gateway, metrics } = make(null);
+    const client = fakeSocket(undefined);
+
+    await gateway.handleConnection(client);
+    gateway.handleDisconnect(client);
+
+    expect(metrics.recordWsDisconnect).not.toHaveBeenCalled();
+  });
+
   it("joins the session room for a token carrying a live sid", async () => {
     const jwtService = {
       verifyAsync: vi.fn().mockResolvedValue({
@@ -164,6 +199,7 @@ describe("EventsGateway.handleConnection", () => {
       prisma,
       makeFlags(),
       new SessionCacheService(),
+      makeMetrics(),
     );
     const client = fakeSocket(cookieHeader());
 
@@ -186,12 +222,14 @@ describe("EventsGateway.handleConnection", () => {
       user: { findUnique: vi.fn().mockResolvedValue(null) },
       refreshToken: { findUnique: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
+    const metrics = makeMetrics();
     const gateway = new EventsGateway(
       jwtService,
       makeConfig(),
       prisma,
       makeFlags(),
       new SessionCacheService(),
+      metrics,
     );
     const client = fakeSocket(cookieHeader());
 
@@ -199,6 +237,7 @@ describe("EventsGateway.handleConnection", () => {
 
     expect(client.disconnect).toHaveBeenCalledWith(true);
     expect(client.join).not.toHaveBeenCalled();
+    expect(metrics.recordWsRejection).toHaveBeenCalledWith("session_revoked");
   });
 });
 
@@ -210,6 +249,7 @@ describe("EventsGateway.disconnectSession", () => {
       {} as PrismaService,
       makeFlags(),
       new SessionCacheService(),
+      makeMetrics(),
     );
     const disconnectSockets = vi.fn();
     const fakeServer = {
@@ -240,6 +280,7 @@ describe("EventsGateway.handleJoinComments", () => {
       prisma,
       flags,
       new SessionCacheService(),
+      makeMetrics(),
     );
   }
 
@@ -301,6 +342,7 @@ describe("EventsGateway.handleJoinList", () => {
       prisma,
       flags,
       new SessionCacheService(),
+      makeMetrics(),
     );
   }
 
