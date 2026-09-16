@@ -337,9 +337,19 @@
           <ReviewsSection
             targetType="MUSIC"
             targetId={entry.album.id}
-            workTitle={detail.title} />
+            workTitle={detail.title}>
+            {#snippet actions()}
+              {#if appConfig.socialEnabled && detail.commentTargetId}
+                <CommentsPanel
+                  targetType="MUSIC"
+                  targetId={detail.commentTargetId}
+                  title={detail.title}
+                  canParticipate={!!entry} />
+              {/if}
+            {/snippet}
+          </ReviewsSection>
         {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId}
+        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
           <CommentsPanel
             targetType="MUSIC"
             targetId={detail.commentTargetId}

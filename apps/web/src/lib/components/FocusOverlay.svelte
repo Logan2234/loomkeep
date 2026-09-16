@@ -1,7 +1,6 @@
 <script lang="ts">
   // Generic mobile long-press result: blurs the background and centers a
-  // snippet of content on screen with a contextual menu underneath — the
-  // touch equivalent of a desktop hover-reveal action row. Content-agnostic:
+  // snippet of content on screen with a contextual menu underneath. Content-agnostic:
   // callers supply what to show (a comment card today; a review/list/library
   // item tomorrow) and what actions to offer.
   //

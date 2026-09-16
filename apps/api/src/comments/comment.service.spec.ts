@@ -76,6 +76,7 @@ function commentRow(over: Partial<Record<string, unknown>> = {}) {
     createdAt: new Date(),
     updatedAt: new Date(),
     author: AUTHOR,
+    mentions: [],
     // list() reads both through the nested include on its single query.
     replies: [],
     _count: { replies: 0 },
@@ -535,46 +536,210 @@ describe("CommentService.create", () => {
     expect(prisma.comment.create).not.toHaveBeenCalled();
   });
 
-  it("notifies a mentioned user but not the author mentioning themselves", async () => {
-    const { svc, notifications } = make({
+  it("notifies only a participant deliberately selected as a mention", async () => {
+    const bob = {
+      ...AUTHOR,
+      id: "bobId",
+      username: "bob",
+      displayName: "Bob",
+    };
+    const { svc, notifications, prisma } = make({
       comment: {
-        create: vi
+        findMany: vi
           .fn()
-          .mockResolvedValue(commentRow({ text: "hey @author and @bob" })),
-      },
-      user: {
-        findMany: vi.fn().mockResolvedValue([{ id: "bobId" }]),
+          .mockResolvedValue([{ authorId: bob.id, author: bob }]),
+        create: vi.fn().mockResolvedValue(
+          commentRow({
+            text: "hey @author and @bob",
+            mentions: [{ userId: bob.id, user: bob, start: 16 }],
+          }),
+        ),
       },
     });
     await svc.create(AUTHOR.id, {
       targetType: "MEDIA" as never,
       targetId: "m1",
       text: "hey @author and @bob",
+      mentions: [
+        { userId: AUTHOR.id, start: 4 },
+        { userId: bob.id, start: 16 },
+      ],
     });
     expect(notifications.create).toHaveBeenCalledTimes(1);
     expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "bobId", type: "COMMENT_MENTION" }),
     );
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mentions: { create: [{ userId: bob.id, start: 16 }] },
+        }),
+      }),
+    );
   });
 
-  it("excludes Figurants from mention resolution (unaddressable)", async () => {
-    const findMany = vi.fn().mockResolvedValue([]);
-    const { svc } = make({
+  it("keeps raw @text as text when no recipient was selected", async () => {
+    const { svc, notifications, prisma } = make({
       comment: {
         create: vi.fn().mockResolvedValue(commentRow({ text: "hey @ghosty" })),
       },
-      user: { findMany },
     });
     await svc.create(AUTHOR.id, {
       targetType: "MEDIA" as never,
       targetId: "m1",
       text: "hey @ghosty",
     });
-    expect(findMany).toHaveBeenCalledWith(
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mentions: { create: [] },
+        }),
+      }),
+    );
+  });
+
+  it("keeps a stale mention picker selection out of the comment", async () => {
+    const { svc, notifications, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue(commentRow({ text: "hey @bob" })),
+      },
+    });
+    await svc.create(AUTHOR.id, {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "hey @bob",
+      mentions: [{ userId: "former-participant", start: 4 }],
+    });
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ mentions: { create: [] } }),
+      }),
+    );
+  });
+
+  it("drops a mention when either participant blocked the other", async () => {
+    const bob = { ...AUTHOR, id: "bobId", username: "bob" };
+    const { svc, notifications, prisma } = make({
+      comment: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ authorId: bob.id, author: bob }]),
+        create: vi.fn().mockResolvedValue(commentRow({ text: "hey @bob" })),
+      },
+      relations: { [bob.id]: relation({ blocking: true }) },
+    });
+    await svc.create(AUTHOR.id, {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "hey @bob",
+      mentions: [{ userId: bob.id, start: 4 }],
+    });
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ mentions: { create: [] } }),
+      }),
+    );
+  });
+
+  it("keeps two deliberate occurrences of the same participant distinct", async () => {
+    const bob = { ...AUTHOR, id: "bobId", username: "bob" };
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ authorId: bob.id, author: bob }]),
+        create: vi.fn().mockResolvedValue(
+          commentRow({
+            text: "@bob says @bob",
+            mentions: [
+              { userId: bob.id, user: bob, start: 0 },
+              { userId: bob.id, user: bob, start: 10 },
+            ],
+          }),
+        ),
+      },
+    });
+    await svc.create(AUTHOR.id, {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "@bob says @bob",
+      mentions: [
+        { userId: bob.id, start: 0 },
+        { userId: bob.id, start: 10 },
+      ],
+    });
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mentions: {
+            create: [
+              { userId: bob.id, start: 0 },
+              { userId: bob.id, start: 10 },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+});
+
+describe("CommentService.participants", () => {
+  it("offers recent channel authors, filters the username search and hides blocks", async () => {
+    const lo = {
+      ...AUTHOR,
+      id: "lo-id",
+      username: "logan",
+      displayName: "Logan",
+      avatarUpdatedAt: null,
+    };
+    const blocked = {
+      ...AUTHOR,
+      id: "blocked-id",
+      username: "louis",
+      displayName: "Louis",
+      avatarUpdatedAt: null,
+    };
+    const self = {
+      ...AUTHOR,
+      id: "viewer",
+      username: "loviewer",
+      avatarUpdatedAt: null,
+    };
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          { authorId: self.id, author: self },
+          { authorId: lo.id, author: lo },
+          { authorId: blocked.id, author: blocked },
+        ]),
+      },
+      relations: {
+        [blocked.id]: relation({ blocking: true }),
+      },
+    });
+
+    await expect(
+      svc.participants("viewer", "MEDIA" as never, "m1", "lo"),
+    ).resolves.toEqual([
+      expect.objectContaining({ username: "logan", avatarUrl: null }),
+    ]);
+
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          profileAccess: { not: "GHOST" },
+          targetType: "MEDIA",
+          targetId: "m1",
+          author: expect.objectContaining({
+            is: expect.objectContaining({
+              username: { contains: "lo", mode: "insensitive" },
+            }),
+          }),
         }),
+        distinct: ["authorId"],
       }),
     );
   });

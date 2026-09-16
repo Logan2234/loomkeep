@@ -460,9 +460,19 @@
           <ReviewsSection
             targetType="BOOK"
             targetId={entry.book.id}
-            workTitle={detail.title} />
+            workTitle={detail.title}>
+            {#snippet actions()}
+              {#if appConfig.socialEnabled && detail.commentTargetId}
+                <CommentsPanel
+                  targetType="BOOK"
+                  targetId={detail.commentTargetId}
+                  title={detail.title}
+                  canParticipate={!!entry} />
+              {/if}
+            {/snippet}
+          </ReviewsSection>
         {/if}
-        {#if appConfig.socialEnabled && detail.commentTargetId}
+        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
           <CommentsPanel
             targetType="BOOK"
             targetId={detail.commentTargetId}

@@ -275,7 +275,7 @@
           {/if}
           {#if entry && season.id}
             <button
-              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
               aria-label={m.media_season_review()}
               onclick={(e) => {
                 e.stopPropagation();
@@ -290,20 +290,20 @@
             </button>
           {/if}
           {#if appConfig.socialEnabled && season.id}
-            <span onclick={(e) => e.stopPropagation()}>
-              <CommentsPanel
-                targetType="SEASON"
-                targetId={season.id}
-                title={season.title ?? `${m.common_season()} ${season.number}`}
-                canParticipate={!!entry} />
-            </span>
+            <CommentsPanel
+              targetType="SEASON"
+              targetId={season.id}
+              title={season.title ?? `${m.common_season()} ${season.number}`}
+              canParticipate={!!entry}
+              revealSpoilersByDefault={seasonWatched(season)}
+              compact />
           {/if}
           {#if entry && season.id}
             {@const seasonId = season.id}
             <Dropdown placement="bottom-end" class="min-w-64">
               {#snippet trigger({ open, toggle })}
                 <button
-                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
                   aria-label={m.media_season_more_actions()}
                   aria-haspopup="menu"
                   aria-expanded={open}
@@ -421,7 +421,7 @@
                   {/if}
                   {#if entry && episode.id}
                     <button
-                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
                       aria-label={m.media_episode_review()}
                       onclick={() => {
                         reviewTarget = {
@@ -434,11 +434,15 @@
                     </button>
                   {/if}
                   {#if appConfig.socialEnabled && episode.id}
-                    <CommentsPanel
-                      targetType="EPISODE"
-                      targetId={episode.id}
-                      title={`S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`}
-                      canParticipate={!!entry} />
+                    <span class={watched ? "" : "mr-1"}>
+                      <CommentsPanel
+                        targetType="EPISODE"
+                        targetId={episode.id}
+                        title={`S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}${episode.title ? ` · ${episode.title}` : ""}`}
+                        canParticipate={!!entry}
+                        revealSpoilersByDefault={watched}
+                        compact />
+                    </span>
                   {/if}
                   {#if entry && episode.id}
                     {@const upcoming =
