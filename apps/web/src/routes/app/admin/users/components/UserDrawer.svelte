@@ -26,6 +26,7 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import SidePanel from "$lib/components/SidePanel.svelte";
   import { downloadBlob } from "$lib/download";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
@@ -202,21 +203,12 @@
   };
 </script>
 
-<svelte:window
-  onkeydown={(e) => {
-    if (e.key === "Escape" && !showDeleteModal) onClose();
-  }} />
-
-<div class="fixed inset-0 z-50 flex justify-end">
-  <button
-    class="absolute inset-0 cursor-default bg-black/60"
-    aria-label={m.common_close()}
-    onclick={onClose}></button>
-  <div
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="drawer-title"
-    class="card relative z-10 flex h-full w-full max-w-sm flex-col overflow-y-auto rounded-none border-y-0 border-r-0 p-5">
+<SidePanel
+  onclose={onClose}
+  labelledby="drawer-title"
+  zIndex={2147483646}
+  backdropClass="bg-black/60">
+  <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
     <div class="mb-4 flex items-start justify-between gap-2">
       <div class="flex min-w-0 items-center gap-3">
         <button
@@ -494,7 +486,7 @@
       </div>
     </section>
   </div>
-</div>
+</SidePanel>
 
 {#if activeModal}
   <UserActivityModal

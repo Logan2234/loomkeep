@@ -21,6 +21,7 @@
   import LevelBadge from "./LevelBadge.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import type { Snippet } from "svelte";
 
   // Always-visible review section for a work's detail page: the viewer's own
   // review (add/edit via the shared modal) + everyone else's, visibility-
@@ -33,11 +34,13 @@
     targetId,
     workTitle,
     compact = false,
+    actions,
   }: {
     targetType: ReviewTargetType;
     targetId: string;
     workTitle: string;
     compact?: boolean;
+    actions?: Snippet;
   } = $props();
 
   const queryClient = useQueryClient();
@@ -107,21 +110,24 @@
 </script>
 
 <section class={compact ? "" : "mt-6"}>
-  <div class="mb-3 flex items-center justify-between gap-2">
-    <h2 class="font-display mb-3 text-xl font-bold">
+  <div class="mb-3 flex items-center gap-2">
+    <h2 class="font-display min-w-0 flex-1 text-xl font-bold">
       {#if appConfig.socialEnabled}
         {m.reviews_section_community_title({ count: othersReviews.length })}
       {:else}
         {m.reviews_section_my_review_title()}
       {/if}
     </h2>
-    {#if myReviewLoaded}
-      <button
-        class="btn btn-ghost btn-sm shrink-0"
-        onclick={() => (editing = true)}>
-        {myReview ? m.common_edit() : m.common_add()}
-      </button>
-    {/if}
+    <div class="flex shrink-0 items-center gap-1">
+      {#if actions}
+        {@render actions()}
+      {/if}
+      {#if myReviewLoaded}
+        <button class="btn btn-ghost btn-sm" onclick={() => (editing = true)}>
+          {myReview ? m.common_edit() : m.common_add()}
+        </button>
+      {/if}
+    </div>
   </div>
 
   {#if myReview}

@@ -3,7 +3,11 @@ import {
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
 } from "@loomkeep/shared";
+import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsIn,
   IsOptional,
@@ -11,7 +15,9 @@ import {
   Matches,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from "class-validator";
+import { CommentMentionBody } from "./comment-mention.dto";
 
 export class CreateCommentBody {
   @IsIn(Object.values(CommentTargetType))
@@ -33,4 +39,12 @@ export class CreateCommentBody {
   @IsOptional()
   @IsBoolean()
   spoilerTag?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ArrayUnique((mention: CommentMentionBody) => mention.start)
+  @ValidateNested({ each: true })
+  @Type(() => CommentMentionBody)
+  mentions?: CommentMentionBody[];
 }

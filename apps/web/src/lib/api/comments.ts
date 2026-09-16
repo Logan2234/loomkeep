@@ -1,11 +1,15 @@
 import type {
+  CommentDto,
   CommentEmote,
   CommentTargetType,
   CreateCommentDto,
+  PagedResult,
   ReportCategory,
   ReportMotif,
   UpdateCommentDto,
+  UserSummaryDto,
 } from "@loomkeep/shared";
+import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getCommentCount = (
@@ -21,26 +25,36 @@ export const getComments = (
   targetId: string,
   page = 1,
 ) =>
-  typedRequest("/comments/{type}/{id}", {
-    params: { type: targetType, id: targetId },
-    query: { page: String(page) },
-  });
+  request<PagedResult<CommentDto>>(
+    `/comments/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}?page=${page}`,
+  );
 
 /**
  * One comment's replies, newest first — `getComments` only embeds a short
  * preview of each thread's tail.
  */
 export const getCommentReplies = (id: string, page = 1) =>
-  typedRequest("/comments/{id}/replies", {
-    params: { id },
-    query: { page: String(page) },
-  });
+  request<PagedResult<CommentDto>>(
+    `/comments/${encodeURIComponent(id)}/replies?page=${page}`,
+  );
+
+export const getCommentParticipants = (
+  targetType: CommentTargetType,
+  targetId: string,
+  query = "",
+) =>
+  request<UserSummaryDto[]>(
+    `/comments/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}/participants?q=${encodeURIComponent(query)}`,
+  );
 
 export const createComment = (body: CreateCommentDto) =>
-  typedRequest("/comments", { method: "POST", body });
+  request<CommentDto>("/comments", { method: "POST", body });
 
 export const updateComment = (id: string, body: UpdateCommentDto) =>
-  typedRequest("/comments/{id}", { method: "PUT", params: { id }, body });
+  request<CommentDto>(`/comments/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body,
+  });
 
 export const deleteComment = (id: string): Promise<void> =>
   typedRequest("/comments/{id}", { method: "DELETE", params: { id } });

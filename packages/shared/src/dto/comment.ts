@@ -7,6 +7,20 @@ export interface CommentReactionSummaryDto {
   count: number;
 }
 
+/** A person deliberately selected from a discussion's mention picker. */
+export interface CommentMentionDto {
+  id: string;
+  username: string;
+  /** Character offset of the explicit @reference in the comment text. */
+  start: number;
+}
+
+/** An explicit mention submitted by the composer. */
+export interface CommentMentionInputDto {
+  userId: string;
+  start: number;
+}
+
 /** A comment or one of its (single-level) replies. */
 export interface CommentDto {
   id: string;
@@ -32,6 +46,8 @@ export interface CommentDto {
   updatedAt: string;
   /** Null once the author's account has been deleted — content stays, identity doesn't. */
   author: UserSummaryDto | null;
+  /** Explicit picker selections only; raw @text remains ordinary text. */
+  mentions: CommentMentionDto[];
   reactions: CommentReactionSummaryDto[];
   /** The viewer's own active reaction, or null. */
   myReaction: CommentEmote | null;
@@ -59,11 +75,13 @@ export interface CreateCommentDto {
   parentId?: string;
   text: string;
   spoilerTag?: boolean;
+  mentions?: CommentMentionInputDto[];
 }
 
 export interface UpdateCommentDto {
   text: string;
   spoilerTag?: boolean;
+  mentions?: CommentMentionInputDto[];
 }
 
 /** One comment authored by a user, for the admin user drawer's "Commentaires" shortcut. */

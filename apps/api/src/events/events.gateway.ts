@@ -1,4 +1,4 @@
-import type { RealtimeEvent } from "@loomkeep/shared";
+import { RealtimeEvent } from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -36,6 +36,12 @@ const sessionRoom = (sessionId: string) => `session:${sessionId}`;
 const listRoom = (listId: string) => `list:${listId}`;
 const commentsRoom = (targetType: string, targetId: string) =>
   `comments:${targetType}:${targetId}`;
+
+type CommentRoomMembership = {
+  targetType: string;
+  targetId: string;
+  userId: string;
+};
 
 // Buckets a handleConnection failure into the small, fixed set of reasons
 // MetricsService's Counter accepts — never the raw JWT error message, which
@@ -107,6 +113,15 @@ const webOrigins = (process.env.WEB_ORIGIN ?? "")
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
   private readonly expiryTimers = new Map<string, NodeJS.Timeout>();
+  private readonly commentRoomMembers = new Map<
+    string,
+    Map<string, Set<string>>
+  >();
+
+  private readonly commentRoomsBySocket = new Map<
+    string,
+    Map<string, CommentRoomMembership>
+  >();
 
   @WebSocketServer()
   private readonly server!: Server;
@@ -189,6 +204,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.expiryTimers.delete(client.id);
       this.metrics.recordWsDisconnect();
     }
+
+    const memberships = this.commentRoomsBySocket.get(client.id);
+    if (!memberships) return;
+
+    for (const membership of memberships.values()) {
+      this.removeCommentRoomMember(
+        client.id,
+        membership.targetType,
+        membership.targetId,
+      );
+      this.emitCommentPresence(membership.targetType, membership.targetId);
+    }
   }
 
   /** Comments are entirely social-gated (see CommentController) — refused silently, same "don't advertise the surface" rule as the REST side. */
@@ -200,6 +227,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     if (!isSocialEnabled(this.config, this.flags)) return;
     await client.join(commentsRoom(targetType, targetId));
+
+    const userId = client.data.userId as string | undefined;
+    if (!userId) return;
+
+    this.addCommentRoomMember(client.id, userId, targetType, targetId);
+    this.emitCommentPresence(targetType, targetId);
   }
 
   @SubscribeMessage("leave-comments")
@@ -209,6 +242,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     { targetType, targetId }: { targetType: string; targetId: string },
   ): Promise<void> {
     await client.leave(commentsRoom(targetType, targetId));
+
+    if (this.removeCommentRoomMember(client.id, targetType, targetId)) {
+      this.emitCommentPresence(targetType, targetId);
+    }
   }
 
   /** Owner or editor only — the same audience ListService.canEdit grants write access to. */
@@ -248,12 +285,61 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return !!member;
   }
 
+  private addCommentRoomMember(
+    socketId: string,
+    userId: string,
+    targetType: string,
+    targetId: string,
+  ): void {
+    const room = commentsRoom(targetType, targetId);
+    const members = this.commentRoomMembers.get(room) ?? new Map();
+    const sockets = members.get(userId) ?? new Set();
+    sockets.add(socketId);
+    members.set(userId, sockets);
+    this.commentRoomMembers.set(room, members);
+
+    const rooms = this.commentRoomsBySocket.get(socketId) ?? new Map();
+    rooms.set(room, { targetType, targetId, userId });
+    this.commentRoomsBySocket.set(socketId, rooms);
+  }
+
+  private removeCommentRoomMember(
+    socketId: string,
+    targetType: string,
+    targetId: string,
+  ): boolean {
+    const room = commentsRoom(targetType, targetId);
+    const membership = this.commentRoomsBySocket.get(socketId)?.get(room);
+    if (!membership) return false;
+
+    const members = this.commentRoomMembers.get(room);
+    const sockets = members?.get(membership.userId);
+    sockets?.delete(socketId);
+    if (sockets?.size === 0) members?.delete(membership.userId);
+    if (members?.size === 0) this.commentRoomMembers.delete(room);
+
+    const rooms = this.commentRoomsBySocket.get(socketId);
+    rooms?.delete(room);
+    if (rooms?.size === 0) this.commentRoomsBySocket.delete(socketId);
+    return true;
+  }
+
+  private emitCommentPresence(targetType: string, targetId: string): void {
+    const room = commentsRoom(targetType, targetId);
+    const count = this.commentRoomMembers.get(room)?.size ?? 0;
+    this.server.to(room).emit(RealtimeEvent.COMMENT_PRESENCE, {
+      targetType,
+      targetId,
+      count,
+    });
+  }
+
   emitToUser(userId: string, event: RealtimeEvent, payload?: unknown): void {
     this.server.to(userRoom(userId)).emit(event, payload);
   }
 
   emitReportsCount(): void {
-    this.server.to(ADMIN_REPORTS_ROOM).emit("reports-count");
+    this.server.to(ADMIN_REPORTS_ROOM).emit(RealtimeEvent.REPORTS_COUNT);
   }
 
   /** Forces the socket(s) for one specific session (device) to disconnect — called wherever AuthService revokes a session, so a WS connection notices a revocation immediately instead of waiting out its own expiry timer. */

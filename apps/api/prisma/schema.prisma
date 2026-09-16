@@ -589,6 +589,7 @@ model User {
   activityEvents             ActivityEvent[]
   comments                   Comment[]
   commentReactions           CommentReaction[]
+  commentMentions            CommentMention[]
   reportsFiled               Report[]             @relation("ReportsFiled")
   reportsResolved            Report[]             @relation("ReportsResolved")
   lists                      List[]
@@ -743,6 +744,7 @@ model Comment {
   parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[]         @relation("CommentReplies")
   reactions CommentReaction[]
+  mentions  CommentMention[]
 
   @@index([targetType, targetId, createdAt])
   @@index([parentId])
@@ -761,6 +763,22 @@ model CommentReaction {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
+}
+
+// An explicit recipient selected from the discussion's mention picker. A raw
+// `@handle` in comment text intentionally creates no row and remains plain
+// text: only a deliberate picker choice may link or notify a person.
+model CommentMention {
+  commentId String
+  userId    String
+  start     Int
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, start])
+  @@index([userId])
 }
 
 // Social (P4): a user-submitted report against a polymorphic target — a

@@ -487,7 +487,19 @@
     onToggleWatched={toggleWatched}
     onDrop={dropEntry}
     onResume={resumeEntry}
-    onRemove={() => (confirmRemove = true)} />
+    onRemove={() => (confirmRemove = true)}>
+    {#snippet socialActions()}
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <CommentsPanel
+          targetType="MEDIA"
+          targetId={detail.commentTargetId}
+          title={detail.title}
+          canParticipate={!!entry}
+          revealSpoilersByDefault={entry?.status === "COMPLETED"}
+          compact />
+      {/if}
+    {/snippet}
+  </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
     {#if entry?.progress}
@@ -715,14 +727,6 @@
         targetType="MEDIA"
         targetId={entry.mediaItem.id}
         workTitle={detail.title} />
-    {/if}
-
-    {#if appConfig.socialEnabled && detail.commentTargetId}
-      <CommentsPanel
-        targetType="MEDIA"
-        targetId={detail.commentTargetId}
-        title={detail.title}
-        canParticipate={!!entry} />
     {/if}
 
     {#if extras}

@@ -2,6 +2,8 @@ import {
   type AdminUserCommentDto,
   type CommentDto,
   type CommentEmote,
+  type CommentMentionDto,
+  type CommentMentionInputDto,
   type CommentReactionSummaryDto,
   type CommentTargetType,
   type PagedResult,
@@ -31,7 +33,6 @@ import { VisibilityService } from "../social/visibility.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
-import { extractMentions } from "./mention.util";
 
 // Alias kept only so CommentController's existing import still resolves —
 // the page size itself is now the shared one from pagination.util.
@@ -84,11 +85,22 @@ type CommentRow = {
   // Null once the author's account has been deleted (authorId SetNull) —
   // the content stays, the client renders "Utilisateur supprimé".
   author: CommentAuthor | null;
+  mentions?: {
+    userId: string;
+    start: number;
+    user: { id: string; username: string } | null;
+  }[];
   // Only on rows read by `list`: the inline reply preview and the total the
   // preview is a subset of.
   replies?: CommentRow[];
   _count?: { replies: number };
 };
+
+const MENTION_SELECT = {
+  userId: true,
+  start: true,
+  user: { select: { id: true, username: true } },
+} as const;
 
 @Injectable()
 export class CommentService {
@@ -130,6 +142,7 @@ export class CommentService {
       take: limit + 1,
       include: {
         author: { select: AUTHOR_SELECT },
+        mentions: { select: MENTION_SELECT },
         // Negative take against an ascending order = the *last* N rows, still
         // returned oldest-first, so the preview reads as the tail of the
         // conversation without a second sort here.
@@ -137,7 +150,10 @@ export class CommentService {
           where: { deletedAt: null },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           take: -REPLY_PREVIEW_LIMIT,
-          include: { author: { select: AUTHOR_SELECT } },
+          include: {
+            author: { select: AUTHOR_SELECT },
+            mentions: { select: MENTION_SELECT },
+          },
         },
         _count: { select: { replies: { where: { deletedAt: null } } } },
       },
@@ -193,7 +209,10 @@ export class CommentService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * limit,
       take: limit + 1,
-      include: { author: { select: AUTHOR_SELECT } },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        mentions: { select: MENTION_SELECT },
+      },
     })) as CommentRow[];
 
     const hasMore = rows.length > limit;
@@ -250,6 +269,61 @@ export class CommentService {
     return this.prisma.comment.count({
       where: { targetType, targetId, deletedAt: null },
     });
+  }
+
+  /**
+   * People who most recently spoke in a thread, for the mention picker. This
+   * is intentionally scoped to the thread: mentions stay conversational and
+   * never turn into a global people search.
+   */
+  async participants(
+    viewerId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+    query?: string,
+  ) {
+    const username = query?.trim().toLowerCase();
+    const rows = await this.prisma.comment.findMany({
+      where: {
+        targetType,
+        targetId,
+        deletedAt: null,
+        authorId: { not: null },
+        author: {
+          is: {
+            profileAccess: { not: ProfileAccess.GHOST },
+            ...(username
+              ? { username: { contains: username, mode: "insensitive" } }
+              : {}),
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      distinct: ["authorId"],
+      // Collect a few extra rows before block filtering, so a blocked recent
+      // author does not leave an otherwise busy conversation empty.
+      take: 20,
+      select: {
+        authorId: true,
+        author: { select: AUTHOR_SELECT },
+      },
+    });
+
+    const participants = [];
+
+    for (const row of rows) {
+      if (!row.author) continue;
+      if (row.authorId === viewerId) continue;
+      const relation = await this.visibility.getRelation(viewerId, {
+        id: row.author.id,
+        profileAccess: row.author.profileAccess,
+      });
+      if (relation.blocking || relation.blockedByTarget) continue;
+      participants.push(toUserSummaryDto(row.author));
+      if (participants.length === 5) break;
+    }
+
+    return participants;
   }
 
   /** Comments authored by a user, for the admin user drawer's "Commentaires" shortcut. */
@@ -338,6 +412,13 @@ export class CommentService {
     }
 
     const spoilerTag = targetType === "MUSIC" ? false : !!body.spoilerTag;
+    const mentions = await this.resolveMentions(
+      authorId,
+      targetType,
+      targetId,
+      body.text,
+      body.mentions,
+    );
 
     const row = await this.prisma.comment.create({
       data: {
@@ -347,11 +428,22 @@ export class CommentService {
         authorId,
         text: body.text,
         spoilerTag,
+        mentions: {
+          create: mentions,
+        },
       },
-      include: { author: { select: AUTHOR_SELECT } },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        mentions: { select: MENTION_SELECT },
+      },
     });
 
-    await this.notifyOnCreate(authorId, row, parent);
+    await this.notifyOnCreate(
+      authorId,
+      row,
+      parent,
+      mentions.map((mention) => mention.userId),
+    );
     this.events.emitToCommentsThread(targetType, targetId, "comment-changed");
 
     // Checked here rather than left to award() (which credits blindly) —
@@ -404,11 +496,29 @@ export class CommentService {
 
     const spoilerTag =
       existing.targetType === "MUSIC" ? false : !!body.spoilerTag;
+    const mentions = await this.resolveMentions(
+      authorId,
+      existing.targetType as CommentTargetType,
+      existing.targetId,
+      body.text,
+      body.mentions,
+    );
 
     const row = await this.prisma.comment.update({
       where: { id },
-      data: { text: body.text, spoilerTag, edited: true },
-      include: { author: { select: AUTHOR_SELECT } },
+      data: {
+        text: body.text,
+        spoilerTag,
+        edited: true,
+        mentions: {
+          deleteMany: {},
+          create: mentions,
+        },
+      },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        mentions: { select: MENTION_SELECT },
+      },
     });
     this.events.emitToCommentsThread(
       existing.targetType,
@@ -777,6 +887,17 @@ export class CommentService {
             hideProgressionByUser,
           )
         : null,
+      mentions: (row.mentions ?? []).flatMap((mention): CommentMentionDto[] =>
+        mention.user
+          ? [
+              {
+                id: mention.user.id,
+                username: mention.user.username,
+                start: mention.start,
+              },
+            ]
+          : [],
+      ),
       reactions: reactionMap.get(row.id) ?? [],
       myReaction: myReactionMap.get(row.id) ?? null,
       // Both filled in by `list`, which is the only reader that has them.
@@ -802,6 +923,7 @@ export class CommentService {
     authorId: string,
     row: CommentRow,
     parent: { id: string; authorId: string | null } | null,
+    mentionedUserIds: string[],
   ): Promise<void> {
     const notifiedIds = new Set<string>([authorId]);
 
@@ -812,19 +934,7 @@ export class CommentService {
       }
     }
 
-    const mentions = extractMentions(row.text ?? "");
-    if (mentions.length === 0) return;
-
-    // Figurants are unaddressable: excluded so they're never mentioned/notified.
-    const mentioned = await this.prisma.user.findMany({
-      where: {
-        username: { in: mentions },
-        profileAccess: { not: ProfileAccess.GHOST },
-      },
-      select: { id: true },
-    });
-
-    for (const { id: userId } of mentioned) {
+    for (const userId of mentionedUserIds) {
       if (notifiedIds.has(userId)) continue;
 
       if (await this.mayNotify(authorId, userId)) {
@@ -832,6 +942,84 @@ export class CommentService {
         notifiedIds.add(userId);
       }
     }
+  }
+
+  /**
+   * Mentions are deliberate picker choices, not a parser for arbitrary text.
+   * A recipient must still be a visible discussion participant when the
+   * comment is submitted, which also neutralizes stale picker results.
+   */
+  private async resolveMentions(
+    authorId: string,
+    targetType: CommentTargetType,
+    targetId: string,
+    text: string,
+    requestedMentions?: CommentMentionInputDto[],
+  ): Promise<CommentMentionInputDto[]> {
+    const requested = (requestedMentions ?? [])
+      .slice(0, 5)
+      .filter(
+        (mention, index, all) =>
+          mention.userId !== authorId &&
+          all.findIndex((candidate) => candidate.start === mention.start) ===
+            index,
+      );
+    if (requested.length === 0) return [];
+    const ids = [...new Set(requested.map((mention) => mention.userId))];
+
+    const candidates = await this.prisma.comment.findMany({
+      where: {
+        targetType,
+        targetId,
+        deletedAt: null,
+        authorId: { in: ids },
+      },
+      distinct: ["authorId"],
+      select: { authorId: true, author: { select: AUTHOR_SELECT } },
+    });
+    const byId = new Map(
+      candidates
+        .filter((candidate) => candidate.authorId && candidate.author)
+        .map((candidate) => [candidate.authorId!, candidate.author!]),
+    );
+    const resolved: CommentMentionInputDto[] = [];
+
+    for (const mention of requested) {
+      const user = byId.get(mention.userId);
+      if (!user || user.profileAccess === ProfileAccess.GHOST) continue;
+
+      if (!this.textContainsMentionAt(text, user.username, mention.start)) {
+        continue;
+      }
+
+      const relation = await this.visibility.getRelation(authorId, {
+        id: user.id,
+        profileAccess: user.profileAccess,
+      });
+      if (!relation.blocking && !relation.blockedByTarget)
+        resolved.push(mention);
+    }
+
+    return resolved;
+  }
+
+  private textContainsMentionAt(
+    text: string,
+    username: string,
+    start: number,
+  ): boolean {
+    const token = `@${username}`;
+
+    if (
+      text.slice(start, start + token.length).toLowerCase() !==
+      token.toLowerCase()
+    ) {
+      return false;
+    }
+
+    const before = start === 0 ? "" : text[start - 1];
+    const after = text[start + token.length] ?? "";
+    return !/[\w.@]/.test(before) && !/\w/.test(after);
   }
 
   /** A block in either direction neutralizes the notification. */
