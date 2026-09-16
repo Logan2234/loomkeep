@@ -366,6 +366,12 @@ export class ImportJobService {
         userId,
         ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED,
       );
+      // "import" (and often add_title/mark_complete/rate alongside it) is
+      // one of the onboarding checklist's steps (see OnboardingService) —
+      // this also covers ratings the import itself set via ReviewService,
+      // since a full checklist recompute follows any onboarding-updated
+      // event rather than one keyed to a specific step.
+      this.events.emitToUser(userId, "onboarding-updated");
     }
   }
 

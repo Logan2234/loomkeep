@@ -4,15 +4,12 @@
   // reserves the extra room for it, the same way it already reserves room
   // for the nav bar itself). See OnboardingWidget for the desktop half.
   import { afterNavigate } from "$app/navigation";
-  import {
-    getOnboardingChecklist,
-    skipOnboardingStep,
-  } from "$lib/api/gamification";
+  import { skipOnboardingStep } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import Drawer from "$lib/components/Drawer.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
   import { deriveStepViews } from "./onboarding-checklist";
@@ -27,11 +24,7 @@
     open = false;
   });
 
-  const checklistQuery = createApiQuery(() => ({
-    key: keys.gamification.onboarding(),
-    fetch: getOnboardingChecklist,
-    refetchInterval: (data) => (data?.allDone ? false : 30_000),
-  }));
+  const checklistQuery = useOnboardingChecklist();
 
   const steps = $derived(
     checklistQuery.data ? deriveStepViews(checklistQuery.data.steps) : [],

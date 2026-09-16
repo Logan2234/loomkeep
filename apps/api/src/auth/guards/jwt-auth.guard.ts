@@ -22,6 +22,7 @@ import {
   JWT_ISSUER,
 } from "../jwt.constants";
 import { SessionCacheService } from "../session-cache.service";
+import { isSessionLive } from "../session-live.util";
 
 /** Global guard: every route requires an HttpOnly access-token cookie unless marked @Public(). */
 @Injectable()
@@ -100,23 +101,16 @@ export class JwtAuthGuard implements CanActivate {
    * request for the common case where the session is still alive; explicit
    * invalidation from AuthService's revoke methods, logout, and
    * resetPassword keeps a forced logout effective immediately instead of
-   * waiting out the cache.
+   * waiting out the cache — EventsGateway additionally force-disconnects any
+   * live socket for that session at the same moment, since a WS connection
+   * otherwise wouldn't notice a revocation until this cache entry expired.
    */
   private async assertSessionLive(sessionId: string): Promise<void> {
-    if (this.sessionCache.isKnownLive(sessionId)) return;
-
-    const session = await this.prisma.refreshToken.findUnique({
-      where: { id: sessionId },
-      select: { id: true },
-    });
-
-    if (!session) {
+    if (!(await isSessionLive(this.prisma, this.sessionCache, sessionId))) {
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthInvalidAccessToken,
       );
     }
-
-    this.sessionCache.markLive(sessionId);
   }
 }

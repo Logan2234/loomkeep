@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -18,6 +19,10 @@ function stubXp(): XpService {
 
 function stubAchievements(): AchievementService {
   return { evaluate: vi.fn() } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -77,6 +82,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     } as unknown as import("../social/activity.service").ActivityService,
     stubXp(),
     stubAchievements(),
+    stubEvents(),
   );
   return { service, prisma };
 }
@@ -167,6 +173,7 @@ describe("GameLibraryService.deleteEntry", () => {
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -203,6 +210,7 @@ describe("GameLibraryService — XP wiring", () => {
       gameEntry: { findUnique, upsert, count },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const events = stubEvents();
 
     const service = new GameLibraryService(
       prisma,
@@ -214,6 +222,7 @@ describe("GameLibraryService — XP wiring", () => {
       activity,
       xp,
       stubAchievements(),
+      events,
     );
 
     await service.upsertEntry("user-1", {
@@ -225,6 +234,10 @@ describe("GameLibraryService — XP wiring", () => {
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "GAMES");
     expect(xp.award).toHaveBeenCalledWith("user-1", "GAME_FINISHED", "e1");
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      "onboarding-updated",
+    );
   });
 
   it("awards GAME_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
@@ -259,6 +272,7 @@ describe("GameLibraryService — XP wiring", () => {
       activity,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.addReplay("user-1", "e1", {} as never);

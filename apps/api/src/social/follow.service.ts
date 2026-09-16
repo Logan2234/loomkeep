@@ -8,6 +8,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
+import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/registry";
 import { NotificationService } from "../notifications/notification.service";
@@ -33,6 +34,7 @@ export class FollowService {
     private readonly notifications: NotificationService,
     private readonly achievements: AchievementService,
     private readonly blocks: BlockService,
+    private readonly events: EventsGateway,
   ) {}
 
   /**
@@ -149,6 +151,10 @@ export class FollowService {
         body: "souhaite vous suivre",
         dedupeKey: `request:${viewerId}`,
       });
+      // FOLLOW_REQUEST is excluded from the bell feed (NotificationService's
+      // own FEED_EXCLUDED_TYPES), so it never triggers that live push either
+      // — the pending-requests panel needs its own signal.
+      this.events.emitToUser(target.id, "follow-request-changed");
     }
 
     return this.relationship(viewerId, username);
@@ -157,9 +163,22 @@ export class FollowService {
   /** Unfollows (or cancels a pending request). Idempotent. */
   async unfollow(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.resolveTarget(viewerId, username);
+    const existing = await this.prisma.follow.findUnique({
+      where: {
+        followerId_followeeId: { followerId: viewerId, followeeId: target.id },
+      },
+      select: { status: true },
+    });
     await this.prisma.follow.deleteMany({
       where: { followerId: viewerId, followeeId: target.id },
     });
+
+    // A cancelled request should disappear from the target's pending list
+    // live, the same way a new one appears.
+    if (existing?.status === "PENDING") {
+      this.events.emitToUser(target.id, "follow-request-changed");
+    }
+
     return this.relationship(viewerId, username);
   }
 

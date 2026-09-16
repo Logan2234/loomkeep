@@ -11,7 +11,10 @@ export const RealtimeEvent = {
   ACHIEVEMENT_UNLOCKED: "achievement-unlocked",
   IMPORT_PROGRESS: "import-progress",
   COMMENT_CHANGED: "comment-changed",
+  COMMENT_PRESENCE: "comment-presence",
   LIST_UPDATED: "list-updated",
+  ONBOARDING_UPDATED: "onboarding-updated",
+  FOLLOW_REQUEST_CHANGED: "follow-request-changed",
 } as const;
 export type RealtimeEvent = (typeof RealtimeEvent)[keyof typeof RealtimeEvent];
 
@@ -19,4 +22,10 @@ export interface ImportProgressEvent {
   done: number;
   total: number;
   status: "running" | "completed" | "failed";
+}
+
+export interface CommentPresenceEvent {
+  targetType: string;
+  targetId: string;
+  count: number;
 }
