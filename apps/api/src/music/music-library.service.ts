@@ -26,6 +26,7 @@ import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -106,6 +107,7 @@ export class MusicLibraryService {
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
     private readonly xp: XpService,
+    private readonly events: EventsGateway,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a music entry write. */
@@ -208,6 +210,12 @@ export class MusicLibraryService {
         dto.rating,
       );
     }
+
+    // add_title/mark_complete are two of the onboarding checklist's steps
+    // (see OnboardingService) — pushed unconditionally rather than checking
+    // whether onboarding is even still in progress first, since that check
+    // would cost as much as the emit is worth avoiding.
+    this.events.emitToUser(userId, "onboarding-updated");
 
     return toEntryDto(
       entry,
@@ -339,6 +347,8 @@ export class MusicLibraryService {
         dto.rating,
       );
     }
+
+    this.events.emitToUser(userId, "onboarding-updated");
 
     return toEntryDto(
       entry,

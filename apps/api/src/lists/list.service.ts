@@ -134,6 +134,9 @@ export class ListService {
     await this.xp.award(userId, XpReason.LIST_CREATED, row.id);
     await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_LIST_CREATED);
 
+    // create_list is one of the onboarding checklist's steps (OnboardingService).
+    this.events.emitToUser(userId, "onboarding-updated");
+
     return this.toDto(row, await this.author(userId));
   }
 

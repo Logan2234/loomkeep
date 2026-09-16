@@ -369,6 +369,9 @@ export class CommentService {
       ACHIEVEMENT_KEYS_ON_COMMENT_POSTED,
     );
 
+    // "comment" is one of the onboarding checklist's steps (OnboardingService).
+    this.events.emitToUser(authorId, "onboarding-updated");
+
     const [[reactionMap, myReactionMap], xpMap] = await Promise.all([
       this.loadReactions(authorId, [row.id]),
       fetchXpByUser(this.prisma, [authorId]),

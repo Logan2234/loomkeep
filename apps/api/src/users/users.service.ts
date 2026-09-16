@@ -23,6 +23,7 @@ import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -68,6 +69,7 @@ export class UsersService {
     private readonly profiles: ProfileService,
     private readonly accountDeletion: AccountDeletionService,
     private readonly xp: XpService,
+    private readonly events: EventsGateway,
   ) {}
 
   async getMe(userId: string): Promise<UserDto> {
@@ -418,6 +420,10 @@ export class UsersService {
   ): Promise<void> {
     if (user.avatar && user.bio?.trim()) {
       await this.xp.award(userId, XpReason.PROFILE_COMPLETED, userId);
+      // complete_profile is one of the onboarding checklist's steps
+      // (OnboardingService) — this method's own condition is exactly that
+      // step's own check.
+      this.events.emitToUser(userId, "onboarding-updated");
     }
   }
 

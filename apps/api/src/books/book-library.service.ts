@@ -29,6 +29,7 @@ import { toDateOrNull } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -145,6 +146,7 @@ export class BookLibraryService {
     private readonly activity: ActivityService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly events: EventsGateway,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a book entry write. */
@@ -253,6 +255,12 @@ export class BookLibraryService {
         dto.rating,
       );
     }
+
+    // add_title/mark_complete are two of the onboarding checklist's steps
+    // (see OnboardingService) — pushed unconditionally rather than checking
+    // whether onboarding is even still in progress first, since that check
+    // would cost as much as the emit is worth avoiding.
+    this.events.emitToUser(userId, "onboarding-updated");
 
     return toEntryDto(
       entry,
@@ -391,6 +399,8 @@ export class BookLibraryService {
         dto.rating,
       );
     }
+
+    this.events.emitToUser(userId, "onboarding-updated");
 
     return toEntryDto(
       entry,

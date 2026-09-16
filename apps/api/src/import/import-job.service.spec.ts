@@ -336,6 +336,46 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       );
     });
   });
+
+  it("pushes onboarding-updated once a commit succeeds — the import step, and often others alongside it", async () => {
+    const { service, events } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    service.commit("u1", "tvtime", "analyzed-1", { include: [] } as never);
+
+    await vi.waitFor(() => {
+      expect(events.emitToUser).toHaveBeenCalledWith(
+        "u1",
+        "onboarding-updated",
+      );
+    });
+  });
+
+  it("pushes no onboarding-updated when the commit fails", async () => {
+    const { service, events } = makeCommitService(async () => {
+      throw new Error("boom");
+    });
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(events.emitToUser).toHaveBeenCalledWith(
+        "u1",
+        "import-progress",
+        expect.objectContaining({ jobId: job.id, status: "failed" }),
+      );
+    });
+    expect(events.emitToUser).not.toHaveBeenCalledWith(
+      "u1",
+      "onboarding-updated",
+    );
+  });
 });
 
 describe("ImportJobService — retained payloads", () => {

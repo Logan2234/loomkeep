@@ -25,7 +25,10 @@ function stubAchievements(): AchievementService {
 }
 
 function stubEvents(): EventsGateway {
-  return { emitToList: vi.fn() } as unknown as EventsGateway;
+  return {
+    emitToList: vi.fn(),
+    emitToUser: vi.fn(),
+  } as unknown as EventsGateway;
 }
 
 const VIEWER = "viewer";

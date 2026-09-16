@@ -1,9 +1,11 @@
+import { RealtimeEvent } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { FastifyReply } from "fastify";
 import type { Socket } from "socket.io";
 import { afterEach, beforeEach, vi } from "vitest";
 import { setAuthCookies } from "../auth/auth-cookies";
+import { SessionCacheService } from "../auth/session-cache.service";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { EventsGateway } from "./events.gateway";
@@ -68,10 +70,18 @@ describe("EventsGateway.handleConnection", () => {
       },
       list: { findUnique: vi.fn() },
       listMember: { findUnique: vi.fn() },
+      refreshToken: { findUnique: vi.fn().mockResolvedValue({ id: "sid-1" }) },
     } as unknown as PrismaService;
     const flags = makeFlags();
-    const gateway = new EventsGateway(jwtService, makeConfig(), prisma, flags);
-    return { gateway, jwtService, prisma };
+    const sessionCache = new SessionCacheService();
+    const gateway = new EventsGateway(
+      jwtService,
+      makeConfig(),
+      prisma,
+      flags,
+      sessionCache,
+    );
+    return { gateway, jwtService, prisma, sessionCache };
   }
 
   it("joins the user's own room on a valid cookie", async () => {
@@ -135,6 +145,84 @@ describe("EventsGateway.handleConnection", () => {
     vi.advanceTimersByTime(900 * 1000 + 1);
     expect(client.disconnect).toHaveBeenCalledWith(true);
   });
+
+  it("joins the session room for a token carrying a live sid", async () => {
+    const jwtService = {
+      verifyAsync: vi.fn().mockResolvedValue({
+        sub: "user-1",
+        email: "alice@example.com",
+        sid: "sid-1",
+        exp: Math.floor(Date.now() / 1000) + 900,
+      }),
+    } as unknown as JwtService;
+    const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(null) },
+      refreshToken: { findUnique: vi.fn().mockResolvedValue({ id: "sid-1" }) },
+    } as unknown as PrismaService;
+    const gateway = new EventsGateway(
+      jwtService,
+      makeConfig(),
+      prisma,
+      makeFlags(),
+      new SessionCacheService(),
+    );
+    const client = fakeSocket(cookieHeader());
+
+    await gateway.handleConnection(client);
+
+    expect(client.join).toHaveBeenCalledWith("session:sid-1");
+    expect(client.disconnect).not.toHaveBeenCalled();
+  });
+
+  it("rejects a token whose sid no longer names a live session — the WS equivalent of JwtAuthGuard's REST check", async () => {
+    const jwtService = {
+      verifyAsync: vi.fn().mockResolvedValue({
+        sub: "user-1",
+        email: "alice@example.com",
+        sid: "revoked-sid",
+        exp: Math.floor(Date.now() / 1000) + 900,
+      }),
+    } as unknown as JwtService;
+    const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue(null) },
+      refreshToken: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService;
+    const gateway = new EventsGateway(
+      jwtService,
+      makeConfig(),
+      prisma,
+      makeFlags(),
+      new SessionCacheService(),
+    );
+    const client = fakeSocket(cookieHeader());
+
+    await gateway.handleConnection(client);
+
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(client.join).not.toHaveBeenCalled();
+  });
+});
+
+describe("EventsGateway.disconnectSession", () => {
+  it("forces every socket in that session's room to disconnect", () => {
+    const gateway = new EventsGateway(
+      {} as JwtService,
+      makeConfig(),
+      {} as PrismaService,
+      makeFlags(),
+      new SessionCacheService(),
+    );
+    const disconnectSockets = vi.fn();
+    const fakeServer = {
+      in: vi.fn().mockReturnValue({ disconnectSockets }),
+    };
+    (gateway as unknown as { server: unknown }).server = fakeServer;
+
+    gateway.disconnectSession("sid-1");
+
+    expect(fakeServer.in).toHaveBeenCalledWith("session:sid-1");
+    expect(disconnectSockets).toHaveBeenCalledWith(true);
+  });
 });
 
 describe("EventsGateway.handleJoinComments", () => {
@@ -147,7 +235,13 @@ describe("EventsGateway.handleJoinComments", () => {
     const flags = {
       isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
     } as unknown as FeatureFlagsService;
-    return new EventsGateway({} as JwtService, config, prisma, flags);
+    return new EventsGateway(
+      {} as JwtService,
+      config,
+      prisma,
+      flags,
+      new SessionCacheService(),
+    );
   }
 
   it("joins the thread room when social is enabled", async () => {
@@ -160,6 +254,80 @@ describe("EventsGateway.handleJoinComments", () => {
     });
 
     expect(client.join).toHaveBeenCalledWith("comments:MEDIA:m1");
+  });
+
+  it("publishes the number of unique people in a comment thread", async () => {
+    const gateway = make(true);
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
+    (gateway as unknown as { server: unknown }).server = { to };
+    const firstTab = fakeSocket();
+    firstTab.data.userId = "user-1";
+    const secondTab = fakeSocket();
+    Object.assign(secondTab, { id: "socket-2" });
+    secondTab.data.userId = "user-1";
+
+    await gateway.handleJoinComments(firstTab, {
+      targetType: "MEDIA",
+      targetId: "m1",
+    });
+    await gateway.handleJoinComments(secondTab, {
+      targetType: "MEDIA",
+      targetId: "m1",
+    });
+
+    expect(emit).toHaveBeenLastCalledWith(RealtimeEvent.COMMENT_PRESENCE, {
+      targetType: "MEDIA",
+      targetId: "m1",
+      count: 1,
+    });
+  });
+
+  it("updates presence when the last person leaves a thread", async () => {
+    const gateway = make(true);
+    const emit = vi.fn();
+    (gateway as unknown as { server: unknown }).server = {
+      to: vi.fn().mockReturnValue({ emit }),
+    };
+    const client = fakeSocket();
+    client.data.userId = "user-1";
+
+    await gateway.handleJoinComments(client, {
+      targetType: "MEDIA",
+      targetId: "m1",
+    });
+    await gateway.handleLeaveComments(client, {
+      targetType: "MEDIA",
+      targetId: "m1",
+    });
+
+    expect(emit).toHaveBeenLastCalledWith(RealtimeEvent.COMMENT_PRESENCE, {
+      targetType: "MEDIA",
+      targetId: "m1",
+      count: 0,
+    });
+  });
+
+  it("updates presence when a person disconnects without leaving", async () => {
+    const gateway = make(true);
+    const emit = vi.fn();
+    (gateway as unknown as { server: unknown }).server = {
+      to: vi.fn().mockReturnValue({ emit }),
+    };
+    const client = fakeSocket();
+    client.data.userId = "user-1";
+
+    await gateway.handleJoinComments(client, {
+      targetType: "MEDIA",
+      targetId: "m1",
+    });
+    gateway.handleDisconnect(client);
+
+    expect(emit).toHaveBeenLastCalledWith(RealtimeEvent.COMMENT_PRESENCE, {
+      targetType: "MEDIA",
+      targetId: "m1",
+      count: 0,
+    });
   });
 
   it("silently refuses when social is disabled", async () => {
@@ -202,7 +370,13 @@ describe("EventsGateway.handleJoinList", () => {
     const flags = {
       isEnabled: vi.fn((_name: string, fallback: boolean) => fallback),
     } as unknown as FeatureFlagsService;
-    return new EventsGateway({} as JwtService, config, prisma, flags);
+    return new EventsGateway(
+      {} as JwtService,
+      config,
+      prisma,
+      flags,
+      new SessionCacheService(),
+    );
   }
 
   it("lets the owner join their own list room", async () => {

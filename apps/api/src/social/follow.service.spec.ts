@@ -1,5 +1,6 @@
 import { NotificationType } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -47,6 +48,7 @@ function makeService(opts: {
       }),
       findUnique: vi.fn(),
       update: vi.fn().mockResolvedValue(undefined),
+      deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
   } as unknown as PrismaService;
 
@@ -61,6 +63,7 @@ function makeService(opts: {
   } as unknown as AchievementService;
 
   const blocks = new BlockService(prisma);
+  const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
 
   return {
     service: new FollowService(
@@ -69,10 +72,12 @@ function makeService(opts: {
       notifications,
       achievements,
       blocks,
+      events,
     ),
     prisma,
     create,
     achievements,
+    events,
   };
 }
 
@@ -147,6 +152,54 @@ describe("FollowService notifications", () => {
     );
   });
 
+  it("pushes a live update to the target when a request comes in, since FOLLOW_REQUEST never reaches the bell feed", async () => {
+    const { service, events } = makeService({ targetAccess: "PRIVATE" });
+    await service.follow("viewer", "alice");
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "target",
+      "follow-request-changed",
+    );
+  });
+
+  it("pushes no live update for an immediately-accepted follow (public profile)", async () => {
+    const { service, events } = makeService({ targetAccess: "PUBLIC" });
+    await service.follow("viewer", "alice");
+    expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("FollowService.unfollow", () => {
+  it("pushes a live update to the target when cancelling a pending request", async () => {
+    const { service, prisma, events } = makeService({
+      targetAccess: "PRIVATE",
+    });
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
+      status: "PENDING",
+    });
+
+    await service.unfollow("viewer", "alice");
+
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "target",
+      "follow-request-changed",
+    );
+  });
+
+  it("pushes nothing when unfollowing an already-accepted relationship", async () => {
+    const { service, prisma, events } = makeService({
+      targetAccess: "PUBLIC",
+    });
+    (prisma.follow.findUnique as Mock).mockResolvedValue({
+      status: "ACCEPTED",
+    });
+
+    await service.unfollow("viewer", "alice");
+
+    expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("FollowService.acceptRequest", () => {
   it("posts a FOLLOW_ACCEPTED notification to the requester on approval", async () => {
     const { service, prisma, create } = makeService({
       targetAccess: "PRIVATE",

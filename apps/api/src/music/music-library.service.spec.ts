@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import type { EventsGateway } from "../events/events.gateway";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { MusicItemService } from "./music-item.service";
@@ -12,6 +13,10 @@ function stubXp(): XpService {
     awardMany: vi.fn(),
     revokeBySource: vi.fn(),
   } as unknown as XpService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -69,6 +74,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
       emit: vi.fn(),
     } as unknown as import("../social/activity.service").ActivityService,
     stubXp(),
+    stubEvents(),
   );
   return { service, prisma };
 }
@@ -163,6 +169,7 @@ describe("MusicLibraryService.deleteEntry", () => {
         emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
+      stubEvents(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -198,6 +205,7 @@ describe("MusicLibraryService — XP wiring", () => {
       setRating: vi.fn(),
     } as unknown as import("../reviews/review.service").ReviewService;
 
+    const events = stubEvents();
     const service = new MusicLibraryService(
       prisma,
       {
@@ -208,6 +216,7 @@ describe("MusicLibraryService — XP wiring", () => {
         emit: vi.fn(),
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
+      events,
     );
 
     await service.upsertEntry("user-1", {
@@ -219,5 +228,9 @@ describe("MusicLibraryService — XP wiring", () => {
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "MUSIC");
     expect(xp.award).toHaveBeenCalledWith("user-1", "ALBUM_LISTENED", "e1");
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      "onboarding-updated",
+    );
   });
 });

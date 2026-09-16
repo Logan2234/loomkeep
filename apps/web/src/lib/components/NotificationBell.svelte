@@ -45,8 +45,6 @@
   const reduced = prefersReducedMotion();
 
   let open = $state(false);
-  let requests = $state<FollowRequestDto[]>([]);
-  let requestsLoaded = $state(false);
   let busy = $state<string | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
   let drawerContentEl = $state<HTMLDivElement | null>(null);
@@ -71,6 +69,21 @@
   const notificationItems = $derived(feedQuery.data?.notifications ?? []);
   const unread = $derived(feedQuery.data?.unread ?? 0);
 
+  // Not gated behind `open` — the badge total must update live even while
+  // the panel is closed, same reasoning as feedQuery above.
+  const requestsQuery = createApiQuery(() => ({
+    key: keys.social.followRequests(),
+    fetch: getFollowRequests,
+  }));
+  $effect(() =>
+    onRealtimeEvent("follow-request-changed", () => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.social.followRequests(),
+      });
+    }),
+  );
+  const requests = $derived(requestsQuery.data ?? []);
+
   const markReadMut = createApiMutation(() => ({
     mutate: markNotificationRead,
     invalidates: [keys.notifications.feed()],
@@ -82,12 +95,8 @@
 
   const total = $derived(requests.length + unread);
 
-  async function toggle() {
+  function toggle() {
     open = !open;
-    if (open && !requestsLoaded) {
-      requestsLoaded = true;
-      requests = await getFollowRequests().catch(() => []);
-    }
   }
 
   function close() {
@@ -97,17 +106,24 @@
   // The compact shell has no button of its own here — BottomNavigation owns
   // the bell tab and asks to open, same idiom as MenuSheet's toggle event.
   $effect(() => {
-    const handler = () => void toggle();
-    window.addEventListener("mobile-notifications-toggle", handler);
+    window.addEventListener("mobile-notifications-toggle", toggle);
     return () =>
-      window.removeEventListener("mobile-notifications-toggle", handler);
+      window.removeEventListener("mobile-notifications-toggle", toggle);
   });
+
+  function removeRequest(id: string) {
+    queryClient.setQueryData(
+      keys.social.followRequests(),
+      (prev: FollowRequestDto[] | undefined) =>
+        prev?.filter((r) => r.id !== id),
+    );
+  }
 
   async function accept(req: FollowRequestDto) {
     busy = req.id;
     try {
       await acceptFollowRequest(req.id);
-      requests = requests.filter((r) => r.id !== req.id);
+      removeRequest(req.id);
     } finally {
       busy = null;
     }
@@ -117,7 +133,7 @@
     busy = req.id;
     try {
       await rejectFollowRequest(req.id);
-      requests = requests.filter((r) => r.id !== req.id);
+      removeRequest(req.id);
     } finally {
       busy = null;
     }

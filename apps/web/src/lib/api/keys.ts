@@ -99,6 +99,9 @@ export const keys = {
   notifications: {
     feed: () => ["notifications", "feed"] as const,
   },
+  social: {
+    followRequests: () => ["social", "follow-requests"] as const,
+  },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
     myReviews: () => ["profile", "my-reviews"] as const,

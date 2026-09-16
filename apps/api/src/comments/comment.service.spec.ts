@@ -169,7 +169,10 @@ function make(
   const xp = stubXp();
   const achievements = stubAchievements();
   const blocks = new BlockService(prisma);
-  const events = { emitToCommentsThread: vi.fn() } as unknown as EventsGateway;
+  const events = {
+    emitToCommentsThread: vi.fn(),
+    emitToUser: vi.fn(),
+  } as unknown as EventsGateway;
 
   return {
     svc: new CommentService(

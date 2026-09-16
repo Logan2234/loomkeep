@@ -5,6 +5,7 @@ import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import type { XpService } from "../gamification/xp.service";
@@ -30,6 +31,10 @@ function stubAchievements(): AchievementService {
   return {
     evaluate: vi.fn(),
   } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -150,6 +155,7 @@ function makeService(
     {} as EntitlementService,
     stubXp(),
     stubAchievements(),
+    stubEvents(),
   );
   return { service, prisma, mediaItemService };
 }
@@ -325,6 +331,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -373,6 +380,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -431,6 +439,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -494,6 +503,7 @@ describe("LibraryService.unwatchSeason", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -521,6 +531,7 @@ describe("LibraryService.unwatchSeason", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -575,6 +586,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -632,6 +644,7 @@ describe("LibraryService.deleteEntry", () => {
       {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await expect(
@@ -658,6 +671,7 @@ describe("LibraryService.getCalendarIcs", () => {
       entitlements,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
   }
 
@@ -718,6 +732,7 @@ describe("LibraryService — XP wiring", () => {
     } as unknown as PrismaService;
     const xp = stubXp();
     const achievements = stubAchievements();
+    const events = stubEvents();
 
     const service = new LibraryService(
       prisma,
@@ -734,6 +749,7 @@ describe("LibraryService — XP wiring", () => {
       {} as EntitlementService,
       xp,
       achievements,
+      events,
     );
 
     await service.upsertEntry("user-1", {
@@ -749,6 +765,10 @@ describe("LibraryService — XP wiring", () => {
     expect(achievements.evaluate).toHaveBeenCalledWith(
       "user-1",
       ACHIEVEMENT_KEYS_BY_XP_REASON.MOVIE_WATCHED,
+    );
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      "onboarding-updated",
     );
   });
 
@@ -783,6 +803,7 @@ describe("LibraryService — XP wiring", () => {
       {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.updateEntry("user-1", "entry-1", {
@@ -828,6 +849,7 @@ describe("LibraryService — XP wiring", () => {
       {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.upsertEntry("user-1", {
@@ -893,6 +915,7 @@ describe("LibraryService — XP wiring", () => {
       {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.addReplay("user-1", "entry-1", {} as never);
@@ -965,6 +988,7 @@ describe("LibraryService — XP wiring", () => {
       {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.watchEpisode("user-1", "ep2", {} as never);
@@ -1033,6 +1057,7 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
       {} as EntitlementService,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
     return { service, prisma, xp };
   }
