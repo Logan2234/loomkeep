@@ -1,9 +1,9 @@
 import { COMMENT_TEXT_MAX_LENGTH } from "@loomkeep/shared";
 import {
   IsBoolean,
-  Matches,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from "class-validator";

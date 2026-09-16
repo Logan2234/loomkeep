@@ -85,9 +85,11 @@ export class ReportService {
         where: { id: targetId },
         select: { authorId: true, deletedAt: true },
       });
+
       if (!comment || comment.deletedAt) {
         throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
       }
+
       if (comment.authorId === reporterId) {
         throw new AppException(
           HttpStatus.FORBIDDEN,
@@ -100,6 +102,7 @@ export class ReportService {
       where: { reporterId, targetType, targetId, status: "PENDING" },
       select: { id: true },
     });
+
     if (pending) {
       throw new AppException(HttpStatus.CONFLICT, ErrorCode.ReportAlreadyFiled);
     }

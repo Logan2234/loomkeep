@@ -57,7 +57,8 @@
       aria-modal="true"
       aria-label={m.media_comments_title({ target: title })}
       class="bg-bg border-border fixed inset-y-0 right-0 z-70 flex w-full max-w-xl flex-col border-l shadow-2xl">
-      <header class="border-border flex shrink-0 items-center gap-3 border-b px-5 py-4">
+      <header
+        class="border-border flex shrink-0 items-center gap-3 border-b px-5 py-4">
         <div class="min-w-0 flex-1">
           <p class="timecode text-[0.65rem] tracking-[0.18em] uppercase">
             {m.common_comments()}

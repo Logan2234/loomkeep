@@ -418,28 +418,28 @@
         ? 'flex opacity-100'
         : 'hidden opacity-0 md:flex'}">
       {#if canParticipate}
-      <div class="relative">
-        <button
-          class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full"
-          title={m.common_react()}
-          aria-label={m.common_react()}
-          onclick={() => (reactingId = reactingId === c.id ? null : c.id)}>
-          <Icon name="plus" class="h-3.5 w-3.5" />
-        </button>
-        {#if reactingId === c.id}
-          <div
-            class="bg-surface border-border absolute bottom-full left-0 z-10 mb-1 flex origin-bottom-left gap-1 rounded-lg border p-1 shadow-lg"
-            transition:scale={{ duration: 140, start: 0.85 }}>
-            {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
-              <button
-                class="hover:bg-surface-2 rounded px-1.5 py-1 text-base"
-                onclick={() => react(c.id, emote as CommentEmote)}>
-                {glyph}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
+        <div class="relative">
+          <button
+            class="text-dim hover:text-fg hover:bg-surface-2 grid h-6 w-6 place-items-center rounded-full"
+            title={m.common_react()}
+            aria-label={m.common_react()}
+            onclick={() => (reactingId = reactingId === c.id ? null : c.id)}>
+            <Icon name="plus" class="h-3.5 w-3.5" />
+          </button>
+          {#if reactingId === c.id}
+            <div
+              class="bg-surface border-border absolute bottom-full left-0 z-10 mb-1 flex origin-bottom-left gap-1 rounded-lg border p-1 shadow-lg"
+              transition:scale={{ duration: 140, start: 0.85 }}>
+              {#each Object.entries(COMMENT_EMOTE_DISPLAY) as [emote, glyph] (emote)}
+                <button
+                  class="hover:bg-surface-2 rounded px-1.5 py-1 text-base"
+                  onclick={() => react(c.id, emote as CommentEmote)}>
+                  {glyph}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/if}
 
       <!-- Icon-only: title/aria-label carry the meaning instead of visible
@@ -454,7 +454,7 @@
             <Icon name="reply" class="h-4 w-4" />
           </button>
         {/if}
-          {#if c.author?.id === auth.user?.id}
+        {#if c.author?.id === auth.user?.id}
           <button
             class="btn-icon"
             title={m.common_edit()}
@@ -629,7 +629,8 @@
                 </button>
               {/if}
               <div class="relative min-w-32 flex-1">
-                <label class="sr-only" for="comment-reply-{c.id}">{m.comment_reply_label()}</label>
+                <label class="sr-only" for="comment-reply-{c.id}"
+                  >{m.comment_reply_label()}</label>
                 <input
                   id="comment-reply-{c.id}"
                   type="text"
@@ -674,8 +675,9 @@
 
 <section class="min-h-0 flex-1">
   <div class="flex min-h-0 flex-col">
-      {#if canParticipate}
-      <div class="order-2 mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+    {#if canParticipate}
+      <div
+        class="border-border order-2 mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
         {#if allowSpoilerTag}
           <button
             type="button"
@@ -694,7 +696,8 @@
           </button>
         {/if}
         <div class="relative min-w-32 flex-1">
-          <label class="sr-only" for="comment-add-text">{m.comment_add_label()}</label>
+          <label class="sr-only" for="comment-add-text"
+            >{m.comment_add_label()}</label>
           <input
             id="comment-add-text"
             type="text"
@@ -723,63 +726,62 @@
             : m.common_publish()}
         </button>
       </div>
-      {:else}
-        <p class="order-2 mt-4 border-t border-border pt-4 text-sm text-dim">
-          {m.comments_track_to_participate()}
-        </p>
-      {/if}
+    {:else}
+      <p class="border-border text-dim order-2 mt-4 border-t pt-4 text-sm">
+        {m.comments_track_to_participate()}
+      </p>
+    {/if}
 
-      {#if query.isPending}
-        <p class="text-dim text-sm">{m.common_loading()}</p>
-      {:else if query.isError}
-        <div class="text-dim flex items-center justify-between gap-3 text-sm">
-          <span>{m.comments_load_failed()}</span>
-          <button class="btn btn-ghost btn-sm" onclick={() => query.refetch()}>
-            {m.common_retry()}
-          </button>
-        </div>
-      {:else if visibleComments.length === 0}
-        <p class="text-dim text-sm">{m.comments_empty()}</p>
-      {:else}
-        <div class="relative">
-          <div class="flex flex-col gap-2">
-            {#each displayedComments as c (c.id)}
-              {@const shownReplies = repliesOf(c)}
-              {@const hiddenReplyCount = Math.max(
-                0,
-                c.replyCount - shownReplies.length,
-              )}
-              {@render commentCard(c, false)}
-              {#each shownReplies as r (r.id)}
-                {#if !r.deleted}
-                  {@render commentCard(r, true)}
-                {/if}
-              {/each}
-              {#if hiddenReplyCount > 0}
-                <button
-                  type="button"
-                  class="timecode ml-8 block text-left text-xs hover:underline disabled:opacity-50"
-                  disabled={loadingReplies.has(c.id)}
-                  onclick={() => expandReplies(c.id)}>
-                  {hiddenReplyCount === 1
-                    ? m.comments_more_replies_one({ count: hiddenReplyCount })
-                    : m.comments_more_replies_many({ count: hiddenReplyCount })}
-                </button>
+    {#if query.isPending}
+      <p class="text-dim text-sm">{m.common_loading()}</p>
+    {:else if query.isError}
+      <div class="text-dim flex items-center justify-between gap-3 text-sm">
+        <span>{m.comments_load_failed()}</span>
+        <button class="btn btn-ghost btn-sm" onclick={() => query.refetch()}>
+          {m.common_retry()}
+        </button>
+      </div>
+    {:else if visibleComments.length === 0}
+      <p class="text-dim text-sm">{m.comments_empty()}</p>
+    {:else}
+      <div class="relative">
+        <div class="flex flex-col gap-2">
+          {#each displayedComments as c (c.id)}
+            {@const shownReplies = repliesOf(c)}
+            {@const hiddenReplyCount = Math.max(
+              0,
+              c.replyCount - shownReplies.length,
+            )}
+            {@render commentCard(c, false)}
+            {#each shownReplies as r (r.id)}
+              {#if !r.deleted}
+                {@render commentCard(r, true)}
               {/if}
             {/each}
-          </div>
-
+            {#if hiddenReplyCount > 0}
+              <button
+                type="button"
+                class="timecode ml-8 block text-left text-xs hover:underline disabled:opacity-50"
+                disabled={loadingReplies.has(c.id)}
+                onclick={() => expandReplies(c.id)}>
+                {hiddenReplyCount === 1
+                  ? m.comments_more_replies_one({ count: hiddenReplyCount })
+                  : m.comments_more_replies_many({ count: hiddenReplyCount })}
+              </button>
+            {/if}
+          {/each}
         </div>
+      </div>
 
-        {#if query.hasNextPage}
-          <button
-            class="btn btn-ghost btn-sm mt-3"
-            disabled={query.isFetchingNextPage}
-            onclick={() => query.fetchNextPage()}>
-            {m.common_load_more()}
-          </button>
-        {/if}
+      {#if query.hasNextPage}
+        <button
+          class="btn btn-ghost btn-sm mt-3"
+          disabled={query.isFetchingNextPage}
+          onclick={() => query.fetchNextPage()}>
+          {m.common_load_more()}
+        </button>
       {/if}
+    {/if}
   </div>
 </section>
 

@@ -332,6 +332,7 @@ export class CommentService {
     }
 
     await this.ensureParticipationAllowed(authorId, targetType, targetId);
+
     if (parent?.authorId) {
       await this.ensureInteractionNotBlocked(authorId, parent.authorId);
     }
@@ -501,6 +502,7 @@ export class CommentService {
       comment.targetType as CommentTargetType,
       comment.targetId,
     );
+
     if (comment.authorId) {
       await this.ensureInteractionNotBlocked(userId, comment.authorId);
     }
@@ -544,7 +546,12 @@ export class CommentService {
 
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
-      select: { deletedAt: true, targetType: true, targetId: true, authorId: true },
+      select: {
+        deletedAt: true,
+        targetType: true,
+        targetId: true,
+        authorId: true,
+      },
     });
     if (!comment || comment.deletedAt)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
@@ -553,6 +560,7 @@ export class CommentService {
       comment.targetType as CommentTargetType,
       comment.targetId,
     );
+
     if (comment.authorId) {
       await this.ensureInteractionNotBlocked(userId, comment.authorId);
     }
@@ -606,24 +614,31 @@ export class CommentService {
           select: { id: true },
         });
         break;
+
       case "SEASON": {
         const season = await this.prisma.season.findUnique({
           where: { id: targetId },
           select: { mediaItemId: true },
         });
+
         if (season) {
           entry = await this.prisma.libraryEntry.findUnique({
-            where: { userId_mediaItemId: { userId, mediaItemId: season.mediaItemId } },
+            where: {
+              userId_mediaItemId: { userId, mediaItemId: season.mediaItemId },
+            },
             select: { id: true },
           });
         }
+
         break;
       }
+
       case "EPISODE": {
         const episode = await this.prisma.episode.findUnique({
           where: { id: targetId },
           select: { season: { select: { mediaItemId: true } } },
         });
+
         if (episode) {
           entry = await this.prisma.libraryEntry.findUnique({
             where: {
@@ -635,6 +650,7 @@ export class CommentService {
             select: { id: true },
           });
         }
+
         break;
       }
     }
