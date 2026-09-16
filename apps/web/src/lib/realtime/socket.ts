@@ -1,4 +1,5 @@
 import { API_URL, tryRefresh } from "$lib/api/core";
+import { auth } from "$lib/auth.svelte";
 import type { RealtimeEvent } from "@loomkeep/shared";
 import { io } from "socket.io-client";
 
@@ -39,13 +40,27 @@ export function disconnectRealtimeSocket(): void {
 }
 
 // EventsGateway force-disconnects a socket once its connecting access token's
-// own expiry is reached (~15 min) — unlike a REST call, there's no 401 to
-// react to, so nothing would otherwise refresh the cookie before socket.io's
-// own auto-reconnect retries with the same, now-expired one. "io client
-// disconnect" is skipped: that's disconnectRealtimeSocket() itself (logout),
-// where refreshing the very session being torn down would be wrong.
+// own expiry is reached (~15 min). Two things the client has to do itself
+// here, neither of which a REST call needs:
+// - Refresh the cookie: there's no 401 to react to, so nothing else would.
+// - Reconnect explicitly: socket.io does NOT auto-reconnect after a
+//   server-initiated disconnect ("io server disconnect" — see socket.io-
+//   client's own `active` getter doc) the way it does for a dropped
+//   connection. Without this, the tab would just stay disconnected forever
+//   after the very first expiry, even once the refresh succeeds.
+// "io client disconnect" is skipped: that's disconnectRealtimeSocket()
+// itself (logout), where reconnecting the very session being torn down
+// would be wrong.
 socket.on("disconnect", (reason) => {
-  if (reason !== "io client disconnect") void tryRefresh();
+  if (reason === "io client disconnect") return;
+
+  void tryRefresh().then((refreshed) => {
+    if (refreshed) connectRealtimeSocket();
+    // A dead refresh token means the session itself is gone — mirror the
+    // REST path's own auth.clear() (core.ts) instead of leaving isLoggedIn
+    // stuck true with no live connection and no way back short of a reload.
+    else auth.clear();
+  });
 });
 
 export function onRealtimeEvent<T = void>(
