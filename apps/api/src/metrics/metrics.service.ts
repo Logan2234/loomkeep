@@ -7,7 +7,8 @@ import {
   collectDefaultMetrics,
 } from "prom-client";
 
-export type WsRejectionReason = "no_cookie" | "session_revoked" | "invalid_token";
+export type WsRejectionReason =
+  "no_cookie" | "session_revoked" | "invalid_token";
 
 /**
  * Technical metrics for Prometheus: Node/process internals plus one HTTP

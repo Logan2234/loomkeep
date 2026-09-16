@@ -46,6 +46,7 @@ function classifyRejection(error: unknown): WsRejectionReason {
     if (error.message === "No access token cookie") return "no_cookie";
     if (error.message === "Session revoked") return "session_revoked";
   }
+
   return "invalid_token";
 }
 
