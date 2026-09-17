@@ -23,6 +23,7 @@
     type NavStyle,
   } from "$lib/navStyle.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { flashAnchor } from "../flash-anchor";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
   import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
@@ -106,7 +107,7 @@
 </script>
 
 <section class="card space-y-4 p-5 md:p-6">
-  <div>
+  <div id="theme" use:flashAnchor={"theme"} class="rounded-lg">
     <p class="mb-2 font-semibold">{m.common_theme()}</p>
     <div class="flex gap-2">
       {#each THEME_DEFINITIONS as theme (theme.mode)}
@@ -115,7 +116,7 @@
     </div>
   </div>
 
-  <div>
+  <div id="nav-style" use:flashAnchor={"nav-style"} class="rounded-lg">
     <p class="mb-2 flex items-center gap-2 font-semibold">
       {m.settings_nav_style_label()}
       {#if isFeatureNew("nav-styles")}
@@ -153,7 +154,7 @@
     </div>
   </div>
 
-  <div>
+  <div id="language" use:flashAnchor={"language"} class="rounded-lg">
     <p class="mb-2 flex items-center gap-2 font-semibold">
       {m.common_language()}
     </p>
@@ -168,7 +169,7 @@
     </div>
   </div>
 
-  <div>
+  <div id="mobile-nav" use:flashAnchor={"mobile-nav"} class="rounded-lg">
     <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
     <p class="text-dim text-sm">
       {m.settings_mobile_nav_bar_description({ min: MIN, max: MAX })}

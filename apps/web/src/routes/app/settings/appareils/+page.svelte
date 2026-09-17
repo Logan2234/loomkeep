@@ -13,6 +13,7 @@
   import RelativeTime from "$lib/components/RelativeTime.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
+  import { flashAnchor } from "../flash-anchor";
   import SettingsSection from "../components/SettingsSection.svelte";
 
   const sessionsQuery = createApiQuery(() => ({
@@ -65,7 +66,7 @@
         {@const isCurrent = session.isCurrent}
         <div
           class="flex items-center gap-4 p-4 {isCurrent
-            ? 'border-accent border-l-2'
+            ? 'border-l-accent border-l-2'
             : ''}">
           <Icon
             name="monitor"
@@ -99,7 +100,10 @@
     </div>
 
     {#if hasOthers}
-      <div class="mt-5">
+      <div
+        id="sessions-revoke-all"
+        use:flashAnchor={"sessions-revoke-all"}
+        class="mt-5 rounded-lg">
         <button
           class="btn btn-danger"
           onclick={() => (confirmTarget = { kind: "others" })}>

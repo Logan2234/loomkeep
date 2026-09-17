@@ -9,6 +9,7 @@
   import type { IconName } from "$lib/types/icon-name";
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
+  import { flashAnchor } from "../flash-anchor";
   import SavedIndicator from "./SavedIndicator.svelte";
 
   /** Just enough of createApiMutation()'s surface to drive a row. */
@@ -25,6 +26,7 @@
     mutation,
     error,
     saving = false,
+    anchor,
     controlId,
     control,
     children,
@@ -42,6 +44,12 @@
     error?: string | null;
     /** For rows whose save doesn't go through a single mutation. */
     saving?: boolean;
+    /**
+     * The row's id in the settings search index (see nav.ts). A result that
+     * matched this control links straight to it, and the row flashes once on
+     * arrival so it is obvious which one was meant.
+     */
+    anchor?: string;
     /**
      * The id of the control this row labels. Set it for a row built around an
      * input: the label then really labels it, and the description is wired up
@@ -89,7 +97,10 @@
   );
 </script>
 
-<div class="py-3.5 first:pt-0 last:pb-0">
+<div
+  id={anchor}
+  use:flashAnchor={anchor ?? ""}
+  class="rounded-lg py-3.5 first:pt-0 last:pb-0">
   <div class="flex items-start justify-between gap-4">
     <div class="flex min-w-0 items-start gap-3">
       {#if icon}

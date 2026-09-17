@@ -50,6 +50,7 @@
   <section class="card p-5 md:p-6">
     <div class="divide-border divide-y">
       <SettingRow
+        anchor="birthdate"
         label={m.common_birthdate()}
         description={m.settings_birthdate_description()}
         controlId="settings-birth-date"
@@ -70,6 +71,7 @@
 
       {#if isAdultEligible}
         <SettingRow
+          anchor="adult-content"
           label={m.settings_adult_content_label()}
           description={m.settings_adult_content_description()}
           mutation={toggleAdultContentMut}>

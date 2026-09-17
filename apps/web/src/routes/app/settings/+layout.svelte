@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Settings shell: the rail on the left, the open section on the right.
+  // Settings shell: the rail on the left, the open section on the right, and
+  // the search results taking the section's place while a query is active.
   // The import wizards keep the full width — they are task flows with their
   // own back affordance, not a section you browse to.
   import { page } from "$app/state";
@@ -9,16 +10,31 @@
   import Banner from "$lib/components/Banner.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import SettingsNav from "./components/SettingsNav.svelte";
+  import SettingsSearchField from "./components/SettingsSearchField.svelte";
+  import SettingsSearchResults from "./components/SettingsSearchResults.svelte";
   import { RECOVERY_CODES_LOW_THRESHOLD, sectionHref } from "./nav";
+  import { settingsSearch } from "./search-state.svelte";
 
   let { children }: { children: Snippet } = $props();
 
   const isWizard = $derived(
     page.url.pathname.startsWith("/app/settings/import/"),
   );
+
+  // Leaving settings entirely drops the query — coming back to a screen still
+  // filtered by what you typed ten minutes ago is a small mystery.
+  $effect(() => {
+    if (!page.url.pathname.startsWith("/app/settings")) settingsSearch.clear();
+  });
+
+  // Where the rail's own back link leads, mirroring the sidebar footer: the
+  // profile hub, or nothing to go back to when social is off.
+  const backHref = $derived(appConfig.socialEnabled ? "/app/profile" : null);
+
   // Shared cache entry with the 2FA section, so this costs one request for
   // the whole of settings. It is what moves the "running out of recovery
   // codes" warning out of a card nobody scrolls to.
@@ -61,12 +77,38 @@
       <!-- The index *is* the nav on a phone, so the rail only ever shows from
            lg up; below that it would be a second copy of the same list. -->
       <aside class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
+        {#if backHref}
+          <a
+            href={backHref}
+            class="text-dim hover:text-fg mb-3 inline-flex items-center gap-1 text-sm font-semibold transition-colors">
+            <Icon name="chevron-left" class="h-4 w-4" />
+            {m.nav_profile()}
+          </a>
+        {/if}
+        <div class="mb-4">
+          <SettingsSearchField id="settings-search-rail" />
+        </div>
         <SettingsNav variant="rail" {alerts} />
+        <LegalLinks class="mt-8 items-start px-3 text-left" />
       </aside>
 
-      <div class="min-w-0">{@render children()}</div>
-    </div>
+      <div class="min-w-0">
+        <!-- On a phone the field rides above the content instead, since the
+             rail it normally sits in isn't rendered. -->
+        <div class="mb-6 lg:hidden">
+          <SettingsSearchField id="settings-search-content" />
+        </div>
 
-    <LegalLinks />
+        {#if settingsSearch.active}
+          <SettingsSearchResults />
+        {:else}
+          {@render children()}
+        {/if}
+
+        <!-- Desktop keeps these at the foot of the rail, where they anchor to
+             something; on a phone there is no rail to anchor them to. -->
+        <LegalLinks class="mt-10 items-center px-4 text-center lg:hidden" />
+      </div>
+    </div>
   </div>
 {/if}

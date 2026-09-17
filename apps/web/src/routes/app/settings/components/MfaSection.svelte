@@ -356,6 +356,7 @@
   <section class="card p-5 md:p-6">
     <div class="divide-border divide-y">
       <SettingRow
+        anchor="mfa-totp"
         label={m.auth_mfa_totp_label()}
         description={m.settings_mfa_totp_desc()}
         icon="qr-code">
@@ -368,6 +369,7 @@
       </SettingRow>
 
       <SettingRow
+        anchor="mfa-email"
         label={m.auth_mfa_email_label()}
         description={m.settings_mfa_email_desc()}
         icon="mail">
@@ -381,6 +383,7 @@
 
       {#if webauthnBrowserSupported}
         <SettingRow
+          anchor="mfa-webauthn"
           label={m.settings_mfa_webauthn_label()}
           description={webauthnSecureContext
             ? m.settings_mfa_webauthn_desc()
@@ -441,6 +444,7 @@
         </SettingRow>
 
         <SettingRow
+          anchor="mfa-passwordless"
           label={m.settings_mfa_passwordless_label()}
           description={status && status.webauthnCredentials.length > 0
             ? m.settings_mfa_passwordless_desc()
@@ -458,6 +462,7 @@
 
       {#if hasAnyMfa && status}
         <SettingRow
+          anchor="mfa-recovery"
           label={m.settings_mfa_recovery_title()}
           description={recoveryLow
             ? m.settings_mfa_recovery_low_warning({

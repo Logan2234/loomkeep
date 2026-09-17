@@ -183,7 +183,6 @@
   "settings_help_chat_title": "Discuter avec le développeur",
   "settings_help_chat_body": "Une question, un souci ? Écris-nous directement.",
   "settings_section_support": "Soutenir",
-  "settings_support_title": "Soutenir Loomkeep",
   "settings_support_body": "Loomkeep reste gratuit, hébergé ou auto-hébergé. Si le projet vous est utile, un petit geste aide à couvrir l'hébergement et le temps passé à le développer. Don ponctuel ou récurrent selon le provider — un compte peut être requis, voir les badges ci-dessous.",
   "settings_support_recommended": "Notre choix",
   "settings_support_recommended_reason": "aucun compte requis",
@@ -1190,7 +1189,6 @@
   "settings_go_further": "Aller plus loin",
   "settings_search_placeholder": "Rechercher un réglage",
   "settings_search_empty": "Aucun réglage ne correspond à « {query} ».",
-  "settings_search_clear": "Effacer la recherche",
   "settings_health_mfa_on": "Double authentification active",
   "settings_health_mfa_off": "Double authentification inactive",
   "settings_health_recovery_one": "{count} code de secours",
@@ -1216,5 +1214,7 @@
   "settings_import_last_run_items_many": "{count} éléments importés",
   "settings_import_none_yet": "Aucun import pour l'instant. Choisis une source ci-dessous.",
   "settings_export_coming_soon_label": "Bientôt : {domains}",
-  "settings_recovery_codes_regenerate": "Régénérer les codes"
+  "settings_recovery_codes_regenerate": "Régénérer les codes",
+  "settings_search_count_one": "{count} résultat pour « {query} »",
+  "settings_search_count_many": "{count} résultats pour « {query} »"
 }

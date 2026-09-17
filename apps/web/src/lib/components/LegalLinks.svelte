@@ -4,13 +4,17 @@
   import { m } from "$lib/paraglide/messages";
   import { GITHUB_REPO_URL } from "../constants/external-links";
   import BetaBadge from "./BetaBadge.svelte";
+
+  // Alignment lives in the default rather than in the base classes: Tailwind
+  // resolves conflicting utilities by stylesheet order, not by the order they
+  // appear in the attribute, so `items-center` in the base would always beat
+  // an `items-start` passed in here.
+  let { class: cls = "items-center px-4 text-center" }: { class?: string } =
+    $props();
 </script>
 
-<footer
-  class="border-border text-dim flex flex-col items-center gap-4 px-4 py-5 text-center text-xs">
-  <nav
-    aria-label={m.common_legal_information()}
-    class="flex flex-wrap justify-center gap-y-1">
+<footer class="border-border text-dim flex flex-col gap-4 py-5 text-xs {cls}">
+  <nav aria-label={m.common_legal_information()} class="flex flex-wrap gap-y-1">
     <a
       href="/legal/legal-notice"
       target="_blank"

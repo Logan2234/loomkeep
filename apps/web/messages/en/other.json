@@ -183,7 +183,6 @@
   "settings_help_chat_title": "Chat with the developer",
   "settings_help_chat_body": "A question or an issue? Message us directly.",
   "settings_section_support": "Support",
-  "settings_support_title": "Support Loomkeep",
   "settings_support_body": "Loomkeep stays free, hosted or self-hosted. If the project's been useful to you, a small gesture helps cover hosting and the time spent building it. One-time or recurring depending on the provider — account requirements vary, see the badges below.",
   "settings_support_recommended": "Our pick",
   "settings_support_recommended_reason": "no account needed",
@@ -1190,7 +1189,6 @@
   "settings_go_further": "Go further",
   "settings_search_placeholder": "Search settings",
   "settings_search_empty": "No setting matches “{query}”.",
-  "settings_search_clear": "Clear search",
   "settings_health_mfa_on": "Two-factor authentication on",
   "settings_health_mfa_off": "Two-factor authentication off",
   "settings_health_recovery_one": "{count} recovery code",
@@ -1216,5 +1214,7 @@
   "settings_import_last_run_items_many": "{count} items imported",
   "settings_import_none_yet": "No import yet. Pick a source below.",
   "settings_export_coming_soon_label": "Coming soon: {domains}",
-  "settings_recovery_codes_regenerate": "Regenerate codes"
+  "settings_recovery_codes_regenerate": "Regenerate codes",
+  "settings_search_count_one": "{count} result for “{query}”",
+  "settings_search_count_many": "{count} results for “{query}”"
 }

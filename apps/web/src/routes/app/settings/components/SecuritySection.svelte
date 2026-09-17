@@ -22,6 +22,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { isPasswordValid } from "@loomkeep/shared";
+  import { flashAnchor } from "../flash-anchor";
   import { sectionHref } from "../nav";
 
   type SecurityModal = "username" | "email" | "password" | null;
@@ -229,7 +230,10 @@
 {#if auth.user}
   <section class="card p-5 md:p-6">
     <div class="divide-border divide-y">
-      <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
+      <div
+        id="username"
+        use:flashAnchor={"username"}
+        class="flex items-center justify-between gap-4 rounded-lg py-3 first:pt-0">
         <div>
           <p class="text-dim text-sm">{m.common_username()}</p>
           <p class="font-semibold">{auth.user.username}</p>
@@ -238,7 +242,10 @@
           {m.common_edit()}
         </button>
       </div>
-      <div class="flex items-center justify-between gap-4 py-3">
+      <div
+        id="email"
+        use:flashAnchor={"email"}
+        class="flex items-center justify-between gap-4 rounded-lg py-3">
         <div class="min-w-0">
           <p class="text-dim text-sm">{m.common_email()}</p>
           <p class="flex items-center gap-1.5 font-semibold">
@@ -296,7 +303,10 @@
           {m.common_edit()}
         </button>
       </div>
-      <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
+      <div
+        id="password"
+        use:flashAnchor={"password"}
+        class="flex items-center justify-between gap-4 rounded-lg py-3 last:pb-0">
         <div>
           <p class="text-dim text-sm">{m.common_password()}</p>
           <p class="font-semibold tracking-widest">••••••••</p>

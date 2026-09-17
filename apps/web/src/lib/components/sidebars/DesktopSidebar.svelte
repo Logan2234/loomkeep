@@ -32,7 +32,11 @@
     if (navigating.to) return;
     hovered = false;
   }
-  let expanded = $derived(pinned || hovered);
+  // Settings has a nav column of its own; keeping this one expanded next to
+  // it reads as two sidebars for one page. The pin is a stored preference, so
+  // it isn't cleared — only ignored here, and hover still opens the rail.
+  const inSettings = $derived(page.url.pathname.startsWith("/app/settings"));
+  let expanded = $derived((pinned && !inSettings) || hovered);
 
   let { children } = $props();
 

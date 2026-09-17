@@ -3,12 +3,14 @@
 // section titles — someone looking for the digest hour types "fuseau", which
 // is a row inside Communications and nowhere in its name.
 import type { SettingsSectionDef } from "./nav";
-import { SETTINGS_SECTIONS } from "./nav";
+import { SETTINGS_SECTIONS, sectionHref } from "./nav";
 
 export interface SettingsSearchHit {
   section: SettingsSectionDef;
   /** The control that matched, or null when the section itself did. */
   entryLabel: string | null;
+  /** The control's anchor, so the result lands on the row and not the page. */
+  entryId: string | null;
 }
 
 /**
@@ -40,16 +42,26 @@ export function searchSettings(
 
   for (const section of sections) {
     if (matches([section.label, ...section.keywords], needle)) {
-      sectionHits.push({ section, entryLabel: null });
+      sectionHits.push({ section, entryLabel: null, entryId: null });
       continue;
     }
 
     for (const entry of section.entries) {
       if (matches([entry.label, ...entry.keywords], needle)) {
-        entryHits.push({ section, entryLabel: entry.label });
+        entryHits.push({
+          section,
+          entryLabel: entry.label,
+          entryId: entry.id,
+        });
       }
     }
   }
 
   return [...sectionHits, ...entryHits];
+}
+
+/** Where a hit leads: the section, or the row inside it that matched. */
+export function hitHref(hit: SettingsSearchHit): string {
+  const href = sectionHref(hit.section.slug);
+  return hit.entryId ? `${href}#${hit.entryId}` : href;
 }

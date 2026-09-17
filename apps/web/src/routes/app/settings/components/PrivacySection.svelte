@@ -244,6 +244,7 @@
         {@const user = auth.user}
         <div class="border-border mt-5 border-y py-5">
           <SettingRow
+            anchor="review-visibility"
             label={m.settings_privacy_default_reviews()}
             description={m.settings_privacy_default_reviews_hint()}
             mutation={reviewVisibilityMut}>
@@ -267,6 +268,7 @@
       {@const gamificationUser = auth.user}
       <div class="mt-5">
         <SettingRow
+          anchor="hide-progression"
           label={m.settings_hide_progression()}
           description={m.settings_hide_progression_desc()}
           mutation={hideProgressionMut}>

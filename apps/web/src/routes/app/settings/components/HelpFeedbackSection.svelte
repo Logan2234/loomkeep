@@ -7,24 +7,31 @@
     ROADMAP_URL,
   } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
+  import { flashAnchor } from "../flash-anchor";
 
+  // `anchor` matches the entry ids in nav.ts, so a search result for
+  // "roadmap" lands on that tile rather than at the top of the section.
   const LINKS = [
     {
+      anchor: "help-idea",
       href: FEEDBACK_FEATURE_REQUESTS_URL,
       icon: "sparkles" as const,
       label: m.common_suggest_idea(),
     },
     {
+      anchor: "help-bug",
       href: FEEDBACK_BUG_REPORTS_URL,
       icon: "flag" as const,
       label: m.common_report_bug(),
     },
     {
+      anchor: "help-roadmap",
       href: ROADMAP_URL,
       icon: "gauge" as const,
       label: m.settings_help_roadmap(),
     },
     {
+      anchor: "help-changelog",
       href: CHANGELOG_URL,
       icon: "list" as const,
       label: m.settings_help_changelog(),
@@ -43,6 +50,8 @@
   <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
     {#each LINKS as link (link.href)}
       <a
+        id={link.anchor}
+        use:flashAnchor={link.anchor}
         href={link.href}
         target="_blank"
         rel="noopener noreferrer"

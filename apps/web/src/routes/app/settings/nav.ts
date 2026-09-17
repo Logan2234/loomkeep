@@ -6,18 +6,21 @@
 import type { isFeatureNew } from "$lib/feature-badges";
 import { m } from "$lib/paraglide/messages.js";
 import type { IconName } from "$lib/types/icon-name";
-
 type FeatureBadgeKey = Parameters<typeof isFeatureNew>[0];
-
 /**
  * Below this many unused recovery codes, running out stops being a detail of
  * the 2FA screen and becomes an account-level warning — the settings layout
  * shows a banner on every section, not just the one you have to scroll to.
  */
 export const RECOVERY_CODES_LOW_THRESHOLD = 2;
-
 /** One searchable control inside a section — a row, a toggle, a field. */
 interface SettingsEntryDef {
+  /**
+   * DOM id of the control's row, so a search result can land on it rather
+   * than on the top of its section. Paired with `flashAnchor`, which brings
+   * it into view and flashes it once on arrival.
+   */
+  id: string;
   label: string;
   /**
    * Terms a user might type for this control that its label doesn't contain:
@@ -26,7 +29,6 @@ interface SettingsEntryDef {
    */
   keywords: string[];
 }
-
 export interface SettingsSectionDef {
   /** Route segment under `/app/settings`. */
   slug: string;
@@ -44,13 +46,11 @@ export interface SettingsSectionDef {
   /** The `#anchor` this section answered on before it had its own route. */
   legacyHash?: string;
 }
-
 export interface SettingsGroupDef {
   id: string;
   label: string;
   sections: SettingsSectionDef[];
 }
-
 export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   {
     id: "account",
@@ -65,14 +65,17 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         legacyHash: "securite",
         entries: [
           {
+            id: "username",
             label: m.common_username(),
             keywords: ["pseudo", "handle", "identifiant"],
           },
           {
+            id: "email",
             label: m.common_email(),
             keywords: ["mail", "adresse", "verification"],
           },
           {
+            id: "password",
             label: m.common_password(),
             keywords: ["password", "mot de passe", "motdepasse"],
           },
@@ -88,19 +91,27 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         legacyHash: "mfa",
         entries: [
           {
+            id: "mfa-totp",
             label: m.auth_mfa_totp_label(),
             keywords: ["totp", "authenticator", "aegis", "google"],
           },
-          { label: m.auth_mfa_email_label(), keywords: ["code", "otp"] },
           {
+            id: "mfa-email",
+            label: m.auth_mfa_email_label(),
+            keywords: ["code", "otp"],
+          },
+          {
+            id: "mfa-webauthn",
             label: m.settings_mfa_webauthn_label(),
             keywords: ["webauthn", "passkey", "yubikey", "biometrie"],
           },
           {
+            id: "mfa-passwordless",
             label: m.settings_mfa_passwordless_label(),
             keywords: ["passwordless", "sans mot de passe"],
           },
           {
+            id: "mfa-recovery",
             label: m.settings_mfa_recovery_title(),
             keywords: ["recovery", "secours", "backup"],
           },
@@ -114,6 +125,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         keywords: ["sessions", "devices", "deconnecter", "logout"],
         entries: [
           {
+            id: "sessions-revoke-all",
             label: m.settings_sessions_disconnect_all(),
             keywords: ["revoke", "deconnexion"],
           },
@@ -145,10 +157,12 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         legacyHash: "confidentialite",
         entries: [
           {
+            id: "review-visibility",
             label: m.settings_privacy_default_reviews(),
             keywords: ["avis", "notes", "reviews", "portee"],
           },
           {
+            id: "hide-progression",
             label: m.settings_hide_progression(),
             keywords: ["progression", "avancement", "masquer"],
           },
@@ -163,10 +177,12 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         legacyHash: "contenu",
         entries: [
           {
+            id: "birthdate",
             label: m.common_birthdate(),
             keywords: ["naissance", "birthday", "age", "date"],
           },
           {
+            id: "adult-content",
             label: m.settings_adult_content_label(),
             keywords: ["adulte", "adult", "18", "nsfw", "hentai"],
           },
@@ -187,18 +203,22 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         legacyHash: "apparence",
         entries: [
           {
+            id: "theme",
             label: m.common_theme(),
             keywords: ["theme", "sombre", "clair", "dark", "light", "salle"],
           },
           {
+            id: "language",
             label: m.common_language(),
             keywords: ["langue", "language", "francais", "english", "locale"],
           },
           {
+            id: "nav-style",
             label: m.settings_nav_style_label(),
             keywords: ["navigation", "rail", "marquee"],
           },
           {
+            id: "mobile-nav",
             label: m.settings_mobile_nav_bar_label(),
             keywords: ["raccourcis", "shortcuts", "barre", "mobile"],
           },
@@ -231,18 +251,22 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         legacyHash: "communications",
         entries: [
           {
+            id: "timezone",
             label: m.common_timezone(),
             keywords: ["fuseau", "timezone", "heure", "horaire", "utc"],
           },
           {
+            id: "email-digest",
             label: m.common_email(),
             keywords: ["resume", "digest", "episodes", "hebdo"],
           },
           {
+            id: "push",
             label: m.common_push_notifications(),
             keywords: ["push", "alerte", "notification"],
           },
           {
+            id: "newsletter",
             label: m.common_newsletter(),
             keywords: ["newsletter", "nouveautes", "release"],
           },
@@ -296,10 +320,26 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         keywords: ["aide", "help", "bug", "idee", "roadmap", "changelog"],
         legacyHash: "aide",
         entries: [
-          { label: m.common_suggest_idea(), keywords: ["feature", "idee"] },
-          { label: m.common_report_bug(), keywords: ["bug", "probleme"] },
-          { label: m.settings_help_roadmap(), keywords: ["roadmap"] },
-          { label: m.settings_help_changelog(), keywords: ["changelog"] },
+          {
+            id: "help-idea",
+            label: m.common_suggest_idea(),
+            keywords: ["feature", "idee"],
+          },
+          {
+            id: "help-bug",
+            label: m.common_report_bug(),
+            keywords: ["bug", "probleme"],
+          },
+          {
+            id: "help-roadmap",
+            label: m.settings_help_roadmap(),
+            keywords: ["roadmap"],
+          },
+          {
+            id: "help-changelog",
+            label: m.settings_help_changelog(),
+            keywords: ["changelog"],
+          },
         ],
       },
       {
@@ -332,7 +372,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
     ],
   },
 ];
-
 export const SETTINGS_SECTIONS: SettingsSectionDef[] = SETTINGS_GROUPS.flatMap(
   (group) => group.sections,
 );

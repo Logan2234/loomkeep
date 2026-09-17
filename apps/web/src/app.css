@@ -222,6 +222,26 @@ body {
   .skeleton {
     @apply bg-surface-2 animate-pulse;
   }
+  /* One-shot "here it is" for the row a settings search result pointed at:
+     a short lift out of the surface and an accent ring that fades with it. */
+  .setting-flash {
+    animation: setting-flash 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes setting-flash {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 transparent;
+    }
+    35% {
+      transform: scale(1.015);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 6px transparent;
+    }
+  }
+
   /* Native scroll (and drag-to-scroll) without the browser's scrollbar chrome. */
   .no-scrollbar {
     scrollbar-width: none;

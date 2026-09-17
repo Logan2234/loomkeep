@@ -114,6 +114,7 @@
   <section class="card p-5 md:p-6">
     <div class="divide-border divide-y">
       <SettingRow
+        anchor="timezone"
         label={m.common_timezone()}
         description={m.settings_communications_timezone_desc()}
         mutation={timezoneMut}>
@@ -128,6 +129,7 @@
       </SettingRow>
 
       <SettingRow
+        anchor="email-digest"
         label={m.common_email()}
         description={m.settings_communications_email_desc()}
         mutation={emailCadenceMut}>
@@ -140,6 +142,7 @@
       </SettingRow>
 
       <SettingRow
+        anchor="push"
         label={m.common_push_notifications()}
         description={pushSupported
           ? m.settings_communications_push_desc()
@@ -155,6 +158,7 @@
       </SettingRow>
 
       <SettingRow
+        anchor="newsletter"
         label={m.common_newsletter()}
         description={m.settings_communications_newsletter_desc()}
         mutation={newsletterMut}>

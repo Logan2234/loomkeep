@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";
-import { fold, searchSettings } from "./search";
+import { fold, hitHref, searchSettings } from "./search";
 
 describe("settings search", () => {
   it("ignores case and diacritics", () => {
@@ -29,6 +29,14 @@ describe("settings search", () => {
     expect(hits[0].section.slug).toBe("communications");
     expect(hits[0].entryLabel).toBeNull();
     expect(hits.some((hit) => hit.entryLabel !== null)).toBe(true);
+  });
+
+  it("points a row match at its anchor, and a section match at the page", () => {
+    const [row] = searchSettings("fuseau");
+    const [section] = searchSettings("import");
+
+    expect(hitHref(row)).toBe("/app/settings/communications#timezone");
+    expect(hitHref(section)).toBe("/app/settings/import");
   });
 
   it("only searches the sections it is given", () => {
