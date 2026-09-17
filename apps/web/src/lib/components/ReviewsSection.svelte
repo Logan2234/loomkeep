@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    getMyReview,
     getReviewsForTarget,
+    reportReview,
     unvoteReview,
     voteReview,
   } from "$lib/api/client";
@@ -10,47 +10,63 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
+  import { formatNumber } from "$lib/format";
+  import { createMyReview } from "$lib/my-review.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    arrangeReviews,
+    summarizeReviews,
+    type ReviewArrangement,
+  } from "$lib/review-community";
   import type {
+    ReportCategory,
+    ReportMotif,
     ReviewDto,
     ReviewTargetType,
     ReviewVoteValue,
   } from "@loomkeep/shared";
-  import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
-  import LevelBadge from "./LevelBadge.svelte";
+  import NewBadge from "./NewBadge.svelte";
+  import ReportModal from "./ReportModal.svelte";
+  import ReviewCard from "./ReviewCard.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import type { Snippet } from "svelte";
+  import { untrack, type Snippet } from "svelte";
 
-  // Always-visible review section for a work's detail page: the viewer's own
-  // review (add/edit via the shared modal) + everyone else's, visibility-
-  // filtered server-side. Anchored at the very bottom of the page — or, for a
-  // season/episode target, embedded directly inside a Modal (EpisodesSection),
-  // in which case `compact` drops the top margin the Modal's own heading
-  // already accounts for.
+  // Always-visible review section for a work's detail page: a community
+  // summary, the viewer's own review (add/edit via the shared modal) and
+  // everyone else's, visibility-filtered server-side. Anchored at the very
+  // bottom of the page — or, for a season/episode target, embedded directly
+  // inside a Modal (EpisodesSection), in which case `compact` drops the top
+  // margin the Modal's own heading already accounts for.
   let {
     targetType,
     targetId,
     workTitle,
+    workMeta,
+    workImageUrl,
     compact = false,
     actions,
   }: {
     targetType: ReviewTargetType;
     targetId: string;
     workTitle: string;
+    /** Forwarded to the review modal's timecode line. */
+    workMeta?: string;
+    /** Forwarded to the review modal's thumbnail. */
+    workImageUrl?: string | null;
     compact?: boolean;
     actions?: Snippet;
   } = $props();
 
+  // Below this, an average and a histogram say less than the cards do.
+  const SUMMARY_MIN_REVIEWS = 3;
+
   const queryClient = useQueryClient();
 
-  const myReviewQuery = createApiQuery(() => ({
-    key: keys.reviews.mine(targetType, targetId),
-    fetch: () => getMyReview(targetType, targetId),
-  }));
-  const myReview = $derived(myReviewQuery.data);
-  const myReviewLoaded = $derived(!myReviewQuery.loading);
+  const mine = createMyReview(() => ({ targetType, targetId }));
+  const myReview = $derived(mine.review);
 
   const communityQuery = createApiQuery(() => ({
     key: keys.reviews.community(targetType, targetId),
@@ -61,19 +77,42 @@
   const communityLoaded = $derived(!communityQuery.loading);
 
   let editing = $state(false);
+  let reportingId = $state<string | null>(null);
+  let arrangement = $state<ReviewArrangement>("useful");
 
   // `listForTarget` always includes the viewer's own review — keep the
-  // community list to everyone else so it isn't shown twice.
+  // community list to everyone else so it isn't shown twice. The summary
+  // takes the viewer's review from its own query, which a save updates
+  // immediately, instead of the community copy fetched before it.
   const othersReviews = $derived(
     allReviews.filter((r) => r.author?.id !== auth.user?.id),
   );
+  const ratedReviews = $derived(
+    myReview ? [myReview, ...othersReviews] : othersReviews,
+  );
+  // A vote rewrites the community cache without touching any rating, so the
+  // summary only recomputes when the ratings themselves change.
+  const ratingsKey = $derived(
+    ratedReviews.map((r) => `${r.rating}:${r.byFriend}`).join(","),
+  );
+  const summary = $derived.by(() => {
+    void ratingsKey;
+    return untrack(() => summarizeReviews(ratedReviews));
+  });
+  const showSummary = $derived(summary.count >= SUMMARY_MIN_REVIEWS);
+  const mostCommon = $derived(Math.max(...summary.distribution));
+  const myBucket = $derived(myReview ? Math.round(myReview.rating) : null);
+  const shownOthers = $derived(arrangeReviews(othersReviews, arrangement));
+  const showMineInList = $derived(!!myReview && arrangement !== "friends");
 
-  function handleSaved(updated: ReviewDto) {
-    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), updated);
-  }
+  const ARRANGEMENTS: { value: ReviewArrangement; label: () => string }[] = [
+    { value: "useful", label: m.reviews_sort_useful },
+    { value: "recent", label: m.reviews_sort_recent },
+    { value: "friends", label: m.common_friends },
+  ];
 
-  function handleDeleted() {
-    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), null);
+  function formatAverage(value: number): string {
+    return formatNumber(value, { maximumFractionDigits: 1 });
   }
 
   // Reddit-style: clicking the already-active direction removes the vote,
@@ -104,25 +143,45 @@
     return voteMut.loading && voteMut.variables?.review.id === id;
   }
 
-  function castVote(review: ReviewDto, value: ReviewVoteValue) {
-    voteMut.mutate({ review, value });
+  const reportMut = createApiMutation(() => ({
+    mutate: (args: {
+      reviewId: string;
+      category: ReportCategory;
+      motif?: ReportMotif;
+      reason?: string;
+    }) => reportReview(args.reviewId, args.category, args.motif, args.reason),
+    successToast: m.reviews_reported(),
+    errorToast: true,
+    onSuccess: () => (reportingId = null),
+  }));
+
+  function submitReport(report: {
+    category: ReportCategory;
+    motif?: ReportMotif;
+    reason?: string;
+  }) {
+    if (reportingId) reportMut.mutate({ reviewId: reportingId, ...report });
   }
 </script>
 
 <section class={compact ? "" : "mt-6"}>
   <div class="mb-3 flex items-center gap-2">
-    <h2 class="font-display min-w-0 flex-1 text-xl font-bold">
+    <h2
+      class="font-display flex min-w-0 flex-1 items-center gap-2 text-xl font-bold">
       {#if appConfig.socialEnabled}
         {m.reviews_section_community_title({ count: othersReviews.length })}
       {:else}
         {m.reviews_section_my_review_title()}
+      {/if}
+      {#if isFeatureNew("reviews-redesign")}
+        <NewBadge />
       {/if}
     </h2>
     <div class="flex shrink-0 items-center gap-1">
       {#if actions}
         {@render actions()}
       {/if}
-      {#if myReviewLoaded}
+      {#if mine.loaded}
         <button class="btn btn-ghost btn-sm" onclick={() => (editing = true)}>
           {myReview ? m.common_edit() : m.common_add()}
         </button>
@@ -130,154 +189,124 @@
     </div>
   </div>
 
-  {#if myReview}
-    <div class="card mb-3 p-3">
-      <div class="flex items-center gap-3">
-        {#if auth.user}
-          <Avatar
-            seed={auth.user.username}
-            url={auth.user.avatarUrl}
-            size={32} />
-        {/if}
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-semibold">
-            {m.reviews_section_your_review()}
-          </p>
-          {#if appConfig.socialEnabled}
-            <p class="timecode flex items-center gap-2 text-xs">
-              <span
-                >{myReview.visibility === "PUBLIC"
-                  ? m.common_public()
-                  : m.common_friends()}</span>
-              {#if myReview.voteScore !== 0}
-                <span aria-label={m.reviews_section_vote_score_label()}
-                  >{myReview.voteScore > 0
-                    ? `+${myReview.voteScore}`
-                    : myReview.voteScore}</span>
-              {/if}
-            </p>
+  <div class="flex flex-col gap-2.5">
+    {#if appConfig.socialEnabled && showSummary}
+      <div class="card grid grid-cols-[auto_1fr] items-center gap-[18px] p-4">
+        <div class="flex flex-col items-start">
+          <span
+            class="font-display text-[2.6rem] leading-none font-extrabold tabular-nums">
+            {formatAverage(summary.average!)}<span
+              class="timecode text-[0.8rem] font-normal">&nbsp;/10</span>
+          </span>
+          <span class="text-dim mt-1 text-xs">
+            {summary.count === 1
+              ? m.reviews_count_one({ count: summary.count })
+              : m.reviews_count_other({ count: summary.count })}
+          </span>
+          {#if summary.friendsAverage !== null}
+            <span
+              class="mt-2 flex items-center gap-1.5 text-xs"
+              title={m.reviews_friends_average()}>
+              <Icon name="users" class="text-dim h-3.5 w-3.5" />
+              {m.common_friends()}
+              <b class="text-accent font-mono">
+                {formatAverage(summary.friendsAverage)}
+              </b>
+            </span>
           {/if}
         </div>
-        <span
-          class="bg-accent/15 text-accent shrink-0 rounded-md px-2.5 py-1 font-mono font-bold tabular-nums">
-          {myReview.rating}<span class="text-accent/60 text-xs">/10</span>
-        </span>
-      </div>
-      {#if myReview.text}
-        <p class="mt-2 text-sm leading-relaxed wrap-break-word">
-          {myReview.text}
-        </p>
-      {/if}
-    </div>
-  {/if}
 
-  {#if appConfig.socialEnabled}
-    {#if communityLoaded && othersReviews.length === 0}
-      <p class="text-dim text-sm">
-        {m.reviews_section_empty_community()}
-      </p>
-    {:else if othersReviews.length > 0}
-      <ul class="flex flex-col gap-2">
-        {#each othersReviews as review (review.id)}
-          <li class="card p-3">
-            <div class="flex items-center gap-3">
-              <div class="flex shrink-0 flex-col items-center gap-0.5">
-                <button
-                  type="button"
-                  class="hover:text-accent disabled:opacity-40 {review.myVote ===
-                  'UP'
-                    ? 'text-accent'
-                    : 'text-dim'}"
-                  aria-label={m.reviews_section_vote_up()}
-                  title={m.reviews_section_vote_up()}
-                  aria-pressed={review.myVote === "UP"}
-                  disabled={isVoting(review.id)}
-                  onclick={() => castVote(review, "UP")}>
-                  <Icon name="chevron-up" class="h-4 w-4" />
-                </button>
-                <span class="timecode text-xs font-semibold">
-                  {review.voteScore}
-                </span>
-                <button
-                  type="button"
-                  class="hover:text-accent disabled:opacity-40 {review.myVote ===
-                  'DOWN'
-                    ? 'text-accent'
-                    : 'text-dim'}"
-                  aria-label={m.reviews_section_vote_down()}
-                  title={m.reviews_section_vote_down()}
-                  aria-pressed={review.myVote === "DOWN"}
-                  disabled={isVoting(review.id)}
-                  onclick={() => castVote(review, "DOWN")}>
-                  <Icon name="chevron-down" class="h-4 w-4" />
-                </button>
-              </div>
-              <div class="flex min-w-0 flex-1 gap-2">
-                {#if !review.author}
-                  <span class="shrink-0">
-                    <Avatar seed="utilisateur-supprime" size={32} />
-                  </span>
-                  <p class="text-dim truncate text-sm font-semibold italic">
-                    {m.common_deleted_user()}
-                  </p>
-                {:else if review.author.anonymized}
-                  <!-- Seeded on the derived pseudonym, never the real id — a
-                     stable seed would let the same identicon resurface across
-                     unrelated works and quietly de-anonymize the author. -->
-                  <span class="shrink-0">
-                    <Avatar seed={review.author.displayName} size={32} />
-                  </span>
-                  <p class="timecode truncate text-sm font-semibold">
-                    {review.author.displayName}
-                  </p>
-                {:else}
-                  <a
-                    href="/app/u/{review.author.username}"
-                    class="flex shrink-0 items-center">
-                    <Avatar
-                      seed={review.author.username}
-                      url={review.author.avatarUrl}
-                      size={32} />
-                  </a>
-                  <a href="/app/u/{review.author.username}">
-                    <p
-                      class="flex items-center gap-1.5 truncate text-sm font-semibold hover:underline">
-                      {review.author.displayName}
-                      {#if appConfig.gamificationEnabled}
-                        <LevelBadge xp={review.author.xp} />
-                      {/if}
-                    </p>
-                    <p class="timecode truncate text-xs">
-                      @{review.author.username}
-                    </p>
-                  </a>
+        <div
+          class="grid h-[86px] grid-cols-11 items-end gap-[3px]"
+          role="img"
+          aria-label={m.reviews_distribution_label()}>
+          {#each summary.distribution as count, rating (rating)}
+            <div
+              class="flex h-full flex-col items-center gap-[3px]"
+              title={m.reviews_distribution_bar({ count, rating })}>
+              <div class="border-border flex w-full flex-1 items-end border-b">
+                {#if count > 0}
+                  <i
+                    class="block min-h-0.5 w-full rounded-t-[3px]"
+                    class:histogram-bar={count !== mostCommon}
+                    class:bg-accent={count === mostCommon}
+                    class:ring-fg={rating === myBucket}
+                    class:ring-2={rating === myBucket}
+                    class:ring-inset={rating === myBucket}
+                    style="height: {(count / mostCommon) * 100}%"></i>
                 {/if}
               </div>
-              <span
-                class="bg-accent/15 text-accent shrink-0 rounded-md px-2.5 py-1 font-mono font-bold tabular-nums">
-                {review.rating}<span class="text-accent/60 text-xs">/10</span>
-              </span>
+              <span class="timecode text-[0.6rem]">{rating}</span>
             </div>
-            {#if review.text}
-              <p class="mt-2 text-sm leading-relaxed wrap-break-word">
-                {review.text}
-              </p>
-            {/if}
-          </li>
-        {/each}
-      </ul>
+          {/each}
+        </div>
+      </div>
     {/if}
-  {/if}
+
+    {#if appConfig.socialEnabled && othersReviews.length > 0}
+      <div class="flex flex-wrap gap-1.5">
+        {#each ARRANGEMENTS as option (option.value)}
+          <button
+            type="button"
+            class="chip"
+            class:chip-on={arrangement === option.value}
+            aria-pressed={arrangement === option.value}
+            onclick={() => (arrangement = option.value)}>
+            {option.label()}
+          </button>
+        {/each}
+      </div>
+    {/if}
+
+    {#if myReview && (showMineInList || !appConfig.socialEnabled)}
+      <ReviewCard review={myReview} mine onEdit={() => (editing = true)} />
+    {/if}
+
+    {#if appConfig.socialEnabled}
+      {#if communityLoaded && othersReviews.length === 0}
+        <p class="text-dim text-sm">
+          {m.reviews_section_empty_community()}
+        </p>
+      {:else if arrangement === "friends" && shownOthers.length === 0}
+        <p class="text-dim text-sm">{m.reviews_filter_friends_empty()}</p>
+      {:else}
+        {#each shownOthers as review (review.id)}
+          <ReviewCard
+            {review}
+            voting={isVoting(review.id)}
+            votesLocked={voteMut.loading}
+            onVote={(value) => voteMut.mutate({ review, value })}
+            onReport={() => (reportingId = review.id)} />
+        {/each}
+      {/if}
+    {/if}
+  </div>
 </section>
 
 {#if editing}
   <ReviewFormModal
     title={workTitle}
+    meta={workMeta}
+    imageUrl={workImageUrl}
     {targetType}
     {targetId}
     review={myReview}
     defaultVisibility={auth.user?.defaultReviewVisibility ?? "FRIENDS"}
     onClose={() => (editing = false)}
-    onSaved={handleSaved}
-    onDeleted={handleDeleted} />
+    onSaved={mine.set}
+    onDeleted={() => mine.set(null)} />
 {/if}
+
+{#if reportingId}
+  <ReportModal
+    title={m.reviews_report_title()}
+    targetType="REVIEW"
+    onClose={() => (reportingId = null)}
+    onSubmit={submitReport} />
+{/if}
+
+<style>
+  .histogram-bar {
+    background: color-mix(in srgb, var(--accent) 35%, var(--surface-2));
+  }
+</style>

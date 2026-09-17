@@ -14,6 +14,7 @@ export interface MailCopy {
   };
   moderation: {
     comment: ModerationVariant;
+    review: ModerationVariant;
     account: ModerationVariant;
     illegalBasis: string;
     tosBasis: (clause: string) => string;
@@ -124,6 +125,10 @@ export const MAIL_COPY = {
       comment: {
         measure: "le retrait d'un de tes commentaires",
         subject: "Un de tes commentaires a été retiré",
+      },
+      review: {
+        measure: "le retrait d'une de tes critiques",
+        subject: "Une de tes critiques a été retirée",
       },
       account: {
         measure: "la suppression de ton compte Loomkeep",
@@ -254,6 +259,10 @@ export const MAIL_COPY = {
       comment: {
         measure: "the removal of one of your comments",
         subject: "One of your comments has been removed",
+      },
+      review: {
+        measure: "the removal of one of your reviews",
+        subject: "One of your reviews has been removed",
       },
       account: {
         measure: "the deletion of your Loomkeep account",

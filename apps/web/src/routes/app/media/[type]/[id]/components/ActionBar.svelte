@@ -169,7 +169,7 @@
               <button
                 role="menuitem"
                 type="button"
-                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                class="menu-item"
                 onclick={() => {
                   close();
                   onResume();
@@ -181,7 +181,7 @@
               <button
                 role="menuitem"
                 type="button"
-                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                class="menu-item"
                 onclick={() => {
                   close();
                   onDrop();
@@ -193,7 +193,7 @@
             <button
               role="menuitem"
               type="button"
-              class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
+              class="menu-item menu-item-danger border-border border-t"
               onclick={() => {
                 close();
                 onRemove();

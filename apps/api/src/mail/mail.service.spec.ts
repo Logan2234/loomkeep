@@ -377,6 +377,15 @@ describe("MailService template gallery", () => {
     expect(preview?.text).toContain("This decision was made by a moderator");
   });
 
+  it("names a removed review in the moderation notice", () => {
+    const service = new MailService(quota);
+    const preview = service.renderTemplatePreview("moderationDecision", "en", {
+      measure: "REVIEW_REMOVED",
+    });
+
+    expect(preview?.subject).toBe("One of your reviews has been removed");
+  });
+
   it("localizes dates but leaves newsletter copy as authored", () => {
     const service = new MailService(quota);
     const inactivity = service.renderTemplatePreview(

@@ -276,7 +276,7 @@ export class MailService {
       fields: [
         {
           key: "measure",
-          label: "Mesure (COMMENT_REMOVED ou ACCOUNT_DELETED)",
+          label: "Mesure (COMMENT_REMOVED, REVIEW_REMOVED ou ACCOUNT_DELETED)",
           default: "COMMENT_REMOVED",
         },
         {
@@ -298,10 +298,11 @@ export class MailService {
       ],
       build: (locale, v) =>
         this.buildModerationDecision(locale, {
-          measure:
-            v.measure === ModerationMeasure.ACCOUNT_DELETED
-              ? ModerationMeasure.ACCOUNT_DELETED
-              : ModerationMeasure.COMMENT_REMOVED,
+          measure: Object.values(ModerationMeasure).includes(
+            v.measure as ModerationMeasure,
+          )
+            ? (v.measure as ModerationMeasure)
+            : ModerationMeasure.COMMENT_REMOVED,
           legalBasis:
             v.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
               ? ModerationLegalBasis.ILLEGAL_CONTENT
@@ -635,10 +636,11 @@ export class MailService {
     },
   ): TemplateBody {
     const copy = MAIL_COPY[locale].moderation;
-    const variant =
-      input.measure === ModerationMeasure.COMMENT_REMOVED
-        ? copy.comment
-        : copy.account;
+    const variant = {
+      [ModerationMeasure.COMMENT_REMOVED]: copy.comment,
+      [ModerationMeasure.REVIEW_REMOVED]: copy.review,
+      [ModerationMeasure.ACCOUNT_DELETED]: copy.account,
+    }[input.measure];
     const basisText =
       input.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
         ? copy.illegalBasis

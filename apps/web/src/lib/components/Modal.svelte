@@ -9,6 +9,8 @@
 
   let {
     title,
+    eyebrow,
+    leading,
     onclose,
     children,
     wide = false,
@@ -17,6 +19,10 @@
     overflowVisible = false,
   }: {
     title: string;
+    /** Metadata line above the title (timecode voice). */
+    eyebrow?: string;
+    /** Visual before the title block, e.g. a work's poster thumbnail. */
+    leading?: Snippet;
     onclose: () => void;
     children: Snippet;
     /** Wider variant (max-w-2xl instead of max-w-md), for content like tables. */
@@ -58,9 +64,25 @@
       <Icon name="x" class="h-5 w-5" />
     </button>
   {/if}
-  <h3 id="modal-title" class="font-display mb-4 text-lg font-bold">
-    {title}
-  </h3>
+  {#if leading || eyebrow}
+    <div class="mb-4 flex items-center gap-3 pr-8">
+      {@render leading?.()}
+      <div class="min-w-0">
+        {#if eyebrow}
+          <p class="timecode truncate text-[0.7rem] uppercase">{eyebrow}</p>
+        {/if}
+        <h3
+          id="modal-title"
+          class="font-display text-lg leading-tight font-bold text-balance">
+          {title}
+        </h3>
+      </div>
+    </div>
+  {:else}
+    <h3 id="modal-title" class="font-display mb-4 text-lg font-bold">
+      {title}
+    </h3>
+  {/if}
 {/snippet}
 
 {#if isDesktop}

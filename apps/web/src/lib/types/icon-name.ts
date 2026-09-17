@@ -50,6 +50,7 @@ export type IconName =
   | "share"
   | "qr-code"
   | "camera"
+  | "globe"
   | "link"
   | "logout"
   | "sparkles"

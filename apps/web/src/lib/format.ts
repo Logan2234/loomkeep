@@ -219,3 +219,12 @@ export function formatBytes(bytes: number): string {
   );
   return `${number} ${units[unit]}`;
 }
+
+/** Metadata parts joined with a middle dot ("Film · 2024"), skipping empty ones. */
+export function joinMeta(
+  ...parts: (string | number | null | undefined)[]
+): string {
+  return parts
+    .filter((part) => part !== null && part !== undefined && part !== "")
+    .join(" · ");
+}

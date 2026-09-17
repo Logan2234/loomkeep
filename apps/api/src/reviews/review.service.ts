@@ -51,6 +51,7 @@ type ReviewRow = {
   rating: number;
   text: string | null;
   visibility: string;
+  spoilerTag: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -109,6 +110,7 @@ export class ReviewService {
     row: ReviewRow,
     author: UserSummaryDto | null,
     votes: { score: number; myVote: ReviewVoteValue | null },
+    byFriend = false,
   ): ReviewDto {
     return {
       id: row.id,
@@ -117,11 +119,13 @@ export class ReviewService {
       rating: row.rating,
       text: row.text,
       visibility: row.visibility as ReviewVisibility,
+      spoilerTag: row.spoilerTag,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       author,
       voteScore: votes.score,
       myVote: votes.myVote,
+      byFriend,
     };
   }
 
@@ -299,7 +303,12 @@ export class ReviewService {
 
     const row = await this.prisma.review.upsert({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      update: { rating: dto.rating, text, visibility },
+      update: {
+        rating: dto.rating,
+        text,
+        visibility,
+        spoilerTag: dto.spoilerTag,
+      },
       create: {
         userId,
         targetType,
@@ -307,6 +316,7 @@ export class ReviewService {
         rating: dto.rating,
         text,
         visibility,
+        spoilerTag: dto.spoilerTag ?? false,
       },
     });
 
@@ -315,14 +325,14 @@ export class ReviewService {
     const contentChanged =
       !existing || existing.rating !== dto.rating || existing.text !== text;
 
+    // Audience/spoiler-only edits aren't news: no revision, no feed entry.
     if (contentChanged) {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating: dto.rating, text },
       });
+      await this.emitReviewed(userId, targetType, targetId, dto.rating);
+      await this.awardReviewRatingXp(userId, row.id, text);
     }
-
-    await this.emitReviewed(userId, targetType, targetId, dto.rating);
-    await this.awardReviewRatingXp(userId, row.id, text);
 
     // first_take unlocks off the review's creation, not every edit.
     if (!existing) {
@@ -391,6 +401,32 @@ export class ReviewService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
 
     if (existing) await this.xp.revokeBySource("Review", [existing.id]);
+  }
+
+  /**
+   * Moderation take-down: a review has no tombstone (nothing hangs off it
+   * the way replies hang off a comment), so it is deleted outright, with its
+   * XP. Returns what the DSA statement of reasons needs, captured before the
+   * row disappears.
+   */
+  async adminRemove(
+    id: string,
+  ): Promise<{ authorId: string | null; rating: number; text: string | null }> {
+    const review = await this.prisma.review.findUnique({
+      where: { id },
+      select: { id: true, userId: true, rating: true, text: true },
+    });
+    if (!review)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+
+    await this.prisma.review.delete({ where: { id } });
+    await this.xp.revokeBySource("Review", [id]);
+
+    return {
+      authorId: review.userId,
+      rating: review.rating,
+      text: review.text,
+    };
   }
 
   /** The edit history of the user's own review (newest first). */
@@ -662,12 +698,12 @@ export class ReviewService {
       if (
         resolveReviewVisibility(row.visibility, author.profileAccess, relation)
       ) {
+        const shown = anonymizeAuthor(author, viewerId, targetType, targetId);
+        // A pseudonymous author must stay unlinkable — flagging them as a
+        // friend would narrow the pseudonym down to the viewer's friend list.
+        const byFriend = relation.isFriend && !shown.anonymized;
         visible.push(
-          this.toDto(
-            row,
-            withBadges(anonymizeAuthor(author, viewerId, targetType, targetId)),
-            votesFor(row.id),
-          ),
+          this.toDto(row, withBadges(shown), votesFor(row.id), byFriend),
         );
       }
     }

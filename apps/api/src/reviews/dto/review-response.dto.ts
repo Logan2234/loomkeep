@@ -13,9 +13,11 @@ export class ReviewResponseDto implements ReviewDto {
   rating!: number;
   text!: string | null;
   visibility!: ReviewVisibility;
+  spoilerTag!: boolean;
   createdAt!: string;
   updatedAt!: string;
   author!: UserSummaryResponseDto | null;
   voteScore!: number;
   myVote!: ReviewVoteValue | null;
+  byFriend!: boolean;
 }

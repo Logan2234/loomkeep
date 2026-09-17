@@ -13,6 +13,8 @@ export interface ReviewDto {
   rating: number;
   text: string | null;
   visibility: ReviewVisibility;
+  /** Author-set spoiler flag — the client masks the text until revealed. */
+  spoilerTag: boolean;
   createdAt: string;
   updatedAt: string;
   /** Null once the author's account has been deleted — rating/text stay, identity doesn't. */
@@ -21,6 +23,8 @@ export interface ReviewDto {
   voteScore: number;
   /** The viewer's own vote on this review, or null if they haven't voted. */
   myVote: ReviewVoteValue | null;
+  /** Written by one of the viewer's friends (never true for their own or a pseudonymous review). */
+  byFriend: boolean;
 }
 
 /** Minimal display info for the work a review targets. */
@@ -52,6 +56,8 @@ export interface UpsertReviewDto {
   rating: number;
   text?: string | null;
   visibility?: ReviewVisibility;
+  /** Omitted on update = keep the current flag. */
+  spoilerTag?: boolean;
 }
 
 /** Count of reviews affected by a bulk delete/visibility change. */

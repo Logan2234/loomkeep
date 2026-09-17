@@ -24,7 +24,7 @@ export interface RecordModerationDecisionInput {
   reasonMotif?: ReportMotif | null;
   reasonText: string;
   tosClause: string;
-  /** COMMENT_REMOVED only: the comment's text before the tombstone nulled it. */
+  /** Content removals only: what the removed content said (for a review, its rating too). */
   contentSnapshot?: string | null;
   decidedById: string;
   reportId?: string | null;
@@ -87,8 +87,13 @@ export class ModerationDecisionService {
   }
 
   private notificationTitle(measure: ModerationMeasure): string {
-    return measure === ModerationMeasure.COMMENT_REMOVED
-      ? "Un de tes commentaires a été retiré"
-      : "Une mesure a été prise sur ton compte";
+    switch (measure) {
+      case ModerationMeasure.COMMENT_REMOVED:
+        return "Un de tes commentaires a été retiré";
+      case ModerationMeasure.REVIEW_REMOVED:
+        return "Une de tes critiques a été retirée";
+      default:
+        return "Une mesure a été prise sur ton compte";
+    }
   }
 }
