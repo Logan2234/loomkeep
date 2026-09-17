@@ -515,3 +515,51 @@ describe("ImportJobService — retained payloads", () => {
     expect(jobs(service).has("analyzed-1")).toBe(true);
   });
 });
+
+describe("ImportJobService.getLastRun", () => {
+  function makeService(findFirst: ReturnType<typeof vi.fn>) {
+    return new ImportJobService(
+      [],
+      { importRun: { findFirst } } as unknown as PrismaService,
+      {} as ConfigService,
+      {} as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+  }
+
+  it("reports an absent run rather than an empty body", async () => {
+    const service = makeService(vi.fn().mockResolvedValue(null));
+
+    await expect(service.getLastRun("u1")).resolves.toEqual({ run: null });
+  });
+
+  it("returns the caller's most recent run, failures included", async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      sourceId: "tvtime",
+      domain: Domain.MEDIA,
+      status: "FAILURE",
+      itemCount: 0,
+      summary: null,
+      finishedAt: new Date("2026-09-12T08:30:00.000Z"),
+    });
+
+    await expect(makeService(findFirst).getLastRun("u1")).resolves.toEqual({
+      run: {
+        sourceId: "tvtime",
+        domain: Domain.MEDIA,
+        status: "FAILURE",
+        itemCount: 0,
+        summary: null,
+        finishedAt: "2026-09-12T08:30:00.000Z",
+      },
+    });
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u1" },
+        orderBy: { finishedAt: "desc" },
+      }),
+    );
+  });
+});
