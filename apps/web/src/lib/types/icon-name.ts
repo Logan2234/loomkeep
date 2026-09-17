@@ -70,4 +70,5 @@ export type IconName =
   | "pumpkin"
   | "crown"
   | "key"
+  | "keyboard"
   | "send";

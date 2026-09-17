@@ -572,6 +572,20 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             label: m.settings_help_chat_title(),
             keywords: ["chat", "developer", "message", "contact"],
           },
+          {
+            id: "help-shortcuts",
+            label: m.settings_shortcuts_title(),
+            keywords: [
+              "shortcuts",
+              "raccourcis",
+              "clavier",
+              "keyboard",
+              "hotkeys",
+              "alt",
+              "cmd",
+              "ctrl",
+            ],
+          },
         ],
       },
       {

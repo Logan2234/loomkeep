@@ -78,4 +78,21 @@
       {m.settings_help_chat_title()}
     </button>
   </section>
+
+  <a
+    id="help-shortcuts"
+    use:flashAnchor={{ anchor: "help-shortcuts", hash: page.url.hash }}
+    href="/app/settings/help/shortcuts"
+    class="card hover:border-accent hover:bg-surface-2 flex items-center gap-3 p-4 transition-[border-color,background-color]">
+    <Icon name="keyboard" class="text-accent h-4 w-4 shrink-0" />
+    <span class="min-w-0 flex-1">
+      <span class="block text-sm font-semibold">
+        {m.settings_shortcuts_title()}
+      </span>
+      <span class="text-dim block text-xs">
+        {m.settings_shortcuts_link_hint()}
+      </span>
+    </span>
+    <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+  </a>
 </div>

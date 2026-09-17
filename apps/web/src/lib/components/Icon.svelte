@@ -262,5 +262,16 @@
   {:else if name === "key"}
     <circle cx="8" cy="8" r="4.2" />
     <path d="M11 11l9 9M16 16l2.5-2.5M18.5 18.5 21 16" />
+  {:else if name === "keyboard"}
+    <rect x="2" y="6" width="20" height="13" rx="2" />
+    <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01" />
+    <rect
+      x="8"
+      y="13.2"
+      width="8"
+      height="1.8"
+      rx="0.9"
+      fill="currentColor"
+      stroke="none" />
   {/if}
 </svg>
