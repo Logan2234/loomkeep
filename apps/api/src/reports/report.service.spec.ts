@@ -26,6 +26,7 @@ function make(
     },
     review: {
       findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       ...overrides.review,
     },
     user: {
@@ -306,19 +307,96 @@ describe("ReportService.list — target resolution", () => {
         ]),
       },
       review: {
-        findUnique: vi.fn().mockResolvedValue({
-          rating: 3,
-          text: "fake review",
-          targetType: "MEDIA",
-          targetId: "m1",
-          user: { username: "troll" },
-        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rev1",
+            rating: 3,
+            text: "fake review",
+            targetType: "MEDIA",
+            targetId: "m1",
+            user: { username: "troll" },
+          },
+        ]),
       },
     });
     const page = await svc.list(undefined, 1);
     expect(page.items[0].target?.targetOwnerUsername).toBe("troll");
     expect(page.items[0].target?.label).toContain("3/10");
     expect(page.items[0].target?.label).toContain("fake review");
+  });
+
+  it("loads every reviewed target of a page in one query", async () => {
+    const reportRow = (id: string, targetId: string) => ({
+      id,
+      targetType: "REVIEW",
+      targetId,
+      reason: null,
+      status: "PENDING",
+      createdAt: new Date(),
+      resolvedAt: null,
+      reporter: null,
+    });
+    const reviewRow = (id: string) => ({
+      id,
+      rating: 5,
+      text: null,
+      targetType: "MEDIA",
+      targetId: "m1",
+      user: { username: "someone" },
+    });
+    const { svc, prisma } = make({
+      report: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            reportRow("r1", "rev1"),
+            reportRow("r2", "rev2"),
+          ]),
+      },
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([reviewRow("rev1"), reviewRow("rev2")]),
+      },
+    });
+    const page = await svc.list(undefined, 1);
+    expect(prisma.review.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.review.findUnique).not.toHaveBeenCalled();
+    expect(page.items.map((i) => i.target?.label)).toEqual(["5/10", "5/10"]);
+  });
+
+  it("says so when a reported review's author deleted their account", async () => {
+    const { svc } = make({
+      report: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "r1",
+            targetType: "REVIEW",
+            targetId: "rev1",
+            reason: null,
+            status: "PENDING",
+            createdAt: new Date(),
+            resolvedAt: null,
+            reporter: null,
+          },
+        ]),
+      },
+      review: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rev1",
+            rating: 1,
+            text: null,
+            targetType: "MEDIA",
+            targetId: "m1",
+            user: null,
+          },
+        ]),
+      },
+    });
+    const page = await svc.list(undefined, 1);
+    expect(page.items[0].target?.label).toContain("auteur supprimé");
+    expect(page.items[0].target?.targetOwnerUsername).toBeNull();
   });
 
   it("resolves a COMMENT target to an excerpt", async () => {
@@ -486,9 +564,10 @@ describe("ReportService.list — reporterId filter", () => {
 });
 
 describe("ReportService.listAgainstUser", () => {
-  it("matches reports targeting the user directly or a comment they authored", async () => {
+  it("matches reports targeting the user directly or content they authored", async () => {
     const { svc, prisma } = make({
       comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },
+      review: { findMany: vi.fn().mockResolvedValue([{ id: "rev1" }]) },
     });
     await svc.listAgainstUser("user1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
@@ -497,6 +576,7 @@ describe("ReportService.listAgainstUser", () => {
           OR: [
             { targetType: "USER", targetId: "user1" },
             { targetType: "COMMENT", targetId: { in: ["c1"] } },
+            { targetType: "REVIEW", targetId: { in: ["rev1"] } },
           ],
         },
       }),

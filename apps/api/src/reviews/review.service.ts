@@ -325,14 +325,14 @@ export class ReviewService {
     const contentChanged =
       !existing || existing.rating !== dto.rating || existing.text !== text;
 
+    // Audience/spoiler-only edits aren't news: no revision, no feed entry.
     if (contentChanged) {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating: dto.rating, text },
       });
+      await this.emitReviewed(userId, targetType, targetId, dto.rating);
+      await this.awardReviewRatingXp(userId, row.id, text);
     }
-
-    await this.emitReviewed(userId, targetType, targetId, dto.rating);
-    await this.awardReviewRatingXp(userId, row.id, text);
 
     // first_take unlocks off the review's creation, not every edit.
     if (!existing) {

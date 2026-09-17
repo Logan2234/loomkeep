@@ -37,7 +37,7 @@
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { MONTH_YEAR_OPTIONS, formatDate } from "$lib/format";
+  import { MONTH_YEAR_OPTIONS, formatDate, joinMeta } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
   // MusicBrainz is the only music source today; the web route carries just the id.
@@ -60,9 +60,7 @@
 
   const entry = $derived(detail?.entry ?? null);
   const reviewMeta = $derived(
-    detail
-      ? [detail.artists.join(", "), detail.year].filter(Boolean).join(" · ")
-      : "",
+    detail ? joinMeta(detail.artists.join(", "), detail.year) : "",
   );
 
   // Precise release date, respecting the source's actual precision — a

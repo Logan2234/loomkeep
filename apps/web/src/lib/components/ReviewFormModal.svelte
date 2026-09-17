@@ -7,6 +7,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
@@ -21,6 +22,7 @@
     type ReviewTargetType,
     type ReviewVisibility,
   } from "@loomkeep/shared";
+  import { onDestroy, untrack } from "svelte";
   import Modal from "./Modal.svelte";
   import Poster from "./Poster.svelte";
   import RatingSlider from "./RatingSlider.svelte";
@@ -65,38 +67,77 @@
   } = $props();
 
   const NEAR_LIMIT = REVIEW_TEXT_MAX_LENGTH - 200;
+  const DRAFT_TEXT_DELAY_MS = 400;
 
-  const saved = $derived({
-    rating: review?.rating ?? null,
-    text: review?.text ?? "",
-    spoilerTag: review?.spoilerTag ?? false,
-  });
-  const draft = $derived.by(() => {
-    const d = readReviewDraft(targetType, targetId);
-    const differs =
-      d &&
-      (d.rating !== saved.rating ||
-        d.text !== saved.text ||
-        d.spoilerTag !== saved.spoilerTag);
-    return differs ? d : null;
+  // The modal is mounted per opening, so the form is seeded once from the
+  // props: a background refetch of the review mid-edit must not overwrite
+  // what the user is typing or choosing.
+  const initial = untrack(() => {
+    const saved = {
+      rating: review?.rating ?? null,
+      text: review?.text ?? "",
+      spoilerTag: review?.spoilerTag ?? false,
+    };
+    const stored = auth.user
+      ? readReviewDraft(auth.user.id, targetType, targetId)
+      : null;
+    const restored =
+      stored !== null &&
+      (stored.rating !== saved.rating ||
+        stored.text !== saved.text ||
+        stored.spoilerTag !== saved.spoilerTag);
+    return {
+      ...(restored && stored ? stored : saved),
+      visibility: review?.visibility ?? defaultVisibility,
+      restored,
+      targetType,
+      targetId,
+    };
   });
 
-  let formRating = $derived<number | null>((draft ?? saved).rating);
-  let formText = $derived((draft ?? saved).text);
-  let formSpoiler = $derived((draft ?? saved).spoilerTag);
-  let formVisibility = $derived<ReviewVisibility>(
-    review?.visibility ?? defaultVisibility,
-  );
+  let formRating = $state<number | null>(initial.rating);
+  let formText = $state(initial.text);
+  let formSpoiler = $state(initial.spoilerTag);
+  let formVisibility = $state<ReviewVisibility>(initial.visibility);
   let confirmingDelete = $state(false);
   let showRevisions = $state(false);
 
+  let pendingTextSave: ReturnType<typeof setTimeout> | null = null;
+
   function persistDraft() {
-    writeReviewDraft(targetType, targetId, {
+    cancelPendingTextSave();
+    if (!auth.user) return;
+    writeReviewDraft(auth.user.id, initial.targetType, initial.targetId, {
       rating: formRating,
       text: formText,
       spoilerTag: formSpoiler,
     });
   }
+
+  function cancelPendingTextSave() {
+    if (pendingTextSave === null) return;
+    clearTimeout(pendingTextSave);
+    pendingTextSave = null;
+  }
+
+  // Typing writes on a short pause rather than on every keystroke; an
+  // accidental close in between still keeps the latest text.
+  function setText(value: string) {
+    formText = value;
+    cancelPendingTextSave();
+    pendingTextSave = setTimeout(persistDraft, DRAFT_TEXT_DELAY_MS);
+  }
+
+  function discardDraft() {
+    cancelPendingTextSave();
+    if (auth.user) {
+      clearReviewDraft(auth.user.id, initial.targetType, initial.targetId);
+    }
+  }
+
+  onDestroy(() => {
+    if (pendingTextSave !== null) persistDraft();
+  });
 
   function setRating(value: number | null) {
     formRating = value;
@@ -111,7 +152,7 @@
   // An explicit Cancel discards the draft; the close cross, backdrop and
   // swipe keep it — those are the accidental closes drafts exist for.
   function cancel() {
-    clearReviewDraft(targetType, targetId);
+    discardDraft();
     onClose();
   }
 
@@ -132,7 +173,7 @@
       }),
     coveredFields: ["rating", "text"],
     onSuccess: (updated) => {
-      clearReviewDraft(targetType, targetId);
+      discardDraft();
       onSaved(updated);
       onClose();
     },
@@ -146,7 +187,7 @@
   const deleteMut = createApiMutation(() => ({
     mutate: () => deleteReview(targetType, targetId),
     onSuccess: () => {
-      clearReviewDraft(targetType, targetId);
+      discardDraft();
       onDeleted?.();
       onClose();
     },
@@ -188,10 +229,7 @@
         placeholder={m.reviews_text_placeholder()}
         maxlength={REVIEW_TEXT_MAX_LENGTH}
         value={formText}
-        oninput={(e) => {
-          formText = e.currentTarget.value;
-          persistDraft();
-        }}></textarea>
+        oninput={(e) => setText(e.currentTarget.value)}></textarea>
       <div class="mt-2 flex items-center justify-between gap-3">
         {#if appConfig.socialEnabled}
           <label class="flex cursor-pointer items-center gap-2 text-sm">
@@ -200,7 +238,7 @@
           </label>
         {/if}
         <p class="timecode ml-auto text-right text-[0.7rem]">
-          {#if draft}
+          {#if initial.restored}
             <span class="text-accent">{m.reviews_draft_restored()}</span> ·
           {/if}
           <span class:text-accent={formText.length > NEAR_LIMIT}

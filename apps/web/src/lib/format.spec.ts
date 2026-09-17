@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
-import { formatBytes, formatDurationMs, formatRelative } from "./format";
+import {
+  formatBytes,
+  formatDurationMs,
+  formatRelative,
+  joinMeta,
+} from "./format";
 import { getLocale, overwriteGetLocale } from "./paraglide/runtime.js";
 
 vi.mock("./auth.svelte", () => ({ auth: { user: { locale: "en" } } }));
@@ -10,6 +15,14 @@ afterEach(() => {
   auth.user = originalUser;
   overwriteGetLocale(originalGetLocale);
   vi.useRealTimers();
+});
+
+describe("joinMeta", () => {
+  it("joins the known parts with a middle dot and skips the missing ones", () => {
+    expect(joinMeta("Film", 2024)).toBe("Film · 2024");
+    expect(joinMeta("", null, 2024, undefined)).toBe("2024");
+    expect(joinMeta(null)).toBe("");
+  });
 });
 
 describe("localized formatting", () => {

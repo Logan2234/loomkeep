@@ -1,12 +1,10 @@
 <script lang="ts">
   import {
-    getMyReview,
     getReviewsForTarget,
     reportReview,
     unvoteReview,
     voteReview,
   } from "$lib/api/client";
-  import { resolveApiError } from "$lib/api/errors";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -14,13 +12,13 @@
   import { appConfig } from "$lib/config.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import { formatNumber } from "$lib/format";
+  import { createMyReview } from "$lib/my-review.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import {
     arrangeReviews,
     summarizeReviews,
     type ReviewArrangement,
   } from "$lib/review-community";
-  import { toast } from "$lib/toast.svelte";
   import type {
     ReportCategory,
     ReportMotif,
@@ -34,7 +32,7 @@
   import ReviewCard from "./ReviewCard.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import type { Snippet } from "svelte";
+  import { untrack, type Snippet } from "svelte";
 
   // Always-visible review section for a work's detail page: a community
   // summary, the viewer's own review (add/edit via the shared modal) and
@@ -64,16 +62,11 @@
 
   // Below this, an average and a histogram say less than the cards do.
   const SUMMARY_MIN_REVIEWS = 3;
-  const HISTOGRAM_HEIGHT_PX = 70;
 
   const queryClient = useQueryClient();
 
-  const myReviewQuery = createApiQuery(() => ({
-    key: keys.reviews.mine(targetType, targetId),
-    fetch: () => getMyReview(targetType, targetId),
-  }));
-  const myReview = $derived(myReviewQuery.data);
-  const myReviewLoaded = $derived(!myReviewQuery.loading);
+  const mine = createMyReview(() => ({ targetType, targetId }));
+  const myReview = $derived(mine.review);
 
   const communityQuery = createApiQuery(() => ({
     key: keys.reviews.community(targetType, targetId),
@@ -94,9 +87,18 @@
   const othersReviews = $derived(
     allReviews.filter((r) => r.author?.id !== auth.user?.id),
   );
-  const summary = $derived(
-    summarizeReviews(myReview ? [myReview, ...othersReviews] : othersReviews),
+  const ratedReviews = $derived(
+    myReview ? [myReview, ...othersReviews] : othersReviews,
   );
+  // A vote rewrites the community cache without touching any rating, so the
+  // summary only recomputes when the ratings themselves change.
+  const ratingsKey = $derived(
+    ratedReviews.map((r) => `${r.rating}:${r.byFriend}`).join(","),
+  );
+  const summary = $derived.by(() => {
+    void ratingsKey;
+    return untrack(() => summarizeReviews(ratedReviews));
+  });
   const showSummary = $derived(summary.count >= SUMMARY_MIN_REVIEWS);
   const mostCommon = $derived(Math.max(...summary.distribution));
   const myBucket = $derived(myReview ? Math.round(myReview.rating) : null);
@@ -111,14 +113,6 @@
 
   function formatAverage(value: number): string {
     return formatNumber(value, { maximumFractionDigits: 1 });
-  }
-
-  function handleSaved(updated: ReviewDto) {
-    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), updated);
-  }
-
-  function handleDeleted() {
-    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), null);
   }
 
   // Reddit-style: clicking the already-active direction removes the vote,
@@ -149,25 +143,24 @@
     return voteMut.loading && voteMut.variables?.review.id === id;
   }
 
-  async function submitReport(report: {
+  const reportMut = createApiMutation(() => ({
+    mutate: (args: {
+      reviewId: string;
+      category: ReportCategory;
+      motif?: ReportMotif;
+      reason?: string;
+    }) => reportReview(args.reviewId, args.category, args.motif, args.reason),
+    successToast: m.reviews_reported(),
+    errorToast: true,
+    onSuccess: () => (reportingId = null),
+  }));
+
+  function submitReport(report: {
     category: ReportCategory;
     motif?: ReportMotif;
     reason?: string;
   }) {
-    if (!reportingId) return;
-    try {
-      await reportReview(
-        reportingId,
-        report.category,
-        report.motif,
-        report.reason,
-      );
-      toast.success(m.reviews_reported());
-    } catch (err) {
-      toast.error(resolveApiError(err));
-    } finally {
-      reportingId = null;
-    }
+    if (reportingId) reportMut.mutate({ reviewId: reportingId, ...report });
   }
 </script>
 
@@ -188,7 +181,7 @@
       {#if actions}
         {@render actions()}
       {/if}
-      {#if myReviewLoaded}
+      {#if mine.loaded}
         <button class="btn btn-ghost btn-sm" onclick={() => (editing = true)}>
           {myReview ? m.common_edit() : m.common_add()}
         </button>
@@ -229,17 +222,20 @@
           aria-label={m.reviews_distribution_label()}>
           {#each summary.distribution as count, rating (rating)}
             <div
-              class="flex h-full flex-col items-center justify-end gap-[3px]"
+              class="flex h-full flex-col items-center gap-[3px]"
               title={m.reviews_distribution_bar({ count, rating })}>
-              <i
-                class="block min-h-0.5 w-full rounded-t-[3px]"
-                class:histogram-bar={count !== mostCommon}
-                class:bg-accent={count === mostCommon}
-                class:ring-fg={rating === myBucket}
-                class:ring-2={rating === myBucket}
-                class:ring-inset={rating === myBucket}
-                style="height: {(count / mostCommon) * HISTOGRAM_HEIGHT_PX}px"
-              ></i>
+              <div class="border-border flex w-full flex-1 items-end border-b">
+                {#if count > 0}
+                  <i
+                    class="block min-h-0.5 w-full rounded-t-[3px]"
+                    class:histogram-bar={count !== mostCommon}
+                    class:bg-accent={count === mostCommon}
+                    class:ring-fg={rating === myBucket}
+                    class:ring-2={rating === myBucket}
+                    class:ring-inset={rating === myBucket}
+                    style="height: {(count / mostCommon) * 100}%"></i>
+                {/if}
+              </div>
               <span class="timecode text-[0.6rem]">{rating}</span>
             </div>
           {/each}
@@ -278,6 +274,7 @@
           <ReviewCard
             {review}
             voting={isVoting(review.id)}
+            votesLocked={voteMut.loading}
             onVote={(value) => voteMut.mutate({ review, value })}
             onReport={() => (reportingId = review.id)} />
         {/each}
@@ -296,8 +293,8 @@
     review={myReview}
     defaultVisibility={auth.user?.defaultReviewVisibility ?? "FRIENDS"}
     onClose={() => (editing = false)}
-    onSaved={handleSaved}
-    onDeleted={handleDeleted} />
+    onSaved={mine.set}
+    onDeleted={() => mine.set(null)} />
 {/if}
 
 {#if reportingId}

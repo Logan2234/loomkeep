@@ -25,6 +25,27 @@ import { toUserSummaryDto } from "../users/avatar.util";
 export const REPORT_PAGE_SIZE = 20;
 const EXCERPT_LENGTH = 120;
 
+type ReportRow = {
+  id: string;
+  targetType: string;
+  targetId: string;
+  category: string | null;
+  motif: string | null;
+  reason: string | null;
+  status: string;
+  createdAt: Date;
+  resolvedAt: Date | null;
+  reporter: Parameters<typeof toUserSummaryDto>[0] | null;
+};
+
+type ReviewTarget = {
+  rating: number;
+  text: string | null;
+  targetType: string;
+  targetId: string;
+  user: { username: string } | null;
+};
+
 const REPORTER_SELECT = {
   id: true,
   username: true,
@@ -90,40 +111,13 @@ export class ReportService {
       );
     }
 
-    if (targetType === "COMMENT") {
-      const comment = await this.prisma.comment.findUnique({
-        where: { id: targetId },
-        select: { authorId: true, deletedAt: true },
-      });
+    const ownerId = await this.reportableContentOwner(targetType, targetId);
 
-      if (!comment || comment.deletedAt) {
-        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
-      }
-
-      if (comment.authorId === reporterId) {
-        throw new AppException(
-          HttpStatus.FORBIDDEN,
-          ErrorCode.ReportCannotReportOwnContent,
-        );
-      }
-    }
-
-    if (targetType === "REVIEW") {
-      const review = await this.prisma.review.findUnique({
-        where: { id: targetId },
-        select: { userId: true },
-      });
-
-      if (!review) {
-        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
-      }
-
-      if (review.userId === reporterId) {
-        throw new AppException(
-          HttpStatus.FORBIDDEN,
-          ErrorCode.ReportCannotReportOwnContent,
-        );
-      }
+    if (ownerId === reporterId) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ReportCannotReportOwnContent,
+      );
     }
 
     const pending = await this.prisma.report.findFirst({
@@ -147,6 +141,44 @@ export class ReportService {
     });
 
     this.events.emitReportsCount();
+  }
+
+  /**
+   * The author of a reportable piece of content (null once their account is
+   * gone), 404ing when the content itself no longer exists. `undefined` for
+   * target types filed without an ownership check (USER, LIST).
+   */
+  private async reportableContentOwner(
+    targetType: ReportTargetType,
+    targetId: string,
+  ): Promise<string | null | undefined> {
+    if (targetType === "COMMENT") {
+      const comment = await this.prisma.comment.findUnique({
+        where: { id: targetId },
+        select: { authorId: true, deletedAt: true },
+      });
+
+      if (!comment || comment.deletedAt) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
+      }
+
+      return comment.authorId;
+    }
+
+    if (targetType === "REVIEW") {
+      const review = await this.prisma.review.findUnique({
+        where: { id: targetId },
+        select: { userId: true },
+      });
+
+      if (!review) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+      }
+
+      return review.userId;
+    }
+
+    return undefined;
   }
 
   async pendingCount(): Promise<number> {
@@ -190,28 +222,8 @@ export class ReportService {
       include: { reporter: { select: REPORTER_SELECT } },
     });
     const hasMore = rows.length > limit;
-    const pageRows = rows.slice(0, limit);
 
-    const items = await Promise.all(
-      pageRows.map(async (r): Promise<ReportDto> => ({
-        id: r.id,
-        targetType: r.targetType as ReportTargetType,
-        targetId: r.targetId,
-        category: r.category as ReportCategory | null,
-        motif: r.motif as ReportMotif | null,
-        reason: r.reason,
-        status: r.status as ReportDto["status"],
-        createdAt: r.createdAt.toISOString(),
-        resolvedAt: r.resolvedAt?.toISOString() ?? null,
-        reporter: r.reporter ? toUserSummaryDto(r.reporter) : null,
-        target: await this.resolveTarget(
-          r.targetType as ReportTargetType,
-          r.targetId,
-        ),
-      })),
-    );
-
-    return { items, hasMore };
+    return { items: await this.toDtos(rows.slice(0, limit)), hasMore };
   }
 
   async resolve(
@@ -262,15 +274,21 @@ export class ReportService {
 
   /**
    * Reports filed against a user: directly (targetType USER) or against a
-   * comment they authored. Reviews/lists aren't covered — no filing UI exists
-   * for those targets yet (see resolveTarget). Not paginated: an admin-drawer
+   * comment or review they authored. Lists aren't covered — no filing UI
+   * exists for them yet (see resolveTarget). Not paginated: an admin-drawer
    * shortcut, not the moderation queue itself.
    */
   async listAgainstUser(userId: string): Promise<ReportDto[]> {
-    const authoredCommentIds = await this.prisma.comment.findMany({
-      where: { authorId: userId },
-      select: { id: true },
-    });
+    const [authoredCommentIds, authoredReviewIds] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: { authorId: userId },
+        select: { id: true },
+      }),
+      this.prisma.review.findMany({
+        where: { userId },
+        select: { id: true },
+      }),
+    ]);
 
     const rows = await this.prisma.report.findMany({
       where: {
@@ -280,12 +298,24 @@ export class ReportService {
             targetType: "COMMENT",
             targetId: { in: authoredCommentIds.map((c) => c.id) },
           },
+          {
+            targetType: "REVIEW",
+            targetId: { in: authoredReviewIds.map((r) => r.id) },
+          },
         ],
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 50,
       include: { reporter: { select: REPORTER_SELECT } },
     });
+
+    return this.toDtos(rows);
+  }
+
+  private async toDtos(rows: ReportRow[]): Promise<ReportDto[]> {
+    const reviews = await this.reviewTargets(
+      rows.filter((r) => r.targetType === "REVIEW").map((r) => r.targetId),
+    );
 
     return Promise.all(
       rows.map(async (r): Promise<ReportDto> => ({
@@ -302,9 +332,29 @@ export class ReportService {
         target: await this.resolveTarget(
           r.targetType as ReportTargetType,
           r.targetId,
+          reviews,
         ),
       })),
     );
+  }
+
+  /** Every reported review of a page in one query, keyed by id. */
+  private async reviewTargets(
+    ids: string[],
+  ): Promise<Map<string, ReviewTarget>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.review.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        rating: true,
+        text: true,
+        targetType: true,
+        targetId: true,
+        user: { select: { username: true } },
+      },
+    });
+    return new Map(rows.map((r) => [r.id, r]));
   }
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
@@ -342,6 +392,7 @@ export class ReportService {
   private async resolveTarget(
     targetType: ReportTargetType,
     targetId: string,
+    reviews: Map<string, ReviewTarget>,
   ): Promise<ReportTargetSummaryDto | null> {
     if (targetType === "COMMENT") {
       const comment = await this.prisma.comment.findUnique({
@@ -397,22 +448,14 @@ export class ReportService {
       };
     }
 
-    const review = await this.prisma.review.findUnique({
-      where: { id: targetId },
-      select: {
-        rating: true,
-        text: true,
-        targetType: true,
-        targetId: true,
-        user: { select: { username: true } },
-      },
-    });
+    const review = reviews.get(targetId);
     if (!review) return null;
     const excerpt = (review.text ?? "").slice(0, EXCERPT_LENGTH);
+    const label = excerpt
+      ? `${review.rating}/10 — ${excerpt}`
+      : `${review.rating}/10`;
     return {
-      label: excerpt
-        ? `${review.rating}/10 — ${excerpt}`
-        : `${review.rating}/10`,
+      label: review.user ? label : `${label} (auteur supprimé)`,
       href: await resolveWorkHref(
         this.prisma,
         review.targetType,

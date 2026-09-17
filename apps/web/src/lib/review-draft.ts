@@ -1,4 +1,5 @@
 import type { ReviewTargetType } from "@loomkeep/shared";
+import { readStorage, removeStorage, writeStorage } from "./local-storage";
 
 // An unsaved review survives an accidental close (backdrop tap, swipe,
 // Escape) on this device only. Losing it to a private window or a full
@@ -9,32 +10,35 @@ export interface ReviewDraft {
   spoilerTag: boolean;
 }
 
-const PREFIX = "loomkeep.reviewDraft.";
-
-const keyOf = (targetType: ReviewTargetType, targetId: string) =>
-  `${PREFIX}${targetType}:${targetId}`;
+// Scoped per account: a shared browser must never restore someone else's
+// unsent text into the next person's form.
+const keyOf = (
+  userId: string,
+  targetType: ReviewTargetType,
+  targetId: string,
+) => `loomkeep.reviewDraft.${userId}.${targetType}:${targetId}`;
 
 function isDraft(value: unknown): value is ReviewDraft {
   const d = value as ReviewDraft | null;
   return (
     typeof d === "object" &&
     d !== null &&
-    (d.rating === null || typeof d.rating === "number") &&
+    (d.rating === null ||
+      (typeof d.rating === "number" && d.rating >= 0 && d.rating <= 10)) &&
     typeof d.text === "string" &&
     typeof d.spoilerTag === "boolean"
   );
 }
 
 export function readReviewDraft(
+  userId: string,
   targetType: ReviewTargetType,
   targetId: string,
 ): ReviewDraft | null {
-  if (typeof localStorage === "undefined") return null;
+  const raw = readStorage(keyOf(userId, targetType, targetId));
+  if (raw === null) return null;
 
   try {
-    const raw = localStorage.getItem(keyOf(targetType, targetId));
-    if (raw === null) return null;
-
     const parsed: unknown = JSON.parse(raw);
     return isDraft(parsed) ? parsed : null;
   } catch {
@@ -43,28 +47,18 @@ export function readReviewDraft(
 }
 
 export function writeReviewDraft(
+  userId: string,
   targetType: ReviewTargetType,
   targetId: string,
   draft: ReviewDraft,
 ): void {
-  if (typeof localStorage === "undefined") return;
-
-  try {
-    localStorage.setItem(keyOf(targetType, targetId), JSON.stringify(draft));
-  } catch {
-    // See the module comment: a lost draft is acceptable.
-  }
+  writeStorage(keyOf(userId, targetType, targetId), JSON.stringify(draft));
 }
 
 export function clearReviewDraft(
+  userId: string,
   targetType: ReviewTargetType,
   targetId: string,
 ): void {
-  if (typeof localStorage === "undefined") return;
-
-  try {
-    localStorage.removeItem(keyOf(targetType, targetId));
-  } catch {
-    // See the module comment: a lost draft is acceptable.
-  }
+  removeStorage(keyOf(userId, targetType, targetId));
 }

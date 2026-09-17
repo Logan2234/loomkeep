@@ -37,7 +37,7 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
-  import { formatDate } from "$lib/format";
+  import { formatDate, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { EntryStatus, MediaType } from "@loomkeep/shared";
@@ -263,9 +263,7 @@
 
   const entry = $derived(detail?.entry ?? null);
   const reviewMeta = $derived(
-    detail
-      ? [TYPE_LABELS[detail.type], detail.year].filter(Boolean).join(" · ")
-      : "",
+    detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
   );
   const isMovie = $derived(detail?.type === "MOVIE");
   const dormant = $derived(entry ? isDormant(entry) : false);

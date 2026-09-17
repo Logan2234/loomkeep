@@ -24,6 +24,31 @@
   function pick(e: Event) {
     onChange(Number((e.currentTarget as HTMLInputElement).value));
   }
+
+  const SLIDER_KEYS = new Set([
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+    "PageUp",
+    "PageDown",
+    "Home",
+    "End",
+  ]);
+
+  // While unrated the thumb is hidden and parked mid-track, so the native
+  // step would jump straight to 4 or 6: the first key press lands on the
+  // middle instead (Home/End still go to the ends).
+  function startFromKeyboard(e: KeyboardEvent) {
+    if (selected !== null || !SLIDER_KEYS.has(e.key)) return;
+    e.preventDefault();
+    onChange(e.key === "Home" ? 0 : e.key === "End" ? 10 : UNSET_POSITION);
+  }
+
+  // A click on the parked position changes nothing, so no `input` fires.
+  function startFromPointer(e: PointerEvent) {
+    if (selected === null) pick(e);
+  }
 </script>
 
 <div>
@@ -68,7 +93,8 @@
       ? m.reviews_rating_unrated()
       : m.reviews_rating_value_word({ rating: selected, word: word! })}
     oninput={pick}
-    onclick={pick} />
+    onkeydown={startFromKeyboard}
+    onpointerup={startFromPointer} />
 
   <div class="mt-0.5 flex justify-between px-[7px]" aria-hidden="true">
     {#each TICKS as n (n)}
@@ -136,11 +162,17 @@
   }
 
   .rating-range.unset::-webkit-slider-thumb {
-    border-color: var(--border);
+    opacity: 0;
   }
 
   .rating-range.unset::-moz-range-thumb {
-    border-color: var(--border);
+    opacity: 0;
+  }
+
+  .rating-range.unset:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 999px;
   }
 
   .rating-range:focus-visible {

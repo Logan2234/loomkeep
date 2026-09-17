@@ -1,17 +1,13 @@
 <script lang="ts">
-  import { getMyReview } from "$lib/api/client";
-  import { keys } from "$lib/api/keys";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import { createMyReview } from "$lib/my-review.svelte";
   import { m } from "$lib/paraglide/messages.js";
-  import type { ReviewDto, ReviewTargetType } from "@loomkeep/shared";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import type { ReviewTargetType } from "@loomkeep/shared";
   import Icon from "./Icon.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
 
   // The viewer's rating in a detail page's hero, opening the review modal in
   // place — rating a work shouldn't require scrolling to the reviews section.
-  // Shares its query key with ReviewsSection, so both stay in sync.
   let {
     targetType,
     targetId,
@@ -29,22 +25,13 @@
     overlay?: boolean;
   } = $props();
 
-  const queryClient = useQueryClient();
-
-  const myReviewQuery = createApiQuery(() => ({
-    key: keys.reviews.mine(targetType, targetId),
-    fetch: () => getMyReview(targetType, targetId),
-  }));
-  const myReview = $derived(myReviewQuery.data);
+  const mine = createMyReview(() => ({ targetType, targetId }));
+  const myReview = $derived(mine.review);
 
   let editing = $state(false);
-
-  function setMine(value: ReviewDto | null) {
-    queryClient.setQueryData(keys.reviews.mine(targetType, targetId), value);
-  }
 </script>
 
-{#if !myReviewQuery.loading}
+{#if mine.loaded}
   <button
     type="button"
     class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold transition-[filter,transform] hover:brightness-110 active:scale-[0.97] {overlay
@@ -73,6 +60,6 @@
     review={myReview}
     defaultVisibility={auth.user?.defaultReviewVisibility ?? "FRIENDS"}
     onClose={() => (editing = false)}
-    onSaved={setMine}
-    onDeleted={() => setMine(null)} />
+    onSaved={mine.set}
+    onDeleted={() => mine.set(null)} />
 {/if}

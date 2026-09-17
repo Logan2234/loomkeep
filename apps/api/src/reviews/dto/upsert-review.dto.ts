@@ -15,7 +15,8 @@ import {
 } from "class-validator";
 
 export class UpsertReviewBody {
-  // Mandatory /10 rating, half-point steps enforced client-side.
+  // Mandatory /10 rating. The UI only writes integers; half-points are
+  // still accepted because imported/legacy reviews carry them.
   @IsNumber()
   @Min(0)
   @Max(10)

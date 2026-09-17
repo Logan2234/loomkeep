@@ -45,7 +45,7 @@
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { formatDate } from "$lib/format";
+  import { formatDate, joinMeta } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
   // Open Library is the only book source today; the web route carries just
@@ -112,9 +112,7 @@
 
   const entry = $derived(detail?.entry ?? null);
   const reviewMeta = $derived(
-    detail
-      ? [detail.authors.join(", "), detail.year].filter(Boolean).join(" · ")
-      : "",
+    detail ? joinMeta(detail.authors.join(", "), detail.year) : "",
   );
   const hasMeta = $derived(
     !!detail &&

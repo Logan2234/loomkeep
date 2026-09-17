@@ -245,7 +245,7 @@ function makeForWrite(
     FLAGS,
     achievements,
   );
-  return { svc, revisionCreate, upsert, xp, achievements };
+  return { svc, revisionCreate, upsert, xp, achievements, activity };
 }
 
 describe("ReviewService.upsert — spoiler tag", () => {
@@ -280,6 +280,27 @@ describe("ReviewService.upsert — spoiler tag", () => {
       spoilerTag: true,
     });
     expect(revisionCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReviewService.upsert — feed and XP", () => {
+  it("posts to the feed and credits XP when the rating or text changed", async () => {
+    const { svc, activity, xp } = makeForWrite({ rating: 6, text: null });
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+    expect(activity.emit).toHaveBeenCalledTimes(1);
+    expect(xp.award).toHaveBeenCalled();
+  });
+
+  it("stays silent when only the audience or the spoiler tag changed", async () => {
+    const { svc, activity, xp } = makeForWrite({ rating: 8, text: "hey" });
+    await svc.upsert("u1", "MEDIA" as never, "m1", {
+      rating: 8,
+      text: "hey",
+      visibility: "PUBLIC",
+      spoilerTag: true,
+    });
+    expect(activity.emit).not.toHaveBeenCalled();
+    expect(xp.award).not.toHaveBeenCalled();
   });
 });
 

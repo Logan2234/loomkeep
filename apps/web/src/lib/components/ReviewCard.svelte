@@ -23,13 +23,17 @@
     review,
     mine = false,
     voting = false,
+    votesLocked = false,
     onEdit,
     onVote,
     onReport,
   }: {
     review: ReviewDto;
     mine?: boolean;
+    /** This card's vote is the one in flight. */
     voting?: boolean;
+    /** Another card's vote is in flight — votes go one at a time. */
+    votesLocked?: boolean;
     onEdit?: () => void;
     onVote?: (value: ReviewVoteValue) => void;
     onReport?: () => void;
@@ -44,7 +48,8 @@
   let resizing = $state(false);
   // The viewer wrote it, so there's nothing to hide from them.
   let revealed = $state(false);
-  const masked = $derived(review.spoilerTag && !mine && !revealed);
+  const spoilerApplies = $derived(review.spoilerTag && !mine);
+  const masked = $derived(spoilerApplies && !revealed);
 
   let textEl = $state<HTMLParagraphElement>();
 
@@ -139,7 +144,7 @@
         aria-hidden={masked}>
         {review.text}
       </p>
-      {#if review.spoilerTag && !mine}
+      {#if spoilerApplies}
         <button
           type="button"
           class="veil group"
@@ -243,13 +248,14 @@
           class="border-border ml-1 inline-flex shrink-0 items-center rounded-full border">
           <button
             type="button"
-            class="hover:text-accent hover:bg-surface-2 grid rounded-full px-2 py-1 transition-colors active:scale-90 disabled:opacity-40"
+            class="hover:text-accent hover:bg-surface-2 grid rounded-full px-2 py-1 transition-colors active:scale-90 disabled:pointer-events-none"
+            class:opacity-40={voting}
             class:text-accent={review.myVote === "UP"}
             class:text-dim={review.myVote !== "UP"}
             aria-label={m.reviews_section_vote_up()}
             title={m.reviews_section_vote_up()}
             aria-pressed={review.myVote === "UP"}
-            disabled={voting}
+            disabled={voting || votesLocked}
             onclick={() => onVote("UP")}>
             <Icon name="chevron-up" class="h-4 w-4" />
           </button>
@@ -260,13 +266,14 @@
           </span>
           <button
             type="button"
-            class="hover:text-accent hover:bg-surface-2 grid rounded-full px-2 py-1 transition-colors active:scale-90 disabled:opacity-40"
+            class="hover:text-accent hover:bg-surface-2 grid rounded-full px-2 py-1 transition-colors active:scale-90 disabled:pointer-events-none"
+            class:opacity-40={voting}
             class:text-accent={review.myVote === "DOWN"}
             class:text-dim={review.myVote !== "DOWN"}
             aria-label={m.reviews_section_vote_down()}
             title={m.reviews_section_vote_down()}
             aria-pressed={review.myVote === "DOWN"}
-            disabled={voting}
+            disabled={voting || votesLocked}
             onclick={() => onVote("DOWN")}>
             <Icon name="chevron-down" class="h-4 w-4" />
           </button>

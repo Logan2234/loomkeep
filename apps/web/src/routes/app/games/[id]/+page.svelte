@@ -40,7 +40,7 @@
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { formatDate } from "$lib/format";
+  import { formatDate, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { slide } from "svelte/transition";
@@ -84,7 +84,7 @@
 
   const entry = $derived(detail?.entry ?? null);
   const reviewMeta = $derived(
-    detail ? [m.game_type(), detail.year].filter(Boolean).join(" · ") : "",
+    detail ? joinMeta(m.game_type(), detail.year) : "",
   );
   const hasMeta = $derived(
     !!detail &&
