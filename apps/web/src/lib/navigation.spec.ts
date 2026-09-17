@@ -1,7 +1,11 @@
 import { Domain } from "@loomkeep/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import { auth } from "./auth.svelte";
-import { resolveShortcutChoices, visibleNavItems } from "./navigation";
+import {
+  resolveShortcutChoices,
+  visibleNavItems,
+  visibleNavSections,
+} from "./navigation";
 
 afterEach(() => {
   auth.user = null;
@@ -29,7 +33,6 @@ describe("mobile shortcut choices", () => {
       "feed",
       "profile",
       "settings",
-      "admin",
     ]);
   });
 });
@@ -42,10 +45,15 @@ describe("domain display order", () => {
     gamificationEnabled: true,
   };
 
+  // Scoped to the Library section specifically (the only one where every
+  // item is domain-tagged) — Tracking's Calendar entry also carries a
+  // `domain` (it's gated on MEDIA being enabled), so filtering the flat
+  // item list by `item.domain` alone would pull it in too.
   function libraryHrefs(): string[] {
-    return visibleNavItems(opts)
-      .filter((item) => item.domain)
-      .map((item) => item.href);
+    const library = visibleNavSections(opts).find((section) =>
+      section.items.every((item) => item.domain),
+    );
+    return (library?.items ?? []).map((item) => item.href);
   }
 
   it("keeps the canonical order with no saved preference", () => {

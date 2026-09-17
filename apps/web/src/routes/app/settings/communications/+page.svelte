@@ -10,7 +10,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import { DigestCadence } from "@loomkeep/shared";
-  import SettingRow from "./SettingRow.svelte";
+  import SettingRow from "../components/SettingRow.svelte";
 
   const dailyLocked = $derived(auth.isPremiumLocked);
 
