@@ -6,9 +6,23 @@
   import { updateMe } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import { SpoilerSensitivity } from "@loomkeep/shared";
   import SettingRow from "./SettingRow.svelte";
+
+  const SPOILER_OPTIONS: { label: string; value: SpoilerSensitivity }[] = [
+    { label: m.settings_spoiler_auto(), value: SpoilerSensitivity.AUTO },
+    {
+      label: m.settings_spoiler_always_hidden(),
+      value: SpoilerSensitivity.ALWAYS_HIDDEN,
+    },
+    {
+      label: m.settings_spoiler_always_revealed(),
+      value: SpoilerSensitivity.ALWAYS_REVEALED,
+    },
+  ];
 
   let birthDate = $state(auth.user?.birthDate ?? "");
 
@@ -43,6 +57,11 @@
     if (!auth.user || !isAdultEligible) return;
     toggleAdultContentMut.mutate(!auth.user.allowAdultContent);
   }
+
+  const spoilerSensitivityMut = createApiMutation(() => ({
+    mutate: (spoilerSensitivity: SpoilerSensitivity) =>
+      updateMe({ spoilerSensitivity }),
+  }));
 </script>
 
 {#if auth.user}
@@ -83,6 +102,20 @@
           {/snippet}
         </SettingRow>
       {/if}
+
+      <SettingRow
+        anchor="spoiler-sensitivity"
+        label={m.settings_spoiler_sensitivity_label()}
+        description={m.settings_spoiler_sensitivity_description()}
+        mutation={spoilerSensitivityMut}>
+        {#snippet control()}
+          <SegmentedControl
+            label={m.settings_spoiler_sensitivity_label()}
+            options={SPOILER_OPTIONS}
+            value={user.spoilerSensitivity}
+            onChange={(v) => spoilerSensitivityMut.mutate(v)} />
+        {/snippet}
+      </SettingRow>
     </div>
   </section>
 {/if}

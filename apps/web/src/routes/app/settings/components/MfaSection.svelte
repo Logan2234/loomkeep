@@ -6,6 +6,7 @@
     regenerateRecoveryCodes,
     registerWebauthnCredential,
     removeWebauthnCredential,
+    renameWebauthnCredential,
     setEmailMfa,
     setPasswordless,
     setupTotp,
@@ -45,6 +46,7 @@
     | "recovery-reveal"
     | "webauthn-add"
     | "webauthn-remove"
+    | "webauthn-rename"
     | "passwordless-confirm"
     | null;
 
@@ -301,6 +303,35 @@
     webauthnRemoveMut.mutate();
   }
 
+  let pendingRenameCredential = $state<WebauthnCredentialDto | null>(null);
+
+  const webauthnRenameMut = createApiMutation(() => ({
+    mutate: (name: string) =>
+      renameWebauthnCredential(pendingRenameCredential!.id, { name }),
+    onSuccess: ({ credential }) => {
+      patchStatus({
+        webauthnCredentials: (status?.webauthnCredentials ?? []).map((c) =>
+          c.id === credential.id ? credential : c,
+        ),
+      });
+      openModal = null;
+      toast.success(m.settings_mfa_webauthn_renamed_toast());
+    },
+  }));
+
+  function openWebauthnRename(credential: WebauthnCredentialDto) {
+    pendingRenameCredential = credential;
+    webauthnNameInput = credential.name;
+    webauthnRenameMut.reset();
+    openModal = "webauthn-rename";
+  }
+
+  function confirmWebauthnRename() {
+    const name = webauthnNameInput.trim();
+    if (!name) return;
+    webauthnRenameMut.mutate(name);
+  }
+
   // --- Passwordless sign-in ---
   let pendingPasswordlessEnabled = $state(false);
 
@@ -443,6 +474,13 @@
                             })}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      class="btn-icon shrink-0"
+                      aria-label={m.common_rename()}
+                      onclick={() => openWebauthnRename(credential)}>
+                      <Icon name="edit" class="h-4 w-4" />
+                    </button>
                     <button
                       type="button"
                       class="btn-icon shrink-0"
@@ -709,6 +747,47 @@
           class="btn btn-primary"
           disabled={webauthnAddMut.loading || !webauthnNameInput.trim()}>
           {webauthnAddMut.loading ? m.common_save_loading() : m.common_next()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "webauthn-rename"}
+  <Modal title={m.settings_mfa_webauthn_rename_title()} onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmWebauthnRename();
+      }}>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.settings_mfa_webauthn_name_label()}
+        </span>
+        <input
+          type="text"
+          name="name"
+          required
+          maxlength="60"
+          enterkeyhint="done"
+          class="input"
+          bind:value={webauthnNameInput} />
+      </label>
+      {#if webauthnRenameMut.error}
+        <p class="text-danger text-sm">{webauthnRenameMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={webauthnRenameMut.loading || !webauthnNameInput.trim()}>
+          {webauthnRenameMut.loading
+            ? m.common_save_loading()
+            : m.common_save()}
         </button>
       </div>
     </form>

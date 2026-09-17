@@ -180,6 +180,14 @@ enum ReviewVisibility {
   PUBLIC
 }
 
+// Overrides the reviews/comments per-context "already finished, so reveal"
+// default. See User.spoilerSensitivity.
+enum SpoilerSensitivity {
+  AUTO
+  ALWAYS_HIDDEN
+  ALWAYS_REVEALED
+}
+
 // What a comment thread targets. Same shape as ReviewTargetType (a comment
 // under a work, or one of its seasons/episodes).
 enum CommentTargetType {
@@ -421,30 +429,30 @@ enum MusicOwnershipStatus {
 }
 
 model User {
-  id                            String           @id @default(cuid())
-  email                         String           @unique
+  id                            String             @id @default(cuid())
+  email                         String             @unique
   passwordHash                  String
   // Free-form label shown around the app; not unique. See `username` for the
   // unique, login-capable handle.
   displayName                   String
   // Unique login handle (alongside email). Assigned at registration, editable
   // in Sécurité.
-  username                      String           @unique
+  username                      String             @unique
   birthDate                     DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
-  allowAdultContent             Boolean          @default(false)
+  allowAdultContent             Boolean            @default(false)
   // Opt-out from showing gamification progression (level/XP) to OTHER
   // viewers — the owner always sees their own real progress regardless.
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
-  hideProgression               Boolean          @default(false)
+  hideProgression               Boolean            @default(false)
   // [G9] Up to 3 unlocked, non-secret achievement keys shown as a badge
   // showcase on the profile — always an explicit choice, never auto-picked
   // (see the ticket's design-discussion comment). A key here freezes the
   // tier the user equipped, not "whatever tier is highest now": a tiered
   // achievement's tiers are separate keys already (cinephile_bronze vs
   // cinephile_gold), so equipping one just picks a key like any other.
-  equippedBadgeKeys             String[]         @default([])
+  equippedBadgeKeys             String[]           @default([])
   // [G8] "Première séance" gamified checklist. Steps explicitly skipped by
   // the user (one-way — there is no "unskip"); a step's *done* state is
   // never stored here, always re-derived live from the real data (see
@@ -453,19 +461,19 @@ model User {
   // once and never cleared, independent of the achievement catalogue, so a
   // future rework of the checklist's steps never re-proposes it to someone
   // who already finished the old one.
-  onboardingSkippedSteps        String[]         @default([])
+  onboardingSkippedSteps        String[]           @default([])
   onboardingGamifiedCompletedAt DateTime?
   // Communication preferences: cadence at which each channel delivers the
   // "new episode" digest. See DigestCadence.
-  notifyEmail                   DigestCadence    @default(WEEKLY)
-  notifyPush                    DigestCadence    @default(WEEKLY)
+  notifyEmail                   DigestCadence      @default(WEEKLY)
+  notifyPush                    DigestCadence      @default(WEEKLY)
   // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
   // hour. Auto-detected client-side at onboarding, editable afterwards.
-  timezone                      String           @default("Europe/Paris")
+  timezone                      String             @default("Europe/Paris")
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
-  notifyNewsletter              Boolean          @default(false)
+  notifyNewsletter              Boolean            @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including
   // across a later opt-out — so it always records when consent was last given.
@@ -476,10 +484,10 @@ model User {
   // would grow the token table without bound as the newsletter goes out
   // repeatedly. Low-stakes if it ever leaked (only lets someone toggle this
   // one preference off), so it's a plain unguessable string, not hashed.
-  newsletterUnsubscribeToken    String?          @unique
+  newsletterUnsubscribeToken    String?            @unique
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
-  emailVerified                 Boolean          @default(false)
+  emailVerified                 Boolean            @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
   bio                           String?
   // Profile picture, stored in-row (not on disk) so it rides along with
@@ -492,34 +500,42 @@ model User {
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.
-  profileAccess                 ProfileAccess    @default(PRIVATE)
+  profileAccess                 ProfileAccess      @default(PRIVATE)
   // Default audience applied to a new review unless overridden at publication.
-  defaultReviewVisibility       ReviewVisibility @default(FRIENDS)
+  defaultReviewVisibility       ReviewVisibility   @default(FRIENDS)
   // Default audience applied to a new list unless overridden at creation.
-  defaultListVisibility         ListVisibility   @default(PRIVATE)
+  defaultListVisibility         ListVisibility     @default(PRIVATE)
+  // Overrides the per-context "already finished this, so reveal" default
+  // that reviews and comments otherwise apply on their own.
+  spoilerSensitivity            SpoilerSensitivity @default(AUTO)
   // Operational permission level (gates /admin). Separate axis from the paid
   // tier (see UserEntitlement below): an admin isn't "the highest tier".
-  role                          Role             @default(USER)
+  role                          Role               @default(USER)
   // Composition seam: content domains the user enabled. Drives the nav today;
   // search/notif filtering follow at P3. Empty by default — the onboarding
   // wizard's domain step is what actually turns these on for a new account.
-  enabledDomains                Domain[]         @default([])
+  enabledDomains                Domain[]           @default([])
+  // Display order for the domain browser (settings tiles, desktop rail's
+  // Library section). Partial and total-safe: a domain missing from it (a
+  // brand-new one, or before this preference ever existed) just keeps its
+  // canonical position at the end — see web domains.ts's orderedDomains().
+  domainOrder                   Domain[]           @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
-  mobileNavShortcuts            String[]         @default(["home", "search", "menu", "calendar", "account"])
+  mobileNavShortcuts            String[]           @default(["home", "search", "menu", "calendar", "account"])
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
   // seam.
-  locale                        String           @default("fr")
+  locale                        String             @default("fr")
   // Opaque secret for the public .ics calendar subscription URL (not hashed:
   // looked up directly by calendar apps, which can't send an Authorization
   // header). Null until first requested from Réglages > Export.
-  calendarToken                 String?          @unique
-  createdAt                     DateTime         @default(now())
-  updatedAt                     DateTime         @updatedAt
+  calendarToken                 String?            @unique
+  createdAt                     DateTime           @default(now())
+  updatedAt                     DateTime           @updatedAt
   // Set once the mandatory first-run onboarding wizard is completed (see
   // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
   // showing the wizard instead of the app chrome — including for accounts
@@ -1139,6 +1155,7 @@ enum SecurityEventType {
   MFA_EMAIL_DISABLED
   MFA_WEBAUTHN_ADDED
   MFA_WEBAUTHN_REMOVED
+  MFA_WEBAUTHN_RENAMED
   MFA_PASSWORDLESS_ENABLED
   MFA_PASSWORDLESS_DISABLED
   MFA_RECOVERY_CODES_REGENERATED
@@ -1491,7 +1508,7 @@ model MovieReplay {
 
 // One row per viewing: watching the same episode twice = two rows (rewatch).
 model EpisodeWatch {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   episodeId String
   watchedAt DateTime? @default(now())

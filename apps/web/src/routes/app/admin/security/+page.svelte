@@ -35,6 +35,7 @@
     MFA_EMAIL_DISABLED: m.admin_security_mfa_email_disabled(),
     MFA_WEBAUTHN_ADDED: m.admin_security_mfa_webauthn_added(),
     MFA_WEBAUTHN_REMOVED: m.admin_security_mfa_webauthn_removed(),
+    MFA_WEBAUTHN_RENAMED: m.admin_security_mfa_webauthn_renamed(),
     MFA_PASSWORDLESS_ENABLED: m.admin_security_mfa_passwordless_enabled(),
     MFA_PASSWORDLESS_DISABLED: m.admin_security_mfa_passwordless_disabled(),
     MFA_RECOVERY_CODES_REGENERATED:
@@ -57,6 +58,7 @@
     MFA_EMAIL_DISABLED: "border-warning/40 bg-warning/10 text-warning",
     MFA_WEBAUTHN_ADDED: "border-success/40 bg-success/10 text-success",
     MFA_WEBAUTHN_REMOVED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_WEBAUTHN_RENAMED: "border-accent/40 bg-accent/10 text-accent",
     MFA_PASSWORDLESS_ENABLED: "border-warning/40 bg-warning/10 text-warning",
     MFA_PASSWORDLESS_DISABLED: "border-success/40 bg-success/10 text-success",
     MFA_RECOVERY_CODES_REGENERATED: "border-accent/40 bg-accent/10 text-accent",

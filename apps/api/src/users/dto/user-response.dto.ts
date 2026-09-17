@@ -6,6 +6,7 @@ import type {
   ProfileAccess,
   ReviewVisibility,
   Role,
+  SpoilerSensitivity,
   UserDto,
 } from "@loomkeep/shared";
 
@@ -36,4 +37,6 @@ export class UserResponseDto implements UserDto {
   mfaTotpEnabled!: boolean;
   mfaEmailEnabled!: boolean;
   hideProgression!: boolean;
+  spoilerSensitivity!: SpoilerSensitivity;
+  domainOrder!: Domain[];
 }

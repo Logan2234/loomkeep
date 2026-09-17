@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { auth } from "$lib/auth.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { ratingWord } from "$lib/rating-words";
   import {
     levelProgress,
+    SpoilerSensitivity,
     type ReviewDto,
     type ReviewVoteValue,
   } from "@loomkeep/shared";
@@ -46,9 +48,17 @@
   let expanded = $state(false);
   let overflowing = $state(false);
   let resizing = $state(false);
-  // The viewer wrote it, so there's nothing to hide from them.
+  // The viewer wrote it, so there's nothing to hide from them. AUTO and
+  // ALWAYS_HIDDEN read the same here — reviews have no per-item "already
+  // finished this" signal the way episodes/seasons do (see CommentsPanel's
+  // revealSpoilersByDefault), so only an explicit ALWAYS_REVEALED changes
+  // anything.
   let revealed = $state(false);
-  const spoilerApplies = $derived(review.spoilerTag && !mine);
+  const spoilerApplies = $derived(
+    review.spoilerTag &&
+      !mine &&
+      auth.user?.spoilerSensitivity !== SpoilerSensitivity.ALWAYS_REVEALED,
+  );
   const masked = $derived(spoilerApplies && !revealed);
 
   let textEl = $state<HTMLParagraphElement>();

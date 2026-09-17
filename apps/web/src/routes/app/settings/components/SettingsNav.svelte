@@ -68,7 +68,9 @@
     // module state for one frame so the newly mounted indicator can travel
     // from the old link to the new one.
     if (indicatorReady)
-      await new Promise<void>((resolve) => requestAnimationFrame(resolve));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
     const active = navEl?.querySelector<HTMLElement>('a[aria-current="page"]');
     if (!active) {
       indicatorVisible = false;

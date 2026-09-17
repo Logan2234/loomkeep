@@ -309,6 +309,7 @@ export const SecurityEventType = {
   MFA_EMAIL_DISABLED: "MFA_EMAIL_DISABLED",
   MFA_WEBAUTHN_ADDED: "MFA_WEBAUTHN_ADDED",
   MFA_WEBAUTHN_REMOVED: "MFA_WEBAUTHN_REMOVED",
+  MFA_WEBAUTHN_RENAMED: "MFA_WEBAUTHN_RENAMED",
   MFA_PASSWORDLESS_ENABLED: "MFA_PASSWORDLESS_ENABLED",
   MFA_PASSWORDLESS_DISABLED: "MFA_PASSWORDLESS_DISABLED",
   MFA_RECOVERY_CODES_REGENERATED: "MFA_RECOVERY_CODES_REGENERATED",
@@ -412,6 +413,21 @@ export type ReviewVisibility =
 
 /** Max length of a review's optional text (frontend + backend DTO). */
 export const REVIEW_TEXT_MAX_LENGTH = 2000;
+
+/**
+ * How spoiler-tagged reviews and comments are masked for the reader by
+ * default. AUTO keeps today's per-context behaviour (episodes/seasons/works
+ * already finished reveal automatically, everything else stays masked
+ * behind a click) — this preference only ever narrows or widens that, it
+ * never needs updating when a new context adds its own progress signal.
+ */
+export const SpoilerSensitivity = {
+  AUTO: "AUTO",
+  ALWAYS_HIDDEN: "ALWAYS_HIDDEN",
+  ALWAYS_REVEALED: "ALWAYS_REVEALED",
+} as const;
+export type SpoilerSensitivity =
+  (typeof SpoilerSensitivity)[keyof typeof SpoilerSensitivity];
 
 /**
  * A vote cast on someone else's review — Reddit-style, one active vote per

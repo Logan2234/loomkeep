@@ -402,6 +402,8 @@ export class UsersService {
         defaultListVisibility: dto.defaultListVisibility,
         locale: dto.locale as string,
         hideProgression: dto.hideProgression,
+        spoilerSensitivity: dto.spoilerSensitivity,
+        domainOrder: dto.domainOrder,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);

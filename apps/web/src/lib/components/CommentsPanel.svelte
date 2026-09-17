@@ -1,11 +1,13 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { getCommentCount } from "$lib/api/client";
+  import { auth } from "$lib/auth.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "$lib/realtime/socket";
-  import type {
-    CommentPresenceEvent,
-    CommentTargetType,
+  import {
+    SpoilerSensitivity,
+    type CommentPresenceEvent,
+    type CommentTargetType,
   } from "@loomkeep/shared";
   import { createQuery } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
@@ -91,7 +93,18 @@
         detail: `${targetType}:${targetId}`,
       }),
     );
-    showSpoilers = revealSpoilersByDefault;
+    // An explicit preference overrides the per-item "already finished this"
+    // default; AUTO leaves that default as-is.
+    switch (auth.user?.spoilerSensitivity) {
+      case SpoilerSensitivity.ALWAYS_REVEALED:
+        showSpoilers = true;
+        break;
+      case SpoilerSensitivity.ALWAYS_HIDDEN:
+        showSpoilers = false;
+        break;
+      default:
+        showSpoilers = revealSpoilersByDefault;
+    }
     open = true;
   }
 </script>

@@ -236,6 +236,21 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             label: m.settings_adult_content_label(),
             keywords: ["adulte", "adult", "18", "nsfw", "hentai"],
           },
+          {
+            id: "spoiler-sensitivity",
+            label: m.settings_spoiler_sensitivity_label(),
+            keywords: [
+              "spoiler",
+              "spoilers",
+              "reveal",
+              "reveler",
+              "masquer",
+              "hide",
+              "reviews",
+              "comments",
+              "commentaires",
+            ],
+          },
         ],
       },
       {
@@ -583,7 +598,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             keywords: ["kofi", "coffee", "one-time donation"],
           },
           {
-            id: "support-buy-me-a-coffee",
+            id: "support-bmc",
             label: "Buy Me a Coffee",
             keywords: ["bmc", "coffee", "one-time donation"],
           },
