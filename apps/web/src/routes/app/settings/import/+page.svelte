@@ -1,17 +1,22 @@
 <script lang="ts">
-  import { getImportAvailability, getImportQuota } from "$lib/api/client";
+  import {
+    getImportAvailability,
+    getImportQuota,
+    getLastImportRun,
+  } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
+  import RelativeTime from "$lib/components/RelativeTime.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
+  import SettingsSection from "../components/SettingsSection.svelte";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import {
     Domain,
@@ -54,13 +59,57 @@
   const quota = $derived<ImportQuotaDto>(quotaQuery.data ?? {});
 
   const premiumLocked = $derived(auth.isPremiumLocked);
+
+  // "Did it work?" is the question people come back here with, and the
+  // source list can't answer it. The last run does, before anything else.
+  const lastRunQuery = createApiQuery(() => ({
+    key: keys.import.lastRun(),
+    fetch: getLastImportRun,
+  }));
+  const lastRun = $derived(lastRunQuery.data?.run ?? null);
+  const lastRunOk = $derived(lastRun?.status === "SUCCESS");
+  const lastRunSource = $derived(
+    lastRun
+      ? (IMPORTS_DEFINITION[lastRun.sourceId]?.label ?? lastRun.sourceId)
+      : "",
+  );
 </script>
 
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-  <PageHeader
-    title={m.common_import()}
-    subtitle={m.settings_import_description()}
-    back="/app/settings" />
+<SettingsSection slug="import">
+  {#if lastRunQuery.loading}
+    <div class="skeleton mb-8 h-[4.5rem] rounded-xl"></div>
+  {:else if lastRun}
+    <div
+      class="card mb-8 flex items-center gap-3 p-4 {lastRunOk
+        ? 'border-success/50'
+        : 'border-danger/50'}">
+      <Icon
+        name={lastRunOk ? "check" : "warning"}
+        class="h-5 w-5 shrink-0 {lastRunOk ? 'text-success' : 'text-danger'}" />
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold">
+          {lastRunOk
+            ? m.settings_import_last_run_title({ source: lastRunSource })
+            : m.settings_import_last_run_failed({ source: lastRunSource })}
+        </p>
+        <p class="text-dim text-sm">
+          <RelativeTime iso={lastRun.finishedAt} class="timecode" />
+          {#if lastRunOk}
+            ·
+            {lastRun.itemCount > 1
+              ? m.settings_import_last_run_items_many({
+                  count: lastRun.itemCount,
+                })
+              : m.settings_import_last_run_items_one({
+                  count: lastRun.itemCount,
+                })}
+          {/if}
+        </p>
+      </div>
+    </div>
+  {:else}
+    <p class="text-dim mb-8 text-sm">{m.settings_import_none_yet()}</p>
+  {/if}
 
   <div class="flex flex-col gap-8">
     {#each Object.entries(groups) as [domain, sources] (domain)}
@@ -137,4 +186,4 @@
       {/if}
     {/each}
   </div>
-</div>
+</SettingsSection>

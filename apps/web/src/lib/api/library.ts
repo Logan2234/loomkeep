@@ -17,6 +17,10 @@ export interface ListLibraryFilters {
   page?: number;
 }
 
+/** Tracked-item count per domain, the user's hidden domains included. */
+export const getLibraryDomainCounts = () =>
+  typedRequest("/library/domain-counts");
+
 export function listLibrary(filters: ListLibraryFilters = {}) {
   return typedRequest("/library", {
     query: {

@@ -3,13 +3,12 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import { DigestCadence } from "@loomkeep/shared";
+  import SettingRow from "./SettingRow.svelte";
 
   const dailyLocked = $derived(auth.isPremiumLocked);
 
@@ -37,16 +36,6 @@
     value: tz,
   }));
 
-  // One shared error banner at the bottom of the card — starting any of the
-  // four actions below resets every other mutation's error, so a stale
-  // failure from one control never lingers once another succeeds.
-  function resetOtherErrors(except: { reset(): void }) {
-    for (const mut of [timezoneMut, emailCadenceMut, pushMut, newsletterMut]) {
-      if (mut !== except) mut.reset();
-    }
-    pushPermissionError = null;
-  }
-
   const timezoneMut = createApiMutation(() => ({
     mutate: (timezone: string) => updateMe({ timezone }),
   }));
@@ -54,7 +43,6 @@
   function setTimezone(values: string[]) {
     const timezone = values[0];
     if (!auth.user || !timezone || timezone === auth.user.timezone) return;
-    resetOtherErrors(timezoneMut);
     timezoneMut.mutate(timezone);
   }
 
@@ -76,7 +64,6 @@
       return;
     }
 
-    resetOtherErrors(emailCadenceMut);
     emailCadenceMut.mutate(cadence);
   }
 
@@ -108,7 +95,7 @@
   }));
 
   function togglePushSubscription(cadence: DigestCadence) {
-    resetOtherErrors(pushMut);
+    pushPermissionError = null;
     pushMut.mutate(cadence);
   }
 
@@ -118,89 +105,66 @@
 
   function toggleNewsletter() {
     if (!auth.user) return;
-    resetOtherErrors(newsletterMut);
     newsletterMut.mutate(!auth.user.notifyNewsletter);
   }
-
-  const notifyError = $derived(
-    timezoneMut.error ??
-      emailCadenceMut.error ??
-      pushPermissionError ??
-      pushMut.error ??
-      newsletterMut.error,
-  );
 </script>
 
 {#if auth.user}
-  <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-4 flex items-center gap-2 text-lg font-bold">
-      {m.settings_section_communications()}
-      {#if isFeatureNew("notification-digest")}
-        <NewBadge />
-      {/if}
-    </h2>
+  {@const user = auth.user}
+  <section class="card p-5 md:p-6">
     <div class="divide-border divide-y">
-      <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
-        <div>
-          <p class="font-semibold">
-            {m.common_timezone()}
-          </p>
-          <p class="text-dim text-sm">
-            {m.settings_communications_timezone_desc()}
-          </p>
-        </div>
-        <Combobox
-          label={m.common_timezone()}
-          options={TIMEZONE_OPTIONS}
-          values={[auth.user.timezone]}
-          searchable
-          onChange={setTimezone} />
-      </div>
-      <div class="flex items-center justify-between gap-4 py-3">
-        <div>
-          <p class="font-semibold">{m.common_email()}</p>
-          <p class="text-dim text-sm">
-            {m.settings_communications_email_desc()}
-          </p>
-        </div>
-        <SegmentedControl
-          options={cadenceOptions(false)}
-          value={auth.user.notifyEmail}
-          onChange={(v) => setCadence("notifyEmail", v)} />
-      </div>
-      <div class="flex items-center justify-between gap-4 py-3">
-        <div>
-          <p class="font-semibold">{m.common_push_notifications()}</p>
-          <p class="text-dim text-sm">
-            {#if pushSupported}
-              {m.settings_communications_push_desc()}
-            {:else}
-              {m.notifications_push_unsupported()}
-            {/if}
-          </p>
-        </div>
-        <SegmentedControl
-          options={cadenceOptions(!pushSupported || pushMut.loading)}
-          value={auth.user.notifyPush}
-          onChange={(v) => setCadence("notifyPush", v)} />
-      </div>
-      <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
-        <div>
-          <p class="flex items-center gap-2 font-semibold">
-            {m.common_newsletter()}
-          </p>
-          <p class="text-dim text-sm">
-            {m.settings_communications_newsletter_desc()}
-          </p>
-        </div>
-        <Switch
-          label={m.common_newsletter()}
-          checked={auth.user.notifyNewsletter}
-          onChange={toggleNewsletter} />
-      </div>
+      <SettingRow
+        label={m.common_timezone()}
+        description={m.settings_communications_timezone_desc()}
+        mutation={timezoneMut}>
+        {#snippet control()}
+          <Combobox
+            label={m.common_timezone()}
+            options={TIMEZONE_OPTIONS}
+            values={[user.timezone]}
+            searchable
+            onChange={setTimezone} />
+        {/snippet}
+      </SettingRow>
+
+      <SettingRow
+        label={m.common_email()}
+        description={m.settings_communications_email_desc()}
+        mutation={emailCadenceMut}>
+        {#snippet control()}
+          <SegmentedControl
+            options={cadenceOptions(false)}
+            value={user.notifyEmail}
+            onChange={(v) => setCadence("notifyEmail", v)} />
+        {/snippet}
+      </SettingRow>
+
+      <SettingRow
+        label={m.common_push_notifications()}
+        description={pushSupported
+          ? m.settings_communications_push_desc()
+          : m.notifications_push_unsupported()}
+        mutation={pushMut}
+        error={pushPermissionError}>
+        {#snippet control()}
+          <SegmentedControl
+            options={cadenceOptions(!pushSupported || pushMut.loading)}
+            value={user.notifyPush}
+            onChange={(v) => setCadence("notifyPush", v)} />
+        {/snippet}
+      </SettingRow>
+
+      <SettingRow
+        label={m.common_newsletter()}
+        description={m.settings_communications_newsletter_desc()}
+        mutation={newsletterMut}>
+        {#snippet control()}
+          <Switch
+            label={m.common_newsletter()}
+            checked={user.notifyNewsletter}
+            onChange={toggleNewsletter} />
+        {/snippet}
+      </SettingRow>
     </div>
-    {#if notifyError}
-      <p class="text-danger mt-2 text-sm">{notifyError}</p>
-    {/if}
   </section>
 {/if}

@@ -58,14 +58,7 @@
   ];
 </script>
 
-<section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">
-    {m.settings_datasources_title()}
-  </h2>
-  <p class="text-dim mb-4 text-sm">
-    {m.settings_datasources_body()}
-  </p>
-
+<section class="card p-5 md:p-6">
   <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
     {#each PROVIDERS as p (p.name)}
       <li>

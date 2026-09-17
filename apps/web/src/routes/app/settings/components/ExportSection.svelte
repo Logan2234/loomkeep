@@ -63,15 +63,16 @@
   function downloadCsv(domain: Domain, slug: string) {
     csvExportMut.mutate({ domain, slug });
   }
+
+  // Four permanently disabled buttons read as four broken promises. The
+  // planned domains say so once, in a line, instead.
+  const exportableDomains = CSV_DOMAINS.filter((d) => !d.comingSoon);
+  const plannedDomains = CSV_DOMAINS.filter((d) => d.comingSoon)
+    .map((d) => d.label)
+    .join(", ");
 </script>
 
-<section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">
-    {m.common_export()}
-  </h2>
-  <p class="text-dim mb-4 text-sm">
-    {m.settings_export_body()}
-  </p>
+<section class="card p-5 md:p-6">
   <button
     class="btn btn-primary"
     disabled={exportMut.loading}
@@ -90,26 +91,23 @@
       {m.settings_export_csv_body()}
     </p>
     <div class="flex flex-wrap gap-2">
-      {#each CSV_DOMAINS as d (d.domain)}
-        {#if d.comingSoon}
-          <!-- Planned domain: no data to export yet. -->
-          <button class="btn btn-ghost" disabled title={m.common_coming_soon()}>
-            <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-            {d.label} (CSV) · {m.common_coming_soon()}
-          </button>
-        {:else}
-          <button
-            class="btn btn-ghost"
-            disabled={csvExportMut.loading}
-            onclick={() => downloadCsv(d.domain, d.slug)}>
-            <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-            {csvExportMut.loading && csvExportMut.variables?.domain === d.domain
-              ? m.settings_export_action_loading()
-              : `${d.label} (CSV)`}
-          </button>
-        {/if}
+      {#each exportableDomains as d (d.domain)}
+        <button
+          class="btn btn-ghost"
+          disabled={csvExportMut.loading}
+          onclick={() => downloadCsv(d.domain, d.slug)}>
+          <Icon name="download" class="mr-1.5 inline h-4 w-4" />
+          {csvExportMut.loading && csvExportMut.variables?.domain === d.domain
+            ? m.settings_export_action_loading()
+            : `${d.label} (CSV)`}
+        </button>
       {/each}
     </div>
+    {#if plannedDomains}
+      <p class="timecode mt-3 text-xs">
+        {m.settings_export_coming_soon_label({ domains: plannedDomains })}
+      </p>
+    {/if}
     {#if csvExportMut.error}
       <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
     {/if}

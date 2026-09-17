@@ -105,12 +105,7 @@
   }
 </script>
 
-<section class="card mb-5 space-y-4 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">
-    {m.settings_appearance_title()}
-  </h2>
-  <p class="text-dim text-sm">{m.settings_appearance_description()}</p>
-
+<section class="card space-y-4 p-5 md:p-6">
   <div>
     <p class="mb-2 font-semibold">{m.common_theme()}</p>
     <div class="flex gap-2">

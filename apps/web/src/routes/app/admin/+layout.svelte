@@ -27,7 +27,7 @@
       {m.admin_mfa_required_title()}
     </h1>
     <p class="text-dim max-w-sm text-sm">{m.admin_mfa_required_desc()}</p>
-    <a href="/app/settings#mfa" class="btn btn-primary">
+    <a href="/app/settings/double-authentification" class="btn btn-primary">
       {m.admin_mfa_required_cta()}
     </a>
   </div>

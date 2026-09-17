@@ -1,244 +1,210 @@
 <script lang="ts">
+  // The settings index. On a phone it is the whole navigation: account
+  // health first, then the five groups with each section's current value
+  // under its name. On a desktop the rail already shows that list, so the
+  // index hands over to the first section instead of repeating itself.
+  import { browser } from "$app/environment";
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { getLastImportRun, getMfaStatus, getSessions } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
-  import LegalLinks from "$lib/components/LegalLinks.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
-  import { appConfig } from "$lib/config.svelte";
+  import { DOMAINS } from "$lib/constants/domains";
+  import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
-  import AppearanceSection from "./components/AppearanceSection.svelte";
-  import CommunicationsSection from "./components/CommunicationsSection.svelte";
-  import DangerZoneSection from "./components/DangerZoneSection.svelte";
-  import DataSourcesSection from "./components/DataSourcesSection.svelte";
-  import DomainsSection from "./components/DomainsSection.svelte";
-  import ExportSection from "./components/ExportSection.svelte";
-  import HelpFeedbackSection from "./components/HelpFeedbackSection.svelte";
-  import ImportSection from "./components/ImportSection.svelte";
-  import MfaSection from "./components/MfaSection.svelte";
-  import PrivacySection from "./components/PrivacySection.svelte";
-  import ProfileSection from "./components/ProfileSection.svelte";
-  import SecuritySection from "./components/SecuritySection.svelte";
-  import SupportSection from "./components/SupportSection.svelte";
+  import { theme } from "$lib/theme.svelte";
+  import { DigestCadence } from "@loomkeep/shared";
+  import SettingsNav from "./components/SettingsNav.svelte";
+  import {
+    LEGACY_HASH_ROUTES,
+    RECOVERY_CODES_LOW_THRESHOLD,
+    sectionHref,
+  } from "./nav";
 
-  // Section table of contents (desktop only) — id must match the wrapper
-  // below each section component. `social` entries hide when the flag is off.
-  const SECTIONS: {
-    id: string;
-    label: string;
-    social?: boolean;
-    newBadgeKey?: Parameters<typeof isFeatureNew>[0];
-  }[] = [
-    { id: "securite", label: m.common_security() },
-    {
-      id: "mfa",
-      label: m.settings_section_mfa(),
-      newBadgeKey: "mfa",
-    },
-    { id: "contenu", label: m.settings_section_content() },
-    {
-      id: "confidentialite",
-      label: m.common_privacy(),
-      social: true,
-    },
-    { id: "domaines", label: m.common_domains() },
-    { id: "communications", label: m.settings_section_communications() },
-    {
-      id: "apparence",
-      label: m.settings_appearance_title(),
-      newBadgeKey: "nav-styles",
-    },
-    { id: "import", label: m.common_import() },
-    { id: "export", label: m.common_export() },
-    { id: "aide", label: `${m.common_help()} & ${m.common_feedback()}` },
-    { id: "soutien", label: m.settings_section_support() },
-    { id: "sources-donnees", label: m.settings_datasources_title() },
-    { id: "danger", label: m.settings_danger_zone_title() },
-  ];
-  const visibleSections = $derived(
-    SECTIONS.filter((s) => !s.social || appConfig.socialEnabled),
+  // Links already out in inboxes and push payloads still point at
+  // /app/settings#communications — resolve them to the route that replaced
+  // the anchor rather than dropping the user on the index.
+  $effect(() => {
+    const target = LEGACY_HASH_ROUTES[page.url.hash.slice(1)];
+    if (target) void goto(target, { replaceState: true });
+  });
+
+  $effect(() => {
+    if (!browser || page.url.hash) return;
+    const wide = window.matchMedia("(min-width: 1024px)");
+    const openFirstSection = () => {
+      if (wide.matches && page.url.pathname === "/app/settings") {
+        void goto(sectionHref("securite"), { replaceState: true });
+      }
+    };
+    openFirstSection();
+    wide.addEventListener("change", openFirstSection);
+    return () => wide.removeEventListener("change", openFirstSection);
+  });
+
+  const mfaQuery = createApiQuery(() => ({
+    key: keys.mfa.status(),
+    fetch: getMfaStatus,
+  }));
+  const sessionsQuery = createApiQuery(() => ({
+    key: keys.sessions.all(),
+    fetch: getSessions,
+  }));
+  const lastRunQuery = createApiQuery(() => ({
+    key: keys.import.lastRun(),
+    fetch: getLastImportRun,
+  }));
+  const mfa = $derived(mfaQuery.data);
+  const sessionCount = $derived(sessionsQuery.data?.length ?? 0);
+  const lastRun = $derived(lastRunQuery.data?.run ?? null);
+
+  const mfaOn = $derived(
+    !!mfa &&
+      (mfa.totpEnabled ||
+        mfa.emailEnabled ||
+        mfa.webauthnCredentials.length > 0),
+  );
+  const recoveryLow = $derived(
+    mfaOn &&
+      !!mfa &&
+      mfa.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD,
   );
 
-  let containerEl = $state<HTMLElement | null>(null);
-  let activeId = $state(SECTIONS[0].id);
-  let compactTocEl = $state<HTMLElement | null>(null);
+  const CADENCE_PREVIEW: Record<DigestCadence, string> = {
+    [DigestCadence.DISABLED]: m.settings_communications_cadence_disabled(),
+    [DigestCadence.WEEKLY]: m.settings_communications_cadence_weekly(),
+    [DigestCadence.DAILY]: m.settings_communications_cadence_daily(),
+  };
 
-  // Deep links like /app/settings#aide (the home page's "Aide & Feedback"
-  // shortcut) can't rely on the browser resolving the fragment: these routes
-  // are SPA-rendered, so #aide doesn't exist in the DOM yet when the
-  // navigation lands. Resolve it once the sections are mounted.
-  $effect(() => {
-    const id = page.url.hash.slice(1);
-    if (!id || !containerEl) return;
-    if (!SECTIONS.some((s) => s.id === id)) return;
-    requestAnimationFrame(() => scrollToSection(id));
+  const LOCALE_LABELS: Record<string, string> = {
+    fr: m.common_language_fr(),
+    en: m.common_language_en(),
+  };
+
+  const contentPreview = $derived.by(() => {
+    if (!auth.user?.birthDate) return m.settings_preview_birthdate_missing();
+    return auth.user.allowAdultContent
+      ? m.settings_preview_adult_on()
+      : m.settings_preview_adult_off();
   });
 
-  // The compact TOC is a horizontal scroller, so the active chip has to be
-  // brought into view as the scroll-spy advances or the bar stops telling
-  // you where you are.
-  $effect(() => {
-    const chip = compactTocEl?.querySelector<HTMLElement>(
-      `[data-toc-id="${activeId}"]`,
-    );
-    chip?.scrollIntoView({ block: "nearest", inline: "center" });
+  const importPreview = $derived.by(() => {
+    if (!lastRun) return m.settings_preview_no_import();
+    const source = IMPORTS_DEFINITION[lastRun.sourceId]?.label;
+    return lastRun.status === "SUCCESS"
+      ? m.settings_import_last_run_title({ source: source ?? lastRun.sourceId })
+      : m.settings_import_last_run_failed({
+          source: source ?? lastRun.sourceId,
+        });
   });
 
-  function scrollToSection(id: string) {
-    document
-      .getElementById(id)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  // Scroll-spy: whichever section wrapper crosses the upper band of the
-  // viewport becomes active in the TOC.
-  $effect(() => {
-    const container = containerEl;
-    if (!container) return;
-    const targets = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-section-id]"),
-    );
-    if (targets.length === 0) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            activeId = e.target.getAttribute("data-section-id") ?? activeId;
-          }
-        }
-      },
-      { rootMargin: "-15% 0px -70% 0px" },
-    );
-    for (const t of targets) io.observe(t);
-
-    // The IO band never reaches the last section once the page bottom is
-    // scrolled into view (nothing left below it to cross the "-70%" line) —
-    // force the last section active once we're at the very bottom.
-    function onScroll() {
-      const atBottom =
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 2;
-      if (atBottom) {
-        const last = targets[targets.length - 1];
-        activeId = last?.getAttribute("data-section-id") ?? activeId;
-      }
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      io.disconnect();
-      window.removeEventListener("scroll", onScroll);
-    };
+  const previews = $derived({
+    securite: auth.user
+      ? `${auth.user.username} · ${auth.user.email}`
+      : undefined,
+    "double-authentification": mfa
+      ? mfaOn
+        ? m.settings_health_mfa_on()
+        : m.settings_preview_mfa_off()
+      : undefined,
+    appareils: sessionsQuery.data
+      ? sessionCount > 1
+        ? m.settings_health_sessions_many({ count: sessionCount })
+        : m.settings_health_sessions_one({ count: sessionCount })
+      : undefined,
+    contenu: contentPreview,
+    apparence: auth.user
+      ? `${theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${LOCALE_LABELS[auth.user.locale] ?? auth.user.locale}`
+      : undefined,
+    domaines: auth.user
+      ? m.settings_preview_domains({
+          count: auth.user.enabledDomains.length,
+          total: Object.keys(DOMAINS).length,
+        })
+      : undefined,
+    communications: auth.user
+      ? CADENCE_PREVIEW[auth.user.notifyEmail]
+      : undefined,
+    import: importPreview,
+    export: m.settings_preview_export(),
+    aide: m.settings_preview_help(),
+    soutien: m.settings_preview_support(),
+    "sources-donnees": m.settings_preview_datasources(),
   });
+
+  const alerts = $derived({ "double-authentification": recoveryLow });
 </script>
 
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10 lg:max-w-5xl">
+<!-- lg:hidden on the wrapper rather than per-block: above lg this route has
+     already handed over to the first section. -->
+<div class="lg:hidden">
   <PageHeader
     icon="gear"
     back="/app/profile"
     title={m.common_settings()}
+    isNew={isFeatureNew("settings-rework")}
     class="mb-6" />
 
   {#if auth.user}
-    <!-- Under lg the sidebar TOC is hidden, which left a 5000px+ page with no
-         way to jump: same sections as a sticky scroller instead. -->
-    <nav
-      bind:this={compactTocEl}
-      aria-label={m.common_settings()}
-      class="bg-bg/95 border-border no-scrollbar sticky top-0 z-20 -mx-5 mb-4 flex snap-x gap-2 overflow-x-auto border-b px-5 py-2.5 backdrop-blur md:-mx-8 md:px-8 lg:hidden">
-      {#each visibleSections as s (s.id)}
-        <button
-          type="button"
-          data-toc-id={s.id}
-          onclick={() => scrollToSection(s.id)}
-          aria-current={activeId === s.id ? "true" : undefined}
-          class="chip shrink-0 snap-center text-[0.7rem] whitespace-nowrap {activeId ===
-          s.id
-            ? 'chip-on'
-            : ''}">
-          {s.label}
-          {#if s.newBadgeKey && isFeatureNew(s.newBadgeKey)}
+    <div class="mb-6 flex flex-wrap gap-2">
+      <span
+        class="border-border flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold">
+        <span
+          class="h-1.5 w-1.5 rounded-full {auth.user.emailVerified
+            ? 'bg-success'
+            : 'bg-warning'}"
+          aria-hidden="true"></span>
+        {auth.user.emailVerified
+          ? m.settings_email_verified()
+          : m.settings_email_not_verified()}
+      </span>
+
+      {#if mfa}
+        <span
+          class="border-border flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold">
+          <span
+            class="h-1.5 w-1.5 rounded-full {mfaOn ? 'bg-success' : 'bg-dim'}"
+            aria-hidden="true"></span>
+          {mfaOn ? m.settings_health_mfa_on() : m.settings_health_mfa_off()}
+        </span>
+
+        {#if mfaOn}
+          <span
+            class="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold {recoveryLow
+              ? 'border-warning text-warning'
+              : 'border-border'}">
             <span
-              class="bg-accent ml-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+              class="h-1.5 w-1.5 rounded-full {recoveryLow
+                ? 'bg-warning'
+                : 'bg-success'}"
               aria-hidden="true"></span>
-          {/if}
-        </button>
-      {/each}
-    </nav>
+            {mfa.recoveryCodesRemaining > 1
+              ? m.settings_health_recovery_many({
+                  count: mfa.recoveryCodesRemaining,
+                })
+              : m.settings_health_recovery_one({
+                  count: mfa.recoveryCodesRemaining,
+                })}
+          </span>
+        {/if}
+      {/if}
 
-    <div class="mb-6 lg:grid lg:grid-cols-[180px_1fr] lg:gap-10">
-      <nav class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
-        <ul class="border-border space-y-1 border-l">
-          {#each visibleSections as s (s.id)}
-            <li>
-              <a
-                href={`#${s.id}`}
-                onclick={(e) => {
-                  e.preventDefault();
-                  scrollToSection(s.id);
-                }}
-                class="-ml-px block border-l-2 py-1.5 pl-3 text-xs font-bold tracking-widest uppercase transition-colors {activeId ===
-                s.id
-                  ? 'border-accent text-fg'
-                  : 'text-dim hover:text-fg border-transparent'}">
-                {s.label}
-                {#if s.newBadgeKey && isFeatureNew(s.newBadgeKey)}
-                  <span
-                    class="bg-accent ml-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
-                    aria-hidden="true"></span>
-                {/if}
-              </a>
-            </li>
-          {/each}
-        </ul>
-      </nav>
-
-      <!-- scroll-mt clears the compact TOC bar, which is sticky over the
-           top of whichever section it jumps to. -->
-      <div
-        bind:this={containerEl}
-        class="min-w-0 [&>[data-section-id]]:scroll-mt-16 lg:[&>[data-section-id]]:scroll-mt-0">
-        <div id="securite" data-section-id="securite">
-          <SecuritySection />
-        </div>
-        <div id="mfa" data-section-id="mfa">
-          <MfaSection />
-        </div>
-        <div id="contenu" data-section-id="contenu">
-          <ProfileSection />
-        </div>
-        <div id="confidentialite" data-section-id="confidentialite">
-          <PrivacySection />
-        </div>
-        <div id="domaines" data-section-id="domaines">
-          <DomainsSection />
-        </div>
-        <div id="communications" data-section-id="communications">
-          <CommunicationsSection />
-        </div>
-        <div id="apparence" data-section-id="apparence">
-          <AppearanceSection />
-        </div>
-        <div id="import" data-section-id="import">
-          <ImportSection />
-        </div>
-        <div id="export" data-section-id="export">
-          <ExportSection />
-        </div>
-        <div id="aide" data-section-id="aide">
-          <HelpFeedbackSection />
-        </div>
-        <div id="soutien" data-section-id="soutien">
-          <SupportSection />
-        </div>
-        <div id="sources-donnees" data-section-id="sources-donnees">
-          <DataSourcesSection />
-        </div>
-        <div id="danger" data-section-id="danger">
-          <DangerZoneSection />
-        </div>
-      </div>
+      {#if sessionsQuery.data}
+        <a
+          href={sectionHref("appareils")}
+          class="border-border hover:border-accent flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors">
+          <Icon name="monitor" class="text-dim h-3.5 w-3.5" />
+          {sessionCount > 1
+            ? m.settings_health_sessions_many({ count: sessionCount })
+            : m.settings_health_sessions_one({ count: sessionCount })}
+        </a>
+      {/if}
     </div>
-  {/if}
 
-  <LegalLinks />
+    <SettingsNav variant="list" {previews} {alerts} />
+  {/if}
 </div>

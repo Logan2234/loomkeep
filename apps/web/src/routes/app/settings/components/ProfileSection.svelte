@@ -8,9 +8,9 @@
   import { auth } from "$lib/auth.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import SettingRow from "./SettingRow.svelte";
 
   let birthDate = $state(auth.user?.birthDate ?? "");
-  let birthDateSaved = $state(false);
 
   // Today, formatted for the date input's `max` bound (no future birth dates).
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -18,26 +18,7 @@
   const saveBirthDateMut = createApiMutation(() => ({
     mutate: () => updateMe({ birthDate: birthDate || null }),
     coveredFields: ["birthDate"],
-    onSuccess: () => {
-      birthDateSaved = true;
-      setTimeout(() => (birthDateSaved = false), 2500);
-    },
   }));
-
-  function saveBirthDate() {
-    birthDateSaved = false;
-    saveBirthDateMut.mutate();
-  }
-
-  const birthDateStatus = $derived<"idle" | "saving" | "saved" | "error">(
-    saveBirthDateMut.loading
-      ? "saving"
-      : saveBirthDateMut.error
-        ? "error"
-        : birthDateSaved
-          ? "saved"
-          : "idle",
-  );
 
   // Mirrors the API's age check, just for enabling/disabling the toggle below.
   function hasTurned18(isoBirthDate: string | null): boolean {
@@ -65,56 +46,41 @@
 </script>
 
 {#if auth.user}
-  <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-4 text-lg font-bold">
-      {m.settings_section_content()}
-    </h2>
+  {@const user = auth.user}
+  <section class="card p-5 md:p-6">
+    <div class="divide-border divide-y">
+      <SettingRow
+        label={m.common_birthdate()}
+        description={m.settings_birthdate_description()}
+        controlId="settings-birth-date"
+        mutation={saveBirthDateMut}>
+        {#snippet control()}
+          <input
+            type="date"
+            id="settings-birth-date"
+            name="birthDate"
+            autocomplete="bday"
+            class="input w-auto"
+            max={todayIso}
+            aria-describedby="settings-birth-date-description"
+            bind:value={birthDate}
+            onchange={() => saveBirthDateMut.mutate()} />
+        {/snippet}
+      </SettingRow>
 
-    <label class="block max-w-xs">
-      <span class="mb-1.5 block text-sm font-semibold">
-        {m.common_birthdate()}
-      </span>
-      <input
-        type="date"
-        name="birthDate"
-        autocomplete="bday"
-        class="input"
-        max={todayIso}
-        aria-describedby="birth-date-description"
-        bind:value={birthDate}
-        onchange={saveBirthDate} />
-    </label>
-    <p id="birth-date-description" class="text-dim mt-1.5 text-xs">
-      {m.settings_birthdate_description()}
-    </p>
-    {#if birthDateStatus === "saving"}
-      <p class="text-dim mt-2 text-sm">
-        {m.common_save_loading()}
-      </p>
-    {:else if birthDateStatus === "saved"}
-      <p class="text-success mt-2 text-sm">{m.settings_birthdate_saved()}</p>
-    {:else if birthDateStatus === "error"}
-      <p class="text-danger mt-2 text-sm">{saveBirthDateMut.error}</p>
-    {/if}
-
-    {#if isAdultEligible}
-      <div class="border-border mt-5 border-t pt-5">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="font-semibold">{m.settings_adult_content_label()}</p>
-            <p class="text-dim text-sm">
-              {m.settings_adult_content_description()}
-            </p>
-          </div>
-          <Switch
-            label={m.settings_adult_content_label()}
-            checked={auth.user.allowAdultContent}
-            onChange={toggleAdultContent} />
-        </div>
-        {#if toggleAdultContentMut.error}
-          <p class="text-danger mt-2 text-sm">{toggleAdultContentMut.error}</p>
-        {/if}
-      </div>
-    {/if}
+      {#if isAdultEligible}
+        <SettingRow
+          label={m.settings_adult_content_label()}
+          description={m.settings_adult_content_description()}
+          mutation={toggleAdultContentMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_adult_content_label()}
+              checked={user.allowAdultContent}
+              onChange={toggleAdultContent} />
+          {/snippet}
+        </SettingRow>
+      {/if}
+    </div>
   </section>
 {/if}

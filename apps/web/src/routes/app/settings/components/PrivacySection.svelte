@@ -9,6 +9,7 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
@@ -32,6 +33,7 @@
     type VisibilitySettingsDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import SettingRow from "./SettingRow.svelte";
 
   let showModesModal = $state(false);
   let confirmingGhost = $state(false);
@@ -163,14 +165,11 @@
     onChange={(v) => setAudience(domain, facet, v)} />
 {/snippet}
 
-{#if appConfig.socialEnabled && settings}
-  <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-1 text-lg font-bold">{m.common_privacy()}</h2>
-    <p class="text-dim text-sm">
-      {m.settings_privacy_description()}
-    </p>
-
-    <div class="my-8">
+{#if appConfig.socialEnabled && settingsQuery.loading}
+  <CardRowSkeleton count={3} />
+{:else if appConfig.socialEnabled && settings}
+  <section class="card p-5 md:p-6">
+    <div class="mb-8">
       <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p class="font-semibold">{m.settings_profile_visibility()}</p>
         <button
@@ -242,42 +241,42 @@
       </div>
 
       {#if auth.user}
+        {@const user = auth.user}
         <div class="border-border mt-5 border-y py-5">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p class="font-semibold">
-                {m.settings_privacy_default_reviews()}
-              </p>
-              <p class="text-dim text-sm">
-                {m.settings_privacy_default_reviews_hint()}
-              </p>
-            </div>
-            <Combobox
-              label={m.settings_privacy_scope()}
-              options={[
-                { label: m.common_friends(), value: "FRIENDS" },
-                { label: m.common_public(), value: "PUBLIC" },
-              ]}
-              values={[auth.user.defaultReviewVisibility]}
-              onChange={(v) =>
-                setDefaultReviewVisibility(v[0] as ReviewVisibility)} />
-          </div>
+          <SettingRow
+            label={m.settings_privacy_default_reviews()}
+            description={m.settings_privacy_default_reviews_hint()}
+            mutation={reviewVisibilityMut}>
+            {#snippet control()}
+              <Combobox
+                label={m.settings_privacy_scope()}
+                options={[
+                  { label: m.common_friends(), value: "FRIENDS" },
+                  { label: m.common_public(), value: "PUBLIC" },
+                ]}
+                values={[user.defaultReviewVisibility]}
+                onChange={(v) =>
+                  setDefaultReviewVisibility(v[0] as ReviewVisibility)} />
+            {/snippet}
+          </SettingRow>
         </div>
       {/if}
     {/if}
 
     {#if appConfig.gamificationEnabled && auth.user}
-      <div class="mt-5 flex items-center justify-between gap-4">
-        <div>
-          <p class="font-semibold">{m.settings_hide_progression()}</p>
-          <p class="text-dim text-sm">
-            {m.settings_hide_progression_desc()}
-          </p>
-        </div>
-        <Switch
+      {@const gamificationUser = auth.user}
+      <div class="mt-5">
+        <SettingRow
           label={m.settings_hide_progression()}
-          checked={auth.user.hideProgression}
-          onChange={toggleHideProgression} />
+          description={m.settings_hide_progression_desc()}
+          mutation={hideProgressionMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_hide_progression()}
+              checked={gamificationUser.hideProgression}
+              onChange={toggleHideProgression} />
+          {/snippet}
+        </SettingRow>
       </div>
     {/if}
 

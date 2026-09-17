@@ -192,6 +192,30 @@ export type ImportAvailabilityDto = Partial<Record<ImportSource, boolean>>;
  */
 export type ImportQuotaDto = Partial<Record<Domain, boolean>>;
 
+/** The user's most recent import attempt, whatever its outcome. */
+export interface ImportRunDto {
+  sourceId: ImportSource;
+  /** Null on rows written before the column existed — see ImportRun. */
+  domain: Domain | null;
+  /** "SUCCESS" or "FAILURE", mirroring ImportRun.status. */
+  status: string;
+  /** Items actually written (the user's kept selection). */
+  itemCount: number;
+  /** Human summary joined from the report's tiles; null on failure. */
+  summary: string | null;
+  /** ISO-8601 instant. */
+  finishedAt: string;
+}
+
+/**
+ * Response of `GET /import/last-run`. Wrapped rather than nullable at the top
+ * level so the endpoint always answers with an object — "never imported" is a
+ * state the UI renders, not an empty body it has to guess at.
+ */
+export interface ImportLastRunDto {
+  run: ImportRunDto | null;
+}
+
 /** Body of `POST /import/:source/analyze`. */
 export interface ImportAnalyzeRequest {
   /**

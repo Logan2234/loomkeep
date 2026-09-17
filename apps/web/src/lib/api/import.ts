@@ -9,6 +9,9 @@ export const getImportAvailability = () => typedRequest("/import/availability");
 
 export const getImportQuota = () => typedRequest("/import/quota");
 
+/** The user's last import, whatever its outcome — `{ run: null }` if none. */
+export const getLastImportRun = () => typedRequest("/import/last-run");
+
 /** Analyse an export → reconciliation plan (writes nothing). Poll the job. */
 export const analyzeImport = (
   source: ImportSource,

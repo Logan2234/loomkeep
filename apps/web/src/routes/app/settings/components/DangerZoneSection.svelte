@@ -68,11 +68,11 @@
 </script>
 
 <section class="card border-danger/40 p-5 md:p-6">
-  <h2 class="font-display text-danger mb-1 text-lg font-bold">
+  <h2 class="font-display text-danger mb-2 text-lg font-bold">
     {m.settings_danger_zone_title()}
   </h2>
   <p class="text-dim mb-4 text-sm">
-    {m.settings_delete_account_description()}
+    {m.settings_delete_account_modal_description()}
   </p>
   <button class="btn btn-danger" onclick={openDeleteModal}>
     {m.settings_delete_account_button()}

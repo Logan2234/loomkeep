@@ -3,6 +3,7 @@ import type {
   ImportAvailabilityDto,
   ImportCommitRequest,
   ImportJobDto,
+  ImportLastRunDto,
   ImportPlan,
   ImportQuotaDto,
   ImportReport,
@@ -118,6 +119,39 @@ export class ImportJobService {
     }
 
     return quota;
+  }
+
+  /**
+   * The user's last import attempt, success or failure. Shown at the top of
+   * the import screen so coming back answers "did it work?" without opening
+   * anything. `null` until they have run one.
+   */
+  async getLastRun(userId: string): Promise<ImportLastRunDto> {
+    const run = await this.prisma.importRun.findFirst({
+      where: { userId },
+      orderBy: { finishedAt: "desc" },
+      select: {
+        sourceId: true,
+        domain: true,
+        status: true,
+        itemCount: true,
+        summary: true,
+        finishedAt: true,
+      },
+    });
+
+    if (!run) return { run: null };
+
+    return {
+      run: {
+        sourceId: run.sourceId as ImportSource,
+        domain: run.domain as Domain | null,
+        status: run.status,
+        itemCount: run.itemCount,
+        summary: run.summary,
+        finishedAt: run.finishedAt.toISOString(),
+      },
+    };
   }
 
   /**

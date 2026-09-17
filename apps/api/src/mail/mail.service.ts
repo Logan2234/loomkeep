@@ -744,7 +744,7 @@ export class MailService {
     // can reach in-app settings directly.
     const url =
       this.umamiLink(UMAMI_LINK_SLUG_NEW_DEVICE_LOGIN) ??
-      `${this.webOrigin}/app/settings#securite`;
+      `${this.webOrigin}/app/settings/securite`;
     return {
       subject: copy.subject,
       text: `${copy.intro(deviceLabel, ipTextSuffix)} ${copy.warning}\n\n${url}`,
@@ -868,7 +868,7 @@ export class MailService {
     const periodLabel = period === "daily" ? copy.today : copy.thisWeek;
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
-      `${this.webOrigin}/app/settings#communications`;
+      `${this.webOrigin}/app/settings/communications`;
 
     const listHtml = items
       .map(
@@ -918,7 +918,7 @@ export class MailService {
       "https://feedback.loomkeep.app/changelog";
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS) ??
-      `${this.webOrigin}/app/settings#communications`;
+      `${this.webOrigin}/app/settings/communications`;
     // Carries a per-recipient token in its query string, so — like "Voir"
     // above — it can't go through a Link (one fixed URL per Link, this one
     // is different for every recipient). Works without being logged in

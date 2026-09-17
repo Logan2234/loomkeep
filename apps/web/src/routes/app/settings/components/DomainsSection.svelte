@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { updateMe } from "$lib/api/client";
+  import { getLibraryDomainCounts, updateMe } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
@@ -12,6 +14,21 @@
   import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
 
   const premiumLocked = $derived(auth.isPremiumLocked);
+
+  // What switching a domain off would take out of the navigation. Best
+  // effort: a failed count leaves the tiles as they were rather than
+  // blocking the toggles behind an error.
+  const countsQuery = createApiQuery(() => ({
+    key: keys.library.domainCounts(),
+    fetch: getLibraryDomainCounts,
+  }));
+  const counts = $derived(countsQuery.data ?? {});
+
+  function trackedLabel(count: number): string {
+    return count > 1
+      ? m.settings_domain_tracked_many({ count })
+      : m.settings_domain_tracked_one({ count });
+  }
 
   const toggleDomainMut = createApiMutation(() => ({
     mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
@@ -26,13 +43,7 @@
 </script>
 
 {#if auth.user}
-  <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-1 text-lg font-bold">
-      {m.common_domains()}
-    </h2>
-    <p class="text-dim mb-4 text-sm">
-      {m.settings_domains_description()}
-    </p>
+  <section class="card p-5 md:p-6">
     <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
       {#each Object.entries(DOMAINS) as [id, d] (id)}
         {@const on = auth.user.enabledDomains.includes(id as Domain)}
@@ -69,6 +80,13 @@
             {/if}
             <Icon name={d.icon} class="h-5 w-5 {on ? 'text-accent' : ''}" />
             <span class="text-xs font-semibold">{d.label}</span>
+            {#if countsQuery.loading && !d.comingSoon}
+              <span class="skeleton h-3 w-10 rounded"></span>
+            {:else if (counts[id as Domain] ?? 0) > 0}
+              <span class="timecode text-[0.65rem]">
+                {trackedLabel(counts[id as Domain] ?? 0)}
+              </span>
+            {/if}
           </button>
         {/snippet}
         {#if showLock}
@@ -82,7 +100,7 @@
       {/each}
     </div>
     {#if toggleDomainMut.error}
-      <p class="text-danger mt-2 text-sm">{toggleDomainMut.error}</p>
+      <p class="text-danger mt-3 text-sm">{toggleDomainMut.error}</p>
     {/if}
   </section>
 {/if}

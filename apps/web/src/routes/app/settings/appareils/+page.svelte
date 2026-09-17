@@ -10,16 +10,25 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { deviceLabel, type SessionDto } from "@loomkeep/shared";
+  import SettingsSection from "../components/SettingsSection.svelte";
 
   const sessionsQuery = createApiQuery(() => ({
     key: keys.sessions.all(),
     fetch: getSessions,
   }));
-  const sessions = $derived(sessionsQuery.data ?? []);
+  // This device first, then the rest by last activity: spotting the one you
+  // don't recognise is a comparison, and it only works from a fixed anchor.
+  const sessions = $derived(
+    [...(sessionsQuery.data ?? [])].sort((a, b) => {
+      if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+      return (
+        new Date(b.lastUsedAt).getTime() - new Date(a.lastUsedAt).getTime()
+      );
+    }),
+  );
   const loading = $derived(sessionsQuery.loading);
   const error = $derived(sessionsQuery.error);
 
@@ -45,13 +54,7 @@
   let hasOthers = $derived(sessions.some((s) => !s.isCurrent));
 </script>
 
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-  <PageHeader
-    title={m.settings_sessions_title()}
-    subtitle={m.settings_sessions_description()}
-    icon="monitor"
-    back="/app/settings" />
-
+<SettingsSection slug="appareils">
   {#if loading}
     <CardRowSkeleton count={3} />
   {:else if error}
@@ -60,8 +63,13 @@
     <div class="card divide-border divide-y">
       {#each sessions as session (session.id)}
         {@const isCurrent = session.isCurrent}
-        <div class="flex items-center gap-4 p-4">
-          <Icon name="monitor" class="text-dim h-6 w-6 shrink-0" />
+        <div
+          class="flex items-center gap-4 p-4 {isCurrent
+            ? 'border-accent border-l-2'
+            : ''}">
+          <Icon
+            name="monitor"
+            class="h-6 w-6 shrink-0 {isCurrent ? 'text-accent' : 'text-dim'}" />
           <div class="min-w-0 flex-1">
             <p class="flex items-center gap-2 font-semibold">
               <span class="truncate"
@@ -138,4 +146,4 @@
       </div>
     </Modal>
   {/if}
-</div>
+</SettingsSection>

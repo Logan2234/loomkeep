@@ -166,7 +166,7 @@ describe("MailService", () => {
     );
 
     const { html } = sendMail.mock.calls[0][0];
-    expect(html).toContain("https://loomkeep.example/app/settings#securite");
+    expect(html).toContain("https://loomkeep.example/app/settings/securite");
   });
 
   it("links email-changed (old address) to a mailto contact, not the app", async () => {
@@ -228,7 +228,7 @@ describe("MailService", () => {
       "https://loomkeep.example/unsubscribe?token=unsub-token-123",
     );
     expect(html).toContain(
-      "https://loomkeep.example/app/settings#communications",
+      "https://loomkeep.example/app/settings/communications",
     );
   });
 

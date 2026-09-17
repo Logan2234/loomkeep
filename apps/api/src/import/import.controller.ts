@@ -1,6 +1,7 @@
 import type {
   ImportAvailabilityDto,
   ImportJobDto,
+  ImportLastRunDto,
   ImportQuotaDto,
   ImportSource,
 } from "@loomkeep/shared";
@@ -12,6 +13,7 @@ import { AnalyzeImportDto } from "./dto/analyze-import.dto";
 import { CommitImportDto } from "./dto/commit-import.dto";
 import { ImportAvailabilityResponseDto } from "./dto/import-availability-response.dto";
 import { ImportJobResponseDto } from "./dto/import-job-response.dto";
+import { ImportLastRunResponseDto } from "./dto/import-last-run-response.dto";
 import { ImportQuotaResponseDto } from "./dto/import-quota-response.dto";
 import { ImportJobService } from "./import-job.service";
 
@@ -41,6 +43,13 @@ export class ImportController {
   @ApiOkResponse({ type: ImportQuotaResponseDto })
   quota(@CurrentUser() user: JwtPayload): Promise<ImportQuotaDto> {
     return this.jobs.getQuota(user.sub);
+  }
+
+  /** The user's last import, whatever its outcome — `{ run: null }` if none. */
+  @Get("last-run")
+  @ApiOkResponse({ type: ImportLastRunResponseDto })
+  lastRun(@CurrentUser() user: JwtPayload): Promise<ImportLastRunDto> {
+    return this.jobs.getLastRun(user.sub);
   }
 
   /** Analyse an export and build a reconciliation plan (writes nothing). */
