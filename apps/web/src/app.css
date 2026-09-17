@@ -206,6 +206,14 @@ body {
   .switch-on .switch-thumb {
     @apply translate-x-[18px];
   }
+  /* A row inside a Dropdown menu ("…" popovers). Pair with `.menu-item-danger`
+     for destructive actions. */
+  .menu-item {
+    @apply hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50;
+  }
+  .menu-item-danger {
+    @apply text-danger hover:bg-danger/10;
+  }
   .link-accent {
     @apply text-accent font-semibold underline decoration-transparent decoration-2 underline-offset-4 transition-colors hover:decoration-current disabled:pointer-events-none disabled:opacity-50;
   }

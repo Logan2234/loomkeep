@@ -6,6 +6,7 @@ import {
   type ReportDto,
   type ReportPendingCountDto,
   type ReportStatus,
+  type ReportTargetType,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -32,6 +33,7 @@ import { ReportResponseDto } from "../reports/dto/report-response.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
 import { ModerationDecisionService } from "../reports/moderation-decision.service";
 import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
+import { ReviewService } from "../reviews/review.service";
 import { AdminOnly } from "./admin-only.decorator";
 import {
   foundedPercent,
@@ -49,6 +51,7 @@ export class AdminReportsController {
   constructor(
     private readonly reports: ReportService,
     private readonly comments: CommentService,
+    private readonly reviews: ReviewService,
     private readonly prisma: PrismaService,
     private readonly moderationDecisions: ModerationDecisionService,
   ) {}
@@ -142,9 +145,9 @@ export class AdminReportsController {
   }
 
   /**
-   * Removes the reported content itself (comment tombstone today), notifies
-   * its author with the DSA art. 17 statement of reasons, then resolves the
-   * report.
+   * Removes the reported content itself (comment tombstone or review
+   * deletion), notifies its author with the DSA art. 17 statement of
+   * reasons, then resolves the report.
    */
   @Post(":id/take-down")
   async takeDown(
@@ -159,39 +162,72 @@ export class AdminReportsController {
         ErrorCode.AdminReportNotFound,
       );
 
-    if (report.targetType === "COMMENT") {
-      const { authorId, text } = await this.comments.adminRemove(
-        report.targetId,
-      );
+    const removal = await this.removeContent(
+      report.targetType,
+      report.targetId,
+    );
 
-      if (authorId) {
-        const author = await this.prisma.user.findUnique({
-          where: { id: authorId },
-          select: { email: true, locale: true, username: true },
+    if (removal?.authorId) {
+      const author = await this.prisma.user.findUnique({
+        where: { id: removal.authorId },
+        select: { email: true, locale: true, username: true },
+      });
+
+      if (author) {
+        await this.moderationDecisions.record({
+          measure: removal.measure,
+          targetType: report.targetType,
+          targetId: report.targetId,
+          subjectUserId: removal.authorId,
+          subjectEmail: author.email,
+          subjectLocale: author.locale,
+          subjectUsername: author.username,
+          legalBasis: body.legalBasis,
+          reasonCategory: report.category,
+          reasonMotif: report.motif,
+          reasonText: body.reasonText,
+          tosClause: body.tosClause,
+          contentSnapshot: removal.snapshot,
+          decidedById: user.sub,
+          reportId: id,
         });
-
-        if (author) {
-          await this.moderationDecisions.record({
-            measure: ModerationMeasure.COMMENT_REMOVED,
-            targetType: report.targetType,
-            targetId: report.targetId,
-            subjectUserId: authorId,
-            subjectEmail: author.email,
-            subjectLocale: author.locale,
-            subjectUsername: author.username,
-            legalBasis: body.legalBasis,
-            reasonCategory: report.category,
-            reasonMotif: report.motif,
-            reasonText: body.reasonText,
-            tosClause: body.tosClause,
-            contentSnapshot: text,
-            decidedById: user.sub,
-            reportId: id,
-          });
-        }
       }
     }
 
     await this.reports.resolve(user.sub, id, "RESOLVED");
+  }
+
+  /**
+   * Removes the reported content for the target types that support a
+   * take-down; null for the others (USER/LIST), which only get resolved.
+   */
+  private async removeContent(
+    targetType: ReportTargetType,
+    targetId: string,
+  ): Promise<{
+    measure: ModerationMeasure;
+    authorId: string | null;
+    snapshot: string | null;
+  } | null> {
+    if (targetType === "COMMENT") {
+      const { authorId, text } = await this.comments.adminRemove(targetId);
+      return {
+        measure: ModerationMeasure.COMMENT_REMOVED,
+        authorId,
+        snapshot: text,
+      };
+    }
+
+    if (targetType === "REVIEW") {
+      const { authorId, rating, text } =
+        await this.reviews.adminRemove(targetId);
+      return {
+        measure: ModerationMeasure.REVIEW_REMOVED,
+        authorId,
+        snapshot: text ? `${rating}/10 — ${text}` : `${rating}/10`,
+      };
+    }
+
+    return null;
   }
 }

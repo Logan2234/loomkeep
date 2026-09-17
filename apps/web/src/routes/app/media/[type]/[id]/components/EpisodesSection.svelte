@@ -318,7 +318,7 @@
                 {#if !seasonWatched(season)}
                   <button
                     role="menuitem"
-                    class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                    class="menu-item"
                     disabled={markSeasonMut.loading &&
                       markSeasonMut.variables === seasonId}
                     onclick={() => {
@@ -332,7 +332,7 @@
                 {#if seasonWatchedCount(season) > 0}
                   <button
                     role="menuitem"
-                    class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
+                    class="menu-item menu-item-danger border-border border-t"
                     onclick={() => {
                       close();
                       confirmUnwatchSeasonId = seasonId;

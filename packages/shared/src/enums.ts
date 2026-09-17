@@ -497,6 +497,7 @@ export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
  */
 export const ModerationMeasure = {
   COMMENT_REMOVED: "COMMENT_REMOVED",
+  REVIEW_REMOVED: "REVIEW_REMOVED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
 } as const;
 export type ModerationMeasure =
@@ -561,6 +562,7 @@ export const ReportMotif = {
   MISINFORMATION_FALSE_FACT: "MISINFORMATION_FALSE_FACT",
   STOLEN_CONTENT_PLAGIARIZED: "STOLEN_CONTENT_PLAGIARIZED",
   MISLEADING_REVIEW_MANIPULATION: "MISLEADING_REVIEW_MANIPULATION",
+  MISLEADING_REVIEW_OFF_TOPIC: "MISLEADING_REVIEW_OFF_TOPIC",
 } as const;
 export type ReportMotif = (typeof ReportMotif)[keyof typeof ReportMotif];
 
@@ -601,9 +603,30 @@ export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
   ],
   MISINFORMATION: [ReportMotif.MISINFORMATION_FALSE_FACT],
   STOLEN_CONTENT: [ReportMotif.STOLEN_CONTENT_PLAGIARIZED],
-  MISLEADING_REVIEW: [ReportMotif.MISLEADING_REVIEW_MANIPULATION],
+  MISLEADING_REVIEW: [
+    ReportMotif.MISLEADING_REVIEW_MANIPULATION,
+    ReportMotif.MISLEADING_REVIEW_OFF_TOPIC,
+  ],
   OTHER: [],
 };
+
+/**
+ * Categories that only make sense for some target types (a comment has no
+ * rating to manipulate). Any category not listed applies to every target.
+ * Shared by the picker UI and ReportService.create's validation.
+ */
+const REPORT_CATEGORY_TARGETS: Partial<
+  Record<ReportCategory, ReportTargetType[]>
+> = {
+  MISLEADING_REVIEW: [ReportTargetType.REVIEW],
+};
+
+export function isReportCategoryAllowed(
+  category: ReportCategory,
+  targetType: ReportTargetType,
+): boolean {
+  return REPORT_CATEGORY_TARGETS[category]?.includes(targetType) ?? true;
+}
 
 /**
  * A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top
