@@ -17,7 +17,7 @@ type FeatureBadgeKey = Parameters<typeof isFeatureNew>[0];
 export const RECOVERY_CODES_LOW_THRESHOLD = 2;
 
 /** One searchable control inside a section — a row, a toggle, a field. */
-export interface SettingsEntryDef {
+interface SettingsEntryDef {
   label: string;
   /**
    * Terms a user might type for this control that its label doesn't contain:
