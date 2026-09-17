@@ -247,6 +247,42 @@ describe("ReportService.create — reviews", () => {
   });
 });
 
+describe("ReportService.create — category per target", () => {
+  it("rejects the misleading-review category on a comment", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "MISLEADING_REVIEW" as never,
+        "MISLEADING_REVIEW_MANIPULATION" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("accepts an off-topic review report", async () => {
+    const { svc, prisma } = make({
+      review: { findUnique: vi.fn().mockResolvedValue({ userId: "author" }) },
+    });
+    await svc.create(
+      "reporter1",
+      "REVIEW" as never,
+      "r1",
+      "MISLEADING_REVIEW" as never,
+      "MISLEADING_REVIEW_OFF_TOPIC" as never,
+    );
+    expect(prisma.report.create).toHaveBeenCalled();
+  });
+});
+
 describe("ReportService.list — target resolution", () => {
   it("resolves a REVIEW target to its rating and excerpt, with its author", async () => {
     const { svc } = make({

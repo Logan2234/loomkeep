@@ -883,7 +883,7 @@
   "nav_style_marquee": "Marquee",
   "moderation_basis_terms": "Violation des CGU",
   "moderation_basis_illegal": "Contenu manifestement illégal",
-  "report_motif_misleading_review": "Faux avis ou manipulation de la note",
+  "report_motif_misleading_review": "Faux avis, note manipulée ou campagne coordonnée",
   "report_motif_stolen": "Texte copié d'ailleurs sans attribution",
   "report_false_information": "Fausse information présentée comme un fait",
   "report_motif_impersonation_fake": "Faux compte ou bot",
@@ -905,7 +905,7 @@
   "report_motif_spam_link": "Lien suspect ou malveillant",
   "report_motif_spam_promotional": "Contenu publicitaire non sollicité",
   "report_hint_other": "Autre chose — explique en quelques mots",
-  "report_hint_misleading_review": "Faux avis, notation manipulée",
+  "report_hint_misleading_review": "Faux avis, note manipulée, hors sujet",
   "report_hint_stolen": "Texte copié sans attribution",
   "report_hint_impersonation": "Faux compte ou usurpation",
   "report_hint_spoiler": "Révèle l'intrigue sans balise",
@@ -1188,5 +1188,6 @@
   "reviews_report_title": "Signaler cette critique",
   "reviews_reported": "Critique signalée.",
   "reviews_rate_cta": "Noter",
-  "reviews_spoiler_tag": "Spoiler"
+  "reviews_spoiler_tag": "Spoiler",
+  "report_motif_misleading_off_topic": "Avis hors sujet, sans rapport avec l'œuvre"
 }

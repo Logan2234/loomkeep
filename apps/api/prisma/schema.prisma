@@ -266,6 +266,7 @@ enum ReportMotif {
   MISINFORMATION_FALSE_FACT
   STOLEN_CONTENT_PLAGIARIZED
   MISLEADING_REVIEW_MANIPULATION
+  MISLEADING_REVIEW_OFF_TOPIC
 }
 
 // A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top 10"),
@@ -295,6 +296,7 @@ enum ReportStatus {
 // exactly what the code can do, not more (DSA art. 14).
 enum ModerationMeasure {
   COMMENT_REMOVED
+  REVIEW_REMOVED
   ACCOUNT_DELETED
 }
 

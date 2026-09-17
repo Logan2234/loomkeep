@@ -77,4 +77,14 @@ describe("ModerationDecisionService.record", () => {
     expect(mail.sendModerationDecision).toHaveBeenCalled();
     expect(notifications.create).not.toHaveBeenCalled();
   });
+
+  it("titles the in-app notice after the removed content type", async () => {
+    const { svc, notifications } = make();
+
+    await svc.record({ ...BASE_INPUT, measure: "REVIEW_REMOVED" as const });
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Une de tes critiques a été retirée" }),
+    );
+  });
 });

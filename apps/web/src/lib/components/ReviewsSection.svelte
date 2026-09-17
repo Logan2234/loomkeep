@@ -303,6 +303,7 @@
 {#if reportingId}
   <ReportModal
     title={m.reviews_report_title()}
+    targetType="REVIEW"
     onClose={() => (reportingId = null)}
     onSubmit={submitReport} />
 {/if}

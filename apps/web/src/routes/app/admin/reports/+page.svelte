@@ -316,7 +316,7 @@
 
           {#if r.status === "PENDING"}
             <div class="mt-2 flex flex-wrap gap-2">
-              {#if r.targetType === "COMMENT" && r.target}
+              {#if (r.targetType === "COMMENT" || r.targetType === "REVIEW") && r.target}
                 <button
                   class="btn btn-danger btn-sm"
                   disabled={rowBusy(r.id)}

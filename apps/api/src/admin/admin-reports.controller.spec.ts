@@ -4,6 +4,7 @@ import type { PrismaService } from "../prisma/prisma.service";
 import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import type { ModerationDecisionService } from "../reports/moderation-decision.service";
 import type { ReportService } from "../reports/report.service";
+import type { ReviewService } from "../reviews/review.service";
 import { AdminReportsController } from "./admin-reports.controller";
 
 const REASON_BODY: ModerationReasonBody = {
@@ -16,6 +17,7 @@ function makeController(
   overrides: {
     findOne?: Mock;
     adminRemove?: Mock;
+    adminRemoveReview?: Mock;
     findUniqueUser?: Mock;
   } = {},
 ) {
@@ -36,6 +38,16 @@ function makeController(
       overrides.adminRemove ??
       vi.fn().mockResolvedValue({ authorId: "author1", text: "commentaire" }),
   } as unknown as CommentService;
+
+  const reviews = {
+    adminRemove:
+      overrides.adminRemoveReview ??
+      vi.fn().mockResolvedValue({
+        authorId: "author1",
+        rating: 1,
+        text: "nul, allez voir l'autre film",
+      }),
+  } as unknown as ReviewService;
 
   const prisma = {
     report: {
@@ -61,10 +73,18 @@ function makeController(
   const controller = new AdminReportsController(
     reports,
     comments,
+    reviews,
     prisma,
     moderationDecisions,
   );
-  return { controller, reports, comments, prisma, moderationDecisions };
+  return {
+    controller,
+    reports,
+    comments,
+    reviews,
+    prisma,
+    moderationDecisions,
+  };
 }
 
 const ADMIN = { sub: "admin1" } as never;
@@ -124,6 +144,54 @@ describe("AdminReportsController.takeDown", () => {
     expect(comments.adminRemove).not.toHaveBeenCalled();
     expect(moderationDecisions.record).not.toHaveBeenCalled();
     expect(reports.resolve).toHaveBeenCalledWith("admin1", "r1", "RESOLVED");
+  });
+
+  it("removes a reported review and records its rating and text as the snapshot", async () => {
+    const { controller, reports, comments, reviews, moderationDecisions } =
+      makeController({
+        findOne: vi.fn().mockResolvedValue({
+          targetType: "REVIEW",
+          targetId: "rev1",
+          category: "MISLEADING_REVIEW",
+          motif: "MISLEADING_REVIEW_OFF_TOPIC",
+        }),
+      });
+
+    await controller.takeDown(ADMIN, "r1", REASON_BODY);
+
+    expect(reviews.adminRemove).toHaveBeenCalledWith("rev1");
+    expect(comments.adminRemove).not.toHaveBeenCalled();
+    expect(moderationDecisions.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        measure: "REVIEW_REMOVED",
+        targetType: "REVIEW",
+        targetId: "rev1",
+        subjectUserId: "author1",
+        reasonMotif: "MISLEADING_REVIEW_OFF_TOPIC",
+        contentSnapshot: "1/10 — nul, allez voir l'autre film",
+      }),
+    );
+    expect(reports.resolve).toHaveBeenCalledWith("admin1", "r1", "RESOLVED");
+  });
+
+  it("snapshots a text-less review as its rating alone", async () => {
+    const { controller, moderationDecisions } = makeController({
+      findOne: vi.fn().mockResolvedValue({
+        targetType: "REVIEW",
+        targetId: "rev1",
+        category: "MISLEADING_REVIEW",
+        motif: "MISLEADING_REVIEW_MANIPULATION",
+      }),
+      adminRemoveReview: vi
+        .fn()
+        .mockResolvedValue({ authorId: "author1", rating: 0, text: null }),
+    });
+
+    await controller.takeDown(ADMIN, "r1", REASON_BODY);
+
+    expect(moderationDecisions.record).toHaveBeenCalledWith(
+      expect.objectContaining({ contentSnapshot: "0/10" }),
+    );
   });
 
   it("404s on an unknown report", async () => {

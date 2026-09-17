@@ -8,8 +8,10 @@
   import { m } from "$lib/paraglide/messages.js";
   import {
     REPORT_CATEGORY_MOTIFS,
+    isReportCategoryAllowed,
     type ReportCategory,
     type ReportMotif,
+    type ReportTargetType,
   } from "@loomkeep/shared";
   import Combobox from "./Combobox.svelte";
   import Modal from "./Modal.svelte";
@@ -19,10 +21,13 @@
   // the success/failure toast.
   let {
     title,
+    targetType,
     onClose,
     onSubmit,
   }: {
     title: string;
+    /** Narrows the categories to those that apply to this content. */
+    targetType: ReportTargetType;
     onClose: () => void;
     onSubmit: (report: {
       category: ReportCategory;
@@ -35,10 +40,11 @@
   let motif = $state<ReportMotif | null>(null);
   let reason = $state("");
 
-  const categoryOptions = REPORT_CATEGORY_ORDER.map((c) => ({
-    label: REPORT_CATEGORY_LABELS[c],
-    value: c,
-  }));
+  const categoryOptions = $derived(
+    REPORT_CATEGORY_ORDER.filter((c) =>
+      isReportCategoryAllowed(c, targetType),
+    ).map((c) => ({ label: REPORT_CATEGORY_LABELS[c], value: c })),
+  );
   const motifOptions = $derived(
     category ? REPORT_CATEGORY_MOTIFS[category] : [],
   );

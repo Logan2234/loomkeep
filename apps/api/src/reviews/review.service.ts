@@ -403,6 +403,32 @@ export class ReviewService {
     if (existing) await this.xp.revokeBySource("Review", [existing.id]);
   }
 
+  /**
+   * Moderation take-down: a review has no tombstone (nothing hangs off it
+   * the way replies hang off a comment), so it is deleted outright, with its
+   * XP. Returns what the DSA statement of reasons needs, captured before the
+   * row disappears.
+   */
+  async adminRemove(
+    id: string,
+  ): Promise<{ authorId: string | null; rating: number; text: string | null }> {
+    const review = await this.prisma.review.findUnique({
+      where: { id },
+      select: { id: true, userId: true, rating: true, text: true },
+    });
+    if (!review)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+
+    await this.prisma.review.delete({ where: { id } });
+    await this.xp.revokeBySource("Review", [id]);
+
+    return {
+      authorId: review.userId,
+      rating: review.rating,
+      text: review.text,
+    };
+  }
+
   /** The edit history of the user's own review (newest first). */
   async revisions(
     userId: string,

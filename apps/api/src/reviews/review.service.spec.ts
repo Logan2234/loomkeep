@@ -552,3 +552,56 @@ describe("ReviewService — structural review deletion revokes XP", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["r1", "r2"]);
   });
 });
+
+describe("ReviewService.adminRemove", () => {
+  it("deletes the review, revokes its XP and returns what the notice needs", async () => {
+    const deleteFn = vi.fn().mockResolvedValue({});
+    const xp = stubXp();
+    const prisma = {
+      review: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "rev1",
+          userId: "author1",
+          rating: 2,
+          text: "hors sujet",
+        }),
+        delete: deleteFn,
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    await expect(svc.adminRemove("rev1")).resolves.toEqual({
+      authorId: "author1",
+      rating: 2,
+      text: "hors sujet",
+    });
+    expect(deleteFn).toHaveBeenCalledWith({ where: { id: "rev1" } });
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"]);
+  });
+
+  it("404s when the review is already gone", async () => {
+    const xp = stubXp();
+    const prisma = {
+      review: { findUnique: vi.fn().mockResolvedValue(null), delete: vi.fn() },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    await expect(svc.adminRemove("missing")).rejects.toThrow();
+  });
+});

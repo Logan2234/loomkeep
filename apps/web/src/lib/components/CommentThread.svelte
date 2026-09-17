@@ -1001,6 +1001,7 @@
 {#if reportingId}
   <ReportModal
     title={m.comment_report_title()}
+    targetType="COMMENT"
     onClose={() => (reportingId = null)}
     onSubmit={submitReport} />
 {/if}

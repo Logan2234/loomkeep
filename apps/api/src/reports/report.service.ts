@@ -2,6 +2,7 @@ import {
   ErrorCode,
   NotificationType,
   REPORT_CATEGORY_MOTIFS,
+  isReportCategoryAllowed,
   type PagedResult,
   type ReportCategory,
   type ReportDto,
@@ -62,6 +63,15 @@ export class ReportService {
     motif?: ReportMotif,
     reason?: string,
   ): Promise<void> {
+    if (!isReportCategoryAllowed(category, targetType)) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ReportInvalidMotif,
+        undefined,
+        "This category doesn't apply to this content",
+      );
+    }
+
     if (category === "OTHER") {
       if (!reason?.trim()) {
         throw new AppException(

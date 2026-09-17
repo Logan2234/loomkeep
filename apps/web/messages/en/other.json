@@ -883,7 +883,7 @@
   "nav_style_marquee": "Marquee",
   "moderation_basis_terms": "Terms of service violation",
   "moderation_basis_illegal": "Clearly illegal content",
-  "report_motif_misleading_review": "Fake review or rating manipulation",
+  "report_motif_misleading_review": "Fake review, rating manipulation or coordinated campaign",
   "report_motif_stolen": "Text copied from elsewhere without attribution",
   "report_false_information": "False information presented as fact",
   "report_motif_impersonation_fake": "Fake account or bot",
@@ -905,7 +905,7 @@
   "report_motif_spam_link": "Suspicious or malicious link",
   "report_motif_spam_promotional": "Unsolicited advertising",
   "report_hint_other": "Something else — explain briefly",
-  "report_hint_misleading_review": "Fake reviews, manipulated ratings",
+  "report_hint_misleading_review": "Fake reviews, manipulated ratings, off-topic",
   "report_hint_stolen": "Text copied without attribution",
   "report_hint_impersonation": "Fake account or impersonation",
   "report_hint_spoiler": "Reveals the plot without a spoiler tag",
@@ -1188,5 +1188,6 @@
   "reviews_report_title": "Report this review",
   "reviews_reported": "Review reported.",
   "reviews_rate_cta": "Rate",
-  "reviews_spoiler_tag": "Spoiler"
+  "reviews_spoiler_tag": "Spoiler",
+  "report_motif_misleading_off_topic": "Off-topic review, unrelated to the work"
 }
