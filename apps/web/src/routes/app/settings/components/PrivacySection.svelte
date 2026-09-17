@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     getGhostSwitchImpact,
     getPrivacySettings,
@@ -9,7 +10,7 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
+  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
@@ -32,6 +33,8 @@
     type VisibilitySettingsDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { flashAnchor } from "../flash-anchor";
+  import SettingRow from "./SettingRow.svelte";
 
   let showModesModal = $state(false);
   let confirmingGhost = $state(false);
@@ -163,121 +166,102 @@
     onChange={(v) => setAudience(domain, facet, v)} />
 {/snippet}
 
-{#if appConfig.socialEnabled && settings}
-  <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-1 text-lg font-bold">{m.common_privacy()}</h2>
-    <p class="text-dim text-sm">
-      {m.settings_privacy_description()}
-    </p>
-
-    <div class="my-8">
-      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+{#if appConfig.socialEnabled && settingsQuery.loading}
+  <CardRowSkeleton count={3} />
+{:else if appConfig.socialEnabled && settings}
+  <section class="card p-5 md:p-6">
+    <div
+      id="profile-access"
+      use:flashAnchor={{ anchor: "profile-access", hash: page.url.hash }}
+      class="border-border mb-6 flex flex-wrap items-center justify-between gap-4 border-b pb-5">
+      <div>
         <p class="font-semibold">{m.settings_profile_visibility()}</p>
-        <button
-          type="button"
-          class="text-dim decoration-dim/50 cursor-pointer text-xs underline decoration-dotted underline-offset-4"
-          onclick={() => (showModesModal = true)}>
-          {m.common_learn_more()}
-        </button>
+        <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          {#if auth.user?.username}
+            <a
+              href={`/app/u/${auth.user.username}`}
+              class="text-accent hover:text-accent/80 font-semibold underline underline-offset-4 transition-colors duration-150">
+              {m.settings_privacy_view_public_profile()}
+            </a>
+          {/if}
+          <button
+            type="button"
+            class="text-dim decoration-dim/50 cursor-pointer underline decoration-dotted underline-offset-4"
+            onclick={() => (showModesModal = true)}>
+            {m.common_learn_more()}
+          </button>
+        </div>
       </div>
-      <Combobox
-        label={m.settings_privacy_profile_label()}
-        options={ACCESS_OPTIONS.map((a) => ({ label: a.label, value: a.id }))}
-        values={settings.profileAccess ? [settings.profileAccess] : []}
-        onChange={(v) => setAccess(v[0] as ProfileAccess)} />
+      <div>
+        <SegmentedControl
+          label={m.settings_privacy_profile_label()}
+          options={ACCESS_OPTIONS.map((a) => ({ label: a.label, value: a.id }))}
+          value={settings.profileAccess}
+          onChange={(v) => setAccess(v as ProfileAccess)} />
+      </div>
     </div>
 
     {#if settings.profileAccess !== ProfileAccess.GHOST}
-      <!-- Visibility matrix: the authZ layer, per domain × facet. A table on
-           desktop (12 cells scannable at once) doesn't fit a phone screen —
-           the segmented control alone is wider than the "Activité" column —
-           so under md it drops to one stacked block per domain instead,
-           same control, same data. -->
-      <div class="divide-border divide-y md:hidden">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
-          <div class="py-3 first:pt-0">
-            <p class="mb-2 font-semibold">{domainInfo.label}</p>
-            <div class="space-y-2">
+          <section class="border-border rounded-xl border p-4">
+            <p class="font-semibold">{domainInfo.label}</p>
+            <div
+              class="mt-4 flex w-full flex-wrap justify-between gap-4 md:flex-col">
               {#each FACETS as f (f.id)}
                 {@const current = audienceOf(domainId as Domain, f.id)}
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-dim text-sm">{f.label}</span>
+                <div>
+                  <p
+                    class="text-dim mb-1.5 text-xs font-semibold tracking-wide uppercase">
+                    {f.label}
+                  </p>
                   {@render audienceSegmented(domainId as Domain, f.id, current)}
                 </div>
               {/each}
             </div>
-          </div>
+          </section>
         {/each}
       </div>
 
-      <div class="hidden overflow-x-auto md:block">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr class="border-border border-b">
-              <th class="pr-3 pb-2 font-semibold">{m.common_category()}</th>
-              {#each FACETS as f (f.id)}
-                <th class="px-3 pb-2 text-center font-semibold">{f.label}</th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody class="divide-border divide-y">
-            {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
-              <tr>
-                <td class="py-2.5 pr-3 font-semibold whitespace-nowrap"
-                  >{domainInfo.label}</td>
-                {#each FACETS as f (f.id)}
-                  {@const current = audienceOf(domainId as Domain, f.id)}
-                  <td class="px-3 py-2.5 text-center">
-                    {@render audienceSegmented(
-                      domainId as Domain,
-                      f.id,
-                      current,
-                    )}
-                  </td>
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-
       {#if auth.user}
-        <div class="border-border mt-5 border-y py-5">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p class="font-semibold">
-                {m.settings_privacy_default_reviews()}
-              </p>
-              <p class="text-dim text-sm">
-                {m.settings_privacy_default_reviews_hint()}
-              </p>
-            </div>
-            <Combobox
-              label={m.settings_privacy_scope()}
-              options={[
-                { label: m.common_friends(), value: "FRIENDS" },
-                { label: m.common_public(), value: "PUBLIC" },
-              ]}
-              values={[auth.user.defaultReviewVisibility]}
-              onChange={(v) =>
-                setDefaultReviewVisibility(v[0] as ReviewVisibility)} />
-          </div>
+        {@const user = auth.user}
+        <div class="border-border mt-6 border-t pt-6">
+          <SettingRow
+            anchor="review-visibility"
+            label={m.settings_privacy_default_reviews()}
+            description={m.settings_privacy_default_reviews_hint()}
+            mutation={reviewVisibilityMut}>
+            {#snippet control()}
+              <SegmentedControl
+                label={m.settings_privacy_scope()}
+                options={[
+                  { label: m.common_friends(), value: "FRIENDS" },
+                  { label: m.common_public(), value: "PUBLIC" },
+                ]}
+                value={user.defaultReviewVisibility}
+                onChange={(v) =>
+                  setDefaultReviewVisibility(v as ReviewVisibility)} />
+            {/snippet}
+          </SettingRow>
         </div>
       {/if}
     {/if}
 
     {#if appConfig.gamificationEnabled && auth.user}
-      <div class="mt-5 flex items-center justify-between gap-4">
-        <div>
-          <p class="font-semibold">{m.settings_hide_progression()}</p>
-          <p class="text-dim text-sm">
-            {m.settings_hide_progression_desc()}
-          </p>
-        </div>
-        <Switch
+      {@const gamificationUser = auth.user}
+      <div class="border-border mt-6 border-t pt-6">
+        <SettingRow
+          anchor="hide-progression"
           label={m.settings_hide_progression()}
-          checked={auth.user.hideProgression}
-          onChange={toggleHideProgression} />
+          description={m.settings_hide_progression_desc()}
+          mutation={hideProgressionMut}>
+          {#snippet control()}
+            <Switch
+              label={m.settings_hide_progression()}
+              checked={gamificationUser.hideProgression}
+              onChange={toggleHideProgression} />
+          {/snippet}
+        </SettingRow>
       </div>
     {/if}
 

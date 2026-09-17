@@ -132,6 +132,15 @@ export interface RemoveWebauthnCredentialResponseDto {
   passwordlessDisabled: boolean;
 }
 
+export interface RenameWebauthnCredentialRequestDto {
+  /** The new user-chosen label — no password confirmation, this isn't a security-changing action. */
+  name: string;
+}
+
+export interface RenameWebauthnCredentialResponseDto {
+  credential: WebauthnCredentialDto;
+}
+
 export interface SetPasswordlessRequestDto {
   enabled: boolean;
   currentPassword: string;

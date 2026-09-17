@@ -2,6 +2,7 @@ import type {
   CalendarEntryDto,
   EntryEpisodesResponseDto,
   EpisodeWatchDto,
+  LibraryDomainCountsDto,
   LibraryEntryDto,
   MediaType,
   PagedResult,
@@ -34,6 +35,7 @@ import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
 import { EntryEpisodesResponseResponseDto } from "./dto/entry-episodes-response.dto";
 import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
+import { LibraryDomainCountsResponseDto } from "./dto/library-domain-counts-response.dto";
 import { LibraryEntryResponseDto } from "./dto/library-entry-response.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
@@ -82,6 +84,15 @@ export class LibraryController {
     @Body() dto: UpsertEntryDto,
   ): Promise<LibraryEntryDto> {
     return this.libraryService.upsertEntry(user.sub, dto);
+  }
+
+  /** Per domain, how many items the user tracks — hidden domains included. */
+  @Get("domain-counts")
+  @ApiOkResponse({ type: LibraryDomainCountsResponseDto })
+  getDomainCounts(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<LibraryDomainCountsDto> {
+    return this.libraryService.getDomainCounts(user.sub);
   }
 
   @Get("calendar")

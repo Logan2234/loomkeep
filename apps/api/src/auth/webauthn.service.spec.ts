@@ -291,6 +291,53 @@ describe("WebauthnService.removeCredential", () => {
   });
 });
 
+describe("WebauthnService.renameCredential", () => {
+  it("updates the name and records MFA_WEBAUTHN_RENAMED", async () => {
+    const { service, credentials, security } = makeService();
+    credentials.set("cred-1", makeCredential({ name: "YubiKey bureau" }));
+
+    const { credential } = await service.renameCredential(
+      "user-1",
+      "cred-1",
+      "YubiKey maison",
+    );
+
+    expect(credential.name).toBe("YubiKey maison");
+    expect(credentials.get("cred-1")?.name).toBe("YubiKey maison");
+    expect(security.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "MFA_WEBAUTHN_RENAMED",
+        userId: "user-1",
+      }),
+    );
+  });
+
+  it("trims the new name and keeps the old one if it was blank", async () => {
+    const { service, credentials } = makeService();
+    credentials.set("cred-1", makeCredential({ name: "YubiKey bureau" }));
+
+    const { credential } = await service.renameCredential(
+      "user-1",
+      "cred-1",
+      "   ",
+    );
+
+    expect(credential.name).toBe("YubiKey bureau");
+  });
+
+  it("refuses to rename another user's credential", async () => {
+    const { service, credentials } = makeService();
+    credentials.set(
+      "cred-1",
+      makeCredential({ userId: "someone-else", name: "Not yours" }),
+    );
+
+    await expect(
+      service.renameCredential("user-1", "cred-1", "Mine now"),
+    ).rejects.toThrow();
+  });
+});
+
 describe("WebauthnService.setPasswordless", () => {
   it("refuses to enable passwordless with zero credentials", async () => {
     const { service } = makeService();

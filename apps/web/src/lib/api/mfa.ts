@@ -3,6 +3,8 @@ import type {
   DisableTotpRequestDto,
   RegenerateRecoveryCodesRequestDto,
   RemoveWebauthnCredentialRequestDto,
+  RenameWebauthnCredentialRequestDto,
+  RenameWebauthnCredentialResponseDto,
   SetEmailMfaRequestDto,
   SetPasswordlessRequestDto,
   WebauthnRegistrationVerifyResponseDto,
@@ -12,6 +14,7 @@ import {
   type PublicKeyCredentialCreationOptionsJSON,
 } from "@simplewebauthn/browser";
 import { auth } from "../auth.svelte";
+import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getMfaStatus = () => typedRequest("/users/me/mfa");
@@ -80,3 +83,15 @@ export const removeWebauthnCredential = (
 
 export const setPasswordless = (body: SetPasswordlessRequestDto) =>
   typedRequest("/users/me/mfa/passwordless", { method: "PATCH", body });
+
+// Not through typedRequest: this PATCH is new on the shared route the
+// generated client already knows as DELETE-only, and regenerating it needs a
+// live API build. Same workaround as getImportHistory/getBlockedUsers.
+export const renameWebauthnCredential = (
+  credentialId: string,
+  body: RenameWebauthnCredentialRequestDto,
+) =>
+  request<RenameWebauthnCredentialResponseDto>(
+    `/users/me/mfa/webauthn/${credentialId}`,
+    { method: "PATCH", body },
+  );

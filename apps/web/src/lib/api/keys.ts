@@ -52,6 +52,8 @@ export const keys = {
   },
   import: {
     availability: () => ["import", "availability"] as const,
+    history: () => ["import", "history"] as const,
+    lastRun: () => ["import", "last-run"] as const,
     quota: () => ["import", "quota"] as const,
     job: (source: string, jobId: string) =>
       ["import", "job", source, jobId] as const,
@@ -101,6 +103,7 @@ export const keys = {
   },
   social: {
     followRequests: () => ["social", "follow-requests"] as const,
+    blockedUsers: () => ["social", "blocked-users"] as const,
   },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
@@ -110,6 +113,7 @@ export const keys = {
       ["profile", "connections", username, kind] as const,
   },
   library: {
+    domainCounts: () => ["library", "domain-counts"] as const,
     watching: () => ["library", "watching"] as const,
     plannedMovies: () => ["library", "planned-movies"] as const,
     browse: (

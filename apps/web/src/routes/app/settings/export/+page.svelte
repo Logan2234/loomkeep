@@ -1,4 +1,7 @@
 <script lang="ts">
+  import SettingsSection from "../components/SettingsSection.svelte";
+
+  import { page } from "$app/state";
   import { exportMyData, exportMyDataCsv } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -6,6 +9,7 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { Domain } from "@loomkeep/shared";
+  import { flashAnchor } from "../flash-anchor";
 
   const exportMut = createApiMutation(() => ({
     mutate: exportMyData,
@@ -63,41 +67,44 @@
   function downloadCsv(domain: Domain, slug: string) {
     csvExportMut.mutate({ domain, slug });
   }
+
+  const exportableDomains = CSV_DOMAINS.filter((d) => !d.comingSoon);
+  const plannedDomains = CSV_DOMAINS.filter((d) => d.comingSoon)
+    .map((d) => d.label)
+    .join(", ");
 </script>
 
-<section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">
-    {m.common_export()}
-  </h2>
-  <p class="text-dim mb-4 text-sm">
-    {m.settings_export_body()}
-  </p>
-  <button
-    class="btn btn-primary"
-    disabled={exportMut.loading}
-    onclick={() => exportMut.mutate()}>
-    <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-    {exportMut.loading
-      ? m.settings_export_action_loading()
-      : m.settings_export_action()}
-  </button>
-  {#if exportMut.error}
-    <p class="text-danger mt-2 text-sm">{exportMut.error}</p>
-  {/if}
+<SettingsSection slug="export">
+  <div class="space-y-3">
+    <section
+      id="export-json"
+      use:flashAnchor={{ anchor: "export-json", hash: page.url.hash }}
+      class="card p-5 md:p-6">
+      <p class="font-semibold">{m.settings_export_json_title()}</p>
+      <p class="text-dim mt-1 max-w-xl text-sm">
+        {m.settings_export_json_description()}
+      </p>
+      <button
+        class="btn btn-primary mt-4"
+        disabled={exportMut.loading}
+        onclick={() => exportMut.mutate()}>
+        <Icon name="download" class="mr-1.5 inline h-4 w-4" />
+        {exportMut.loading
+          ? m.settings_export_action_loading()
+          : m.settings_export_action()}
+      </button>
+      {#if exportMut.error}
+        <p class="text-danger mt-2 text-sm">{exportMut.error}</p>
+      {/if}
+    </section>
 
-  <div class="border-border mt-5 border-t pt-5">
-    <p class="text-dim mb-3 text-sm">
-      {m.settings_export_csv_body()}
-    </p>
-    <div class="flex flex-wrap gap-2">
-      {#each CSV_DOMAINS as d (d.domain)}
-        {#if d.comingSoon}
-          <!-- Planned domain: no data to export yet. -->
-          <button class="btn btn-ghost" disabled title={m.common_coming_soon()}>
-            <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-            {d.label} (CSV) · {m.common_coming_soon()}
-          </button>
-        {:else}
+    <section
+      id="export-csv"
+      use:flashAnchor={{ anchor: "export-csv", hash: page.url.hash }}
+      class="card p-5 md:p-6">
+      <p class="text-dim mb-3 text-sm">{m.settings_export_csv_body()}</p>
+      <div class="flex flex-wrap gap-2">
+        {#each exportableDomains as d (d.domain)}
           <button
             class="btn btn-ghost"
             disabled={csvExportMut.loading}
@@ -107,11 +114,16 @@
               ? m.settings_export_action_loading()
               : `${d.label} (CSV)`}
           </button>
-        {/if}
-      {/each}
-    </div>
-    {#if csvExportMut.error}
-      <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
-    {/if}
+        {/each}
+      </div>
+      {#if plannedDomains}
+        <p class="timecode mt-3 text-xs">
+          {m.settings_export_coming_soon_label({ domains: plannedDomains })}
+        </p>
+      {/if}
+      {#if csvExportMut.error}
+        <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
+      {/if}
+    </section>
   </div>
-</section>
+</SettingsSection>

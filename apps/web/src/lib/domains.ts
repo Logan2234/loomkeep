@@ -22,6 +22,21 @@ export function isDomainEnabled(domain: Domain): boolean {
 }
 
 /**
+ * Every domain, in the user's preferred display order (settings tiles, the
+ * desktop rail's Library section). Total and partial-safe: a domain missing
+ * from `preference` — unset, or shipped after the preference was saved —
+ * keeps its canonical position at the end rather than being dropped.
+ */
+export function orderedDomains(preference: Domain[] | undefined): Domain[] {
+  const canonical = Object.keys(DOMAINS) as Domain[];
+  if (!preference?.length) return canonical;
+  const rank = new Map(preference.map((d, i) => [d, i]));
+  return [...canonical].sort(
+    (a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity),
+  );
+}
+
+/**
  * Toggles `id` in `current`, refusing to drop the last remaining domain —
  * used by both the settings "Domaines" section and the onboarding wizard's
  * domain step so the "at least one" rule can't drift between the two.

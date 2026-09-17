@@ -10,6 +10,7 @@ const SHIPPED = {
   "book-edition-selector": "2026-09-10",
   babelio: "2026-09-15",
   "reviews-redesign": "2026-09-17",
+  "settings-rework": "2026-09-17",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

@@ -37,7 +37,7 @@
   <button
     type="button"
     aria-pressed={on}
-    class="inline-flex items-center gap-1.5 rounded-md px-3 py-[5px] text-[0.82rem] font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] disabled:pointer-events-none disabled:opacity-40"
+    class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.25 text-[0.82rem] font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] disabled:pointer-events-none disabled:opacity-40"
     class:bg-surface={on}
     class:text-fg={on}
     class:shadow-sm={on}
@@ -56,7 +56,7 @@
 <div
   role="group"
   aria-label={label}
-  class="border-border bg-surface-2 inline-flex shrink-0 gap-0.5 rounded-[9px] border p-[3px] {className}">
+  class="border-border bg-surface-2 inline-flex shrink-0 gap-0.5 rounded-[9px] border p-0.75 {className}">
   {#each options as opt (opt.value)}
     {#if opt.locked}
       <Tooltip text={m.premium_locked()}>

@@ -9,6 +9,7 @@
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import { queryClient } from "$lib/queryClient";
+  import { accessibility } from "$lib/accessibility.svelte";
   import { theme } from "$lib/theme.svelte";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
   import "@fontsource-variable/hanken-grotesk/wght.css";
@@ -25,6 +26,10 @@
 
   $effect(() => {
     theme.init();
+  });
+
+  $effect(() => {
+    accessibility.init();
   });
 
   $effect(() => {

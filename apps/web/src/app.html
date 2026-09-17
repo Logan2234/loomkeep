@@ -53,11 +53,22 @@
 
       // Apply the saved (or system) theme before first paint to avoid a flash.
       try {
-        const saved = localStorage.getItem("tl-theme");
+        const saved = localStorage.getItem("lk-theme");
         const dark = saved
           ? saved === "dark"
           : matchMedia("(prefers-color-scheme: dark)").matches;
         if (dark) document.documentElement.classList.add("dark");
+
+        if (localStorage.getItem("lk-a11y-motion") === "reduce") {
+          document.documentElement.classList.add("a11y-reduce-motion");
+        }
+        if (localStorage.getItem("lk-a11y-contrast") === "high") {
+          document.documentElement.classList.add("a11y-high-contrast");
+        }
+        const density = localStorage.getItem("lk-a11y-density");
+        if (density === "compact" || density === "comfortable") {
+          document.documentElement.classList.add("a11y-" + density);
+        }
       } catch {}
     </script>
     %sveltekit.head%

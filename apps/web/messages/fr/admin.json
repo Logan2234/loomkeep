@@ -315,6 +315,7 @@
   "admin_security_mfa_email_disabled": "Code par e-mail désactivé",
   "admin_security_mfa_webauthn_added": "Clé de sécurité ajoutée",
   "admin_security_mfa_webauthn_removed": "Clé de sécurité retirée",
+  "admin_security_mfa_webauthn_renamed": "Clé de sécurité renommée",
   "admin_security_mfa_passwordless_enabled": "Connexion sans mot de passe activée",
   "admin_security_mfa_passwordless_disabled": "Connexion sans mot de passe désactivée",
   "admin_security_mfa_recovery_codes_regenerated": "Codes de secours régénérés",

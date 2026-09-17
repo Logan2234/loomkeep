@@ -12,6 +12,7 @@
   import { onMount } from "svelte";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
 
   let {
@@ -20,9 +21,7 @@
     menu,
   }: { onclose: () => void; content: Snippet; menu?: Snippet } = $props();
 
-  const reduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = prefersReducedMotion();
   const dur = reduced ? 0 : 180;
 
   let visible = $state(false);

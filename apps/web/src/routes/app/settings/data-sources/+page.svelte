@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import ProviderMark from "$lib/components/ProviderMark.svelte";
   import {
     ANILIST_API,
@@ -8,8 +9,10 @@
     OPENLIBRARY_API,
     TMDB_API,
   } from "$lib/constants/external-links";
-  import { m } from "$lib/paraglide/messages.js";
+  import { m } from "$lib/paraglide/messages";
   import type { ProviderBrandKey } from "$lib/provider-brands";
+  import SettingsSection from "../components/SettingsSection.svelte";
+  import { flashAnchor } from "../flash-anchor";
 
   // TMDB's notice text is quoted verbatim by their API Terms of Use and kept
   // identical across locales for that reason — see messages/*.json.
@@ -58,22 +61,20 @@
   ];
 </script>
 
-<section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-1 text-lg font-bold">
-    {m.settings_datasources_title()}
-  </h2>
-  <p class="text-dim mb-4 text-sm">
-    {m.settings_datasources_body()}
-  </p>
-
-  <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+<SettingsSection slug="data-sources">
+  <ul class="grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2">
     {#each PROVIDERS as p (p.name)}
-      <li>
+      <li class="flex">
         <a
+          id={`datasource-${p.name.toLowerCase().replaceAll(" ", "-")}`}
+          use:flashAnchor={{
+            anchor: `datasource-${p.name.toLowerCase().replaceAll(" ", "-")}`,
+            hash: page.url.hash,
+          }}
           href={p.href}
           target="_blank"
           rel="noopener noreferrer"
-          class="card hover:border-accent flex items-start gap-2.5 p-3 text-left text-sm transition-[border-color]">
+          class="card hover:border-accent hover:bg-surface-2 flex h-full w-full items-start gap-2.5 p-4 text-left text-sm transition-[border-color,background-color]">
           {#if p.brand}
             <ProviderMark brand={p.brand} class="mt-0.5 h-4 w-4 shrink-0" />
           {/if}
@@ -87,4 +88,4 @@
       </li>
     {/each}
   </ul>
-</section>
+</SettingsSection>

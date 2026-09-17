@@ -1,5 +1,6 @@
 import type {
   RemoveWebauthnCredentialResponseDto,
+  RenameWebauthnCredentialResponseDto,
   WebauthnCredentialDto,
   WebauthnLoginOptionsResponseDto,
   WebauthnMfaOptionsResponseDto,
@@ -264,6 +265,41 @@ export class WebauthnService {
     });
 
     return { passwordlessDisabled };
+  }
+
+  /**
+   * Relabelling is not a security-changing action (unlike add/remove), so it
+   * skips the current-password confirmation those require.
+   */
+  async renameCredential(
+    userId: string,
+    credentialId: string,
+    name: string,
+  ): Promise<RenameWebauthnCredentialResponseDto> {
+    const row = await this.prisma.webauthnCredential.findUnique({
+      where: { id: credentialId },
+    });
+
+    if (!row || row.userId !== userId) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AuthWebauthnCredentialNotFound,
+      );
+    }
+
+    const trimmed = name.trim();
+    const updated = await this.prisma.webauthnCredential.update({
+      where: { id: row.id },
+      data: { name: trimmed || row.name },
+    });
+
+    await this.security.record({
+      type: "MFA_WEBAUTHN_RENAMED",
+      userId,
+      detail: `${row.name} → ${updated.name}`,
+    });
+
+    return { credential: toCredentialDto(updated) };
   }
 
   async setPasswordless(

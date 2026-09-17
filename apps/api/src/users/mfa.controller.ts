@@ -3,6 +3,7 @@ import type {
   MfaStatusDto,
   RegenerateRecoveryCodesResponseDto,
   RemoveWebauthnCredentialResponseDto,
+  RenameWebauthnCredentialResponseDto,
   SetEmailMfaResponseDto,
   TotpSetupDto,
   WebauthnRegistrationOptionsDto,
@@ -32,6 +33,8 @@ import { RegenerateRecoveryCodesResultDto } from "./dto/regenerate-recovery-code
 import { RegenerateRecoveryCodesDto } from "./dto/regenerate-recovery-codes.dto";
 import { RemoveWebauthnCredentialResultDto } from "./dto/remove-webauthn-credential-response.dto";
 import { RemoveWebauthnCredentialDto } from "./dto/remove-webauthn-credential.dto";
+import { RenameWebauthnCredentialResultDto } from "./dto/rename-webauthn-credential-response.dto";
+import { RenameWebauthnCredentialDto } from "./dto/rename-webauthn-credential.dto";
 import { SetEmailMfaResultDto } from "./dto/set-email-mfa-response.dto";
 import { SetEmailMfaDto } from "./dto/set-email-mfa.dto";
 import { SetPasswordlessDto } from "./dto/set-passwordless.dto";
@@ -161,6 +164,20 @@ export class MfaController {
       credentialId,
       dto.currentPassword,
       payload.sid,
+    );
+  }
+
+  @Patch("webauthn/:credentialId")
+  @ApiOkResponse({ type: RenameWebauthnCredentialResultDto })
+  renameWebauthnCredential(
+    @CurrentUser() payload: JwtPayload,
+    @Param("credentialId") credentialId: string,
+    @Body() dto: RenameWebauthnCredentialDto,
+  ): Promise<RenameWebauthnCredentialResponseDto> {
+    return this.webauthnService.renameCredential(
+      payload.sub,
+      credentialId,
+      dto.name,
     );
   }
 

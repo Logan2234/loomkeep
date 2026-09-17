@@ -4,6 +4,7 @@ import type {
   EntryEpisodesResponseDto,
   EntryStatus,
   EpisodeWatchDto,
+  LibraryDomainCountsDto,
   LibraryEntryDto,
   MediaDetailDto,
   MediaItemDto,
@@ -254,6 +255,29 @@ export class LibraryService {
         mediaItem.id,
       ),
     );
+  }
+
+  /**
+   * Tracked-item count per domain, hidden domains included. Deliberately not
+   * routed through the stats endpoints: those are scoped to the user's
+   * `enabledDomains`, and the settings tiles need to say what switching a
+   * domain *off* would hide. PODCASTS/BOARDGAMES have no table yet, so they
+   * are absent rather than zero.
+   */
+  async getDomainCounts(userId: string): Promise<LibraryDomainCountsDto> {
+    const [media, games, books, music] = await Promise.all([
+      this.prisma.libraryEntry.count({ where: { userId } }),
+      this.prisma.gameEntry.count({ where: { userId } }),
+      this.prisma.bookEntry.count({ where: { userId } }),
+      this.prisma.musicEntry.count({ where: { userId } }),
+    ]);
+
+    return {
+      [Domain.MEDIA]: media,
+      [Domain.GAMES]: games,
+      [Domain.BOOKS]: books,
+      [Domain.MUSIC]: music,
+    };
   }
 
   async listEntries(

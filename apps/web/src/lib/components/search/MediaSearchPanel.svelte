@@ -15,6 +15,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import { debounce } from "$lib/debounce";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     EntryStatus,
@@ -144,7 +145,7 @@
   }));
 
   onMount(() => {
-    reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    reduced = prefersReducedMotion();
   });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.

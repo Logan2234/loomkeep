@@ -315,6 +315,7 @@
   "admin_security_mfa_email_disabled": "Email code disabled",
   "admin_security_mfa_webauthn_added": "Security key added",
   "admin_security_mfa_webauthn_removed": "Security key removed",
+  "admin_security_mfa_webauthn_renamed": "Security key renamed",
   "admin_security_mfa_passwordless_enabled": "Passwordless sign-in enabled",
   "admin_security_mfa_passwordless_disabled": "Passwordless sign-in disabled",
   "admin_security_mfa_recovery_codes_regenerated": "Recovery codes regenerated",

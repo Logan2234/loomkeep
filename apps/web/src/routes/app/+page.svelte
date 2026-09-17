@@ -706,7 +706,7 @@
             <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
           </a>
           <a
-            href="/app/settings#aide"
+            href="/app/settings/help"
             class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
             <Icon name="message" class="text-accent h-5 w-5 shrink-0" />
             <span class="flex flex-1 items-center gap-2 text-sm font-semibold">

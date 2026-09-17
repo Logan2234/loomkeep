@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages.js";
+  import { page } from "$app/state";
+  import { m } from "$lib/paraglide/messages";
+  import SettingsSection from "../components/SettingsSection.svelte";
+  import { flashAnchor } from "../flash-anchor";
 
-  // Official brand marks (simple-icons), kept local to this section rather
-  // than in the shared Icon component — these are flat colored logos, not
-  // part of the app's monochrome line-icon system.
   const BRAND_ICONS = {
     kofi: {
       color: "#FF6433",
@@ -56,31 +56,23 @@
 </script>
 
 {#snippet accountBadge(accountRequired: boolean)}
-  <!-- Plain info label, not `.chip` — that class is styled for clickable
-       filter chips (hover:text-fg), which makes no sense on a static badge. -->
-  <span
-    class="border-border text-dim rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold whitespace-nowrap">
+  <span class="chip hover:text-dim px-2 py-0.5 text-[0.65rem]">
     {accountRequired
       ? m.settings_support_account_required()
       : m.settings_support_no_account()}
   </span>
 {/snippet}
 
-<section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-1 flex items-center gap-2 text-lg font-bold">
-    {m.settings_support_title()}
-  </h2>
-  <p class="text-dim mb-4 text-sm">
-    {m.settings_support_body()}
-  </p>
-
-  <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+<SettingsSection slug="support">
+  <section class="grid grid-cols-1 gap-2 sm:grid-cols-2">
     {#each TILES as tile (tile.key)}
       <a
+        id={`support-${tile.key}`}
+        use:flashAnchor={{ anchor: `support-${tile.key}`, hash: page.url.hash }}
         href={tile.href}
         target="_blank"
         rel="noopener noreferrer"
-        class="card hover:border-accent flex items-start gap-2.5 p-3 text-left text-sm font-semibold transition-[border-color]">
+        class="card hover:border-accent hover:bg-surface-2 flex items-start gap-2.5 p-4 text-left text-sm font-semibold transition-[border-color,background-color]">
         <svg
           viewBox="0 0 24 24"
           class="mt-0.5 h-4 w-4 shrink-0"
@@ -106,5 +98,5 @@
         </span>
       </a>
     {/each}
-  </div>
-</section>
+  </section>
+</SettingsSection>
