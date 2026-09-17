@@ -62,10 +62,7 @@ function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
       (match, hex: string | undefined, decimal: string | undefined) => {
         const numeric = hex ?? decimal;
         if (!numeric) return match;
-        const codePoint = Number.parseInt(
-          numeric,
-          hex === undefined ? 10 : 16,
-        );
+        const codePoint = Number.parseInt(numeric, hex === undefined ? 10 : 16);
         return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : match;
       },
     )
@@ -73,7 +70,16 @@ function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
       if (entity.toLowerCase() === "colon") return ":";
       return "";
     })
-    .replace(/[\u0000-\u0020]/g, "")
+    .split("")
+    .filter((character) => {
+      const codePoint = character.charCodeAt(0);
+      return (
+        character.trim().length > 0 &&
+        codePoint > 0x1f &&
+        codePoint !== 0x7f
+      );
+    })
+    .join("")
     .toLowerCase();
 
   if (attribute === "src") return /^https?:/.test(normalized);
@@ -83,7 +89,13 @@ function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
 function sanitizeHtmlUrls(html: string): string {
   return html.replace(
     /\s(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi,
-    (match, attribute: "href" | "src", doubleQuoted, singleQuoted, unquoted) => {
+    (
+      match,
+      attribute: "href" | "src",
+      doubleQuoted,
+      singleQuoted,
+      unquoted,
+    ) => {
       const value = doubleQuoted ?? singleQuoted ?? unquoted;
       return isAllowedUrl(value, attribute.toLowerCase() as "href" | "src")
         ? match
