@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import {
     CHANGELOG_URL,
@@ -51,7 +52,7 @@
     {#each LINKS as link (link.href)}
       <a
         id={link.anchor}
-        use:flashAnchor={link.anchor}
+        use:flashAnchor={{ anchor: link.anchor, hash: page.url.hash }}
         href={link.href}
         target="_blank"
         rel="noopener noreferrer"

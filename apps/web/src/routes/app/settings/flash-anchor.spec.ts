@@ -21,4 +21,8 @@ describe("isFlashTarget", () => {
   it("does not match when there is no fragment at all", () => {
     expect(isFlashTarget("timezone", "")).toBe(false);
   });
+
+  it("matches a bare fragment marker against nothing", () => {
+    expect(isFlashTarget("timezone", "#")).toBe(false);
+  });
 });

@@ -20,6 +20,12 @@
   const query = $derived(settingsSearch.query.trim());
 </script>
 
+<!-- The section underneath is still mounted-in-name-only while a query is
+     active, so without this the tab keeps its title. -->
+<svelte:head>
+  <title>{m.common_results()} · {m.common_loomkeep()}</title>
+</svelte:head>
+
 <h1 class="font-display mb-1 text-2xl font-bold tracking-tight">
   {m.common_results()}
 </h1>

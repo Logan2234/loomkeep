@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { updateMe } from "$lib/api/auth";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
@@ -107,7 +108,10 @@
 </script>
 
 <section class="card space-y-4 p-5 md:p-6">
-  <div id="theme" use:flashAnchor={"theme"} class="rounded-lg">
+  <div
+    id="theme"
+    use:flashAnchor={{ anchor: "theme", hash: page.url.hash }}
+    class="rounded-lg">
     <p class="mb-2 font-semibold">{m.common_theme()}</p>
     <div class="flex gap-2">
       {#each THEME_DEFINITIONS as theme (theme.mode)}
@@ -116,7 +120,10 @@
     </div>
   </div>
 
-  <div id="nav-style" use:flashAnchor={"nav-style"} class="rounded-lg">
+  <div
+    id="nav-style"
+    use:flashAnchor={{ anchor: "nav-style", hash: page.url.hash }}
+    class="rounded-lg">
     <p class="mb-2 flex items-center gap-2 font-semibold">
       {m.settings_nav_style_label()}
       {#if isFeatureNew("nav-styles")}
@@ -154,7 +161,10 @@
     </div>
   </div>
 
-  <div id="language" use:flashAnchor={"language"} class="rounded-lg">
+  <div
+    id="language"
+    use:flashAnchor={{ anchor: "language", hash: page.url.hash }}
+    class="rounded-lg">
     <p class="mb-2 flex items-center gap-2 font-semibold">
       {m.common_language()}
     </p>
@@ -169,7 +179,10 @@
     </div>
   </div>
 
-  <div id="mobile-nav" use:flashAnchor={"mobile-nav"} class="rounded-lg">
+  <div
+    id="mobile-nav"
+    use:flashAnchor={{ anchor: "mobile-nav", hash: page.url.hash }}
+    class="rounded-lg">
     <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
     <p class="text-dim text-sm">
       {m.settings_mobile_nav_bar_description({ min: MIN, max: MAX })}

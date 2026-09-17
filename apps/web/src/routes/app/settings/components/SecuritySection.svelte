@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     changeEmail,
     changePassword,
@@ -232,7 +233,7 @@
     <div class="divide-border divide-y">
       <div
         id="username"
-        use:flashAnchor={"username"}
+        use:flashAnchor={{ anchor: "username", hash: page.url.hash }}
         class="flex items-center justify-between gap-4 rounded-lg py-3 first:pt-0">
         <div>
           <p class="text-dim text-sm">{m.common_username()}</p>
@@ -244,7 +245,7 @@
       </div>
       <div
         id="email"
-        use:flashAnchor={"email"}
+        use:flashAnchor={{ anchor: "email", hash: page.url.hash }}
         class="flex items-center justify-between gap-4 rounded-lg py-3">
         <div class="min-w-0">
           <p class="text-dim text-sm">{m.common_email()}</p>
@@ -305,7 +306,7 @@
       </div>
       <div
         id="password"
-        use:flashAnchor={"password"}
+        use:flashAnchor={{ anchor: "password", hash: page.url.hash }}
         class="flex items-center justify-between gap-4 rounded-lg py-3 last:pb-0">
         <div>
           <p class="text-dim text-sm">{m.common_password()}</p>

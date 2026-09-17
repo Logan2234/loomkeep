@@ -1,17 +1,14 @@
 <script lang="ts">
   // The five groups, rendered twice: as the desktop rail and as the phone
-  // index. The active highlight is one element that flies between entries —
-  // a crossfade pairs the outgoing and incoming halves, so changing section
-  // moves the highlight instead of blinking it to a new place.
+  // index. The rail's highlight is one tinted pill that slides between
+  // entries, measured off `aria-current="page"` — the same mechanism as the
+  // global sidebar's, so the two rails behave alike when they sit together.
   import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import { cubicOut } from "svelte/easing";
-  import { crossfade } from "svelte/transition";
   import { SETTINGS_GROUPS, sectionHref } from "../nav";
 
   let {
@@ -27,13 +24,6 @@
     alerts?: Record<string, boolean>;
   } = $props();
 
-  const reduced = prefersReducedMotion();
-
-  const [send, receive] = crossfade({
-    duration: reduced ? 0 : 220,
-    easing: cubicOut,
-  });
-
   const groups = $derived(
     SETTINGS_GROUPS.map((group) => ({
       ...group,
@@ -46,10 +36,49 @@
   function isActive(slug: string): boolean {
     return page.url.pathname === sectionHref(slug);
   }
+
+  let navEl = $state<HTMLElement | null>(null);
+  let indicatorTop = $state(0);
+  let indicatorHeight = $state(0);
+  let indicatorVisible = $state(false);
+
+  function positionIndicator() {
+    const active = navEl?.querySelector<HTMLElement>('a[aria-current="page"]');
+    if (!active) {
+      indicatorVisible = false;
+      return;
+    }
+    indicatorTop = active.offsetTop;
+    indicatorHeight = active.offsetHeight;
+    indicatorVisible = true;
+  }
+
+  // Re-measure when the route changes, and when the group list itself does
+  // (social off drops a whole group, moving everything below it).
+  $effect(() => {
+    void page.url.pathname;
+    void groups;
+    positionIndicator();
+  });
 </script>
 
 {#if variant === "rail"}
-  <nav aria-label={m.common_settings()} class="flex flex-col gap-4">
+  <nav
+    bind:this={navEl}
+    aria-label={m.common_settings()}
+    class="relative flex flex-col gap-4">
+    <!-- One indicator for the whole rail: a tinted pill with a straight
+         accent bar down its left edge, sliding between entries. -->
+    <div
+      class="pointer-events-none absolute inset-x-0 transition-[top,height,opacity] duration-300 ease-out {indicatorVisible
+        ? 'opacity-100'
+        : 'opacity-0'}"
+      style="top: {indicatorTop}px; height: {indicatorHeight}px"
+      aria-hidden="true">
+      <div class="bg-accent/10 h-full rounded-lg"></div>
+      <div class="bg-accent absolute inset-y-0 left-0 w-0.5"></div>
+    </div>
+
     {#each groups as group (group.id)}
       <div>
         <p
@@ -68,24 +97,15 @@
                   : section.danger
                     ? 'text-dim hover:text-danger hover:bg-surface-2'
                     : 'text-dim hover:text-fg hover:bg-surface-2'}">
-                {#if active}
-                  <span
-                    in:receive={{ key: "settings-rail-highlight" }}
-                    out:send={{ key: "settings-rail-highlight" }}
-                    class="bg-accent/10 border-l-accent absolute inset-0 rounded-lg border-l-2"
-                  ></span>
-                {/if}
-                <span class="relative min-w-0 flex-1 truncate">
-                  {section.label}
-                </span>
+                <span class="min-w-0 flex-1 truncate">{section.label}</span>
                 {#if alerts[section.slug]}
                   <span
-                    class="bg-warning relative h-1.5 w-1.5 shrink-0 rounded-full"
+                    class="bg-warning h-1.5 w-1.5 shrink-0 rounded-full"
                     aria-hidden="true"></span>
                 {/if}
                 {#if section.newBadgeKey && isFeatureNew(section.newBadgeKey)}
                   <span
-                    class="bg-accent relative h-1.5 w-1.5 shrink-0 rounded-full"
+                    class="bg-accent h-1.5 w-1.5 shrink-0 rounded-full"
                     aria-hidden="true"></span>
                 {/if}
               </a>

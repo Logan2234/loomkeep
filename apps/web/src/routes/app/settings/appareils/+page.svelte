@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     getSessions,
     revokeOtherSessions,
@@ -102,7 +103,7 @@
     {#if hasOthers}
       <div
         id="sessions-revoke-all"
-        use:flashAnchor={"sessions-revoke-all"}
+        use:flashAnchor={{ anchor: "sessions-revoke-all", hash: page.url.hash }}
         class="mt-5 rounded-lg">
         <button
           class="btn btn-danger"

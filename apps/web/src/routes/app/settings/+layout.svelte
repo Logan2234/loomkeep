@@ -56,7 +56,8 @@
 {#if isWizard}
   {@render children()}
 {:else}
-  <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
+  <div
+    class="mx-auto flex min-h-[75dvh] max-w-3xl flex-col px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
     {#if recoveryLow && mfa}
       <Banner variant="warning" class="mb-6 flex items-center gap-3">
         <Icon name="warning" class="h-5 w-5 shrink-0" />
@@ -73,7 +74,7 @@
       </Banner>
     {/if}
 
-    <div class="lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-10">
+    <div class="flex-1 lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-10">
       <!-- The index *is* the nav on a phone, so the rail only ever shows from
            lg up; below that it would be a second copy of the same list. -->
       <aside class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
@@ -89,7 +90,6 @@
           <SettingsSearchField id="settings-search-rail" />
         </div>
         <SettingsNav variant="rail" {alerts} />
-        <LegalLinks class="mt-8 items-start px-3 text-left" />
       </aside>
 
       <div class="min-w-0">
@@ -104,11 +104,9 @@
         {:else}
           {@render children()}
         {/if}
-
-        <!-- Desktop keeps these at the foot of the rail, where they anchor to
-             something; on a phone there is no rail to anchor them to. -->
-        <LegalLinks class="mt-10 items-center px-4 text-center lg:hidden" />
       </div>
     </div>
+
+    <LegalLinks class="mt-10 items-center px-4 text-center" />
   </div>
 {/if}

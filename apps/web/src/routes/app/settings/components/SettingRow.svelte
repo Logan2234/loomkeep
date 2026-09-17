@@ -4,6 +4,7 @@
   // card — whatever went wrong. Nine sections used to hand-roll this with
   // their own `flex items-start justify-between gap-4`, which is how the
   // description sizes and the error placement drifted apart.
+  import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import type { IconName } from "$lib/types/icon-name";
@@ -99,7 +100,7 @@
 
 <div
   id={anchor}
-  use:flashAnchor={anchor ?? ""}
+  use:flashAnchor={{ anchor: anchor ?? "", hash: page.url.hash }}
   class="rounded-lg py-3.5 first:pt-0 last:pb-0">
   <div class="flex items-start justify-between gap-4">
     <div class="flex min-w-0 items-start gap-3">
