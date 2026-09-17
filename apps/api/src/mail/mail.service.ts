@@ -55,10 +55,49 @@ function renderQuackbackEmojiAliases(text: string): string {
   );
 }
 
+function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
+  const normalized = value
+    .replace(
+      /&#(?:x([0-9a-f]+)|([0-9]+));/gi,
+      (match, hex: string | undefined, decimal: string | undefined) => {
+        const numeric = hex ?? decimal;
+        if (!numeric) return match;
+        const codePoint = Number.parseInt(
+          numeric,
+          hex === undefined ? 10 : 16,
+        );
+        return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : match;
+      },
+    )
+    .replace(/&(colon|tab|newline);/gi, (_match, entity: string) => {
+      if (entity.toLowerCase() === "colon") return ":";
+      return "";
+    })
+    .replace(/[\u0000-\u0020]/g, "")
+    .toLowerCase();
+
+  if (attribute === "src") return /^https?:/.test(normalized);
+  return /^(?:https?:|mailto:)/.test(normalized);
+}
+
+function sanitizeHtmlUrls(html: string): string {
+  return html.replace(
+    /\s(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi,
+    (match, attribute: "href" | "src", doubleQuoted, singleQuoted, unquoted) => {
+      const value = doubleQuoted ?? singleQuoted ?? unquoted;
+      return isAllowedUrl(value, attribute.toLowerCase() as "href" | "src")
+        ? match
+        : "";
+    },
+  );
+}
+
 /** Bold/italic/link inline spans within a line — the rest is passed through as-is. */
 function renderInline(text: string): string {
   return escapeHtml(text)
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_match, label, url) =>
+      isAllowedUrl(url, "href") ? `<a href="${url}">${label}</a>` : label,
+    )
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
 }
@@ -934,7 +973,9 @@ export class MailService {
     // content, reached only through the signed webhook).
     const { html: fallbackHtml, text: contentText } =
       this.renderChangelogMarkdown(contentPreview);
-    const bodyHtml = renderQuackbackEmojiAliases(contentHtml) || fallbackHtml;
+    const bodyHtml = contentHtml
+      ? sanitizeHtmlUrls(renderQuackbackEmojiAliases(contentHtml))
+      : fallbackHtml;
 
     return {
       subject: `Loomkeep — ${title}`,
