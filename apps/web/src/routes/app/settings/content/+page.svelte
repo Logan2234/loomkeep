@@ -3,6 +3,6 @@
   import ProfileSection from "../components/ProfileSection.svelte";
 </script>
 
-<SettingsSection slug="contenu">
+<SettingsSection slug="content">
   <ProfileSection />
 </SettingsSection>

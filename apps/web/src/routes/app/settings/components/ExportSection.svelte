@@ -1,11 +1,13 @@
 <script lang="ts">
   import { exportMyData, exportMyDataCsv } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import { downloadBlob } from "$lib/download";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { Domain } from "@loomkeep/shared";
+  import { flashAnchor } from "../flash-anchor";
 
   const exportMut = createApiMutation(() => ({
     mutate: exportMyData,
@@ -72,24 +74,34 @@
     .join(", ");
 </script>
 
-<section class="card p-5 md:p-6">
-  <button
-    class="btn btn-primary"
-    disabled={exportMut.loading}
-    onclick={() => exportMut.mutate()}>
-    <Icon name="download" class="mr-1.5 inline h-4 w-4" />
-    {exportMut.loading
-      ? m.settings_export_action_loading()
-      : m.settings_export_action()}
-  </button>
-  {#if exportMut.error}
-    <p class="text-danger mt-2 text-sm">{exportMut.error}</p>
-  {/if}
-
-  <div class="border-border mt-5 border-t pt-5">
-    <p class="text-dim mb-3 text-sm">
-      {m.settings_export_csv_body()}
+<div class="space-y-3">
+  <section
+    id="export-json"
+    use:flashAnchor={{ anchor: "export-json", hash: page.url.hash }}
+    class="card p-5 md:p-6">
+    <p class="font-semibold">{m.settings_export_json_title()}</p>
+    <p class="text-dim mt-1 max-w-xl text-sm">
+      {m.settings_export_json_description()}
     </p>
+    <button
+      class="btn btn-primary mt-4"
+      disabled={exportMut.loading}
+      onclick={() => exportMut.mutate()}>
+      <Icon name="download" class="mr-1.5 inline h-4 w-4" />
+      {exportMut.loading
+        ? m.settings_export_action_loading()
+        : m.settings_export_action()}
+    </button>
+    {#if exportMut.error}
+      <p class="text-danger mt-2 text-sm">{exportMut.error}</p>
+    {/if}
+  </section>
+
+  <section
+    id="export-csv"
+    use:flashAnchor={{ anchor: "export-csv", hash: page.url.hash }}
+    class="card p-5 md:p-6">
+    <p class="text-dim mb-3 text-sm">{m.settings_export_csv_body()}</p>
     <div class="flex flex-wrap gap-2">
       {#each exportableDomains as d (d.domain)}
         <button
@@ -111,5 +123,5 @@
     {#if csvExportMut.error}
       <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
     {/if}
-  </div>
-</section>
+  </section>
+</div>

@@ -140,7 +140,6 @@
             onChange={(v) => setCadence("notifyEmail", v)} />
         {/snippet}
       </SettingRow>
-
       <SettingRow
         anchor="push"
         label={m.common_push_notifications()}

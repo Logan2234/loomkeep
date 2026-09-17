@@ -47,7 +47,7 @@
   }
 </script>
 
-<section class="card p-5 md:p-6">
+<div class="space-y-3">
   <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
     {#each LINKS as link (link.href)}
       <a
@@ -56,14 +56,17 @@
         href={link.href}
         target="_blank"
         rel="noopener noreferrer"
-        class="card hover:border-accent flex items-center gap-2.5 p-3 text-sm font-semibold transition-[border-color]">
+        class="card hover:border-accent hover:bg-surface-2 flex items-center gap-2.5 p-4 text-sm font-semibold transition-[border-color,background-color]">
         <Icon name={link.icon} class="text-accent h-4 w-4 shrink-0" />
         {link.label}
       </a>
     {/each}
   </div>
 
-  <div class="border-border mt-5 border-t pt-5">
+  <section
+    id="help-chat"
+    use:flashAnchor={{ anchor: "help-chat", hash: page.url.hash }}
+    class="card p-5 md:p-6">
     <p class="flex items-center gap-2 font-semibold">
       <Icon name="message" class="text-accent h-4 w-4" />
       {m.settings_help_chat_title()}
@@ -74,5 +77,5 @@
     <button class="btn btn-ghost" onclick={openChat}>
       {m.settings_help_chat_title()}
     </button>
-  </div>
-</section>
+  </section>
+</div>

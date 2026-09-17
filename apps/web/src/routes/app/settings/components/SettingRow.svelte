@@ -101,7 +101,7 @@
 <div
   id={anchor}
   use:flashAnchor={{ anchor: anchor ?? "", hash: page.url.hash }}
-  class="rounded-lg py-3.5 first:pt-0 last:pb-0">
+  class="py-4 first:pt-0 last:pb-0">
   <div class="flex items-start justify-between gap-4">
     <div class="flex min-w-0 items-start gap-3">
       {#if icon}

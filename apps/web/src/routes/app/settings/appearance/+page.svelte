@@ -3,6 +3,6 @@
   import AppearanceSection from "../components/AppearanceSection.svelte";
 </script>
 
-<SettingsSection slug="apparence">
+<SettingsSection slug="appearance">
   <AppearanceSection />
 </SettingsSection>

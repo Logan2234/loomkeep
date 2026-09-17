@@ -2,12 +2,14 @@ import type {
   ImportAnalyzeRequest,
   ImportAvailabilityDto,
   ImportCommitRequest,
+  ImportHistoryRunDto,
   ImportJobDto,
   ImportLastRunDto,
   ImportPlan,
   ImportQuotaDto,
   ImportReport,
   ImportSource,
+  PagedResult,
 } from "@loomkeep/shared";
 import { Domain, ErrorCode, XpReason } from "@loomkeep/shared";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
@@ -151,6 +153,47 @@ export class ImportJobService {
         summary: run.summary,
         finishedAt: run.finishedAt.toISOString(),
       },
+    };
+  }
+
+  /** The user's own import audit trail, newest first. */
+  async getHistory(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResult<ImportHistoryRunDto>> {
+    const rows = await this.prisma.importRun.findMany({
+      where: { userId },
+      orderBy: { finishedAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit + 1,
+      select: {
+        id: true,
+        sourceId: true,
+        domain: true,
+        status: true,
+        itemCount: true,
+        overwrite: true,
+        summary: true,
+        startedAt: true,
+        finishedAt: true,
+      },
+    });
+    const hasMore = rows.length > limit;
+
+    return {
+      hasMore,
+      items: rows.slice(0, limit).map((run) => ({
+        id: run.id,
+        sourceId: run.sourceId as ImportSource,
+        domain: run.domain as Domain | null,
+        status: run.status,
+        itemCount: run.itemCount,
+        overwrite: run.overwrite,
+        summary: run.summary,
+        startedAt: run.startedAt.toISOString(),
+        finishedAt: run.finishedAt.toISOString(),
+      })),
     };
   }
 

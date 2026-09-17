@@ -3,6 +3,6 @@
   import SupportSection from "../components/SupportSection.svelte";
 </script>
 
-<SettingsSection slug="soutien">
+<SettingsSection slug="support">
   <SupportSection />
 </SettingsSection>

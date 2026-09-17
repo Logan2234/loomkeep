@@ -563,3 +563,56 @@ describe("ImportJobService.getLastRun", () => {
     );
   });
 });
+
+describe("ImportJobService.getHistory", () => {
+  it("returns the caller's import runs in reverse chronological order", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: "run-1",
+        sourceId: "tvtime",
+        domain: Domain.MEDIA,
+        status: "SUCCESS",
+        itemCount: 12,
+        overwrite: true,
+        summary: "3 series, 9 episodes",
+        startedAt: new Date("2026-09-12T08:00:00.000Z"),
+        finishedAt: new Date("2026-09-12T08:30:00.000Z"),
+      },
+    ]);
+    const service = new ImportJobService(
+      [],
+      { importRun: { findMany } } as unknown as PrismaService,
+      {} as ConfigService,
+      {} as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+
+    await expect(service.getHistory("u1", 1, 20)).resolves.toEqual({
+      items: [
+        {
+          id: "run-1",
+          sourceId: "tvtime",
+          domain: Domain.MEDIA,
+          status: "SUCCESS",
+          itemCount: 12,
+          overwrite: true,
+          summary: "3 series, 9 episodes",
+          startedAt: "2026-09-12T08:00:00.000Z",
+          finishedAt: "2026-09-12T08:30:00.000Z",
+        },
+      ],
+      hasMore: false,
+    });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u1" },
+        orderBy: { finishedAt: "desc" },
+        skip: 0,
+        take: 21,
+      }),
+    );
+  });
+});

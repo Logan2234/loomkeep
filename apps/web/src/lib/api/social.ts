@@ -1,4 +1,9 @@
-import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared";
+import type {
+  PagedResult,
+  UpdateVisibilitySettingsDto,
+  UserSummaryDto,
+} from "@loomkeep/shared";
+import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getProfile = (username: string) =>
@@ -41,6 +46,9 @@ export const unblockUser = (username: string) =>
   });
 
 export const getFollowRequests = () => typedRequest("/social/requests");
+
+export const getBlockedUsers = (page: number) =>
+  request<PagedResult<UserSummaryDto>>(`/social/blocked?page=${page}`);
 
 export const acceptFollowRequest = (id: string): Promise<void> =>
   typedRequest("/social/requests/{id}/accept", {

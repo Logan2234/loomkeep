@@ -39,7 +39,10 @@ function makeService(opts: {
         },
       ),
     },
-    block: { findUnique: vi.fn().mockResolvedValue(null) },
+    block: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     follow: {
       upsert: vi.fn().mockResolvedValue({
         status:
@@ -196,6 +199,45 @@ describe("FollowService.unfollow", () => {
     await service.unfollow("viewer", "alice");
 
     expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("FollowService.listBlocked", () => {
+  it("returns the caller's blocked accounts, newest first", async () => {
+    const { service, prisma } = makeService({ targetAccess: "PUBLIC" });
+    (prisma.block.findMany as Mock).mockResolvedValue([
+      {
+        blocked: {
+          id: "blocked-1",
+          username: "noah",
+          displayName: "Noah",
+          profileAccess: "PUBLIC",
+          avatarUrl: null,
+        },
+      },
+    ]);
+
+    await expect(service.listBlocked("viewer", 1, 20)).resolves.toEqual({
+      items: [
+        {
+          id: "blocked-1",
+          username: "noah",
+          displayName: "Noah",
+          profileAccess: "PUBLIC",
+          avatarUrl: null,
+        },
+      ],
+      hasMore: false,
+    });
+
+    expect(prisma.block.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { blockerId: "viewer" },
+        orderBy: { createdAt: "desc" },
+        skip: 0,
+        take: 21,
+      }),
+    );
   });
 });
 

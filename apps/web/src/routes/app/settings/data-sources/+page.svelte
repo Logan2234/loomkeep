@@ -3,6 +3,6 @@
   import DataSourcesSection from "../components/DataSourcesSection.svelte";
 </script>
 
-<SettingsSection slug="sources-donnees">
+<SettingsSection slug="data-sources">
   <DataSourcesSection />
 </SettingsSection>

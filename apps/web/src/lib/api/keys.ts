@@ -52,6 +52,7 @@ export const keys = {
   },
   import: {
     availability: () => ["import", "availability"] as const,
+    history: () => ["import", "history"] as const,
     lastRun: () => ["import", "last-run"] as const,
     quota: () => ["import", "quota"] as const,
     job: (source: string, jobId: string) =>
@@ -102,6 +103,7 @@ export const keys = {
   },
   social: {
     followRequests: () => ["social", "follow-requests"] as const,
+    blockedUsers: () => ["social", "blocked-users"] as const,
   },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,

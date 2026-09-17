@@ -7,7 +7,9 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
@@ -17,6 +19,7 @@
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
+  import { flashAnchor } from "../flash-anchor";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import {
     Domain,
@@ -81,8 +84,8 @@
   {:else if lastRun}
     <div
       class="card mb-8 flex items-center gap-3 p-4 {lastRunOk
-        ? 'border-success/50'
-        : 'border-danger/50'}">
+        ? 'border-success/50 bg-success/5'
+        : 'border-danger/50 bg-danger/5'}">
       <Icon
         name={lastRunOk ? "check" : "warning"}
         class="h-5 w-5 shrink-0 {lastRunOk ? 'text-success' : 'text-danger'}" />
@@ -106,9 +109,20 @@
           {/if}
         </p>
       </div>
+      <a
+        id="import-history"
+        href="/app/settings/import/history"
+        use:flashAnchor={{ anchor: "import-history", hash: page.url.hash }}
+        class="btn btn-ghost btn-sm shrink-0">
+        {m.settings_import_history_action()}
+        <Icon name="chevron-right" class="h-3.5 w-3.5" />
+      </a>
     </div>
   {:else}
-    <p class="text-dim mb-8 text-sm">{m.settings_import_none_yet()}</p>
+    <EmptyState class="mb-8 px-5 py-8">
+      <Icon name="download" class="text-accent mx-auto h-5 w-5" />
+      <p class="mt-2 text-sm">{m.settings_import_none_yet()}</p>
+    </EmptyState>
   {/if}
 
   <div class="flex flex-col gap-8">
@@ -125,12 +139,17 @@
               </span>
             {/if}
           </p>
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
             {#each sources as source (source.label)}
               {@const available =
                 !!source.href && availability[source.type] !== false && !usedUp}
               {#if available}
                 <a
+                  id={`import-source-${source.type}`}
+                  use:flashAnchor={{
+                    anchor: `import-source-${source.type}`,
+                    hash: page.url.hash,
+                  }}
                   href={source.href}
                   class="border-border bg-bg hover:border-accent hover:bg-surface-2 flex items-center gap-3 rounded-lg border p-4 transition-colors">
                   <Icon
@@ -149,6 +168,11 @@
                 </a>
               {:else}
                 <div
+                  id={`import-source-${source.type}`}
+                  use:flashAnchor={{
+                    anchor: `import-source-${source.type}`,
+                    hash: page.url.hash,
+                  }}
                   class="border-border bg-bg flex items-center gap-3 rounded-lg border p-4 opacity-60">
                   <Icon
                     name={DOMAINS[domain as Domain].icon}

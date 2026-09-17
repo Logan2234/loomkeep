@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import ProviderMark from "$lib/components/ProviderMark.svelte";
   import {
     ANILIST_API,
@@ -10,6 +11,7 @@
   } from "$lib/constants/external-links";
   import { m } from "$lib/paraglide/messages.js";
   import type { ProviderBrandKey } from "$lib/provider-brands";
+  import { flashAnchor } from "../flash-anchor";
 
   // TMDB's notice text is quoted verbatim by their API Terms of Use and kept
   // identical across locales for that reason — see messages/*.json.
@@ -58,26 +60,29 @@
   ];
 </script>
 
-<section class="card p-5 md:p-6">
-  <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-    {#each PROVIDERS as p (p.name)}
-      <li>
-        <a
-          href={p.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="card hover:border-accent flex items-start gap-2.5 p-3 text-left text-sm transition-[border-color]">
-          {#if p.brand}
-            <ProviderMark brand={p.brand} class="mt-0.5 h-4 w-4 shrink-0" />
-          {/if}
-          <span class="min-w-0">
-            <span class="font-semibold">{p.name}</span>
-            <span class="text-dim mt-1 block text-xs font-normal">
-              {p.notice}
-            </span>
+<ul class="grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2">
+  {#each PROVIDERS as p (p.name)}
+    <li class="flex">
+      <a
+        id={`datasource-${p.name.toLowerCase().replaceAll(" ", "-")}`}
+        use:flashAnchor={{
+          anchor: `datasource-${p.name.toLowerCase().replaceAll(" ", "-")}`,
+          hash: page.url.hash,
+        }}
+        href={p.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="card hover:border-accent hover:bg-surface-2 flex h-full w-full items-start gap-2.5 p-4 text-left text-sm transition-[border-color,background-color]">
+        {#if p.brand}
+          <ProviderMark brand={p.brand} class="mt-0.5 h-4 w-4 shrink-0" />
+        {/if}
+        <span class="min-w-0">
+          <span class="font-semibold">{p.name}</span>
+          <span class="text-dim mt-1 block text-xs font-normal">
+            {p.notice}
           </span>
-        </a>
-      </li>
-    {/each}
-  </ul>
-</section>
+        </span>
+      </a>
+    </li>
+  {/each}
+</ul>

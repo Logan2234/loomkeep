@@ -234,7 +234,7 @@
       <div
         id="username"
         use:flashAnchor={{ anchor: "username", hash: page.url.hash }}
-        class="flex items-center justify-between gap-4 rounded-lg py-3 first:pt-0">
+        class="flex items-center justify-between gap-4 py-4 first:pt-0">
         <div>
           <p class="text-dim text-sm">{m.common_username()}</p>
           <p class="font-semibold">{auth.user.username}</p>
@@ -246,7 +246,7 @@
       <div
         id="email"
         use:flashAnchor={{ anchor: "email", hash: page.url.hash }}
-        class="flex items-center justify-between gap-4 rounded-lg py-3">
+        class="flex items-center justify-between gap-4 py-4">
         <div class="min-w-0">
           <p class="text-dim text-sm">{m.common_email()}</p>
           <p class="flex items-center gap-1.5 font-semibold">
@@ -307,7 +307,7 @@
       <div
         id="password"
         use:flashAnchor={{ anchor: "password", hash: page.url.hash }}
-        class="flex items-center justify-between gap-4 rounded-lg py-3 last:pb-0">
+        class="flex items-center justify-between gap-4 py-4 last:pb-0">
         <div>
           <p class="text-dim text-sm">{m.common_password()}</p>
           <p class="font-semibold tracking-widest">••••••••</p>
@@ -326,7 +326,7 @@
   <ul class="card divide-border divide-y">
     <li>
       <a
-        href={sectionHref("double-authentification")}
+        href={sectionHref("two-factor-authentication")}
         class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
         <Icon name="lock" class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">
@@ -340,7 +340,7 @@
     </li>
     <li>
       <a
-        href={sectionHref("appareils")}
+        href={sectionHref("devices")}
         class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
         <Icon name="monitor" class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">

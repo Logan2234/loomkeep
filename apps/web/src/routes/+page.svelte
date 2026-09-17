@@ -7,6 +7,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { FEEDBACK_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { theme } from "$lib/theme.svelte";
   import LandingFooter from "./components/LandingFooter.svelte";
@@ -287,8 +288,7 @@
   ];
 
   $effect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (query.matches) return;
+    if (prefersReducedMotion()) return;
     const id = setInterval(() => {
       verb = (verb + 1) % VERBS.length;
     }, 2200);

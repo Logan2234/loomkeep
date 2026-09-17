@@ -67,16 +67,20 @@
   }
 </script>
 
-<section class="card border-danger/40 p-5 md:p-6">
-  <h2 class="font-display text-danger mb-2 text-lg font-bold">
-    {m.settings_danger_zone_title()}
-  </h2>
-  <p class="text-dim mb-4 text-sm">
-    {m.settings_delete_account_modal_description()}
-  </p>
-  <button class="btn btn-danger" onclick={openDeleteModal}>
-    {m.settings_delete_account_button()}
-  </button>
+<section class="border-danger/50 bg-danger/5 overflow-hidden rounded-xl border">
+  <div class="p-5 md:p-6">
+    <h2 class="font-display text-danger text-lg font-bold">
+      {m.settings_danger_zone_title()}
+    </h2>
+    <p class="text-dim mt-2 max-w-2xl text-sm">
+      {m.settings_delete_account_modal_description()}
+    </p>
+  </div>
+  <div class="border-danger/30 border-t px-5 py-4 md:px-6">
+    <button class="btn btn-danger" onclick={openDeleteModal}>
+      {m.settings_delete_account_button()}
+    </button>
+  </div>
 </section>
 
 {#if showModal}

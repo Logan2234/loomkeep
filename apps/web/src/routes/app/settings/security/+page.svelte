@@ -3,6 +3,6 @@
   import SecuritySection from "../components/SecuritySection.svelte";
 </script>
 
-<SettingsSection slug="securite">
+<SettingsSection slug="security">
   <SecuritySection />
 </SettingsSection>

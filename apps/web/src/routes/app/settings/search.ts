@@ -13,6 +13,12 @@ export interface SettingsSearchHit {
   entryId: string | null;
 }
 
+/** One result group represents the page that owns its matching controls. */
+export interface SettingsSearchGroup {
+  section: SettingsSectionDef;
+  entries: SettingsSearchHit[];
+}
+
 /**
  * Lower-cases and strips diacritics, so "confidentialite" finds
  * "Confidentialité" and "Fuseau" finds "fuseau horaire".
@@ -43,7 +49,6 @@ export function searchSettings(
   for (const section of sections) {
     if (matches([section.label, ...section.keywords], needle)) {
       sectionHits.push({ section, entryLabel: null, entryId: null });
-      continue;
     }
 
     for (const entry of section.entries) {
@@ -58,6 +63,29 @@ export function searchSettings(
   }
 
   return [...sectionHits, ...entryHits];
+}
+
+/**
+ * Keeps every matching control under its owning page. The page itself is the
+ * heading and link for the group, even when the query only found a control.
+ */
+export function groupSearchHits(
+  hits: SettingsSearchHit[],
+): SettingsSearchGroup[] {
+  const groups = new Map<string, SettingsSearchGroup>();
+
+  for (const hit of hits) {
+    let group = groups.get(hit.section.slug);
+
+    if (!group) {
+      group = { section: hit.section, entries: [] };
+      groups.set(hit.section.slug, group);
+    }
+
+    if (hit.entryId) group.entries.push(hit);
+  }
+
+  return [...groups.values()];
 }
 
 /** Where a hit leads: the section, or the row inside it that matched. */

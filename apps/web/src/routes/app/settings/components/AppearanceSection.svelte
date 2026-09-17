@@ -1,14 +1,21 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import {
+    accessibility,
+    type ContrastPreference,
+    type DensityPreference,
+    type MotionPreference,
+  } from "$lib/accessibility.svelte";
   import { updateMe } from "$lib/api/auth";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import ThemePreview from "$lib/components/ThemePreview.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
+  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
@@ -34,12 +41,34 @@
   const MIN = 3;
   const MAX = 7;
 
-  const LOCALE_OPTIONS = [
+  const LOCALE_OPTIONS: { label: string; value: Locale }[] = [
     { label: m.common_language_fr(), value: "fr" },
     { label: m.common_language_en(), value: "en" },
   ];
 
-  const gate = $derived({ isDomainEnabled, isAdmin: auth.isAdmin });
+  const MOTION_OPTIONS: { label: string; value: MotionPreference }[] = [
+    { label: m.common_system(), value: "system" },
+    { label: m.settings_accessibility_reduced_motion(), value: "reduce" },
+  ];
+  const CONTRAST_OPTIONS: { label: string; value: ContrastPreference }[] = [
+    { label: m.common_default(), value: "default" },
+    { label: m.settings_accessibility_high_contrast(), value: "high" },
+  ];
+  const DENSITY_OPTIONS: { label: string; value: DensityPreference }[] = [
+    { label: m.settings_accessibility_density_compact(), value: "compact" },
+    { label: m.common_default(), value: "default" },
+    {
+      label: m.settings_accessibility_density_comfortable(),
+      value: "comfortable",
+    },
+  ];
+
+  const gate = $derived({
+    isDomainEnabled,
+    isAdmin: auth.isAdmin,
+    socialEnabled: appConfig.socialEnabled,
+    gamificationEnabled: appConfig.gamificationEnabled,
+  });
 
   // Stored order, gated to what's visible now (drops disabled/unknown ids and
   // keeps "menu"). This is the working set every action rebuilds from.
@@ -107,23 +136,115 @@
   }
 </script>
 
-<section class="card space-y-4 p-5 md:p-6">
-  <div
-    id="theme"
-    use:flashAnchor={{ anchor: "theme", hash: page.url.hash }}
-    class="rounded-lg">
-    <p class="mb-2 font-semibold">{m.common_theme()}</p>
-    <div class="flex gap-2">
-      {#each THEME_DEFINITIONS as theme (theme.mode)}
-        <ThemePreview {theme} />
-      {/each}
+<div class="space-y-4">
+  <section class="card divide-border divide-y">
+    <div
+      id="theme"
+      use:flashAnchor={{ anchor: "theme", hash: page.url.hash }}
+      class="p-5 md:p-6">
+      <p class="font-semibold">{m.common_theme()}</p>
+      <p class="text-dim mt-1 mb-3 text-sm">
+        {m.settings_theme_description()}
+      </p>
+      <div class="flex gap-2">
+        {#each THEME_DEFINITIONS as theme (theme.mode)}
+          <ThemePreview {theme} />
+        {/each}
+      </div>
     </div>
-  </div>
 
-  <div
+    <div
+      id="language"
+      use:flashAnchor={{ anchor: "language", hash: page.url.hash }}
+      class="p-5 md:p-6">
+      <p class="flex items-center gap-2 font-semibold">
+        {m.common_language()}
+      </p>
+      <p class="text-dim mt-1 mb-3 text-sm">
+        {m.settings_language_description()}
+      </p>
+      <div
+        class:pointer-events-none={saveLocaleMut.loading}
+        class:opacity-50={saveLocaleMut.loading}>
+        <SegmentedControl
+          label={m.common_language()}
+          options={LOCALE_OPTIONS}
+          value={auth.user?.locale ?? getLocale()}
+          onChange={saveLocale} />
+      </div>
+    </div>
+
+    <div
+      id="accessibility"
+      use:flashAnchor={{ anchor: "accessibility", hash: page.url.hash }}
+      class="p-5 md:p-6">
+      <p class="font-semibold">{m.settings_accessibility_title()}</p>
+      <p class="text-dim mt-1 text-sm">
+        {m.settings_accessibility_description()}
+      </p>
+
+      <div class="mt-5 space-y-5">
+        <div class="gap-3 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="font-semibold">
+              {m.settings_accessibility_motion_title()}
+            </p>
+            <p class="text-dim mt-1 text-sm">
+              {m.settings_accessibility_motion_description()}
+            </p>
+          </div>
+          <div class="mt-3 sm:mt-0">
+            <SegmentedControl
+              label={m.settings_accessibility_motion_title()}
+              options={MOTION_OPTIONS}
+              value={accessibility.motion}
+              onChange={(value) => accessibility.setMotion(value)} />
+          </div>
+        </div>
+
+        <div class="gap-3 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="font-semibold">
+              {m.settings_accessibility_contrast_title()}
+            </p>
+            <p class="text-dim mt-1 text-sm">
+              {m.settings_accessibility_contrast_description()}
+            </p>
+          </div>
+          <div class="mt-3 sm:mt-0">
+            <SegmentedControl
+              label={m.settings_accessibility_contrast_title()}
+              options={CONTRAST_OPTIONS}
+              value={accessibility.contrast}
+              onChange={(value) => accessibility.setContrast(value)} />
+          </div>
+        </div>
+
+        <div class="gap-3 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="font-semibold">
+              {m.settings_accessibility_density_title()}
+            </p>
+            <p class="text-dim mt-1 text-sm">
+              {m.settings_accessibility_density_description()}
+            </p>
+          </div>
+          <div class="mt-3 sm:mt-0">
+            <SegmentedControl
+              label={m.settings_accessibility_density_title()}
+              options={DENSITY_OPTIONS}
+              value={accessibility.density}
+              onChange={(value) => accessibility.setDensity(value)} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section
     id="nav-style"
     use:flashAnchor={{ anchor: "nav-style", hash: page.url.hash }}
-    class="rounded-lg">
+    class="card p-5 md:p-6">
     <p class="mb-2 flex items-center gap-2 font-semibold">
       {m.settings_nav_style_label()}
       {#if isFeatureNew("nav-styles")}
@@ -159,30 +280,12 @@
         {/if}
       {/each}
     </div>
-  </div>
+  </section>
 
-  <div
-    id="language"
-    use:flashAnchor={{ anchor: "language", hash: page.url.hash }}
-    class="rounded-lg">
-    <p class="mb-2 flex items-center gap-2 font-semibold">
-      {m.common_language()}
-    </p>
-    <div
-      class:pointer-events-none={saveLocaleMut.loading}
-      class:opacity-50={saveLocaleMut.loading}>
-      <Combobox
-        label={m.common_language()}
-        options={LOCALE_OPTIONS}
-        values={[auth.user?.locale ?? getLocale()]}
-        onChange={(v) => saveLocale(v[0] as Locale)} />
-    </div>
-  </div>
-
-  <div
+  <section
     id="mobile-nav"
     use:flashAnchor={{ anchor: "mobile-nav", hash: page.url.hash }}
-    class="rounded-lg">
+    class="card p-5 md:p-6">
     <p class="mb-2 font-semibold">{m.settings_mobile_nav_bar_label()}</p>
     <p class="text-dim text-sm">
       {m.settings_mobile_nav_bar_description({ min: MIN, max: MAX })}
@@ -258,5 +361,5 @@
     {#if saveShortcutsMut.error}
       <p class="text-danger mt-3 text-sm">{saveShortcutsMut.error}</p>
     {/if}
-  </div>
-</section>
+  </section>
+</div>

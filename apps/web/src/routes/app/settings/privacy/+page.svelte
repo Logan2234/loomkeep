@@ -3,6 +3,6 @@
   import PrivacySection from "../components/PrivacySection.svelte";
 </script>
 
-<SettingsSection slug="confidentialite">
+<SettingsSection slug="privacy">
   <PrivacySection />
 </SettingsSection>

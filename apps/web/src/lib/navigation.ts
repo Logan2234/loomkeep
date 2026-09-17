@@ -383,6 +383,9 @@ const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "music",
   "calendar",
   "stats",
+  "leaderboard",
+  "feed",
+  "profile",
   "settings",
   "admin",
 ];

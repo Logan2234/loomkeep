@@ -16,6 +16,21 @@ export interface FlashAnchorArgs {
   hash: string;
 }
 
+let activeFlashTarget: HTMLElement | null = null;
+
+/**
+ * A search can target another row before the first row's brief flash ends.
+ * Keep the feedback singular: two lit rows make it unclear which result was
+ * just selected.
+ */
+export function clearPreviousFlash(
+  previous: HTMLElement | null,
+  next: HTMLElement,
+): HTMLElement {
+  previous?.classList.remove("setting-flash");
+  return next;
+}
+
 /**
  * Brings the row the URL fragment names into view and flashes it once, so a
  * search result that points at one control inside a section says which one it
@@ -35,9 +50,7 @@ export function flashAnchor(node: HTMLElement, args: FlashAnchorArgs) {
     if (typeof window === "undefined") return;
     if (!isFlashTarget(anchor, hash)) return;
 
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const reduced = prefersReducedMotion();
 
     // After paint: the section's own content is still settling on mount, and
     // scrolling before it does lands on the wrong offset.
@@ -48,12 +61,15 @@ export function flashAnchor(node: HTMLElement, args: FlashAnchorArgs) {
       });
       if (reduced) return;
       // Restart the animation even if the same row is targeted twice.
-      node.classList.remove("setting-flash");
+      activeFlashTarget = clearPreviousFlash(activeFlashTarget, node);
       void node.offsetWidth;
       node.classList.add("setting-flash");
       node.addEventListener(
         "animationend",
-        () => node.classList.remove("setting-flash"),
+        () => {
+          node.classList.remove("setting-flash");
+          if (activeFlashTarget === node) activeFlashTarget = null;
+        },
         { once: true },
       );
     });
@@ -63,3 +79,5 @@ export function flashAnchor(node: HTMLElement, args: FlashAnchorArgs) {
 
   return { update: run };
 }
+
+import { prefersReducedMotion } from "$lib/motion";

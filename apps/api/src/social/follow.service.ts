@@ -2,6 +2,7 @@ import {
   ErrorCode,
   type FollowRequestDto,
   NotificationType,
+  type PagedResult,
   ProfileAccess,
   type RelationshipDto,
   type UserSummaryDto,
@@ -363,6 +364,27 @@ export class FollowService {
       createdAt: r.createdAt.toISOString(),
       user: toUserSummaryDto(r.follower),
     }));
+  }
+
+  /** Accounts this user chose to block, with the action needed to reverse it. */
+  async listBlocked(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResult<UserSummaryDto>> {
+    const rows = await this.prisma.block.findMany({
+      where: { blockerId: userId },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit + 1,
+      select: { blocked: { select: USER_SUMMARY_SELECT } },
+    });
+    const hasMore = rows.length > limit;
+
+    return {
+      hasMore,
+      items: rows.slice(0, limit).map((row) => toUserSummaryDto(row.blocked)),
+    };
   }
 
   /** Accepted followers of a user. */

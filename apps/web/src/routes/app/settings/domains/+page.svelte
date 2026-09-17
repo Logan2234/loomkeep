@@ -3,6 +3,6 @@
   import DomainsSection from "../components/DomainsSection.svelte";
 </script>
 
-<SettingsSection slug="domaines">
+<SettingsSection slug="domains">
   <DomainsSection />
 </SettingsSection>

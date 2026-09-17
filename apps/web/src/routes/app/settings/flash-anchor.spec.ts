@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { isFlashTarget } from "./flash-anchor";
+import { describe, expect, it, vi } from "vitest";
+import { clearPreviousFlash, isFlashTarget } from "./flash-anchor";
 
 describe("isFlashTarget", () => {
   it("matches the row the fragment names", () => {
@@ -24,5 +24,17 @@ describe("isFlashTarget", () => {
 
   it("matches a bare fragment marker against nothing", () => {
     expect(isFlashTarget("timezone", "#")).toBe(false);
+  });
+
+  it("clears the previous row before flashing a new search result", () => {
+    const previous = {
+      classList: { remove: vi.fn() },
+    } as unknown as HTMLElement;
+    const next = {
+      classList: { remove: vi.fn() },
+    } as unknown as HTMLElement;
+
+    expect(clearPreviousFlash(previous, next)).toBe(next);
+    expect(previous.classList.remove).toHaveBeenCalledWith("setting-flash");
   });
 });

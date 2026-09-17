@@ -3,6 +3,6 @@
   import HelpFeedbackSection from "../components/HelpFeedbackSection.svelte";
 </script>
 
-<SettingsSection slug="aide">
+<SettingsSection slug="help">
   <HelpFeedbackSection />
 </SettingsSection>

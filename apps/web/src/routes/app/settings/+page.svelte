@@ -38,7 +38,7 @@
     const wide = window.matchMedia("(min-width: 1024px)");
     const openFirstSection = () => {
       if (wide.matches && page.url.pathname === "/app/settings") {
-        void goto(sectionHref("securite"), { replaceState: true });
+        void goto(sectionHref("security"), { replaceState: true });
       }
     };
     openFirstSection();
@@ -103,24 +103,24 @@
   });
 
   const previews = $derived({
-    securite: auth.user
+    security: auth.user
       ? `${auth.user.username} · ${auth.user.email}`
       : undefined,
-    "double-authentification": mfa
+    "two-factor-authentication": mfa
       ? mfaOn
         ? m.settings_health_mfa_on()
         : m.settings_preview_mfa_off()
       : undefined,
-    appareils: sessionsQuery.data
+    devices: sessionsQuery.data
       ? sessionCount > 1
         ? m.settings_health_sessions_many({ count: sessionCount })
         : m.settings_health_sessions_one({ count: sessionCount })
       : undefined,
-    contenu: contentPreview,
-    apparence: auth.user
+    content: contentPreview,
+    appearance: auth.user
       ? `${theme.mode === "dark" ? m.common_theme_dark() : m.common_theme_light()} · ${LOCALE_LABELS[auth.user.locale] ?? auth.user.locale}`
       : undefined,
-    domaines: auth.user
+    domains: auth.user
       ? m.settings_preview_domains({
           count: auth.user.enabledDomains.length,
           total: Object.keys(DOMAINS).length,
@@ -131,12 +131,12 @@
       : undefined,
     import: importPreview,
     export: m.settings_preview_export(),
-    aide: m.settings_preview_help(),
-    soutien: m.settings_preview_support(),
-    "sources-donnees": m.settings_preview_datasources(),
+    help: m.settings_preview_help(),
+    support: m.settings_preview_support(),
+    "data-sources": m.settings_preview_datasources(),
   });
 
-  const alerts = $derived({ "double-authentification": recoveryLow });
+  const alerts = $derived({ "two-factor-authentication": recoveryLow });
 </script>
 
 <!-- lg:hidden on the wrapper rather than per-block: above lg this route has
@@ -195,7 +195,7 @@
 
       {#if sessionsQuery.data}
         <a
-          href={sectionHref("appareils")}
+          href={sectionHref("devices")}
           class="border-border hover:border-accent flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors">
           <Icon name="monitor" class="text-dim h-3.5 w-3.5" />
           {sessionCount > 1

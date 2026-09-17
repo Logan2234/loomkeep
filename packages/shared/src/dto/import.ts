@@ -207,6 +207,15 @@ export interface ImportRunDto {
   finishedAt: string;
 }
 
+/** An import attempt retained in the account's personal audit history. */
+export interface ImportHistoryRunDto extends ImportRunDto {
+  /** Stable identifier for rendering and pagination. */
+  id: string;
+  /** Whether this run replaced the existing library for its domain first. */
+  overwrite: boolean;
+  startedAt: string;
+}
+
 /**
  * Response of `GET /import/last-run`. Wrapped rather than nullable at the top
  * level so the endpoint always answers with an object — "never imported" is a

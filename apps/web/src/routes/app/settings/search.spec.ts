@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";
-import { fold, hitHref, searchSettings } from "./search";
+import { fold, groupSearchHits, hitHref, searchSettings } from "./search";
 
 describe("settings search", () => {
   it("ignores case and diacritics", () => {
@@ -43,5 +43,74 @@ describe("settings search", () => {
     const visible = SETTINGS_SECTIONS.filter((s) => !s.social);
 
     expect(searchSettings("ghost", visible)).toEqual([]);
+  });
+
+  it("groups matching controls under their owning page", () => {
+    const groups = groupSearchHits(searchSettings("email"));
+    const mfa = groups.find(
+      (group) => group.section.slug === "two-factor-authentication",
+    );
+
+    expect(mfa?.entries.map((entry) => entry.entryId)).toContain("mfa-email");
+  });
+
+  it("finds navigation skins and individual domain controls by their aliases", () => {
+    const dock = searchSettings("dock").find(
+      (hit) => hit.entryId === "nav-style",
+    )!;
+    const anime = searchSettings("anime").find(
+      (hit) => hit.entryId === "domain-media",
+    )!;
+
+    expect(dock).toMatchObject({
+      section: { slug: "appearance" },
+      entryId: "nav-style",
+    });
+    expect(anime).toMatchObject({
+      section: { slug: "domains" },
+      entryId: "domain-media",
+    });
+  });
+
+  it("points mobile destinations to the mobile navigation setting", () => {
+    const [leaderboard] = searchSettings("leaderboard");
+
+    expect(leaderboard).toMatchObject({
+      section: { slug: "appearance" },
+      entryId: "mobile-nav",
+    });
+  });
+
+  it("indexes each import source as a result that lands on its card", () => {
+    const letterboxd = searchSettings("letterboxd").find(
+      (hit) => hit.entryId === "import-source-letterboxd",
+    )!;
+
+    expect(letterboxd).toMatchObject({
+      section: { slug: "import" },
+      entryId: "import-source-letterboxd",
+    });
+    expect(hitHref(letterboxd)).toBe(
+      "/app/settings/import#import-source-letterboxd",
+    );
+  });
+
+  it("indexes import history and the social block list as settings controls", () => {
+    const history = searchSettings("historique").find(
+      (hit) => hit.entryId === "import-history",
+    )!;
+    const blocked = searchSettings("muted").find(
+      (hit) => hit.entryId === "blocked-users-list",
+    )!;
+
+    expect(history).toMatchObject({
+      section: { slug: "import" },
+      entryId: "import-history",
+    });
+    expect(hitHref(history)).toBe("/app/settings/import#import-history");
+    expect(blocked).toMatchObject({
+      section: { slug: "blocked-users" },
+      entryId: "blocked-users-list",
+    });
   });
 });

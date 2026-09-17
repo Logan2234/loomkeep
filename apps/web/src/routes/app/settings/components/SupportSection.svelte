@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { m } from "$lib/paraglide/messages.js";
+  import { flashAnchor } from "../flash-anchor";
 
   // Official brand marks (simple-icons), kept local to this section rather
   // than in the shared Icon component — these are flat colored logos, not
@@ -66,38 +68,38 @@
   </span>
 {/snippet}
 
-<section class="card p-5 md:p-6">
-  <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-    {#each TILES as tile (tile.key)}
-      <a
-        href={tile.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="card hover:border-accent flex items-start gap-2.5 p-3 text-left text-sm font-semibold transition-[border-color]">
-        <svg
-          viewBox="0 0 24 24"
-          class="mt-0.5 h-4 w-4 shrink-0"
-          fill={BRAND_ICONS[tile.key].color}
-          aria-hidden="true"><path d={BRAND_ICONS[tile.key].path} /></svg>
-        <span class="flex w-full flex-wrap items-center justify-between gap-4">
-          <span class="flex flex-row items-center gap-1.5"
-            >{tile.name}
-            {#if tile.recommended}
-              <svg
-                viewBox="0 0 24 24"
-                class="text-accent h-3.5 w-3.5 shrink-0"
-                fill="currentColor"
-                role="img">
-                <title
-                  >{m.settings_support_recommended()} — {m.settings_support_recommended_reason()}</title>
-                <path
-                  d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
-              </svg>
-            {/if}
-          </span>
-          {@render accountBadge(tile.accountRequired)}
+<section class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+  {#each TILES as tile (tile.key)}
+    <a
+      id={`support-${tile.key}`}
+      use:flashAnchor={{ anchor: `support-${tile.key}`, hash: page.url.hash }}
+      href={tile.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="card hover:border-accent hover:bg-surface-2 flex items-start gap-2.5 p-4 text-left text-sm font-semibold transition-[border-color,background-color]">
+      <svg
+        viewBox="0 0 24 24"
+        class="mt-0.5 h-4 w-4 shrink-0"
+        fill={BRAND_ICONS[tile.key].color}
+        aria-hidden="true"><path d={BRAND_ICONS[tile.key].path} /></svg>
+      <span class="flex w-full flex-wrap items-center justify-between gap-4">
+        <span class="flex flex-row items-center gap-1.5"
+          >{tile.name}
+          {#if tile.recommended}
+            <svg
+              viewBox="0 0 24 24"
+              class="text-accent h-3.5 w-3.5 shrink-0"
+              fill="currentColor"
+              role="img">
+              <title
+                >{m.settings_support_recommended()} — {m.settings_support_recommended_reason()}</title>
+              <path
+                d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+            </svg>
+          {/if}
         </span>
-      </a>
-    {/each}
-  </div>
+        {@render accountBadge(tile.accountRequired)}
+      </span>
+    </a>
+  {/each}
 </section>

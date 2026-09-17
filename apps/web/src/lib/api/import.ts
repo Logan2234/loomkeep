@@ -1,8 +1,11 @@
 import type {
   ImportAnalyzeRequest,
   ImportCommitRequest,
+  ImportHistoryRunDto,
   ImportSource,
+  PagedResult,
 } from "@loomkeep/shared";
+import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getImportAvailability = () => typedRequest("/import/availability");
@@ -11,6 +14,9 @@ export const getImportQuota = () => typedRequest("/import/quota");
 
 /** The user's last import, whatever its outcome — `{ run: null }` if none. */
 export const getLastImportRun = () => typedRequest("/import/last-run");
+
+export const getImportHistory = (page: number) =>
+  request<PagedResult<ImportHistoryRunDto>>(`/import/history?page=${page}`);
 
 /** Analyse an export → reconciliation plan (writes nothing). Poll the job. */
 export const analyzeImport = (

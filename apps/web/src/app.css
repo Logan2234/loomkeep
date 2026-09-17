@@ -286,6 +286,35 @@ body {
   }
 }
 
+html.a11y-reduce-motion {
+  scroll-behavior: auto;
+}
+
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html.a11y-high-contrast {
+  --border: color-mix(in srgb, var(--fg) 72%, var(--bg));
+  --dim: color-mix(in srgb, var(--fg) 78%, var(--bg));
+}
+
+html.a11y-high-contrast :focus-visible {
+  outline-width: 3px;
+}
+
+html.a11y-compact {
+  font-size: 15px;
+}
+
+html.a11y-comfortable {
+  font-size: 17px;
+}
+
 /* Legal documents are set as programme notes: quiet, durable and easy to scan. */
 .legal-document {
   @apply text-[15px] leading-7 md:text-base;

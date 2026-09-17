@@ -3,6 +3,6 @@
   import DangerZoneSection from "../components/DangerZoneSection.svelte";
 </script>
 
-<SettingsSection slug="suppression">
+<SettingsSection slug="delete-account">
   <DangerZoneSection />
 </SettingsSection>

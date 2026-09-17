@@ -3,6 +3,6 @@
   import MfaSection from "../components/MfaSection.svelte";
 </script>
 
-<SettingsSection slug="double-authentification">
+<SettingsSection slug="two-factor-authentication">
   <MfaSection />
 </SettingsSection>

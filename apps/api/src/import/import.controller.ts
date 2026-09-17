@@ -1,17 +1,22 @@
 import type {
   ImportAvailabilityDto,
+  ImportHistoryRunDto,
   ImportJobDto,
   ImportLastRunDto,
   ImportQuotaDto,
   ImportSource,
+  PagedResult,
 } from "@loomkeep/shared";
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { AnalyzeImportDto } from "./dto/analyze-import.dto";
 import { CommitImportDto } from "./dto/commit-import.dto";
 import { ImportAvailabilityResponseDto } from "./dto/import-availability-response.dto";
+import { ImportHistoryRunResponseDto } from "./dto/import-history-run-response.dto";
 import { ImportJobResponseDto } from "./dto/import-job-response.dto";
 import { ImportLastRunResponseDto } from "./dto/import-last-run-response.dto";
 import { ImportQuotaResponseDto } from "./dto/import-quota-response.dto";
@@ -50,6 +55,18 @@ export class ImportController {
   @ApiOkResponse({ type: ImportLastRunResponseDto })
   lastRun(@CurrentUser() user: JwtPayload): Promise<ImportLastRunDto> {
     return this.jobs.getLastRun(user.sub);
+  }
+
+  /** The account's import history, most recent first. */
+  @Get("history")
+  @ApiOkResponse({ type: PagedResponseDto(ImportHistoryRunResponseDto) })
+  history(
+    @CurrentUser() user: JwtPayload,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<ImportHistoryRunDto>> {
+    const parsed = parsePageQuery(page, limit, DEFAULT_PAGE_SIZE);
+    return this.jobs.getHistory(user.sub, parsed.page, parsed.limit);
   }
 
   /** Analyse an export and build a reconciliation plan (writes nothing). */
