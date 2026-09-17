@@ -12,7 +12,9 @@
   const reduced = prefersReducedMotion();
 </script>
 
-<span class="flex h-5 items-center" aria-live="polite">
+<span
+  class="flex items-center {state === 'idle' ? '' : 'h-5'}"
+  aria-live="polite">
   {#if state === "saving"}
     <span class="timecode text-xs">{m.common_save_loading()}</span>
   {:else if state === "saved"}

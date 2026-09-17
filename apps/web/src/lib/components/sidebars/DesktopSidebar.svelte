@@ -20,7 +20,7 @@
   const reduced = prefersReducedMotion();
 
   let pinned = $state(
-    browser ? localStorage.getItem("tl-rail-pinned") === "true" : false,
+    browser ? localStorage.getItem("lk-rail-pinned") === "true" : false,
   );
   let hovered = $state(false);
 
@@ -65,7 +65,7 @@
   function togglePinned() {
     pinned = !pinned;
     if (browser) {
-      localStorage.setItem("tl-rail-pinned", pinned ? "true" : "false");
+      localStorage.setItem("lk-rail-pinned", pinned ? "true" : "false");
     }
   }
 
@@ -159,7 +159,7 @@
       <nav
         bind:this={navEl}
         onscroll={updateScroll}
-        class="tl-rail-scroll relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+        class="lk-rail-scroll relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         <div
           class="bg-accent/15 pointer-events-none absolute inset-x-0 rounded-xl transition-[top,height,opacity] duration-300 ease-out {indicatorVisible
             ? 'opacity-100'
@@ -415,10 +415,10 @@
 <style>
   /* Hide the native scrollbar in the narrow rail; the edge fades convey that
      the list scrolls. */
-  .tl-rail-scroll {
+  .lk-rail-scroll {
     scrollbar-width: none;
   }
-  .tl-rail-scroll::-webkit-scrollbar {
+  .lk-rail-scroll::-webkit-scrollbar {
     width: 0;
     height: 0;
   }

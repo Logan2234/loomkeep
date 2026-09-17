@@ -199,7 +199,7 @@
                 </span>
                 {#if shortcut}
                   <kbd
-                    class="border-border text-dim shrink-0 rounded border px-1 py-0.5 font-mono text-[0.65rem] leading-none whitespace-nowrap">
+                    class="border-border text-dim hidden shrink-0 rounded border px-1 py-0.5 font-mono text-[0.65rem] leading-none whitespace-nowrap md:block">
                     {shortcut}
                   </kbd>
                 {/if}

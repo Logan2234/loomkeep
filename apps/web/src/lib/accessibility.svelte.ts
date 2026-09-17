@@ -1,8 +1,8 @@
 import { browser } from "$app/environment";
 
-const MOTION_KEY = "tl-a11y-motion";
-const CONTRAST_KEY = "tl-a11y-contrast";
-const DENSITY_KEY = "tl-a11y-density";
+const MOTION_KEY = "lk-a11y-motion";
+const CONTRAST_KEY = "lk-a11y-contrast";
+const DENSITY_KEY = "lk-a11y-density";
 
 export type MotionPreference = "system" | "reduce";
 export type ContrastPreference = "default" | "high";

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     getGhostSwitchImpact,
     getPrivacySettings,
@@ -23,7 +24,6 @@
     FACETS,
     MODE_MATRIX,
   } from "$lib/privacy-options";
-  import { page } from "$app/state";
   import {
     Domain,
     ProfileAccess,
@@ -33,8 +33,8 @@
     type VisibilitySettingsDto,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import SettingRow from "./SettingRow.svelte";
   import { flashAnchor } from "../flash-anchor";
+  import SettingRow from "./SettingRow.svelte";
 
   let showModesModal = $state(false);
   let confirmingGhost = $state(false);
@@ -163,7 +163,6 @@
       disabledReason: m.settings_private_profile_public_hint(),
     }))}
     value={current}
-    class="w-full justify-between"
     onChange={(v) => setAudience(domain, facet, v)} />
 {/snippet}
 
@@ -207,7 +206,8 @@
         {#each visibleDomainEntries as [domainId, domainInfo] (domainId)}
           <section class="border-border rounded-xl border p-4">
             <p class="font-semibold">{domainInfo.label}</p>
-            <div class="mt-4 space-y-4">
+            <div
+              class="mt-4 flex w-full flex-wrap justify-between gap-4 md:flex-col">
               {#each FACETS as f (f.id)}
                 {@const current = audienceOf(domainId as Domain, f.id)}
                 <div>

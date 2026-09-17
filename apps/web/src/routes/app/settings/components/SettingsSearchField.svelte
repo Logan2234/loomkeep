@@ -56,7 +56,7 @@
     placeholder={m.settings_search_placeholder()}
     onkeydown={onKeydown} />
   <kbd
-    class="border-border text-dim pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded border px-1.5 py-0.5 font-mono text-[0.65rem] whitespace-nowrap">
+    class="border-border text-dim pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded border px-1.5 py-0.5 font-mono text-[0.65rem] whitespace-nowrap md:block">
     {shortcutLabel}
   </kbd>
 </div>

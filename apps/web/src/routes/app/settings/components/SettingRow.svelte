@@ -123,9 +123,9 @@
       </div>
     </div>
     {#if control}
-      <div class="flex shrink-0 items-center gap-2.5">
-        <SavedIndicator state={saveState} />
+      <div class="flex shrink-0 flex-col items-end gap-2.5">
         {@render control()}
+        <SavedIndicator state={saveState} />
       </div>
     {/if}
   </div>

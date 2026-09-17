@@ -14,13 +14,13 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { auth } from "$lib/auth.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import Switch from "$lib/components/Switch.svelte";
-  import { auth } from "$lib/auth.svelte";
   import { downloadBlob } from "$lib/download";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
@@ -476,15 +476,15 @@
                     </div>
                     <button
                       type="button"
-                      class="btn-icon shrink-0"
+                      class="btn-icon"
                       aria-label={m.common_rename()}
                       onclick={() => openWebauthnRename(credential)}>
                       <Icon name="edit" class="h-4 w-4" />
                     </button>
                     <button
                       type="button"
-                      class="btn-icon shrink-0"
                       aria-label={m.common_delete()}
+                      class="btn-icon hover:text-danger hover:bg-danger/10"
                       onclick={() => openWebauthnRemove(credential)}>
                       <Icon name="trash" class="h-4 w-4" />
                     </button>
