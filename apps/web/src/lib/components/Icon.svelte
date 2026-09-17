@@ -189,6 +189,11 @@
     <path
       d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
     <circle cx="12" cy="12.5" r="3.5" />
+  {:else if name === "globe"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path
+      d="M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3Z" />
   {:else if name === "link"}
     <path d="M9 12h6" />
     <path

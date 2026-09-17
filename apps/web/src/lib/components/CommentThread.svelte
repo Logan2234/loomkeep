@@ -17,18 +17,11 @@
   import { appConfig } from "$lib/config.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import {
-    REPORT_CATEGORY_HINTS,
-    REPORT_CATEGORY_LABELS,
-    REPORT_CATEGORY_ORDER,
-    REPORT_MOTIF_LABELS,
-  } from "../constants/report-labels";
   import { onRealtimeEvent } from "$lib/realtime/socket";
   import { toast } from "$lib/toast.svelte";
   import {
     COMMENT_EMOTE_DISPLAY,
     COMMENT_TEXT_MAX_LENGTH,
-    REPORT_CATEGORY_MOTIFS,
     type CommentDto,
     type CommentEmote,
     type CommentMentionDto,
@@ -47,11 +40,10 @@
   import { fly } from "svelte/transition";
   import Avatar from "./Avatar.svelte";
   import CommentMentionInput from "./CommentMentionInput.svelte";
-  import Combobox from "./Combobox.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import LevelBadge from "./LevelBadge.svelte";
-  import Modal from "./Modal.svelte";
+  import ReportModal from "./ReportModal.svelte";
 
   let {
     targetType,
@@ -301,22 +293,6 @@
   let revealed = $state<Set<string>>(new Set());
   let confirmDeleteId = $state<string | null>(null);
   let reportingId = $state<string | null>(null);
-  let reportCategory = $state<ReportCategory | null>(null);
-  let reportMotif = $state<ReportMotif | null>(null);
-  let reportReason = $state("");
-
-  const reportCategoryOptions = REPORT_CATEGORY_ORDER.map((c) => ({
-    label: REPORT_CATEGORY_LABELS[c],
-    value: c,
-  }));
-  const reportMotifOptions = $derived(
-    reportCategory ? REPORT_CATEGORY_MOTIFS[reportCategory] : [],
-  );
-  const reportIsOther = $derived(reportCategory === "OTHER");
-  const canSubmitReport = $derived(
-    reportCategory !== null &&
-      (reportIsOther ? reportReason.trim().length > 0 : reportMotif !== null),
-  );
 
   // Long-press focus (touch): centers the pressed comment in a focused
   // reading mode without making the full panel difficult to scan.
@@ -536,27 +512,20 @@
 
   function openReport(id: string) {
     reportingId = id;
-    reportCategory = null;
-    reportMotif = null;
-    reportReason = "";
   }
 
-  function chooseReportCategory(category: ReportCategory) {
-    reportCategory = category;
-    // Skip the motif step entirely when the category only has one — nothing
-    // to choose between, so pre-check it instead of showing a 1-item list.
-    const motifs = REPORT_CATEGORY_MOTIFS[category];
-    reportMotif = motifs.length === 1 ? motifs[0] : null;
-  }
-
-  async function submitReport() {
-    if (!reportingId || !reportCategory || !canSubmitReport) return;
+  async function submitReport(report: {
+    category: ReportCategory;
+    motif?: ReportMotif;
+    reason?: string;
+  }) {
+    if (!reportingId) return;
     try {
       await reportComment(
         reportingId,
-        reportCategory,
-        reportMotif ?? undefined,
-        reportReason.trim() || undefined,
+        report.category,
+        report.motif,
+        report.reason,
       );
       toast.success(m.comment_reported());
     } catch {
@@ -1030,69 +999,10 @@
 {/if}
 
 {#if reportingId}
-  <Modal title={m.comment_report_title()} onclose={() => (reportingId = null)}>
-    <div class="flex flex-col gap-3">
-      <div>
-        <Combobox
-          label={m.common_category()}
-          options={reportCategoryOptions}
-          values={reportCategory ? [reportCategory] : []}
-          onChange={(v) => chooseReportCategory(v[0] as ReportCategory)} />
-        {#if reportCategory}
-          <p class="text-dim mt-1.5 text-xs">
-            {REPORT_CATEGORY_HINTS[reportCategory]}
-          </p>
-        {/if}
-      </div>
-
-      {#if reportMotifOptions.length > 1}
-        <ul class="divide-border flex flex-col divide-y">
-          {#each reportMotifOptions as motif (motif)}
-            <li>
-              <label
-                class="flex cursor-pointer items-center gap-2.5 py-2 text-sm">
-                <input
-                  type="radio"
-                  name="report-motif"
-                  value={motif}
-                  class="accent-accent h-4 w-4 shrink-0"
-                  checked={reportMotif === motif}
-                  onchange={() => (reportMotif = motif)} />
-                {REPORT_MOTIF_LABELS[motif]}
-              </label>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-
-      {#if reportCategory}
-        <textarea
-          name="reason"
-          aria-label={reportIsOther
-            ? m.report_reason_placeholder()
-            : m.report_detail_placeholder()}
-          class="input min-h-20 resize-y text-sm"
-          rows="3"
-          placeholder={reportIsOther
-            ? m.report_reason_placeholder()
-            : m.report_detail_placeholder()}
-          maxlength={500}
-          bind:value={reportReason}></textarea>
-      {/if}
-    </div>
-
-    <div class="mt-3 flex justify-end gap-2">
-      <button class="btn btn-ghost" onclick={() => (reportingId = null)}>
-        {m.common_cancel()}
-      </button>
-      <button
-        class="btn btn-primary"
-        disabled={!canSubmitReport}
-        onclick={submitReport}>
-        {m.common_report()}
-      </button>
-    </div>
-  </Modal>
+  <ReportModal
+    title={m.comment_report_title()}
+    onClose={() => (reportingId = null)}
+    onSubmit={submitReport} />
 {/if}
 
 <style>

@@ -98,6 +98,24 @@ export class ReportService {
       }
     }
 
+    if (targetType === "REVIEW") {
+      const review = await this.prisma.review.findUnique({
+        where: { id: targetId },
+        select: { userId: true },
+      });
+
+      if (!review) {
+        throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+      }
+
+      if (review.userId === reporterId) {
+        throw new AppException(
+          HttpStatus.FORBIDDEN,
+          ErrorCode.ReportCannotReportOwnContent,
+        );
+      }
+    }
+
     const pending = await this.prisma.report.findFirst({
       where: { reporterId, targetType, targetId, status: "PENDING" },
       select: { id: true },
@@ -369,12 +387,28 @@ export class ReportService {
       };
     }
 
-    // REVIEW: no reporting UI wired to reviews yet (P4 backlog) — resolve
-    // generically so the queue still renders if one is ever filed.
+    const review = await this.prisma.review.findUnique({
+      where: { id: targetId },
+      select: {
+        rating: true,
+        text: true,
+        targetType: true,
+        targetId: true,
+        user: { select: { username: true } },
+      },
+    });
+    if (!review) return null;
+    const excerpt = (review.text ?? "").slice(0, EXCERPT_LENGTH);
     return {
-      label: `review:${targetId}`,
-      href: null,
-      targetOwnerUsername: null,
+      label: excerpt
+        ? `${review.rating}/10 — ${excerpt}`
+        : `${review.rating}/10`,
+      href: await resolveWorkHref(
+        this.prisma,
+        review.targetType,
+        review.targetId,
+      ),
+      targetOwnerUsername: review.user?.username ?? null,
     };
   }
 }

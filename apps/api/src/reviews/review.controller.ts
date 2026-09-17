@@ -20,11 +20,14 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import {
   BatchDeleteReviewsBody,
@@ -55,7 +58,10 @@ function parseTarget(type: string): ReviewTargetType {
 
 @Controller("reviews")
 export class ReviewController {
-  constructor(private readonly reviews: ReviewService) {}
+  constructor(
+    private readonly reviews: ReviewService,
+    private readonly reports: ReportService,
+  ) {}
 
   // --- Own reviews: NOT social-gated (rating your own items always works). ---
 
@@ -163,5 +169,23 @@ export class ReviewController {
     @Param("reviewId") reviewId: string,
   ): Promise<ReviewUnvoteResultDto> {
     return this.reviews.unvote(user.sub, reviewId);
+  }
+
+  @Post(":reviewId/report")
+  @UseGuards(SocialFeatureGuard)
+  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  report(
+    @CurrentUser() user: JwtPayload,
+    @Param("reviewId") reviewId: string,
+    @Body() body: CreateReportBody,
+  ): Promise<void> {
+    return this.reports.create(
+      user.sub,
+      "REVIEW",
+      reviewId,
+      body.category,
+      body.motif,
+      body.reason,
+    );
   }
 }

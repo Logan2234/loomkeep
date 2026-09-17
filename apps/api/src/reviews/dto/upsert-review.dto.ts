@@ -4,6 +4,7 @@ import {
   ReviewVisibility as ReviewVisibilityEnum,
 } from "@loomkeep/shared";
 import {
+  IsBoolean,
   IsIn,
   IsNumber,
   IsOptional,
@@ -28,4 +29,8 @@ export class UpsertReviewBody {
   @IsOptional()
   @IsIn(Object.values(ReviewVisibilityEnum))
   visibility?: ReviewVisibility;
+
+  @IsOptional()
+  @IsBoolean()
+  spoilerTag?: boolean;
 }

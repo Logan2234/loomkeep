@@ -1,4 +1,6 @@
 import type {
+  ReportCategory,
+  ReportMotif,
   ReviewTargetType,
   ReviewVisibility,
   ReviewVoteValue,
@@ -89,3 +91,16 @@ export function unvoteReview(reviewId: string) {
     params: { reviewId },
   });
 }
+
+/** Files a moderation report against someone else's review. */
+export const reportReview = (
+  reviewId: string,
+  category: ReportCategory,
+  motif?: ReportMotif,
+  reason?: string,
+): Promise<void> =>
+  typedRequest("/reviews/{reviewId}/report", {
+    method: "POST",
+    params: { reviewId },
+    body: { category, motif, reason },
+  });

@@ -51,6 +51,7 @@ type ReviewRow = {
   rating: number;
   text: string | null;
   visibility: string;
+  spoilerTag: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -109,6 +110,7 @@ export class ReviewService {
     row: ReviewRow,
     author: UserSummaryDto | null,
     votes: { score: number; myVote: ReviewVoteValue | null },
+    byFriend = false,
   ): ReviewDto {
     return {
       id: row.id,
@@ -117,11 +119,13 @@ export class ReviewService {
       rating: row.rating,
       text: row.text,
       visibility: row.visibility as ReviewVisibility,
+      spoilerTag: row.spoilerTag,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       author,
       voteScore: votes.score,
       myVote: votes.myVote,
+      byFriend,
     };
   }
 
@@ -299,7 +303,12 @@ export class ReviewService {
 
     const row = await this.prisma.review.upsert({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      update: { rating: dto.rating, text, visibility },
+      update: {
+        rating: dto.rating,
+        text,
+        visibility,
+        spoilerTag: dto.spoilerTag,
+      },
       create: {
         userId,
         targetType,
@@ -307,6 +316,7 @@ export class ReviewService {
         rating: dto.rating,
         text,
         visibility,
+        spoilerTag: dto.spoilerTag ?? false,
       },
     });
 
@@ -662,12 +672,12 @@ export class ReviewService {
       if (
         resolveReviewVisibility(row.visibility, author.profileAccess, relation)
       ) {
+        const shown = anonymizeAuthor(author, viewerId, targetType, targetId);
+        // A pseudonymous author must stay unlinkable — flagging them as a
+        // friend would narrow the pseudonym down to the viewer's friend list.
+        const byFriend = relation.isFriend && !shown.anonymized;
         visible.push(
-          this.toDto(
-            row,
-            withBadges(anonymizeAuthor(author, viewerId, targetType, targetId)),
-            votesFor(row.id),
-          ),
+          this.toDto(row, withBadges(shown), votesFor(row.id), byFriend),
         );
       }
     }

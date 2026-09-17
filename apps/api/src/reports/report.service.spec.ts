@@ -24,6 +24,10 @@ function make(
       findMany: vi.fn().mockResolvedValue([]),
       ...overrides.comment,
     },
+    review: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      ...overrides.review,
+    },
     user: {
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
@@ -194,7 +198,93 @@ describe("ReportService.create", () => {
   });
 });
 
+describe("ReportService.create — reviews", () => {
+  it("rejects a missing review", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create(
+        "reporter1",
+        "REVIEW" as never,
+        "missing",
+        "MISLEADING_REVIEW" as never,
+        "MISLEADING_REVIEW_MANIPULATION" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects reporting one's own review", async () => {
+    const { svc, prisma } = make({
+      review: {
+        findUnique: vi.fn().mockResolvedValue({ userId: "reporter1" }),
+      },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "REVIEW" as never,
+        "r1",
+        "MISLEADING_REVIEW" as never,
+        "MISLEADING_REVIEW_MANIPULATION" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("files a report against someone else's review", async () => {
+    const { svc, prisma } = make({
+      review: { findUnique: vi.fn().mockResolvedValue({ userId: "author" }) },
+    });
+    await svc.create(
+      "reporter1",
+      "REVIEW" as never,
+      "r1",
+      "SPOILER" as never,
+      "SPOILER_UNTAGGED" as never,
+    );
+    expect(prisma.report.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ targetType: "REVIEW", targetId: "r1" }),
+    });
+  });
+});
+
 describe("ReportService.list — target resolution", () => {
+  it("resolves a REVIEW target to its rating and excerpt, with its author", async () => {
+    const { svc } = make({
+      report: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "r1",
+            targetType: "REVIEW",
+            targetId: "rev1",
+            reason: null,
+            status: "PENDING",
+            createdAt: new Date(),
+            resolvedAt: null,
+            reporter: {
+              id: "u1",
+              username: "u1",
+              displayName: "U1",
+              profileAccess: "PUBLIC",
+            },
+          },
+        ]),
+      },
+      review: {
+        findUnique: vi.fn().mockResolvedValue({
+          rating: 3,
+          text: "fake review",
+          targetType: "MEDIA",
+          targetId: "m1",
+          user: { username: "troll" },
+        }),
+      },
+    });
+    const page = await svc.list(undefined, 1);
+    expect(page.items[0].target?.targetOwnerUsername).toBe("troll");
+    expect(page.items[0].target?.label).toContain("3/10");
+    expect(page.items[0].target?.label).toContain("fake review");
+  });
+
   it("resolves a COMMENT target to an excerpt", async () => {
     const { svc } = make({
       report: {

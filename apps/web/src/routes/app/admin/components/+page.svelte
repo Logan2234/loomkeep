@@ -17,7 +17,7 @@
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ProviderMark from "$lib/components/ProviderMark.svelte";
-  import RatingPips from "$lib/components/RatingPips.svelte";
+  import RatingSlider from "$lib/components/RatingSlider.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import Switch from "$lib/components/Switch.svelte";
@@ -431,7 +431,7 @@
             providers,
           )}
           {@render specimen(
-            "RatingPips",
+            "RatingSlider",
             m.admin_components_rating_detail(),
             ratings,
           )}
@@ -708,7 +708,7 @@
 
 {#snippet ratings()}
   <div class="max-w-lg">
-    <RatingPips value={rating} onChange={(value) => (rating = value)} />
+    <RatingSlider value={rating} onChange={(value) => (rating = value)} />
   </div>
 {/snippet}
 

@@ -245,6 +245,8 @@
 {#if editing}
   <ReviewFormModal
     title={editing.target?.title ?? m.reviews_edit()}
+    meta={TYPE_LABEL[editing.targetType]}
+    imageUrl={editing.target?.imageUrl ?? null}
     targetType={editing.targetType}
     targetId={editing.targetId}
     review={editing}

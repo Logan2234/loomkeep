@@ -21,6 +21,7 @@
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
@@ -110,6 +111,11 @@
   ]);
 
   const entry = $derived(detail?.entry ?? null);
+  const reviewMeta = $derived(
+    detail
+      ? [detail.authors.join(", "), detail.year].filter(Boolean).join(" · ")
+      : "",
+  );
   const hasMeta = $derived(
     !!detail &&
       (!!detail.publisher ||
@@ -246,8 +252,16 @@
                 {detail.genres.slice(0, 3).join(", ")}
               {/if}
             </p>
-            {#if detail.ratings.length > 0}
+            {#if entry || detail.ratings.length > 0}
               <div class="mt-2.5 flex flex-wrap gap-1.5">
+                {#if entry}
+                  <MyRatingBadge
+                    targetType="BOOK"
+                    targetId={entry.book.id}
+                    workTitle={detail.title}
+                    workMeta={reviewMeta}
+                    workImageUrl={detail.coverUrl} />
+                {/if}
                 {#each detail.ratings as r (r.source)}
                   <svelte:element
                     this={r.url ? "a" : "span"}
@@ -460,7 +474,9 @@
           <ReviewsSection
             targetType="BOOK"
             targetId={entry.book.id}
-            workTitle={detail.title}>
+            workTitle={detail.title}
+            workMeta={reviewMeta}
+            workImageUrl={detail.coverUrl}>
             {#snippet actions()}
               {#if appConfig.socialEnabled && detail.commentTargetId}
                 <CommentsPanel

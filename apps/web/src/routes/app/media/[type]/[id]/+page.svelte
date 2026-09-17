@@ -23,6 +23,7 @@
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -261,6 +262,11 @@
   );
 
   const entry = $derived(detail?.entry ?? null);
+  const reviewMeta = $derived(
+    detail
+      ? [TYPE_LABELS[detail.type], detail.year].filter(Boolean).join(" · ")
+      : "",
+  );
   const isMovie = $derived(detail?.type === "MOVIE");
   const dormant = $derived(entry ? isDormant(entry) : false);
   const pct = $derived(
@@ -439,9 +445,18 @@
           {/if}
         </p>
 
-        {#if extras && extras.ratings.length > 0}
+        {#if entry || (extras && extras.ratings.length > 0)}
           <div class="mt-2.5 flex flex-wrap gap-1.5">
-            {#each extras.ratings as r (r.source)}
+            {#if entry}
+              <MyRatingBadge
+                targetType="MEDIA"
+                targetId={entry.mediaItem.id}
+                workTitle={detail.title}
+                workMeta={reviewMeta}
+                workImageUrl={detail.posterUrl}
+                overlay />
+            {/if}
+            {#each extras?.ratings ?? [] as r (r.source)}
               <svelte:element
                 this={r.url ? "a" : "span"}
                 href={r.url}
@@ -726,7 +741,9 @@
       <ReviewsSection
         targetType="MEDIA"
         targetId={entry.mediaItem.id}
-        workTitle={detail.title} />
+        workTitle={detail.title}
+        workMeta={reviewMeta}
+        workImageUrl={detail.posterUrl} />
     {/if}
 
     {#if extras}

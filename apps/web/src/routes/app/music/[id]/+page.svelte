@@ -17,6 +17,7 @@
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -58,6 +59,11 @@
   const error = $derived(musicQuery.error);
 
   const entry = $derived(detail?.entry ?? null);
+  const reviewMeta = $derived(
+    detail
+      ? [detail.artists.join(", "), detail.year].filter(Boolean).join(" · ")
+      : "",
+  );
 
   // Precise release date, respecting the source's actual precision — a
   // year-only date must not be shown as if it were "1 janvier".
@@ -221,6 +227,16 @@
                 {detail.genres.slice(0, 3).join(", ")}
               {/if}
             </p>
+            {#if entry}
+              <div class="mt-2.5 flex">
+                <MyRatingBadge
+                  targetType="MUSIC"
+                  targetId={entry.album.id}
+                  workTitle={detail.title}
+                  workMeta={reviewMeta}
+                  workImageUrl={detail.coverUrl} />
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -337,7 +353,9 @@
           <ReviewsSection
             targetType="MUSIC"
             targetId={entry.album.id}
-            workTitle={detail.title}>
+            workTitle={detail.title}
+            workMeta={reviewMeta}
+            workImageUrl={detail.coverUrl}>
             {#snippet actions()}
               {#if appConfig.socialEnabled && detail.commentTargetId}
                 <CommentsPanel
