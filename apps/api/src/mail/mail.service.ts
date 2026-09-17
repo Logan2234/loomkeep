@@ -74,9 +74,7 @@ function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
     .filter((character) => {
       const codePoint = character.charCodeAt(0);
       return (
-        character.trim().length > 0 &&
-        codePoint > 0x1f &&
-        codePoint !== 0x7f
+        character.trim().length > 0 && codePoint > 0x1f && codePoint !== 0x7f
       );
     })
     .join("")
