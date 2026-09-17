@@ -1,6 +1,4 @@
 <script lang="ts">
-  import SettingsSection from "../components/SettingsSection.svelte";
-
   import { updateMe } from "$lib/api/client";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { auth } from "$lib/auth.svelte";
@@ -11,6 +9,7 @@
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
   import { DigestCadence } from "@loomkeep/shared";
   import SettingRow from "../components/SettingRow.svelte";
+  import SettingsSection from "../components/SettingsSection.svelte";
 
   const dailyLocked = $derived(auth.isPremiumLocked);
 
