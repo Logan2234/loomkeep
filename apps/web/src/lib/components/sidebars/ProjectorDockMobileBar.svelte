@@ -29,6 +29,7 @@
 </script>
 
 <nav
+  data-mobile-navigation
   class="
     border-border bg-surface/95 fixed inset-x-4
     z-30 flex items-end

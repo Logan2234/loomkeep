@@ -47,7 +47,10 @@
       </a>
     {/if}
     <div class="min-w-0 flex-1">
-      <Carousel items={listTiles} keyOf={(item) => item.key}>
+      <Carousel
+        items={listTiles}
+        keyOf={(item) => item.key}
+        label={m.common_lists()}>
         {#snippet card(item)}
           {#if item.kind === "create"}
             <button

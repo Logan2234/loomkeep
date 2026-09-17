@@ -152,11 +152,12 @@
         </button>
 
         <Dropdown placement="bottom-end" class="min-w-64">
-          {#snippet trigger({ open, toggle })}
+          {#snippet trigger({ open, toggle, onkeydown })}
             <button
               type="button"
               aria-haspopup="menu"
               aria-expanded={open}
+              {onkeydown}
               aria-label={m.common_more_actions()}
               title={m.common_more_actions()}
               onclick={toggle}

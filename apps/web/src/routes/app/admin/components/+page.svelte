@@ -633,7 +633,10 @@
           <span>{progress.label}</span>
           <span class="timecode">{progress.value}%</span>
         </div>
-        <ProgressBar value={progress.value} fillClass={progress.fillClass} />
+        <ProgressBar
+          value={progress.value}
+          label={progress.label}
+          fillClass={progress.fillClass} />
       </div>
     {/each}
   </div>
@@ -713,7 +716,10 @@
 {/snippet}
 
 {#snippet carousel()}
-  <Carousel items={CAROUSEL_ITEMS} keyOf={(item) => item}>
+  <Carousel
+    items={CAROUSEL_ITEMS}
+    keyOf={(item) => item}
+    label={m.admin_components_carousel_label()}>
     {#snippet card(title)}
       <div class="card w-32">
         <Poster {title} />

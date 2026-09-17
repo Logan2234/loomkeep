@@ -441,6 +441,7 @@
   "admin_components_provider_detail": "official source marks",
   "admin_components_rating_detail": "0 to 10 · clear",
   "admin_components_carousel_detail": "scroll · adaptive navigation",
+  "admin_components_carousel_label": "Carousel example",
   "admin_components_body_sample": "Body copy stays readable and calm.",
   "admin_components_button_primary": "Primary action",
   "admin_components_button_secondary": "Secondary action",

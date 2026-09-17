@@ -295,6 +295,10 @@
                     {#if s.limit && s.percentUsed !== undefined}
                       <ProgressBar
                         value={s.percentUsed}
+                        label={m.common_selection_summary({
+                          label: adminServiceLabel(s.key, s.label),
+                          selection: `${s.percentUsed}%`,
+                        })}
                         height="h-px"
                         track="bg-border/60"
                         fillClass={gaugeCls(s.percentUsed)}
