@@ -117,7 +117,7 @@
   {#if searching}
     <div bind:this={resultsEl}>
       <p class="timecode mb-2 block text-[0.65rem] tracking-[0.14em] uppercase">
-        {m.settings_search_results()}
+        {m.common_results()}
       </p>
       {#if results.length === 0}
         <p class="text-dim text-sm">

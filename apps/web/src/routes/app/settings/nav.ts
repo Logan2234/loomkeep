@@ -54,7 +54,7 @@ export interface SettingsGroupDef {
 export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   {
     id: "account",
-    label: m.settings_nav_group_account(),
+    label: m.common_account(),
     sections: [
       {
         slug: "securite",
@@ -133,7 +133,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   },
   {
     id: "privacy",
-    label: m.settings_nav_group_privacy(),
+    label: m.common_privacy(),
     sections: [
       {
         slug: "confidentialite",
@@ -286,7 +286,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   },
   {
     id: "loomkeep",
-    label: m.settings_nav_group_loomkeep(),
+    label: m.common_loomkeep(),
     sections: [
       {
         slug: "aide",
