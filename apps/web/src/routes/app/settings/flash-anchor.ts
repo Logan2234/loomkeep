@@ -1,13 +1,23 @@
 /**
+ * Whether the row named `anchor` is the one the fragment points at.
+ *
+ * Split out from the action below because of the empty case: rows that aren't
+ * in the settings search index render with no anchor, and a bare `===` would
+ * match them all against an empty fragment — every row on the page flashing
+ * at once on a plain visit.
+ */
+export function isFlashTarget(anchor: string, hash: string): boolean {
+  return anchor.length > 0 && hash.slice(1) === anchor;
+}
+
+/**
  * Brings the element the URL fragment names into view and flashes it once, so
  * a search result that points at one row inside a section says which row it
  * meant. Mount-time only: arriving here is always a navigation.
  */
 export function flashAnchor(node: HTMLElement, anchor: string) {
-  // Rows that aren't in the search index pass "" — without this they would
-  // all match an empty fragment and flash at once.
-  if (!anchor || typeof window === "undefined") return;
-  if (window.location.hash.slice(1) !== anchor) return;
+  if (typeof window === "undefined") return;
+  if (!isFlashTarget(anchor, window.location.hash)) return;
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
