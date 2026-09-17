@@ -72,7 +72,7 @@
   </section>
 
   <p class="text-dim mb-2 text-sm font-semibold">
-    {m.settings_shortcuts_search_page_title()}
+    {m.common_search()}
   </p>
   <section class="card divide-border mb-4 divide-y p-5 md:p-6">
     <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
@@ -114,8 +114,7 @@
     <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
       <span class="flex items-center gap-3">
         <Icon name="chevron-left" class="text-dim h-4 w-4 shrink-0" />
-        <span class="font-semibold"
-          >{m.settings_shortcuts_viewer_previous()}</span>
+        <span class="font-semibold">{m.common_image_previous()}</span>
       </span>
       <kbd
         class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
@@ -125,7 +124,7 @@
     <div class="flex items-center justify-between gap-4 py-3">
       <span class="flex items-center gap-3">
         <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-        <span class="font-semibold">{m.settings_shortcuts_viewer_next()}</span>
+        <span class="font-semibold">{m.common_image_next()}</span>
       </span>
       <kbd
         class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
