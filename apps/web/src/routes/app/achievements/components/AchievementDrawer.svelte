@@ -1,6 +1,4 @@
 <script lang="ts">
-  // Compact-viewport counterpart of the desktop unfold: same medallion,
-  // same ladder, same note — a tap opens it instead of a hover.
   import Drawer from "$lib/components/Drawer.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";

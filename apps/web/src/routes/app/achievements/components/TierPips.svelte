@@ -1,6 +1,4 @@
 <script lang="ts">
-  // One pip per tier the family has, filled for the ones earned — the "how
-  // far along am I, and how far does this go" cue the card carries at rest.
   import { m } from "$lib/paraglide/messages.js";
   import type { AchievementDto, AchievementTier } from "@loomkeep/shared";
 

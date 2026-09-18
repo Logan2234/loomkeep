@@ -1,7 +1,4 @@
 <script lang="ts">
-  // The field only holds the query; the results render in the content column
-  // (see SettingsSearchResults), because that is where there is room to read
-  // them and where the thing you are looking for will appear once you click.
   import Icon from "$lib/components/Icon.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { settingsSearch } from "../search-state.svelte";

@@ -325,8 +325,7 @@
 
 {#snippet primaryCta(label: string, event: string, cls: string)}
   {#if !bootstrap.ready}
-    <!-- Holds the slot rather than leaving it empty: the button used to pop
-         in once /api/config answered, shifting the hero as it landed. -->
+    <!-- Reserve the button slot while /api/config loads to prevent layout shift. -->
     <span class="{cls} invisible" aria-hidden="true">{label}</span>
   {:else if auth.isLoggedIn}
     <a href="/app" class={cls} data-umami-event="{event}-open-app">

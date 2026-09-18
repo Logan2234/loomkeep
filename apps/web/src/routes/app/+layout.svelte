@@ -95,8 +95,7 @@
 {:else if auth.isLoggedIn}
   <RealtimeConnection />
   <NotificationBell />
-  <!-- Mounting *is* the trigger for [G6]'s unlock sequence: entering the app
-       is the only moment a bubble plays. -->
+  <!-- Mounting triggers level-up bubbles; achievement unlocks can also arrive live. -->
   <UnlockBubble />
   <WidgetIdentify />
   <OnboardingWidget />

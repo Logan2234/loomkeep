@@ -1,7 +1,6 @@
 <script lang="ts">
-  // [G5] the achievements screen — own achievements only, no other user's
-  // page (see the [G5] design notes: 44+ conditions together read as a
-  // behavioural fingerprint). Auth comes from the app/ layout nesting.
+  // Achievement progress is private to the signed-in user because the full
+  // catalogue of conditions forms a behavioral fingerprint.
   import { page } from "$app/state";
   import { layout } from "$lib/layout.svelte";
   import { getAchievements } from "$lib/api/gamification";
@@ -35,9 +34,7 @@
   const list = $derived(achievementsQuery.data ?? []);
   const summary = $derived(summarize(list));
   const sections = $derived(sectionsByFamily(groupAchievements(list)));
-  // [G9] Threaded down to every card/drawer so each equip control knows
-  // whether the showcase is already full — computed once here rather than
-  // re-counting per card.
+  // Shared with every equip control to avoid counting once per card.
   const equippedCount = $derived(list.filter((a) => a.equipped).length);
 
   // The drawer is the compact-shell path only — it locks page scroll on
@@ -48,9 +45,8 @@
 
   let openGroup = $state<AchievementGroup | null>(null);
 
-  // [G6] point 6: the unlock bubble deep-links here naming the achievement it
-  // just announced, so the page can point at its card instead of dropping the
-  // reader in front of the whole catalogue. The parameter stays in the URL —
+  // The unlock bubble names the achievement so this page can point at its card
+  // instead of the whole catalogue. The parameter stays in the URL —
   // the flash is a one-shot animation, so a reload simply replays it.
   const highlightKey = $derived(page.url.searchParams.get("unlocked"));
 </script>

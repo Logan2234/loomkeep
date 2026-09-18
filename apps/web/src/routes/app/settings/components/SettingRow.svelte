@@ -1,9 +1,4 @@
 <script lang="ts">
-  // The recurring shape of a setting: label, one line of explanation, a
-  // control on the right, and — right here rather than at the foot of the
-  // card — whatever went wrong. Nine sections used to hand-roll this with
-  // their own `flex items-start justify-between gap-4`, which is how the
-  // description sizes and the error placement drifted apart.
   import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import { prefersReducedMotion } from "$lib/motion";

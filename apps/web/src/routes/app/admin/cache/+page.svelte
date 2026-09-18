@@ -44,7 +44,6 @@
 
   let showDeleteOrphansConfirm = $state(false);
 
-  // --- detail drawer ---
   let selected = $state<AdminCacheItemDto | null>(null);
   let showDeleteConfirm = $state(false);
 
@@ -116,9 +115,7 @@
     showDeleteConfirm = false;
   }
 
-  // Shared by the per-item list button and the drawer's own button — both
-  // hit the same endpoint. Also invalidates the drawer's detail key when one
-  // is open, replacing the extra manual re-fetch that used to follow it.
+  // Shared by the list and drawer; invalidate both query views together.
   const resyncMut = createApiMutation(() => ({
     mutate: (item: AdminCacheItemDto) =>
       resyncAdminCacheItem(item.domain, item.id),
@@ -530,7 +527,6 @@
           </ul>
         </section>
 
-        <!-- Actions -->
         <section class="mt-auto space-y-2 pt-2">
           <a href={detail.detailPath} class="btn btn-ghost w-full">
             {m.admin_cache_open_work()}

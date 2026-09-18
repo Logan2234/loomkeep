@@ -39,7 +39,6 @@
     second: "2-digit",
   };
 
-  // --- page header summary ---------------------------------------------------
   // Everything below is derived from the payload the list already renders: the
   // page loads every service in one call, so a summary endpoint would only
   // re-fetch what's on screen (and risk disagreeing with it).

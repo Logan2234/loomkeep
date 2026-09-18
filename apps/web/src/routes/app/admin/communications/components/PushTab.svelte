@@ -67,9 +67,7 @@
     sendPushMut.reset();
   });
 
-  // Instance-wide push reach. Also feeds the broadcast section's "portée
-  // actuelle", which used to read the same two numbers off /admin/overview —
-  // one source now, so the header and the warning can't disagree.
+  // One source for the summary and broadcast reach keeps both views aligned.
   const pushSummaryQuery = createApiQuery(() => ({
     key: keys.admin.pushSummary(),
     fetch: getAdminPushSummary,

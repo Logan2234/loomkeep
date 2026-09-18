@@ -1,8 +1,4 @@
 <script lang="ts">
-  // One card per achievement family. Everything essential is on it at rest —
-  // medallion, tier pips, name, description, progress, next XP; hovering (or
-  // focusing) only *deepens* it with the tier ladder.
-  //
   // The unfold panel is a DOM child of the card so moving the cursor down
   // into it never leaves the hover target, and absolutely positioned so the
   // grid never reflows when it opens. Below `md` it stays hidden and the
@@ -39,9 +35,9 @@
     group: AchievementGroup;
     /** Set only on compact viewports, where a tap opens the drawer. */
     onselect?: () => void;
-    /** The card the [G6] bubble deep-linked to: scrolled to and flashed once. */
+    /** The card the unlock bubble deep-linked to: scrolled to and flashed once. */
     highlighted?: boolean;
-    /** [G9] Total badges currently equipped, across the whole catalogue. */
+    /** Total badges currently equipped across the whole catalogue. */
     equippedCount: number;
   } = $props();
 
@@ -77,7 +73,7 @@
   const earned = $derived(group.entries.filter((e) => e.unlocked).at(-1));
   const xpEntry = $derived(earned ?? focusEntry);
 
-  // [G9] Whichever tier of this family is currently in the profile showcase,
+  // Whichever tier of this family is currently in the profile showcase,
   // if any — surfaced right on the card (not just inside the hover-only
   // ladder) so it can actually be found and unequipped without opening it.
   const equippedEntry = $derived(group.entries.find((e) => e.equipped));

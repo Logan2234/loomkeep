@@ -68,7 +68,6 @@
     );
   }
 
-  // --- TOTP setup ---
   let totpStep: "scan" | "confirm" = $state("scan");
   let totpOtpauthUri = $state("");
   let totpSecret = $state("");
@@ -122,7 +121,6 @@
     totpConfirmMut.mutate(totpCodeInput.trim());
   }
 
-  // --- TOTP disable ---
   let disablePasswordInput = $state("");
   let sensitivePasswordInput = $state("");
   let pendingEmailEnabled = $state(false);
@@ -177,7 +175,6 @@
     });
   }
 
-  // --- Recovery codes ---
   let revealedCodes = $state<string[]>([]);
   let recoveryCopied = $state(false);
 
@@ -237,7 +234,6 @@
     );
   }
 
-  // --- WebAuthn credentials ---
   let webauthnNameInput = $state("");
   let pendingRemoveCredential = $state<WebauthnCredentialDto | null>(null);
 
@@ -332,7 +328,6 @@
     webauthnRenameMut.mutate(name);
   }
 
-  // --- Passwordless sign-in ---
   let pendingPasswordlessEnabled = $state(false);
 
   const passwordlessMut = createApiMutation(() => ({

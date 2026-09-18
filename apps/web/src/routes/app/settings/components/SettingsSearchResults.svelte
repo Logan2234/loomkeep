@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Search results take over the content column. A row match links to its
-  // anchor inside the owning section, so clicking it lands on the control
-  // rather than on the section's title.
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";

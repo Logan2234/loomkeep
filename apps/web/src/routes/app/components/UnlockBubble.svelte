@@ -1,19 +1,6 @@
 <script lang="ts">
-  // [G6] the unlock bubble: what the app says when something is unlocked.
-  //
-  // Anchored at the *top* and mounted once by app/+layout.svelte. It is
-  // neither Toast.svelte (bottom-anchored, several at once, system
-  // messages) nor the notification bell — [G2] settled that an unlock
-  // creates no `Notification` row at all, on purpose.
-  //
-  // Originally mount-only ("entering the app is the trigger, no live push
-  // mid-session"), revisited once EventsGateway shipped: an achievement
-  // unlocked live now pops the bubble immediately too, via the
-  // `achievement-unlocked` WebSocket event invalidating `pending()` — the
-  // interruption concern that motivated the original mount-only rule turned
-  // out to be worth it for the instant-gratification payoff. Level-ups still
-  // only surface on mount (no server push for those, see progressionQuery
-  // below), so re-entering the app is still the only way those show up.
+  // Achievement unlocks arrive live through `achievement-unlocked`. Level-ups
+  // have no server push and therefore surface only when this mounts.
   import { goto } from "$app/navigation";
   import {
     getAchievements,
@@ -51,8 +38,7 @@
 
   const reduced = prefersReducedMotion();
 
-  // Everything gamification-shaped is gated on the instance flag, same
-  // pattern as [G4]/[G5]: nothing rendered, nothing requested when it's off.
+  // Nothing is rendered or requested while gamification is disabled.
   const enabled = $derived(appConfig.gamificationEnabled && auth.isLoggedIn);
 
   const levelKey = $derived(`level:${auth.user?.id ?? ""}`);
@@ -165,9 +151,7 @@
     queue.stop();
     void goto(
       bubble.kind === "achievement"
-        ? // Deep link agreed in [G5]'s design: the screen scrolls to this
-          // achievement's card and flashes it, instead of dropping the user
-          // in front of 42 cards with no clue which one just fired.
+        ? // Point to the card that fired instead of the whole catalogue.
           `/app/achievements?unlocked=${encodeURIComponent(bubble.key)}`
         : // A level isn't an achievement — it lives on the profile, where
           // the reel shows it.
