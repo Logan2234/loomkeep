@@ -216,10 +216,7 @@ describe("WebauthnService.verifyRegistration", () => {
     );
   });
 
-  // Regression: a passkey used to be registered without ever generating
-  // recovery codes, so an account whose only MFA method was WebAuthn had no
-  // fallback at all if the key was lost — unlike TOTP/email, which both call
-  // ensureRecoveryCodes() on first confirmation.
+  // A first passkey must generate the same recovery fallback as TOTP/email.
   it("generates recovery codes as it would for a first TOTP/email confirmation", async () => {
     const { service, mfa } = makeService();
     const { verifyRegistrationResponse } =

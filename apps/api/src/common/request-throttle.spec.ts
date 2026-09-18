@@ -39,9 +39,7 @@ describe("RequestThrottle", () => {
   });
 
   it("spaces concurrent callers instead of releasing them together", async () => {
-    // The regression: each caller used to read the same lastRequestAt, sleep
-    // the same amount and fire at once — so N parallel calls cost one slot,
-    // not N. MusicBrainz bans for that.
+    // Parallel callers must reserve distinct slots; MusicBrainz bans bursts.
     vi.useFakeTimers();
 
     try {

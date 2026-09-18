@@ -165,14 +165,8 @@ export class StatsService {
     );
   }
 
-  // --- Premium redaction — "compter/agréger" stays free, "classer/comparer/
-  //     temporaliser" is premium (see the premium-stats feature plan). The
-  //     underlying queries above still run unconditionally (kept simple,
-  //     not optimized to skip them for non-premium accounts); this is the
-  //     single point where advanced fields are zeroed/emptied before the
-  //     DTO ever reaches a non-premium client, so — unlike the front-end-only
-  //     blur this replaced — the real numbers no longer transit over the
-  //     wire for a locked account. ---
+  // Counts and aggregates stay free; rankings, comparisons and timelines are
+  // premium. Redact here so locked values never reach the client.
 
   private redactOverview(
     dto: StatsOverviewDto,
@@ -512,9 +506,6 @@ export class StatsService {
     }));
   }
 
-  // --- Vidéo deep section — everything the cross-domain overview doesn't
-  //     already cover (statuses/favorites live in getOverview's breakdowns). ---
-
   async getVideoStats(
     userId: string,
     premium: boolean,
@@ -794,9 +785,6 @@ export class StatsService {
     return result;
   }
 
-  // --- Jeux deep section — everything the cross-domain overview doesn't
-  //     already cover (statuses/favorites/decades live in getOverview). ---
-
   async getGameStats(userId: string, premium: boolean): Promise<GameStatsDto> {
     const [entries, replaysCount] = await Promise.all([
       this.prisma.gameEntry.findMany({
@@ -887,10 +875,6 @@ export class StatsService {
       premium,
     );
   }
-
-  // --- Livres deep section — everything the cross-domain overview doesn't
-  //     already cover (statuses/favorites/decades/possession/ratings live in
-  //     getOverview). ---
 
   async getBookStats(userId: string, premium: boolean): Promise<BookStatsDto> {
     const [entries, rereadsCount] = await Promise.all([
@@ -991,10 +975,6 @@ export class StatsService {
     );
   }
 
-  // --- Musique deep section — everything the cross-domain overview doesn't
-  //     already cover (statuses/favorites/decades/possession/ratings live in
-  //     getOverview). ---
-
   async getMusicStats(
     userId: string,
     premium: boolean,
@@ -1048,10 +1028,8 @@ export class StatsService {
     );
   }
 
-  // --- Vidéo "activité dans le temps" — the only domain with a true
-  //     per-event log (EpisodeWatch). The heatmap and monthly/yearly bars
-  //     always span their own natural full range; only the weekday/hour
-  //     curves respect `period`. ---
+  // The heatmap and monthly/yearly bars span their natural range; only the
+  // weekday and hourly curves respect `period`.
 
   async getVideoTemporal(
     userId: string,
@@ -1059,8 +1037,7 @@ export class StatsService {
     premium: boolean,
   ): Promise<VideoTemporalDto> {
     const watches = await this.prisma.episodeWatch.findMany({
-      // Both conditions used to be applied in memory, over every watch the
-      // account ever recorded — the one table here that grows without bound.
+      // Filter in PostgreSQL because EpisodeWatch grows without bound.
       where: {
         userId,
         watchedAt: { not: null },
@@ -1119,8 +1096,7 @@ export class StatsService {
     );
   }
 
-  // --- Social section — gated by SOCIAL_ENABLED on the controller. Always
-  //     self-view (no visibility checks needed, mirrors /stats itself). ---
+  // The controller gates this section with SOCIAL_ENABLED. Stats are self-only.
 
   async getSocialStats(
     userId: string,

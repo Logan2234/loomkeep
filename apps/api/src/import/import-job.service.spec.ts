@@ -11,7 +11,6 @@ import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -434,8 +433,6 @@ describe("ImportJobService — retained payloads", () => {
   }
 
   it("drops the parse model once its commit has succeeded", async () => {
-    // It used to sit in memory for the full retention hour after the import
-    // it belonged to was already done.
     const service = makeService(async () => ({ overwrite: false, tiles: [] }));
     seedAnalyzed(service, "analyzed-1");
 
@@ -469,8 +466,6 @@ describe("ImportJobService — retained payloads", () => {
   });
 
   it("keeps only the newest analysis loaded when a new one starts", async () => {
-    // The unbounded case: analysing repeatedly without committing retained up
-    // to MAX_RETAINED_JOBS_PER_USER payloads at once.
     const service = makeService();
     seedAnalyzed(service, "old-1");
     seedAnalyzed(service, "old-2");

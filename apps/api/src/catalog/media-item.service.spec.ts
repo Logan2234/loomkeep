@@ -130,8 +130,7 @@ describe("MediaItemService episode sync", () => {
   }
 
   it("writes nothing when the provider listing matches what is stored", async () => {
-    // The 6-hourly cron's normal case. It used to cost one upsert per
-    // episode regardless; it now costs the single read above.
+    // The six-hourly cron's normal case should cost only the comparison read.
     const { service, prisma } = makeService([
       { number: 1, title: "Pilote", airDate: new Date("2020-01-01") },
       { number: 2, title: "Suite", airDate: null },

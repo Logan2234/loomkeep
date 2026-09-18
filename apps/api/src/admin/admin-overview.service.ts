@@ -5,10 +5,8 @@ import { trendBucketStarts } from "./admin-stats.util";
 
 /**
  * The handful of counters the admin *dashboard* status strip and the
- * /admin/communications header need — not a statistics payload (that is
- * /admin/stats, section by section). All that survives of the former
- * `AdminStatsService`, which fetched four unrelated aggregate blocks so two
- * pages could read five numbers out of them.
+ * /admin/communications header need, not a statistics payload. Analytical
+ * data lives on /admin/stats.
  */
 @Injectable()
 export class AdminOverviewService {

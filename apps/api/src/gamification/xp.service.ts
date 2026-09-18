@@ -18,8 +18,8 @@ const RECONCILE_BATCH_SIZE = 500;
 
 /**
  * Credits, reverses and reconciles the XP ledger — the single write path for
- * `XpEntry`/`UserScore` (see the [G1] plan). `ActivityService.emit` was
- * deliberately not reused as a base for this: it swallows its own errors and
+ * `XpEntry`/`UserScore`. `ActivityService.emit` cannot be the base for this:
+ * it swallows its own errors and
  * isn't called from every cancellation path, which is fine for a feed but
  * not for a ledger that must never silently drift from the data it's
  * supposed to track.
@@ -44,8 +44,7 @@ export class XpService {
    * is behind SocialFeatureGuard. Reading your own progression must not go
    * through the social surface.
    *
-   * Returns the total only — the level is never stored or served, it is
-   * derived client-side from this by `levelForXp` (see the [G1] plan).
+   * Returns the total only — the level is derived client-side by `levelForXp`.
    */
   async myXp(userId: string): Promise<number | null> {
     if (!isGamificationEnabled(this.config, this.flags)) return null;
@@ -90,8 +89,8 @@ export class XpService {
    *
    * The score is resummed once at the end rather than per entry: the resum
    * (rather than an increment) is a deliberate integrity choice, but it
-   * scans the user's whole ledger, so marking a 24-episode season used to
-   * cost 24 full sums for one final value.
+   * scans the user's whole ledger, so doing it once avoids 24 full sums when
+   * marking a 24-episode season.
    */
   async awardMany(
     userId: string,
@@ -123,9 +122,8 @@ export class XpService {
     const rule = XP_RULES[reason];
     if (rule.socialGated && !isSocialEnabled(this.config, this.flags))
       return false;
-    // Only ADMIN_ADJUSTMENT (B8, not this ticket) has no fixed amount and no
-    // override — its callers will set XpEntry.amount directly rather than
-    // going through this registry-driven path.
+    // ADMIN_ADJUSTMENT has no fixed amount; callers write its signed value
+    // directly instead of using this registry-driven path.
     const amount = amountOverride ?? rule.amount;
     if (amount === undefined) return false;
 
@@ -161,8 +159,7 @@ export class XpService {
       });
     } catch (err) {
       // A concurrent/retried award() on the same source hits the unique
-      // constraint — expected under concurrency, not an error (see the
-      // [G1] plan's edge case #8).
+      // constraint; that is expected under concurrency, not an error.
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === "P2002"
@@ -180,8 +177,8 @@ export class XpService {
   /**
    * Reverses every XpEntry anchored to one of `sourceIds` (of `sourceType`)
    * — the entry point for every cancellation path (unwatch, delete, …).
-   * Deletes the rows outright (see the [G1] plan: no revokedAt, no negative
-   * entry) and resums `UserScore` for every user actually affected.
+   * Deletes the rows outright (there is no revokedAt or negative entry) and
+   * resums `UserScore` for every user actually affected.
    */
   async revokeBySource(sourceType: string, sourceIds: string[]): Promise<void> {
     if (sourceIds.length === 0) return;
@@ -200,8 +197,7 @@ export class XpService {
   }
 
   /**
-   * Nightly control sweep (see the [G1] plan's "réconciliation pilotée par
-   * le journal, jamais par l'état"): walks every XpEntry that has a
+   * Nightly control sweep: walks every XpEntry that has a
    * verifier (ADMIN_ADJUSTMENT never does — it's excluded, not treated as
    * always-valid), deletes the ones whose source no longer justifies them,
    * and resums the affected users' `UserScore`. Never creates XP — a

@@ -33,17 +33,11 @@ describe("parseStoryGraphCsv", () => {
   it("derives ownership from Format + Owned?, and reads the read count", () => {
     const rows = parseStoryGraphCsv(
       csv(
-        // Owned paperback → PHYSICAL.
         'A,X,"",,paperback,to-read,2025/01/01,"","",0,"",,,,,,,,"","","","",Yes',
-        // Owned digital → DIGITAL.
         'B,X,"",,digital,to-read,2025/01/01,"","",0,"",,,,,,,,"","","","",Yes',
-        // Owned audiobook → AUDIO.
         'C,X,"",,audiobook,to-read,2025/01/01,"","",0,"",,,,,,,,"","","","",Yes',
-        // Not owned → BORROWED regardless of format.
         'D,X,"",,hardcover,to-read,2025/01/01,"","",0,"",,,,,,,,"","","","",No',
-        // Unknown format, owned → NONE.
         'E,X,"",,,to-read,2025/01/01,"","",0,"",,,,,,,,"","","","",Yes',
-        // Reread three times.
         'F,X,"",,paperback,read,2025/01/01,"","",3,"",,,,,,,,"","","","",Yes',
       ),
     );

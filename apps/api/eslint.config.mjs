@@ -17,9 +17,7 @@ export default defineConfig(
     // per-status fallback message. Tests are exempt: they still construct
     // these to assert on thrown types/status, which is fine.
     //
-    // "error": every call site was migrated by the "Migrate API errors to
-    // error codes, domain by domain" ticket — a new bare exception is a
-    // regression, not pre-existing debt.
+    // A new bare exception would bypass the translated error-code contract.
     files: ["src/**/*.ts"],
     ignores: ["src/**/*.spec.ts"],
     rules: {

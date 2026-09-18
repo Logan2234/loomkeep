@@ -15,8 +15,6 @@ import type { ActivityService } from "../social/activity.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
 
-// Stubbed no-op — the [G1] wiring itself is covered by xp.service.spec.ts,
-// these tests only need LibraryService to not blow up calling it.
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -25,8 +23,6 @@ function stubXp(): XpService {
   } as unknown as XpService;
 }
 
-// Stubbed no-op — the [G2] wiring itself is covered by achievement.service.spec.ts,
-// these tests only need LibraryService to not blow up calling it.
 function stubAchievements(): AchievementService {
   return {
     evaluate: vi.fn(),
@@ -286,11 +282,7 @@ describe("LibraryService.listEntries", () => {
   });
 });
 
-// Regression: entry.finishedAt used to only ever be set by an explicit dto
-// field nothing in the UI ever sends, so CommentService.isMasked's
-// work-level spoiler gate (`!entry?.finishedAt`) stayed permanently true —
-// a movie/series' comment thread stayed blurred forever, even to viewers
-// who had actually finished it.
+// Comment masking depends on finishedAt, while the UI only sends status.
 describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
   it("sets finishedAt when a movie's status is patched to COMPLETED", async () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });

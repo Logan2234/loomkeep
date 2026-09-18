@@ -11,7 +11,7 @@ import { ApiProperty } from "@nestjs/swagger";
  * required from their plain, non-optional types — an inline schema has no
  * class fields for the plugin to read, so it generated both as optional,
  * which then made the whole `AchievementDto` un-assignable wherever a
- * stricter caller (the [G9] profile showcase) needed the real shared type.
+ * stricter callers such as the profile showcase needed the shared type.
  * Deliberately not exported: nothing outside this file references it, and
  * `AchievementResponseDto` below only needs it as a type for `@ApiProperty` —
  * exporting it would fail both the response-DTO `implements` convention test

@@ -2,7 +2,6 @@ import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
 import { parseReadCount, parseStarRatingToTen } from "./csv-field.util";
 
-/** One StoryGraph CSV row reduced to the fields the import needs. */
 export interface ParsedStoryGraphRow {
   title: string;
   authors: string[];
@@ -21,7 +20,6 @@ export interface ParsedStoryGraphRow {
   readCount: number;
 }
 
-// StoryGraph "Read Status" → our library status.
 const STATUS_BY_READ_STATUS: Record<string, BookStatus> = {
   read: "READ",
   "to-read": "TO_READ",

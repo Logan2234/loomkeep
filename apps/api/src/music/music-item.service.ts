@@ -27,7 +27,6 @@ export class MusicItemService {
     return this.musicBrainzProvider;
   }
 
-  /** Free-text catalogue search. */
   async search(query: string): Promise<MusicSummaryDto[]> {
     return this.musicBrainzProvider.search(query).catch(() => []);
   }

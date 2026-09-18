@@ -240,8 +240,7 @@ describe("StatsService — premium redaction", () => {
   });
 });
 
-// --- Query shape: what these assert is that the filtering happens in
-//     Postgres. The aggregates themselves are covered by the util specs. ---
+// These tests verify PostgreSQL filtering; util specs cover the aggregates.
 
 function makeServiceWith(prisma: unknown): StatsService {
   return new StatsService(
@@ -298,8 +297,7 @@ describe("StatsService in-progress staleness", () => {
   }
 
   it("scopes the watch history to the series still in progress", async () => {
-    // It used to read every EpisodeWatch of the account to derive one date
-    // per in-progress series.
+    // The query must not read unrelated EpisodeWatch rows.
     const { service, prisma } = make([SERIES]);
 
     await run(service);

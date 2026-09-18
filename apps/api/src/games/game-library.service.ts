@@ -391,7 +391,7 @@ export class GameLibraryService {
 
     // Loaded before the transaction — GameReplay cascades at the DB level,
     // so its ids would otherwise be gone by the time revokeBySource needs
-    // them (same [G1] rule as library.service.ts's deleteEntry).
+    // them when revocation runs after the transaction.
     const replays = await this.prisma.gameReplay.findMany({
       where: { gameEntryId: entryId },
       select: { id: true },
@@ -432,7 +432,6 @@ export class GameLibraryService {
     ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
   }
 
-  /** Log a completed replay (a completion beyond the entry's first one). */
   async addReplay(
     userId: string,
     entryId: string,

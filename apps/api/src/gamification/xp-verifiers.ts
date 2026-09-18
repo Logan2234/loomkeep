@@ -15,13 +15,11 @@ import type { PrismaService } from "../prisma/prisma.service";
  * Each verifier takes the whole batch and answers for all of it at once.
  *
  * `ADMIN_ADJUSTMENT` and `PROFILE_COMPLETED` deliberately have no entry:
- * both are acquired for good once credited (see the [G1] plan for
- * ADMIN_ADJUSTMENT; PROFILE_COMPLETED is a one-off milestone that never
- * un-happens even if the bio/avatar is cleared later), so
+ * both are permanent once credited. PROFILE_COMPLETED does not revert when
+ * the bio or avatar is cleared later, so
  * `XpService.reconcile` excludes them from the loop entirely rather than
  * mapping them to an always-true verifier.
  */
-/** One ledger row, as the reconciliation sweep hands it to a verifier. */
 export interface XpEntryRef {
   /** The XpEntry's own id — what the verifier returns to keep. */
   id: string;
@@ -252,8 +250,8 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
     (entry) => entry.status === MusicStatus.LISTENED,
   ),
 
-  // Not wired to any caller in this ticket (G1b). `sourceType` is the
-  // domain-agnostic "Entry" (see xp-rules.ts) — the id is a cuid, globally
+  // `sourceType` is the domain-agnostic "Entry" (see xp-rules.ts). The id is
+  // a cuid, globally
   // unique across tables, so checking all four is unambiguous. Four queries
   // per batch, not four per row.
   WORK_ADDED: async (prisma, entries) => {
@@ -276,7 +274,7 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
   },
 
   // Synthetic, domain-scoped sources (sourceId is a domain name, not a real
-  // row id) — never revoked by design (see the [G1] plan), so there is
+  // row id) are never revoked, so there is
   // nothing that can go stale.
   DOMAIN_STARTED: ALWAYS_VALID,
   IMPORT_COMPLETED: ALWAYS_VALID,
@@ -306,8 +304,8 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
     (review) => wordCount(review.text) >= 150,
   ),
 
-  // Comment.deletedAt is set by soft-delete — an existing-but-tombstoned row
-  // must not keep justifying its XP (see the [G1] plan's edge cases).
+  // Comment.deletedAt is set by soft-delete; a tombstone must not keep
+  // justifying its XP.
   COMMENT_POSTED: byExistingRow(
     (prisma, ids) =>
       prisma.comment.findMany({

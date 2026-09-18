@@ -2,7 +2,6 @@ import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
 import { parseStarRatingToTen } from "./csv-field.util";
 
-/** One Babelio CSV row reduced to the fields the import needs. */
 export interface ParsedBabelioRow {
   title: string;
   authors: string[];

@@ -183,7 +183,6 @@ export class FollowService {
     return this.relationship(viewerId, username);
   }
 
-  /** Approves a pending incoming request (identified by the Follow row id). */
   async acceptRequest(userId: string, followId: string): Promise<void> {
     const follow = await this.prisma.follow.findUnique({
       where: { id: followId },
@@ -260,7 +259,6 @@ export class FollowService {
     });
   }
 
-  /** Rejects a pending incoming request. */
   async rejectRequest(userId: string, followId: string): Promise<void> {
     const { count } = await this.prisma.follow.deleteMany({
       where: { id: followId, followeeId: userId, status: "PENDING" },
@@ -313,7 +311,6 @@ export class FollowService {
     return this.relationship(viewerId, username);
   }
 
-  /** Lifts a block. */
   async unblock(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
       where: { username },
@@ -330,7 +327,6 @@ export class FollowService {
     return this.relationship(viewerId, username);
   }
 
-  /** The viewer's relationship to a username. */
   async relationship(
     viewerId: string,
     username: string,
@@ -348,7 +344,6 @@ export class FollowService {
     return this.visibility.toRelationshipDto(relation);
   }
 
-  /** Pending incoming follow requests awaiting the user's approval. */
   async listRequests(userId: string): Promise<FollowRequestDto[]> {
     const rows = await this.prisma.follow.findMany({
       where: { followeeId: userId, status: "PENDING" },
@@ -387,7 +382,6 @@ export class FollowService {
     };
   }
 
-  /** Accepted followers of a user. */
   async listFollowers(userId: string): Promise<UserSummaryDto[]> {
     const rows = await this.prisma.follow.findMany({
       where: { followeeId: userId, status: "ACCEPTED" },
@@ -397,7 +391,6 @@ export class FollowService {
     return rows.map((r) => toUserSummaryDto(r.follower));
   }
 
-  /** Users a user follows (accepted). */
   async listFollowing(userId: string): Promise<UserSummaryDto[]> {
     const rows = await this.prisma.follow.findMany({
       where: { followerId: userId, status: "ACCEPTED" },
@@ -411,8 +404,8 @@ export class FollowService {
    * Every user id `userId` is a friend of, per `computeIsFriend` — a PRIVATE
    * account followed (their acceptance already means friend-level), or a
    * PUBLIC account followed back. Two queries, not one per candidate: the
-   * [G7] friends-scoped leaderboard is the first caller that needs the whole
-   * set at once rather than a single pairwise relation.
+   * leaderboard needs the whole set at once rather than a single pairwise
+   * relation.
    */
   async listFriendIds(userId: string): Promise<string[]> {
     const [followees, followers] = await Promise.all([

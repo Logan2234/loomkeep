@@ -18,7 +18,6 @@ import {
   type ParsedShow,
 } from "./parse-export";
 
-/** Each import field → its file name in the TV Time GDPR export. */
 const FILE_NAMES: Record<keyof TvTimeImportFilesDto, string> = {
   episodesCsv: "tracking-prod-records-v2.csv",
   showsCsv: "user_tv_show_data.csv",

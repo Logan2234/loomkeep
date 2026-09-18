@@ -5,8 +5,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import "reflect-metadata";
 
-// Guardrail for the "Translate form validation errors" ticket: every
-// class-validator constraint actually used by a DTO in this app must be
+// Every class-validator constraint used by an app DTO must be
 // registered in VALIDATION_CONSTRAINT_NAMES (packages/shared), or apps/web's
 // translation table (validation-messages.ts) has no way of knowing it needs
 // an entry for it — a silent gap, not a crash, since resolveFieldError()

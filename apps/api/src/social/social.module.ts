@@ -13,9 +13,8 @@ import { ProfileService } from "./profile.service";
 import { SocialController } from "./social.controller";
 import { VisibilityService } from "./visibility.service";
 
-// P4 social graph, profiles, search and privacy. Every route is gated behind
-// SOCIAL_ENABLED via SocialFeatureGuard on the controllers. The [G7]
-// leaderboard lives here rather than in GamificationModule: it's inherently
+// Social routes are gated behind SOCIAL_ENABLED through SocialFeatureGuard.
+// The leaderboard lives here rather than in GamificationModule: it's inherently
 // social-gated and leans on FollowService for the friends scope — putting it
 // in Gamification would need Gamification to import Social, which already
 // imports Gamification (AchievementService), a real circular dependency.

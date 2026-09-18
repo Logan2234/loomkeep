@@ -12,7 +12,6 @@ import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { CommentService, REPLY_PREVIEW_LIMIT } from "./comment.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -331,8 +330,8 @@ describe("CommentService.list — reply preview", () => {
 
     await svc.list("viewer", "MEDIA" as never, "m1");
 
-    // The regression this guards: replies used to be fetched in a second,
-    // unbounded query, so one popular comment decided the response size.
+    // Replies must share the bounded query so one popular thread cannot
+    // decide the response size.
     expect(findMany).toHaveBeenCalledTimes(1);
     expect(findMany.mock.calls[0][0].include.replies.take).toBe(
       -REPLY_PREVIEW_LIMIT,

@@ -71,7 +71,7 @@ describe("JwtAuthGuard", () => {
     // A WS context has no HTTP request to read a cookie from — the socket's
     // own connection already went through the equivalent check once, at the
     // handshake (see EventsGateway.handleConnection). Reading the request
-    // here the way the HTTP path does is what used to crash.
+    // here would crash because the WebSocket context has no HTTP request.
     const wsContext = {
       getType: vi.fn().mockReturnValue("ws"),
       getHandler: vi.fn(),

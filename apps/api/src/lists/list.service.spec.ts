@@ -11,7 +11,6 @@ import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { ListService } from "./list.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),

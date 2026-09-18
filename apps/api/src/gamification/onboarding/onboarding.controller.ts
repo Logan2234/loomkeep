@@ -9,7 +9,7 @@ import { OnboardingChecklistResponseDto } from "./dto/onboarding-checklist-respo
 import { OnboardingService } from "./onboarding.service";
 
 /**
- * [G8] The "Première séance" checklist — no `GamificationFeatureGuard`, same
+ * The "Première séance" checklist has no `GamificationFeatureGuard`, like
  * as every other gamification endpoint: it soft-degrades to an empty,
  * already-done checklist rather than 404ing (see GamificationController).
  */

@@ -6,7 +6,6 @@ import type { PrismaService } from "../prisma/prisma.service";
 import type { MusicItemService } from "./music-item.service";
 import { MusicLibraryService } from "./music-library.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),

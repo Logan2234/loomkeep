@@ -656,8 +656,6 @@ export class ListService {
     }
   }
 
-  // --- internals -------------------------------------------------------
-
   private async ownList(userId: string, id: string): Promise<ListRow> {
     const row = await this.prisma.list.findUnique({ where: { id } });
     if (!row)

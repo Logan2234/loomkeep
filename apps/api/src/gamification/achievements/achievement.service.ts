@@ -28,8 +28,7 @@ import {
  * Unlocks achievements — the engine behind the registry declared in
  * `registry.ts`. Achievements are permanent: once a `UserAchievement` row
  * exists, `evaluate()` never re-checks or removes it, unlike `XpService`'s
- * ledger (see the [G2] plan — a trophy isn't taken back because the
- * underlying activity later changes).
+ * ledger. A trophy is not taken back when the underlying activity changes.
  */
 @Injectable()
 export class AchievementService {
@@ -161,7 +160,7 @@ export class AchievementService {
 
   /**
    * The whole catalogue projected for `userId` — one entry per registry key,
-   * unlocked or not, for the [G5] achievements screen. Empty list rather
+   * unlocked or not, for the achievements screen. Empty list rather
    * than an error when gamification is off (the web gates on
    * `appConfig.gamificationEnabled`, so no extra guard here — same shape as
    * `pending()`).
@@ -252,14 +251,13 @@ export class AchievementService {
   }
 
   /**
-   * [G9] Adds `key` to the viewer's badge showcase — idempotent (equipping an
+   * Adds `key` to the viewer's badge showcase — idempotent (equipping an
    * already-equipped key is a no-op, not an error). Rejects a secret
    * achievement outright: the whole point of "secret" is that unlocking it
    * doesn't have to mean showing it, and equipping is the one action that
-   * would put it on display for every visitor. Never auto-picks or replaces
-   * anything on the caller's behalf (see the ticket's design-discussion
-   * comment) — a full showcase must be explicitly thinned by `unequip`
-   * first.
+   * would put it on display for every visitor. It never auto-picks or
+   * replaces anything: a full showcase must be explicitly thinned by
+   * `unequip` first.
    */
   async equip(userId: string, key: string): Promise<string[]> {
     const definition = ACHIEVEMENTS[key];
@@ -312,7 +310,7 @@ export class AchievementService {
     return next;
   }
 
-  /** [G9] Removes `key` from the viewer's badge showcase. Idempotent. */
+  /** Removes `key` from the viewer's badge showcase. Idempotent. */
   async unequip(userId: string, key: string): Promise<string[]> {
     const current = await this.equippedKeys(userId);
     if (!current.includes(key)) return current;
@@ -326,7 +324,7 @@ export class AchievementService {
   }
 
   /**
-   * Unlocked achievements the [G6] unlock-bubble UI hasn't shown yet, oldest
+   * Unlocked achievements the unlock-bubble UI hasn't shown yet, oldest
    * first (the order the bubble sequence should play them in). Empty list
    * rather than an error when gamification is off.
    */
@@ -339,8 +337,8 @@ export class AchievementService {
     });
     if (rows.length === 0) return [];
 
-    // xpAwarded isn't stored on UserAchievement (see the [G2] plan) — looked
-    // up from the XpEntry each unlock created.
+    // xpAwarded is read from the XpEntry created for the unlock rather than
+    // duplicated on UserAchievement.
     const xpEntries = await this.prisma.xpEntry.findMany({
       where: {
         sourceType: "UserAchievement",
@@ -386,15 +384,12 @@ export class AchievementService {
 
   /**
    * Nightly safety net: re-evaluates every achievement for every user. This
-   * is what catches anything not wired to a live award site (see the [G2]
-   * plan) — including, on its first run after deploy, every existing
+   * catches anything not wired to a live award site, including every existing
    * account's history, with no separate backfill script needed (`check()`
    * never cares whether a row came from live use or an import).
    *
-   * Full sweep, every user, no activity-based targeting: acceptable while
-   * the registry only has two achievement families (see the [G2] plan) —
-   * targeting active users only should be revisited once [G3]'s full
-   * catalogue makes this loop expensive, not solved preemptively here.
+   * This is a full sweep without activity-based targeting. Revisit that if
+   * the catalogue makes the loop expensive.
    */
   @Cron("0 5 * * *")
   async runAchievementsSweepJob(): Promise<string> {
