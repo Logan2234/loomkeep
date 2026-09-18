@@ -1,9 +1,5 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages.js";
-  // "Jeux — en détail" section of /stats. Self-contained: fetches on mount,
-  // reuses the GAMES status breakdown already loaded by the overview for
-  // "Terminés" (avoids re-deriving it from scratch), same pattern as the
-  // Vidéo section.
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { getGameStats } from "$lib/api/stats";

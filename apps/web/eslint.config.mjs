@@ -16,10 +16,7 @@ export default defineConfig(
   // Reading apps/web/.gitignore here too — patterns already web-relative —
   // fixes that for every entry in it (paraglide's generated messages/, the
   // typed API client's schema.d.ts, ...) instead of listing them by hand.
-  // This is what surfaced the bug: paraglide's generated files carry their
-  // own inline eslint-disable, which ESLint still counts as a "suppressed
-  // result" — enough of them (37788, after a recent locale expansion) to
-  // get the SARIF upload rejected outright (GitHub's cap is 25000).
+  // Generated Paraglide suppressions can exceed GitHub SARIF's 25,000-result cap.
   includeIgnoreFile(path.resolve(import.meta.dirname, ".gitignore")),
   ...baseConfig(import.meta.dirname, { browser: true }),
   svelte.configs.recommended,

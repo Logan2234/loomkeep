@@ -1,8 +1,5 @@
 <script lang="ts">
-  // [G8] Mobile half of the "Première séance" checklist: a bar docked right
-  // above the bottom nav bar (not floating over content — MobileLayout
-  // reserves the extra room for it, the same way it already reserves room
-  // for the nav bar itself). See OnboardingWidget for the desktop half.
+  // MobileLayout reserves room for this bar above the bottom navigation.
   import { afterNavigate } from "$app/navigation";
   import { skipOnboardingStep } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";

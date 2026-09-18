@@ -1,8 +1,4 @@
 <script lang="ts">
-  // Premium nav skin — a fixed-width, icon-only rail that never expands in
-  // place. Hovering (or tabbing into) it slides out a dark "directory
-  // board" overlay, styled after a cinema programme board: each entry gets
-  // a small amber pin-light instead of a background highlight.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { logout } from "$lib/api/auth";

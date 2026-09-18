@@ -1,11 +1,4 @@
 <script lang="ts">
-  // Merges what used to be three separate, unlabelled blocks (cumulative
-  // watch time / most active year, top genres, and a standalone heatmap
-  // teaser) into one card — each was gated by a fragment of the same
-  // activityStats.visible check and read as loose debris rather than one
-  // "Statistiques" module. The review/comment/list counts that used to live
-  // here moved to ProfileHeader's ruler — they're identity counters, not
-  // activity metrics. Renders nothing at all when every part is empty.
   import CalendarHeatmap from "$lib/components/stats/CalendarHeatmap.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";

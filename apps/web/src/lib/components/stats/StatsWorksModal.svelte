@@ -1,6 +1,5 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages.js";
-  // Drill-down for a clicked rating/decade bar: the works behind that count.
   import Modal from "$lib/components/Modal.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import type { StatsWorkDto } from "@loomkeep/shared";

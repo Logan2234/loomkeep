@@ -1,8 +1,5 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages.js";
-  // "Livres — en détail" section of /stats. Self-contained: fetches on
-  // mount, reuses the BOOKS status breakdown already loaded by the overview
-  // for "Lus", same pattern as the Vidéo/Jeux sections.
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { getBookStats } from "$lib/api/stats";

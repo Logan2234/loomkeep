@@ -224,11 +224,8 @@ const MESSAGES = {
 } satisfies Record<ErrorCode, () => string>;
 
 /**
- * Generic message per HTTP status, used whenever `code` is null (a throw
- * site not yet migrated to AppException) or unknown to this build (a newer
- * API than the deployed/cached PWA). This fallback is what keeps every
- * un-migrated API error rendering cleanly — see the
- * "Migrate API errors to error codes, domain by domain" ticket.
+ * Generic message per HTTP status, used when `code` is absent or unknown to
+ * this build, such as when a cached PWA talks to a newer API.
  */
 const STATUS_MESSAGES: Record<number, () => string> = {
   400: () => m.apierr_status_400(),
@@ -258,13 +255,9 @@ function statusFallback(err: ApiError): string {
  * Translates an error from an API call into a user-facing string. Always
  * use this instead of reading `err.message` directly — that's the API's
  * dev-facing English text (see ApiError's doc comment), never meant for
- * display. `request()` (./core.ts) wraps every failure — including a
- * rejected fetch (offline, VPS down) — into an ApiError, so a non-ApiError
- * reaching this function is a bug in the calling code, not a real API
- * failure; it gets the same generic message as an unrecognized 5xx rather
- * than a bespoke per-call-site fallback (there used to be one — it was
- * essentially never exercised once the status/network fallbacks below
- * existed, so it was dead weight, not a real safety net).
+ * display. `request()` wraps every failure, including rejected fetches, into
+ * an ApiError. A non-ApiError therefore indicates a caller bug and receives
+ * the generic fallback.
  */
 export function resolveApiError(err: unknown): string {
   if (!(err instanceof ApiError)) {

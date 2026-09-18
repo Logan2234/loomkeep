@@ -2,9 +2,6 @@
   import { m } from "$lib/paraglide/messages.js";
   import Modal from "./Modal.svelte";
 
-  // Confirm a consequential action (e.g. removing a library entry) in-place,
-  // replacing the browser's native confirm(). The caller keeps the trigger
-  // state; this only renders when mounted.
   let {
     title,
     message,

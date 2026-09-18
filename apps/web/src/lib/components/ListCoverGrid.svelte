@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Collage preview for a list: 1 cover fills the whole tile (Poster's usual
-  // gradient-with-title fallback when empty), 2-4 covers sit in a 2x2 grid —
-  // top-left/top-right first, bottom row only fills once there's a 3rd/4th.
   import Poster from "./Poster.svelte";
 
   let {

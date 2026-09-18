@@ -1,8 +1,4 @@
 <script lang="ts">
-  // Searchable account picker, built on Combobox — the same pattern
-  // /admin/communications uses inline, extracted so any admin surface can
-  // filter by account. Loads the
-  // account list itself and emits the selected user id (null once cleared).
   import { getAdminUserOptions } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";

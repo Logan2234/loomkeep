@@ -29,9 +29,8 @@ import { typedRequest } from "./generated/typed-request";
  * Restores the session, and reports whether the answer is trustworthy.
  *
  * Returns false when the API never answered (offline, VPS down, 5xx): the
- * session is *unknown*, not invalid, so it must not be cleared — every
- * failure used to clear it, which logged people out of a PWA on a flaky
- * mobile connection. Only an explicit rejection (401/403) ends the session.
+ * session is unknown, not invalid. Only an explicit rejection (401/403)
+ * ends the session.
  */
 export async function initAuth(): Promise<boolean> {
   if (browser) {
@@ -82,7 +81,6 @@ export async function register(body: RegisterRequestDto): Promise<void> {
   await loadEntitlement();
 }
 
-/** Sends a reset link by email, if the address matches an account. */
 export const forgotPassword = (email: string): Promise<void> =>
   typedRequest("/auth/forgot-password", {
     method: "POST",
@@ -119,7 +117,6 @@ export const unsubscribeNewsletter = (token: string): Promise<void> =>
     withAuth: false,
   });
 
-/** Returns the MFA challenge unresolved when the account requires a second factor. */
 export async function login(body: LoginRequestDto): Promise<LoginResponseDto> {
   const result = await typedRequest("/auth/login", {
     method: "POST",
@@ -152,7 +149,6 @@ export const resendMfaEmailCode = (challengeId: string): Promise<void> =>
     withAuth: false,
   });
 
-/** Runs the WebAuthn 2nd-factor ceremony for a pending login challenge and completes the login. */
 export async function verifyWebauthnMfaLogin(
   challengeId: string,
 ): Promise<void> {
@@ -175,7 +171,6 @@ export async function verifyWebauthnMfaLogin(
   await loadEntitlement();
 }
 
-/** Full passwordless login: no password step at all, the passkey is the whole factor. */
 export async function loginWithPasskey(identifier: string): Promise<void> {
   const { webauthnChallengeId, options } = await typedRequest(
     "/auth/webauthn/login-options",
@@ -199,7 +194,6 @@ export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {
   return user;
 }
 
-/** Marks the mandatory first-run onboarding wizard as done. */
 export async function completeOnboarding(): Promise<UserDto> {
   const user = await typedRequest("/users/me/complete-onboarding", {
     method: "POST",
@@ -208,7 +202,6 @@ export async function completeOnboarding(): Promise<UserDto> {
   return user;
 }
 
-/** Records re-acceptance of the current CGU (LEGAL_VERSION). */
 export async function acceptTerms(): Promise<UserDto> {
   const user = await typedRequest("/users/me/accept-terms", {
     method: "POST",
@@ -276,11 +269,9 @@ export const exportMyDataCsv = (domain: Domain) =>
 // Creates the token on first call.
 export const getCalendarToken = () => typedRequest("/users/me/calendar-token");
 
-/** Issues a new calendar token, revoking any previously shared .ics link. */
 export const regenerateCalendarToken = () =>
   typedRequest("/users/me/calendar-token/regenerate", { method: "POST" });
 
-// Unused, for now...
 const _getWidgetToken = (): Promise<WidgetTokenDto> =>
   typedRequest("/users/me/widget-token");
 
@@ -295,14 +286,11 @@ export async function deleteAccount(
   auth.clear();
 }
 
-// --- Sessions (connected devices) ---
-
 export const getSessions = () => typedRequest("/auth/sessions");
 
 export const revokeSession = (id: string): Promise<void> =>
   typedRequest("/auth/sessions/{id}", { method: "DELETE", params: { id } });
 
-/** Revokes every session except the current signed-in device. */
 export const revokeOtherSessions = (): Promise<void> =>
   typedRequest("/auth/sessions", { method: "DELETE" });
 

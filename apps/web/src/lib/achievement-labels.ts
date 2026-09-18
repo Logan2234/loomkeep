@@ -1,16 +1,11 @@
-// Display text and glyph for one achievement entry, resolved from its
-// registry key — the part of ../../routes/app/achievements/labels.ts that
-// has no dependency on that route's own concepts (AchievementGroup,
-// family sections), so it's shared with anywhere else an AchievementDto
-// needs to render on its own (the [G9] profile badge showcase, the [G6]
-// unlock bubble).
+// Shared by the achievements page, profile badge showcase, and unlock bubble.
 import { m } from "$lib/paraglide/messages.js";
 import type { IconName } from "$lib/types/icon-name";
 import type { AchievementDto, AchievementFamily } from "@loomkeep/shared";
 
 /**
  * Names and descriptions are keyed by the achievement's own registry key
- * (`gamification_<key>_name` / `_description`, shipped in [G3]), so they are
+ * (`gamification_<key>_name` / `_description`), so they are
  * looked up by construction rather than through an explicit map like
  * `errors.ts`'s: the keys arrive from the API as plain strings, so a map
  * would buy no compile-time completeness check for its 100-odd entries. `m`
@@ -32,9 +27,7 @@ export function achievementDescription(entry: AchievementDto): string {
   return messages[`gamification_${entry.key}_description`]?.() ?? "";
 }
 
-// Glyph per achievement family root ([G3] shipped a shared base icon set, not
-// a bespoke badge per entry — see the "badge artwork stays glyph-only"
-// reservation). Anything unmapped falls back to its page family's glyph.
+// Anything unmapped falls back to its page family's glyph.
 const GROUP_ICON: Record<string, IconName> = {
   first_episode: "footprint",
   cinephile: "play",

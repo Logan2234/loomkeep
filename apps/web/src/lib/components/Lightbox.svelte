@@ -4,11 +4,6 @@
   import { fade, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
 
-  // Fullscreen zoom over one or more images, with a carousel when there's
-  // more than one (arrow keys / buttons / swipe). A single image just zooms,
-  // no navigation chrome. An optional trailer slots in as slide 0 ahead of
-  // the images, when the caller has one (e.g. a game's trailer alongside its
-  // screenshots).
   let {
     images,
     video = null,

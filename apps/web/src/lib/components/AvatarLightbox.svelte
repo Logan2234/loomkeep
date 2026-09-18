@@ -5,9 +5,6 @@
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
 
-  // Fullscreen zoom for a profile avatar — same chrome as Lightbox, but
-  // wrapping Avatar itself (identicon fallback or uploaded picture) instead
-  // of a plain <img>.
   let {
     seed,
     url = null,

@@ -1,8 +1,5 @@
 <script lang="ts">
   import { formatNumber } from "$lib/format";
-  // One dense figure + caption, the unit every admin card counts in (/admin/stats
-  // sections, and the summary headers of the operational pages). Smaller and
-  // quieter than KpiStrip's tiles: those head the page, these sit inside a card.
   let {
     value,
     label,

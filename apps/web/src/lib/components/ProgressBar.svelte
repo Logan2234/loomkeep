@@ -54,7 +54,7 @@
     };
   });
 
-  // [G6] point 3: reaching the end gets a brief accent — the bar already
+  // Reaching the end gets a brief accent — the bar already
   // animates its width, this is what turns "the fill stopped moving" into
   // "that's finished". It is what marks a season/series completed, so it
   // lives on the shared bar rather than at one call site: every rail that

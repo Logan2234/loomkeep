@@ -1,8 +1,6 @@
 import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
-// --- Notifications ---
-
 /** Detect new episodes of tracked shows, then return the refreshed feed. */
 export const scanNotifications = () =>
   typedRequest("/notifications/scan", { method: "POST" });
@@ -14,8 +12,6 @@ export const markNotificationsRead = (): Promise<void> =>
 
 export const markNotificationRead = (id: string): Promise<void> =>
   typedRequest("/notifications/{id}/read", { method: "PATCH", params: { id } });
-
-// --- Web Push ---
 
 /** VAPID public key; empty string when the server has push disabled. */
 export const getPushPublicKey = () =>

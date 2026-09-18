@@ -1,10 +1,6 @@
 <script lang="ts">
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
-  // Vertical bar histogram (ratings, decades…). Bars are clickable when
-  // onSelect is passed — the caller decides what "select" means (open a
-  // modal, navigate to a filtered list); this component only renders and
-  // reports the click.
   let {
     bars,
     onSelect,

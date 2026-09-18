@@ -1,9 +1,4 @@
 <script lang="ts">
-  // Premium nav skin — mobile counterpart of ProgrammeBoardDesktop: every
-  // primary destination gets its own frame in a horizontally scrollable
-  // "filmstrip" tray, sprocket holes on both edges, rather than a fixed set
-  // of shortcuts. "Menu" stays last for the destinations this strip has no
-  // room for (settings, profile, admin…).
   import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";

@@ -1,6 +1,4 @@
 <script lang="ts">
-  // Loading placeholder for simple list-of-cards pages (sessions,
-  // notifications, calendar): a few rows shaped like the real cards.
   let { count = 4 }: { count?: number } = $props();
 </script>
 
