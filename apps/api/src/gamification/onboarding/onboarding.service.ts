@@ -18,10 +18,9 @@ import { computeOnboardingDoneMap } from "./onboarding.util";
 const COMPLETION_ACHIEVEMENT_KEY = "premiere_seance";
 
 /**
- * [G8] "Première séance": a discreet, self-paced checklist of first actions
+ * "Première séance" is a discreet, self-paced checklist of first actions
  * — separate from the mandatory first-run `OnboardingWizard` (settings, not
- * a tour of the app). No step ever grants XP on its own (see the [B10]
- * design discussion) — the only reward is `premiere_seance`
+ * a tour of the app). No step grants XP on its own; the only reward is `premiere_seance`
  * (achievements/registry.ts), unlocked once every applicable step is done
  * or skipped.
  */
@@ -60,10 +59,8 @@ export class OnboardingService {
     );
 
     // A social step that never even applies on this deployment is treated as
-    // skipped, persisted once — the same fact `checkPremiereSeance` reads,
-    // so the achievement never needs its own feature-flag awareness (see the
-    // [G8] design discussion on why this reuses `onboardingSkippedSteps`
-    // rather than adding one to every achievement `check()`).
+    // skipped, persisted once — the same fact `checkPremiereSeance` reads, so
+    // the achievement needs no separate feature-flag awareness.
     const inapplicable = ONBOARDING_STEP_KEYS.filter(
       (key) =>
         ONBOARDING_SOCIAL_STEPS.includes(key) &&

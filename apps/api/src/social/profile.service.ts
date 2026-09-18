@@ -235,7 +235,7 @@ export class ProfileService {
   }
 
   /**
-   * [G9] Projects the target's equipped keys into full `AchievementDto`s for
+   * Projects the target's equipped keys into full `AchievementDto`s for
    * the profile showcase. A key with no matching `UserAchievement` row (the
    * unlock was somehow reversed, or the registry entry no longer exists) is
    * dropped rather than shown half-populated — equipping already guarantees

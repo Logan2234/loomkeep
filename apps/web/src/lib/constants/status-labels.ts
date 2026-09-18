@@ -1,8 +1,6 @@
 import { m } from "$lib/paraglide/messages";
 import type { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared";
 
-// --- Books ---
-
 export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
   TO_READ: m.book_status_to_read(),
   READING: m.book_status_reading(),
@@ -43,8 +41,6 @@ export const BOOK_STATUS_SEG_ACTIVE: Record<BookStatus, string> = {
   READ: "bg-success/20 text-success",
   DROPPED: "text-danger shadow-[inset_0_0_0_1px_var(--color-danger)]",
 };
-
-// --- Games ---
 
 export const GAME_STATUS_LABELS: Record<GameStatus, string> = {
   BACKLOG: m.game_status_backlog(),
@@ -89,8 +85,6 @@ export const GAME_STATUS_SEG_ACTIVE: Record<GameStatus, string> = {
   COMPLETED: "bg-success/20 text-success",
   DROPPED: "text-danger shadow-[inset_0_0_0_1px_var(--color-danger)]",
 };
-
-// --- Music ---
 
 export const MUSIC_STATUS_LABELS: Record<MusicStatus, string> = {
   TO_LISTEN: m.music_status_to_listen(),

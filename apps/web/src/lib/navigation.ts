@@ -188,15 +188,12 @@ export function visibleNavItems(
   return visibleNavSections(opts, filterOpts).flatMap((s) => s.items);
 }
 
-// ---------------------------------------------------------------------------
 // Mobile navigation
-//
 // The mobile UI is driven by a flat registry of destinations (below) rather
 // than the desktop `NAVIGATION` sections: the bottom tab bar shows a short,
-// user-orderable subset (Phase B) and the "Menu" launcher sheet shows all of
+// user-orderable subset and the "Menu" launcher sheet shows all of
 // them, grouped. Desktop keeps its own rail structure above — the two don't
 // share layout, only the underlying routes.
-// ---------------------------------------------------------------------------
 
 // Stable id for a mobile destination; also the value stored in the user's
 //  bottom-bar shortcut list. `menu` is the launcher itself (no route).

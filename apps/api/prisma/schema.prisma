@@ -51,7 +51,7 @@ enum Role {
   ADMIN
 }
 
-// --- Open-core (docs/adr/0001-open-core-agpl.md) ---
+// Open-core entitlements; see docs/adr/0001-open-core-agpl.md.
 
 enum Plan {
   FREE
@@ -133,7 +133,7 @@ model Subscription {
   @@index([userId])
 }
 
-// --- Social (P4) — all gated behind the runtime SOCIAL_ENABLED flag. ---
+// Social models are gated behind the runtime SOCIAL_ENABLED flag.
 // Mirror of packages/shared/src/enums.ts; see there for the full rationale.
 
 // How reachable a profile is (the authN layer). Caps the per-facet audience.
@@ -446,14 +446,12 @@ model User {
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
   hideProgression               Boolean            @default(false)
-  // [G9] Up to 3 unlocked, non-secret achievement keys shown as a badge
-  // showcase on the profile — always an explicit choice, never auto-picked
-  // (see the ticket's design-discussion comment). A key here freezes the
-  // tier the user equipped, not "whatever tier is highest now": a tiered
-  // achievement's tiers are separate keys already (cinephile_bronze vs
+  // Up to 3 unlocked, non-secret achievement keys shown on the profile.
+  // Equipping a key freezes that tier rather than following the highest tier;
+  // an achievement's tiers are separate keys (cinephile_bronze vs
   // cinephile_gold), so equipping one just picks a key like any other.
   equippedBadgeKeys             String[]           @default([])
-  // [G8] "Première séance" gamified checklist. Steps explicitly skipped by
+  // "Première séance" checklist. Steps explicitly skipped by
   // the user (one-way — there is no "unskip"); a step's *done* state is
   // never stored here, always re-derived live from the real data (see
   // OnboardingService) so completing step 3 out of order still marks it
@@ -565,7 +563,7 @@ model User {
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt       DateTime?
 
-  // --- MFA ---
+  // MFA
   // Two independently-toggleable methods; admin accounts with neither active
   // are blocked from /admin by AdminGuard. mfaTotpSecretEnc is cleared (not
   // just flagged off) when TOTP is disabled, so re-enabling always starts
@@ -1742,18 +1740,17 @@ model MusicEntry {
   @@unique([userId, musicItemId])
 }
 
-// --- Gamification (G1) — XP ledger, level curve, barème. ---
+// Gamification: XP ledger, level curve and reward scale.
 // The level curve (xpForLevel/levelForXp) and the full barème (amount/cap/
 // source per reason) live in packages/shared/src/level.ts and xp-rules.ts —
 // pure data/functions shared with the web, kept out of Prisma entirely.
 
-// One credited (or reversed-by-deletion) unit of XP. Append-only by design
-// (see the [G1] plan's "attribution explicite + réconciliation de contrôle"
-// decision): a reversal deletes the row outright rather than writing a
+// One credited (or reversed-by-deletion) unit of XP. Append-only by design:
+// a reversal deletes the row outright rather than writing a
 // negative entry or a revokedAt — re-crediting the same source always starts
 // from a fresh row, so cycling a source (mark watched, unwatch, rewatch)
-// never manufactures XP. Admin adjustments ([B8], not this ticket) will be
-// the one exception: distinct rows, never deleted.
+// never manufactures XP. Admin adjustments are the exception: distinct rows,
+// never deleted.
 model XpEntry {
   id         String   @id @default(cuid())
   userId     String
@@ -1786,11 +1783,11 @@ model XpEntry {
 }
 
 // Materialised sum of the user's XpEntry rows, kept only for cheap
-// leaderboard ordering ([G7]) — never written by hand, always recomputed
+// leaderboard ordering — never written by hand, always recomputed
 // from XpEntry via aggregate(_sum) (see XpService.recomputeScore). Same
 // "derived per-user projection in its own table" shape as UserEntitlement.
-// No peakXp: level is derived from the current xp in both directions (see
-// the [G1] plan) so revoking XP always lowers the level back down too.
+// No peakXp: level is derived from current XP in both directions, so revoking
+// XP lowers the level too.
 model UserScore {
   userId    String   @id
   xp        Int      @default(0)
@@ -1816,7 +1813,7 @@ model UserAchievement {
   // row with a tier column.
   key         String
   unlockedAt  DateTime  @default(now())
-  // Null until the [G6] unlock-bubble UI has shown this achievement to the
+  // Null until the unlock bubble has shown this achievement to the
   // user once — set by PATCH /achievements/:id/displayed. Independent of
   // unlockedAt: an unlock can happen server-side (a live action, or the
   // nightly sweep) while the user isn't even in the app.

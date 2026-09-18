@@ -9,8 +9,7 @@ import type { PrismaService } from "../../prisma/prisma.service";
 import type { XpService } from "../xp.service";
 import { AchievementService } from "./achievement.service";
 
-// A socialGated achievement to exercise the [G3]-reserved gate — none of
-// this ticket's own registry entries (first_episode, cinephile_*) use it.
+// A social-gated fixture exercises behavior independent of the real registry.
 const { socialGatedCheck } = vi.hoisted(() => ({
   socialGatedCheck: vi.fn(),
 }));
@@ -172,10 +171,8 @@ describe("AchievementService.evaluate", () => {
 
     await service.evaluate("user-1", ["first_episode"]);
 
-    // One batched lookup for the whole set, scoped to the named keys —
-    // cinephile's tiers and the socialGated fixture never reach the query.
-    // It used to be one findUnique per candidate, which is what made marking
-    // an episode watched (18 keys) take about a second.
+    // One lookup covers the named keys; unrelated tiers and social-gated
+    // candidates must not reach the query.
     expect(prisma.userAchievement.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.userAchievement.findMany).toHaveBeenCalledWith({
       where: { userId: "user-1", key: { in: ["first_episode"] } },

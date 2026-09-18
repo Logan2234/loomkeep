@@ -692,8 +692,6 @@ export class CommentService {
     }
   }
 
-  // --- internals ---
-
   /** A discussion is readable to everyone, but only a tracker can join it. */
   private async ensureParticipationAllowed(
     userId: string,

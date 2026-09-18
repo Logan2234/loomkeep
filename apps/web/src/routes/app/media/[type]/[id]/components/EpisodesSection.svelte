@@ -171,7 +171,7 @@
     return days === 1 ? m.common_tomorrow() : m.media_airing_in_days({ days });
   }
 
-  // [G6] point 5: the tick that lands when an episode is marked. This is the
+  // This tick lands when an episode is marked. It is the
   // most repeated action in the app, and it's what makes the season bar's
   // move (and its completion accent, on the last episode) read as one
   // gesture rather than two unrelated redraws. Gated on "the episode that

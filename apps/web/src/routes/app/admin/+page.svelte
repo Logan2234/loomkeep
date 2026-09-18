@@ -1,9 +1,5 @@
 <script lang="ts">
   import { env } from "$env/dynamic/public";
-  // "Poste de contrôle": a status strip of the 4 numbers an admin actually
-  // checks at a glance (each a real link to its page), then every ADMIN_NAV
-  // destination grouped by concern instead of one flat grid of identical
-  // cards — see apps/web/DESIGN.md for the palette/type tokens this reuses.
   import { createApiQuery } from "$lib/api/query.svelte";
   import {
     getAdminBackupFiles,
@@ -24,8 +20,7 @@
   import { useReportsPendingCount } from "$lib/reports-pending.svelte";
   import type { ServiceStatusDto } from "@loomkeep/shared";
 
-  // ---- best-effort: a failed fetch just leaves that card/metric blank
-  // rather than breaking the page (no errorToast) ----
+  // Best-effort queries leave failed cards blank instead of breaking the page.
 
   const overviewQuery = createApiQuery(() => ({
     key: keys.admin.overview(),

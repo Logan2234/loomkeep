@@ -14,9 +14,8 @@ if (process.env.NODE_ENV === "production" && dsn) {
     dsn,
     tracesSampleRate: 0.01,
     integrations: [
-      // GlitchTip does not support Sessions/Release Health — the option
-      // used to be a top-level `autoSessionTracking: false`, but that was
-      // removed in the SDK's v9; this is the current equivalent.
+      // GlitchTip does not support Sessions/Release Health. SDK v9 exposes
+      // the opt-out on the HTTP integration.
       Sentry.httpIntegration({ trackIncomingRequestsAsSessions: false }),
     ],
   });

@@ -20,7 +20,6 @@ export type ActivityLevel = "WORK" | "SEASON" | "EPISODE";
  */
 export type ActivityDomain = Domain | "LISTS";
 
-/** One activity-feed event (post-visibility), with its target snapshot. */
 export interface ActivityEventDto {
   id: string;
   type: ActivityType;

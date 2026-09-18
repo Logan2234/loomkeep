@@ -8,7 +8,6 @@ export type ListItemTargetType = Extract<
   "MEDIA" | "GAME" | "BOOK" | "MUSIC"
 >;
 
-/** One work in a list, with its resolved display info. */
 export interface ListItemDto {
   id: string;
   targetType: ListItemTargetType;

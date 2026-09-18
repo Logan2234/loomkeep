@@ -28,7 +28,7 @@
      */
     isSelf?: boolean;
     /**
-     * Storage key enabling the [G6] rise animation, e.g. `streak:<userId>`.
+     * Storage key enabling the rise animation, e.g. `streak:<userId>`.
      * Left unset wherever the badge annotates *someone else's* line (review
      * and comment authors): a stranger's streak moving is not news.
      */
@@ -53,9 +53,7 @@
     return () => clearTimeout(timer);
   });
 
-  // [G10] Explicitly not a "no loss pressure" violation by oversight — Logan
-  // deliberately chose this for the streak specifically (2026-09-11),
-  // overriding the [G10] ticket's own default: a clock only in the last 4h
+  // The clock appears only in the last four hours
   // of the viewer's local day, only on the streak's own page, only while it
   // still needs today's watch. Re-evaluated every minute so it appears
   // without needing a reload right at the 4h mark.

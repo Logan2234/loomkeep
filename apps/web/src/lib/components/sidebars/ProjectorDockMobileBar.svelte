@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Premium nav skin — mobile counterpart of ProjectorDockDesktop: a
-  // floating pill, detached and centered, rather than a bar pinned to the
-  // screen edge. Same item source/gating as the default BottomNavigation.
   import { page } from "$app/state";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";

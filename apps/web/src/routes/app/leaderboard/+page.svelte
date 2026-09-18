@@ -1,6 +1,5 @@
 <script lang="ts">
-  // [G7] Ranking by XP — global or friends, month or year. No pagination
-  // (see the ticket): the API caps the visible list at the Top 100 and
+  // The API caps the unpaginated list at 100 and
   // returns the viewer's own row separately when it falls outside that cut.
   import { getLeaderboard } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";

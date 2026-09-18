@@ -3,10 +3,6 @@
   // so a reload lands on something rather than an empty page. It only ever
   // appears before the first `bootstrap.ready` — SPA navigations don't re-run
   // the bootstrap — and on an explicit reconnect retry.
-  //
-  // "Séance": a film reel, turning. The amber isn't standing in for anything
-  // here — it's just the brand accent on a shape that reads as cinema on
-  // sight, which earlier passes (a leader reticle, a lit gate) did not.
   import { m } from "$lib/paraglide/messages.js";
 </script>
 

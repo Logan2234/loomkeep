@@ -12,8 +12,7 @@ const typeAware = process.env.ESLINT_TYPE_AWARE === "true";
 /**
  * Shared flat-config base for every workspace package: JS/TS recommended
  * rules, Prettier integration, common globals, and the @stylistic formatting
- * rules — identical across apps/api, apps/web and packages/shared until now,
- * which is exactly how they drifted (a missing import in two of three files).
+ * rules shared by apps/api, apps/web and packages/shared.
  * Each package's own eslint.config.mjs calls this with its own directory
  * (`projectService` needs it to find that package's tsconfig) and layers
  * package-specific config (e.g. Svelte) on top of the returned array.

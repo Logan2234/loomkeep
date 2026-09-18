@@ -238,7 +238,6 @@
           </div>
         </div>
 
-        <!-- Actions -->
         {#if !entry}
           <div class="mt-6">
             <button

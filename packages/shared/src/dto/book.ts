@@ -79,7 +79,6 @@ export interface BookItemDto {
   sourceId: string;
 }
 
-/** One completed reread, beyond the entry's own (first) completion. */
 export interface BookReplayDto {
   id: string;
   /** ISO date the reread was completed. */

@@ -22,7 +22,7 @@ import { PendingAchievementResponseDto } from "./dto/pending-achievement-respons
 export class AchievementsController {
   constructor(private readonly achievements: AchievementService) {}
 
-  /** The whole catalogue, projected for the current user — the [G5] screen. */
+  /** The whole catalogue projected for the current user. */
   @Get()
   @ApiOkResponse({ type: AchievementResponseDto, isArray: true })
   list(@CurrentUser() user: JwtPayload): Promise<AchievementDto[]> {
@@ -53,7 +53,6 @@ export class AchievementsController {
     await this.achievements.markVersionLinkClicked(user.sub);
   }
 
-  /** [G9] Adds `key` to the viewer's badge showcase. Returns the new set. */
   @Post(":key/equip")
   equip(
     @CurrentUser() user: JwtPayload,
@@ -62,7 +61,6 @@ export class AchievementsController {
     return this.achievements.equip(user.sub, key);
   }
 
-  /** [G9] Removes `key` from the viewer's badge showcase. Returns the new set. */
   @Delete(":key/equip")
   unequip(
     @CurrentUser() user: JwtPayload,

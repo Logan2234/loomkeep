@@ -7,18 +7,13 @@ import type {
 } from "../enums";
 import type { ErrorCode } from "../error-codes";
 
-// ============================================================================
-// Generic, source-agnostic import model.
-//
 // Every import source runs through one async job framework: `analyze`
 // parses the export and resolves it against the catalogue into a reviewable
 // {@link ImportPlan} (writing nothing);
 // `commit` writes the user's decisions and returns an {@link ImportReport}.
 // Both phases run in the background as an {@link ImportJobDto} the client polls.
-//
 // The wizard UI and the job controller are fully generic over these shapes: a
 // new source only supplies its own parse/resolve/write, never its own DTOs.
-// ============================================================================
 
 export type ImportSource =
   | "tvtime"
@@ -73,7 +68,6 @@ export type ImportItemContext =
       favorite: boolean;
     };
 
-/** One reviewable item in the plan (a show, movie, book or game). */
 export interface ImportPlanItem {
   /** Stable id carrying the user's decision from analyze → commit. */
   key: string;
@@ -128,7 +122,6 @@ export interface ImportPlan {
   searchMediaType?: MediaType;
 }
 
-/** One headline number in the completion report (rendered as a stat tile). */
 export interface ImportReportTile {
   /** Stable identity for localization, absent on older API deployments. */
   id?:
@@ -254,10 +247,8 @@ export interface ImportCommitRequest {
   overwrite?: boolean;
 }
 
-// ---------------------------------------------------------------------------
 // TV Time export parse structure (source-specific; consumed only by the TV Time
 // source's parser). Kept here so the parser and its tests share one shape.
-// ---------------------------------------------------------------------------
 
 /**
  * Raw CSV text extracted from a TV Time GDPR export, one field per relevant

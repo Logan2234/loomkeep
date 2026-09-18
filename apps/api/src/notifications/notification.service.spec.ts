@@ -66,8 +66,7 @@ describe("NotificationService.scanAll", () => {
   }
 
   it("starts from the episodes, which do not grow with the user count", async () => {
-    // The sweep used to run one joined query per account with a digest on,
-    // every hour, almost always for nothing.
+    // The hourly sweep must not run one joined query per subscribed account.
     const { service, prisma } = makeService({});
 
     await service.scanAll();

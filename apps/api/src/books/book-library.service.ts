@@ -423,7 +423,7 @@ export class BookLibraryService {
 
     // Loaded before the transaction — BookReplay cascades at the DB level,
     // so its ids would otherwise be gone by the time revokeBySource needs
-    // them (same [G1] rule as library.service.ts's deleteEntry).
+    // them when revocation runs after the transaction.
     const replays = await this.prisma.bookReplay.findMany({
       where: { bookEntryId: entryId },
       select: { id: true },
@@ -464,7 +464,6 @@ export class BookLibraryService {
     ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
   }
 
-  /** Log a completed reread (a completion beyond the entry's first one). */
   async addReplay(
     userId: string,
     entryId: string,

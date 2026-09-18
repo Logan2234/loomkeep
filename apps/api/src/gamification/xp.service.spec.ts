@@ -168,8 +168,8 @@ describe("XpService.award — daily cap under concurrency", () => {
 
 describe("XpService.awardMany", () => {
   it("resums the score once for the whole batch, not once per entry", async () => {
-    // recomputeScore scans the user's entire ledger. Marking a 24-episode
-    // season used to pay that 24 times over for one final value.
+    // recomputeScore scans the user's entire ledger, so the batch must pay
+    // that cost once rather than once per episode.
     const { service, prisma } = makeService();
 
     await service.awardMany("user-1", XpReason.EPISODE_WATCHED, [

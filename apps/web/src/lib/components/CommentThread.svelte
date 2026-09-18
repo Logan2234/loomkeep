@@ -84,8 +84,7 @@
     enabled: expanded,
   }));
 
-  // Pushed live by EventsGateway (see CommentService's create/update/remove/
-  // react/unreact) instead of the 5s poll this used to run while open.
+  // EventsGateway pushes comment and reaction changes while the thread is open.
   $effect(() => {
     const off = onRealtimeEvent<{
       targetType: string;

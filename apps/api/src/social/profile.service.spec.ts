@@ -126,8 +126,7 @@ describe("ProfileService.getProfile xp", () => {
     const visibility = {
       getRelation: vi.fn().mockResolvedValue(opts.rel),
       getSettingsMap: vi.fn().mockResolvedValue(new Map()),
-      // LIBRARY facet forced to NONE so per-domain counts (unrelated to this
-      // ticket) stay untouched; ACTIVITY is the one this suite drives.
+      // Force LIBRARY to NONE so this suite isolates the ACTIVITY facet.
       audienceFor: vi.fn((_settings, _domain, facet) =>
         facet === "ACTIVITY"
           ? (opts.activityAudience ?? VisibilityAudience.PUBLIC)

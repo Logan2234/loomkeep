@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Rule-and-caps section separator, shared by /stats and /admin/stats.
-  // `class` carries the caller's own vertical rhythm (the admin page wraps
-  // each section in a bordered block, /stats spaces them itself).
   let {
     label,
     badge,

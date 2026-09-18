@@ -17,16 +17,16 @@ export interface AchievementCheckResult {
 }
 
 /**
- * One declarative registry entry: what unlocks it, what it grants, and
- * optional metadata for later tickets. Mirrors XP_RULES/XP_RULE_LIST's
+ * One declarative registry entry: what unlocks it and what it grants.
+ * Mirrors XP_RULES/XP_RULE_LIST's
  * shape (see xp-rules.ts) — a single lookup-by-key registry, plus an array
  * for iteration.
  */
 export interface AchievementDefinition {
   key: string;
-  // Which section of the [G5] achievements screen this belongs to. Every
+  // Which screen section this belongs to. Every
   // entry has one, secrets included — "secret" is an orthogonal trait, never
-  // a family (see the [G5] design notes).
+  // a family.
   family: AchievementFamily;
   // XP credited via XpReason.ACHIEVEMENT_UNLOCKED when this unlocks — varies
   // by rarity, see xp-rules.ts's note on this reason. Passed as
@@ -35,16 +35,14 @@ export interface AchievementDefinition {
   xpAward: number;
   // A tiered achievement is modelled as several registry entries sharing
   // this root (e.g. "cinephile" for cinephile_bronze/_silver/_gold) — for
-  // display grouping later (G3/G5), not used by the engine itself in this
-  // ticket.
+  // display grouping, not used by the engine itself.
   tierOf?: string;
   // Which tier of its `tierOf` family this entry is — declared explicitly,
   // never derived by parsing the key's suffix. Absent on untiered entries.
   tier?: AchievementTier;
-  // [G3]: the slot shows even before unlock, the name/description stay
-  // hidden until then (enforced by the G5 screen, not here).
+  // The slot shows before unlock while its name and description stay hidden.
   secret?: boolean;
-  // [G3]: mirrors XpRule.socialGated — set on the whole "Social" family.
+  // Mirrors XpRule.socialGated for the whole Social family.
   socialGated?: boolean;
   check(prisma: PrismaService, userId: string): Promise<AchievementCheckResult>;
 }
@@ -68,7 +66,7 @@ export async function checkFirstEpisode(
 /**
  * Shared core of the three "cinephile" tiers — only the threshold differs.
  * Movies watched = LibraryEntry rows at status COMPLETED whose MediaItem is
- * type MOVIE (see the [G2] plan's MVP catalogue).
+ * type MOVIE.
  */
 export function checkCinephileTier(target: number) {
   return async (
@@ -82,10 +80,8 @@ export function checkCinephileTier(target: number) {
   };
 }
 
-// --- [G3]: the real catalogue -------------------------------------------
-//
-// Grouped by query family rather than declared one-by-one, per the [G3]
-// plan — most families are a single count/distinct query parameterised by
+// Grouped by query family rather than declared one by one: most families are
+// a single count/distinct query parameterised by
 // threshold, mirroring checkCinephileTier above.
 
 /** Generic "count reaches target" tier, shared by every simple volume family. */
@@ -101,8 +97,6 @@ function checkCountTier(
     return { unlocked: current >= target, progress: { current, target } };
   };
 }
-
-// --- Volume (per domain) ---
 
 export const checkEpisodeWatcherTier = (target: number) =>
   checkCountTier(
@@ -136,8 +130,6 @@ const checkGameFinisherTier = (target: number) =>
       prisma.gameEntry.count({ where: { userId, status: "COMPLETED" } }),
     target,
   );
-
-// --- Rituel ---
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -254,8 +246,6 @@ export function checkStreakTier(target: number) {
   };
 }
 
-// --- Exploration (transversal) ---
-
 /** Distinct release decades across every domain the user has tracked (any status). */
 async function distinctDecades(
   prisma: PrismaService,
@@ -302,9 +292,8 @@ export function checkDecadesTier(target: number) {
  * Thresholds here are high (25/75/150) because this set is not a curated
  * taxonomy: TMDB and IGDB ship a couple dozen genres each, but Open Library
  * contributes free-form *subjects*, so a book-heavy library crosses a
- * hundred distinct values without being especially diverse. See the note in
- * the [G5] review — narrowing this to media/games would make the figure
- * comparable between users, at the cost of ignoring books entirely.
+ * hundred distinct values without being especially diverse. Narrowing this
+ * to media/games would improve comparability but ignore books entirely.
  */
 async function distinctGenres(
   prisma: PrismaService,
@@ -357,8 +346,6 @@ export async function checkOmnivore(
   return { unlocked: current === 4, progress: { current, target: 4 } };
 }
 
-// --- Complétion ---
-
 /** "big_screen": 5+ series/anime, with 5+ real seasons (season 0 excluded), COMPLETED. */
 export async function checkBigScreen(
   prisma: PrismaService,
@@ -383,8 +370,7 @@ export async function checkBigScreen(
 }
 
 /**
- * "well_rounded": 10+ finished titles in each of 4 different domains — the
- * "well_rounded" of the [G3] plan's Domain set (MEDIA/GAMES/BOOKS/MUSIC).
+ * "well_rounded": 10+ finished titles in each of MEDIA/GAMES/BOOKS/MUSIC.
  */
 export async function checkWellRounded(
   prisma: PrismaService,
@@ -399,8 +385,6 @@ export async function checkWellRounded(
   const current = [media, games, books, music].filter((c) => c >= 10).length;
   return { unlocked: current >= 4, progress: { current, target: 4 } };
 }
-
-// --- Saisonnier / temporel ---
 
 // MediaItem.genres is denormalised from TMDB at whatever locale was active
 // when the item was first cached (tmdb.provider.ts's tmdbLanguage — "fr" or
@@ -494,8 +478,6 @@ export async function checkNewYearFinish(
   });
   return { unlocked };
 }
-
-// --- Social (SOCIAL_ENABLED) ---
 
 export async function checkFirstComment(
   prisma: PrismaService,
@@ -606,8 +588,6 @@ export async function checkOneSided(
   return { unlocked };
 }
 
-// --- Compte ---
-
 export async function checkLockedDown(
   prisma: PrismaService,
   userId: string,
@@ -671,7 +651,7 @@ export async function checkProfileComplete(
  * can never disagree on what counts as finished. A social step that never
  * applied on this deployment is already recorded as skipped by
  * `OnboardingService` before this ever runs, so this needs no feature-flag
- * awareness of its own (see the [G8] design discussion).
+ * awareness of its own.
  */
 export async function checkPremiereSeance(
   prisma: PrismaService,
@@ -687,8 +667,6 @@ export async function checkPremiereSeance(
   );
   return { unlocked };
 }
-
-// --- Autres ---
 
 /**
  * "no_favorites" (secret): 100+ titles tracked across every domain, none of
@@ -736,8 +714,7 @@ const MEDIA_OWNERSHIP_STATUSES = [
  * Scoped to the MEDIA domain — GAMES/BOOKS/MUSIC each have their own,
  * differently-shaped ownership enum (see schema.prisma), so a single
  * transversal "every status across every domain" reading doesn't have one
- * coherent target set. Flagged as an implementation assumption, not
- * explicit in the [G3] plan.
+ * coherent target set.
  */
 export async function checkFullInventory(
   prisma: PrismaService,
@@ -755,8 +732,6 @@ export async function checkFullInventory(
     progress: { current, target: MEDIA_OWNERSHIP_STATUSES.length },
   };
 }
-
-// --- Secrets ---
 
 /** "guilty_pleasure": a whole series/anime completed, rated 1-3 by the user. */
 export async function checkGuiltyPleasure(
@@ -1066,7 +1041,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkCinephileTier(200),
   },
 
-  // --- Volume ---
   episode_watcher_bronze: {
     key: "episode_watcher_bronze",
     family: "volume",
@@ -1164,7 +1138,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkGameFinisherTier(75),
   },
 
-  // --- Rituel ---
   marathon: {
     key: "marathon",
     family: "ritual",
@@ -1208,12 +1181,8 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkStreakTier(365),
   },
 
-  // --- Exploration ---
-  // "countries_bronze/_silver/_gold" from the [G3] plan is intentionally
-  // NOT implemented here — see the [G3] implementation summary: no country-
-  // of-origin field is captured anywhere in the catalog schema
-  // (MediaItem/GameItem/BookItem), and adding one is a new persisted field
-  // beyond what [G3] set out to do — pick it up in its own ticket.
+  // Country achievements are omitted because no catalogue model persists a
+  // country-of-origin field.
   decades_bronze: {
     key: "decades_bronze",
     family: "exploration",
@@ -1269,7 +1238,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkOmnivore,
   },
 
-  // --- Complétion ---
   big_screen: {
     key: "big_screen",
     family: "completion",
@@ -1283,7 +1251,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkWellRounded,
   },
 
-  // --- Saisonnier / temporel ---
   halloween: {
     key: "halloween",
     family: "seasonal",
@@ -1304,7 +1271,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkNewYearFinish,
   },
 
-  // --- Social ---
   first_comment: {
     key: "first_comment",
     family: "social",
@@ -1430,7 +1396,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkOneSided,
   },
 
-  // --- Compte ---
   locked_down: {
     key: "locked_down",
     family: "account",
@@ -1473,9 +1438,8 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     xpAward: 50,
     check: checkProfileComplete,
   },
-  // [G8]: the gamified onboarding checklist's own completion reward — the
-  // only XP the checklist ever grants (no step gives XP on its own, see the
-  // [B10] design discussion). Not social-gated at the definition level even
+  // The checklist grants XP only through this completion reward. It is not
+  // social-gated at the definition level even
   // though two of its steps are social-only: it must stay reachable on a
   // SOCIAL_ENABLED=false instance too, with a smaller step count.
   premiere_seance: {
@@ -1485,7 +1449,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkPremiereSeance,
   },
 
-  // --- Autres ---
   no_favorites: {
     key: "no_favorites",
     family: "misc",
@@ -1500,9 +1463,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkFullInventory,
   },
 
-  // --- Secrets ---
-  // Every one of these still carries a real family: "secret" is an
-  // orthogonal trait, never a section of the [G5] screen.
+  // Secret is orthogonal to the screen family assigned to each entry.
   guilty_pleasure: {
     key: "guilty_pleasure",
     family: "completion",
@@ -1576,15 +1537,12 @@ export const ACHIEVEMENT_LIST: AchievementDefinition[] =
 
 /**
  * Which registry keys a live XP award site should re-evaluate right after
- * crediting XP for that reason — the live-wiring half of the engine (see
- * AchievementService.evaluate's callers in LibraryService and the [G3]
- * plan's "Câblage live" section). Reasons with no achievement depending on
+ * crediting XP for that reason. Reasons with no achievement depending on
  * them are simply absent.
  *
  * Achievements with no natural single-moment mutation (member_since_*,
  * anniversary, welcome_back, full_circle, hidden_gem, full_inventory,
- * no_favorites, double_life) are deliberately absent here — they stay
- * nightly-sweep-only, per the [G3] plan.
+ * no_favorites, double_life) are deliberately absent and stay nightly-only.
  */
 export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
   Record<XpReason, string[]>
@@ -1672,10 +1630,10 @@ export const ACHIEVEMENT_KEYS_BY_XP_REASON: Partial<
   ],
 };
 
-// --- [G3] non-XP-reason live wiring keys, evaluated by name (not via
+// Non-XP live keys are evaluated by name rather than via
 // ACHIEVEMENT_KEYS_BY_XP_REASON — these live sites don't credit any
 // XpReason the engine dispatches on, or need to react before an XP award
-// happens). See the [G3] plan's "Câblage live" section.
+// happens.
 export const ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED = [
   "has_friends",
   "one_sided",

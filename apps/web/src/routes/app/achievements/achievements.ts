@@ -1,6 +1,4 @@
-// Client-side shaping of GET /achievements: the API returns one row per
-// registry key, the screen shows one card per tiered family (see the [G5]
-// design notes — ~42 cards for the 66 catalogue entries).
+// The API returns one row per key; the screen groups tiers into one card.
 import type {
   AchievementDto,
   AchievementFamily,
@@ -110,7 +108,6 @@ export function groupAchievements(list: AchievementDto[]): AchievementGroup[] {
   return [...buckets].map(([id, entries]) => buildGroup(id, entries));
 }
 
-/** Groups split into the page's family sections, empty families dropped. */
 export function sectionsByFamily(groups: AchievementGroup[]): FamilySection[] {
   return FAMILY_ORDER.map((family) => {
     const familyGroups = groups.filter((g) => g.family === family);

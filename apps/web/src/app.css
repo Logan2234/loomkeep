@@ -63,7 +63,7 @@
   --stat-games: #0c7a87;
   --stat-books: #be3d80;
   --stat-music: #3b6dc8;
-  /* Achievement tiers ([G5]). One ring color per tier, never reused for
+  /* One ring color per achievement tier, never reused for
      anything else — same rule as the per-domain stat hues above. */
   --tier-bronze: #8a5423;
   --tier-silver: #68707c;

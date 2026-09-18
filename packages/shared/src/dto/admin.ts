@@ -60,7 +60,6 @@ export interface ServiceStatusResponseDto {
   checkedAt: string;
 }
 
-/** One editable sample-data field for a gallery template (e.g. a recipient's display name). */
 export interface MailTemplateFieldDto {
   key: string;
   label: string;
@@ -69,7 +68,6 @@ export interface MailTemplateFieldDto {
   multiline?: boolean;
 }
 
-/** One entry in the admin email-template gallery. */
 export interface MailTemplateInfoDto {
   key: string;
   label: string;
@@ -134,7 +132,6 @@ export interface AdminPushBroadcastResponseDto {
   failureCount: number;
 }
 
-/** One device an account has subscribed to push on. */
 export interface AdminPushDeviceDto {
   id: string;
   userAgent: string | null;
@@ -153,7 +150,6 @@ export interface SchemaGraphResponseDto {
 
 export type JobStatus = "SUCCESS" | "FAILURE";
 
-/** One completed execution of a scheduled/admin-triggered job. */
 export interface JobRunDto {
   id: string;
   jobKey: string;
@@ -170,9 +166,7 @@ export interface JobRunDto {
  * One background job the admin can inspect/trigger, with its recent runs.
  *
  * Carries no label or schedule: both are presentation, derived from `key` by
- * the web (`adminJobLabel`/`adminJobSchedule`), the same way an `ErrorCode`
- * becomes a message. The API used to send French strings for them, which the
- * web already ignored — an English-locale admin would have read them anyway.
+ * the web (`adminJobLabel`/`adminJobSchedule`), like an `ErrorCode` message.
  */
 export interface JobDto {
   key: string;
@@ -187,7 +181,6 @@ export interface JobListResponseDto {
 /** Bucket granularity for the admin trend charts. */
 export type TrendPeriod = "day" | "week" | "month" | "year";
 
-/** One bucket in a trend series. */
 export interface TrendPointDto {
   /** ISO date (UTC) of the bucket's start. */
   periodStart: string;
@@ -196,10 +189,8 @@ export interface TrendPointDto {
 
 /**
  * The few instance counters the admin *dashboard* (/admin) and
- * /admin/communications need for their status strips — deliberately not a
- * statistics payload. Everything analytical lives on /admin/stats, section by
- * section (dto/admin-stats.ts); this is what remains of the former
- * `AdminStatsDto` once that page took over.
+ * /admin/communications need for their status strips, not a statistics
+ * payload. Everything analytical lives on /admin/stats (dto/admin-stats.ts).
  */
 export interface AdminOverviewDto {
   accounts: number;
@@ -213,7 +204,6 @@ export interface AdminOverviewDto {
   cachedItems: number;
 }
 
-/** One cached catalogue item (media/game/book/album), as browsed on the admin cache page. */
 export interface AdminCacheItemDto {
   id: string;
   domain: Domain;
@@ -245,7 +235,6 @@ export interface AdminCacheListResponseDto extends PagedResult<AdminCacheItemDto
   orphanTotal: number;
 }
 
-/** One external identifier a cached item carries (its source + id in that source). */
 export interface AdminCacheExternalIdDto {
   source: string;
   externalId: string;
@@ -282,7 +271,6 @@ export interface AdminCacheDeleteOrphansResultDto {
   skipped: number;
 }
 
-/** One registered account, as listed in the admin users page. */
 export interface AdminUserDto {
   id: string;
   email: string;
@@ -370,7 +358,6 @@ export interface AdminBackupRestoreRequestDto {
   currentPassword: string;
 }
 
-/** One sensitive account action, as listed on the admin "Sécurité" page. */
 export interface SecurityEventDto {
   id: string;
   type: SecurityEventType;
@@ -384,7 +371,6 @@ export interface SecurityEventDto {
   createdAt: string;
 }
 
-/** One committed import (analyze-only runs write nothing and aren't logged here). */
 export interface AdminImportRunDto {
   id: string;
   /** Null once the account has since been deleted. */
@@ -430,7 +416,6 @@ export interface AdminImportSummaryDto {
   bySource: AdminImportSourceStatDto[];
 }
 
-/** One account ranked by how many reports it filed. */
 export interface AdminTopReporterDto {
   username: string;
   reports: number;
@@ -453,7 +438,6 @@ export interface AdminReportsSummaryDto {
   topReporters: AdminTopReporterDto[];
 }
 
-/** One identifier targeted by failed logins over the summary's recent window. */
 export interface AdminFailedLoginTargetDto {
   /** Email or username the failed attempts were made against. */
   identifier: string;
@@ -476,7 +460,6 @@ export interface AdminSecuritySummaryDto {
   topTargets7d: AdminFailedLoginTargetDto[];
 }
 
-/** Active push subscriptions sharing one user-agent family. */
 export interface AdminPushUserAgentStatDto {
   /** Browser family derived from the stored user-agent ("Chrome", "Safari", "Inconnu"…). */
   label: string;

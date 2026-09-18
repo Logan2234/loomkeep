@@ -58,8 +58,7 @@
     if (!auth.user || cadence === auth.user[key]) return;
     if (cadence === DigestCadence.DAILY && dailyLocked) return;
 
-    // Push additionally needs a live browser subscription — mirror the
-    // subscribe/unsubscribe dance the boolean toggle used to do.
+    // Push cadence also controls the live browser subscription.
     if (key === "notifyPush") {
       togglePushSubscription(cadence);
       return;

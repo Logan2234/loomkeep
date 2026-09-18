@@ -1,8 +1,5 @@
 <script lang="ts">
-  // The row of headline numbers pinned above a page's content — on /admin/stats
-  // the six the mockup called for, on the operational admin pages the two to
-  // five that summarise the raw list underneath. Always assembled from the same
-  // payload as what it sits above, so the strip can never disagree with it.
+  // Built from the same payload as the content below to prevent mismatched totals.
   let {
     tiles,
   }: {

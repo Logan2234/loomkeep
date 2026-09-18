@@ -1,5 +1,5 @@
 /**
- * "Last known value" tracking, shared by the two rise-only reactions of [G6]:
+ * "Last known value" tracking shared by rise-only reactions:
  * the level-up bubble and the streak badge. Factored out rather than written
  * twice because both need the exact same rule, including the one that
  * matters most — a drop updates the stored value *in silence*. XP (and so

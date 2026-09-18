@@ -334,7 +334,6 @@ export abstract class MediaImportSource<
     return true;
   }
 
-  /** Write one show against an already-resolved catalogue match. */
   private async writeShow(
     userId: string,
     show: ImportShow,
@@ -395,7 +394,6 @@ export abstract class MediaImportSource<
     else tally.showsImported++;
   }
 
-  /** Write one movie against an already-resolved catalogue match. */
   private async writeMovie(
     userId: string,
     movie: ImportMovie,
@@ -448,7 +446,6 @@ export abstract class MediaImportSource<
     else tally.moviesImported++;
   }
 
-  /** Create the missing replay rows for a movie; skip if already imported. */
   private async recordMovieReplays(
     libraryEntryId: string,
     dates: Date[],
@@ -492,7 +489,6 @@ export abstract class MediaImportSource<
     return { byKey, totalRegular };
   }
 
-  /** Create the missing watch rows for an episode; skip if already imported. */
   private async recordWatches(
     userId: string,
     episodeId: string,

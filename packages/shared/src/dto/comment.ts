@@ -84,7 +84,6 @@ export interface UpdateCommentDto {
   mentions?: CommentMentionInputDto[];
 }
 
-/** One comment authored by a user, for the admin user drawer's "Commentaires" shortcut. */
 export interface AdminUserCommentDto {
   id: string;
   excerpt: string;

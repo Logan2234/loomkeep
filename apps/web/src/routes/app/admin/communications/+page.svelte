@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Merges the former /admin/emails and /admin/push pages: same admin gesture
-  // on two channels (preview/test-send a template vs. test/broadcast a push),
-  // now two tabs of one page instead of two nav entries.
   import { page } from "$app/state";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { m } from "$lib/paraglide/messages";

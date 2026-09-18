@@ -68,14 +68,12 @@ export const getAdminSchema = () => typedRequest("/admin/schema");
 
 export const getAdminOverview = () => typedRequest("/admin/overview");
 
-/** "Comptes & engagement" section of /admin/stats. */
 export const getAdminAccountsStats = () =>
   typedRequest("/admin/stats/accounts");
 
 export const getAdminNewAccountsTrend = (period: TrendPeriod) =>
   typedRequest("/admin/stats/accounts/new", { query: { period } });
 
-/** "Catalogue & cache" section of /admin/stats. */
 export const getAdminCatalogueStats = () =>
   typedRequest("/admin/stats/catalogue");
 
@@ -84,16 +82,14 @@ export const getAdminSocialStats = () => typedRequest("/admin/stats/social");
 export const getAdminSocialActivityTrend = (period: TrendPeriod) =>
   typedRequest("/admin/stats/social/activity", { query: { period } });
 
-/** "Système" section of /admin/stats. */
 export const getAdminSystemStats = () => typedRequest("/admin/stats/system");
 
 export const getAdminJobs = () => typedRequest("/admin/jobs");
 
-/** Triggers a job immediately (both are idempotent). */
+/** Safe to retry: admin jobs are idempotent. */
 export const runAdminJob = (key: string): Promise<void> =>
   typedRequest("/admin/jobs/{key}/run", { method: "POST", params: { key } });
 
-/** Registered accounts, filterable by search/role/verification/activity, paginated. */
 export function getAdminUsers(
   filters: {
     search?: string;
@@ -153,26 +149,25 @@ export const updateAdminUserPlan = (userId: string, plan: Plan) =>
 export const getAdminUserExport = (userId: string) =>
   typedRequest("/admin/users/{userId}/export", { params: { userId } });
 
-/** Reviews the account has written, with resolved targets — for the user drawer shortcut. */
 export const getAdminUserReviews = (userId: string) =>
   typedRequest("/admin/users/{userId}/reviews", { params: { userId } });
 
 export const getAdminUserComments = (userId: string) =>
   typedRequest("/admin/users/{userId}/comments", { params: { userId } });
 
-/** Accepted followers of the account (admin view, bypasses visibility). */
+/** Admin view bypasses follower visibility. */
 export const getAdminUserFollowers = (userId: string) =>
   typedRequest("/admin/users/{userId}/followers", { params: { userId } });
 
-/** Accounts this user follows (admin view, bypasses visibility). */
+/** Admin view bypasses following visibility. */
 export const getAdminUserFollowing = (userId: string) =>
   typedRequest("/admin/users/{userId}/following", { params: { userId } });
 
-/** Reports filed against this account, directly or via a comment they authored. */
+/** Includes reports against comments authored by the account. */
 export const getAdminUserReportsAgainst = (userId: string) =>
   typedRequest("/admin/users/{userId}/reports-against", { params: { userId } });
 
-/** Every list the account owns, regardless of visibility (admin view). */
+/** Admin view includes private lists. */
 export const getAdminUserLists = (userId: string) =>
   typedRequest("/admin/users/{userId}/lists", { params: { userId } });
 
@@ -238,11 +233,10 @@ export function getAdminCache(filters: {
   });
 }
 
-/** Full detail of one cached item (external ids, metadata, media seasons). */
 export const getAdminCacheItem = (domain: Domain, id: string) =>
   typedRequest("/admin/cache/{domain}/{id}", { params: { domain, id } });
 
-/** Forces a re-sync of one cached item from its canonical source, bypassing the TTL. */
+/** Bypasses the cache TTL. */
 export const resyncAdminCacheItem = (
   domain: Domain,
   id: string,
@@ -252,14 +246,14 @@ export const resyncAdminCacheItem = (
     params: { domain, id },
   });
 
-/** Re-syncs every stale (>24h) item in a domain in one pass. */
+/** Re-syncs domain items stale for more than 24 hours. */
 export const resyncAdminCacheStale = (domain: Domain) =>
   typedRequest("/admin/cache/{domain}/resync-stale", {
     method: "POST",
     params: { domain },
   });
 
-/** Deletes an orphaned cached item (no account references it). 409 if referenced. */
+/** Returns 409 when an account still references the item. */
 export const deleteAdminCacheItem = (
   domain: Domain,
   id: string,
@@ -275,7 +269,6 @@ export const deleteAdminCacheOrphans = (domain: Domain) =>
     params: { domain },
   });
 
-/** Past import commits across every account, filterable by source/status/account, paginated. */
 export function getAdminImportRuns(
   filters: {
     source?: string;
@@ -320,7 +313,6 @@ export function getAdminSecurityEvents(
   });
 }
 
-/** The comment/review/user moderation queue, filterable by status/reporter, paginated. */
 export function getAdminReports(
   filters: {
     status?: string;

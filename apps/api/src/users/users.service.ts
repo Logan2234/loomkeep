@@ -156,7 +156,6 @@ export class UsersService {
     };
   }
 
-  /** Replaces the account's profile picture. */
   async uploadAvatar(userId: string, dto: UploadAvatarDto): Promise<UserDto> {
     const buffer = Buffer.from(dto.data, "base64");
 
@@ -205,7 +204,6 @@ export class UsersService {
     return toUserDto(user);
   }
 
-  /** Clears the profile picture — the client falls back to the identicon. */
   async deleteAvatar(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -256,7 +254,6 @@ export class UsersService {
     return { token: calendarToken! };
   }
 
-  /** Issues a new token, invalidating any previously shared .ics link. Premium. */
   async regenerateCalendarToken(userId: string): Promise<CalendarTokenDto> {
     await this.requirePremium(userId);
 
@@ -288,7 +285,6 @@ export class UsersService {
     }
   }
 
-  /** Marks the mandatory first-run onboarding wizard as done. Idempotent. */
   async completeOnboarding(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -478,7 +474,6 @@ export class UsersService {
     );
   }
 
-  /** Consumes the code sent by changeEmail() and applies the new address. */
   async confirmEmailChange(
     userId: string,
     dto: ConfirmEmailChangeDto,

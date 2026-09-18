@@ -44,14 +44,12 @@ export interface MyReviewDto extends ReviewDto {
   target: ReviewTargetSummaryDto | null;
 }
 
-/** One historised snapshot of a review (V1, V2, …), newest first. */
 export interface ReviewRevisionDto {
   rating: number;
   text: string | null;
   createdAt: string;
 }
 
-/** Create-or-update a review for a target (identified by the route). */
 export interface UpsertReviewDto {
   rating: number;
   text?: string | null;

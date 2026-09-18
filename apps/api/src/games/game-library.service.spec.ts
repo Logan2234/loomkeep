@@ -8,7 +8,6 @@ import type { AgeGateService } from "../users/age-gate.service";
 import type { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),

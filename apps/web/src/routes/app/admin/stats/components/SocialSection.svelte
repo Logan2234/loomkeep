@@ -76,8 +76,6 @@
   );
 </script>
 
-<!-- The mockup showed static totals only; the curve is the addition that tells
-     an admin whether the social surface went quiet, so it leads the section. -->
 <TrendPeriodCard
   title={m.admin_social_activity_title()}
   description={m.admin_social_activity_desc()}
@@ -90,9 +88,6 @@
   {/snippet}
 </TrendPeriodCard>
 
-<!-- 8 tiles: the mockup pinned this strip to 2 columns at every width, which
-     leaves four rows of pairs on desktop — read as a slip, it follows the
-     section's own 2→4 column rhythm here. -->
 <div class="mt-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
   {#each totals as t (t.label)}
     <div class="card p-4">

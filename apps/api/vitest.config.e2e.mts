@@ -23,8 +23,7 @@ export default defineConfig({
     testTimeout: 30_000,
     coverage: {
       provider: "v8",
-      // Separate from vitest.config.ts's ./coverage — CI uploads each as
-      // its own Codecov flag (api-unit vs api-e2e), so they can't collide.
+      // Separate directory prevents unit and E2E Codecov flags from colliding.
       reportsDirectory: "./coverage-e2e",
       include: ["src/**/*.{ts,js}"],
       reporter: ["lcov", "text", "html"],

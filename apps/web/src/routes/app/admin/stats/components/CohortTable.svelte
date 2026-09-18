@@ -13,8 +13,7 @@
   );
   const columns = $derived(Array.from({ length: width }, (_, i) => i));
 
-  // Same ramp as the mockup: the accent tinted into the surface, flipping the
-  // text colour once the fill is dark enough to swallow it.
+  // Flip text colour when the accent fill becomes too dark for contrast.
   const background = (value: number) =>
     `color-mix(in srgb, var(--accent) ${value}%, var(--surface-2))`;
   const foreground = (value: number) =>

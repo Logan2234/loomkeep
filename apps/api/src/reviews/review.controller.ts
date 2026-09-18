@@ -63,7 +63,7 @@ export class ReviewController {
     private readonly reports: ReportService,
   ) {}
 
-  // --- Own reviews: NOT social-gated (rating your own items always works). ---
+  // Own reviews remain available when social features are disabled.
 
   @Get("me")
   @ApiOkResponse({ type: MyReviewResponseDto, isArray: true })
@@ -135,7 +135,7 @@ export class ReviewController {
     return this.reviews.revisions(user.sub, parseTarget(type), id);
   }
 
-  // --- Others' reviews for a target: social-gated + visibility-filtered. ---
+  // Other users' reviews are social-gated and visibility-filtered.
 
   @Get(":type/:id")
   @UseGuards(SocialFeatureGuard)
@@ -148,7 +148,7 @@ export class ReviewController {
     return this.reviews.listForTarget(user.sub, parseTarget(type), id);
   }
 
-  // --- Voting on someone else's review: social-gated, a community action. ---
+  // Voting is a social-gated community action.
 
   @Put(":reviewId/vote")
   @UseGuards(SocialFeatureGuard)

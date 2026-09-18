@@ -55,8 +55,7 @@
     fetch: getNotifications,
   }));
 
-  // Pushed live by EventsGateway (see NotificationService.create()) instead
-  // of the 20s poll this used to run — RealtimeConnection (root layout) owns
+  // RealtimeConnection (root layout) owns
   // the socket's connect/disconnect lifecycle and the catch-up refetch on
   // reconnect; this only needs its own event.
   $effect(() =>

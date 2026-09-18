@@ -1,8 +1,8 @@
 /**
- * An unlocked achievement not yet shown to the user by the [G6] unlock-bubble
+ * An unlocked achievement not yet shown to the user by the unlock bubble
  * UI (`UserAchievement.displayedAt IS NULL`). `xpAwarded` is looked up from
  * the matching XpEntry (sourceType "UserAchievement", sourceId = this id)
- * rather than stored on `UserAchievement` itself — see the [G2] plan.
+ * rather than stored on `UserAchievement` itself.
  */
 export interface PendingAchievementDto {
   id: string;
@@ -54,7 +54,7 @@ export interface AchievementDto {
   unlockedAt: string | null;
   progress: { current: number; target: number } | null;
   /**
-   * [G9] Whether this exact key is currently in the viewer's own showcase.
+   * Whether this exact key is currently in the viewer's own showcase.
    * Always false for a masked secret (it can never be equipped — see
    * `MAX_EQUIPPED_BADGES`'s doc) and for anyone else's achievement list, since
    * `GET /achievements` only ever returns the viewer's own.
@@ -63,7 +63,7 @@ export interface AchievementDto {
 }
 
 /**
- * [G9] How many badges a showcase can hold at once. Shared so the API's
+ * How many badges a showcase can hold at once. Shared so the API's
  * validation and the web's "equip" button disabled-state agree on the same
  * number without either hardcoding it.
  */
@@ -78,18 +78,16 @@ export interface MyProgressionDto {
   xp: number | null;
 }
 
-/** [G7] Which population a leaderboard ranks. */
 export type LeaderboardScope = "global" | "friends";
 
 /**
- * [G7] The window a leaderboard sums XP over — calendar month or calendar
- * year in the server's clock, recomputed live from the ledger rather than a
- * snapshot (see the ticket: no snapshot table needed for the MVP).
+ * Calendar window a leaderboard sums live from the XP ledger, using the
+ * server's clock rather than a snapshot table.
  */
 export type LeaderboardPeriod = "month" | "year";
 
 /**
- * [G7] One ranked row. Deliberately lean, not a `UserSummaryDto`: it carries
+ * Deliberately lean, not a `UserSummaryDto`: it carries
  * no `profileAccess`, so a PRIVATE row is never distinguishable from a
  * PUBLIC one — the leaderboard shows a pseudo and nothing else, ever.
  *
@@ -98,8 +96,8 @@ export type LeaderboardPeriod = "month" | "year";
  *
  * `avatarUrl` is null (client falls back to the identicon) whenever the row
  * is a PRIVATE account the viewer isn't friends with, regardless of whether
- * they uploaded a real photo — see the [G7] plan for why this is a stricter
- * rule than the profile page (which shows a PRIVATE stranger's real avatar).
+ * they uploaded a real photo. This is stricter than the profile page, which
+ * shows a PRIVATE stranger's real avatar.
  *
  * `rank` follows SQL `RANK()` semantics: tied rows share the same number and
  * the next distinct rank skips ahead by the tie's size (1, 2, 2, 4 — not
@@ -118,7 +116,7 @@ export interface LeaderboardEntryDto {
 }
 
 /**
- * [G7] `entries` is capped at the top 100 (no pagination for the MVP).
+ * `entries` is capped at the top 100 without pagination.
  * `viewerOutsideTop` carries the viewer's own row only when it did NOT make
  * that cut — when it did, the viewer's row is already in `entries` (flagged
  * `isViewer`) and this is null, so the UI never shows both at once. Also

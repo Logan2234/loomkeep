@@ -90,8 +90,6 @@ export class WebauthnService {
     };
   }
 
-  // --- Settings: adding a credential ---
-
   async registrationOptions(
     userId: string,
     email: string,
@@ -335,8 +333,6 @@ export class WebauthnService {
     });
   }
 
-  // --- Login: MFA 2nd factor (password already verified) ---
-
   async createMfaChallenge(
     userId: string,
     mfaLoginChallengeId: string,
@@ -347,8 +343,6 @@ export class WebauthnService {
     );
     return { webauthnChallengeId, options };
   }
-
-  // --- Login: passwordless (no password verified at all) ---
 
   /** Returns null when the account isn't eligible — callers must respond identically to "unknown identifier" to avoid enumeration. */
   async passwordlessOptions(

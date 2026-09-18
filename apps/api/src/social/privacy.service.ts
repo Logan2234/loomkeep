@@ -65,7 +65,6 @@ export class PrivacyService {
     return { followersToRemove, outgoingFollowsToCancel, listsToDowngrade };
   }
 
-  /** Applies a partial update (profile access and/or individual matrix cells). */
   async updateSettings(
     userId: string,
     dto: UpdateVisibilitySettingsDto,

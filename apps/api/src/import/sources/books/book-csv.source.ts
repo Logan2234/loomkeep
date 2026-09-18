@@ -175,7 +175,6 @@ export abstract class BookCsvSource<
       await this.prisma.bookEntry.deleteMany({ where: { userId } });
     }
 
-    // Tally imported books by their final status → one report tile per status.
     const tally = new Map<BookStatus, number>();
 
     for (const key of decisions.include) {
@@ -323,7 +322,6 @@ export abstract class BookCsvSource<
       },
     );
 
-    // Restore the CSV's original row order for the review list.
     const byKey = new Map(
       [...isbnResolved, ...queryResolved].map((r) => [r.key, r]),
     );
@@ -387,7 +385,6 @@ function toMatch(summary: BookSummaryDto): ImportMatch {
   };
 }
 
-/** Flatten a plan's auto-resolved matches into a key → match lookup. */
 function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
   const byKey = new Map<string, ImportMatch>();
 
@@ -400,7 +397,6 @@ function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
   return byKey;
 }
 
-/** Parse the row index out of a `b{i}` plan key. */
 function rowIndex(key: string): number | null {
   const m = /^b(\d+)$/.exec(key);
   return m ? Number(m[1]) : null;

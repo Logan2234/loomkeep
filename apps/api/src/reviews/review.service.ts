@@ -241,7 +241,6 @@ export class ReviewService {
     return { score: info.score, myVote: value };
   }
 
-  /** Removes the viewer's vote on a review, if any. */
   async unvote(viewerId: string, reviewId: string): Promise<{ score: number }> {
     // Looked up before the delete so revokeBySource still has the id to
     // work with afterwards.
@@ -381,14 +380,13 @@ export class ReviewService {
     return count;
   }
 
-  /** Deletes the user's review for a target (revisions cascade). */
   async remove(
     userId: string,
     targetType: ReviewTargetType,
     targetId: string,
   ): Promise<void> {
     // Looked up before the delete so revokeBySource still has the id to
-    // work with afterwards (same [G1] rule as every other cancellation path).
+    // work with afterwards.
     const existing = await this.prisma.review.findUnique({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
       select: { id: true },
@@ -429,7 +427,6 @@ export class ReviewService {
     };
   }
 
-  /** The edit history of the user's own review (newest first). */
   async revisions(
     userId: string,
     targetType: ReviewTargetType,
@@ -451,7 +448,6 @@ export class ReviewService {
     }));
   }
 
-  /** Every review the current user has written (newest first), with targets. */
   async listMine(userId: string): Promise<MyReviewDto[]> {
     const rows = await this.prisma.review.findMany({
       where: { userId },
@@ -711,10 +707,8 @@ export class ReviewService {
     return visible;
   }
 
-  // --- Rating projection for the library services (entry DTOs keep `rating`,
-  //     now sourced from Review). ---
+  // Library entry DTO ratings are projected from reviews.
 
-  /** The user's ratings for many targets of one type, keyed by targetId. */
   async getRatings(
     userId: string,
     targetType: ReviewTargetType,
@@ -728,7 +722,6 @@ export class ReviewService {
     return new Map(rows.map((r) => [r.targetId, r.rating]));
   }
 
-  /** The user's rating for a single target, or null. */
   async getRating(
     userId: string,
     targetType: ReviewTargetType,

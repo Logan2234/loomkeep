@@ -1,8 +1,4 @@
 <script lang="ts">
-  // Premium nav skin — a floating dock detached from the edge, icon-only
-  // with a tooltip label on hover, magnified on hover like a dock. Mirrors
-  // DesktopSidebar's data/gating but skips the expand/pin mechanic: this
-  // skin is deliberately icon-only, so there's nothing to expand.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { logout } from "$lib/api/auth";

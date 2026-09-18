@@ -1,8 +1,5 @@
 <script lang="ts">
-  // [G8] Desktop half of the "Première séance" checklist: a small collapsed
-  // ticket-stub pill, bottom-right, that unfolds into the step list on click
-  // — see OnboardingBanner for the mobile half (a different shell entirely,
-  // not just a responsive variant of this one).
+  // The mobile checklist uses a separate shell in OnboardingBanner.
   import { afterNavigate } from "$app/navigation";
   import { skipOnboardingStep } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";

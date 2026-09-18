@@ -10,9 +10,9 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { avatarUrl } from "../../users/avatar.util";
 import { FollowService } from "../follow.service";
 
-// No pagination for the MVP (see the [G7] ticket) — the visible list is
-// capped here, but a whole tied group at the boundary is kept together (see
-// the `rank <= TOP_CUTOFF` filter below), so it can render slightly more
+// The unpaginated list is capped here, but a whole tied group at the boundary
+// is kept together by the `rank <= TOP_CUTOFF` filter, so it can render
+// slightly more
 // than 100 rows in the rare case of a tie straddling the cutoff.
 const TOP_CUTOFF = 100;
 
@@ -37,8 +37,8 @@ export class LeaderboardService {
 
   /**
    * Ranks by XP summed over the given calendar period — recomputed live from
-   * the ledger every call (no snapshot table for the MVP, per the [G7]
-   * ticket). GHOST and `hideProgression` accounts never appear, in either
+   * the ledger every call, without a snapshot table. GHOST and
+   * `hideProgression` accounts never appear, in either
    * scope: a leaderboard is exactly the "other viewers" a Figurant or a
    * hidden-progression account already opted out of showing XP to.
    *

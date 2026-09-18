@@ -74,7 +74,6 @@
   let jobError = $state<string | null>(null);
   let showOverwriteConfirm = $state(false);
 
-  // --- Input step ---
   // The raw payload sent as-is to the source: CSV text, a base64 ZIP, or a Steam id.
   let inputValue = $state("");
   let fileName = $state("");
@@ -100,7 +99,6 @@
     [Domain.PODCASTS]: "/app/podcasts",
   };
 
-  // --- Job / plan ---
   let analyzeJobId = $state<string | null>(null);
   let job = $state<ImportJobDto | null>(null);
   let plan = $state<ImportPlan | null>(null);
@@ -138,9 +136,7 @@
     },
   }));
 
-  // Pushed live by EventsGateway (see ImportJobService.progressFor()/run())
-  // instead of the 1s poll this used to run. A running tick is cheap to
-  // merge straight into the cache; once the job settles, the plan/report
+  // Merge running progress into the cache; once the job settles, the plan/report
   // only exist server-side, so the completion event triggers a real refetch
   // instead of guessing at the shape.
   $effect(() => {
@@ -174,19 +170,16 @@
     };
   });
 
-  // --- Decisions (reactive collections, mutated in place) ---
   const included = new SvelteSet<string>();
   const statuses = new SvelteMap<string, string>();
   const picked = new SvelteMap<string, ImportMatch>();
   let overwrite = $state(false);
 
-  // --- Per-item manual search ---
   let searchKey = $state<string | null>(null);
   let searchQuery = $state("");
   let searchResults = $state<ImportMatch[]>([]);
   let searching = $state(false);
 
-  // --- Review-step filter ---
   // Shows only items still needing a manual match; toggled from the recap bar.
   let filterUnresolved = $state(false);
 
@@ -235,7 +228,6 @@
   const matchOf = (item: ImportPlanItem): ImportMatch | null =>
     picked.get(item.key) ?? item.match;
 
-  // --- Input handling ---
   function readBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -283,7 +275,6 @@
     if (file) void handleFile(file);
   }
 
-  // --- Analyze / commit ---
   // Both go through createApiMutation rather than a hand-rolled try/catch:
   // `error` is then a translated string by construction, and a double submit
   // is ignored instead of starting a second job. The *polling* that follows

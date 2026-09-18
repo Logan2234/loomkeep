@@ -125,7 +125,6 @@ export class ActivityService {
     return this.buildFeed(viewerId, rows, limit);
   }
 
-  /** A short home-page teaser of the home feed. */
   async homePreview(viewerId: string): Promise<ActivityEventDto[]> {
     const feed = await this.homeFeed(viewerId, 1, PREVIEW_SIZE);
     return feed.items;
@@ -151,8 +150,6 @@ export class ActivityService {
 
     return this.buildFeed(viewerId, rows, limit);
   }
-
-  // --- internals -----------------------------------------------------------
 
   private async followeeIds(viewerId: string): Promise<string[]> {
     const follows = await this.prisma.follow.findMany({
@@ -325,7 +322,6 @@ export class ActivityService {
     );
   }
 
-  /** Resolves a work's title/image/detail-link from its internal id. */
   private async resolveSnapshot(
     targetType: string,
     targetId: string,

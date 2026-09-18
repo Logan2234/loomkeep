@@ -29,7 +29,6 @@ import {
   type ProgressReporter,
 } from "./import-source";
 
-/** Completed jobs are dropped from memory after this delay. */
 const JOB_RETENTION_MS = 60 * 60 * 1000;
 const MAX_RETAINED_JOBS_PER_USER = 20;
 /** Caps how often a live progress push goes out during a hot tick loop (a large CSV can tick thousands of times). */
@@ -156,7 +155,6 @@ export class ImportJobService {
     };
   }
 
-  /** The user's own import audit trail, newest first. */
   async getHistory(
     userId: string,
     page: number,
@@ -252,7 +250,6 @@ export class ImportJobService {
     return toDto(job);
   }
 
-  /** Commit a previously analysed import with the user's decisions. */
   commit(
     userId: string,
     sourceId: ImportSource,
@@ -405,7 +402,6 @@ export class ImportJobService {
     };
   }
 
-  /** Logs a finished commit to the admin "Imports" audit log (analyze runs write nothing). */
   private async recordRun(
     userId: string,
     job: JobRecord,
@@ -483,7 +479,6 @@ export class ImportJobService {
     });
   }
 
-  /** Run the background work, flipping the job to completed/failed when done. */
   private async run(job: JobRecord, work: () => Promise<void>): Promise<void> {
     try {
       await work();
@@ -525,7 +520,6 @@ export class ImportJobService {
     job.plan = null;
   }
 
-  /** Same, for every one of this user's jobs that is no longer running. */
   private releasePayloads(userId: string): void {
     for (const job of this.jobs.values()) {
       if (job.userId === userId && job.status !== "running") {

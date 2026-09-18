@@ -151,9 +151,9 @@ export class ListController {
     );
   }
 
-  // --- Collaborators: social-gated (granting/revoking edit access to
+  // Collaborators are social-gated because granting or revoking access to
   // another user is itself a social feature). Listing/adding are owner-only;
-  // removing is owner-only except an editor can remove themselves (leave). ---
+  // removing is owner-only except an editor can remove themselves.
 
   @Get(":id/members")
   @UseGuards(SocialFeatureGuard)
@@ -186,7 +186,7 @@ export class ListController {
     return this.lists.removeMember(user.sub, id, memberUserId);
   }
 
-  // --- A list of a viewer's choosing: social-gated + visibility-filtered. ---
+  // Viewer-selected lists are social-gated and visibility-filtered.
 
   @Get("user/:username")
   @UseGuards(SocialFeatureGuard)

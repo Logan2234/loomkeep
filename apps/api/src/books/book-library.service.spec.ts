@@ -8,8 +8,6 @@ import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1) — the XP
-// wiring's actual crediting/reasons is asserted below via these mocks.
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -194,9 +192,7 @@ describe("BookLibraryService.deleteEntry", () => {
   });
 });
 
-// Regression: finishedAt used to only ever be set by an explicit dto field
-// nothing in the UI ever sends, so a book marked READ never actually
-// counted towards the reading goal (which reads finishedAt, not status).
+// Reading goals depend on finishedAt, while the UI only sends status.
 describe("BookLibraryService — finishedAt sync", () => {
   it("sets finishedAt when a book's status is patched to READ", async () => {
     const entryRow = makeRow({ id: "e1", status: "TO_READ" });

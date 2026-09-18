@@ -478,7 +478,7 @@ export class LibraryService {
     ];
 
     // Loaded before the transaction so revokeBySource has something to work
-    // with once the watches are gone — see the [G1] plan: XP writes never
+    // with once the watches are gone. XP writes never
     // happen inside a $transaction (no side effect in the lock, same as
     // `activity.emit` elsewhere in this file, always awaited after one).
     const watches = await this.prisma.episodeWatch.findMany({
@@ -784,7 +784,7 @@ export class LibraryService {
     });
 
     // Loaded before the deleteMany so revokeBySource still has the ids to
-    // work with afterwards (see the [G1] plan: never award/revoke inside a
+    // work with afterwards. Never award/revoke inside a
     // transaction, and here there's nothing left to look up post-delete).
     const watches = await this.prisma.episodeWatch.findMany({
       where: { userId, episodeId: { in: episodes.map((e) => e.id) } },

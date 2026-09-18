@@ -1,5 +1,5 @@
 /**
- * Sequencing for [G6]'s unlock bubble: one bubble on screen at a time, in
+ * Unlock-bubble sequencing: one bubble on screen at a time, in
  * reading order, each sliding in from the top, holding, then sliding back
  * out before the next one enters.
  *

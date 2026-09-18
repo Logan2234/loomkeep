@@ -6,7 +6,6 @@ import { AgeGateService } from "../../../users/age-gate.service";
 import { parseBabelioCsv, type ParsedBabelioRow } from "./babelio-parse";
 import { BookCsvSource } from "./book-csv.source";
 
-/** Babelio CSV import, using the shared book resolve/plan/commit flow. */
 @Injectable()
 export class BabelioImportSource extends BookCsvSource<ParsedBabelioRow> {
   readonly id = "babelio";

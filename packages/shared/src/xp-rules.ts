@@ -22,10 +22,9 @@ export interface XpRule {
   socialGated: boolean;
 }
 
-// Reference unit: one episode watched = 10 XP. See the [G1] plan for the
-// full rationale behind each amount/cap pair.
+// Reference unit: one episode watched = 10 XP.
 export const XP_RULES: Record<XpReason, XpRule> = {
-  // --- Consumption — the only group that lives without SOCIAL_ENABLED. ---
+  // Consumption is the only group available without SOCIAL_ENABLED.
   EPISODE_WATCHED: {
     reason: XpReason.EPISODE_WATCHED,
     amount: 10,
@@ -116,7 +115,6 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     socialGated: false,
   },
 
-  // --- Rating & critique. ---
   WORK_RATED: {
     reason: XpReason.WORK_RATED,
     amount: 10,
@@ -139,7 +137,6 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     socialGated: false,
   },
 
-  // --- Discussion — SOCIAL_ENABLED only. ---
   COMMENT_POSTED: {
     reason: XpReason.COMMENT_POSTED,
     amount: 10,
@@ -169,7 +166,6 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     socialGated: true,
   },
 
-  // --- Milestones. ---
   IMPORT_COMPLETED: {
     reason: XpReason.IMPORT_COMPLETED,
     amount: 150,
@@ -187,18 +183,14 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     sourceType: "User",
     socialGated: false,
   },
-  // [G2]: amount varies by achievement tier — like ADMIN_ADJUSTMENT below,
-  // no fixed `amount` here. AchievementService always passes
-  // XpService.award's `amountOverride` (the definition's own `xpAward`)
-  // instead. Unique per achievement id, so no dailyCap.
+  // AchievementService supplies the tier's `xpAward` through amountOverride.
+  // The achievement id provides uniqueness, so no dailyCap is needed.
   ACHIEVEMENT_UNLOCKED: {
     reason: XpReason.ACHIEVEMENT_UNLOCKED,
     sourceType: "UserAchievement",
     socialGated: false,
   },
-  // Reserved for B8 — no caller in this ticket. No fixed `amount` (a signed,
-  // per-grant value chosen by an admin) and never revoked (excluded from
-  // reconciliation explicitly, not just "no verifier").
+  // A signed per-grant value chosen by an admin; never reconciled or revoked.
   ADMIN_ADJUSTMENT: {
     reason: XpReason.ADMIN_ADJUSTMENT,
     sourceType: "AdminAdjustment",

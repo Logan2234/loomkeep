@@ -1,7 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-// No swc plugin, unlike apps/api's config: nothing here uses decorators or
-// Nest metadata, so Vite's own esbuild transform is enough.
+// No SWC plugin is needed without decorators or Nest metadata.
 export default defineConfig({
   test: {
     root: "./",
@@ -11,8 +10,7 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "./coverage",
       include: ["src/**/*.ts"],
-      // Vitest's v8 provider defaults to text/html/clover/json — no lcov,
-      // which is what Codecov's upload actually reads.
+      // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
     },
   },
