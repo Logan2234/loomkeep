@@ -16,7 +16,6 @@ export interface MusicSearchResponseDto {
   results: MusicSummaryDto[];
 }
 
-/** One track of the album's representative release. */
 export interface MusicTrackDto {
   /** 1-indexed position within its medium (resets per disc on multi-disc releases). */
   position: number;

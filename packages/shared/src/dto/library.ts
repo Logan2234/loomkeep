@@ -53,7 +53,6 @@ export interface LibraryEntryDto {
   replays: MovieReplayDto[];
 }
 
-/** One completed rewatch of a movie, beyond the entry's own (first) completion. */
 export interface MovieReplayDto {
   id: string;
   /** ISO date the rewatch was completed. */
@@ -103,7 +102,6 @@ export interface UpsertLibraryEntryDto {
   favorite?: boolean;
 }
 
-/** One watch event for one episode; several rows for the same episode = rewatches. */
 export interface EpisodeWatchDto {
   id: string;
   episodeId: string;

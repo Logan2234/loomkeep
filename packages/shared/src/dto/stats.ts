@@ -32,7 +32,6 @@ export interface StatusBucketCountDto {
   count: number;
 }
 
-/** One domain's library reduced to the shared status vocabulary. */
 export interface DomainStatusBreakdownDto {
   domain: StatsDomain;
   total: number;
@@ -98,7 +97,6 @@ export interface StatsOverviewDto {
   possession: PossessionBreakdownDto;
 }
 
-/** One work matching a rating or decade filter, for the drill-down modal. */
 export interface StatsWorkDto {
   domain: StatsDomain;
   title: string;
@@ -151,7 +149,6 @@ export interface VideoStatsDto {
 /** Staleness bucket for a WATCHING series/anime — mutually exclusive. */
 export type WatchStaleness = "PAUSED" | "GHOST";
 
-/** A count grouped by a free-form label (genre, platform…). */
 export interface LabelCountDto {
   label: string;
   count: number;

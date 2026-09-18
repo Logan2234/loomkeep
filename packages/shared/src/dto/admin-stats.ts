@@ -1,16 +1,8 @@
-// Instance-wide admin statistics, section by section ("Salle des machines").
-//
-// Deliberately split per section rather than one monolithic payload: each
-// section has its own endpoint, its own refresh cadence and its own failure
-// mode. It replaces the former `AdminStatsDto`/`AdminTrendsDto`, of which only
-// the handful of counters the /admin dashboard and /admin/communications read
-// survive, as `AdminOverviewDto` (dto/admin.ts).
+// Sections have separate endpoints, refresh cadences, and failure modes.
 
 import type { Locale, ProfileAccess, ReportCategory } from "../enums";
 import type { TrendPeriod, TrendPointDto } from "./admin";
 import type { RatingBucketDto, StatsDomain } from "./stats";
-
-/* ── Comptes & engagement ─────────────────────────────────────────────── */
 
 /** New-account curve for one bucket size — re-queried by the card's own period picker. */
 export interface AdminNewAccountsTrendDto {
@@ -101,8 +93,6 @@ export interface AdminAccountsSectionDto {
   byLocale: AdminLocaleCountDto[];
 }
 
-/* ── Catalogue & cache ────────────────────────────────────────────────── */
-
 export interface AdminCacheDomainRowDto {
   domain: StatsDomain;
   /** Cached items for that domain. */
@@ -135,8 +125,6 @@ export interface AdminCatalogueSectionDto {
   orphanCount: number;
 }
 
-/* ── Social ───────────────────────────────────────────────────────────── */
-
 /** Instance-wide social counters, all time. */
 interface AdminSocialTotalsDto {
   reviews: number;
@@ -158,9 +146,8 @@ interface AdminSocialTotalsDto {
 }
 
 /**
- * Reviews + comments created per bucket — the one temporal series of the
- * section (the mockup only had static totals; a flat curve is what tells an
- * admin the social surface went quiet). Re-queried by the card's own picker.
+ * Reviews + comments created per bucket. A flat curve reveals when the social
+ * surface went quiet. Re-queried by the card's own picker.
  */
 export interface AdminSocialActivityTrendDto {
   period: TrendPeriod;
@@ -169,7 +156,6 @@ export interface AdminSocialActivityTrendDto {
   total: number;
 }
 
-/** One report category ranked by volume, descending. */
 export interface AdminReportCategoryCountDto {
   category: ReportCategory;
   count: number;
@@ -195,7 +181,6 @@ interface AdminReportsStatsDto {
   byCategory: AdminReportCategoryCountDto[];
 }
 
-/** One account ranked by how much it writes. */
 export interface AdminTopContributorDto {
   username: string;
   /** Reviews + comments (tombstones excluded), all time. */
@@ -232,7 +217,6 @@ export interface AdminSocialStatsDto {
 export type AdminSocialSectionDto =
   { enabled: false } | ({ enabled: true } & AdminSocialStatsDto);
 
-/* ── Système ──────────────────────────────────────────────────────────── */
 // Database size / per-table breakdown deliberately lives outside the app now
 // (Homepage dashboard, via Prometheus/postgres_exporter) — it's
 // infrastructure monitoring, not Loomkeep business data, and doesn't need a

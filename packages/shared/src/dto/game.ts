@@ -64,7 +64,6 @@ export interface GameItemDto {
   sourceId: string;
 }
 
-/** One completed replay, beyond the entry's own (first) completion. */
 export interface GameReplayDto {
   id: string;
   /** ISO date the replay was completed. */

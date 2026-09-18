@@ -120,12 +120,12 @@ export interface SocialProfileDto {
    */
   xp: number | null;
   /**
-   * [G9] Up to `MAX_EQUIPPED_BADGES` unlocked, non-secret achievements the
+   * Up to `MAX_EQUIPPED_BADGES` unlocked, non-secret achievements the
    * target chose to show — an empty array both when nothing is equipped and
    * whenever `xp` above would be null (same visibility rule, reused exactly
    * rather than a parallel check: gamification off, viewer not allowed to see
    * progression, or `hideProgression`). Never render a placeholder for the
-   * empty case — the ticket requires zero footprint, not an empty slot.
+   * empty case: the showcase has zero footprint when empty.
    */
   equippedBadges: AchievementDto[];
   /** Reviews with a visibility the viewer may see (own-scope, like List). */

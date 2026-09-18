@@ -15,7 +15,6 @@ export interface ReportTargetSummaryDto {
   targetOwnerUsername: string | null;
 }
 
-/** One report in the admin moderation queue. */
 export interface ReportDto {
   id: string;
   targetType: ReportTargetType;

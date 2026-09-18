@@ -105,19 +105,14 @@ export type NotificationType =
  */
 export const ActivityType = {
   ADDED: "ADDED",
-  /** Started watching/playing/reading/listening. */
   STARTED: "STARTED",
   FINISHED: "FINISHED",
   DROPPED: "DROPPED",
-  /** Started a rewatch/replay/reread. */
   REWATCHED: "REWATCHED",
-  /** Watched an episode / made reading or play progress. */
   PROGRESS: "PROGRESS",
   FAVORITED: "FAVORITED",
-  /** Published or updated a review. */
   REVIEWED: "REVIEWED",
   LIST_CREATED: "LIST_CREATED",
-  /** Added one or more works to a list. */
   LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A list's visibility moved from PRIVATE to FRIENDS/PUBLIC. */
   LIST_SHARED: "LIST_SHARED",
@@ -152,7 +147,6 @@ export const CatalogSource = {
 } as const;
 export type CatalogSource = (typeof CatalogSource)[keyof typeof CatalogSource];
 
-/** Source a game's catalogue data comes from. IGDB is the only one today. */
 export const GameSource = {
   IGDB: "IGDB",
 } as const;
@@ -187,7 +181,6 @@ export const GameOwnershipStatus = {
 export type GameOwnershipStatus =
   (typeof GameOwnershipStatus)[keyof typeof GameOwnershipStatus];
 
-/** Source a book's catalogue data comes from. Open Library only. */
 export const BookSource = {
   OPEN_LIBRARY: "OPEN_LIBRARY",
 } as const;
@@ -256,7 +249,6 @@ export const MediaOwnershipStatus = {
 export type MediaOwnershipStatus =
   (typeof MediaOwnershipStatus)[keyof typeof MediaOwnershipStatus];
 
-/** Source a music item's catalogue data comes from. MusicBrainz only. */
 export const MusicSource = {
   MUSICBRAINZ: "MUSICBRAINZ",
 } as const;
@@ -323,9 +315,7 @@ export const SecurityEventType = {
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];
 
-// ---------------------------------------------------------------------------
-// Social (P4). All of it is gated behind the runtime `SOCIAL_ENABLED` flag.
-// ---------------------------------------------------------------------------
+// All social behavior is gated behind the runtime `SOCIAL_ENABLED` flag.
 
 /**
  * How reachable a user's profile is — the "authentication" layer of visibility.
@@ -456,7 +446,7 @@ export const CommentTargetType = {
 export type CommentTargetType =
   (typeof CommentTargetType)[keyof typeof CommentTargetType];
 
-/** Fixed reaction set for comments (a full emoji picker is backlog). */
+/** Fixed reaction set accepted by the API and client. */
 export const CommentEmote = {
   LIKE: "LIKE",
   LOVE: "LOVE",
@@ -671,12 +661,8 @@ export type ListVisibility =
 export const Locale = ["fr", "en"] as const;
 export type Locale = (typeof Locale)[number];
 
-// ---------------------------------------------------------------------------
-// Gamification (G1). Mirrors `apps/api/prisma/schema.prisma`'s `XpEntry.reason`
-// — a plain String column there, not a Prisma enum (same rationale as
-// `ActivityEvent.type`: a new reason needs no migration). The full barème
-// (amount/cap/source per reason) lives in `xp-rules.ts`, not here.
-// ---------------------------------------------------------------------------
+// Mirrors XpEntry.reason, a String column so new reasons need no migration.
+// Amount, cap, and source rules live in xp-rules.ts.
 
 /**
  * Every source of XP the app can credit. See `xp-rules.ts` for the amount,
