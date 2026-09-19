@@ -1,6 +1,7 @@
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
+  AdminUserFilter,
   Domain,
   JobStatus,
   Locale,
@@ -93,7 +94,7 @@ export const runAdminJob = (key: string): Promise<void> =>
 export function getAdminUsers(
   filters: {
     search?: string;
-    filter?: "all" | "admin" | "unverified" | "never";
+    filter?: AdminUserFilter;
     page?: number;
     limit?: number;
   } = {},
