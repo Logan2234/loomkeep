@@ -289,7 +289,8 @@ export interface AdminUserDto {
 }
 
 /** Extra server-side filter for the admin users list, on top of free-text search. */
-export type AdminUserFilter = "all" | "admin" | "unverified" | "never";
+export type AdminUserFilter =
+  "all" | "admin" | "unverified" | "never" | "premium";
 
 /** Compact breakdown of the works saved in one account's libraries. */
 export interface AdminUserLibraryStatsDto {

@@ -794,5 +794,5 @@
       onClose={() => (lightboxOpen = false)} />
   {/if}
 {:else if !error}
-  <DetailHeroSkeleton wide={false} />
+  <DetailHeroSkeleton wide={false} media />
 {/if}

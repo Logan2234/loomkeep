@@ -28,6 +28,16 @@ function make(over: { backup?: unknown; counters?: unknown[] } = {}) {
 }
 
 describe("AdminSystemStatsService", () => {
+  it("labels the notification count as a total, not pending work", async () => {
+    const { service, prisma } = make();
+
+    const stats = await service.getStats();
+
+    expect(stats.ops).toHaveProperty("notificationsTotal", 4);
+    expect(stats.ops).not.toHaveProperty("notificationsPending");
+    expect(prisma.notification.count).toHaveBeenCalledWith();
+  });
+
   it("counts failed logins over the last 24 hours only", async () => {
     const { service, prisma } = make();
 

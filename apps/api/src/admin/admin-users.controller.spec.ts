@@ -164,6 +164,21 @@ describe("AdminUsersController.listUsers", () => {
       }),
     );
   });
+
+  it("filters assigned Premium plans before pagination", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
+
+    await controller.listUsers(undefined, "premium", "2");
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { entitlement: { is: { plan: "PREMIUM" } } },
+        skip: DEFAULT_PAGE_SIZE,
+        take: DEFAULT_PAGE_SIZE + 1,
+      }),
+    );
+  });
 });
 
 describe("AdminUsersController.getUserLibraryStats", () => {

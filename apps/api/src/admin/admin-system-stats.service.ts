@@ -49,28 +49,24 @@ export class AdminSystemStatsService {
   }
 
   private async ops(now: Date): Promise<AdminSystemSectionDto["ops"]> {
-    const [
-      notificationsPending,
-      pushSubscriptions,
-      failedLogins24h,
-      lastBackup,
-    ] = await Promise.all([
-      this.prisma.notification.count(),
-      this.prisma.pushSubscription.count(),
-      this.prisma.securityEvent.count({
-        where: {
-          type: SecurityEventType.LOGIN_FAILED,
-          createdAt: { gte: new Date(now.getTime() - DAY_MS) },
-        },
-      }),
-      this.prisma.backupFile.findFirst({
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true, sizeBytes: true },
-      }),
-    ]);
+    const [notificationsTotal, pushSubscriptions, failedLogins24h, lastBackup] =
+      await Promise.all([
+        this.prisma.notification.count(),
+        this.prisma.pushSubscription.count(),
+        this.prisma.securityEvent.count({
+          where: {
+            type: SecurityEventType.LOGIN_FAILED,
+            createdAt: { gte: new Date(now.getTime() - DAY_MS) },
+          },
+        }),
+        this.prisma.backupFile.findFirst({
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true, sizeBytes: true },
+        }),
+      ]);
 
     return {
-      notificationsPending,
+      notificationsTotal,
       pushSubscriptions,
       failedLogins24h,
       lastBackup: lastBackup

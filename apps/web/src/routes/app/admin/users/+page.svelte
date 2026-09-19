@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
   import { getAdminUsers } from "$lib/api/client";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
@@ -9,21 +11,28 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { debounce } from "$lib/debounce";
   import { formatDate } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminUserDto,
     AdminUserFilter,
     PagedResult,
   } from "@loomkeep/shared";
+  import { onDestroy } from "svelte";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
   import UserDrawer from "./components/UserDrawer.svelte";
 
-  // Pre-filled from `?q=` so links like /admin/users?q=<email> land pre-filtered
-  // (used by the imports page's "Voir le compte →"). `query` is the raw
-  // input; `queryFilter` is the debounced value that actually drives the
-  // fetch (see onQueryInput below).
+  const reduced = prefersReducedMotion();
   let query = $state(page.url.searchParams.get("q") ?? "");
-  let queryFilter = $state(page.url.searchParams.get("q") ?? "");
-  let filter = $state<AdminUserFilter>("all");
+  const queryFilter = $derived(page.url.searchParams.get("q") ?? "");
+  const filter = $derived<AdminUserFilter>(
+    ["admin", "unverified", "never", "premium"].includes(
+      page.url.searchParams.get("filter") ?? "",
+    )
+      ? (page.url.searchParams.get("filter") as AdminUserFilter)
+      : "all",
+  );
 
   let selectedId = $state<string | null>(null);
 
@@ -55,10 +64,30 @@
   const selected = $derived(users.find((u) => u.id === selectedId) ?? null);
 
   const queryFilterDebounce = debounce(() => {
-    queryFilter = query.trim();
+    void goto(adminFilterHref(page.url, { q: query.trim() || null }), {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
   }, 300);
+  $effect(() => {
+    queryFilterDebounce.cancel();
+    query = page.url.searchParams.get("q") ?? "";
+  });
+  onDestroy(() => queryFilterDebounce.cancel());
   function onQueryInput() {
     queryFilterDebounce.call();
+  }
+
+  function changeFilter(value: AdminUserFilter) {
+    queryFilterDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, {
+        q: query.trim() || null,
+        filter: value === "all" ? null : value,
+      }),
+      { noScroll: true, keepFocus: true },
+    );
   }
 
   function closeDrawer() {
@@ -89,6 +118,7 @@
     { value: "admin", label: m.common_admin() },
     { value: "unverified", label: m.admin_users_unverified() },
     { value: "never", label: m.admin_users_never_logged_in() },
+    { value: "premium", label: m.admin_users_premium_filter() },
   ];
 </script>
 
@@ -113,7 +143,7 @@
       label={m.common_filter()}
       options={FILTERS}
       values={[filter]}
-      onChange={(v) => (filter = (v[0] as AdminUserFilter) ?? "all")} />
+      onChange={(v) => changeFilter((v[0] as AdminUserFilter) ?? "all")} />
   </div>
 
   {#if error}
@@ -136,13 +166,18 @@
         <tbody>
           {#each users as u (u.id)}
             <tr
-              onclick={() => (selectedId = u.id)}
-              class="border-border hover:bg-surface-2 cursor-pointer border-b transition-colors last:border-b-0 {selected?.id ===
+              animate:flip={{ duration: reduced ? 0 : 160 }}
+              in:fade|global={{ duration: reduced ? 0 : 140 }}
+              out:fade|global={{ duration: reduced ? 0 : 100 }}
+              class="border-border border-b transition-colors last:border-b-0 {selected?.id ===
               u.id
                 ? 'bg-accent/10'
                 : ''}">
               <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  onclick={() => (selectedId = u.id)}
+                  class="hover:bg-surface-2 -m-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-lg p-2 text-left transition-colors">
                   <Avatar seed={u.username} url={u.avatarUrl} size={36} />
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
@@ -183,7 +218,7 @@
                       {formatDate(u.createdAt)}
                     </p>
                   </div>
-                </div>
+                </button>
               </td>
               <td class="hidden px-4 py-3 sm:table-cell">
                 <div class="text-dim flex items-center gap-2 text-xs">

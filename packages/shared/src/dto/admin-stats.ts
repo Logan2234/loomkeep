@@ -244,7 +244,7 @@ interface AdminOpsSignalsDto {
    * `Notification` model), so there's no read/unread split any more — a row's
    * existence already means "unread".
    */
-  notificationsPending: number;
+  notificationsTotal: number;
   /**
    * Push subscription rows. A total, not a live/dead split: nothing tracks
    * whether an endpoint still answers.

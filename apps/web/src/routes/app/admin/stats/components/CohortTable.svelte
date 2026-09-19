@@ -25,7 +25,7 @@
 {:else}
   <div class="overflow-x-auto">
     <table
-      class="w-full border-separate border-spacing-0.75 font-mono text-[10.5px] tabular-nums">
+      class="w-full border-separate border-spacing-0.75 font-mono text-xs tabular-nums">
       <thead>
         <tr>
           <th class="text-dim p-0.5 font-normal"
