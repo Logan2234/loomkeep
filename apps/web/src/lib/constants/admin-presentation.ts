@@ -58,6 +58,16 @@ export function adminJobLabel(key: string): string {
     : key;
 }
 
+export function adminJobButtonState(
+  runningKey: string | null,
+  jobKey: string,
+): { disabled: boolean; running: boolean } {
+  return {
+    disabled: runningKey !== null,
+    running: runningKey === jobKey,
+  };
+}
+
 export function adminJobSchedule(key: string): string | null {
   switch (key) {
     case "notifications.scan":

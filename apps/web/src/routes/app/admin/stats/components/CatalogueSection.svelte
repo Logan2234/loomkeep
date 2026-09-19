@@ -35,14 +35,14 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_catalogue_cache_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_catalogue_cache_desc()}
     </p>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr
-            class="border-border text-dim border-b font-mono text-[10px] uppercase">
+            class="border-border text-dim border-b font-mono text-xs uppercase">
             <th class="px-2 py-1.5 text-left font-normal"
               >{m.common_domain()}</th>
             <th class="px-2 py-1.5 text-right font-normal"
@@ -58,7 +58,7 @@
             <tr class="border-border border-b last:border-0">
               <td class="px-2 py-2">
                 <span
-                  class="bg-surface-2 rounded px-1.5 py-0.5 font-mono text-[10px]"
+                  class="bg-surface-2 rounded px-1.5 py-0.5 font-mono text-xs"
                   style="color:{STATS_DOMAIN_COLOR_VAR[row.domain]}">
                   {STATS_DOMAIN_LABEL[row.domain]}
                 </span>
@@ -81,7 +81,7 @@
         </tbody>
       </table>
     </div>
-    <p class="text-dim mt-2.5 text-[11px] italic">
+    <p class="text-dim mt-2.5 text-xs italic">
       {m.admin_catalogue_detail_hint()}
       <a href="/app/admin/cache" class="link-accent not-italic"
         >{m.admin_catalogue_cache_link()}</a
@@ -93,7 +93,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_catalogue_popular_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_catalogue_popular_desc()}
     </p>
     <RankBars items={popularItems} />

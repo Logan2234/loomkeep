@@ -519,7 +519,9 @@ describe("ReportService.resolve", () => {
     const { svc, notifications } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUnique: vi.fn().mockResolvedValue({ reporterId: "reporter1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "fr" },
+        }),
       },
     });
     await svc.resolve("admin1", "r1", "DISMISSED");
@@ -527,6 +529,28 @@ describe("ReportService.resolve", () => {
       expect.objectContaining({
         userId: "reporter1",
         type: "REPORT_RESOLVED",
+        title: "Ton signalement a été traité",
+        body: "Nous n'avons pas donné suite à ton signalement.",
+      }),
+    );
+  });
+
+  it("localizes the resolution notification to the reporter's language", async () => {
+    const { svc, notifications } = make({
+      report: {
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "en" },
+        }),
+      },
+    });
+
+    await svc.resolve("admin1", "r1", "RESOLVED");
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "reporter1",
+        title: "Your report has been reviewed",
+        body: "Action has been taken following your report.",
       }),
     );
   });
@@ -535,7 +559,7 @@ describe("ReportService.resolve", () => {
     const { svc, notifications } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUnique: vi.fn().mockResolvedValue({ reporterId: null }),
+        findUnique: vi.fn().mockResolvedValue({ reporter: null }),
       },
     });
     await svc.resolve("admin1", "r1", "RESOLVED");

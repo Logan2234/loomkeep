@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
   import {
     getAdminReports,
     getAdminReportsSummary,
@@ -27,6 +30,7 @@
     REPORT_STATUS_LABELS,
   } from "$lib/constants/report-labels";
   import { formatDateTime, formatNumber } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     ModerationLegalBasis,
@@ -34,7 +38,10 @@
     ReportDto,
     ReportStatus,
   } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
 
+  const reduced = prefersReducedMotion();
   const STATUS_OPTIONS = [
     { label: m.report_status_pending(), value: "PENDING" },
     ...(Object.keys(REPORT_STATUS_LABELS) as ReportStatus[])
@@ -42,8 +49,21 @@
       .map((s) => ({ label: REPORT_STATUS_LABELS[s], value: s })),
   ];
 
-  let activeStatus = $state<ReportStatus>("PENDING");
-  let reporterId = $state<string | null>(null);
+  const activeStatus = $derived<ReportStatus>(
+    Object.keys(REPORT_STATUS_LABELS).includes(
+      page.url.searchParams.get("status") ?? "",
+    )
+      ? (page.url.searchParams.get("status") as ReportStatus)
+      : "PENDING",
+  );
+  const reporterId = $derived(page.url.searchParams.get("reporter") || null);
+
+  function changeFilters(updates: Record<string, string | null>) {
+    void goto(adminFilterHref(page.url, updates), {
+      noScroll: true,
+      keepFocus: true,
+    });
+  }
 
   const reportsKey = $derived(
     keys.admin.reports({ status: activeStatus, reporterId }),
@@ -222,12 +242,15 @@
       label={m.common_status()}
       options={STATUS_OPTIONS}
       values={[activeStatus]}
-      onChange={(v) => (activeStatus = (v[0] as ReportStatus) || "PENDING")} />
+      onChange={(v) =>
+        changeFilters({
+          status: v[0] && v[0] !== "PENDING" ? v[0] : null,
+        })} />
     <UserSelector
       value={reporterId}
       label={m.admin_reports_all_authors()}
-      searchPlaceholder="Filtrer par auteur du signalement…"
-      onChange={(id) => (reporterId = id)} />
+      searchPlaceholder={m.admin_reports_author_search()}
+      onChange={(id) => changeFilters({ reporter: id })} />
   </div>
 
   {#if error}
@@ -259,7 +282,11 @@
   {:else}
     <ul class="space-y-2">
       {#each reports as r (r.id)}
-        <li class="card p-3.5">
+        <li
+          animate:flip={{ duration: reduced ? 0 : 160 }}
+          in:fade|global={{ duration: reduced ? 0 : 140 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}
+          class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
             <span
               class="rounded-full border px-2 py-0.5 text-xs font-bold {REPORT_STATUS_COLORS[

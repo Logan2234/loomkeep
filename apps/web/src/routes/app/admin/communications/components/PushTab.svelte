@@ -158,7 +158,7 @@
         options={userOptions}
         values={email ? [email] : []}
         searchable
-        searchPlaceholder="Rechercher par nom ou email…"
+        searchPlaceholder={m.admin_communications_account_search()}
         onChange={(v) => (email = v[0] ?? "")} />
     </div>
 

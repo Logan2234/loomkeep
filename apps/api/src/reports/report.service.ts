@@ -18,6 +18,7 @@ import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -257,18 +258,17 @@ export class ReportService {
   ): Promise<void> {
     const report = await this.prisma.report.findUnique({
       where: { id: reportId },
-      select: { reporterId: true },
+      select: { reporter: { select: { id: true, locale: true } } },
     });
-    if (!report?.reporterId) return;
+    if (!report?.reporter) return;
+
+    const copy = notificationCopy(report.reporter.locale).reportResolution;
 
     await this.notifications.create({
-      userId: report.reporterId,
+      userId: report.reporter.id,
       type: NotificationType.REPORT_RESOLVED,
-      title: "Ton signalement a été traité",
-      body:
-        status === "RESOLVED"
-          ? "Une mesure a été prise suite à ton signalement."
-          : "Nous n'avons pas donné suite à ton signalement.",
+      title: copy.title,
+      body: status === "RESOLVED" ? copy.resolved : copy.dismissed,
     });
   }
 

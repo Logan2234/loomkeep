@@ -36,8 +36,8 @@
 
   const opsItems = $derived([
     {
-      value: formatNumber(stats.ops.notificationsPending),
-      label: m.admin_system_notifs_pending(),
+      value: formatNumber(stats.ops.notificationsTotal),
+      label: m.admin_system_notifs_total(),
     },
     // A count, not a live/dead ratio: nothing tracks whether an endpoint still
     // answers, so a denominator here would be invented.
@@ -67,7 +67,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_system_api_calls_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.common_today()}
     </p>
     {#if providerItems.length === 0}
@@ -75,7 +75,7 @@
     {:else}
       <RankBars items={providerItems} />
     {/if}
-    <p class="text-dim mt-2.5 text-[11px] italic">
+    <p class="text-dim mt-2.5 text-xs italic">
       {m.admin_system_quota_detail_hint()}
       <a href="/app/admin/services" class="link-accent not-italic"
         >{m.admin_services_title()}</a
@@ -87,13 +87,13 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_system_ops_signals_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">{m.admin_system_misc()}</p>
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">{m.admin_system_misc()}</p>
     <div class="grid grid-cols-2 gap-3">
       {#each opsItems as item (item.label)}
         <StatFigure value={item.value} label={item.label} />
       {/each}
     </div>
-    <p class="text-dim mt-3 text-[11px] italic">
+    <p class="text-dim mt-3 text-xs italic">
       {m.admin_system_ops_hint()}
     </p>
   </div>
