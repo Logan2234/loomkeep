@@ -1,4 +1,5 @@
 import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import type { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EventsGateway } from "../events/events.gateway";
@@ -356,7 +357,7 @@ describe("NotificationService.create — realtime push", () => {
     } as unknown as PrismaService;
     const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
     const service = new NotificationService(prisma, jobRunsStub, events);
-    return { service, events };
+    return { service, events, prisma };
   }
 
   it("pushes a live event for a bell-visible kind that was actually created", async () => {
@@ -387,5 +388,24 @@ describe("NotificationService.create — realtime push", () => {
       title: "S2E5",
     });
     expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+
+  it("writes on the caller's transaction without publishing before commit", async () => {
+    const { service, events, prisma } = makeService(1);
+    const tx = {
+      notification: { createMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    } as unknown as Prisma.TransactionClient;
+
+    await service.createInTransaction(tx, {
+      userId: "u1",
+      type: NotificationType.REPORT_RESOLVED,
+      title: "Ton signalement a été traité",
+    });
+
+    expect(tx.notification.createMany).toHaveBeenCalled();
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    expect(events.emitToUser).not.toHaveBeenCalled();
+    service.publishCreated("u1", NotificationType.REPORT_RESOLVED);
+    expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
   });
 });

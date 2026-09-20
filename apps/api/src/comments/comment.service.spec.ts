@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EventsGateway } from "../events/events.gateway";
@@ -779,6 +780,29 @@ describe("CommentService.remove", () => {
 });
 
 describe("CommentService.adminRemove", () => {
+  it("uses the caller's transaction and emits only after publication", async () => {
+    const { svc, prisma, xp, events } = make();
+    const tx = {
+      comment: {
+        findUnique: vi.fn().mockResolvedValue(commentRow()),
+        update: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    await svc.adminRemove("c1", tx);
+
+    expect(tx.comment.update).toHaveBeenCalled();
+    expect(prisma.comment.update).not.toHaveBeenCalled();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Comment", ["c1"], tx);
+    expect(events.emitToCommentsThread).not.toHaveBeenCalled();
+    svc.publishAdminRemoval("MEDIA", "m1");
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+  });
+
   it("soft-deletes without checking ownership (moderation takedown)", async () => {
     const { svc, prisma } = make({
       comment: {
@@ -809,6 +833,8 @@ describe("CommentService.adminRemove", () => {
     await expect(svc.adminRemove("c1")).resolves.toEqual({
       authorId: "someone-else",
       text: "insulte gratuite",
+      targetType: "MEDIA",
+      targetId: "m1",
     });
   });
 
