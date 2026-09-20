@@ -81,7 +81,7 @@ function makeController(
   const moderationDecisions = {
     record: vi.fn(),
     queueForReport: vi.fn().mockResolvedValue("decision1"),
-    deliver: vi.fn(),
+    deliver: vi.fn().mockResolvedValue(undefined),
     publishQueued: vi.fn(),
   } as unknown as ModerationDecisionService;
 
