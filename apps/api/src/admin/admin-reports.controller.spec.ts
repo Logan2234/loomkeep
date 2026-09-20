@@ -80,9 +80,9 @@ function makeController(
 
   const moderationDecisions = {
     record: vi.fn(),
-    queueForReport: vi.fn().mockResolvedValue("decision1"),
-    deliver: vi.fn().mockResolvedValue(undefined),
-    publishQueued: vi.fn(),
+    recordForReportInTransaction: vi.fn().mockResolvedValue(undefined),
+    sendEmail: vi.fn().mockResolvedValue(undefined),
+    publishForReport: vi.fn(),
   } as unknown as ModerationDecisionService;
 
   const controller = new AdminReportsController(
@@ -113,10 +113,9 @@ describe("AdminReportsController.takeDown", () => {
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(comments.adminRemove).toHaveBeenCalledWith("c1", prisma);
-    expect(moderationDecisions.queueForReport).toHaveBeenCalledWith(
-      prisma,
-      expect.objectContaining({ reportId: "r1" }),
-    );
+    expect(
+      moderationDecisions.recordForReportInTransaction,
+    ).toHaveBeenCalledWith(prisma, expect.objectContaining({ reportId: "r1" }));
     expect(reports.resolveInTransaction).toHaveBeenCalledWith(
       prisma,
       "admin1",
@@ -124,17 +123,21 @@ describe("AdminReportsController.takeDown", () => {
       "RESOLVED",
     );
     expect(moderationDecisions.record).not.toHaveBeenCalled();
-    expect(moderationDecisions.deliver).toHaveBeenCalledWith("decision1");
+    expect(moderationDecisions.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ reportId: "r1" }),
+    );
   });
 
-  it("queues the notice and commits the comment removal with the resolution", async () => {
+  it("persists the notice and commits the comment removal with the resolution", async () => {
     const { controller, reports, comments, moderationDecisions, prisma } =
       makeController();
 
     await controller.takeDown(ADMIN, "r1", REASON_BODY);
 
     expect(comments.adminRemove).toHaveBeenCalledWith("c1", prisma);
-    expect(moderationDecisions.queueForReport).toHaveBeenCalledWith(
+    expect(
+      moderationDecisions.recordForReportInTransaction,
+    ).toHaveBeenCalledWith(
       prisma,
       expect.objectContaining({
         measure: "COMMENT_REMOVED",
@@ -167,7 +170,9 @@ describe("AdminReportsController.takeDown", () => {
 
     await controller.takeDown(ADMIN, "r1", REASON_BODY);
 
-    expect(moderationDecisions.queueForReport).not.toHaveBeenCalled();
+    expect(
+      moderationDecisions.recordForReportInTransaction,
+    ).not.toHaveBeenCalled();
   });
 
   it("resolves without touching a comment for a non-COMMENT target", async () => {
@@ -185,7 +190,9 @@ describe("AdminReportsController.takeDown", () => {
     await controller.takeDown(ADMIN, "r1", REASON_BODY);
 
     expect(comments.adminRemove).not.toHaveBeenCalled();
-    expect(moderationDecisions.queueForReport).not.toHaveBeenCalled();
+    expect(
+      moderationDecisions.recordForReportInTransaction,
+    ).not.toHaveBeenCalled();
     expect(reports.resolveInTransaction).toHaveBeenCalled();
   });
 
@@ -211,7 +218,9 @@ describe("AdminReportsController.takeDown", () => {
 
     expect(reviews.adminRemove).toHaveBeenCalledWith("rev1", prisma);
     expect(comments.adminRemove).not.toHaveBeenCalled();
-    expect(moderationDecisions.queueForReport).toHaveBeenCalledWith(
+    expect(
+      moderationDecisions.recordForReportInTransaction,
+    ).toHaveBeenCalledWith(
       prisma,
       expect.objectContaining({
         measure: "REVIEW_REMOVED",
@@ -241,7 +250,9 @@ describe("AdminReportsController.takeDown", () => {
 
     await controller.takeDown(ADMIN, "r1", REASON_BODY);
 
-    expect(moderationDecisions.queueForReport).toHaveBeenCalledWith(
+    expect(
+      moderationDecisions.recordForReportInTransaction,
+    ).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ contentSnapshot: "0/10" }),
     );
@@ -260,21 +271,21 @@ describe("AdminReportsController.takeDown", () => {
   it("does not publish or send when persisting the decision fails", async () => {
     const { controller, reports, comments, moderationDecisions } =
       makeController();
-    vi.mocked(moderationDecisions.queueForReport).mockRejectedValue(
-      new Error("database unavailable"),
-    );
+    vi.mocked(
+      moderationDecisions.recordForReportInTransaction,
+    ).mockRejectedValue(new Error("database unavailable"));
 
     await expect(controller.takeDown(ADMIN, "r1", REASON_BODY)).rejects.toThrow(
       "database unavailable",
     );
     expect(comments.publishAdminRemoval).not.toHaveBeenCalled();
     expect(reports.publishResolution).not.toHaveBeenCalled();
-    expect(moderationDecisions.deliver).not.toHaveBeenCalled();
+    expect(moderationDecisions.sendEmail).not.toHaveBeenCalled();
   });
 
   it("does not turn a committed takedown into an error when email dispatch fails", async () => {
     const { controller, reports, moderationDecisions } = makeController();
-    vi.mocked(moderationDecisions.deliver).mockRejectedValue(
+    vi.mocked(moderationDecisions.sendEmail).mockRejectedValue(
       new Error("SMTP unavailable"),
     );
 
@@ -286,14 +297,16 @@ describe("AdminReportsController.takeDown", () => {
 
   it("returns after the commit without waiting for SMTP", async () => {
     const { controller, moderationDecisions } = makeController();
-    vi.mocked(moderationDecisions.deliver).mockImplementation(
+    vi.mocked(moderationDecisions.sendEmail).mockImplementation(
       () => new Promise<void>(() => {}),
     );
 
     await expect(
       controller.takeDown(ADMIN, "r1", REASON_BODY),
     ).resolves.toBeUndefined();
-    expect(moderationDecisions.deliver).toHaveBeenCalledWith("decision1");
+    expect(moderationDecisions.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ reportId: "r1" }),
+    );
   });
 
   it("does not remove content for a report already resolved", async () => {

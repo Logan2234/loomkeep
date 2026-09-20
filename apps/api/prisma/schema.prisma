@@ -873,29 +873,9 @@ model ModerationDecision {
   subject   User?   @relation("ModerationDecisionSubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
   decidedBy User?   @relation("ModerationDecisionAdmin", fields: [decidedById], references: [id], onDelete: SetNull)
   report    Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
-  emailOutbox ModerationEmailOutbox?
 
   @@index([subjectUserId])
   @@index([decidedAt])
-}
-
-// A committed takedown must not depend on SMTP being available. Pending rows
-// are retried until sent; a lease prevents concurrent dispatchers from sending
-// the same notice at once (delivery remains at-least-once after a crash).
-model ModerationEmailOutbox {
-  decisionId    String   @id
-  locale        String
-  attempts      Int      @default(0)
-  nextAttemptAt DateTime @default(now())
-  leaseId       String?
-  leaseUntil    DateTime?
-  sentAt        DateTime?
-  lastError     String?
-  createdAt     DateTime @default(now())
-
-  decision ModerationDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
-
-  @@index([sentAt, nextAttemptAt])
 }
 
 // Social (P4): a cross-domain, user-curated list of works (RANKED "top 10" or

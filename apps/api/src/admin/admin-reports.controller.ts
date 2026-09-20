@@ -33,7 +33,10 @@ import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import { ReportPendingCountResponseDto } from "../reports/dto/report-pending-count-response.dto";
 import { ReportResponseDto } from "../reports/dto/report-response.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
-import { ModerationDecisionService } from "../reports/moderation-decision.service";
+import {
+  ModerationDecisionService,
+  type RecordModerationDecisionInput,
+} from "../reports/moderation-decision.service";
 import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
 import { ReviewService } from "../reviews/review.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -181,7 +184,8 @@ export class AdminReportsController {
         report.targetId,
         tx,
       );
-      let decisionId: string | null = null;
+      let notice:
+        (RecordModerationDecisionInput & { reportId: string }) | null = null;
       let notifiedAuthorId: string | null = null;
 
       if (removal?.authorId) {
@@ -191,7 +195,7 @@ export class AdminReportsController {
         });
 
         if (author) {
-          decisionId = await this.moderationDecisions.queueForReport(tx, {
+          notice = {
             measure: removal.measure,
             targetType: report.targetType,
             targetId: report.targetId,
@@ -207,7 +211,11 @@ export class AdminReportsController {
             contentSnapshot: removal.snapshot,
             decidedById: user.sub,
             reportId: id,
-          });
+          };
+          await this.moderationDecisions.recordForReportInTransaction(
+            tx,
+            notice,
+          );
           notifiedAuthorId = removal.authorId;
         }
       }
@@ -218,7 +226,7 @@ export class AdminReportsController {
         id,
         "RESOLVED",
       );
-      return { removal, reporterId, decisionId, notifiedAuthorId };
+      return { removal, reporterId, notice, notifiedAuthorId };
     });
 
     try {
@@ -232,7 +240,7 @@ export class AdminReportsController {
       }
 
       if (committed.notifiedAuthorId) {
-        this.moderationDecisions.publishQueued(committed.notifiedAuthorId);
+        this.moderationDecisions.publishForReport(committed.notifiedAuthorId);
       }
     } catch (err) {
       this.logger.warn(
@@ -241,16 +249,10 @@ export class AdminReportsController {
       );
     }
 
-    if (committed.decisionId) {
-      // The committed outbox row survives a crash before this immediate attempt.
-      void this.moderationDecisions
-        .deliver(committed.decisionId)
-        .catch((err) => {
-          this.logger.warn(
-            "A queued moderation email could not be dispatched",
-            err,
-          );
-        });
+    if (committed.notice) {
+      void this.moderationDecisions.sendEmail(committed.notice).catch((err) => {
+        this.logger.warn("A moderation email could not be sent", err);
+      });
     }
   }
 

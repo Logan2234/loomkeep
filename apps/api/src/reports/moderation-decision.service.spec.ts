@@ -8,21 +8,6 @@ import { ModerationDecisionService } from "./moderation-decision.service";
 function make() {
   const prisma = {
     moderationDecision: { create: vi.fn() },
-    moderationEmailOutbox: {
-      findMany: vi.fn().mockResolvedValue([]),
-      findUnique: vi.fn().mockResolvedValue({ attempts: 1 }),
-      findUniqueOrThrow: vi.fn().mockResolvedValue({
-        locale: "en",
-        decision: {
-          subjectEmail: "alice@example.com",
-          measure: "COMMENT_REMOVED",
-          reasonText: "Insultes répétées.",
-          legalBasis: "TOS_BREACH",
-          tosClause: "§7 — Règles de conduite",
-        },
-      }),
-      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-    },
   } as unknown as PrismaService;
   const mail = {
     sendModerationDecision: vi.fn(),
@@ -109,23 +94,16 @@ describe("ModerationDecisionService.record", () => {
   });
 });
 
-describe("ModerationDecisionService queued report notice", () => {
-  it("persists the decision, email outbox and in-app notice in the caller's transaction", async () => {
+describe("ModerationDecisionService report notice", () => {
+  it("persists the decision and in-app notice in the caller's transaction without sending email", async () => {
     const { svc, mail, notifications } = make();
     const tx = {
-      moderationDecision: {
-        create: vi.fn().mockResolvedValue({ id: "decision1" }),
-      },
-      moderationEmailOutbox: { create: vi.fn() },
+      moderationDecision: { create: vi.fn() },
     } as unknown as Prisma.TransactionClient;
 
-    await expect(svc.queueForReport(tx, BASE_INPUT)).resolves.toBe("decision1");
+    await svc.recordForReportInTransaction(tx, BASE_INPUT);
     expect(tx.moderationDecision.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ reportId: "r1" }),
-      select: { id: true },
-    });
-    expect(tx.moderationEmailOutbox.create).toHaveBeenCalledWith({
-      data: { decisionId: "decision1", locale: "en" },
     });
     expect(notifications.createInTransaction).toHaveBeenCalledWith(
       tx,
@@ -138,56 +116,19 @@ describe("ModerationDecisionService queued report notice", () => {
     expect(mail.sendModerationDecision).not.toHaveBeenCalled();
   });
 
-  it("marks a claimed notice sent after SMTP succeeds", async () => {
-    const { svc, prisma, mail } = make();
+  it("sends the committed notice to the subject's email and locale", async () => {
+    const { svc, mail } = make();
 
-    await svc.deliver("decision1");
+    await svc.sendEmail(BASE_INPUT);
 
-    expect(mail.sendModerationDecision).toHaveBeenCalledOnce();
-    expect(prisma.moderationEmailOutbox.updateMany).toHaveBeenLastCalledWith(
+    expect(mail.sendModerationDecision).toHaveBeenCalledWith(
+      { email: "alice@example.com", locale: "en" },
       expect.objectContaining({
-        where: expect.objectContaining({ decisionId: "decision1" }),
-        data: expect.objectContaining({ sentAt: expect.any(Date) }),
+        measure: "COMMENT_REMOVED",
+        reasonText: "Insultes répétées.",
+        legalBasis: "TOS_BREACH",
+        tosClause: "§7 — Règles de conduite",
       }),
     );
-  });
-
-  it("keeps a failed SMTP notice available for retry without throwing", async () => {
-    const { svc, prisma, mail } = make();
-    vi.mocked(mail.sendModerationDecision).mockRejectedValue(
-      new Error("SMTP unavailable"),
-    );
-
-    await expect(svc.deliver("decision1")).resolves.toBeUndefined();
-    expect(prisma.moderationEmailOutbox.updateMany).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          nextAttemptAt: expect.any(Date),
-          lastError: "SMTP unavailable",
-        }),
-      }),
-    );
-  });
-
-  it("replays due notices during the scheduled sweep", async () => {
-    const { svc, prisma, mail } = make();
-    vi.mocked(prisma.moderationEmailOutbox.findMany).mockResolvedValue([
-      { decisionId: "decision1" },
-    ] as never);
-
-    await svc.dispatchPending();
-
-    expect(mail.sendModerationDecision).toHaveBeenCalledOnce();
-  });
-
-  it("does not send when another dispatcher holds the lease", async () => {
-    const { svc, prisma, mail } = make();
-    vi.mocked(prisma.moderationEmailOutbox.updateMany).mockResolvedValueOnce({
-      count: 0,
-    });
-
-    await svc.deliver("decision1");
-
-    expect(mail.sendModerationDecision).not.toHaveBeenCalled();
   });
 });
