@@ -274,12 +274,12 @@
     { name: "Steam", what: m.landing_import_done_steam_what },
     { name: "Goodreads", what: m.landing_import_done_goodreads_what },
     { name: "StoryGraph", what: m.landing_import_done_storygraph_what },
+    { name: "Letterboxd", what: m.landing_import_done_letterboxd_what },
+    { name: "IMDb", what: m.landing_import_done_imdb_what },
   ];
 
   const IMPORTS_TODO: { name: string; what: () => string }[] = [
-    { name: "Letterboxd", what: m.landing_import_todo_letterboxd_what },
     { name: "Serializd", what: m.landing_import_todo_serializd_what },
-    { name: "IMDb", what: m.landing_import_todo_imdb_what },
     { name: "Backloggd", what: m.landing_import_todo_backloggd_what },
     { name: "Last.fm", what: m.landing_import_todo_lastfm_what },
     { name: "RateYourMusic", what: m.landing_import_todo_rym_what },

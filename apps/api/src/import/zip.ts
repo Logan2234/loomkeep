@@ -62,6 +62,42 @@ export function readZipEntries(
 }
 
 /**
+ * Extract, decoded as UTF-8 text, every entry whose **full path** (lowercased,
+ * separators normalised to `/`) satisfies `predicate`.
+ *
+ * Base-name matching is wrong for the Letterboxd export, which puts meaning in
+ * its folders: `deleted/diary.csv` is a different file from `diary.csv`, and
+ * `lists/` holds one arbitrarily-named CSV per list. Paths are handed over
+ * whole — including any wrapper directory the archive nests everything under —
+ * so callers match on a suffix rather than this helper guessing which leading
+ * segment is a wrapper and which is meaningful.
+ */
+export function readZipEntriesByPath(
+  buf: Buffer,
+  predicate: (pathLower: string) => boolean,
+): Map<string, string> {
+  const result = new Map<string, string>();
+  let extractedBytes = 0;
+
+  for (const entry of readCentralDirectory(buf)) {
+    const path = entry.name
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "")
+      .toLowerCase();
+    if (!predicate(path) || result.has(path)) continue;
+    const decoded = decodeEntry(
+      buf,
+      entry,
+      MAX_TOTAL_UNCOMPRESSED_BYTES - extractedBytes,
+    );
+    extractedBytes += decoded.length;
+    result.set(path, decoded.toString("utf8"));
+  }
+
+  return result;
+}
+
+/**
  * Extract, decoded as UTF-8 text, every entry whose base name (lowercased)
  * satisfies `predicate` — for an export that splits one logical file across
  * an unpredictable number of numbered parts (Trakt's `watched-history-N.json`

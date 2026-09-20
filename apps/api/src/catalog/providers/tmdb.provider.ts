@@ -138,6 +138,30 @@ export class TmdbProvider implements CatalogProvider {
     return tv ? toTvSummary(tv) : null;
   }
 
+  /**
+   * Resolve an IMDb **episode** id (`tt…`) to the series it belongs to and its
+   * position. IMDb lets a user rate a single episode, and the export carries
+   * only that episode's id — the series, season and episode numbers all have
+   * to come from here. Null when TMDB knows no episode for that id.
+   */
+  async findEpisodeByImdbId(imdbId: string): Promise<{
+    seriesTmdbId: string;
+    season: number;
+    episode: number;
+  } | null> {
+    const found = await this.get<TmdbFindResult>(`/find/${imdbId}`, {
+      external_source: "imdb_id",
+    });
+    const episode = found.tv_episode_results?.[0];
+    if (!episode) return null;
+
+    return {
+      seriesTmdbId: String(episode.show_id),
+      season: episode.season_number,
+      episode: episode.episode_number,
+    };
+  }
+
   private async getMovieDetails(
     sourceId: string,
     lang?: string,

@@ -13,6 +13,8 @@ import { ImportController } from "./import.controller";
 import { BabelioImportSource } from "./sources/books/babelio.source";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
+import { ImdbImportSource } from "./sources/imdb/imdb.source";
+import { LetterboxdImportSource } from "./sources/letterboxd/letterboxd.source";
 import { MediaMatchResolver } from "./sources/media/media-match-resolver";
 import { AnilistMatchResolver } from "./sources/myanimelist/anilist-match-resolver";
 import { MyAnimeListImportSource } from "./sources/myanimelist/myanimelist.source";
@@ -48,6 +50,8 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     TraktImportSource,
     SimklImportSource,
     MyAnimeListImportSource,
+    LetterboxdImportSource,
+    ImdbImportSource,
     StoryGraphImportSource,
     GoodreadsImportSource,
     BabelioImportSource,
@@ -60,6 +64,8 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
         TraktImportSource,
         SimklImportSource,
         MyAnimeListImportSource,
+        LetterboxdImportSource,
+        ImdbImportSource,
         StoryGraphImportSource,
         GoodreadsImportSource,
         BabelioImportSource,

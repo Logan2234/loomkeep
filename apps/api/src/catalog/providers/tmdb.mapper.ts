@@ -159,6 +159,12 @@ export interface TmdbFindResult {
   // metadata needed to display the match — no extra details call.
   tv_results?: TmdbTvResult[];
   movie_results?: TmdbMovieResult[];
+  /** Populated when the external id is an episode's (IMDb rates episodes). */
+  tv_episode_results?: {
+    show_id: number;
+    season_number: number;
+    episode_number: number;
+  }[];
 }
 
 export function toMovieSummary(movie: TmdbMovieResult): MediaSummaryDto {

@@ -11,6 +11,8 @@ const SHIPPED = {
   babelio: "2026-09-15",
   "reviews-redesign": "2026-09-17",
   "settings-rework": "2026-09-17",
+  letterboxd: "2026-09-21",
+  imdb: "2026-09-21",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;
