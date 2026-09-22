@@ -29,9 +29,8 @@ dans un ticket ou une session de correction.
 
 **État au 22 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés
 (PR #209), puis M-15, M-16, M-21, M-23, M-24, M-25 et M-26 (PR #210), puis
-M-11, M-12, M-13, M-17, M-18, M-20 et M-28 (PR #244), et enfin M-19 et M-27 ;
-tous retirés de ce document. M-07 est partiellement corrigé (requalifié P2).
-M-09 reste ouvert volontairement. M-14 et M-22 ont été retirés sans
+M-11, M-12, M-13, M-17, M-18, M-20 et M-28 (PR #244), et enfin M-07, M-19
+et M-27 ; tous retirés de ce document. M-09 reste ouvert volontairement. M-14 et M-22 ont été retirés sans
 correctif : la page Schéma n'est pas exposée en production, et « Mes listes »
 / « Mes critiques » sont volontairement accessibles depuis l'accueil et le
 profil, en mobile comme en desktop. M-27, M-28 et M-29 ont été découverts
@@ -122,58 +121,11 @@ carrousel se fait déjà au doigt.
 
 ---
 
-## Priorité 2 — moyen
-
-### M-07 · Les actions d'une modale ne sont pas ancrées
-
-**Fichier** : [apps/web/src/lib/components/Modal.svelte:84](../apps/web/src/lib/components/Modal.svelte#L84)
-
-Partiellement traité. La modale suit maintenant le shell (`layout.compact`),
-donc un téléphone en paysage obtient le bottom sheet — scrollable, avec sa
-poignée et son balayage — au lieu du dialogue centré qui coupait son propre
-contenu ; et le dialogue desktop est passé de `max-h-[80vh] overflow-scroll`
-à `max-h-[85svh] overflow-y-auto`, ce qui supprime la barre de défilement
-horizontale parasite.
-
-Ce qui reste : les boutons d'action arrivent en fin de contenu défilant, donc
-sur « Créer une liste » à 430 px de haut, « Enregistrer » n'est pas visible à
-l'ouverture (contenu 476 px pour 309 px utiles). Il faut faire défiler dans la
-feuille pour valider.
-
-**Remédiation recommandée** : ancrer les actions dans un pied fixe, ce qui
-demande d'ajouter un snippet `actions` à `Modal` et de migrer les appelants
-qui rendent aujourd'hui leurs boutons dans `children` :
-
-```svelte
-<div class="card flex max-h-[85svh] w-full flex-col overflow-hidden …">
-  <header class="shrink-0 …">…</header>
-  <div class="min-h-0 flex-1 overflow-y-auto …">{@render children()}</div>
-  {#if actions}
-    <footer class="border-border shrink-0 border-t …">{@render actions()}</footer>
-  {/if}
-</div>
-```
-
-Appelants à migrer : `ListFormModal`, `ReviewFormModal`, `EditProfileModal`,
-`AddToListModal`, `ListMembersModal`, `CalendarSubscribeModal`,
-`ReadingGoalEditModal`, `EditAvatarModal`, `ScanIsbnModal`,
-`ScanProfileModal`. Le snippet restant optionnel, la migration peut se faire
-modale par modale.
-
 ## Récapitulatif
 
-Ce qu'il reste ouvert après les quatre passes de correction. M-07 est
-partiellement corrigé et requalifié P2 ; son périmètre restant est décrit
-ci-dessus.
-
-| ID   | Priorité | Sujet                         | Portée           |
-| ---- | -------- | ----------------------------- | ---------------- |
-| M-07 | P2       | Actions de modale non ancrées | paysage          |
-| M-09 | P1       | Cibles tactiles < 44 px       | portrait+paysage |
-
-M-09 est une passe transverse sur le design system, à faire en une fois
-plutôt que fichier par fichier. M-07 peut attendre : le bottom sheet rend la
-situation acceptable en paysage.
+Un seul constat reste ouvert, volontairement : **M-09**, les cibles tactiles
+sous 44 px, décrit ci-dessus. C'est une passe transverse sur le design
+system, à faire en une fois plutôt que fichier par fichier.
 
 ### Points non couverts par cet audit
 

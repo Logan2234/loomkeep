@@ -13,12 +13,13 @@ a **timecode in a mono font** (year, `S01E04`, `2:46:00`, `12 / 24`), thin
 - Body / UI: **Hanken Grotesk** (replaces the old Inter).
 - Data / timecodes: **Space Mono**.
 
-**Smallest readable size** — text that carries information (a cast role, an
-account status, a table header, a legal notice) uses `.text-micro`: 11px on a
-phone, 12px once there is room. Nothing informative goes below that. The
-arbitrary sizes under it (`text-[0.6rem]` and friends) are reserved for
-decoration a reader never needs to read — the BÊTA and NOUVEAU pills, a badge
-counter.
+**Smallest readable size** — running text that carries information (a cast
+role, a legal notice, a caption) uses `.text-micro`: 11px on a phone, 12px
+once there is room.
+
+Pills are the exception and stay at `text-[0.6rem]`: a badge is read as a
+shape and a colour before it is read as a word (ADMIN, PREMIUM, DÉBLOQUÉ,
+NOUVEAU), and at 12px they stop reading as pills at all.
 
 **Palette** — single ownable accent = **projector amber**.
 

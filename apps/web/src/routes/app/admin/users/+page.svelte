@@ -185,19 +185,19 @@
                         >{u.displayName}</span>
                       {#if u.role === "ADMIN"}
                         <span
-                          class="border-accent/40 bg-accent/10 text-accent text-micro rounded-full border px-1.5 py-0.5 font-bold uppercase">
+                          class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                           {m.common_admin()}
                         </span>
                       {/if}
                       {#if u.plan === "PREMIUM"}
                         <span
-                          class="border-warning/40 bg-warning/10 text-warning text-micro rounded-full border px-1.5 py-0.5 font-bold uppercase">
+                          class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                           {m.common_premium()}
                         </span>
                       {/if}
                       {#if !u.emailVerified}
                         <span
-                          class="border-border text-dim text-micro rounded-full border px-1.5 py-0.5 font-bold uppercase">
+                          class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                           {m.admin_users_unverified()}
                         </span>
                       {/if}
