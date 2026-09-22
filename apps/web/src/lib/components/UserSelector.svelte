@@ -21,11 +21,10 @@
   } = $props();
 
   const PAGE_SIZE = 20;
-  let pendingSearch = $state(value ?? "");
-  let search = $state(value ?? "");
-  let selectedLabel = $state<string | undefined>(
-    valueMode === "email" && value ? value : undefined,
-  );
+  let pendingSearch = $state("");
+  let search = $state("");
+  let selectedLabel = $state<string | undefined>();
+  let syncedValue = $state<string | null>(null);
 
   $effect(() => {
     const candidate = pendingSearch.trim();
@@ -58,6 +57,12 @@
   ]);
 
   $effect(() => {
+    if (value !== syncedValue) {
+      syncedValue = value;
+      pendingSearch = value ?? "";
+      selectedLabel = valueMode === "email" && value ? value : undefined;
+    }
+
     if (!value) {
       selectedLabel = undefined;
       return;

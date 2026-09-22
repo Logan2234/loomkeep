@@ -563,7 +563,7 @@
     {following}
     {lists}
     {reportsAgainst}
-    onRetry={() => retryActivity(activeModal)}
+    onRetry={() => activeModal && retryActivity(activeModal)}
     onClose={() => (activeModal = null)} />
 {/if}
 

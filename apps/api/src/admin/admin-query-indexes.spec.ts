@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("admin query indexes", () => {
   it("covers the chronological import, security and reporter queues", () => {
     const schema = readFileSync(
-      new URL("../../prisma/schema.prisma", import.meta.url),
+      resolve(__dirname, "../../prisma/schema.prisma"),
       "utf8",
     );
     const model = (name: string) =>
