@@ -101,7 +101,7 @@
 
     <div
       data-drawer-scroll
-      class="flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {#if inAdmin}
         {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
           <section class="mt-4 first:mt-2">
