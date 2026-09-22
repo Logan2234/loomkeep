@@ -128,7 +128,7 @@
         <img
           src={currentImage.src}
           alt={currentImage.alt}
-          class="pointer-events-none max-h-[88vh] max-w-[92vw] object-contain" />
+          class="pointer-events-none max-h-[88dvh] max-w-[92vw] object-contain" />
       </button>
     {/if}
   </div>

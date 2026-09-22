@@ -155,7 +155,7 @@
     aria-modal="true"
     aria-labelledby={labelledby}
     tabindex="-1"
-    class="border-border bg-surface fixed inset-x-0 bottom-0 flex max-h-[88vh] w-full touch-none flex-col rounded-t-3xl border-t shadow-2xl {closing
+    class="border-border bg-surface fixed inset-x-0 bottom-0 flex max-h-[88dvh] w-full touch-none flex-col rounded-t-3xl border-t shadow-2xl {closing
       ? 'pointer-events-none'
       : ''}"
     style="z-index: {zIndex + 10}; {dragging

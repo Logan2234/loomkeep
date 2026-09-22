@@ -122,9 +122,9 @@
   });
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-svh">
   <aside
-    class="border-border bg-surface sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
+    class="border-border bg-surface sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
     {expanded ? 'w-60' : 'w-16'}"
     onmouseenter={() => (hovered = true)}
     onmouseleave={onRailLeave}>

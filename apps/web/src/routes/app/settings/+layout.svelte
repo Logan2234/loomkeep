@@ -99,7 +99,7 @@
   {@render children()}
 {:else}
   <div
-    class="mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
+    class="mx-auto flex min-h-svh max-w-3xl flex-col px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
     {#if recoveryLow && mfa}
       <Banner variant="warning" class="mb-6 flex items-center gap-3">
         <Icon name="warning" class="h-5 w-5 shrink-0" />
