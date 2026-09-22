@@ -134,7 +134,7 @@
     <div class="flex items-baseline justify-between gap-2">
       {#if complete}
         <span
-          class="border-accent text-accent rounded-full border px-2 py-0.5 text-[0.6rem] font-bold tracking-wide uppercase">
+          class="border-accent text-accent text-micro rounded-full border px-2 py-0.5 font-bold tracking-wide uppercase">
           {m.gamification_stamp_unlocked()}
         </span>
       {:else if progress}

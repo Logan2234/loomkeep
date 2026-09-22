@@ -13,6 +13,13 @@ a **timecode in a mono font** (year, `S01E04`, `2:46:00`, `12 / 24`), thin
 - Body / UI: **Hanken Grotesk** (replaces the old Inter).
 - Data / timecodes: **Space Mono**.
 
+**Smallest readable size** — text that carries information (a cast role, an
+account status, a table header, a legal notice) uses `.text-micro`: 11px on a
+phone, 12px once there is room. Nothing informative goes below that. The
+arbitrary sizes under it (`text-[0.6rem]` and friends) are reserved for
+decoration a reader never needs to read — the BÊTA and NOUVEAU pills, a badge
+counter.
+
 **Palette** — single ownable accent = **projector amber**.
 
 |         | Dark ("la salle") | Light ("le programme")                                    |
