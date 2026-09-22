@@ -38,7 +38,7 @@
   }
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-svh">
   <aside
     class="border-border bg-surface/90 sticky top-1/2 z-40 hidden h-fit -translate-y-1/2 flex-col gap-1 rounded-2xl border p-2 shadow-xl backdrop-blur md:ml-4 md:flex">
     {#if inAdmin}

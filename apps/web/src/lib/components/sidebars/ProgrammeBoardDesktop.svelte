@@ -58,7 +58,7 @@
   </a>
 {/snippet}
 
-<div class="flex min-h-screen">
+<div class="flex min-h-svh">
   <div
     class="relative hidden md:block"
     role="group"
@@ -69,7 +69,7 @@
       if (!e.currentTarget.contains(e.relatedTarget as Node)) open = false;
     }}>
     <aside
-      class="border-border bg-surface sticky top-0 flex h-screen w-16 shrink-0 flex-col items-center gap-1 border-r py-4">
+      class="border-border bg-surface sticky top-0 flex h-svh w-16 shrink-0 flex-col items-center gap-1 border-r py-4">
       {#if inAdmin}
         {@render railIcon({
           href: "/app/admin",
@@ -110,7 +110,7 @@
 
     <!-- Directory board overlay -->
     <div
-      class="fixed top-0 left-16 z-30 h-screen w-64 border-r border-black/20 bg-[#0c0d10] px-4 py-5 text-[#ececea] shadow-2xl transition-transform duration-200 ease-out {open
+      class="fixed top-0 left-16 z-30 h-svh w-64 border-r border-black/20 bg-[#0c0d10] px-4 py-5 text-[#ececea] shadow-2xl transition-transform duration-200 ease-out {open
         ? 'translate-x-0 opacity-100'
         : 'pointer-events-none -translate-x-4 opacity-0'}">
       <p

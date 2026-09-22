@@ -27,15 +27,18 @@ mobile, modale de création de liste.
 Chaque constat porte un identifiant (`M-xx`) pour pouvoir être repris tel quel
 dans un ticket ou une session de correction.
 
-**État au 9 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés
-(PR #209), puis M-15, M-16, M-21, M-23, M-24, M-25 et M-26 (PR suivante) ;
-tous retirés de ce document. M-07 est partiellement corrigé (requalifié P2).
-M-09 reste ouvert volontairement. M-14 et M-22 ont été retirés sans
-correctif : la page Schéma n'est pas exposée en production, et « Mes listes »
-/ « Mes critiques » sont volontairement accessibles depuis l'accueil et le
-profil, en mobile comme en desktop.
-M-27 et M-28 ont été découverts pendant la correction, ainsi que M-29
-(corrigé) — un débordement horizontal du profil signalé par Logan.
+**État au 22 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés
+(PR #209), puis M-15, M-16, M-21, M-23, M-24, M-25 et M-26 (PR #210), et
+enfin M-11, M-12, M-13, M-17, M-18, M-20 et M-28 ; tous retirés de ce
+document. M-07 est partiellement corrigé (requalifié P2). M-09 reste ouvert
+volontairement. M-14 et M-22 ont été retirés sans correctif : la page Schéma
+n'est pas exposée en production, et « Mes listes » / « Mes critiques » sont
+volontairement accessibles depuis l'accueil et le profil, en mobile comme en
+desktop.
+M-27 a été découvert pendant la correction, ainsi que M-28 (corrigé) et M-29
+(corrigé) — un débordement horizontal du profil signalé par Logan. De M-13,
+seules les couleurs du manifest PWA restent en dur : le manifest est servi par
+locale, sans rien savoir du thème choisi, donc les régler demande un arbitrage.
 
 **M-29 · Débordement horizontal du profil** (corrigé) — un titre saisi par un
 utilisateur et sans espace (nom de liste, titre d'œuvre) a une largeur
@@ -158,113 +161,6 @@ Appelants à migrer : `ListFormModal`, `ReviewFormModal`, `EditProfileModal`,
 `ScanProfileModal`. Le snippet restant optionnel, la migration peut se faire
 modale par modale.
 
-### M-11 · `100vh` au lieu de `svh` / `dvh`
-
-La landing utilise déjà `min-h-[86svh]`
-([routes/+page.svelte:415](../apps/web/src/routes/+page.svelte#L415)), mais
-l'app reste sur des unités `vh`, qui incluent la barre d'URL mobile :
-
-- `MobileLayout.svelte:16,19` — `min-h-screen` (deux fois) ;
-- `DesktopSidebar.svelte:124` — `h-screen` ;
-- `Modal.svelte:84` — `max-h-[80vh]` ;
-- `Drawer.svelte:156` — `max-h-[88vh]` ;
-- `Lightbox.svelte:127` — `max-h-[88vh]` ;
-- `MermaidDiagram.svelte:131` — `h-[75vh]` ;
-- `Dropdown.svelte:64` — `calc(100vh-2rem)`.
-
-Effets : défilement résiduel permanent sur l'app même quand le contenu tient à
-l'écran, et bas de modale/tiroir passant sous la barre d'outils du navigateur.
-
-**Remédiation** : `min-h-[100svh]` pour les conteneurs de page, `dvh` pour les
-surfaces qui doivent suivre l'apparition de la barre d'URL (tiroirs, modales,
-lightbox). Prévoir un repli `vh` pour les navigateurs anciens via une
-déclaration en cascade (`min-height: 100vh; min-height: 100svh;`).
-
----
-
-### M-12 · La barre du bas ne tient pas ses 7 raccourcis sur écran étroit
-
-**Fichiers** : `apps/web/src/routes/app/settings/components/AppearanceSection.svelte:32-33`
-(`MIN = 3`, `MAX = 7`), `apps/web/src/lib/components/sidebars/BottomNavigation.svelte`
-
-Avec 7 raccourcis configurés, chaque cellule tombe à 54 px à 375 px et à 45 px
-à 320 px, pour des libellés de 10 px qui mesurent jusqu'à 52 px
-(« Calendrier », « Recherche »). Les libellés se touchent puis se chevauchent :
-ils ne sont pas tronqués, ils débordent sur la cellule voisine.
-
-**Remédiation recommandée** : plafonner dynamiquement plutôt que d'imposer un
-maximum fixe — 5 raccourcis en dessous de 360 px, 6 en dessous de 400 px,
-7 au‑delà ; ou tronquer proprement le libellé (`truncate` + `px-0.5` sur la
-cellule) et le masquer complètement sous 360 px en gardant l'icône et
-l'`aria-label`. Signaler la limite dans l'écran de configuration plutôt que
-d'accepter une configuration qui casse.
-
----
-
-### M-13 · Couleur de barre système figée en sombre
-
-**Fichiers** : [apps/web/src/app.html:8-13](../apps/web/src/app.html#L8),
-[apps/web/src/lib/pwa-manifest.ts:12-13](../apps/web/src/lib/pwa-manifest.ts#L12)
-
-Les balises `theme-color` sont conditionnées à `prefers-color-scheme`,
-c'est‑à‑dire à la préférence **système**, alors que le thème de l'app se choisit
-indépendamment dans les Paramètres (classe `dark` sur `<html>`). Un utilisateur
-en thème clair sur un téléphone en mode sombre garde une barre d'état
-`#0c0d10` au‑dessus d'une app `#f7f5f3`. Dans le manifest, `theme_color` et
-`background_color` sont fixés en dur à `#0c0d10`, donc l'écran de démarrage de
-la PWA est toujours sombre.
-
-**Remédiation** : piloter la balise `theme-color` depuis le même code que le
-thème applicatif (mise à jour de `<meta name="theme-color">` au changement de
-thème), et retirer les deux variantes `media` qui deviennent inutiles.
-
----
-
-### M-17 · Les bascules de domaine perdent les clics rapides
-
-**Fichiers** : `apps/web/src/lib/components/onboarding/OnboardingWizard.svelte:70-75`,
-`apps/web/src/routes/app/settings/components/DomainsSection.svelte`
-
-`toggleDomain` calcule l'état suivant à partir de `auth.user.enabledDomains`
-puis déclenche une mutation réseau ; il n'y a ni mise à jour optimiste, ni
-état désactivé visible pendant le vol. Enchaîner quatre domaines plus vite que
-l'aller‑retour serveur laisse une partie des clics sans effet (constaté à
-l'étape 2 de l'onboarding : quatre tuiles cochées, un seul domaine enregistré).
-Un humain sur un réseau mobile lent est exactement dans ce cas.
-
-**Remédiation recommandée** : appliquer l'état localement à l'émission de la
-mutation (mise à jour optimiste du cache TanStack, rollback sur erreur), ou à
-défaut afficher un état « en cours » sur la tuile et empiler les changements
-au lieu de repartir de l'état serveur à chaque clic. Le second point est le
-plus important : la source de vérité du calcul doit être l'état _affiché_, pas
-l'état serveur potentiellement en retard.
-
----
-
-### M-18 · Incohérences de ton et de libellé
-
-L'app tutoie (« Reprends là où tu t'es arrêté », « Trouve un titre et
-ajoute‑le à ta bibliothèque »), mais trois écrans vouvoient :
-
-- `/app/feed` — « Ce que font les membres que **vous** suivez », « Partagez
-  votre profil pour que d'autres vous suivent » ;
-- `/app/reviews` — « Toutes **vos** notes et critiques, à gérer d'un seul
-  endroit » ;
-- `/app/achievements` — « Découvrez tous les succès à débloquer et **suivez**
-  votre progression ».
-
-Par ailleurs `/app/reviews` s'intitule « Mes reviews » alors que le lien qui y
-mène, sur l'accueil, dit « Mes critiques » — et le reste de l'app emploie
-« critique » (`m.media_episode_review`, « Critiques de la communauté »).
-
-**Remédiation** : reprendre ces clés dans
-`apps/web/messages/{fr,en}/*.json` pour aligner sur le tutoiement, et
-remplacer « Mes reviews » par « Mes critiques ». Un test de non‑régression
-simple existe déjà dans le dépôt (`i18n.spec.ts`) et pourrait accueillir une
-règle interdisant `vous`/`votre` dans le catalogue français.
-
----
-
 ### M-19 · Typographie sous le seuil de lisibilité
 
 Relevé de tailles inférieures à 12 px sur du texte porteur d'information :
@@ -290,26 +186,9 @@ petits écrans, et réserver le 9,6 px aux pastilles non essentielles.
 
 ---
 
-### M-20 · Accessibilité : états et noms manquants
-
-- Les tuiles de domaine (onboarding et paramètres) sont des `<button>` sans
-  `aria-pressed` : un lecteur d'écran n'annonce pas si le domaine est actif.
-  L'état n'est porté que par les classes CSS.
-- Les cases à cocher de l'inscription (CGU, âge minimum) n'ont pas de nom
-  accessible — l'arbre d'accessibilité les expose en `checkbox "true"` sans
-  libellé, alors que le texte est à côté d'elles.
-- Le bloc `#svelte-announcer` est correctement en place, rien à signaler de ce
-  côté.
-
-**Remédiation** : ajouter `aria-pressed={on}` sur les tuiles de domaine, et
-relier les cases à cocher à leur texte (`<label for>` ou englobement dans un
-`<label>`) dans `routes/(auth)/register/+page.svelte`.
-
----
-
 ## Récapitulatif
 
-Ce qu'il reste ouvert après les deux passes de correction. M-07 est
+Ce qu'il reste ouvert après les trois passes de correction. M-07 est
 partiellement corrigé et requalifié P2 ; son périmètre restant est décrit
 ci-dessus.
 
@@ -317,24 +196,17 @@ ci-dessus.
 | ---- | -------- | ----------------------------------------------------- | ---------------- |
 | M-07 | P2       | Actions de modale non ancrées                         | paysage          |
 | M-09 | P1       | Cibles tactiles < 44 px                               | portrait+paysage |
-| M-11 | P2       | `vh` au lieu de `svh`/`dvh`                           | portrait+paysage |
-| M-12 | P2       | 7 raccourcis dans la barre du bas                     | portrait étroit  |
-| M-13 | P2       | `theme-color` figée                                   | PWA              |
-| M-17 | P2       | Bascules de domaine : clics perdus                    | mobile surtout   |
-| M-18 | P2       | Tutoiement / vouvoiement, « Mes reviews »             | global           |
 | M-19 | P2       | Typographie sous 12 px                                | portrait         |
-| M-20 | P2       | `aria-pressed`, libellés de cases à cocher            | global           |
 | M-27 | **P0**   | Un domaine premium actif vide toute la page d'accueil | global           |
-| M-28 | P3       | Le widget Quackback recouvre la barre du bas          | portrait+paysage |
 
 ### Ordre de traitement suggéré
 
 1. **M-27** en premier : c'est un écran d'accueil entièrement vide, et il ne
    demande qu'un correctif localisé.
-2. **M-09** et **M-11** : deux passes transverses sur le design system, à
-   faire en une fois plutôt que fichier par fichier.
-3. **M-17**, **M-18**, **M-19**, **M-20** : quatre correctifs indépendants.
-4. Le reste au fil de l'eau. **M-07** peut attendre : le bottom sheet rend la
+2. **M-09** ensuite : une passe transverse sur le design system, à faire en
+   une fois plutôt que fichier par fichier. **M-19** relève du même geste —
+   un plancher documenté dans `DESIGN.md` — et peut suivre dans la foulée.
+3. Le reste au fil de l'eau. **M-07** peut attendre : le bottom sheet rend la
    situation acceptable en paysage.
 
 ### Constats découverts pendant la correction
@@ -374,17 +246,6 @@ important.
    soit, une section en échec doit dégrader en état vide, pas faire disparaître
    ses voisines. Un test de rendu de `/app` avec un domaine premium actif et
    son endpoint en 403 verrouillerait le comportement.
-
-#### M-28 · Le widget Quackback recouvre la barre du bas — P3
-
-La bulle de feedback flottante (widget tiers, `.quackback-panel`) se place en
-bas à droite et recouvre le dernier onglet de la barre de navigation —
-« Alertes » depuis le correctif M-04, « Calendrier » avant. En paysage elle
-mord aussi sur le contenu.
-
-**Remédiation** : décaler le widget au-dessus de la barre via sa
-configuration, ou le masquer sous `md` et ne l'exposer que par l'entrée
-« Aide & Feedback » des Paramètres, qui existe déjà.
 
 ### Points non couverts par cet audit
 

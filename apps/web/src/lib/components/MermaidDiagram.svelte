@@ -128,7 +128,7 @@
   <div
     role="application"
     aria-label={m.mermaid_pan_hint()}
-    class="border-border bg-surface h-[75vh] touch-none overflow-hidden rounded-lg border {dragging
+    class="border-border bg-surface h-[75dvh] touch-none overflow-hidden rounded-lg border {dragging
       ? 'cursor-grabbing'
       : 'cursor-grab'}"
     onpointerdown={startDrag}
