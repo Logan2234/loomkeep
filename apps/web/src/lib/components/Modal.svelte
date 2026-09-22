@@ -17,6 +17,7 @@
     leading,
     onclose,
     children,
+    actions,
     wide = false,
     blur = false,
     dismissable = true,
@@ -29,6 +30,12 @@
     leading?: Snippet;
     onclose: () => void;
     children: Snippet;
+    /**
+     * Confirm/cancel buttons, pinned to the bottom instead of scrolling away
+     * with the content. Optional: a modal that renders its own buttons inside
+     * `children` still works, they just sit at the end of the scroll.
+     */
+    actions?: Snippet;
     /** Wider variant (max-w-2xl instead of max-w-md), for content like tables. */
     wide?: boolean;
     blur?: boolean;
@@ -108,13 +115,21 @@
       aria-labelledby="modal-title"
       tabindex="-1"
       transition:scale|global={{ duration: reduced ? 0 : 180, start: 0.9 }}
-      class="card relative z-10 max-h-[85svh] w-full overflow-y-auto {wide
+      class="card relative z-10 flex max-h-[85svh] w-full flex-col {wide
         ? 'max-w-2xl'
-        : 'max-w-md'} rounded-2xl p-5 {overflowVisible
-        ? 'overflow-visible'
-        : ''}">
-      {@render header(dismissable)}
-      {@render children()}
+        : 'max-w-md'} rounded-2xl {overflowVisible ? 'overflow-visible' : ''}">
+      <div
+        class="p-5 {overflowVisible
+          ? 'overflow-visible'
+          : 'min-h-0 flex-1 overflow-y-auto'}">
+        {@render header(dismissable)}
+        {@render children()}
+      </div>
+      {#if actions}
+        <div class="border-border shrink-0 border-t px-5 py-3">
+          {@render actions()}
+        </div>
+      {/if}
     </div>
   </div>
 {:else}
@@ -127,11 +142,23 @@
     {dismissable}
     labelledby="modal-title"
     zIndex={MODAL_Z_INDEX}>
+    <!-- `min-h-0` is what lets this actually scroll: a flex child defaults to
+         `min-height: auto`, so without it the body grew past the sheet's
+         max-height and its bottom sat off-screen, unreachable — the sheet
+         itself being the only thing that moved. -->
     <div
       data-drawer-scroll
-      class="relative touch-pan-y overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      class="relative min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 {actions
+        ? 'pb-4'
+        : 'pb-[calc(1.25rem+env(safe-area-inset-bottom))]'}">
       {@render header(false)}
       {@render children()}
     </div>
+    {#if actions}
+      <div
+        class="border-border shrink-0 border-t px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        {@render actions()}
+      </div>
+    {/if}
   </Drawer>
 {/if}

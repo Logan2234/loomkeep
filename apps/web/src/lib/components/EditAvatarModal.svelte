@@ -211,7 +211,9 @@
       accept="image/png,image/jpeg,image/webp"
       class="hidden"
       onchange={onFileSelected} />
+  </div>
 
+  {#snippet actions()}
     <div class="flex w-full flex-col gap-2">
       {#if stage === "editing"}
         <button
@@ -246,5 +248,5 @@
         {/if}
       {/if}
     </div>
-  </div>
+  {/snippet}
 </Modal>
