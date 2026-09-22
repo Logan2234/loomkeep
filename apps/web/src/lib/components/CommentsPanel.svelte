@@ -13,6 +13,7 @@
   import { onMount } from "svelte";
   import CommentThread from "./CommentThread.svelte";
   import Icon from "./Icon.svelte";
+  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "./overlay-layers";
   import SidePanel from "./SidePanel.svelte";
 
   const PANEL_OPEN_EVENT = "loomkeep:comments-panel-open";
@@ -145,7 +146,7 @@
 {#if open}
   <SidePanel
     onclose={closePanel}
-    zIndex={2147483646}
+    zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}
     backdropClass="bg-transparent touch-pan-y"
     labelledby="comments-panel-title">
     <header

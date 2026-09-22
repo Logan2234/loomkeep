@@ -6,6 +6,7 @@
     sendAdminTestEmail,
   } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
+  import { resolveApiError } from "$lib/api/errors";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
@@ -17,6 +18,7 @@
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
+  import { createLatestEmailPreviewRequest } from "./email-preview";
 
   const emailLocales: Locale[] = ["fr", "en"];
 
@@ -47,6 +49,7 @@
   let previewHtml = $state<string | null>(null);
   let previewText = $state<string | null>(null);
   let previewLoading = $state(false);
+  let previewError = $state<string | null>(null);
   let previewTab = $state<"html" | "text">("html");
 
   let copied = $state(false);
@@ -71,25 +74,27 @@
     debouncedLoadPreview.call();
   }
 
-  async function loadPreview() {
-    if (!selectedKey) return;
-    previewLoading = true;
-    try {
-      const preview = await getAdminEmailPreview(
-        selectedKey,
-        emailLocale,
-        fieldValues,
-      );
+  const requestPreview = createLatestEmailPreviewRequest(getAdminEmailPreview, {
+    onStart: () => {
+      previewLoading = true;
+      previewError = null;
+    },
+    onSuccess: (preview) => {
       previewSubject = preview.subject;
       previewHtml = preview.html;
       previewText = preview.text;
-    } catch {
-      previewSubject = null;
-      previewHtml = null;
-      previewText = null;
-    } finally {
+    },
+    onError: (error) => {
+      previewError = resolveApiError(error);
+    },
+    onSettled: () => {
       previewLoading = false;
-    }
+    },
+  });
+
+  async function loadPreview() {
+    if (!selectedKey) return;
+    await requestPreview(selectedKey, emailLocale, fieldValues);
   }
 
   async function copyHtml() {
@@ -251,10 +256,21 @@
         </button>
       </div>
 
-      <div class="border-border bg-surface-2 overflow-hidden rounded-xl border">
-        {#if previewLoading}
-          <div class="h-96 animate-pulse"></div>
-        {:else if previewTab === "html" && previewHtml}
+      {#if previewError}
+        <Banner variant="error">
+          <div class="flex items-center justify-between gap-2">
+            <span>{previewError}</span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() => void loadPreview()}>{m.common_retry()}</button>
+          </div>
+        </Banner>
+      {/if}
+
+      <div
+        class="border-border bg-surface-2 relative overflow-hidden rounded-xl border">
+        {#if previewTab === "html" && previewHtml}
           <iframe
             title={m.admin_communications_email_preview()}
             sandbox=""
@@ -265,9 +281,21 @@
             class="bg-surface text-fg h-130 overflow-auto p-4 text-xs whitespace-pre-wrap">{previewSubject
               ? m.admin_communications_subject({ subject: previewSubject })
               : ""}{previewText}</pre>
+        {:else if previewLoading}
+          <div class="h-96 animate-pulse"></div>
         {:else}
           <div class="text-dim grid h-96 place-items-center text-sm">
             {m.admin_communications_preview_unavailable()}
+          </div>
+        {/if}
+        {#if previewLoading && (previewHtml || previewText)}
+          <div
+            class="border-border bg-surface/95 text-dim absolute top-3 right-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-sm"
+            aria-live="polite">
+            <span
+              class="border-accent h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent"
+              aria-hidden="true"></span>
+            {m.common_loading()}
           </div>
         {/if}
       </div>

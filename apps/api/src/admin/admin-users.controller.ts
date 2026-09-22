@@ -66,7 +66,13 @@ import { AdminUserRoleResponseDto } from "./dto/admin-user-role-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
-const FILTERS: AdminUserFilter[] = ["all", "admin", "unverified", "never"];
+const FILTERS: AdminUserFilter[] = [
+  "all",
+  "admin",
+  "unverified",
+  "never",
+  "premium",
+];
 
 /** Account administration: listing, role, data export and sessions. */
 @AdminOnly()
@@ -121,6 +127,9 @@ export class AdminUsersController {
       ...(activeFilter === "admin" ? { role: "ADMIN" as const } : {}),
       ...(activeFilter === "unverified" ? { emailVerified: false } : {}),
       ...(activeFilter === "never" ? { lastActiveAt: null } : {}),
+      ...(activeFilter === "premium"
+        ? { entitlement: { is: { plan: "PREMIUM" as const } } }
+        : {}),
     };
 
     const rows = await this.prisma.user.findMany({

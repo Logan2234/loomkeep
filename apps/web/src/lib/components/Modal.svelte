@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { portal } from "$lib/actions/portal";
   import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
@@ -6,6 +7,7 @@
   import { fade, scale } from "svelte/transition";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
+  import { MODAL_Z_INDEX } from "./overlay-layers";
 
   let {
     title,
@@ -88,7 +90,9 @@
 {#if isDesktop}
   <!-- Desktop: a centered dialog. Mobile's Drawer already closes on Escape. -->
   <div
-    class={`fixed inset-0 z-60 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}>
+    use:portal
+    class={`fixed inset-0 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}
+    style="z-index: {MODAL_Z_INDEX}">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
       transition:fade|global={{ duration: reduced ? 0 : 180 }}
@@ -113,7 +117,11 @@
        drawer (MenuSheet) — no close cross, the swipe/backdrop tap covers it.
        Stacked above FocusOverlay (z-50) since a Modal can be opened from
        within a focused comment on touch. -->
-  <Drawer {onclose} {dismissable} labelledby="modal-title" zIndex={60}>
+  <Drawer
+    {onclose}
+    {dismissable}
+    labelledby="modal-title"
+    zIndex={MODAL_Z_INDEX}>
     <div
       data-drawer-scroll
       class="relative touch-pan-y overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">

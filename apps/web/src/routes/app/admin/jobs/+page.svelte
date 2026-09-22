@@ -8,16 +8,21 @@
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import StatFigure from "$lib/components/stats/StatFigure.svelte";
+  import { prefersReducedMotion } from "$lib/motion";
   import { formatDate, formatDurationMs } from "$lib/format";
   import {
     adminJobLabel,
+    adminJobButtonState,
     adminJobSchedule,
   } from "$lib/constants/admin-presentation";
   import { m } from "$lib/paraglide/messages.js";
   import type { JobDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { slide } from "svelte/transition";
 
   const queryClient = useQueryClient();
+  const reduced = prefersReducedMotion();
+  let expandedJobs = $state<string[]>([]);
 
   const jobsQuery = createApiQuery(() => ({
     key: keys.admin.jobs(),
@@ -31,10 +36,17 @@
   const runJobMut = createApiMutation(() => ({
     mutate: (key: string) => runAdminJob(key),
     invalidates: [keys.admin.jobs()],
+    errorToast: true,
   }));
 
   function runJob(key: string) {
     runJobMut.mutate(key);
+  }
+
+  function toggleHistory(key: string) {
+    expandedJobs = expandedJobs.includes(key)
+      ? expandedJobs.filter((value) => value !== key)
+      : [...expandedJobs, key];
   }
 
   const DAY_MONTH_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -99,6 +111,11 @@
       {#each jobs as job (job.key)}
         {@const last = job.runs[0]}
         {@const stats = summarize(job.runs)}
+        {@const buttonState = adminJobButtonState(
+          runJobMut.loading ? (runJobMut.variables ?? null) : null,
+          job.key,
+        )}
+        {@const historyOpen = expandedJobs.includes(job.key)}
         <section>
           <div class="mb-2 flex items-center justify-between gap-3">
             <div>
@@ -107,9 +124,9 @@
             </div>
             <button
               onclick={() => runJob(job.key)}
-              disabled={runJobMut.loading && runJobMut.variables === job.key}
+              disabled={buttonState.disabled}
               class="btn btn-primary btn-sm shrink-0">
-              {runJobMut.loading && runJobMut.variables === job.key
+              {buttonState.running
                 ? m.admin_jobs_running()
                 : m.admin_jobs_run_now()}
             </button>
@@ -154,40 +171,53 @@
               {m.admin_jobs_no_runs()}
             </p>
           {:else}
-            <details class="card group">
-              <summary
-                class="bg-surface-2 group-open:border-border flex cursor-pointer list-none items-center gap-2 rounded-[inherit] px-4 py-2.5 text-sm font-semibold group-open:rounded-b-none group-open:border-b [&::-webkit-details-marker]:hidden">
+            <div class="card">
+              <button
+                type="button"
+                aria-expanded={historyOpen}
+                aria-controls="job-history-{job.key}"
+                onclick={() => toggleHistory(job.key)}
+                class="bg-surface-2 flex w-full items-center gap-2 rounded-[inherit] px-4 py-2.5 text-left text-sm font-semibold {historyOpen
+                  ? 'border-border rounded-b-none border-b'
+                  : ''}">
                 <Icon
                   name="chevron-right"
-                  class="text-dim h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
+                  class="text-dim h-4 w-4 shrink-0 transition-transform {historyOpen
+                    ? 'rotate-90'
+                    : ''}" />
                 {m.admin_jobs_history({ count: job.runs.length })}
-              </summary>
-              <div class="overflow-hidden rounded-b-[inherit]">
-                {#each job.runs as run, i (run.id)}
-                  <div
-                    class="bg-surface flex items-center gap-3 px-4 py-2.5 text-sm {i >
-                    0
-                      ? 'border-border border-t'
-                      : ''}">
-                    <span
-                      class="h-2 w-2 shrink-0 rounded-full {run.status ===
-                      'SUCCESS'
-                        ? 'bg-success'
-                        : 'bg-danger'}"
-                      aria-hidden="true"></span>
-                    <span class="text-dim w-32 shrink-0 tabular-nums">
-                      {formatDate(run.startedAt, DAY_MONTH_TIME_OPTIONS)}
-                    </span>
-                    <span class="text-fg min-w-0 flex-1 truncate">
-                      {run.status === "FAILURE" ? run.error : run.summary}
-                    </span>
-                    <span class="text-dim shrink-0 text-xs tabular-nums">
-                      {formatDurationMs(durationMs(run))}
-                    </span>
-                  </div>
-                {/each}
-              </div>
-            </details>
+              </button>
+              {#if historyOpen}
+                <div
+                  id="job-history-{job.key}"
+                  transition:slide|global={{ duration: reduced ? 0 : 180 }}
+                  class="overflow-hidden rounded-b-[inherit]">
+                  {#each job.runs as run, i (run.id)}
+                    <div
+                      class="bg-surface flex items-center gap-3 px-4 py-2.5 text-sm {i >
+                      0
+                        ? 'border-border border-t'
+                        : ''}">
+                      <span
+                        class="h-2 w-2 shrink-0 rounded-full {run.status ===
+                        'SUCCESS'
+                          ? 'bg-success'
+                          : 'bg-danger'}"
+                        aria-hidden="true"></span>
+                      <span class="text-dim w-32 shrink-0 tabular-nums">
+                        {formatDate(run.startedAt, DAY_MONTH_TIME_OPTIONS)}
+                      </span>
+                      <span class="text-fg min-w-0 flex-1 truncate">
+                        {run.status === "FAILURE" ? run.error : run.summary}
+                      </span>
+                      <span class="text-dim shrink-0 text-xs tabular-nums">
+                        {formatDurationMs(durationMs(run))}
+                      </span>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           {/if}
         </section>
       {/each}

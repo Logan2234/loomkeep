@@ -23,15 +23,18 @@
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
+  import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "$lib/components/overlay-layers";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import { downloadBlob } from "$lib/download";
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { AdminUserDto, ModerationLegalBasis } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import DeleteUserModal from "./DeleteUserModal.svelte";
   import UserActivityModal from "./UserActivityModal.svelte";
 
@@ -52,6 +55,7 @@
   let showDeleteModal = $state(false);
   let activeModal = $state<ActivityKind | null>(null);
   let avatarLightbox = $state(false);
+  const queryClient = useQueryClient();
 
   const ACTIVITY_SECTIONS: { kind: ActivityKind; label: string }[] = [
     { kind: "reviews", label: m.admin_users_reviews() },
@@ -69,6 +73,36 @@
     if (kind === "followers") return followers.length;
     if (kind === "lists") return lists.length;
     return reportsAgainst.length;
+  }
+
+  function activityError(kind: ActivityKind): string | null {
+    if (kind === "reviews") return reviewsQuery.error;
+    if (kind === "comments") return commentsQuery.error;
+    if (kind === "followers") return followersQuery.error;
+    if (kind === "following") return followingQuery.error;
+    if (kind === "lists") return listsQuery.error;
+    return reportsAgainstQuery.error;
+  }
+
+  function activityHasData(kind: ActivityKind): boolean {
+    if (kind === "reviews") return reviewsQuery.data !== null;
+    if (kind === "comments") return commentsQuery.data !== null;
+    if (kind === "followers") return followersQuery.data !== null;
+    if (kind === "following") return followingQuery.data !== null;
+    if (kind === "lists") return listsQuery.data !== null;
+    return reportsAgainstQuery.data !== null;
+  }
+
+  function retryActivity(kind: ActivityKind) {
+    const key = {
+      reviews: keys.admin.userReviews,
+      comments: keys.admin.userComments,
+      followers: keys.admin.userFollowers,
+      following: keys.admin.userFollowing,
+      lists: keys.admin.userLists,
+      reports: keys.admin.userReportsAgainst,
+    }[kind](user.id);
+    void queryClient.refetchQueries({ queryKey: key });
   }
 
   const sessionsQuery = createApiQuery(() => ({
@@ -206,7 +240,7 @@
 <SidePanel
   onclose={onClose}
   labelledby="drawer-title"
-  zIndex={2147483646}
+  zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}
   backdropClass="bg-black/60">
   <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
     <div class="mb-4 flex items-start justify-between gap-2">
@@ -326,6 +360,20 @@
         {m.admin_users_access()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
+      {#if sessionsQuery.error}
+        <Banner variant="error" class="mb-2">
+          <div class="flex items-center justify-between gap-2">
+            <span>{sessionsQuery.error}</span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() =>
+                void queryClient.refetchQueries({
+                  queryKey: keys.admin.userSessions(user.id),
+                })}>{m.common_retry()}</button>
+          </div>
+        </Banner>
+      {/if}
       {#if sessionsQuery.loading}
         <div class="space-y-2">
           {#each { length: 2 } as _, i (i)}
@@ -363,7 +411,7 @@
             {m.admin_users_revoke_all()}
           </button>
         {/if}
-      {:else}
+      {:else if !sessionsQuery.error}
         <p class="text-dim text-sm">{m.admin_users_no_sessions()}</p>
       {/if}
     </section>
@@ -388,8 +436,21 @@
                 class="hover:bg-surface-2 flex w-full items-center justify-between px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
                 <span class="text-fg">{s.label}</span>
                 <span class="text-dim text-xs font-semibold"
-                  >{activityCount(s.kind)}</span>
+                  >{activityHasData(s.kind)
+                    ? activityCount(s.kind)
+                    : "—"}</span>
               </button>
+              {#if activityError(s.kind)}
+                <div
+                  class="text-danger flex items-center justify-between gap-2 px-3 pb-2 text-xs">
+                  <span>{activityError(s.kind)}</span>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    onclick={() => retryActivity(s.kind)}
+                    >{m.common_retry()}</button>
+                </div>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -402,6 +463,20 @@
         {m.common_library()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
+      {#if libraryStatsQuery.error}
+        <Banner variant="error" class="mb-2">
+          <div class="flex items-center justify-between gap-2">
+            <span>{libraryStatsQuery.error}</span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() =>
+                void queryClient.refetchQueries({
+                  queryKey: keys.admin.userLibraryStats(user.id),
+                })}>{m.common_retry()}</button>
+          </div>
+        </Banner>
+      {/if}
       {#if libraryStatsQuery.loading}
         <div class="skeleton h-28 rounded-lg"></div>
       {:else if libraryStats}
@@ -418,7 +493,7 @@
             ? m.common_item_count_one({ count: libraryStats.total })
             : m.common_item_count_many({ count: libraryStats.total })}
         </p>
-      {:else}
+      {:else if !libraryStatsQuery.error}
         <p class="text-dim text-sm">{m.admin_users_stats_unavailable()}</p>
       {/if}
     </section>

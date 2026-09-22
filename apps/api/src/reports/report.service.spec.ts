@@ -524,7 +524,9 @@ describe("ReportService.resolve", () => {
     const { svc, notifications, prisma } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUnique: vi.fn().mockResolvedValue({ reporterId: "reporter1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "fr" },
+        }),
       },
     });
     await svc.resolve("admin1", "r1", "DISMISSED");
@@ -533,6 +535,34 @@ describe("ReportService.resolve", () => {
       expect.objectContaining({
         userId: "reporter1",
         type: "REPORT_RESOLVED",
+        title: "Ton signalement a été traité",
+        body: "Nous n'avons pas donné suite à ton signalement.",
+        dedupeKey: "report:r1:resolved",
+      }),
+    );
+    expect(notifications.publishCreated).toHaveBeenCalledWith(
+      "reporter1",
+      "REPORT_RESOLVED",
+    );
+  });
+
+  it("localizes the resolution notification to the reporter's language", async () => {
+    const { svc, notifications, prisma } = make({
+      report: {
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "en" },
+        }),
+      },
+    });
+
+    await svc.resolve("admin1", "r1", "RESOLVED");
+
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({
+        userId: "reporter1",
+        title: "Your report has been reviewed",
+        body: "Action has been taken following your report.",
         dedupeKey: "report:r1:resolved",
       }),
     );
@@ -546,7 +576,7 @@ describe("ReportService.resolve", () => {
     const { svc, notifications } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUnique: vi.fn().mockResolvedValue({ reporterId: null }),
+        findUnique: vi.fn().mockResolvedValue({ reporter: null }),
       },
     });
     await svc.resolve("admin1", "r1", "RESOLVED");
@@ -556,7 +586,9 @@ describe("ReportService.resolve", () => {
   it("does not publish resolution when the notification write fails", async () => {
     const { svc, notifications, events } = make({
       report: {
-        findUnique: vi.fn().mockResolvedValue({ reporterId: "reporter1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "fr" },
+        }),
       },
     });
     vi.mocked(notifications.createInTransaction).mockRejectedValue(

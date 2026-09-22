@@ -19,6 +19,7 @@ import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -256,21 +257,19 @@ export class ReportService {
 
     const report = await tx.report.findUnique({
       where: { id },
-      select: { reporterId: true },
+      select: { reporter: { select: { id: true, locale: true } } },
     });
-    if (!report?.reporterId) return null;
+    if (!report?.reporter) return null;
 
+    const copy = notificationCopy(report.reporter.locale).reportResolution;
     const created = await this.notifications.createInTransaction(tx, {
-      userId: report.reporterId,
+      userId: report.reporter.id,
       type: NotificationType.REPORT_RESOLVED,
-      title: "Ton signalement a été traité",
-      body:
-        status === "RESOLVED"
-          ? "Une mesure a été prise suite à ton signalement."
-          : "Nous n'avons pas donné suite à ton signalement.",
+      title: copy.title,
+      body: status === "RESOLVED" ? copy.resolved : copy.dismissed,
       dedupeKey: `report:${id}:resolved`,
     });
-    return created ? report.reporterId : null;
+    return created ? report.reporter.id : null;
   }
 
   publishResolution(reporterId: string | null): void {

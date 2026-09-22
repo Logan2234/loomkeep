@@ -13,7 +13,6 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
-  import Banner from "$lib/components/Banner.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
@@ -27,6 +26,7 @@
   import AccountsSection from "./components/AccountsSection.svelte";
   import CatalogueSection from "./components/CatalogueSection.svelte";
   import SocialSection from "./components/SocialSection.svelte";
+  import StatsSectionError from "./components/StatsSectionError.svelte";
   import SystemSection from "./components/SystemSection.svelte";
 
   const queryClient = useQueryClient();
@@ -70,13 +70,6 @@
       socialQuery.loading ||
       systemQuery.loading,
   );
-  const error = $derived(
-    accountsQuery.error ??
-      catalogueQuery.error ??
-      socialQuery.error ??
-      systemQuery.error,
-  );
-
   function refresh() {
     for (const key of STATS_KEYS)
       void queryClient.refetchQueries({ queryKey: key });
@@ -151,11 +144,7 @@
     {/snippet}
   </PageHeader>
 
-  {#if error}
-    <Banner variant="error" class="mb-6">{error}</Banner>
-  {/if}
-
-  {#if loading && !accounts}
+  {#if loading && !accounts && !catalogue && !social && !system}
     <div class="animate-pulse">
       <div class="my-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         {#each { length: 5 } as _, i (i)}
@@ -203,38 +192,74 @@
       <KpiStrip tiles={kpis} />
     {/if}
 
-    {#if accounts}
+    {#if accounts || accountsQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.admin_stats_section_accounts()} />
-        <!-- Remount on refresh so the cards' own local pickers reset with it. -->
-        {#key accounts.generatedAt}
-          <AccountsSection stats={accounts} />
-        {/key}
+        {#if accountsQuery.error}
+          <StatsSectionError
+            message={accountsQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.accountsStats(),
+              })} />
+        {:else if accounts}
+          <!-- Remount on refresh so the cards' own local pickers reset with it. -->
+          {#key accounts.generatedAt}
+            <AccountsSection stats={accounts} />
+          {/key}
+        {/if}
       </section>
     {/if}
 
-    {#if catalogue}
+    {#if catalogue || catalogueQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.admin_stats_section_catalogue()} />
-        <CatalogueSection stats={catalogue} />
+        {#if catalogueQuery.error}
+          <StatsSectionError
+            message={catalogueQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.catalogueStats(),
+              })} />
+        {:else if catalogue}
+          <CatalogueSection stats={catalogue} />
+        {/if}
       </section>
     {/if}
 
     <!-- Dropped entirely when SOCIAL_ENABLED is off: a self-host install has
          no social surface to report on. -->
-    {#if socialStats}
+    {#if socialStats || socialQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.common_social()} badge="SOCIAL_ENABLED" />
-        {#key socialStats.generatedAt}
-          <SocialSection stats={socialStats} />
-        {/key}
+        {#if socialQuery.error}
+          <StatsSectionError
+            message={socialQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.socialStats(),
+              })} />
+        {:else if socialStats}
+          {#key socialStats.generatedAt}
+            <SocialSection stats={socialStats} />
+          {/key}
+        {/if}
       </section>
     {/if}
 
-    {#if system}
+    {#if system || systemQuery.error}
       <section class="border-border border-t py-6">
         <SectionLabel label={m.common_system()} />
-        <SystemSection stats={system} />
+        {#if systemQuery.error}
+          <StatsSectionError
+            message={systemQuery.error}
+            onRetry={() =>
+              void queryClient.refetchQueries({
+                queryKey: keys.admin.systemStats(),
+              })} />
+        {:else if system}
+          <SystemSection stats={system} />
+        {/if}
       </section>
     {/if}
 

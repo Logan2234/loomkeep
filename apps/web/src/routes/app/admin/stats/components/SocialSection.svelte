@@ -104,11 +104,11 @@
       </h3>
       <a
         href="/app/admin/reports"
-        class="link-accent ml-auto text-[11px] font-bold">
+        class="link-accent ml-auto text-xs font-bold">
         {m.admin_social_reports_queue_link()}
       </a>
     </div>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_social_moderation()}
     </p>
     <div class="grid grid-cols-2 gap-3">
@@ -131,7 +131,7 @@
         label={m.admin_social_reports_founded_rate()} />
     </div>
     {#if categoryItems.length > 0}
-      <p class="text-dim mt-3.5 mb-2 text-[11px] font-bold uppercase">
+      <p class="text-dim mt-3.5 mb-2 text-xs font-bold uppercase">
         {m.admin_social_by_category()}
       </p>
       <RankBars items={categoryItems} />
@@ -142,7 +142,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_social_ratings_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_social_ratings_desc({
         avgPart:
           stats.ratings.average === null
@@ -164,7 +164,7 @@
     <h3 class="font-display text-[15px] font-bold">
       {m.admin_social_top_contributors_title()}
     </h3>
-    <p class="text-dim mt-0.5 mb-3.5 text-[11.5px]">
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
       {m.admin_social_top_contributors_desc()}
     </p>
     <RankBars items={contributorItems} />
