@@ -13,11 +13,13 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Logger,
   Param,
   Post,
   Query,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import type { Prisma } from "@prisma/client";
 import {
   CurrentUser,
   type JwtPayload,
@@ -31,7 +33,10 @@ import { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
 import { ReportPendingCountResponseDto } from "../reports/dto/report-pending-count-response.dto";
 import { ReportResponseDto } from "../reports/dto/report-response.dto";
 import { ResolveReportBody } from "../reports/dto/resolve-report.dto";
-import { ModerationDecisionService } from "../reports/moderation-decision.service";
+import {
+  ModerationDecisionService,
+  type RecordModerationDecisionInput,
+} from "../reports/moderation-decision.service";
 import { REPORT_PAGE_SIZE, ReportService } from "../reports/report.service";
 import { ReviewService } from "../reviews/review.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -48,6 +53,8 @@ const STATUSES: ReportStatus[] = ["PENDING", "RESOLVED", "DISMISSED"];
 @AdminOnly()
 @Controller("admin/reports")
 export class AdminReportsController {
+  private readonly logger = new Logger(AdminReportsController.name);
+
   constructor(
     private readonly reports: ReportService,
     private readonly comments: CommentService,
@@ -146,8 +153,8 @@ export class AdminReportsController {
 
   /**
    * Removes the reported content itself (comment tombstone or review
-   * deletion), notifies its author with the DSA art. 17 statement of
-   * reasons, then resolves the report.
+   * deletion), persists its author's DSA art. 17 notice, and resolves the
+   * report in one transaction. Email delivery follows the commit.
    */
   @Post(":id/take-down")
   async takeDown(
@@ -155,46 +162,98 @@ export class AdminReportsController {
     @Param("id") id: string,
     @Body() body: ModerationReasonBody,
   ): Promise<void> {
-    const report = await this.reports.findOne(id);
-    if (!report)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.AdminReportNotFound,
-      );
-
-    const removal = await this.removeContent(
-      report.targetType,
-      report.targetId,
-    );
-
-    if (removal?.authorId) {
-      const author = await this.prisma.user.findUnique({
-        where: { id: removal.authorId },
-        select: { email: true, locale: true, username: true },
+    const committed = await this.prisma.$transaction(async (tx) => {
+      const report = await tx.report.findUnique({
+        where: { id },
+        select: {
+          targetType: true,
+          targetId: true,
+          category: true,
+          motif: true,
+          status: true,
+        },
       });
+      if (!report || report.status !== "PENDING")
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.AdminReportNotFound,
+        );
 
-      if (author) {
-        await this.moderationDecisions.record({
-          measure: removal.measure,
-          targetType: report.targetType,
-          targetId: report.targetId,
-          subjectUserId: removal.authorId,
-          subjectEmail: author.email,
-          subjectLocale: author.locale,
-          subjectUsername: author.username,
-          legalBasis: body.legalBasis,
-          reasonCategory: report.category,
-          reasonMotif: report.motif,
-          reasonText: body.reasonText,
-          tosClause: body.tosClause,
-          contentSnapshot: removal.snapshot,
-          decidedById: user.sub,
-          reportId: id,
+      const removal = await this.removeContent(
+        report.targetType,
+        report.targetId,
+        tx,
+      );
+      let notice:
+        (RecordModerationDecisionInput & { reportId: string }) | null = null;
+      let notifiedAuthorId: string | null = null;
+
+      if (removal?.authorId) {
+        const author = await tx.user.findUnique({
+          where: { id: removal.authorId },
+          select: { email: true, locale: true, username: true },
         });
+
+        if (author) {
+          notice = {
+            measure: removal.measure,
+            targetType: report.targetType,
+            targetId: report.targetId,
+            subjectUserId: removal.authorId,
+            subjectEmail: author.email,
+            subjectLocale: author.locale,
+            subjectUsername: author.username,
+            legalBasis: body.legalBasis,
+            reasonCategory: report.category,
+            reasonMotif: report.motif,
+            reasonText: body.reasonText,
+            tosClause: body.tosClause,
+            contentSnapshot: removal.snapshot,
+            decidedById: user.sub,
+            reportId: id,
+          };
+          await this.moderationDecisions.recordForReportInTransaction(
+            tx,
+            notice,
+          );
+          notifiedAuthorId = removal.authorId;
+        }
       }
+
+      const reporterId = await this.reports.resolveInTransaction(
+        tx,
+        user.sub,
+        id,
+        "RESOLVED",
+      );
+      return { removal, reporterId, notice, notifiedAuthorId };
+    });
+
+    try {
+      this.reports.publishResolution(committed.reporterId);
+
+      if (committed.removal?.commentTarget) {
+        this.comments.publishAdminRemoval(
+          committed.removal.commentTarget.type,
+          committed.removal.commentTarget.id,
+        );
+      }
+
+      if (committed.notifiedAuthorId) {
+        this.moderationDecisions.publishForReport(committed.notifiedAuthorId);
+      }
+    } catch (err) {
+      this.logger.warn(
+        "A moderation realtime notification could not be published",
+        err,
+      );
     }
 
-    await this.reports.resolve(user.sub, id, "RESOLVED");
+    if (committed.notice) {
+      void this.moderationDecisions.sendEmail(committed.notice).catch((err) => {
+        this.logger.warn("A moderation email could not be sent", err);
+      });
+    }
   }
 
   /**
@@ -204,23 +263,33 @@ export class AdminReportsController {
   private async removeContent(
     targetType: ReportTargetType,
     targetId: string,
+    tx: Prisma.TransactionClient,
   ): Promise<{
     measure: ModerationMeasure;
     authorId: string | null;
     snapshot: string | null;
+    commentTarget?: { type: string; id: string };
   } | null> {
     if (targetType === "COMMENT") {
-      const { authorId, text } = await this.comments.adminRemove(targetId);
+      const {
+        authorId,
+        text,
+        targetType: type,
+        targetId: id,
+      } = await this.comments.adminRemove(targetId, tx);
       return {
         measure: ModerationMeasure.COMMENT_REMOVED,
         authorId,
         snapshot: text,
+        commentTarget: { type, id },
       };
     }
 
     if (targetType === "REVIEW") {
-      const { authorId, rating, text } =
-        await this.reviews.adminRemove(targetId);
+      const { authorId, rating, text } = await this.reviews.adminRemove(
+        targetId,
+        tx,
+      );
       return {
         measure: ModerationMeasure.REVIEW_REMOVED,
         authorId,

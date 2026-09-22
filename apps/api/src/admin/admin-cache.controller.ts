@@ -21,6 +21,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import type { Prisma } from "@prisma/client";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
@@ -37,6 +38,7 @@ import { AdminCacheResyncStaleResultResponseDto } from "./dto/admin-cache-resync
 const STALE_TTL_MS = 24 * 60 * 60 * 1000;
 const DOMAINS = ["MEDIA", "GAMES", "BOOKS", "MUSIC"] as const;
 type CacheDomain = (typeof DOMAINS)[number];
+type CachePrisma = PrismaService | Prisma.TransactionClient;
 
 /** An item with no library/game/book/music entry pointing at it, across every account. */
 const ORPHAN_WHERE = { entries: { none: {} } } as const;
@@ -46,9 +48,8 @@ const ORPHAN_WHERE = { entries: { none: {} } } as const;
  * (targetType, targetId) pair, not a real FK — Prisma can't join them to
  * MediaItem/GameItem/etc, so "does this item still have content on it" has
  * to be checked by hand rather than folded into the entries-based ORPHAN_WHERE.
- * Work-level only (a SEASON/EPISODE review/comment on a work with zero
- * *work-level* rows is a narrower, accepted gap — see the cache page's admin
- * memory note).
+ * MEDIA also checks content targeting its seasons and episodes because those
+ * child rows cascade when the cached media item is removed.
  */
 const TARGET_TYPE: Record<CacheDomain, string> = {
   MEDIA: "MEDIA",
@@ -388,49 +389,58 @@ export class AdminCacheController {
   ): Promise<AdminCacheDeleteOrphansResultDto> {
     const cacheDomain = this.domainOrThrow(domain);
 
-    const orphanIds: string[] =
-      cacheDomain === "MEDIA"
-        ? (
-            await this.prisma.mediaItem.findMany({
-              where: ORPHAN_WHERE,
-              select: { id: true },
-            })
-          ).map((o) => o.id)
-        : cacheDomain === "GAMES"
+    const purge = async (db: CachePrisma) => {
+      const orphanIds: string[] =
+        cacheDomain === "MEDIA"
           ? (
-              await this.prisma.gameItem.findMany({
+              await db.mediaItem.findMany({
                 where: ORPHAN_WHERE,
                 select: { id: true },
               })
             ).map((o) => o.id)
-          : cacheDomain === "BOOKS"
+          : cacheDomain === "GAMES"
             ? (
-                await this.prisma.bookItem.findMany({
+                await db.gameItem.findMany({
                   where: ORPHAN_WHERE,
                   select: { id: true },
                 })
               ).map((o) => o.id)
-            : (
-                await this.prisma.musicItem.findMany({
-                  where: ORPHAN_WHERE,
-                  select: { id: true },
-                })
-              ).map((o) => o.id);
+            : cacheDomain === "BOOKS"
+              ? (
+                  await db.bookItem.findMany({
+                    where: ORPHAN_WHERE,
+                    select: { id: true },
+                  })
+                ).map((o) => o.id)
+              : (
+                  await db.musicItem.findMany({
+                    where: ORPHAN_WHERE,
+                    select: { id: true },
+                  })
+                ).map((o) => o.id);
 
-    const withContent = await this.idsWithContent(cacheDomain, orphanIds);
-    const deletable = orphanIds.filter((id) => !withContent.has(id));
-    const where = { id: { in: deletable } };
+      const withContent = await this.idsWithContent(cacheDomain, orphanIds, db);
+      const deletable = orphanIds.filter((id) => !withContent.has(id));
+      const where = { id: { in: deletable } };
 
-    const { count } =
-      cacheDomain === "MEDIA"
-        ? await this.prisma.mediaItem.deleteMany({ where })
-        : cacheDomain === "GAMES"
-          ? await this.prisma.gameItem.deleteMany({ where })
-          : cacheDomain === "BOOKS"
-            ? await this.prisma.bookItem.deleteMany({ where })
-            : await this.prisma.musicItem.deleteMany({ where });
+      const { count } =
+        cacheDomain === "MEDIA"
+          ? await db.mediaItem.deleteMany({ where })
+          : cacheDomain === "GAMES"
+            ? await db.gameItem.deleteMany({ where })
+            : cacheDomain === "BOOKS"
+              ? await db.bookItem.deleteMany({ where })
+              : await db.musicItem.deleteMany({ where });
 
-    return { deleted: count, skipped: withContent.size };
+      return { deleted: count, skipped: withContent.size };
+    };
+
+    return cacheDomain === "MEDIA"
+      ? this.prisma.$transaction(purge, {
+          isolationLevel: "Serializable",
+          timeout: 60_000,
+        })
+      : purge(this.prisma);
   }
 
   /**
@@ -449,79 +459,137 @@ export class AdminCacheController {
     @Param("id") id: string,
   ): Promise<void> {
     const cacheDomain = this.domainOrThrow(domain);
-    const references = await this.referenceCount(cacheDomain, id);
-    if (references === null)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.AdminCacheItemNotFound,
-      );
 
-    if (references > 0) {
-      throw new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.AdminCacheItemReferenced,
-        undefined,
-        "Referenced by at least one account — cannot delete",
-      );
-    }
+    const purge = async (db: CachePrisma) => {
+      const references = await this.referenceCount(cacheDomain, id, db);
+      if (references === null)
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.AdminCacheItemNotFound,
+        );
 
-    if ((await this.idsWithContent(cacheDomain, [id])).size > 0) {
-      throw new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.AdminCacheItemHasContent,
-        undefined,
-        "Reviews, comments or activity still reference this item — cannot delete",
-      );
-    }
+      if (references > 0) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AdminCacheItemReferenced,
+          undefined,
+          "Referenced by at least one account — cannot delete",
+        );
+      }
 
-    switch (cacheDomain) {
-      case "MEDIA":
-        await this.prisma.mediaItem.delete({ where: { id } });
-        return;
-      case "GAMES":
-        await this.prisma.gameItem.delete({ where: { id } });
-        return;
-      case "BOOKS":
-        await this.prisma.bookItem.delete({ where: { id } });
-        return;
-      case "MUSIC":
-        await this.prisma.musicItem.delete({ where: { id } });
-        return;
+      if ((await this.idsWithContent(cacheDomain, [id], db)).size > 0) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AdminCacheItemHasContent,
+          undefined,
+          "Reviews, comments or activity still reference this item — cannot delete",
+        );
+      }
+
+      switch (cacheDomain) {
+        case "MEDIA":
+          await db.mediaItem.delete({ where: { id } });
+          return;
+        case "GAMES":
+          await db.gameItem.delete({ where: { id } });
+          return;
+        case "BOOKS":
+          await db.bookItem.delete({ where: { id } });
+          return;
+        case "MUSIC":
+          await db.musicItem.delete({ where: { id } });
+          return;
+      }
+    };
+
+    if (cacheDomain === "MEDIA") {
+      await this.prisma.$transaction(purge, {
+        isolationLevel: "Serializable",
+        timeout: 60_000,
+      });
+    } else {
+      await purge(this.prisma);
     }
   }
 
-  /** Subset of `ids` that still have a work-level review, comment, or activity row. */
+  /** Subset of `ids` with content on the work or, for MEDIA, a child. */
   private async idsWithContent(
     domain: CacheDomain,
     ids: string[],
+    db: CachePrisma,
   ): Promise<Set<string>> {
     if (ids.length === 0) return new Set();
     const targetType = TARGET_TYPE[domain];
+    const parentByTarget = new Map(
+      ids.map((id) => [`${targetType}:${id}`, id]),
+    );
+    const targetGroups: { type: string; ids: string[] }[] = [
+      { type: targetType, ids },
+    ];
+
+    if (domain === "MEDIA") {
+      const seasons = await db.season.findMany({
+        where: { mediaItemId: { in: ids } },
+        select: {
+          id: true,
+          mediaItemId: true,
+          episodes: { select: { id: true } },
+        },
+      });
+      const seasonIds: string[] = [];
+      const episodeIds: string[] = [];
+
+      for (const season of seasons) {
+        seasonIds.push(season.id);
+        parentByTarget.set(`SEASON:${season.id}`, season.mediaItemId);
+
+        for (const episode of season.episodes) {
+          episodeIds.push(episode.id);
+          parentByTarget.set(`EPISODE:${episode.id}`, season.mediaItemId);
+        }
+      }
+
+      if (seasonIds.length)
+        targetGroups.push({ type: "SEASON", ids: seasonIds });
+      if (episodeIds.length)
+        targetGroups.push({ type: "EPISODE", ids: episodeIds });
+    }
+
+    const where = {
+      OR: targetGroups.map(({ type, ids: targetIds }) => ({
+        targetType: type,
+        targetId: { in: targetIds },
+      })),
+    };
     const [reviews, comments, activity] = await Promise.all([
-      this.prisma.review.findMany({
+      db.review.findMany({
         where: {
-          targetType: targetType as ReviewTargetType,
-          targetId: { in: ids },
+          OR: where.OR.map((target) => ({
+            ...target,
+            targetType: target.targetType as ReviewTargetType,
+          })),
         },
-        select: { targetId: true },
+        select: { targetType: true, targetId: true },
       }),
-      this.prisma.comment.findMany({
+      db.comment.findMany({
         where: {
-          targetType: targetType as CommentTargetType,
-          targetId: { in: ids },
+          OR: where.OR.map((target) => ({
+            ...target,
+            targetType: target.targetType as CommentTargetType,
+          })),
         },
-        select: { targetId: true },
+        select: { targetType: true, targetId: true },
       }),
-      this.prisma.activityEvent.findMany({
-        where: { targetType, targetId: { in: ids } },
-        select: { targetId: true },
+      db.activityEvent.findMany({
+        where,
+        select: { targetType: true, targetId: true },
       }),
     ]);
-    return new Set([
-      ...reviews.map((r) => r.targetId),
-      ...comments.map((c) => c.targetId),
-      ...activity.map((a) => a.targetId),
-    ]);
+    return new Set(
+      [...reviews, ...comments, ...activity]
+        .map((row) => parentByTarget.get(`${row.targetType}:${row.targetId}`))
+        .filter((id): id is string => id !== undefined),
+    );
   }
 
   /**
@@ -588,10 +656,11 @@ export class AdminCacheController {
   private async referenceCount(
     domain: CacheDomain,
     id: string,
+    db: CachePrisma,
   ): Promise<number | null> {
     switch (domain) {
       case "MEDIA": {
-        const item = await this.prisma.mediaItem.findUnique({
+        const item = await db.mediaItem.findUnique({
           where: { id },
           include: { _count: { select: { entries: true } } },
         });
@@ -599,7 +668,7 @@ export class AdminCacheController {
       }
 
       case "GAMES": {
-        const item = await this.prisma.gameItem.findUnique({
+        const item = await db.gameItem.findUnique({
           where: { id },
           include: { _count: { select: { entries: true } } },
         });
@@ -607,7 +676,7 @@ export class AdminCacheController {
       }
 
       case "BOOKS": {
-        const item = await this.prisma.bookItem.findUnique({
+        const item = await db.bookItem.findUnique({
           where: { id },
           include: { _count: { select: { entries: true } } },
         });
@@ -615,7 +684,7 @@ export class AdminCacheController {
       }
 
       case "MUSIC": {
-        const item = await this.prisma.musicItem.findUnique({
+        const item = await db.musicItem.findUnique({
           where: { id },
           include: { _count: { select: { entries: true } } },
         });

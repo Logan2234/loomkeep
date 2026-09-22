@@ -10,6 +10,9 @@ function make(
   overrides: Partial<Record<string, Partial<Record<string, Mock>>>> = {},
 ) {
   const prisma = {
+    $transaction: vi.fn(async (action: (tx: unknown) => Promise<unknown>) =>
+      action(prisma),
+    ),
     report: {
       create: vi.fn(),
       findFirst: vi.fn().mockResolvedValue(null),
@@ -47,6 +50,8 @@ function make(
   } as unknown as JobRunService;
   const notifications = {
     create: vi.fn(),
+    createInTransaction: vi.fn().mockResolvedValue(true),
+    publishCreated: vi.fn(),
   } as unknown as NotificationService;
   const events = {
     emitReportsCount: vi.fn(),
@@ -516,7 +521,7 @@ describe("ReportService.resolve", () => {
   });
 
   it("notifies the reporter in-app of the outcome, DSA art. 16(5)", async () => {
-    const { svc, notifications } = make({
+    const { svc, notifications, prisma } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUnique: vi.fn().mockResolvedValue({
@@ -525,18 +530,24 @@ describe("ReportService.resolve", () => {
       },
     });
     await svc.resolve("admin1", "r1", "DISMISSED");
-    expect(notifications.create).toHaveBeenCalledWith(
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      prisma,
       expect.objectContaining({
         userId: "reporter1",
         type: "REPORT_RESOLVED",
         title: "Ton signalement a été traité",
         body: "Nous n'avons pas donné suite à ton signalement.",
+        dedupeKey: "report:r1:resolved",
       }),
+    );
+    expect(notifications.publishCreated).toHaveBeenCalledWith(
+      "reporter1",
+      "REPORT_RESOLVED",
     );
   });
 
   it("localizes the resolution notification to the reporter's language", async () => {
-    const { svc, notifications } = make({
+    const { svc, notifications, prisma } = make({
       report: {
         findUnique: vi.fn().mockResolvedValue({
           reporter: { id: "reporter1", locale: "en" },
@@ -546,12 +557,18 @@ describe("ReportService.resolve", () => {
 
     await svc.resolve("admin1", "r1", "RESOLVED");
 
-    expect(notifications.create).toHaveBeenCalledWith(
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      prisma,
       expect.objectContaining({
         userId: "reporter1",
         title: "Your report has been reviewed",
         body: "Action has been taken following your report.",
+        dedupeKey: "report:r1:resolved",
       }),
+    );
+    expect(notifications.publishCreated).toHaveBeenCalledWith(
+      "reporter1",
+      "REPORT_RESOLVED",
     );
   });
 
@@ -563,7 +580,40 @@ describe("ReportService.resolve", () => {
       },
     });
     await svc.resolve("admin1", "r1", "RESOLVED");
-    expect(notifications.create).not.toHaveBeenCalled();
+    expect(notifications.createInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("does not publish resolution when the notification write fails", async () => {
+    const { svc, notifications, events } = make({
+      report: {
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "fr" },
+        }),
+      },
+    });
+    vi.mocked(notifications.createInTransaction).mockRejectedValue(
+      new Error("notification write failed"),
+    );
+
+    await expect(svc.resolve("admin1", "r1", "RESOLVED")).rejects.toThrow(
+      "notification write failed",
+    );
+    expect(events.emitReportsCount).not.toHaveBeenCalled();
+  });
+
+  it("does not report a failed resolution after a post-commit realtime error", async () => {
+    const { svc, events } = make({
+      events: {
+        emitReportsCount: vi.fn().mockImplementation(() => {
+          throw new Error("socket unavailable");
+        }),
+      },
+    });
+
+    await expect(
+      svc.resolve("admin1", "r1", "RESOLVED"),
+    ).resolves.toBeUndefined();
+    expect(events.emitReportsCount).toHaveBeenCalledOnce();
   });
 });
 

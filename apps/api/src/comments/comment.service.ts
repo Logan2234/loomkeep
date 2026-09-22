@@ -15,6 +15,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { resolveWorkHref, workTargetExists } from "../common/work-href.util";
@@ -569,23 +570,45 @@ export class CommentService {
    */
   async adminRemove(
     id: string,
-  ): Promise<{ authorId: string | null; text: string | null }> {
-    const existing = await this.prisma.comment.findUnique({ where: { id } });
+    tx?: Prisma.TransactionClient,
+  ): Promise<{
+    authorId: string | null;
+    text: string | null;
+    targetType: string;
+    targetId: string;
+  }> {
+    const db = tx ?? this.prisma;
+    const existing = await db.comment.findUnique({ where: { id } });
     if (!existing || existing.deletedAt)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.CommentNotFound);
 
-    await this.softDelete(id, true);
-    await this.xp.revokeBySource("Comment", [id]);
-    this.events.emitToCommentsThread(
-      existing.targetType,
-      existing.targetId,
-      "comment-changed",
-    );
-    return { authorId: existing.authorId, text: existing.text };
+    await this.softDelete(id, true, tx);
+
+    if (tx) {
+      await this.xp.revokeBySource("Comment", [id], tx);
+    } else {
+      await this.xp.revokeBySource("Comment", [id]);
+    }
+
+    if (!tx) this.publishAdminRemoval(existing.targetType, existing.targetId);
+    return {
+      authorId: existing.authorId,
+      text: existing.text,
+      targetType: existing.targetType,
+      targetId: existing.targetId,
+    };
   }
 
-  private async softDelete(id: string, byAdmin: boolean): Promise<void> {
-    await this.prisma.comment.update({
+  publishAdminRemoval(targetType: string, targetId: string): void {
+    this.events.emitToCommentsThread(targetType, targetId, "comment-changed");
+  }
+
+  private async softDelete(
+    id: string,
+    byAdmin: boolean,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    await (tx ?? this.prisma).comment.update({
       where: { id },
       data: { text: null, deletedAt: new Date(), deletedByAdmin: byAdmin },
     });
