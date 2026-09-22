@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
@@ -574,6 +575,39 @@ describe("ReviewService — structural review deletion revokes XP", () => {
 });
 
 describe("ReviewService.adminRemove", () => {
+  it("deletes the review and revokes XP on the caller's transaction", async () => {
+    const xp = stubXp();
+    const tx = {
+      review: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "rev1",
+          userId: "author1",
+          rating: 2,
+          text: "hors sujet",
+        }),
+        delete: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+    const prisma = {
+      review: { findUnique: vi.fn(), delete: vi.fn() },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    await svc.adminRemove("rev1", tx);
+
+    expect(tx.review.delete).toHaveBeenCalledWith({ where: { id: "rev1" } });
+    expect(prisma.review.delete).not.toHaveBeenCalled();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"], tx);
+  });
+
   it("deletes the review, revokes its XP and returns what the notice needs", async () => {
     const deleteFn = vi.fn().mockResolvedValue({});
     const xp = stubXp();

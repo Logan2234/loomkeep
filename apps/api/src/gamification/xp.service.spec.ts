@@ -241,6 +241,28 @@ describe("XpService.revokeBySource", () => {
 
     expect(prisma.xpEntry.deleteMany).not.toHaveBeenCalled();
   });
+
+  it("revokes and recomputes on the caller's transaction", async () => {
+    const { service, prisma } = makeService();
+    const tx = {
+      xpEntry: {
+        findMany: vi.fn().mockResolvedValue([{ userId: "user-1" }]),
+        deleteMany: vi.fn(),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 7 } }),
+      },
+      userScore: { upsert: vi.fn() },
+    } as unknown as Prisma.TransactionClient;
+
+    await service.revokeBySource("Review", ["rev1"], tx);
+
+    expect(tx.xpEntry.deleteMany).toHaveBeenCalled();
+    expect(tx.userScore.upsert).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      update: { xp: 7 },
+      create: { userId: "user-1", xp: 7 },
+    });
+    expect(prisma.xpEntry.deleteMany).not.toHaveBeenCalled();
+  });
 });
 
 describe("XpService.reconcile", () => {

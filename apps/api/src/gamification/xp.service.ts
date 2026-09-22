@@ -180,20 +180,25 @@ export class XpService {
    * Deletes the rows outright (there is no revokedAt or negative entry) and
    * resums `UserScore` for every user actually affected.
    */
-  async revokeBySource(sourceType: string, sourceIds: string[]): Promise<void> {
+  async revokeBySource(
+    sourceType: string,
+    sourceIds: string[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
     if (sourceIds.length === 0) return;
+    const db = tx ?? this.prisma;
 
-    const affected = await this.prisma.xpEntry.findMany({
+    const affected = await db.xpEntry.findMany({
       where: { sourceType, sourceId: { in: sourceIds } },
       select: { userId: true },
       distinct: ["userId"],
     });
 
-    await this.prisma.xpEntry.deleteMany({
+    await db.xpEntry.deleteMany({
       where: { sourceType, sourceId: { in: sourceIds } },
     });
 
-    await Promise.all(affected.map((a) => this.recomputeScore(a.userId)));
+    await Promise.all(affected.map((a) => this.recomputeScore(a.userId, tx)));
   }
 
   /**
@@ -280,14 +285,18 @@ export class XpService {
   }
 
   /** Resums `UserScore.xp` for `userId` from its XpEntry rows — never incremented in place. */
-  private async recomputeScore(userId: string): Promise<void> {
-    const agg = await this.prisma.xpEntry.aggregate({
+  private async recomputeScore(
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const db = tx ?? this.prisma;
+    const agg = await db.xpEntry.aggregate({
       where: { userId },
       _sum: { amount: true },
     });
     const xp = agg._sum.amount ?? 0;
 
-    await this.prisma.userScore.upsert({
+    await db.userScore.upsert({
       where: { userId },
       update: { xp },
       create: { userId, xp },

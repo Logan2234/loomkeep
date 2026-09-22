@@ -15,6 +15,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -409,16 +410,23 @@ export class ReviewService {
    */
   async adminRemove(
     id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<{ authorId: string | null; rating: number; text: string | null }> {
-    const review = await this.prisma.review.findUnique({
+    const db = tx ?? this.prisma;
+    const review = await db.review.findUnique({
       where: { id },
       select: { id: true, userId: true, rating: true, text: true },
     });
     if (!review)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
 
-    await this.prisma.review.delete({ where: { id } });
-    await this.xp.revokeBySource("Review", [id]);
+    await db.review.delete({ where: { id } });
+
+    if (tx) {
+      await this.xp.revokeBySource("Review", [id], tx);
+    } else {
+      await this.xp.revokeBySource("Review", [id]);
+    }
 
     return {
       authorId: review.userId,

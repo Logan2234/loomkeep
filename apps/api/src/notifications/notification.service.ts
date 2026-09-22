@@ -30,6 +30,16 @@ const FEED_EXCLUDED_TYPES: NotificationType[] = [
   NotificationType.FOLLOW_REQUEST,
 ];
 
+type CreateNotificationInput = {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body?: string | null;
+  url?: string | null;
+  dedupeKey?: string | null;
+  data?: Record<string, unknown>;
+};
+
 /** Digest body: `S1E2 · Title` (title suffix only when known). */
 function notificationBody(n: NewEpisodeNotification): string {
   return `S${n.seasonNumber}E${n.episodeNumber}${n.episodeTitle ? " · " + n.episodeTitle : ""}`;
@@ -342,16 +352,18 @@ export class NotificationService {
    * a re-scan won't duplicate a row). Used by other domains (e.g. social) to
    * post notifications without knowing the storage shape.
    */
-  async create(input: {
-    userId: string;
-    type: NotificationType;
-    title: string;
-    body?: string | null;
-    url?: string | null;
-    dedupeKey?: string | null;
-    data?: Record<string, unknown>;
-  }): Promise<void> {
-    const { count } = await this.prisma.notification.createMany({
+  async create(input: CreateNotificationInput): Promise<void> {
+    if (await this.createInTransaction(this.prisma, input)) {
+      this.publishCreated(input.userId, input.type);
+    }
+  }
+
+  /** Persists a notification alongside the caller's transaction; publish only after commit. */
+  async createInTransaction(
+    db: PrismaService | Prisma.TransactionClient,
+    input: CreateNotificationInput,
+  ): Promise<boolean> {
+    const { count } = await db.notification.createMany({
       data: [
         {
           userId: input.userId,
@@ -366,11 +378,13 @@ export class NotificationService {
       skipDuplicates: true,
     });
 
-    // A deduped no-op, or a kind the bell feed never shows (NEW_EPISODE,
-    // FOLLOW_REQUEST — see FEED_EXCLUDED_TYPES) — nothing for the client to
-    // usefully refetch.
-    if (count > 0 && !FEED_EXCLUDED_TYPES.includes(input.type)) {
-      this.events.emitToUser(input.userId, "notification");
+    return count > 0;
+  }
+
+  publishCreated(userId: string, type: NotificationType): void {
+    // Kinds excluded from the bell feed have nothing useful to refetch.
+    if (!FEED_EXCLUDED_TYPES.includes(type)) {
+      this.events.emitToUser(userId, "notification");
     }
   }
 
