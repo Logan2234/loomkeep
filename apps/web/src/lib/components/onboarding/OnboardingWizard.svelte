@@ -8,7 +8,7 @@
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
-  import { toggleDomainSelection } from "$lib/domains";
+  import { createDomainToggle } from "$lib/domain-toggle.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { getLocale, setLocale } from "$lib/paraglide/runtime.js";
   import { disablePush, enablePush, isPushSupported } from "$lib/push";
@@ -63,16 +63,7 @@
   // No error UI for these three: a locale/domain/timezone hiccup just leaves
   // the still-current value showing, same call as AppearanceSection/
   // PrivacySection make for the same kind of low-stakes setting.
-  const toggleDomainMut = createApiMutation(() => ({
-    mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
-  }));
-
-  function toggleDomain(id: Domain) {
-    if (!auth.user) return;
-    const next = toggleDomainSelection(auth.user.enabledDomains, id);
-    if (next === auth.user.enabledDomains) return;
-    toggleDomainMut.mutate(next);
-  }
+  const domainToggle = createDomainToggle();
 
   const saveLocaleMut = createApiMutation(() => ({
     mutate: (next: Locale) => updateMe({ locale: next }),
@@ -266,10 +257,11 @@
         {@const on = auth.user?.enabledDomains.includes(id) ?? false}
         <button
           type="button"
+          aria-pressed={on}
           class="border-border relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors {on
             ? 'border-accent bg-accent/10 text-fg'
             : 'text-dim hover:bg-surface-2'}"
-          onclick={() => toggleDomain(id)}>
+          onclick={() => domainToggle.toggle(id)}>
           <Icon
             name={DOMAINS[id].icon}
             class="h-5 w-5 {on ? 'text-accent' : ''}" />
