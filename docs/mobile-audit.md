@@ -35,19 +35,10 @@ volontairement. M-14 et M-22 ont été retirés sans correctif : la page Schéma
 n'est pas exposée en production, et « Mes listes » / « Mes critiques » sont
 volontairement accessibles depuis l'accueil et le profil, en mobile comme en
 desktop.
-M-27 et M-28 ont été découverts pendant la correction, ainsi que M-29
-(corrigé) — un débordement horizontal du profil signalé par Logan.
-
-De M-13, seul le volet manifest reste ouvert : `theme_color` et
-`background_color` y sont fixés en dur à `#0c0d10`, donc l'écran de démarrage
-de la PWA est toujours sombre. Le manifest est servi par locale, sans rien
-savoir du thème choisi par le lecteur — le régler demande un arbitrage, pas un
-correctif.
-
-M-28 s'est révélé plus précis que le constat d'origine : le lanceur se cachait
-déjà sous `(min-width: 768px)`, mais un téléphone en paysage fait plus de
-800 px de large, donc il réapparaissait pile sur la barre du bas. Il suit
-maintenant `layout.compact`, comme le reste du shell.
+M-27 a été découvert pendant la correction, ainsi que M-28 (corrigé) et M-29
+(corrigé) — un débordement horizontal du profil signalé par Logan. De M-13,
+seules les couleurs du manifest PWA restent en dur : le manifest est servi par
+locale, sans rien savoir du thème choisi, donc les régler demande un arbitrage.
 
 **M-29 · Débordement horizontal du profil** (corrigé) — un titre saisi par un
 utilisateur et sans espace (nom de liste, titre d'œuvre) a une largeur
