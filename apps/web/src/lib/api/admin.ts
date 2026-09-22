@@ -110,7 +110,17 @@ export function getAdminUsers(
   });
 }
 
-export const getAdminUserOptions = () => typedRequest("/admin/users/options");
+export function getAdminUserOptions(
+  filters: { search?: string; page?: number; limit?: number } = {},
+) {
+  return typedRequest("/admin/users/options", {
+    query: {
+      search: filters.search || undefined,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+    },
+  });
+}
 
 export const getAdminUserLibraryStats = (userId: string) =>
   typedRequest("/admin/users/{userId}/library-stats", { params: { userId } });

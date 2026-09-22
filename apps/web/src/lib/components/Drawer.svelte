@@ -16,6 +16,7 @@
   // setTimeout, only after the local closing animation has finished, makes
   // the parent's unmount instant and unconditional — nothing left for Svelte
   // to defer.
+  import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
   import { prefersReducedMotion } from "$lib/motion";
@@ -151,6 +152,7 @@
 
   <div
     bind:this={panelEl}
+    use:dialogFocus
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}

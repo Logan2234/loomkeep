@@ -131,7 +131,7 @@
   }
 </script>
 
-<div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="archive"
     title={m.admin_backup_title()}

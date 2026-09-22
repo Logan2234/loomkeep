@@ -181,6 +181,39 @@ describe("AdminUsersController.listUsers", () => {
   });
 });
 
+describe("AdminUsersController.listUserOptions", () => {
+  it("searches and paginates the compact account picker", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([
+      { id: "user-1", displayName: "Alice", email: "alice@example.com" },
+      { id: "user-2", displayName: "Alicia", email: "alicia@example.com" },
+      { id: "user-3", displayName: "Alix", email: "alix@example.com" },
+    ]);
+
+    await expect(controller.listUserOptions("ali", "2", "2")).resolves.toEqual({
+      items: [
+        { id: "user-1", displayName: "Alice", email: "alice@example.com" },
+        { id: "user-2", displayName: "Alicia", email: "alicia@example.com" },
+      ],
+      hasMore: true,
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { id: "ali" },
+          { email: { contains: "ali", mode: "insensitive" } },
+          { username: { contains: "ali", mode: "insensitive" } },
+          { displayName: { contains: "ali", mode: "insensitive" } },
+        ],
+      },
+      orderBy: [{ displayName: "asc" }, { id: "asc" }],
+      select: { id: true, displayName: true, email: true },
+      skip: 2,
+      take: 3,
+    });
+  });
+});
+
 describe("AdminUsersController.getUserLibraryStats", () => {
   it("counts every persisted library domain, splitting media by type", async () => {
     const { controller, prisma } = makeController();

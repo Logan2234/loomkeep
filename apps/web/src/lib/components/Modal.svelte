@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
+  import { scrollLock } from "$lib/actions/scrollLock";
   import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
@@ -91,6 +93,7 @@
   <!-- Desktop: a centered dialog. Mobile's Drawer already closes on Escape. -->
   <div
     use:portal
+    use:scrollLock
     class={`fixed inset-0 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}
     style="z-index: {MODAL_Z_INDEX}">
     <button
@@ -99,9 +102,11 @@
       aria-label={m.common_close()}
       onclick={() => dismissable && onclose()}></button>
     <div
+      use:dialogFocus
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      tabindex="-1"
       transition:scale|global={{ duration: reduced ? 0 : 180, start: 0.9 }}
       class="card relative z-10 max-h-[85svh] w-full overflow-y-auto {wide
         ? 'max-w-2xl'

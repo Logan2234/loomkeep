@@ -2,7 +2,7 @@ import type Icon from "$lib/components/Icon.svelte";
 import { m } from "$lib/paraglide/messages";
 import type { ComponentProps } from "svelte";
 
-type AdminNavItem = {
+export type AdminNavItem = {
   href: string;
   label: string;
   description: string;
@@ -107,6 +107,48 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
 ];
 
-export const VISIBLE_ADMIN_NAV = ADMIN_NAV.filter(
-  (item) => !item.devOnly || import.meta.env.DEV,
-);
+function itemsFor(hrefs: string[]): AdminNavItem[] {
+  return hrefs.map((href) => {
+    const item = ADMIN_NAV.find((candidate) => candidate.href === href);
+    if (!item) throw new Error(`Unknown admin navigation destination: ${href}`);
+    return item;
+  });
+}
+
+export const ADMIN_NAV_GROUPS = [
+  {
+    label: m.admin_group_content(),
+    items: itemsFor([
+      "/app/admin/cache",
+      "/app/admin/schema",
+      "/app/admin/components",
+      "/app/admin/backup",
+      "/app/admin/imports",
+    ]),
+  },
+  {
+    label: m.admin_group_users(),
+    items: itemsFor([
+      "/app/admin/users",
+      "/app/admin/communications",
+      "/app/admin/newsletter",
+    ]),
+  },
+  {
+    label: m.admin_group_system(),
+    items: itemsFor([
+      "/app/admin/services",
+      "/app/admin/jobs",
+      "/app/admin/stats",
+    ]),
+  },
+  {
+    label: m.admin_group_security(),
+    items: itemsFor(["/app/admin/security", "/app/admin/reports"]),
+  },
+];
+
+export const VISIBLE_ADMIN_NAV_GROUPS = ADMIN_NAV_GROUPS.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => !item.devOnly || import.meta.env.DEV),
+})).filter((group) => group.items.length > 0);

@@ -84,6 +84,15 @@
     return reportsAgainstQuery.error;
   }
 
+  function activityLoading(kind: ActivityKind): boolean {
+    if (kind === "reviews") return reviewsQuery.loading;
+    if (kind === "comments") return commentsQuery.loading;
+    if (kind === "followers") return followersQuery.loading;
+    if (kind === "following") return followingQuery.loading;
+    if (kind === "lists") return listsQuery.loading;
+    return reportsAgainstQuery.loading;
+  }
+
   function activityHasData(kind: ActivityKind): boolean {
     if (kind === "reviews") return reviewsQuery.data !== null;
     if (kind === "comments") return commentsQuery.data !== null;
@@ -120,26 +129,32 @@
   const reviewsQuery = createApiQuery(() => ({
     key: keys.admin.userReviews(user.id),
     fetch: () => getAdminUserReviews(user.id),
+    enabled: activeModal === "reviews",
   }));
   const commentsQuery = createApiQuery(() => ({
     key: keys.admin.userComments(user.id),
     fetch: () => getAdminUserComments(user.id),
+    enabled: activeModal === "comments",
   }));
   const followersQuery = createApiQuery(() => ({
     key: keys.admin.userFollowers(user.id),
     fetch: () => getAdminUserFollowers(user.id),
+    enabled: activeModal === "followers",
   }));
   const followingQuery = createApiQuery(() => ({
     key: keys.admin.userFollowing(user.id),
     fetch: () => getAdminUserFollowing(user.id),
+    enabled: activeModal === "following",
   }));
   const listsQuery = createApiQuery(() => ({
     key: keys.admin.userLists(user.id),
     fetch: () => getAdminUserLists(user.id),
+    enabled: activeModal === "lists",
   }));
   const reportsAgainstQuery = createApiQuery(() => ({
     key: keys.admin.userReportsAgainst(user.id),
     fetch: () => getAdminUserReportsAgainst(user.id),
+    enabled: activeModal === "reports",
   }));
 
   const reviews = $derived(reviewsQuery.data ?? []);
@@ -148,15 +163,6 @@
   const following = $derived(followingQuery.data ?? []);
   const lists = $derived(listsQuery.data ?? []);
   const reportsAgainst = $derived(reportsAgainstQuery.data ?? []);
-  const activityLoading = $derived(
-    reviewsQuery.loading ||
-      commentsQuery.loading ||
-      followersQuery.loading ||
-      followingQuery.loading ||
-      listsQuery.loading ||
-      reportsAgainstQuery.loading,
-  );
-
   const revokeMut = createApiMutation(() => ({
     mutate: (sessionId: string) => revokeAdminUserSession(user.id, sessionId),
     invalidates: [keys.admin.userSessions(user.id)],
@@ -422,39 +428,22 @@
         {m.admin_social_activity_title()}
         <span class="bg-border h-px flex-1"></span>
       </h3>
-      {#if activityLoading}
-        <div class="skeleton h-24 rounded-lg"></div>
-      {:else}
-        <ul
-          class="border-border divide-border divide-y overflow-hidden rounded-lg border">
-          {#each ACTIVITY_SECTIONS as s (s.kind)}
-            <li>
-              <button
-                type="button"
-                disabled={activityCount(s.kind) === 0}
-                onclick={() => (activeModal = s.kind)}
-                class="hover:bg-surface-2 flex w-full items-center justify-between px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
-                <span class="text-fg">{s.label}</span>
-                <span class="text-dim text-xs font-semibold"
-                  >{activityHasData(s.kind)
-                    ? activityCount(s.kind)
-                    : "—"}</span>
-              </button>
-              {#if activityError(s.kind)}
-                <div
-                  class="text-danger flex items-center justify-between gap-2 px-3 pb-2 text-xs">
-                  <span>{activityError(s.kind)}</span>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-sm"
-                    onclick={() => retryActivity(s.kind)}
-                    >{m.common_retry()}</button>
-                </div>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {/if}
+      <ul
+        class="border-border divide-border divide-y overflow-hidden rounded-lg border">
+        {#each ACTIVITY_SECTIONS as s (s.kind)}
+          <li>
+            <button
+              type="button"
+              disabled={activityHasData(s.kind) && activityCount(s.kind) === 0}
+              onclick={() => (activeModal = s.kind)}
+              class="hover:bg-surface-2 flex w-full items-center justify-between px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
+              <span class="text-fg">{s.label}</span>
+              <span class="text-dim text-xs font-semibold"
+                >{activityHasData(s.kind) ? activityCount(s.kind) : "—"}</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
     </section>
 
     <section class="mb-5">
@@ -566,12 +555,15 @@
 {#if activeModal}
   <UserActivityModal
     kind={activeModal}
+    loading={activityLoading(activeModal)}
+    error={activityError(activeModal)}
     {reviews}
     {comments}
     {followers}
     {following}
     {lists}
     {reportsAgainst}
+    onRetry={() => retryActivity(activeModal)}
     onClose={() => (activeModal = null)} />
 {/if}
 

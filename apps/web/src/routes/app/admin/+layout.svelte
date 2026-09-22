@@ -1,9 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import { auth } from "$lib/auth.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import AdminPageShell from "./AdminPageShell.svelte";
 
   let { children } = $props();
 
@@ -32,5 +34,7 @@
     </a>
   </div>
 {:else if auth.isAdmin}
-  {@render children()}
+  <AdminPageShell pathname={page.url.pathname}>
+    {@render children()}
+  </AdminPageShell>
 {/if}

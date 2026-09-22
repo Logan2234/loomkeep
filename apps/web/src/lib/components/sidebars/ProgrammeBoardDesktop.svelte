@@ -6,7 +6,7 @@
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { visibleNavSections } from "$lib/navigation";
@@ -77,8 +77,12 @@
           label: m.common_overview(),
           match: (p) => p === "/app/admin",
         })}
-        {#each VISIBLE_ADMIN_NAV as item (item.href)}
-          {@render railIcon(item)}
+        {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+          <div class="my-1 w-8 border-t border-white/10" aria-hidden="true">
+          </div>
+          {#each group.items as item (item.href)}
+            {@render railIcon(item)}
+          {/each}
         {/each}
       {:else}
         {#each visibleSections as section (section.label ?? "primary")}
@@ -133,26 +137,32 @@
               : 'bg-white/15'}"></span>
           {m.common_overview()}
         </a>
-        {#each VISIBLE_ADMIN_NAV as item (item.href)}
-          {@const active = item.match(page.url.pathname)}
-          <a
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            class="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-semibold transition-colors {active
-              ? 'text-[#f5b841]'
-              : 'text-white/75 hover:bg-white/5 hover:text-white'}">
-            <span
-              class="h-1.5 w-1.5 shrink-0 rounded-full {active
-                ? 'bg-[#f5b841] shadow-[0_0_6px_1px_#f5b841]'
-                : 'bg-white/15'}"></span>
-            {item.label}
-            {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+        {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+          <p
+            class="mt-4 mb-2 font-mono text-[0.58rem] font-bold tracking-[0.14em] text-white/40 first:mt-2">
+            {group.label}
+          </p>
+          {#each group.items as item (item.href)}
+            {@const active = item.match(page.url.pathname)}
+            <a
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              class="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-semibold transition-colors {active
+                ? 'text-[#f5b841]'
+                : 'text-white/75 hover:bg-white/5 hover:text-white'}">
               <span
-                class="ml-auto rounded-full bg-[#f5b841] px-1.5 text-[0.6rem] font-bold text-[#1a1406]">
-                {reportsPending.count > 9 ? "9+" : reportsPending.count}
-              </span>
-            {/if}
-          </a>
+                class="h-1.5 w-1.5 shrink-0 rounded-full {active
+                  ? 'bg-[#f5b841] shadow-[0_0_6px_1px_#f5b841]'
+                  : 'bg-white/15'}"></span>
+              {item.label}
+              {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                <span
+                  class="ml-auto rounded-full bg-[#f5b841] px-1.5 text-[0.6rem] font-bold text-[#1a1406]">
+                  {reportsPending.count > 9 ? "9+" : reportsPending.count}
+                </span>
+              {/if}
+            </a>
+          {/each}
         {/each}
         <a
           href="/app"

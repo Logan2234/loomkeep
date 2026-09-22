@@ -122,7 +122,7 @@
   ];
 </script>
 
-<div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="user"
     title={m.common_users()}

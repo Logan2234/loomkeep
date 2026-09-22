@@ -155,7 +155,7 @@
     percentUsed >= 80 ? "bg-danger" : "bg-accent";
 </script>
 
-<div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="monitor"
     title={m.admin_services_title()}

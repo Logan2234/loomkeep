@@ -16,7 +16,7 @@
   const loadError = $derived(sendsQuery.error);
 </script>
 
-<div class="mx-auto max-w-2xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="sparkles"
     title={m.common_newsletter()}

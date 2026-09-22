@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
+  import { scrollLock } from "$lib/actions/scrollLock";
   import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
-  import { onMount, tick } from "svelte";
   import { fly } from "svelte/transition";
 
   let {
@@ -27,11 +28,6 @@
   } = $props();
 
   const reduced = prefersReducedMotion();
-  let panel = $state<HTMLDivElement | null>(null);
-
-  onMount(() => {
-    void tick().then(() => panel?.focus());
-  });
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key !== "Escape" || event.defaultPrevented) return;
@@ -43,14 +39,14 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div use:portal class="contents">
+<div use:portal use:scrollLock class="contents">
   <button
     class="fixed inset-0 cursor-default {backdropClass}"
     style="z-index: {zIndex}"
     aria-label={m.common_close()}
     onclick={onclose}></button>
   <div
-    bind:this={panel}
+    use:dialogFocus
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}
