@@ -78,7 +78,11 @@ describe("AdminService.getServicesStatus", () => {
     const { services } = await service.getServicesStatus();
     const tmdb = services.find((s) => s.key === "tmdb");
 
-    expect(tmdb).toMatchObject({ configured: true, reachable: false });
+    expect(tmdb).toMatchObject({
+      configured: true,
+      reachable: false,
+      detail: "HTTP 401",
+    });
   });
 
   it("treats a thrown probe (network error / timeout) as down", async () => {
@@ -90,7 +94,7 @@ describe("AdminService.getServicesStatus", () => {
     const { services } = await service.getServicesStatus();
     const tmdb = services.find((s) => s.key === "tmdb");
 
-    expect(tmdb?.reachable).toBe(false);
+    expect(tmdb).toMatchObject({ reachable: false, detail: "boom" });
   });
 
   it("probes SMTP via MailService.verifyConnection", async () => {
@@ -106,7 +110,11 @@ describe("AdminService.getServicesStatus", () => {
     const smtp = services.find((s) => s.key === "smtp");
 
     expect(mail.verifyConnection).toHaveBeenCalled();
-    expect(smtp).toMatchObject({ configured: true, reachable: false });
+    expect(smtp).toMatchObject({
+      configured: true,
+      reachable: false,
+      failure: "refused",
+    });
   });
 
   it("reports a configured-but-unprobed service (VAPID) as reachable:null", async () => {

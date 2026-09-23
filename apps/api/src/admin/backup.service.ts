@@ -221,14 +221,18 @@ export class BackupService {
 
       const entries = await readdir(this.dir, { withFileTypes: true });
 
-      if (!entries.some((entry) => entry.name === filename && entry.isFile())) {
+      const orphan = entries.find(
+        (entry) => entry.name === filename && entry.isFile(),
+      );
+
+      if (!orphan) {
         throw new AppException(
           HttpStatus.NOT_FOUND,
           ErrorCode.AdminBackupNotFound,
         );
       }
 
-      await rm(join(this.dir, filename));
+      await rm(join(this.dir, orphan.name));
     });
   }
 

@@ -34,11 +34,11 @@ export const ANIME_SUMMARY = {
 };
 
 /** An episode that has not aired: progress must never count it. */
-export const FUTURE_AIR_DATE = new Date(
+const FUTURE_AIR_DATE = new Date(
   Date.now() + 30 * 24 * 60 * 60 * 1000,
 ).toISOString();
 
-export const ANIME_DETAILS: ProviderMediaDetails = {
+const ANIME_DETAILS: ProviderMediaDetails = {
   summary: ANIME_SUMMARY,
   overview: "An anime used by the e2e suite.",
   backdropUrl: null,
@@ -68,7 +68,7 @@ const EMPTY_EXTRAS = {
 };
 
 /** Catalogue providers are stubbed: no e2e run may depend on a live API. */
-export function providerStubs() {
+function providerStubs() {
   return {
     anilist: {
       source: CatalogSource.ANILIST,

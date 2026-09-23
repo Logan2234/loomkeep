@@ -396,6 +396,7 @@ export class AdminService {
       configured,
       reachable,
       detail,
+      failure,
       latencyMs,
       ...quota,
     };

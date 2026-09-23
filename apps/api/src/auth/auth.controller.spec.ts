@@ -125,7 +125,7 @@ describe("AuthController.login", () => {
   it("issues no cookie while a second factor is still owed", async () => {
     // The whole point of the challenge: no session exists yet, so nothing may
     // be set that would authenticate the caller.
-    const { reply, headers } = fakeReply();
+    const { reply } = fakeReply();
     const challenge = {
       mfaRequired: true,
       challengeId: "c1",
