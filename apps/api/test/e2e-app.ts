@@ -81,6 +81,8 @@ function providerStubs() {
         }),
       ),
       getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
+      // The MyAnimeList import resolves exclusively through AniList's `idMal`.
+      getSummaryByMalId: vi.fn().mockResolvedValue(ANIME_SUMMARY),
     },
     tmdb: {
       source: CatalogSource.TMDB,
