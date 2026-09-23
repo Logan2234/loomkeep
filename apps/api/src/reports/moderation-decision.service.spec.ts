@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ModerationDecisionService } from "./moderation-decision.service";
@@ -16,6 +17,7 @@ function make() {
     create: vi.fn(),
     createInTransaction: vi.fn().mockResolvedValue(true),
     publishCreated: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
   } as unknown as NotificationService;
 
   return {

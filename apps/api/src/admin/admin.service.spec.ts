@@ -47,8 +47,11 @@ describe("AdminService.getServicesStatus", () => {
     expect(tmdb).toMatchObject({
       configured: false,
       reachable: null,
-      detail: "Clé absente",
+      // A code the client translates, where this used to be French prose the
+      // API phrased itself.
+      failure: "missingKey",
     });
+    expect(tmdb?.detail).toBeUndefined();
     // AniList, Open Library and MusicBrainz are keyless, so they are still
     // probed; but no keyed probe ran here.
     expect(global.fetch).toHaveBeenCalledTimes(3);

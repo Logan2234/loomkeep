@@ -6,6 +6,7 @@ import type { EventsGateway } from "../events/events.gateway";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
@@ -166,7 +167,10 @@ function make(
     ),
   } as unknown as VisibilityService;
 
-  const notifications = { create: vi.fn() } as unknown as NotificationService;
+  const notifications = {
+    create: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
   const xp = stubXp();
   const achievements = stubAchievements();
   const blocks = new BlockService(prisma);

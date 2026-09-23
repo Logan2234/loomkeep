@@ -12,6 +12,7 @@ import { AppException } from "../common/app.exception";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/registry";
+import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -131,7 +132,7 @@ export class FollowService {
     if (follow.status === "ACCEPTED") {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW,
-        body: "vous suit",
+        body: (copy) => copy.follow.followed,
         dedupeKey: `follow:${viewerId}`,
         urlToActor: true,
       });
@@ -149,7 +150,7 @@ export class FollowService {
     } else {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW_REQUEST,
-        body: "souhaite vous suivre",
+        body: (copy) => copy.follow.requested,
         dedupeKey: `request:${viewerId}`,
       });
       // FOLLOW_REQUEST is excluded from the bell feed (NotificationService's
@@ -207,7 +208,7 @@ export class FollowService {
     // Tell the requester their request was approved (they can now see us).
     await this.notifyActor(follow.followerId, userId, {
       type: NotificationType.FOLLOW_ACCEPTED,
-      body: "a accepté votre demande",
+      body: (copy) => copy.follow.accepted,
       dedupeKey: `accept:${userId}`,
       urlToActor: true,
     });
@@ -232,7 +233,8 @@ export class FollowService {
     actorId: string,
     opts: {
       type: NotificationType;
-      body: string;
+      /** Built from the recipient's own copy bundle — the text is persisted. */
+      body: (copy: NotificationCopy) => string;
       dedupeKey: string;
       /** Link to the actor's profile, or a fixed url, or neither. */
       urlToActor?: boolean;
@@ -245,11 +247,13 @@ export class FollowService {
     });
     if (!actor) return;
 
+    const copy = await this.notifications.copyFor(recipientId);
+
     await this.notifications.create({
       userId: recipientId,
       type: opts.type,
       title: actor.displayName,
-      body: opts.body,
+      body: opts.body(copy),
       url: opts.urlToActor ? `/app/u/${actor.username}` : (opts.url ?? null),
       dedupeKey: opts.dedupeKey,
       data: {

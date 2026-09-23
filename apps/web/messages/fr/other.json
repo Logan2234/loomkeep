@@ -1284,5 +1284,8 @@
   "settings_export_coming_soon_label": "Bientôt : {domains}",
   "settings_recovery_codes_regenerate": "Régénérer les codes",
   "settings_search_count_one": "{count} résultat pour « {query} »",
-  "settings_search_count_many": "{count} résultats pour « {query} »"
+  "settings_search_count_many": "{count} résultats pour « {query} »",
+  "admin_service_timeout": "Délai de réponse dépassé",
+  "admin_service_network_error": "Erreur réseau",
+  "admin_service_refused": "Connexion ou authentification refusée"
 }

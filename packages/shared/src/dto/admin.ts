@@ -15,6 +15,15 @@ export type ServiceArea =
 export type QuotaWindow = "day" | "month";
 
 /** Health of one external dependency, as surfaced by the admin services page. */
+/**
+ * Why a service is not usable, when the reason is generic enough to have a
+ * translation. Anything provider-specific travels in `detail` instead, as the
+ * raw (redacted) message — untranslatable by nature, and what an operator
+ * actually needs to see.
+ */
+export type ServiceProbeFailure =
+  "missingKey" | "timeout" | "network" | "refused";
+
 export interface ServiceStatusDto {
   /** Stable identifier, e.g. "tmdb". */
   key: string;
@@ -28,6 +37,8 @@ export interface ServiceStatusDto {
   required: boolean;
   /** Its API key/credentials are present in the environment. */
   configured: boolean;
+  /** Generic reason for a failure, translated by the client. */
+  failure?: ServiceProbeFailure;
   /**
    * Live probe result: `true`/`false` when probed, `null` when not probed
    * (unconfigured, or nothing cheap to ping).
@@ -337,6 +348,18 @@ export interface AdminBackupFileDto {
   filename: string;
   sizeBytes: number;
   createdAt: string;
+  status: "AVAILABLE" | "MISSING";
+}
+
+export interface AdminOrphanBackupFileDto {
+  filename: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface AdminBackupInventoryDto {
+  files: AdminBackupFileDto[];
+  orphans: AdminOrphanBackupFileDto[];
 }
 
 /**

@@ -1284,5 +1284,8 @@
   "settings_export_coming_soon_label": "Coming soon: {domains}",
   "settings_recovery_codes_regenerate": "Regenerate codes",
   "settings_search_count_one": "{count} result for “{query}”",
-  "settings_search_count_many": "{count} results for “{query}”"
+  "settings_search_count_many": "{count} results for “{query}”",
+  "admin_service_timeout": "Response timed out",
+  "admin_service_network_error": "Network error",
+  "admin_service_refused": "Connection or authentication refused"
 }

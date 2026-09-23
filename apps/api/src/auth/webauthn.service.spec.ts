@@ -60,6 +60,10 @@ function makeService() {
 
   const prisma = {
     user: {
+      // Read for the locale the default credential name is written in.
+      findUnique: vi.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(users.get(where.id) ?? null),
+      ),
       findUniqueOrThrow: vi.fn(({ where }: { where: { id: string } }) => {
         const user = users.get(where.id);
         if (!user) throw new Error("not found");

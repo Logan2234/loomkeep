@@ -23,6 +23,7 @@ import {
 } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
 import { AppException } from "../common/app.exception";
+import { notificationCopy } from "../notifications/notification-copy";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { MfaService } from "./mfa.service";
@@ -177,6 +178,14 @@ export class WebauthnService {
 
     const { credential, credentialDeviceType, credentialBackedUp } =
       verification.registrationInfo;
+    // Named in the owner's own language: the default lands in the database and
+    // is shown back to them in settings. Read straight from the copy table
+    // rather than injecting NotificationService for one label.
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    const copy = notificationCopy(owner?.locale);
 
     const row = await this.prisma.webauthnCredential.create({
       data: {
@@ -187,7 +196,7 @@ export class WebauthnService {
         deviceType: credentialDeviceType,
         backedUp: credentialBackedUp,
         transports: credential.transports ?? [],
-        name: dto.name.trim() || "Clé de sécurité",
+        name: dto.name.trim() || copy.securityKey,
       },
     });
 

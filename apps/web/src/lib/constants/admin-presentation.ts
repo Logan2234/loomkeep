@@ -29,12 +29,24 @@ export function adminServiceLabel(key: string, label: string): string {
     : label;
 }
 
+const PROBE_FAILURES = {
+  missingKey: () => m.admin_service_missing_key(),
+  timeout: () => m.admin_service_timeout(),
+  network: () => m.admin_service_network_error(),
+  refused: () => m.admin_service_refused(),
+} satisfies Record<NonNullable<ServiceStatusDto["failure"]>, () => string>;
+
 export function adminServiceDetail(service: ServiceStatusDto): string | null {
   if (service.comingSoon) return null;
   if (!service.configured) return m.admin_service_missing_key();
 
   if (service.reachable === false) {
-    return service.detail ?? m.admin_service_unreachable();
+    // `detail` is a provider's own (redacted) message — more useful to an
+    // operator than a label, and untranslatable either way. The code covers
+    // the generic cases the API used to phrase in French itself.
+    if (service.detail) return service.detail;
+    const failure = service.failure && PROBE_FAILURES[service.failure];
+    return failure ? failure() : m.admin_service_unreachable();
   }
 
   return null;

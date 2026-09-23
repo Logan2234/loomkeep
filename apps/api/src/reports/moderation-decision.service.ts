@@ -9,6 +9,7 @@ import {
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { MailService } from "../mail/mail.service";
+import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -53,10 +54,11 @@ export class ModerationDecisionService {
     await this.sendEmail(input);
 
     if (input.measure !== ModerationMeasure.ACCOUNT_DELETED) {
+      const copy = await this.notifications.copyFor(input.subjectUserId);
       await this.notifications.create({
         userId: input.subjectUserId,
         type: NotificationType.MODERATION_ACTION,
-        title: this.notificationTitle(input.measure),
+        title: this.notificationTitle(input.measure, copy),
         body: input.reasonText,
         url: "/app/settings",
       });
@@ -70,10 +72,11 @@ export class ModerationDecisionService {
     await tx.moderationDecision.create({
       data: this.decisionData(input),
     });
+    const copy = await this.notifications.copyFor(input.subjectUserId);
     await this.notifications.createInTransaction(tx, {
       userId: input.subjectUserId,
       type: NotificationType.MODERATION_ACTION,
-      title: this.notificationTitle(input.measure),
+      title: this.notificationTitle(input.measure, copy),
       body: input.reasonText,
       url: "/app/settings",
       dedupeKey: `moderation:${input.reportId}`,
@@ -120,14 +123,17 @@ export class ModerationDecisionService {
     };
   }
 
-  private notificationTitle(measure: ModerationMeasure): string {
+  private notificationTitle(
+    measure: ModerationMeasure,
+    copy: NotificationCopy,
+  ): string {
     switch (measure) {
       case ModerationMeasure.COMMENT_REMOVED:
-        return "Un de tes commentaires a été retiré";
+        return copy.moderation.commentRemoved;
       case ModerationMeasure.REVIEW_REMOVED:
-        return "Une de tes critiques a été retirée";
+        return copy.moderation.reviewRemoved;
       default:
-        return "Une mesure a été prise sur ton compte";
+        return copy.moderation.other;
     }
   }
 }

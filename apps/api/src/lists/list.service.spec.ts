@@ -4,6 +4,7 @@ import type { EventsGateway } from "../events/events.gateway";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
@@ -41,7 +42,10 @@ function fakeConfig(socialEnabled = true): ConfigService {
 }
 
 function fakeNotifications(): NotificationService {
-  return { create: vi.fn() } as unknown as NotificationService;
+  return {
+    create: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
 }
 
 function fakeFlags(): FeatureFlagsService {
