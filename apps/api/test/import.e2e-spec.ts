@@ -1,6 +1,8 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { vi } from "vitest";
+import { FeatureFlagsService } from "../src/feature-flags/feature-flags.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
@@ -216,12 +218,24 @@ describe("Import (e2e)", () => {
   });
 
   it("refuses a second import into a domain already imported on the free plan", async () => {
-    // The refusal lands at analyze, before anything is parsed: a user must not
-    // review a plan they cannot commit.
-    await request(http)
-      .post("/api/import/myanimelist/analyze")
-      .set("Cookie", cookies)
-      .send({ input: MAL_EXPORT })
-      .expect(403);
+    const flags = app.get(FeatureFlagsService);
+    const isEnabled = flags.isEnabled.bind(flags);
+    const premiumFlag = vi
+      .spyOn(flags, "isEnabled")
+      .mockImplementation((name, fallback) =>
+        name === "premium-features" ? true : isEnabled(name, fallback),
+      );
+
+    try {
+      // The refusal lands at analyze, before anything is parsed: a user must
+      // not review a plan they cannot commit.
+      await request(http)
+        .post("/api/import/myanimelist/analyze")
+        .set("Cookie", cookies)
+        .send({ input: MAL_EXPORT })
+        .expect(403);
+    } finally {
+      premiumFlag.mockRestore();
+    }
   });
 });
