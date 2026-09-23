@@ -98,6 +98,7 @@ const MESSAGES = {
   [ErrorCode.AdminUserNotFound]: () => m.apierr_admin_user_not_found(),
   [ErrorCode.AdminForbidden]: () => m.apierr_admin_forbidden(),
   [ErrorCode.AdminBackupNotFound]: () => m.apierr_admin_backup_not_found(),
+  [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
   [ErrorCode.AdminMisconfigured]: () => m.apierr_admin_misconfigured(),
   [ErrorCode.AdminUnauthorized]: () => m.apierr_admin_unauthorized(),
   [ErrorCode.CommentUnknownTargetType]: () =>
