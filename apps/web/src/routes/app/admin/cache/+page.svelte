@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
   import {
     deleteAdminCacheItem,
     deleteAdminCacheOrphans,
@@ -17,8 +20,11 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import SidePanel from "$lib/components/SidePanel.svelte";
   import { DOMAINS } from "$lib/constants/domains";
+  import { debounce } from "$lib/debounce";
   import { formatDateTime } from "$lib/format";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { IconName } from "$lib/types/icon-name";
   import type {
@@ -27,7 +33,12 @@
     AdminCacheSort,
     Domain,
   } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
+  import { onDestroy } from "svelte";
+  import { parseCacheFilters } from "./cache-filters";
 
+  const reduced = prefersReducedMotion();
   const SORT_OPTIONS: { label: string; value: AdminCacheSort }[] = [
     { label: m.admin_cache_sort_stale(), value: "stale" },
     { label: m.admin_cache_sort_recent(), value: "recent" },
@@ -36,11 +47,12 @@
 
   const domainIcon = (d: Domain): IconName => DOMAINS[d]?.icon ?? "tv";
 
-  let activeDomain = $state<Domain>("MEDIA");
-  let sort = $state<AdminCacheSort>("stale");
-  let orphansOnly = $state(false);
-  let searchInput = $state("");
-  let search = $state("");
+  const filters = $derived(parseCacheFilters(page.url.searchParams));
+  const activeDomain = $derived(filters.domain);
+  const sort = $derived(filters.sort);
+  const orphansOnly = $derived(filters.orphansOnly);
+  const search = $derived(filters.search);
+  let searchInput = $state(page.url.searchParams.get("q") ?? "");
 
   let showDeleteOrphansConfirm = $state(false);
 
@@ -84,23 +96,39 @@
   const orphanTotal = $derived(latestPage?.orphanTotal ?? 0);
 
   function selectDomain(domain: Domain) {
-    activeDomain = domain;
+    changeFilters({ domain: domain === "MEDIA" ? null : domain });
   }
 
   function selectSort(next: AdminCacheSort) {
-    sort = next;
+    changeFilters({ sort: next === "stale" ? null : next });
   }
 
   function toggleOrphans() {
-    orphansOnly = !orphansOnly;
+    changeFilters({ orphans: orphansOnly ? null : "1" });
   }
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
+  function changeFilters(updates: Record<string, string | null>) {
+    searchDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, { q: searchInput.trim() || null, ...updates }),
+      { noScroll: true, keepFocus: true },
+    );
+  }
+
+  const searchDebounce = debounce(() => {
+    void goto(adminFilterHref(page.url, { q: searchInput.trim() || null }), {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
+  }, 300);
+  $effect(() => {
+    searchDebounce.cancel();
+    searchInput = page.url.searchParams.get("q") ?? "";
+  });
+  onDestroy(() => searchDebounce.cancel());
   function onSearchInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      search = searchInput.trim();
-    }, 300);
+    searchDebounce.call();
   }
 
   const detailQuery = createApiQuery(() => ({
@@ -176,12 +204,7 @@
   }));
 </script>
 
-<svelte:window
-  onkeydown={(e) => {
-    if (e.key === "Escape" && selected && !showDeleteConfirm) closeDrawer();
-  }} />
-
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="database"
     title={m.admin_cache_title()}
@@ -199,7 +222,7 @@
           <Icon name={d.icon} class="mr-1 -ml-0.5 inline h-3.5 w-3.5" />
           {d.label}
           <span
-            class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
+            class="bg-surface-2 text-dim ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-bold">
             {m.common_coming_soon()}
           </span>
         </button>
@@ -227,7 +250,7 @@
       class="input sm:flex-1" />
     <div class="flex items-center gap-2">
       <span
-        class="text-dim hidden text-[0.65rem] font-bold tracking-wider uppercase sm:inline">
+        class="text-dim hidden text-xs font-bold tracking-wider uppercase sm:inline">
         {m.admin_cache_sort()}
       </span>
       <Combobox
@@ -289,6 +312,9 @@
     <ul class="space-y-2">
       {#each items as item (item.id)}
         <li
+          animate:flip={{ duration: reduced ? 0 : 160 }}
+          in:fade|global={{ duration: reduced ? 0 : 140 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}
           class="card hover:bg-surface-2 flex items-center gap-3 p-3 transition-colors {selected?.id ===
           item.id
             ? 'ring-accent ring-1'
@@ -312,26 +338,26 @@
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-fg truncate font-semibold">{item.title}</span>
                 <span
-                  class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                  class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
                   {item.canonicalSource}
                 </span>
                 {#if item.stale}
                   <span
-                    class="border-accent/40 bg-accent/10 text-accent flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="border-accent/40 bg-accent/10 text-accent flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold">
                     <span class="bg-accent h-1.5 w-1.5 rounded-full"></span>
                     {m.admin_cache_stale()}
                   </span>
                 {/if}
                 {#if item.referenceCount === 0}
                   <span
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
                     {m.admin_cache_orphan()}
                   </span>
                 {/if}
                 {#if item.cachedLocales.length > 1}
                   <span
                     title={item.cachedLocales.join(", ")}
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
                     {item.cachedLocales.length}
                     {m.admin_cache_languages_suffix()}
                   </span>
@@ -380,16 +406,15 @@
 </div>
 
 {#if selected}
-  <div class="fixed inset-0 z-50 flex justify-end">
-    <button
-      class="absolute inset-0 cursor-default bg-black/60"
-      aria-label={m.common_close()}
-      onclick={closeDrawer}></button>
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cache-drawer-title"
-      class="card relative z-10 flex h-full w-full max-w-sm flex-col overflow-y-auto rounded-none border-y-0 border-r-0 p-5">
+  <SidePanel
+    onclose={closeDrawer}
+    labelledby="cache-drawer-title"
+    desktopClass="max-w-sm"
+    backdropClass="bg-black/60">
+    <div class="flex h-full flex-col overflow-y-auto p-5">
+      <h2 id="cache-drawer-title" class="sr-only">
+        {detail?.title ?? m.common_detail()}
+      </h2>
       {#if detailQuery.loading}
         <div class="space-y-4">
           <div class="skeleton h-40 rounded-lg"></div>
@@ -422,27 +447,25 @@
               </div>
             {/if}
             <div class="min-w-0">
-              <h2
-                id="cache-drawer-title"
-                class="font-display text-lg leading-tight font-bold">
+              <h2 class="font-display text-lg leading-tight font-bold">
                 {detail.title}
               </h2>
               <p class="text-dim mt-1 text-xs">{detail.canonicalSource}</p>
               <div class="mt-1.5 flex flex-wrap gap-1.5">
                 {#if detail.stale}
                   <span
-                    class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="border-accent/40 bg-accent/10 text-accent rounded-full border px-2 py-0.5 text-xs font-bold">
                     {m.admin_cache_stale()}
                   </span>
                 {/if}
                 <span
-                  class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                  class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
                   {detail.referenceCount}
                   {m.admin_accounts_suffix()}
                 </span>
                 {#if detail.cachedLocales.length > 1}
                   <span
-                    class="border-border text-dim rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                    class="border-border text-dim rounded-full border px-2 py-0.5 text-xs font-bold">
                     {m.admin_cache_languages()}
                     {detail.cachedLocales.join(", ")}
                   </span>
@@ -460,7 +483,7 @@
 
         <section class="mb-5">
           <h3
-            class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+            class="text-dim mb-2 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
             {m.admin_cache_information()}
             <span class="bg-border h-px flex-1"></span>
           </h3>
@@ -490,7 +513,7 @@
         {#if detail.seasons.length > 0}
           <section class="mb-5">
             <h3
-              class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+              class="text-dim mb-2 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
               {m.admin_cache_seasons()}{detail.seasons.length})
               <span class="bg-border h-px flex-1"></span>
             </h3>
@@ -513,7 +536,7 @@
 
         <section class="mb-5">
           <h3
-            class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+            class="text-dim mb-2 flex items-center gap-2 text-xs font-bold tracking-wider uppercase">
             {m.admin_cache_external_ids()}
             <span class="bg-border h-px flex-1"></span>
           </h3>
@@ -560,7 +583,7 @@
         </section>
       {/if}
     </div>
-  </div>
+  </SidePanel>
 {/if}
 
 {#if showDeleteConfirm && detail}

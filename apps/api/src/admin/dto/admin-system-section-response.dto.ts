@@ -16,7 +16,7 @@ class AdminBackupSummaryResponseDto {
 }
 
 class AdminOpsSignalsResponseDto {
-  notificationsPending!: number;
+  notificationsTotal!: number;
   pushSubscriptions!: number;
   failedLogins24h!: number;
   lastBackup!: AdminBackupSummaryResponseDto | null;

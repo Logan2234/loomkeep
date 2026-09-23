@@ -12,15 +12,17 @@
   import BetaBadge from "$lib/components/BetaBadge.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import StatsSectionError from "./stats/components/StatsSectionError.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { useReportsPendingCount } from "$lib/reports-pending.svelte";
   import type { ServiceStatusDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
-  // Best-effort queries leave failed cards blank instead of breaking the page.
+  const queryClient = useQueryClient();
 
   const overviewQuery = createApiQuery(() => ({
     key: keys.admin.overview(),
@@ -100,53 +102,18 @@
         cacheTotal !== null
           ? m.common_item_count_many({ count: formatNumber(cacheTotal) })
           : undefined,
-      "/app/admin/reports":
-        reportsPending.count > 0
+      "/app/admin/reports": !reportsPending.available
+        ? undefined
+        : reportsPending.count > 0
           ? m.admin_reports_pending_count({ count: reportsPending.count })
           : m.admin_up_to_date(),
     };
   });
 
-  const CATEGORIES: { label: string; hrefs: string[] }[] = [
-    {
-      label: m.admin_group_content(),
-      hrefs: [
-        "/app/admin/cache",
-        "/app/admin/schema",
-        "/app/admin/components",
-        "/app/admin/backup",
-        "/app/admin/imports",
-      ],
-    },
-    {
-      label: m.admin_group_users(),
-      hrefs: [
-        "/app/admin/users",
-        "/app/admin/communications",
-        "/app/admin/newsletter",
-      ],
-    },
-    {
-      label: m.admin_group_system(),
-      hrefs: ["/app/admin/services", "/app/admin/jobs", "/app/admin/stats"],
-    },
-    {
-      label: m.admin_group_security(),
-      hrefs: ["/app/admin/security", "/app/admin/reports"],
-    },
-  ];
-
-  const grouped = $derived(
-    CATEGORIES.map((cat) => ({
-      label: cat.label,
-      items: cat.hrefs
-        .map((href) => VISIBLE_ADMIN_NAV.find((i) => i.href === href))
-        .filter((i) => i !== undefined),
-    })),
-  );
+  const grouped = VISIBLE_ADMIN_NAV_GROUPS;
 </script>
 
-<div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="shield"
     title={m.admin_dashboard_title()}
@@ -161,7 +128,9 @@
       href="/app/admin/users"
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
-        <span class="bg-success h-1.5 w-1.5 rounded-full"></span>
+        <span
+          class="h-1.5 w-1.5 rounded-full {overview ? 'bg-success' : 'bg-dim'}"
+        ></span>
         {m.common_users()}
       </span>
       <span class="font-display text-2xl font-extrabold">
@@ -179,9 +148,11 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {servicesDegraded > 0
-            ? 'bg-danger'
-            : 'bg-success'}"></span>
+          class="h-1.5 w-1.5 rounded-full {!services
+            ? 'bg-dim'
+            : servicesDegraded > 0
+              ? 'bg-danger'
+              : 'bg-success'}"></span>
         {m.admin_services_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
@@ -197,7 +168,7 @@
           ? servicesDegraded > 0
             ? m.admin_degraded_count({ count: servicesDegraded })
             : m.admin_services_all_healthy()
-          : " "}
+          : m.common_unavailable()}
       </span>
     </a>
 
@@ -206,9 +177,11 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {jobsFailedRecent
-            ? 'bg-danger'
-            : 'bg-success'}"></span>
+          class="h-1.5 w-1.5 rounded-full {jobsFailedRecent === null
+            ? 'bg-dim'
+            : jobsFailedRecent
+              ? 'bg-danger'
+              : 'bg-success'}"></span>
         {m.admin_jobs_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
@@ -222,7 +195,7 @@
           : 'text-dim'}">
         {jobsLastRunAt
           ? m.admin_last_run({ date: formatRelative(jobsLastRunAt) })
-          : " "}
+          : m.common_unavailable()}
       </span>
     </a>
 
@@ -231,24 +204,68 @@
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
       <span class="text-dim flex items-center gap-1.5 text-xs font-semibold">
         <span
-          class="h-1.5 w-1.5 rounded-full {reportsPending.count > 0
-            ? 'bg-danger'
-            : 'bg-success'}"></span>
+          class="h-1.5 w-1.5 rounded-full {!reportsPending.available
+            ? 'bg-dim'
+            : reportsPending.count > 0
+              ? 'bg-danger'
+              : 'bg-success'}"></span>
         {m.admin_social_reports_title()}
       </span>
       <span class="font-display text-2xl font-extrabold">
-        {formatNumber(reportsPending.count)}
+        {reportsPending.available ? formatNumber(reportsPending.count) : "—"}
       </span>
       <span
         class="text-xs {reportsPending.count > 0
           ? 'text-danger font-semibold'
           : 'text-dim'}">
-        {reportsPending.count > 0
-          ? m.admin_moderation_pending()
-          : m.admin_up_to_date()}
+        {!reportsPending.available
+          ? m.common_unavailable()
+          : reportsPending.count > 0
+            ? m.admin_moderation_pending()
+            : m.admin_up_to_date()}
       </span>
     </a>
   </div>
+
+  {#if overviewQuery.error || servicesQuery.error || jobsQuery.error || backupsQuery.error || reportsPending.error}
+    <div class="mb-8 space-y-2" aria-label={m.common_error()}>
+      {#if overviewQuery.error}
+        <StatsSectionError
+          message={`${m.common_users()}: ${overviewQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({
+              queryKey: keys.admin.overview(),
+            })} />
+      {/if}
+      {#if servicesQuery.error}
+        <StatsSectionError
+          message={`${m.admin_services_title()}: ${servicesQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({
+              queryKey: keys.admin.services(),
+            })} />
+      {/if}
+      {#if jobsQuery.error}
+        <StatsSectionError
+          message={`${m.admin_jobs_title()}: ${jobsQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({ queryKey: keys.admin.jobs() })} />
+      {/if}
+      {#if backupsQuery.error}
+        <StatsSectionError
+          message={`${m.admin_backup_title()}: ${backupsQuery.error}`}
+          onRetry={() =>
+            void queryClient.refetchQueries({
+              queryKey: keys.admin.backups(),
+            })} />
+      {/if}
+      {#if reportsPending.error}
+        <StatsSectionError
+          message={`${m.admin_social_reports_title()}: ${reportsPending.error}`}
+          onRetry={reportsPending.retry} />
+      {/if}
+    </div>
+  {/if}
 
   <div class="space-y-8">
     {#each grouped as cat (cat.label)}

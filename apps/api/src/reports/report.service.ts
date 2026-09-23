@@ -10,14 +10,16 @@ import {
   type ReportTargetSummaryDto,
   type ReportTargetType,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -56,6 +58,8 @@ const REPORTER_SELECT = {
 
 @Injectable()
 export class ReportService {
+  private readonly logger = new Logger(ReportService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
@@ -231,45 +235,66 @@ export class ReportService {
     id: string,
     status: "RESOLVED" | "DISMISSED",
   ): Promise<void> {
-    const { count } = await this.prisma.report.updateMany({
+    const reporterId = await this.prisma.$transaction((tx) =>
+      this.resolveInTransaction(tx, adminId, id, status),
+    );
+    this.publishResolution(reporterId);
+  }
+
+  /** Persists the outcome and the art. 16(5) notice before either becomes visible. */
+  async resolveInTransaction(
+    tx: Prisma.TransactionClient,
+    adminId: string,
+    id: string,
+    status: "RESOLVED" | "DISMISSED",
+  ): Promise<string | null> {
+    const { count } = await tx.report.updateMany({
       where: { id, status: "PENDING" },
       data: { status, resolvedAt: new Date(), resolvedById: adminId },
     });
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReportNotFound);
 
-    this.events.emitReportsCount();
-    await this.notifyReporterOfResolution(id, status);
+    const report = await tx.report.findUnique({
+      where: { id },
+      select: { reporter: { select: { id: true, locale: true } } },
+    });
+    if (!report?.reporter) return null;
+
+    const copy = notificationCopy(report.reporter.locale).reportResolution;
+    const created = await this.notifications.createInTransaction(tx, {
+      userId: report.reporter.id,
+      type: NotificationType.REPORT_RESOLVED,
+      title: copy.title,
+      body: status === "RESOLVED" ? copy.resolved : copy.dismissed,
+      dedupeKey: `report:${id}:resolved`,
+    });
+    return created ? report.reporter.id : null;
   }
 
-  /**
-   * DSA art. 16(5): tells the reporter what happened to their report, via the
-   * same channel (in-app) they used to file it — no email, no legal
-   * requirement to use one here. Deliberately generic — no detail on what
-   * measure (if any) was taken against the reported content's author, which
-   * the sanctioned user gets separately via ModerationDecisionService.
-   * Silently skipped if the reporter's account was deleted since filing
-   * (Report.reporterId SetNull).
-   */
-  private async notifyReporterOfResolution(
-    reportId: string,
-    status: "RESOLVED" | "DISMISSED",
-  ): Promise<void> {
-    const report = await this.prisma.report.findUnique({
-      where: { id: reportId },
-      select: { reporterId: true },
-    });
-    if (!report?.reporterId) return;
+  publishResolution(reporterId: string | null): void {
+    try {
+      this.events.emitReportsCount();
+    } catch (err) {
+      this.logger.warn(
+        "The live admin report count could not be published",
+        err,
+      );
+    }
 
-    await this.notifications.create({
-      userId: report.reporterId,
-      type: NotificationType.REPORT_RESOLVED,
-      title: "Ton signalement a été traité",
-      body:
-        status === "RESOLVED"
-          ? "Une mesure a été prise suite à ton signalement."
-          : "Nous n'avons pas donné suite à ton signalement.",
-    });
+    if (reporterId) {
+      try {
+        this.notifications.publishCreated(
+          reporterId,
+          NotificationType.REPORT_RESOLVED,
+        );
+      } catch (err) {
+        this.logger.warn(
+          "The reporter notification could not be published",
+          err,
+        );
+      }
+    }
   }
 
   /**

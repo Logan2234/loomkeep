@@ -29,7 +29,7 @@
   <title>{m.auth_verify_email_title()} · {m.common_loomkeep()}</title>
 </svelte:head>
 
-<div class="flex min-h-screen items-center justify-center px-4 py-12">
+<div class="flex min-h-svh items-center justify-center px-4 py-12">
   <div class="w-full max-w-sm">
     <div class="mb-8 text-center">
       <p class="font-display text-3xl font-extrabold tracking-tight">

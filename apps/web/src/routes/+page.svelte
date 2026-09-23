@@ -353,7 +353,7 @@
   {/if}
 </svelte:head>
 
-<div class="min-h-screen">
+<div class="min-h-svh">
   <header
     class="border-border bg-bg/85 sticky top-0 z-30 border-b backdrop-blur">
     <div

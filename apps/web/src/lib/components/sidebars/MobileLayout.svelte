@@ -24,9 +24,9 @@
   const showOnboarding = $derived((checklistQuery.data?.steps.length ?? 0) > 0);
 </script>
 
-<div class="min-h-screen">
+<div class="min-h-svh">
   <main
-    class="min-h-screen {showOnboarding
+    class="min-h-svh {showOnboarding
       ? 'pb-[calc(7.25rem+env(safe-area-inset-bottom))]'
       : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'}">
     {#key page.url.pathname}

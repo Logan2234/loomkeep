@@ -6,7 +6,7 @@
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { visibleNavItems } from "$lib/navigation";
@@ -38,7 +38,7 @@
   }
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-svh">
   <aside
     class="border-border bg-surface/90 sticky top-1/2 z-40 hidden h-fit -translate-y-1/2 flex-col gap-1 rounded-2xl border p-2 shadow-xl backdrop-blur md:ml-4 md:flex">
     {#if inAdmin}
@@ -59,29 +59,32 @@
         </span>
       </div>
       <div class="border-border my-1 border-t"></div>
-      {#each VISIBLE_ADMIN_NAV as item (item.href)}
-        {@const active = item.match(page.url.pathname)}
-        <div class="group relative">
-          <a
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            aria-label={item.label}
-            class="relative grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 ease-out group-hover:scale-110 {active
-              ? 'bg-accent/15 text-accent'
-              : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-            <Icon name={item.icon} class="h-5 w-5" />
-            {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
-              <span
-                class="bg-accent text-accent-fg absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                {reportsPending.count > 9 ? "9+" : reportsPending.count}
-              </span>
-            {/if}
-          </a>
-          <span
-            class="bg-fg text-bg pointer-events-none absolute top-1/2 left-full ml-3 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold whitespace-nowrap opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-            {item.label}
-          </span>
-        </div>
+      {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+        <div class="border-border my-1 w-7 border-t" aria-hidden="true"></div>
+        {#each group.items as item (item.href)}
+          {@const active = item.match(page.url.pathname)}
+          <div class="group relative">
+            <a
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              aria-label={item.label}
+              class="relative grid h-11 w-11 place-items-center rounded-xl transition-all duration-150 ease-out group-hover:scale-110 {active
+                ? 'bg-accent/15 text-accent'
+                : 'text-dim hover:bg-surface-2 hover:text-fg'}">
+              <Icon name={item.icon} class="h-5 w-5" />
+              {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                <span
+                  class="bg-accent text-accent-fg absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
+                  {reportsPending.count > 9 ? "9+" : reportsPending.count}
+                </span>
+              {/if}
+            </a>
+            <span
+              class="bg-fg text-bg pointer-events-none absolute top-1/2 left-full ml-3 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-semibold whitespace-nowrap opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+              {item.label}
+            </span>
+          </div>
+        {/each}
       {/each}
       <div class="border-border my-1 border-t"></div>
       <div class="group relative">

@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 
 const STORAGE_KEY = "lk-theme";
-const THEME_COLOR = { light: "##f2ebdc", dark: "#0c0d10" } as const;
+const THEME_COLOR = { light: "#f2ebdc", dark: "#0c0d10" } as const;
 
 type Mode = "light" | "dark";
 

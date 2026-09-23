@@ -8,7 +8,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { prefersReducedMotion } from "$lib/motion";
@@ -122,9 +122,9 @@
   });
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-svh">
   <aside
-    class="border-border bg-surface sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
+    class="border-border bg-surface sticky top-0 hidden h-svh shrink-0 flex-col overflow-hidden border-r px-3 py-3 transition-[width] duration-200 md:flex
     {expanded ? 'w-60' : 'w-16'}"
     onmouseenter={() => (hovered = true)}
     onmouseleave={onRailLeave}>
@@ -190,49 +190,52 @@
             </span>
           </a>
 
-          {#if expanded}
-            <div
-              class="text-dim sticky top-0 px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-[0.13em] uppercase">
-              {m.nav_administration()}
-            </div>
-          {:else}
-            <div
-              class="border-border mx-3 mt-4.5 mb-4 border-t"
-              aria-hidden="true">
-            </div>
-          {/if}
+          {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+            {#if expanded}
+              <div
+                class="text-dim px-3 pt-3 pb-2 text-[0.6rem] font-bold tracking-[0.13em] whitespace-nowrap uppercase">
+                {group.label}
+              </div>
+            {:else}
+              <div
+                class="border-border mx-3 mt-3 mb-2 border-t"
+                aria-hidden="true">
+              </div>
+            {/if}
 
-          {#each VISIBLE_ADMIN_NAV as item (item.href)}
-            {@const active = item.match(page.url.pathname)}
-            <a
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              title={expanded ? undefined : item.label}
-              class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {active
-                ? 'text-accent'
-                : 'text-dim hover:bg-surface-2 hover:text-fg'}">
-              <span class="relative grid h-10 w-10 shrink-0 place-items-center">
-                <Icon name={item.icon} class="h-5 w-5" />
-                {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
-                  {#key reportsPending.count}
-                    <span
-                      in:scale|global={{
-                        duration: reduced ? 0 : 200,
-                        start: 0.5,
-                      }}
-                      class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
-                      {reportsPending.count > 9 ? "9+" : reportsPending.count}
-                    </span>
-                  {/key}
-                {/if}
-              </span>
-              <span
-                class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
-                  ? 'opacity-100'
-                  : 'opacity-0'}">
-                {item.label}
-              </span>
-            </a>
+            {#each group.items as item (item.href)}
+              {@const active = item.match(page.url.pathname)}
+              <a
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                title={expanded ? undefined : item.label}
+                class="flex w-full shrink-0 items-center overflow-hidden rounded-xl transition-colors {active
+                  ? 'text-accent'
+                  : 'text-dim hover:bg-surface-2 hover:text-fg'}">
+                <span
+                  class="relative grid h-10 w-10 shrink-0 place-items-center">
+                  <Icon name={item.icon} class="h-5 w-5" />
+                  {#if item.href === "/app/admin/reports" && reportsPending.count > 0}
+                    {#key reportsPending.count}
+                      <span
+                        in:scale|global={{
+                          duration: reduced ? 0 : 200,
+                          start: 0.5,
+                        }}
+                        class="bg-accent text-accent-fg absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[0.55rem] font-bold">
+                        {reportsPending.count > 9 ? "9+" : reportsPending.count}
+                      </span>
+                    {/key}
+                  {/if}
+                </span>
+                <span
+                  class="text-sm font-semibold whitespace-nowrap transition-opacity duration-150 {expanded
+                    ? 'opacity-100'
+                    : 'opacity-0'}">
+                  {item.label}
+                </span>
+              </a>
+            {/each}
           {/each}
         {:else}
           {#each visibleSections as section (section.label)}

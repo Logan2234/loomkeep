@@ -70,7 +70,7 @@
     {c.name}
   </p>
   {#if c.role}
-    <p class="text-dim truncate text-[0.65rem]">{c.role}</p>
+    <p class="text-dim text-micro truncate">{c.role}</p>
   {/if}
 {/snippet}
 

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { dialogFocus } from "$lib/actions/dialogFocus";
+  import { portal } from "$lib/actions/portal";
+  import { scrollLock } from "$lib/actions/scrollLock";
   import { layout } from "$lib/layout.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
@@ -6,6 +9,7 @@
   import { fade, scale } from "svelte/transition";
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
+  import { MODAL_Z_INDEX } from "./overlay-layers";
 
   let {
     title,
@@ -13,6 +17,7 @@
     leading,
     onclose,
     children,
+    actions,
     wide = false,
     blur = false,
     dismissable = true,
@@ -25,6 +30,12 @@
     leading?: Snippet;
     onclose: () => void;
     children: Snippet;
+    /**
+     * Confirm/cancel buttons, pinned to the bottom instead of scrolling away
+     * with the content. Optional: a modal that renders its own buttons inside
+     * `children` still works, they just sit at the end of the scroll.
+     */
+    actions?: Snippet;
     /** Wider variant (max-w-2xl instead of max-w-md), for content like tables. */
     wide?: boolean;
     blur?: boolean;
@@ -88,24 +99,37 @@
 {#if isDesktop}
   <!-- Desktop: a centered dialog. Mobile's Drawer already closes on Escape. -->
   <div
-    class={`fixed inset-0 z-60 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}>
+    use:portal
+    use:scrollLock
+    class={`fixed inset-0 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}
+    style="z-index: {MODAL_Z_INDEX}">
     <button
       class="absolute inset-0 cursor-default bg-black/60"
       transition:fade|global={{ duration: reduced ? 0 : 180 }}
       aria-label={m.common_close()}
       onclick={() => dismissable && onclose()}></button>
     <div
+      use:dialogFocus
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      tabindex="-1"
       transition:scale|global={{ duration: reduced ? 0 : 180, start: 0.9 }}
-      class="card relative z-10 max-h-[85svh] w-full overflow-y-auto {wide
+      class="card relative z-10 flex max-h-[85svh] w-full flex-col {wide
         ? 'max-w-2xl'
-        : 'max-w-md'} rounded-2xl p-5 {overflowVisible
-        ? 'overflow-visible'
-        : ''}">
-      {@render header(dismissable)}
-      {@render children()}
+        : 'max-w-md'} rounded-2xl {overflowVisible ? 'overflow-visible' : ''}">
+      <div
+        class="p-5 {overflowVisible
+          ? 'overflow-visible'
+          : 'min-h-0 flex-1 overflow-y-auto'}">
+        {@render header(dismissable)}
+        {@render children()}
+      </div>
+      {#if actions}
+        <div class="border-border shrink-0 border-t px-5 py-3">
+          {@render actions()}
+        </div>
+      {/if}
     </div>
   </div>
 {:else}
@@ -113,12 +137,28 @@
        drawer (MenuSheet) — no close cross, the swipe/backdrop tap covers it.
        Stacked above FocusOverlay (z-50) since a Modal can be opened from
        within a focused comment on touch. -->
-  <Drawer {onclose} {dismissable} labelledby="modal-title" zIndex={60}>
+  <Drawer
+    {onclose}
+    {dismissable}
+    labelledby="modal-title"
+    zIndex={MODAL_Z_INDEX}>
+    <!-- `min-h-0` is what lets this actually scroll: a flex child defaults to
+         `min-height: auto`, so without it the body grew past the sheet's
+         max-height and its bottom sat off-screen, unreachable — the sheet
+         itself being the only thing that moved. -->
     <div
       data-drawer-scroll
-      class="relative touch-pan-y overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      class="relative min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 {actions
+        ? 'pb-4'
+        : 'pb-[calc(1.25rem+env(safe-area-inset-bottom))]'}">
       {@render header(false)}
       {@render children()}
     </div>
+    {#if actions}
+      <div
+        class="border-border shrink-0 border-t px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        {@render actions()}
+      </div>
+    {/if}
   </Drawer>
 {/if}

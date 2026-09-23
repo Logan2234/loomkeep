@@ -18,14 +18,14 @@
   import SettingsSearchField from "./components/SettingsSearchField.svelte";
   import SettingsSearchResults from "./components/SettingsSearchResults.svelte";
   import {
+    numberedSettingsSection,
+    settingsShortcutIndex,
+  } from "./keyboard-navigation";
+  import {
     RECOVERY_CODES_LOW_THRESHOLD,
     SETTINGS_SECTIONS,
     sectionHref,
   } from "./nav";
-  import {
-    numberedSettingsSection,
-    settingsShortcutIndex,
-  } from "./keyboard-navigation";
   import { settingsSearch } from "./search-state.svelte";
 
   let { children }: { children: Snippet } = $props();
@@ -40,10 +40,6 @@
   $effect(() => {
     if (!page.url.pathname.startsWith("/app/settings")) settingsSearch.clear();
   });
-
-  // Where the rail's own back link leads, mirroring the sidebar footer: the
-  // profile hub, or nothing to go back to when social is off.
-  const backHref = $derived(appConfig.socialEnabled ? "/app/profile" : null);
 
   // Shared cache entry with the 2FA section, so this costs one request for
   // the whole of settings. It is what moves the "running out of recovery
@@ -103,7 +99,7 @@
   {@render children()}
 {:else}
   <div
-    class="mx-auto flex min-h-screen max-w-3xl flex-col px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
+    class="mx-auto flex min-h-svh max-w-3xl flex-col px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
     {#if recoveryLow && mfa}
       <Banner variant="warning" class="mb-6 flex items-center gap-3">
         <Icon name="warning" class="h-5 w-5 shrink-0" />
@@ -124,14 +120,6 @@
       <!-- The index *is* the nav on a phone, so the rail only ever shows from
            lg up; below that it would be a second copy of the same list. -->
       <aside class="hidden lg:sticky lg:top-8 lg:block lg:h-fit">
-        {#if backHref}
-          <a
-            href={backHref}
-            class="text-dim hover:text-fg mb-3 inline-flex items-center gap-1 text-sm font-semibold transition-colors">
-            <Icon name="chevron-left" class="h-4 w-4" />
-            {m.nav_profile()}
-          </a>
-        {/if}
         <div class="mb-4">
           <SettingsSearchField id="settings-search-rail" />
         </div>

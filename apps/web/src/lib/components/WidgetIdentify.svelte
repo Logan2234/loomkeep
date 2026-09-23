@@ -17,12 +17,7 @@
   // upstream or worked around.
   import { browser } from "$app/environment";
   import { auth } from "$lib/auth.svelte";
-
-  // Desktop-only: the launcher button (bottom-right, fixed) has no clean
-  // position on mobile that doesn't collide with the fixed bottom tab bar
-  // (BottomNavigation.svelte). Same md: breakpoint as Modal.svelte/
-  // DesktopSidebar's own desktop/mobile split.
-  const DESKTOP_QUERY = "(min-width: 768px)";
+  import { layout } from "$lib/layout.svelte";
 
   // Defines window.Quackback (a queue-based stub the real SDK replaces once
   // it loads) and injects the script tag, exactly once per page load.
@@ -43,16 +38,18 @@
     loadSdk();
     window.Quackback!("init");
 
-    const mq = window.matchMedia(DESKTOP_QUERY);
-    const syncLauncher = () => {
-      window.Quackback?.(mq.matches ? "showLauncher" : "hideLauncher");
-    };
-    syncLauncher();
-    mq.addEventListener("change", syncLauncher);
-
     return () => {
-      mq.removeEventListener("change", syncLauncher);
       window.Quackback?.("hideLauncher");
     };
+  });
+
+  // The launcher button (bottom-right, fixed) has no clean position on the
+  // compact shell that doesn't collide with the tab bar, so it follows the
+  // shell rather than a width query of its own: a phone in landscape is over
+  // 800px wide, so `(min-width: 768px)` put the launcher straight on top of
+  // the tab bar. The feedback board stays reachable from Settings > Help.
+  $effect(() => {
+    if (!browser || !auth.isLoggedIn) return;
+    window.Quackback?.(layout.compact ? "hideLauncher" : "showLauncher");
   });
 </script>

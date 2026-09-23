@@ -67,12 +67,14 @@
     {#if saveMut.error}
       <p class="text-danger text-sm">{saveMut.error}</p>
     {/if}
+  </div>
 
+  {#snippet actions()}
     <button
       class="btn btn-primary w-full"
       disabled={saveMut.loading || !displayName.trim()}
       onclick={save}>
       {m.common_save()}
     </button>
-  </div>
+  {/snippet}
 </Modal>

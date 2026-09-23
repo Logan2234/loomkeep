@@ -7,7 +7,7 @@
     $props();
 </script>
 
-<div class="flex min-h-screen flex-col">
+<div class="flex min-h-svh flex-col">
   <div class="flex flex-1 items-center justify-center px-4 py-12">
     <div class="w-full max-w-sm">
       <div class="mb-8 text-center">

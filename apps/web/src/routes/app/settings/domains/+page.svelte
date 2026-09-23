@@ -11,7 +11,8 @@
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import { DOMAINS } from "$lib/constants/domains";
-  import { orderedDomains, toggleDomainSelection } from "$lib/domains";
+  import { createDomainToggle } from "$lib/domain-toggle.svelte";
+  import { orderedDomains } from "$lib/domains";
   import { liveFlags } from "$lib/feature-flags-live.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
@@ -53,16 +54,7 @@
       : m.settings_domain_tracked_one({ count });
   }
 
-  const toggleDomainMut = createApiMutation(() => ({
-    mutate: (enabledDomains: Domain[]) => updateMe({ enabledDomains }),
-  }));
-
-  function toggleDomain(id: Domain) {
-    if (!auth.user) return;
-    const next = toggleDomainSelection(auth.user.enabledDomains, id);
-    if (next === auth.user.enabledDomains) return; // last domain, refused
-    toggleDomainMut.mutate(next);
-  }
+  const domainToggle = createDomainToggle();
 
   // Tile order: settings tiles and the desktop rail's Library section both
   // read this. Drag-reordering doesn't touch enabledDomains — that array
@@ -153,7 +145,7 @@
                 : isLast
                   ? m.settings_domain_last_required()
                   : undefined}
-              onclick={() => toggleDomain(id)}>
+              onclick={() => domainToggle.toggle(id)}>
               <Icon name={d.icon} class="domain-tile-icon h-6 w-6" />
               <span class="block">
                 <span class="block text-sm font-semibold">{d.label}</span>
@@ -182,9 +174,9 @@
           {@render domainButton()}
         {/if}
       {/each}
-      {#if toggleDomainMut.error || reorderMut.error}
+      {#if domainToggle.error || reorderMut.error}
         <p class="text-danger text-sm sm:col-span-2 lg:col-span-3">
-          {toggleDomainMut.error || reorderMut.error}
+          {domainToggle.error || reorderMut.error}
         </p>
       {/if}
     </div>

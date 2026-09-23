@@ -12,8 +12,13 @@
     multiselect = false,
     searchable = false,
     searchPlaceholder = "Rechercher…",
+    selectedLabel,
+    loading = false,
+    hasMore = false,
     name,
     disabled = false,
+    onSearch,
+    onLoadMore,
     onChange,
   }: {
     label: string;
@@ -23,8 +28,15 @@
     /** Adds a text filter at the top of the panel. Single-select only. */
     searchable?: boolean;
     searchPlaceholder?: string;
+    /** Label retained when a server-selected value is outside the current page. */
+    selectedLabel?: string;
+    loading?: boolean;
+    hasMore?: boolean;
     name?: string;
     disabled?: boolean;
+    /** Enables server-side filtering instead of filtering `options` locally. */
+    onSearch?: (query: string) => void;
+    onLoadMore?: () => void;
     onChange: (values: string[]) => void;
   } = $props();
 
@@ -35,10 +47,10 @@
   const triggerText = $derived(
     multiselect
       ? `${label} : ${values.length === 0 ? m.common_all() : values.length}`
-      : (selectedOption?.label ?? label),
+      : (selectedOption?.label ?? selectedLabel ?? label),
   );
   const visibleOptions = $derived(
-    searchable && query.trim()
+    searchable && !onSearch && query.trim()
       ? options.filter((o) =>
           o.label.toLowerCase().includes(query.trim().toLowerCase()),
         )
@@ -87,6 +99,7 @@
       onclick={(e) => {
         if (!open) {
           query = "";
+          onSearch?.("");
           if (searchable) queueMicrotask(() => searchInput?.focus());
         }
         toggle(e);
@@ -105,6 +118,7 @@
         <input
           bind:this={searchInput}
           bind:value={query}
+          oninput={(event) => onSearch?.(event.currentTarget.value)}
           type="text"
           aria-label={searchPlaceholder}
           enterkeyhint="search"
@@ -139,7 +153,18 @@
         </button>
       {/each}
       {#if searchable && visibleOptions.length === 0}
-        <p class="text-dim px-3 py-2 text-sm">{m.common_no_results()}.</p>
+        <p class="text-dim px-3 py-2 text-sm">
+          {loading ? m.common_loading() : `${m.common_no_results()}.`}
+        </p>
+      {/if}
+      {#if hasMore && onLoadMore}
+        <button
+          type="button"
+          class="text-accent hover:bg-surface-2 w-full px-3 py-2 text-left text-sm font-semibold disabled:opacity-50"
+          disabled={loading}
+          onclick={onLoadMore}>
+          {loading ? m.common_loading() : m.common_load_more()}
+        </button>
       {/if}
     </div>
   {/snippet}

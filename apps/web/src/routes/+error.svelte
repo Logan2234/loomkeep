@@ -17,7 +17,7 @@
 </svelte:head>
 
 <div
-  class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6">
+  class="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6">
   <!-- Letterbox hairlines: the "Séance" signature device, framing the void
        where a page should have been. -->
   <div class="border-border absolute inset-x-0 top-0 border-t"></div>

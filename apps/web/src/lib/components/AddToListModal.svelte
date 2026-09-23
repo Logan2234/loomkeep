@@ -110,13 +110,15 @@
     </ul>
   {/if}
 
-  <button
-    type="button"
-    class="btn btn-ghost mt-3 w-full"
-    onclick={() => (creating = true)}>
-    <Icon name="plus" class="h-4 w-4" />
-    {m.lists_create_button()}
-  </button>
+  {#snippet actions()}
+    <button
+      type="button"
+      class="btn btn-ghost w-full"
+      onclick={() => (creating = true)}>
+      <Icon name="plus" class="h-4 w-4" />
+      {m.lists_create_button()}
+    </button>
+  {/snippet}
 </Modal>
 
 {#if creating}

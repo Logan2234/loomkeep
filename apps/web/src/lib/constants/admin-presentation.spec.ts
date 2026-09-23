@@ -3,6 +3,7 @@ import { getLocale, overwriteGetLocale } from "$lib/paraglide/runtime.js";
 import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  adminJobButtonState,
   adminJobLabel,
   adminJobSchedule,
   adminServiceDetail,
@@ -24,6 +25,21 @@ const service = (area: ServiceArea): ServiceStatusDto => ({
 });
 
 describe("admin presentation", () => {
+  it("disables every job action while one job is running", () => {
+    expect(adminJobButtonState(null, "backup.run")).toEqual({
+      disabled: false,
+      running: false,
+    });
+    expect(adminJobButtonState("backup.run", "backup.run")).toEqual({
+      disabled: true,
+      running: true,
+    });
+    expect(adminJobButtonState("backup.run", "reports.digest")).toEqual({
+      disabled: true,
+      running: false,
+    });
+  });
+
   it.each(["fr", "en"] as const)(
     "keeps all API services visible in %s",
     (locale) => {

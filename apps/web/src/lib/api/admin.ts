@@ -1,11 +1,14 @@
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
+  AdminUserFilter,
+  AdminUserOptionDto,
   Domain,
   JobStatus,
   Locale,
   MailTemplatePreviewDto,
   ModerationLegalBasis,
+  PagedResult,
   Plan,
   Role,
   SecurityEventType,
@@ -93,7 +96,7 @@ export const runAdminJob = (key: string): Promise<void> =>
 export function getAdminUsers(
   filters: {
     search?: string;
-    filter?: "all" | "admin" | "unverified" | "never";
+    filter?: AdminUserFilter;
     page?: number;
     limit?: number;
   } = {},
@@ -109,7 +112,35 @@ export function getAdminUsers(
   });
 }
 
-export const getAdminUserOptions = () => typedRequest("/admin/users/options");
+export function getAdminUserOptions(
+  filters: { search?: string; page?: number; limit?: number } = {},
+) {
+  return typedRequest("/admin/users/options", {
+    query: {
+      search: filters.search || undefined,
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+      limit: filters.limit ? String(filters.limit) : undefined,
+    },
+  });
+}
+
+export function normalizeAdminUserOptionsPage(
+  result: PagedResult<AdminUserOptionDto> | AdminUserOptionDto[],
+  search = "",
+): PagedResult<AdminUserOptionDto> {
+  if (!Array.isArray(result)) return result;
+
+  const query = search.trim().toLocaleLowerCase();
+  const items = query
+    ? result.filter((user) =>
+        [user.id, user.email, user.displayName].some((value) =>
+          value.toLocaleLowerCase().includes(query),
+        ),
+      )
+    : result;
+
+  return { items, hasMore: false };
+}
 
 export const getAdminUserLibraryStats = (userId: string) =>
   typedRequest("/admin/users/{userId}/library-stats", { params: { userId } });

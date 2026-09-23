@@ -29,7 +29,7 @@
   type="button"
   onclick={open}
   aria-label={m.common_notifications()}
-  class="text-dim font-semibold {rootClass}">
+  class="text-dim min-w-0 font-semibold {rootClass}">
   <span class="relative grid place-items-center rounded-full {slotClass}">
     <Icon name="bell" class="h-5 w-5" />
     {#if unread > 0}
@@ -39,5 +39,7 @@
       </span>
     {/if}
   </span>
-  {m.nav_notifications_short()}
+  <span class="w-full truncate px-0.5 max-[359px]:sr-only">
+    {m.nav_notifications_short()}
+  </span>
 </button>
