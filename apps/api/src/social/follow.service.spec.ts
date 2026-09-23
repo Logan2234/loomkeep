@@ -2,6 +2,7 @@ import { NotificationType } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "./block.service";
@@ -60,7 +61,10 @@ function makeService(opts: {
     toRelationshipDto: vi.fn().mockReturnValue({}),
   } as unknown as VisibilityService;
 
-  const notifications = { create } as unknown as NotificationService;
+  const notifications = {
+    create,
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
   const achievements = {
     evaluate: vi.fn().mockResolvedValue(undefined),
   } as unknown as AchievementService;

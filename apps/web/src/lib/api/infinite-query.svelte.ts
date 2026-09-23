@@ -109,6 +109,9 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
     get loading() {
       return query.isPending;
     },
+    get fetching() {
+      return query.isFetching;
+    },
     get hasNextPage() {
       return query.hasNextPage;
     },

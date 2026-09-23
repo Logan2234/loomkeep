@@ -573,11 +573,12 @@ export class ListService {
     });
 
     const owner = await this.author(userId);
+    const copy = await this.notifications.copyFor(target.id);
     await this.notifications.create({
       userId: target.id,
       type: NotificationType.LIST_MEMBER_ADDED,
       title: owner.displayName,
-      body: `vous a ajouté comme éditeur sur « ${list.title} »`,
+      body: copy.listEditorAdded(list.title),
       url: `/app/lists/${id}`,
       dedupeKey: `list-member:${id}:${target.id}`,
       data: {

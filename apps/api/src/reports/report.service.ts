@@ -388,8 +388,7 @@ export class ReportService {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,
       () => this.runDailyDigest(),
-      (sent) =>
-        sent > 0 ? `Envoyé à ${sent} admin(s)` : "Aucun signalement en attente",
+      (sent) => (sent > 0 ? `Sent to ${sent} admin(s)` : "No pending report"),
     );
   }
 

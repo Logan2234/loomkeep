@@ -45,7 +45,7 @@
   const overview = $derived(overviewQuery.data);
   const services = $derived(servicesQuery.data?.services ?? null);
   const jobs = $derived(jobsQuery.data);
-  const backups = $derived(backupsQuery.data);
+  const backups = $derived(backupsQuery.data?.files);
 
   const usersTotal = $derived(overview?.accounts ?? null);
   const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);

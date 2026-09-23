@@ -1109,11 +1109,13 @@ export class CommentService {
       comment.targetId,
     );
 
+    const copy = (await this.notifications.copyFor(authorId)).commentReactions;
+
     await this.notifications.create({
       userId: authorId,
       type: NotificationType.COMMENT_REACTIONS,
-      title: "Ton commentaire fait réagir",
-      body: `${COMMENT_REACTION_NOTIFY_THRESHOLD} réactions`,
+      title: copy.title,
+      body: copy.body(COMMENT_REACTION_NOTIFY_THRESHOLD),
       url: url
         ? `${url}?comment=${commentId}&commentTarget=${comment.targetType}:${comment.targetId}`
         : null,

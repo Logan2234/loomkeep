@@ -278,24 +278,24 @@ export abstract class MediaImportSource<
       overwrite: decisions.overwrite,
       tiles: [
         {
-          label: "Séries",
+          label: "Series",
           id: "series",
           watchlistCount: tally.showsWatchlist,
           value: tally.showsImported,
-          sub: `${tally.showsWatchlist} en watchlist`,
+          sub: `${tally.showsWatchlist} on the watchlist`,
         },
         {
-          label: "Épisodes",
+          label: "Episodes",
           id: "episodes",
           value: tally.episodesCreated,
-          sub: "visionnages créés",
+          sub: "viewings created",
         },
         {
-          label: "Films",
+          label: "Movies",
           id: "movies",
           watchlistCount: tally.moviesWatchlist,
           value: tally.moviesImported,
-          sub: `${tally.moviesWatchlist} en watchlist`,
+          sub: `${tally.moviesWatchlist} on the watchlist`,
         },
       ],
     };

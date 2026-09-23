@@ -164,8 +164,18 @@ export const keys = {
     }) => ["admin", "cache-items", filters] as const,
     cacheItem: (domain: string, id: string) =>
       ["admin", "cache-item", domain, id] as const,
-    users: (filters: { query: string; filter: string }) =>
-      ["admin", "users", filters] as const,
+    users: (filters: {
+      query: string;
+      filter: string;
+      createdFrom: string;
+      createdTo: string;
+      activeFrom: string;
+      activeTo: string;
+      mfa: string;
+      newsletter: string;
+      push: string;
+      session: string;
+    }) => ["admin", "users", filters] as const,
     userSessions: (userId: string) =>
       ["admin", "user-sessions", userId] as const,
     userLibraryStats: (userId: string) =>

@@ -45,6 +45,7 @@ export const ErrorCode = {
   AdminUserNotFound: "admin.user_not_found",
   AdminForbidden: "admin.forbidden",
   AdminBackupNotFound: "admin.backup_not_found",
+  AdminBackupNotOrphan: "admin.backup_not_orphan",
   AdminMisconfigured: "admin.misconfigured",
   AdminUnauthorized: "admin.unauthorized",
 

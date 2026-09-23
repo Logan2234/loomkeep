@@ -32,6 +32,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import type { Prisma } from "@prisma/client";
 import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -103,6 +104,14 @@ export class AdminUsersController {
     @Query("filter") filter?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("createdFrom") createdFrom?: string,
+    @Query("createdTo") createdTo?: string,
+    @Query("activeFrom") activeFrom?: string,
+    @Query("activeTo") activeTo?: string,
+    @Query("mfa") mfa?: string,
+    @Query("newsletter") newsletter?: string,
+    @Query("push") push?: string,
+    @Query("session") session?: string,
   ): Promise<PagedResult<AdminUserDto>> {
     const {
       skip,
@@ -114,7 +123,7 @@ export class AdminUsersController {
       ? (filter as AdminUserFilter)
       : "all";
 
-    const where = {
+    const where: Prisma.UserWhereInput = {
       ...(q
         ? {
             OR: [
@@ -131,6 +140,43 @@ export class AdminUsersController {
         ? { entitlement: { is: { plan: "PREMIUM" as const } } }
         : {}),
     };
+
+    const createdRange = dateRange(createdFrom, createdTo);
+    if (createdRange) where.createdAt = createdRange;
+
+    const activeRange = dateRange(activeFrom, activeTo);
+
+    if (activeRange) {
+      if (activeFilter === "never") {
+        where.AND = [{ lastActiveAt: null }, { lastActiveAt: activeRange }];
+        delete where.lastActiveAt;
+      } else {
+        where.lastActiveAt = activeRange;
+      }
+    }
+
+    if (mfa === "yes") {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        { OR: [{ mfaTotpEnabled: true }, { mfaEmailEnabled: true }] },
+      ];
+    } else if (mfa === "no") {
+      where.mfaTotpEnabled = false;
+      where.mfaEmailEnabled = false;
+    }
+
+    if (newsletter === "yes" || newsletter === "no") {
+      where.notifyNewsletter = newsletter === "yes";
+    }
+
+    if (push === "yes") where.pushSubscriptions = { some: {} };
+    if (push === "no") where.pushSubscriptions = { none: {} };
+
+    if (session === "yes" || session === "no") {
+      const activeSession = { expiresAt: { gt: new Date() } };
+      where.refreshTokens =
+        session === "yes" ? { some: activeSession } : { none: activeSession };
+    }
 
     const rows = await this.prisma.user.findMany({
       where,
@@ -412,7 +458,7 @@ export class AdminUsersController {
     await this.securityEvents.record({
       type: "USER_DELETED",
       userId: user.id,
-      detail: "Supprimé depuis le panel admin",
+      detail: "Deleted from the admin panel",
     });
 
     await this.moderationDecisions.record({
@@ -431,4 +477,17 @@ export class AdminUsersController {
 
     await this.prisma.user.delete({ where: { id: userId } });
   }
+}
+
+function dateRange(
+  from?: string,
+  to?: string,
+): Prisma.DateTimeFilter | undefined {
+  const start = from ? new Date(from) : undefined;
+  const end = to ? new Date(to) : undefined;
+  const gte = start && !Number.isNaN(start.getTime()) ? start : undefined;
+  const lt = end && !Number.isNaN(end.getTime()) ? end : undefined;
+  return gte || lt
+    ? { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) }
+    : undefined;
 }

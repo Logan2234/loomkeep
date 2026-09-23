@@ -30,6 +30,7 @@ import {
   readRefreshCookie,
   setAuthCookies,
 } from "./auth-cookies";
+import { AUTH_THROTTLE_LIMIT, AUTH_THROTTLE_TTL_MS } from "./auth-throttle";
 import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { AuthResultResponseDto } from "./dto/auth-result-response.dto";
@@ -56,11 +57,12 @@ import { WebauthnMfaVerifyDto } from "./dto/webauthn-mfa-verify.dto";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Brute-force / abuse guards on top of the global 60 req/min default.
-  // 10, not something tighter, partly so the e2e suite's own sequential
-  // /auth/register calls (app.e2e-spec.ts) stay well under the budget —
-  // bump this further alongside adding another one there.
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  // Brute-force / abuse guards on top of the global 60 req/min default. The
+  // budget lives in auth-throttle.ts: the e2e suite raises it by env rather
+  // than the production value being calibrated around the tests.
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @ApiCreatedResponse({ type: AuthResultResponseDto })
   @Post("register")
   async register(
@@ -80,7 +82,9 @@ export class AuthController {
     return { user: result.user };
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiExtraModels(LoginMfaChallengeResponseDto, LoginSuccessResponseDto)
   @ApiOkResponse({
@@ -106,7 +110,9 @@ export class AuthController {
   }
 
   // Same budget as login — this is its natural continuation for MFA-enabled accounts.
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("mfa/verify")
@@ -133,7 +139,9 @@ export class AuthController {
     await this.authService.resendMfaEmailCode(dto.challengeId);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: WebauthnMfaOptionsResultDto })
   @Post("mfa/webauthn/options")
@@ -143,7 +151,9 @@ export class AuthController {
     return this.authService.startWebauthnMfaChallenge(dto.challengeId);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("mfa/webauthn/verify")
@@ -164,7 +174,9 @@ export class AuthController {
   }
 
   // Same budget as login — this is its alternate entry point, no password involved.
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: WebauthnLoginOptionsResultDto })
   @Post("webauthn/login-options")
@@ -174,7 +186,9 @@ export class AuthController {
     return this.authService.passwordlessLoginOptions(dto.identifier);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResultResponseDto })
   @Post("webauthn/login-verify")
@@ -246,7 +260,9 @@ export class AuthController {
     await this.authService.resetPassword(dto.token, dto.newPassword, userAgent);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post("verify-email")
   async verifyEmail(@Body() dto: VerifyEmailDto): Promise<void> {

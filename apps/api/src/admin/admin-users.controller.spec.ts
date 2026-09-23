@@ -179,6 +179,77 @@ describe("AdminUsersController.listUsers", () => {
       }),
     );
   });
+
+  it("combines date, MFA, newsletter, push and active-session filters", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
+
+    await controller.listUsers(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "2026-09-01T22:00:00.000Z",
+      "2026-10-01T22:00:00.000Z",
+      "2026-08-01T22:00:00.000Z",
+      "2026-09-01T22:00:00.000Z",
+      "yes",
+      "yes",
+      "yes",
+      "yes",
+    );
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: {
+            gte: new Date("2026-09-01T22:00:00.000Z"),
+            lt: new Date("2026-10-01T22:00:00.000Z"),
+          },
+          lastActiveAt: {
+            gte: new Date("2026-08-01T22:00:00.000Z"),
+            lt: new Date("2026-09-01T22:00:00.000Z"),
+          },
+          AND: [{ OR: [{ mfaTotpEnabled: true }, { mfaEmailEnabled: true }] }],
+          notifyNewsletter: true,
+          pushSubscriptions: { some: {} },
+          refreshTokens: { some: { expiresAt: { gt: expect.any(Date) } } },
+        }),
+      }),
+    );
+  });
+
+  it("selects accounts without MFA, push subscriptions or active sessions", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
+
+    await controller.listUsers(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "no",
+      "no",
+      "no",
+      "no",
+    );
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          mfaTotpEnabled: false,
+          mfaEmailEnabled: false,
+          notifyNewsletter: false,
+          pushSubscriptions: { none: {} },
+          refreshTokens: { none: { expiresAt: { gt: expect.any(Date) } } },
+        },
+      }),
+    );
+  });
 });
 
 describe("AdminUsersController.listUserOptions", () => {

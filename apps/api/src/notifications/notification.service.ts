@@ -15,6 +15,7 @@ import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { notificationCopy } from "./notification-copy";
 import {
   type NewEpisodeNotification,
   selectNewEpisodeNotifications,
@@ -61,6 +62,21 @@ export class NotificationService {
   ) {}
 
   /**
+   * The copy bundle for whoever is about to receive a notification.
+   *
+   * Centralised here because a notification's text is persisted at creation
+   * time, so every caller writing static prose needs the recipient's stored
+   * locale — one lookup, one place, rather than five.
+   */
+  async copyFor(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    return notificationCopy(user?.locale);
+  }
+
+  /**
    * Hourly: scan every user with an episode digest enabled on some channel
    * and record any newly-aired episode as a ledger row. Delivery (push/mail)
    * is a separate concern, cadenced per user/channel — see
@@ -73,7 +89,7 @@ export class NotificationService {
       JOB_KEYS.NOTIFICATIONS_SCAN,
       () => this.runScanAll(),
       (created) =>
-        created > 0 ? `${created} notification(s) créée(s)` : "Rien de nouveau",
+        created > 0 ? `${created} notification(s) created` : "Nothing new",
     );
   }
 

@@ -2,6 +2,7 @@ import type {
   QuotaWindow,
   SchemaGraphResponseDto,
   ServiceArea,
+  ServiceProbeFailure,
   ServiceStatusDto,
   ServiceStatusResponseDto,
 } from "@loomkeep/shared";
@@ -33,6 +34,7 @@ const MAX_DIAGNOSTIC_LENGTH = 300;
 interface ProbeResult {
   reachable: boolean;
   detail?: string;
+  failure?: ServiceProbeFailure;
 }
 
 interface ServiceSpec {
@@ -227,8 +229,8 @@ export class AdminService {
             reachable,
             detail: reachable
               ? undefined
-              : (this.diagnostic(this.mail.lastVerificationError) ??
-                "Connexion ou authentification refusée"),
+              : this.diagnostic(this.mail.lastVerificationError),
+            failure: reachable ? undefined : "refused",
           };
         },
         // https://www.brevo.com free plan: 300 emails/day (see README "Email").
@@ -351,7 +353,7 @@ export class AdminService {
         required: spec.required,
         configured: false,
         reachable: null,
-        detail: "Clé absente",
+        failure: "missingKey",
         keyUrl: spec.keyUrl,
         ...quota,
       };
@@ -359,6 +361,7 @@ export class AdminService {
 
     let reachable: boolean | null = null;
     let detail: string | undefined;
+    let failure: ServiceProbeFailure | undefined;
     let latencyMs: number | undefined;
 
     if (spec.probe) {
@@ -369,13 +372,19 @@ export class AdminService {
         reachable = result.reachable;
         latencyMs = Date.now() - start;
         detail = result.detail;
+        failure = result.failure;
       } catch (error) {
         latencyMs = Date.now() - start;
         reachable = false;
-        detail =
-          error instanceof DOMException && error.name === "AbortError"
-            ? `Délai de réponse dépassé après ${PROBE_TIMEOUT_MS / 1_000} s`
-            : (this.diagnostic(error) ?? "Erreur réseau");
+
+        if (error instanceof DOMException && error.name === "AbortError") {
+          failure = "timeout";
+        } else {
+          // A provider's own message is worth more to an operator than a
+          // generic label, so the code is only the fallback.
+          detail = this.diagnostic(error);
+          if (!detail) failure = "network";
+        }
       }
     }
 
@@ -387,6 +396,7 @@ export class AdminService {
       configured,
       reachable,
       detail,
+      failure,
       latencyMs,
       ...quota,
     };
@@ -531,7 +541,7 @@ export class AdminService {
       .replace(/\s+/g, " ")
       .replace(
         /\b(bearer\s+|api[-_ ]?key|token|secret|password)\s*[:=]?\s*[^\s,;]+/gi,
-        "$1 [masqué]",
+        "$1 [***]",
       )
       .trim();
     if (!normalized) return undefined;
