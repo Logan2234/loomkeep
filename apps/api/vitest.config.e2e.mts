@@ -17,6 +17,9 @@ export default defineConfig({
     globals: true,
     root: "./",
     include: ["test/**/*.e2e-spec.ts"],
+    // One shared `e2e` Postgres schema, and each spec file truncates it as it
+    // boots: run the files one after another, never side by side.
+    fileParallelism: false,
     environment: "node",
     globalSetup: ["./test/global-setup.js"],
     setupFiles: ["./test/e2e-env.js"],

@@ -11,3 +11,9 @@ process.env.DATABASE_URL = process.env.DATABASE_URL.replace(
   /schema=[^&]+/,
   "schema=e2e",
 );
+
+// The suite drives real registrations and logins through the real guard, and
+// every spec file doing so inside the same minute shares one budget. Raised
+// here so the production limit (see src/auth/auth-throttle.ts) is set for
+// production rather than for the tests.
+process.env.AUTH_THROTTLE_LIMIT = "1000";
