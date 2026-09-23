@@ -24,16 +24,19 @@ const LABELS = {
   movies: () => m.media_movies(),
   episodes: () => m.media_episodes(),
   playtime: () => m.game_playtime(),
+  lists: () => m.common_lists(),
   seriesTracked: () => m.import_group_series_tracked(),
   seriesWatchlist: () => m.import_group_series_watchlist(),
   moviesWatched: () => m.import_group_movies_watched(),
   moviesWatchlist: () => m.import_group_movies_watchlist(),
+  listFilms: () => m.import_group_list_films(),
 } satisfies Record<
   | NonNullable<ImportReportTile["id"]>
   | "seriesTracked"
   | "seriesWatchlist"
   | "moviesWatched"
-  | "moviesWatchlist",
+  | "moviesWatchlist"
+  | "listFilms",
   () => string
 >;
 

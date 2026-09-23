@@ -11,6 +11,7 @@ import type {
 import {
   Domain,
   entryStatusFromProgress,
+  REVIEW_TEXT_MAX_LENGTH,
   ReviewTargetType,
 } from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
@@ -25,6 +26,8 @@ import type {
   ProgressReporter,
 } from "../../import-source";
 import type {
+  ImportList,
+  ImportListFilm,
   ImportMovie,
   ImportShow,
   ParsedImport,
@@ -57,6 +60,7 @@ interface CommitTally {
   episodesCreated: number;
   moviesImported: number;
   moviesWatchlist: number;
+  listsCreated: number;
 }
 
 /**
@@ -105,7 +109,12 @@ export abstract class MediaImportSource<
     progress: ProgressReporter,
   ): Promise<ImportPlan> {
     await this.load(parsed);
-    progress.setTotal(parsed.shows.length + parsed.movies.length);
+    // Films reachable only through a list still need resolving, so they are
+    // counted up front — the keys are derivable without any match.
+    const listOnlyFilms = collectListOnlyFilms(parsed);
+    progress.setTotal(
+      parsed.shows.length + parsed.movies.length + listOnlyFilms.length,
+    );
 
     const seriesTracked: ImportPlanItem[] = [];
     const seriesWatchlist: ImportPlanItem[] = [];
@@ -191,6 +200,43 @@ export abstract class MediaImportSource<
       (movie.watched ? moviesWatched : moviesWatchlist).push(item);
     });
 
+    const listFilms: ImportPlanItem[] = [];
+    const listMatches = await mapWithConcurrency(
+      listOnlyFilms,
+      RESOLVE_CONCURRENCY,
+      async (film) => {
+        const match =
+          film.type === "SERIES"
+            ? await this.matchResolver.resolveShow(asShow(film))
+            : await this.matchResolver.resolveMovie(asMovie(film));
+        progress.tick();
+        return match;
+      },
+    );
+
+    listOnlyFilms.forEach((film, i) => {
+      const match = listMatches[i];
+      if (!match) unresolved++;
+      listFilms.push({
+        key: movieKey(film),
+        title: match?.title ?? film.title,
+        sourceTitle: film.title,
+        subtitle: film.year ? String(film.year) : null,
+        context: {
+          kind: "movie",
+          year: film.year,
+          rewatches: 0,
+          rating: null,
+          favorite: false,
+        },
+        coverUrl: match?.coverUrl ?? null,
+        match,
+        include: match !== null,
+        alreadyInLibrary: false,
+        defaultStatus: null,
+      });
+    });
+
     const groups: ImportPlanGroup[] = [
       { id: "seriesTracked", label: "Séries suivies", items: seriesTracked },
       {
@@ -204,9 +250,11 @@ export abstract class MediaImportSource<
         label: "Films — watchlist",
         items: moviesWatchlist,
       },
+      { id: "listFilms", label: "Films de tes listes", items: listFilms },
     ].filter((g) => g.items.length > 0);
 
-    const total = parsed.shows.length + parsed.movies.length;
+    const total =
+      parsed.shows.length + parsed.movies.length + listOnlyFilms.length;
     return {
       groups,
       counts: { total, matched: total - unresolved, unresolved, apiErrors: 0 },
@@ -237,6 +285,7 @@ export abstract class MediaImportSource<
       episodesCreated: 0,
       moviesImported: 0,
       moviesWatchlist: 0,
+      listsCreated: 0,
     };
 
     if (decisions.overwrite) {
@@ -274,6 +323,10 @@ export abstract class MediaImportSource<
       progress.tick();
     }
 
+    if (parsed.lists && parsed.lists.length > 0) {
+      await this.writeLists(userId, parsed.lists, decisions, matchByKey, tally);
+    }
+
     return {
       overwrite: decisions.overwrite,
       tiles: [
@@ -297,6 +350,16 @@ export abstract class MediaImportSource<
           value: tally.moviesImported,
           sub: `${tally.moviesWatchlist} en watchlist`,
         },
+        ...(tally.listsCreated > 0
+          ? [
+              {
+                label: "Listes",
+                id: "lists" as const,
+                value: tally.listsCreated,
+                sub: null,
+              },
+            ]
+          : []),
       ],
     };
   }
@@ -377,6 +440,14 @@ export abstract class MediaImportSource<
         ep.totalWatches,
         ep.watchedAt,
       );
+      // IMDb rates episodes individually; the rating belongs to the episode,
+      // not to the show (ReviewTargetType.EPISODE).
+      await this.writeRating(
+        userId,
+        ReviewTargetType.EPISODE,
+        episodeId,
+        ep.rating,
+      );
     }
 
     const status =
@@ -418,6 +489,7 @@ export abstract class MediaImportSource<
         startedAt: watchedAt,
         finishedAt: watchedAt,
         favorite: favorite ? true : undefined,
+        notes: movie.notes ?? undefined,
       },
       create: {
         userId,
@@ -426,6 +498,11 @@ export abstract class MediaImportSource<
         startedAt: watchedAt,
         finishedAt: watchedAt,
         favorite,
+        notes: movie.notes ?? null,
+        // The date the user added it on the source, so "recently added" keeps
+        // meaning something after an import. Only on create: an existing entry
+        // already has the user's own history.
+        createdAt: movie.addedAt ?? undefined,
       },
     });
 
@@ -433,17 +510,108 @@ export abstract class MediaImportSource<
       await this.recordMovieReplays(entry.id, movie.rewatchedAt);
     }
 
-    if (movie.rating !== null && movie.rating !== undefined) {
-      await this.reviews.setRating(
-        userId,
-        ReviewTargetType.MEDIA,
-        media.id,
-        movie.rating,
-      );
-    }
+    await this.writeRating(
+      userId,
+      ReviewTargetType.MEDIA,
+      media.id,
+      movie.rating,
+      movie.review,
+    );
 
     if (status === "PLANNED") tally.moviesWatchlist++;
     else tally.moviesImported++;
+  }
+
+  /**
+   * Writes the source's rating, carrying its review body when there is one.
+   *
+   * A review needs a rating to exist at all (`Review.rating` is mandatory), so
+   * text without stars — possible on Letterboxd — is dropped rather than
+   * invented as a 0. Visibility is left to `upsert`, which applies the user's
+   * own default: an import must not decide who sees their writing.
+   */
+  private async writeRating(
+    userId: string,
+    targetType: ReviewTargetType,
+    targetId: string,
+    rating: number | null | undefined,
+    review?: string | null,
+  ): Promise<void> {
+    if (rating === null || rating === undefined) return;
+
+    if (review) {
+      await this.reviews.upsert(userId, targetType, targetId, {
+        rating,
+        text: review.slice(0, REVIEW_TEXT_MAX_LENGTH),
+      });
+      return;
+    }
+
+    await this.reviews.setRating(userId, targetType, targetId, rating);
+  }
+
+  /**
+   * Recreates the source's custom lists, reusing the matches the plan already
+   * settled so a list never re-resolves a film.
+   *
+   * A list whose title the user already has is skipped rather than merged: a
+   * re-run must not append the same films twice, and quietly editing a list
+   * they have since curated would be worse than doing nothing.
+   */
+  private async writeLists(
+    userId: string,
+    lists: ImportList[],
+    decisions: CommitDecisions,
+    matchByKey: Map<string, ResolvedMatch>,
+    tally: CommitTally,
+  ): Promise<void> {
+    for (const list of lists) {
+      const existing = await this.prisma.list.findFirst({
+        where: { userId, title: list.name },
+        select: { id: true },
+      });
+      if (existing) continue;
+
+      const targetIds: string[] = [];
+
+      for (const film of list.items) {
+        const key = movieKey(film);
+        if (!decisions.include.has(key)) continue;
+
+        const match = this.resolvedMatch(key, decisions, matchByKey);
+        if (!match) continue;
+
+        try {
+          const media = await this.mediaItemService.upsertFromSource(
+            match.source,
+            match.sourceId,
+            match.type,
+          );
+          if (!targetIds.includes(media.id)) targetIds.push(media.id);
+        } catch (error) {
+          throw this.contextualize(error, film.title);
+        }
+      }
+
+      if (targetIds.length === 0) continue;
+
+      await this.prisma.list.create({
+        data: {
+          userId,
+          title: list.name,
+          description: list.description,
+          kind: list.ranked ? "RANKED" : "COLLECTION",
+          items: {
+            create: targetIds.map((targetId, index) => ({
+              targetType: ReviewTargetType.MEDIA,
+              targetId,
+              position: index,
+            })),
+          },
+        },
+      });
+      tally.listsCreated++;
+    }
   }
 
   private async recordMovieReplays(
@@ -593,11 +761,47 @@ function showKey(show: ImportShow): string {
   return `show:${show.title.toLowerCase()}`;
 }
 
-function movieKey(movie: ImportMovie): string {
+function movieKey(
+  movie: Pick<ImportMovie, "title" | "year" | "externalIds">,
+): string {
   const { tmdb, imdb } = movie.externalIds;
   if (tmdb) return `tmdb:${tmdb}`;
   if (imdb) return `imdb:${imdb}`;
   return `movie:${movie.title.toLowerCase()}:${movie.year ?? ""}`;
+}
+
+/**
+ * List entries no show/movie entry already covers, deduplicated.
+ *
+ * `showKey` and `movieKey` agree on an `imdb:`/`tmdb:` prefix, so a title that
+ * is both tracked and listed is recognised as one item whichever it is.
+ */
+function collectListOnlyFilms(parsed: ParsedImport): ImportListFilm[] {
+  const covered = new Set<string>([
+    ...parsed.shows.map(showKey),
+    ...parsed.movies.map(movieKey),
+  ]);
+  const films: ImportListFilm[] = [];
+
+  for (const list of parsed.lists ?? []) {
+    for (const film of list.items) {
+      const key = movieKey(film);
+      if (covered.has(key)) continue;
+      covered.add(key);
+      films.push(film);
+    }
+  }
+
+  return films;
+}
+
+/** A list entry as the matcher's input, which reads nothing else. */
+function asMovie(film: ImportListFilm): ImportMovie {
+  return { ...film, watched: false, watchedAt: null, rewatchedAt: [] };
+}
+
+function asShow(film: ImportListFilm): ImportShow {
+  return { title: film.title, externalIds: film.externalIds, episodes: [] };
 }
 
 /** Flatten a plan's auto-resolved matches into a key → write-target lookup. */

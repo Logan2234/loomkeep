@@ -23,8 +23,23 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     letterboxd: {
       domain: Domain.MEDIA,
       label: "Letterboxd",
-      description: m.import_source_letterboxd_description() as string,
-    } as ImportSourceDescriptor,
+      description: m.import_source_letterboxd_description(),
+      href: "/app/settings/import/letterboxd",
+      input: { type: "zip", accept: ".zip" },
+      noun: { one: m.library_title_one(), many: m.library_title_many() },
+      newBadgeKey: "letterboxd",
+    },
+    imdb: {
+      domain: Domain.MEDIA,
+      label: "IMDb",
+      description: m.import_source_imdb_description(),
+      href: "/app/settings/import/imdb",
+      // IMDb has exported these as UTF-8 and as Windows-1252 depending on the
+      // year, so the decoder sniffs rather than trusting one of them.
+      input: { type: "csv", accept: ".csv,text/csv", textEncoding: "auto" },
+      noun: { one: m.library_title_one(), many: m.library_title_many() },
+      newBadgeKey: "imdb",
+    },
     myanimelist: {
       domain: Domain.MEDIA,
       label: "MyAnimeList",

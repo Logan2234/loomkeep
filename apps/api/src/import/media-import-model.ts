@@ -25,6 +25,11 @@ interface ImportWatchedEpisode {
   watchedAt: Date | null;
   /** Base watch + rewatches. Always >= 1. */
   totalWatches: number;
+  /**
+   * Per-episode 1-10 rating, for sources that rate episodes individually
+   * (IMDb). Written as a Review targeting the episode, not the show.
+   */
+  rating?: number | null;
 }
 
 export interface ImportShow {
@@ -43,6 +48,8 @@ export interface ImportShow {
   finishedAt?: Date | null;
   /** Private source note, if the source exports one. */
   notes?: string | null;
+  /** When the user added it on the source — becomes the entry's creation date. */
+  addedAt?: Date | null;
   /** Ownership metadata when the source has a meaningful equivalent. */
   ownershipStatus?: MediaOwnershipStatus;
   ownershipSource?: string | null;
@@ -61,7 +68,38 @@ export interface ImportMovie {
   rating?: number | null;
   /** Marked as a favorite on the source. */
   favorite?: boolean;
+  /** Private source note, if the source exports one. */
+  notes?: string | null;
+  /** Review body the source exports, written as the Review's text. */
+  review?: string | null;
+  /** When the user added it on the source — becomes the entry's creation date. */
+  addedAt?: Date | null;
   externalIds: ExternalIdMap;
+}
+
+/**
+ * A film inside an exported list. Deliberately the subset of
+ * {@link ImportMovie} the matcher needs, so a list film resolves through the
+ * exact same path — and shares its plan key when the film is also tracked.
+ */
+export interface ImportListFilm {
+  title: string;
+  year: number | null;
+  externalIds: ExternalIdMap;
+  /**
+   * Which catalogue path resolves it. IMDb lists mix films and series, and a
+   * series looked up as a film resolves to nothing. Absent means film.
+   */
+  type?: "MOVIE" | "SERIES";
+}
+
+/** One custom list the source exports (Letterboxd `lists/`, IMDb lists). */
+export interface ImportList {
+  name: string;
+  description: string | null;
+  /** Ranked lists keep their export order; the rest become a collection. */
+  ranked: boolean;
+  items: ImportListFilm[];
 }
 
 export interface ParsedImport {
@@ -69,4 +107,6 @@ export interface ParsedImport {
   source: string;
   shows: ImportShow[];
   movies: ImportMovie[];
+  /** Custom lists, when the source exports any. */
+  lists?: ImportList[];
 }

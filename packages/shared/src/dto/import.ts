@@ -19,6 +19,7 @@ export type ImportSource =
   | "tvtime"
   | "trakt"
   | "letterboxd"
+  | "imdb"
   | "myanimelist"
   | "simkl"
   | "kitsu"
@@ -132,7 +133,8 @@ export interface ImportReportTile {
     | "series"
     | "movies"
     | "episodes"
-    | "playtime";
+    | "playtime"
+    | "lists";
   /** Legacy heading for older clients and the admin audit log. */
   label: string;
   value: number;
