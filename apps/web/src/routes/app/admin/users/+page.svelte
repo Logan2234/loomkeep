@@ -14,6 +14,7 @@
   import Avatar from "$lib/components/Avatar.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { debounce } from "$lib/debounce";
@@ -28,7 +29,7 @@
   } from "@loomkeep/shared";
   import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
-  import { fade } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import UserDrawer from "./components/UserDrawer.svelte";
 
   const reduced = prefersReducedMotion();
@@ -51,6 +52,9 @@
     push: page.url.searchParams.get("push") ?? "",
     session: page.url.searchParams.get("session") ?? "",
   });
+  let advancedOpen = $state(
+    ADMIN_USER_ADVANCED_KEYS.some((key) => page.url.searchParams.has(key)),
+  );
 
   let selectedId = $state<string | null>(null);
 
@@ -87,6 +91,11 @@
 
   const users = $derived(usersQuery.data);
   const error = $derived(usersQuery.error);
+  const filtering = $derived(
+    usersQuery.fetching &&
+      !usersQuery.loading &&
+      !usersQuery.isFetchingNextPage,
+  );
   // Looked up from the list rather than kept as its own copy, so a role/plan
   // change (which invalidates usersKey) refreshes the open drawer for free.
   const selected = $derived(users.find((u) => u.id === selectedId) ?? null);
@@ -181,6 +190,11 @@
     { key: "push", label: m.admin_users_push() },
     { key: "session", label: m.admin_users_session() },
   ] as const;
+  const BINARY_OPTIONS = [
+    { value: "", label: m.common_all() },
+    { value: "yes", label: m.common_yes() },
+    { value: "no", label: m.common_no() },
+  ];
   const activeAdvanced = $derived(
     [...DATE_FIELDS, ...BINARY_FIELDS]
       .filter(({ key }) => advanced[key])
@@ -221,49 +235,68 @@
       onChange={(v) => changeFilter((v[0] as AdminUserFilter) ?? "all")} />
   </div>
 
-  <details class="border-border mb-4 rounded-lg border px-4 py-3">
-    <summary class="text-fg cursor-pointer text-sm font-semibold">
-      {m.admin_users_advanced_filters()}
-      {#if isFeatureNew("admin-user-filters")}
-        <NewBadge />
+  <div class="border-border mb-4 rounded-lg border">
+    <button
+      type="button"
+      class="text-fg flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold"
+      aria-expanded={advancedOpen}
+      aria-controls="admin-user-advanced-filters"
+      onclick={() => (advancedOpen = !advancedOpen)}>
+      <span class="flex flex-wrap items-center gap-2">
+        {m.admin_users_advanced_filters()}
+        {#if isFeatureNew("admin-user-filters")}
+          <NewBadge />
+        {/if}
+        {#if activeAdvanced.length > 0}
+          <span class="text-dim">({activeAdvanced.length})</span>
+        {/if}
+      </span>
+      <Icon
+        name="chevron-right"
+        class="h-4 w-4 shrink-0 transition-transform {advancedOpen
+          ? 'rotate-90'
+          : ''}" />
+    </button>
+    <div id="admin-user-advanced-filters">
+      {#if advancedOpen}
+        <div transition:slide={{ duration: reduced ? 0 : 180 }}>
+          <div
+            class="border-border grid gap-4 border-t px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
+            {#each DATE_FIELDS as field (field.key)}
+              <label class="text-dim flex flex-col gap-1.5 text-sm">
+                {field.label}
+                <input
+                  type="date"
+                  value={advanced[field.key]}
+                  onchange={(event) =>
+                    changeAdvanced(field.key, event.currentTarget.value)}
+                  class="border-border bg-surface text-fg rounded-lg border px-3 py-2" />
+              </label>
+            {/each}
+            {#each BINARY_FIELDS as field (field.key)}
+              <div class="text-dim flex flex-col items-start gap-1.5 text-sm">
+                <span>{field.label}</span>
+                <Combobox
+                  label={field.label}
+                  options={BINARY_OPTIONS}
+                  values={[advanced[field.key]]}
+                  onChange={(values) =>
+                    changeAdvanced(field.key, values[0] ?? "")} />
+              </div>
+            {/each}
+          </div>
+        </div>
       {/if}
-      {#if activeAdvanced.length > 0}
-        <span class="text-dim ml-1">({activeAdvanced.length})</span>
-      {/if}
-    </summary>
-    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {#each DATE_FIELDS as field (field.key)}
-        <label class="text-dim flex flex-col gap-1 text-sm">
-          {field.label}
-          <input
-            type="date"
-            value={advanced[field.key]}
-            onchange={(event) =>
-              changeAdvanced(field.key, event.currentTarget.value)}
-            class="border-border bg-surface text-fg rounded-lg border px-3 py-2" />
-        </label>
-      {/each}
-      {#each BINARY_FIELDS as field (field.key)}
-        <label class="text-dim flex flex-col gap-1 text-sm">
-          {field.label}
-          <select
-            value={advanced[field.key]}
-            onchange={(event) =>
-              changeAdvanced(field.key, event.currentTarget.value)}
-            class="border-border bg-surface text-fg rounded-lg border px-3 py-2">
-            <option value="">{m.common_all()}</option>
-            <option value="yes">{m.common_yes()}</option>
-            <option value="no">{m.common_no()}</option>
-          </select>
-        </label>
-      {/each}
     </div>
-  </details>
+  </div>
 
   {#if activeAdvanced.length > 0 || filter !== "all" || queryFilter}
-    <div class="mb-4 flex flex-wrap items-center gap-2">
+    <div
+      transition:slide={{ duration: reduced ? 0 : 150 }}
+      class="mb-4 flex flex-wrap items-center gap-2">
       {#each activeAdvanced as item (item.key)}
         <button
+          transition:fade={{ duration: reduced ? 0 : 120 }}
           type="button"
           class="border-border text-dim hover:text-fg rounded-full border px-3 py-1 text-xs transition-colors"
           aria-label={m.admin_users_remove_filter({ filter: item.label })}
@@ -277,12 +310,29 @@
     </div>
   {/if}
 
+  {#if filtering}
+    <p
+      role="status"
+      transition:fade={{ duration: reduced ? 0 : 120 }}
+      class="text-dim mb-2 text-sm">
+      {m.common_loading()}
+    </p>
+  {/if}
+
   {#if error}
-    <Banner variant="error">{error}</Banner>
+    <div transition:fade={{ duration: reduced ? 0 : 120 }}>
+      <Banner variant="error">{error}</Banner>
+    </div>
   {:else if usersQuery.loading}
-    <div class="card h-64 animate-pulse"></div>
+    <div
+      transition:fade={{ duration: reduced ? 0 : 120 }}
+      class="card h-64 {reduced ? '' : 'animate-pulse'}">
+    </div>
   {:else}
-    <div class="card overflow-x-auto">
+    <div
+      transition:fade={{ duration: reduced ? 0 : 120 }}
+      aria-busy={filtering}
+      class="card overflow-x-auto">
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr
@@ -368,7 +418,9 @@
         </tbody>
       </table>
       {#if users.length === 0}
-        <p class="text-dim px-4 py-6 text-center text-sm">
+        <p
+          transition:fade={{ duration: reduced ? 0 : 120 }}
+          class="text-dim px-4 py-6 text-center text-sm">
           {query.trim() || filter !== "all" || activeAdvanced.length > 0
             ? m.admin_users_empty_filter()
             : m.admin_users_empty()}
@@ -378,6 +430,7 @@
 
     {#if usersQuery.hasNextPage}
       <button
+        transition:fade={{ duration: reduced ? 0 : 120 }}
         class="btn btn-ghost mt-4 w-full"
         disabled={usersQuery.isFetchingNextPage}
         onclick={() => usersQuery.fetchNextPage()}>

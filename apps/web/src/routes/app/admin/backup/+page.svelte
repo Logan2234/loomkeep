@@ -23,17 +23,21 @@
     formatDateTime,
   } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "$lib/motion";
   import { toast } from "$lib/toast.svelte";
   import type {
     AdminBackupFileDto,
     AdminOrphanBackupFileDto,
   } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade, slide } from "svelte/transition";
 
   // Mirrors JOB_KEYS.BACKUP in apps/api/src/jobs/job-keys.ts — the daily
   // 3h cron this button also triggers on demand (same code path either way,
   // see BackupService.runScheduled).
   const BACKUP_JOB_KEY = "backup.run";
   const CONFIRM_PHRASE = "RESTAURER";
+  const reduced = prefersReducedMotion();
 
   const filesQuery = createApiQuery(() => ({
     key: keys.admin.backups(),
@@ -171,7 +175,7 @@
     {#if loadError}
       <Banner variant="error">{loadError}</Banner>
     {:else if loading}
-      <div class="space-y-2">
+      <div transition:fade={{ duration: reduced ? 0 : 120 }} class="space-y-2">
         {#each { length: 3 } as _, i (i)}
           <div class="skeleton h-12 rounded-lg"></div>
         {/each}
@@ -180,7 +184,11 @@
       <ul
         class="border-border divide-border divide-y overflow-hidden rounded-lg border">
         {#each files as f (f.id)}
-          <li class="flex items-center gap-3 px-3 py-2.5">
+          <li
+            animate:flip={{ duration: reduced ? 0 : 160 }}
+            in:fade|global={{ duration: reduced ? 0 : 140 }}
+            out:fade|global={{ duration: reduced ? 0 : 100 }}
+            class="flex items-center gap-3 px-3 py-2.5">
             <div class="min-w-0 flex-1">
               <p class="text-fg truncate text-sm font-semibold">
                 {f.filename}
@@ -214,21 +222,29 @@
         {/each}
       </ul>
     {:else}
-      <p class="text-dim py-6 text-center text-sm">
+      <p
+        transition:fade={{ duration: reduced ? 0 : 120 }}
+        class="text-dim py-6 text-center text-sm">
         {m.admin_backup_empty()}
       </p>
     {/if}
   </section>
 
   {#if orphans && orphans.length > 0}
-    <section class="card mb-5 p-5 md:p-6">
+    <section
+      transition:slide={{ duration: reduced ? 0 : 180 }}
+      class="card mb-5 p-5 md:p-6">
       <h2 class="font-display mb-1 text-lg font-bold">
         {m.admin_backup_orphans()}
       </h2>
       <p class="text-dim mb-3 text-sm">{m.admin_backup_orphans_hint()}</p>
       <ul class="border-border divide-border divide-y rounded-lg border">
         {#each orphans as file (file.filename)}
-          <li class="flex items-center gap-3 px-3 py-2.5">
+          <li
+            animate:flip={{ duration: reduced ? 0 : 160 }}
+            in:fade|global={{ duration: reduced ? 0 : 140 }}
+            out:fade|global={{ duration: reduced ? 0 : 100 }}
+            class="flex items-center gap-3 px-3 py-2.5">
             <div class="min-w-0 flex-1">
               <p class="text-fg truncate text-sm font-semibold">
                 {file.filename}

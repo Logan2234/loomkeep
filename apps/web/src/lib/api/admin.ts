@@ -1,3 +1,4 @@
+import { normalizeAdminBackupInventory } from "$lib/admin-backup-inventory";
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
@@ -243,7 +244,8 @@ export const deleteAdminUser = (
 
 export const getAdminNewsletterSends = () => typedRequest("/admin/newsletter");
 
-export const getAdminBackupFiles = () => typedRequest("/admin/backup/files");
+export const getAdminBackupFiles = async () =>
+  normalizeAdminBackupInventory(await typedRequest("/admin/backup/files"));
 
 export const getAdminBackupFile = (id: string) =>
   typedRequest("/admin/backup/files/{id}", { params: { id } });
