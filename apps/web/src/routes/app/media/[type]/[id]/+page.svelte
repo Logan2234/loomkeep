@@ -475,7 +475,7 @@
               href={OMDB_API}
               target="_blank"
               rel="noopener noreferrer"
-              class="btn-text mt-1 inline-block text-[0.6rem]">
+              class="btn-text text-micro mt-1 inline-block">
               {m.media_omdb_notice()}
             </a>
           {/if}
@@ -690,12 +690,12 @@
               href={extras.watchProviders.link}
               target="_blank"
               rel="noopener noreferrer"
-              class="link-accent timecode text-[0.6rem] decoration-1">
+              class="link-accent timecode text-micro decoration-1">
               {m.media_tmdb_france()}
             </a>
           </div>
         {:else}
-          <span class="timecode text-dim w-full text-[0.6rem]"
+          <span class="timecode text-dim text-micro w-full"
             >{m.media_france()}</span>
         {/if}
       </section>
@@ -719,7 +719,7 @@
     <!-- Provider attribution: required for TMDB (logo + non-endorsement
          notice, less prominent than Loomkeep's own branding), courtesy for
          AniList. -->
-    <p class="text-dim mt-4 flex items-center gap-1.5 text-[0.6rem]">
+    <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
       <ProviderMark
         brand={type === "ANIME" ? "anilist" : "tmdb"}
         class="h-3 w-3 shrink-0 opacity-70" />

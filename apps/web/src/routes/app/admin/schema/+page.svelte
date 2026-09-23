@@ -18,7 +18,7 @@
   const error = $derived(schemaQuery.error);
 </script>
 
-<div class="px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="library"
     title={m.admin_schema_title()}

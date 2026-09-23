@@ -178,8 +178,10 @@
     {#if error}
       <p class="text-danger text-sm">{error}</p>
     {/if}
+  </div>
 
-    <div class="flex items-center gap-2 pt-1">
+  {#snippet actions()}
+    <div class="flex items-center gap-2">
       <button
         class="btn btn-primary flex-1"
         disabled={busy || !title.trim()}
@@ -201,5 +203,5 @@
         {/if}
       {/if}
     </div>
-  </div>
+  {/snippet}
 </Modal>

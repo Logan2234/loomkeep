@@ -24,7 +24,9 @@
 </script>
 
 <Drawer {onclose} labelledby="achievement-drawer-title">
-  <div class="flex flex-col gap-3 px-5 pt-2 pb-6">
+  <div
+    data-drawer-scroll
+    class="flex min-h-0 flex-1 touch-pan-y flex-col gap-3 overflow-y-auto px-5 pt-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
     <div class="flex items-center gap-3">
       <AchievementMedallion icon={groupIcon(group)} tier={group.reachedTier} />
       <div class="min-w-0">

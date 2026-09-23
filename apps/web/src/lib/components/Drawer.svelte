@@ -5,6 +5,13 @@
   // how far down it's dragged, snapping back if released before the
   // threshold. Shared by Modal.svelte (its mobile mode) and MenuSheet.svelte.
   //
+  // The panel is a capped flex column, so a caller whose content can outgrow
+  // it owes its scrolling child `min-h-0 flex-1 overflow-y-auto touch-pan-y`
+  // and `data-drawer-scroll` (see below). Without `min-h-0` that child keeps
+  // `min-height: auto`, grows past the panel and hangs its own bottom off
+  // the screen, where nothing can reach it — the sheet is the only thing
+  // that moves.
+  //
   // The enter/exit animation is driven by plain CSS transitions off a local
   // `visible` flag rather than a Svelte `transition:` directive. A
   // transition: directive here previously made Svelte defer destroying the
@@ -16,6 +23,7 @@
   // setTimeout, only after the local closing animation has finished, makes
   // the parent's unmount instant and unconditional — nothing left for Svelte
   // to defer.
+  import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
   import { prefersReducedMotion } from "$lib/motion";
@@ -151,6 +159,7 @@
 
   <div
     bind:this={panelEl}
+    use:dialogFocus
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}

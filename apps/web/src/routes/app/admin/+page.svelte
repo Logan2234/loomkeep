@@ -14,7 +14,7 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import StatsSectionError from "./stats/components/StatsSectionError.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
   import { GITHUB_REPO_URL } from "$lib/constants/external-links";
   import { formatNumber, formatRelative } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
@@ -110,46 +110,10 @@
     };
   });
 
-  const CATEGORIES: { label: string; hrefs: string[] }[] = [
-    {
-      label: m.admin_group_content(),
-      hrefs: [
-        "/app/admin/cache",
-        "/app/admin/schema",
-        "/app/admin/components",
-        "/app/admin/backup",
-        "/app/admin/imports",
-      ],
-    },
-    {
-      label: m.admin_group_users(),
-      hrefs: [
-        "/app/admin/users",
-        "/app/admin/communications",
-        "/app/admin/newsletter",
-      ],
-    },
-    {
-      label: m.admin_group_system(),
-      hrefs: ["/app/admin/services", "/app/admin/jobs", "/app/admin/stats"],
-    },
-    {
-      label: m.admin_group_security(),
-      hrefs: ["/app/admin/security", "/app/admin/reports"],
-    },
-  ];
-
-  const grouped = $derived(
-    CATEGORIES.map((cat) => ({
-      label: cat.label,
-      items: cat.hrefs
-        .map((href) => VISIBLE_ADMIN_NAV.find((i) => i.href === href))
-        .filter((i) => i !== undefined),
-    })),
-  );
+  const grouped = VISIBLE_ADMIN_NAV_GROUPS;
 </script>
 
-<div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="shield"
     title={m.admin_dashboard_title()}

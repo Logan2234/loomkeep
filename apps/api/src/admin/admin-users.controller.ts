@@ -168,19 +168,36 @@ export class AdminUsersController {
     };
   }
 
-  /**
-   * Minimal, unpaginated account list for pickers (UserSelector, the
-   * communications broadcast target) — distinct from the paginated `users`
-   * endpoint above, which now only returns one page at a time.
-   */
+  /** Compact server-searched account list for admin pickers. */
   @Get("users/options")
-  @ApiOkResponse({ type: AdminUserOptionResponseDto, isArray: true })
-  async listUserOptions(): Promise<AdminUserOptionDto[]> {
-    const users = await this.prisma.user.findMany({
-      orderBy: { displayName: "asc" },
+  @ApiOkResponse({ type: PagedResponseDto(AdminUserOptionResponseDto) })
+  async listUserOptions(
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<AdminUserOptionDto>> {
+    const parsed = parsePageQuery(page, limit, 20);
+    const query = search?.trim();
+    const rows = await this.prisma.user.findMany({
+      where: query
+        ? {
+            OR: [
+              { id: query },
+              { email: { contains: query, mode: "insensitive" } },
+              { username: { contains: query, mode: "insensitive" } },
+              { displayName: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {},
+      orderBy: [{ displayName: "asc" }, { id: "asc" }],
       select: { id: true, displayName: true, email: true },
+      skip: parsed.skip,
+      take: parsed.take + 1,
     });
-    return users;
+    return {
+      items: rows.slice(0, parsed.limit),
+      hasMore: rows.length > parsed.limit,
+    };
   }
 
   /**

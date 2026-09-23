@@ -827,6 +827,7 @@ model Report {
 
   @@index([status, createdAt])
   @@index([category])
+  @@index([reporterId, status, createdAt])
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure
@@ -1182,6 +1183,7 @@ model SecurityEvent {
 
   @@index([type, createdAt])
   @@index([userId])
+  @@index([createdAt])
 }
 
 // One committed import (tvtime/storygraph/goodreads/steam), for the admin
@@ -1213,6 +1215,7 @@ model ImportRun {
 
   @@index([sourceId, startedAt])
   @@index([userId])
+  @@index([startedAt])
 }
 
 // One row per persisted backup dump on disk (BACKUP_DIR), for the admin

@@ -13,7 +13,7 @@
   import Drawer from "$lib/components/Drawer.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { VISIBLE_ADMIN_NAV } from "$lib/constants/admin-nav";
+  import { VISIBLE_ADMIN_NAV_GROUPS } from "$lib/constants/admin-nav";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { resolveMenuGroups } from "$lib/navigation";
@@ -101,13 +101,24 @@
 
     <div
       data-drawer-scroll
-      class="flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       {#if inAdmin}
-        <div class="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {#each VISIBLE_ADMIN_NAV as item (item.href)}
-            {@render tile(item)}
-          {/each}
-        </div>
+        {#each VISIBLE_ADMIN_NAV_GROUPS as group (group.label)}
+          <section class="mt-4 first:mt-2">
+            <div class="mb-2.5 flex items-center gap-3">
+              <span
+                class="timecode text-[0.65rem] font-bold tracking-[0.14em] uppercase">
+                {group.label}
+              </span>
+              <span class="bg-border h-px flex-1"></span>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+              {#each group.items as item (item.href)}
+                {@render tile(item)}
+              {/each}
+            </div>
+          </section>
+        {/each}
 
         <a
           href="/app"

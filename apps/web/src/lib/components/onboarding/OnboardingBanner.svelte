@@ -71,7 +71,7 @@
     labelledby="onboarding-checklist-title">
     <div
       data-drawer-scroll
-      class="touch-pan-y overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
       <h2
         id="onboarding-checklist-title"
         class="font-display mb-3 text-lg font-bold">

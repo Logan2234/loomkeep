@@ -266,7 +266,7 @@
   </div>
 {/snippet}
 
-<div class="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="compass"
     title={m.admin_components_title()}

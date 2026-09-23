@@ -285,8 +285,10 @@
     {#if error}
       <p class="text-danger text-sm">{error}</p>
     {/if}
+  </div>
 
-    <div class="border-border flex items-center gap-2 border-t pt-3.5">
+  {#snippet actions()}
+    <div class="flex items-center gap-2">
       {#if review}
         {#if confirmingDelete}
           <button
@@ -323,5 +325,5 @@
         {m.common_save()}
       </button>
     </div>
-  </div>
+  {/snippet}
 </Modal>

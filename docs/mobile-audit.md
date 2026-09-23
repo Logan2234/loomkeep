@@ -28,17 +28,17 @@ Chaque constat porte un identifiant (`M-xx`) pour pouvoir être repris tel quel
 dans un ticket ou une session de correction.
 
 **État au 22 septembre 2026** — M-01 à M-06, M-08 et M-10 sont corrigés
-(PR #209), puis M-15, M-16, M-21, M-23, M-24, M-25 et M-26 (PR #210), et
-enfin M-11, M-12, M-13, M-17, M-18, M-20 et M-28 ; tous retirés de ce
-document. M-07 est partiellement corrigé (requalifié P2). M-09 reste ouvert
-volontairement. M-14 et M-22 ont été retirés sans correctif : la page Schéma
-n'est pas exposée en production, et « Mes listes » / « Mes critiques » sont
-volontairement accessibles depuis l'accueil et le profil, en mobile comme en
-desktop.
-M-27 a été découvert pendant la correction, ainsi que M-28 (corrigé) et M-29
-(corrigé) — un débordement horizontal du profil signalé par Logan. De M-13,
-seules les couleurs du manifest PWA restent en dur : le manifest est servi par
-locale, sans rien savoir du thème choisi, donc les régler demande un arbitrage.
+(PR #209), puis M-15, M-16, M-21, M-23, M-24, M-25 et M-26 (PR #210), puis
+M-11, M-12, M-13, M-17, M-18, M-20 et M-28 (PR #244), et enfin M-07, M-19
+et M-27 ; tous retirés de ce document. M-09 reste ouvert volontairement. M-14 et M-22 ont été retirés sans
+correctif : la page Schéma n'est pas exposée en production, et « Mes listes »
+/ « Mes critiques » sont volontairement accessibles depuis l'accueil et le
+profil, en mobile comme en desktop. M-27, M-28 et M-29 ont été découverts
+pendant la correction, et sont corrigés.
+
+De M-13, seules les couleurs du manifest PWA restent en dur : le manifest est
+servi par locale, sans rien savoir du thème choisi, donc les régler demande un
+arbitrage.
 
 **M-29 · Débordement horizontal du profil** (corrigé) — un titre saisi par un
 utilisateur et sans espace (nom de liste, titre d'œuvre) a une largeur
@@ -121,131 +121,11 @@ carrousel se fait déjà au doigt.
 
 ---
 
----
-
-## Priorité 2 — moyen
-
-### M-07 · Les actions d'une modale ne sont pas ancrées
-
-**Fichier** : [apps/web/src/lib/components/Modal.svelte:84](../apps/web/src/lib/components/Modal.svelte#L84)
-
-Partiellement traité. La modale suit maintenant le shell (`layout.compact`),
-donc un téléphone en paysage obtient le bottom sheet — scrollable, avec sa
-poignée et son balayage — au lieu du dialogue centré qui coupait son propre
-contenu ; et le dialogue desktop est passé de `max-h-[80vh] overflow-scroll`
-à `max-h-[85svh] overflow-y-auto`, ce qui supprime la barre de défilement
-horizontale parasite.
-
-Ce qui reste : les boutons d'action arrivent en fin de contenu défilant, donc
-sur « Créer une liste » à 430 px de haut, « Enregistrer » n'est pas visible à
-l'ouverture (contenu 476 px pour 309 px utiles). Il faut faire défiler dans la
-feuille pour valider.
-
-**Remédiation recommandée** : ancrer les actions dans un pied fixe, ce qui
-demande d'ajouter un snippet `actions` à `Modal` et de migrer les appelants
-qui rendent aujourd'hui leurs boutons dans `children` :
-
-```svelte
-<div class="card flex max-h-[85svh] w-full flex-col overflow-hidden …">
-  <header class="shrink-0 …">…</header>
-  <div class="min-h-0 flex-1 overflow-y-auto …">{@render children()}</div>
-  {#if actions}
-    <footer class="border-border shrink-0 border-t …">{@render actions()}</footer>
-  {/if}
-</div>
-```
-
-Appelants à migrer : `ListFormModal`, `ReviewFormModal`, `EditProfileModal`,
-`AddToListModal`, `ListMembersModal`, `CalendarSubscribeModal`,
-`ReadingGoalEditModal`, `EditAvatarModal`, `ScanIsbnModal`,
-`ScanProfileModal`. Le snippet restant optionnel, la migration peut se faire
-modale par modale.
-
-### M-19 · Typographie sous le seuil de lisibilité
-
-Relevé de tailles inférieures à 12 px sur du texte porteur d'information :
-
-| Taille  | Exemple                                        | Écran       |
-| ------- | ---------------------------------------------- | ----------- |
-| 8,8 px  | badges `ADMIN`, `NON VÉRIFIÉ`, `PREMIUM`       | admin/users |
-| 9,6 px  | « Notes via OMDb, sous licence CC BY-NC 4.0. » | fiche œuvre |
-| 9,6 px  | « Voir sur TMDB · France »                     | fiche œuvre |
-| 9,6 px  | `DERNIERS DÉBLOCAGES`, `DÉBLOQUÉ`              | succès      |
-| 9,6 px  | badges `BÊTA`, `NOUVEAU`                       | global      |
-| 10,4 px | noms de rôles du casting                       | fiche œuvre |
-| 10,5 px | en‑têtes du tableau de rétention               | admin/stats |
-
-Les badges purement décoratifs peuvent rester petits ; les libellés
-informatifs (rôles du casting, en‑têtes de tableau, statuts de compte)
-devraient remonter à 11–12 px minimum sous `sm`.
-
-**Remédiation** : introduire un plancher dans le design system plutôt que de
-corriger au cas par cas — par exemple une classe `.text-micro` documentée dans
-`DESIGN.md` avec une valeur `clamp()` qui ne descend pas sous 11 px sur les
-petits écrans, et réserver le 9,6 px aux pastilles non essentielles.
-
----
-
 ## Récapitulatif
 
-Ce qu'il reste ouvert après les trois passes de correction. M-07 est
-partiellement corrigé et requalifié P2 ; son périmètre restant est décrit
-ci-dessus.
-
-| ID   | Priorité | Sujet                                                 | Portée           |
-| ---- | -------- | ----------------------------------------------------- | ---------------- |
-| M-07 | P2       | Actions de modale non ancrées                         | paysage          |
-| M-09 | P1       | Cibles tactiles < 44 px                               | portrait+paysage |
-| M-19 | P2       | Typographie sous 12 px                                | portrait         |
-| M-27 | **P0**   | Un domaine premium actif vide toute la page d'accueil | global           |
-
-### Ordre de traitement suggéré
-
-1. **M-27** en premier : c'est un écran d'accueil entièrement vide, et il ne
-   demande qu'un correctif localisé.
-2. **M-09** ensuite : une passe transverse sur le design system, à faire en
-   une fois plutôt que fichier par fichier. **M-19** relève du même geste —
-   un plancher documenté dans `DESIGN.md` — et peut suivre dans la foulée.
-3. Le reste au fil de l'eau. **M-07** peut attendre : le bottom sheet rend la
-   situation acceptable en paysage.
-
-### Constats découverts pendant la correction
-
-#### M-27 · Un domaine premium resté actif vide entièrement la page d'accueil — **P0**
-
-**Fichiers** : [apps/api/src/users/domain-gate.service.ts:43](../apps/api/src/users/domain-gate.service.ts#L43),
-`apps/web/src/routes/app/+page.svelte`
-
-`DomainGateService.getEnabledDomains()` retire les domaines de
-`PREMIUM_DOMAINS` pour un compte non premium, mais `GET /users/me` renvoie
-`enabledDomains` **brut**. Le front croit donc le domaine actif, monte sa
-section d'accueil, et l'appel correspondant répond
-`403 user.domain_disabled`.
-
-Conséquence observée avec `enabledDomains = [MEDIA, GAMES, BOOKS, MUSIC]` sur
-un compte non premium : `/app` ne rend **plus aucune section** — les huit
-`<section>` existent mais sont vides, y compris la carte de raccourcis qui
-n'utilise aucune requête. Retirer `MUSIC` de `enabledDomains` rétablit
-immédiatement la page (0 lien de contenu → 25). Ce n'est donc pas une section
-en erreur, c'est l'accueil entier qui disparaît.
-
-Le scénario est explicitement anticipé côté API — le commentaire du service
-mentionne « e.g. from before it became premium-gated » — mais le front ne le
-gère pas.
-
-**Remédiation recommandée** : deux correctifs, le second étant le plus
-important.
-
-1. Faire renvoyer par `GET /users/me` les domaines **effectifs** (ceux que
-   `getEnabledDomains()` calcule), pour que nav, accueil et requêtes voient la
-   même vérité. Attention à `PATCH /users/me`, qui doit continuer à accepter
-   et conserver le choix brut de l'utilisateur.
-2. Isoler chaque bloc de l'accueil pour qu'un 403 sur un domaine n'emporte pas
-   la page : la cause exacte de l'écran vide est à confirmer (une erreur non
-   rattrapée pendant le rendu semble la plus probable), mais quelle qu'elle
-   soit, une section en échec doit dégrader en état vide, pas faire disparaître
-   ses voisines. Un test de rendu de `/app` avec un domaine premium actif et
-   son endpoint en 403 verrouillerait le comportement.
+Un seul constat reste ouvert, volontairement : **M-09**, les cibles tactiles
+sous 44 px, décrit ci-dessus. C'est une passe transverse sur le design
+system, à faire en une fois plutôt que fichier par fichier.
 
 ### Points non couverts par cet audit
 
