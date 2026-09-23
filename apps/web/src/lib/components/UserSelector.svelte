@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { getAdminUserOptions } from "$lib/api/client";
+  import {
+    getAdminUserOptions,
+    normalizeAdminUserOptionsPage,
+  } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -35,12 +38,14 @@
 
   const usersQuery = createApiInfiniteQuery(() => ({
     key: keys.admin.userOptions(search),
-    fetch: (page: number) =>
-      getAdminUserOptions({
-        search: search || undefined,
-        page,
-        limit: PAGE_SIZE,
-      }),
+    fetch: async (page: number) =>
+      normalizeAdminUserOptionsPage(
+        await getAdminUserOptions({
+          search: search || undefined,
+          page,
+          limit: PAGE_SIZE,
+        }),
+      ),
     getPageItems: (result) => result.items,
     initialPageParam: 1,
     getNextPageParam: (lastPage, pages) =>

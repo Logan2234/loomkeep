@@ -2,11 +2,13 @@ import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
   AdminUserFilter,
+  AdminUserOptionDto,
   Domain,
   JobStatus,
   Locale,
   MailTemplatePreviewDto,
   ModerationLegalBasis,
+  PagedResult,
   Plan,
   Role,
   SecurityEventType,
@@ -120,6 +122,12 @@ export function getAdminUserOptions(
       limit: filters.limit ? String(filters.limit) : undefined,
     },
   });
+}
+
+export function normalizeAdminUserOptionsPage(
+  result: PagedResult<AdminUserOptionDto> | AdminUserOptionDto[],
+): PagedResult<AdminUserOptionDto> {
+  return Array.isArray(result) ? { items: result, hasMore: false } : result;
 }
 
 export const getAdminUserLibraryStats = (userId: string) =>
