@@ -89,7 +89,7 @@ export class NotificationService {
       JOB_KEYS.NOTIFICATIONS_SCAN,
       () => this.runScanAll(),
       (created) =>
-        created > 0 ? `${created} notification(s) créée(s)` : "Rien de nouveau",
+        created > 0 ? `${created} notification(s) created` : "Nothing new",
     );
   }
 

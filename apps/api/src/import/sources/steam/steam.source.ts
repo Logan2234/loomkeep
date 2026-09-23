@@ -280,12 +280,12 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       sub: null,
     }));
     if (tiles.length === 0)
-      tiles.push({ id: "games", label: "Jeux", value: 0, sub: null });
+      tiles.push({ id: "games", label: "Games", value: 0, sub: null });
     tiles.push({
       id: "playtime",
-      label: "Temps de jeu",
+      label: "Playtime",
       value: Math.round(totalMinutes / 60),
-      sub: "heures importées",
+      sub: "hours imported",
     });
 
     return { overwrite: decisions.overwrite, tiles };

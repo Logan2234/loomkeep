@@ -76,8 +76,8 @@ export class MediaItemService {
       () => this.runRefreshStale(),
       (refreshed) =>
         refreshed > 0
-          ? `${refreshed} média(s) rafraîchi(s)`
-          : "Rien à rafraîchir",
+          ? `${refreshed} media item(s) refreshed`
+          : "Nothing to refresh",
     );
   }
 

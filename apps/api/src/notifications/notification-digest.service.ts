@@ -84,7 +84,7 @@ export class NotificationDigestService {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_DIGEST,
       () => this.run(),
-      (sent) => (sent > 0 ? `${sent} digest(s) envoyé(s)` : "Rien à envoyer"),
+      (sent) => (sent > 0 ? `${sent} digest(s) sent` : "Nothing to send"),
     );
   }
 

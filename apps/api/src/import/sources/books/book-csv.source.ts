@@ -210,7 +210,7 @@ export abstract class BookCsvSource<
     }));
 
     if (tiles.length === 0) {
-      tiles.push({ id: "books", label: "Livres", value: 0, sub: null });
+      tiles.push({ id: "books", label: "Books", value: 0, sub: null });
     }
 
     return { overwrite: decisions.overwrite, tiles };

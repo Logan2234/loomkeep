@@ -458,7 +458,7 @@ export class AdminUsersController {
     await this.securityEvents.record({
       type: "USER_DELETED",
       userId: user.id,
-      detail: "Supprimé depuis le panel admin",
+      detail: "Deleted from the admin panel",
     });
 
     await this.moderationDecisions.record({
