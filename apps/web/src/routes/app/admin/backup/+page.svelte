@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     deleteAdminBackupFile,
+    deleteAdminOrphanBackupFile,
     getAdminBackupFile,
     getAdminBackupFiles,
     restoreAdminBackup,
@@ -23,7 +24,10 @@
   } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
-  import type { AdminBackupFileDto } from "@loomkeep/shared";
+  import type {
+    AdminBackupFileDto,
+    AdminOrphanBackupFileDto,
+  } from "@loomkeep/shared";
 
   // Mirrors JOB_KEYS.BACKUP in apps/api/src/jobs/job-keys.ts — the daily
   // 3h cron this button also triggers on demand (same code path either way,
@@ -35,11 +39,13 @@
     key: keys.admin.backups(),
     fetch: getAdminBackupFiles,
   }));
-  const files = $derived(filesQuery.data);
+  const files = $derived(filesQuery.data?.files);
+  const orphans = $derived(filesQuery.data?.orphans);
   const loading = $derived(filesQuery.loading);
   const loadError = $derived(filesQuery.error);
 
   let pendingDelete = $state<AdminBackupFileDto | null>(null);
+  let pendingOrphanDelete = $state<AdminOrphanBackupFileDto | null>(null);
 
   let fileInput = $state<HTMLInputElement | null>(null);
   let pendingFile = $state<File | null>(null);
@@ -83,6 +89,15 @@
     if (!pendingDelete) return;
     deleteMut.mutate(pendingDelete);
   }
+
+  const deleteOrphanMut = createApiMutation(() => ({
+    mutate: (file: AdminOrphanBackupFileDto) =>
+      deleteAdminOrphanBackupFile(file.filename),
+    invalidates: [keys.admin.backups()],
+    successToast: m.admin_backup_orphan_deleted(),
+    errorToast: true,
+    onSuccess: () => (pendingOrphanDelete = null),
+  }));
 
   function pickFile() {
     fileInput?.click();
@@ -174,12 +189,15 @@
                 {formatDateTime(f.createdAt, DATETIME_NUMERIC_OPTIONS)} ·
                 {formatBytes(f.sizeBytes)}
               </p>
+              {#if f.status === "MISSING"}
+                <p class="text-danger text-xs">{m.admin_backup_missing()}</p>
+              {/if}
             </div>
             <button
               type="button"
               aria-label={m.admin_backup_download()}
-              disabled={downloadMut.loading &&
-                downloadMut.variables?.id === f.id}
+              disabled={f.status === "MISSING" ||
+                (downloadMut.loading && downloadMut.variables?.id === f.id)}
               onclick={() => downloadFile(f)}
               class="text-dim hover:bg-surface-2 hover:text-fg shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-50">
               <Icon name="download" class="h-4 w-4" />
@@ -201,6 +219,37 @@
       </p>
     {/if}
   </section>
+
+  {#if orphans && orphans.length > 0}
+    <section class="card mb-5 p-5 md:p-6">
+      <h2 class="font-display mb-1 text-lg font-bold">
+        {m.admin_backup_orphans()}
+      </h2>
+      <p class="text-dim mb-3 text-sm">{m.admin_backup_orphans_hint()}</p>
+      <ul class="border-border divide-border divide-y rounded-lg border">
+        {#each orphans as file (file.filename)}
+          <li class="flex items-center gap-3 px-3 py-2.5">
+            <div class="min-w-0 flex-1">
+              <p class="text-fg truncate text-sm font-semibold">
+                {file.filename}
+              </p>
+              <p class="timecode text-xs">
+                {formatDateTime(file.createdAt, DATETIME_NUMERIC_OPTIONS)} ·
+                {formatBytes(file.sizeBytes)}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="text-dim hover:bg-danger/10 hover:text-danger shrink-0 rounded-lg p-1.5 transition-colors"
+              aria-label={m.admin_backup_delete_orphan()}
+              onclick={() => (pendingOrphanDelete = file)}>
+              <Icon name="trash" class="h-4 w-4" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   <section class="card border-danger/40 p-5 md:p-6">
     <h2 class="font-display text-danger mb-1 text-lg font-bold">
@@ -234,14 +283,32 @@
 {#if pendingDelete}
   <ConfirmationModal
     title={m.admin_backup_delete_title()}
-    message={m.admin_backup_delete_message({
-      filename: pendingDelete.filename,
-    })}
+    message={pendingDelete.status === "MISSING"
+      ? m.admin_backup_delete_missing_message({
+          filename: pendingDelete.filename,
+        })
+      : m.admin_backup_delete_message({
+          filename: pendingDelete.filename,
+        })}
     confirmLabel={m.common_delete()}
     danger
     busy={deleteMut.loading}
     onConfirm={confirmDeleteFile}
     onCancel={() => (pendingDelete = null)} />
+{/if}
+
+{#if pendingOrphanDelete}
+  <ConfirmationModal
+    title={m.admin_backup_delete_orphan_title()}
+    message={m.admin_backup_delete_orphan_message({
+      filename: pendingOrphanDelete.filename,
+    })}
+    confirmLabel={m.common_delete()}
+    danger
+    busy={deleteOrphanMut.loading}
+    onConfirm={() =>
+      pendingOrphanDelete && deleteOrphanMut.mutate(pendingOrphanDelete)}
+    onCancel={() => (pendingOrphanDelete = null)} />
 {/if}
 
 {#if showRestoreModal && pendingFile}

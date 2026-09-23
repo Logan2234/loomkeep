@@ -1,7 +1,7 @@
 import {
   ErrorCode,
   type AdminBackupFileContentDto,
-  type AdminBackupFileDto,
+  type AdminBackupInventoryDto,
   type AdminOverviewDto,
   type SchemaGraphResponseDto,
   type ServiceStatusResponseDto,
@@ -29,7 +29,7 @@ import { AdminOverviewService } from "./admin-overview.service";
 import { AdminService } from "./admin.service";
 import { BackupService } from "./backup.service";
 import { AdminBackupFileContentResponseDto } from "./dto/admin-backup-file-content-response.dto";
-import { AdminBackupFileResponseDto } from "./dto/admin-backup-file-response.dto";
+import { AdminBackupInventoryResponseDto } from "./dto/admin-backup-inventory-response.dto";
 import { AdminOverviewResponseDto } from "./dto/admin-overview-response.dto";
 import { RestoreBackupDto } from "./dto/restore-backup.dto";
 import { SchemaGraphResultResponseDto } from "./dto/schema-graph-response.dto";
@@ -48,8 +48,8 @@ export class AdminSystemController {
 
   /** Persisted backup dumps on disk (BACKUP_DIR), most recent first — up to 7, pruned by the daily job. */
   @Get("backup/files")
-  @ApiOkResponse({ type: AdminBackupFileResponseDto, isArray: true })
-  listBackupFiles(): Promise<AdminBackupFileDto[]> {
+  @ApiOkResponse({ type: AdminBackupInventoryResponseDto })
+  listBackupFiles(): Promise<AdminBackupInventoryDto> {
     return this.backup.listFiles();
   }
 
@@ -64,6 +64,14 @@ export class AdminSystemController {
   @Delete("backup/files/:id")
   async deleteBackupFile(@Param("id") id: string): Promise<void> {
     await this.backup.deleteFile(id);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("backup/orphans/:filename")
+  async deleteOrphanBackupFile(
+    @Param("filename") filename: string,
+  ): Promise<void> {
+    await this.backup.deleteOrphanFile(filename);
   }
 
   /**

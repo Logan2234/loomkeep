@@ -90,6 +90,7 @@
   "apierr_admin_user_not_found": "This user could not be found.",
   "apierr_admin_forbidden": "Admin access required.",
   "apierr_admin_backup_not_found": "This backup could not be found.",
+  "apierr_admin_backup_not_orphan": "This file is already linked to a registered backup.",
   "apierr_admin_misconfigured": "This feature isn't configured on this server.",
   "apierr_admin_unauthorized": "Unauthorized.",
   "apierr_comment_unknown_target_type": "Unknown comment target type.",

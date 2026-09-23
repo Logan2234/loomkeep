@@ -90,6 +90,7 @@
   "apierr_admin_user_not_found": "Cet utilisateur est introuvable.",
   "apierr_admin_forbidden": "Accès administrateur requis.",
   "apierr_admin_backup_not_found": "Cette sauvegarde est introuvable.",
+  "apierr_admin_backup_not_orphan": "Ce fichier est déjà lié à une sauvegarde enregistrée.",
   "apierr_admin_misconfigured": "Cette fonctionnalité n'est pas configurée sur ce serveur.",
   "apierr_admin_unauthorized": "Accès non autorisé.",
   "apierr_comment_unknown_target_type": "Type de contenu commenté inconnu.",

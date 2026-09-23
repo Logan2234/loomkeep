@@ -2,12 +2,23 @@ import {
   ErrorCode,
   type AdminBackupFileContentDto,
   type AdminBackupFileDto,
+  type AdminBackupInventoryDto,
+  type AdminOrphanBackupFileDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import { spawn } from "node:child_process";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { AppException } from "../common/app.exception";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -16,6 +27,8 @@ import { PrismaService } from "../prisma/prisma.service";
 
 /** How many dumps are kept on disk — older ones are purged after each run. */
 const KEEP = 7;
+const BACKUP_FILENAME =
+  /^loomkeep-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}(?:-[a-f0-9]{8})?\.sql\.age(?:\.deleting-[a-f0-9-]{36})?$/;
 
 /**
  * Shells out to pg_dump/psql rather than reimplementing a dump in Prisma: it's
@@ -37,6 +50,7 @@ const KEEP = 7;
 @Injectable()
 export class BackupService {
   private readonly logger = new Logger(BackupService.name);
+  private fileOperation: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -80,16 +94,86 @@ export class BackupService {
   async runScheduled(): Promise<AdminBackupFileDto> {
     return this.jobRuns.record(
       JOB_KEYS.BACKUP,
-      () => this.writeBackup(),
+      async () => {
+        const encrypted = await this.encrypt(await this.dump());
+        return this.withFileLock(() => this.writeBackup(encrypted));
+      },
       (file) => `${file.filename} (${formatBytes(file.sizeBytes)})`,
     );
   }
 
-  async listFiles(): Promise<AdminBackupFileDto[]> {
+  async listFiles(): Promise<AdminBackupInventoryDto> {
+    return this.withFileLock(() => this.reconcileFiles());
+  }
+
+  private async reconcileFiles(): Promise<AdminBackupInventoryDto> {
+    await mkdir(this.dir, { recursive: true });
     const rows = await this.prisma.backupFile.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return rows.map(toDto);
+    const entries = await readdir(this.dir, { withFileTypes: true });
+    const names = new Set(
+      entries.filter((entry) => entry.isFile()).map((entry) => entry.name),
+    );
+    const files: AdminBackupFileDto[] = [];
+
+    for (const row of rows) {
+      if (names.has(row.filename)) {
+        files.push(toDto(row));
+        continue;
+      }
+
+      const stagedName = [...names].find((name) =>
+        name.startsWith(`${row.filename}.deleting-`),
+      );
+
+      if (stagedName) {
+        try {
+          await rename(
+            join(this.dir, stagedName),
+            join(this.dir, row.filename),
+          );
+          names.delete(stagedName);
+          names.add(row.filename);
+          files.push(toDto(row));
+          continue;
+        } catch (error) {
+          this.logger.error(
+            `Could not restore staged backup ${stagedName}`,
+            error,
+          );
+        }
+      } else {
+        try {
+          await this.prisma.backupFile.delete({ where: { id: row.id } });
+          continue;
+        } catch (error) {
+          this.logger.error(
+            `Could not remove missing backup metadata ${row.id}`,
+            error,
+          );
+        }
+      }
+
+      files.push({ ...toDto(row), status: "MISSING" });
+    }
+
+    const registeredNames = new Set(files.map((file) => file.filename));
+    const orphans: AdminOrphanBackupFileDto[] = [];
+
+    for (const name of names) {
+      const originalName = name.replace(/\.deleting-[a-f0-9-]{36}$/, "");
+      if (!BACKUP_FILENAME.test(name) || registeredNames.has(originalName))
+        continue;
+      const details = await stat(join(this.dir, name));
+      orphans.push({
+        filename: name,
+        sizeBytes: details.size,
+        createdAt: details.mtime.toISOString(),
+      });
+    }
+
+    return { files, orphans };
   }
 
   async readFile(id: string): Promise<AdminBackupFileContentDto> {
@@ -104,27 +188,79 @@ export class BackupService {
   }
 
   async deleteFile(id: string): Promise<void> {
-    const row = await this.prisma.backupFile.findUnique({ where: { id } });
-    if (!row)
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.AdminBackupNotFound,
-      );
-    await rm(join(this.dir, row.filename), { force: true });
-    await this.prisma.backupFile.delete({ where: { id } });
+    await this.withFileLock(async () => {
+      const row = await this.prisma.backupFile.findUnique({ where: { id } });
+      if (!row)
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.AdminBackupNotFound,
+        );
+      await this.deleteStoredFile(row);
+    });
   }
 
-  private async writeBackup(): Promise<AdminBackupFileDto> {
-    const sql = await this.dump();
-    const encrypted = await this.encrypt(sql);
-    const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql.age`;
-    await mkdir(this.dir, { recursive: true });
-    await writeFile(join(this.dir, filename), encrypted, "utf-8");
+  async deleteOrphanFile(filename: string): Promise<void> {
+    await this.withFileLock(async () => {
+      if (!BACKUP_FILENAME.test(filename)) {
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.AdminBackupNotFound,
+        );
+      }
 
-    const row = await this.prisma.backupFile.create({
-      data: { filename, sizeBytes: Buffer.byteLength(encrypted, "utf-8") },
+      const registered = await this.prisma.backupFile.findFirst({
+        where: { filename: filename.replace(/\.deleting-[a-f0-9-]{36}$/, "") },
+      });
+
+      if (registered) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.AdminBackupNotOrphan,
+        );
+      }
+
+      const entries = await readdir(this.dir, { withFileTypes: true });
+
+      if (!entries.some((entry) => entry.name === filename && entry.isFile())) {
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.AdminBackupNotFound,
+        );
+      }
+
+      await rm(join(this.dir, filename));
     });
+  }
+
+  private async writeBackup(encrypted: string): Promise<AdminBackupFileDto> {
+    const filename = `loomkeep-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}-${randomUUID().slice(0, 8)}.sql.age`;
+    await mkdir(this.dir, { recursive: true });
+    await writeFile(join(this.dir, filename), encrypted, {
+      encoding: "utf-8",
+      flag: "wx",
+    });
+
+    let row;
+
+    try {
+      row = await this.prisma.backupFile.create({
+        data: { filename, sizeBytes: Buffer.byteLength(encrypted, "utf-8") },
+      });
+    } catch (error) {
+      try {
+        await rm(join(this.dir, filename));
+      } catch (cleanupError) {
+        this.logger.error(
+          `Could not remove unregistered backup ${filename}`,
+          cleanupError,
+        );
+      }
+
+      throw error;
+    }
+
     await this.prune();
+    await this.reconcileFiles();
     return toDto(row);
   }
 
@@ -162,12 +298,47 @@ export class BackupService {
     });
     if (stale.length === 0) return;
 
-    await Promise.all(
-      stale.map((f) => rm(join(this.dir, f.filename), { force: true })),
-    );
-    await this.prisma.backupFile.deleteMany({
-      where: { id: { in: stale.map((f) => f.id) } },
+    for (const file of stale) await this.deleteStoredFile(file);
+  }
+
+  private async deleteStoredFile(row: {
+    id: string;
+    filename: string;
+  }): Promise<void> {
+    const original = join(this.dir, row.filename);
+    const staged = `${original}.deleting-${randomUUID()}`;
+    let moved = false;
+
+    try {
+      await rename(original, staged);
+      moved = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+
+    try {
+      await this.prisma.backupFile.delete({ where: { id: row.id } });
+    } catch (error) {
+      if (moved) await rename(staged, original);
+      throw error;
+    }
+
+    if (moved) await rm(staged);
+  }
+
+  private async withFileLock<T>(action: () => Promise<T>): Promise<T> {
+    const previous = this.fileOperation;
+    let release!: () => void;
+    this.fileOperation = new Promise<void>((resolve) => {
+      release = resolve;
     });
+    await previous;
+
+    try {
+      return await action();
+    } finally {
+      release();
+    }
   }
 
   /** Connection info for pg_dump/psql via the standard libpq PG* env vars — keeps the password out of argv/`ps`. */
@@ -267,6 +438,7 @@ function toDto(row: {
     filename: row.filename,
     sizeBytes: row.sizeBytes,
     createdAt: row.createdAt.toISOString(),
+    status: "AVAILABLE",
   };
 }
 

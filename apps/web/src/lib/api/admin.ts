@@ -99,6 +99,14 @@ export function getAdminUsers(
     filter?: AdminUserFilter;
     page?: number;
     limit?: number;
+    createdFrom?: string;
+    createdTo?: string;
+    activeFrom?: string;
+    activeTo?: string;
+    mfa?: string;
+    newsletter?: string;
+    push?: string;
+    session?: string;
   } = {},
 ) {
   return typedRequest("/admin/users", {
@@ -108,6 +116,14 @@ export function getAdminUsers(
         filters.filter && filters.filter !== "all" ? filters.filter : undefined,
       page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
       limit: filters.limit ? String(filters.limit) : undefined,
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
+      activeFrom: filters.activeFrom,
+      activeTo: filters.activeTo,
+      mfa: filters.mfa || undefined,
+      newsletter: filters.newsletter || undefined,
+      push: filters.push || undefined,
+      session: filters.session || undefined,
     },
   });
 }
@@ -236,6 +252,12 @@ export const deleteAdminBackupFile = (id: string): Promise<void> =>
   typedRequest("/admin/backup/files/{id}", {
     method: "DELETE",
     params: { id },
+  });
+
+export const deleteAdminOrphanBackupFile = (filename: string): Promise<void> =>
+  typedRequest("/admin/backup/orphans/{filename}", {
+    method: "DELETE",
+    params: { filename },
   });
 
 /** Irreversible. */
