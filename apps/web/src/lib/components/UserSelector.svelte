@@ -45,6 +45,7 @@
           page,
           limit: PAGE_SIZE,
         }),
+        search,
       ),
     getPageItems: (result) => result.items,
     initialPageParam: 1,

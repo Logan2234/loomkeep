@@ -126,8 +126,20 @@ export function getAdminUserOptions(
 
 export function normalizeAdminUserOptionsPage(
   result: PagedResult<AdminUserOptionDto> | AdminUserOptionDto[],
+  search = "",
 ): PagedResult<AdminUserOptionDto> {
-  return Array.isArray(result) ? { items: result, hasMore: false } : result;
+  if (!Array.isArray(result)) return result;
+
+  const query = search.trim().toLocaleLowerCase();
+  const items = query
+    ? result.filter((user) =>
+        [user.id, user.email, user.displayName].some((value) =>
+          value.toLocaleLowerCase().includes(query),
+        ),
+      )
+    : result;
+
+  return { items, hasMore: false };
 }
 
 export const getAdminUserLibraryStats = (userId: string) =>

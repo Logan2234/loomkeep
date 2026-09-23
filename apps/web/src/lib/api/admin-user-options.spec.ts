@@ -21,4 +21,17 @@ describe("normalizeAdminUserOptionsPage", () => {
       hasMore: false,
     });
   });
+
+  it("filters the previous array response when the server cannot search it", () => {
+    const bob: AdminUserOptionDto = {
+      id: "user-2",
+      displayName: "Bob",
+      email: "bob@example.com",
+    };
+
+    expect(normalizeAdminUserOptionsPage([user, bob], " ALI ")).toEqual({
+      items: [user],
+      hasMore: false,
+    });
+  });
 });
