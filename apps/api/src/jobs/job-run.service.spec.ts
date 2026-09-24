@@ -103,3 +103,61 @@ describe("JobRunService.record — Healthchecks.io ping", () => {
     ).resolves.toBe("ok");
   });
 });
+
+describe("JobRunService.record — run history", () => {
+  it("persists a successful run and prunes only that job's old rows", async () => {
+    const { service, prisma } = makeService();
+    prisma.jobRun.findMany.mockResolvedValue([{ id: "old-1" }]);
+
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => "completed",
+        (result) => `Backup ${result}`,
+      ),
+    ).resolves.toBe("completed");
+
+    expect(prisma.jobRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        jobKey: JOB_KEYS.BACKUP,
+        status: "SUCCESS",
+        summary: "Backup completed",
+        startedAt: expect.any(Date),
+        finishedAt: expect.any(Date),
+      }),
+    });
+    expect(prisma.jobRun.findMany).toHaveBeenCalledWith({
+      where: { jobKey: JOB_KEYS.BACKUP },
+      orderBy: { startedAt: "desc" },
+      skip: 50,
+      select: { id: true },
+    });
+    expect(prisma.jobRun.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["old-1"] } },
+    });
+  });
+
+  it("persists a failed run and rethrows the original error", async () => {
+    const { service, prisma } = makeService();
+    const failure = new Error("backup failed");
+
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => {
+          throw failure;
+        },
+        () => "not reached",
+      ),
+    ).rejects.toBe(failure);
+
+    expect(prisma.jobRun.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        jobKey: JOB_KEYS.BACKUP,
+        status: "FAILURE",
+        error: expect.stringContaining("backup failed"),
+      }),
+    });
+    expect(prisma.jobRun.deleteMany).not.toHaveBeenCalled();
+  });
+});
