@@ -43,6 +43,20 @@ export function notificationText(n: NotificationDto): {
       };
     }
 
+    case NotificationType.LIST_ITEM_ADDED: {
+      // Rendered from `data`, not from the persisted body, so the wording
+      // follows the reader's current language.
+      const list = typeof n.data.listTitle === "string" ? n.data.listTitle : "";
+      const item =
+        typeof n.data.itemTitle === "string" ? n.data.itemTitle : null;
+      return {
+        title: n.title,
+        body: item
+          ? m.notif_list_item_added({ item, list })
+          : m.notif_list_item_added_generic({ list }),
+      };
+    }
+
     case NotificationType.REPORT_RESOLVED:
       return {
         title: m.notif_report_title(),

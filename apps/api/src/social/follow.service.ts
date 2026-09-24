@@ -274,7 +274,11 @@ export class FollowService {
       );
   }
 
-  /** Blocks a user: removes any follow edges both ways, then records the block. */
+  /**
+   * Blocks a user: removes any follow edges both ways, then records the block.
+   * Also ends any editing of each other's lists — only friends can edit a
+   * list, and a block ends the friendship.
+   */
   async block(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
       where: { username },
@@ -295,6 +299,16 @@ export class FollowService {
       );
     }
 
+    const memberships = await this.prisma.listMember.findMany({
+      where: {
+        OR: [
+          { userId: target.id, list: { userId: viewerId } },
+          { userId: viewerId, list: { userId: target.id } },
+        ],
+      },
+      select: { id: true, listId: true, userId: true },
+    });
+
     await this.prisma.$transaction([
       this.prisma.follow.deleteMany({
         where: {
@@ -311,7 +325,21 @@ export class FollowService {
         update: {},
         create: { blockerId: viewerId, blockedId: target.id },
       }),
+      this.prisma.listMember.deleteMany({
+        where: { id: { in: memberships.map((m) => m.id) } },
+      }),
+      this.prisma.listNotificationMute.deleteMany({
+        where: {
+          OR: memberships.map((m) => ({ listId: m.listId, userId: m.userId })),
+        },
+      }),
     ]);
+
+    for (const membership of memberships) {
+      this.events.emitToList(membership.listId, "list-updated");
+      await this.events.evictFromList(membership.listId, membership.userId);
+    }
+
     return this.relationship(viewerId, username);
   }
 

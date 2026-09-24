@@ -69,6 +69,7 @@ export const ErrorCode = {
   ListMemberUserNotFound: "lists.member_user_not_found",
   ListCannotAddSelf: "lists.cannot_add_self",
   ListMemberAlreadyEditor: "lists.member_already_editor",
+  ListMemberNotFriend: "lists.member_not_friend",
   ListMembershipNotFound: "lists.membership_not_found",
 
   // newsletter

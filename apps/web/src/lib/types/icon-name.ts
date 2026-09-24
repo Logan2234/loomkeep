@@ -20,6 +20,7 @@ export type IconName =
   | "chevron-down"
   | "download"
   | "bell"
+  | "bell-off"
   | "monitor"
   | "plus"
   | "trash"

@@ -15,6 +15,12 @@ export interface ListItemDto {
   position: number;
   addedAt: string;
   target: ReviewTargetSummaryDto | null;
+  /**
+   * Who added it. Only sent to the owner and editors, and only on a list that
+   * has editors — the editors of a list stay private to its collaborators.
+   * `null` when that person has left the list or deleted their account.
+   */
+  addedBy?: UserSummaryDto | null;
 }
 
 /** A list's own metadata, without its items (see `ListDetailDto` for those). */
@@ -39,6 +45,10 @@ export type ListViewerRole = "OWNER" | "EDITOR" | "VIEWER";
 export interface ListDetailDto extends ListDto {
   items: ListItemDto[];
   viewerRole: ListViewerRole;
+  /** Has at least one editor. Always false for a VIEWER, who can't know. */
+  collaborative: boolean;
+  /** The viewer turned this list's notifications off. False for a VIEWER. */
+  notificationsMuted: boolean;
 }
 
 /** A user granted edit access to someone else's list. */

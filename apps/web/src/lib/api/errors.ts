@@ -125,6 +125,7 @@ const MESSAGES = {
   [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),
   [ErrorCode.ListMemberAlreadyEditor]: () =>
     m.apierr_lists_member_already_editor(),
+  [ErrorCode.ListMemberNotFriend]: () => m.apierr_lists_member_not_friend(),
   [ErrorCode.ListMembershipNotFound]: () =>
     m.apierr_lists_membership_not_found(),
   [ErrorCode.NewsletterWebhookInvalidPayload]: () =>

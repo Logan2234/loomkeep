@@ -33,6 +33,10 @@ const COPY = {
     },
     listEditorAdded: (listTitle: string) =>
       `vous a ajouté comme éditeur sur « ${listTitle} »`,
+    listItemAdded: (itemTitle: string | null, listTitle: string) =>
+      itemTitle
+        ? `a ajouté « ${itemTitle} » à « ${listTitle} »`
+        : `a ajouté un élément à « ${listTitle} »`,
     moderation: {
       commentRemoved: "Un de tes commentaires a été retiré",
       reviewRemoved: "Une de tes critiques a été retirée",
@@ -60,6 +64,10 @@ const COPY = {
     },
     listEditorAdded: (listTitle: string) =>
       `added you as an editor on “${listTitle}”`,
+    listItemAdded: (itemTitle: string | null, listTitle: string) =>
+      itemTitle
+        ? `added “${itemTitle}” to “${listTitle}”`
+        : `added an item to “${listTitle}”`,
     moderation: {
       commentRemoved: "One of your comments was removed",
       reviewRemoved: "One of your reviews was removed",
@@ -76,6 +84,7 @@ export interface NotificationCopy {
   follow: { followed: string; requested: string; accepted: string };
   commentReactions: { title: string; body: (count: number) => string };
   listEditorAdded: (listTitle: string) => string;
+  listItemAdded: (itemTitle: string | null, listTitle: string) => string;
   moderation: {
     commentRemoved: string;
     reviewRemoved: string;
