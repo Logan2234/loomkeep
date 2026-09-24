@@ -15,10 +15,21 @@ import { PrismaService } from "../prisma/prisma.service";
  */
 @Injectable()
 export class EntitlementService {
+  private instancePremium: () => boolean = () => false;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly flags: FeatureFlagsService,
   ) {}
+
+  /**
+   * Lets the self-host license (ee/licensing, LICENSE-EE) make every account
+   * of the instance premium, without the AGPL core importing ee/: ee/ hands
+   * its check in here at startup. Without ee/, no account is premium this way.
+   */
+  setInstancePremiumSource(source: () => boolean): void {
+    this.instancePremium = source;
+  }
 
   async getEntitlement(userId: string): Promise<UserEntitlement> {
     return this.prisma.userEntitlement.upsert({
@@ -29,6 +40,7 @@ export class EntitlementService {
   }
 
   async hasPremium(userId: string): Promise<boolean> {
+    if (this.instancePremium()) return true;
     const entitlement = await this.getEntitlement(userId);
     return entitlement.plan === "PREMIUM";
   }

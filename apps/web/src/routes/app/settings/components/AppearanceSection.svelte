@@ -18,6 +18,7 @@
   import { appConfig } from "$lib/config.svelte";
   import { THEME_DEFINITIONS } from "$lib/constants/theme-definitions";
   import { isDomainEnabled } from "$lib/domains";
+  import { useEeLock } from "$lib/ee/license.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import type { MobileDestination } from "$lib/navigation";
   import {
@@ -36,7 +37,8 @@
   import { type Locale } from "@loomkeep/shared";
   import { dndzone } from "svelte-dnd-action";
 
-  const navStyleLocked = $derived(auth.isPremiumLocked);
+  const eeLock = useEeLock();
+  const navStyleLocked = $derived(eeLock.locked);
 
   const MIN = 3;
   const MAX = 7;

@@ -2,8 +2,8 @@ import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 import { vi } from "vitest";
-import { LibraryController } from "./library.controller";
-import type { LibraryService } from "./library.service";
+import { CalendarFeedController } from "./calendar-feed.controller";
+import type { CalendarFeedService } from "./calendar-feed.service";
 
 /**
  * `calendar.ics` is the one route here that is not a pass-through: it is
@@ -26,14 +26,14 @@ function fakeReply() {
 }
 
 function makeController(getCalendarIcs = vi.fn()) {
-  const service = { getCalendarIcs } as unknown as LibraryService;
+  const service = { getCalendarIcs } as unknown as CalendarFeedService;
   return {
-    controller: new LibraryController(service, {} as never),
+    controller: new CalendarFeedController(service),
     getCalendarIcs,
   };
 }
 
-describe("LibraryController.getCalendarIcs", () => {
+describe("CalendarFeedController.getCalendarIcs", () => {
   it("serves the calendar as an ICS attachment", async () => {
     const { reply, headers } = fakeReply();
     const { controller } = makeController(

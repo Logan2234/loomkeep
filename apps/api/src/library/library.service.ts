@@ -46,7 +46,6 @@ import {
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
-import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
@@ -63,7 +62,6 @@ import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
-import { buildCalendarIcs } from "./ics.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
 // Reused include: entries always need the media + its external IDs (sourceId),
@@ -160,7 +158,6 @@ export class LibraryService {
     private readonly ageGate: AgeGateService,
     private readonly reviews: ReviewService,
     private readonly activity: ActivityService,
-    private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
@@ -944,27 +941,6 @@ export class LibraryService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
-  }
-
-  /**
-   * Renders the same feed as getCalendar() as an .ics file, for the public
-   * token-based subscription URL (see LibraryController#getCalendarIcs).
-   * Returns null if the token doesn't match any account.
-   */
-  async getCalendarIcs(token: string): Promise<string | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { calendarToken: token },
-      select: { id: true },
-    });
-
-    // Re-checked here, not just at token issuance (UsersController), so a
-    // downgraded premium account's calendar app stops getting fed the moment
-    // its plan changes, instead of forever on a token minted while premium.
-    if (!user || !(await this.entitlements.isEffectivelyPremium(user.id))) {
-      return null;
-    }
-
-    return buildCalendarIcs(await this.getCalendar(user.id));
   }
 
   /**

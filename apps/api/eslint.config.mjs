@@ -31,4 +31,24 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // ee/ is under LICENSE-EE, not the AGPL: the core must run without it,
+    // so only the composition root may import it.
+    files: ["src/**/*.ts"],
+    ignores: ["src/ee/**", "src/app.module.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/ee", "**/ee/**"],
+              message:
+                "The AGPL core must not depend on ee/ (LICENSE-EE) — only app.module.ts registers EeModule.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

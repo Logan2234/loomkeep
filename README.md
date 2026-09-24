@@ -737,3 +737,10 @@ pnpm --filter @loomkeep/api test:e2e    # full API flow, isolated "e2e" schema
 ## License
 
 AGPL-3.0 — self-host freely; run it as a service, share your changes.
+
+**Except the `ee/` directories** (`apps/api/src/ee`, `apps/web/src/lib/ee`):
+the premium features live there, under a commercial license
+([LICENSE-EE](LICENSE-EE)). The code is visible, and ships inactive in every
+build, but running those features in production takes a license key
+(`LOOMKEEP_LICENSE_KEY`). Until the premium offer launches, they stay on for
+everyone without one.

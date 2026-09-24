@@ -9,6 +9,7 @@ export * from "./dto/catalog";
 export * from "./dto/comment";
 export * from "./dto/config";
 export * from "./dto/data-export";
+export * from "./dto/ee";
 export * from "./dto/entitlement";
 export * from "./dto/game";
 export * from "./dto/gamification";

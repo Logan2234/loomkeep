@@ -56,6 +56,7 @@ const MESSAGES = {
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
     m.apierr_admin_cache_resync_failed(),
+  [ErrorCode.EeUnlicensed]: () => m.apierr_ee_unlicensed(),
   [ErrorCode.LibraryEpisodeNotAired]: () =>
     m.apierr_library_episode_not_aired(),
   [ErrorCode.LibraryCalendarUnavailable]: () =>

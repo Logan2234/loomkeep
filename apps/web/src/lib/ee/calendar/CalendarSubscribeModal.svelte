@@ -1,16 +1,13 @@
 <script lang="ts">
-  import {
-    API_URL,
-    getCalendarToken,
-    regenerateCalendarToken,
-  } from "$lib/api/client";
+  import { API_URL } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { m } from "$lib/paraglide/messages";
   import { toast } from "$lib/toast.svelte";
-  import Icon from "./Icon.svelte";
-  import Modal from "./Modal.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import { getCalendarToken, regenerateCalendarToken } from "../api";
 
   let { onclose }: { onclose: () => void } = $props();
 
