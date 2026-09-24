@@ -1,8 +1,10 @@
-import { XP_RULES, type XpReason } from "@loomkeep/shared";
-import { Injectable, Logger } from "@nestjs/common";
+import { ErrorCode, XP_RULES, XpReason } from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import { localDay } from "../common/local-day.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -78,6 +80,50 @@ export class XpService {
     if (await this.creditEntry(userId, reason, sourceId, amountOverride)) {
       await this.recomputeScore(userId);
     }
+  }
+
+  /**
+   * An admin's manual correction: a signed amount, written as its own
+   * ADMIN_ADJUSTMENT entry. The nightly reconciliation never touches it —
+   * there is no source to verify it against — and it is never revoked: an
+   * adjustment is undone by another one of the opposite sign. Refused when it
+   * would take the total below zero. Returns the new total.
+   */
+  async adjust(userId: string, amount: number): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      // Two adjustments read-then-write the same total: serialise them so
+      // both can't pass the check against a total the other is changing.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${XpReason.ADMIN_ADJUSTMENT}::text))`;
+
+      const agg = await tx.xpEntry.aggregate({
+        where: { userId },
+        _sum: { amount: true },
+      });
+      const current = agg._sum.amount ?? 0;
+      const next = current + amount;
+
+      if (next < 0) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.GamificationXpBelowZero,
+          { current },
+        );
+      }
+
+      await tx.xpEntry.create({
+        data: {
+          userId,
+          reason: XpReason.ADMIN_ADJUSTMENT,
+          sourceType: XP_RULES[XpReason.ADMIN_ADJUSTMENT].sourceType,
+          // Each adjustment is its own ledger row; the id only keeps the
+          // (user, reason, source) key unique.
+          sourceId: randomUUID(),
+          amount,
+        },
+      });
+      await this.recomputeScore(userId, tx);
+      return next;
+    });
   }
 
   /**

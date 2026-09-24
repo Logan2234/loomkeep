@@ -111,6 +111,7 @@
   "apierr_lists_cannot_add_self": "You can't add yourself to this list.",
   "apierr_lists_member_already_editor": "This user can already edit this list.",
   "apierr_lists_member_not_friend": "You can only add your friends as editors.",
+  "apierr_gamification_xp_below_zero": "This adjustment would take this account's XP below zero.",
   "apierr_lists_membership_not_found": "This collaborator could not be found.",
   "apierr_newsletter_webhook_invalid_payload": "Invalid request.",
   "apierr_newsletter_invalid_unsubscribe_link": "This unsubscribe link is invalid.",

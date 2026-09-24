@@ -297,6 +297,18 @@ export interface AdminUserDto {
   lastActiveAt: string | null;
   /** Set once the inactivity reminder email has been sent, null otherwise. */
   inactivityWarningSentAt: string | null;
+  /** Total XP (`UserScore`), 0 before any gain. */
+  xp: number;
+}
+
+/** A manual XP correction: a signed amount, never zero. */
+export interface AdjustAdminUserXpRequestDto {
+  amount: number;
+}
+
+/** The account's total XP once an adjustment is applied. */
+export interface AdminUserXpDto {
+  xp: number;
 }
 
 /** Extra server-side filter for the admin users list, on top of free-text search. */

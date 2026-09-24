@@ -194,6 +194,14 @@ export const updateAdminUserPlan = (userId: string, plan: Plan) =>
     body: { plan },
   });
 
+/** Adds (positive) or removes (negative) XP by hand; returns the new total. */
+export const adjustAdminUserXp = (userId: string, amount: number) =>
+  typedRequest("/admin/users/{userId}/xp-adjustments", {
+    method: "POST",
+    params: { userId },
+    body: { amount },
+  });
+
 export const getAdminUserExport = (userId: string) =>
   typedRequest("/admin/users/{userId}/export", { params: { userId } });
 
