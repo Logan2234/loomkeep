@@ -404,10 +404,16 @@ describe("ListService.addItem notifications", () => {
   const add = (svc: ListService) =>
     svc.addItem("ed1", "l1", { targetType: "MEDIA", targetId: "m1" });
 
-  function recipients(notifications: NotificationService): string[] {
+  type Sent = { userId: string; body: string };
+
+  function sent(notifications: NotificationService): Sent[] {
     return (notifications.create as ReturnType<typeof vi.fn>).mock.calls.map(
-      ([input]: [{ userId: string }]) => input.userId,
+      (call) => call[0] as Sent,
     );
+  }
+
+  function recipients(notifications: NotificationService): string[] {
+    return sent(notifications).map((n) => n.userId);
   }
 
   it("tells the owner and every other editor, never the one who added it", async () => {
@@ -426,12 +432,7 @@ describe("ListService.addItem notifications", () => {
     const { svc, notifications } = make();
     await add(svc);
     const bodies = Object.fromEntries(
-      (notifications.create as ReturnType<typeof vi.fn>).mock.calls.map(
-        ([input]: [{ userId: string; body: string }]) => [
-          input.userId,
-          input.body,
-        ],
-      ),
+      sent(notifications).map((n) => [n.userId, n.body]),
     );
     expect(bodies.owner).toBe("a ajouté un élément à « Top 10 »");
     expect(bodies.ed3).toBe("added an item to “Top 10”");
@@ -441,7 +442,7 @@ describe("ListService.addItem notifications", () => {
     const { svc, push } = make();
     await add(svc);
     const pushed = (push.sendToUser as ReturnType<typeof vi.fn>).mock.calls.map(
-      ([userId]: [string]) => userId,
+      (call) => call[0] as string,
     );
     expect(pushed.sort()).toEqual(["ed2", "owner"]);
   });
