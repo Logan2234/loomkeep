@@ -28,4 +28,17 @@ describe("EntitlementService.isEffectivelyPremium", () => {
     const premium = makeService("PREMIUM", true);
     await expect(premium.isEffectivelyPremium("u1")).resolves.toBe(true);
   });
+
+  it("makes every account premium while the instance license says so", async () => {
+    const service = makeService("FREE", true);
+    let licensed = true;
+    service.setInstancePremiumSource(() => licensed);
+
+    await expect(service.isEffectivelyPremium("u1")).resolves.toBe(true);
+    await expect(service.hasPremium("u1")).resolves.toBe(true);
+
+    // Re-read on every check: an expired license stops granting at once.
+    licensed = false;
+    await expect(service.isEffectivelyPremium("u1")).resolves.toBe(false);
+  });
 });

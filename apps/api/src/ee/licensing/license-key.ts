@@ -19,6 +19,11 @@ export interface LicensePayload {
   licensee: string;
   /** ISO datetime. Keys are annual: renewing means issuing a new one. */
   expiresAt: string;
+  /**
+   * A self-host key: every account of the instance is premium. Absent on the
+   * hosted instance's key, where premium stays per account (UserEntitlement).
+   */
+  instanceWide?: boolean;
 }
 
 /**
@@ -61,7 +66,11 @@ export function verifyLicenseKey(
       return null;
     }
 
-    return { licensee: payload.licensee, expiresAt: payload.expiresAt };
+    return {
+      licensee: payload.licensee,
+      expiresAt: payload.expiresAt,
+      ...(payload.instanceWide === true ? { instanceWide: true } : {}),
+    };
   } catch {
     return null;
   }
