@@ -5,6 +5,7 @@
     ApiError,
     getList,
     getMyList,
+    setListMuted,
     removeListItem,
     removeListMember,
     reorderListItems,
@@ -136,6 +137,12 @@
     onSuccess: () => (window.location.href = "/app/lists"),
   }));
 
+  const muteMut = createApiMutation(() => ({
+    mutate: (muted: boolean) => setListMuted(list!.id, muted),
+    onSuccess: (_: void, muted: boolean) =>
+      patchList({ notificationsMuted: muted }),
+  }));
+
   function leaveList() {
     if (!list || leaveMut.loading || !auth.user) return;
     leaveMut.mutate();
@@ -204,6 +211,35 @@
       : m.common_loomkeep()}</title>
 </svelte:head>
 
+<!-- Who added the item: only on a list shared with editors, and only its
+     collaborators ever receive `addedBy`. -->
+{#snippet addedByMark(item: ListItemDto, size: number, cls = "")}
+  {#if list?.collaborative && item.addedBy !== undefined}
+    {@const label = item.addedBy
+      ? m.list_added_by({ name: item.addedBy.displayName })
+      : m.list_added_by_former_member()}
+    <span
+      class="flex shrink-0 rounded-full {cls}"
+      title={label}
+      aria-label={label}
+      role="img">
+      {#if item.addedBy}
+        <Avatar
+          seed={item.addedBy.username}
+          url={item.addedBy.avatarUrl}
+          {size} />
+      {:else}
+        <span
+          class="bg-surface-2 text-dim grid place-items-center rounded-full"
+          style:width="{size}px"
+          style:height="{size}px">
+          <Icon name="user" class="h-3/5 w-3/5" />
+        </span>
+      {/if}
+    </span>
+  {/if}
+{/snippet}
+
 {#snippet gridItem(item: ListItemDto, focused: boolean = false)}
   <svelte:element
     this={!focused && item.target?.href ? "a" : "div"}
@@ -214,6 +250,7 @@
         src={item.target?.imageUrl ?? null}
         title={item.target?.title ?? "?"} />
     </div>
+    {@render addedByMark(item, 24, "ring-bg absolute top-2 left-2 ring-2")}
     <p class="mt-1.5 truncate text-sm font-semibold">
       {item.target?.title ?? m.common_work()}
     </p>
@@ -291,6 +328,22 @@
             {m.list_members_title()}
           </button>
         {/if}
+        {#if canEditList && list.collaborative && appConfig.socialEnabled}
+          {@const label = list.notificationsMuted
+            ? m.list_unmute()
+            : m.list_mute()}
+          <button
+            class="btn btn-ghost px-3"
+            aria-label={label}
+            aria-pressed={list.notificationsMuted}
+            title={label}
+            disabled={muteMut.loading}
+            onclick={() => muteMut.mutate(!list.notificationsMuted)}>
+            <Icon
+              name={list.notificationsMuted ? "bell-off" : "bell"}
+              class="h-4 w-4" />
+          </button>
+        {/if}
         {#if canEditList}
           <button class="btn btn-ghost" onclick={() => (editing = true)}>
             {m.common_edit()}
@@ -351,6 +404,7 @@
                 {item.target?.title ?? m.common_work()}
               </p>
             </svelte:element>
+            {@render addedByMark(item, 22)}
             {#if canEditList}
               <button
                 class="text-dim hover:text-danger hover:bg-danger/10 mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors"

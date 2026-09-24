@@ -7,6 +7,7 @@ import {
   type ListMemberDto,
   type ListMembershipDto,
   type MyListDto,
+  type UserSummaryDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -26,6 +27,7 @@ import {
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import { AddListItemBody } from "./dto/add-list-item.dto";
 import { AddListMemberBody } from "./dto/add-list-member.dto";
@@ -165,6 +167,17 @@ export class ListController {
     return this.lists.listMembers(user.sub, id);
   }
 
+  /** The owner's friends who could still be added as editors. */
+  @Get(":id/members/candidates")
+  @UseGuards(SocialFeatureGuard)
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
+  memberCandidates(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<UserSummaryDto[]> {
+    return this.lists.memberCandidates(user.sub, id);
+  }
+
   @Post(":id/members")
   @UseGuards(SocialFeatureGuard)
   @ApiCreatedResponse({ type: ListMemberResponseDto })
@@ -184,6 +197,27 @@ export class ListController {
     @Param("memberUserId") memberUserId: string,
   ): Promise<void> {
     return this.lists.removeMember(user.sub, id, memberUserId);
+  }
+
+  // Muting only means something on a list shared with editors, hence the
+  // social gate, like the members routes above.
+
+  @Put(":id/mute")
+  @UseGuards(SocialFeatureGuard)
+  mute(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.lists.setNotificationsMuted(user.sub, id, true);
+  }
+
+  @Delete(":id/mute")
+  @UseGuards(SocialFeatureGuard)
+  unmute(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.lists.setNotificationsMuted(user.sub, id, false);
   }
 
   // Viewer-selected lists are social-gated and visibility-filtered.

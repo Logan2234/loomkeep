@@ -78,6 +78,8 @@ export const keys = {
       ["lists", "membership", targetType, targetId] as const,
     forUser: (username: string) => ["lists", "for-user", username] as const,
     members: (listId: string) => ["lists", "members", listId] as const,
+    memberCandidates: (listId: string) =>
+      ["lists", "member-candidates", listId] as const,
     detail: (listId: string) => ["lists", "detail", listId] as const,
   },
   calendarSubscribe: {

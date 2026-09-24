@@ -90,6 +90,8 @@ export const NotificationType = {
   COMMENT_REACTIONS: "COMMENT_REACTIONS",
   /** Someone added you as an editor on one of their lists. */
   LIST_MEMBER_ADDED: "LIST_MEMBER_ADDED",
+  /** Someone else added a work to a list you own or edit. */
+  LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A moderation decision (content removal) was taken against you — see ModerationDecision. */
   MODERATION_ACTION: "MODERATION_ACTION",
   /** DSA art. 16(5): a report you filed has been resolved or dismissed. */

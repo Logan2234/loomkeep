@@ -596,22 +596,24 @@ model User {
   securityEvents             SecurityEvent[]
   importRuns                 ImportRun[]
   visibilitySettings         VisibilitySetting[]
-  following                  Follow[]             @relation("UserFollowing")
-  followers                  Follow[]             @relation("UserFollowers")
-  blocking                   Block[]              @relation("UserBlocking")
-  blockedBy                  Block[]              @relation("UserBlockedBy")
+  following                  Follow[]               @relation("UserFollowing")
+  followers                  Follow[]               @relation("UserFollowers")
+  blocking                   Block[]                @relation("UserBlocking")
+  blockedBy                  Block[]                @relation("UserBlockedBy")
   reviews                    Review[]
   reviewVotes                ReviewVote[]
   activityEvents             ActivityEvent[]
   comments                   Comment[]
   commentReactions           CommentReaction[]
   commentMentions            CommentMention[]
-  reportsFiled               Report[]             @relation("ReportsFiled")
-  reportsResolved            Report[]             @relation("ReportsResolved")
+  reportsFiled               Report[]               @relation("ReportsFiled")
+  reportsResolved            Report[]               @relation("ReportsResolved")
   lists                      List[]
   listMemberships            ListMember[]
-  moderationDecisionsAgainst ModerationDecision[] @relation("ModerationDecisionSubject")
-  moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
+  listItemsAdded             ListItem[]
+  listNotificationMutes      ListNotificationMute[]
+  moderationDecisionsAgainst ModerationDecision[]   @relation("ModerationDecisionSubject")
+  moderationDecisionsMade    ModerationDecision[]   @relation("ModerationDecisionAdmin")
   entitlement                UserEntitlement?
   subscriptions              Subscription[]
   xpEntries                  XpEntry[]
@@ -897,16 +899,18 @@ model List {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items   ListItem[]
-  members ListMember[]
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items             ListItem[]
+  members           ListMember[]
+  notificationMutes ListNotificationMute[]
 
   @@index([userId])
 }
 
 // Social (P4): grants a user edit access to another user's list (add/remove/
-// reorder items, edit title/description) — added directly by the owner via
-// username, no invite/accept step. Mirrors Follow/Block's directed
+// reorder items, edit title/description) — added directly by the owner from
+// their friends, no invite/accept step. A block in either direction between
+// owner and editor removes the membership (see FollowService.block). Mirrors Follow/Block's directed
 // join-table shape, but for write access rather than visibility.
 model ListMember {
   id        String   @id @default(cuid())
@@ -934,11 +938,31 @@ model ListItem {
   targetId   String
   position   Int
   addedAt    DateTime         @default(now())
+  // Who added it, shown on collaborative lists. Null once that account is
+  // deleted; items that predate the column were attributed to the owner.
+  addedById  String?
 
-  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list    List  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
 
   @@unique([listId, targetType, targetId])
   @@index([listId, position])
+  @@index([addedById])
+}
+
+// A collaborator (owner or editor) who turned off notifications for one list.
+// Its own table rather than a ListMember column because the owner has no
+// ListMember row.
+model ListNotificationMute {
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([listId, userId])
+  @@index([userId])
 }
 
 // One row per browser/device push subscription (Web Push). endpoint is the

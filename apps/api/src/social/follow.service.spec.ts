@@ -16,6 +16,7 @@ function makeService(opts: {
   targetAccess: "PUBLIC" | "PRIVATE";
   upsertStatus?: "ACCEPTED" | "PENDING";
   viewerAccess?: "PUBLIC" | "PRIVATE" | "GHOST";
+  listMemberships?: { id: string; listId: string; userId: string }[];
 }) {
   const create = vi.fn().mockResolvedValue(undefined);
 
@@ -43,7 +44,16 @@ function makeService(opts: {
     block: {
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
+      upsert: vi.fn().mockResolvedValue({}),
     },
+    listMember: {
+      findMany: vi.fn().mockResolvedValue(opts.listMemberships ?? []),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    listNotificationMute: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     follow: {
       upsert: vi.fn().mockResolvedValue({
         status:
@@ -70,7 +80,11 @@ function makeService(opts: {
   } as unknown as AchievementService;
 
   const blocks = new BlockService(prisma);
-  const events = { emitToUser: vi.fn() } as unknown as EventsGateway;
+  const events = {
+    emitToUser: vi.fn(),
+    emitToList: vi.fn(),
+    evictFromList: vi.fn(),
+  } as unknown as EventsGateway;
 
   return {
     service: new FollowService(
@@ -203,6 +217,46 @@ describe("FollowService.unfollow", () => {
     await service.unfollow("viewer", "alice");
 
     expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("FollowService.block", () => {
+  it("ends list editing both ways, since only friends can edit a list", async () => {
+    // Viewer edits a list of the target's, and the target edits one of the
+    // viewer's: both grants go with the friendship.
+    const memberships = [
+      { id: "lm1", listId: "target-list", userId: "viewer" },
+      { id: "lm2", listId: "viewer-list", userId: "target" },
+    ];
+    const { service, prisma, events } = makeService({
+      targetAccess: "PUBLIC",
+      listMemberships: memberships,
+    });
+
+    await service.block("viewer", "target-username");
+
+    expect((prisma.listMember.findMany as Mock).mock.calls[0][0].where).toEqual(
+      {
+        OR: [
+          { userId: "target", list: { userId: "viewer" } },
+          { userId: "viewer", list: { userId: "target" } },
+        ],
+      },
+    );
+    expect(prisma.listMember.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["lm1", "lm2"] } },
+    });
+    // Their mutes go with the membership, as when an editor leaves.
+    expect(prisma.listNotificationMute.deleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { listId: "target-list", userId: "viewer" },
+          { listId: "viewer-list", userId: "target" },
+        ],
+      },
+    });
+    expect(events.evictFromList).toHaveBeenCalledWith("target-list", "viewer");
+    expect(events.evictFromList).toHaveBeenCalledWith("viewer-list", "target");
   });
 });
 

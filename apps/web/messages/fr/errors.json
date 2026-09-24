@@ -110,6 +110,7 @@
   "apierr_lists_member_user_not_found": "Cet utilisateur est introuvable.",
   "apierr_lists_cannot_add_self": "Tu ne peux pas t'ajouter toi-même à cette liste.",
   "apierr_lists_member_already_editor": "Cet utilisateur peut déjà modifier cette liste.",
+  "apierr_lists_member_not_friend": "Tu ne peux ajouter comme éditeurs que tes amis.",
   "apierr_lists_membership_not_found": "Cette collaboration est introuvable.",
   "apierr_newsletter_webhook_invalid_payload": "Requête invalide.",
   "apierr_newsletter_invalid_unsubscribe_link": "Ce lien de désabonnement est invalide.",
