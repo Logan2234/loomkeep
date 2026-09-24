@@ -81,6 +81,45 @@ touch docker/caddy-flags/maintenance   # on
 rm docker/caddy-flags/maintenance      # off
 ```
 
+That cuts everyone off. To warn ahead of time instead, use the news banner.
+
+## News banner
+
+A strip across the top of the site, driven by the `NEWS_BANNER` flag in
+Unleash, so it appears and disappears for everyone without a reload or a
+deploy. The flag is the switch: turn it off and the banner is gone whatever
+its payload says.
+
+What it shows comes from a variant of that flag with a **JSON** payload:
+
+```json
+{
+  "id": "2026-10-04-db-upgrade",
+  "key": "maintenance_scheduled",
+  "severity": "warning",
+  "dismissible": false,
+  "placement": "all",
+  "startsAt": "2026-10-01T08:00:00Z",
+  "endsAt": "2026-10-04T05:00:00Z",
+  "data": { "start": "2026-10-04T01:00:00Z", "end": "2026-10-04T03:00:00Z" }
+}
+```
+
+| Field                 | Required | Meaning                                                                                                                                                       |
+| --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | yes      | Unique per announcement: a closed banner stays closed for that id only, so a new announcement needs a new id.                                                 |
+| `key`                 | yes      | Which translated message: `maintenance_scheduled` (needs `data.start` and `data.end`, ISO datetimes, shown in each reader's time zone) or `degraded_service`. |
+| `severity`            | no       | `info` (default) or `warning`.                                                                                                                                |
+| `dismissible`         | no       | `true` by default; `false` keeps it on screen.                                                                                                                |
+| `placement`           | no       | `app` (signed-in pages under `/app`), `public` (the rest: landing, legal pages, sign-in) or `all` (default).                                                  |
+| `startsAt` / `endsAt` | no       | Display window, ISO datetimes. Without them, the flag alone decides.                                                                                          |
+| `data`                | depends  | The values the message needs.                                                                                                                                 |
+
+The text itself never comes from Unleash, so the banner stays in each
+reader's language. A malformed payload shows nothing; the browser console
+says why. A new message means a new key in `apps/web/src/lib/news-banner.ts`,
+its text in `apps/web/messages`, and its case in `NewsBanner.svelte`.
+
 ## Operator checklist (public instance)
 
 Annual: confirm the OVH account behind loomkeep.app still carries Logan's

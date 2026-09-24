@@ -49,6 +49,16 @@ class LiveFlags {
     void this.#version; // reactivity dependency — bumped on every Unleash update
     return this.#client?.isEnabled(name) ?? fallback;
   }
+
+  /**
+   * The payload of `name`'s active variant (a JSON variant's raw string), or
+   * undefined while the flag is off. Reactive like `isEnabled`.
+   */
+  variantPayload(name: string): string | undefined {
+    void this.#version;
+    if (!this.#client?.isEnabled(name)) return undefined;
+    return this.#client.getVariant(name).payload?.value;
+  }
 }
 
 export const liveFlags = new LiveFlags();
