@@ -36,6 +36,7 @@
     STATUS_BUCKET_ORDER,
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
+  import { useEeLock } from "$lib/ee/license.svelte";
   import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type {
@@ -52,11 +53,13 @@
   );
 
   // Gates the "deep analysis" stats (rankings, distributions, temporal
-  // breakdowns) — the "counting" stats stay free everywhere. stats.service.ts
-  // redacts the advanced fields server-side for a non-premium account (see
-  // feature plan); this flag only drives which sections show a fake/blurred
-  // preview instead of the (already-empty) real data.
-  const statsLocked = $derived(auth.isPremiumLocked);
+  // breakdowns) — the "counting" stats stay free everywhere. The advanced
+  // fields are computed by the API's ee/stats (LICENSE-EE) and arrive empty
+  // for a non-premium account or an unlicensed instance; this flag only
+  // drives which sections show a fake/blurred preview instead of the
+  // (already-empty) real data.
+  const eeLock = useEeLock();
+  const statsLocked = $derived(eeLock.locked);
 
   let selected = $state<Choice>("ALL");
   // Narrows the "Activité dans le temps" weekday/hour curves only — see

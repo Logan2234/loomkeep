@@ -7,12 +7,15 @@
   import { toast } from "$lib/toast.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { getCalendarToken, regenerateCalendarToken } from "../api";
 
   let { onclose }: { onclose: () => void } = $props();
 
   let confirmingRegenerate = $state(false);
-  let copied = $state(false);
+  // Which of the three links was just copied, for its button's feedback.
+  let copied = $state<Link | null>(null);
 
   const tokenQuery = createApiQuery(() => ({
     key: keys.calendarSubscribe.token(),
@@ -21,14 +24,24 @@
   const token = $derived(tokenQuery.data?.token ?? null);
   const loading = $derived(tokenQuery.loading);
 
-  const calendarUrl = (t: string): string =>
-    `${API_URL}/library/calendar.ics?token=${t}`;
+  // One token feeds the calendar and the release feed alike.
+  type Link = "ics" | "rss" | "atom";
+  const LINK_PATHS: Record<Link, string> = {
+    ics: "library/calendar.ics",
+    rss: "library/releases.rss",
+    atom: "library/releases.atom",
+  };
+  const linkUrl = (link: Link, t: string): string =>
+    `${API_URL}/${LINK_PATHS[link]}?token=${t}`;
+  const calendarUrl = (t: string): string => linkUrl("ics", t);
 
-  async function copyLink() {
+  async function copyLink(link: Link) {
     if (!token) return;
-    await navigator.clipboard.writeText(calendarUrl(token));
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
+    await navigator.clipboard.writeText(linkUrl(link, token));
+    copied = link;
+    setTimeout(() => {
+      if (copied === link) copied = null;
+    }, 2000);
   }
 
   const regenerateMut = createApiMutation(() => ({
@@ -89,10 +102,38 @@
         onclick={() => (confirmingRegenerate = true)}>
         {m.calendar_link_regenerate()}
       </button>
-      <button class="btn btn-primary" onclick={copyLink}>
-        <Icon name={copied ? "check" : "link"} class="h-4 w-4" />
-        {copied ? m.common_link_copied() : m.common_copy_link()}
+      <button class="btn btn-primary" onclick={() => copyLink("ics")}>
+        <Icon name={copied === "ics" ? "check" : "link"} class="h-4 w-4" />
+        {copied === "ics" ? m.common_link_copied() : m.common_copy_link()}
       </button>
+    </div>
+
+    <div class="border-border mt-6 border-t pt-5">
+      <p class="flex items-center gap-2 font-semibold">
+        {m.calendar_feed_title()}
+        {#if isFeatureNew("release-feed")}<NewBadge />{/if}
+      </p>
+      <p class="text-dim mt-1 text-sm">{m.calendar_feed_description()}</p>
+      <div class="mt-3 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          onclick={() => copyLink("rss")}>
+          <Icon name={copied === "rss" ? "check" : "link"} class="h-4 w-4" />
+          {copied === "rss"
+            ? m.common_link_copied()
+            : m.calendar_feed_copy_rss()}
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          onclick={() => copyLink("atom")}>
+          <Icon name={copied === "atom" ? "check" : "link"} class="h-4 w-4" />
+          {copied === "atom"
+            ? m.common_link_copied()
+            : m.calendar_feed_copy_atom()}
+        </button>
+      </div>
     </div>
   {/if}
 </Modal>

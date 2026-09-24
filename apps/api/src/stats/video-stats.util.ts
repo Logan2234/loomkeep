@@ -41,21 +41,6 @@ export function computeTypeSplit(rows: TypeSplitInput[]): VideoTypeSplitDto[] {
     .sort((a, b) => b.minutes - a.minutes);
 }
 
-/** Most watch events falling within any rolling 24h window. */
-export function computeLongestBinge(watchedAt: Date[]): number {
-  const times = watchedAt.map((d) => d.getTime()).sort((a, b) => a - b);
-  const WINDOW_MS = 24 * 60 * 60 * 1000;
-  let best = 0;
-  let start = 0;
-
-  for (let end = 0; end < times.length; end++) {
-    while (times[end] - times[start] >= WINDOW_MS) start++;
-    best = Math.max(best, end - start + 1);
-  }
-
-  return best;
-}
-
 export interface SeasonProgressInput {
   /** Episodes aired so far (see the "à jour" convention in computeProgress). */
   totalEpisodes: number;
