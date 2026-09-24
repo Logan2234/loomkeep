@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  customText,
+  isExternalHref,
   isNewsBannerLive,
   newsBannerFitsPage,
   parseNewsBanner,
@@ -27,6 +29,7 @@ describe("parseNewsBanner", () => {
       ...maintenance,
       startsAt: new Date("2026-10-01T00:00:00Z"),
       endsAt: new Date("2026-10-04T05:00:00Z"),
+      href: null,
     });
   });
 
@@ -44,7 +47,6 @@ describe("parseNewsBanner", () => {
   it.each([
     ["no payload", undefined],
     ["broken JSON", "{not json"],
-    ["no id", { key: "degraded_service" }],
     ["an unknown template", { id: "a", key: "free_text" }],
     [
       "an unknown severity",
@@ -55,6 +57,15 @@ describe("parseNewsBanner", () => {
       { id: "a", key: "degraded_service", placement: "home" },
     ],
     ["a bad date", { id: "a", key: "degraded_service", endsAt: "tomorrow" }],
+    ["a custom banner with no text", { id: "a", key: "custom" }],
+    [
+      "a script href",
+      { id: "a", key: "degraded_service", href: "javascript:alert(1)" },
+    ],
+    [
+      "a protocol-relative href",
+      { id: "a", key: "degraded_service", href: "//evil.example" },
+    ],
     [
       "a template missing its data",
       {
@@ -68,6 +79,53 @@ describe("parseNewsBanner", () => {
     expect(
       payload === undefined ? parseNewsBanner(undefined) : parse(payload),
     ).toBeNull();
+  });
+});
+
+describe("id", () => {
+  it("is derived from the content when the payload has none", () => {
+    const a = parse({ id: "", key: "custom", data: { fr: "Un" } })!;
+    const same = parse({ key: "custom", data: { fr: "Un" } })!;
+    const edited = parse({ key: "custom", data: { fr: "Deux" } })!;
+
+    expect(a.id).toBe(same.id);
+    // Editing the text is a new announcement: a closed banner comes back.
+    expect(edited.id).not.toBe(a.id);
+  });
+});
+
+describe("custom banners", () => {
+  const text = { fr: "Bonjour", en: "Hello", de: "Hallo" };
+
+  it("reads the text from data, per language", () => {
+    expect(parse({ id: "a", key: "custom", data: text })).toMatchObject({
+      key: "custom",
+      data: text,
+    });
+  });
+
+  it("speaks the reader's language when it's there", () => {
+    expect(customText(text, "fr")).toBe("Bonjour");
+  });
+
+  it("falls back to English, then to the first language given", () => {
+    expect(customText(text, "es")).toBe("Hello");
+    expect(customText({ de: "Hallo", it: "Ciao" }, "fr")).toBe("Hallo");
+  });
+});
+
+describe("href", () => {
+  it("accepts a site path or an http(s) URL", () => {
+    for (const href of ["/app/feed", "https://status.loomkeep.app"]) {
+      expect(parse({ id: "a", key: "degraded_service", href })?.href).toBe(
+        href,
+      );
+    }
+  });
+
+  it("opens only other sites in a new tab", () => {
+    expect(isExternalHref("/app/feed")).toBe(false);
+    expect(isExternalHref("https://status.loomkeep.app")).toBe(true);
   });
 });
 

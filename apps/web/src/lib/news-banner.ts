@@ -4,9 +4,10 @@
  * the JSON payload of its variant says what to show, where and when. The
  * operator guide is in docker/README.md ("News banner").
  *
- * The text itself never comes from Unleash: `key` picks one of the translated
- * templates below, and `data` only fills in its values, so the banner stays
- * in the reader's language.
+ * `key` picks one of the translated templates below, whose `data` only fills
+ * in its values, so the banner stays in the reader's language. The one
+ * exception is `custom`: there `data` holds the text itself, one entry per
+ * language — see `customText`.
  */
 
 export const NEWS_BANNER_FLAG = "NEWS_BANNER";
@@ -19,12 +20,18 @@ const TEMPLATE_FIELDS = {
   /** `start`/`end`: ISO datetimes, shown in the reader's time zone. */
   maintenance_scheduled: ["start", "end"],
   degraded_service: [],
+  /** `data` is the text, keyed by language: `{ "fr": "…", "en": "…" }`. */
+  custom: [],
 } as const;
 
 export type NewsBannerKey = keyof typeof TEMPLATE_FIELDS;
 
 export interface NewsBanner {
-  /** Unique per announcement: dismissing one remembers this id. */
+  /**
+   * Dismissing a banner remembers this id. Optional in the payload: without
+   * one it is derived from the content, so editing the text brings a closed
+   * banner back.
+   */
   id: string;
   key: NewsBannerKey;
   severity: "info" | "warning";
@@ -34,6 +41,8 @@ export interface NewsBanner {
   startsAt: Date | null;
   endsAt: Date | null;
   data: Record<string, string>;
+  /** Where the banner's button leads; no button without one. */
+  href: string | null;
 }
 
 const SEVERITIES = ["info", "warning"] as const;
@@ -71,8 +80,6 @@ export function parseNewsBanner(raw: string | undefined): NewsBanner | null {
     return invalid("payload is not an object");
   const p = json as Record<string, unknown>;
 
-  if (typeof p.id !== "string" || !p.id) return invalid("missing id");
-
   if (typeof p.key !== "string" || !Object.hasOwn(TEMPLATE_FIELDS, p.key))
     return invalid(`unknown key ${String(p.key)}`);
   const key = p.key as NewsBannerKey;
@@ -105,8 +112,24 @@ export function parseNewsBanner(raw: string | undefined): NewsBanner | null {
     if (!data[field]) return invalid(`${key} needs data.${field}`);
   }
 
+  if (key === "custom" && Object.keys(data).length === 0)
+    return invalid("custom needs its text in data, one entry per language");
+
+  let href: string | null = null;
+
+  if (p.href !== undefined) {
+    if (typeof p.href !== "string" || !isSafeHref(p.href))
+      return invalid("href must be a path (/app/…) or an http(s) URL");
+    href = p.href;
+  }
+
+  const id =
+    typeof p.id === "string" && p.id
+      ? p.id
+      : `auto-${hashString(JSON.stringify([key, data, href]))}`;
+
   return {
-    id: p.id,
+    id,
     key,
     severity: severity as NewsBanner["severity"],
     dismissible: p.dismissible !== false,
@@ -114,7 +137,51 @@ export function parseNewsBanner(raw: string | undefined): NewsBanner | null {
     startsAt,
     endsAt,
     data,
+    href,
   };
+}
+
+/** A short, stable fingerprint (djb2) — not for anything security-related. */
+function hashString(text: string): string {
+  let hash = 5381;
+
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+  }
+
+  return (hash >>> 0).toString(36);
+}
+
+/**
+ * A site path or an http(s) URL — never `javascript:` or a protocol-relative
+ * `//host`, which would turn the banner's button into a script or an open
+ * redirect for whoever can edit the flag.
+ */
+function isSafeHref(href: string): boolean {
+  if (href.startsWith("/")) return !href.startsWith("//");
+
+  try {
+    const { protocol } = new URL(href);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+/** Whether `href` leaves the site (and so opens in a new tab). */
+export function isExternalHref(href: string): boolean {
+  return !href.startsWith("/");
+}
+
+/**
+ * A `custom` banner's text for `locale`: that language if it's there, else
+ * English, else whichever language comes first.
+ */
+export function customText(
+  data: Record<string, string>,
+  locale: string,
+): string {
+  return data[locale] ?? data.en ?? Object.values(data)[0] ?? "";
 }
 
 /** Whether `now` falls inside the banner's optional display window. */

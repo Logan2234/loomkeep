@@ -7,11 +7,14 @@
   import { formatDateTime } from "$lib/format";
   import {
     NEWS_BANNER_FLAG,
+    customText,
+    isExternalHref,
     isNewsBannerLive,
     newsBannerFitsPage,
     parseNewsBanner,
   } from "$lib/news-banner";
   import { m } from "$lib/paraglide/messages";
+  import { getLocale } from "$lib/paraglide/runtime";
   import Icon from "./Icon.svelte";
 
   const DISMISSED_KEY = "news-banner-dismissed";
@@ -97,37 +100,59 @@
       }
       case "degraded_service":
         return m.news_banner_degraded_service();
+      case "custom":
+        return customText(shown.data, getLocale());
     }
   });
 </script>
 
 {#if shown}
+  {@const warning = shown.severity === "warning"}
   <div
     role="status"
-    class="border-b text-sm {shown.severity === 'warning'
+    class="border-b text-sm {warning
       ? 'border-accent/40 bg-accent/10'
-      : 'border-border bg-surface-2'}">
+      : 'border-border bg-surface'}">
     <!-- In the app, the notification bell is pinned to the top-right corner:
          keep the close button out from under it. -->
     <div
-      class="mx-auto flex max-w-5xl items-start gap-3 px-4 py-2.5 {inApp
+      class="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2.5 {inApp
         ? 'pr-16'
         : ''}">
-      <Icon
-        name={shown.severity === "warning" ? "warning" : "bell"}
-        class="mt-0.5 h-4 w-4 shrink-0 {shown.severity === 'warning'
-          ? 'text-accent'
-          : 'text-dim'}" />
-      <p class="text-fg min-w-0 flex-1">{text}</p>
-      {#if shown.dismissible}
-        <button
-          type="button"
-          class="text-dim hover:text-fg -my-1 grid h-7 w-7 shrink-0 place-items-center rounded-md transition-colors"
-          aria-label={m.common_close()}
-          title={m.common_close()}
-          onclick={() => dismiss(shown.id)}>
-          <Icon name="x" class="h-4 w-4" />
-        </button>
+      <!-- The label sits inside the sentence, so a long message wraps under
+           it rather than leaving it stranded beside a tall block of text. -->
+      <p class="text-fg min-w-0 flex-1 basis-64 leading-relaxed">
+        <span
+          class="mr-2 inline-block rounded-sm border px-1.5 py-0.5 align-[1px] font-mono text-[0.6rem] leading-none font-bold tracking-widest uppercase {warning
+            ? 'border-accent/60 text-accent'
+            : 'border-border text-dim'}">
+          {warning ? m.news_banner_label_warning() : m.news_banner_label_info()}
+        </span>{text}
+      </p>
+      {#if shown.href || shown.dismissible}
+        <div class="ml-auto flex shrink-0 items-center gap-1">
+          {#if shown.href}
+            {@const external = isExternalHref(shown.href)}
+            <a
+              class="btn btn-ghost btn-sm"
+              href={shown.href}
+              target={external ? "_blank" : undefined}
+              rel={external ? "noopener noreferrer" : undefined}>
+              {m.news_banner_cta()}
+              <Icon name="chevron-right" class="h-3.5 w-3.5" />
+            </a>
+          {/if}
+          {#if shown.dismissible}
+            <button
+              type="button"
+              class="btn-icon"
+              aria-label={m.common_close()}
+              title={m.common_close()}
+              onclick={() => dismiss(shown.id)}>
+              <Icon name="x" class="h-4 w-4" />
+            </button>
+          {/if}
+        </div>
       {/if}
     </div>
   </div>
