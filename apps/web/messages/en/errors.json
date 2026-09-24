@@ -30,6 +30,7 @@
   "apierr_user_avatar_too_large": "The image is too large.",
   "apierr_user_avatar_invalid_type": "The file doesn't match the expected image type.",
   "apierr_import_simkl_connection_failed": "Couldn't connect to Simkl. Try the import again from the start.",
+  "apierr_ee_unlicensed": "This feature isn't available on this instance.",
   "apierr_library_calendar_unavailable": "This calendar is unavailable.",
   "apierr_library_episode_not_found": "This episode could not be found.",
   "apierr_library_season_empty": "This season could not be found or has no episodes.",

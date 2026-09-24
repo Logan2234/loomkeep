@@ -16,6 +16,7 @@ import { CommonModule } from "./common/common.module";
 import { loggerOptions } from "./common/logger.config";
 import { RuntimeConfigModule } from "./config/config.module";
 import { validateEnv } from "./config/env.validation";
+import { EeModule } from "./ee/ee.module";
 import { EventsModule } from "./events/events.module";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
@@ -78,6 +79,7 @@ import { UsersModule } from "./users/users.module";
     StatsModule,
     NewsletterModule,
     MetricsModule,
+    EeModule,
   ],
   controllers: [],
   providers: [

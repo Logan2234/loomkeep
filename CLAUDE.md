@@ -108,6 +108,15 @@ fix does.
   it's `true` for everyone until the `premium-features` Unleash flag is on
   (no CGV/billing exists yet; positioning in
   [docs/adr/0001-open-core-agpl.md](docs/adr/0001-open-core-agpl.md)).
+- A premium feature that is a whole feature (not a quota or tier of a free
+  one) lives in an `ee/` directory (`apps/api/src/ee`, `apps/web/src/lib/ee`)
+  under [LICENSE-EE](LICENSE-EE), not the AGPL. On the API the core never
+  imports `ee/` (ESLint enforces it; only `app.module.ts` registers
+  `EeModule`), and every `ee/` controller carries `EeLicenseGuard` (404 on an
+  unlicensed instance). Web screens use `useEeLock()` rather than
+  `auth.isPremiumLocked`. The instance license (`LOOMKEEP_LICENSE_KEY`, an
+  offline-signed annual key) is only required once `premium-features` is on;
+  the maintainer signs keys with `pnpm --filter @loomkeep/api ee:license`.
 
 ### Web routing & data fetching
 

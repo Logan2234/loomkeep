@@ -4,7 +4,6 @@ import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
-import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
@@ -148,7 +147,6 @@ function makeService(
     {} as AgeGateService,
     reviews,
     { emit: vi.fn() } as unknown as ActivityService,
-    {} as EntitlementService,
     stubXp(),
     stubAchievements(),
     stubEvents(),
@@ -320,7 +318,6 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -369,7 +366,6 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -428,7 +424,6 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -492,7 +487,6 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -520,7 +514,6 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -575,7 +568,6 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -633,7 +625,6 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -642,44 +633,6 @@ describe("LibraryService.deleteEntry", () => {
     await expect(
       service.deleteEntry("user-1", "entry-2"),
     ).resolves.toBeUndefined();
-  });
-});
-
-describe("LibraryService.getCalendarIcs", () => {
-  function makeService(user: { id: string } | null, hasPremium: boolean) {
-    const prisma = {
-      user: { findUnique: vi.fn().mockResolvedValue(user) },
-      episode: { findMany: vi.fn().mockResolvedValue([]) },
-    } as unknown as PrismaService;
-    const entitlements = {
-      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
-    } as unknown as EntitlementService;
-    return new LibraryService(
-      prisma,
-      {} as MediaItemService,
-      {} as AgeGateService,
-      {} as ReviewService,
-      { emit: vi.fn() } as unknown as ActivityService,
-      entitlements,
-      stubXp(),
-      stubAchievements(),
-      stubEvents(),
-    );
-  }
-
-  it("returns the feed for a premium user with a valid token", async () => {
-    const service = makeService({ id: "user-1" }, true);
-    await expect(service.getCalendarIcs("tok")).resolves.not.toBeNull();
-  });
-
-  it("returns null for a non-premium user, even with a valid token", async () => {
-    const service = makeService({ id: "user-1" }, false);
-    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
-  });
-
-  it("returns null when the token matches no account", async () => {
-    const service = makeService(null, true);
-    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
   });
 });
 
@@ -738,7 +691,6 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       events,
@@ -792,7 +744,6 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
@@ -838,7 +789,6 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
@@ -904,7 +854,6 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
@@ -977,7 +926,6 @@ describe("LibraryService — XP wiring", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
       stubEvents(),
@@ -1046,7 +994,6 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       stubAchievements(),
       stubEvents(),
@@ -1122,7 +1069,6 @@ describe("LibraryService.getDomainCounts", () => {
       {} as AgeGateService,
       {} as ReviewService,
       {} as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),

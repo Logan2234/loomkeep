@@ -7,7 +7,7 @@ import type {
   MediaType,
   PagedResult,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, Locale } from "@loomkeep/shared";
+import { Domain, Locale } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -20,14 +20,10 @@ import {
   Post,
   Put,
   Query,
-  Res,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
-import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
-import { Public } from "../auth/decorators/public.decorator";
-import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -99,33 +95,6 @@ export class LibraryController {
   @ApiOkResponse({ type: CalendarEntryResponseDto, isArray: true })
   getCalendar(@CurrentUser() user: JwtPayload): Promise<CalendarEntryDto[]> {
     return this.libraryService.getCalendar(user.sub);
-  }
-
-  /**
-   * Public (no auth) so Google/Apple Calendar can poll it directly by URL —
-   * subscription clients can't send an Authorization header. Gated by the
-   * unguessable per-user `calendarToken` instead (see UsersController's
-   * calendar-token endpoints), same pattern as the avatar route.
-   */
-  @Public()
-  @Get("calendar.ics")
-  async getCalendarIcs(
-    @Query("token") token: string | undefined,
-    @Res() reply: FastifyReply,
-  ): Promise<void> {
-    const ics = token ? await this.libraryService.getCalendarIcs(token) : null;
-
-    if (!ics) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryCalendarUnavailable,
-      );
-    }
-
-    reply
-      .header("Content-Type", "text/calendar; charset=utf-8")
-      .header("Content-Disposition", 'inline; filename="loomkeep.ics"')
-      .send(ics);
   }
 
   @Get("entries/:id")

@@ -67,6 +67,9 @@ export const keys = {
   sessions: {
     all: () => ["sessions", "all"] as const,
   },
+  ee: {
+    status: () => ["ee", "status"] as const,
+  },
   securityEvents: {
     all: () => ["security-events", "all"] as const,
   },

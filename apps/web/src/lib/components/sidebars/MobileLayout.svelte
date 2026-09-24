@@ -1,13 +1,13 @@
 <script lang="ts">
   import { page } from "$app/state";
   import OnboardingBanner from "$lib/components/onboarding/OnboardingBanner.svelte";
+  import ProgrammeBoardMobileBar from "$lib/ee/nav/ProgrammeBoardMobileBar.svelte";
+  import ProjectorDockMobileBar from "$lib/ee/nav/ProjectorDockMobileBar.svelte";
   import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
   import type { NavStyle } from "$lib/navStyle.svelte";
   import type { Snippet } from "svelte";
   import BottomNavigation from "./BottomNavigation.svelte";
   import MenuSheet from "./MenuSheet.svelte";
-  import ProgrammeBoardMobileBar from "./ProgrammeBoardMobileBar.svelte";
-  import ProjectorDockMobileBar from "./ProjectorDockMobileBar.svelte";
 
   let {
     children,

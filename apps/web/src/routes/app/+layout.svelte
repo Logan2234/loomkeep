@@ -16,8 +16,9 @@
   import DesktopSidebar from "$lib/components/sidebars/DesktopSidebar.svelte";
   import { layout } from "$lib/layout.svelte";
   import MobileLayout from "$lib/components/sidebars/MobileLayout.svelte";
-  import ProgrammeBoardDesktop from "$lib/components/sidebars/ProgrammeBoardDesktop.svelte";
-  import ProjectorDockDesktop from "$lib/components/sidebars/ProjectorDockDesktop.svelte";
+  import { useEeLock } from "$lib/ee/license.svelte";
+  import ProgrammeBoardDesktop from "$lib/ee/nav/ProgrammeBoardDesktop.svelte";
+  import ProjectorDockDesktop from "$lib/ee/nav/ProjectorDockDesktop.svelte";
   import TermsReacceptance from "$lib/components/TermsReacceptance.svelte";
   import WidgetIdentify from "$lib/components/WidgetIdentify.svelte";
   import { navStyle } from "$lib/navStyle.svelte";
@@ -36,7 +37,8 @@
   // fall back to the free "Marquee" rail whenever the flag is on and the
   // account isn't premium, regardless of what's still saved in
   // localStorage (e.g. a lapsed subscription).
-  const navStyleLocked = $derived(auth.isPremiumLocked);
+  const eeLock = useEeLock();
+  const navStyleLocked = $derived(eeLock.locked);
   const effectiveNavStyle = $derived(
     navStyleLocked ? "marquee" : navStyle.choice,
   );

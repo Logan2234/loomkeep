@@ -108,6 +108,9 @@ export const ErrorCode = {
   StatsInvalidDecade: "stats.invalid_decade",
   StatsRatingOrDecadeRequired: "stats.rating_or_decade_required",
 
+  // ee — the commercially licensed features (LICENSE-EE)
+  EeUnlicensed: "ee.unlicensed",
+
   // library — entry/replay codes are shared across media/games/books/music,
   // the four domains that each have their own *LibraryService with the same
   // ownership-check shape

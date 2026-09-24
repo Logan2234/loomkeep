@@ -1,6 +1,6 @@
 # ADR 0001 — Positionnement open-core sous AGPL
 
-**Statut :** Acceptée
+**Statut :** Acceptée — complétée le 24/09/2026 (emplacement du code premium : option B, voir « Mise en œuvre retenue »)
 **Contexte GitHub :** [loomkeep-roadmap#7 (LK-X10)](https://github.com/Logan2234/loomkeep-roadmap/issues/7)
 **Bloque :** LK-D01 (rédaction des CGV)
 
@@ -41,15 +41,11 @@ par clé/licence), pas seulement sur l'instance hébergée par Logan. Ce
 positionnement, et les règles de non-rétroactivité ci-dessous, ne dépendent
 pas de l'endroit où vit le code.
 
-**Ce qui reste ouvert** : est-ce que le code premium vit dans le monorepo AGPL
-(un guard `entitlements` visible par quiconque clone le repo, gratuit ou pas)
-ou dans un module séparé sous licence propriétaire, distribué seulement après
-achat (façon Grafana Enterprise) ? Les deux respectent la décision ci-dessus ;
-ils diffèrent sur la charge d'ingénierie (un guard vs un vrai système de
-chargement de module à construire et maintenir) et sur qui reçoit le code par
-défaut (tout le monde vs seulement les payeurs) — voir la section suivante.
-À trancher une fois les premières features premium arrêtées, en fonction du
-temps que Logan peut investir dans l'archi.
+**Ce qui était resté ouvert, tranché le 24/09/2026** : où vit le code premium.
+Trois options ont été comparées — tout AGPL avec un guard `entitlements`, un
+module séparé dans un dépôt privé (façon Grafana Enterprise), ou un dossier
+`ee/` dans le monorepo sous licence commerciale (façon Cal.com, GitLab). C'est
+la troisième qui est retenue : voir « Mise en œuvre retenue » plus bas.
 
 ### Aperçu du mécanisme (illustratif, le détail reste à concevoir)
 
@@ -82,8 +78,10 @@ L'activation diffère entre les deux publics :
   ici : licence annuelle réémise manuellement à chaque paiement reçu, ou
   licence perpétuelle par version majeure (paiement unique, façon
   JetBrains). Un vrai contrôle périodique en ligne réglerait la révocation
-  mais réintroduirait le phone-home qu'on cherche à éviter — à trancher dans
-  le ticket d'implémentation, pas ici.
+  mais réintroduirait le phone-home qu'on cherche à éviter.
+
+  **Tranché le 24/09/2026 : licence annuelle**, réémise à chaque paiement,
+  sans phone-home (voir « Mise en œuvre retenue »).
 
 ### Le gating self-host est une friction, pas une protection technique — et ça dépend d'où vit le code
 
@@ -154,19 +152,94 @@ modifiable pour quiconque l'a récupérée. Concrètement :
 
 ### Conséquence pour LK-D01 (CGV)
 
-Les CGV doivent être honnêtes sur le fait que le code premium est
-AGPL : elles vendent un service (hébergement, quotas desserrés, support,
-accès anticipé), jamais une exclusivité logicielle. Ne pas promettre une
-restriction que la licence ne permet pas de faire tenir.
+Les CGV vendent un service (hébergement, quotas desserrés, support, accès
+anticipé) et, depuis l'option B, une licence d'usage des fonctionnalités
+`ee/` pour l'auto-hébergement. Elles doivent rester honnêtes : le code `ee/`
+est visible, et les quotas du cœur restent AGPL, donc contournables
+légalement. Ne pas promettre une restriction que la licence ne permet pas de
+faire tenir.
+
+## Mise en œuvre retenue (24/09/2026) : dossier `ee/` sous licence commerciale
+
+### Pourquoi cette option
+
+- **Un module privé n'apporte presque rien de plus.** Sa seule protection
+  supplémentaire : quelqu'un qui n'a jamais payé n'a pas le code. Mais le
+  vrai frein au contournement est de maintenir un fork à chaque version, et
+  il vaut autant avec un dossier `ee/`. Un module privé imposerait en échange
+  deux dépôts, deux builds, un registre d'images privé et une génération
+  OpenAPI séparée, pour un développeur seul.
+- **Le code du front ne se cache pas.** Tout ce qui est dans le bundle
+  SvelteKit est téléchargé par chaque navigateur ; seule la logique serveur
+  aurait pu rester privée.
+- **La protection est juridique, et elle est réelle.** Utiliser `ee/` en
+  production sans clé est interdit par LICENSE-EE : contourner la
+  vérification est une contrefaçon au sens du droit d'auteur, pas seulement
+  une violation des CGV.
+
+### Ce qui va dans `ee/`, ce qui reste dans le cœur
+
+- **Dans `ee/`** (`apps/api/src/ee`, `apps/web/src/lib/ee`, sous
+  [LICENSE-EE](../../LICENSE-EE)) : les fonctionnalités premium **entières**.
+  Premières migrées : l'abonnement iCal au calendrier et les styles de
+  navigation Dock et Board.
+- **Dans le cœur AGPL** : les **quotas et paliers** de fonctionnalités
+  gratuites (un import par domaine, digest quotidien), les stats avancées
+  (calculées dans les mêmes requêtes que les stats gratuites) et les domaines
+  en accès anticipé. Leur code est de toute façon public, puisque la
+  fonctionnalité de base est gratuite : ce qui se vend là, c'est le service
+  hébergé.
+- **Déplacer une fonctionnalité déjà publiée a un effet**, même si les
+  anciennes versions restent AGPL pour toujours : pour la garder
+  gratuitement, il faudrait maintenir un fork à chaque nouvelle version.
+
+### Règles techniques
+
+- **Le cœur n'importe jamais `ee/`** (règle ESLint côté API ; seul
+  `app.module.ts` enregistre `EeModule`). Le cœur AGPL doit fonctionner seul.
+- **Chaque contrôleur `ee/` porte `EeLicenseGuard`** : sans licence, ses
+  routes répondent 404, comme si elles n'existaient pas. Les routes gardent
+  leur chemin d'avant la migration (les calendriers abonnés interrogent déjà
+  `/library/calendar.ics`).
+- **Côté web**, un écran `ee/` se verrouille avec `useEeLock()` : verrouillé
+  pour un compte non premium, comme tout écran premium, et aussi sur une
+  instance sans licence (`GET /api/ee/status`).
+- **Les droits par utilisateur ne changent pas** : sur l'instance hébergée,
+  `isEffectivelyPremium` reste le contrôle par compte.
+
+### La clé de licence
+
+- **Format** : une charge JSON (`licensee`, `expiresAt`) signée en Ed25519,
+  vérifiée hors ligne au démarrage avec la clé publique embarquée dans le
+  code (`LICENSE_PUBLIC_KEY`). Variable : `LOOMKEEP_LICENSE_KEY`.
+- **Annuelle**, avec 14 jours de grâce après `expiresAt` pour qu'un
+  renouvellement tardif ne casse rien. À expiration, les fonctionnalités
+  `ee/` se désactivent sans toucher aux données.
+- **Avant le lancement du premium**, tant que le flag `premium-features` est
+  éteint, les fonctionnalités `ee/` restent actives partout sans clé :
+  personne ne peut encore en acheter, donc aucun auto-hébergeur ne perd ce
+  qu'il avait.
+- **La clé privée ne quitte jamais la machine de Logan**
+  (`~/.loomkeep/license-signing-key.pem`, à sauvegarder hors ligne : la
+  perdre oblige à changer la clé publique, ce qui invalide toutes les clés
+  émises). Signer une clé :
+  `pnpm --filter @loomkeep/api ee:license sign <clé privée> <titulaire> <expiration>`.
+- **Instance hébergée et dev local** : même chemin de code qu'un
+  auto-hébergeur, avec une clé que Logan se signe lui-même (longue durée),
+  sans aucun contournement dans le code. Les tests n'ont pas besoin de clé :
+  le flag `premium-features` y est éteint.
+
+### Contributions
+
+Un CLA ([CLA.md](../../CLA.md)) est demandé avant toute contribution
+extérieure : sans lui, une contribution au cœur, reçue sous AGPL
+uniquement, ne pourrait plus être combinée avec le code `ee/`.
 
 ## Hors périmètre de cette décision
 
-- Le mécanisme technique de gating (module optionnel, format exact de la
-  licence, exposition via `/api/config`, etc.) — ticket d'implémentation
-  séparé, une fois les premières features premium arrêtées. Inclut les deux
-  questions non tranchées : où vit le code premium (monorepo vs module
-  séparé, voir "Décision" ci-dessus) et la durée de validité d'une licence
-  self-host (voir "Aperçu du mécanisme" ci-dessus).
+- Le premium « pour toute l'instance » côté self-host : une clé de licence
+  auto-hébergée devra rendre premium tous les comptes de l'instance, sans
+  passer par `UserEntitlement`. À faire avant le lancement de l'offre.
 - Le calendrier de lancement du premium (quand la base d'utilisateurs et le
   catalogue de features premium seront suffisants).
 - La liste définitive des features premium — pistes évoquées : stats
@@ -177,9 +250,9 @@ restriction que la licence ne permet pas de faire tenir.
 ## Conséquences
 
 - `User.entitlements` (le statut, dans `apps/api/prisma/schema.prisma`) reste
-  dans le schéma AGPL principal quoi qu'il arrive — c'est le code des
-  _features_ premium elles-mêmes dont l'emplacement (monorepo vs module
-  séparé) reste ouvert.
+  dans le schéma AGPL principal, comme toutes les tables : le schéma n'est
+  pas la valeur. Le code des fonctionnalités premium entières vit dans
+  `ee/`.
 - Le style de gating (seuil desserré vs. feature complète réservée) se
   décide feature par feature, sans préférence de principe imposée par
   l'AGPL — dans les deux architectures, un self-hoster qui a reçu le code

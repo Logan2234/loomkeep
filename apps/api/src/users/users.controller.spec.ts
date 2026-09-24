@@ -24,8 +24,6 @@ function makeController() {
     deleteAvatar: vi.fn(),
     exportData: vi.fn(),
     exportCsv: vi.fn(),
-    getCalendarToken: vi.fn(),
-    regenerateCalendarToken: vi.fn(),
     getMyEntitlement: vi.fn(),
     completeOnboarding: vi.fn(),
     acceptTerms: vi.fn(),
@@ -106,18 +104,6 @@ describe("UsersController — delegation to UsersService", () => {
     const { controller, users } = makeController();
     void controller.exportCsv(payload, "MEDIA");
     expect(users.exportCsv).toHaveBeenCalledWith(userId, "MEDIA");
-  });
-
-  it("getCalendarToken", () => {
-    const { controller, users } = makeController();
-    void controller.getCalendarToken(payload);
-    expect(users.getCalendarToken).toHaveBeenCalledWith(userId);
-  });
-
-  it("regenerateCalendarToken", () => {
-    const { controller, users } = makeController();
-    void controller.regenerateCalendarToken(payload);
-    expect(users.regenerateCalendarToken).toHaveBeenCalledWith(userId);
   });
 
   it("getMyEntitlement", () => {

@@ -2,9 +2,9 @@
   import { getCalendar } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
-  import { auth } from "$lib/auth.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CalendarSubscribeModal from "$lib/components/CalendarSubscribeModal.svelte";
+  import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
+  import { useEeLock } from "$lib/ee/license.svelte";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -17,7 +17,8 @@
   import type { CalendarEntryDto } from "@loomkeep/shared";
   import { SvelteDate } from "svelte/reactivity";
 
-  const calendarLocked = $derived(auth.isPremiumLocked);
+  const eeLock = useEeLock();
+  const calendarLocked = $derived(eeLock.locked);
 
   let showSubscribeModal = $state(false);
 

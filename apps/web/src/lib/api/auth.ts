@@ -266,12 +266,6 @@ export const exportMyData = () => typedRequest("/users/me/export");
 export const exportMyDataCsv = (domain: Domain) =>
   typedRequest("/users/me/export.csv", { query: { domain } });
 
-// Creates the token on first call.
-export const getCalendarToken = () => typedRequest("/users/me/calendar-token");
-
-export const regenerateCalendarToken = () =>
-  typedRequest("/users/me/calendar-token/regenerate", { method: "POST" });
-
 const _getWidgetToken = (): Promise<WidgetTokenDto> =>
   typedRequest("/users/me/widget-token");
 

@@ -18,5 +18,6 @@ import { MediaController } from "./media.controller";
   ],
   controllers: [LibraryController, MediaController],
   providers: [LibraryService],
+  exports: [LibraryService],
 })
 export class LibraryModule {}

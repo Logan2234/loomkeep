@@ -6,7 +6,7 @@
   import { isFeatureNew } from "$lib/feature-badges";
   import { visibleNavItems } from "$lib/navigation";
   import { m } from "$lib/paraglide/messages.js";
-  import NotificationTab from "./NotificationTab.svelte";
+  import NotificationTab from "$lib/components/sidebars/NotificationTab.svelte";
 
   const items = $derived(
     visibleNavItems(

@@ -6,7 +6,6 @@ import {
   UsernameAvailabilityDto,
   XpReason,
   type AccountDeletionSummaryDto,
-  type CalendarTokenDto,
   type CsvExportDto,
   type EntitlementDto,
   type SocialProfileDto,
@@ -17,7 +16,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { randomBytes, randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
@@ -228,61 +227,12 @@ export class UsersService {
   }
 
   /**
-   * Returns the token for the user's public .ics calendar subscription URL,
-   * generating one on first call. Stable across calls — use the regenerate
-   * endpoint below to revoke a previously shared link. Premium
-   * (docs/adr/0001-open-core-agpl.md) — see LibraryService#getCalendarIcs
-   * for the matching check on the feed itself.
-   */
-  async getCalendarToken(userId: string): Promise<CalendarTokenDto> {
-    await this.requirePremium(userId);
-
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { calendarToken: true },
-    });
-
-    if (user.calendarToken) {
-      return { token: user.calendarToken };
-    }
-
-    const { calendarToken } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
-      select: { calendarToken: true },
-    });
-    return { token: calendarToken! };
-  }
-
-  async regenerateCalendarToken(userId: string): Promise<CalendarTokenDto> {
-    await this.requirePremium(userId);
-
-    const { calendarToken } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
-      select: { calendarToken: true },
-    });
-    return { token: calendarToken! };
-  }
-
-  /**
    * The user's real plan (not gated by `premium-features` — see
    * `EntitlementService#isEffectivelyPremium`) so the web can decide what to
    * lock: `showLock = flag on && !isPremium`.
    */
   async getMyEntitlement(userId: string): Promise<EntitlementDto> {
     return { isPremium: await this.entitlements.hasPremium(userId) };
-  }
-
-  private async requirePremium(userId: string): Promise<void> {
-    if (!(await this.entitlements.isEffectivelyPremium(userId))) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.UserPremiumRequired,
-        undefined,
-        "This feature is reserved for premium accounts",
-      );
-    }
   }
 
   async completeOnboarding(userId: string): Promise<UserDto> {
