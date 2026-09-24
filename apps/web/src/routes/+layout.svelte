@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { env } from "$env/dynamic/public";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import NewsBanner from "$lib/components/NewsBanner.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { toIntlLocale } from "$lib/constants/language-to-locale";
   import { layout } from "$lib/layout.svelte";
@@ -61,6 +62,8 @@
   <link rel="preconnect" href={env.PUBLIC_API_URL} />
   <link rel="canonical" href={page.url.href} />
 </svelte:head>
+
+<NewsBanner />
 
 <QueryClientProvider client={queryClient}>
   {@render children()}
