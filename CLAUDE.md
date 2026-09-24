@@ -116,7 +116,10 @@ fix does.
   unlicensed instance). Web screens use `useEeLock()` rather than
   `auth.isPremiumLocked`. The instance license (`LOOMKEEP_LICENSE_KEY`, an
   offline-signed annual key) is only required once `premium-features` is on;
-  the maintainer signs keys with `pnpm --filter @loomkeep/api ee:license`.
+  the maintainer signs keys with `pnpm --filter @loomkeep/api ee:license`. A
+  self-host key (`--instance`) makes every account of the instance premium,
+  through `EntitlementService.setInstancePremiumSource` — the hosted
+  instance's key doesn't, premium stays per account there.
 
 ### Web routing & data fetching
 

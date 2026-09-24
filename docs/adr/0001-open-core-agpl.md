@@ -206,6 +206,13 @@ faire tenir.
   instance sans licence (`GET /api/ee/status`).
 - **Les droits par utilisateur ne changent pas** : sur l'instance hébergée,
   `isEffectivelyPremium` reste le contrôle par compte.
+- **Une clé auto-hébergée rend premium tous les comptes de l'instance**
+  (`instanceWide` dans la charge signée, option `--instance` du script) : un
+  foyer fait tourner une instance, il n'achète pas des sièges. La clé de
+  l'instance hébergée n'a pas cette option, le premium y reste par compte.
+  Le cœur AGPL n'importe pas `ee/` pour autant : c'est `ee/` qui transmet sa
+  vérification à `EntitlementService` au démarrage
+  (`setInstancePremiumSource`).
 
 ### La clé de licence
 
@@ -237,9 +244,6 @@ uniquement, ne pourrait plus être combinée avec le code `ee/`.
 
 ## Hors périmètre de cette décision
 
-- Le premium « pour toute l'instance » côté self-host : une clé de licence
-  auto-hébergée devra rendre premium tous les comptes de l'instance, sans
-  passer par `UserEntitlement`. À faire avant le lancement de l'offre.
 - Le calendrier de lancement du premium (quand la base d'utilisateurs et le
   catalogue de features premium seront suffisants).
 - La liste définitive des features premium — pistes évoquées : stats
