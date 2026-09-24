@@ -90,7 +90,7 @@
       class="bg-accent pointer-events-none absolute bottom-0 left-0 h-0.5 {animate
         ? 'transition-[transform,width] duration-300 ease-out'
         : ''}"
-      style:width="{indicator.width}px"
-      style:transform="translateX({indicator.left}px)"></span>
+      style:width={`${indicator.width}px`}
+      style:transform={`translateX(${indicator.left}px)`}></span>
   {/if}
 </div>
