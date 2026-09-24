@@ -99,6 +99,22 @@ describe("Loomkeep API (e2e)", () => {
     });
   });
 
+  it("shows the account its own security history, with where it came from", async () => {
+    const response = await request(http)
+      .get("/api/auth/security-events")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+
+    // Registration posts a JSON body: the IP must survive body parsing.
+    expect(response.body.items).toEqual([
+      expect.objectContaining({
+        type: "USER_REGISTERED",
+        ip: expect.any(String),
+      }),
+    ]);
+    expect(response.body.items[0]).not.toHaveProperty("identifier");
+  });
+
   it("records re-acceptance of the CGU", async () => {
     const response = await request(http)
       .post("/api/users/me/accept-terms")

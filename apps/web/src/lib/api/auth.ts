@@ -294,6 +294,11 @@ export const revokeSession = (id: string): Promise<void> =>
 export const revokeOtherSessions = (): Promise<void> =>
   typedRequest("/auth/sessions", { method: "DELETE" });
 
+export const getAccountSecurityEvents = (page: number) =>
+  typedRequest("/auth/security-events", {
+    query: { page: page > 1 ? String(page) : undefined },
+  });
+
 export async function logout(): Promise<void> {
   await typedRequest("/auth/logout", { method: "POST", withAuth: false }).catch(
     () => undefined,

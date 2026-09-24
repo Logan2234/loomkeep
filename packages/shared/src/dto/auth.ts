@@ -4,7 +4,7 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
 } from "@simplewebauthn/browser";
-import type { Locale } from "../enums";
+import type { Locale, SecurityEventType } from "../enums";
 import type { UserDto } from "./user";
 
 export interface RegisterRequestDto {
@@ -228,4 +228,16 @@ export interface SessionDto {
   createdAt: string;
   /** ISO datetime of the last refresh — the session's last activity. */
   lastUsedAt: string;
+}
+
+/** One entry of the account's own security history, in the settings. */
+export interface AccountSecurityEventDto {
+  id: string;
+  type: SecurityEventType;
+  /** Language-neutral context: the old → new email, a security key's name. */
+  detail: string | null;
+  /** Null when unknown, e.g. on events recorded before IPs were kept. */
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
 }

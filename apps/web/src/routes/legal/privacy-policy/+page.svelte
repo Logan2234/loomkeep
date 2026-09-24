@@ -13,7 +13,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 23/08/2026</em></p>
+    <p><em>Dernière mise à jour : 24/09/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -534,7 +534,9 @@
               >Lié au compte tant qu'il existe ; le lien avec l'identité est
               retiré dès la suppression du compte, plutôt que conservé. Les
               tentatives de connexion échouées restent journalisées
-              indépendamment, à des fins de prévention des abus</td
+              indépendamment, à des fins de prévention des abus. Les événements
+              de sécurité, avec l'adresse IP d'où ils proviennent, sont
+              supprimés au bout d'un an</td
             ></tr>
           <tr
             ><td>Logs applicatifs</td><td
@@ -603,9 +605,16 @@
     <p>
       Le journal de sécurité et d'imports (créations de compte, changements
       d'identifiants, imports commis) perd son lien avec l'identité du compte
-      dès sa suppression, plutôt que d'être conservé nominativement. Les
-      tentatives de connexion échouées restent journalisées indépendamment du
-      compte visé, à des fins de prévention des abus.
+      dès sa suppression, plutôt que d'être conservé nominativement : les
+      adresses IP enregistrées sont alors effacées. Les tentatives de connexion
+      échouées restent journalisées indépendamment du compte visé, avec leur
+      adresse IP, à des fins de prévention des abus. Les événements de sécurité
+      sont supprimés au bout d'un an.
+    </p>
+    <p>
+      L'utilisateur peut consulter à tout moment le journal de sécurité de son
+      compte (actions sensibles, appareil et adresse IP d'origine) depuis ses
+      paramètres, rubrique « Activité du compte ».
     </p>
     <h2>13. Sécurité</h2>
     <p>

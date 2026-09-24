@@ -11,6 +11,7 @@ import { AppModule } from "./../src/app.module";
 import { AnilistProvider } from "./../src/catalog/providers/anilist.provider";
 import type { ProviderMediaDetails } from "./../src/catalog/providers/provider.types";
 import { TmdbProvider } from "./../src/catalog/providers/tmdb.provider";
+import { registerRequestContext } from "./../src/common/request-context";
 import { PrismaService } from "./../src/prisma/prisma.service";
 
 /**
@@ -114,6 +115,7 @@ export async function createE2eApp(): Promise<E2eApp> {
   const app = moduleFixture.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter(),
   );
+  registerRequestContext(app);
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
