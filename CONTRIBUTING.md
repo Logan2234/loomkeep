@@ -86,5 +86,11 @@ short on purpose. Draft PRs are fine if you want early feedback.
 
 ## License
 
-AGPL-3.0. By contributing, you agree your changes are licensed under the
-same terms as the rest of the project.
+AGPL-3.0.
+
+Before your first pull request can be merged, you need to sign the
+[Contributor License Agreement](CLA.md): CLA Assistant asks you to, in a
+comment on the pull request, and it only takes a click. You keep the
+copyright on your code; the agreement lets the project also ship it under
+other licenses — the premium features are under a commercial license, and
+without it a contribution to the AGPL core could never be combined with them.
