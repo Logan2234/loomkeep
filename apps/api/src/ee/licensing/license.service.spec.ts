@@ -12,9 +12,9 @@ import { LicenseService } from "./license.service";
 
 // The service checks keys against the embedded maintainer key; tests sign
 // their own, so they swap in the public half of a throwaway pair.
-const { PUBLIC_PEM, PRIVATE_PEM } = await vi.hoisted(async () => {
+const { PUBLIC_PEM, PRIVATE_PEM } = vi.hoisted(() => {
   // Hoisted above the imports, so it can't use the static one.
-  const crypto = await import("node:crypto");
+  const crypto = process.getBuiltinModule("node:crypto");
   const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519");
   return {
     PUBLIC_PEM: publicKey.export({ type: "spki", format: "pem" }).toString(),
