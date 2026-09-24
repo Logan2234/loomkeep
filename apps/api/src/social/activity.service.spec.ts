@@ -196,6 +196,35 @@ describe("ActivityService.homeFeed", () => {
   });
 });
 
+describe("ActivityService feed pagination", () => {
+  it("keeps paging when a page holds an event the viewer can't see", async () => {
+    // The page is cut from raw events, so whether more follow must be read
+    // there too. Reading it after the visibility filter ended the feed as
+    // soon as one hidden event landed on a page.
+    const { service } = make({
+      follows: [{ followeeId: ACTOR }],
+      events: [
+        eventRow({ id: "e1", targetId: "m1" }),
+        // A list event whose list is gone: never visible.
+        eventRow({
+          id: "e2",
+          type: "LIST_SHARED",
+          domain: "LISTS",
+          targetType: "LIST",
+          targetId: "gone",
+        }),
+        eventRow({ id: "e3", targetId: "m3" }),
+      ],
+    });
+
+    const feed = await service.homeFeed(VIEWER, 1, 2);
+
+    expect(feed.hasMore).toBe(true);
+    // Only the page's own raw window is shown: e3 belongs to the next page.
+    expect(feed.items.map((i) => i.id)).toEqual(["e1"]);
+  });
+});
+
 describe("ActivityService feed building", () => {
   const target = { id: ACTOR, profileAccess: ProfileAccess.PUBLIC };
 

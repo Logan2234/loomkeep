@@ -186,15 +186,20 @@ export class ActivityService {
   /**
    * Shared feed builder: visibility-gates the raw rows against each actor's
    * Activité audience, aggregates binges, hydrates the actor, and paginates.
+   *
+   * `rows` is one page of raw events plus one extra, fetched with
+   * `skip`/`take`. Pages are cut from raw events, so `hasMore` is read from
+   * them before any are hidden: reading it after the visibility filter ended
+   * the feed as soon as one hidden event landed on a page. A page can
+   * therefore come back shorter than `limit` — aggregation shortens it too.
    */
   private async buildFeed(
     viewerId: string,
     rows: EventRow[],
     limit: number,
   ): Promise<PagedResult<ActivityEventDto>> {
-    const visible = await this.filterVisible(viewerId, rows);
-    const hasMore = visible.length > limit;
-    const page = visible.slice(0, limit);
+    const hasMore = rows.length > limit;
+    const page = await this.filterVisible(viewerId, rows.slice(0, limit));
 
     const actors = await this.actors(page.map((e) => e.userId));
     const aggregated = aggregate(page);
