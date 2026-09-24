@@ -55,6 +55,36 @@ describe("TmdbProvider", () => {
     global.fetch = originalFetch;
   });
 
+  it("counts every attempt against the quota, retries included", async () => {
+    // Counted once per call before, a 503 retried by fetchJson went missing
+    // from /admin/services and from the quota alerts built on it.
+    const quota = { record: vi.fn() };
+    const counted = new TmdbProvider(
+      {
+        getOrThrow: vi.fn().mockReturnValue("test-token"),
+      } as unknown as ConfigService,
+      { getRatings: vi.fn() } as unknown as OmdbService,
+      quota as unknown as QuotaTrackerService,
+    );
+    let calls = 0;
+    global.fetch = vi.fn(() =>
+      Promise.resolve(
+        ++calls === 1
+          ? new Response("", { status: 503 })
+          : new Response(JSON.stringify({ results: [] }), { status: 200 }),
+      ),
+    ) as unknown as typeof fetch;
+
+    vi.useFakeTimers();
+    const search = counted.search("Inception", MediaType.MOVIE);
+    await vi.runAllTimersAsync();
+    await search;
+    vi.useRealTimers();
+
+    expect(quota.record).toHaveBeenCalledTimes(2);
+    expect(quota.record).toHaveBeenCalledWith("tmdb");
+  });
+
   it("maps movie search results to canonical summaries", async () => {
     mockFetchByUrl({
       "/search/movie": fixture("tmdb-search-movie.json"),

@@ -10,6 +10,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { PROVIDER_DAILY_QUOTAS } from "../common/quota-tracker.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type { ProviderQuotaSpec } from "./admin-system-stats.util";
@@ -126,8 +127,7 @@ export class AdminService {
             `https://www.omdbapi.com/?apikey=${this.env("OMDB_API_KEY")}&i=tt0111161`,
             { signal },
           ),
-        // https://www.omdbapi.com/apikey.aspx — free tier: 1,000 requests/day.
-        quotaLimit: { max: 1000, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.omdb, window: "day" },
       },
       {
         key: "igdb",
@@ -161,8 +161,7 @@ export class AdminService {
             "https://api.steampowered.com/ISteamWebAPIUtil/GetServerInfo/v1/",
             { signal },
           ),
-        // https://steamcommunity.com/dev/apiterms §2 — 100,000 calls/day.
-        quotaLimit: { max: 100_000, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.steam, window: "day" },
       },
       {
         key: "simkl",
@@ -180,8 +179,7 @@ export class AdminService {
             `https://api.simkl.com/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
             { signal },
           ),
-        // Limited to 1,000 requests/day.
-        quotaLimit: { max: 1000, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.simkl, window: "day" },
       },
       {
         // Keyless (like AniList), but the sole book source — so it's required
@@ -233,8 +231,7 @@ export class AdminService {
             failure: reachable ? undefined : "refused",
           };
         },
-        // https://www.brevo.com free plan: 300 emails/day (see README "Email").
-        quotaLimit: { max: 300, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.smtp, window: "day" },
       },
       {
         // No external to ping: presence of the VAPID key pair is the signal.

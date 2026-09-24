@@ -1,6 +1,9 @@
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
-import { QuotaTrackerService } from "./quota-tracker.service";
+import {
+  QuotaTrackerService,
+  type QuotaThresholdReached,
+} from "./quota-tracker.service";
 
 function makePrisma(upsert: Mock) {
   return { apiCallCounter: { upsert } } as unknown as PrismaService;
@@ -8,7 +11,7 @@ function makePrisma(upsert: Mock) {
 
 describe("QuotaTrackerService.record", () => {
   it("upserts today's UTC counter for the given provider", () => {
-    const upsert = vi.fn().mockResolvedValue(undefined);
+    const upsert = vi.fn().mockResolvedValue({ count: 1 });
     const service = new QuotaTrackerService(makePrisma(upsert));
 
     service.record("tmdb");
@@ -30,5 +33,44 @@ describe("QuotaTrackerService.record", () => {
     const service = new QuotaTrackerService(makePrisma(upsert));
 
     expect(() => service.record("tmdb")).not.toThrow();
+  });
+});
+
+describe("QuotaTrackerService thresholds", () => {
+  /** Records one call that brings `provider`'s daily counter to `count`. */
+  async function reach(provider: string, count: number) {
+    const upsert = vi.fn().mockResolvedValue({ count });
+    const service = new QuotaTrackerService(makePrisma(upsert));
+    const reached: QuotaThresholdReached[] = [];
+    service.onThresholdReached((event) => reached.push(event));
+
+    service.record(provider);
+    await vi.waitFor(() => expect(upsert).toHaveBeenCalled());
+    // Let the fire-and-forget upsert's continuation run.
+    await new Promise((resolve) => setImmediate(resolve));
+    return reached;
+  }
+
+  it("raises the 80% threshold on the call that reaches it", async () => {
+    expect(await reach("omdb", 800)).toEqual([
+      { provider: "omdb", count: 800, limit: 1000, threshold: 0.8 },
+    ]);
+  });
+
+  it("raises it once: the calls after it stay quiet", async () => {
+    // Each counter value comes back from exactly one increment, so equality
+    // is what makes a threshold fire once a day, even under concurrent calls.
+    expect(await reach("omdb", 801)).toEqual([]);
+  });
+
+  it("raises the 100% threshold when the quota is used up", async () => {
+    expect(await reach("smtp", 300)).toEqual([
+      { provider: "smtp", count: 300, limit: 300, threshold: 1 },
+    ]);
+  });
+
+  it("stays quiet for a provider with no documented daily quota", async () => {
+    // TMDB limits requests per second, not per day.
+    expect(await reach("tmdb", 1_000_000)).toEqual([]);
   });
 });

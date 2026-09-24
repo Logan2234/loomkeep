@@ -116,6 +116,7 @@ const TEMPLATE_LABELS = {
   newsletter: () => m.common_newsletter(),
   episodeDigest: () => m.admin_template_episode_digest(),
   reportsDigest: () => m.admin_job_reports_digest(),
+  quotaAlert: () => m.admin_template_quota_alert(),
   newDeviceLogin: () => m.admin_security_new_device(),
   inactivityWarning: () => m.admin_template_inactivity(),
   moderationDecision: () => m.admin_template_moderation(),
@@ -138,6 +139,9 @@ const FIELD_LABELS = {
   legalBasis: () => m.admin_template_basis(),
   reasonText: () => m.admin_moderation_facts(),
   tosClause: () => m.admin_moderation_terms_clause(),
+  provider: () => m.admin_template_provider(),
+  count: () => m.admin_template_calls_today(),
+  limit: () => m.admin_template_daily_quota(),
 };
 
 export function adminTemplateLabel(key: string): string {

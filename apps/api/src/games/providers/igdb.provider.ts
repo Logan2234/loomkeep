@@ -384,7 +384,6 @@ export class IgdbProvider implements GameCatalogProvider {
   /** POST an Apicalypse query to an IGDB endpoint with a valid access token. */
   private async query<T>(path: string, body: string): Promise<T> {
     await this.throttle.wait();
-    this.quota.record("igdb");
     return fetchJson<T>(
       `${API_URL}${path}`,
       {
@@ -397,7 +396,7 @@ export class IgdbProvider implements GameCatalogProvider {
         },
         body,
       },
-      { sourceLabel: "IGDB" },
+      { sourceLabel: "IGDB", onAttempt: () => this.quota.record("igdb") },
     );
   }
 

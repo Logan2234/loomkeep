@@ -126,6 +126,7 @@ describe("admin presentation", () => {
         "newsletter",
         "episodeDigest",
         "reportsDigest",
+        "quotaAlert",
         "newDeviceLogin",
         "inactivityWarning",
         "moderationDecision",
@@ -151,6 +152,9 @@ describe("admin presentation", () => {
         "legalBasis",
         "reasonText",
         "tosClause",
+        "provider",
+        "count",
+        "limit",
       ]) {
         expect(adminTemplateFieldLabel(key)).not.toBe(key);
       }
