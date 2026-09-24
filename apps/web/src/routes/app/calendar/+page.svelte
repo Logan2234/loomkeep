@@ -5,9 +5,11 @@
   import Banner from "$lib/components/Banner.svelte";
   import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
   import { useEeLock } from "$lib/ee/license.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
@@ -92,6 +94,9 @@
           onclick={() => (showSubscribeModal = true)}>
           <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
           {m.calendar_subscribe_button()}
+          {#if isFeatureNew("release-feed")}
+            <span class="ml-1.5"><NewBadge /></span>
+          {/if}
         </button>
       {/snippet}
       {#if calendarLocked}

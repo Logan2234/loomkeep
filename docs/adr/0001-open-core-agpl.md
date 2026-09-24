@@ -181,14 +181,18 @@ faire tenir.
 
 - **Dans `ee/`** (`apps/api/src/ee`, `apps/web/src/lib/ee`, sous
   [LICENSE-EE](../../LICENSE-EE)) : les fonctionnalités premium **entières**.
-  Premières migrées : l'abonnement iCal au calendrier et les styles de
-  navigation Dock et Board.
+  À ce jour : l'abonnement iCal au calendrier, le flux RSS/Atom des épisodes
+  sortis (même jeton que l'iCal), les styles de navigation Dock et Board, et
+  les stats avancées.
+- **Les stats avancées passent par un point d'extension** : le cœur calcule
+  les champs gratuits et laisse les champs avancés vides ; `ee/stats` les
+  calcule à partir des données déjà chargées par le cœur et se transmet à
+  `StatsService` au démarrage (`setAdvancedStatsSource`). Mêmes routes, mêmes
+  DTO : sans `ee/`, le web reçoit la forme verrouillée qu'il recevait déjà.
 - **Dans le cœur AGPL** : les **quotas et paliers** de fonctionnalités
-  gratuites (un import par domaine, digest quotidien), les stats avancées
-  (calculées dans les mêmes requêtes que les stats gratuites) et les domaines
-  en accès anticipé. Leur code est de toute façon public, puisque la
-  fonctionnalité de base est gratuite : ce qui se vend là, c'est le service
-  hébergé.
+  gratuites (un import par domaine, digest quotidien) et les domaines en accès
+  anticipé. Leur code est de toute façon public, puisque la fonctionnalité de
+  base est gratuite : ce qui se vend là, c'est le service hébergé.
 - **Déplacer une fonctionnalité déjà publiée a un effet**, même si les
   anciennes versions restent AGPL pour toujours : pour la garder
   gratuitement, il faudrait maintenir un fork à chaque nouvelle version.

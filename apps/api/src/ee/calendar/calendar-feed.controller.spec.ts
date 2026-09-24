@@ -25,11 +25,15 @@ function fakeReply() {
   return { reply, headers };
 }
 
-function makeController(getCalendarIcs = vi.fn()) {
-  const service = { getCalendarIcs } as unknown as CalendarFeedService;
+function makeController(getCalendarIcs = vi.fn(), getReleasesFeed = vi.fn()) {
+  const service = {
+    getCalendarIcs,
+    getReleasesFeed,
+  } as unknown as CalendarFeedService;
   return {
     controller: new CalendarFeedController(service),
     getCalendarIcs,
+    getReleasesFeed,
   };
 }
 
@@ -69,6 +73,57 @@ describe("CalendarFeedController.getCalendarIcs", () => {
 
     await expect(
       controller.getCalendarIcs("stale-token", reply),
+    ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
+    expect(reply.send).not.toHaveBeenCalled();
+  });
+});
+
+describe("CalendarFeedController releases feed", () => {
+  const feed = {
+    id: "urn:loomkeep:releases:user-1",
+    title: "Loomkeep",
+    description: "New episodes",
+    link: "https://loomkeep.app/app/calendar",
+    entries: [],
+  };
+
+  it("serves the same feed as Atom and as RSS", async () => {
+    const atom = fakeReply();
+    const rss = fakeReply();
+    const { controller } = makeController(
+      vi.fn(),
+      vi.fn().mockResolvedValue(feed),
+    );
+
+    await controller.getReleasesAtom("a-valid-token", atom.reply);
+    await controller.getReleasesRss("a-valid-token", rss.reply);
+
+    expect(atom.headers["Content-Type"]).toBe(
+      "application/atom+xml; charset=utf-8",
+    );
+    expect(atom.reply.send.mock.calls[0][0]).toContain(
+      '<feed xmlns="http://www.w3.org/2005/Atom">',
+    );
+    expect(rss.headers["Content-Type"]).toBe(
+      "application/rss+xml; charset=utf-8",
+    );
+    expect(rss.reply.send.mock.calls[0][0]).toContain('<rss version="2.0">');
+  });
+
+  it("answers 404 for a missing or unknown token", async () => {
+    const { reply } = fakeReply();
+    const { controller, getReleasesFeed } = makeController(
+      vi.fn(),
+      vi.fn().mockResolvedValue(null),
+    );
+
+    await expect(
+      controller.getReleasesAtom(undefined, reply),
+    ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
+    expect(getReleasesFeed).not.toHaveBeenCalled();
+
+    await expect(
+      controller.getReleasesRss("stale-token", reply),
     ).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
     expect(reply.send).not.toHaveBeenCalled();
   });

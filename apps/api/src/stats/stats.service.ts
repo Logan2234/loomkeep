@@ -2,7 +2,6 @@ import type {
   BookStatsDto,
   DomainStatusBreakdownDto,
   GameStatsDto,
-  LabelCountDto,
   MusicStatsDto,
   ReviewTargetType,
   SocialStatsDto,
@@ -21,21 +20,20 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { DomainGateService } from "../users/domain-gate.service";
+import {
+  type AdvancedStatsSource,
+  EMPTY_BOOK_ADVANCED,
+  EMPTY_GAME_ADVANCED,
+  EMPTY_MUSIC_ADVANCED,
+  EMPTY_SOCIAL_STATS,
+  EMPTY_VIDEO_ADVANCED,
+  emptyOverviewAdvanced,
+  emptyVideoTemporal,
+} from "./advanced-stats.source";
 import { sumStatusBreakdowns } from "./cross-domain-totals.util";
-import { computeDecadeHistogram, decadeOf } from "./decade.util";
+import { decadeOf } from "./decade.util";
 import { filterEnabledDomains } from "./enabled-domains.util";
-import { computePossessionBreakdown } from "./possession.util";
-import { computeAverageRatingByGroup } from "./rating-by-group.util";
-import {
-  computeAverageRating,
-  computeRatingDistribution,
-} from "./rating-distribution.util";
-import {
-  computeAvgReviewLength,
-  computeRatingVsCommunity,
-  computeReciprocityRate,
-  computeSpoilerRatio,
-} from "./social-stats.util";
+import { computeAverageRating } from "./rating-distribution.util";
 import {
   bucketizeBookStatus,
   bucketizeEntryStatus,
@@ -45,24 +43,12 @@ import {
 } from "./status-bucket.util";
 import {
   classifyStaleness,
-  computeLongestBinge,
   computeTypeSplit,
   countCompletedSeasons,
   lastWatchedPerMediaItem,
   runtimeFor,
   type TypeSplitInput,
 } from "./video-stats.util";
-import {
-  computeHeatmap,
-  computeHourCounts,
-  computeMonthlyCounts,
-  computeMonthlyMinutes,
-  computeStreak,
-  computeWeekdayCounts,
-  computeYearlyMinutes,
-  mostActiveYear,
-  windowStart,
-} from "./video-temporal.util";
 
 /** One library entry, domain-agnostic, for the cross-domain aggregators below. */
 interface DomainRow {
@@ -103,20 +89,20 @@ function matchesFilter(
   return false;
 }
 
-/** Tallied labels as a ranked list, most frequent first. */
-function toRankedList(counts: Map<string, number>): LabelCountDto[] {
-  return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
 @Injectable()
 export class StatsService {
+  private advanced: AdvancedStatsSource | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly reviewService: ReviewService,
     private readonly domainGate: DomainGateService,
   ) {}
+
+  /** Called by ee/stats at startup — see advanced-stats.source.ts. */
+  setAdvancedStatsSource(source: AdvancedStatsSource): void {
+    this.advanced = source;
+  }
 
   async getOverview(
     userId: string,
@@ -143,125 +129,21 @@ export class StatsService {
 
     const allRows = domains.flatMap((d) => rows.get(d) ?? []);
     const ratings = await this.ratingsFor(userId, domains, rows);
+    const advanced = premium
+      ? this.advanced?.overview({ ratings, rows: allRows })
+      : null;
 
-    return this.redactOverview(
-      {
-        domain: requested,
-        breakdowns,
-        total,
-        favorites,
-        completionRate: total > 0 ? doneCount / total : 0,
-        abandonRate: total > 0 ? droppedCount / total : 0,
-        ratedCount: ratings.length,
-        ratingRate: total > 0 ? ratings.length / total : 0,
-        averageRating: computeAverageRating(ratings),
-        ratingDistribution: computeRatingDistribution(ratings),
-        decades: computeDecadeHistogram(allRows.map((r) => r.releaseDate)),
-        possession: computePossessionBreakdown(
-          allRows.map((r) => r.ownershipStatus),
-        ),
-      },
-      premium,
-    );
-  }
-
-  // Counts and aggregates stay free; rankings, comparisons and timelines are
-  // premium. Redact here so locked values never reach the client.
-
-  private redactOverview(
-    dto: StatsOverviewDto,
-    premium: boolean,
-  ): StatsOverviewDto {
-    if (premium) return dto;
     return {
-      ...dto,
-      ratingDistribution: dto.ratingDistribution.map((b) => ({
-        ...b,
-        count: 0,
-      })),
-      decades: [],
-      possession: { sufficientData: false, renseignedRatio: 0 },
-    };
-  }
-
-  private redactVideo(dto: VideoStatsDto, premium: boolean): VideoStatsDto {
-    if (premium) return dto;
-    return {
-      ...dto,
-      longestFilm: null,
-      shortestFilm: null,
-      genres: [],
-      pausedCount: 0,
-      ghostCount: 0,
-      longestBingeCount: 0,
-      moviesRewatchedCount: 0,
-    };
-  }
-
-  private redactGame(dto: GameStatsDto, premium: boolean): GameStatsDto {
-    if (premium) return dto;
-    return {
-      ...dto,
-      topGamesByPlaytime: [],
-      topPlatforms: [],
-      topGenres: [],
-      avgRatingByPlatform: [],
-      avgRatingByGenre: [],
-    };
-  }
-
-  private redactBook(dto: BookStatsDto, premium: boolean): BookStatsDto {
-    if (premium) return dto;
-    return {
-      ...dto,
-      longestBook: null,
-      shortestBook: null,
-      topAuthorsByPages: [],
-      distinctAuthorsCount: 0,
-    };
-  }
-
-  private redactMusic(dto: MusicStatsDto, premium: boolean): MusicStatsDto {
-    if (premium) return dto;
-    return { ...dto, topArtists: [], releaseTypeSplit: [] };
-  }
-
-  private redactVideoTemporal(
-    dto: VideoTemporalDto,
-    premium: boolean,
-  ): VideoTemporalDto {
-    if (premium) return dto;
-    return {
-      heatmap: [],
-      byWeekday: dto.byWeekday.map((b) => ({ ...b, count: 0 })),
-      byHour: dto.byHour.map((b) => ({ ...b, count: 0 })),
-      monthlyMinutes: [],
-      yearlyMinutes: [],
-      mostActiveYear: null,
-    };
-  }
-
-  private redactSocial(dto: SocialStatsDto, premium: boolean): SocialStatsDto {
-    if (premium) return dto;
-    return {
-      reviewsWritten: 0,
-      avgReviewLength: null,
-      ratingVsCommunity: { sufficientData: false, sampleSize: 0 },
-      commentsWritten: 0,
-      rootCommentsCount: 0,
-      replyCommentsCount: 0,
-      spoilerCommentRatio: 0,
-      reviewRevisionsCount: 0,
-      helpfulVotesReceived: 0,
-      mostVotedReviewVotes: null,
-      reactionsGiven: 0,
-      reactionsReceived: 0,
-      listsWritten: 0,
-      listsPublicCount: 0,
-      newFollowersByMonth: [],
-      followerReciprocityRate: 0,
-      socialActivityByMonth: [],
-      contributionStreakDays: 0,
+      domain: requested,
+      breakdowns,
+      total,
+      favorites,
+      completionRate: total > 0 ? doneCount / total : 0,
+      abandonRate: total > 0 ? droppedCount / total : 0,
+      ratedCount: ratings.length,
+      ratingRate: total > 0 ? ratings.length / total : 0,
+      averageRating: computeAverageRating(ratings),
+      ...(advanced ?? emptyOverviewAdvanced()),
     };
   }
 
@@ -510,60 +392,50 @@ export class StatsService {
     userId: string,
     premium: boolean,
   ): Promise<VideoStatsDto> {
-    const [entries, watches, staleness, moviesRewatchedCount] =
-      await Promise.all([
-        this.prisma.libraryEntry.findMany({
-          where: { userId },
-          select: {
-            status: true,
-            mediaItem: {
-              select: {
-                id: true,
-                title: true,
-                type: true,
-                runtimeMin: true,
-                genres: true,
-                canonicalSource: true,
-                externalIds: { select: { source: true, externalId: true } },
-              },
+    const [entries, watches] = await Promise.all([
+      this.prisma.libraryEntry.findMany({
+        where: { userId },
+        select: {
+          status: true,
+          mediaItem: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              runtimeMin: true,
+              genres: true,
+              canonicalSource: true,
+              externalIds: { select: { source: true, externalId: true } },
             },
-            _count: { select: { replays: true } },
           },
-        }),
-        this.prisma.episodeWatch.findMany({
-          // Season 0 (TMDB specials) never counts towards progression, so it
-          // is excluded here rather than loaded and dropped in memory.
-          where: { userId, episode: { season: { number: { not: 0 } } } },
-          select: {
-            watchedAt: true,
-            episode: {
-              select: {
-                id: true,
-                seasonId: true,
-                season: {
-                  select: {
-                    mediaItemId: true,
-                    mediaItem: {
-                      select: { type: true, genres: true, runtimeMin: true },
-                    },
+          _count: { select: { replays: true } },
+        },
+      }),
+      this.prisma.episodeWatch.findMany({
+        // Season 0 (TMDB specials) never counts towards progression, so it
+        // is excluded here rather than loaded and dropped in memory.
+        where: { userId, episode: { season: { number: { not: 0 } } } },
+        select: {
+          watchedAt: true,
+          episode: {
+            select: {
+              id: true,
+              seasonId: true,
+              season: {
+                select: {
+                  mediaItemId: true,
+                  mediaItem: {
+                    select: { type: true, genres: true, runtimeMin: true },
                   },
                 },
               },
             },
           },
-        }),
-        this.fetchInProgressStaleness(userId),
-        this.prisma.movieReplay.count({
-          where: { libraryEntry: { userId } },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     const regularWatches = watches;
-    const datedRegularWatches = regularWatches.filter(
-      (w): w is (typeof regularWatches)[number] & { watchedAt: Date } =>
-        w.watchedAt !== null,
-    );
-    const genreCounts = new Map<string, number>();
     const typeSplitRows: TypeSplitInput[] = [];
     let episodeMinutes = 0;
 
@@ -572,8 +444,6 @@ export class StatsService {
       const minutes = runtimeFor(mi.type, mi.runtimeMin);
       episodeMinutes += minutes;
       typeSplitRows.push({ type: mi.type, minutes });
-      for (const g of mi.genres)
-        genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
     }
 
     const completedMovies = entries.filter(
@@ -590,20 +460,7 @@ export class StatsService {
       for (let i = 0; i < instances; i++) {
         typeSplitRows.push({ type: "MOVIE", minutes });
       }
-
-      for (const g of m.mediaItem.genres) {
-        genreCounts.set(g, (genreCounts.get(g) ?? 0) + instances);
-      }
     }
-
-    const moviesWithRuntime = completedMovies.filter(
-      (m) => m.mediaItem.runtimeMin !== null && m.mediaItem.runtimeMin > 0,
-    );
-    const sortedByRuntime = moviesWithRuntime.sort(
-      (a, b) => b.mediaItem.runtimeMin! - a.mediaItem.runtimeMin!,
-    );
-    const longest = sortedByRuntime[0];
-    const shortest = sortedByRuntime[sortedByRuntime.length - 1];
 
     // Distinct watched episode ids per season, to weigh against how many of
     // that season's episodes have aired so far ("à jour" = completed).
@@ -639,44 +496,35 @@ export class StatsService {
       };
     });
 
-    return this.redactVideo(
-      {
-        totalMinutes: episodeMinutes + movieMinutes,
-        episodesWatched: regularWatches.length,
-        uniqueEpisodesWatched: new Set(regularWatches.map((w) => w.episode.id))
-          .size,
-        seasonsCompleted: countCompletedSeasons(seasonProgress),
-        typeSplit: computeTypeSplit(typeSplitRows),
-        avgEpisodeRuntimeMin:
-          regularWatches.length > 0
-            ? Math.round(episodeMinutes / regularWatches.length)
-            : null,
-        longestFilm: longest
-          ? {
-              title: longest.mediaItem.title,
-              minutes: longest.mediaItem.runtimeMin!,
-              href: this.mediaHref(longest.mediaItem),
-            }
+    const advanced = premium
+      ? await this.advanced?.video(userId, {
+          episodeWatches: regularWatches.map((w) => ({
+            watchedAt: w.watchedAt,
+            genres: w.episode.season.mediaItem.genres,
+          })),
+          completedMovies: completedMovies.map((m) => ({
+            title: m.mediaItem.title,
+            runtimeMin: m.mediaItem.runtimeMin,
+            genres: m.mediaItem.genres,
+            href: this.mediaHref(m.mediaItem),
+            viewings: 1 + m._count.replays,
+          })),
+        })
+      : null;
+
+    return {
+      totalMinutes: episodeMinutes + movieMinutes,
+      episodesWatched: regularWatches.length,
+      uniqueEpisodesWatched: new Set(regularWatches.map((w) => w.episode.id))
+        .size,
+      seasonsCompleted: countCompletedSeasons(seasonProgress),
+      typeSplit: computeTypeSplit(typeSplitRows),
+      avgEpisodeRuntimeMin:
+        regularWatches.length > 0
+          ? Math.round(episodeMinutes / regularWatches.length)
           : null,
-        shortestFilm: shortest
-          ? {
-              title: shortest.mediaItem.title,
-              minutes: shortest.mediaItem.runtimeMin!,
-              href: this.mediaHref(shortest.mediaItem),
-            }
-          : null,
-        genres: [...genreCounts.entries()]
-          .map(([genre, count]) => ({ genre, count }))
-          .sort((a, b) => b.count - a.count),
-        pausedCount: staleness.filter((s) => s.staleness === "PAUSED").length,
-        ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
-        moviesRewatchedCount,
-        longestBingeCount: computeLongestBinge(
-          datedRegularWatches.map((w) => w.watchedAt),
-        ),
-      },
-      premium,
-    );
+      ...(advanced ?? EMPTY_VIDEO_ADVANCED),
+    };
   }
 
   async getVideoSeries(
@@ -702,8 +550,9 @@ export class StatsService {
 
   // WATCHING series/anime (movies have no "in progress"), paired with how
   // stale their last viewing is — only entries actually touched at least
-  // once (a never-started show is neither paused nor a ghost).
-  private async fetchInProgressStaleness(userId: string): Promise<
+  // once (a never-started show is neither paused nor a ghost). Public for
+  // ee/stats, which counts the paused and ghost ones.
+  async fetchInProgressStaleness(userId: string): Promise<
     {
       mediaItem: {
         id: string;
@@ -809,71 +658,37 @@ export class StatsService {
       }),
     ]);
 
-    const ratingMap = await this.reviewService.getRatings(
-      userId,
-      "GAME",
-      entries.map((e) => e.gameItem.id),
-    );
-
     const completed = entries.filter((e) => e.status === "COMPLETED");
     const totalPlaytimeMinutes = entries.reduce(
       (sum, e) => sum + e.playtimeMinutes,
       0,
     );
-
-    const topGamesByPlaytime = entries
-      .filter((e) => e.playtimeMinutes > 0)
-      .sort((a, b) => b.playtimeMinutes - a.playtimeMinutes)
-      .map((e) => ({
-        title: e.gameItem.title,
-        minutes: e.playtimeMinutes,
-        href: this.itemHref("games", e.gameItem),
-      }));
-
-    const platformCounts = new Map<string, number>();
-    const genreCounts = new Map<string, number>();
-
-    for (const e of entries) {
-      for (const p of e.gameItem.platforms) {
-        platformCounts.set(p, (platformCounts.get(p) ?? 0) + 1);
-      }
-
-      for (const g of e.gameItem.genres) {
-        genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
-      }
-    }
-
-    return this.redactGame(
-      {
-        totalPlaytimeMinutes,
-        avgPlaytimePerCompletedMinutes:
-          completed.length > 0
-            ? Math.round(
-                completed.reduce((sum, e) => sum + e.playtimeMinutes, 0) /
-                  completed.length,
-              )
-            : null,
-        neverLaunchedCount: entries.filter((e) => e.playtimeMinutes === 0)
-          .length,
-        replaysCount,
-        topGamesByPlaytime,
-        topPlatforms: toRankedList(platformCounts),
-        topGenres: toRankedList(genreCounts),
-        avgRatingByPlatform: computeAverageRatingByGroup(
-          entries.map((e) => ({
-            groups: e.gameItem.platforms,
-            rating: ratingMap.get(e.gameItem.id) ?? null,
+    const advanced = premium
+      ? await this.advanced?.games(userId, {
+          entries: entries.map((e) => ({
+            itemId: e.gameItem.id,
+            title: e.gameItem.title,
+            href: this.itemHref("games", e.gameItem),
+            playtimeMinutes: e.playtimeMinutes,
+            genres: e.gameItem.genres,
+            platforms: e.gameItem.platforms,
           })),
-        ),
-        avgRatingByGenre: computeAverageRatingByGroup(
-          entries.map((e) => ({
-            groups: e.gameItem.genres,
-            rating: ratingMap.get(e.gameItem.id) ?? null,
-          })),
-        ),
-      },
-      premium,
-    );
+        })
+      : null;
+
+    return {
+      totalPlaytimeMinutes,
+      avgPlaytimePerCompletedMinutes:
+        completed.length > 0
+          ? Math.round(
+              completed.reduce((sum, e) => sum + e.playtimeMinutes, 0) /
+                completed.length,
+            )
+          : null,
+      neverLaunchedCount: entries.filter((e) => e.playtimeMinutes === 0).length,
+      replaysCount,
+      ...(advanced ?? EMPTY_GAME_ADVANCED),
+    };
   }
 
   async getBookStats(userId: string, premium: boolean): Promise<BookStatsDto> {
@@ -909,27 +724,11 @@ export class StatsService {
         0,
       ) + reading.reduce((sum, e) => sum + e.currentPage, 0);
 
-    const readWithPages = read.filter(
-      (e) => e.bookItem.pageCount !== null && e.bookItem.pageCount > 0,
+    const readPageCounts = read.flatMap((e) =>
+      e.bookItem.pageCount !== null && e.bookItem.pageCount > 0
+        ? [e.bookItem.pageCount]
+        : [],
     );
-    const sortedByPages = [...readWithPages].sort(
-      (a, b) => b.bookItem.pageCount! - a.bookItem.pageCount!,
-    );
-    const longest = sortedByPages[0];
-    const shortest = sortedByPages[sortedByPages.length - 1];
-
-    const pagesByAuthor = new Map<string, number>();
-
-    for (const e of readWithPages) {
-      for (const author of e.bookItem.authors) {
-        pagesByAuthor.set(
-          author,
-          (pagesByAuthor.get(author) ?? 0) + e.bookItem.pageCount!,
-        );
-      }
-    }
-
-    const distinctAuthors = new Set(entries.flatMap((e) => e.bookItem.authors));
 
     const now = new Date();
     const stagnantInProgressCount = reading.filter(
@@ -938,41 +737,31 @@ export class StatsService {
         DORMANT_AFTER_DAYS,
     ).length;
 
-    return this.redactBook(
-      {
-        pagesRead,
-        avgPagesPerRead:
-          readWithPages.length > 0
-            ? Math.round(
-                readWithPages.reduce(
-                  (sum, e) => sum + e.bookItem.pageCount!,
-                  0,
-                ) / readWithPages.length,
-              )
-            : null,
-        longestBook: longest
-          ? {
-              title: longest.bookItem.title,
-              pages: longest.bookItem.pageCount!,
-              href: this.itemHref("books", longest.bookItem),
-            }
+    const advanced = premium
+      ? this.advanced?.books({
+          entries: entries.map((e) => ({
+            status: e.status,
+            title: e.bookItem.title,
+            href: this.itemHref("books", e.bookItem),
+            pageCount: e.bookItem.pageCount,
+            authors: e.bookItem.authors,
+          })),
+        })
+      : null;
+
+    return {
+      pagesRead,
+      avgPagesPerRead:
+        readPageCounts.length > 0
+          ? Math.round(
+              readPageCounts.reduce((sum, pages) => sum + pages, 0) /
+                readPageCounts.length,
+            )
           : null,
-        shortestBook: shortest
-          ? {
-              title: shortest.bookItem.title,
-              pages: shortest.bookItem.pageCount!,
-              href: this.itemHref("books", shortest.bookItem),
-            }
-          : null,
-        topAuthorsByPages: [...pagesByAuthor.entries()]
-          .map(([author, pages]) => ({ author, pages }))
-          .sort((a, b) => b.pages - a.pages),
-        distinctAuthorsCount: distinctAuthors.size,
-        rereadsCount,
-        stagnantInProgressCount,
-      },
-      premium,
-    );
+      rereadsCount,
+      stagnantInProgressCount,
+      ...(advanced ?? EMPTY_BOOK_ADVANCED),
+    };
   }
 
   async getMusicStats(
@@ -1003,277 +792,45 @@ export class StatsService {
       (sum, e) => sum + (e.musicItem.trackCount ?? 0),
       0,
     );
+    const advanced = premium
+      ? this.advanced?.music({
+          entries: entries.map((e) => ({
+            artists: e.musicItem.artists,
+            albumType: e.musicItem.albumType,
+          })),
+        })
+      : null;
 
-    const artistCounts = new Map<string, number>();
-    const typeCounts = new Map<string, number>();
-
-    for (const e of entries) {
-      for (const artist of e.musicItem.artists) {
-        artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
-      }
-
-      const type = e.musicItem.albumType ?? "Autre";
-      typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
-    }
-
-    return this.redactMusic(
-      {
-        listenDurationMin,
-        totalTracks,
-        distinctArtistsCount: artistCounts.size,
-        topArtists: toRankedList(artistCounts),
-        releaseTypeSplit: toRankedList(typeCounts),
-      },
-      premium,
-    );
+    return {
+      listenDurationMin,
+      totalTracks,
+      distinctArtistsCount: new Set(entries.flatMap((e) => e.musicItem.artists))
+        .size,
+      ...(advanced ?? EMPTY_MUSIC_ADVANCED),
+    };
   }
 
-  // The heatmap and monthly/yearly bars span their natural range; only the
-  // weekday and hourly curves respect `period`.
-
+  /** Entirely advanced: computed by ee/stats, empty without it. */
   async getVideoTemporal(
     userId: string,
     period: StatsWindow,
     premium: boolean,
   ): Promise<VideoTemporalDto> {
-    const watches = await this.prisma.episodeWatch.findMany({
-      // Filter in PostgreSQL because EpisodeWatch grows without bound.
-      where: {
-        userId,
-        watchedAt: { not: null },
-        episode: { season: { number: { not: 0 } } },
-      },
-      select: {
-        watchedAt: true,
-        episode: {
-          select: {
-            season: {
-              select: {
-                mediaItem: { select: { type: true, runtimeMin: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Runtime-wise a no-op — the `where` above already excluded these. Prisma
-    // types `watchedAt` as nullable regardless of the filter, and this is
-    // what narrows it for everything below.
-    const regular = watches.filter(
-      (w): w is (typeof watches)[number] & { watchedAt: Date } =>
-        w.watchedAt !== null,
-    );
-    const now = new Date();
-    const start = windowStart(period, now);
-    const inWindow = start
-      ? regular.filter((w) => w.watchedAt >= start)
-      : regular;
-
-    const datedMinutes = regular.map((w) => ({
-      watchedAt: w.watchedAt,
-      minutes: runtimeFor(
-        w.episode.season.mediaItem.type,
-        w.episode.season.mediaItem.runtimeMin,
-      ),
-    }));
-    const yearlyMinutes = computeYearlyMinutes(datedMinutes);
-
-    return this.redactVideoTemporal(
-      {
-        heatmap: computeHeatmap(
-          regular.map((w) => w.watchedAt),
-          365,
-          now,
-        ),
-        byWeekday: computeWeekdayCounts(inWindow.map((w) => w.watchedAt)),
-        byHour: computeHourCounts(inWindow.map((w) => w.watchedAt)),
-        monthlyMinutes: computeMonthlyMinutes(datedMinutes, 12, now),
-        yearlyMinutes,
-        mostActiveYear: mostActiveYear(yearlyMinutes),
-      },
-      premium,
-    );
+    const advanced = premium
+      ? await this.advanced?.videoTemporal(userId, period)
+      : null;
+    return advanced ?? emptyVideoTemporal();
   }
 
-  // The controller gates this section with SOCIAL_ENABLED. Stats are self-only.
-
+  /**
+   * Entirely advanced, like getVideoTemporal. The controller gates this
+   * section with SOCIAL_ENABLED. Stats are self-only.
+   */
   async getSocialStats(
     userId: string,
     premium: boolean,
   ): Promise<SocialStatsDto> {
-    const now = new Date();
-    const twelveMonthsAgo = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1),
-    );
-
-    const [
-      reviews,
-      comments,
-      reactionsGiven,
-      reactionsReceived,
-      lists,
-      newFollowers,
-    ] = await Promise.all([
-      this.prisma.review.findMany({
-        where: { userId },
-        select: {
-          targetType: true,
-          targetId: true,
-          rating: true,
-          text: true,
-          createdAt: true,
-          _count: { select: { revisions: true } },
-          votes: { select: { value: true } },
-        },
-      }),
-      this.prisma.comment.findMany({
-        where: { authorId: userId, deletedAt: null },
-        select: { parentId: true, spoilerTag: true, createdAt: true },
-      }),
-      this.prisma.commentReaction.count({ where: { userId } }),
-      this.prisma.commentReaction.count({
-        where: { comment: { authorId: userId } },
-      }),
-      // Two counts, not a row per list.
-      this.prisma.list.groupBy({
-        by: ["visibility"],
-        where: { userId },
-        _count: { _all: true },
-      }),
-      this.prisma.follow.findMany({
-        where: {
-          followeeId: userId,
-          status: "ACCEPTED",
-          createdAt: { gte: twelveMonthsAgo },
-        },
-        select: { followerId: true, createdAt: true },
-      }),
-    ]);
-
-    const communityRatings = await this.fetchCommunityRatings(userId, reviews);
-    const votesUp = reviews.map(
-      (r) => r.votes.filter((v) => v.value === "UP").length,
-    );
-
-    const viewerFollowsIds = await this.fetchFollowedBackIds(
-      userId,
-      newFollowers.map((f) => f.followerId),
-    );
-
-    const socialActivityDates = [
-      ...reviews.map((r) => r.createdAt),
-      ...comments.map((c) => c.createdAt),
-    ];
-
-    return this.redactSocial(
-      {
-        reviewsWritten: reviews.length,
-        avgReviewLength: computeAvgReviewLength(reviews.map((r) => r.text)),
-        ratingVsCommunity: computeRatingVsCommunity(
-          reviews.map((r) => ({
-            yourRating: r.rating,
-            otherRatings:
-              communityRatings.get(`${r.targetType}:${r.targetId}`) ?? [],
-          })),
-        ),
-        commentsWritten: comments.length,
-        rootCommentsCount: comments.filter((c) => c.parentId === null).length,
-        replyCommentsCount: comments.filter((c) => c.parentId !== null).length,
-        spoilerCommentRatio: computeSpoilerRatio(comments),
-        reviewRevisionsCount: reviews.reduce(
-          (sum, r) => sum + r._count.revisions,
-          0,
-        ),
-        helpfulVotesReceived: votesUp.reduce((sum, n) => sum + n, 0),
-        mostVotedReviewVotes: votesUp.length > 0 ? Math.max(...votesUp) : null,
-        reactionsGiven,
-        reactionsReceived,
-        listsWritten: sumCounts(lists),
-        listsPublicCount: sumCounts(
-          lists.filter((l) => l.visibility === "PUBLIC"),
-        ),
-        newFollowersByMonth: computeMonthlyCounts(
-          newFollowers.map((f) => f.createdAt),
-          12,
-          now,
-        ),
-        followerReciprocityRate: computeReciprocityRate(
-          newFollowers.map((f) => f.followerId),
-          viewerFollowsIds,
-        ),
-        socialActivityByMonth: computeMonthlyCounts(
-          socialActivityDates,
-          12,
-          now,
-        ),
-        contributionStreakDays: computeStreak(socialActivityDates, now),
-      },
-      premium,
-    );
+    const advanced = premium ? await this.advanced?.social(userId) : null;
+    return advanced ?? EMPTY_SOCIAL_STATS;
   }
-
-  /** Which of `candidateIds` the viewer follows back (accepted), for reciprocity. */
-  private async fetchFollowedBackIds(
-    userId: string,
-    candidateIds: string[],
-  ): Promise<Set<string>> {
-    if (candidateIds.length === 0) return new Set();
-
-    const rows = await this.prisma.follow.findMany({
-      where: {
-        followerId: userId,
-        followeeId: { in: candidateIds },
-        status: "ACCEPTED",
-      },
-      select: { followeeId: true },
-    });
-
-    return new Set(rows.map((f) => f.followeeId));
-  }
-
-  // Other users' ratings on the same works the viewer reviewed, grouped by
-  // "targetType:targetId" — grouped per targetType since Prisma can't filter
-  // a compound (targetType, targetId) pair list in one `in` clause.
-  private async fetchCommunityRatings(
-    userId: string,
-    reviews: { targetType: string; targetId: string }[],
-  ): Promise<Map<string, number[]>> {
-    const idsByType = new Map<string, string[]>();
-
-    for (const r of reviews) {
-      const arr = idsByType.get(r.targetType) ?? [];
-      arr.push(r.targetId);
-      idsByType.set(r.targetType, arr);
-    }
-
-    const result = new Map<string, number[]>();
-
-    await Promise.all(
-      [...idsByType.entries()].map(async ([targetType, targetIds]) => {
-        const rows = await this.prisma.review.findMany({
-          where: {
-            targetType: targetType as ReviewTargetType,
-            targetId: { in: targetIds },
-            userId: { not: userId },
-          },
-          select: { targetId: true, rating: true },
-        });
-
-        for (const row of rows) {
-          const key = `${targetType}:${row.targetId}`;
-          const arr = result.get(key) ?? [];
-          arr.push(row.rating);
-          result.set(key, arr);
-        }
-      }),
-    );
-
-    return result;
-  }
-}
-
-/** Totals a Prisma groupBy result's `_count._all` buckets. */
-function sumCounts(groups: { _count: { _all: number } }[]): number {
-  return groups.reduce((sum, g) => sum + g._count._all, 0);
 }

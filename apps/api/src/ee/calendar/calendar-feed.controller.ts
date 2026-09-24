@@ -18,6 +18,7 @@ import { AppException } from "../../common/app.exception";
 import { EeLicenseGuard } from "../licensing/ee-license.guard";
 import { CalendarFeedService } from "./calendar-feed.service";
 import { CalendarTokenResponseDto } from "./dto/calendar-token-response.dto";
+import { buildAtomFeed, buildRssFeed, type ReleaseFeed } from "./feed.util";
 
 /**
  * Keeps the routes the feature had before moving to `ee/`: subscribed
@@ -53,6 +54,42 @@ export class CalendarFeedController {
       .header("Content-Type", "text/calendar; charset=utf-8")
       .header("Content-Disposition", 'inline; filename="loomkeep.ics"')
       .send(ics);
+  }
+
+  /** The episodes already out, for feed readers. Public for the same reason. */
+  @Public()
+  @Get("library/releases.atom")
+  async getReleasesAtom(
+    @Query("token") token: string | undefined,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    reply
+      .header("Content-Type", "application/atom+xml; charset=utf-8")
+      .send(buildAtomFeed(await this.releasesFeed(token)));
+  }
+
+  @Public()
+  @Get("library/releases.rss")
+  async getReleasesRss(
+    @Query("token") token: string | undefined,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    reply
+      .header("Content-Type", "application/rss+xml; charset=utf-8")
+      .send(buildRssFeed(await this.releasesFeed(token)));
+  }
+
+  private async releasesFeed(token: string | undefined): Promise<ReleaseFeed> {
+    const feed = token ? await this.calendarFeed.getReleasesFeed(token) : null;
+
+    if (!feed) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryCalendarUnavailable,
+      );
+    }
+
+    return feed;
   }
 
   @Get("users/me/calendar-token")
