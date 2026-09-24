@@ -167,6 +167,7 @@
   "valerr_max_length": "Must be at most {max} characters.",
   "valerr_length_exact": "Must be exactly {count} characters.",
   "valerr_length_range": "Must be between {min} and {max} characters.",
+  "valerr_not_equals": "Can't be {value}.",
   "valerr_min": "Must be greater than or equal to {min}.",
   "valerr_max": "Must be less than or equal to {max}.",
   "valerr_matches": "The format doesn't match what's expected.",
