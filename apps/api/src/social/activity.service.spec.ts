@@ -1,6 +1,7 @@
 import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { DomainGateService } from "../users/domain-gate.service";
 import { ActivityService } from "./activity.service";
 import type { VisibilityService } from "./visibility.service";
 import type { ViewerRelation } from "./visibility.util";
@@ -47,6 +48,7 @@ function make(
     audience?: VisibilityAudience;
     relation?: ViewerRelation;
     actorAccess?: ProfileAccess;
+    enabledDomains?: string[];
   } = {},
 ) {
   const prisma = {
@@ -81,8 +83,14 @@ function make(
       .mockReturnValue(options.audience ?? VisibilityAudience.PUBLIC),
   } as unknown as VisibilityService;
 
+  const domainGate = {
+    getEnabledDomains: vi
+      .fn()
+      .mockResolvedValue(options.enabledDomains ?? ["MEDIA", "BOOKS"]),
+  } as unknown as DomainGateService;
+
   return {
-    service: new ActivityService(prisma, visibility),
+    service: new ActivityService(prisma, visibility, domainGate),
     prisma,
     visibility,
   };
@@ -142,7 +150,49 @@ describe("ActivityService.homeFeed", () => {
 
     expect(
       (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where,
-    ).toEqual({ userId: { in: [ACTOR] }, homeFeed: true });
+    ).toMatchObject({ userId: { in: [ACTOR] }, homeFeed: true });
+  });
+
+  function feedDomains(prisma: PrismaService): unknown {
+    return (prisma.activityEvent.findMany as Mock).mock.calls[0][0].where
+      .domain;
+  }
+
+  it("leaves out the domains the viewer has turned off", async () => {
+    // A reader who switched Games off doesn't want a friend's playthroughs
+    // back in through the feed.
+    const { service, prisma } = make({
+      follows: [{ followeeId: ACTOR }],
+      enabledDomains: ["MEDIA", "BOOKS"],
+    });
+
+    await service.homeFeed(VIEWER);
+
+    expect(feedDomains(prisma)).toEqual({ in: ["MEDIA", "BOOKS", "LISTS"] });
+  });
+
+  it("narrows to the one domain asked for", async () => {
+    const { service, prisma } = make({
+      follows: [{ followeeId: ACTOR }],
+      enabledDomains: ["MEDIA", "BOOKS"],
+    });
+
+    await service.homeFeed(VIEWER, 1, 30, "BOOKS");
+
+    expect(feedDomains(prisma)).toEqual({ in: ["BOOKS"] });
+  });
+
+  it("returns nothing for a domain the viewer has turned off", async () => {
+    // A stale ?domain= link must not reopen a domain the viewer closed.
+    const { service, prisma } = make({
+      follows: [{ followeeId: ACTOR }],
+      enabledDomains: ["MEDIA"],
+    });
+
+    const feed = await service.homeFeed(VIEWER, 1, 30, "GAMES");
+
+    expect(feed).toEqual({ items: [], hasMore: false });
+    expect(prisma.activityEvent.findMany).not.toHaveBeenCalled();
   });
 });
 

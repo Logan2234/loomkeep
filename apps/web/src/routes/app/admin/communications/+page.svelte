@@ -3,6 +3,7 @@
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import Tabs from "$lib/components/Tabs.svelte";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
   import EmailTab from "./components/EmailTab.svelte";
@@ -33,33 +34,16 @@
     subtitle={m.admin_communications_subtitle()}
     back="/app/admin" />
 
-  <div
-    class="mb-6 flex gap-2"
-    role="tablist"
-    aria-label={m.settings_section_communications()}>
-    <button
-      id="communications-email-tab"
-      type="button"
-      role="tab"
-      aria-selected={tab === "email"}
-      aria-controls="communications-email-panel"
-      class="chip"
-      class:chip-on={tab === "email"}
-      onclick={() => changeTab("email")}>
-      {m.common_email()}
-    </button>
-    <button
-      id="communications-push-tab"
-      type="button"
-      role="tab"
-      aria-selected={tab === "push"}
-      aria-controls="communications-push-panel"
-      class="chip"
-      class:chip-on={tab === "push"}
-      onclick={() => changeTab("push")}>
-      {m.admin_communications_push()}
-    </button>
-  </div>
+  <Tabs
+    class="mb-6"
+    label={m.settings_section_communications()}
+    idPrefix="communications"
+    tabs={[
+      { value: "email" as const, label: m.common_email() },
+      { value: "push" as const, label: m.admin_communications_push() },
+    ]}
+    current={tab}
+    onSelect={changeTab} />
 
   {#key tab}
     <div

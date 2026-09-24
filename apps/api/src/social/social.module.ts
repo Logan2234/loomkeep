@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationModule } from "../notifications/notification.module";
+import { DomainGateModule } from "../users/domain-gate.module";
 import { ActivityService } from "./activity.service";
 import { BlockService } from "./block.service";
 import { FollowService } from "./follow.service";
@@ -19,7 +20,12 @@ import { VisibilityService } from "./visibility.service";
 // in Gamification would need Gamification to import Social, which already
 // imports Gamification (AchievementService), a real circular dependency.
 @Module({
-  imports: [NotificationModule, GamificationModule, EventsModule],
+  imports: [
+    NotificationModule,
+    GamificationModule,
+    EventsModule,
+    DomainGateModule,
+  ],
   controllers: [SocialController, PrivacyController, LeaderboardController],
   providers: [
     BlockService,

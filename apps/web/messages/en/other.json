@@ -669,6 +669,7 @@
   "feed_empty_title": "Nothing to display yet",
   "feed_empty_body": "Share your profile for others to follow you, or follow someone to see their activity here.",
   "feed_share_profile": "Share my profile",
+  "feed_empty_domain": "Nobody you follow has any activity in this domain yet.",
   "calendar_subtitle": "Next episodes of what you're following.",
   "calendar_subscribe_button": "Add to my calendar",
   "calendar_no_episodes": "No upcoming episodes in what you're following.",

@@ -1,7 +1,11 @@
+import type { Domain } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
-export const getFeed = (page = 1) =>
-  typedRequest("/social/feed", { query: { page: String(page) } });
+/** `domain` narrows the feed to one of the viewer's enabled domains. */
+export const getFeed = (page = 1, domain?: Domain) =>
+  typedRequest("/social/feed", {
+    query: { page: String(page), ...(domain ? { domain } : {}) },
+  });
 
 export const getFeedPreview = () => typedRequest("/social/feed/preview");
 

@@ -9,6 +9,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
+  import Tabs from "$lib/components/Tabs.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import { formatNumber } from "$lib/format";
@@ -78,18 +79,21 @@
   {#if !enabled}
     <EmptyState>{m.gamification_leaderboard_disabled()}</EmptyState>
   {:else}
-    <div class="border-border mb-5 flex gap-6 border-b">
-      {#each [{ value: "global" as const, label: m.gamification_leaderboard_tab_global() }, { value: "friends" as const, label: m.gamification_leaderboard_tab_friends() }] as tab (tab.value)}
-        <button
-          type="button"
-          class="-mb-px border-b-2 pb-2.5 text-sm font-bold {scope === tab.value
-            ? 'border-accent text-fg'
-            : 'text-dim border-transparent'}"
-          onclick={() => (scope = tab.value)}>
-          {tab.label}
-        </button>
-      {/each}
-    </div>
+    <Tabs
+      class="mb-5"
+      label={m.gamification_leaderboard_title()}
+      tabs={[
+        {
+          value: "global" as const,
+          label: m.gamification_leaderboard_tab_global(),
+        },
+        {
+          value: "friends" as const,
+          label: m.gamification_leaderboard_tab_friends(),
+        },
+      ]}
+      current={scope}
+      onSelect={(next) => (scope = next)} />
 
     <div class="mb-4">
       <SegmentedControl

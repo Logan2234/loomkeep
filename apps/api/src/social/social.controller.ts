@@ -6,6 +6,7 @@ import type {
   SocialProfileDto,
   UserSummaryDto,
 } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared";
 import {
   Controller,
   Delete,
@@ -23,6 +24,7 @@ import {
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
+import { parseEnumParam } from "../common/parse-enum-param.util";
 import { ActivityService, FEED_PAGE_SIZE } from "./activity.service";
 import { ActivityEventResponseDto } from "./dto/activity-event-response.dto";
 import { FollowRequestResponseDto } from "./dto/follow-request-response.dto";
@@ -42,16 +44,27 @@ export class SocialController {
     private readonly activity: ActivityService,
   ) {}
 
-  /** Home feed: aggregated milestones from the users you follow. */
+  /**
+   * Home feed: aggregated milestones from the users you follow, optionally
+   * narrowed to one `domain`.
+   */
   @Get("feed")
   @ApiOkResponse({ type: PagedResponseDto(ActivityEventResponseDto) })
   feed(
     @CurrentUser() user: JwtPayload,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("domain") domain?: string,
   ): Promise<PagedResult<ActivityEventDto>> {
     const parsed = parsePageQuery(page, limit, FEED_PAGE_SIZE);
-    return this.activity.homeFeed(user.sub, parsed.page, parsed.limit);
+    return this.activity.homeFeed(
+      user.sub,
+      parsed.page,
+      parsed.limit,
+      domain
+        ? parseEnumParam(domain, Object.values(Domain), "domain")
+        : undefined,
+    );
   }
 
   /** A short home-page teaser of the home feed. */

@@ -13,7 +13,7 @@ import { AccountDeletionService } from "./account-deletion.service";
 import { AgeGateService } from "./age-gate.service";
 import { CsvExportService } from "./csv-export.service";
 import { DataExportService } from "./data-export.service";
-import { DomainGateService } from "./domain-gate.service";
+import { DomainGateModule } from "./domain-gate.module";
 import { InactiveAccountService } from "./inactive-account.service";
 import { MfaController } from "./mfa.controller";
 import { UsersController } from "./users.controller";
@@ -27,6 +27,7 @@ import { UsersService } from "./users.service";
     ReviewsModule,
     ListsModule,
     EntitlementModule,
+    DomainGateModule,
     JobsModule,
     SocialModule,
     GamificationModule,
@@ -35,7 +36,6 @@ import { UsersService } from "./users.service";
   controllers: [UsersController, MfaController],
   providers: [
     AgeGateService,
-    DomainGateService,
     DataExportService,
     CsvExportService,
     AccountDeletionService,
@@ -44,7 +44,7 @@ import { UsersService } from "./users.service";
   ],
   exports: [
     AgeGateService,
-    DomainGateService,
+    DomainGateModule,
     DataExportService,
     CsvExportService,
     AccountDeletionService,
