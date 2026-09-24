@@ -24,7 +24,7 @@ const TEMPLATE_FIELDS = {
   custom: [],
 } as const;
 
-export type NewsBannerKey = keyof typeof TEMPLATE_FIELDS;
+type NewsBannerKey = keyof typeof TEMPLATE_FIELDS;
 
 export interface NewsBanner {
   /**

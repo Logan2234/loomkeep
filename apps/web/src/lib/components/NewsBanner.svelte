@@ -138,7 +138,7 @@
               href={shown.href}
               target={external ? "_blank" : undefined}
               rel={external ? "noopener noreferrer" : undefined}>
-              {m.news_banner_cta()}
+              {m.common_learn_more()}
               <Icon name="chevron-right" class="h-3.5 w-3.5" />
             </a>
           {/if}
