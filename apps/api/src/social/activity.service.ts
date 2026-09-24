@@ -15,6 +15,7 @@ import { Prisma } from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
+import { DomainGateService } from "../users/domain-gate.service";
 import { VisibilityService } from "./visibility.service";
 import {
   resolveFacet,
@@ -58,6 +59,12 @@ type EventRow = {
 export const FEED_PAGE_SIZE = 30;
 const PREVIEW_SIZE = 6;
 
+/**
+ * Feed domains no user turns on or off, so the viewer's enabled domains can't
+ * filter them out.
+ */
+const UNGATED_FEED_DOMAINS: ActivityDomain[] = ["LISTS"];
+
 @Injectable()
 export class ActivityService {
   private readonly logger = new Logger(ActivityService.name);
@@ -65,6 +72,7 @@ export class ActivityService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly visibility: VisibilityService,
+    private readonly domainGate: DomainGateService,
   ) {}
 
   /**
@@ -103,19 +111,35 @@ export class ActivityService {
   /**
    * The home feed: recent `homeFeed` milestones from the users the viewer
    * follows, gated by each actor's Activité audience, aggregated and paginated.
+   *
+   * Only ever covers the domains the viewer keeps enabled — a domain they
+   * turned off, or one under maintenance or premium-locked for them, stays out
+   * of the feed as it stays out of the rest of the app. `domain` narrows it to
+   * one of those.
    */
   async homeFeed(
     viewerId: string,
     page = 1,
     limit = FEED_PAGE_SIZE,
+    domain?: Domain,
   ): Promise<PagedResult<ActivityEventDto>> {
+    const enabled = await this.domainGate.getEnabledDomains(viewerId);
+
+    if (domain && !enabled.includes(domain)) {
+      return { items: [], hasMore: false };
+    }
+
     const followeeIds = await this.followeeIds(viewerId);
     if (followeeIds.length === 0) return { items: [], hasMore: false };
 
+    const domains: ActivityDomain[] = domain
+      ? [domain]
+      : [...enabled, ...UNGATED_FEED_DOMAINS];
     const rows = await this.prisma.activityEvent.findMany({
       where: {
         userId: { in: followeeIds },
         homeFeed: true,
+        domain: { in: domains },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
@@ -162,15 +186,20 @@ export class ActivityService {
   /**
    * Shared feed builder: visibility-gates the raw rows against each actor's
    * Activité audience, aggregates binges, hydrates the actor, and paginates.
+   *
+   * `rows` is one page of raw events plus one extra, fetched with
+   * `skip`/`take`. Pages are cut from raw events, so `hasMore` is read from
+   * them before any are hidden: reading it after the visibility filter ended
+   * the feed as soon as one hidden event landed on a page. A page can
+   * therefore come back shorter than `limit` — aggregation shortens it too.
    */
   private async buildFeed(
     viewerId: string,
     rows: EventRow[],
     limit: number,
   ): Promise<PagedResult<ActivityEventDto>> {
-    const visible = await this.filterVisible(viewerId, rows);
-    const hasMore = visible.length > limit;
-    const page = visible.slice(0, limit);
+    const hasMore = rows.length > limit;
+    const page = await this.filterVisible(viewerId, rows.slice(0, limit));
 
     const actors = await this.actors(page.map((e) => e.userId));
     const aggregated = aggregate(page);

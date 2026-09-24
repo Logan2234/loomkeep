@@ -679,6 +679,7 @@
   "feed_empty_title": "Rien à afficher pour l'instant",
   "feed_empty_body": "Partage ton profil pour que d'autres te suivent, ou suis quelqu'un pour voir son activité ici.",
   "feed_share_profile": "Partager mon profil",
+  "feed_empty_domain": "Personne que tu suis n'a encore d'activité dans ce domaine.",
   "calendar_subtitle": "Les prochains épisodes de ce que tu suis.",
   "calendar_subscribe_button": "Ajouter à mon agenda",
   "calendar_no_episodes": "Aucun épisode à venir dans ce que tu suis.",

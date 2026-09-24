@@ -98,6 +98,7 @@ export const keys = {
   },
   feed: {
     all: () => ["feed"] as const,
+    list: (domain: string | null) => ["feed", "list", domain ?? "ALL"] as const,
     preview: () => ["feed", "preview"] as const,
   },
   notifications: {
