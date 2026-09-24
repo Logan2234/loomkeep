@@ -9,24 +9,32 @@ import type {
 import {
   ActivityType,
   Domain,
-  ErrorCode,
   GameStatus,
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type {
   GameStatus as DbGameStatus,
-  GameEntry,
   GameExternalId,
   GameItem,
   GameReplay,
   Prisma,
 } from "@prisma/client";
-import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters,
+} from "../common/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  deleteOwnedReplay,
+  emitEntryActivity,
+  paginateEntries,
+  polymorphicTargetCleanup,
+} from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -34,7 +42,6 @@ import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/regi
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
-import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
@@ -56,7 +63,7 @@ type EntryWithGame = Prisma.GameEntryGetPayload<{
 
 type GameSortKey =
   "added" | "title" | "rating" | "playtime" | "finished" | "started" | "status";
-const GAME_SORT_KEYS: GameSortKey[] = [
+const GAME_SORT_KEYS = [
   "added",
   "title",
   "rating",
@@ -64,25 +71,13 @@ const GAME_SORT_KEYS: GameSortKey[] = [
   "finished",
   "started",
   "status",
-];
+] as const satisfies readonly GameSortKey[];
 const GAME_STATUS_SORT_ORDER = [
   "BACKLOG",
   "PLAYING",
   "COMPLETED",
   "DROPPED",
 ] as const;
-
-export interface ListEntriesFilters {
-  q?: string;
-  favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
-  order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-  /** The signed-in user's locale, when known — drives alphabetical collation. */
-  lang?: string;
-}
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareGameEntries(
@@ -126,43 +121,21 @@ export class GameLibraryService {
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
-  private async emitEntryActivity(
+  private emitEntryActivity(
     userId: string,
     gameItemId: string,
-    change: {
-      prevStatus: string | null;
-      nextStatus: string;
-      prevFavorite: boolean;
-      nextFavorite: boolean;
-    },
+    change: EntryStatusChange,
   ): Promise<void> {
-    const transition = classifyStatusTransition(
-      "GAMES",
-      change.prevStatus,
-      change.nextStatus,
+    return emitEntryActivity(
+      this.activity,
+      {
+        userId,
+        domain: Domain.GAMES,
+        targetType: ReviewTargetType.GAME,
+        targetId: gameItemId,
+      },
+      change,
     );
-
-    if (transition) {
-      await this.activity.emit({
-        userId,
-        type: transition.type,
-        domain: "GAMES",
-        targetType: ReviewTargetType.GAME,
-        targetId: gameItemId,
-        homeFeed: transition.homeFeed,
-      });
-    }
-
-    if (change.nextFavorite && !change.prevFavorite) {
-      await this.activity.emit({
-        userId,
-        type: ActivityType.FAVORITED,
-        domain: "GAMES",
-        targetType: ReviewTargetType.GAME,
-        targetId: gameItemId,
-        homeFeed: false,
-      });
-    }
   }
 
   /** First touch of a game persists it (on-demand cache), then upserts the entry. */
@@ -200,14 +173,12 @@ export class GameLibraryService {
     });
 
     if (before === null) {
-      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
-      const domainEntryCount = await this.prisma.gameEntry.count({
-        where: { userId },
+      await awardNewEntryXp(this.xp, {
+        userId,
+        entryId: entry.id,
+        domain: Domain.GAMES,
+        countEntries: () => this.prisma.gameEntry.count({ where: { userId } }),
       });
-
-      if (domainEntryCount === 1) {
-        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.GAMES);
-      }
     }
 
     if (
@@ -263,35 +234,16 @@ export class GameLibraryService {
       ReviewTargetType.GAME,
       entries.map((e) => e.gameItemId),
     );
-    let dtos = entries.map((e) =>
+    const dtos = entries.map((e) =>
       toEntryDto(e, ratings.get(e.gameItemId) ?? null),
     );
 
-    const q = filters.q?.trim().toLowerCase();
-    dtos = dtos.filter((dto) => {
-      if (filters.favorite && !dto.favorite) return false;
-      if (q && !dto.game.title.toLowerCase().includes(q)) return false;
-      return true;
+    return paginateEntries(dtos, filters, {
+      sortKeys: GAME_SORT_KEYS,
+      defaultSort: "added",
+      compare: compareGameEntries,
+      title: (dto) => dto.game.title,
     });
-
-    const sort = GAME_SORT_KEYS.includes(filters.sort as GameSortKey)
-      ? (filters.sort as GameSortKey)
-      : "added";
-    const asc = filters.order === "asc";
-    dtos.sort((a, b) => {
-      const c = compareGameEntries(sort, a, b, filters.lang);
-      return asc ? -c : c;
-    });
-
-    const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-    const start = (page - 1) * limit;
-    return {
-      items: dtos.slice(start, start + limit),
-      total: dtos.length,
-      hasMore: dtos.length > page * limit,
-    };
   }
 
   async getEntry(userId: string, entryId: string): Promise<GameEntryDto> {
@@ -406,17 +358,7 @@ export class GameLibraryService {
     });
 
     await this.prisma.$transaction([
-      this.prisma.review.deleteMany({
-        where: { userId, targetId: entry.gameItemId },
-      }),
-      this.prisma.comment.updateMany({
-        where: {
-          authorId: userId,
-          targetId: entry.gameItemId,
-          deletedAt: null,
-        },
-        data: { text: null, deletedAt: new Date() },
-      }),
+      ...polymorphicTargetCleanup(this.prisma, userId, [entry.gameItemId]),
       this.prisma.gameEntry.delete({ where: { id: entryId } }),
     ]);
 
@@ -472,27 +414,19 @@ export class GameLibraryService {
   }
 
   async deleteReplay(userId: string, replayId: string): Promise<void> {
-    const replay = await this.prisma.gameReplay.findUnique({
-      where: { id: replayId },
-      include: { gameEntry: true },
+    await deleteOwnedReplay(this.xp, {
+      userId,
+      replayId,
+      xpSource: "GameReplay",
+      findOwnerId: async () =>
+        (
+          await this.prisma.gameReplay.findUnique({
+            where: { id: replayId },
+            select: { gameEntry: { select: { userId: true } } },
+          })
+        )?.gameEntry.userId ?? null,
+      remove: () => this.prisma.gameReplay.delete({ where: { id: replayId } }),
     });
-
-    if (!replay) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryReplayNotFound,
-      );
-    }
-
-    if (replay.gameEntry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryReplayForbidden,
-      );
-    }
-
-    await this.prisma.gameReplay.delete({ where: { id: replayId } });
-    await this.xp.revokeBySource("GameReplay", [replayId]);
   }
 
   /**
@@ -544,29 +478,10 @@ export class GameLibraryService {
     };
   }
 
-  private async assertEntryOwnership(
-    userId: string,
-    entryId: string,
-  ): Promise<GameEntry> {
-    const entry = await this.prisma.gameEntry.findUnique({
-      where: { id: entryId },
-    });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
+  private assertEntryOwnership(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.gameEntry.findUnique({ where: { id: entryId } }),
+    );
   }
 }
 

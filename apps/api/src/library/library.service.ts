@@ -24,7 +24,6 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   ExternalSource as DbExternalSource,
-  LibraryEntry,
   MediaExternalId,
   MediaItem,
   MovieReplay,
@@ -33,8 +32,19 @@ import type {
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters as SharedListEntriesFilters,
+} from "../common/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  deleteOwnedReplay,
+  emitEntryActivity,
+  paginateEntries,
+  polymorphicTargetCleanup,
+} from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
@@ -47,7 +57,6 @@ import {
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
-import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
@@ -78,7 +87,7 @@ type MediaSortKey =
   | "finished"
   | "started"
   | "status";
-const MEDIA_SORT_KEYS: MediaSortKey[] = [
+const MEDIA_SORT_KEYS = [
   "recent",
   "added",
   "title",
@@ -87,7 +96,7 @@ const MEDIA_SORT_KEYS: MediaSortKey[] = [
   "finished",
   "started",
   "status",
-];
+] as const satisfies readonly MediaSortKey[];
 // Order used by the "Statut" sort.
 const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
   "WATCHING",
@@ -97,18 +106,13 @@ const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
   "DROPPED",
 ];
 
-export interface ListEntriesFilters {
-  q?: string;
-  favorite?: boolean;
-  /** "DORMANT" is accepted alongside real `EntryStatus` values — see `isDormant`. */
-  statuses?: string[];
+/**
+ * `statuses` accepts "DORMANT" alongside real `EntryStatus` values — see
+ * `isDormant`. `lang` drives `MediaItemService.translatedTitles` here, on top
+ * of the collation it drives everywhere.
+ */
+export interface ListEntriesFilters extends SharedListEntriesFilters {
   types?: MediaType[];
-  sort?: string;
-  order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-  /** The signed-in user's locale, when known — see `MediaItemService.translatedTitles`. */
-  lang?: string;
 }
 
 function mediaProgressPct(entry: LibraryEntryDto): number {
@@ -204,17 +208,13 @@ export class LibraryService {
     });
 
     if (before === null) {
-      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
-      // Counted only on a true first insert (not every update) — see the
-      // [G1b] plan. A user's very first MEDIA entry also earns the
-      // one-off DOMAIN_STARTED milestone.
-      const domainEntryCount = await this.prisma.libraryEntry.count({
-        where: { userId },
+      await awardNewEntryXp(this.xp, {
+        userId,
+        entryId: entry.id,
+        domain: Domain.MEDIA,
+        countEntries: () =>
+          this.prisma.libraryEntry.count({ where: { userId } }),
       });
-
-      if (domainEntryCount === 1) {
-        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.MEDIA);
-      }
     }
 
     if (
@@ -315,41 +315,21 @@ export class LibraryService {
       );
     });
 
-    // Status is derived, so filter on the effective status, not the stored
-    // one — "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
-    const q = filters.q?.trim().toLowerCase();
-    const filtered = dtos.filter((dto) => {
-      if (
-        filters.statuses &&
-        filters.statuses.length > 0 &&
-        !filters.statuses.some((s) =>
+    return paginateEntries(dtos, filters, {
+      sortKeys: MEDIA_SORT_KEYS,
+      defaultSort: "recent",
+      compare: compareMediaEntries,
+      title: (dto) => dto.mediaItem.title,
+      // Status is derived, so filter on the effective status, not the stored
+      // one — "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
+      // The other three domains filter status in SQL; media cannot.
+      keep: (dto) =>
+        !filters.statuses ||
+        filters.statuses.length === 0 ||
+        filters.statuses.some((s) =>
           s === "DORMANT" ? isDormant(dto) : dto.status === s,
-        )
-      )
-        return false;
-      if (filters.favorite && !dto.favorite) return false;
-      if (q && !dto.mediaItem.title.toLowerCase().includes(q)) return false;
-      return true;
+        ),
     });
-
-    const sort = MEDIA_SORT_KEYS.includes(filters.sort as MediaSortKey)
-      ? (filters.sort as MediaSortKey)
-      : "recent";
-    const asc = filters.order === "asc";
-    filtered.sort((a, b) => {
-      const c = compareMediaEntries(sort, a, b, filters.lang);
-      return asc ? -c : c;
-    });
-
-    const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-    const start = (page - 1) * limit;
-    return {
-      items: filtered.slice(start, start + limit),
-      total: filtered.length,
-      hasMore: filtered.length > page * limit,
-    };
   }
 
   async getEntry(userId: string, entryId: string): Promise<LibraryEntryDto> {
@@ -498,17 +478,7 @@ export class LibraryService {
       this.prisma.episodeWatch.deleteMany({
         where: { userId, episodeId: { in: episodeIds } },
       }),
-      this.prisma.review.deleteMany({
-        where: { userId, targetId: { in: targetIds } },
-      }),
-      this.prisma.comment.updateMany({
-        where: {
-          authorId: userId,
-          targetId: { in: targetIds },
-          deletedAt: null,
-        },
-        data: { text: null, deletedAt: new Date() },
-      }),
+      ...polymorphicTargetCleanup(this.prisma, userId, targetIds),
       this.prisma.libraryEntry.delete({ where: { id: entryId } }),
     ]);
 
@@ -532,48 +502,22 @@ export class LibraryService {
     ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
   }
 
-  /**
-   * Emits the activity events for a media entry write: a status milestone (via
-   * the shared transition rules) and, separately, a FAVORITED event when a work
-   * is newly favourited (profile-timeline only, per the matrix).
-   */
-  private async emitEntryActivity(
+  /** Emits the status milestone + FAVORITED events for a media entry write. */
+  private emitEntryActivity(
     userId: string,
     mediaItemId: string,
-    change: {
-      prevStatus: string | null;
-      nextStatus: string;
-      prevFavorite: boolean;
-      nextFavorite: boolean;
-    },
+    change: EntryStatusChange,
   ): Promise<void> {
-    const transition = classifyStatusTransition(
-      "MEDIA",
-      change.prevStatus,
-      change.nextStatus,
+    return emitEntryActivity(
+      this.activity,
+      {
+        userId,
+        domain: Domain.MEDIA,
+        targetType: ReviewTargetType.MEDIA,
+        targetId: mediaItemId,
+      },
+      change,
     );
-
-    if (transition) {
-      await this.activity.emit({
-        userId,
-        type: transition.type,
-        domain: "MEDIA",
-        targetType: ReviewTargetType.MEDIA,
-        targetId: mediaItemId,
-        homeFeed: transition.homeFeed,
-      });
-    }
-
-    if (change.nextFavorite && !change.prevFavorite) {
-      await this.activity.emit({
-        userId,
-        type: ActivityType.FAVORITED,
-        domain: "MEDIA",
-        targetType: ReviewTargetType.MEDIA,
-        targetId: mediaItemId,
-        homeFeed: false,
-      });
-    }
   }
 
   /**
@@ -1059,29 +1003,10 @@ export class LibraryService {
     );
   }
 
-  private async assertEntryOwnership(
-    userId: string,
-    entryId: string,
-  ): Promise<LibraryEntry> {
-    const entry = await this.prisma.libraryEntry.findUnique({
-      where: { id: entryId },
-    });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
+  private assertEntryOwnership(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.libraryEntry.findUnique({ where: { id: entryId } }),
+    );
   }
 
   /**
@@ -1364,27 +1289,19 @@ export class LibraryService {
   }
 
   async deleteReplay(userId: string, replayId: string): Promise<void> {
-    const replay = await this.prisma.movieReplay.findUnique({
-      where: { id: replayId },
-      include: { libraryEntry: true },
+    await deleteOwnedReplay(this.xp, {
+      userId,
+      replayId,
+      xpSource: "MovieReplay",
+      findOwnerId: async () =>
+        (
+          await this.prisma.movieReplay.findUnique({
+            where: { id: replayId },
+            select: { libraryEntry: { select: { userId: true } } },
+          })
+        )?.libraryEntry.userId ?? null,
+      remove: () => this.prisma.movieReplay.delete({ where: { id: replayId } }),
     });
-
-    if (!replay) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryReplayNotFound,
-      );
-    }
-
-    if (replay.libraryEntry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryReplayForbidden,
-      );
-    }
-
-    await this.prisma.movieReplay.delete({ where: { id: replayId } });
-    await this.xp.revokeBySource("MovieReplay", [replayId]);
   }
 
   /**

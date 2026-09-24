@@ -180,10 +180,14 @@ describe("BookLibraryService.deleteEntry", () => {
     await service.deleteEntry("user-1", "entry-1");
 
     expect(reviewDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: "book-1" },
+      where: { userId: "user-1", targetId: { in: ["book-1"] } },
     });
     expect(commentUpdateMany).toHaveBeenCalledWith({
-      where: { authorId: "user-1", targetId: "book-1", deletedAt: null },
+      where: {
+        authorId: "user-1",
+        targetId: { in: ["book-1"] },
+        deletedAt: null,
+      },
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
