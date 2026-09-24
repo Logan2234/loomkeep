@@ -218,7 +218,6 @@ export class TmdbProvider implements CatalogProvider {
       url.searchParams.set(key, value);
     }
 
-    this.quota.record("tmdb");
     return fetchJson<T>(
       url,
       {
@@ -227,7 +226,11 @@ export class TmdbProvider implements CatalogProvider {
           Accept: "application/json",
         },
       },
-      { sourceLabel: "TMDB", notFoundMessage: "Media not found on TMDB" },
+      {
+        sourceLabel: "TMDB",
+        notFoundMessage: "Media not found on TMDB",
+        onAttempt: () => this.quota.record("tmdb"),
+      },
     );
   }
 }

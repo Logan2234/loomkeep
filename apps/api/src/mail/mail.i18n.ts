@@ -12,6 +12,18 @@ export interface MailCopy {
     sentence: (count: number) => string;
     button: string;
   };
+  quotaAlert: {
+    subject: (provider: string, percent: number) => string;
+    heading: string;
+    sentence: (
+      provider: string,
+      percent: number,
+      count: string,
+      limit: string,
+    ) => string;
+    exhausted: string;
+    button: string;
+  };
   moderation: {
     comment: ModerationVariant;
     review: ModerationVariant;
@@ -120,6 +132,16 @@ export const MAIL_COPY = {
       sentence: (count) =>
         `${count} ${count > 1 ? "signalements" : "signalement"} en attente de modération sur Loomkeep.`,
       button: "Voir la file de modération",
+    },
+    quotaAlert: {
+      subject: (provider, percent) =>
+        `Quota ${provider} : ${percent} % utilisé aujourd'hui`,
+      heading: "Quota d'un fournisseur",
+      sentence: (provider, percent, count, limit) =>
+        `${provider} a atteint ${percent} % de son quota quotidien : ${count} appels sur ${limit}.`,
+      exhausted:
+        "Les appels suivants risquent d'être refusés jusqu'au changement de jour (minuit UTC).",
+      button: "Voir les services",
     },
     moderation: {
       comment: {
@@ -254,6 +276,16 @@ export const MAIL_COPY = {
       sentence: (count) =>
         `${count} ${count === 1 ? "report is" : "reports are"} awaiting moderation on Loomkeep.`,
       button: "Open the moderation queue",
+    },
+    quotaAlert: {
+      subject: (provider, percent) =>
+        `${provider} quota: ${percent}% used today`,
+      heading: "Provider quota",
+      sentence: (provider, percent, count, limit) =>
+        `${provider} has reached ${percent}% of its daily quota: ${count} of ${limit} calls.`,
+      exhausted:
+        "Further calls may be refused until the day rolls over (midnight UTC).",
+      button: "Open services",
     },
     moderation: {
       comment: {

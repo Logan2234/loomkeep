@@ -8,6 +8,16 @@ import nodemailer, { Transporter } from "nodemailer";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 import { dateLocale, MAIL_COPY, resolveMailLocale } from "./mail.i18n";
 
+/** A provider reaching one of its daily-quota alert thresholds. */
+export interface QuotaAlert {
+  /** Display name, e.g. "OMDb". */
+  provider: string;
+  count: number;
+  limit: number;
+  /** Share of the quota reached: 0.8 or 1. */
+  threshold: number;
+}
+
 export interface MailRecipient {
   email: string;
   locale: string;
@@ -281,6 +291,24 @@ export class MailService {
           items,
           v.period === "weekly" ? "weekly" : "daily",
         );
+      },
+    },
+    quotaAlert: {
+      label: "Alerte de quota fournisseur",
+      fields: [
+        { key: "provider", label: "Fournisseur", default: "OMDb" },
+        { key: "count", label: "Appels du jour", default: "800" },
+        { key: "limit", label: "Quota quotidien", default: "1000" },
+      ],
+      build: (locale, v) => {
+        const limit = Number(v.limit) || 1000;
+        const count = Number(v.count) || 0;
+        return this.buildQuotaAlert(locale, {
+          provider: v.provider,
+          count,
+          limit,
+          threshold: count / limit,
+        });
       },
     },
     reportsDigest: {
@@ -590,6 +618,18 @@ export class MailService {
     });
   }
 
+  /** Tells an admin a provider reached an alert threshold of its daily quota. */
+  async sendQuotaAlert(
+    recipient: MailRecipient,
+    alert: QuotaAlert,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildQuotaAlert(locale, alert),
+    });
+  }
+
   /**
    * warns an inactive account it will be deleted on `deletionDate`
    * (the account-preservation notice required before InactiveAccountService's
@@ -649,6 +689,30 @@ export class MailService {
         unsubscribeToken,
       ),
     });
+  }
+
+  private buildQuotaAlert(locale: Locale, alert: QuotaAlert) {
+    const copy = MAIL_COPY[locale].quotaAlert;
+    const percent = Math.round(alert.threshold * 100);
+    const sentence = copy.sentence(
+      alert.provider,
+      percent,
+      alert.count.toLocaleString(locale),
+      alert.limit.toLocaleString(locale),
+    );
+    const exhausted = alert.threshold >= 1 ? copy.exhausted : null;
+    const url = `${this.webOrigin}/app/admin/services`;
+    return {
+      subject: copy.subject(alert.provider, percent),
+      text: [sentence, exhausted, url].filter(Boolean).join("\n\n"),
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(sentence)}</p>
+         ${exhausted ? `<p>${escapeHtml(exhausted)}</p>` : ""}
+         ${this.button(url, copy.button)}`,
+      ),
+    };
   }
 
   private buildReportsDigest(
