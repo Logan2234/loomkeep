@@ -63,15 +63,16 @@ function makeController(kind: ContentKind, targetType: TargetType) {
   prisma.$transaction.mockImplementation(
     async (action: (db: typeof prisma) => Promise<unknown>) => action(prisma),
   );
+  const mediaItems = { forceRefresh: vi.fn().mockResolvedValue(undefined) };
   const controller = new AdminCacheController(
     prisma as unknown as PrismaService,
-    {} as MediaItemService,
+    mediaItems as unknown as MediaItemService,
     {} as GameItemService,
     {} as BookItemService,
     {} as MusicItemService,
   );
 
-  return { controller, prisma };
+  return { controller, prisma, mediaItems };
 }
 
 describe("AdminCacheController media purge", () => {
@@ -117,6 +118,30 @@ describe("AdminCacheController media purge", () => {
     });
     expect(prisma.mediaItem.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ["empty-media"] } },
+    });
+  });
+});
+
+describe("AdminCacheController.resyncStale", () => {
+  it("continues after a failed refresh and reports both outcomes", async () => {
+    const { controller, prisma, mediaItems } = makeController(
+      "review",
+      "MEDIA",
+    );
+    vi.spyOn(controller["logger"], "error").mockImplementation(() => undefined);
+    mediaItems.forceRefresh.mockRejectedValueOnce(new Error("provider down"));
+
+    await expect(controller.resyncStale("MEDIA")).resolves.toEqual({
+      resynced: 1,
+      failed: 1,
+    });
+    expect(mediaItems.forceRefresh.mock.calls.map(([id]) => id)).toEqual([
+      "protected-media",
+      "empty-media",
+    ]);
+    expect(prisma.mediaItem.findMany).toHaveBeenCalledWith({
+      where: { lastSyncedAt: { lt: expect.any(Date) } },
+      select: { id: true },
     });
   });
 });
