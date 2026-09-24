@@ -67,6 +67,9 @@ export const keys = {
   sessions: {
     all: () => ["sessions", "all"] as const,
   },
+  securityEvents: {
+    all: () => ["security-events", "all"] as const,
+  },
   verification: {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>

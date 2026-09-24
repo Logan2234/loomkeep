@@ -1193,7 +1193,11 @@ enum SecurityEventType {
 // actually typed at a login attempt, independent of any account — see
 // SecurityEventService#record); every other type derives its display email
 // from userId → User.email at read time, so it anonymises itself the moment
-// the account is deleted instead of surviving indefinitely.
+// the account is deleted instead of surviving indefinitely. `ip` is erased on
+// deletion too, except on LOGIN_FAILED (kept for abuse prevention, as the
+// privacy policy states). Rows older than a year are purged
+// (SecurityEventService#purgeExpired). The account owner reads their own
+// trail in the settings.
 model SecurityEvent {
   id         String            @id @default(cuid())
   type       SecurityEventType
@@ -1201,12 +1205,13 @@ model SecurityEvent {
   identifier String?
   detail     String?
   userAgent  String?
+  ip         String?
   createdAt  DateTime          @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([type, createdAt])
-  @@index([userId])
+  @@index([userId, createdAt])
   @@index([createdAt])
 }
 

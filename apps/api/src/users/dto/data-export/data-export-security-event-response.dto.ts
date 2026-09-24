@@ -8,5 +8,6 @@ export class DataExportSecurityEventResponseDto implements DataExportSecurityEve
   identifier!: string;
   detail!: string | null;
   userAgent!: string | null;
+  ip!: string | null;
   createdAt!: string;
 }

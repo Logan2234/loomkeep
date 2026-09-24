@@ -231,6 +231,7 @@ export interface DataExportSecurityEvent {
   identifier: string;
   detail: string | null;
   userAgent: string | null;
+  ip: string | null;
   createdAt: string;
 }
 

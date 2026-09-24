@@ -1,10 +1,13 @@
 import type {
+  AccountSecurityEventDto,
   AdminSecuritySummaryDto,
   PagedResult,
   SecurityEventDto,
   SecurityEventType,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
+import { currentRequest } from "../common/request-context";
 import { PrismaService } from "../prisma/prisma.service";
 import { rankFailedTargets, sinceDaysAgo } from "./login-failure.util";
 
@@ -14,6 +17,9 @@ export const SECURITY_EVENT_PAGE_SIZE = 50;
 /** Window the "most targeted identifiers" ranking looks back over, in days. */
 const TARGETS_WINDOW_DAYS = 7;
 
+/** How long an event is kept, for the account owner and the admin alike. */
+const RETENTION_DAYS = 365;
+
 export interface RecordSecurityEventParams {
   type: SecurityEventType;
   /** Null when the account is unknown (e.g. a LOGIN_FAILED against an unregistered identifier). */
@@ -21,6 +27,7 @@ export interface RecordSecurityEventParams {
   /** Only meaningful for LOGIN_FAILED (the string actually typed) — every other type derives its display email from userId at read time, so pass nothing. */
   identifier?: string;
   detail?: string;
+  /** Defaults to the current request's, like the IP. */
   userAgent?: string;
 }
 
@@ -34,18 +41,73 @@ export interface ListSecurityEventsParams {
 
 @Injectable()
 export class SecurityEventService {
+  private readonly logger = new Logger(SecurityEventService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async record(params: RecordSecurityEventParams): Promise<void> {
+    const request = currentRequest();
+
     await this.prisma.securityEvent.create({
       data: {
         type: params.type,
         userId: params.userId ?? null,
         identifier: params.identifier,
         detail: params.detail,
-        userAgent: params.userAgent,
+        userAgent: params.userAgent ?? request?.userAgent,
+        ip: request?.ip,
       },
     });
+  }
+
+  /**
+   * The account's own trail, most recent first. USER_DELETED is left out: it
+   * can only ever be read by someone else, the account being gone.
+   */
+  async listForAccount(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResult<AccountSecurityEventDto>> {
+    const rows = await this.prisma.securityEvent.findMany({
+      where: { userId, type: { not: "USER_DELETED" } },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit + 1,
+    });
+
+    return {
+      hasMore: rows.length > limit,
+      items: rows.slice(0, limit).map((e) => ({
+        id: e.id,
+        type: e.type as SecurityEventType,
+        detail: e.detail,
+        ip: e.ip,
+        userAgent: e.userAgent,
+        createdAt: e.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  /**
+   * Called just before an account is deleted: its trail survives, anonymised
+   * (see SecurityEvent), so the addresses go too. Failed logins keep theirs —
+   * the privacy policy keeps them for abuse prevention, whatever the account.
+   */
+  async forgetIps(userId: string): Promise<void> {
+    await this.prisma.securityEvent.updateMany({
+      where: { userId, type: { not: "LOGIN_FAILED" } },
+      data: { ip: null },
+    });
+  }
+
+  @Cron("0 6 * * *")
+  async purgeExpired(now = new Date()): Promise<void> {
+    const { count } = await this.prisma.securityEvent.deleteMany({
+      where: { createdAt: { lt: sinceDaysAgo(now, RETENTION_DAYS) } },
+    });
+
+    if (count > 0) this.logger.log(`Purged ${count} expired security events`);
   }
 
   /**

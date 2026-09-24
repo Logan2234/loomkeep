@@ -19,6 +19,7 @@ import { Logger } from "nestjs-pino";
 import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
+import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
 import { MetricsService } from "./metrics/metrics.service";
 
@@ -151,6 +152,8 @@ async function bootstrap() {
       );
       done();
     });
+
+  registerRequestContext(app);
 
   app.setGlobalPrefix("api");
   app.useGlobalPipes(

@@ -494,6 +494,7 @@ export class AdminUsersController {
       userId: user.id,
       detail: "Deleted from the admin panel",
     });
+    await this.securityEvents.forgetIps(user.id);
 
     await this.moderationDecisions.record({
       measure: ModerationMeasure.ACCOUNT_DELETED,

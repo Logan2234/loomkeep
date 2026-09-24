@@ -50,6 +50,7 @@ function makeController() {
   } as unknown as DataExportService;
   const securityEvents = {
     record: vi.fn(),
+    forgetIps: vi.fn(),
   } as unknown as SecurityEventService;
   const reviews = { listMine: vi.fn() } as unknown as ReviewService;
   const comments = { listByAuthor: vi.fn() } as unknown as CommentService;
@@ -488,6 +489,7 @@ describe("AdminUsersController.deleteUser", () => {
         userId: "user-2",
       }),
     );
+    expect(securityEvents.forgetIps).toHaveBeenCalledWith("user-2");
     expect(moderationDecisions.record).toHaveBeenCalledWith(
       expect.objectContaining({
         measure: "ACCOUNT_DELETED",

@@ -584,7 +584,6 @@ export class AuthService {
       await this.security.record({
         type: "NEW_DEVICE_LOGIN",
         userId: promoted.id,
-        detail: ip ? `IP: ${ip}` : undefined,
         userAgent,
       });
     }
