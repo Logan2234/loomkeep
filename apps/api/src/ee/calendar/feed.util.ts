@@ -1,5 +1,5 @@
 /** One aired episode, as a feed entry. */
-export interface ReleaseFeedEntry {
+interface ReleaseFeedEntry {
   /** A stable URI: a feed reader dedupes entries on it. */
   id: string;
   title: string;

@@ -201,7 +201,9 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     expect(prisma.refreshToken.deleteMany).toHaveBeenLastCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
     });
-  });
+    // Really bcrypt-hashes every recovery code (pure-JS bcryptjs): past the
+    // default 5s under CI coverage instrumentation.
+  }, 20_000);
 
   it("rejects an incorrect password before changing email MFA", async () => {
     const { service, prisma } = makeService();
