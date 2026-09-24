@@ -3,15 +3,17 @@
   import { page } from "$app/state";
   import { adminFilterHref } from "$lib/admin-filter-url";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import TabPanels from "$lib/components/TabPanels.svelte";
   import Tabs from "$lib/components/Tabs.svelte";
-  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
   import EmailTab from "./components/EmailTab.svelte";
   import PushTab from "./components/PushTab.svelte";
-  import { fade, fly } from "svelte/transition";
 
   type Tab = "email" | "push";
-  const reduced = prefersReducedMotion();
+  const tabs: { value: Tab; label: string }[] = [
+    { value: "email", label: m.common_email() },
+    { value: "push", label: m.admin_communications_push() },
+  ];
   const tab = $derived<Tab>(
     page.url.searchParams.get("tab") === "push" ? "push" : "email",
   );
@@ -38,25 +40,15 @@
     class="mb-6"
     label={m.settings_section_communications()}
     idPrefix="communications"
-    tabs={[
-      { value: "email" as const, label: m.common_email() },
-      { value: "push" as const, label: m.admin_communications_push() },
-    ]}
+    {tabs}
     current={tab}
     onSelect={changeTab} />
 
-  {#key tab}
-    <div
-      id="communications-{tab}-panel"
-      role="tabpanel"
-      aria-labelledby="communications-{tab}-tab"
-      in:fly|global={{ y: reduced ? 0 : 8, duration: reduced ? 0 : 180 }}
-      out:fade|global={{ duration: reduced ? 0 : 120 }}>
-      {#if tab === "email"}
-        <EmailTab />
-      {:else}
-        <PushTab />
-      {/if}
-    </div>
-  {/key}
+  <TabPanels current={tab} idPrefix="communications">
+    {#if tab === "email"}
+      <EmailTab />
+    {:else}
+      <PushTab />
+    {/if}
+  </TabPanels>
 </div>

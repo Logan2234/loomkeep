@@ -9,6 +9,7 @@
   import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
+  import TabPanels from "$lib/components/TabPanels.svelte";
   import Tabs from "$lib/components/Tabs.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { isDomainEnabled, orderedDomains } from "$lib/domains";
@@ -72,39 +73,41 @@
       onSelect={changeTab} />
   {/if}
 
-  {#if feed.loading}
-    <CardRowSkeleton count={6} />
-  {:else if feed.error}
-    <p class="text-danger text-sm">{feed.error}</p>
-  {:else if feed.data.length === 0 && domain}
-    <EmptyState>{m.feed_empty_domain()}</EmptyState>
-  {:else if feed.data.length === 0}
-    <EmptyState>
-      <p class="font-display text-lg font-bold">
-        {m.feed_empty_title()}
-      </p>
-      <p class="mt-1 text-sm">
-        {m.feed_empty_body()}
-      </p>
-      <a href="/app/profile" class="btn btn-ghost mt-3"
-        >{m.feed_share_profile()}</a>
-    </EmptyState>
-  {:else}
-    <ul class="flex flex-col gap-2">
-      {#each feed.data as event (event.id)}
-        <ActivityItem {event} />
-      {/each}
-    </ul>
+  <TabPanels current={domain ?? "ALL"}>
+    {#if feed.loading}
+      <CardRowSkeleton count={6} />
+    {:else if feed.error}
+      <p class="text-danger text-sm">{feed.error}</p>
+    {:else if feed.data.length === 0 && domain}
+      <EmptyState>{m.feed_empty_domain()}</EmptyState>
+    {:else if feed.data.length === 0}
+      <EmptyState>
+        <p class="font-display text-lg font-bold">
+          {m.feed_empty_title()}
+        </p>
+        <p class="mt-1 text-sm">
+          {m.feed_empty_body()}
+        </p>
+        <a href="/app/profile" class="btn btn-ghost mt-3"
+          >{m.feed_share_profile()}</a>
+      </EmptyState>
+    {:else}
+      <ul class="flex flex-col gap-2">
+        {#each feed.data as event (event.id)}
+          <ActivityItem {event} />
+        {/each}
+      </ul>
 
-    {#if feed.hasNextPage}
-      <div class="mt-4 flex justify-center">
-        <button
-          class="btn btn-ghost"
-          disabled={feed.isFetchingNextPage}
-          onclick={() => feed.fetchNextPage()}>
-          {feed.isFetchingNextPage ? m.common_loading() : m.common_see_more()}
-        </button>
-      </div>
+      {#if feed.hasNextPage}
+        <div class="mt-4 flex justify-center">
+          <button
+            class="btn btn-ghost"
+            disabled={feed.isFetchingNextPage}
+            onclick={() => feed.fetchNextPage()}>
+            {feed.isFetchingNextPage ? m.common_loading() : m.common_see_more()}
+          </button>
+        </div>
+      {/if}
     {/if}
-  {/if}
+  </TabPanels>
 </div>
