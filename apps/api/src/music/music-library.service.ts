@@ -6,31 +6,36 @@ import type {
   PagedResult,
 } from "@loomkeep/shared";
 import {
-  ActivityType,
   Domain,
-  ErrorCode,
   MusicStatus,
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type {
   MusicStatus as DbMusicStatus,
-  MusicEntry,
   MusicExternalId,
   MusicItem,
   Prisma,
 } from "@prisma/client";
-import { AppException } from "../common/app.exception";
 import { toDateOrNull } from "../common/date.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters,
+} from "../common/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  emitEntryActivity,
+  paginateEntries,
+  polymorphicTargetCleanup,
+} from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
-import { classifyStatusTransition } from "../social/activity-transition.util";
 import { ActivityService } from "../social/activity.service";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
@@ -47,27 +52,15 @@ type EntryWithAlbum = Prisma.MusicEntryGetPayload<{
 
 type MusicSortKey =
   "added" | "title" | "artist" | "rating" | "finished" | "status";
-const MUSIC_SORT_KEYS: MusicSortKey[] = [
+const MUSIC_SORT_KEYS = [
   "added",
   "title",
   "artist",
   "rating",
   "finished",
   "status",
-];
+] as const satisfies readonly MusicSortKey[];
 const MUSIC_STATUS_SORT_ORDER = ["TO_LISTEN", "LISTENED"] as const;
-
-export interface ListEntriesFilters {
-  q?: string;
-  favorite?: boolean;
-  statuses?: string[];
-  sort?: string;
-  order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-  /** The signed-in user's locale, when known — drives alphabetical collation. */
-  lang?: string;
-}
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMusicEntries(
@@ -111,43 +104,21 @@ export class MusicLibraryService {
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a music entry write. */
-  private async emitEntryActivity(
+  private emitEntryActivity(
     userId: string,
     musicItemId: string,
-    change: {
-      prevStatus: string | null;
-      nextStatus: string;
-      prevFavorite: boolean;
-      nextFavorite: boolean;
-    },
+    change: EntryStatusChange,
   ): Promise<void> {
-    const transition = classifyStatusTransition(
-      "MUSIC",
-      change.prevStatus,
-      change.nextStatus,
+    return emitEntryActivity(
+      this.activity,
+      {
+        userId,
+        domain: Domain.MUSIC,
+        targetType: ReviewTargetType.MUSIC,
+        targetId: musicItemId,
+      },
+      change,
     );
-
-    if (transition) {
-      await this.activity.emit({
-        userId,
-        type: transition.type,
-        domain: "MUSIC",
-        targetType: ReviewTargetType.MUSIC,
-        targetId: musicItemId,
-        homeFeed: transition.homeFeed,
-      });
-    }
-
-    if (change.nextFavorite && !change.prevFavorite) {
-      await this.activity.emit({
-        userId,
-        type: ActivityType.FAVORITED,
-        domain: "MUSIC",
-        targetType: ReviewTargetType.MUSIC,
-        targetId: musicItemId,
-        homeFeed: false,
-      });
-    }
   }
 
   /** First touch of an album persists it (on-demand cache), then upserts the entry. */
@@ -185,14 +156,12 @@ export class MusicLibraryService {
     });
 
     if (before === null) {
-      await this.xp.award(userId, XpReason.WORK_ADDED, entry.id);
-      const domainEntryCount = await this.prisma.musicEntry.count({
-        where: { userId },
+      await awardNewEntryXp(this.xp, {
+        userId,
+        entryId: entry.id,
+        domain: Domain.MUSIC,
+        countEntries: () => this.prisma.musicEntry.count({ where: { userId } }),
       });
-
-      if (domainEntryCount === 1) {
-        await this.xp.award(userId, XpReason.DOMAIN_STARTED, Domain.MUSIC);
-      }
     }
 
     if (
@@ -248,35 +217,16 @@ export class MusicLibraryService {
       ReviewTargetType.MUSIC,
       entries.map((e) => e.musicItemId),
     );
-    let dtos = entries.map((e) =>
+    const dtos = entries.map((e) =>
       toEntryDto(e, ratings.get(e.musicItemId) ?? null),
     );
 
-    const q = filters.q?.trim().toLowerCase();
-    dtos = dtos.filter((dto) => {
-      if (filters.favorite && !dto.favorite) return false;
-      if (q && !dto.album.title.toLowerCase().includes(q)) return false;
-      return true;
+    return paginateEntries(dtos, filters, {
+      sortKeys: MUSIC_SORT_KEYS,
+      defaultSort: "added",
+      compare: compareMusicEntries,
+      title: (dto) => dto.album.title,
     });
-
-    const sort = MUSIC_SORT_KEYS.includes(filters.sort as MusicSortKey)
-      ? (filters.sort as MusicSortKey)
-      : "added";
-    const asc = filters.order === "asc";
-    dtos.sort((a, b) => {
-      const c = compareMusicEntries(sort, a, b, filters.lang);
-      return asc ? -c : c;
-    });
-
-    const page = filters.page && filters.page > 0 ? filters.page : 1;
-    const limit =
-      filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-    const start = (page - 1) * limit;
-    return {
-      items: dtos.slice(start, start + limit),
-      total: dtos.length,
-      hasMore: dtos.length > page * limit,
-    };
   }
 
   async getEntry(userId: string, entryId: string): Promise<MusicEntryDto> {
@@ -379,17 +329,7 @@ export class MusicLibraryService {
     });
 
     await this.prisma.$transaction([
-      this.prisma.review.deleteMany({
-        where: { userId, targetId: entry.musicItemId },
-      }),
-      this.prisma.comment.updateMany({
-        where: {
-          authorId: userId,
-          targetId: entry.musicItemId,
-          deletedAt: null,
-        },
-        data: { text: null, deletedAt: new Date() },
-      }),
+      ...polymorphicTargetCleanup(this.prisma, userId, [entry.musicItemId]),
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
 
@@ -445,29 +385,10 @@ export class MusicLibraryService {
     };
   }
 
-  private async assertEntryOwnership(
-    userId: string,
-    entryId: string,
-  ): Promise<MusicEntry> {
-    const entry = await this.prisma.musicEntry.findUnique({
-      where: { id: entryId },
-    });
-
-    if (!entry) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
-      );
-    }
-
-    return entry;
+  private assertEntryOwnership(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.musicEntry.findUnique({ where: { id: entryId } }),
+    );
   }
 }
 

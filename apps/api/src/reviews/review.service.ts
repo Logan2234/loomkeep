@@ -477,8 +477,10 @@ export class ReviewService {
 
   /**
    * Resolves display info (title + image) for the work each review targets,
-   * batched per type. SEASON/EPISODE aren't creatable from the UI yet, so they
-   * fall back to a null target (rendered generically).
+   * batched per type. SEASON and EPISODE resolve to nothing here — a season
+   * review is creatable from the episode list, and an episode one arrives with
+   * the IMDb import — so they fall back to a null target (rendered
+   * generically, without title or poster).
    */
   private async resolveTargets(
     rows: { targetType: string; targetId: string }[],
