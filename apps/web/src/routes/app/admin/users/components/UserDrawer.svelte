@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    adjustAdminUserXp,
     deleteAdminUser,
     getAdminUserComments,
     getAdminUserExport,
@@ -21,6 +22,7 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import AvatarLightbox from "$lib/components/AvatarLightbox.svelte";
   import Banner from "$lib/components/Banner.svelte";
@@ -30,10 +32,14 @@
   import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "$lib/components/overlay-layers";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import { downloadBlob } from "$lib/download";
-  import { formatDate } from "$lib/format";
+  import { formatDate, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
-  import type { AdminUserDto, ModerationLegalBasis } from "@loomkeep/shared";
+  import {
+    levelForXp,
+    type AdminUserDto,
+    type ModerationLegalBasis,
+  } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import DeleteUserModal from "./DeleteUserModal.svelte";
   import UserActivityModal from "./UserActivityModal.svelte";
@@ -185,6 +191,22 @@
     mutate: (plan: "FREE" | "PREMIUM") => updateAdminUserPlan(user.id, plan),
     invalidates: [usersKey],
   }));
+
+  let xpAmount = $state<number | null>(null);
+
+  const xpMut = createApiMutation(() => ({
+    mutate: (amount: number) => adjustAdminUserXp(user.id, amount),
+    invalidates: [usersKey],
+    onSuccess: (result) => {
+      xpAmount = null;
+      toast.success(m.admin_users_xp_done({ xp: formatNumber(result.xp) }));
+    },
+  }));
+
+  function adjustXp() {
+    if (!xpAmount || !Number.isInteger(xpAmount)) return;
+    xpMut.mutate(xpAmount);
+  }
 
   const exportMut = createApiMutation(() => ({
     mutate: () => getAdminUserExport(user.id),
@@ -359,6 +381,51 @@
         <p class="text-danger mt-1.5 text-xs">{planMut.error}</p>
       {/if}
     </section>
+
+    {#if appConfig.gamificationEnabled}
+      <section class="mb-5">
+        <h3
+          class="text-dim mb-2 flex items-center gap-2 text-[0.65rem] font-bold tracking-wider uppercase">
+          {m.admin_users_xp()}
+          <span class="bg-border h-px flex-1"></span>
+        </h3>
+        <div class="border-border rounded-lg border p-3 text-sm">
+          <p class="text-fg timecode font-semibold">
+            {m.admin_users_xp_total({
+              xp: formatNumber(user.xp),
+              level: formatNumber(levelForXp(user.xp)),
+            })}
+          </p>
+          <form
+            class="mt-2 flex gap-2"
+            onsubmit={(e) => {
+              e.preventDefault();
+              adjustXp();
+            }}>
+            <input
+              type="number"
+              step="1"
+              inputmode="numeric"
+              class="input min-w-0 flex-1"
+              aria-label={m.admin_users_xp_amount()}
+              placeholder={m.admin_users_xp_amount()}
+              bind:value={xpAmount} />
+            <button
+              type="submit"
+              class="btn btn-ghost shrink-0"
+              disabled={xpMut.loading ||
+                !xpAmount ||
+                !Number.isInteger(xpAmount)}>
+              {m.admin_users_xp_apply()}
+            </button>
+          </form>
+        </div>
+        <p class="text-dim mt-1.5 text-xs">{m.admin_users_xp_hint()}</p>
+        {#if xpMut.error}
+          <p class="text-danger mt-1.5 text-xs">{xpMut.error}</p>
+        {/if}
+      </section>
+    {/if}
 
     <section class="mb-5">
       <h3

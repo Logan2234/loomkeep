@@ -6,6 +6,7 @@ import type {
   AdminUserOptionDto,
   AdminUserPlanDto,
   AdminUserRoleDto,
+  AdminUserXpDto,
   MyListDto,
   MyReviewDto,
   PagedResult,
@@ -30,6 +31,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { Prisma } from "@prisma/client";
@@ -43,6 +45,8 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { GamificationFeatureGuard } from "../gamification/gamification-feature.guard";
+import { XpService } from "../gamification/xp.service";
 import { MyListResponseDto } from "../lists/dto/my-list-response.dto";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -58,12 +62,14 @@ import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdjustAdminUserXpDto } from "./dto/adjust-admin-user-xp.dto";
 import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
 import { AdminUserLibraryStatsResponseDto } from "./dto/admin-user-library-stats-response.dto";
 import { AdminUserOptionResponseDto } from "./dto/admin-user-option-response.dto";
 import { AdminUserPlanResponseDto } from "./dto/admin-user-plan-response.dto";
 import { AdminUserResponseDto } from "./dto/admin-user-response.dto";
 import { AdminUserRoleResponseDto } from "./dto/admin-user-role-response.dto";
+import { AdminUserXpResponseDto } from "./dto/admin-user-xp-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
@@ -91,6 +97,7 @@ export class AdminUsersController {
     private readonly lists: ListService,
     private readonly moderationDecisions: ModerationDecisionService,
     private readonly entitlements: EntitlementService,
+    private readonly xp: XpService,
   ) {}
 
   /**
@@ -183,6 +190,7 @@ export class AdminUsersController {
       orderBy: { createdAt: "desc" },
       skip,
       take: take + 1,
+      include: { score: { select: { xp: true } } },
     });
     const hasMore = rows.length > pageLimit;
     const users = rows.slice(0, pageLimit);
@@ -210,6 +218,7 @@ export class AdminUsersController {
         lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
         inactivityWarningSentAt:
           u.inactivityWarningSentAt?.toISOString() ?? null,
+        xp: u.score?.xp ?? 0,
       })),
     };
   }
@@ -288,6 +297,31 @@ export class AdminUsersController {
   ): Promise<AdminUserPlanDto> {
     const entitlement = await this.entitlements.setPlan(userId, dto.plan);
     return { plan: entitlement.plan };
+  }
+
+  /**
+   * Adds or removes XP by hand — to fix an anomaly, or to reward a report.
+   * An admin may adjust their own account. Undone by an adjustment of the
+   * opposite sign. 404 while gamification is off, like its other endpoints.
+   */
+  @Post("users/:userId/xp-adjustments")
+  @UseGuards(GamificationFeatureGuard)
+  @ApiOkResponse({ type: AdminUserXpResponseDto })
+  @HttpCode(HttpStatus.OK)
+  async adjustUserXp(
+    @Param("userId") userId: string,
+    @Body() dto: AdjustAdminUserXpDto,
+  ): Promise<AdminUserXpDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
+    }
+
+    return { xp: await this.xp.adjust(userId, dto.amount) };
   }
 
   /** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */

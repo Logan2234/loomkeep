@@ -5,6 +5,7 @@ import type { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { XpService } from "../gamification/xp.service";
 import type { ListService } from "../lists/list.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ModerationReasonBody } from "../reports/dto/moderation-reason.dto";
@@ -66,6 +67,7 @@ function makeController() {
   const entitlements = {
     setPlan: vi.fn().mockResolvedValue({ plan: "PREMIUM" }),
   } as unknown as EntitlementService;
+  const xp = { adjust: vi.fn().mockResolvedValue(150) } as unknown as XpService;
 
   const controller = new AdminUsersController(
     prisma,
@@ -79,6 +81,7 @@ function makeController() {
     lists,
     moderationDecisions,
     entitlements,
+    xp,
   );
   return {
     controller,
@@ -88,6 +91,7 @@ function makeController() {
     securityEvents,
     moderationDecisions,
     entitlements,
+    xp,
   };
 }
 
@@ -376,6 +380,28 @@ describe("AdminUsersController.updateUserPlan", () => {
 
     expect(entitlements.setPlan).toHaveBeenCalledWith("user-2", "PREMIUM");
     expect(result).toEqual({ plan: "PREMIUM" });
+  });
+});
+
+describe("AdminUsersController.adjustUserXp", () => {
+  it("applies the adjustment and returns the account's new total", async () => {
+    const { controller, prisma, xp } = makeController();
+    (prisma.user.findUnique as Mock).mockResolvedValue({ id: "u1" });
+
+    await expect(
+      controller.adjustUserXp("u1", { amount: -50 }),
+    ).resolves.toEqual({ xp: 150 });
+    expect(xp.adjust).toHaveBeenCalledWith("u1", -50);
+  });
+
+  it("404s an unknown account without touching the ledger", async () => {
+    const { controller, prisma, xp } = makeController();
+    (prisma.user.findUnique as Mock).mockResolvedValue(null);
+
+    await expect(
+      controller.adjustUserXp("ghost", { amount: 10 }),
+    ).rejects.toMatchObject({ code: "admin.user_not_found" });
+    expect(xp.adjust).not.toHaveBeenCalled();
   });
 });
 

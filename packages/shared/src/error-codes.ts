@@ -172,6 +172,7 @@ export const ErrorCode = {
   // gamification
   GamificationAchievementNotFound: "gamification.achievement_not_found",
   GamificationFeatureDisabled: "gamification.feature_disabled",
+  GamificationXpBelowZero: "gamification.xp_below_zero",
   GamificationBadgeSecret: "gamification.badge_secret",
   GamificationBadgeLimitReached: "gamification.badge_limit_reached",
 

@@ -305,3 +305,66 @@ describe("XpService.reconcile", () => {
     expect(prisma.xpEntry.deleteMany).not.toHaveBeenCalled();
   });
 });
+
+describe("XpService.adjust", () => {
+  it("writes a signed ADMIN_ADJUSTMENT entry and returns the new total", async () => {
+    const { service, prisma } = makeService();
+    (prisma.xpEntry.aggregate as Mock).mockResolvedValue({
+      _sum: { amount: 120 },
+    });
+
+    await expect(service.adjust("u1", -20)).resolves.toBe(100);
+
+    const [[{ data }]] = (prisma.xpEntry.create as Mock).mock.calls;
+    expect(data).toMatchObject({
+      userId: "u1",
+      reason: "ADMIN_ADJUSTMENT",
+      sourceType: "AdminAdjustment",
+      amount: -20,
+    });
+    expect(prisma.userScore.upsert).toHaveBeenCalled();
+  });
+
+  it("gives every adjustment its own ledger row", async () => {
+    const { service, prisma } = makeService();
+
+    await service.adjust("u1", 10);
+    await service.adjust("u1", 10);
+
+    const sources = (prisma.xpEntry.create as Mock).mock.calls.map(
+      (call) => (call[0] as { data: { sourceId: string } }).data.sourceId,
+    );
+    expect(new Set(sources).size).toBe(2);
+  });
+
+  it("refuses to take the total below zero, and writes nothing", async () => {
+    const { service, prisma } = makeService();
+    (prisma.xpEntry.aggregate as Mock).mockResolvedValue({
+      _sum: { amount: 50 },
+    });
+
+    await expect(service.adjust("u1", -51)).rejects.toMatchObject({
+      code: "gamification.xp_below_zero",
+    });
+    expect(prisma.xpEntry.create).not.toHaveBeenCalled();
+  });
+
+  it("allows bringing the total exactly to zero", async () => {
+    const { service, prisma } = makeService();
+    (prisma.xpEntry.aggregate as Mock).mockResolvedValue({
+      _sum: { amount: 50 },
+    });
+
+    await expect(service.adjust("u1", -50)).resolves.toBe(0);
+  });
+
+  it("serialises adjustments of one user under an advisory lock", async () => {
+    const { service, prisma } = makeService();
+
+    await service.adjust("u1", 5);
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    const [[sql]] = (prisma.$executeRaw as Mock).mock.calls;
+    expect(sql.join("")).toContain("pg_advisory_xact_lock");
+  });
+});

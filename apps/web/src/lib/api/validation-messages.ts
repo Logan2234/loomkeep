@@ -45,6 +45,8 @@ const CONSTRAINT_MESSAGES = {
       ? m.valerr_length_exact({ count: min })
       : m.valerr_length_range({ min, max });
   },
+  notEquals: (params) =>
+    m.valerr_not_equals({ value: String(params?.[0] ?? "") }),
   min: (params) => m.valerr_min({ min: asNumber(params?.[0]) }),
   max: (params) => m.valerr_max({ max: asNumber(params?.[0]) }),
   // A regex is never shown to a user — see the sanitization in
@@ -96,6 +98,7 @@ export const VALERR_MESSAGE_KEYS = [
   "valerr_array_max_size",
   "valerr_array_not_empty",
   "valerr_array_unique",
+  "valerr_not_equals",
   "valerr_is_push_endpoint",
   // Not produced by CONSTRAINT_MESSAGES itself — the fallback for a
   // constraint name it doesn't recognize (see fieldError() below).

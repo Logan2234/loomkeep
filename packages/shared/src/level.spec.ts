@@ -71,6 +71,11 @@ describe("levelForXp", () => {
     }
   });
 
+  it("reads a negative total as level 1 rather than no level at all", () => {
+    expect(levelForXp(-1)).toBe(1);
+    expect(levelForXp(-5000)).toBe(1);
+  });
+
   it("holds level 1 until the first threshold is crossed", () => {
     expect(levelForXp(0)).toBe(1);
     expect(levelForXp(xpForLevel(2) - 1)).toBe(1);
