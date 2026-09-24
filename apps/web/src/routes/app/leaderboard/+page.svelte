@@ -102,6 +102,10 @@
             value: "year" as const,
             label: m.gamification_leaderboard_period_year(),
           },
+          {
+            value: "all" as const,
+            label: m.gamification_leaderboard_period_all(),
+          },
         ]}
         value={period}
         onChange={(v) => (period = v)} />

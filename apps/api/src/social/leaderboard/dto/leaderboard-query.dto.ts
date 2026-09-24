@@ -7,6 +7,6 @@ export class LeaderboardQueryDto {
   scope?: LeaderboardScope;
 
   @IsOptional()
-  @IsIn(["month", "year"])
+  @IsIn(["month", "year", "all"])
   period?: LeaderboardPeriod;
 }

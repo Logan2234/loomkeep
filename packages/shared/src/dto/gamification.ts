@@ -82,9 +82,10 @@ export type LeaderboardScope = "global" | "friends";
 
 /**
  * Calendar window a leaderboard sums live from the XP ledger, using the
- * server's clock rather than a snapshot table.
+ * server's clock rather than a snapshot table — or `all`, every XP ever
+ * earned, read from the materialised total instead.
  */
-export type LeaderboardPeriod = "month" | "year";
+export type LeaderboardPeriod = "month" | "year" | "all";
 
 /**
  * Deliberately lean, not a `UserSummaryDto`: it carries

@@ -29,13 +29,16 @@ function makeService(opts: {
   users: MockUser[];
   follows?: { followeeId: string }[];
   friendIds?: string[];
+  scores?: { userId: string; xp: number }[];
 }) {
   const groupBy = vi.fn().mockResolvedValue(opts.sums);
+  const findManyScore = vi.fn().mockResolvedValue(opts.scores ?? []);
   const findManyUser = vi.fn().mockResolvedValue(opts.users);
   const findManyFollow = vi.fn().mockResolvedValue(opts.follows ?? []);
 
   const prisma = {
     xpEntry: { groupBy },
+    userScore: { findMany: findManyScore },
     user: { findMany: findManyUser },
     follow: { findMany: findManyFollow },
   } as unknown as PrismaService;
@@ -47,6 +50,7 @@ function makeService(opts: {
   return {
     service: new LeaderboardService(prisma, follow),
     groupBy,
+    findManyScore,
     findManyUser,
     findManyFollow,
     follow,
@@ -190,6 +194,55 @@ describe("LeaderboardService.getLeaderboard", () => {
       expect.objectContaining({
         where: expect.objectContaining({
           userId: { in: ["viewer", "friend-1", "friend-2"] },
+        }),
+      }),
+    );
+  });
+});
+
+describe("LeaderboardService.getLeaderboard — all time", () => {
+  it("ranks by the materialised total rather than summing the whole ledger", async () => {
+    const { service, groupBy, findManyScore } = makeService({
+      sums: [],
+      scores: [
+        { userId: "a", xp: 500 },
+        { userId: "b", xp: 1200 },
+      ],
+      users: [makeUser({ id: "a" }), makeUser({ id: "b" })],
+    });
+
+    const { entries } = await service.getLeaderboard("nobody", "global", "all");
+
+    expect(groupBy).not.toHaveBeenCalled();
+    expect(entries.map((e) => [e.id, e.xp, e.rank])).toEqual([
+      ["b", 1200, 1],
+      ["a", 500, 2],
+    ]);
+    expect(findManyScore).toHaveBeenCalledWith({
+      where: {
+        xp: { gt: 0 },
+        user: {
+          profileAccess: { not: ProfileAccess.GHOST },
+          hideProgression: false,
+        },
+      },
+      select: { userId: true, xp: true },
+    });
+  });
+
+  it("keeps the friends scope", async () => {
+    const { service, findManyScore } = makeService({
+      sums: [],
+      users: [],
+      friendIds: ["friend-1"],
+    });
+
+    await service.getLeaderboard("viewer", "friends", "all");
+
+    expect(findManyScore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: { in: ["viewer", "friend-1"] },
         }),
       }),
     );
