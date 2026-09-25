@@ -7,8 +7,6 @@ export const getFeed = (page = 1, domain?: Domain) =>
     query: { page: String(page), ...(domain ? { domain } : {}) },
   });
 
-export const getFeedPreview = () => typedRequest("/social/feed/preview");
-
 export function getUserActivity(username: string, page = 1) {
   return typedRequest("/social/users/{username}/activity", {
     params: { username },

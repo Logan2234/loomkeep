@@ -340,3 +340,18 @@ export interface SocialStatsDto {
   /** Consecutive days with a review or comment, same rule as the video streak. */
   contributionStreakDays: number;
 }
+
+export type OnThisDayKind = "watched" | "started" | "finished";
+
+/** A work you were on around this date a year ago ("Il y a un an"). */
+export interface OnThisDayEntryDto {
+  domain: StatsDomain;
+  title: string;
+  imageUrl: string | null;
+  href: string | null;
+  kind: OnThisDayKind;
+  /** ISO — the day it happened. */
+  date: string;
+  /** Episodes watched that week, for a series; 1 otherwise. */
+  count: number;
+}

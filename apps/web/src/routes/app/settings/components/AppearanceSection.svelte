@@ -244,6 +244,29 @@
   </section>
 
   <section
+    id="home-layout"
+    use:flashAnchor={{ anchor: "home-layout", hash: page.url.hash }}
+    class="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center md:p-6">
+    <div class="min-w-0 flex-1">
+      <p class="mb-2 flex items-center gap-2 font-semibold">
+        {m.settings_home_layout_title()}
+        {#if isFeatureNew("home-layout")}
+          <NewBadge />
+        {/if}
+      </p>
+      <p class="text-dim text-sm">{m.settings_home_layout_description()}</p>
+    </div>
+    <a
+      href="/app/settings/appearance/home"
+      class="btn btn-primary group shrink-0 gap-1.5 self-start sm:self-center">
+      <Icon
+        name="layout"
+        class="h-4 w-4 transition-transform group-hover:scale-110" />
+      {m.settings_home_layout_open()}
+    </a>
+  </section>
+
+  <section
     id="nav-style"
     use:flashAnchor={{ anchor: "nav-style", hash: page.url.hash }}
     class="card p-5 md:p-6">

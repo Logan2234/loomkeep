@@ -523,6 +523,10 @@ model User {
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
   mobileNavShortcuts            String[]           @default(["home", "search", "menu", "calendar", "account"])
+  // The home page's widget grid (shared HomeLayoutDto). Null means the
+  // default grid, which the web builds from the enabled domains — stored
+  // only once the user edits the page, so the default keeps evolving.
+  homeLayout                    Json?
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices

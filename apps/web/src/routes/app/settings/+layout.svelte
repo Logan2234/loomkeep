@@ -1,8 +1,9 @@
 <script lang="ts">
   // Settings shell: the rail on the left, the open section on the right, and
   // the search results taking the section's place while a query is active.
-  // The import wizards keep the full width — they are task flows with their
-  // own back affordance, not a section you browse to.
+  // The import wizards and the home page editor keep the full width — they
+  // are task flows with their own back affordance, not a section you browse
+  // to (and the editor lays widgets out at the home page's own width).
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { getMfaStatus } from "$lib/api/client";
@@ -31,8 +32,9 @@
   let { children }: { children: Snippet } = $props();
 
   const isWizard = $derived(
-    page.url.pathname.startsWith("/app/settings/import/") &&
-      page.url.pathname !== "/app/settings/import/history",
+    (page.url.pathname.startsWith("/app/settings/import/") &&
+      page.url.pathname !== "/app/settings/import/history") ||
+      page.url.pathname === "/app/settings/appearance/home",
   );
 
   // Leaving settings entirely drops the query — coming back to a screen still

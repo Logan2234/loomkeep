@@ -14,6 +14,7 @@ const SHIPPED = {
   "admin-user-filters": "2026-09-23",
   "account-activity": "2026-09-24",
   "release-feed": "2026-09-25",
+  "home-layout": "2026-09-25",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

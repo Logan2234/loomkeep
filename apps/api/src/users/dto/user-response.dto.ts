@@ -9,6 +9,7 @@ import type {
   SpoilerSensitivity,
   UserDto,
 } from "@loomkeep/shared";
+import { HomeLayoutBody } from "./home-layout.dto";
 
 export class UserResponseDto implements UserDto {
   id!: string;
@@ -39,4 +40,5 @@ export class UserResponseDto implements UserDto {
   hideProgression!: boolean;
   spoilerSensitivity!: SpoilerSensitivity;
   domainOrder!: Domain[];
+  homeLayout!: HomeLayoutBody | null;
 }

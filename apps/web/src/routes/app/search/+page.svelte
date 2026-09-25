@@ -15,27 +15,6 @@
   import { m } from "$lib/paraglide/messages";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
-  const DOMAIN_HINT: Record<Domain, string> = {
-    [Domain.MEDIA]: m.search_domain_media(),
-    [Domain.GAMES]: m.search_domain_games(),
-    [Domain.BOOKS]: m.search_domain_books(),
-    [Domain.MUSIC]: m.search_domain_music(),
-    [Domain.PODCASTS]: m.search_domain_podcasts(),
-    [Domain.BOARDGAMES]: m.search_domain_boardgames(),
-  };
-
-  // Reuses the same one-hue-per-domain tokens as the stats charts
-  // (`--stat-media/games/books/music` in app.css) rather than inventing a
-  // second palette — "Bientôt" domains fall back to the neutral `--dim`.
-  const DOMAIN_ACCENT_VAR: Record<Domain, string> = {
-    [Domain.MEDIA]: "var(--stat-media)",
-    [Domain.GAMES]: "var(--stat-games)",
-    [Domain.BOOKS]: "var(--stat-books)",
-    [Domain.MUSIC]: "var(--stat-music)",
-    [Domain.PODCASTS]: "var(--dim)",
-    [Domain.BOARDGAMES]: "var(--dim)",
-  };
-
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
   // the API enforces the same gate on the search endpoints).
   const enabledTabs = $derived(
@@ -55,7 +34,7 @@
   let domain = $state<Domain>(initialDomain);
 
   const placeholder = $derived(
-    m.search_placeholder({ domain: DOMAIN_HINT[domain] }),
+    m.search_placeholder({ domain: DOMAINS[domain].searchHint }),
   );
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
@@ -204,7 +183,7 @@
 
   <div
     class="guichet mb-5"
-    style={`--domain-accent: ${DOMAIN_ACCENT_VAR[domain]}`}>
+    style={`--domain-accent: ${DOMAINS[domain].accent}`}>
     {#if enabledTabs.length > 1}
       <div class="guichet-tabs no-scrollbar">
         {#each enabledTabs as tab (tab[0])}

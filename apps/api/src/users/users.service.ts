@@ -1,6 +1,7 @@
 import {
   Domain,
   ErrorCode,
+  HOME_GRID_COLUMNS,
   LEGAL_VERSION,
   UserDto,
   UsernameAvailabilityDto,
@@ -14,7 +15,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { User } from "@prisma/client";
+import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
@@ -41,6 +42,7 @@ import type { ChangeEmailDto } from "./dto/change-email.dto";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
 import type { DeleteAccountDto } from "./dto/delete-account.dto";
+import type { HomeLayoutBody } from "./dto/home-layout.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
@@ -255,6 +257,39 @@ export class UsersService {
         acceptedTermsAt: new Date(),
         acceptedTermsVersion: LEGAL_VERSION,
       },
+    });
+    return toUserDto(user);
+  }
+
+  /**
+   * Stores the home grid as sent, only pulled back inside the grid: a widget
+   * overflowing the right edge slides left, and a repeated id keeps its first
+   * widget. Overlaps are left alone — the web compacts on every render.
+   */
+  async setHomeLayout(userId: string, body: HomeLayoutBody): Promise<UserDto> {
+    const seen = new Set<string>();
+    const widgets = body.widgets
+      .filter((widget) => {
+        if (seen.has(widget.id)) return false;
+        seen.add(widget.id);
+        return true;
+      })
+      .map((widget) => ({
+        ...widget,
+        x: Math.min(widget.x, HOME_GRID_COLUMNS - widget.w),
+      }));
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { homeLayout: { widgets } as unknown as Prisma.InputJsonValue },
+    });
+    return toUserDto(user);
+  }
+
+  /** Back to the default grid, which follows the enabled domains again. */
+  async resetHomeLayout(userId: string): Promise<UserDto> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { homeLayout: Prisma.DbNull },
     });
     return toUserDto(user);
   }
