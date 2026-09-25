@@ -32,6 +32,7 @@
     stripMinWidth,
     loading,
     empty,
+    label,
     image,
     meta,
     action,
@@ -47,6 +48,8 @@
     stripMinWidth?: number;
     loading: boolean;
     empty: string;
+    /** Accessible name of the strip, when it scrolls sideways. */
+    label: string;
     /** Replaces the poster, e.g. a list's cover collage. */
     image?: Snippet<[T]>;
     meta?: Snippet<[T]>;
@@ -112,6 +115,7 @@
     bind:this={carousel}
     {items}
     {keyOf}
+    {label}
     gap="gap-3"
     wrapClass=""
     innerClass="pb-1"

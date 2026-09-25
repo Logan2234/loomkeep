@@ -152,8 +152,7 @@ fix does.
   `invalidates` (factory keys to refetch on success). `CommentThread.svelte`
   is the one deliberate exception — it needs raw TanStack directly
   (`refetchInterval` polling, its own `createInfiniteQuery`) — don't
-  migrate it. Full design and the settled tradeoffs:
-  [docs/plans/centralized-api-layer.md](docs/plans/centralized-api-layer.md).
+  migrate it.
 - Query keys come from a factory (`apps/web/src/lib/api/keys.ts`),
   namespaced per domain. TanStack dedupes by key at the single
   `QueryClient` (mounted in `routes/+layout.svelte`) — two components

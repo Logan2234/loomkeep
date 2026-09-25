@@ -60,6 +60,7 @@
     year: "numeric",
   })}>
   <PosterRail
+    label={def.title()}
     items={memoriesQuery.data ?? []}
     keyOf={(e) => `${e.domain}:${e.title}:${e.date}`}
     info={(e) => ({

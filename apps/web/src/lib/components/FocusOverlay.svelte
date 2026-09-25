@@ -10,6 +10,7 @@
   // screen, unclickable, after closing).
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
+  import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
   import { prefersReducedMotion } from "$lib/motion";
@@ -19,7 +20,13 @@
     onclose,
     content,
     menu,
-  }: { onclose: () => void; content: Snippet; menu?: Snippet } = $props();
+    initialFocus,
+  }: {
+    onclose: () => void;
+    content: Snippet;
+    menu?: Snippet;
+    initialFocus?: HTMLElement | null;
+  } = $props();
 
   const reduced = prefersReducedMotion();
   const dur = reduced ? 0 : 180;
@@ -39,16 +46,18 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === "Escape" && requestClose()} />
-
 <div
   use:portal
   use:scrollLock
+  use:dialogFocus={{ initialFocus, onEscape: requestClose }}
   class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-5"
   role="dialog"
   aria-modal="true"
   aria-label={m.common_actions()}>
   <button
+    type="button"
+    data-dialog-backdrop
+    tabindex="-1"
     class="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity {visible
       ? 'opacity-100'
       : 'pointer-events-none opacity-0'}"

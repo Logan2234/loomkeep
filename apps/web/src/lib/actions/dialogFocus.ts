@@ -1,88 +1,206 @@
-const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  '[tabindex]:not([tabindex="-1"])',
-].join(",");
+type DialogFocusOptions = {
+  initialFocus?: HTMLElement | null;
+  onEscape?: () => void;
+};
+
+type InertState = { count: number; wasInert: boolean };
 
 const dialogStack: HTMLElement[] = [];
+const inertStates = new Map<HTMLElement, InertState>();
+
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type='hidden'])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
+  "audio[controls]",
+  "video[controls]",
+  "[contenteditable='true']",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+export function nextFocusIndex(
+  currentIndex: number,
+  focusableCount: number,
+  reverse: boolean,
+): number | null {
+  if (focusableCount === 0) return -1;
+  if (currentIndex < 0) return reverse ? focusableCount - 1 : 0;
+  if (reverse) return currentIndex === 0 ? focusableCount - 1 : null;
+  return currentIndex === focusableCount - 1 ? 0 : null;
+}
+
+function isAvailable(element: HTMLElement): boolean {
+  return (
+    element.tabIndex >= 0 &&
+    !element.hasAttribute("disabled") &&
+    element.getAttribute("aria-disabled") !== "true" &&
+    !element.inert &&
+    element.getClientRects().length > 0
+  );
+}
 
 function focusableElements(node: HTMLElement): HTMLElement[] {
   return Array.from(
     node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(
-    (element) =>
-      element.getAttribute("aria-hidden") !== "true" &&
-      element.getClientRects().length > 0,
-  );
+  ).filter(isAvailable);
 }
 
-function focusFirst(node: HTMLElement) {
-  const autofocus = node.querySelector<HTMLElement>("[autofocus]");
-  (autofocus ?? focusableElements(node)[0] ?? node).focus();
+function backgroundSiblings(node: HTMLElement): HTMLElement[] {
+  const siblings = new Set<HTMLElement>();
+  let current: HTMLElement | null = node;
+  let directSiblings = true;
+
+  while (current?.parentElement) {
+    const parentElement: HTMLElement = current.parentElement;
+
+    for (const child of parentElement.children) {
+      if (
+        child !== current &&
+        child instanceof HTMLElement &&
+        !(directSiblings && child.hasAttribute("data-dialog-backdrop"))
+      ) {
+        siblings.add(child);
+      }
+    }
+
+    if (parentElement === document.body) break;
+    current = parentElement;
+    directSiblings = false;
+  }
+
+  return [...siblings];
 }
 
-/** Keeps keyboard focus in the topmost dialog and restores it on close. */
-export function dialogFocus(node: HTMLElement) {
+function makeInert(elements: HTMLElement[]) {
+  for (const element of elements) {
+    const state = inertStates.get(element);
+
+    if (state) {
+      state.count++;
+    } else {
+      inertStates.set(element, { count: 1, wasInert: element.inert });
+      element.inert = true;
+    }
+  }
+}
+
+function restoreInert(elements: HTMLElement[]) {
+  for (const element of elements) {
+    const state = inertStates.get(element);
+    if (!state) continue;
+    state.count--;
+
+    if (state.count === 0) {
+      element.inert = state.wasInert;
+      inertStates.delete(element);
+    }
+  }
+}
+
+export function dialogFocus(
+  node: HTMLElement,
+  options: DialogFocusOptions = {},
+) {
+  let currentOptions = options;
   const previouslyFocused =
     document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
+  const inertElements = backgroundSiblings(node);
+  const hadTabindex = node.hasAttribute("tabindex");
+  const previousTabindex = node.getAttribute("tabindex");
+
+  if (!hadTabindex) node.setAttribute("tabindex", "-1");
   dialogStack.push(node);
+  makeInert(inertElements);
 
   const isTopmost = () => dialogStack.at(-1) === node;
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (!isTopmost() || event.key !== "Tab") return;
+  const focusInitial = () => {
+    if (!isTopmost()) return;
+    const requested = currentOptions.initialFocus;
+    const target =
+      requested &&
+      node.contains(requested) &&
+      !requested.hasAttribute("disabled") &&
+      requested.getAttribute("aria-disabled") !== "true" &&
+      !requested.inert
+        ? requested
+        : (focusableElements(node)[0] ?? node);
+    target.focus({ preventScroll: true });
+  };
 
-    const focusable = focusableElements(node);
+  const onKeydown = (event: KeyboardEvent) => {
+    if (!isTopmost()) return;
 
-    if (focusable.length === 0) {
+    if (event.key === "Escape") {
+      const escapeConsumer = event
+        .composedPath()
+        .find(
+          (target): target is HTMLElement =>
+            target instanceof HTMLElement &&
+            target.hasAttribute("data-escape-consumer"),
+        );
+
+      if (
+        (escapeConsumer && node.contains(escapeConsumer)) ||
+        !currentOptions.onEscape
+      ) {
+        return;
+      }
+
       event.preventDefault();
-      node.focus();
+      event.stopImmediatePropagation();
+      currentOptions.onEscape();
       return;
     }
 
-    const first = focusable[0];
-    const last = focusable.at(-1) as HTMLElement;
-    const active = document.activeElement;
+    if (event.key !== "Tab") return;
+    const focusable = focusableElements(node);
+    const currentIndex = focusable.indexOf(
+      document.activeElement as HTMLElement,
+    );
+    const nextIndex = nextFocusIndex(
+      currentIndex,
+      focusable.length,
+      event.shiftKey,
+    );
+    if (nextIndex === null) return;
+    event.preventDefault();
+    (nextIndex === -1 ? node : focusable[nextIndex]).focus({
+      preventScroll: true,
+    });
+  };
 
-    if (event.shiftKey && (active === first || !node.contains(active))) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && (active === last || !node.contains(active))) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
+  const onFocusIn = (event: FocusEvent) => {
+    if (isTopmost() && !node.contains(event.target as Node)) focusInitial();
+  };
 
-  function handleFocusIn(event: FocusEvent) {
-    if (!isTopmost() || node.contains(event.target as Node)) return;
-    focusFirst(node);
-  }
-
-  node.addEventListener("keydown", handleKeydown);
-  document.addEventListener("focusin", handleFocusIn, true);
-  queueMicrotask(() => {
-    if (isTopmost()) focusFirst(node);
-  });
+  document.addEventListener("keydown", onKeydown, true);
+  document.addEventListener("focusin", onFocusIn, true);
+  queueMicrotask(() => requestAnimationFrame(focusInitial));
 
   return {
+    update(nextOptions: DialogFocusOptions = {}) {
+      currentOptions = nextOptions;
+    },
     destroy() {
+      document.removeEventListener("keydown", onKeydown, true);
+      document.removeEventListener("focusin", onFocusIn, true);
       const index = dialogStack.lastIndexOf(node);
-      const wasTopmost = index === dialogStack.length - 1;
       if (index !== -1) dialogStack.splice(index, 1);
+      restoreInert(inertElements);
 
-      node.removeEventListener("keydown", handleKeydown);
-      document.removeEventListener("focusin", handleFocusIn, true);
+      if (!hadTabindex) node.removeAttribute("tabindex");
+      else if (previousTabindex !== null)
+        node.setAttribute("tabindex", previousTabindex);
 
-      if (wasTopmost) {
-        queueMicrotask(() => {
-          if (previouslyFocused?.isConnected) previouslyFocused.focus();
-          else dialogStack.at(-1)?.focus();
-        });
+      if (previouslyFocused?.isConnected && !previouslyFocused.inert) {
+        queueMicrotask(() => previouslyFocused.focus({ preventScroll: true }));
       }
     },
   };

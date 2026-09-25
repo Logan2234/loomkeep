@@ -52,6 +52,10 @@
         </div>
         <ProgressBar
           value={(item.value / max) * 100}
+          label={m.common_selection_summary({
+            label: item.label,
+            selection: item.display ?? formatNumber(item.value),
+          })}
           height="h-2"
           fillClass=""
           fillStyle="background:{item.color ?? 'var(--accent)'}" />

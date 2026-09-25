@@ -83,6 +83,7 @@ this point beyond the roadmap phases already documented in the README.
   validation failures return 400 instead of 500, and knip plus type-aware
   promise rules became blocking CI gates. The e2e suite was split per flow
   (MFA, import, social) with a shared bootstrap.
+
 ## 1.8.0 — Gamification, complete localization, and security hardening
 
 - **Gamification is now a broad product surface.** An append-only
@@ -164,8 +165,7 @@ this point beyond the roadmap phases already documented in the README.
   app, fixing several real unhandled-rejection bugs uncovered along the way
   (ProfileView's follow/block actions, review casting, stats drill-downs).
   Every paginated list endpoint now shares one `page`/`limit` +
-  `PagedResult<T>` contract. Full design in
-  [docs/plans/centralized-api-layer.md](docs/plans/centralized-api-layer.md).
+  `PagedResult<T>` contract.
 - **Notification digests** replace instant push/email on new episodes with a
   per-channel cadence (weekly free, daily premium) timed at each user's
   local hour.

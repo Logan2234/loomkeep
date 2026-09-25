@@ -517,7 +517,7 @@
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
     {#if entry?.progress}
       <div class="mt-6 max-w-sm">
-        <ProgressBar value={pct} />
+        <ProgressBar value={pct} label={m.common_progress()} />
         <p class="timecode mt-1.5 text-sm">
           {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
           {m.media_watched_episodes_suffix()}

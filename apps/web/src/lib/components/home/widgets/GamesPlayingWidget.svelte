@@ -37,6 +37,7 @@
 
 <WidgetShell icon={def.icon} title={def.title()} href="/app/games">
   <PosterRail
+    label={def.title()}
     items={gamesQuery.data ?? []}
     keyOf={(e) => e.id}
     info={(e) => ({

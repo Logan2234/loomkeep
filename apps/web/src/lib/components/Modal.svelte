@@ -22,6 +22,7 @@
     blur = false,
     dismissable = true,
     overflowVisible = false,
+    initialFocus,
   }: {
     title: string;
     /** Metadata line above the title (timecode voice). */
@@ -44,6 +45,7 @@
     /** Lets content (e.g. a decorative marker) poke outside the card's rounded
      * corners instead of being clipped by `.card`'s `overflow-hidden`. */
     overflowVisible?: boolean;
+    initialFocus?: HTMLElement | null;
   } = $props();
 
   // Only one of Drawer/dialog is ever mounted — not both at once toggled by
@@ -60,11 +62,6 @@
   const reduced = prefersReducedMotion();
   const isDesktop = $derived(!layout.compact);
 </script>
-
-<!-- Mobile's Drawer already closes on Escape via its own listener. -->
-<svelte:window
-  onkeydown={(e) =>
-    isDesktop && dismissable && e.key === "Escape" && onclose()} />
 
 {#snippet header(showClose: boolean)}
   {#if showClose}
@@ -104,13 +101,28 @@
     use:scrollLock
     class={`fixed inset-0 flex items-center justify-center ${blur ? "backdrop-blur-sm" : ""}`}
     style="z-index: {MODAL_Z_INDEX}">
-    <button
-      class="absolute inset-0 cursor-default bg-black/60"
-      transition:fade|global={{ duration: reduced ? 0 : 180 }}
-      aria-label={m.common_close()}
-      onclick={() => dismissable && onclose()}></button>
+    {#if dismissable}
+      <button
+        type="button"
+        data-dialog-backdrop
+        tabindex="-1"
+        class="absolute inset-0 cursor-default bg-black/60"
+        transition:fade|global={{ duration: reduced ? 0 : 180 }}
+        aria-label={m.common_close()}
+        onclick={onclose}></button>
+    {:else}
+      <div
+        data-dialog-backdrop
+        aria-hidden="true"
+        class="absolute inset-0 bg-black/60"
+        transition:fade|global={{ duration: reduced ? 0 : 180 }}>
+      </div>
+    {/if}
     <div
-      use:dialogFocus
+      use:dialogFocus={{
+        initialFocus,
+        onEscape: dismissable ? onclose : undefined,
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -141,6 +153,7 @@
   <Drawer
     {onclose}
     {dismissable}
+    {initialFocus}
     labelledby="modal-title"
     zIndex={MODAL_Z_INDEX}>
     <!-- `min-h-0` is what lets this actually scroll: a flex child defaults to

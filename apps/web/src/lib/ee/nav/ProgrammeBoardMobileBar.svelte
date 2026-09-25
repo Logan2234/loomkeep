@@ -25,6 +25,7 @@
 </script>
 
 <nav
+  data-mobile-navigation
   class="
     border-border bg-surface/95 no-scrollbar filmstrip fixed inset-x-0
     bottom-0

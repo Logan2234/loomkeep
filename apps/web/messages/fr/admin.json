@@ -474,6 +474,7 @@
   "admin_components_provider_detail": "marques officielles des sources",
   "admin_components_rating_detail": "0 à 10 · effacement",
   "admin_components_carousel_detail": "défilement · navigation adaptative",
+  "admin_components_carousel_label": "Exemple de carrousel",
   "admin_components_body_sample": "Le corps de texte reste lisible et calme.",
   "admin_components_button_primary": "Action principale",
   "admin_components_button_secondary": "Action secondaire",

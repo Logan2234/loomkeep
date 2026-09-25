@@ -150,9 +150,9 @@
       onRemoveSuccess: () => (confirmRemove = false),
     });
 
-  // Every action but "remove" shared one `saving` flag before this migration
-  // (see docs/plans/centralized-api-layer.md) — kept combined here rather
-  // than split per-button, since that's what the template already disables on.
+  // Every action but "remove" shared one `saving` flag before the move to
+  // the centralized API layer — kept combined here rather than split
+  // per-button, since that's what the template already disables on.
   const saving = $derived(
     addMut.loading ||
       patchMut.loading ||
@@ -388,7 +388,10 @@
                 {/if}
               </div>
               {#if detail.pageCount}
-                <ProgressBar value={progressPct} height="h-2" />
+                <ProgressBar
+                  value={progressPct}
+                  label={m.book_reading_progress()}
+                  height="h-2" />
               {/if}
             </div>
 

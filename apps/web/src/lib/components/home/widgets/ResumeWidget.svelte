@@ -67,6 +67,7 @@
   href="/app/media"
   linkLabel={m.common_see_more()}>
   <PosterRail
+    label={def.title()}
     items={dormant}
     keyOf={(e) => e.id}
     info={(e) => ({

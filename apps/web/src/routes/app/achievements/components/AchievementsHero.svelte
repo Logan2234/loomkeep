@@ -64,6 +64,7 @@
     </div>
     <ProgressBar
       value={summary.ratio * 100}
+      label={m.gamification_hero_progress_label()}
       height="h-1"
       track="bg-border"
       rounded={false} />

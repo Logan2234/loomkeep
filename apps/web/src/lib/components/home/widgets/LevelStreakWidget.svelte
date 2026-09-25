@@ -63,6 +63,7 @@
       </div>
       <ProgressBar
         value={levelSpan > 0 ? (progress.xpInLevel / levelSpan) * 100 : 0}
+        label={m.common_progress()}
         height="h-2" />
       <p class="timecode truncate text-[0.65rem]">
         {roomy

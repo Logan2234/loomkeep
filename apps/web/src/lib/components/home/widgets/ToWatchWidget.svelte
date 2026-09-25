@@ -105,6 +105,7 @@
   href="/app/media"
   linkLabel={m.common_see_more()}>
   <PosterRail
+    label={def.title()}
     bind:carousel
     items={toWatch}
     keyOf={(e) => e.id}
@@ -125,6 +126,10 @@
       {#if e.progress}
         <ProgressBar
           value={entryPct(e)}
+          label={m.common_selection_summary({
+            label: m.common_progress(),
+            selection: e.mediaItem.title,
+          })}
           height="h-1"
           class="mt-1"
           title="{e.progress.watchedEpisodes} / {e.progress.totalEpisodes}" />

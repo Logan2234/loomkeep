@@ -47,6 +47,7 @@
     </div>
   {:else}
     <PosterRail
+      label={def.title()}
       items={lists}
       keyOf={(list) => list.id}
       info={(list) => ({

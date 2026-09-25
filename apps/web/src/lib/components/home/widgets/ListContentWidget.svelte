@@ -40,6 +40,7 @@
     </p>
   {:else}
     <PosterRail
+      label={list?.title ?? def.title()}
       items={list?.items ?? []}
       keyOf={(item) => item.id}
       info={(item) => ({

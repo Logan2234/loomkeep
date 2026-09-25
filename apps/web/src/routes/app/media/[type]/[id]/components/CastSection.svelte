@@ -77,7 +77,11 @@
 {#if cast.length > 0}
   <section class="mt-10">
     <h2 class="font-display mb-3 text-xl font-bold">{m.media_cast()}</h2>
-    <Carousel items={cast} keyOf={(c) => c.name + (c.role ?? "")} gap="gap-3">
+    <Carousel
+      items={cast}
+      keyOf={(c) => c.name + (c.role ?? "")}
+      label={m.media_cast()}
+      gap="gap-3">
       {#snippet card(c)}
         {#if c.id}
           <button
@@ -169,6 +173,7 @@
         <Carousel
           items={castDetail.knownFor}
           keyOf={(k) => `${k.source}:${k.sourceId}`}
+          label={m.media_known_for()}
           gap="gap-3"
           wrapClass="-mx-1"
           innerClass="px-1 pb-1"

@@ -50,6 +50,7 @@
        page matters more than the cover), covers side by side only once the
        widget is wide enough for several. -->
   <PosterRail
+    label={def.title()}
     items={booksQuery.data ?? []}
     keyOf={(e) => e.id}
     info={(e) => ({
@@ -66,7 +67,14 @@
     {#snippet meta(e)}
       {@const p = pct(e)}
       {#if p !== null}
-        <ProgressBar value={p} height="h-1" class="mt-1" />
+        <ProgressBar
+          value={p}
+          label={m.common_selection_summary({
+            label: m.book_reading_progress(),
+            selection: e.book.title,
+          })}
+          height="h-1"
+          class="mt-1" />
       {/if}
       <p class="timecode mt-0.5 truncate text-[0.65rem]">{pages(e)}</p>
     {/snippet}

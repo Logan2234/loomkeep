@@ -116,6 +116,7 @@
 
 <WidgetShell icon={def.icon} title={def.title()}>
   <PosterRail
+    label={def.title()}
     items={favorites}
     keyOf={(f) => f.id}
     info={(f) => ({ href: f.href, title: f.title, imageUrl: f.imageUrl })}
