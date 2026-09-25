@@ -1,8 +1,8 @@
 // createApiInfiniteQuery() — thin wrapper over TanStack's
-// createInfiniteQuery(), the third helper from the centralized API layer
-// (docs/plans/centralized-api-layer.md §3). "Infinite" means accumulating
-// pages, not a scroll mechanism — the trigger (IntersectionObserver
-// sentinel, "load more" button) stays the component's business. Supports
+// createInfiniteQuery(), the third helper from the centralized API layer.
+// "Infinite" means accumulating pages, not a scroll mechanism — the trigger
+// (IntersectionObserver sentinel, "load more" button) stays the component's
+// business. Supports
 // both server paging styles (cursor or page number) through
 // `getNextPageParam`, not a mode flag — and there is deliberately no
 // accumulate-vs-replace flag either, since every paginated list in this app
