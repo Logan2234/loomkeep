@@ -1,11 +1,14 @@
 <script lang="ts" generics="T extends string">
   import { m } from "$lib/paraglide/messages.js";
+  import type { IconName } from "$lib/types/icon-name";
+  import Icon from "./Icon.svelte";
   import PremiumLockBadge from "./PremiumLockBadge.svelte";
   import Tooltip from "./Tooltip.svelte";
 
   interface SegmentOption<V extends string> {
     value: V;
     label: string;
+    icon?: IconName;
     disabled?: boolean;
     /** Native title shown on hover — ignored when `locked` (uses Tooltip instead). */
     disabledReason?: string;
@@ -17,11 +20,14 @@
     options,
     value,
     onChange,
+    label,
     class: className = "",
   }: {
     options: SegmentOption<T>[];
     value: T;
     onChange: (value: T) => void;
+    /** Accessible name for the group, when no visible label names it. */
+    label?: string;
     class?: string;
   } = $props();
 </script>
@@ -30,20 +36,27 @@
   {@const on = value === opt.value}
   <button
     type="button"
-    class="rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40"
-    class:bg-accent={on}
-    class:text-accent-fg={on}
+    aria-pressed={on}
+    class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.25 text-[0.82rem] font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] disabled:pointer-events-none disabled:opacity-40"
+    class:bg-surface={on}
+    class:text-fg={on}
+    class:shadow-sm={on}
     class:text-dim={!on}
     class:hover:text-fg={!on}
     disabled={opt.disabled || opt.locked}
     title={opt.locked ? undefined : opt.disabledReason}
     onclick={() => onChange(opt.value)}>
+    {#if opt.icon}
+      <Icon name={opt.icon} class="h-3.5 w-3.5" />
+    {/if}
     {opt.label}
   </button>
 {/snippet}
 
 <div
-  class="border-border bg-surface-2 inline-flex shrink-0 gap-0.5 rounded-full border p-0.5 {className}">
+  role="group"
+  aria-label={label}
+  class="border-border bg-surface-2 inline-flex shrink-0 gap-0.5 rounded-[9px] border p-0.75 {className}">
   {#each options as opt (opt.value)}
     {#if opt.locked}
       <Tooltip text={m.premium_locked()}>

@@ -1,5 +1,5 @@
 import type { AuthTokensDto } from "@loomkeep/shared";
-import type { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyReply } from "fastify";
 import {
   createCipheriv,
   createDecipheriv,
@@ -51,7 +51,10 @@ export function clearAuthCookies(reply: FastifyReply): void {
   ]);
 }
 
-function readAuthCookie(request: FastifyRequest, name: string): string | null {
+/** Structural subset of FastifyRequest — also satisfied by a socket.io handshake, so EventsGateway's handleConnection can reuse this without a FastifyRequest to hand it. */
+type CookieCarrier = { headers: { cookie?: string } };
+
+function readAuthCookie(request: CookieCarrier, name: string): string | null {
   const raw = request.headers.cookie;
   if (!raw) return null;
 
@@ -136,10 +139,10 @@ function cookieEncryptionKey(): Buffer {
     .digest();
 }
 
-export function readAccessCookie(request: FastifyRequest): string | null {
+export function readAccessCookie(request: CookieCarrier): string | null {
   return readAuthCookie(request, ACCESS_COOKIE);
 }
 
-export function readRefreshCookie(request: FastifyRequest): string | null {
+export function readRefreshCookie(request: CookieCarrier): string | null {
   return readAuthCookie(request, REFRESH_COOKIE);
 }

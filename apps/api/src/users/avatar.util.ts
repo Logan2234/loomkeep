@@ -1,4 +1,5 @@
 import type { UserSummaryDto } from "@loomkeep/shared";
+import sharp from "sharp";
 
 const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
   "image/png": (buf) =>
@@ -16,6 +17,54 @@ const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {
  */
 export function matchesMimeType(buffer: Buffer, mimeType: string): boolean {
   return MAGIC_BYTES[mimeType]?.(buffer) ?? false;
+}
+
+/** Longest side an avatar is stored at — it is never displayed larger. */
+const AVATAR_MAX_DIMENSION = 512;
+
+/** What every avatar is stored as, whatever was uploaded. */
+export const STORED_AVATAR_MIME_TYPE = "image/webp";
+
+/**
+ * Normalises an uploaded avatar: re-encoded to WebP, bounded to
+ * {@link AVATAR_MAX_DIMENSION}, and stripped of everything that isn't pixels.
+ *
+ * That last part is the point. The bytes used to be stored exactly as
+ * uploaded and served back with a year-long immutable cache, so a photo taken
+ * on a phone published its EXIF block — which routinely carries **GPS
+ * coordinates** and a capture timestamp. The web app resizes through a canvas
+ * before uploading (which drops them), but the API accepts any client, so
+ * that was a convention rather than a guarantee.
+ *
+ * Re-encoding also collapses the polyglot-file class by construction: what
+ * gets stored is sharp's own output, not the caller's bytes.
+ *
+ * `rotate()` before the strip, not after: it applies the EXIF orientation
+ * flag while it still exists, otherwise portrait phone photos come out
+ * sideways. sharp drops metadata unless `withMetadata()` is called, so
+ * nothing else survives.
+ *
+ * Throws on anything it cannot decode — the caller turns that into a 400.
+ *
+ * Returns a plain Uint8Array rather than sharp's Buffer: Prisma's Bytes
+ * column is typed against a non-shared ArrayBuffer, which Buffer no longer
+ * guarantees.
+ */
+export async function reencodeAvatar(
+  buffer: Buffer,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const encoded = await sharp(buffer)
+    .rotate()
+    .resize({
+      width: AVATAR_MAX_DIMENSION,
+      height: AVATAR_MAX_DIMENSION,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  return new Uint8Array(encoded);
 }
 
 /** Fields every avatar-bearing select must include to compute `avatarUrl`. */

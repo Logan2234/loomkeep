@@ -137,3 +137,29 @@ describe("notification presentation", () => {
     ).toBeNull();
   });
 });
+
+describe("list item added notification", () => {
+  const added = (data: Record<string, unknown>): NotificationDto => ({
+    ...notification("LIST_ITEM_ADDED", "a ajouté « Dune » à « SF »"),
+    data,
+  });
+
+  it.each(["fr", "en"] as const)(
+    "is worded in the reader's language (%s), not the persisted one",
+    (locale) => {
+      overwriteGetLocale(() => locale);
+      expect(
+        notificationText(added({ listTitle: "SF", itemTitle: "Dune" })),
+      ).toEqual({
+        title: "Alice",
+        body: m.notif_list_item_added({ item: "Dune", list: "SF" }),
+      });
+    },
+  );
+
+  it("falls back to a generic line when the work couldn't be named", () => {
+    expect(
+      notificationText(added({ listTitle: "SF", itemTitle: null })).body,
+    ).toBe(m.notif_list_item_added_generic({ list: "SF" }));
+  });
+});

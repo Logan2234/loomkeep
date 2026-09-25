@@ -82,8 +82,16 @@ export const IMPORTS_DEFINITION: Record<ImportSource, ImportSourceDescriptor> =
     babelio: {
       domain: Domain.BOOKS,
       label: "Babelio",
-      description: m.import_source_books_description() as string,
-    } as ImportSourceDescriptor,
+      description: m.import_source_books_csv_description(),
+      href: "/app/settings/import/babelio",
+      input: {
+        type: "csv",
+        accept: ".csv,text/csv",
+        textEncoding: "windows-1252",
+      },
+      noun: { one: m.common_book(), many: m.common_books() },
+      newBadgeKey: "babelio",
+    },
     librarything: {
       domain: Domain.BOOKS,
       label: "LibraryThing",

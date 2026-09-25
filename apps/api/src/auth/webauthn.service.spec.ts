@@ -60,6 +60,10 @@ function makeService() {
 
   const prisma = {
     user: {
+      // Read for the locale the default credential name is written in.
+      findUnique: vi.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(users.get(where.id) ?? null),
+      ),
       findUniqueOrThrow: vi.fn(({ where }: { where: { id: string } }) => {
         const user = users.get(where.id);
         if (!user) throw new Error("not found");
@@ -216,10 +220,7 @@ describe("WebauthnService.verifyRegistration", () => {
     );
   });
 
-  // Regression: a passkey used to be registered without ever generating
-  // recovery codes, so an account whose only MFA method was WebAuthn had no
-  // fallback at all if the key was lost — unlike TOTP/email, which both call
-  // ensureRecoveryCodes() on first confirmation.
+  // A first passkey must generate the same recovery fallback as TOTP/email.
   it("generates recovery codes as it would for a first TOTP/email confirmation", async () => {
     const { service, mfa } = makeService();
     const { verifyRegistrationResponse } =
@@ -288,6 +289,53 @@ describe("WebauthnService.removeCredential", () => {
 
     expect(result.passwordlessDisabled).toBe(false);
     expect(users.get("user-1")?.passwordlessEnabled).toBe(true);
+  });
+});
+
+describe("WebauthnService.renameCredential", () => {
+  it("updates the name and records MFA_WEBAUTHN_RENAMED", async () => {
+    const { service, credentials, security } = makeService();
+    credentials.set("cred-1", makeCredential({ name: "YubiKey bureau" }));
+
+    const { credential } = await service.renameCredential(
+      "user-1",
+      "cred-1",
+      "YubiKey maison",
+    );
+
+    expect(credential.name).toBe("YubiKey maison");
+    expect(credentials.get("cred-1")?.name).toBe("YubiKey maison");
+    expect(security.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "MFA_WEBAUTHN_RENAMED",
+        userId: "user-1",
+      }),
+    );
+  });
+
+  it("trims the new name and keeps the old one if it was blank", async () => {
+    const { service, credentials } = makeService();
+    credentials.set("cred-1", makeCredential({ name: "YubiKey bureau" }));
+
+    const { credential } = await service.renameCredential(
+      "user-1",
+      "cred-1",
+      "   ",
+    );
+
+    expect(credential.name).toBe("YubiKey bureau");
+  });
+
+  it("refuses to rename another user's credential", async () => {
+    const { service, credentials } = makeService();
+    credentials.set(
+      "cred-1",
+      makeCredential({ userId: "someone-else", name: "Not yours" }),
+    );
+
+    await expect(
+      service.renameCredential("user-1", "cred-1", "Mine now"),
+    ).rejects.toThrow();
   });
 });
 

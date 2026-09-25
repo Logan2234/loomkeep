@@ -5,7 +5,7 @@ type DialogFocusOptions = {
 
 type InertState = { count: number; wasInert: boolean };
 
-const dialogs: HTMLElement[] = [];
+const dialogStack: HTMLElement[] = [];
 const inertStates = new Map<HTMLElement, InertState>();
 
 const FOCUSABLE_SELECTOR = [
@@ -107,7 +107,7 @@ export function dialogFocus(
   options: DialogFocusOptions = {},
 ) {
   let currentOptions = options;
-  const trigger =
+  const previouslyFocused =
     document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
@@ -116,10 +116,10 @@ export function dialogFocus(
   const previousTabindex = node.getAttribute("tabindex");
 
   if (!hadTabindex) node.setAttribute("tabindex", "-1");
-  dialogs.push(node);
+  dialogStack.push(node);
   makeInert(inertElements);
 
-  const isTopmost = () => dialogs.at(-1) === node;
+  const isTopmost = () => dialogStack.at(-1) === node;
 
   const focusInitial = () => {
     if (!isTopmost()) return;
@@ -146,12 +146,14 @@ export function dialogFocus(
             target instanceof HTMLElement &&
             target.hasAttribute("data-escape-consumer"),
         );
+
       if (
         (escapeConsumer && node.contains(escapeConsumer)) ||
         !currentOptions.onEscape
       ) {
         return;
       }
+
       event.preventDefault();
       event.stopImmediatePropagation();
       currentOptions.onEscape();
@@ -189,16 +191,16 @@ export function dialogFocus(
     destroy() {
       document.removeEventListener("keydown", onKeydown, true);
       document.removeEventListener("focusin", onFocusIn, true);
-      const index = dialogs.lastIndexOf(node);
-      if (index !== -1) dialogs.splice(index, 1);
+      const index = dialogStack.lastIndexOf(node);
+      if (index !== -1) dialogStack.splice(index, 1);
       restoreInert(inertElements);
 
       if (!hadTabindex) node.removeAttribute("tabindex");
       else if (previousTabindex !== null)
         node.setAttribute("tabindex", previousTabindex);
 
-      if (trigger?.isConnected && !trigger.inert) {
-        queueMicrotask(() => trigger.focus({ preventScroll: true }));
+      if (previouslyFocused?.isConnected && !previouslyFocused.inert) {
+        queueMicrotask(() => previouslyFocused.focus({ preventScroll: true }));
       }
     },
   };

@@ -1,6 +1,7 @@
 import type {
   QuotaWindow,
   ServiceArea,
+  ServiceProbeFailure,
   ServiceStatusDto,
   ServiceStatusResponseDto,
 } from "@loomkeep/shared";
@@ -18,6 +19,7 @@ class ServiceStatusItemResponseDto implements ServiceStatusDto {
   configured!: boolean;
   reachable!: boolean | null;
   detail?: string;
+  failure?: ServiceProbeFailure;
   latencyMs?: number;
   keyUrl?: string;
   today?: number;

@@ -4,10 +4,6 @@
   import Modal from "./Modal.svelte";
   import { profileUrl, shareProfile } from "$lib/share-profile";
 
-  // The QR shows first, always — scanning straight off the screen is the
-  // fastest path when two people are physically together. "Partager avec…"
-  // and "Copier le lien" cover everything else (native share sheet where
-  // supported, plain link otherwise).
   let {
     username,
     displayName,

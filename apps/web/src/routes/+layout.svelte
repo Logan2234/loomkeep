@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { env } from "$env/dynamic/public";
   import { bootstrap } from "$lib/bootstrap.svelte";
+  import NewsBanner from "$lib/components/NewsBanner.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { toIntlLocale } from "$lib/constants/language-to-locale";
   import { layout } from "$lib/layout.svelte";
@@ -9,6 +10,7 @@
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import { queryClient } from "$lib/queryClient";
+  import { accessibility } from "$lib/accessibility.svelte";
   import { theme } from "$lib/theme.svelte";
   import "@fontsource-variable/bricolage-grotesque/wght.css";
   import "@fontsource-variable/hanken-grotesk/wght.css";
@@ -25,6 +27,10 @@
 
   $effect(() => {
     theme.init();
+  });
+
+  $effect(() => {
+    accessibility.init();
   });
 
   $effect(() => {
@@ -56,6 +62,8 @@
   <link rel="preconnect" href={env.PUBLIC_API_URL} />
   <link rel="canonical" href={page.url.href} />
 </svelte:head>
+
+<NewsBanner />
 
 <QueryClientProvider client={queryClient}>
   {@render children()}

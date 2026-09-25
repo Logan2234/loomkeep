@@ -60,6 +60,10 @@ export const reorderListItems = (
 export const getListMembers = (listId: string) =>
   typedRequest("/lists/{id}/members", { params: { id: listId } });
 
+/** The owner's friends who could still be added as editors. */
+export const getListMemberCandidates = (listId: string) =>
+  typedRequest("/lists/{id}/members/candidates", { params: { id: listId } });
+
 export const addListMember = (listId: string, body: AddListMemberDto) =>
   typedRequest("/lists/{id}/members", {
     method: "POST",
@@ -75,6 +79,18 @@ export const removeListMember = (
     method: "DELETE",
     params: { id: listId, memberUserId },
   });
+
+/** Turns the list's notifications off, or back on, for the caller. */
+export const setListMuted = (listId: string, muted: boolean): Promise<void> =>
+  muted
+    ? typedRequest("/lists/{id}/mute", {
+        method: "PUT",
+        params: { id: listId },
+      })
+    : typedRequest("/lists/{id}/mute", {
+        method: "DELETE",
+        params: { id: listId },
+      });
 
 /**
  * A list as seen by the viewer — own list or a shared one, resolved server-

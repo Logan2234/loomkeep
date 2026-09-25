@@ -1,7 +1,7 @@
 {
   "name": "@loomkeep/web",
   "description": "Loomkeep's SvelteKit web client — the frontend consuming @loomkeep/api",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "author": {
     "name": "Logan WILLEM",
     "email": "loganwi322.dev@gmail.com"
@@ -37,23 +37,24 @@
     "@fontsource-variable/hanken-grotesk": "^5.3.0",
     "@fontsource/space-mono": "^5.3.0",
     "@loomkeep/shared": "workspace:*",
-    "@sentry/sveltekit": "^10.74.0",
+    "@sentry/sveltekit": "^10.75.2",
     "@simplewebauthn/browser": "^14.0.0",
-    "@tanstack/svelte-query": "^6.1.48",
+    "@tanstack/svelte-query": "^6.2.4",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
+    "socket.io-client": "^4.8.3",
     "svelte-dnd-action": "^0.9.79",
     "unleash-proxy-client": "^3.8.2"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.25.1",
+    "@inlang/paraglide-js": "^2.25.4",
     "@sveltejs/adapter-node": "^5.5.7",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/qrcode": "^1.5.6",
     "@vite-pwa/sveltekit": "^1.1.0",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "eslint-plugin-svelte": "^3.23.0",
     "mermaid": "^12.0.0",
     "openapi-typescript": "^7.13.0",
@@ -61,7 +62,7 @@
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.0",
-    "vitest": "^5.0.0",
+    "vitest": "^5.0.1",
     "workbox-precaching": "^7.4.1"
   }
 }

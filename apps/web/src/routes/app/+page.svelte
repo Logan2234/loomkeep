@@ -101,16 +101,12 @@
   const readingBooks = $derived(booksQuery.data ?? []);
   const toListenAlbums = $derived(musicQuery.data ?? []);
 
-  // Only the enabled domains' skeleton counts toward the page-level loading
-  // state — a disabled query never settles, so it must never be OR'd in.
-  const loading = $derived(
-    (mediaOn &&
-      (watchingQuery.loading ||
-        plannedMoviesQuery.loading ||
-        calendarQuery.loading)) ||
-      (gamesOn && gamesQuery.loading) ||
-      (booksOn && booksQuery.loading) ||
-      (musicOn && musicQuery.loading),
+  // Each section carries its own loading state. A page-level gate coupled
+  // them: one query that never settled — a domain the API refuses, a slow
+  // endpoint — replaced every other section with a skeleton, so the whole
+  // dashboard read as empty.
+  const resumeLoading = $derived(
+    watchingQuery.loading || plannedMoviesQuery.loading,
   );
 
   const epCodeOf = (n: NextEpisodeDto) =>
@@ -207,6 +203,44 @@
   );
 </script>
 
+{#snippet resumeSkeleton()}
+  <div class="flex gap-3 overflow-hidden">
+    {#each { length: 5 } as _, j (j)}
+      <div class="w-28 shrink-0">
+        <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
+        <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+        <div class="skeleton mt-2 h-1 w-full rounded"></div>
+        <div class="skeleton mt-2 h-7 w-full rounded"></div>
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet postersSkeleton(count: number)}
+  <div class="flex gap-3 overflow-hidden">
+    {#each { length: count } as _, j (j)}
+      <div class="w-24 shrink-0">
+        <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
+        <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet rowsSkeleton(count: number)}
+  <div class="space-y-3">
+    {#each { length: count } as _, j (j)}
+      <div class="flex items-center gap-3">
+        <div class="skeleton h-12 w-8 shrink-0 rounded-md"></div>
+        <div class="min-w-0 flex-1">
+          <div class="skeleton h-3 w-4/5 rounded"></div>
+          <div class="skeleton mt-2 h-2 w-1/2 rounded"></div>
+        </div>
+      </div>
+    {/each}
+  </div>
+{/snippet}
+
 <div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
     icon="home"
@@ -214,564 +248,394 @@
     documentTitle={m.common_home()}
     subtitle={m.home_subtitle()} />
 
-  {#if loading}
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <div class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {#if mediaOn}
-          <section class="card sm:col-span-2 lg:col-span-3">
-            <div class="flex items-center justify-between p-4 pb-0">
-              <div class="skeleton h-5 w-48 rounded"></div>
-              <div class="skeleton h-4 w-16 rounded"></div>
-            </div>
-            <div class="flex gap-3 overflow-hidden p-4">
-              {#each { length: 5 } as _, j (j)}
-                <div class="w-28 shrink-0">
-                  <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
-                  <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
-                  <div class="skeleton mt-2 h-1 w-full rounded"></div>
-                  <div class="skeleton mt-2 h-7 w-full rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/if}
-
-        {#if gamesOn}
-          <section
-            class="card p-4 {booksOn
-              ? 'sm:col-span-1 lg:col-span-2'
-              : 'sm:col-span-2 lg:col-span-3'}">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="skeleton h-5 w-44 rounded"></div>
-              <div class="skeleton h-4 w-12 rounded"></div>
-            </div>
-            <div class="flex gap-3 overflow-hidden">
-              {#each { length: 4 } as _, j (j)}
-                <div class="w-24 shrink-0">
-                  <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
-                  <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
-                  <div class="skeleton mt-1 h-2 w-1/2 rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/if}
-
-        {#if booksOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="skeleton h-5 w-40 rounded"></div>
-              <div class="skeleton h-4 w-12 rounded"></div>
-            </div>
-            <div class="space-y-3">
-              {#each { length: 3 } as _, j (j)}
-                <div class="flex items-center gap-3">
-                  <div class="skeleton h-12 w-8 shrink-0 rounded-md"></div>
-                  <div class="min-w-0 flex-1">
-                    <div class="skeleton h-3 w-4/5 rounded"></div>
-                    <div class="skeleton mt-2 h-1 w-2/3 rounded"></div>
-                    <div class="skeleton mt-2 h-2 w-1/3 rounded"></div>
-                  </div>
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/if}
-
-        {#if musicOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="skeleton h-5 w-44 rounded"></div>
-              <div class="skeleton h-4 w-12 rounded"></div>
-            </div>
-            <div class="flex gap-3 overflow-hidden">
-              {#each { length: 3 } as _, j (j)}
-                <div class="w-24 shrink-0">
-                  <div class="skeleton aspect-2/3 w-full rounded-lg"></div>
-                  <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/if}
-
-        {#if soonOn}
-          <section class="border-border rounded-xl border border-dashed p-4">
-            <div class="skeleton h-4 w-40 rounded"></div>
-            <div class="skeleton mt-2 h-3 w-3/4 rounded"></div>
-            <div class="skeleton mt-3 h-4 w-16 rounded-full"></div>
-          </section>
-        {/if}
-
-        {#if appConfig.socialEnabled}
-          <section class="card sm:col-span-2 lg:col-span-3">
-            <div class="flex items-center justify-between p-4 pb-0">
-              <div class="skeleton h-3 w-24 rounded"></div>
-              <div class="skeleton h-4 w-20 rounded"></div>
-            </div>
-            <div class="space-y-3 p-4">
-              {#each { length: 3 } as _, j (j)}
-                <div class="flex items-center gap-3">
-                  <div class="skeleton h-8 w-8 shrink-0 rounded-full"></div>
-                  <div class="flex-1">
-                    <div class="skeleton h-3 w-2/5 rounded"></div>
-                    <div class="skeleton mt-2 h-3 w-4/5 rounded"></div>
-                  </div>
-                  <div class="skeleton h-3 w-12 rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/if}
-      </div>
-
-      <aside class="flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
-        {#if mediaOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="skeleton h-5 w-32 rounded"></div>
-              <div class="skeleton h-4 w-16 rounded"></div>
-            </div>
-            <div class="space-y-3">
-              {#each { length: 3 } as _, j (j)}
-                <div class="flex items-center gap-3">
-                  <div class="skeleton h-12 w-8 shrink-0 rounded-md"></div>
-                  <div class="min-w-0 flex-1">
-                    <div class="skeleton h-3 w-4/5 rounded"></div>
-                    <div class="skeleton mt-2 h-2 w-1/2 rounded"></div>
-                  </div>
-                  <div class="skeleton h-5 w-8 rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/if}
-
-        {#if booksOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <div class="skeleton h-5 w-36 rounded"></div>
-              <div class="skeleton h-4 w-10 rounded"></div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="skeleton h-10 w-10 shrink-0 rounded-full"></div>
-              <div class="skeleton h-5 w-20 rounded"></div>
-            </div>
-            <div class="skeleton mt-3 h-3 w-4/5 rounded"></div>
-          </section>
-        {/if}
-
-        <section class="card space-y-2 p-2">
-          {#each { length: 7 } as _, j (j)}
-            <div class="flex items-center gap-3 p-2.5">
-              <div class="skeleton h-5 w-5 shrink-0 rounded"></div>
-              <div class="skeleton h-3 flex-1 rounded"></div>
-              <div class="skeleton h-4 w-4 shrink-0 rounded"></div>
-            </div>
-          {/each}
-        </section>
-      </aside>
-    </div>
-  {:else}
-    <!-- Two independent grids side by side on desktop, not one shared
+  <!-- Two independent grids side by side on desktop, not one shared
          12-col grid sliced with col-span: a wide "main" grid (Vidéo, the
          3 domain carousels, Activité) and a narrow "sidebar" stack (Cette
          semaine, Objectif de lecture, Raccourcis) that never interleave
          with each other's rows. On mobile they just stack, main first. -->
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <!-- Main grid. -->
-      <div class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {#if mediaOn}
-          <section class="card sm:col-span-2 lg:col-span-3">
-            <div class="flex items-center justify-between p-4 pb-0">
-              <h2
-                class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="tv" class="text-accent h-4 w-4" />
-                {m.common_selection_summary({
-                  label: m.common_Media(),
-                  selection: m.home_media_to_watch(),
-                })}
-              </h2>
-              <a href="/app/media" class="btn-text group">
-                {m.common_see_more()}
-                <Icon
-                  name="arrow-right"
-                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </div>
-            <div class="p-4">
-              {#if toWatch.length > 0}
-                <Carousel
-                  bind:this={resumeCarousel}
-                  items={toWatch}
-                  label={m.common_selection_summary({
-                    label: m.common_Media(),
-                    selection: m.home_media_to_watch(),
-                  })}
-                  keyOf={(e) => e.id}>
-                  {#snippet card(e)}
-                    <a
-                      href={`/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
-                      class="block w-28">
-                      <div
-                        class="card hover:border-accent overflow-hidden transition-[border-color]">
-                        <Poster
-                          src={e.mediaItem.posterUrl}
-                          title={e.mediaItem.title} />
-                      </div>
-                      <p
-                        class="font-display mt-1.5 truncate text-xs font-semibold">
-                        {e.mediaItem.title}
-                      </p>
-                    </a>
-                    {#if e.progress}
-                      <ProgressBar
-                        value={pct(e)}
-                        label={m.common_selection_summary({
-                          label: m.common_progress(),
-                          selection: e.mediaItem.title,
-                        })}
-                        height="h-1"
-                        class="mt-1"
-                        title="{e.progress.watchedEpisodes} / {e.progress
-                          .totalEpisodes}" />
-                      {#if e.progress.nextEpisode}
-                        <button
-                          class="btn btn-primary btn-sm mt-2 w-full"
-                          disabled={resuming === e.id}
-                          onclick={() => resume(e)}>
-                          ▶ {epCodeOf(e.progress.nextEpisode)}
-                        </button>
-                      {/if}
-                    {:else if e.mediaItem.type === "MOVIE"}
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+    <!-- Main grid. -->
+    <div class="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {#if mediaOn}
+        <section class="card sm:col-span-2 lg:col-span-3">
+          <div class="flex items-center justify-between p-4 pb-0">
+            <h2
+              class="font-display flex items-center gap-2 text-base font-bold">
+              <Icon name="tv" class="text-accent h-4 w-4" />
+              {m.common_Media()} · {m.home_media_to_watch()}
+            </h2>
+            <a href="/app/media" class="btn-text group">
+              {m.common_see_more()}
+              <Icon
+                name="arrow-right"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+          <div class="p-4">
+            {#if resumeLoading}
+              {@render resumeSkeleton()}
+            {:else if toWatch.length > 0}
+              <Carousel
+                bind:this={resumeCarousel}
+                items={toWatch}
+                keyOf={(e) => e.id}
+                label={`${m.common_Media()} · ${m.home_media_to_watch()}`}>
+                {#snippet card(e)}
+                  <a
+                    href={`/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`}
+                    class="block w-28">
+                    <div
+                      class="card hover:border-accent overflow-hidden transition-[border-color]">
+                      <Poster
+                        src={e.mediaItem.posterUrl}
+                        title={e.mediaItem.title} />
+                    </div>
+                    <p
+                      class="font-display mt-1.5 truncate text-xs font-semibold">
+                      {e.mediaItem.title}
+                    </p>
+                  </a>
+                  {#if e.progress}
+                    <ProgressBar
+                      value={pct(e)}
+                      label={m.common_selection_summary({
+                        label: m.common_progress(),
+                        selection: e.mediaItem.title,
+                      })}
+                      height="h-1"
+                      class="mt-1"
+                      title="{e.progress.watchedEpisodes} / {e.progress
+                        .totalEpisodes}" />
+                    {#if e.progress.nextEpisode}
                       <button
-                        class="btn btn-primary btn-sm mt-4 w-full"
-                        disabled={markingMovieSeen === e.id}
-                        onclick={() => markMovieSeen(e)}>
-                        {m.home_mark_seen()}
+                        class="btn btn-primary btn-sm mt-2 w-full"
+                        disabled={resuming === e.id}
+                        onclick={() => resume(e)}>
+                        ▶ {epCodeOf(e.progress.nextEpisode)}
                       </button>
                     {/if}
-                  {/snippet}
-                </Carousel>
-              {:else}
-                <p class="text-dim py-4 text-center text-sm md:py-10">
-                  {m.home_nothing_to_watch()}
-                </p>
-              {/if}
-            </div>
-          </section>
-        {/if}
-
-        {#if gamesOn}
-          <section
-            class="card p-4 {booksOn
-              ? 'sm:col-span-1 lg:col-span-2'
-              : 'sm:col-span-2 lg:col-span-3'}">
-            <div class="mb-3 flex items-center justify-between">
-              <h2
-                class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="gamepad" class="text-accent h-4 w-4" />
-                {m.common_selection_summary({
-                  label: m.common_Games(),
-                  selection: m.home_games_playing(),
-                })}
-              </h2>
-              <a href="/app/games" class="btn-text group">
-                {m.common_see()}
-                <Icon
-                  name="arrow-right"
-                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </div>
-            {#if playingGames.length > 0}
-              <Carousel
-                items={playingGames}
-                label={m.common_selection_summary({
-                  label: m.common_Games(),
-                  selection: m.home_games_playing(),
-                })}
-                keyOf={(e) => e.id}>
-                {#snippet card(e)}
-                  <a href={`/app/games/${e.game.sourceId}`} class="block w-24">
-                    <div
-                      class="card hover:border-accent overflow-hidden transition-[border-color]">
-                      <Poster src={e.game.coverUrl} title={e.game.title} />
-                    </div>
-                    <p
-                      class="font-display mt-1.5 truncate text-xs font-semibold">
-                      {e.game.title}
-                    </p>
-                    {#if e.playtimeMinutes > 0}
-                      <p class="timecode text-[0.65rem]">
-                        {Math.round(e.playtimeMinutes / 60)}
-                        {m.home_played_hours_suffix()}
-                      </p>
-                    {/if}
-                  </a>
+                  {:else if e.mediaItem.type === "MOVIE"}
+                    <button
+                      class="btn btn-primary btn-sm mt-4 w-full"
+                      disabled={markingMovieSeen === e.id}
+                      onclick={() => markMovieSeen(e)}>
+                      {m.home_mark_seen()}
+                    </button>
+                  {/if}
                 {/snippet}
               </Carousel>
             {:else}
               <p class="text-dim py-4 text-center text-sm md:py-10">
-                {m.home_nothing_playing()}
+                {m.home_nothing_to_watch()}
               </p>
             {/if}
-          </section>
-        {/if}
-
-        {#if booksOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <h2
-                class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="book" class="text-accent h-4 w-4" />
-                {m.common_Books()} · {m.home_books_reading()}
-              </h2>
-              <a href="/app/books" class="btn-text group">
-                {m.common_see()}
-                <Icon
-                  name="arrow-right"
-                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </div>
-            {#if readingBooks.length > 0}
-              <ul class="divide-border divide-y">
-                {#each readingBooks as e (e.id)}
-                  {@const p = bookPct(e)}
-                  <li>
-                    <a
-                      href={`/app/books/${e.book.sourceId}`}
-                      class="flex items-center gap-3 py-2">
-                      <div class="w-8 shrink-0 overflow-hidden rounded-md">
-                        <Poster src={e.book.coverUrl} title={e.book.title} />
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <p class="font-display truncate text-sm font-semibold">
-                          {e.book.title}
-                        </p>
-                        {#if p !== null}
-                          <ProgressBar
-                            value={p}
-                            label={m.common_selection_summary({
-                              label: m.book_reading_progress(),
-                              selection: e.book.title,
-                            })}
-                            height="h-1"
-                            class="mt-1 max-w-32" />
-                        {/if}
-                        <p class="timecode text-xs">
-                          {#if e.book.pageCount}
-                            {m.book_page_short()}
-                            {e.currentPage} / {e.book.pageCount}
-                          {:else}
-                            {m.book_page_short()} {e.currentPage}
-                          {/if}
-                        </p>
-                      </div>
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="text-dim py-3 text-center text-sm md:py-6">
-                {m.home_nothing_reading()}
-              </p>
-            {/if}
-          </section>
-        {/if}
-
-        {#if musicOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <h2
-                class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="music" class="text-accent h-4 w-4" />
-                {m.common_selection_summary({
-                  label: m.common_Music(),
-                  selection: m.home_music_listening(),
-                })}
-              </h2>
-              <a href="/app/music" class="btn-text group">
-                {m.common_see()}
-                <Icon
-                  name="arrow-right"
-                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </div>
-            {#if toListenAlbums.length > 0}
-              <Carousel
-                items={toListenAlbums}
-                label={m.common_selection_summary({
-                  label: m.common_Music(),
-                  selection: m.home_music_listening(),
-                })}
-                keyOf={(e) => e.id}>
-                {#snippet card(e)}
-                  <a href={`/app/music/${e.album.sourceId}`} class="block w-24">
-                    <div
-                      class="card hover:border-accent overflow-hidden transition-[border-color]">
-                      <Poster src={e.album.coverUrl} title={e.album.title} />
-                    </div>
-                    <p
-                      class="font-display mt-1.5 truncate text-xs font-semibold">
-                      {e.album.title}
-                    </p>
-                  </a>
-                {/snippet}
-              </Carousel>
-            {:else}
-              <p class="text-dim py-4 text-center text-sm md:py-10">
-                {m.home_nothing_listening()}
-              </p>
-            {/if}
-          </section>
-        {/if}
-
-        {#if soonOn}
-          <section
-            class="border-border flex flex-col justify-center gap-1 rounded-xl border border-dashed p-4 opacity-70">
-            <p class="font-display text-sm font-bold">
-              🎧 {m.common_Podcasts()} &amp; 🎲 {m.common_Boardgames()}
-            </p>
-            <p class="text-dim text-xs">{m.home_coming_soon()}</p>
-            <span
-              class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
-              {m.common_coming_soon()}
-            </span>
-          </section>
-        {/if}
-
-        <div class="sm:col-span-2 lg:col-span-3">
-          <HomeActivityPreview limit={6} />
-        </div>
-      </div>
-
-      <div class="sticky top-4 flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
-        {#if mediaOn}
-          <section class="card p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <h2
-                class="font-display flex items-center gap-2 text-base font-bold">
-                <Icon name="calendar" class="text-accent h-4 w-4" />
-                {m.home_this_week()}
-              </h2>
-              <a href="/app/calendar" class="btn-text group">
-                {m.common_calendar()}
-                <Icon
-                  name="arrow-right"
-                  class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </div>
-            {#if week.length > 0}
-              <ul class="divide-border divide-y">
-                {#each week as e (e.mediaItem.id + epCode(e))}
-                  <li>
-                    <a href={mediaHref(e)} class="flex items-center gap-3 py-2">
-                      <div class="w-8 shrink-0 overflow-hidden rounded-md">
-                        <Poster
-                          src={e.mediaItem.posterUrl}
-                          title={e.mediaItem.title} />
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <p class="font-display truncate text-sm font-semibold">
-                          {e.mediaItem.title}
-                        </p>
-                        <p class="timecode text-xs">
-                          {epCode(e)}
-                        </p>
-                      </div>
-                      <span
-                        class="border-accent/40 text-accent timecode rounded-md border px-1.5 py-0.5 text-[0.65rem]">
-                        {dayShort(e.airDate)}
-                      </span>
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="text-dim py-3 text-center text-sm md:py-6">
-                {m.home_nothing_this_week()}
-              </p>
-            {/if}
-          </section>
-        {/if}
-
-        {#if booksOn}
-          <ReadingGoalDashboardCard />
-        {/if}
-
-        <section class="card p-2">
-          <a
-            href="/app/profile"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="user" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold"
-              >{m.home_sidebar_my_account()}</span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
-          <a
-            href="/app/stats"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="stats" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold">{m.common_stats()}</span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
-          <a
-            href="/app/lists"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="list" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold">{m.lists_title()}</span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
-          <a
-            href="/app/reviews"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="star" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold"
-              >{m.home_sidebar_my_reviews()}</span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
-          <a
-            href="/app/feed"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold"
-              >{m.common_activity_feed()}</span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
-          <a
-            href="/app/settings#aide"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="message" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex flex-1 items-center gap-2 text-sm font-semibold">
-              {m.common_help()} & {m.common_feedback()}
-            </span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
-          <a
-            href="/app/settings"
-            class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
-            <Icon name="gear" class="text-accent h-5 w-5 shrink-0" />
-            <span class="flex-1 text-sm font-semibold"
-              >{m.common_settings()}</span>
-            <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
-          </a>
+          </div>
         </section>
+      {/if}
 
-        <p class="text-dim mt-2 flex items-center justify-center gap-2 text-xs">
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onclick={() => signalVersionLinkClicked()}
-            class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
-            {m.app_version({ version: appConfig.version })}
-            {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
-              <span class="opacity-60">({appConfig.gitSha})</span>
-            {/if}
-          </a>
-          {#if env.PUBLIC_IS_BETA}<BetaBadge />{/if}
-        </p>
+      {#if gamesOn}
+        <section
+          class="card p-4 {booksOn
+            ? 'sm:col-span-1 lg:col-span-2'
+            : 'sm:col-span-2 lg:col-span-3'}">
+          <div class="mb-3 flex items-center justify-between">
+            <h2
+              class="font-display flex items-center gap-2 text-base font-bold">
+              <Icon name="gamepad" class="text-accent h-4 w-4" />
+              {m.common_Games()} · {m.home_games_playing()}
+            </h2>
+            <a href="/app/games" class="btn-text group">
+              {m.common_see()}
+              <Icon
+                name="arrow-right"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+          {#if gamesQuery.loading}
+            {@render postersSkeleton(4)}
+          {:else if playingGames.length > 0}
+            <Carousel
+              items={playingGames}
+              keyOf={(e) => e.id}
+              label={`${m.common_Games()} · ${m.home_games_playing()}`}>
+              {#snippet card(e)}
+                <a href={`/app/games/${e.game.sourceId}`} class="block w-24">
+                  <div
+                    class="card hover:border-accent overflow-hidden transition-[border-color]">
+                    <Poster src={e.game.coverUrl} title={e.game.title} />
+                  </div>
+                  <p class="font-display mt-1.5 truncate text-xs font-semibold">
+                    {e.game.title}
+                  </p>
+                  {#if e.playtimeMinutes > 0}
+                    <p class="timecode text-[0.65rem]">
+                      {Math.round(e.playtimeMinutes / 60)}
+                      {m.home_played_hours_suffix()}
+                    </p>
+                  {/if}
+                </a>
+              {/snippet}
+            </Carousel>
+          {:else}
+            <p class="text-dim py-4 text-center text-sm md:py-10">
+              {m.home_nothing_playing()}
+            </p>
+          {/if}
+        </section>
+      {/if}
+
+      {#if booksOn}
+        <section class="card p-4">
+          <div class="mb-3 flex items-center justify-between">
+            <h2
+              class="font-display flex items-center gap-2 text-base font-bold">
+              <Icon name="book" class="text-accent h-4 w-4" />
+              {m.common_Books()} · {m.home_books_reading()}
+            </h2>
+            <a href="/app/books" class="btn-text group">
+              {m.common_see()}
+              <Icon
+                name="arrow-right"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+          {#if booksQuery.loading}
+            {@render rowsSkeleton(3)}
+          {:else if readingBooks.length > 0}
+            <ul class="divide-border divide-y">
+              {#each readingBooks as e (e.id)}
+                {@const p = bookPct(e)}
+                <li>
+                  <a
+                    href={`/app/books/${e.book.sourceId}`}
+                    class="flex items-center gap-3 py-2">
+                    <div class="w-8 shrink-0 overflow-hidden rounded-md">
+                      <Poster src={e.book.coverUrl} title={e.book.title} />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-display truncate text-sm font-semibold">
+                        {e.book.title}
+                      </p>
+                      {#if p !== null}
+                        <ProgressBar
+                          value={p}
+                          label={m.common_selection_summary({
+                            label: m.book_reading_progress(),
+                            selection: e.book.title,
+                          })}
+                          height="h-1"
+                          class="mt-1 max-w-32" />
+                      {/if}
+                      <p class="timecode text-xs">
+                        {#if e.book.pageCount}
+                          {m.book_page_short()}
+                          {e.currentPage} / {e.book.pageCount}
+                        {:else}
+                          {m.book_page_short()} {e.currentPage}
+                        {/if}
+                      </p>
+                    </div>
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="text-dim py-3 text-center text-sm md:py-6">
+              {m.home_nothing_reading()}
+            </p>
+          {/if}
+        </section>
+      {/if}
+
+      {#if musicOn}
+        <section class="card p-4">
+          <div class="mb-3 flex items-center justify-between">
+            <h2
+              class="font-display flex items-center gap-2 text-base font-bold">
+              <Icon name="music" class="text-accent h-4 w-4" />
+              {m.common_Music()} · {m.home_music_listening()}
+            </h2>
+            <a href="/app/music" class="btn-text group">
+              {m.common_see()}
+              <Icon
+                name="arrow-right"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+          {#if musicQuery.loading}
+            {@render postersSkeleton(3)}
+          {:else if toListenAlbums.length > 0}
+            <Carousel
+              items={toListenAlbums}
+              keyOf={(e) => e.id}
+              label={`${m.common_Music()} · ${m.home_music_listening()}`}>
+              {#snippet card(e)}
+                <a href={`/app/music/${e.album.sourceId}`} class="block w-24">
+                  <div
+                    class="card hover:border-accent overflow-hidden transition-[border-color]">
+                    <Poster src={e.album.coverUrl} title={e.album.title} />
+                  </div>
+                  <p class="font-display mt-1.5 truncate text-xs font-semibold">
+                    {e.album.title}
+                  </p>
+                </a>
+              {/snippet}
+            </Carousel>
+          {:else}
+            <p class="text-dim py-4 text-center text-sm md:py-10">
+              {m.home_nothing_listening()}
+            </p>
+          {/if}
+        </section>
+      {/if}
+
+      {#if soonOn}
+        <section
+          class="border-border flex flex-col justify-center gap-1 rounded-xl border border-dashed p-4 opacity-70">
+          <p class="font-display text-sm font-bold">
+            🎧 {m.common_Podcasts()} &amp; 🎲 {m.common_Boardgames()}
+          </p>
+          <p class="text-dim text-xs">{m.home_coming_soon()}</p>
+          <span
+            class="bg-surface-2 text-dim mt-1 w-fit rounded-full px-2 py-0.5 text-[0.6rem] font-bold">
+            {m.common_coming_soon()}
+          </span>
+        </section>
+      {/if}
+
+      <div class="sm:col-span-2 lg:col-span-3">
+        <HomeActivityPreview limit={6} />
       </div>
     </div>
-  {/if}
+
+    <div class="sticky top-4 flex w-full flex-col gap-4 lg:w-72 lg:shrink-0">
+      {#if mediaOn}
+        <section class="card p-4">
+          <div class="mb-3 flex items-center justify-between">
+            <h2
+              class="font-display flex items-center gap-2 text-base font-bold">
+              <Icon name="calendar" class="text-accent h-4 w-4" />
+              {m.home_this_week()}
+            </h2>
+            <a href="/app/calendar" class="btn-text group">
+              {m.common_calendar()}
+              <Icon
+                name="arrow-right"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+          {#if calendarQuery.loading}
+            {@render rowsSkeleton(3)}
+          {:else if week.length > 0}
+            <ul class="divide-border divide-y">
+              {#each week as e (e.mediaItem.id + epCode(e))}
+                <li>
+                  <a href={mediaHref(e)} class="flex items-center gap-3 py-2">
+                    <div class="w-8 shrink-0 overflow-hidden rounded-md">
+                      <Poster
+                        src={e.mediaItem.posterUrl}
+                        title={e.mediaItem.title} />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-display truncate text-sm font-semibold">
+                        {e.mediaItem.title}
+                      </p>
+                      <p class="timecode text-xs">
+                        {epCode(e)}
+                      </p>
+                    </div>
+                    <span
+                      class="border-accent/40 text-accent timecode rounded-md border px-1.5 py-0.5 text-[0.65rem]">
+                      {dayShort(e.airDate)}
+                    </span>
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="text-dim py-3 text-center text-sm md:py-6">
+              {m.home_nothing_this_week()}
+            </p>
+          {/if}
+        </section>
+      {/if}
+
+      {#if booksOn}
+        <ReadingGoalDashboardCard />
+      {/if}
+
+      <section class="card p-2">
+        <a
+          href="/app/profile"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="user" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex-1 text-sm font-semibold"
+            >{m.home_sidebar_my_account()}</span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+        <a
+          href="/app/stats"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="stats" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex-1 text-sm font-semibold">{m.common_stats()}</span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+        <a
+          href="/app/lists"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="list" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex-1 text-sm font-semibold">{m.lists_title()}</span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+        <a
+          href="/app/reviews"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="star" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex-1 text-sm font-semibold"
+            >{m.home_sidebar_my_reviews()}</span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+        <a
+          href="/app/feed"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="activity" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex-1 text-sm font-semibold"
+            >{m.common_activity_feed()}</span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+        <a
+          href="/app/settings/help"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="message" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex flex-1 items-center gap-2 text-sm font-semibold">
+            {m.common_help()} & {m.common_feedback()}
+          </span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+        <a
+          href="/app/settings"
+          class="hover:bg-surface-2 flex items-center gap-3 rounded-lg p-2.5 transition-colors">
+          <Icon name="gear" class="text-accent h-5 w-5 shrink-0" />
+          <span class="flex-1 text-sm font-semibold"
+            >{m.common_settings()}</span>
+          <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
+        </a>
+      </section>
+
+      <p class="text-dim mt-2 flex items-center justify-center gap-2 text-xs">
+        <a
+          href={GITHUB_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onclick={() => signalVersionLinkClicked()}
+          class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
+          {m.app_version({ version: appConfig.version })}
+          {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+            <span class="opacity-60">({appConfig.gitSha})</span>
+          {/if}
+        </a>
+        {#if env.PUBLIC_IS_BETA}<BetaBadge />{/if}
+      </p>
+    </div>
+  </div>
 </div>

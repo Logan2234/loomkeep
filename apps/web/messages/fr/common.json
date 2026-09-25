@@ -9,6 +9,8 @@
   "common_save": "Enregistrer",
   "common_save_loading": "Enregistrement…",
   "common_delete": "Supprimer",
+  "common_rename": "Renommer",
+  "common_reorder": "Réordonner",
   "common_confirm": "Confirmer",
   "common_close": "Fermer",
   "common_back": "Retour",
@@ -254,5 +256,6 @@
   "common_view_all_count": "Tout voir — {count}",
   "common_day_count_short": "{days} j",
   "common_image_large": "Image en grand",
-  "common_camera_unavailable": "Accès à la caméra refusé ou indisponible."
+  "common_camera_unavailable": "Accès à la caméra refusé ou indisponible.",
+  "common_saved": "Enregistré"
 }

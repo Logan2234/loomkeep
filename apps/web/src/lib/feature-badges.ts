@@ -8,6 +8,12 @@ const SHIPPED = {
   leaderboard: "2026-09-05",
   myanimelist: "2026-09-09",
   "book-edition-selector": "2026-09-10",
+  babelio: "2026-09-15",
+  "reviews-redesign": "2026-09-17",
+  "settings-rework": "2026-09-17",
+  "admin-user-filters": "2026-09-23",
+  "account-activity": "2026-09-24",
+  "release-feed": "2026-09-25",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

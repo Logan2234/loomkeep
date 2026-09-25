@@ -54,19 +54,19 @@
       {#if back}
         <a
           href={back}
-          class="text-dim hover:text-fg -ml-1 flex h-[1lh] shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
+          class="text-dim hover:text-fg -ml-1 flex h-lh shrink-0 items-center transition-all hover:-translate-x-0.5 hover:scale-105 active:scale-90"
           aria-label={m.common_back()}>
           <Icon name="chevron-left" class="h-6 w-6" />
         </a>
       {/if}
       {#if icon}
-        <span class="flex h-[1lh] shrink-0 items-center">
+        <span class="flex h-lh shrink-0 items-center">
           <Icon name={icon} class="text-accent h-7 w-7" />
         </span>
       {/if}
       {title}
       {#if isNew}
-        <span class="flex h-[1lh] shrink-0 items-center"><NewBadge /></span>
+        <span class="flex h-lh shrink-0 items-center"><NewBadge /></span>
       {/if}
     </h1>
     {#if subtitle}

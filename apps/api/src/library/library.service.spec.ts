@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
-import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import type { XpService } from "../gamification/xp.service";
@@ -14,8 +14,6 @@ import type { ActivityService } from "../social/activity.service";
 import type { AgeGateService } from "../users/age-gate.service";
 import { LibraryService } from "./library.service";
 
-// Stubbed no-op — the [G1] wiring itself is covered by xp.service.spec.ts,
-// these tests only need LibraryService to not blow up calling it.
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -24,12 +22,14 @@ function stubXp(): XpService {
   } as unknown as XpService;
 }
 
-// Stubbed no-op — the [G2] wiring itself is covered by achievement.service.spec.ts,
-// these tests only need LibraryService to not blow up calling it.
 function stubAchievements(): AchievementService {
   return {
     evaluate: vi.fn(),
   } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -147,9 +147,9 @@ function makeService(
     {} as AgeGateService,
     reviews,
     { emit: vi.fn() } as unknown as ActivityService,
-    {} as EntitlementService,
     stubXp(),
     stubAchievements(),
+    stubEvents(),
   );
   return { service, prisma, mediaItemService };
 }
@@ -280,11 +280,7 @@ describe("LibraryService.listEntries", () => {
   });
 });
 
-// Regression: entry.finishedAt used to only ever be set by an explicit dto
-// field nothing in the UI ever sends, so CommentService.isMasked's
-// work-level spoiler gate (`!entry?.finishedAt`) stayed permanently true —
-// a movie/series' comment thread stayed blurred forever, even to viewers
-// who had actually finished it.
+// Comment masking depends on finishedAt, while the UI only sends status.
 describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
   it("sets finishedAt when a movie's status is patched to COMPLETED", async () => {
     const entryRow = makeRow({ id: "e1", type: "MOVIE", status: "PLANNED" });
@@ -322,9 +318,9 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -370,9 +366,9 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       reviews,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -428,9 +424,9 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -491,9 +487,9 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       activity,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -518,9 +514,9 @@ describe("LibraryService.unwatchSeason", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -572,9 +568,9 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -629,51 +625,14 @@ describe("LibraryService.deleteEntry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await expect(
       service.deleteEntry("user-1", "entry-2"),
     ).resolves.toBeUndefined();
-  });
-});
-
-describe("LibraryService.getCalendarIcs", () => {
-  function makeService(user: { id: string } | null, hasPremium: boolean) {
-    const prisma = {
-      user: { findUnique: vi.fn().mockResolvedValue(user) },
-      episode: { findMany: vi.fn().mockResolvedValue([]) },
-    } as unknown as PrismaService;
-    const entitlements = {
-      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
-    } as unknown as EntitlementService;
-    return new LibraryService(
-      prisma,
-      {} as MediaItemService,
-      {} as AgeGateService,
-      {} as ReviewService,
-      { emit: vi.fn() } as unknown as ActivityService,
-      entitlements,
-      stubXp(),
-      stubAchievements(),
-    );
-  }
-
-  it("returns the feed for a premium user with a valid token", async () => {
-    const service = makeService({ id: "user-1" }, true);
-    await expect(service.getCalendarIcs("tok")).resolves.not.toBeNull();
-  });
-
-  it("returns null for a non-premium user, even with a valid token", async () => {
-    const service = makeService({ id: "user-1" }, false);
-    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
-  });
-
-  it("returns null when the token matches no account", async () => {
-    const service = makeService(null, true);
-    await expect(service.getCalendarIcs("tok")).resolves.toBeNull();
   });
 });
 
@@ -718,6 +677,7 @@ describe("LibraryService — XP wiring", () => {
     } as unknown as PrismaService;
     const xp = stubXp();
     const achievements = stubAchievements();
+    const events = stubEvents();
 
     const service = new LibraryService(
       prisma,
@@ -731,9 +691,9 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
+      events,
     );
 
     await service.upsertEntry("user-1", {
@@ -749,6 +709,10 @@ describe("LibraryService — XP wiring", () => {
     expect(achievements.evaluate).toHaveBeenCalledWith(
       "user-1",
       ACHIEVEMENT_KEYS_BY_XP_REASON.MOVIE_WATCHED,
+    );
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      "onboarding-updated",
     );
   });
 
@@ -780,9 +744,9 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.updateEntry("user-1", "entry-1", {
@@ -825,9 +789,9 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.upsertEntry("user-1", {
@@ -890,9 +854,9 @@ describe("LibraryService — XP wiring", () => {
         getRating: vi.fn().mockResolvedValue(null),
       } as unknown as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.addReplay("user-1", "entry-1", {} as never);
@@ -962,9 +926,9 @@ describe("LibraryService — XP wiring", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       achievements,
+      stubEvents(),
     );
 
     await service.watchEpisode("user-1", "ep2", {} as never);
@@ -1030,9 +994,9 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
       {} as AgeGateService,
       {} as ReviewService,
       { emit: vi.fn() } as unknown as ActivityService,
-      {} as EntitlementService,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
     return { service, prisma, xp };
   }
@@ -1088,5 +1052,43 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
     await expectForbidden(service.unwatchSeason("intruder", "season-1"));
 
     expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("LibraryService.getDomainCounts", () => {
+  it("counts every domain's table for the caller, hidden domains included", async () => {
+    const prisma = {
+      libraryEntry: { count: vi.fn().mockResolvedValue(412) },
+      gameEntry: { count: vi.fn().mockResolvedValue(0) },
+      bookEntry: { count: vi.fn().mockResolvedValue(340) },
+      musicEntry: { count: vi.fn().mockResolvedValue(7) },
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+
+    const counts = await service.getDomainCounts("u1");
+
+    // GAMES stays present at 0: the settings tile needs "you track none"
+    // told apart from "we don't know yet".
+    expect(counts).toEqual({ MEDIA: 412, GAMES: 0, BOOKS: 340, MUSIC: 7 });
+
+    for (const table of [
+      prisma.libraryEntry,
+      prisma.gameEntry,
+      prisma.bookEntry,
+      prisma.musicEntry,
+    ]) {
+      // Scoped to the user, and to nothing else — no enabledDomains filter,
+      // which is the whole reason this doesn't go through /stats.
+      expect(table.count).toHaveBeenCalledWith({ where: { userId: "u1" } });
+    }
   });
 });

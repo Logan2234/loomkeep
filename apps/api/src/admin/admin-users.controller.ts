@@ -6,6 +6,7 @@ import type {
   AdminUserOptionDto,
   AdminUserPlanDto,
   AdminUserRoleDto,
+  AdminUserXpDto,
   MyListDto,
   MyReviewDto,
   PagedResult,
@@ -30,8 +31,10 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import type { Prisma } from "@prisma/client";
 import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -42,6 +45,8 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { GamificationFeatureGuard } from "../gamification/gamification-feature.guard";
+import { XpService } from "../gamification/xp.service";
 import { MyListResponseDto } from "../lists/dto/my-list-response.dto";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -57,16 +62,24 @@ import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdjustAdminUserXpDto } from "./dto/adjust-admin-user-xp.dto";
 import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
 import { AdminUserLibraryStatsResponseDto } from "./dto/admin-user-library-stats-response.dto";
 import { AdminUserOptionResponseDto } from "./dto/admin-user-option-response.dto";
 import { AdminUserPlanResponseDto } from "./dto/admin-user-plan-response.dto";
 import { AdminUserResponseDto } from "./dto/admin-user-response.dto";
 import { AdminUserRoleResponseDto } from "./dto/admin-user-role-response.dto";
+import { AdminUserXpResponseDto } from "./dto/admin-user-xp-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 
-const FILTERS: AdminUserFilter[] = ["all", "admin", "unverified", "never"];
+const FILTERS: AdminUserFilter[] = [
+  "all",
+  "admin",
+  "unverified",
+  "never",
+  "premium",
+];
 
 /** Account administration: listing, role, data export and sessions. */
 @AdminOnly()
@@ -84,6 +97,7 @@ export class AdminUsersController {
     private readonly lists: ListService,
     private readonly moderationDecisions: ModerationDecisionService,
     private readonly entitlements: EntitlementService,
+    private readonly xp: XpService,
   ) {}
 
   /**
@@ -97,6 +111,14 @@ export class AdminUsersController {
     @Query("filter") filter?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("createdFrom") createdFrom?: string,
+    @Query("createdTo") createdTo?: string,
+    @Query("activeFrom") activeFrom?: string,
+    @Query("activeTo") activeTo?: string,
+    @Query("mfa") mfa?: string,
+    @Query("newsletter") newsletter?: string,
+    @Query("push") push?: string,
+    @Query("session") session?: string,
   ): Promise<PagedResult<AdminUserDto>> {
     const {
       skip,
@@ -108,7 +130,7 @@ export class AdminUsersController {
       ? (filter as AdminUserFilter)
       : "all";
 
-    const where = {
+    const where: Prisma.UserWhereInput = {
       ...(q
         ? {
             OR: [
@@ -121,13 +143,54 @@ export class AdminUsersController {
       ...(activeFilter === "admin" ? { role: "ADMIN" as const } : {}),
       ...(activeFilter === "unverified" ? { emailVerified: false } : {}),
       ...(activeFilter === "never" ? { lastActiveAt: null } : {}),
+      ...(activeFilter === "premium"
+        ? { entitlement: { is: { plan: "PREMIUM" as const } } }
+        : {}),
     };
+
+    const createdRange = dateRange(createdFrom, createdTo);
+    if (createdRange) where.createdAt = createdRange;
+
+    const activeRange = dateRange(activeFrom, activeTo);
+
+    if (activeRange) {
+      if (activeFilter === "never") {
+        where.AND = [{ lastActiveAt: null }, { lastActiveAt: activeRange }];
+        delete where.lastActiveAt;
+      } else {
+        where.lastActiveAt = activeRange;
+      }
+    }
+
+    if (mfa === "yes") {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        { OR: [{ mfaTotpEnabled: true }, { mfaEmailEnabled: true }] },
+      ];
+    } else if (mfa === "no") {
+      where.mfaTotpEnabled = false;
+      where.mfaEmailEnabled = false;
+    }
+
+    if (newsletter === "yes" || newsletter === "no") {
+      where.notifyNewsletter = newsletter === "yes";
+    }
+
+    if (push === "yes") where.pushSubscriptions = { some: {} };
+    if (push === "no") where.pushSubscriptions = { none: {} };
+
+    if (session === "yes" || session === "no") {
+      const activeSession = { expiresAt: { gt: new Date() } };
+      where.refreshTokens =
+        session === "yes" ? { some: activeSession } : { none: activeSession };
+    }
 
     const rows = await this.prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
       skip,
       take: take + 1,
+      include: { score: { select: { xp: true } } },
     });
     const hasMore = rows.length > pageLimit;
     const users = rows.slice(0, pageLimit);
@@ -155,23 +218,41 @@ export class AdminUsersController {
         lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
         inactivityWarningSentAt:
           u.inactivityWarningSentAt?.toISOString() ?? null,
+        xp: u.score?.xp ?? 0,
       })),
     };
   }
 
-  /**
-   * Minimal, unpaginated account list for pickers (UserSelector, the
-   * communications broadcast target) — distinct from the paginated `users`
-   * endpoint above, which now only returns one page at a time.
-   */
+  /** Compact server-searched account list for admin pickers. */
   @Get("users/options")
-  @ApiOkResponse({ type: AdminUserOptionResponseDto, isArray: true })
-  async listUserOptions(): Promise<AdminUserOptionDto[]> {
-    const users = await this.prisma.user.findMany({
-      orderBy: { displayName: "asc" },
+  @ApiOkResponse({ type: PagedResponseDto(AdminUserOptionResponseDto) })
+  async listUserOptions(
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<AdminUserOptionDto>> {
+    const parsed = parsePageQuery(page, limit, 20);
+    const query = search?.trim();
+    const rows = await this.prisma.user.findMany({
+      where: query
+        ? {
+            OR: [
+              { id: query },
+              { email: { contains: query, mode: "insensitive" } },
+              { username: { contains: query, mode: "insensitive" } },
+              { displayName: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {},
+      orderBy: [{ displayName: "asc" }, { id: "asc" }],
       select: { id: true, displayName: true, email: true },
+      skip: parsed.skip,
+      take: parsed.take + 1,
     });
-    return users;
+    return {
+      items: rows.slice(0, parsed.limit),
+      hasMore: rows.length > parsed.limit,
+    };
   }
 
   /**
@@ -216,6 +297,31 @@ export class AdminUsersController {
   ): Promise<AdminUserPlanDto> {
     const entitlement = await this.entitlements.setPlan(userId, dto.plan);
     return { plan: entitlement.plan };
+  }
+
+  /**
+   * Adds or removes XP by hand — to fix an anomaly, or to reward a report.
+   * An admin may adjust their own account. Undone by an adjustment of the
+   * opposite sign. 404 while gamification is off, like its other endpoints.
+   */
+  @Post("users/:userId/xp-adjustments")
+  @UseGuards(GamificationFeatureGuard)
+  @ApiOkResponse({ type: AdminUserXpResponseDto })
+  @HttpCode(HttpStatus.OK)
+  async adjustUserXp(
+    @Param("userId") userId: string,
+    @Body() dto: AdjustAdminUserXpDto,
+  ): Promise<AdminUserXpDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUserNotFound);
+    }
+
+    return { xp: await this.xp.adjust(userId, dto.amount) };
   }
 
   /** Full portable dump of one account's data (GDPR "download my data"), admin-triggered. */
@@ -386,8 +492,9 @@ export class AdminUsersController {
     await this.securityEvents.record({
       type: "USER_DELETED",
       userId: user.id,
-      detail: "Supprimé depuis le panel admin",
+      detail: "Deleted from the admin panel",
     });
+    await this.securityEvents.forgetIps(user.id);
 
     await this.moderationDecisions.record({
       measure: ModerationMeasure.ACCOUNT_DELETED,
@@ -405,4 +512,17 @@ export class AdminUsersController {
 
     await this.prisma.user.delete({ where: { id: userId } });
   }
+}
+
+function dateRange(
+  from?: string,
+  to?: string,
+): Prisma.DateTimeFilter | undefined {
+  const start = from ? new Date(from) : undefined;
+  const end = to ? new Date(to) : undefined;
+  const gte = start && !Number.isNaN(start.getTime()) ? start : undefined;
+  const lt = end && !Number.isNaN(end.getTime()) ? end : undefined;
+  return gte || lt
+    ? { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) }
+    : undefined;
 }

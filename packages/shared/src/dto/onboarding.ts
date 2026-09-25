@@ -1,10 +1,10 @@
 /**
- * [G8] "Première séance" — the gamified onboarding checklist. Separate from
+ * The "Première séance" gamified checklist is separate from
  * the mandatory first-run `OnboardingWizard` (domains/theme/notifications):
  * this one is a discreet, non-blocking checklist that rewards a tour of the
  * app's core actions at the user's own pace, once the wizard is closed.
  *
- * Steps are locked in a fixed order (see the [B10] design discussion): a
+ * Steps are locked in a fixed order: a
  * step becomes actionable only once every step before it is done or
  * skipped, though later steps stay visible at reduced opacity rather than
  * hidden. `create_list`/`comment` only apply when `SOCIAL_ENABLED` — see

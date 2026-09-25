@@ -11,18 +11,24 @@ function makeService() {
   const lists = {
     reassignOwnedListsOnAccountDeletion: vi.fn(),
   } as unknown as ListService;
-  const security = { record: vi.fn() } as unknown as SecurityEventService;
+  const security = {
+    record: vi.fn(),
+    forgetIps: vi.fn(),
+  } as unknown as SecurityEventService;
 
   const service = new AccountDeletionService(prisma, lists, security);
   return { service, prisma, lists, security };
 }
 
 describe("AccountDeletionService.deleteAccount", () => {
-  it("records USER_DELETED, reassigns owned lists, then deletes the account", async () => {
+  it("records USER_DELETED, forgets the IPs, reassigns owned lists, then deletes the account", async () => {
     const { service, prisma, lists, security } = makeService();
     const calls: string[] = [];
     (security.record as Mock).mockImplementation(async () => {
       calls.push("record");
+    });
+    (security.forgetIps as Mock).mockImplementation(async () => {
+      calls.push("forget-ips");
     });
     (lists.reassignOwnedListsOnAccountDeletion as Mock).mockImplementation(
       async () => {
@@ -44,12 +50,13 @@ describe("AccountDeletionService.deleteAccount", () => {
       detail: "Suppression automatique pour inactivité (>36 mois)",
       userAgent: undefined,
     });
+    expect(security.forgetIps).toHaveBeenCalledWith("user-1");
     expect(lists.reassignOwnedListsOnAccountDeletion).toHaveBeenCalledWith(
       "user-1",
     );
     expect(prisma.user.delete).toHaveBeenCalledWith({
       where: { id: "user-1" },
     });
-    expect(calls).toEqual(["record", "reassign", "delete"]);
+    expect(calls).toEqual(["record", "forget-ips", "reassign", "delete"]);
   });
 });

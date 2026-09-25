@@ -8,7 +8,7 @@
   } from "$lib/api/client";
   import { resolveApiError } from "$lib/api/errors";
   import { createApiMutation } from "$lib/api/mutation.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,7 +20,6 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
   import type {
-    CommentTargetType,
     LibraryEntryDto,
     MediaDetailSeasonDto,
     ReviewTargetType,
@@ -102,14 +101,6 @@
   let catchup = $state<{ episodeId: string; count: number } | null>(null);
   let declinedCatchup = $state(false);
 
-  // Each season/episode has its own comment thread (per the target-type
-  // granularity), opened in a modal rather than inlined in every row.
-  let commentTarget = $state<{
-    type: CommentTargetType;
-    id: string;
-    label: string;
-  } | null>(null);
-
   // Same idea for a season/episode's own review — discreet (icon-triggered
   // modal), never inlined in the row.
   let reviewTarget = $state<{
@@ -180,7 +171,7 @@
     return days === 1 ? m.common_tomorrow() : m.media_airing_in_days({ days });
   }
 
-  // [G6] point 5: the tick that lands when an episode is marked. This is the
+  // This tick lands when an episode is marked. It is the
   // most repeated action in the app, and it's what makes the season bar's
   // move (and its completion accent, on the last episode) read as one
   // gesture rather than two unrelated redraws. Gated on "the episode that
@@ -284,7 +275,7 @@
           {/if}
           {#if entry && season.id}
             <button
-              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
               aria-label={m.media_season_review()}
               onclick={(e) => {
                 e.stopPropagation();
@@ -298,28 +289,21 @@
               <Icon name="star" class="h-4 w-4" />
             </button>
           {/if}
-          {#if entry && appConfig.socialEnabled && season.id}
-            <button
-              class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-              aria-label={m.media_season_comments()}
-              onclick={(e) => {
-                e.stopPropagation();
-                commentTarget = {
-                  type: "SEASON",
-                  id: season.id!,
-                  label:
-                    season.title ?? `${m.common_season()} ${season.number}`,
-                };
-              }}>
-              <Icon name="message" class="h-4 w-4" />
-            </button>
+          {#if appConfig.socialEnabled && season.id}
+            <CommentsPanel
+              targetType="SEASON"
+              targetId={season.id}
+              title={season.title ?? `${m.common_season()} ${season.number}`}
+              canParticipate={!!entry}
+              revealSpoilersByDefault={seasonWatched(season)}
+              compact />
           {/if}
           {#if entry && season.id}
             {@const seasonId = season.id}
             <Dropdown placement="bottom-end" class="min-w-64">
               {#snippet trigger({ open, toggle, onkeydown })}
                 <button
-                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                  class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
                   aria-label={m.media_season_more_actions()}
                   {onkeydown}
                   aria-haspopup="menu"
@@ -335,7 +319,7 @@
                 {#if !seasonWatched(season)}
                   <button
                     role="menuitem"
-                    class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                    class="menu-item"
                     disabled={markSeasonMut.loading &&
                       markSeasonMut.variables === seasonId}
                     onclick={() => {
@@ -349,7 +333,7 @@
                 {#if seasonWatchedCount(season) > 0}
                   <button
                     role="menuitem"
-                    class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
+                    class="menu-item menu-item-danger border-border border-t"
                     onclick={() => {
                       close();
                       confirmUnwatchSeasonId = seasonId;
@@ -443,7 +427,7 @@
                   {/if}
                   {#if entry && episode.id}
                     <button
-                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
+                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95"
                       aria-label={m.media_episode_review()}
                       onclick={() => {
                         reviewTarget = {
@@ -455,19 +439,16 @@
                       <Icon name="star" class="h-4 w-4" />
                     </button>
                   {/if}
-                  {#if entry && appConfig.socialEnabled && episode.id}
-                    <button
-                      class="text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full"
-                      aria-label={m.media_episode_comments()}
-                      onclick={() => {
-                        commentTarget = {
-                          type: "EPISODE",
-                          id: episode.id!,
-                          label: `S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}`,
-                        };
-                      }}>
-                      <Icon name="message" class="h-4 w-4" />
-                    </button>
+                  {#if appConfig.socialEnabled && episode.id}
+                    <span class={watched ? "" : "mr-1"}>
+                      <CommentsPanel
+                        targetType="EPISODE"
+                        targetId={episode.id}
+                        title={`S${String(season.number).padStart(2, "0")}E${String(episode.number).padStart(2, "0")}${episode.title ? ` · ${episode.title}` : ""}`}
+                        canParticipate={!!entry}
+                        revealSpoilersByDefault={watched}
+                        compact />
+                    </span>
                   {/if}
                   {#if entry && episode.id}
                     {@const upcoming =
@@ -544,16 +525,6 @@
     busy={confirmUnwatchSeasonMut.loading}
     onConfirm={confirmUnwatchSeason}
     onCancel={() => (confirmUnwatchSeasonId = null)} />
-{/if}
-
-{#if commentTarget}
-  <Modal
-    title={m.media_comments_title({ target: commentTarget.label })}
-    onclose={() => (commentTarget = null)}>
-    <CommentThread
-      targetType={commentTarget.type}
-      targetId={commentTarget.id} />
-  </Modal>
 {/if}
 
 {#if reviewTarget}

@@ -79,9 +79,7 @@ const adapter = new PrismaPg({ connectionString }, { schema });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // ---------------------------------------------------------------------
   // Users
-  // ---------------------------------------------------------------------
   const [loganPassword, secondaryPassword, demoPassword] = await Promise.all([
     bcrypt.hash("Lolo2234", BCRYPT_ROUNDS),
     bcrypt.hash("Lolo2234", BCRYPT_ROUNDS),
@@ -183,9 +181,7 @@ async function main() {
 
   const users = [logan, loganSfr, alice, bob, chloe];
 
-  // ---------------------------------------------------------------------
-  // Visibility settings (overrides of the FRIENDS default)
-  // ---------------------------------------------------------------------
+  // Visibility settings overriding the FRIENDS default
   await prisma.visibilitySetting.createMany({
     data: [
       {
@@ -203,9 +199,7 @@ async function main() {
     ],
   });
 
-  // ---------------------------------------------------------------------
   // Follow / Block
-  // ---------------------------------------------------------------------
   await prisma.follow.createMany({
     data: [
       {
@@ -242,9 +236,7 @@ async function main() {
     data: { blockerId: alice.id, blockedId: bob.id },
   });
 
-  // ---------------------------------------------------------------------
   // Catalogue cache: media (movies/series/anime)
-  // ---------------------------------------------------------------------
   const inception = await prisma.mediaItem.create({
     data: {
       type: MediaType.MOVIE,
@@ -386,9 +378,7 @@ async function main() {
     include: { seasons: { include: { episodes: true } } },
   });
 
-  // ---------------------------------------------------------------------
   // Catalogue cache: games / books / music
-  // ---------------------------------------------------------------------
   const eldenRing = await prisma.gameItem.create({
     data: {
       canonicalSource: GameSource.IGDB,
@@ -500,9 +490,7 @@ async function main() {
     },
   });
 
-  // ---------------------------------------------------------------------
   // Library entries
-  // ---------------------------------------------------------------------
   await prisma.libraryEntry.create({
     data: {
       userId: logan.id,
@@ -715,9 +703,7 @@ async function main() {
     },
   });
 
-  // ---------------------------------------------------------------------
   // Reviews, votes, revisions
-  // ---------------------------------------------------------------------
   const inceptionReview = await prisma.review.create({
     data: {
       userId: logan.id,
@@ -768,9 +754,7 @@ async function main() {
     },
   });
 
-  // ---------------------------------------------------------------------
   // Comments & reactions
-  // ---------------------------------------------------------------------
   const breakingBadComment = await prisma.comment.create({
     data: {
       targetType: CommentTargetType.MEDIA,
@@ -820,9 +804,7 @@ async function main() {
     },
   });
 
-  // ---------------------------------------------------------------------
   // Reports & moderation
-  // ---------------------------------------------------------------------
   const report = await prisma.report.create({
     data: {
       targetType: ReportTargetType.COMMENT,
@@ -874,9 +856,7 @@ async function main() {
     },
   });
 
-  // ---------------------------------------------------------------------
   // Lists
-  // ---------------------------------------------------------------------
   const topFilms = await prisma.list.create({
     data: {
       userId: alice.id,
@@ -919,9 +899,7 @@ async function main() {
     },
   });
 
-  // ---------------------------------------------------------------------
   // Push subscriptions, notifications, activity feed
-  // ---------------------------------------------------------------------
   await prisma.pushSubscription.create({
     data: {
       userId: logan.id,
@@ -1021,9 +999,7 @@ async function main() {
     ],
   });
 
-  // ---------------------------------------------------------------------
   // Jobs, devices, sessions, security, imports, backups, newsletter, quotas
-  // ---------------------------------------------------------------------
   await prisma.jobRun.createMany({
     data: [
       {

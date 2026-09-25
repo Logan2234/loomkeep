@@ -1,4 +1,4 @@
-import type { Domain } from "@loomkeep/shared";
+import { PREMIUM_DOMAINS, type Domain } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
 import { DOMAINS } from "./constants/domains";
 import { liveFlags } from "./feature-flags-live.svelte";
@@ -14,11 +14,36 @@ import { liveFlags } from "./feature-flags-live.svelte";
  * exactly like the user having turned the domain off themselves. Updates
  * without a reload; this only hides UI — `DomainGateService` is what actually
  * enforces the gate server-side.
+ *
+ * And a premium domain while the plan is enforced and the account is free:
+ * `enabledDomains` is the user's raw choice, which can still name one from
+ * before it became premium-gated (`DomainGateService` anticipates exactly
+ * that). Without this, the nav offered the domain and the home page mounted
+ * its section, for endpoints answering 403.
+ *
+ * The settings tiles deliberately read `auth.user.enabledDomains` directly
+ * instead: that screen shows the raw choice, with its own lock badge.
  */
 export function isDomainEnabled(domain: Domain): boolean {
   if (liveFlags.isEnabled(`MAINTENANCE_${domain}`)) return false;
+  if (auth.isPremiumLocked && PREMIUM_DOMAINS.includes(domain)) return false;
   const enabled = auth.user?.enabledDomains;
   return enabled ? enabled.includes(domain) : true;
+}
+
+/**
+ * Every domain, in the user's preferred display order (settings tiles, the
+ * desktop rail's Library section). Total and partial-safe: a domain missing
+ * from `preference` — unset, or shipped after the preference was saved —
+ * keeps its canonical position at the end rather than being dropped.
+ */
+export function orderedDomains(preference: Domain[] | undefined): Domain[] {
+  const canonical = Object.keys(DOMAINS) as Domain[];
+  if (!preference?.length) return canonical;
+  const rank = new Map(preference.map((d, i) => [d, i]));
+  return [...canonical].sort(
+    (a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity),
+  );
 }
 
 /**

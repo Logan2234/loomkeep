@@ -46,8 +46,8 @@ export class InactiveAccountService {
       () => this.runScan(),
       ({ warned, deleted }) =>
         warned === 0 && deleted === 0
-          ? "Rien à traiter"
-          : `${warned} relance(s) envoyée(s), ${deleted} compte(s) supprimé(s)`,
+          ? "Nothing to process"
+          : `${warned} reminder(s) sent, ${deleted} account(s) deleted`,
     );
   }
 

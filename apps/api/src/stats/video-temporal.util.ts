@@ -180,7 +180,7 @@ export function computeStreak(
  * streak — i.e. nothing more is needed before midnight for it to survive.
  * Kept separate from `computeStreak` itself: its other two callers (the
  * streak achievements, `StatsService`'s contribution count) have no use for
- * this, only the profile's own activity stats do (the [G10] streak badge).
+ * this; only the profile's own activity stats do.
  */
 export function isStreakSecuredToday(
   watchedAt: Date[],

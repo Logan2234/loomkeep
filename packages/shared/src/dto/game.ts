@@ -64,7 +64,6 @@ export interface GameItemDto {
   sourceId: string;
 }
 
-/** One completed replay, beyond the entry's own (first) completion. */
 export interface GameReplayDto {
   id: string;
   /** ISO date the replay was completed. */
@@ -123,5 +122,7 @@ export interface UpdateGameEntryDto {
  * `entry` is null when the game is not in the library.
  */
 export interface GameDetailDto extends GameDetailsDto {
+  /** Cached work id when a public discussion can exist; null for a live-only item. */
+  commentTargetId: string | null;
   entry: GameEntryDto | null;
 }

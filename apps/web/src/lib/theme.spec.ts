@@ -10,14 +10,10 @@ describe("theme browser chrome", () => {
       light: css.match(/:root\s*\{[\s\S]*?--bg:\s*(#[0-9a-f]{6})/i)?.[1],
       dark: css.match(/\.dark\s*\{[\s\S]*?--bg:\s*(#[0-9a-f]{6})/i)?.[1],
     };
-    const initialColors = {
-      light: html.match(
-        /media="\(prefers-color-scheme: light\)"\s*content="(#[0-9a-f]{6})"/i,
-      )?.[1],
-      dark: html.match(
-        /media="\(prefers-color-scheme: dark\)"\s*content="(#[0-9a-f]{6})"/i,
-      )?.[1],
-    };
+    const bootColors = html.match(
+      /content\s*=\s*dark\s*\?\s*"(#[0-9a-f]{6})"\s*:\s*"(#[0-9a-f]{6})"/i,
+    );
+    const initialColors = { light: bootColors?.[2], dark: bootColors?.[1] };
 
     expect(cssColors).toEqual(THEME_COLOR);
     expect(initialColors).toEqual(THEME_COLOR);

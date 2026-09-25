@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Dashed placeholder box for "nothing here yet" / "no results" states.
   import type { Snippet } from "svelte";
 
   let {

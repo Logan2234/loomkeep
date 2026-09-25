@@ -6,6 +6,7 @@ import {
   ProfileAccess,
   ReviewVisibility,
   Role,
+  SpoilerSensitivity,
 } from "../enums";
 
 export interface UserDto {
@@ -85,6 +86,15 @@ export interface UserDto {
    * `SocialProfileDto.xp`.
    */
   hideProgression: boolean;
+  /** Overrides reviews/comments' per-context spoiler-reveal default. */
+  spoilerSensitivity: SpoilerSensitivity;
+  /**
+   * Display order for the domain browser (settings tiles, desktop rail's
+   * Library section). Partial and total-safe — a domain missing from it
+   * (unset, or shipped after this preference was saved) keeps its canonical
+   * position at the end. See web `domains.ts`'s `orderedDomains()`.
+   */
+  domainOrder: Domain[];
 }
 
 export interface UpdateUserRequestDto {
@@ -111,6 +121,10 @@ export interface UpdateUserRequestDto {
   locale?: Locale;
   /** See `UserDto.hideProgression`. */
   hideProgression?: boolean;
+  /** See `UserDto.spoilerSensitivity`. */
+  spoilerSensitivity?: SpoilerSensitivity;
+  /** See `UserDto.domainOrder`. */
+  domainOrder?: Domain[];
 }
 
 export interface UpdateUsernameRequestDto {

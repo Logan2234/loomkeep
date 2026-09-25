@@ -3,7 +3,6 @@
   import {
     getAdminPushDevices,
     getAdminPushSummary,
-    getAdminUserOptions,
     sendAdminBroadcastPush,
     sendAdminTestPush,
   } from "$lib/api/client";
@@ -11,28 +10,17 @@
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import Combobox from "$lib/components/Combobox.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import KpiStrip from "$lib/components/stats/KpiStrip.svelte";
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
+  import UserSelector from "$lib/components/UserSelector.svelte";
   import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
 
   let email = $state(page.url.searchParams.get("email") ?? "");
   let pushTitle = $state("");
   let pushBody = $state("");
-
-  const usersQuery = createApiQuery(() => ({
-    key: keys.admin.userOptions(),
-    fetch: getAdminUserOptions,
-  }));
-  const userOptions = $derived(
-    (usersQuery.data ?? []).map((u) => ({
-      label: `${u.displayName} <${u.email}>`,
-      value: u.email,
-    })),
-  );
 
   const devicesQuery = createApiQuery(() => ({
     key: keys.admin.pushDevices(email),
@@ -67,9 +55,7 @@
     sendPushMut.reset();
   });
 
-  // Instance-wide push reach. Also feeds the broadcast section's "portée
-  // actuelle", which used to read the same two numbers off /admin/overview —
-  // one source now, so the header and the warning can't disagree.
+  // One source for the summary and broadcast reach keeps both views aligned.
   const pushSummaryQuery = createApiQuery(() => ({
     key: keys.admin.pushSummary(),
     fetch: getAdminPushSummary,
@@ -155,13 +141,12 @@
     <div>
       <span class="text-dim mb-1 block text-xs font-semibold"
         >{m.common_account()}</span>
-      <Combobox
+      <UserSelector
+        value={email || null}
+        valueMode="email"
         label={m.admin_communications_choose_account()}
-        options={userOptions}
-        values={email ? [email] : []}
-        searchable
-        searchPlaceholder="Rechercher par nom ou email…"
-        onChange={(v) => (email = v[0] ?? "")} />
+        searchPlaceholder={m.admin_communications_account_search()}
+        onChange={(value) => (email = value ?? "")} />
     </div>
 
     <div>

@@ -41,7 +41,6 @@ jobs:
       - id: vars
         run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      # ----------------------------------------------------------------
       # Stand up an ephemeral api+web+db stack (docker/docker-compose.yml)
       # instead of scanning https://loomkeep.app directly — activeScan sends
       # real attack payloads, and Logan isn't comfortable with that hitting
@@ -102,7 +101,7 @@ jobs:
       # violation exits pa11y-ci non-zero, but the SARIF is still written.
       - name: Upload Pa11y SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: pa11y-results.sarif
           category: pa11y
@@ -136,11 +135,8 @@ jobs:
         uses: zaproxy/action-af@d186d5d9536d0f1380e5eaa58168432fefc8ed6d
         with:
           plan: .github/zap/plan.yml
-      # Unblocks activeScan-ing write endpoints now that it's the ephemeral
-      # stack's synthetic data taking the hit, not production — was removed
-      # as dead code from this workflow previously since its old target
-      # (/api/openapi.json) doesn't even exist in prod (Swagger is dev-only,
-      # see apps/api/src/main.ts).
+      # The API scan may attack write endpoints because this ephemeral stack
+      # contains only synthetic data and is torn down after the job.
       - name: Run ZAP (api)
         uses: zaproxy/action-af@d186d5d9536d0f1380e5eaa58168432fefc8ed6d
         with:
@@ -202,13 +198,13 @@ jobs:
           PY
       - name: Upload ZAP SARIF (web)
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: zap-results/zap-results.fixed.sarif.json
           category: zap
       - name: Upload ZAP SARIF (api)
         if: always()
-        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: zap-results/zap-api-results.fixed.sarif.json
           category: zap-api

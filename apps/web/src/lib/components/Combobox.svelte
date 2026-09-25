@@ -17,8 +17,13 @@
     multiselect = false,
     searchable = false,
     searchPlaceholder,
+    selectedLabel,
+    loading = false,
+    hasMore = false,
     name,
     disabled = false,
+    onSearch,
+    onLoadMore,
     onChange,
   }: {
     label: string;
@@ -28,8 +33,15 @@
     /** Adds a text filter at the top of the panel. */
     searchable?: boolean;
     searchPlaceholder?: string;
+    /** Label retained when a server-selected value is outside the current page. */
+    selectedLabel?: string;
+    loading?: boolean;
+    hasMore?: boolean;
     name?: string;
     disabled?: boolean;
+    /** Enables server-side filtering instead of filtering `options` locally. */
+    onSearch?: (query: string) => void;
+    onLoadMore?: () => void;
     onChange: (values: string[]) => void;
   } = $props();
 
@@ -50,10 +62,10 @@
           selection:
             values.length === 0 ? m.common_all() : String(values.length),
         })
-      : (selectedOption?.label ?? label),
+      : (selectedOption?.label ?? selectedLabel ?? label),
   );
   const visibleOptions = $derived(
-    searchable && query.trim()
+    searchable && !onSearch && query.trim()
       ? options.filter((o) =>
           o.label.toLowerCase().includes(query.trim().toLowerCase()),
         )
@@ -62,10 +74,10 @@
   const accessibleLabel = $derived(
     multiselect
       ? triggerText
-      : selectedOption
+      : selectedOption || selectedLabel
         ? m.common_selection_summary({
             label,
-            selection: selectedOption.label,
+            selection: selectedOption?.label ?? selectedLabel ?? "",
           })
         : label,
   );
@@ -111,6 +123,7 @@
     command: "first" | "last" = "first",
   ) {
     query = "";
+    onSearch?.("");
     resetActive(command);
     toggle(e);
     focusSearchInput();
@@ -243,7 +256,10 @@
           aria-activedescendant={activeOptionId}
           enterkeyhint="search"
           placeholder={resolvedSearchPlaceholder}
-          oninput={() => resetActive()}
+          oninput={(event) => {
+            resetActive();
+            onSearch?.(event.currentTarget.value);
+          }}
           onkeydown={(e) => onSearchKeydown(e, close)}
           class="border-border bg-surface-2 w-full rounded-md border px-2 py-1 text-sm" />
       </div>
@@ -287,11 +303,20 @@
           </span>
         </button>
       {/each}
+      {#if searchable && visibleOptions.length === 0}
+        <p role="status" class="text-dim px-3 py-2 text-sm">
+          {loading ? m.common_loading() : m.common_no_results()}
+        </p>
+      {/if}
     </div>
-    {#if searchable && visibleOptions.length === 0}
-      <p role="status" class="text-dim px-3 py-2 text-sm">
-        {m.common_no_results()}
-      </p>
+    {#if hasMore && onLoadMore}
+      <button
+        type="button"
+        class="text-accent hover:bg-surface-2 w-full px-3 py-2 text-left text-sm font-semibold disabled:opacity-50"
+        disabled={loading}
+        onclick={onLoadMore}>
+        {loading ? m.common_loading() : m.common_load_more()}
+      </button>
     {/if}
   {/snippet}
 </Dropdown>

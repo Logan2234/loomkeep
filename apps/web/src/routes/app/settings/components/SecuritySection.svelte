@@ -1,13 +1,18 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     changeEmail,
     changePassword,
     checkUsernameAvailable,
     confirmEmailChange,
+    getMfaStatus,
+    getSessions,
     resendVerificationEmail,
     updateUsername,
   } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import { Cooldown } from "$lib/cooldown.svelte";
   import { debounce } from "$lib/debounce";
@@ -18,6 +23,8 @@
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { isPasswordValid } from "@loomkeep/shared";
+  import { flashAnchor } from "../flash-anchor";
+  import { sectionHref } from "../nav";
 
   type SecurityModal = "username" | "email" | "password" | null;
 
@@ -189,13 +196,45 @@
   }
 
   const passwordError = $derived(localPasswordError || savePasswordMut.error);
+
+  // The two screens this one hands off to, with their current state read off
+  // the same cache entries they use themselves — so "Aller plus loin" says
+  // what it leads to instead of just that it leads somewhere.
+  const mfaQuery = createApiQuery(() => ({
+    key: keys.mfa.status(),
+    fetch: getMfaStatus,
+  }));
+  const sessionsQuery = createApiQuery(() => ({
+    key: keys.sessions.all(),
+    fetch: getSessions,
+  }));
+
+  const mfaPreview = $derived.by(() => {
+    const status = mfaQuery.data;
+    if (!status) return null;
+    if (status.totpEnabled) return m.settings_preview_mfa_totp();
+    if (status.emailEnabled || status.webauthnCredentials.length > 0) {
+      return m.settings_health_mfa_on();
+    }
+    return m.settings_preview_mfa_off();
+  });
+
+  const sessionsPreview = $derived.by(() => {
+    const count = sessionsQuery.data?.length;
+    if (count === undefined) return null;
+    return count > 1
+      ? m.settings_health_sessions_many({ count })
+      : m.settings_health_sessions_one({ count });
+  });
 </script>
 
 {#if auth.user}
-  <section class="card mb-5 p-5 md:p-6">
-    <h2 class="font-display mb-4 text-lg font-bold">{m.common_security()}</h2>
+  <section class="card p-5 md:p-6">
     <div class="divide-border divide-y">
-      <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
+      <div
+        id="username"
+        use:flashAnchor={{ anchor: "username", hash: page.url.hash }}
+        class="flex items-center justify-between gap-4 py-4 first:pt-0">
         <div>
           <p class="text-dim text-sm">{m.common_username()}</p>
           <p class="font-semibold">{auth.user.username}</p>
@@ -204,7 +243,10 @@
           {m.common_edit()}
         </button>
       </div>
-      <div class="flex items-center justify-between gap-4 py-3">
+      <div
+        id="email"
+        use:flashAnchor={{ anchor: "email", hash: page.url.hash }}
+        class="flex items-center justify-between gap-4 py-4">
         <div class="min-w-0">
           <p class="text-dim text-sm">{m.common_email()}</p>
           <p class="flex items-center gap-1.5 font-semibold">
@@ -262,7 +304,10 @@
           {m.common_edit()}
         </button>
       </div>
-      <div class="flex items-center justify-between gap-4 py-3">
+      <div
+        id="password"
+        use:flashAnchor={{ anchor: "password", hash: page.url.hash }}
+        class="flex items-center justify-between gap-4 py-4 last:pb-0">
         <div>
           <p class="text-dim text-sm">{m.common_password()}</p>
           <p class="font-semibold tracking-widest">••••••••</p>
@@ -271,17 +316,45 @@
           {m.common_edit()}
         </button>
       </div>
-      <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
-        <div>
-          <p class="text-dim text-sm">{m.settings_sessions_title()}</p>
-          <p class="font-semibold">{m.settings_open_sessions_description()}</p>
-        </div>
-        <a class="link-accent text-sm" href="/app/settings/sessions">
-          {m.common_manage()}
-        </a>
-      </div>
     </div>
   </section>
+
+  <p
+    class="timecode mt-6 mb-2 block text-[0.65rem] tracking-[0.14em] uppercase">
+    {m.settings_go_further()}
+  </p>
+  <ul class="card divide-border divide-y">
+    <li>
+      <a
+        href={sectionHref("two-factor-authentication")}
+        class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
+        <Icon name="lock" class="text-accent h-5 w-5 shrink-0" />
+        <span class="min-w-0 flex-1">
+          <span class="block font-semibold">{m.settings_section_mfa()}</span>
+          {#if mfaPreview}
+            <span class="text-dim block truncate text-sm">{mfaPreview}</span>
+          {/if}
+        </span>
+        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
+      </a>
+    </li>
+    <li>
+      <a
+        href={sectionHref("devices")}
+        class="hover:bg-surface-2 flex items-center gap-3 px-4 py-3.5 transition-colors">
+        <Icon name="monitor" class="text-accent h-5 w-5 shrink-0" />
+        <span class="min-w-0 flex-1">
+          <span class="block font-semibold">
+            {m.settings_sessions_title()}
+          </span>
+          <span class="text-dim block truncate text-sm">
+            {sessionsPreview ?? m.settings_open_sessions_description()}
+          </span>
+        </span>
+        <Icon name="chevron-right" class="text-dim h-5 w-5 shrink-0" />
+      </a>
+    </li>
+  </ul>
 
   {#if openModal === "username"}
     <Modal title={m.settings_change_username_title()} onclose={closeModal}>

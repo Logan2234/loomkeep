@@ -90,6 +90,8 @@ export const NotificationType = {
   COMMENT_REACTIONS: "COMMENT_REACTIONS",
   /** Someone added you as an editor on one of their lists. */
   LIST_MEMBER_ADDED: "LIST_MEMBER_ADDED",
+  /** Someone else added a work to a list you own or edit. */
+  LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A moderation decision (content removal) was taken against you — see ModerationDecision. */
   MODERATION_ACTION: "MODERATION_ACTION",
   /** DSA art. 16(5): a report you filed has been resolved or dismissed. */
@@ -105,19 +107,14 @@ export type NotificationType =
  */
 export const ActivityType = {
   ADDED: "ADDED",
-  /** Started watching/playing/reading/listening. */
   STARTED: "STARTED",
   FINISHED: "FINISHED",
   DROPPED: "DROPPED",
-  /** Started a rewatch/replay/reread. */
   REWATCHED: "REWATCHED",
-  /** Watched an episode / made reading or play progress. */
   PROGRESS: "PROGRESS",
   FAVORITED: "FAVORITED",
-  /** Published or updated a review. */
   REVIEWED: "REVIEWED",
   LIST_CREATED: "LIST_CREATED",
-  /** Added one or more works to a list. */
   LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A list's visibility moved from PRIVATE to FRIENDS/PUBLIC. */
   LIST_SHARED: "LIST_SHARED",
@@ -152,7 +149,6 @@ export const CatalogSource = {
 } as const;
 export type CatalogSource = (typeof CatalogSource)[keyof typeof CatalogSource];
 
-/** Source a game's catalogue data comes from. IGDB is the only one today. */
 export const GameSource = {
   IGDB: "IGDB",
 } as const;
@@ -187,7 +183,6 @@ export const GameOwnershipStatus = {
 export type GameOwnershipStatus =
   (typeof GameOwnershipStatus)[keyof typeof GameOwnershipStatus];
 
-/** Source a book's catalogue data comes from. Open Library only. */
 export const BookSource = {
   OPEN_LIBRARY: "OPEN_LIBRARY",
 } as const;
@@ -256,7 +251,6 @@ export const MediaOwnershipStatus = {
 export type MediaOwnershipStatus =
   (typeof MediaOwnershipStatus)[keyof typeof MediaOwnershipStatus];
 
-/** Source a music item's catalogue data comes from. MusicBrainz only. */
 export const MusicSource = {
   MUSICBRAINZ: "MUSICBRAINZ",
 } as const;
@@ -309,6 +303,7 @@ export const SecurityEventType = {
   MFA_EMAIL_DISABLED: "MFA_EMAIL_DISABLED",
   MFA_WEBAUTHN_ADDED: "MFA_WEBAUTHN_ADDED",
   MFA_WEBAUTHN_REMOVED: "MFA_WEBAUTHN_REMOVED",
+  MFA_WEBAUTHN_RENAMED: "MFA_WEBAUTHN_RENAMED",
   MFA_PASSWORDLESS_ENABLED: "MFA_PASSWORDLESS_ENABLED",
   MFA_PASSWORDLESS_DISABLED: "MFA_PASSWORDLESS_DISABLED",
   MFA_RECOVERY_CODES_REGENERATED: "MFA_RECOVERY_CODES_REGENERATED",
@@ -322,9 +317,7 @@ export const SecurityEventType = {
 export type SecurityEventType =
   (typeof SecurityEventType)[keyof typeof SecurityEventType];
 
-// ---------------------------------------------------------------------------
-// Social (P4). All of it is gated behind the runtime `SOCIAL_ENABLED` flag.
-// ---------------------------------------------------------------------------
+// All social behavior is gated behind the runtime `SOCIAL_ENABLED` flag.
 
 /**
  * How reachable a user's profile is — the "authentication" layer of visibility.
@@ -414,6 +407,21 @@ export type ReviewVisibility =
 export const REVIEW_TEXT_MAX_LENGTH = 2000;
 
 /**
+ * How spoiler-tagged reviews and comments are masked for the reader by
+ * default. AUTO keeps today's per-context behaviour (episodes/seasons/works
+ * already finished reveal automatically, everything else stays masked
+ * behind a click) — this preference only ever narrows or widens that, it
+ * never needs updating when a new context adds its own progress signal.
+ */
+export const SpoilerSensitivity = {
+  AUTO: "AUTO",
+  ALWAYS_HIDDEN: "ALWAYS_HIDDEN",
+  ALWAYS_REVEALED: "ALWAYS_REVEALED",
+} as const;
+export type SpoilerSensitivity =
+  (typeof SpoilerSensitivity)[keyof typeof SpoilerSensitivity];
+
+/**
  * A vote cast on someone else's review — Reddit-style, one active vote per
  * (user, review). Never shown attributed to a voter; only the aggregate
  * score and the viewer's own vote are ever surfaced.
@@ -440,7 +448,7 @@ export const CommentTargetType = {
 export type CommentTargetType =
   (typeof CommentTargetType)[keyof typeof CommentTargetType];
 
-/** Fixed reaction set for comments (a full emoji picker is backlog). */
+/** Fixed reaction set accepted by the API and client. */
 export const CommentEmote = {
   LIKE: "LIKE",
   LOVE: "LOVE",
@@ -497,6 +505,7 @@ export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
  */
 export const ModerationMeasure = {
   COMMENT_REMOVED: "COMMENT_REMOVED",
+  REVIEW_REMOVED: "REVIEW_REMOVED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
 } as const;
 export type ModerationMeasure =
@@ -561,6 +570,7 @@ export const ReportMotif = {
   MISINFORMATION_FALSE_FACT: "MISINFORMATION_FALSE_FACT",
   STOLEN_CONTENT_PLAGIARIZED: "STOLEN_CONTENT_PLAGIARIZED",
   MISLEADING_REVIEW_MANIPULATION: "MISLEADING_REVIEW_MANIPULATION",
+  MISLEADING_REVIEW_OFF_TOPIC: "MISLEADING_REVIEW_OFF_TOPIC",
 } as const;
 export type ReportMotif = (typeof ReportMotif)[keyof typeof ReportMotif];
 
@@ -601,9 +611,30 @@ export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
   ],
   MISINFORMATION: [ReportMotif.MISINFORMATION_FALSE_FACT],
   STOLEN_CONTENT: [ReportMotif.STOLEN_CONTENT_PLAGIARIZED],
-  MISLEADING_REVIEW: [ReportMotif.MISLEADING_REVIEW_MANIPULATION],
+  MISLEADING_REVIEW: [
+    ReportMotif.MISLEADING_REVIEW_MANIPULATION,
+    ReportMotif.MISLEADING_REVIEW_OFF_TOPIC,
+  ],
   OTHER: [],
 };
+
+/**
+ * Categories that only make sense for some target types (a comment has no
+ * rating to manipulate). Any category not listed applies to every target.
+ * Shared by the picker UI and ReportService.create's validation.
+ */
+const REPORT_CATEGORY_TARGETS: Partial<
+  Record<ReportCategory, ReportTargetType[]>
+> = {
+  MISLEADING_REVIEW: [ReportTargetType.REVIEW],
+};
+
+export function isReportCategoryAllowed(
+  category: ReportCategory,
+  targetType: ReportTargetType,
+): boolean {
+  return REPORT_CATEGORY_TARGETS[category]?.includes(targetType) ?? true;
+}
 
 /**
  * A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top
@@ -632,12 +663,8 @@ export type ListVisibility =
 export const Locale = ["fr", "en"] as const;
 export type Locale = (typeof Locale)[number];
 
-// ---------------------------------------------------------------------------
-// Gamification (G1). Mirrors `apps/api/prisma/schema.prisma`'s `XpEntry.reason`
-// — a plain String column there, not a Prisma enum (same rationale as
-// `ActivityEvent.type`: a new reason needs no migration). The full barème
-// (amount/cap/source per reason) lives in `xp-rules.ts`, not here.
-// ---------------------------------------------------------------------------
+// Mirrors XpEntry.reason, a String column so new reasons need no migration.
+// Amount, cap, and source rules live in xp-rules.ts.
 
 /**
  * Every source of XP the app can credit. See `xp-rules.ts` for the amount,

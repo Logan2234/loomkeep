@@ -15,6 +15,15 @@ export type ServiceArea =
 export type QuotaWindow = "day" | "month";
 
 /** Health of one external dependency, as surfaced by the admin services page. */
+/**
+ * Why a service is not usable, when the reason is generic enough to have a
+ * translation. Anything provider-specific travels in `detail` instead, as the
+ * raw (redacted) message — untranslatable by nature, and what an operator
+ * actually needs to see.
+ */
+export type ServiceProbeFailure =
+  "missingKey" | "timeout" | "network" | "refused";
+
 export interface ServiceStatusDto {
   /** Stable identifier, e.g. "tmdb". */
   key: string;
@@ -28,6 +37,8 @@ export interface ServiceStatusDto {
   required: boolean;
   /** Its API key/credentials are present in the environment. */
   configured: boolean;
+  /** Generic reason for a failure, translated by the client. */
+  failure?: ServiceProbeFailure;
   /**
    * Live probe result: `true`/`false` when probed, `null` when not probed
    * (unconfigured, or nothing cheap to ping).
@@ -60,7 +71,6 @@ export interface ServiceStatusResponseDto {
   checkedAt: string;
 }
 
-/** One editable sample-data field for a gallery template (e.g. a recipient's display name). */
 export interface MailTemplateFieldDto {
   key: string;
   label: string;
@@ -69,7 +79,6 @@ export interface MailTemplateFieldDto {
   multiline?: boolean;
 }
 
-/** One entry in the admin email-template gallery. */
 export interface MailTemplateInfoDto {
   key: string;
   label: string;
@@ -134,7 +143,6 @@ export interface AdminPushBroadcastResponseDto {
   failureCount: number;
 }
 
-/** One device an account has subscribed to push on. */
 export interface AdminPushDeviceDto {
   id: string;
   userAgent: string | null;
@@ -153,7 +161,6 @@ export interface SchemaGraphResponseDto {
 
 export type JobStatus = "SUCCESS" | "FAILURE";
 
-/** One completed execution of a scheduled/admin-triggered job. */
 export interface JobRunDto {
   id: string;
   jobKey: string;
@@ -166,12 +173,14 @@ export interface JobRunDto {
   error: string | null;
 }
 
-/** One background job the admin can inspect/trigger, with its recent runs. */
+/**
+ * One background job the admin can inspect/trigger, with its recent runs.
+ *
+ * Carries no label or schedule: both are presentation, derived from `key` by
+ * the web (`adminJobLabel`/`adminJobSchedule`), like an `ErrorCode` message.
+ */
 export interface JobDto {
   key: string;
-  label: string;
-  /** Cron schedule, human-readable (e.g. "Toutes les heures"). */
-  schedule: string;
   /** Most recent runs first. */
   runs: JobRunDto[];
 }
@@ -183,7 +192,6 @@ export interface JobListResponseDto {
 /** Bucket granularity for the admin trend charts. */
 export type TrendPeriod = "day" | "week" | "month" | "year";
 
-/** One bucket in a trend series. */
 export interface TrendPointDto {
   /** ISO date (UTC) of the bucket's start. */
   periodStart: string;
@@ -192,10 +200,8 @@ export interface TrendPointDto {
 
 /**
  * The few instance counters the admin *dashboard* (/admin) and
- * /admin/communications need for their status strips — deliberately not a
- * statistics payload. Everything analytical lives on /admin/stats, section by
- * section (dto/admin-stats.ts); this is what remains of the former
- * `AdminStatsDto` once that page took over.
+ * /admin/communications need for their status strips, not a statistics
+ * payload. Everything analytical lives on /admin/stats (dto/admin-stats.ts).
  */
 export interface AdminOverviewDto {
   accounts: number;
@@ -209,7 +215,6 @@ export interface AdminOverviewDto {
   cachedItems: number;
 }
 
-/** One cached catalogue item (media/game/book/album), as browsed on the admin cache page. */
 export interface AdminCacheItemDto {
   id: string;
   domain: Domain;
@@ -241,7 +246,6 @@ export interface AdminCacheListResponseDto extends PagedResult<AdminCacheItemDto
   orphanTotal: number;
 }
 
-/** One external identifier a cached item carries (its source + id in that source). */
 export interface AdminCacheExternalIdDto {
   source: string;
   externalId: string;
@@ -278,7 +282,6 @@ export interface AdminCacheDeleteOrphansResultDto {
   skipped: number;
 }
 
-/** One registered account, as listed in the admin users page. */
 export interface AdminUserDto {
   id: string;
   email: string;
@@ -294,10 +297,23 @@ export interface AdminUserDto {
   lastActiveAt: string | null;
   /** Set once the inactivity reminder email has been sent, null otherwise. */
   inactivityWarningSentAt: string | null;
+  /** Total XP (`UserScore`), 0 before any gain. */
+  xp: number;
+}
+
+/** A manual XP correction: a signed amount, never zero. */
+export interface AdjustAdminUserXpRequestDto {
+  amount: number;
+}
+
+/** The account's total XP once an adjustment is applied. */
+export interface AdminUserXpDto {
+  xp: number;
 }
 
 /** Extra server-side filter for the admin users list, on top of free-text search. */
-export type AdminUserFilter = "all" | "admin" | "unverified" | "never";
+export type AdminUserFilter =
+  "all" | "admin" | "unverified" | "never" | "premium";
 
 /** Compact breakdown of the works saved in one account's libraries. */
 export interface AdminUserLibraryStatsDto {
@@ -310,11 +326,7 @@ export interface AdminUserLibraryStatsDto {
   total: number;
 }
 
-/**
- * Minimal, unpaginated account list for a picker (UserSelector, the
- * communications broadcast target field) — distinct from `AdminUserDto`,
- * which now comes paginated from the admin users page itself.
- */
+/** Minimal account result returned by the paginated admin picker search. */
 export interface AdminUserOptionDto {
   id: string;
   displayName: string;
@@ -348,6 +360,18 @@ export interface AdminBackupFileDto {
   filename: string;
   sizeBytes: number;
   createdAt: string;
+  status: "AVAILABLE" | "MISSING";
+}
+
+export interface AdminOrphanBackupFileDto {
+  filename: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface AdminBackupInventoryDto {
+  files: AdminBackupFileDto[];
+  orphans: AdminOrphanBackupFileDto[];
 }
 
 /**
@@ -366,7 +390,6 @@ export interface AdminBackupRestoreRequestDto {
   currentPassword: string;
 }
 
-/** One sensitive account action, as listed on the admin "Sécurité" page. */
 export interface SecurityEventDto {
   id: string;
   type: SecurityEventType;
@@ -380,7 +403,6 @@ export interface SecurityEventDto {
   createdAt: string;
 }
 
-/** One committed import (analyze-only runs write nothing and aren't logged here). */
 export interface AdminImportRunDto {
   id: string;
   /** Null once the account has since been deleted. */
@@ -426,7 +448,6 @@ export interface AdminImportSummaryDto {
   bySource: AdminImportSourceStatDto[];
 }
 
-/** One account ranked by how many reports it filed. */
 export interface AdminTopReporterDto {
   username: string;
   reports: number;
@@ -449,7 +470,6 @@ export interface AdminReportsSummaryDto {
   topReporters: AdminTopReporterDto[];
 }
 
-/** One identifier targeted by failed logins over the summary's recent window. */
 export interface AdminFailedLoginTargetDto {
   /** Email or username the failed attempts were made against. */
   identifier: string;
@@ -472,7 +492,6 @@ export interface AdminSecuritySummaryDto {
   topTargets7d: AdminFailedLoginTargetDto[];
 }
 
-/** Active push subscriptions sharing one user-agent family. */
 export interface AdminPushUserAgentStatDto {
   /** Browser family derived from the stored user-agent ("Chrome", "Safari", "Inconnu"…). */
   label: string;

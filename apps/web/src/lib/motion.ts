@@ -3,4 +3,5 @@
 // added to the app is gated through this snapshot instead.
 export const prefersReducedMotion = (): boolean =>
   typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (document.documentElement.classList.contains("a11y-reduce-motion") ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches);

@@ -2,14 +2,17 @@ import {
   ErrorCode,
   type FollowRequestDto,
   NotificationType,
+  type PagedResult,
   ProfileAccess,
   type RelationshipDto,
   type UserSummaryDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
+import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED } from "../gamification/achievements/registry";
+import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
@@ -33,6 +36,7 @@ export class FollowService {
     private readonly notifications: NotificationService,
     private readonly achievements: AchievementService,
     private readonly blocks: BlockService,
+    private readonly events: EventsGateway,
   ) {}
 
   /**
@@ -128,7 +132,7 @@ export class FollowService {
     if (follow.status === "ACCEPTED") {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW,
-        body: "vous suit",
+        body: (copy) => copy.follow.followed,
         dedupeKey: `follow:${viewerId}`,
         urlToActor: true,
       });
@@ -146,9 +150,13 @@ export class FollowService {
     } else {
       await this.notifyActor(target.id, viewerId, {
         type: NotificationType.FOLLOW_REQUEST,
-        body: "souhaite vous suivre",
+        body: (copy) => copy.follow.requested,
         dedupeKey: `request:${viewerId}`,
       });
+      // FOLLOW_REQUEST is excluded from the bell feed (NotificationService's
+      // own FEED_EXCLUDED_TYPES), so it never triggers that live push either
+      // — the pending-requests panel needs its own signal.
+      this.events.emitToUser(target.id, "follow-request-changed");
     }
 
     return this.relationship(viewerId, username);
@@ -157,13 +165,25 @@ export class FollowService {
   /** Unfollows (or cancels a pending request). Idempotent. */
   async unfollow(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.resolveTarget(viewerId, username);
+    const existing = await this.prisma.follow.findUnique({
+      where: {
+        followerId_followeeId: { followerId: viewerId, followeeId: target.id },
+      },
+      select: { status: true },
+    });
     await this.prisma.follow.deleteMany({
       where: { followerId: viewerId, followeeId: target.id },
     });
+
+    // A cancelled request should disappear from the target's pending list
+    // live, the same way a new one appears.
+    if (existing?.status === "PENDING") {
+      this.events.emitToUser(target.id, "follow-request-changed");
+    }
+
     return this.relationship(viewerId, username);
   }
 
-  /** Approves a pending incoming request (identified by the Follow row id). */
   async acceptRequest(userId: string, followId: string): Promise<void> {
     const follow = await this.prisma.follow.findUnique({
       where: { id: followId },
@@ -188,7 +208,7 @@ export class FollowService {
     // Tell the requester their request was approved (they can now see us).
     await this.notifyActor(follow.followerId, userId, {
       type: NotificationType.FOLLOW_ACCEPTED,
-      body: "a accepté votre demande",
+      body: (copy) => copy.follow.accepted,
       dedupeKey: `accept:${userId}`,
       urlToActor: true,
     });
@@ -213,7 +233,8 @@ export class FollowService {
     actorId: string,
     opts: {
       type: NotificationType;
-      body: string;
+      /** Built from the recipient's own copy bundle — the text is persisted. */
+      body: (copy: NotificationCopy) => string;
       dedupeKey: string;
       /** Link to the actor's profile, or a fixed url, or neither. */
       urlToActor?: boolean;
@@ -226,11 +247,13 @@ export class FollowService {
     });
     if (!actor) return;
 
+    const copy = await this.notifications.copyFor(recipientId);
+
     await this.notifications.create({
       userId: recipientId,
       type: opts.type,
       title: actor.displayName,
-      body: opts.body,
+      body: opts.body(copy),
       url: opts.urlToActor ? `/app/u/${actor.username}` : (opts.url ?? null),
       dedupeKey: opts.dedupeKey,
       data: {
@@ -240,7 +263,6 @@ export class FollowService {
     });
   }
 
-  /** Rejects a pending incoming request. */
   async rejectRequest(userId: string, followId: string): Promise<void> {
     const { count } = await this.prisma.follow.deleteMany({
       where: { id: followId, followeeId: userId, status: "PENDING" },
@@ -252,7 +274,11 @@ export class FollowService {
       );
   }
 
-  /** Blocks a user: removes any follow edges both ways, then records the block. */
+  /**
+   * Blocks a user: removes any follow edges both ways, then records the block.
+   * Also ends any editing of each other's lists — only friends can edit a
+   * list, and a block ends the friendship.
+   */
   async block(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
       where: { username },
@@ -273,6 +299,16 @@ export class FollowService {
       );
     }
 
+    const memberships = await this.prisma.listMember.findMany({
+      where: {
+        OR: [
+          { userId: target.id, list: { userId: viewerId } },
+          { userId: viewerId, list: { userId: target.id } },
+        ],
+      },
+      select: { id: true, listId: true, userId: true },
+    });
+
     await this.prisma.$transaction([
       this.prisma.follow.deleteMany({
         where: {
@@ -289,11 +325,24 @@ export class FollowService {
         update: {},
         create: { blockerId: viewerId, blockedId: target.id },
       }),
+      this.prisma.listMember.deleteMany({
+        where: { id: { in: memberships.map((m) => m.id) } },
+      }),
+      this.prisma.listNotificationMute.deleteMany({
+        where: {
+          OR: memberships.map((m) => ({ listId: m.listId, userId: m.userId })),
+        },
+      }),
     ]);
+
+    for (const membership of memberships) {
+      this.events.emitToList(membership.listId, "list-updated");
+      await this.events.evictFromList(membership.listId, membership.userId);
+    }
+
     return this.relationship(viewerId, username);
   }
 
-  /** Lifts a block. */
   async unblock(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
       where: { username },
@@ -310,7 +359,6 @@ export class FollowService {
     return this.relationship(viewerId, username);
   }
 
-  /** The viewer's relationship to a username. */
   async relationship(
     viewerId: string,
     username: string,
@@ -328,7 +376,6 @@ export class FollowService {
     return this.visibility.toRelationshipDto(relation);
   }
 
-  /** Pending incoming follow requests awaiting the user's approval. */
   async listRequests(userId: string): Promise<FollowRequestDto[]> {
     const rows = await this.prisma.follow.findMany({
       where: { followeeId: userId, status: "PENDING" },
@@ -346,7 +393,27 @@ export class FollowService {
     }));
   }
 
-  /** Accepted followers of a user. */
+  /** Accounts this user chose to block, with the action needed to reverse it. */
+  async listBlocked(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResult<UserSummaryDto>> {
+    const rows = await this.prisma.block.findMany({
+      where: { blockerId: userId },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit + 1,
+      select: { blocked: { select: USER_SUMMARY_SELECT } },
+    });
+    const hasMore = rows.length > limit;
+
+    return {
+      hasMore,
+      items: rows.slice(0, limit).map((row) => toUserSummaryDto(row.blocked)),
+    };
+  }
+
   async listFollowers(userId: string): Promise<UserSummaryDto[]> {
     const rows = await this.prisma.follow.findMany({
       where: { followeeId: userId, status: "ACCEPTED" },
@@ -356,7 +423,6 @@ export class FollowService {
     return rows.map((r) => toUserSummaryDto(r.follower));
   }
 
-  /** Users a user follows (accepted). */
   async listFollowing(userId: string): Promise<UserSummaryDto[]> {
     const rows = await this.prisma.follow.findMany({
       where: { followerId: userId, status: "ACCEPTED" },
@@ -370,8 +436,8 @@ export class FollowService {
    * Every user id `userId` is a friend of, per `computeIsFriend` — a PRIVATE
    * account followed (their acceptance already means friend-level), or a
    * PUBLIC account followed back. Two queries, not one per candidate: the
-   * [G7] friends-scoped leaderboard is the first caller that needs the whole
-   * set at once rather than a single pairwise relation.
+   * leaderboard needs the whole set at once rather than a single pairwise
+   * relation.
    */
   async listFriendIds(userId: string): Promise<string[]> {
     const [followees, followers] = await Promise.all([

@@ -50,8 +50,11 @@ export function extractConstraintParams(
  * (RegExp, object, function...) is dropped.
  */
 function sanitizeParams(
-  raw: unknown[],
+  // Typed `any[]` by class-validator, but left undefined at runtime for
+  // argument-less decorators (@IsString, @ArrayNotEmpty...).
+  raw: unknown[] | undefined,
 ): (string | number | boolean)[] | undefined {
+  if (!raw) return undefined;
   const sanitized = raw
     .map(sanitizeParam)
     .filter((v): v is string | number | boolean => v !== undefined);

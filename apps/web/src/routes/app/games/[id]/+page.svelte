@@ -15,11 +15,12 @@
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -39,7 +40,7 @@
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { formatDate } from "$lib/format";
+  import { formatDate, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { slide } from "svelte/transition";
@@ -82,6 +83,9 @@
   );
 
   const entry = $derived(detail?.entry ?? null);
+  const reviewMeta = $derived(
+    detail ? joinMeta(m.game_type(), detail.year) : "",
+  );
   const hasMeta = $derived(
     !!detail &&
       (detail.developers.length > 0 ||
@@ -256,8 +260,16 @@
                 {detail.genres.slice(0, 3).join(", ")}
               {/if}
             </p>
-            {#if detail.ratings.length > 0}
+            {#if entry || detail.ratings.length > 0}
               <div class="mt-2.5 flex flex-wrap gap-1.5">
+                {#if entry}
+                  <MyRatingBadge
+                    targetType="GAME"
+                    targetId={entry.game.id}
+                    workTitle={detail.title}
+                    workMeta={reviewMeta}
+                    workImageUrl={detail.coverUrl} />
+                {/if}
                 {#each detail.ratings as r (r.source)}
                   <svelte:element
                     this={r.url ? "a" : "span"}
@@ -321,7 +333,6 @@
           </div>
         {/if}
 
-        <!-- Actions -->
         {#if !entry}
           <div class="mt-6">
             <button
@@ -466,10 +477,26 @@
           <ReviewsSection
             targetType="GAME"
             targetId={entry.game.id}
-            workTitle={detail.title} />
-          {#if appConfig.socialEnabled}
-            <CommentThread targetType="GAME" targetId={entry.game.id} />
-          {/if}
+            workTitle={detail.title}
+            workMeta={reviewMeta}
+            workImageUrl={detail.coverUrl}>
+            {#snippet actions()}
+              {#if appConfig.socialEnabled && detail.commentTargetId}
+                <CommentsPanel
+                  targetType="GAME"
+                  targetId={detail.commentTargetId}
+                  title={detail.title}
+                  canParticipate={!!entry} />
+              {/if}
+            {/snippet}
+          </ReviewsSection>
+        {/if}
+        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
+          <CommentsPanel
+            targetType="GAME"
+            targetId={detail.commentTargetId}
+            title={detail.title}
+            canParticipate={!!entry} />
         {/if}
       </div>
 

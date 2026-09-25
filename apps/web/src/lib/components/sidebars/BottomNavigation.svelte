@@ -28,7 +28,12 @@
   }
 </script>
 
-<!-- Séance signature: a "ticket stub" bar — the active tab punches up
+<!-- Labels are truncated, and dropped to screen readers only under 360px:
+     with 7 shortcuts a cell is 45px wide there, while "Calendrier" needs 52px,
+     so the labels used to run into each other. The icon and the accessible
+     name stay, so nothing becomes unreachable.
+
+     Séance signature: a "ticket stub" bar — the active tab punches up
      through the line, sitting in a lit amber notch, and the top edge is
      perforated like a torn ticket. -->
 <nav
@@ -47,11 +52,13 @@
       <button
         onclick={openMenu}
         aria-label={m.nav_open_menu()}
-        class="text-dim flex flex-1 flex-col items-center gap-1 text-[0.62rem] font-semibold">
+        class="text-dim flex min-w-0 flex-1 flex-col items-center gap-1 text-[0.62rem] font-semibold">
         <span class="grid h-9 w-9 place-items-center rounded-full">
           <Icon name={item.icon} class="h-5 w-5" />
         </span>
-        {item.label}
+        <span class="w-full truncate px-0.5 max-[359px]:sr-only">
+          {item.label}
+        </span>
       </button>
     {:else}
       {@const active = item.match(page.url.pathname)}
@@ -59,7 +66,7 @@
         href={item.href}
         aria-current={active ? "page" : undefined}
         class="
-          relative flex flex-1 flex-col items-center gap-1
+          relative flex min-w-0 flex-1 flex-col items-center gap-1
           text-[0.62rem]
           font-semibold
           transition-transform
@@ -83,7 +90,9 @@
           {/if}
         </span>
 
-        {item.label}
+        <span class="w-full truncate px-0.5 max-[359px]:sr-only">
+          {item.label}
+        </span>
       </a>
     {/if}
   {/each}

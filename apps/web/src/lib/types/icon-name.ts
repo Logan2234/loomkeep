@@ -20,6 +20,7 @@ export type IconName =
   | "chevron-down"
   | "download"
   | "bell"
+  | "bell-off"
   | "monitor"
   | "plus"
   | "trash"
@@ -50,6 +51,7 @@ export type IconName =
   | "share"
   | "qr-code"
   | "camera"
+  | "globe"
   | "link"
   | "logout"
   | "sparkles"
@@ -69,4 +71,5 @@ export type IconName =
   | "pumpkin"
   | "crown"
   | "key"
+  | "keyboard"
   | "send";

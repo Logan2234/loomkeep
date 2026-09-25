@@ -56,6 +56,7 @@ const MESSAGES = {
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
     m.apierr_admin_cache_resync_failed(),
+  [ErrorCode.EeUnlicensed]: () => m.apierr_ee_unlicensed(),
   [ErrorCode.LibraryEpisodeNotAired]: () =>
     m.apierr_library_episode_not_aired(),
   [ErrorCode.LibraryCalendarUnavailable]: () =>
@@ -98,6 +99,7 @@ const MESSAGES = {
   [ErrorCode.AdminUserNotFound]: () => m.apierr_admin_user_not_found(),
   [ErrorCode.AdminForbidden]: () => m.apierr_admin_forbidden(),
   [ErrorCode.AdminBackupNotFound]: () => m.apierr_admin_backup_not_found(),
+  [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
   [ErrorCode.AdminMisconfigured]: () => m.apierr_admin_misconfigured(),
   [ErrorCode.AdminUnauthorized]: () => m.apierr_admin_unauthorized(),
   [ErrorCode.CommentUnknownTargetType]: () =>
@@ -105,6 +107,10 @@ const MESSAGES = {
   [ErrorCode.CommentParentNotFound]: () => m.apierr_comment_parent_not_found(),
   [ErrorCode.CommentNotFound]: () => m.apierr_comment_not_found(),
   [ErrorCode.CommentForbidden]: () => m.apierr_comment_forbidden(),
+  [ErrorCode.CommentParticipationRequiresLibrary]: () =>
+    m.apierr_comment_participation_requires_library(),
+  [ErrorCode.CommentInteractionBlocked]: () =>
+    m.apierr_comment_interaction_blocked(),
   [ErrorCode.ListInvalidMembershipTarget]: () =>
     m.apierr_lists_invalid_membership_target(),
   [ErrorCode.ListNotFound]: () => m.apierr_lists_not_found(),
@@ -120,6 +126,7 @@ const MESSAGES = {
   [ErrorCode.ListCannotAddSelf]: () => m.apierr_lists_cannot_add_self(),
   [ErrorCode.ListMemberAlreadyEditor]: () =>
     m.apierr_lists_member_already_editor(),
+  [ErrorCode.ListMemberNotFriend]: () => m.apierr_lists_member_not_friend(),
   [ErrorCode.ListMembershipNotFound]: () =>
     m.apierr_lists_membership_not_found(),
   [ErrorCode.NewsletterWebhookInvalidPayload]: () =>
@@ -134,6 +141,9 @@ const MESSAGES = {
   [ErrorCode.ReportReasonRequired]: () => m.apierr_reports_reason_required(),
   [ErrorCode.ReportInvalidMotif]: () => m.apierr_reports_invalid_motif(),
   [ErrorCode.ReportNotFound]: () => m.apierr_reports_not_found(),
+  [ErrorCode.ReportAlreadyFiled]: () => m.apierr_reports_already_filed(),
+  [ErrorCode.ReportCannotReportOwnContent]: () =>
+    m.apierr_reports_cannot_report_own_content(),
   [ErrorCode.ReviewUnknownTargetType]: () =>
     m.apierr_reviews_unknown_target_type(),
   [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),
@@ -208,6 +218,8 @@ const MESSAGES = {
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
   [ErrorCode.GamificationAchievementNotFound]: () =>
     m.apierr_gamification_achievement_not_found(),
+  [ErrorCode.GamificationXpBelowZero]: () =>
+    m.apierr_gamification_xp_below_zero(),
   [ErrorCode.GamificationFeatureDisabled]: () =>
     m.apierr_gamification_feature_disabled(),
   [ErrorCode.GamificationBadgeSecret]: () =>
@@ -217,11 +229,8 @@ const MESSAGES = {
 } satisfies Record<ErrorCode, () => string>;
 
 /**
- * Generic message per HTTP status, used whenever `code` is null (a throw
- * site not yet migrated to AppException) or unknown to this build (a newer
- * API than the deployed/cached PWA). This fallback is what keeps every
- * un-migrated API error rendering cleanly — see the
- * "Migrate API errors to error codes, domain by domain" ticket.
+ * Generic message per HTTP status, used when `code` is absent or unknown to
+ * this build, such as when a cached PWA talks to a newer API.
  */
 const STATUS_MESSAGES: Record<number, () => string> = {
   400: () => m.apierr_status_400(),
@@ -251,13 +260,9 @@ function statusFallback(err: ApiError): string {
  * Translates an error from an API call into a user-facing string. Always
  * use this instead of reading `err.message` directly — that's the API's
  * dev-facing English text (see ApiError's doc comment), never meant for
- * display. `request()` (./core.ts) wraps every failure — including a
- * rejected fetch (offline, VPS down) — into an ApiError, so a non-ApiError
- * reaching this function is a bug in the calling code, not a real API
- * failure; it gets the same generic message as an unrecognized 5xx rather
- * than a bespoke per-call-site fallback (there used to be one — it was
- * essentially never exercised once the status/network fallbacks below
- * existed, so it was dead weight, not a real safety net).
+ * display. `request()` wraps every failure, including rejected fetches, into
+ * an ApiError. A non-ApiError therefore indicates a caller bug and receives
+ * the generic fallback.
  */
 export function resolveApiError(err: unknown): string {
   if (!(err instanceof ApiError)) {

@@ -5,7 +5,7 @@ import type {
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import type { MediaItem } from "@prisma/client";
+import { Prisma, type MediaItem } from "@prisma/client";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -14,6 +14,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AnilistProvider } from "./providers/anilist.provider";
 import type {
   CatalogProvider,
+  ProviderEpisode,
   ProviderMediaDetails,
 } from "./providers/provider.types";
 import { TmdbProvider } from "./providers/tmdb.provider";
@@ -35,6 +36,10 @@ const MAX_REFRESHED_PER_RUN = 500;
 // few independent media items overlap their network latency instead of
 // refreshing one at a time.
 const REFRESH_CONCURRENCY = 3;
+
+// Episode rows whose title or air date actually changed, updated at a time.
+// Matches REFRESH_CONCURRENCY above: same pool, same reason to bound it.
+const EPISODE_UPDATE_CONCURRENCY = 3;
 
 // The language the base MediaItem row's own title/overview/genres are always
 // fetched in (providers default to English when no `lang` is passed). Only
@@ -71,8 +76,8 @@ export class MediaItemService {
       () => this.runRefreshStale(),
       (refreshed) =>
         refreshed > 0
-          ? `${refreshed} média(s) rafraîchi(s)`
-          : "Rien à rafraîchir",
+          ? `${refreshed} media item(s) refreshed`
+          : "Nothing to refresh",
     );
   }
 
@@ -387,24 +392,7 @@ export class MediaItemService {
         create: { mediaItemId, number: season.number, title: season.title },
       });
 
-      for (const episode of season.episodes) {
-        const airDate = episode.airDate ? new Date(episode.airDate) : null;
-        await this.prisma.episode.upsert({
-          where: {
-            seasonId_number: {
-              seasonId: storedSeason.id,
-              number: episode.number,
-            },
-          },
-          update: { title: episode.title, airDate },
-          create: {
-            seasonId: storedSeason.id,
-            number: episode.number,
-            title: episode.title,
-            airDate,
-          },
-        });
-      }
+      await this.syncEpisodes(storedSeason.id, season.episodes);
     }
 
     // Refresh whatever locale translations already exist, on this same
@@ -434,6 +422,82 @@ export class MediaItemService {
     }
 
     return item;
+  }
+
+  /**
+   * Brings one season's episodes in line with the provider in a fixed number
+   * of queries: read what's stored, insert what's missing, and update only
+   * the rows whose title or air date actually moved.
+   *
+   * It used to be one upsert per episode, strictly sequential — thousands of
+   * round-trips for a long-running series, on a path taken both by the
+   * 6-hourly cron and by upsertEntry on a synchronous user request. The
+   * common case (nothing changed since the last sync) now costs one read.
+   *
+   * Inserts only, never deletes: an EpisodeWatch must always keep a valid
+   * target, even if the source reorganises its listing.
+   */
+  private async syncEpisodes(
+    seasonId: string,
+    episodes: ProviderEpisode[],
+  ): Promise<void> {
+    if (episodes.length === 0) return;
+
+    const stored = await this.prisma.episode.findMany({
+      where: { seasonId },
+      select: { number: true, title: true, airDate: true },
+    });
+    const byNumber = new Map(stored.map((e) => [e.number, e]));
+
+    const toCreate: Prisma.EpisodeCreateManyInput[] = [];
+    const toUpdate: {
+      number: number;
+      title: string | null;
+      airDate: Date | null;
+    }[] = [];
+
+    for (const episode of episodes) {
+      const airDate = episode.airDate ? new Date(episode.airDate) : null;
+      const current = byNumber.get(episode.number);
+
+      if (!current) {
+        toCreate.push({
+          seasonId,
+          number: episode.number,
+          title: episode.title,
+          airDate,
+        });
+      } else if (
+        current.title !== episode.title ||
+        current.airDate?.getTime() !== airDate?.getTime()
+      ) {
+        toUpdate.push({
+          number: episode.number,
+          title: episode.title,
+          airDate,
+        });
+      }
+    }
+
+    if (toCreate.length > 0) {
+      // skipDuplicates: a concurrent refresh of the same media can insert the
+      // same episodes between the read above and this write — the same race
+      // upsertFromSource already adopts rather than fails on.
+      await this.prisma.episode.createMany({
+        data: toCreate,
+        skipDuplicates: true,
+      });
+    }
+
+    // Bounded rather than Promise.all: a provider-wide retitling (or a first
+    // sync after a listing overhaul) can touch every episode at once, and an
+    // unbounded fan-out would empty the connection pool.
+    await mapWithConcurrency(toUpdate, EPISODE_UPDATE_CONCURRENCY, (episode) =>
+      this.prisma.episode.update({
+        where: { seasonId_number: { seasonId, number: episode.number } },
+        data: { title: episode.title, airDate: episode.airDate },
+      }),
+    );
   }
 
   private baseFields(details: ProviderMediaDetails) {

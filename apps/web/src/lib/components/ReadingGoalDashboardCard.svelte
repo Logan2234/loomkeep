@@ -1,8 +1,4 @@
 <script lang="ts">
-  // Dashboard sidebar card for the reading goal — bigger sibling of
-  // ReadingGoalChip (which stays compact, beside the /books title). Same
-  // gauge + timecode fraction, but with room for a motivational line, since
-  // the whole point of surfacing it on the home page is to nudge the reader.
   import { getReadingGoal } from "$lib/api/books";
   import { m } from "$lib/paraglide/messages.js";
   import type { ReadingGoalDto } from "@loomkeep/shared";

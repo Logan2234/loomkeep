@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -158,6 +159,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   } as unknown as WebauthnService;
 
   const sessionCache = new SessionCacheService();
+  const events = { disconnectSession: vi.fn() } as unknown as EventsGateway;
 
   const service = new AuthService(
     prisma,
@@ -171,6 +173,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     mfa,
     webauthn,
     sessionCache,
+    events,
   );
 
   return {
@@ -186,6 +189,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     mfa,
     webauthn,
     sessionCache,
+    events,
   };
 }
 
@@ -880,8 +884,8 @@ describe("AuthService.revokeAllSessions", () => {
   // SEC-07: the admin "forcer la déconnexion" action must take effect on the
   // very next request, not after the JwtAuthGuard session cache's TTL —
   // deleting the RefreshToken row alone isn't enough.
-  it("evicts every revoked session from the session cache", async () => {
-    const { service, prisma, sessionCache } = makeService();
+  it("evicts every revoked session from the session cache and disconnects its socket", async () => {
+    const { service, prisma, sessionCache, events } = makeService();
     (prisma.refreshToken.findMany as Mock).mockResolvedValue([
       { id: "session-a" },
       { id: "session-b" },
@@ -893,6 +897,8 @@ describe("AuthService.revokeAllSessions", () => {
 
     expect(sessionCache.isKnownLive("session-a")).toBe(false);
     expect(sessionCache.isKnownLive("session-b")).toBe(false);
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-a");
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-b");
   });
 });
 
@@ -907,8 +913,8 @@ describe("AuthService.revokeOtherSessions", () => {
     });
   });
 
-  it("evicts the revoked sessions from the cache but keeps the current one", async () => {
-    const { service, prisma, sessionCache } = makeService();
+  it("evicts the revoked sessions from the cache but keeps the current one, and disconnects only the revoked socket", async () => {
+    const { service, prisma, sessionCache, events } = makeService();
     (prisma.refreshToken.findMany as Mock).mockResolvedValue([
       { id: "session-b" },
     ]);
@@ -919,6 +925,10 @@ describe("AuthService.revokeOtherSessions", () => {
 
     expect(sessionCache.isKnownLive("session-b")).toBe(false);
     expect(sessionCache.isKnownLive("current-session")).toBe(true);
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-b");
+    expect(events.disconnectSession).not.toHaveBeenCalledWith(
+      "current-session",
+    );
   });
 });
 
@@ -933,8 +943,8 @@ describe("AuthService.logout", () => {
     });
   });
 
-  it("evicts the logged-out session from the cache", async () => {
-    const { service, prisma, sessionCache } = makeService();
+  it("evicts the logged-out session from the cache and disconnects its socket", async () => {
+    const { service, prisma, sessionCache, events } = makeService();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "session-a",
     });
@@ -943,6 +953,7 @@ describe("AuthService.logout", () => {
     await service.logout("some-refresh-token");
 
     expect(sessionCache.isKnownLive("session-a")).toBe(false);
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-a");
   });
 });
 
@@ -1033,8 +1044,8 @@ describe("AuthService.resetPassword", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("updates the password, revokes every session and reset token, and emails a confirmation", async () => {
-    const { service, prisma, mail, security } = makeService();
+  it("updates the password, revokes every session and reset token, disconnects every live socket, and emails a confirmation", async () => {
+    const { service, prisma, mail, security, events } = makeService();
     const user = makeUser();
     (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
@@ -1042,6 +1053,10 @@ describe("AuthService.resetPassword", () => {
       expiresAt: new Date(Date.now() + 1000),
       user,
     });
+    (prisma.refreshToken.findMany as Mock).mockResolvedValue([
+      { id: "session-a" },
+      { id: "session-b" },
+    ]);
 
     await service.resetPassword("good-token", "brand-new-password");
 
@@ -1066,6 +1081,8 @@ describe("AuthService.resetPassword", () => {
         userId: "user-1",
       }),
     );
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-a");
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-b");
   });
 });
 

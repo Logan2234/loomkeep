@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -9,6 +10,7 @@ import { UsersModule } from "../users/users.module";
 import { ImportJobService } from "./import-job.service";
 import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
+import { BabelioImportSource } from "./sources/books/babelio.source";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
 import { MediaMatchResolver } from "./sources/media/media-match-resolver";
@@ -35,6 +37,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     ReviewsModule,
     EntitlementModule,
     GamificationModule,
+    EventsModule,
   ],
   controllers: [ImportController],
   providers: [
@@ -47,6 +50,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     MyAnimeListImportSource,
     StoryGraphImportSource,
     GoodreadsImportSource,
+    BabelioImportSource,
     SteamImportSource,
     {
       provide: IMPORT_SOURCES,
@@ -58,6 +62,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
         MyAnimeListImportSource,
         StoryGraphImportSource,
         GoodreadsImportSource,
+        BabelioImportSource,
         SteamImportSource,
       ],
     },

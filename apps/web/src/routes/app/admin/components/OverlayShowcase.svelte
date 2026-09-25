@@ -75,18 +75,14 @@
       </button>
     {/snippet}
     {#snippet children({ close })}
-      <button
-        type="button"
-        role="menuitem"
-        class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
-        onclick={close}>
+      <button type="button" role="menuitem" class="menu-item" onclick={close}>
         <Icon name="edit" class="h-4 w-4" />
         {m.common_edit()}
       </button>
       <button
         type="button"
         role="menuitem"
-        class="text-danger hover:bg-danger/10 flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+        class="menu-item menu-item-danger"
         onclick={close}>
         <Icon name="trash" class="h-4 w-4" />
         {m.common_delete()}

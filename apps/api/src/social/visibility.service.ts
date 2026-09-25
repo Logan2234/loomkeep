@@ -39,7 +39,6 @@ export class VisibilityService {
     private readonly blocks: BlockService,
   ) {}
 
-  /** Resolves the viewer's relationship to a target. */
   async getRelation(
     viewerId: string,
     target: { id: string; profileAccess: ProfileAccess },
@@ -97,7 +96,6 @@ export class VisibilityService {
     };
   }
 
-  /** Public projection of a relationship (drops the internal block-by flag). */
   toRelationshipDto(relation: ViewerRelation): RelationshipDto {
     return {
       isSelf: relation.isSelf,

@@ -12,11 +12,12 @@
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -36,7 +37,7 @@
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { MONTH_YEAR_OPTIONS, formatDate } from "$lib/format";
+  import { MONTH_YEAR_OPTIONS, formatDate, joinMeta } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
 
   // MusicBrainz is the only music source today; the web route carries just the id.
@@ -58,6 +59,9 @@
   const error = $derived(musicQuery.error);
 
   const entry = $derived(detail?.entry ?? null);
+  const reviewMeta = $derived(
+    detail ? joinMeta(detail.artists.join(", "), detail.year) : "",
+  );
 
   // Precise release date, respecting the source's actual precision — a
   // year-only date must not be shown as if it were "1 janvier".
@@ -221,10 +225,19 @@
                 {detail.genres.slice(0, 3).join(", ")}
               {/if}
             </p>
+            {#if entry}
+              <div class="mt-2.5 flex">
+                <MyRatingBadge
+                  targetType="MUSIC"
+                  targetId={entry.album.id}
+                  workTitle={detail.title}
+                  workMeta={reviewMeta}
+                  workImageUrl={detail.coverUrl} />
+              </div>
+            {/if}
           </div>
         </div>
 
-        <!-- Actions -->
         {#if !entry}
           <div class="mt-6">
             <button
@@ -337,10 +350,26 @@
           <ReviewsSection
             targetType="MUSIC"
             targetId={entry.album.id}
-            workTitle={detail.title} />
-          {#if appConfig.socialEnabled}
-            <CommentThread targetType="MUSIC" targetId={entry.album.id} />
-          {/if}
+            workTitle={detail.title}
+            workMeta={reviewMeta}
+            workImageUrl={detail.coverUrl}>
+            {#snippet actions()}
+              {#if appConfig.socialEnabled && detail.commentTargetId}
+                <CommentsPanel
+                  targetType="MUSIC"
+                  targetId={detail.commentTargetId}
+                  title={detail.title}
+                  canParticipate={!!entry} />
+              {/if}
+            {/snippet}
+          </ReviewsSection>
+        {/if}
+        {#if appConfig.socialEnabled && detail.commentTargetId && !entry}
+          <CommentsPanel
+            targetType="MUSIC"
+            targetId={detail.commentTargetId}
+            title={detail.title}
+            canParticipate={!!entry} />
         {/if}
       </div>
 

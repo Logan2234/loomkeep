@@ -44,6 +44,19 @@ interface ApiInfiniteQueryOptions<TPage, TPageParam, TItem> {
   errorToast?: boolean;
 }
 
+export function flattenInfinitePages<TPage, TItem>(
+  pages: readonly TPage[],
+  getPageItems: (
+    page: TPage,
+  ) => readonly (TItem | null | undefined)[] | null | undefined,
+): TItem[] {
+  return pages.flatMap((page) =>
+    (getPageItems(page) ?? []).filter(
+      (item): item is TItem => item !== null && item !== undefined,
+    ),
+  );
+}
+
 export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
   optionsFn: () => ApiInfiniteQueryOptions<TPage, TPageParam, TItem>,
 ) {
@@ -83,9 +96,7 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
   return {
     get data(): TItem[] {
       const opts = optionsFn();
-      return (query.data?.pages ?? []).flatMap((page) =>
-        opts.getPageItems(page),
-      );
+      return flattenInfinitePages(query.data?.pages ?? [], opts.getPageItems);
     },
     // Raw pages, for call sites that also need per-page metadata (a total
     // count) alongside the flattened `data`.
@@ -97,6 +108,9 @@ export function createApiInfiniteQuery<TPage, TPageParam, TItem>(
     },
     get loading() {
       return query.isPending;
+    },
+    get fetching() {
+      return query.isFetching;
     },
     get hasNextPage() {
       return query.hasNextPage;

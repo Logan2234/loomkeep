@@ -7,6 +7,7 @@
   import Poster from "$lib/components/Poster.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { FEEDBACK_URL, GITHUB_REPO_URL } from "$lib/constants/external-links";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { theme } from "$lib/theme.svelte";
   import LandingFooter from "./components/LandingFooter.svelte";
@@ -287,8 +288,7 @@
   ];
 
   $effect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (query.matches) return;
+    if (prefersReducedMotion()) return;
     const id = setInterval(() => {
       verb = (verb + 1) % VERBS.length;
     }, 2200);
@@ -325,8 +325,7 @@
 
 {#snippet primaryCta(label: string, event: string, cls: string)}
   {#if !bootstrap.ready}
-    <!-- Holds the slot rather than leaving it empty: the button used to pop
-         in once /api/config answered, shifting the hero as it landed. -->
+    <!-- Reserve the button slot while /api/config loads to prevent layout shift. -->
     <span class="{cls} invisible" aria-hidden="true">{label}</span>
   {:else if auth.isLoggedIn}
     <a href="/app" class={cls} data-umami-event="{event}-open-app">
@@ -354,7 +353,7 @@
   {/if}
 </svelte:head>
 
-<div class="min-h-screen">
+<div class="min-h-svh">
   <header
     class="border-border bg-bg/85 sticky top-0 z-30 border-b backdrop-blur">
     <div

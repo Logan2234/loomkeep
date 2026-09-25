@@ -1,7 +1,5 @@
 <script lang="ts">
   import { formatNumber } from "$lib/format";
-  // The headline figure of /stats: one big number, its caps label and an
-  // optional secondary line. Every domain section opens on a row of four.
   let {
     value,
     unit,

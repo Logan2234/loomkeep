@@ -45,6 +45,7 @@ export const ErrorCode = {
   AdminUserNotFound: "admin.user_not_found",
   AdminForbidden: "admin.forbidden",
   AdminBackupNotFound: "admin.backup_not_found",
+  AdminBackupNotOrphan: "admin.backup_not_orphan",
   AdminMisconfigured: "admin.misconfigured",
   AdminUnauthorized: "admin.unauthorized",
 
@@ -53,6 +54,8 @@ export const ErrorCode = {
   CommentParentNotFound: "comment.parent_not_found",
   CommentNotFound: "comment.not_found",
   CommentForbidden: "comment.forbidden",
+  CommentParticipationRequiresLibrary: "comment.participation_requires_library",
+  CommentInteractionBlocked: "comment.interaction_blocked",
 
   // lists
   ListInvalidMembershipTarget: "lists.invalid_membership_target",
@@ -66,6 +69,7 @@ export const ErrorCode = {
   ListMemberUserNotFound: "lists.member_user_not_found",
   ListCannotAddSelf: "lists.cannot_add_self",
   ListMemberAlreadyEditor: "lists.member_already_editor",
+  ListMemberNotFriend: "lists.member_not_friend",
   ListMembershipNotFound: "lists.membership_not_found",
 
   // newsletter
@@ -81,6 +85,8 @@ export const ErrorCode = {
   ReportReasonRequired: "reports.reason_required",
   ReportInvalidMotif: "reports.invalid_motif",
   ReportNotFound: "reports.not_found",
+  ReportAlreadyFiled: "reports.already_filed",
+  ReportCannotReportOwnContent: "reports.cannot_report_own_content",
 
   // reviews
   ReviewUnknownTargetType: "reviews.unknown_target_type",
@@ -101,6 +107,9 @@ export const ErrorCode = {
   StatsInvalidRating: "stats.invalid_rating",
   StatsInvalidDecade: "stats.invalid_decade",
   StatsRatingOrDecadeRequired: "stats.rating_or_decade_required",
+
+  // ee — the commercially licensed features (LICENSE-EE)
+  EeUnlicensed: "ee.unlicensed",
 
   // library — entry/replay codes are shared across media/games/books/music,
   // the four domains that each have their own *LibraryService with the same
@@ -166,6 +175,7 @@ export const ErrorCode = {
   // gamification
   GamificationAchievementNotFound: "gamification.achievement_not_found",
   GamificationFeatureDisabled: "gamification.feature_disabled",
+  GamificationXpBelowZero: "gamification.xp_below_zero",
   GamificationBadgeSecret: "gamification.badge_secret",
   GamificationBadgeLimitReached: "gamification.badge_limit_reached",
 

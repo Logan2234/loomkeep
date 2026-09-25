@@ -12,7 +12,7 @@ import { LeaderboardResponseDto } from "./dto/leaderboard-response.dto";
 import { LeaderboardService } from "./leaderboard.service";
 
 /**
- * [G7] Ranks by XP. Gated behind BOTH SocialFeatureGuard and
+ * Ranks by XP. Gated behind both SocialFeatureGuard and
  * GamificationFeatureGuard — a leaderboard needs XP to exist AND other users
  * to rank against, so either flag being off 404s it, same as every other
  * social surface.

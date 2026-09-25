@@ -1,15 +1,6 @@
 <script lang="ts">
-  // [G6] the unlock bubble: what the app says when you come back and
-  // something happened while you were away.
-  //
-  // Anchored at the *top* and mounted once by app/+layout.svelte. It is
-  // neither Toast.svelte (bottom-anchored, several at once, system
-  // messages) nor the notification bell — [G2] settled that an unlock
-  // creates no `Notification` row at all, on purpose.
-  //
-  // The trigger is this component mounting, i.e. entering the app. No
-  // `visibilitychange`, no live push while the user is mid-action: a bubble
-  // dropping in over a click is exactly the interruption the design avoids.
+  // Achievement unlocks arrive live through `achievement-unlocked`. Level-ups
+  // have no server push and therefore surface only when this mounts.
   import { goto } from "$app/navigation";
   import {
     getAchievements,
@@ -35,16 +26,19 @@
   } from "$lib/last-known";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "$lib/realtime/socket";
   import { levelForXp } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
   import { achievementName, entryIcon } from "../achievements/labels";
 
+  const queryClient = useQueryClient();
+
   const reduced = prefersReducedMotion();
 
-  // Everything gamification-shaped is gated on the instance flag, same
-  // pattern as [G4]/[G5]: nothing rendered, nothing requested when it's off.
+  // Nothing is rendered or requested while gamification is disabled.
   const enabled = $derived(appConfig.gamificationEnabled && auth.isLoggedIn);
 
   const levelKey = $derived(`level:${auth.user?.id ?? ""}`);
@@ -70,6 +64,18 @@
     enabled,
   }));
   const pending = $derived(pendingQuery.data ?? []);
+
+  // Pushed live by EventsGateway (see AchievementService.grant()) — an
+  // achievement unlocked while the app is open pops the bubble right away
+  // instead of waiting for the next visit.
+  $effect(() => {
+    if (!enabled) return;
+    return onRealtimeEvent("achievement-unlocked", () => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.gamification.pending(),
+      });
+    });
+  });
 
   // The pending rows carry a bare key; the name, the glyph and the tier ring
   // all live on the catalogue projection, so it is fetched — only when there
@@ -145,9 +151,7 @@
     queue.stop();
     void goto(
       bubble.kind === "achievement"
-        ? // Deep link agreed in [G5]'s design: the screen scrolls to this
-          // achievement's card and flashes it, instead of dropping the user
-          // in front of 42 cards with no clue which one just fired.
+        ? // Point to the card that fired instead of the whole catalogue.
           `/app/achievements?unlocked=${encodeURIComponent(bubble.key)}`
         : // A level isn't an achievement — it lives on the profile, where
           // the reel shows it.

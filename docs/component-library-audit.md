@@ -45,6 +45,8 @@ The locked state must explain why it is unavailable without relying on a disable
 
 **Component:** `RatingPips`.
 
+**Status (2026-09-17):** addressed — `RatingPips` was replaced by `RatingSlider`, a native discrete range input with a separate clear-to-`null` action.
+
 The rating is a single 0–10 value, not eleven independent pressed buttons. Use a radiogroup with roving tabindex or a discrete slider, while preserving a deliberate way to clear to `null` if the product needs it. Increase touch hit areas without making the row visually bulky.
 
 **Regression coverage:** `null`, 0, 10 and selected values; arrow/Home/End keys; clear action; disabled and readonly state; legacy decimal values if supported.

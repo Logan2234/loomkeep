@@ -52,6 +52,8 @@ export const keys = {
   },
   import: {
     availability: () => ["import", "availability"] as const,
+    history: () => ["import", "history"] as const,
+    lastRun: () => ["import", "last-run"] as const,
     quota: () => ["import", "quota"] as const,
     job: (source: string, jobId: string) =>
       ["import", "job", source, jobId] as const,
@@ -65,6 +67,12 @@ export const keys = {
   sessions: {
     all: () => ["sessions", "all"] as const,
   },
+  ee: {
+    status: () => ["ee", "status"] as const,
+  },
+  securityEvents: {
+    all: () => ["security-events", "all"] as const,
+  },
   verification: {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>
@@ -76,6 +84,8 @@ export const keys = {
       ["lists", "membership", targetType, targetId] as const,
     forUser: (username: string) => ["lists", "for-user", username] as const,
     members: (listId: string) => ["lists", "members", listId] as const,
+    memberCandidates: (listId: string) =>
+      ["lists", "member-candidates", listId] as const,
     detail: (listId: string) => ["lists", "detail", listId] as const,
   },
   calendarSubscribe: {
@@ -94,10 +104,15 @@ export const keys = {
   },
   feed: {
     all: () => ["feed"] as const,
+    list: (domain: string | null) => ["feed", "list", domain ?? "ALL"] as const,
     preview: () => ["feed", "preview"] as const,
   },
   notifications: {
     feed: () => ["notifications", "feed"] as const,
+  },
+  social: {
+    followRequests: () => ["social", "follow-requests"] as const,
+    blockedUsers: () => ["social", "blocked-users"] as const,
   },
   profile: {
     activity: (username: string) => ["profile", "activity", username] as const,
@@ -107,6 +122,7 @@ export const keys = {
       ["profile", "connections", username, kind] as const,
   },
   library: {
+    domainCounts: () => ["library", "domain-counts"] as const,
     watching: () => ["library", "watching"] as const,
     plannedMovies: () => ["library", "planned-movies"] as const,
     browse: (
@@ -142,7 +158,7 @@ export const keys = {
     catalogueStats: () => ["admin", "catalogue-stats"] as const,
     socialStats: () => ["admin", "social-stats"] as const,
     systemStats: () => ["admin", "system-stats"] as const,
-    userOptions: () => ["admin", "user-options"] as const,
+    userOptions: (search: string) => ["admin", "user-options", search] as const,
     services: () => ["admin", "services"] as const,
     jobs: () => ["admin", "jobs"] as const,
     backups: () => ["admin", "backups"] as const,
@@ -157,8 +173,18 @@ export const keys = {
     }) => ["admin", "cache-items", filters] as const,
     cacheItem: (domain: string, id: string) =>
       ["admin", "cache-item", domain, id] as const,
-    users: (filters: { query: string; filter: string }) =>
-      ["admin", "users", filters] as const,
+    users: (filters: {
+      query: string;
+      filter: string;
+      createdFrom: string;
+      createdTo: string;
+      activeFrom: string;
+      activeTo: string;
+      mfa: string;
+      newsletter: string;
+      push: string;
+      session: string;
+    }) => ["admin", "users", filters] as const,
     userSessions: (userId: string) =>
       ["admin", "user-sessions", userId] as const,
     userLibraryStats: (userId: string) =>

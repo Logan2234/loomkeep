@@ -17,9 +17,7 @@ export default defineConfig(
     // per-status fallback message. Tests are exempt: they still construct
     // these to assert on thrown types/status, which is fine.
     //
-    // "error": every call site was migrated by the "Migrate API errors to
-    // error codes, domain by domain" ticket — a new bare exception is a
-    // regression, not pre-existing debt.
+    // A new bare exception would bypass the translated error-code contract.
     files: ["src/**/*.ts"],
     ignores: ["src/**/*.spec.ts"],
     rules: {
@@ -29,6 +27,26 @@ export default defineConfig(
           selector: `NewExpression[callee.name=/^(${BARE_EXCEPTION_NAMES})Exception$/]`,
           message:
             "Throw an AppException (apps/api/src/common/app.exception.ts) with an ErrorCode from @loomkeep/shared instead — a bare NestJS exception has no code the web app can translate.",
+        },
+      ],
+    },
+  },
+  {
+    // ee/ is under LICENSE-EE, not the AGPL: the core must run without it,
+    // so only the composition root may import it.
+    files: ["src/**/*.ts"],
+    ignores: ["src/ee/**", "src/app.module.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/ee", "**/ee/**"],
+              message:
+                "The AGPL core must not depend on ee/ (LICENSE-EE) — only app.module.ts registers EeModule.",
+            },
+          ],
         },
       ],
     },

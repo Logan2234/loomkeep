@@ -8,6 +8,16 @@ import nodemailer, { Transporter } from "nodemailer";
 import { QuotaTrackerService } from "../common/quota-tracker.service";
 import { dateLocale, MAIL_COPY, resolveMailLocale } from "./mail.i18n";
 
+/** A provider reaching one of its daily-quota alert thresholds. */
+export interface QuotaAlert {
+  /** Display name, e.g. "OMDb". */
+  provider: string;
+  count: number;
+  limit: number;
+  /** Share of the quota reached: 0.8 or 1. */
+  threshold: number;
+}
+
 export interface MailRecipient {
   email: string;
   locale: string;
@@ -55,10 +65,59 @@ function renderQuackbackEmojiAliases(text: string): string {
   );
 }
 
+function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
+  const normalized = value
+    .replace(
+      /&#(?:x([0-9a-f]+)|([0-9]+));/gi,
+      (match, hex: string | undefined, decimal: string | undefined) => {
+        const numeric = hex ?? decimal;
+        if (!numeric) return match;
+        const codePoint = Number.parseInt(numeric, hex === undefined ? 10 : 16);
+        return codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : match;
+      },
+    )
+    .replace(/&(colon|tab|newline);/gi, (_match, entity: string) => {
+      if (entity.toLowerCase() === "colon") return ":";
+      return "";
+    })
+    .split("")
+    .filter((character) => {
+      const codePoint = character.charCodeAt(0);
+      return (
+        character.trim().length > 0 && codePoint > 0x1f && codePoint !== 0x7f
+      );
+    })
+    .join("")
+    .toLowerCase();
+
+  if (attribute === "src") return /^https?:/.test(normalized);
+  return /^(?:https?:|mailto:)/.test(normalized);
+}
+
+function sanitizeHtmlUrls(html: string): string {
+  return html.replace(
+    /\s(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi,
+    (
+      match,
+      attribute: "href" | "src",
+      doubleQuoted,
+      singleQuoted,
+      unquoted,
+    ) => {
+      const value = doubleQuoted ?? singleQuoted ?? unquoted;
+      return isAllowedUrl(value, attribute.toLowerCase() as "href" | "src")
+        ? match
+        : "";
+    },
+  );
+}
+
 /** Bold/italic/link inline spans within a line — the rest is passed through as-is. */
 function renderInline(text: string): string {
   return escapeHtml(text)
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_match, label, url) =>
+      isAllowedUrl(url, "href") ? `<a href="${url}">${label}</a>` : label,
+    )
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
 }
@@ -234,6 +293,24 @@ export class MailService {
         );
       },
     },
+    quotaAlert: {
+      label: "Alerte de quota fournisseur",
+      fields: [
+        { key: "provider", label: "Fournisseur", default: "OMDb" },
+        { key: "count", label: "Appels du jour", default: "800" },
+        { key: "limit", label: "Quota quotidien", default: "1000" },
+      ],
+      build: (locale, v) => {
+        const limit = Number(v.limit) || 1000;
+        const count = Number(v.count) || 0;
+        return this.buildQuotaAlert(locale, {
+          provider: v.provider,
+          count,
+          limit,
+          threshold: count / limit,
+        });
+      },
+    },
     reportsDigest: {
       label: "Digest des signalements",
       fields: [
@@ -276,7 +353,7 @@ export class MailService {
       fields: [
         {
           key: "measure",
-          label: "Mesure (COMMENT_REMOVED ou ACCOUNT_DELETED)",
+          label: "Mesure (COMMENT_REMOVED, REVIEW_REMOVED ou ACCOUNT_DELETED)",
           default: "COMMENT_REMOVED",
         },
         {
@@ -298,10 +375,11 @@ export class MailService {
       ],
       build: (locale, v) =>
         this.buildModerationDecision(locale, {
-          measure:
-            v.measure === ModerationMeasure.ACCOUNT_DELETED
-              ? ModerationMeasure.ACCOUNT_DELETED
-              : ModerationMeasure.COMMENT_REMOVED,
+          measure: Object.values(ModerationMeasure).includes(
+            v.measure as ModerationMeasure,
+          )
+            ? (v.measure as ModerationMeasure)
+            : ModerationMeasure.COMMENT_REMOVED,
           legalBasis:
             v.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
               ? ModerationLegalBasis.ILLEGAL_CONTENT
@@ -540,6 +618,18 @@ export class MailService {
     });
   }
 
+  /** Tells an admin a provider reached an alert threshold of its daily quota. */
+  async sendQuotaAlert(
+    recipient: MailRecipient,
+    alert: QuotaAlert,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildQuotaAlert(locale, alert),
+    });
+  }
+
   /**
    * warns an inactive account it will be deleted on `deletionDate`
    * (the account-preservation notice required before InactiveAccountService's
@@ -601,6 +691,30 @@ export class MailService {
     });
   }
 
+  private buildQuotaAlert(locale: Locale, alert: QuotaAlert) {
+    const copy = MAIL_COPY[locale].quotaAlert;
+    const percent = Math.round(alert.threshold * 100);
+    const sentence = copy.sentence(
+      alert.provider,
+      percent,
+      alert.count.toLocaleString(locale),
+      alert.limit.toLocaleString(locale),
+    );
+    const exhausted = alert.threshold >= 1 ? copy.exhausted : null;
+    const url = `${this.webOrigin}/app/admin/services`;
+    return {
+      subject: copy.subject(alert.provider, percent),
+      text: [sentence, exhausted, url].filter(Boolean).join("\n\n"),
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(sentence)}</p>
+         ${exhausted ? `<p>${escapeHtml(exhausted)}</p>` : ""}
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
   private buildReportsDigest(
     locale: Locale,
     pendingCount: number,
@@ -635,10 +749,11 @@ export class MailService {
     },
   ): TemplateBody {
     const copy = MAIL_COPY[locale].moderation;
-    const variant =
-      input.measure === ModerationMeasure.COMMENT_REMOVED
-        ? copy.comment
-        : copy.account;
+    const variant = {
+      [ModerationMeasure.COMMENT_REMOVED]: copy.comment,
+      [ModerationMeasure.REVIEW_REMOVED]: copy.review,
+      [ModerationMeasure.ACCOUNT_DELETED]: copy.account,
+    }[input.measure];
     const basisText =
       input.legalBasis === ModerationLegalBasis.ILLEGAL_CONTENT
         ? copy.illegalBasis
@@ -742,7 +857,7 @@ export class MailService {
     // can reach in-app settings directly.
     const url =
       this.umamiLink(UMAMI_LINK_SLUG_NEW_DEVICE_LOGIN) ??
-      `${this.webOrigin}/app/settings#securite`;
+      `${this.webOrigin}/app/settings/securite`;
     return {
       subject: copy.subject,
       text: `${copy.intro(deviceLabel, ipTextSuffix)} ${copy.warning}\n\n${url}`,
@@ -866,7 +981,7 @@ export class MailService {
     const periodLabel = period === "daily" ? copy.today : copy.thisWeek;
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_EPISODE_NOTIFICATIONS) ??
-      `${this.webOrigin}/app/settings#communications`;
+      `${this.webOrigin}/app/settings/communications`;
 
     const listHtml = items
       .map(
@@ -916,7 +1031,7 @@ export class MailService {
       "https://feedback.loomkeep.app/changelog";
     const prefsUrl =
       this.umamiLink(UMAMI_LINK_SLUG_NEWSLETTER_NOTIFICATIONS) ??
-      `${this.webOrigin}/app/settings#communications`;
+      `${this.webOrigin}/app/settings/communications`;
     // Carries a per-recipient token in its query string, so — like "Voir"
     // above — it can't go through a Link (one fixed URL per Link, this one
     // is different for every recipient). Works without being logged in
@@ -934,7 +1049,9 @@ export class MailService {
     // content, reached only through the signed webhook).
     const { html: fallbackHtml, text: contentText } =
       this.renderChangelogMarkdown(contentPreview);
-    const bodyHtml = renderQuackbackEmojiAliases(contentHtml) || fallbackHtml;
+    const bodyHtml = contentHtml
+      ? sanitizeHtmlUrls(renderQuackbackEmojiAliases(contentHtml))
+      : fallbackHtml;
 
     return {
       subject: `Loomkeep — ${title}`,

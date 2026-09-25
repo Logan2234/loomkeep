@@ -29,12 +29,24 @@ export function adminServiceLabel(key: string, label: string): string {
     : label;
 }
 
+const PROBE_FAILURES = {
+  missingKey: () => m.admin_service_missing_key(),
+  timeout: () => m.admin_service_timeout(),
+  network: () => m.admin_service_network_error(),
+  refused: () => m.admin_service_refused(),
+} satisfies Record<NonNullable<ServiceStatusDto["failure"]>, () => string>;
+
 export function adminServiceDetail(service: ServiceStatusDto): string | null {
   if (service.comingSoon) return null;
   if (!service.configured) return m.admin_service_missing_key();
 
   if (service.reachable === false) {
-    return service.detail ?? m.admin_service_unreachable();
+    // `detail` is a provider's own (redacted) message — more useful to an
+    // operator than a label, and untranslatable either way. The code covers
+    // the generic cases the API used to phrase in French itself.
+    if (service.detail) return service.detail;
+    const failure = service.failure && PROBE_FAILURES[service.failure];
+    return failure ? failure() : m.admin_service_unreachable();
   }
 
   return null;
@@ -56,6 +68,16 @@ export function adminJobLabel(key: string): string {
   return Object.hasOwn(JOB_LABELS, key)
     ? JOB_LABELS[key as keyof typeof JOB_LABELS]()
     : key;
+}
+
+export function adminJobButtonState(
+  runningKey: string | null,
+  jobKey: string,
+): { disabled: boolean; running: boolean } {
+  return {
+    disabled: runningKey !== null,
+    running: runningKey === jobKey,
+  };
 }
 
 export function adminJobSchedule(key: string): string | null {
@@ -94,6 +116,7 @@ const TEMPLATE_LABELS = {
   newsletter: () => m.common_newsletter(),
   episodeDigest: () => m.admin_template_episode_digest(),
   reportsDigest: () => m.admin_job_reports_digest(),
+  quotaAlert: () => m.admin_template_quota_alert(),
   newDeviceLogin: () => m.admin_security_new_device(),
   inactivityWarning: () => m.admin_template_inactivity(),
   moderationDecision: () => m.admin_template_moderation(),
@@ -116,6 +139,9 @@ const FIELD_LABELS = {
   legalBasis: () => m.admin_template_basis(),
   reasonText: () => m.admin_moderation_facts(),
   tosClause: () => m.admin_moderation_terms_clause(),
+  provider: () => m.admin_template_provider(),
+  count: () => m.admin_template_calls_today(),
+  limit: () => m.admin_template_daily_quota(),
 };
 
 export function adminTemplateLabel(key: string): string {

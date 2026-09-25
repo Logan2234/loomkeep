@@ -2,11 +2,14 @@ import type {
   ImportAnalyzeRequest,
   ImportAvailabilityDto,
   ImportCommitRequest,
+  ImportHistoryRunDto,
   ImportJobDto,
+  ImportLastRunDto,
   ImportPlan,
   ImportQuotaDto,
   ImportReport,
   ImportSource,
+  PagedResult,
 } from "@loomkeep/shared";
 import { Domain, ErrorCode, XpReason } from "@loomkeep/shared";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
@@ -14,6 +17,7 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
@@ -25,9 +29,10 @@ import {
   type ProgressReporter,
 } from "./import-source";
 
-/** Completed jobs are dropped from memory after this delay. */
 const JOB_RETENTION_MS = 60 * 60 * 1000;
 const MAX_RETAINED_JOBS_PER_USER = 20;
+/** Caps how often a live progress push goes out during a hot tick loop (a large CSV can tick thousands of times). */
+const PROGRESS_EMIT_THROTTLE_MS = 250;
 
 interface JobRecord {
   id: string;
@@ -66,6 +71,7 @@ export class ImportJobService {
     private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly events: EventsGateway,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -117,6 +123,79 @@ export class ImportJobService {
   }
 
   /**
+   * The user's last import attempt, success or failure. Shown at the top of
+   * the import screen so coming back answers "did it work?" without opening
+   * anything. `null` until they have run one.
+   */
+  async getLastRun(userId: string): Promise<ImportLastRunDto> {
+    const run = await this.prisma.importRun.findFirst({
+      where: { userId },
+      orderBy: { finishedAt: "desc" },
+      select: {
+        sourceId: true,
+        domain: true,
+        status: true,
+        itemCount: true,
+        summary: true,
+        finishedAt: true,
+      },
+    });
+
+    if (!run) return { run: null };
+
+    return {
+      run: {
+        sourceId: run.sourceId as ImportSource,
+        domain: run.domain as Domain | null,
+        status: run.status,
+        itemCount: run.itemCount,
+        summary: run.summary,
+        finishedAt: run.finishedAt.toISOString(),
+      },
+    };
+  }
+
+  async getHistory(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PagedResult<ImportHistoryRunDto>> {
+    const rows = await this.prisma.importRun.findMany({
+      where: { userId },
+      orderBy: { finishedAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit + 1,
+      select: {
+        id: true,
+        sourceId: true,
+        domain: true,
+        status: true,
+        itemCount: true,
+        overwrite: true,
+        summary: true,
+        startedAt: true,
+        finishedAt: true,
+      },
+    });
+    const hasMore = rows.length > limit;
+
+    return {
+      hasMore,
+      items: rows.slice(0, limit).map((run) => ({
+        id: run.id,
+        sourceId: run.sourceId as ImportSource,
+        domain: run.domain as Domain | null,
+        status: run.status,
+        itemCount: run.itemCount,
+        overwrite: run.overwrite,
+        summary: run.summary,
+        startedAt: run.startedAt.toISOString(),
+        finishedAt: run.finishedAt.toISOString(),
+      })),
+    };
+  }
+
+  /**
    * Parse the export and, in the background, resolve it into a review
    * {@link ImportPlan} — writing nothing. Returns a pending job to poll.
    */
@@ -136,6 +215,9 @@ export class ImportJobService {
     // first is still awaiting its quota check, and the user gets two imports.
     const job = this.newJob(userId, sourceId, "analyze", null);
     this.jobs.set(job.id, job);
+    // Only the newest analysis can still be committed, so no older one needs
+    // to keep its parse model alive.
+    this.releasePayloads(userId);
 
     let parsed: unknown;
 
@@ -168,7 +250,6 @@ export class ImportJobService {
     return toDto(job);
   }
 
-  /** Commit a previously analysed import with the user's decisions. */
   commit(
     userId: string,
     sourceId: ImportSource,
@@ -230,12 +311,16 @@ export class ImportJobService {
         decisions,
         progress,
       );
-    }).then(() =>
-      this.recordRun(userId, job, decisions.overwrite).catch((err) => {
+    }).then(() => {
+      // Only on success: a failed commit is still retryable from the same
+      // analysis, so its payload has to survive.
+      if (job.status === "completed") this.releasePayload(analyzed);
+
+      return this.recordRun(userId, job, decisions.overwrite).catch((err) => {
         // Audit logging must never take the request path down with it.
         this.logger.error(`Failed to record import run ${job.id}`, err);
-      }),
-    );
+      });
+    });
 
     return toDto(job);
   }
@@ -317,7 +402,6 @@ export class ImportJobService {
     };
   }
 
-  /** Logs a finished commit to the admin "Imports" audit log (analyze runs write nothing). */
   private async recordRun(
     userId: string,
     job: JobRecord,
@@ -355,21 +439,46 @@ export class ImportJobService {
         userId,
         ACHIEVEMENT_KEYS_ON_IMPORT_COMPLETED,
       );
+      // "import" (and often add_title/mark_complete/rate alongside it) is
+      // one of the onboarding checklist's steps (see OnboardingService) —
+      // this also covers ratings the import itself set via ReviewService,
+      // since a full checklist recompute follows any onboarding-updated
+      // event rather than one keyed to a specific step.
+      this.events.emitToUser(userId, "onboarding-updated");
     }
   }
 
   private progressFor(job: JobRecord): ProgressReporter {
+    let lastEmit = 0;
+
+    const emitThrottled = () => {
+      const now = Date.now();
+      if (now - lastEmit < PROGRESS_EMIT_THROTTLE_MS) return;
+      lastEmit = now;
+      this.emitProgress(job);
+    };
+
     return {
       setTotal: (total) => {
         job.progress.total = total;
+        emitThrottled();
       },
       tick: () => {
         job.progress.done++;
+        emitThrottled();
       },
     };
   }
 
-  /** Run the background work, flipping the job to completed/failed when done. */
+  private emitProgress(job: JobRecord): void {
+    this.events.emitToUser(job.userId, "import-progress", {
+      jobId: job.id,
+      done: job.progress.done,
+      total: job.progress.total,
+      status: job.status,
+    });
+  }
+
   private async run(job: JobRecord, work: () => Promise<void>): Promise<void> {
     try {
       await work();
@@ -390,6 +499,32 @@ export class ImportJobService {
           : ErrorCode.InternalError;
     } finally {
       job.finishedAt = Date.now();
+      // Unthrottled: the final status change is rare (once per job) and the
+      // client needs it precisely, unlike the tick stream above.
+      this.emitProgress(job);
+    }
+  }
+
+  /**
+   * Drops a finished job's parse model and plan while keeping the record
+   * itself, so the client can still read the outcome.
+   *
+   * These two are the only large fields: `parsed` is the source's whole
+   * export model, which for a media import is bounded only by Fastify's 25 MB
+   * body limit. The job record around it is a few hundred bytes, and the
+   * report the user comes back for lives there — so the retention window
+   * doesn't need shortening, the payload just shouldn't outlive its use.
+   */
+  private releasePayload(job: JobRecord): void {
+    job.parsed = null;
+    job.plan = null;
+  }
+
+  private releasePayloads(userId: string): void {
+    for (const job of this.jobs.values()) {
+      if (job.userId === userId && job.status !== "running") {
+        this.releasePayload(job);
+      }
     }
   }
 

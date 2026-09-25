@@ -16,6 +16,7 @@ export function getCarouselPageOffsets(
       if (offsets.length > 1) offsets[offsets.length - 1] = offset;
       continue;
     }
+
     offsets.push(offset);
   }
 

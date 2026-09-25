@@ -13,11 +13,13 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from "@nestjs/platform-fastify";
+import { IoAdapter } from "@nestjs/platform-socket.io";
 import * as Sentry from "@sentry/node";
 import { Logger } from "nestjs-pino";
 import { readFile } from "node:fs/promises";
 import { join } from "path";
 import { AppModule } from "./app.module";
+import { registerRequestContext } from "./common/request-context";
 import { ValidationException } from "./common/validation.exception";
 import { MetricsService } from "./metrics/metrics.service";
 
@@ -95,6 +97,11 @@ async function bootstrap() {
     },
   );
 
+  // EventsGateway (WebSocket real-time push) rides socket.io regardless of
+  // the HTTP adapter being Fastify — IoAdapter attaches to the underlying
+  // Node http.Server, which app.getHttpServer() exposes either way.
+  app.useWebSocketAdapter(new IoAdapter(app));
+
   app.useLogger(app.get(Logger));
   // Lets onModuleDestroy hooks (Prisma disconnect, log flush...) run on
   // SIGTERM — otherwise a Docker redeploy kills the process before they fire.
@@ -145,6 +152,8 @@ async function bootstrap() {
       );
       done();
     });
+
+  registerRequestContext(app);
 
   app.setGlobalPrefix("api");
   app.useGlobalPipes(

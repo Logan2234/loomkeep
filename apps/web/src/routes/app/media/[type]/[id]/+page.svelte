@@ -18,11 +18,12 @@
   import { goBack } from "$lib/backNav.svelte";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import CommentThread from "$lib/components/CommentThread.svelte";
+  import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
@@ -36,7 +37,7 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
-  import { formatDate } from "$lib/format";
+  import { formatDate, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { EntryStatus, MediaType } from "@loomkeep/shared";
@@ -261,6 +262,9 @@
   );
 
   const entry = $derived(detail?.entry ?? null);
+  const reviewMeta = $derived(
+    detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
+  );
   const isMovie = $derived(detail?.type === "MOVIE");
   const dormant = $derived(entry ? isDormant(entry) : false);
   const pct = $derived(
@@ -439,9 +443,18 @@
           {/if}
         </p>
 
-        {#if extras && extras.ratings.length > 0}
+        {#if entry || (extras && extras.ratings.length > 0)}
           <div class="mt-2.5 flex flex-wrap gap-1.5">
-            {#each extras.ratings as r (r.source)}
+            {#if entry}
+              <MyRatingBadge
+                targetType="MEDIA"
+                targetId={entry.mediaItem.id}
+                workTitle={detail.title}
+                workMeta={reviewMeta}
+                workImageUrl={detail.posterUrl}
+                overlay />
+            {/if}
+            {#each extras?.ratings ?? [] as r (r.source)}
               <svelte:element
                 this={r.url ? "a" : "span"}
                 href={r.url}
@@ -462,7 +475,7 @@
               href={OMDB_API}
               target="_blank"
               rel="noopener noreferrer"
-              class="btn-text mt-1 inline-block text-[0.6rem]">
+              class="btn-text text-micro mt-1 inline-block">
               {m.media_omdb_notice()}
             </a>
           {/if}
@@ -487,7 +500,19 @@
     onToggleWatched={toggleWatched}
     onDrop={dropEntry}
     onResume={resumeEntry}
-    onRemove={() => (confirmRemove = true)} />
+    onRemove={() => (confirmRemove = true)}>
+    {#snippet socialActions()}
+      {#if appConfig.socialEnabled && detail.commentTargetId}
+        <CommentsPanel
+          targetType="MEDIA"
+          targetId={detail.commentTargetId}
+          title={detail.title}
+          canParticipate={!!entry}
+          revealSpoilersByDefault={entry?.status === "COMPLETED"}
+          compact />
+      {/if}
+    {/snippet}
+  </ActionBar>
 
   <div class="mx-auto max-w-4xl px-5 pb-6 md:px-8 md:pb-10">
     {#if entry?.progress}
@@ -665,12 +690,12 @@
               href={extras.watchProviders.link}
               target="_blank"
               rel="noopener noreferrer"
-              class="link-accent timecode text-[0.6rem] decoration-1">
+              class="link-accent timecode text-micro decoration-1">
               {m.media_tmdb_france()}
             </a>
           </div>
         {:else}
-          <span class="timecode text-dim w-full text-[0.6rem]"
+          <span class="timecode text-dim text-micro w-full"
             >{m.media_france()}</span>
         {/if}
       </section>
@@ -694,7 +719,7 @@
     <!-- Provider attribution: required for TMDB (logo + non-endorsement
          notice, less prominent than Loomkeep's own branding), courtesy for
          AniList. -->
-    <p class="text-dim mt-4 flex items-center gap-1.5 text-[0.6rem]">
+    <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
       <ProviderMark
         brand={type === "ANIME" ? "anilist" : "tmdb"}
         class="h-3 w-3 shrink-0 opacity-70" />
@@ -714,13 +739,9 @@
       <ReviewsSection
         targetType="MEDIA"
         targetId={entry.mediaItem.id}
-        workTitle={detail.title} />
-      {#if appConfig.socialEnabled}
-        <CommentThread
-          targetType="MEDIA"
-          targetId={entry.mediaItem.id}
-          digest />
-      {/if}
+        workTitle={detail.title}
+        workMeta={reviewMeta}
+        workImageUrl={detail.posterUrl} />
     {/if}
 
     {#if extras}
@@ -773,5 +794,5 @@
       onClose={() => (lightboxOpen = false)} />
   {/if}
 {:else if !error}
-  <DetailHeroSkeleton wide={false} />
+  <DetailHeroSkeleton wide={false} media />
 {/if}

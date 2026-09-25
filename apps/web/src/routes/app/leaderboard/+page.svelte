@@ -1,6 +1,5 @@
 <script lang="ts">
-  // [G7] Ranking by XP — global or friends, month or year. No pagination
-  // (see the ticket): the API caps the visible list at the Top 100 and
+  // The API caps the unpaginated list at 100 and
   // returns the viewer's own row separately when it falls outside that cut.
   import { getLeaderboard } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
@@ -10,6 +9,8 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import SegmentedControl from "$lib/components/SegmentedControl.svelte";
+  import TabPanels from "$lib/components/TabPanels.svelte";
+  import Tabs from "$lib/components/Tabs.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import { formatNumber } from "$lib/format";
@@ -49,6 +50,10 @@
   }
 
   let scope = $state<LeaderboardScope>("global");
+  const scopeTabs: { value: LeaderboardScope; label: string }[] = [
+    { value: "global", label: m.gamification_leaderboard_tab_global() },
+    { value: "friends", label: m.gamification_leaderboard_tab_friends() },
+  ];
   let period = $state<LeaderboardPeriod>("month");
 
   const enabled = $derived(
@@ -79,18 +84,12 @@
   {#if !enabled}
     <EmptyState>{m.gamification_leaderboard_disabled()}</EmptyState>
   {:else}
-    <div class="border-border mb-5 flex gap-6 border-b">
-      {#each [{ value: "global" as const, label: m.gamification_leaderboard_tab_global() }, { value: "friends" as const, label: m.gamification_leaderboard_tab_friends() }] as tab (tab.value)}
-        <button
-          type="button"
-          class="-mb-px border-b-2 pb-2.5 text-sm font-bold {scope === tab.value
-            ? 'border-accent text-fg'
-            : 'text-dim border-transparent'}"
-          onclick={() => (scope = tab.value)}>
-          {tab.label}
-        </button>
-      {/each}
-    </div>
+    <Tabs
+      class="mb-5"
+      label={m.gamification_leaderboard_title()}
+      tabs={scopeTabs}
+      current={scope}
+      onSelect={(next) => (scope = next)} />
 
     <div class="mb-4">
       <SegmentedControl
@@ -103,95 +102,103 @@
             value: "year" as const,
             label: m.gamification_leaderboard_period_year(),
           },
+          {
+            value: "all" as const,
+            label: m.gamification_leaderboard_period_all(),
+          },
         ]}
         value={period}
         onChange={(v) => (period = v)} />
     </div>
 
-    {#if leaderboardQuery.error}
-      <Banner variant="error">{leaderboardQuery.error}</Banner>
-    {:else if leaderboardQuery.loading}
-      <div class="flex flex-col gap-2">
-        {#each Array.from({ length: 7 }, (_, i) => i) as slot (slot)}
-          <div class="skeleton h-14 rounded-xl"></div>
-        {/each}
-      </div>
-    {:else if entries.length === 0 && !viewerOutsideTop}
-      <EmptyState>{m.gamification_leaderboard_empty()}</EmptyState>
-    {:else}
-      <div class="card divide-border divide-y divide-dashed overflow-hidden">
-        {#each entries as entry, i (entry.id)}
-          <a
-            href="/app/u/{entry.username}"
-            class="flex items-center gap-3 px-3.5 py-2.5 transition-colors duration-150 {rowClass(
-              entry,
-            )}"
-            animate:flip={{ duration: reduced ? 0 : 200 }}
-            in:fade|global={{ duration: reduced ? 0 : 120 }}
-            out:fade|global={{ duration: reduced ? 0 : 100 }}>
-            <span
-              class="w-7 text-center text-lg font-bold {rankTextClass(entry)}">
-              {i > 0 && entries[i - 1].rank === entry.rank ? "–" : entry.rank}
-            </span>
-            <Avatar seed={entry.username} url={entry.avatarUrl} size={34} />
-            <span class="min-w-0 flex-1">
-              <span class="flex items-center gap-1.5">
-                <span class="truncate text-sm font-semibold">
-                  {entry.displayName}
-                </span>
-                {#if entry.isViewer}
-                  <span
-                    class="text-accent text-[0.6rem] font-bold tracking-wide uppercase">
-                    {m.gamification_leaderboard_you()}
-                  </span>
-                {/if}
+    <TabPanels current={scope}>
+      {#if leaderboardQuery.error}
+        <Banner variant="error">{leaderboardQuery.error}</Banner>
+      {:else if leaderboardQuery.loading}
+        <div class="flex flex-col gap-2">
+          {#each Array.from({ length: 7 }, (_, i) => i) as slot (slot)}
+            <div class="skeleton h-14 rounded-xl"></div>
+          {/each}
+        </div>
+      {:else if entries.length === 0 && !viewerOutsideTop}
+        <EmptyState>{m.gamification_leaderboard_empty()}</EmptyState>
+      {:else}
+        <div class="card divide-border divide-y divide-dashed overflow-hidden">
+          {#each entries as entry, i (entry.id)}
+            <a
+              href="/app/u/{entry.username}"
+              class="flex items-center gap-3 px-3.5 py-2.5 transition-colors duration-150 {rowClass(
+                entry,
+              )}"
+              animate:flip={{ duration: reduced ? 0 : 200 }}
+              in:fade|global={{ duration: reduced ? 0 : 120 }}
+              out:fade|global={{ duration: reduced ? 0 : 100 }}>
+              <span
+                class="w-7 text-center text-lg font-bold {rankTextClass(
+                  entry,
+                )}">
+                {i > 0 && entries[i - 1].rank === entry.rank ? "–" : entry.rank}
               </span>
-              <span class="text-dim block text-xs">
-                {m.common_level()}
-                {levelForXp(entry.xp)}
+              <Avatar seed={entry.username} url={entry.avatarUrl} size={34} />
+              <span class="min-w-0 flex-1">
+                <span class="flex items-center gap-1.5">
+                  <span class="truncate text-sm font-semibold">
+                    {entry.displayName}
+                  </span>
+                  {#if entry.isViewer}
+                    <span
+                      class="text-accent text-[0.6rem] font-bold tracking-wide uppercase">
+                      {m.gamification_leaderboard_you()}
+                    </span>
+                  {/if}
+                </span>
+                <span class="text-dim block text-xs">
+                  {m.common_level()}
+                  {levelForXp(entry.xp)}
+                </span>
+              </span>
+              <span class="timecode text-right">
+                <span class="text-fg text-base font-bold">
+                  {formatNumber(entry.xp)}
+                </span>
+                <span class="text-dim text-xs">
+                  {m.gamification_leaderboard_xp_unit()}
+                </span>
+              </span>
+            </a>
+          {/each}
+        </div>
+
+        {#if viewerOutsideTop}
+          <div
+            class="border-accent bg-accent/10 mt-3 flex items-center gap-3 rounded-xl border px-3.5 py-2.5">
+            <span class="text-accent w-7 text-center text-lg font-bold">
+              {viewerOutsideTop.rank}
+            </span>
+            <Avatar
+              seed={viewerOutsideTop.username}
+              url={viewerOutsideTop.avatarUrl}
+              size={34} />
+            <span class="min-w-0 flex-1">
+              <span
+                class="text-accent block text-[0.6rem] font-bold tracking-wide uppercase">
+                {m.gamification_leaderboard_you()}
+              </span>
+              <span class="truncate text-sm font-semibold">
+                {viewerOutsideTop.displayName}
               </span>
             </span>
             <span class="timecode text-right">
               <span class="text-fg text-base font-bold">
-                {formatNumber(entry.xp)}
+                {formatNumber(viewerOutsideTop.xp)}
               </span>
               <span class="text-dim text-xs">
                 {m.gamification_leaderboard_xp_unit()}
               </span>
             </span>
-          </a>
-        {/each}
-      </div>
-
-      {#if viewerOutsideTop}
-        <div
-          class="border-accent bg-accent/10 mt-3 flex items-center gap-3 rounded-xl border px-3.5 py-2.5">
-          <span class="text-accent w-7 text-center text-lg font-bold">
-            {viewerOutsideTop.rank}
-          </span>
-          <Avatar
-            seed={viewerOutsideTop.username}
-            url={viewerOutsideTop.avatarUrl}
-            size={34} />
-          <span class="min-w-0 flex-1">
-            <span
-              class="text-accent block text-[0.6rem] font-bold tracking-wide uppercase">
-              {m.gamification_leaderboard_you()}
-            </span>
-            <span class="truncate text-sm font-semibold">
-              {viewerOutsideTop.displayName}
-            </span>
-          </span>
-          <span class="timecode text-right">
-            <span class="text-fg text-base font-bold">
-              {formatNumber(viewerOutsideTop.xp)}
-            </span>
-            <span class="text-dim text-xs">
-              {m.gamification_leaderboard_xp_unit()}
-            </span>
-          </span>
-        </div>
+          </div>
+        {/if}
       {/if}
-    {/if}
+    </TabPanels>
   {/if}
 </div>

@@ -14,17 +14,21 @@ import {
   type UserSummaryDto,
   XpReason,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
+import { EventsGateway } from "../events/events.gateway";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_ON_LIST_CREATED } from "../gamification/achievements/registry";
 import { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
+import { PushService } from "../notifications/push.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
+import { FollowService } from "../social/follow.service";
 import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveOwnVisibility } from "../social/visibility.util";
@@ -74,7 +78,12 @@ export class ListService {
     private readonly notifications: NotificationService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
+    private readonly events: EventsGateway,
+    private readonly follow: FollowService,
+    private readonly push: PushService,
   ) {}
+
+  private readonly logger = new Logger(ListService.name);
 
   private toDto(row: ListRow, author: UserSummaryDto): ListDto {
     return {
@@ -131,6 +140,9 @@ export class ListService {
     // is off, so no flag check needed here.
     await this.xp.award(userId, XpReason.LIST_CREATED, row.id);
     await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_LIST_CREATED);
+
+    // create_list is one of the onboarding checklist's steps (OnboardingService).
+    this.events.emitToUser(userId, "onboarding-updated");
 
     return this.toDto(row, await this.author(userId));
   }
@@ -199,6 +211,7 @@ export class ListService {
       );
     }
 
+    this.events.emitToList(id, "list-updated");
     return this.toDto(row, await this.author(existing.userId));
   }
 
@@ -247,7 +260,7 @@ export class ListService {
    */
   async getEditable(userId: string, id: string): Promise<ListDetailDto> {
     const { role } = await this.canEdit(userId, id);
-    return this.detail(id, role);
+    return this.detail(id, userId, role);
   }
 
   /**
@@ -276,7 +289,11 @@ export class ListService {
       if (!ok) return null;
     }
 
-    return this.detail(id, row.userId === viewerId ? "OWNER" : "VIEWER");
+    return this.detail(
+      id,
+      viewerId,
+      row.userId === viewerId ? "OWNER" : "VIEWER",
+    );
   }
 
   /**
@@ -393,7 +410,7 @@ export class ListService {
     listId: string,
     dto: AddListItemBody,
   ): Promise<ListItemDto> {
-    await this.canEdit(userId, listId);
+    const { row: list } = await this.canEdit(userId, listId);
 
     const dup = await this.prisma.listItem.findUnique({
       where: {
@@ -424,6 +441,7 @@ export class ListService {
         targetType: dto.targetType,
         targetId: dto.targetId,
         position: last ? last.position + 1 : 0,
+        addedById: userId,
       },
     });
 
@@ -436,8 +454,80 @@ export class ListService {
       homeFeed: false,
     });
 
+    this.events.emitToList(listId, "list-updated");
     const targets = await this.resolveTargets([row]);
-    return this.toItemDto(row, targets);
+    const item = this.toItemDto(row, targets);
+    await this.notifyItemAdded(list, userId, item);
+    return item;
+  }
+
+  /**
+   * Tells the list's other collaborators — the owner and every editor, minus
+   * whoever added it and whoever muted the list — in the app and by push.
+   * Push only reaches those who turned it on: switching it off in the
+   * communications settings also unsubscribes their devices.
+   */
+  private async notifyItemAdded(
+    list: ListRow,
+    actorId: string,
+    item: ListItemDto,
+  ): Promise<void> {
+    if (!isSocialEnabled(this.config, this.flags)) return;
+
+    const members = await this.prisma.listMember.findMany({
+      where: { listId: list.id },
+      select: { userId: true },
+    });
+    const others = [list.userId, ...members.map((m) => m.userId)].filter(
+      (id) => id !== actorId,
+    );
+    if (others.length === 0) return;
+
+    const mutes = await this.prisma.listNotificationMute.findMany({
+      where: { listId: list.id, userId: { in: others } },
+      select: { userId: true },
+    });
+    const muted = new Set(mutes.map((m) => m.userId));
+    const recipients = await this.prisma.user.findMany({
+      where: { id: { in: others.filter((id) => !muted.has(id)) } },
+      select: { id: true, locale: true, notifyPush: true },
+    });
+    if (recipients.length === 0) return;
+
+    const actor = await this.author(actorId);
+    const itemTitle = item.target?.title ?? null;
+    const url = `/app/lists/${list.id}`;
+
+    for (const recipient of recipients) {
+      const body = notificationCopy(recipient.locale).listItemAdded(
+        itemTitle,
+        list.title,
+      );
+      await this.notifications.create({
+        userId: recipient.id,
+        type: NotificationType.LIST_ITEM_ADDED,
+        title: actor.displayName,
+        body,
+        url,
+        dedupeKey: `list-item:${item.id}:${recipient.id}`,
+        data: {
+          actorUsername: actor.username,
+          actorDisplayName: actor.displayName,
+          listTitle: list.title,
+          itemTitle,
+        },
+      });
+
+      if (recipient.notifyPush !== "DISABLED") {
+        // Not awaited: the item is saved, and a slow or failing push service
+        // must not hold up or fail the editor's request.
+        this.push
+          .sendToUser(recipient.id, { title: actor.displayName, body, url })
+          .catch((err: unknown) =>
+            this.logger.error(`List push failed for ${recipient.id}`, err),
+          );
+      }
+    }
   }
 
   async removeItem(
@@ -451,6 +541,7 @@ export class ListService {
     });
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListItemNotFound);
+    this.events.emitToList(listId, "list-updated");
   }
 
   /**
@@ -505,6 +596,8 @@ export class ListService {
         await tx.listItem.update({ where: { id }, data: { position } });
       }
     });
+
+    this.events.emitToList(listId, "list-updated");
   }
 
   /** Everyone with edit access to `id`, besides the owner — owner only. */
@@ -522,8 +615,34 @@ export class ListService {
   }
 
   /**
-   * Grants `username` edit access to the list — owner only, social-gated.
-   * Notifies the invited user in-app.
+   * The owner's friends who don't edit this list yet — the only people they
+   * can add. Owner only.
+   */
+  async memberCandidates(
+    userId: string,
+    id: string,
+  ): Promise<UserSummaryDto[]> {
+    await this.ownList(userId, id);
+    const [friendIds, members] = await Promise.all([
+      this.follow.listFriendIds(userId),
+      this.prisma.listMember.findMany({
+        where: { listId: id },
+        select: { userId: true },
+      }),
+    ]);
+    const editors = new Set(members.map((m) => m.userId));
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: friendIds.filter((f) => !editors.has(f)) } },
+      select: AUTHOR_SELECT,
+      orderBy: { displayName: "asc" },
+    });
+    return users.map(toUserSummaryDto);
+  }
+
+  /**
+   * Grants `username` edit access to the list — owner only, social-gated,
+   * and only for one of the owner's friends. Notifies the invited user
+   * in-app.
    */
   async addMember(
     userId: string,
@@ -549,6 +668,15 @@ export class ListService {
       );
     }
 
+    const friendIds = await this.follow.listFriendIds(userId);
+
+    if (!friendIds.includes(target.id)) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.ListMemberNotFriend,
+      );
+    }
+
     const existing = await this.prisma.listMember.findUnique({
       where: { listId_userId: { listId: id, userId: target.id } },
     });
@@ -563,11 +691,12 @@ export class ListService {
     });
 
     const owner = await this.author(userId);
+    const copy = await this.notifications.copyFor(target.id);
     await this.notifications.create({
       userId: target.id,
       type: NotificationType.LIST_MEMBER_ADDED,
       title: owner.displayName,
-      body: `vous a ajouté comme éditeur sur « ${list.title} »`,
+      body: copy.listEditorAdded(list.title),
       url: `/app/lists/${id}`,
       dedupeKey: `list-member:${id}:${target.id}`,
       data: {
@@ -576,6 +705,7 @@ export class ListService {
       },
     });
 
+    this.events.emitToList(id, "list-updated");
     return {
       user: toUserSummaryDto(target),
       createdAt: row.createdAt.toISOString(),
@@ -601,6 +731,32 @@ export class ListService {
         HttpStatus.NOT_FOUND,
         ErrorCode.ListMembershipNotFound,
       );
+    // A mute belongs to the membership: someone re-added later starts fresh.
+    await this.prisma.listNotificationMute.deleteMany({
+      where: { listId: id, userId: memberUserId },
+    });
+    this.events.emitToList(id, "list-updated");
+    await this.events.evictFromList(id, memberUserId);
+  }
+
+  /** Turns this list's notifications off, or back on, for the caller. */
+  async setNotificationsMuted(
+    userId: string,
+    id: string,
+    muted: boolean,
+  ): Promise<void> {
+    await this.canEdit(userId, id);
+
+    if (muted) {
+      await this.prisma.listNotificationMute.createMany({
+        data: [{ listId: id, userId }],
+        skipDuplicates: true,
+      });
+    } else {
+      await this.prisma.listNotificationMute.deleteMany({
+        where: { listId: id, userId },
+      });
+    }
   }
 
   /**
@@ -643,8 +799,6 @@ export class ListService {
     }
   }
 
-  // --- internals -------------------------------------------------------
-
   private async ownList(userId: string, id: string): Promise<ListRow> {
     const row = await this.prisma.list.findUnique({ where: { id } });
     if (!row)
@@ -683,20 +837,49 @@ export class ListService {
 
   private async detail(
     id: string,
+    viewerId: string,
     viewerRole: ListViewerRole,
   ): Promise<ListDetailDto> {
     const row = await this.prisma.list.findUniqueOrThrow({
       where: { id },
-      include: { items: { orderBy: { position: "asc" } } },
+      include: {
+        items: {
+          orderBy: { position: "asc" },
+          include: { addedBy: { select: AUTHOR_SELECT } },
+        },
+        members: { select: { userId: true } },
+      },
     });
-    const [author, targets] = await Promise.all([
+    // Who edits a list stays between its collaborators: a viewer learns
+    // neither that it has editors nor who added what.
+    const isCollaborator = viewerRole !== "VIEWER";
+    const collaborative = isCollaborator && row.members.length > 0;
+    const current = new Set([row.userId, ...row.members.map((m) => m.userId)]);
+    const [author, targets, mute] = await Promise.all([
       this.author(row.userId),
       this.resolveTargets(row.items),
+      isCollaborator
+        ? this.prisma.listNotificationMute.findUnique({
+            where: { listId_userId: { listId: id, userId: viewerId } },
+          })
+        : null,
     ]);
     return {
       ...this.toDto(row, author),
-      items: row.items.map((i) => this.toItemDto(i, targets)),
+      items: row.items.map((i) => ({
+        ...this.toItemDto(i, targets),
+        // `null` means a former collaborator: left the list or deleted
+        // their account.
+        ...(collaborative && {
+          addedBy:
+            i.addedBy && current.has(i.addedBy.id)
+              ? toUserSummaryDto(i.addedBy)
+              : null,
+        }),
+      })),
       viewerRole,
+      collaborative,
+      notificationsMuted: mute !== null,
     };
   }
 

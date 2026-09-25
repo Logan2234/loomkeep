@@ -2,11 +2,12 @@ import type {
   CalendarEntryDto,
   EntryEpisodesResponseDto,
   EpisodeWatchDto,
+  LibraryDomainCountsDto,
   LibraryEntryDto,
   MediaType,
   PagedResult,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, Locale } from "@loomkeep/shared";
+import { Domain, Locale } from "@loomkeep/shared";
 import {
   Body,
   Controller,
@@ -19,14 +20,10 @@ import {
   Post,
   Put,
   Query,
-  Res,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
-import type { FastifyReply } from "fastify";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
-import { Public } from "../auth/decorators/public.decorator";
-import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { toQueryArray } from "../common/query-array.util";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -34,6 +31,7 @@ import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
 import { EntryEpisodesResponseResponseDto } from "./dto/entry-episodes-response.dto";
 import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
+import { LibraryDomainCountsResponseDto } from "./dto/library-domain-counts-response.dto";
 import { LibraryEntryResponseDto } from "./dto/library-entry-response.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
@@ -84,37 +82,19 @@ export class LibraryController {
     return this.libraryService.upsertEntry(user.sub, dto);
   }
 
+  /** Per domain, how many items the user tracks — hidden domains included. */
+  @Get("domain-counts")
+  @ApiOkResponse({ type: LibraryDomainCountsResponseDto })
+  getDomainCounts(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<LibraryDomainCountsDto> {
+    return this.libraryService.getDomainCounts(user.sub);
+  }
+
   @Get("calendar")
   @ApiOkResponse({ type: CalendarEntryResponseDto, isArray: true })
   getCalendar(@CurrentUser() user: JwtPayload): Promise<CalendarEntryDto[]> {
     return this.libraryService.getCalendar(user.sub);
-  }
-
-  /**
-   * Public (no auth) so Google/Apple Calendar can poll it directly by URL —
-   * subscription clients can't send an Authorization header. Gated by the
-   * unguessable per-user `calendarToken` instead (see UsersController's
-   * calendar-token endpoints), same pattern as the avatar route.
-   */
-  @Public()
-  @Get("calendar.ics")
-  async getCalendarIcs(
-    @Query("token") token: string | undefined,
-    @Res() reply: FastifyReply,
-  ): Promise<void> {
-    const ics = token ? await this.libraryService.getCalendarIcs(token) : null;
-
-    if (!ics) {
-      throw new AppException(
-        HttpStatus.NOT_FOUND,
-        ErrorCode.LibraryCalendarUnavailable,
-      );
-    }
-
-    reply
-      .header("Content-Type", "text/calendar; charset=utf-8")
-      .header("Content-Disposition", 'inline; filename="loomkeep.ics"')
-      .send(ics);
   }
 
   @Get("entries/:id")

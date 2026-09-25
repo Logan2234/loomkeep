@@ -51,7 +51,7 @@ enum Role {
   ADMIN
 }
 
-// --- Open-core (docs/adr/0001-open-core-agpl.md) ---
+// Open-core entitlements; see docs/adr/0001-open-core-agpl.md.
 
 enum Plan {
   FREE
@@ -133,7 +133,7 @@ model Subscription {
   @@index([userId])
 }
 
-// --- Social (P4) — all gated behind the runtime SOCIAL_ENABLED flag. ---
+// Social models are gated behind the runtime SOCIAL_ENABLED flag.
 // Mirror of packages/shared/src/enums.ts; see there for the full rationale.
 
 // How reachable a profile is (the authN layer). Caps the per-facet audience.
@@ -178,6 +178,14 @@ enum ReviewTargetType {
 enum ReviewVisibility {
   FRIENDS
   PUBLIC
+}
+
+// Overrides the reviews/comments per-context "already finished, so reveal"
+// default. See User.spoilerSensitivity.
+enum SpoilerSensitivity {
+  AUTO
+  ALWAYS_HIDDEN
+  ALWAYS_REVEALED
 }
 
 // What a comment thread targets. Same shape as ReviewTargetType (a comment
@@ -266,6 +274,7 @@ enum ReportMotif {
   MISINFORMATION_FALSE_FACT
   STOLEN_CONTENT_PLAGIARIZED
   MISLEADING_REVIEW_MANIPULATION
+  MISLEADING_REVIEW_OFF_TOPIC
 }
 
 // A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top 10"),
@@ -295,6 +304,7 @@ enum ReportStatus {
 // exactly what the code can do, not more (DSA art. 14).
 enum ModerationMeasure {
   COMMENT_REMOVED
+  REVIEW_REMOVED
   ACCOUNT_DELETED
 }
 
@@ -419,31 +429,29 @@ enum MusicOwnershipStatus {
 }
 
 model User {
-  id                            String           @id @default(cuid())
-  email                         String           @unique
+  id                            String             @id @default(cuid())
+  email                         String             @unique
   passwordHash                  String
   // Free-form label shown around the app; not unique. See `username` for the
   // unique, login-capable handle.
   displayName                   String
   // Unique login handle (alongside email). Assigned at registration, editable
   // in Sécurité.
-  username                      String           @unique
+  username                      String             @unique
   birthDate                     DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
-  allowAdultContent             Boolean          @default(false)
+  allowAdultContent             Boolean            @default(false)
   // Opt-out from showing gamification progression (level/XP) to OTHER
   // viewers — the owner always sees their own real progress regardless.
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
-  hideProgression               Boolean          @default(false)
-  // [G9] Up to 3 unlocked, non-secret achievement keys shown as a badge
-  // showcase on the profile — always an explicit choice, never auto-picked
-  // (see the ticket's design-discussion comment). A key here freezes the
-  // tier the user equipped, not "whatever tier is highest now": a tiered
-  // achievement's tiers are separate keys already (cinephile_bronze vs
+  hideProgression               Boolean            @default(false)
+  // Up to 3 unlocked, non-secret achievement keys shown on the profile.
+  // Equipping a key freezes that tier rather than following the highest tier;
+  // an achievement's tiers are separate keys (cinephile_bronze vs
   // cinephile_gold), so equipping one just picks a key like any other.
-  equippedBadgeKeys             String[]         @default([])
-  // [G8] "Première séance" gamified checklist. Steps explicitly skipped by
+  equippedBadgeKeys             String[]           @default([])
+  // "Première séance" checklist. Steps explicitly skipped by
   // the user (one-way — there is no "unskip"); a step's *done* state is
   // never stored here, always re-derived live from the real data (see
   // OnboardingService) so completing step 3 out of order still marks it
@@ -451,19 +459,19 @@ model User {
   // once and never cleared, independent of the achievement catalogue, so a
   // future rework of the checklist's steps never re-proposes it to someone
   // who already finished the old one.
-  onboardingSkippedSteps        String[]         @default([])
+  onboardingSkippedSteps        String[]           @default([])
   onboardingGamifiedCompletedAt DateTime?
   // Communication preferences: cadence at which each channel delivers the
   // "new episode" digest. See DigestCadence.
-  notifyEmail                   DigestCadence    @default(WEEKLY)
-  notifyPush                    DigestCadence    @default(WEEKLY)
+  notifyEmail                   DigestCadence      @default(WEEKLY)
+  notifyPush                    DigestCadence      @default(WEEKLY)
   // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
   // hour. Auto-detected client-side at onboarding, editable afterwards.
-  timezone                      String           @default("Europe/Paris")
+  timezone                      String             @default("Europe/Paris")
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
-  notifyNewsletter              Boolean          @default(false)
+  notifyNewsletter              Boolean            @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including
   // across a later opt-out — so it always records when consent was last given.
@@ -474,10 +482,10 @@ model User {
   // would grow the token table without bound as the newsletter goes out
   // repeatedly. Low-stakes if it ever leaked (only lets someone toggle this
   // one preference off), so it's a plain unguessable string, not hashed.
-  newsletterUnsubscribeToken    String?          @unique
+  newsletterUnsubscribeToken    String?            @unique
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
-  emailVerified                 Boolean          @default(false)
+  emailVerified                 Boolean            @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
   bio                           String?
   // Profile picture, stored in-row (not on disk) so it rides along with
@@ -490,34 +498,42 @@ model User {
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.
-  profileAccess                 ProfileAccess    @default(PRIVATE)
+  profileAccess                 ProfileAccess      @default(PRIVATE)
   // Default audience applied to a new review unless overridden at publication.
-  defaultReviewVisibility       ReviewVisibility @default(FRIENDS)
+  defaultReviewVisibility       ReviewVisibility   @default(FRIENDS)
   // Default audience applied to a new list unless overridden at creation.
-  defaultListVisibility         ListVisibility   @default(PRIVATE)
+  defaultListVisibility         ListVisibility     @default(PRIVATE)
+  // Overrides the per-context "already finished this, so reveal" default
+  // that reviews and comments otherwise apply on their own.
+  spoilerSensitivity            SpoilerSensitivity @default(AUTO)
   // Operational permission level (gates /admin). Separate axis from the paid
   // tier (see UserEntitlement below): an admin isn't "the highest tier".
-  role                          Role             @default(USER)
+  role                          Role               @default(USER)
   // Composition seam: content domains the user enabled. Drives the nav today;
   // search/notif filtering follow at P3. Empty by default — the onboarding
   // wizard's domain step is what actually turns these on for a new account.
-  enabledDomains                Domain[]         @default([])
+  enabledDomains                Domain[]           @default([])
+  // Display order for the domain browser (settings tiles, desktop rail's
+  // Library section). Partial and total-safe: a domain missing from it (a
+  // brand-new one, or before this preference ever existed) just keeps its
+  // canonical position at the end — see web domains.ts's orderedDomains().
+  domainOrder                   Domain[]           @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
   // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
-  mobileNavShortcuts            String[]         @default(["home", "search", "menu", "calendar", "account"])
+  mobileNavShortcuts            String[]           @default(["home", "search", "menu", "calendar", "account"])
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
   // seam.
-  locale                        String           @default("fr")
+  locale                        String             @default("fr")
   // Opaque secret for the public .ics calendar subscription URL (not hashed:
   // looked up directly by calendar apps, which can't send an Authorization
   // header). Null until first requested from Réglages > Export.
-  calendarToken                 String?          @unique
-  createdAt                     DateTime         @default(now())
-  updatedAt                     DateTime         @updatedAt
+  calendarToken                 String?            @unique
+  createdAt                     DateTime           @default(now())
+  updatedAt                     DateTime           @updatedAt
   // Set once the mandatory first-run onboarding wizard is completed (see
   // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
   // showing the wizard instead of the app chrome — including for accounts
@@ -547,7 +563,7 @@ model User {
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt       DateTime?
 
-  // --- MFA ---
+  // MFA
   // Two independently-toggleable methods; admin accounts with neither active
   // are blocked from /admin by AdminGuard. mfaTotpSecretEnc is cleared (not
   // just flagged off) when TOTP is disabled, so re-enabling always starts
@@ -580,21 +596,24 @@ model User {
   securityEvents             SecurityEvent[]
   importRuns                 ImportRun[]
   visibilitySettings         VisibilitySetting[]
-  following                  Follow[]             @relation("UserFollowing")
-  followers                  Follow[]             @relation("UserFollowers")
-  blocking                   Block[]              @relation("UserBlocking")
-  blockedBy                  Block[]              @relation("UserBlockedBy")
+  following                  Follow[]               @relation("UserFollowing")
+  followers                  Follow[]               @relation("UserFollowers")
+  blocking                   Block[]                @relation("UserBlocking")
+  blockedBy                  Block[]                @relation("UserBlockedBy")
   reviews                    Review[]
   reviewVotes                ReviewVote[]
   activityEvents             ActivityEvent[]
   comments                   Comment[]
   commentReactions           CommentReaction[]
-  reportsFiled               Report[]             @relation("ReportsFiled")
-  reportsResolved            Report[]             @relation("ReportsResolved")
+  commentMentions            CommentMention[]
+  reportsFiled               Report[]               @relation("ReportsFiled")
+  reportsResolved            Report[]               @relation("ReportsResolved")
   lists                      List[]
   listMemberships            ListMember[]
-  moderationDecisionsAgainst ModerationDecision[] @relation("ModerationDecisionSubject")
-  moderationDecisionsMade    ModerationDecision[] @relation("ModerationDecisionAdmin")
+  listItemsAdded             ListItem[]
+  listNotificationMutes      ListNotificationMute[]
+  moderationDecisionsAgainst ModerationDecision[]   @relation("ModerationDecisionSubject")
+  moderationDecisionsMade    ModerationDecision[]   @relation("ModerationDecisionAdmin")
   entitlement                UserEntitlement?
   subscriptions              Subscription[]
   xpEntries                  XpEntry[]
@@ -672,6 +691,9 @@ model Review {
   rating     Float
   text       String?
   visibility ReviewVisibility @default(FRIENDS)
+  // Author-set, same manual flag as Comment.spoilerTag. Not part of the
+  // revision snapshot (a masking hint, not content).
+  spoilerTag Boolean          @default(false)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -727,9 +749,8 @@ model Comment {
   authorId       String?
   parentId       String?
   text           String?
-  // Author-set manual spoiler tag. Combined at read time with the auto
-  // progression-based gate (see CommentService) into a per-viewer "masked"
-  // hint — the raw tag itself is what the edit form prefills.
+  // Author-set manual spoiler tag. The read model maps it directly to the
+  // viewer-facing masking hint; there is no automatic progression-based gate.
   spoilerTag     Boolean           @default(false)
   edited         Boolean           @default(false)
   deletedAt      DateTime?
@@ -744,6 +765,7 @@ model Comment {
   parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[]         @relation("CommentReplies")
   reactions CommentReaction[]
+  mentions  CommentMention[]
 
   @@index([targetType, targetId, createdAt])
   @@index([parentId])
@@ -762,6 +784,22 @@ model CommentReaction {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
+}
+
+// An explicit recipient selected from the discussion's mention picker. A raw
+// `@handle` in comment text intentionally creates no row and remains plain
+// text: only a deliberate picker choice may link or notify a person.
+model CommentMention {
+  commentId String
+  userId    String
+  start     Int
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, start])
+  @@index([userId])
 }
 
 // Social (P4): a user-submitted report against a polymorphic target — a
@@ -791,6 +829,7 @@ model Report {
 
   @@index([status, createdAt])
   @@index([category])
+  @@index([reporterId, status, createdAt])
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure
@@ -860,16 +899,18 @@ model List {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items   ListItem[]
-  members ListMember[]
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items             ListItem[]
+  members           ListMember[]
+  notificationMutes ListNotificationMute[]
 
   @@index([userId])
 }
 
 // Social (P4): grants a user edit access to another user's list (add/remove/
-// reorder items, edit title/description) — added directly by the owner via
-// username, no invite/accept step. Mirrors Follow/Block's directed
+// reorder items, edit title/description) — added directly by the owner from
+// their friends, no invite/accept step. A block in either direction between
+// owner and editor removes the membership (see FollowService.block). Mirrors Follow/Block's directed
 // join-table shape, but for write access rather than visibility.
 model ListMember {
   id        String   @id @default(cuid())
@@ -897,11 +938,31 @@ model ListItem {
   targetId   String
   position   Int
   addedAt    DateTime         @default(now())
+  // Who added it, shown on collaborative lists. Null once that account is
+  // deleted; items that predate the column were attributed to the owner.
+  addedById  String?
 
-  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list    List  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
 
   @@unique([listId, targetType, targetId])
   @@index([listId, position])
+  @@index([addedById])
+}
+
+// A collaborator (owner or editor) who turned off notifications for one list.
+// Its own table rather than a ListMember column because the owner has no
+// ListMember row.
+model ListNotificationMute {
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([listId, userId])
+  @@index([userId])
 }
 
 // One row per browser/device push subscription (Web Push). endpoint is the
@@ -1117,6 +1178,7 @@ enum SecurityEventType {
   MFA_EMAIL_DISABLED
   MFA_WEBAUTHN_ADDED
   MFA_WEBAUTHN_REMOVED
+  MFA_WEBAUTHN_RENAMED
   MFA_PASSWORDLESS_ENABLED
   MFA_PASSWORDLESS_DISABLED
   MFA_RECOVERY_CODES_REGENERATED
@@ -1131,7 +1193,11 @@ enum SecurityEventType {
 // actually typed at a login attempt, independent of any account — see
 // SecurityEventService#record); every other type derives its display email
 // from userId → User.email at read time, so it anonymises itself the moment
-// the account is deleted instead of surviving indefinitely.
+// the account is deleted instead of surviving indefinitely. `ip` is erased on
+// deletion too, except on LOGIN_FAILED (kept for abuse prevention, as the
+// privacy policy states). Rows older than a year are purged
+// (SecurityEventService#purgeExpired). The account owner reads their own
+// trail in the settings.
 model SecurityEvent {
   id         String            @id @default(cuid())
   type       SecurityEventType
@@ -1139,12 +1205,14 @@ model SecurityEvent {
   identifier String?
   detail     String?
   userAgent  String?
+  ip         String?
   createdAt  DateTime          @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([type, createdAt])
-  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 // One committed import (tvtime/storygraph/goodreads/steam), for the admin
@@ -1176,6 +1244,7 @@ model ImportRun {
 
   @@index([sourceId, startedAt])
   @@index([userId])
+  @@index([startedAt])
 }
 
 // One row per persisted backup dump on disk (BACKUP_DIR), for the admin
@@ -1469,7 +1538,7 @@ model MovieReplay {
 
 // One row per viewing: watching the same episode twice = two rows (rewatch).
 model EpisodeWatch {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   episodeId String
   watchedAt DateTime? @default(now())
@@ -1703,18 +1772,17 @@ model MusicEntry {
   @@unique([userId, musicItemId])
 }
 
-// --- Gamification (G1) — XP ledger, level curve, barème. ---
+// Gamification: XP ledger, level curve and reward scale.
 // The level curve (xpForLevel/levelForXp) and the full barème (amount/cap/
 // source per reason) live in packages/shared/src/level.ts and xp-rules.ts —
 // pure data/functions shared with the web, kept out of Prisma entirely.
 
-// One credited (or reversed-by-deletion) unit of XP. Append-only by design
-// (see the [G1] plan's "attribution explicite + réconciliation de contrôle"
-// decision): a reversal deletes the row outright rather than writing a
+// One credited (or reversed-by-deletion) unit of XP. Append-only by design:
+// a reversal deletes the row outright rather than writing a
 // negative entry or a revokedAt — re-crediting the same source always starts
 // from a fresh row, so cycling a source (mark watched, unwatch, rewatch)
-// never manufactures XP. Admin adjustments ([B8], not this ticket) will be
-// the one exception: distinct rows, never deleted.
+// never manufactures XP. Admin adjustments are the exception: distinct rows,
+// never deleted.
 model XpEntry {
   id         String   @id @default(cuid())
   userId     String
@@ -1747,11 +1815,11 @@ model XpEntry {
 }
 
 // Materialised sum of the user's XpEntry rows, kept only for cheap
-// leaderboard ordering ([G7]) — never written by hand, always recomputed
+// leaderboard ordering — never written by hand, always recomputed
 // from XpEntry via aggregate(_sum) (see XpService.recomputeScore). Same
 // "derived per-user projection in its own table" shape as UserEntitlement.
-// No peakXp: level is derived from the current xp in both directions (see
-// the [G1] plan) so revoking XP always lowers the level back down too.
+// No peakXp: level is derived from current XP in both directions, so revoking
+// XP lowers the level too.
 model UserScore {
   userId    String   @id
   xp        Int      @default(0)
@@ -1777,7 +1845,7 @@ model UserAchievement {
   // row with a tier column.
   key         String
   unlockedAt  DateTime  @default(now())
-  // Null until the [G6] unlock-bubble UI has shown this achievement to the
+  // Null until the unlock bubble has shown this achievement to the
   // user once — set by PATCH /achievements/:id/displayed. Independent of
   // unlockedAt: an unlock can happen server-side (a live action, or the
   // nightly sweep) while the user isn't even in the app.

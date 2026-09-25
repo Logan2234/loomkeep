@@ -1,9 +1,17 @@
 import type {
   CatalogSource,
+  Domain,
   EntryStatus,
   MediaOwnershipStatus,
   MediaType,
 } from "../enums";
+
+/**
+ * Tracked-item count per domain, hidden domains included — the settings
+ * "Domaines" tiles need to say what turning one off would take out of the
+ * navigation, which the enabled-domain-scoped stats endpoints can't tell them.
+ */
+export type LibraryDomainCountsDto = Partial<Record<Domain, number>>;
 
 /** A persisted media referenced by at least one user (on-demand cache). */
 export interface MediaItemDto {
@@ -45,7 +53,6 @@ export interface LibraryEntryDto {
   replays: MovieReplayDto[];
 }
 
-/** One completed rewatch of a movie, beyond the entry's own (first) completion. */
 export interface MovieReplayDto {
   id: string;
   /** ISO date the rewatch was completed. */
@@ -95,7 +102,6 @@ export interface UpsertLibraryEntryDto {
   favorite?: boolean;
 }
 
-/** One watch event for one episode; several rows for the same episode = rewatches. */
 export interface EpisodeWatchDto {
   id: string;
   episodeId: string;

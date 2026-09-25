@@ -1,6 +1,7 @@
 <script lang="ts">
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
+  import Modal from "$lib/components/Modal.svelte";
   import { MODERATION_LEGAL_BASIS_LABELS } from "$lib/constants/report-labels";
   import { m } from "$lib/paraglide/messages.js";
   import type { ModerationLegalBasis } from "@loomkeep/shared";
@@ -42,18 +43,11 @@
   }
 </script>
 
-<div class="fixed inset-0 z-60 flex items-end justify-center sm:items-center">
-  <button
-    class="absolute inset-0 cursor-default bg-black/60"
-    aria-label={m.common_close()}
-    onclick={close}></button>
-  <div
-    role="dialog"
-    aria-modal="true"
-    class="card relative z-10 w-full max-w-md rounded-t-2xl p-5 sm:rounded-2xl">
-    <h3 class="font-display text-danger mb-3 text-lg font-bold">
-      {m.settings_delete_account_modal_title()}
-    </h3>
+<Modal
+  title={m.settings_delete_account_modal_title()}
+  onclose={close}
+  dismissable={!busy}>
+  <div>
     <p class="text-dim text-sm">
       {m.admin_users_delete_intro()}
       <strong class="text-fg">{displayName}</strong>
@@ -144,4 +138,4 @@
       </button>
     </div>
   </div>
-</div>
+</Modal>

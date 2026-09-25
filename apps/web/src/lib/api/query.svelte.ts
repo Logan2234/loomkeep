@@ -1,9 +1,5 @@
-// createApiQuery() — thin wrapper over TanStack's createQuery(), one of the
-// helpers from the centralized API layer (docs/plans/centralized-api-layer.md
-// §3). `error` is always resolved through resolveApiError() so a raw
-// ApiError can never reach a template. No fieldErrors/coveredFields here —
-// unlike createApiMutation, a GET doesn't submit a body a server can return
-// per-field validation.failed details against.
+// Resolves query errors before they reach templates. Queries have no field
+// errors because they do not submit a body.
 import { toast } from "$lib/toast.svelte";
 import {
   createQuery,

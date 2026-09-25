@@ -4,6 +4,7 @@ import type {
   ListVisibility,
   Locale,
   ReviewVisibility,
+  SpoilerSensitivity,
   UpdateUserRequestDto,
 } from "@loomkeep/shared";
 import {
@@ -11,6 +12,7 @@ import {
   Domain as DomainValues,
   ListVisibility as ListVisibilityValues,
   ReviewVisibility as ReviewVisibilityValues,
+  SpoilerSensitivity as SpoilerSensitivityValues,
 } from "@loomkeep/shared";
 import {
   ArrayMaxSize,
@@ -103,4 +105,16 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsOptional()
   @IsBoolean()
   hideProgression?: boolean;
+
+  @IsOptional()
+  @IsIn(Object.values(SpoilerSensitivityValues))
+  spoilerSensitivity?: SpoilerSensitivity;
+
+  // Empty is valid (resets to canonical order) — unlike enabledDomains,
+  // nothing here needs to stay visible.
+  @IsOptional()
+  @ArrayMaxSize(Object.values(DomainValues).length)
+  @ArrayUnique()
+  @IsIn(Object.values(DomainValues), { each: true })
+  domainOrder?: Domain[];
 }

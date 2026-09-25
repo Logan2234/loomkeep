@@ -6,7 +6,6 @@ import {
   UsernameAvailabilityDto,
   XpReason,
   type AccountDeletionSummaryDto,
-  type CalendarTokenDto,
   type CsvExportDto,
   type EntitlementDto,
   type SocialProfileDto,
@@ -17,12 +16,13 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { randomBytes, randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { BCRYPT_ROUNDS, hashToken, toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -30,7 +30,11 @@ import { SecurityEventService } from "../security/security-event.service";
 import { ProfileService } from "../social/profile.service";
 import { AccountDeletionService } from "./account-deletion.service";
 import { isAdult } from "./age.util";
-import { matchesMimeType } from "./avatar.util";
+import {
+  matchesMimeType,
+  reencodeAvatar,
+  STORED_AVATAR_MIME_TYPE,
+} from "./avatar.util";
 import { CsvExportService } from "./csv-export.service";
 import { DataExportService } from "./data-export.service";
 import type { ChangeEmailDto } from "./dto/change-email.dto";
@@ -64,6 +68,7 @@ export class UsersService {
     private readonly profiles: ProfileService,
     private readonly accountDeletion: AccountDeletionService,
     private readonly xp: XpService,
+    private readonly events: EventsGateway,
   ) {}
 
   async getMe(userId: string): Promise<UserDto> {
@@ -150,7 +155,6 @@ export class UsersService {
     };
   }
 
-  /** Replaces the account's profile picture. */
   async uploadAvatar(userId: string, dto: UploadAvatarDto): Promise<UserDto> {
     const buffer = Buffer.from(dto.data, "base64");
 
@@ -170,11 +174,28 @@ export class UsersService {
       );
     }
 
+    // Kept above as a cheap, precise rejection; the re-encode below is what
+    // actually guarantees what lands in the database (see reencodeAvatar).
+    let encoded: Uint8Array<ArrayBuffer>;
+
+    try {
+      encoded = await reencodeAvatar(buffer);
+    } catch {
+      // Magic bytes matched but the decoder refused it: truncated, corrupt,
+      // or a header glued onto something else.
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.UserAvatarInvalidType,
+        undefined,
+        "Image could not be decoded",
+      );
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        avatar: buffer,
-        avatarMimeType: dto.mimeType,
+        avatar: encoded,
+        avatarMimeType: STORED_AVATAR_MIME_TYPE,
         avatarUpdatedAt: new Date(),
       },
     });
@@ -182,7 +203,6 @@ export class UsersService {
     return toUserDto(user);
   }
 
-  /** Clears the profile picture — the client falls back to the identicon. */
   async deleteAvatar(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -207,45 +227,6 @@ export class UsersService {
   }
 
   /**
-   * Returns the token for the user's public .ics calendar subscription URL,
-   * generating one on first call. Stable across calls — use the regenerate
-   * endpoint below to revoke a previously shared link. Premium
-   * (docs/adr/0001-open-core-agpl.md) — see LibraryService#getCalendarIcs
-   * for the matching check on the feed itself.
-   */
-  async getCalendarToken(userId: string): Promise<CalendarTokenDto> {
-    await this.requirePremium(userId);
-
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { calendarToken: true },
-    });
-
-    if (user.calendarToken) {
-      return { token: user.calendarToken };
-    }
-
-    const { calendarToken } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
-      select: { calendarToken: true },
-    });
-    return { token: calendarToken! };
-  }
-
-  /** Issues a new token, invalidating any previously shared .ics link. Premium. */
-  async regenerateCalendarToken(userId: string): Promise<CalendarTokenDto> {
-    await this.requirePremium(userId);
-
-    const { calendarToken } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: randomBytes(24).toString("base64url") },
-      select: { calendarToken: true },
-    });
-    return { token: calendarToken! };
-  }
-
-  /**
    * The user's real plan (not gated by `premium-features` — see
    * `EntitlementService#isEffectivelyPremium`) so the web can decide what to
    * lock: `showLock = flag on && !isPremium`.
@@ -254,18 +235,6 @@ export class UsersService {
     return { isPremium: await this.entitlements.hasPremium(userId) };
   }
 
-  private async requirePremium(userId: string): Promise<void> {
-    if (!(await this.entitlements.isEffectivelyPremium(userId))) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.UserPremiumRequired,
-        undefined,
-        "This feature is reserved for premium accounts",
-      );
-    }
-  }
-
-  /** Marks the mandatory first-run onboarding wizard as done. Idempotent. */
   async completeOnboarding(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -379,6 +348,8 @@ export class UsersService {
         defaultListVisibility: dto.defaultListVisibility,
         locale: dto.locale as string,
         hideProgression: dto.hideProgression,
+        spoilerSensitivity: dto.spoilerSensitivity,
+        domainOrder: dto.domainOrder,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);
@@ -397,6 +368,10 @@ export class UsersService {
   ): Promise<void> {
     if (user.avatar && user.bio?.trim()) {
       await this.xp.award(userId, XpReason.PROFILE_COMPLETED, userId);
+      // complete_profile is one of the onboarding checklist's steps
+      // (OnboardingService) — this method's own condition is exactly that
+      // step's own check.
+      this.events.emitToUser(userId, "onboarding-updated");
     }
   }
 
@@ -449,7 +424,6 @@ export class UsersService {
     );
   }
 
-  /** Consumes the code sent by changeEmail() and applies the new address. */
   async confirmEmailChange(
     userId: string,
     dto: ConfirmEmailChangeDto,

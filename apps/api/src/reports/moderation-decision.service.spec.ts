@@ -1,5 +1,7 @@
+import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { MailService } from "../mail/mail.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ModerationDecisionService } from "./moderation-decision.service";
@@ -11,7 +13,12 @@ function make() {
   const mail = {
     sendModerationDecision: vi.fn(),
   } as unknown as MailService;
-  const notifications = { create: vi.fn() } as unknown as NotificationService;
+  const notifications = {
+    create: vi.fn(),
+    createInTransaction: vi.fn().mockResolvedValue(true),
+    publishCreated: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
 
   return {
     svc: new ModerationDecisionService(prisma, mail, notifications),
@@ -76,5 +83,54 @@ describe("ModerationDecisionService.record", () => {
 
     expect(mail.sendModerationDecision).toHaveBeenCalled();
     expect(notifications.create).not.toHaveBeenCalled();
+  });
+
+  it("titles the in-app notice after the removed content type", async () => {
+    const { svc, notifications } = make();
+
+    await svc.record({ ...BASE_INPUT, measure: "REVIEW_REMOVED" as const });
+
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Une de tes critiques a été retirée" }),
+    );
+  });
+});
+
+describe("ModerationDecisionService report notice", () => {
+  it("persists the decision and in-app notice in the caller's transaction without sending email", async () => {
+    const { svc, mail, notifications } = make();
+    const tx = {
+      moderationDecision: { create: vi.fn() },
+    } as unknown as Prisma.TransactionClient;
+
+    await svc.recordForReportInTransaction(tx, BASE_INPUT);
+    expect(tx.moderationDecision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ reportId: "r1" }),
+    });
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        userId: "u1",
+        type: "MODERATION_ACTION",
+        dedupeKey: "moderation:r1",
+      }),
+    );
+    expect(mail.sendModerationDecision).not.toHaveBeenCalled();
+  });
+
+  it("sends the committed notice to the subject's email and locale", async () => {
+    const { svc, mail } = make();
+
+    await svc.sendEmail(BASE_INPUT);
+
+    expect(mail.sendModerationDecision).toHaveBeenCalledWith(
+      { email: "alice@example.com", locale: "en" },
+      expect.objectContaining({
+        measure: "COMMENT_REMOVED",
+        reasonText: "Insultes répétées.",
+        legalBasis: "TOS_BREACH",
+        tosClause: "§7 — Règles de conduite",
+      }),
+    );
   });
 });

@@ -63,7 +63,7 @@
   --stat-games: #0c7a87;
   --stat-books: #be3d80;
   --stat-music: #3b6dc8;
-  /* Achievement tiers ([G5]). One ring color per tier, never reused for
+  /* One ring color per achievement tier, never reused for
      anything else — same rule as the per-domain stat hues above. */
   --tier-bronze: #8a5423;
   --tier-silver: #68707c;
@@ -159,7 +159,7 @@ body {
   /* Icon-only round action button (rewatch, follow, dismiss…) — the icon
      equivalent of `.btn-ghost`, sized for a touch target rather than text. */
   .btn-icon {
-    @apply text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
+    @apply text-dim hover:text-fg hover:bg-surface-2 grid h-7 w-7 shrink-0 place-items-center rounded-md transition-colors active:scale-95 disabled:pointer-events-none disabled:opacity-50;
   }
   /* Same affordances as `.btn-icon`, in the larger bordered form the profile
      header uses for its standalone actions. Those five buttons hand-rolled
@@ -187,6 +187,14 @@ body {
   .timecode {
     @apply text-dim font-mono tabular-nums;
   }
+  /* Floor for text that carries information at the smallest size — a cast
+     role, an account status, a legal notice. 11px on a phone, 12px once
+     there is room; nothing informative goes below. Purely decorative pills
+     (BÊTA, NOUVEAU) keep their own smaller size. */
+  .text-micro {
+    font-size: clamp(0.6875rem, 0.66rem + 0.14vw, 0.75rem);
+    line-height: 1.3;
+  }
   .chip {
     @apply border-border text-dim hover:text-fg rounded-full border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors;
   }
@@ -206,6 +214,14 @@ body {
   .switch-on .switch-thumb {
     @apply translate-x-[18px];
   }
+  /* A row inside a Dropdown menu ("…" popovers). Pair with `.menu-item-danger`
+     for destructive actions. */
+  .menu-item {
+    @apply hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50;
+  }
+  .menu-item-danger {
+    @apply text-danger hover:bg-danger/10;
+  }
   .link-accent {
     @apply text-accent font-semibold underline decoration-transparent decoration-2 underline-offset-4 transition-colors hover:decoration-current disabled:pointer-events-none disabled:opacity-50;
   }
@@ -214,6 +230,26 @@ body {
   .skeleton {
     @apply bg-surface-2 animate-pulse;
   }
+  /* One-shot "here it is" for the row a settings search result pointed at:
+     a short lift out of the surface and an accent ring that fades with it. */
+  .setting-flash {
+    animation: setting-flash 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes setting-flash {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 transparent;
+    }
+    35% {
+      transform: scale(1.015);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 6px transparent;
+    }
+  }
+
   /* Native scroll (and drag-to-scroll) without the browser's scrollbar chrome. */
   .no-scrollbar {
     scrollbar-width: none;
@@ -256,6 +292,35 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+html.a11y-reduce-motion {
+  scroll-behavior: auto;
+}
+
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html.a11y-high-contrast {
+  --border: color-mix(in srgb, var(--fg) 72%, var(--bg));
+  --dim: color-mix(in srgb, var(--fg) 78%, var(--bg));
+}
+
+html.a11y-high-contrast :focus-visible {
+  outline-width: 3px;
+}
+
+html.a11y-compact {
+  font-size: 15px;
+}
+
+html.a11y-comfortable {
+  font-size: 17px;
 }
 
 /* Legal documents are set as programme notes: quiet, durable and easy to scan. */

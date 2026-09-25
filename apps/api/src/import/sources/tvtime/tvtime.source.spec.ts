@@ -95,6 +95,7 @@ function makeService() {
     { isEffectivelyPremium: vi.fn().mockResolvedValue(true) } as never,
     { award: vi.fn(), awardMany: vi.fn(), revokeBySource: vi.fn() } as never, // XpService stub
     { evaluate: vi.fn() } as never, // AchievementService stub
+    { emitToUser: vi.fn() } as never, // EventsGateway stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }
@@ -281,8 +282,8 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(prisma.episodeWatch.createMany).toHaveBeenCalledTimes(2);
     const tile = (label: string) =>
       job.report!.tiles.find((t) => t.label === label);
-    expect(tile("Séries")!.value).toBe(1);
-    expect(tile("Épisodes")!.value).toBe(2);
+    expect(tile("Series")!.value).toBe(1);
+    expect(tile("Episodes")!.value).toBe(2);
     expect(job.report!.tiles).toMatchObject([
       { id: "series", watchlistCount: 0 },
       { id: "episodes" },
@@ -359,9 +360,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "m2",
       "MOVIE",
     );
-    const films = job.report!.tiles.find((t) => t.label === "Films");
+    const films = job.report!.tiles.find((t) => t.label === "Movies");
     expect(films!.value).toBe(0);
-    expect(films!.sub).toBe("1 en watchlist");
+    expect(films!.sub).toBe("1 on the watchlist");
   });
 
   it("commit with overwrite wipes history and library first", async () => {

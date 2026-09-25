@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
   import {
     getAdminSecurityEvents,
     getAdminSecuritySummary,
@@ -14,13 +17,19 @@
   import RankBars from "$lib/components/stats/RankBars.svelte";
   import SectionLabel from "$lib/components/stats/SectionLabel.svelte";
   import { formatDateTime, formatNumber } from "$lib/format";
+  import { debounce } from "$lib/debounce";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     PagedResult,
     SecurityEventDto,
     SecurityEventType,
   } from "@loomkeep/shared";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
+  import { onDestroy } from "svelte";
 
+  const reduced = prefersReducedMotion();
   const TYPE_LABELS: Record<SecurityEventType, string> = {
     USER_REGISTERED: m.admin_security_registration(),
     USER_DELETED: m.admin_security_account_deletion(),
@@ -35,6 +44,7 @@
     MFA_EMAIL_DISABLED: m.admin_security_mfa_email_disabled(),
     MFA_WEBAUTHN_ADDED: m.admin_security_mfa_webauthn_added(),
     MFA_WEBAUTHN_REMOVED: m.admin_security_mfa_webauthn_removed(),
+    MFA_WEBAUTHN_RENAMED: m.admin_security_mfa_webauthn_renamed(),
     MFA_PASSWORDLESS_ENABLED: m.admin_security_mfa_passwordless_enabled(),
     MFA_PASSWORDLESS_DISABLED: m.admin_security_mfa_passwordless_disabled(),
     MFA_RECOVERY_CODES_REGENERATED:
@@ -57,6 +67,7 @@
     MFA_EMAIL_DISABLED: "border-warning/40 bg-warning/10 text-warning",
     MFA_WEBAUTHN_ADDED: "border-success/40 bg-success/10 text-success",
     MFA_WEBAUTHN_REMOVED: "border-warning/40 bg-warning/10 text-warning",
+    MFA_WEBAUTHN_RENAMED: "border-accent/40 bg-accent/10 text-accent",
     MFA_PASSWORDLESS_ENABLED: "border-warning/40 bg-warning/10 text-warning",
     MFA_PASSWORDLESS_DISABLED: "border-success/40 bg-success/10 text-success",
     MFA_RECOVERY_CODES_REGENERATED: "border-accent/40 bg-accent/10 text-accent",
@@ -72,9 +83,33 @@
     })),
   ];
 
-  let activeType = $state<SecurityEventType | null>(null);
-  let identifierInput = $state("");
-  let identifierFilter = $state("");
+  const activeType = $derived<SecurityEventType | null>(
+    Object.hasOwn(TYPE_LABELS, page.url.searchParams.get("type") ?? "")
+      ? (page.url.searchParams.get("type") as SecurityEventType)
+      : null,
+  );
+  let identifierInput = $state(page.url.searchParams.get("identifier") ?? "");
+  const identifierFilter = $derived(
+    page.url.searchParams.get("identifier") ?? "",
+  );
+  let copiedEventId = $state<string | null>(null);
+
+  async function copyEvent(event: SecurityEventDto) {
+    const content = [
+      TYPE_LABELS[event.type],
+      event.identifier,
+      event.detail,
+      event.userAgent,
+      formatDateTime(event.createdAt),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    await navigator.clipboard.writeText(content);
+    copiedEventId = event.id;
+    setTimeout(() => {
+      if (copiedEventId === event.id) copiedEventId = null;
+    }, 1500);
+  }
 
   const eventsQuery = createApiInfiniteQuery<
     PagedResult<SecurityEventDto>,
@@ -99,12 +134,30 @@
   const events = $derived(eventsQuery.data);
   const error = $derived(eventsQuery.error);
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
+  const identifierDebounce = debounce(() => {
+    void goto(
+      adminFilterHref(page.url, { identifier: identifierInput.trim() || null }),
+      { replaceState: true, noScroll: true, keepFocus: true },
+    );
+  }, 300);
+  $effect(() => {
+    identifierDebounce.cancel();
+    identifierInput = page.url.searchParams.get("identifier") ?? "";
+  });
+  onDestroy(() => identifierDebounce.cancel());
   function onIdentifierInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      identifierFilter = identifierInput.trim();
-    }, 300);
+    identifierDebounce.call();
+  }
+
+  function changeType(type: SecurityEventType | null) {
+    identifierDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, {
+        type,
+        identifier: identifierInput.trim() || null,
+      }),
+      { noScroll: true, keepFocus: true },
+    );
   }
 
   // Failed logins only, over fixed windows — see the API for why the other
@@ -147,7 +200,7 @@
   );
 </script>
 
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="shield"
     title={m.common_security()}
@@ -160,7 +213,7 @@
       <div class="card mb-5 p-4">
         <SectionLabel
           label={m.admin_security_targeted_identifiers()}
-          badge="7 jours"
+          badge={m.admin_security_seven_days()}
           class="mb-3" />
         <RankBars items={targetBars} />
       </div>
@@ -193,7 +246,7 @@
       label={m.admin_security_all_types()}
       options={TYPE_OPTIONS}
       values={activeType ? [activeType] : []}
-      onChange={(v) => (activeType = (v[0] as SecurityEventType) || null)} />
+      onChange={(v) => changeType((v[0] as SecurityEventType) || null)} />
   </div>
 
   <input
@@ -228,7 +281,11 @@
   {:else}
     <ul class="space-y-2">
       {#each events as e (e.id)}
-        <li class="card p-3.5">
+        <li
+          animate:flip={{ duration: reduced ? 0 : 160 }}
+          in:fade|global={{ duration: reduced ? 0 : 140 }}
+          out:fade|global={{ duration: reduced ? 0 : 100 }}
+          class="card p-3.5">
           <div class="flex flex-wrap items-center gap-2">
             <span
               class="rounded-full border px-2 py-0.5 text-xs font-bold {TYPE_COLORS[
@@ -244,11 +301,28 @@
             </span>
           </div>
           {#if e.detail || e.userAgent}
-            <p class="text-dim mt-1.5 truncate text-xs">
-              {#if e.detail}{e.detail}{/if}
-              {#if e.detail && e.userAgent}·{/if}
-              {#if e.userAgent}{e.userAgent}{/if}
-            </p>
+            <details class="mt-2 text-xs">
+              <summary
+                class="text-dim hover:text-fg cursor-pointer font-semibold transition-colors">
+                {m.common_details()}
+              </summary>
+              <div class="border-border mt-2 space-y-2 border-l pl-3">
+                {#if e.detail}
+                  <p class="text-fg break-words">{e.detail}</p>
+                {/if}
+                {#if e.userAgent}
+                  <code
+                    class="bg-surface-2 text-dim block overflow-x-auto rounded px-2 py-1.5 break-words whitespace-pre-wrap"
+                    >{e.userAgent}</code>
+                {/if}
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  onclick={() => void copyEvent(e)}>
+                  {copiedEventId === e.id ? m.common_copied() : m.common_copy()}
+                </button>
+              </div>
+            </details>
           {/if}
           {#if !e.userId}
             <p class="text-dim mt-1 text-xs italic">

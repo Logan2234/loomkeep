@@ -16,7 +16,6 @@ export interface MusicSearchResponseDto {
   results: MusicSummaryDto[];
 }
 
-/** One track of the album's representative release. */
 export interface MusicTrackDto {
   /** 1-indexed position within its medium (resets per disc on multi-disc releases). */
   position: number;
@@ -125,5 +124,7 @@ export interface UpdateMusicEntryDto {
  * `entry` is null when the album is not in the library.
  */
 export interface MusicDetailDto extends MusicDetailsDto {
+  /** Cached work id when a public discussion can exist; null for a live-only item. */
+  commentTargetId: string | null;
   entry: MusicEntryDto | null;
 }

@@ -1,17 +1,11 @@
 <script lang="ts">
-  // [G8] Desktop half of the "Première séance" checklist: a small collapsed
-  // ticket-stub pill, bottom-right, that unfolds into the step list on click
-  // — see OnboardingBanner for the mobile half (a different shell entirely,
-  // not just a responsive variant of this one).
+  // The mobile checklist uses a separate shell in OnboardingBanner.
   import { afterNavigate } from "$app/navigation";
-  import {
-    getOnboardingChecklist,
-    skipOnboardingStep,
-  } from "$lib/api/gamification";
+  import { skipOnboardingStep } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
   import { layout } from "$lib/layout.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
@@ -28,15 +22,7 @@
     open = false;
   });
 
-  const checklistQuery = createApiQuery(() => ({
-    key: keys.gamification.onboarding(),
-    fetch: getOnboardingChecklist,
-    // Steps only ever change from the user's own actions elsewhere in the
-    // app, which this panel can't observe directly — a modest poll instead
-    // of wiring an invalidation into every add/rate/import/comment call
-    // site across the app. Stops once there's nothing left to poll for.
-    refetchInterval: (data) => (data?.allDone ? false : 30_000),
-  }));
+  const checklistQuery = useOnboardingChecklist();
 
   const steps = $derived(
     checklistQuery.data ? deriveStepViews(checklistQuery.data.steps) : [],

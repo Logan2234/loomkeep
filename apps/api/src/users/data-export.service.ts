@@ -436,6 +436,7 @@ export class DataExportService {
         identifier: s.identifier ?? user.email,
         detail: s.detail,
         userAgent: s.userAgent,
+        ip: s.ip,
         createdAt: s.createdAt.toISOString(),
       })),
       devices: deviceRows.map((d) => ({

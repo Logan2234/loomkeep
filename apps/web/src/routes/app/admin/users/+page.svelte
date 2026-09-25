@@ -1,33 +1,66 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { adminFilterHref } from "$lib/admin-filter-url";
+  import {
+    ADMIN_USER_ADVANCED_KEYS,
+    localDayBoundary,
+    type AdminUserAdvancedFilters,
+    type AdminUserAdvancedKey,
+  } from "$lib/admin-user-filters";
   import { getAdminUsers } from "$lib/api/client";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
   import Avatar from "$lib/components/Avatar.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import { debounce } from "$lib/debounce";
   import { formatDate } from "$lib/format";
+  import { isFeatureNew } from "$lib/feature-badges";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type {
     AdminUserDto,
     AdminUserFilter,
     PagedResult,
   } from "@loomkeep/shared";
+  import { onDestroy } from "svelte";
+  import { flip } from "svelte/animate";
+  import { fade, slide } from "svelte/transition";
   import UserDrawer from "./components/UserDrawer.svelte";
 
-  // Pre-filled from `?q=` so links like /admin/users?q=<email> land pre-filtered
-  // (used by the imports page's "Voir le compte →"). `query` is the raw
-  // input; `queryFilter` is the debounced value that actually drives the
-  // fetch (see onQueryInput below).
+  const reduced = prefersReducedMotion();
   let query = $state(page.url.searchParams.get("q") ?? "");
-  let queryFilter = $state(page.url.searchParams.get("q") ?? "");
-  let filter = $state<AdminUserFilter>("all");
+  const queryFilter = $derived(page.url.searchParams.get("q") ?? "");
+  const filter = $derived<AdminUserFilter>(
+    ["admin", "unverified", "never", "premium"].includes(
+      page.url.searchParams.get("filter") ?? "",
+    )
+      ? (page.url.searchParams.get("filter") as AdminUserFilter)
+      : "all",
+  );
+  const advanced = $derived<AdminUserAdvancedFilters>({
+    createdFrom: page.url.searchParams.get("createdFrom") ?? "",
+    createdTo: page.url.searchParams.get("createdTo") ?? "",
+    activeFrom: page.url.searchParams.get("activeFrom") ?? "",
+    activeTo: page.url.searchParams.get("activeTo") ?? "",
+    mfa: page.url.searchParams.get("mfa") ?? "",
+    newsletter: page.url.searchParams.get("newsletter") ?? "",
+    push: page.url.searchParams.get("push") ?? "",
+    session: page.url.searchParams.get("session") ?? "",
+  });
+  let advancedOpen = $state(
+    ADMIN_USER_ADVANCED_KEYS.some((key) => page.url.searchParams.has(key)),
+  );
 
   let selectedId = $state<string | null>(null);
 
-  const usersKey = $derived(keys.admin.users({ query: queryFilter, filter }));
+  const usersKey = $derived(
+    keys.admin.users({ query: queryFilter, filter, ...advanced }),
+  );
 
   const usersQuery = createApiInfiniteQuery<
     PagedResult<AdminUserDto>,
@@ -40,6 +73,14 @@
         search: queryFilter || undefined,
         filter,
         page: pageNum,
+        createdFrom: localDayBoundary(advanced.createdFrom),
+        createdTo: localDayBoundary(advanced.createdTo, true),
+        activeFrom: localDayBoundary(advanced.activeFrom),
+        activeTo: localDayBoundary(advanced.activeTo, true),
+        mfa: advanced.mfa,
+        newsletter: advanced.newsletter,
+        push: advanced.push,
+        session: advanced.session,
       }),
     getPageItems: (page) => page.items,
     initialPageParam: 1,
@@ -50,15 +91,61 @@
 
   const users = $derived(usersQuery.data);
   const error = $derived(usersQuery.error);
+  const filtering = $derived(
+    usersQuery.fetching &&
+      !usersQuery.loading &&
+      !usersQuery.isFetchingNextPage,
+  );
   // Looked up from the list rather than kept as its own copy, so a role/plan
   // change (which invalidates usersKey) refreshes the open drawer for free.
   const selected = $derived(users.find((u) => u.id === selectedId) ?? null);
 
   const queryFilterDebounce = debounce(() => {
-    queryFilter = query.trim();
+    void goto(adminFilterHref(page.url, { q: query.trim() || null }), {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
   }, 300);
+  $effect(() => {
+    queryFilterDebounce.cancel();
+    query = page.url.searchParams.get("q") ?? "";
+  });
+  onDestroy(() => queryFilterDebounce.cancel());
   function onQueryInput() {
     queryFilterDebounce.call();
+  }
+
+  function changeFilter(value: AdminUserFilter) {
+    queryFilterDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, {
+        q: query.trim() || null,
+        filter: value === "all" ? null : value,
+      }),
+      { noScroll: true, keepFocus: true },
+    );
+  }
+
+  function changeAdvanced(key: AdminUserAdvancedKey, value: string) {
+    queryFilterDebounce.cancel();
+    void goto(
+      adminFilterHref(page.url, {
+        q: query.trim() || null,
+        [key]: value || null,
+      }),
+      { noScroll: true, keepFocus: true },
+    );
+  }
+
+  function clearFilters() {
+    queryFilterDebounce.cancel();
+    const updates: Record<string, null> = { q: null, filter: null };
+    for (const key of ADMIN_USER_ADVANCED_KEYS) updates[key] = null;
+    void goto(adminFilterHref(page.url, updates), {
+      noScroll: true,
+      keepFocus: true,
+    });
   }
 
   function closeDrawer() {
@@ -89,10 +176,42 @@
     { value: "admin", label: m.common_admin() },
     { value: "unverified", label: m.admin_users_unverified() },
     { value: "never", label: m.admin_users_never_logged_in() },
+    { value: "premium", label: m.admin_users_premium_filter() },
   ];
+  const DATE_FIELDS = [
+    { key: "createdFrom", label: m.admin_users_created_from() },
+    { key: "createdTo", label: m.admin_users_created_to() },
+    { key: "activeFrom", label: m.admin_users_active_from() },
+    { key: "activeTo", label: m.admin_users_active_to() },
+  ] as const;
+  const BINARY_FIELDS = [
+    { key: "mfa", label: m.admin_users_mfa() },
+    { key: "newsletter", label: m.admin_users_newsletter() },
+    { key: "push", label: m.admin_users_push() },
+    { key: "session", label: m.admin_users_session() },
+  ] as const;
+  const BINARY_OPTIONS = [
+    { value: "", label: m.common_all() },
+    { value: "yes", label: m.common_yes() },
+    { value: "no", label: m.common_no() },
+  ];
+  const activeAdvanced = $derived(
+    [...DATE_FIELDS, ...BINARY_FIELDS]
+      .filter(({ key }) => advanced[key])
+      .map(({ key, label }) => ({
+        key,
+        label,
+        value:
+          advanced[key] === "yes"
+            ? m.common_yes()
+            : advanced[key] === "no"
+              ? m.common_no()
+              : advanced[key],
+      })),
+  );
 </script>
 
-<div class="mx-auto max-w-5xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="user"
     title={m.common_users()}
@@ -113,15 +232,107 @@
       label={m.common_filter()}
       options={FILTERS}
       values={[filter]}
-      onChange={(v) => (filter = (v[0] as AdminUserFilter) ?? "all")} />
+      onChange={(v) => changeFilter((v[0] as AdminUserFilter) ?? "all")} />
   </div>
 
+  <div class="border-border mb-4 rounded-lg border">
+    <button
+      type="button"
+      class="text-fg flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold"
+      aria-expanded={advancedOpen}
+      aria-controls="admin-user-advanced-filters"
+      onclick={() => (advancedOpen = !advancedOpen)}>
+      <span class="flex flex-wrap items-center gap-2">
+        {m.admin_users_advanced_filters()}
+        {#if isFeatureNew("admin-user-filters")}
+          <NewBadge />
+        {/if}
+        {#if activeAdvanced.length > 0}
+          <span class="text-dim">({activeAdvanced.length})</span>
+        {/if}
+      </span>
+      <Icon
+        name="chevron-right"
+        class="h-4 w-4 shrink-0 transition-transform {advancedOpen
+          ? 'rotate-90'
+          : ''}" />
+    </button>
+    <div id="admin-user-advanced-filters">
+      {#if advancedOpen}
+        <div transition:slide={{ duration: reduced ? 0 : 180 }}>
+          <div
+            class="border-border grid gap-4 border-t px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
+            {#each DATE_FIELDS as field (field.key)}
+              <label class="text-dim flex flex-col gap-1.5 text-sm">
+                {field.label}
+                <input
+                  type="date"
+                  value={advanced[field.key]}
+                  onchange={(event) =>
+                    changeAdvanced(field.key, event.currentTarget.value)}
+                  class="border-border bg-surface text-fg rounded-lg border px-3 py-2" />
+              </label>
+            {/each}
+            {#each BINARY_FIELDS as field (field.key)}
+              <div class="text-dim flex flex-col items-start gap-1.5 text-sm">
+                <span>{field.label}</span>
+                <Combobox
+                  label={field.label}
+                  options={BINARY_OPTIONS}
+                  values={[advanced[field.key]]}
+                  onChange={(values) =>
+                    changeAdvanced(field.key, values[0] ?? "")} />
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+  </div>
+
+  {#if activeAdvanced.length > 0 || filter !== "all" || queryFilter}
+    <div
+      transition:slide={{ duration: reduced ? 0 : 150 }}
+      class="mb-4 flex flex-wrap items-center gap-2">
+      {#each activeAdvanced as item (item.key)}
+        <button
+          transition:fade={{ duration: reduced ? 0 : 120 }}
+          type="button"
+          class="border-border text-dim hover:text-fg rounded-full border px-3 py-1 text-xs transition-colors"
+          aria-label={m.admin_users_remove_filter({ filter: item.label })}
+          onclick={() => changeAdvanced(item.key, "")}>
+          {item.label} : {item.value} ×
+        </button>
+      {/each}
+      <button type="button" class="btn btn-ghost" onclick={clearFilters}>
+        {m.common_clear_filters()}
+      </button>
+    </div>
+  {/if}
+
+  {#if filtering}
+    <p
+      role="status"
+      transition:fade={{ duration: reduced ? 0 : 120 }}
+      class="text-dim mb-2 text-sm">
+      {m.common_loading()}
+    </p>
+  {/if}
+
   {#if error}
-    <Banner variant="error">{error}</Banner>
+    <div transition:fade={{ duration: reduced ? 0 : 120 }}>
+      <Banner variant="error">{error}</Banner>
+    </div>
   {:else if usersQuery.loading}
-    <div class="card h-64 animate-pulse"></div>
+    <div
+      transition:fade={{ duration: reduced ? 0 : 120 }}
+      class="card h-64 {reduced ? '' : 'animate-pulse'}">
+    </div>
   {:else}
-    <div class="card overflow-x-auto">
+    <div
+      transition:fade={{ duration: reduced ? 0 : 120 }}
+      aria-busy={filtering}
+      class="card overflow-x-auto">
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr
@@ -136,13 +347,18 @@
         <tbody>
           {#each users as u (u.id)}
             <tr
-              onclick={() => (selectedId = u.id)}
-              class="border-border hover:bg-surface-2 cursor-pointer border-b transition-colors last:border-b-0 {selected?.id ===
+              animate:flip={{ duration: reduced ? 0 : 160 }}
+              in:fade|global={{ duration: reduced ? 0 : 140 }}
+              out:fade|global={{ duration: reduced ? 0 : 100 }}
+              class="border-border border-b transition-colors last:border-b-0 {selected?.id ===
               u.id
                 ? 'bg-accent/10'
                 : ''}">
               <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  onclick={() => (selectedId = u.id)}
+                  class="hover:bg-surface-2 -m-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-lg p-2 text-left transition-colors">
                   <Avatar seed={u.username} url={u.avatarUrl} size={36} />
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
@@ -150,19 +366,19 @@
                         >{u.displayName}</span>
                       {#if u.role === "ADMIN"}
                         <span
-                          class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
+                          class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                           {m.common_admin()}
                         </span>
                       {/if}
                       {#if u.plan === "PREMIUM"}
                         <span
-                          class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
+                          class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                           {m.common_premium()}
                         </span>
                       {/if}
                       {#if !u.emailVerified}
                         <span
-                          class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">
+                          class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
                           {m.admin_users_unverified()}
                         </span>
                       {/if}
@@ -183,7 +399,7 @@
                       {formatDate(u.createdAt)}
                     </p>
                   </div>
-                </div>
+                </button>
               </td>
               <td class="hidden px-4 py-3 sm:table-cell">
                 <div class="text-dim flex items-center gap-2 text-xs">
@@ -202,8 +418,10 @@
         </tbody>
       </table>
       {#if users.length === 0}
-        <p class="text-dim px-4 py-6 text-center text-sm">
-          {query.trim() || filter !== "all"
+        <p
+          transition:fade={{ duration: reduced ? 0 : 120 }}
+          class="text-dim px-4 py-6 text-center text-sm">
+          {query.trim() || filter !== "all" || activeAdvanced.length > 0
             ? m.admin_users_empty_filter()
             : m.admin_users_empty()}
         </p>
@@ -212,6 +430,7 @@
 
     {#if usersQuery.hasNextPage}
       <button
+        transition:fade={{ duration: reduced ? 0 : 120 }}
         class="btn btn-ghost mt-4 w-full"
         disabled={usersQuery.isFetchingNextPage}
         onclick={() => usersQuery.fetchNextPage()}>

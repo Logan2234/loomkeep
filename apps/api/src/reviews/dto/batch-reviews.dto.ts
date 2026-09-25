@@ -4,7 +4,6 @@ import {
 } from "@loomkeep/shared";
 import { ArrayNotEmpty, IsArray, IsIn, IsString } from "class-validator";
 
-/** Bulk-delete a set of the current user's reviews, by review id. */
 export class BatchDeleteReviewsBody {
   @IsArray()
   @ArrayNotEmpty()
@@ -12,7 +11,6 @@ export class BatchDeleteReviewsBody {
   ids!: string[];
 }
 
-/** Bulk-change the audience of a set of the current user's reviews. */
 export class BatchVisibilityBody {
   @IsArray()
   @ArrayNotEmpty()

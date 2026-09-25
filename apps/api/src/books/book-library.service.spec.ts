@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -7,8 +8,6 @@ import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1) — the XP
-// wiring's actual crediting/reasons is asserted below via these mocks.
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -19,6 +18,10 @@ function stubXp(): XpService {
 
 function stubAchievements(): AchievementService {
   return { evaluate: vi.fn() } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -80,6 +83,7 @@ function makeService(rows: ReturnType<typeof makeRow>[]) {
     } as unknown as import("../social/activity.service").ActivityService,
     stubXp(),
     stubAchievements(),
+    stubEvents(),
   );
   return { service, prisma };
 }
@@ -170,15 +174,20 @@ describe("BookLibraryService.deleteEntry", () => {
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
 
     expect(reviewDeleteMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", targetId: "book-1" },
+      where: { userId: "user-1", targetId: { in: ["book-1"] } },
     });
     expect(commentUpdateMany).toHaveBeenCalledWith({
-      where: { authorId: "user-1", targetId: "book-1", deletedAt: null },
+      where: {
+        authorId: "user-1",
+        targetId: { in: ["book-1"] },
+        deletedAt: null,
+      },
       data: { text: null, deletedAt: expect.any(Date) },
     });
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
@@ -187,9 +196,7 @@ describe("BookLibraryService.deleteEntry", () => {
   });
 });
 
-// Regression: finishedAt used to only ever be set by an explicit dto field
-// nothing in the UI ever sends, so a book marked READ never actually
-// counted towards the reading goal (which reads finishedAt, not status).
+// Reading goals depend on finishedAt, while the UI only sends status.
 describe("BookLibraryService — finishedAt sync", () => {
   it("sets finishedAt when a book's status is patched to READ", async () => {
     const entryRow = makeRow({ id: "e1", status: "TO_READ" });
@@ -225,6 +232,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       activity,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -270,6 +278,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       activity,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -324,6 +333,7 @@ describe("BookLibraryService reading goal", () => {
       {} as unknown as import("../social/activity.service").ActivityService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
   }
 
@@ -423,6 +433,7 @@ describe("BookLibraryService — XP wiring", () => {
       bookEntry: { findUnique, upsert, count },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const events = stubEvents();
 
     const service = new BookLibraryService(
       prisma,
@@ -434,6 +445,7 @@ describe("BookLibraryService — XP wiring", () => {
       activity,
       xp,
       stubAchievements(),
+      events,
     );
 
     await service.upsertEntry("user-1", {
@@ -444,6 +456,10 @@ describe("BookLibraryService — XP wiring", () => {
 
     expect(xp.award).toHaveBeenCalledWith("user-1", "WORK_ADDED", "e1");
     expect(xp.award).toHaveBeenCalledWith("user-1", "DOMAIN_STARTED", "BOOKS");
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      "user-1",
+      "onboarding-updated",
+    );
 
     // A subsequent update (before !== null) must not re-award either.
     xp.award = vi.fn();
@@ -492,6 +508,7 @@ describe("BookLibraryService — XP wiring", () => {
       activity,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.upsertEntry("user-1", {
@@ -535,6 +552,7 @@ describe("BookLibraryService — XP wiring", () => {
       activity,
       xp,
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.addReplay("user-1", "e1", {} as never);

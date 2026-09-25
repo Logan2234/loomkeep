@@ -15,6 +15,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -51,6 +52,7 @@ type ReviewRow = {
   rating: number;
   text: string | null;
   visibility: string;
+  spoilerTag: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -109,6 +111,7 @@ export class ReviewService {
     row: ReviewRow,
     author: UserSummaryDto | null,
     votes: { score: number; myVote: ReviewVoteValue | null },
+    byFriend = false,
   ): ReviewDto {
     return {
       id: row.id,
@@ -117,11 +120,13 @@ export class ReviewService {
       rating: row.rating,
       text: row.text,
       visibility: row.visibility as ReviewVisibility,
+      spoilerTag: row.spoilerTag,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       author,
       voteScore: votes.score,
       myVote: votes.myVote,
+      byFriend,
     };
   }
 
@@ -237,7 +242,6 @@ export class ReviewService {
     return { score: info.score, myVote: value };
   }
 
-  /** Removes the viewer's vote on a review, if any. */
   async unvote(viewerId: string, reviewId: string): Promise<{ score: number }> {
     // Looked up before the delete so revokeBySource still has the id to
     // work with afterwards.
@@ -299,7 +303,12 @@ export class ReviewService {
 
     const row = await this.prisma.review.upsert({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      update: { rating: dto.rating, text, visibility },
+      update: {
+        rating: dto.rating,
+        text,
+        visibility,
+        spoilerTag: dto.spoilerTag,
+      },
       create: {
         userId,
         targetType,
@@ -307,6 +316,7 @@ export class ReviewService {
         rating: dto.rating,
         text,
         visibility,
+        spoilerTag: dto.spoilerTag ?? false,
       },
     });
 
@@ -315,14 +325,14 @@ export class ReviewService {
     const contentChanged =
       !existing || existing.rating !== dto.rating || existing.text !== text;
 
+    // Audience/spoiler-only edits aren't news: no revision, no feed entry.
     if (contentChanged) {
       await this.prisma.reviewRevision.create({
         data: { reviewId: row.id, rating: dto.rating, text },
       });
+      await this.emitReviewed(userId, targetType, targetId, dto.rating);
+      await this.awardReviewRatingXp(userId, row.id, text);
     }
-
-    await this.emitReviewed(userId, targetType, targetId, dto.rating);
-    await this.awardReviewRatingXp(userId, row.id, text);
 
     // first_take unlocks off the review's creation, not every edit.
     if (!existing) {
@@ -371,14 +381,13 @@ export class ReviewService {
     return count;
   }
 
-  /** Deletes the user's review for a target (revisions cascade). */
   async remove(
     userId: string,
     targetType: ReviewTargetType,
     targetId: string,
   ): Promise<void> {
     // Looked up before the delete so revokeBySource still has the id to
-    // work with afterwards (same [G1] rule as every other cancellation path).
+    // work with afterwards.
     const existing = await this.prisma.review.findUnique({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
       select: { id: true },
@@ -393,7 +402,39 @@ export class ReviewService {
     if (existing) await this.xp.revokeBySource("Review", [existing.id]);
   }
 
-  /** The edit history of the user's own review (newest first). */
+  /**
+   * Moderation take-down: a review has no tombstone (nothing hangs off it
+   * the way replies hang off a comment), so it is deleted outright, with its
+   * XP. Returns what the DSA statement of reasons needs, captured before the
+   * row disappears.
+   */
+  async adminRemove(
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ authorId: string | null; rating: number; text: string | null }> {
+    const db = tx ?? this.prisma;
+    const review = await db.review.findUnique({
+      where: { id },
+      select: { id: true, userId: true, rating: true, text: true },
+    });
+    if (!review)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+
+    await db.review.delete({ where: { id } });
+
+    if (tx) {
+      await this.xp.revokeBySource("Review", [id], tx);
+    } else {
+      await this.xp.revokeBySource("Review", [id]);
+    }
+
+    return {
+      authorId: review.userId,
+      rating: review.rating,
+      text: review.text,
+    };
+  }
+
   async revisions(
     userId: string,
     targetType: ReviewTargetType,
@@ -415,7 +456,6 @@ export class ReviewService {
     }));
   }
 
-  /** Every review the current user has written (newest first), with targets. */
   async listMine(userId: string): Promise<MyReviewDto[]> {
     const rows = await this.prisma.review.findMany({
       where: { userId },
@@ -437,8 +477,10 @@ export class ReviewService {
 
   /**
    * Resolves display info (title + image) for the work each review targets,
-   * batched per type. SEASON/EPISODE aren't creatable from the UI yet, so they
-   * fall back to a null target (rendered generically).
+   * batched per type. SEASON and EPISODE resolve to nothing here — a season
+   * review is creatable from the episode list, and an episode one arrives with
+   * the IMDb import — so they fall back to a null target (rendered
+   * generically, without title or poster).
    */
   private async resolveTargets(
     rows: { targetType: string; targetId: string }[],
@@ -662,12 +704,12 @@ export class ReviewService {
       if (
         resolveReviewVisibility(row.visibility, author.profileAccess, relation)
       ) {
+        const shown = anonymizeAuthor(author, viewerId, targetType, targetId);
+        // A pseudonymous author must stay unlinkable — flagging them as a
+        // friend would narrow the pseudonym down to the viewer's friend list.
+        const byFriend = relation.isFriend && !shown.anonymized;
         visible.push(
-          this.toDto(
-            row,
-            withBadges(anonymizeAuthor(author, viewerId, targetType, targetId)),
-            votesFor(row.id),
-          ),
+          this.toDto(row, withBadges(shown), votesFor(row.id), byFriend),
         );
       }
     }
@@ -675,10 +717,8 @@ export class ReviewService {
     return visible;
   }
 
-  // --- Rating projection for the library services (entry DTOs keep `rating`,
-  //     now sourced from Review). ---
+  // Library entry DTO ratings are projected from reviews.
 
-  /** The user's ratings for many targets of one type, keyed by targetId. */
   async getRatings(
     userId: string,
     targetType: ReviewTargetType,
@@ -692,7 +732,6 @@ export class ReviewService {
     return new Map(rows.map((r) => [r.targetId, r.rating]));
   }
 
-  /** The user's rating for a single target, or null. */
   async getRating(
     userId: string,
     targetType: ReviewTargetType,

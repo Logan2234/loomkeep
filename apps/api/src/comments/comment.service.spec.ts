@@ -1,9 +1,12 @@
 import type { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
+import type { EventsGateway } from "../events/events.gateway";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
+import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "../social/block.service";
@@ -11,7 +14,6 @@ import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { CommentService, REPLY_PREVIEW_LIMIT } from "./comment.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -75,6 +77,7 @@ function commentRow(over: Partial<Record<string, unknown>> = {}) {
     createdAt: new Date(),
     updatedAt: new Date(),
     author: AUTHOR,
+    mentions: [],
     // list() reads both through the nested include on its single query.
     replies: [],
     _count: { replies: 0 },
@@ -121,8 +124,11 @@ function make(
       findUnique: vi.fn().mockResolvedValue(null),
       ...overrides.season,
     },
-    libraryEntry: {
+    episode: {
       findUnique: vi.fn().mockResolvedValue(null),
+    },
+    libraryEntry: {
+      findUnique: vi.fn().mockResolvedValue({ id: "entry-1" }),
       ...overrides.libraryEntry,
     },
     gameEntry: {
@@ -161,10 +167,17 @@ function make(
     ),
   } as unknown as VisibilityService;
 
-  const notifications = { create: vi.fn() } as unknown as NotificationService;
+  const notifications = {
+    create: vi.fn(),
+    copyFor: () => notificationCopy("fr"),
+  } as unknown as NotificationService;
   const xp = stubXp();
   const achievements = stubAchievements();
   const blocks = new BlockService(prisma);
+  const events = {
+    emitToCommentsThread: vi.fn(),
+    emitToUser: vi.fn(),
+  } as unknown as EventsGateway;
 
   return {
     svc: new CommentService(
@@ -176,11 +189,13 @@ function make(
       FLAGS,
       achievements,
       blocks,
+      events,
     ),
     prisma,
     notifications,
     xp,
     achievements,
+    events,
   };
 }
 
@@ -320,8 +335,8 @@ describe("CommentService.list — reply preview", () => {
 
     await svc.list("viewer", "MEDIA" as never, "m1");
 
-    // The regression this guards: replies used to be fetched in a second,
-    // unbounded query, so one popular comment decided the response size.
+    // Replies must share the bounded query so one popular thread cannot
+    // decide the response size.
     expect(findMany).toHaveBeenCalledTimes(1);
     expect(findMany.mock.calls[0][0].include.replies.take).toBe(
       -REPLY_PREVIEW_LIMIT,
@@ -498,8 +513,8 @@ describe("CommentService.create", () => {
     );
   });
 
-  it("does not notify a reply when the parent author blocked the commenter", async () => {
-    const { svc, notifications } = make({
+  it("rejects a reply when the parent author blocked the commenter", async () => {
+    const { svc, prisma } = make({
       comment: {
         findUnique: vi.fn().mockResolvedValue({
           id: "root1",
@@ -514,55 +529,221 @@ describe("CommentService.create", () => {
       },
       block: { findFirst: vi.fn().mockResolvedValue({ id: "b1" }) },
     });
-    await svc.create("viewer", {
-      targetType: "MEDIA" as never,
-      targetId: "m1",
-      parentId: "root1",
-      text: "thanks",
-    });
-    expect(notifications.create).not.toHaveBeenCalled();
+    await expect(
+      svc.create("viewer", {
+        targetType: "MEDIA" as never,
+        targetId: "m1",
+        parentId: "root1",
+        text: "thanks",
+      }),
+    ).rejects.toThrow();
+    expect(prisma.comment.create).not.toHaveBeenCalled();
   });
 
-  it("notifies a mentioned user but not the author mentioning themselves", async () => {
-    const { svc, notifications } = make({
+  it("notifies only a participant deliberately selected as a mention", async () => {
+    const bob = {
+      ...AUTHOR,
+      id: "bobId",
+      username: "bob",
+      displayName: "Bob",
+    };
+    const { svc, notifications, prisma } = make({
       comment: {
-        create: vi
+        findMany: vi
           .fn()
-          .mockResolvedValue(commentRow({ text: "hey @author and @bob" })),
-      },
-      user: {
-        findMany: vi.fn().mockResolvedValue([{ id: "bobId" }]),
+          .mockResolvedValue([{ authorId: bob.id, author: bob }]),
+        create: vi.fn().mockResolvedValue(
+          commentRow({
+            text: "hey @author and @bob",
+            mentions: [{ userId: bob.id, user: bob, start: 16 }],
+          }),
+        ),
       },
     });
     await svc.create(AUTHOR.id, {
       targetType: "MEDIA" as never,
       targetId: "m1",
       text: "hey @author and @bob",
+      mentions: [
+        { userId: AUTHOR.id, start: 4 },
+        { userId: bob.id, start: 16 },
+      ],
     });
     expect(notifications.create).toHaveBeenCalledTimes(1);
     expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "bobId", type: "COMMENT_MENTION" }),
     );
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mentions: { create: [{ userId: bob.id, start: 16 }] },
+        }),
+      }),
+    );
   });
 
-  it("excludes Figurants from mention resolution (unaddressable)", async () => {
-    const findMany = vi.fn().mockResolvedValue([]);
-    const { svc } = make({
+  it("keeps raw @text as text when no recipient was selected", async () => {
+    const { svc, notifications, prisma } = make({
       comment: {
         create: vi.fn().mockResolvedValue(commentRow({ text: "hey @ghosty" })),
       },
-      user: { findMany },
     });
     await svc.create(AUTHOR.id, {
       targetType: "MEDIA" as never,
       targetId: "m1",
       text: "hey @ghosty",
     });
-    expect(findMany).toHaveBeenCalledWith(
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mentions: { create: [] },
+        }),
+      }),
+    );
+  });
+
+  it("keeps a stale mention picker selection out of the comment", async () => {
+    const { svc, notifications, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue(commentRow({ text: "hey @bob" })),
+      },
+    });
+    await svc.create(AUTHOR.id, {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "hey @bob",
+      mentions: [{ userId: "former-participant", start: 4 }],
+    });
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ mentions: { create: [] } }),
+      }),
+    );
+  });
+
+  it("drops a mention when either participant blocked the other", async () => {
+    const bob = { ...AUTHOR, id: "bobId", username: "bob" };
+    const { svc, notifications, prisma } = make({
+      comment: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ authorId: bob.id, author: bob }]),
+        create: vi.fn().mockResolvedValue(commentRow({ text: "hey @bob" })),
+      },
+      relations: { [bob.id]: relation({ blocking: true }) },
+    });
+    await svc.create(AUTHOR.id, {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "hey @bob",
+      mentions: [{ userId: bob.id, start: 4 }],
+    });
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ mentions: { create: [] } }),
+      }),
+    );
+  });
+
+  it("keeps two deliberate occurrences of the same participant distinct", async () => {
+    const bob = { ...AUTHOR, id: "bobId", username: "bob" };
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ authorId: bob.id, author: bob }]),
+        create: vi.fn().mockResolvedValue(
+          commentRow({
+            text: "@bob says @bob",
+            mentions: [
+              { userId: bob.id, user: bob, start: 0 },
+              { userId: bob.id, user: bob, start: 10 },
+            ],
+          }),
+        ),
+      },
+    });
+    await svc.create(AUTHOR.id, {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "@bob says @bob",
+      mentions: [
+        { userId: bob.id, start: 0 },
+        { userId: bob.id, start: 10 },
+      ],
+    });
+    expect(prisma.comment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mentions: {
+            create: [
+              { userId: bob.id, start: 0 },
+              { userId: bob.id, start: 10 },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+});
+
+describe("CommentService.participants", () => {
+  it("offers recent channel authors, filters the username search and hides blocks", async () => {
+    const lo = {
+      ...AUTHOR,
+      id: "lo-id",
+      username: "logan",
+      displayName: "Logan",
+      avatarUpdatedAt: null,
+    };
+    const blocked = {
+      ...AUTHOR,
+      id: "blocked-id",
+      username: "louis",
+      displayName: "Louis",
+      avatarUpdatedAt: null,
+    };
+    const self = {
+      ...AUTHOR,
+      id: "viewer",
+      username: "loviewer",
+      avatarUpdatedAt: null,
+    };
+    const { svc, prisma } = make({
+      comment: {
+        findMany: vi.fn().mockResolvedValue([
+          { authorId: self.id, author: self },
+          { authorId: lo.id, author: lo },
+          { authorId: blocked.id, author: blocked },
+        ]),
+      },
+      relations: {
+        [blocked.id]: relation({ blocking: true }),
+      },
+    });
+
+    await expect(
+      svc.participants("viewer", "MEDIA" as never, "m1", "lo"),
+    ).resolves.toEqual([
+      expect.objectContaining({ username: "logan", avatarUrl: null }),
+    ]);
+
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          profileAccess: { not: "GHOST" },
+          targetType: "MEDIA",
+          targetId: "m1",
+          author: expect.objectContaining({
+            is: expect.objectContaining({
+              username: { contains: "lo", mode: "insensitive" },
+            }),
+          }),
         }),
+        distinct: ["authorId"],
       }),
     );
   });
@@ -603,6 +784,29 @@ describe("CommentService.remove", () => {
 });
 
 describe("CommentService.adminRemove", () => {
+  it("uses the caller's transaction and emits only after publication", async () => {
+    const { svc, prisma, xp, events } = make();
+    const tx = {
+      comment: {
+        findUnique: vi.fn().mockResolvedValue(commentRow()),
+        update: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    await svc.adminRemove("c1", tx);
+
+    expect(tx.comment.update).toHaveBeenCalled();
+    expect(prisma.comment.update).not.toHaveBeenCalled();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Comment", ["c1"], tx);
+    expect(events.emitToCommentsThread).not.toHaveBeenCalled();
+    svc.publishAdminRemoval("MEDIA", "m1");
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+  });
+
   it("soft-deletes without checking ownership (moderation takedown)", async () => {
     const { svc, prisma } = make({
       comment: {
@@ -633,6 +837,8 @@ describe("CommentService.adminRemove", () => {
     await expect(svc.adminRemove("c1")).resolves.toEqual({
       authorId: "someone-else",
       text: "insulte gratuite",
+      targetType: "MEDIA",
+      targetId: "m1",
     });
   });
 
@@ -649,6 +855,42 @@ describe("CommentService.adminRemove", () => {
 });
 
 describe("CommentService.react", () => {
+  it("requires the work to be tracked before reacting", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
+      },
+      libraryEntry: { findUnique: vi.fn().mockResolvedValue(null) },
+    });
+
+    await expect(svc.react("viewer", "c1", "LIKE" as never)).rejects.toThrow();
+    expect(prisma.commentReaction.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects reacting to a blocked account", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
+      },
+      block: { findFirst: vi.fn().mockResolvedValue({ id: "block-1" }) },
+    });
+
+    await expect(svc.react("viewer", "c1", "LIKE" as never)).rejects.toThrow();
+    expect(prisma.commentReaction.upsert).not.toHaveBeenCalled();
+  });
+
   it("notifies the author once the reaction count reaches the threshold", async () => {
     const { svc, notifications } = make({
       comment: {
@@ -658,6 +900,8 @@ describe("CommentService.react", () => {
             id: "c1",
             deletedAt: null,
             authorId: "author",
+            targetType: "MEDIA",
+            targetId: "m1",
           })
           .mockResolvedValueOnce({ targetType: "MEDIA", targetId: "m1" }),
       },
@@ -676,6 +920,8 @@ describe("CommentService.react", () => {
           id: "c1",
           deletedAt: null,
           authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
         }),
       },
       reaction: { count: vi.fn().mockResolvedValue(11) },
@@ -738,6 +984,8 @@ describe("CommentService — XP wiring", () => {
           id: "c1",
           deletedAt: null,
           authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
         }),
       },
       reaction: { upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }) },
@@ -762,6 +1010,8 @@ describe("CommentService — XP wiring", () => {
           id: "c1",
           deletedAt: null,
           authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
         }),
       },
       reaction: { upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }) },
@@ -773,13 +1023,76 @@ describe("CommentService — XP wiring", () => {
   it("revokes COMMENT_REACTION_RECEIVED on unreact", async () => {
     const { svc, xp } = make({
       reaction: {
-        findUnique: vi.fn().mockResolvedValue({ id: "reaction-1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: "reaction-1",
+          comment: { targetType: "MEDIA", targetId: "m1" },
+        }),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
       },
     });
     await svc.unreact("reactor", "c1");
     expect(xp.revokeBySource).toHaveBeenCalledWith("CommentReaction", [
       "reaction-1",
     ]);
+  });
+});
+
+describe("CommentService — realtime push", () => {
+  it("notifies the target's thread when a comment is created", async () => {
+    const { svc, events } = make({
+      comment: {
+        create: vi.fn().mockResolvedValue(commentRow({ id: "c1" })),
+      },
+    });
+    await svc.create("author", {
+      targetType: "MEDIA" as never,
+      targetId: "m1",
+      text: "this comment is long enough",
+    });
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+  });
+
+  it("notifies the target's thread on react and unreact", async () => {
+    const { svc, events } = make({
+      comment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "c1",
+          deletedAt: null,
+          authorId: "author",
+          targetType: "MEDIA",
+          targetId: "m1",
+        }),
+      },
+      reaction: {
+        upsert: vi.fn().mockResolvedValue({ id: "reaction-1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: "reaction-1",
+          comment: { targetType: "MEDIA", targetId: "m1" },
+        }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    });
+
+    await svc.react("reactor", "c1", "LIKE" as never);
+    await svc.unreact("reactor", "c1");
+
+    expect(events.emitToCommentsThread).toHaveBeenCalledWith(
+      "MEDIA",
+      "m1",
+      "comment-changed",
+    );
+    expect(events.emitToCommentsThread).toHaveBeenCalledTimes(2);
   });
 });

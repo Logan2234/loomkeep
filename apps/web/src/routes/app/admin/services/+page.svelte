@@ -39,7 +39,6 @@
     second: "2-digit",
   };
 
-  // --- page header summary ---------------------------------------------------
   // Everything below is derived from the payload the list already renders: the
   // page loads every service in one call, so a summary endpoint would only
   // re-fetch what's on screen (and risk disagreeing with it).
@@ -156,7 +155,7 @@
     percentUsed >= 80 ? "bg-danger" : "bg-accent";
 </script>
 
-<div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
+<div>
   <PageHeader
     icon="monitor"
     title={m.admin_services_title()}

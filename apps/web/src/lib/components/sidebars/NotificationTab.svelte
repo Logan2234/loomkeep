@@ -1,13 +1,6 @@
 <script lang="ts">
-  // The bell as a tab in the mobile bars, shared by the three skins. It used
-  // to be a fixed button floating above the bar (NotificationBell), which
-  // covered page content on every screen since nothing reserved space for
-  // it.
-  //
-  // NotificationBell still owns the sheet and the follow-request list; this
-  // only needs the unread count and asks it to open, the same CustomEvent
-  // idiom MenuSheet uses. Reading the same query key means TanStack serves
-  // both from one cache entry and one poll.
+  // NotificationBell owns the sheet and follow requests; this tab shares its
+  // query key and only dispatches the event that opens it.
   import { getNotifications } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
@@ -36,7 +29,7 @@
   type="button"
   onclick={open}
   aria-label={m.common_notifications()}
-  class="text-dim font-semibold {rootClass}">
+  class="text-dim min-w-0 font-semibold {rootClass}">
   <span class="relative grid place-items-center rounded-full {slotClass}">
     <Icon name="bell" class="h-5 w-5" />
     {#if unread > 0}
@@ -46,5 +39,7 @@
       </span>
     {/if}
   </span>
-  {m.nav_notifications_short()}
+  <span class="w-full truncate px-0.5 max-[359px]:sr-only">
+    {m.nav_notifications_short()}
+  </span>
 </button>

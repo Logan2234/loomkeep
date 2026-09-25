@@ -2,6 +2,7 @@ import type {
   QuotaWindow,
   SchemaGraphResponseDto,
   ServiceArea,
+  ServiceProbeFailure,
   ServiceStatusDto,
   ServiceStatusResponseDto,
 } from "@loomkeep/shared";
@@ -9,6 +10,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { PROVIDER_DAILY_QUOTAS } from "../common/quota-tracker.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type { ProviderQuotaSpec } from "./admin-system-stats.util";
@@ -33,6 +35,7 @@ const MAX_DIAGNOSTIC_LENGTH = 300;
 interface ProbeResult {
   reachable: boolean;
   detail?: string;
+  failure?: ServiceProbeFailure;
 }
 
 interface ServiceSpec {
@@ -124,8 +127,7 @@ export class AdminService {
             `https://www.omdbapi.com/?apikey=${this.env("OMDB_API_KEY")}&i=tt0111161`,
             { signal },
           ),
-        // https://www.omdbapi.com/apikey.aspx — free tier: 1,000 requests/day.
-        quotaLimit: { max: 1000, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.omdb, window: "day" },
       },
       {
         key: "igdb",
@@ -159,8 +161,7 @@ export class AdminService {
             "https://api.steampowered.com/ISteamWebAPIUtil/GetServerInfo/v1/",
             { signal },
           ),
-        // https://steamcommunity.com/dev/apiterms §2 — 100,000 calls/day.
-        quotaLimit: { max: 100_000, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.steam, window: "day" },
       },
       {
         key: "simkl",
@@ -178,8 +179,7 @@ export class AdminService {
             `https://api.simkl.com/anime/airing?client_id=${this.env("SIMKL_CLIENT_ID")}`,
             { signal },
           ),
-        // Limited to 1,000 requests/day.
-        quotaLimit: { max: 1000, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.simkl, window: "day" },
       },
       {
         // Keyless (like AniList), but the sole book source — so it's required
@@ -227,12 +227,11 @@ export class AdminService {
             reachable,
             detail: reachable
               ? undefined
-              : (this.diagnostic(this.mail.lastVerificationError) ??
-                "Connexion ou authentification refusée"),
+              : this.diagnostic(this.mail.lastVerificationError),
+            failure: reachable ? undefined : "refused",
           };
         },
-        // https://www.brevo.com free plan: 300 emails/day (see README "Email").
-        quotaLimit: { max: 300, window: "day" },
+        quotaLimit: { max: PROVIDER_DAILY_QUOTAS.smtp, window: "day" },
       },
       {
         // No external to ping: presence of the VAPID key pair is the signal.
@@ -351,7 +350,7 @@ export class AdminService {
         required: spec.required,
         configured: false,
         reachable: null,
-        detail: "Clé absente",
+        failure: "missingKey",
         keyUrl: spec.keyUrl,
         ...quota,
       };
@@ -359,6 +358,7 @@ export class AdminService {
 
     let reachable: boolean | null = null;
     let detail: string | undefined;
+    let failure: ServiceProbeFailure | undefined;
     let latencyMs: number | undefined;
 
     if (spec.probe) {
@@ -369,13 +369,19 @@ export class AdminService {
         reachable = result.reachable;
         latencyMs = Date.now() - start;
         detail = result.detail;
+        failure = result.failure;
       } catch (error) {
         latencyMs = Date.now() - start;
         reachable = false;
-        detail =
-          error instanceof DOMException && error.name === "AbortError"
-            ? `Délai de réponse dépassé après ${PROBE_TIMEOUT_MS / 1_000} s`
-            : (this.diagnostic(error) ?? "Erreur réseau");
+
+        if (error instanceof DOMException && error.name === "AbortError") {
+          failure = "timeout";
+        } else {
+          // A provider's own message is worth more to an operator than a
+          // generic label, so the code is only the fallback.
+          detail = this.diagnostic(error);
+          if (!detail) failure = "network";
+        }
       }
     }
 
@@ -387,6 +393,7 @@ export class AdminService {
       configured,
       reachable,
       detail,
+      failure,
       latencyMs,
       ...quota,
     };
@@ -531,7 +538,7 @@ export class AdminService {
       .replace(/\s+/g, " ")
       .replace(
         /\b(bearer\s+|api[-_ ]?key|token|secret|password)\s*[:=]?\s*[^\s,;]+/gi,
-        "$1 [masqué]",
+        "$1 [***]",
       )
       .trim();
     if (!normalized) return undefined;

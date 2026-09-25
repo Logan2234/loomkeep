@@ -9,6 +9,8 @@
   "common_save": "Save",
   "common_save_loading": "Saving…",
   "common_delete": "Delete",
+  "common_rename": "Rename",
+  "common_reorder": "Reorder",
   "common_confirm": "Confirm",
   "common_close": "Close",
   "common_back": "Back",
@@ -254,5 +256,6 @@
   "common_view_all_count": "View all — {count}",
   "common_day_count_short": "{days} d",
   "common_image_large": "Enlarged image",
-  "common_camera_unavailable": "Camera access denied or unavailable."
+  "common_camera_unavailable": "Camera access denied or unavailable.",
+  "common_saved": "Saved"
 }

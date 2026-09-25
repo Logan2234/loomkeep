@@ -30,7 +30,9 @@
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { onRealtimeEvent } from "$lib/realtime/socket";
   import type { FollowRequestDto, NotificationDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { fade, scale, slide } from "svelte/transition";
   import { layout } from "$lib/layout.svelte";
   import Avatar from "./Avatar.svelte";
@@ -38,27 +40,48 @@
   import Icon from "./Icon.svelte";
   import { notificationText } from "./notification-presentation";
 
+  const queryClient = useQueryClient();
+
   const reduced = prefersReducedMotion();
 
   let open = $state(false);
-  let requests = $state<FollowRequestDto[]>([]);
-  let requestsLoaded = $state(false);
   let busy = $state<string | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
   let drawerContentEl = $state<HTMLDivElement | null>(null);
   let buttonEl = $state<HTMLButtonElement | null>(null);
 
-  // Polls while this bell is mounted (root layout, so effectively always
-  // while logged in) — TanStack only actually polls while the tab is
-  // visible, so this replaces what used to be a manual setInterval +
-  // document.visibilityState check in +layout.svelte.
   const feedQuery = createApiQuery(() => ({
     key: keys.notifications.feed(),
     fetch: getNotifications,
-    refetchInterval: 20_000,
   }));
+
+  // RealtimeConnection (root layout) owns
+  // the socket's connect/disconnect lifecycle and the catch-up refetch on
+  // reconnect; this only needs its own event.
+  $effect(() =>
+    onRealtimeEvent("notification", () => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.notifications.feed(),
+      });
+    }),
+  );
   const notificationItems = $derived(feedQuery.data?.notifications ?? []);
   const unread = $derived(feedQuery.data?.unread ?? 0);
+
+  // Not gated behind `open` — the badge total must update live even while
+  // the panel is closed, same reasoning as feedQuery above.
+  const requestsQuery = createApiQuery(() => ({
+    key: keys.social.followRequests(),
+    fetch: getFollowRequests,
+  }));
+  $effect(() =>
+    onRealtimeEvent("follow-request-changed", () => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.social.followRequests(),
+      });
+    }),
+  );
+  const requests = $derived(requestsQuery.data ?? []);
 
   const markReadMut = createApiMutation(() => ({
     mutate: markNotificationRead,
@@ -71,12 +94,8 @@
 
   const total = $derived(requests.length + unread);
 
-  async function toggle() {
+  function toggle() {
     open = !open;
-    if (open && !requestsLoaded) {
-      requestsLoaded = true;
-      requests = await getFollowRequests().catch(() => []);
-    }
   }
 
   function close() {
@@ -86,17 +105,24 @@
   // The compact shell has no button of its own here — BottomNavigation owns
   // the bell tab and asks to open, same idiom as MenuSheet's toggle event.
   $effect(() => {
-    const handler = () => void toggle();
-    window.addEventListener("mobile-notifications-toggle", handler);
+    window.addEventListener("mobile-notifications-toggle", toggle);
     return () =>
-      window.removeEventListener("mobile-notifications-toggle", handler);
+      window.removeEventListener("mobile-notifications-toggle", toggle);
   });
+
+  function removeRequest(id: string) {
+    queryClient.setQueryData(
+      keys.social.followRequests(),
+      (prev: FollowRequestDto[] | undefined) =>
+        prev?.filter((r) => r.id !== id),
+    );
+  }
 
   async function accept(req: FollowRequestDto) {
     busy = req.id;
     try {
       await acceptFollowRequest(req.id);
-      requests = requests.filter((r) => r.id !== req.id);
+      removeRequest(req.id);
     } finally {
       busy = null;
     }
@@ -106,7 +132,7 @@
     busy = req.id;
     try {
       await rejectFollowRequest(req.id);
-      requests = requests.filter((r) => r.id !== req.id);
+      removeRequest(req.id);
     } finally {
       busy = null;
     }

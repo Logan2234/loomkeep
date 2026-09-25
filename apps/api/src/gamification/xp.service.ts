@@ -1,8 +1,10 @@
-import { XP_RULES, type XpReason } from "@loomkeep/shared";
-import { Injectable, Logger } from "@nestjs/common";
+import { ErrorCode, XP_RULES, XpReason } from "@loomkeep/shared";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "node:crypto";
+import { AppException } from "../common/app.exception";
 import { localDay } from "../common/local-day.util";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -18,8 +20,8 @@ const RECONCILE_BATCH_SIZE = 500;
 
 /**
  * Credits, reverses and reconciles the XP ledger — the single write path for
- * `XpEntry`/`UserScore` (see the [G1] plan). `ActivityService.emit` was
- * deliberately not reused as a base for this: it swallows its own errors and
+ * `XpEntry`/`UserScore`. `ActivityService.emit` cannot be the base for this:
+ * it swallows its own errors and
  * isn't called from every cancellation path, which is fine for a feed but
  * not for a ledger that must never silently drift from the data it's
  * supposed to track.
@@ -44,8 +46,7 @@ export class XpService {
    * is behind SocialFeatureGuard. Reading your own progression must not go
    * through the social surface.
    *
-   * Returns the total only — the level is never stored or served, it is
-   * derived client-side from this by `levelForXp` (see the [G1] plan).
+   * Returns the total only — the level is derived client-side by `levelForXp`.
    */
   async myXp(userId: string): Promise<number | null> {
     if (!isGamificationEnabled(this.config, this.flags)) return null;
@@ -76,35 +77,135 @@ export class XpService {
     sourceId: string,
     amountOverride?: number,
   ): Promise<void> {
-    if (!isGamificationEnabled(this.config, this.flags)) return;
-
-    const rule = XP_RULES[reason];
-    if (rule.socialGated && !isSocialEnabled(this.config, this.flags)) return;
-    // Only ADMIN_ADJUSTMENT (B8, not this ticket) has no fixed amount and no
-    // override — its callers will set XpEntry.amount directly rather than
-    // going through this registry-driven path.
-    const amount = amountOverride ?? rule.amount;
-    if (amount === undefined) return;
-
-    if (rule.dailyCap !== undefined) {
-      const reached = await this.dailyCapReached(userId, reason, rule.dailyCap);
-      if (reached) return;
+    if (await this.creditEntry(userId, reason, sourceId, amountOverride)) {
+      await this.recomputeScore(userId);
     }
+  }
 
-    try {
-      await this.prisma.xpEntry.create({
+  /**
+   * An admin's manual correction: a signed amount, written as its own
+   * ADMIN_ADJUSTMENT entry. The nightly reconciliation never touches it —
+   * there is no source to verify it against — and it is never revoked: an
+   * adjustment is undone by another one of the opposite sign. Refused when it
+   * would take the total below zero. Returns the new total.
+   */
+  async adjust(userId: string, amount: number): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      // Two adjustments read-then-write the same total: serialise them so
+      // both can't pass the check against a total the other is changing.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${XpReason.ADMIN_ADJUSTMENT}::text))`;
+
+      const agg = await tx.xpEntry.aggregate({
+        where: { userId },
+        _sum: { amount: true },
+      });
+      const current = agg._sum.amount ?? 0;
+      const next = current + amount;
+
+      if (next < 0) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.GamificationXpBelowZero,
+          { current },
+        );
+      }
+
+      await tx.xpEntry.create({
         data: {
           userId,
-          reason,
-          sourceType: rule.sourceType,
-          sourceId,
+          reason: XpReason.ADMIN_ADJUSTMENT,
+          sourceType: XP_RULES[XpReason.ADMIN_ADJUSTMENT].sourceType,
+          // Each adjustment is its own ledger row; the id only keeps the
+          // (user, reason, source) key unique.
+          sourceId: randomUUID(),
           amount,
         },
       });
+      await this.recomputeScore(userId, tx);
+      return next;
+    });
+  }
+
+  /**
+   * Credits the same reason for several sources of one user (bulk watch
+   * marking). Each iteration re-checks the daily cap against what's already
+   * been credited (including earlier iterations of this same loop), so a
+   * large batch can never bypass the cap — it just stops crediting once the
+   * cap is hit.
+   *
+   * The score is resummed once at the end rather than per entry: the resum
+   * (rather than an increment) is a deliberate integrity choice, but it
+   * scans the user's whole ledger, so doing it once avoids 24 full sums when
+   * marking a 24-episode season.
+   */
+  async awardMany(
+    userId: string,
+    reason: XpReason,
+    sourceIds: string[],
+  ): Promise<void> {
+    let credited = false;
+
+    for (const sourceId of sourceIds) {
+      if (await this.creditEntry(userId, reason, sourceId)) credited = true;
+    }
+
+    if (credited) await this.recomputeScore(userId);
+  }
+
+  /**
+   * Writes one ledger row if the feature, the social gate and the daily cap
+   * all allow it. Returns whether a row was actually created — i.e. whether
+   * the caller owes a `recomputeScore`.
+   */
+  private async creditEntry(
+    userId: string,
+    reason: XpReason,
+    sourceId: string,
+    amountOverride?: number,
+  ): Promise<boolean> {
+    if (!isGamificationEnabled(this.config, this.flags)) return false;
+
+    const rule = XP_RULES[reason];
+    if (rule.socialGated && !isSocialEnabled(this.config, this.flags))
+      return false;
+    // ADMIN_ADJUSTMENT has no fixed amount; callers write its signed value
+    // directly instead of using this registry-driven path.
+    const amount = amountOverride ?? rule.amount;
+    if (amount === undefined) return false;
+
+    const data = {
+      userId,
+      reason,
+      sourceType: rule.sourceType,
+      sourceId,
+      amount,
+    };
+    const cap = rule.dailyCap;
+
+    try {
+      // An uncapped reason is a unique milestone: nothing to read first, and
+      // the unique constraint is what makes it idempotent.
+      if (cap === undefined) {
+        await this.prisma.xpEntry.create({ data });
+        return true;
+      }
+
+      return await this.prisma.$transaction(async (tx) => {
+        // Serialises concurrent awards for this (user, reason) pair only.
+        // Reading the day's count and then inserting is a TOCTOU otherwise:
+        // two parallel requests both see the cap as not yet reached and both
+        // credit, which the unique constraint can't catch (different
+        // sources). Released on commit/rollback, hence _xact_.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${reason}::text))`;
+
+        if (await this.dailyCapReached(tx, userId, reason, cap)) return false;
+
+        await tx.xpEntry.create({ data });
+        return true;
+      });
     } catch (err) {
       // A concurrent/retried award() on the same source hits the unique
-      // constraint — expected under concurrency, not an error (see the
-      // [G1] plan's edge case #8).
+      // constraint; that is expected under concurrency, not an error.
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === "P2002"
@@ -112,57 +213,42 @@ export class XpService {
         this.logger.debug(
           `XP entry already exists for ${reason}/${sourceId} (user ${userId})`,
         );
-        return;
+        return false;
       }
 
       throw err;
-    }
-
-    await this.recomputeScore(userId);
-  }
-
-  /**
-   * Credits the same reason for several sources of one user (bulk watch
-   * marking). A plain loop over `award`: each call re-checks the daily cap
-   * against what's already been credited (including earlier iterations of
-   * this same loop), so a large batch can never bypass the cap — it just
-   * stops crediting once the cap is hit.
-   */
-  async awardMany(
-    userId: string,
-    reason: XpReason,
-    sourceIds: string[],
-  ): Promise<void> {
-    for (const sourceId of sourceIds) {
-      await this.award(userId, reason, sourceId);
     }
   }
 
   /**
    * Reverses every XpEntry anchored to one of `sourceIds` (of `sourceType`)
    * — the entry point for every cancellation path (unwatch, delete, …).
-   * Deletes the rows outright (see the [G1] plan: no revokedAt, no negative
-   * entry) and resums `UserScore` for every user actually affected.
+   * Deletes the rows outright (there is no revokedAt or negative entry) and
+   * resums `UserScore` for every user actually affected.
    */
-  async revokeBySource(sourceType: string, sourceIds: string[]): Promise<void> {
+  async revokeBySource(
+    sourceType: string,
+    sourceIds: string[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
     if (sourceIds.length === 0) return;
+    const db = tx ?? this.prisma;
 
-    const affected = await this.prisma.xpEntry.findMany({
+    const affected = await db.xpEntry.findMany({
       where: { sourceType, sourceId: { in: sourceIds } },
       select: { userId: true },
       distinct: ["userId"],
     });
 
-    await this.prisma.xpEntry.deleteMany({
+    await db.xpEntry.deleteMany({
       where: { sourceType, sourceId: { in: sourceIds } },
     });
 
-    await Promise.all(affected.map((a) => this.recomputeScore(a.userId)));
+    await Promise.all(affected.map((a) => this.recomputeScore(a.userId, tx)));
   }
 
   /**
-   * Nightly control sweep (see the [G1] plan's "réconciliation pilotée par
-   * le journal, jamais par l'état"): walks every XpEntry that has a
+   * Nightly control sweep: walks every XpEntry that has a
    * verifier (ADMIN_ADJUSTMENT never does — it's excluded, not treated as
    * always-valid), deletes the ones whose source no longer justifies them,
    * and resums the affected users' `UserScore`. Never creates XP — a
@@ -211,12 +297,12 @@ export class XpService {
       if (batch.length === 0) break;
       cursor = batch[batch.length - 1].id;
 
+      // One call for the whole batch — see XpVerifier's doc comment.
+      const stillValid = await verify(this.prisma, batch);
       const staleIds: string[] = [];
 
       for (const entry of batch) {
-        const valid = await verify(this.prisma, entry.sourceId, entry.userId);
-
-        if (!valid) {
+        if (!stillValid.has(entry.id)) {
           staleIds.push(entry.id);
           affectedUserIds.add(entry.userId);
         }
@@ -245,14 +331,18 @@ export class XpService {
   }
 
   /** Resums `UserScore.xp` for `userId` from its XpEntry rows — never incremented in place. */
-  private async recomputeScore(userId: string): Promise<void> {
-    const agg = await this.prisma.xpEntry.aggregate({
+  private async recomputeScore(
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const db = tx ?? this.prisma;
+    const agg = await db.xpEntry.aggregate({
       where: { userId },
       _sum: { amount: true },
     });
     const xp = agg._sum.amount ?? 0;
 
-    await this.prisma.userScore.upsert({
+    await db.userScore.upsert({
       where: { userId },
       update: { xp },
       create: { userId, xp },
@@ -266,13 +356,18 @@ export class XpService {
    * whole ledger, then filtered in memory by `localDay` — simpler than
    * deriving the local midnight-to-midnight range as UTC timestamps, and
    * cheap at these volumes (a handful of rows per user/reason/day).
+   *
+   * Always called inside `creditEntry`'s advisory-locked transaction, hence
+   * the `tx` client: counting on one connection and inserting on another
+   * would put the race straight back.
    */
   private async dailyCapReached(
+    tx: Prisma.TransactionClient,
     userId: string,
     reason: XpReason,
     cap: number,
   ): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
+    const user = await tx.user.findUnique({
       where: { id: userId },
       select: { timezone: true },
     });
@@ -282,7 +377,7 @@ export class XpService {
     const today = localDay(user?.timezone ?? "UTC", now) ?? isoDay(now);
 
     const since = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-    const recent = await this.prisma.xpEntry.findMany({
+    const recent = await tx.xpEntry.findMany({
       where: { userId, reason, createdAt: { gte: since } },
       select: { createdAt: true },
     });

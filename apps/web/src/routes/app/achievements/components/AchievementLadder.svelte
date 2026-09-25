@@ -1,7 +1,4 @@
 <script lang="ts">
-  // The tier ladder plus its context note — the "deepening" half of a card.
-  // Shared verbatim by the desktop unfold panel and the mobile drawer, so
-  // the two can never drift apart.
   import { equipAchievement, unequipAchievement } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";

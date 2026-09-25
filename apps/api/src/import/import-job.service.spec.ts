@@ -4,13 +4,13 @@ import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -21,6 +21,10 @@ function stubXp(): XpService {
 
 function stubAchievements(): AchievementService {
   return { evaluate: vi.fn() } as unknown as AchievementService;
+}
+
+function stubEvents(): EventsGateway {
+  return { emitToUser: vi.fn() } as unknown as EventsGateway;
 }
 
 function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
@@ -72,6 +76,7 @@ describe("ImportJobService translatable failures", () => {
         } as unknown as EntitlementService,
         stubXp(),
         stubAchievements(),
+        stubEvents(),
       );
       const started = await service.startAnalyze("u1", "steam", { input: "" });
       await vi.waitFor(() => {
@@ -100,6 +105,7 @@ describe("ImportJobService.getAvailability", () => {
       { isEffectivelyPremium: vi.fn() } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     const availability = service.getAvailability();
@@ -133,6 +139,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       entitlements,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
     return { service, prisma };
   }
@@ -187,6 +194,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await service.startAnalyze("u1", "tvtime", { input: "" });
@@ -213,6 +221,7 @@ describe("ImportJobService.getQuota", () => {
       {} as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
+      stubEvents(),
     );
 
     await expect(service.getQuota("u1")).resolves.toEqual({
@@ -231,6 +240,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       importRun: { create: importRunCreate },
     } as unknown as PrismaService;
     const xp = stubXp();
+    const events = stubEvents();
     const service = new ImportJobService(
       [source],
       prisma,
@@ -240,8 +250,9 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       } as unknown as EntitlementService,
       xp,
       stubAchievements(),
+      events,
     );
-    return { service, xp, importRunCreate };
+    return { service, xp, events, importRunCreate };
   }
 
   // commit() only accepts a jobId that already has an analyzed plan attached
@@ -303,5 +314,300 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     });
     expect(service.getJob("u1", job.id).status).toBe("failed");
     expect(xp.award).not.toHaveBeenCalled();
+  });
+
+  it("pushes a final live progress update to the job's owner once it settles", async () => {
+    const { service, events } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(events.emitToUser).toHaveBeenCalledWith(
+        "u1",
+        "import-progress",
+        expect.objectContaining({ jobId: job.id, status: "completed" }),
+      );
+    });
+  });
+
+  it("pushes onboarding-updated once a commit succeeds — the import step, and often others alongside it", async () => {
+    const { service, events } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    service.commit("u1", "tvtime", "analyzed-1", { include: [] } as never);
+
+    await vi.waitFor(() => {
+      expect(events.emitToUser).toHaveBeenCalledWith(
+        "u1",
+        "onboarding-updated",
+      );
+    });
+  });
+
+  it("pushes no onboarding-updated when the commit fails", async () => {
+    const { service, events } = makeCommitService(async () => {
+      throw new Error("boom");
+    });
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(events.emitToUser).toHaveBeenCalledWith(
+        "u1",
+        "import-progress",
+        expect.objectContaining({ jobId: job.id, status: "failed" }),
+      );
+    });
+    expect(events.emitToUser).not.toHaveBeenCalledWith(
+      "u1",
+      "onboarding-updated",
+    );
+  });
+});
+
+describe("ImportJobService — retained payloads", () => {
+  type JobMap = Map<string, { parsed: unknown; plan: unknown; status: string }>;
+
+  function jobs(service: ImportJobService): JobMap {
+    return (service as unknown as { jobs: JobMap }).jobs;
+  }
+
+  function makeService(commitImpl?: ImportReq["commit"]) {
+    const source = fakeSource("tvtime");
+    if (commitImpl) source.commit = commitImpl;
+    const prisma = {
+      importRun: {
+        create: vi.fn().mockResolvedValue({}),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    } as unknown as PrismaService;
+
+    return new ImportJobService(
+      [source],
+      prisma,
+      {} as unknown as ConfigService,
+      {
+        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
+      } as unknown as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+  }
+
+  function seedAnalyzed(
+    service: ImportJobService,
+    jobId: string,
+    over: Record<string, unknown> = {},
+  ): void {
+    jobs(service).set(jobId, {
+      id: jobId,
+      userId: "u1",
+      sourceId: "tvtime",
+      kind: "analyze",
+      status: "completed",
+      progress: { done: 0, total: 0 },
+      plan: { groups: [] },
+      report: null,
+      error: null,
+      errorCode: null,
+      startedAt: Date.now(),
+      finishedAt: Date.now(),
+      // Stands in for a full export model — bounded only by Fastify's 25 MB
+      // body limit in production.
+      parsed: { rows: "a big parse model" },
+      ...over,
+    } as never);
+  }
+
+  it("drops the parse model once its commit has succeeded", async () => {
+    const service = makeService(async () => ({ overwrite: false, tiles: [] }));
+    seedAnalyzed(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(service.getJob("u1", job.id).status).toBe("completed");
+    });
+    await vi.waitFor(() => {
+      expect(jobs(service).get("analyzed-1")!.parsed).toBeNull();
+    });
+    expect(jobs(service).get("analyzed-1")!.plan).toBeNull();
+  });
+
+  it("keeps it when the commit failed, so the analysis stays retryable", async () => {
+    const service = makeService(async () => {
+      throw new Error("boom");
+    });
+    seedAnalyzed(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(service.getJob("u1", job.id).status).toBe("failed");
+    });
+    expect(jobs(service).get("analyzed-1")!.parsed).not.toBeNull();
+  });
+
+  it("keeps only the newest analysis loaded when a new one starts", async () => {
+    const service = makeService();
+    seedAnalyzed(service, "old-1");
+    seedAnalyzed(service, "old-2");
+
+    await service.startAnalyze("u1", "tvtime", { input: {} } as never);
+
+    expect(jobs(service).get("old-1")!.parsed).toBeNull();
+    expect(jobs(service).get("old-2")!.parsed).toBeNull();
+  });
+
+  it("leaves a running job's payload alone", () => {
+    // Releasing under a commit still reading it would break that import.
+    // Driven directly: startAnalyze refuses outright while a job is running,
+    // so that path can never reach a running job — this is the helper's own
+    // invariant, for whoever calls it next.
+    const service = makeService();
+    seedAnalyzed(service, "running-1", { status: "running" });
+    seedAnalyzed(service, "done-1");
+
+    (
+      service as unknown as { releasePayloads: (userId: string) => void }
+    ).releasePayloads("u1");
+
+    expect(jobs(service).get("running-1")!.parsed).not.toBeNull();
+    expect(jobs(service).get("done-1")!.parsed).toBeNull();
+  });
+
+  it("keeps the job record itself, so its report stays readable", async () => {
+    const service = makeService(async () => ({
+      overwrite: false,
+      tiles: [{ id: "series", label: "Séries", value: 3, sub: null }],
+    }));
+    seedAnalyzed(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => {
+      expect(service.getJob("u1", job.id).report).not.toBeNull();
+    });
+    expect(jobs(service).has("analyzed-1")).toBe(true);
+  });
+});
+
+describe("ImportJobService.getLastRun", () => {
+  function makeService(findFirst: ReturnType<typeof vi.fn>) {
+    return new ImportJobService(
+      [],
+      { importRun: { findFirst } } as unknown as PrismaService,
+      {} as ConfigService,
+      {} as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+  }
+
+  it("reports an absent run rather than an empty body", async () => {
+    const service = makeService(vi.fn().mockResolvedValue(null));
+
+    await expect(service.getLastRun("u1")).resolves.toEqual({ run: null });
+  });
+
+  it("returns the caller's most recent run, failures included", async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      sourceId: "tvtime",
+      domain: Domain.MEDIA,
+      status: "FAILURE",
+      itemCount: 0,
+      summary: null,
+      finishedAt: new Date("2026-09-12T08:30:00.000Z"),
+    });
+
+    await expect(makeService(findFirst).getLastRun("u1")).resolves.toEqual({
+      run: {
+        sourceId: "tvtime",
+        domain: Domain.MEDIA,
+        status: "FAILURE",
+        itemCount: 0,
+        summary: null,
+        finishedAt: "2026-09-12T08:30:00.000Z",
+      },
+    });
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u1" },
+        orderBy: { finishedAt: "desc" },
+      }),
+    );
+  });
+});
+
+describe("ImportJobService.getHistory", () => {
+  it("returns the caller's import runs in reverse chronological order", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: "run-1",
+        sourceId: "tvtime",
+        domain: Domain.MEDIA,
+        status: "SUCCESS",
+        itemCount: 12,
+        overwrite: true,
+        summary: "3 series, 9 episodes",
+        startedAt: new Date("2026-09-12T08:00:00.000Z"),
+        finishedAt: new Date("2026-09-12T08:30:00.000Z"),
+      },
+    ]);
+    const service = new ImportJobService(
+      [],
+      { importRun: { findMany } } as unknown as PrismaService,
+      {} as ConfigService,
+      {} as EntitlementService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+
+    await expect(service.getHistory("u1", 1, 20)).resolves.toEqual({
+      items: [
+        {
+          id: "run-1",
+          sourceId: "tvtime",
+          domain: Domain.MEDIA,
+          status: "SUCCESS",
+          itemCount: 12,
+          overwrite: true,
+          summary: "3 series, 9 episodes",
+          startedAt: "2026-09-12T08:00:00.000Z",
+          finishedAt: "2026-09-12T08:30:00.000Z",
+        },
+      ],
+      hasMore: false,
+    });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u1" },
+        orderBy: { finishedAt: "desc" },
+        skip: 0,
+        take: 21,
+      }),
+    );
   });
 });

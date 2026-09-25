@@ -201,7 +201,9 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     expect(prisma.refreshToken.deleteMany).toHaveBeenLastCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
     });
-  });
+    // Really bcrypt-hashes every recovery code (pure-JS bcryptjs): past the
+    // default 5s under CI coverage instrumentation.
+  }, 20_000);
 
   it("rejects an incorrect password before changing email MFA", async () => {
     const { service, prisma } = makeService();
@@ -290,12 +292,7 @@ describe("MfaService.disableTotp", () => {
   });
 });
 
-// disabling email MFA used to need nothing but a valid access token —
-// no password check at all, unlike disableTotp() above. #195 (merged to main
-// while this branch was in flight) shipped the same fix more broadly —
-// assertCurrentPassword() now runs unconditionally in setEmailMfaEnabled(),
-// covering both directions — see the "rejects an incorrect password before
-// changing email MFA" test above for the negative-path coverage.
+// Both directions require the current password; the earlier test covers failure.
 describe("MfaService.setEmailMfaEnabled — disabling", () => {
   it("clears the flag on a correct password", async () => {
     const { service, prisma } = makeService();

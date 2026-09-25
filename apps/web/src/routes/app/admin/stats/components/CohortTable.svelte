@@ -13,8 +13,7 @@
   );
   const columns = $derived(Array.from({ length: width }, (_, i) => i));
 
-  // Same ramp as the mockup: the accent tinted into the surface, flipping the
-  // text colour once the fill is dark enough to swallow it.
+  // Flip text colour when the accent fill becomes too dark for contrast.
   const background = (value: number) =>
     `color-mix(in srgb, var(--accent) ${value}%, var(--surface-2))`;
   const foreground = (value: number) =>
@@ -26,7 +25,7 @@
 {:else}
   <div class="overflow-x-auto">
     <table
-      class="w-full border-separate border-spacing-0.75 font-mono text-[10.5px] tabular-nums">
+      class="w-full border-separate border-spacing-0.75 font-mono text-xs tabular-nums">
       <thead>
         <tr>
           <th class="text-dim p-0.5 font-normal"

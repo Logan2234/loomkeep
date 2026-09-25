@@ -7,18 +7,13 @@ import type {
 } from "../enums";
 import type { ErrorCode } from "../error-codes";
 
-// ============================================================================
-// Generic, source-agnostic import model.
-//
 // Every import source runs through one async job framework: `analyze`
 // parses the export and resolves it against the catalogue into a reviewable
 // {@link ImportPlan} (writing nothing);
 // `commit` writes the user's decisions and returns an {@link ImportReport}.
 // Both phases run in the background as an {@link ImportJobDto} the client polls.
-//
 // The wizard UI and the job controller are fully generic over these shapes: a
 // new source only supplies its own parse/resolve/write, never its own DTOs.
-// ============================================================================
 
 export type ImportSource =
   | "tvtime"
@@ -73,7 +68,6 @@ export type ImportItemContext =
       favorite: boolean;
     };
 
-/** One reviewable item in the plan (a show, movie, book or game). */
 export interface ImportPlanItem {
   /** Stable id carrying the user's decision from analyze → commit. */
   key: string;
@@ -128,7 +122,6 @@ export interface ImportPlan {
   searchMediaType?: MediaType;
 }
 
-/** One headline number in the completion report (rendered as a stat tile). */
 export interface ImportReportTile {
   /** Stable identity for localization, absent on older API deployments. */
   id?:
@@ -192,6 +185,39 @@ export type ImportAvailabilityDto = Partial<Record<ImportSource, boolean>>;
  */
 export type ImportQuotaDto = Partial<Record<Domain, boolean>>;
 
+/** The user's most recent import attempt, whatever its outcome. */
+export interface ImportRunDto {
+  sourceId: ImportSource;
+  /** Null on rows written before the column existed — see ImportRun. */
+  domain: Domain | null;
+  /** "SUCCESS" or "FAILURE", mirroring ImportRun.status. */
+  status: string;
+  /** Items actually written (the user's kept selection). */
+  itemCount: number;
+  /** Human summary joined from the report's tiles; null on failure. */
+  summary: string | null;
+  /** ISO-8601 instant. */
+  finishedAt: string;
+}
+
+/** An import attempt retained in the account's personal audit history. */
+export interface ImportHistoryRunDto extends ImportRunDto {
+  /** Stable identifier for rendering and pagination. */
+  id: string;
+  /** Whether this run replaced the existing library for its domain first. */
+  overwrite: boolean;
+  startedAt: string;
+}
+
+/**
+ * Response of `GET /import/last-run`. Wrapped rather than nullable at the top
+ * level so the endpoint always answers with an object — "never imported" is a
+ * state the UI renders, not an empty body it has to guess at.
+ */
+export interface ImportLastRunDto {
+  run: ImportRunDto | null;
+}
+
 /** Body of `POST /import/:source/analyze`. */
 export interface ImportAnalyzeRequest {
   /**
@@ -221,10 +247,8 @@ export interface ImportCommitRequest {
   overwrite?: boolean;
 }
 
-// ---------------------------------------------------------------------------
 // TV Time export parse structure (source-specific; consumed only by the TV Time
 // source's parser). Kept here so the parser and its tests share one shape.
-// ---------------------------------------------------------------------------
 
 /**
  * Raw CSV text extracted from a TV Time GDPR export, one field per relevant

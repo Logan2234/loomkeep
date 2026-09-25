@@ -12,4 +12,5 @@ export class AdminUserResponseDto implements AdminUserDto {
   createdAt!: string;
   lastActiveAt!: string | null;
   inactivityWarningSentAt!: string | null;
+  xp!: number;
 }

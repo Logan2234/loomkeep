@@ -1,5 +1,6 @@
 import type {
   RemoveWebauthnCredentialResponseDto,
+  RenameWebauthnCredentialResponseDto,
   WebauthnCredentialDto,
   WebauthnLoginOptionsResponseDto,
   WebauthnMfaOptionsResponseDto,
@@ -22,6 +23,7 @@ import {
 } from "@simplewebauthn/server";
 import * as bcrypt from "bcryptjs";
 import { AppException } from "../common/app.exception";
+import { notificationCopy } from "../notifications/notification-copy";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { MfaService } from "./mfa.service";
@@ -88,8 +90,6 @@ export class WebauthnService {
       passwordlessEnabled: user.passwordlessEnabled,
     };
   }
-
-  // --- Settings: adding a credential ---
 
   async registrationOptions(
     userId: string,
@@ -178,6 +178,14 @@ export class WebauthnService {
 
     const { credential, credentialDeviceType, credentialBackedUp } =
       verification.registrationInfo;
+    // Named in the owner's own language: the default lands in the database and
+    // is shown back to them in settings. Read straight from the copy table
+    // rather than injecting NotificationService for one label.
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    const copy = notificationCopy(owner?.locale);
 
     const row = await this.prisma.webauthnCredential.create({
       data: {
@@ -188,7 +196,7 @@ export class WebauthnService {
         deviceType: credentialDeviceType,
         backedUp: credentialBackedUp,
         transports: credential.transports ?? [],
-        name: dto.name.trim() || "Clé de sécurité",
+        name: dto.name.trim() || copy.securityKey,
       },
     });
 
@@ -266,6 +274,41 @@ export class WebauthnService {
     return { passwordlessDisabled };
   }
 
+  /**
+   * Relabelling is not a security-changing action (unlike add/remove), so it
+   * skips the current-password confirmation those require.
+   */
+  async renameCredential(
+    userId: string,
+    credentialId: string,
+    name: string,
+  ): Promise<RenameWebauthnCredentialResponseDto> {
+    const row = await this.prisma.webauthnCredential.findUnique({
+      where: { id: credentialId },
+    });
+
+    if (!row || row.userId !== userId) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AuthWebauthnCredentialNotFound,
+      );
+    }
+
+    const trimmed = name.trim();
+    const updated = await this.prisma.webauthnCredential.update({
+      where: { id: row.id },
+      data: { name: trimmed || row.name },
+    });
+
+    await this.security.record({
+      type: "MFA_WEBAUTHN_RENAMED",
+      userId,
+      detail: `${row.name} → ${updated.name}`,
+    });
+
+    return { credential: toCredentialDto(updated) };
+  }
+
   async setPasswordless(
     userId: string,
     enabled: boolean,
@@ -299,8 +342,6 @@ export class WebauthnService {
     });
   }
 
-  // --- Login: MFA 2nd factor (password already verified) ---
-
   async createMfaChallenge(
     userId: string,
     mfaLoginChallengeId: string,
@@ -311,8 +352,6 @@ export class WebauthnService {
     );
     return { webauthnChallengeId, options };
   }
-
-  // --- Login: passwordless (no password verified at all) ---
 
   /** Returns null when the account isn't eligible — callers must respond identically to "unknown identifier" to avoid enumeration. */
   async passwordlessOptions(

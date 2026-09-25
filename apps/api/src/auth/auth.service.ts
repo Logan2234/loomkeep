@@ -25,6 +25,7 @@ import {
 import { AppException } from "../common/app.exception";
 import { normalizeEmail } from "../common/email.util";
 import { HibpService } from "../common/hibp.service";
+import { EventsGateway } from "../events/events.gateway";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -89,6 +90,7 @@ export class AuthService {
     private readonly mfa: MfaService,
     private readonly webauthn: WebauthnService,
     private readonly sessionCache: SessionCacheService,
+    private readonly events: EventsGateway,
   ) {}
 
   async register(
@@ -582,7 +584,6 @@ export class AuthService {
       await this.security.record({
         type: "NEW_DEVICE_LOGIN",
         userId: promoted.id,
-        detail: ip ? `IP: ${ip}` : undefined,
         userAgent,
       });
     }
@@ -697,7 +698,11 @@ export class AuthService {
       select: { id: true },
     });
     await this.prisma.refreshToken.deleteMany({ where: { tokenHash } });
-    if (session) this.sessionCache.invalidate(session.id);
+
+    if (session) {
+      this.sessionCache.invalidate(session.id);
+      this.events.disconnectSession(session.id);
+    }
   }
 
   /**
@@ -734,6 +739,7 @@ export class AuthService {
       where: { id: sessionId, userId },
     });
     this.sessionCache.invalidate(sessionId);
+    this.events.disconnectSession(sessionId);
   }
 
   /** Revokes every session except the current device. */
@@ -750,7 +756,9 @@ export class AuthService {
       select: { id: true },
     });
     await this.prisma.refreshToken.deleteMany({ where });
-    this.sessionCache.invalidateAll(others.map((s) => s.id));
+    const ids = others.map((s) => s.id);
+    this.sessionCache.invalidateAll(ids);
+    ids.forEach((id) => this.events.disconnectSession(id));
   }
 
   /** Revokes every session for an account, no exception — the admin "forcer la déconnexion" action. */
@@ -760,7 +768,9 @@ export class AuthService {
       select: { id: true },
     });
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
-    this.sessionCache.invalidateAll(sessions.map((s) => s.id));
+    const ids = sessions.map((s) => s.id);
+    this.sessionCache.invalidateAll(ids);
+    ids.forEach((id) => this.events.disconnectSession(id));
   }
 
   /**
@@ -844,7 +854,9 @@ export class AuthService {
         where: { userId: stored.userId },
       }),
     ]);
-    this.sessionCache.invalidateAll(sessions.map((s) => s.id));
+    const ids = sessions.map((s) => s.id);
+    this.sessionCache.invalidateAll(ids);
+    ids.forEach((id) => this.events.disconnectSession(id));
     await this.mail.sendPasswordChanged({
       email: stored.user.email,
       locale: stored.user.locale,
@@ -1063,5 +1075,8 @@ export function toUserDto(user: User): UserDto {
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,
     hideProgression: user.hideProgression,
+    spoilerSensitivity:
+      user.spoilerSensitivity as UserDto["spoilerSensitivity"],
+    domainOrder: user.domainOrder as UserDto["domainOrder"],
   };
 }

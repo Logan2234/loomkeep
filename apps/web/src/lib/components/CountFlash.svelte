@@ -1,12 +1,5 @@
 <script lang="ts">
-  // A number that briefly accents itself when it changes under the reader's
-  // eyes — a follower count after following someone, a library count after
-  // an add. Only *changes* are marked: the first render is silent, or every
-  // page load would flash every counter on screen.
-  //
-  // Deliberately not a count-up from zero: the value is already correct, and
-  // animating the digits would make a settled figure look like it is still
-  // being computed.
+  // Only post-mount changes flash; the initial value is already settled.
   import { prefersReducedMotion } from "$lib/motion";
 
   let {

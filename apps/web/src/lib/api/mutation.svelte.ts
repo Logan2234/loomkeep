@@ -1,8 +1,5 @@
-// createApiMutation() — thin wrapper over TanStack's createMutation(), next
-// to createApiQuery() (docs/plans/centralized-api-layer.md §3). Same
-// { data, error, loading, fieldErrors } surface as createApiQuery, plus
-// `mutate()`. `invalidates` replaces manual local patching after a mutation
-// — the query keys it lists get refetched instead.
+// Resolves mutation errors before they reach templates and invalidates the
+// declared query keys after success.
 import { toast } from "$lib/toast.svelte";
 import {
   createMutation,
@@ -68,8 +65,7 @@ export function createApiMutation<TArgs = void, TData = unknown>(
   });
 
   return {
-    // Ignores the call when one is already in flight — the double-submit
-    // guard every hand-rolled `saving` boolean used to be.
+    // Ignore concurrent calls to prevent double submission.
     mutate(args: TArgs) {
       if (mutation.isPending) return;
       if (optionsFn().resetErrorOnRun ?? true) mutation.reset();

@@ -1,7 +1,4 @@
 <script lang="ts">
-  // Ringed glyph standing in for a badge. The ring carries the tier actually
-  // reached — a locked achievement keeps the neutral border, so a family's
-  // state reads from across the grid.
   import Icon from "$lib/components/Icon.svelte";
   import type { IconName } from "$lib/types/icon-name";
   import type { AchievementTier } from "@loomkeep/shared";

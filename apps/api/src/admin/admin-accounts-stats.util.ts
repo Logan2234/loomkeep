@@ -5,9 +5,8 @@ import type {
 } from "@loomkeep/shared";
 
 /**
- * How many signup-month cohorts the retention table shows. Six is what the
- * table stays readable at (and matches the approved mockup) — older cohorts
- * only add rows whose columns are all long-tail noise.
+ * How many signup-month cohorts the retention table shows. More than six
+ * adds mostly long-tail rows and makes the table difficult to scan.
  */
 export const COHORT_MONTHS = 6;
 

@@ -6,6 +6,7 @@
     regenerateRecoveryCodes,
     registerWebauthnCredential,
     removeWebauthnCredential,
+    renameWebauthnCredential,
     setEmailMfa,
     setPasswordless,
     setupTotp,
@@ -13,22 +14,22 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { auth } from "$lib/auth.svelte";
+  import CardRowSkeleton from "$lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Modal from "$lib/components/Modal.svelte";
-  import NewBadge from "$lib/components/NewBadge.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import Switch from "$lib/components/Switch.svelte";
-  import { auth } from "$lib/auth.svelte";
   import { downloadBlob } from "$lib/download";
-  import { isFeatureNew } from "$lib/feature-badges";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
   import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
   import { useQueryClient } from "@tanstack/svelte-query";
-
-  const RECOVERY_CODES_LOW_THRESHOLD = 2;
+  import { RECOVERY_CODES_LOW_THRESHOLD } from "../nav";
+  import SettingRow from "./SettingRow.svelte";
 
   // WebAuthn additionally needs a secure context (HTTPS, or localhost) — a
   // self-host without TLS in front (docker-compose.yml's bare default, no
@@ -45,6 +46,7 @@
     | "recovery-reveal"
     | "webauthn-add"
     | "webauthn-remove"
+    | "webauthn-rename"
     | "passwordless-confirm"
     | null;
 
@@ -66,7 +68,6 @@
     );
   }
 
-  // --- TOTP setup ---
   let totpStep: "scan" | "confirm" = $state("scan");
   let totpOtpauthUri = $state("");
   let totpSecret = $state("");
@@ -120,7 +121,6 @@
     totpConfirmMut.mutate(totpCodeInput.trim());
   }
 
-  // --- TOTP disable ---
   let disablePasswordInput = $state("");
   let sensitivePasswordInput = $state("");
   let pendingEmailEnabled = $state(false);
@@ -175,7 +175,6 @@
     });
   }
 
-  // --- Recovery codes ---
   let revealedCodes = $state<string[]>([]);
   let recoveryCopied = $state(false);
 
@@ -235,7 +234,6 @@
     );
   }
 
-  // --- WebAuthn credentials ---
   let webauthnNameInput = $state("");
   let pendingRemoveCredential = $state<WebauthnCredentialDto | null>(null);
 
@@ -301,7 +299,35 @@
     webauthnRemoveMut.mutate();
   }
 
-  // --- Passwordless sign-in ---
+  let pendingRenameCredential = $state<WebauthnCredentialDto | null>(null);
+
+  const webauthnRenameMut = createApiMutation(() => ({
+    mutate: (name: string) =>
+      renameWebauthnCredential(pendingRenameCredential!.id, { name }),
+    onSuccess: ({ credential }) => {
+      patchStatus({
+        webauthnCredentials: (status?.webauthnCredentials ?? []).map((c) =>
+          c.id === credential.id ? credential : c,
+        ),
+      });
+      openModal = null;
+      toast.success(m.settings_mfa_webauthn_renamed_toast());
+    },
+  }));
+
+  function openWebauthnRename(credential: WebauthnCredentialDto) {
+    pendingRenameCredential = credential;
+    webauthnNameInput = credential.name;
+    webauthnRenameMut.reset();
+    openModal = "webauthn-rename";
+  }
+
+  function confirmWebauthnRename() {
+    const name = webauthnNameInput.trim();
+    if (!name) return;
+    webauthnRenameMut.mutate(name);
+  }
+
   let pendingPasswordlessEnabled = $state(false);
 
   const passwordlessMut = createApiMutation(() => ({
@@ -345,165 +371,178 @@
         status.emailEnabled ||
         status.webauthnCredentials.length > 0),
   );
+
+  const recoveryLow = $derived(
+    !!status && status.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD,
+  );
 </script>
 
-<section class="card mb-5 p-5 md:p-6">
-  <h2 class="font-display mb-4 flex items-center gap-2 text-lg font-bold">
-    {m.settings_section_mfa()}
-    {#if isFeatureNew("mfa")}<NewBadge />{/if}
-  </h2>
+{#if statusQuery.loading}
+  <CardRowSkeleton count={4} />
+{:else}
+  <div class="space-y-4">
+    <section class="card p-5 md:p-6">
+      <p class="text-dim mb-3 text-sm font-semibold">
+        {m.settings_mfa_verification_methods()}
+      </p>
+      <div class="divide-border divide-y">
+        <SettingRow
+          anchor="mfa-totp"
+          label={m.auth_mfa_totp_label()}
+          description={m.settings_mfa_totp_desc()}
+          icon="qr-code">
+          {#snippet control()}
+            <Switch
+              label={m.auth_mfa_totp_label()}
+              checked={status?.totpEnabled || false}
+              onChange={(next) =>
+                next ? openTotpSetup() : openTotpDisable()} />
+          {/snippet}
+        </SettingRow>
 
-  <div class="divide-border divide-y">
-    <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
-      <div class="flex items-start gap-3">
-        <Icon name="qr-code" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
-        <div>
-          <p class="font-semibold">{m.auth_mfa_totp_label()}</p>
-          <p class="text-dim text-sm">{m.settings_mfa_totp_desc()}</p>
-        </div>
+        <SettingRow
+          anchor="mfa-email"
+          label={m.auth_mfa_email_label()}
+          description={m.settings_mfa_email_desc()}
+          icon="mail">
+          {#snippet control()}
+            <Switch
+              label={m.auth_mfa_email_label()}
+              checked={status?.emailEnabled || false}
+              onChange={onToggleEmail} />
+          {/snippet}
+        </SettingRow>
       </div>
-      <Switch
-        label={m.auth_mfa_totp_label()}
-        checked={status?.totpEnabled || false}
-        onChange={(next) => (next ? openTotpSetup() : openTotpDisable())} />
-    </div>
-
-    <div class="flex items-center justify-between gap-4 py-3">
-      <div class="flex items-start gap-3">
-        <Icon name="mail" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
-        <div>
-          <p class="font-semibold">{m.auth_mfa_email_label()}</p>
-          <p class="text-dim text-sm">{m.settings_mfa_email_desc()}</p>
-        </div>
-      </div>
-      <Switch
-        label={m.auth_mfa_email_label()}
-        checked={status?.emailEnabled || false}
-        onChange={onToggleEmail} />
-    </div>
+    </section>
 
     {#if webauthnBrowserSupported}
-      <div class="py-3">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex items-start gap-3">
-            <Icon name="key" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p class="font-semibold">{m.settings_mfa_webauthn_label()}</p>
-              <p class="text-dim text-sm">
-                {webauthnSecureContext
-                  ? m.settings_mfa_webauthn_desc()
-                  : m.settings_mfa_webauthn_unsupported()}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="btn btn-ghost btn-sm shrink-0"
-            disabled={!webauthnSecureContext}
-            onclick={openWebauthnAdd}>
-            <Icon name="plus" class="h-4 w-4" />
-            {m.common_add()}
-          </button>
-        </div>
+      <section class="card p-5 md:p-6">
+        <p class="text-dim mb-3 text-sm font-semibold">
+          {m.settings_mfa_security_keys()}
+        </p>
+        <div class="divide-border divide-y">
+          <SettingRow
+            anchor="mfa-webauthn"
+            label={m.settings_mfa_webauthn_label()}
+            description={webauthnSecureContext
+              ? m.settings_mfa_webauthn_desc()
+              : m.settings_mfa_webauthn_unsupported()}
+            icon="key">
+            {#snippet control()}
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm shrink-0"
+                disabled={!webauthnSecureContext}
+                onclick={openWebauthnAdd}>
+                <Icon name="plus" class="h-4 w-4" />
+                {m.common_add()}
+              </button>
+            {/snippet}
 
-        {#if status && status.webauthnCredentials.length > 0}
-          <div
-            class="border-border divide-border mt-3 divide-y rounded-lg border border-dashed">
-            {#each status.webauthnCredentials as credential (credential.id)}
-              <div class="flex items-center gap-3 px-3 py-2.5">
-                <span
-                  class="bg-surface-2 text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg">
-                  <Icon name="key" class="h-4 w-4" />
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-semibold">
-                    {credential.name}
-                  </p>
-                  <p
-                    class="text-dim font-mono text-[0.68rem] tracking-wide uppercase">
-                    {credential.lastUsedAt
-                      ? m.settings_mfa_webauthn_used_at({
-                          date: formatDate(
-                            credential.lastUsedAt,
-                            DATE_MEDIUM_OPTIONS,
-                          ),
-                        })
-                      : m.settings_mfa_webauthn_added_at({
-                          date: formatDate(
-                            credential.createdAt,
-                            DATE_MEDIUM_OPTIONS,
-                          ),
-                        })}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="btn-icon shrink-0"
-                  aria-label={m.common_delete()}
-                  onclick={() => openWebauthnRemove(credential)}>
-                  <Icon name="trash" class="h-4 w-4" />
-                </button>
+            {#if status && status.webauthnCredentials.length > 0}
+              <div
+                class="border-border divide-border divide-y rounded-lg border border-dashed">
+                {#each status.webauthnCredentials as credential (credential.id)}
+                  <div class="flex items-center gap-3 px-3 py-2.5">
+                    <span
+                      class="bg-surface-2 text-dim grid h-8 w-8 shrink-0 place-items-center rounded-lg">
+                      <Icon name="key" class="h-4 w-4" />
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-semibold">
+                        {credential.name}
+                      </p>
+                      <p
+                        class="text-dim font-mono text-[0.68rem] tracking-wide uppercase">
+                        {credential.lastUsedAt
+                          ? m.settings_mfa_webauthn_used_at({
+                              date: formatDate(
+                                credential.lastUsedAt,
+                                DATE_MEDIUM_OPTIONS,
+                              ),
+                            })
+                          : m.settings_mfa_webauthn_added_at({
+                              date: formatDate(
+                                credential.createdAt,
+                                DATE_MEDIUM_OPTIONS,
+                              ),
+                            })}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      aria-label={m.common_rename()}
+                      onclick={() => openWebauthnRename(credential)}>
+                      <Icon name="edit" class="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={m.common_delete()}
+                      class="btn-icon hover:text-danger hover:bg-danger/10"
+                      onclick={() => openWebauthnRemove(credential)}>
+                      <Icon name="trash" class="h-4 w-4" />
+                    </button>
+                  </div>
+                {/each}
               </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
+            {:else}
+              <EmptyState class="px-4 py-5 text-left">
+                <p class="font-semibold">
+                  {m.settings_empty_security_keys_title()}
+                </p>
+                <p class="mt-1 text-sm">
+                  {m.settings_empty_security_keys_body()}
+                </p>
+              </EmptyState>
+            {/if}
+          </SettingRow>
 
-      <div
-        class="flex items-center justify-between gap-4 {hasAnyMfa
-          ? 'py-3'
-          : 'pt-3'}">
-        <div class="flex items-start gap-3">
-          <Icon name="lock" class="text-dim mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p class="font-semibold">{m.settings_mfa_passwordless_label()}</p>
-            <p class="text-dim text-sm">
-              {status && status.webauthnCredentials.length > 0
-                ? m.settings_mfa_passwordless_desc()
-                : m.settings_mfa_passwordless_needs_credential()}
-            </p>
-          </div>
+          <SettingRow
+            anchor="mfa-passwordless"
+            label={m.settings_mfa_passwordless_label()}
+            description={status && status.webauthnCredentials.length > 0
+              ? m.settings_mfa_passwordless_desc()
+              : m.settings_mfa_passwordless_needs_credential()}
+            icon="lock">
+            {#snippet control()}
+              <Switch
+                label={m.settings_mfa_passwordless_label()}
+                checked={status?.passwordlessEnabled || false}
+                disabled={!status || status.webauthnCredentials.length === 0}
+                onChange={onTogglePasswordless} />
+            {/snippet}
+          </SettingRow>
         </div>
-        <Switch
-          label={m.settings_mfa_passwordless_label()}
-          checked={status?.passwordlessEnabled || false}
-          disabled={!status || status.webauthnCredentials.length === 0}
-          onChange={onTogglePasswordless} />
-      </div>
+      </section>
     {/if}
 
-    {#if hasAnyMfa}
-      <div class="flex items-center justify-between gap-4 pt-3">
-        <div>
-          <p class="font-semibold">
-            {m.settings_mfa_recovery_title()}
-
-            {#if status && status.recoveryCodesRemaining <= RECOVERY_CODES_LOW_THRESHOLD}
-              <span
-                class="text-warning shrink-0"
-                aria-hidden="true"
-                title={m.settings_mfa_recovery_low_warning({
-                  count: status.recoveryCodesRemaining,
-                })}>
-                <Icon name="warning" class="ml-1 inline h-5 w-5" />
-              </span>
-              <span class="sr-only"
-                >{m.settings_mfa_recovery_low_warning({
-                  count: status.recoveryCodesRemaining,
-                })}</span>
-            {/if}
-          </p>
-          <p class="text-dim text-sm">{m.settings_mfa_recovery_hint()}</p>
-        </div>
-        <button
-          class="link-accent shrink-0 text-sm"
-          onclick={openRecoveryRegenerate}>
-          {m.common_regenerate()}
-        </button>
-      </div>
+    {#if hasAnyMfa && status}
+      <section class="card p-5 md:p-6">
+        <p class="text-dim mb-3 text-sm font-semibold">
+          {m.settings_mfa_account_recovery()}
+        </p>
+        <SettingRow
+          anchor="mfa-recovery"
+          label={m.settings_mfa_recovery_title()}
+          description={recoveryLow
+            ? m.settings_mfa_recovery_low_warning({
+                count: status.recoveryCodesRemaining,
+              })
+            : m.settings_mfa_recovery_hint()}
+          icon={recoveryLow ? "warning" : "shield"}>
+          {#snippet control()}
+            <button
+              class="link-accent shrink-0 text-sm"
+              onclick={openRecoveryRegenerate}>
+              {m.common_regenerate()}
+            </button>
+          {/snippet}
+        </SettingRow>
+      </section>
     {/if}
   </div>
-</section>
+{/if}
 
 {#if openModal === "totp-setup"}
   <Modal title={m.settings_mfa_totp_setup_title()} onclose={closeModal}>
@@ -703,6 +742,47 @@
           class="btn btn-primary"
           disabled={webauthnAddMut.loading || !webauthnNameInput.trim()}>
           {webauthnAddMut.loading ? m.common_save_loading() : m.common_next()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if openModal === "webauthn-rename"}
+  <Modal title={m.settings_mfa_webauthn_rename_title()} onclose={closeModal}>
+    <form
+      class="flex flex-col gap-3"
+      onsubmit={(e) => {
+        e.preventDefault();
+        confirmWebauthnRename();
+      }}>
+      <label class="block">
+        <span class="mb-1.5 block text-sm font-semibold">
+          {m.settings_mfa_webauthn_name_label()}
+        </span>
+        <input
+          type="text"
+          name="name"
+          required
+          maxlength="60"
+          enterkeyhint="done"
+          class="input"
+          bind:value={webauthnNameInput} />
+      </label>
+      {#if webauthnRenameMut.error}
+        <p class="text-danger text-sm">{webauthnRenameMut.error}</p>
+      {/if}
+      <div class="mt-2 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" onclick={closeModal}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={webauthnRenameMut.loading || !webauthnNameInput.trim()}>
+          {webauthnRenameMut.loading
+            ? m.common_save_loading()
+            : m.common_save()}
         </button>
       </div>
     </form>

@@ -1,7 +1,6 @@
 <script lang="ts">
   // Generic mobile long-press result: blurs the background and centers a
-  // snippet of content on screen with a contextual menu underneath — the
-  // touch equivalent of a desktop hover-reveal action row. Content-agnostic:
+  // snippet of content on screen with a contextual menu underneath. Content-agnostic:
   // callers supply what to show (a comment card today; a review/list/library
   // item tomorrow) and what actions to offer.
   //
@@ -14,6 +13,7 @@
   import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
 
   let {
@@ -28,9 +28,7 @@
     initialFocus?: HTMLElement | null;
   } = $props();
 
-  const reduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = prefersReducedMotion();
   const dur = reduced ? 0 : 180;
 
   let visible = $state(false);

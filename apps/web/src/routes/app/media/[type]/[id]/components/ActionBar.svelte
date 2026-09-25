@@ -6,6 +6,7 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, NextEpisodeDto } from "@loomkeep/shared";
+  import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
 
   // Sticky action bar for the media detail page ("Cinéma minimal"). Kept to a
@@ -28,6 +29,7 @@
     onDrop,
     onResume,
     onRemove,
+    socialActions,
   }: {
     entry: LibraryEntryDto | null;
     isMovie: boolean;
@@ -44,6 +46,7 @@
     onDrop: () => void;
     onResume: () => void;
     onRemove: () => void;
+    socialActions?: Snippet;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -62,10 +65,15 @@
     </h2>
 
     {#if !entry}
-      <button class="btn btn-primary ml-auto" disabled={saving} onclick={onAdd}>
-        <Icon name="plus" class="h-4 w-4" />
-        {m.library_add()}
-      </button>
+      <div class="ml-auto flex items-center gap-2">
+        {#if socialActions}
+          <div class="mr-1 flex">{@render socialActions()}</div>
+        {/if}
+        <button class="btn btn-primary" disabled={saving} onclick={onAdd}>
+          <Icon name="plus" class="h-4 w-4" />
+          {m.library_add()}
+        </button>
+      </div>
     {:else}
       <div class="flex min-w-0 items-center gap-2.5">
         {#if !isMovie && nextEpisode && !isDropped}
@@ -115,6 +123,9 @@
       </div>
 
       <div class="ml-auto flex shrink-0 items-center gap-2.5">
+        {#if socialActions}
+          <div class="mr-1 flex">{@render socialActions()}</div>
+        {/if}
         <AddToListButton targetType="MEDIA" targetId={entry.mediaItem.id} />
 
         <button
@@ -150,7 +161,7 @@
               aria-label={m.common_more_actions()}
               title={m.common_more_actions()}
               onclick={toggle}
-              class="btn-icon border-border h-9 w-9 border">
+              class="btn-icon border-border h-9 w-9 border transition-colors">
               <Icon name="dots-horizontal" class="h-4 w-4" />
             </button>
           {/snippet}
@@ -159,7 +170,7 @@
               <button
                 role="menuitem"
                 type="button"
-                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                class="menu-item"
                 onclick={() => {
                   close();
                   onResume();
@@ -171,7 +182,7 @@
               <button
                 role="menuitem"
                 type="button"
-                class="hover:bg-surface-2 flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap"
+                class="menu-item"
                 onclick={() => {
                   close();
                   onDrop();
@@ -183,7 +194,7 @@
             <button
               role="menuitem"
               type="button"
-              class="hover:bg-surface-2 text-danger border-border flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm whitespace-nowrap"
+              class="menu-item menu-item-danger border-border border-t"
               onclick={() => {
                 close();
                 onRemove();

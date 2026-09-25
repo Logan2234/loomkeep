@@ -10,8 +10,8 @@ import type { PrismaService } from "../../prisma/prisma.service";
  * Whether `userId` has genuinely performed the action behind each onboarding
  * step, re-derived live from the real tables every time — there is no event
  * log of "did this step" to go stale, so completing step 3 before ever
- * opening the checklist still shows up as done the moment it's read (see the
- * [G8] design discussion). `checkPremiereSeance` (achievements/registry.ts)
+ * opening the checklist still shows up as done the moment it is read.
+ * `checkPremiereSeance` (achievements/registry.ts)
  * reuses this exact function so the checklist and the completion achievement
  * can never disagree on what counts as done.
  */

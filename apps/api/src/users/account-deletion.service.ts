@@ -31,6 +31,7 @@ export class AccountDeletionService {
       detail,
       userAgent,
     });
+    await this.security.forgetIps(userId);
     await this.lists.reassignOwnedListsOnAccountDeletion(userId);
     await this.prisma.user.delete({ where: { id: userId } });
   }

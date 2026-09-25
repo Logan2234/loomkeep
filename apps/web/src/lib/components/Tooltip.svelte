@@ -20,7 +20,8 @@
     children: Snippet;
   } = $props();
 
-  const id = `tooltip-${$props.id()}`;
+  const componentId = $props.id();
+  const id = `tooltip-${componentId}`;
 
   // Touch devices have no real hover, so tapping toggles the bubble instead —
   // checked once, hover capability doesn't change mid-session. On a device

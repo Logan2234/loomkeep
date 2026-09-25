@@ -93,7 +93,6 @@ describe("parseGoodreadsCsv", () => {
       csv(
         "1,Ward,Wildbow,X,,,,0,0,,ebook,,,,,2025/01/01,abandoned,abandoned (#1),read,,0,,1,0",
         "2,DNF Book,X,X,,,,0,0,,,,,,,2025/01/01,dnf,,read,,0,,0,0",
-        // A plain "read" shelf, no dnf tag → stays READ.
         "3,Finished,X,X,,,,0,0,,,,,,,2025/01/01,read,,read,,0,,1,0",
       ),
     );

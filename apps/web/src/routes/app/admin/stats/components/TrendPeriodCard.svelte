@@ -56,7 +56,7 @@
   <div class="mb-3.5 flex flex-wrap items-start justify-between gap-2">
     <div>
       <h3 class="font-display text-[15px] font-bold">{title}</h3>
-      <p class="text-dim mt-0.5 text-[11.5px]">
+      <p class="text-dim mt-0.5 text-xs">
         {#if description}{description}
         {/if}{CADENCE[trend.period]}
       </p>

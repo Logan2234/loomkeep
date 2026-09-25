@@ -1,8 +1,4 @@
-// [G8] "Première séance" — the gamified onboarding checklist. Shared between
-// the desktop widget (OnboardingWidget) and the mobile banner
-// (OnboardingBanner), which render the exact same steps in two different
-// shells (see the [G8] design discussion on why mobile can't reuse
-// NotificationBell's old floating-corner idiom).
+// Shared by the desktop widget and mobile banner, which use separate shells.
 import { m } from "$lib/paraglide/messages.js";
 import type { IconName } from "$lib/types/icon-name";
 import type { OnboardingStepDto, OnboardingStepKey } from "@loomkeep/shared";
@@ -12,8 +8,8 @@ interface StepConfig {
   /**
    * Where the "go do it" click lands. Three steps ("mark complete", "rate",
    * "comment") have no single canonical target — they all act on a
-   * not-yet-chosen tracked item — so they fall back to the app home rather
-   * than guessing a domain, per the [G8] design discussion.
+   * not-yet-chosen tracked item, so they fall back to the app home rather
+   * than guessing a domain.
    */
   href: string;
 }
@@ -55,7 +51,6 @@ const STEP_DESCRIPTION: Record<OnboardingStepKey, () => string> = {
   comment: m.gamification_onboarding_step_comment_desc,
 };
 
-/** One line on how to actually clear the step — shown for current/locked, never needed once done or skipped. */
 export function stepDescription(key: OnboardingStepKey): string {
   return STEP_DESCRIPTION[key]();
 }
@@ -67,7 +62,7 @@ export interface OnboardingStepView extends OnboardingStepDto {
 }
 
 /**
- * Steps are locked in order (see the [G8] design discussion): the first
+ * Steps are locked in order: the first
  * not-done-and-not-skipped step is the actionable "current" one, everything
  * after it is "locked" — shown, at reduced opacity, never hidden.
  */

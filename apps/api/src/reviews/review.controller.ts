@@ -20,11 +20,14 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import {
   CurrentUser,
   type JwtPayload,
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import { CreateReportBody } from "../reports/dto/create-report.dto";
+import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
 import {
   BatchDeleteReviewsBody,
@@ -55,9 +58,12 @@ function parseTarget(type: string): ReviewTargetType {
 
 @Controller("reviews")
 export class ReviewController {
-  constructor(private readonly reviews: ReviewService) {}
+  constructor(
+    private readonly reviews: ReviewService,
+    private readonly reports: ReportService,
+  ) {}
 
-  // --- Own reviews: NOT social-gated (rating your own items always works). ---
+  // Own reviews remain available when social features are disabled.
 
   @Get("me")
   @ApiOkResponse({ type: MyReviewResponseDto, isArray: true })
@@ -129,7 +135,7 @@ export class ReviewController {
     return this.reviews.revisions(user.sub, parseTarget(type), id);
   }
 
-  // --- Others' reviews for a target: social-gated + visibility-filtered. ---
+  // Other users' reviews are social-gated and visibility-filtered.
 
   @Get(":type/:id")
   @UseGuards(SocialFeatureGuard)
@@ -142,7 +148,7 @@ export class ReviewController {
     return this.reviews.listForTarget(user.sub, parseTarget(type), id);
   }
 
-  // --- Voting on someone else's review: social-gated, a community action. ---
+  // Voting is a social-gated community action.
 
   @Put(":reviewId/vote")
   @UseGuards(SocialFeatureGuard)
@@ -163,5 +169,23 @@ export class ReviewController {
     @Param("reviewId") reviewId: string,
   ): Promise<ReviewUnvoteResultDto> {
     return this.reviews.unvote(user.sub, reviewId);
+  }
+
+  @Post(":reviewId/report")
+  @UseGuards(SocialFeatureGuard)
+  @Throttle({ default: { limit: 1, ttl: 5_000 } })
+  report(
+    @CurrentUser() user: JwtPayload,
+    @Param("reviewId") reviewId: string,
+    @Body() body: CreateReportBody,
+  ): Promise<void> {
+    return this.reports.create(
+      user.sub,
+      "REVIEW",
+      reviewId,
+      body.category,
+      body.motif,
+      body.reason,
+    );
   }
 }

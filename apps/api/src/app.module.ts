@@ -7,6 +7,7 @@ import { LoggerModule } from "nestjs-pino";
 import { AdminModule } from "./admin/admin.module";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
+import { SessionCacheModule } from "./auth/session-cache.module";
 import { BooksModule } from "./books/books.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { CommentsModule } from "./comments/comments.module";
@@ -15,6 +16,8 @@ import { CommonModule } from "./common/common.module";
 import { loggerOptions } from "./common/logger.config";
 import { RuntimeConfigModule } from "./config/config.module";
 import { validateEnv } from "./config/env.validation";
+import { EeModule } from "./ee/ee.module";
+import { EventsModule } from "./events/events.module";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
 import { GamesModule } from "./games/games.module";
 import { GamificationModule } from "./gamification/gamification.module";
@@ -53,10 +56,12 @@ import { UsersModule } from "./users/users.module";
     PrismaModule,
     CommonModule,
     FeatureFlagsModule,
+    SessionCacheModule,
     RuntimeConfigModule,
     MailModule,
     AuthModule,
     AdminModule,
+    EventsModule,
     UsersModule,
     CatalogModule,
     GamesModule,
@@ -74,6 +79,7 @@ import { UsersModule } from "./users/users.module";
     StatsModule,
     NewsletterModule,
     MetricsModule,
+    EeModule,
   ],
   controllers: [],
   providers: [

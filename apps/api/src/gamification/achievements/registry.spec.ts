@@ -96,8 +96,6 @@ describe("checkCinephileTier", () => {
   });
 });
 
-// --- [G3] catalogue shape --------------------------------------------
-
 describe("ACHIEVEMENTS catalogue shape", () => {
   it("every entry's xpAward is 50, 150 or 400", () => {
     for (const def of ACHIEVEMENT_LIST) {
@@ -174,8 +172,6 @@ describe("ACHIEVEMENTS catalogue shape", () => {
   });
 });
 
-// --- Volume -----------------------------------------------------------
-
 describe("checkEpisodeWatcherTier (representative of the volume-tier family)", () => {
   it("counts every EpisodeWatch row for the user, reports progress", async () => {
     const count = vi.fn().mockResolvedValue(500);
@@ -190,8 +186,6 @@ describe("checkEpisodeWatcherTier (representative of the volume-tier family)", (
     expect(count).toHaveBeenCalledWith({ where: { userId: "user-1" } });
   });
 });
-
-// --- Rituel -------------------------------------------------------------
 
 describe("checkMarathon", () => {
   it("unlocks once 10+ episodes share the same local calendar day", async () => {
@@ -293,8 +287,6 @@ describe("checkStreakTier", () => {
   });
 });
 
-// --- Exploration ----------------------------------------------------------
-
 describe("checkDecadesTier / checkGenresTier (exploration family)", () => {
   it("counts distinct decades across media/games/books", async () => {
     const prisma = {
@@ -367,8 +359,6 @@ describe("checkOmnivore", () => {
   });
 });
 
-// --- Complétion -----------------------------------------------------------
-
 describe("checkBigScreen", () => {
   it("counts completed series/anime with 5+ real seasons", async () => {
     const bigSeries = { mediaItem: { seasons: Array(5).fill({ id: "s" }) } };
@@ -403,8 +393,6 @@ describe("checkWellRounded", () => {
     });
   });
 });
-
-// --- Saisonnier -------------------------------------------------------
 
 describe("checkHalloween", () => {
   it("unlocks off a horror episode/movie watched in October", async () => {
@@ -471,8 +459,6 @@ describe("checkNewYearFinish", () => {
     });
   });
 });
-
-// --- Social -------------------------------------------------------------
 
 describe("checkFirstComment / checkChatterboxTier", () => {
   it("checkFirstComment unlocks off any non-deleted comment", async () => {
@@ -585,8 +571,6 @@ describe("checkFollowersTier / checkHasFriends / checkOneSided", () => {
     });
   });
 });
-
-// --- Compte ---------------------------------------------------------------
 
 describe("checkLockedDown", () => {
   it("reflects User.mfaTotpEnabled", async () => {
@@ -725,8 +709,6 @@ describe("checkPremiereSeance", () => {
   });
 });
 
-// --- Autres -----------------------------------------------------------
-
 describe("checkNoFavorites", () => {
   it("unlocks only past 100 tracked titles with zero favorites", async () => {
     const prisma = {
@@ -766,8 +748,6 @@ describe("checkFullInventory", () => {
     });
   });
 });
-
-// --- Secrets ------------------------------------------------------------
 
 describe("checkGuiltyPleasure", () => {
   it("unlocks off a completed series rated 1-3 by the user", async () => {

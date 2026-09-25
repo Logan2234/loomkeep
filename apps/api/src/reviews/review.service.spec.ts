@@ -1,4 +1,5 @@
 import type { ConfigService } from "@nestjs/config";
+import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
@@ -9,7 +10,6 @@ import type { VisibilityService } from "../social/visibility.service";
 import type { ViewerRelation } from "../social/visibility.util";
 import { ReviewService } from "./review.service";
 
-// Stubbed no-op, same pattern as library.service.spec.ts (G1).
 function stubXp(): XpService {
   return {
     award: vi.fn(),
@@ -44,6 +44,7 @@ function review(
     rating: 8,
     text: null,
     visibility,
+    spoilerTag: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     user: {
@@ -155,6 +156,36 @@ describe("ReviewService.listForTarget", () => {
     ).toHaveLength(1);
   });
 
+  it("flags reviews written by a friend, never the viewer's own or a pseudonymous one", async () => {
+    const rows = [
+      review("mine", { id: VIEWER, profileAccess: "PUBLIC" }, "PUBLIC"),
+      review("friend", { id: "a", profileAccess: "PUBLIC" }, "FRIENDS"),
+      review("stranger", { id: "b", profileAccess: "PUBLIC" }, "PUBLIC"),
+      review("ghost", { id: "g", profileAccess: "GHOST" }, "PUBLIC"),
+    ];
+    const svc = make(rows, {
+      a: relation({ following: true, followsYou: true, isFriend: true }),
+      g: relation({ isFriend: true }),
+    });
+    const out = await svc.listForTarget(VIEWER, "MEDIA" as never, "m1");
+    expect(Object.fromEntries(out.map((r) => [r.id, r.byFriend]))).toEqual({
+      mine: false,
+      friend: true,
+      stranger: false,
+      ghost: false,
+    });
+  });
+
+  it("exposes the author's spoiler tag", async () => {
+    const row = {
+      ...review("r", { id: "a", profileAccess: "PUBLIC" }, "PUBLIC"),
+      spoilerTag: true,
+    };
+    const svc = make([row], {});
+    const [out] = await svc.listForTarget(VIEWER, "MEDIA" as never, "m1");
+    expect(out.spoilerTag).toBe(true);
+  });
+
   it("omits reviews when either side blocks", async () => {
     const rows = [review("r", { id: "a", profileAccess: "PUBLIC" }, "PUBLIC")];
     const svc = make(rows, { a: relation({ blockedByTarget: true }) });
@@ -172,16 +203,18 @@ function makeForWrite(
     rating: 8,
     text: null,
     visibility: "FRIENDS",
+    spoilerTag: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+  const upsert = vi.fn().mockResolvedValue(row);
   const revisionCreate = vi.fn().mockResolvedValue({});
   const prisma = {
     review: {
       findUnique: vi
         .fn()
         .mockResolvedValue(existing ? { id: "r1", ...existing } : null),
-      upsert: vi.fn().mockResolvedValue(row),
+      upsert,
       update: vi.fn().mockResolvedValue(row),
       create: vi.fn().mockResolvedValue(row),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -212,8 +245,64 @@ function makeForWrite(
     FLAGS,
     achievements,
   );
-  return { svc, revisionCreate, xp, achievements };
+  return { svc, revisionCreate, upsert, xp, achievements, activity };
 }
+
+describe("ReviewService.upsert — spoiler tag", () => {
+  it("stores the spoiler tag on create and update", async () => {
+    const { svc, upsert } = makeForWrite(null);
+    await svc.upsert("u1", "MEDIA" as never, "m1", {
+      rating: 8,
+      text: "Paul drinks the Water of Life",
+      spoilerTag: true,
+    });
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ spoilerTag: true }),
+        update: expect.objectContaining({ spoilerTag: true }),
+      }),
+    );
+  });
+
+  it("defaults to untagged on create and leaves an existing tag alone when omitted", async () => {
+    const { svc, upsert } = makeForWrite(null);
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8 });
+    const args = upsert.mock.calls[0][0];
+    expect(args.create.spoilerTag).toBe(false);
+    expect(args.update.spoilerTag).toBeUndefined();
+  });
+
+  it("doesn't snapshot a revision when only the spoiler tag changed", async () => {
+    const { svc, revisionCreate } = makeForWrite({ rating: 8, text: "hey" });
+    await svc.upsert("u1", "MEDIA" as never, "m1", {
+      rating: 8,
+      text: "hey",
+      spoilerTag: true,
+    });
+    expect(revisionCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReviewService.upsert — feed and XP", () => {
+  it("posts to the feed and credits XP when the rating or text changed", async () => {
+    const { svc, activity, xp } = makeForWrite({ rating: 6, text: null });
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+    expect(activity.emit).toHaveBeenCalledTimes(1);
+    expect(xp.award).toHaveBeenCalled();
+  });
+
+  it("stays silent when only the audience or the spoiler tag changed", async () => {
+    const { svc, activity, xp } = makeForWrite({ rating: 8, text: "hey" });
+    await svc.upsert("u1", "MEDIA" as never, "m1", {
+      rating: 8,
+      text: "hey",
+      visibility: "PUBLIC",
+      spoilerTag: true,
+    });
+    expect(activity.emit).not.toHaveBeenCalled();
+    expect(xp.award).not.toHaveBeenCalled();
+  });
+});
 
 describe("ReviewService.upsert — revision snapshotting", () => {
   it("creates a revision when the review is new", async () => {
@@ -482,5 +571,91 @@ describe("ReviewService — structural review deletion revokes XP", () => {
     const { svc, xp } = makeForWrite({ rating: 8, text: VERY_LONG_TEXT });
     await svc.removeMany("u1", ["r1", "r2"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["r1", "r2"]);
+  });
+});
+
+describe("ReviewService.adminRemove", () => {
+  it("deletes the review and revokes XP on the caller's transaction", async () => {
+    const xp = stubXp();
+    const tx = {
+      review: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "rev1",
+          userId: "author1",
+          rating: 2,
+          text: "hors sujet",
+        }),
+        delete: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+    const prisma = {
+      review: { findUnique: vi.fn(), delete: vi.fn() },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    await svc.adminRemove("rev1", tx);
+
+    expect(tx.review.delete).toHaveBeenCalledWith({ where: { id: "rev1" } });
+    expect(prisma.review.delete).not.toHaveBeenCalled();
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"], tx);
+  });
+
+  it("deletes the review, revokes its XP and returns what the notice needs", async () => {
+    const deleteFn = vi.fn().mockResolvedValue({});
+    const xp = stubXp();
+    const prisma = {
+      review: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "rev1",
+          userId: "author1",
+          rating: 2,
+          text: "hors sujet",
+        }),
+        delete: deleteFn,
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    await expect(svc.adminRemove("rev1")).resolves.toEqual({
+      authorId: "author1",
+      rating: 2,
+      text: "hors sujet",
+    });
+    expect(deleteFn).toHaveBeenCalledWith({ where: { id: "rev1" } });
+    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"]);
+  });
+
+  it("404s when the review is already gone", async () => {
+    const xp = stubXp();
+    const prisma = {
+      review: { findUnique: vi.fn().mockResolvedValue(null), delete: vi.fn() },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    await expect(svc.adminRemove("missing")).rejects.toThrow();
   });
 });

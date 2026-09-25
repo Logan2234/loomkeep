@@ -1,6 +1,4 @@
-// Barrel for the API client. The implementation is split by domain
-// (core/auth/admin/catalog/library/games/books/notifications/import); this file
-// re-exports everything so existing `$lib/api/client` imports keep working.
+// Compatibility barrel for existing `$lib/api/client` imports.
 
 export * from "./activity";
 export * from "./admin";

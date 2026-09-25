@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 import { m } from "$lib/paraglide/messages";
 
-const STORAGE_KEY = "tl-nav-style";
+const STORAGE_KEY = "lk-nav-style";
 
 export type NavStyle = "marquee" | "dock" | "board";
 

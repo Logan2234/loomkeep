@@ -17,14 +17,16 @@ export default defineConfig({
     globals: true,
     root: "./",
     include: ["test/**/*.e2e-spec.ts"],
+    // One shared `e2e` Postgres schema, and each spec file truncates it as it
+    // boots: run the files one after another, never side by side.
+    fileParallelism: false,
     environment: "node",
     globalSetup: ["./test/global-setup.js"],
     setupFiles: ["./test/e2e-env.js"],
     testTimeout: 30_000,
     coverage: {
       provider: "v8",
-      // Separate from vitest.config.ts's ./coverage — CI uploads each as
-      // its own Codecov flag (api-unit vs api-e2e), so they can't collide.
+      // Separate directory prevents unit and E2E Codecov flags from colliding.
       reportsDirectory: "./coverage-e2e",
       include: ["src/**/*.{ts,js}"],
       reporter: ["lcov", "text", "html"],

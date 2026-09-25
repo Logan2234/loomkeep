@@ -36,6 +36,7 @@ import { AdminService } from "./admin.service";
 import { BackupService } from "./backup.service";
 import { PublicStatsController } from "./public-stats.controller";
 import { PublicStatsGuard } from "./public-stats.guard";
+import { QuotaAlertService } from "./quota-alert.service";
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { PublicStatsGuard } from "./public-stats.guard";
     PublicStatsController,
   ],
   providers: [
+    QuotaAlertService,
     AdminService,
     AdminGuard,
     PublicStatsGuard,

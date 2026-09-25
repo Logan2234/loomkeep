@@ -4,6 +4,7 @@ import type {
   CommentTargetType,
 } from "@loomkeep/shared";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
+import { CommentMentionResponseDto } from "./comment-mention-response.dto";
 import { CommentReactionSummaryResponseDto } from "./comment-reaction-summary-response.dto";
 
 export class CommentResponseDto implements CommentDto {
@@ -20,6 +21,7 @@ export class CommentResponseDto implements CommentDto {
   createdAt!: string;
   updatedAt!: string;
   author!: UserSummaryResponseDto | null;
+  mentions!: CommentMentionResponseDto[];
   reactions!: CommentReactionSummaryResponseDto[];
   myReaction!: CommentEmote | null;
   replies!: CommentResponseDto[];

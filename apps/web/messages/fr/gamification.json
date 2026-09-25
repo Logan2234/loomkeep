@@ -68,7 +68,7 @@
   "gamification_halloween_description": "Un film ou une série d'horreur vu en octobre.",
 
   "gamification_contemporary_name": "Contemporain",
-  "gamification_contemporary_description": "Un film sorti l'année de votre propre naissance.",
+  "gamification_contemporary_description": "Un film sorti l'année de ta propre naissance.",
 
   "gamification_new_year_finish_name": "Bonne résolution",
   "gamification_new_year_finish_description": "Termine une œuvre le 1er janvier.",
@@ -82,10 +82,10 @@
   "gamification_chatterbox_gold_description": "500 commentaires postés.",
 
   "gamification_crowd_favorite_name": "Chouchou du public",
-  "gamification_crowd_favorite_description": "20 votes positifs reçus au total sur ses reviews.",
+  "gamification_crowd_favorite_description": "20 votes positifs reçus au total sur ses critiques.",
 
   "gamification_standing_ovation_name": "Standing ovation",
-  "gamification_standing_ovation_description": "20 votes positifs reçus sur une seule review.",
+  "gamification_standing_ovation_description": "20 votes positifs reçus sur une seule critique.",
 
   "gamification_first_list_name": "Premier tri",
   "gamification_first_list_description": "A créé et partagé sa première liste.",
@@ -133,7 +133,7 @@
   "gamification_guilty_pleasure_description": "Une série entière notée 1 à 3, terminée.",
 
   "gamification_hidden_gem_name": "Perle rare",
-  "gamification_hidden_gem_description": "Un titre tracké par vous, et personne d'autre sur l'instance.",
+  "gamification_hidden_gem_description": "Un titre tracké par toi, et personne d'autre sur l'instance.",
 
   "gamification_full_circle_name": "Boucle bouclée",
   "gamification_full_circle_description": "Revoit ou refinit le tout premier titre jamais tracké.",
@@ -145,19 +145,19 @@
   "gamification_welcome_back_description": "Reprend une activité après 6 mois d'inactivité ou plus.",
 
   "gamification_double_life_name": "Double vie",
-  "gamification_double_life_description": "Figurant actuel, avec au moins une review ou un commentaire existant.",
+  "gamification_double_life_description": "Figurant actuel, avec au moins une critique ou un commentaire existant.",
 
   "gamification_icebreaker_name": "Brise-glace",
   "gamification_icebreaker_description": "A été le premier à commenter une œuvre donnée.",
 
   "gamification_first_take_name": "Premier avis",
-  "gamification_first_take_description": "A été le premier à écrire une review sur une œuvre donnée.",
+  "gamification_first_take_description": "A été le premier à écrire une critique sur une œuvre donnée.",
 
   "gamification_curious_cat_name": "Curieux",
   "gamification_curious_cat_description": "A cliqué sur le numéro de version.",
 
   "gamification_page_title": "Succès",
-  "gamification_page_subtitle": "Découvrez tous les succès à débloquer et suivez votre progression.",
+  "gamification_page_subtitle": "Découvre tous les succès à débloquer et suis ta progression.",
   "gamification_my_achievements": "Mes succès",
 
   "gamification_hero_total": "/ {total} succès",
@@ -210,6 +210,7 @@
   "gamification_leaderboard_tab_friends": "Amis",
   "gamification_leaderboard_period_month": "Ce mois-ci",
   "gamification_leaderboard_period_year": "Cette année",
+  "gamification_leaderboard_period_all": "Depuis toujours",
   "gamification_leaderboard_xp_unit": "xp",
   "gamification_leaderboard_you": "Toi",
   "gamification_leaderboard_disabled": "Le classement n'est pas disponible sur cette instance.",

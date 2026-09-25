@@ -1,17 +1,25 @@
 <script lang="ts">
-  import { getImportAvailability, getImportQuota } from "$lib/api/client";
+  import {
+    getImportAvailability,
+    getImportQuota,
+    getLastImportRun,
+  } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
+  import { page } from "$app/state";
   import Icon from "$lib/components/Icon.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
-  import PageHeader from "$lib/components/PageHeader.svelte";
+  import RelativeTime from "$lib/components/RelativeTime.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { isDomainEnabled } from "$lib/domains";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
+  import SettingsSection from "../components/SettingsSection.svelte";
+  import { flashAnchor } from "../flash-anchor";
   import type { ImportSourceDescriptor } from "$lib/types/import-descriptor";
   import {
     Domain,
@@ -54,13 +62,68 @@
   const quota = $derived<ImportQuotaDto>(quotaQuery.data ?? {});
 
   const premiumLocked = $derived(auth.isPremiumLocked);
+
+  // "Did it work?" is the question people come back here with, and the
+  // source list can't answer it. The last run does, before anything else.
+  const lastRunQuery = createApiQuery(() => ({
+    key: keys.import.lastRun(),
+    fetch: getLastImportRun,
+  }));
+  const lastRun = $derived(lastRunQuery.data?.run ?? null);
+  const lastRunOk = $derived(lastRun?.status === "SUCCESS");
+  const lastRunSource = $derived(
+    lastRun
+      ? (IMPORTS_DEFINITION[lastRun.sourceId]?.label ?? lastRun.sourceId)
+      : "",
+  );
 </script>
 
-<div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
-  <PageHeader
-    title={m.common_import()}
-    subtitle={m.settings_import_description()}
-    back="/app/settings" />
+<SettingsSection slug="import">
+  {#if lastRunQuery.loading}
+    <div class="skeleton mb-8 h-[4.5rem] rounded-xl"></div>
+  {:else if lastRun}
+    <div
+      class="card mb-8 flex items-center gap-3 p-4 {lastRunOk
+        ? 'border-success/50 bg-success/5'
+        : 'border-danger/50 bg-danger/5'}">
+      <Icon
+        name={lastRunOk ? "check" : "warning"}
+        class="h-5 w-5 shrink-0 {lastRunOk ? 'text-success' : 'text-danger'}" />
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold">
+          {lastRunOk
+            ? m.settings_import_last_run_title({ source: lastRunSource })
+            : m.settings_import_last_run_failed({ source: lastRunSource })}
+        </p>
+        <p class="text-dim text-sm">
+          <RelativeTime iso={lastRun.finishedAt} class="timecode" />
+          {#if lastRunOk}
+            ·
+            {lastRun.itemCount > 1
+              ? m.settings_import_last_run_items_many({
+                  count: lastRun.itemCount,
+                })
+              : m.settings_import_last_run_items_one({
+                  count: lastRun.itemCount,
+                })}
+          {/if}
+        </p>
+      </div>
+      <a
+        id="import-history"
+        href="/app/settings/import/history"
+        use:flashAnchor={{ anchor: "import-history", hash: page.url.hash }}
+        class="btn btn-ghost btn-sm shrink-0">
+        {m.settings_import_history_action()}
+        <Icon name="chevron-right" class="h-3.5 w-3.5" />
+      </a>
+    </div>
+  {:else}
+    <EmptyState class="mb-8 px-5 py-8">
+      <Icon name="download" class="text-accent mx-auto h-5 w-5" />
+      <p class="mt-2 text-sm">{m.settings_import_none_yet()}</p>
+    </EmptyState>
+  {/if}
 
   <div class="flex flex-col gap-8">
     {#each Object.entries(groups) as [domain, sources] (domain)}
@@ -76,12 +139,17 @@
               </span>
             {/if}
           </p>
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
             {#each sources as source (source.label)}
               {@const available =
                 !!source.href && availability[source.type] !== false && !usedUp}
               {#if available}
                 <a
+                  id={`import-source-${source.type}`}
+                  use:flashAnchor={{
+                    anchor: `import-source-${source.type}`,
+                    hash: page.url.hash,
+                  }}
                   href={source.href}
                   class="border-border bg-bg hover:border-accent hover:bg-surface-2 flex items-center gap-3 rounded-lg border p-4 transition-colors">
                   <Icon
@@ -100,6 +168,11 @@
                 </a>
               {:else}
                 <div
+                  id={`import-source-${source.type}`}
+                  use:flashAnchor={{
+                    anchor: `import-source-${source.type}`,
+                    hash: page.url.hash,
+                  }}
                   class="border-border bg-bg flex items-center gap-3 rounded-lg border p-4 opacity-60">
                   <Icon
                     name={DOMAINS[domain as Domain].icon}
@@ -137,4 +210,4 @@
       {/if}
     {/each}
   </div>
-</div>
+</SettingsSection>

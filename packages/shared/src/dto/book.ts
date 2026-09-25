@@ -79,7 +79,6 @@ export interface BookItemDto {
   sourceId: string;
 }
 
-/** One completed reread, beyond the entry's own (first) completion. */
 export interface BookReplayDto {
   id: string;
   /** ISO date the reread was completed. */
@@ -138,6 +137,8 @@ export interface UpdateBookEntryDto {
  * `entry` is null when the book is not in the library.
  */
 export interface BookDetailDto extends BookDetailsDto {
+  /** Cached work id when a public discussion can exist; null for a live-only item. */
+  commentTargetId: string | null;
   entry: BookEntryDto | null;
 }
 

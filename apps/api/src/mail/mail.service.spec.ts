@@ -166,7 +166,7 @@ describe("MailService", () => {
     );
 
     const { html } = sendMail.mock.calls[0][0];
-    expect(html).toContain("https://loomkeep.example/app/settings#securite");
+    expect(html).toContain("https://loomkeep.example/app/settings/securite");
   });
 
   it("links email-changed (old address) to a mailto contact, not the app", async () => {
@@ -228,7 +228,7 @@ describe("MailService", () => {
       "https://loomkeep.example/unsubscribe?token=unsub-token-123",
     );
     expect(html).toContain(
-      "https://loomkeep.example/app/settings#communications",
+      "https://loomkeep.example/app/settings/communications",
     );
   });
 
@@ -252,6 +252,41 @@ describe("MailService", () => {
 
     const { html } = sendMail.mock.calls[0][0];
     expect(html).toContain("past the 200-char preview cutoff");
+  });
+
+  it("removes unsafe URLs from Quackback HTML and Markdown links", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
+
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    (nodemailer.createTransport as Mock).mockReturnValue({ sendMail });
+
+    const service = new MailService(quota);
+    await service.sendNewsletter(
+      { email: "alice@example.com", locale: "fr" },
+      "Loomkeep 1.8.0",
+      "content",
+      '<a href="&#x6a;avascript:alert(1)">Unsafe</a><img src="data:image/svg+xml;base64,test"><a href="https://loomkeep.app">Safe</a>',
+      "unsub-token-123",
+    );
+
+    const { html } = sendMail.mock.calls[0][0];
+    expect(html).not.toContain("javascript:");
+    expect(html).not.toContain("data:image");
+    expect(html).toContain('href="https://loomkeep.app"');
+
+    await service.sendNewsletter(
+      { email: "alice@example.com", locale: "fr" },
+      "Loomkeep 1.8.0",
+      "[Unsafe](javascript:alert(1)) and [safe](https://loomkeep.app)",
+      "",
+      "unsub-token-123",
+    );
+
+    const fallbackHtml = sendMail.mock.calls[1][0].html;
+    expect(fallbackHtml).not.toContain("javascript:");
+    expect(fallbackHtml).toContain('href="https://loomkeep.app"');
   });
 
   it("falls back to rendering the Markdown preview when contentHtml is empty", async () => {
@@ -375,6 +410,15 @@ describe("MailService template gallery", () => {
     expect(preview?.text).toContain("Texte libre rédigé par la modération.");
     expect(preview?.text).toContain("Article 7 — Conduite");
     expect(preview?.text).toContain("This decision was made by a moderator");
+  });
+
+  it("names a removed review in the moderation notice", () => {
+    const service = new MailService(quota);
+    const preview = service.renderTemplatePreview("moderationDecision", "en", {
+      measure: "REVIEW_REMOVED",
+    });
+
+    expect(preview?.subject).toBe("One of your reviews has been removed");
   });
 
   it("localizes dates but leaves newsletter copy as authored", () => {

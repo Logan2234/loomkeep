@@ -1,6 +1,5 @@
 import type {
   AccountDeletionSummaryDto,
-  CalendarTokenDto,
   CsvExportDto,
   EntitlementDto,
   SocialProfileDto,
@@ -31,7 +30,6 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import { SocialProfileResponseDto } from "../social/dto/social-profile-response.dto";
 import { AccountDeletionSummaryResponseDto } from "./dto/account-deletion-summary-response.dto";
-import { CalendarTokenResponseDto } from "./dto/calendar-token-response.dto";
 import { ChangeEmailDto } from "./dto/change-email.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";
@@ -157,30 +155,6 @@ export class UsersController {
     @Query("domain") domainParam: string,
   ): Promise<CsvExportDto> {
     return this.users.exportCsv(payload.sub, domainParam);
-  }
-
-  /**
-   * Returns the token for the user's public .ics calendar subscription URL,
-   * generating one on first call. Stable across calls — use the regenerate
-   * endpoint below to revoke a previously shared link. Premium
-   * (docs/adr/0001-open-core-agpl.md) — see LibraryService#getCalendarIcs
-   * for the matching check on the feed itself.
-   */
-  @Get("me/calendar-token")
-  @ApiOkResponse({ type: CalendarTokenResponseDto })
-  getCalendarToken(
-    @CurrentUser() payload: JwtPayload,
-  ): Promise<CalendarTokenDto> {
-    return this.users.getCalendarToken(payload.sub);
-  }
-
-  /** Issues a new token, invalidating any previously shared .ics link. Premium. */
-  @Post("me/calendar-token/regenerate")
-  @ApiCreatedResponse({ type: CalendarTokenResponseDto })
-  regenerateCalendarToken(
-    @CurrentUser() payload: JwtPayload,
-  ): Promise<CalendarTokenDto> {
-    return this.users.regenerateCalendarToken(payload.sub);
   }
 
   /**

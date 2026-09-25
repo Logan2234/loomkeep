@@ -88,6 +88,7 @@ export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
   MISINFORMATION_FALSE_FACT: m.report_false_information(),
   STOLEN_CONTENT_PLAGIARIZED: m.report_motif_stolen(),
   MISLEADING_REVIEW_MANIPULATION: m.report_motif_misleading_review(),
+  MISLEADING_REVIEW_OFF_TOPIC: m.report_motif_misleading_off_topic(),
 };
 
 export const MODERATION_LEGAL_BASIS_LABELS: Record<

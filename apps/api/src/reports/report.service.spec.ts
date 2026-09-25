@@ -1,4 +1,5 @@
 import { type Mock, vi } from "vitest";
+import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
 import type { NotificationService } from "../notifications/notification.service";
@@ -9,8 +10,12 @@ function make(
   overrides: Partial<Record<string, Partial<Record<string, Mock>>>> = {},
 ) {
   const prisma = {
+    $transaction: vi.fn(async (action: (tx: unknown) => Promise<unknown>) =>
+      action(prisma),
+    ),
     report: {
       create: vi.fn(),
+      findFirst: vi.fn().mockResolvedValue(null),
       count: vi.fn().mockResolvedValue(0),
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
@@ -21,6 +26,11 @@ function make(
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
       ...overrides.comment,
+    },
+    review: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+      ...overrides.review,
     },
     user: {
       findUnique: vi.fn().mockResolvedValue(null),
@@ -40,19 +50,84 @@ function make(
   } as unknown as JobRunService;
   const notifications = {
     create: vi.fn(),
+    createInTransaction: vi.fn().mockResolvedValue(true),
+    publishCreated: vi.fn(),
   } as unknown as NotificationService;
+  const events = {
+    emitReportsCount: vi.fn(),
+    ...overrides.events,
+  } as unknown as EventsGateway;
 
   return {
-    svc: new ReportService(prisma, mail, jobRuns, notifications),
+    svc: new ReportService(prisma, mail, jobRuns, notifications, events),
     prisma,
     mail,
     notifications,
+    events,
   };
 }
 
 describe("ReportService.create", () => {
+  it("rejects a missing or deleted comment", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "missing",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects reporting one's own comment", async () => {
+    const { svc } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "reporter1", deletedAt: null }),
+      },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a duplicate pending report from the same person", async () => {
+    const { svc } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+      report: { findFirst: vi.fn().mockResolvedValue({ id: "r1" }) },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
   it("persists a report with a valid category/motif pair", async () => {
-    const { svc, prisma } = make();
+    const { svc, prisma, events } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+    });
     await svc.create(
       "reporter1",
       "COMMENT" as never,
@@ -70,10 +145,17 @@ describe("ReportService.create", () => {
         reason: null,
       },
     });
+    expect(events.emitReportsCount).toHaveBeenCalled();
   });
 
   it("persists OTHER with a trimmed reason and no motif", async () => {
-    const { svc, prisma } = make();
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+    });
     await svc.create(
       "reporter1",
       "COMMENT" as never,
@@ -122,7 +204,206 @@ describe("ReportService.create", () => {
   });
 });
 
+describe("ReportService.create — reviews", () => {
+  it("rejects a missing review", async () => {
+    const { svc } = make();
+    await expect(
+      svc.create(
+        "reporter1",
+        "REVIEW" as never,
+        "missing",
+        "MISLEADING_REVIEW" as never,
+        "MISLEADING_REVIEW_MANIPULATION" as never,
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("rejects reporting one's own review", async () => {
+    const { svc, prisma } = make({
+      review: {
+        findUnique: vi.fn().mockResolvedValue({ userId: "reporter1" }),
+      },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "REVIEW" as never,
+        "r1",
+        "MISLEADING_REVIEW" as never,
+        "MISLEADING_REVIEW_MANIPULATION" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("files a report against someone else's review", async () => {
+    const { svc, prisma } = make({
+      review: { findUnique: vi.fn().mockResolvedValue({ userId: "author" }) },
+    });
+    await svc.create(
+      "reporter1",
+      "REVIEW" as never,
+      "r1",
+      "SPOILER" as never,
+      "SPOILER_UNTAGGED" as never,
+    );
+    expect(prisma.report.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ targetType: "REVIEW", targetId: "r1" }),
+    });
+  });
+});
+
+describe("ReportService.create — category per target", () => {
+  it("rejects the misleading-review category on a comment", async () => {
+    const { svc, prisma } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+    });
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "MISLEADING_REVIEW" as never,
+        "MISLEADING_REVIEW_MANIPULATION" as never,
+      ),
+    ).rejects.toThrow();
+    expect(prisma.report.create).not.toHaveBeenCalled();
+  });
+
+  it("accepts an off-topic review report", async () => {
+    const { svc, prisma } = make({
+      review: { findUnique: vi.fn().mockResolvedValue({ userId: "author" }) },
+    });
+    await svc.create(
+      "reporter1",
+      "REVIEW" as never,
+      "r1",
+      "MISLEADING_REVIEW" as never,
+      "MISLEADING_REVIEW_OFF_TOPIC" as never,
+    );
+    expect(prisma.report.create).toHaveBeenCalled();
+  });
+});
+
 describe("ReportService.list — target resolution", () => {
+  it("resolves a REVIEW target to its rating and excerpt, with its author", async () => {
+    const { svc } = make({
+      report: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "r1",
+            targetType: "REVIEW",
+            targetId: "rev1",
+            reason: null,
+            status: "PENDING",
+            createdAt: new Date(),
+            resolvedAt: null,
+            reporter: {
+              id: "u1",
+              username: "u1",
+              displayName: "U1",
+              profileAccess: "PUBLIC",
+            },
+          },
+        ]),
+      },
+      review: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rev1",
+            rating: 3,
+            text: "fake review",
+            targetType: "MEDIA",
+            targetId: "m1",
+            user: { username: "troll" },
+          },
+        ]),
+      },
+    });
+    const page = await svc.list(undefined, 1);
+    expect(page.items[0].target?.targetOwnerUsername).toBe("troll");
+    expect(page.items[0].target?.label).toContain("3/10");
+    expect(page.items[0].target?.label).toContain("fake review");
+  });
+
+  it("loads every reviewed target of a page in one query", async () => {
+    const reportRow = (id: string, targetId: string) => ({
+      id,
+      targetType: "REVIEW",
+      targetId,
+      reason: null,
+      status: "PENDING",
+      createdAt: new Date(),
+      resolvedAt: null,
+      reporter: null,
+    });
+    const reviewRow = (id: string) => ({
+      id,
+      rating: 5,
+      text: null,
+      targetType: "MEDIA",
+      targetId: "m1",
+      user: { username: "someone" },
+    });
+    const { svc, prisma } = make({
+      report: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            reportRow("r1", "rev1"),
+            reportRow("r2", "rev2"),
+          ]),
+      },
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([reviewRow("rev1"), reviewRow("rev2")]),
+      },
+    });
+    const page = await svc.list(undefined, 1);
+    expect(prisma.review.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.review.findUnique).not.toHaveBeenCalled();
+    expect(page.items.map((i) => i.target?.label)).toEqual(["5/10", "5/10"]);
+  });
+
+  it("says so when a reported review's author deleted their account", async () => {
+    const { svc } = make({
+      report: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "r1",
+            targetType: "REVIEW",
+            targetId: "rev1",
+            reason: null,
+            status: "PENDING",
+            createdAt: new Date(),
+            resolvedAt: null,
+            reporter: null,
+          },
+        ]),
+      },
+      review: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rev1",
+            rating: 1,
+            text: null,
+            targetType: "MEDIA",
+            targetId: "m1",
+            user: null,
+          },
+        ]),
+      },
+    });
+    const page = await svc.list(undefined, 1);
+    expect(page.items[0].target?.label).toContain("auteur supprimé");
+    expect(page.items[0].target?.targetOwnerUsername).toBeNull();
+  });
+
   it("resolves a COMMENT target to an excerpt", async () => {
     const { svc } = make({
       report: {
@@ -224,8 +505,8 @@ describe("ReportService.resolve", () => {
     await expect(svc.resolve("admin1", "r1", "RESOLVED")).rejects.toThrow();
   });
 
-  it("marks a pending report resolved", async () => {
-    const { svc, prisma } = make();
+  it("marks a pending report resolved and pushes the live admin count", async () => {
+    const { svc, prisma, events } = make();
     await svc.resolve("admin1", "r1", "RESOLVED");
     expect(prisma.report.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -236,21 +517,58 @@ describe("ReportService.resolve", () => {
         }),
       }),
     );
+    expect(events.emitReportsCount).toHaveBeenCalled();
   });
 
   it("notifies the reporter in-app of the outcome, DSA art. 16(5)", async () => {
-    const { svc, notifications } = make({
+    const { svc, notifications, prisma } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUnique: vi.fn().mockResolvedValue({ reporterId: "reporter1" }),
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "fr" },
+        }),
       },
     });
     await svc.resolve("admin1", "r1", "DISMISSED");
-    expect(notifications.create).toHaveBeenCalledWith(
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      prisma,
       expect.objectContaining({
         userId: "reporter1",
         type: "REPORT_RESOLVED",
+        title: "Ton signalement a été traité",
+        body: "Nous n'avons pas donné suite à ton signalement.",
+        dedupeKey: "report:r1:resolved",
       }),
+    );
+    expect(notifications.publishCreated).toHaveBeenCalledWith(
+      "reporter1",
+      "REPORT_RESOLVED",
+    );
+  });
+
+  it("localizes the resolution notification to the reporter's language", async () => {
+    const { svc, notifications, prisma } = make({
+      report: {
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "en" },
+        }),
+      },
+    });
+
+    await svc.resolve("admin1", "r1", "RESOLVED");
+
+    expect(notifications.createInTransaction).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({
+        userId: "reporter1",
+        title: "Your report has been reviewed",
+        body: "Action has been taken following your report.",
+        dedupeKey: "report:r1:resolved",
+      }),
+    );
+    expect(notifications.publishCreated).toHaveBeenCalledWith(
+      "reporter1",
+      "REPORT_RESOLVED",
     );
   });
 
@@ -258,11 +576,44 @@ describe("ReportService.resolve", () => {
     const { svc, notifications } = make({
       report: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        findUnique: vi.fn().mockResolvedValue({ reporterId: null }),
+        findUnique: vi.fn().mockResolvedValue({ reporter: null }),
       },
     });
     await svc.resolve("admin1", "r1", "RESOLVED");
-    expect(notifications.create).not.toHaveBeenCalled();
+    expect(notifications.createInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("does not publish resolution when the notification write fails", async () => {
+    const { svc, notifications, events } = make({
+      report: {
+        findUnique: vi.fn().mockResolvedValue({
+          reporter: { id: "reporter1", locale: "fr" },
+        }),
+      },
+    });
+    vi.mocked(notifications.createInTransaction).mockRejectedValue(
+      new Error("notification write failed"),
+    );
+
+    await expect(svc.resolve("admin1", "r1", "RESOLVED")).rejects.toThrow(
+      "notification write failed",
+    );
+    expect(events.emitReportsCount).not.toHaveBeenCalled();
+  });
+
+  it("does not report a failed resolution after a post-commit realtime error", async () => {
+    const { svc, events } = make({
+      events: {
+        emitReportsCount: vi.fn().mockImplementation(() => {
+          throw new Error("socket unavailable");
+        }),
+      },
+    });
+
+    await expect(
+      svc.resolve("admin1", "r1", "RESOLVED"),
+    ).resolves.toBeUndefined();
+    expect(events.emitReportsCount).toHaveBeenCalledOnce();
   });
 });
 
@@ -287,9 +638,10 @@ describe("ReportService.list — reporterId filter", () => {
 });
 
 describe("ReportService.listAgainstUser", () => {
-  it("matches reports targeting the user directly or a comment they authored", async () => {
+  it("matches reports targeting the user directly or content they authored", async () => {
     const { svc, prisma } = make({
       comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },
+      review: { findMany: vi.fn().mockResolvedValue([{ id: "rev1" }]) },
     });
     await svc.listAgainstUser("user1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
@@ -298,6 +650,7 @@ describe("ReportService.listAgainstUser", () => {
           OR: [
             { targetType: "USER", targetId: "user1" },
             { targetType: "COMMENT", targetId: { in: ["c1"] } },
+            { targetType: "REVIEW", targetId: { in: ["rev1"] } },
           ],
         },
       }),

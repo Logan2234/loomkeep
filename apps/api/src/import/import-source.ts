@@ -15,9 +15,7 @@ export const IMPORT_SOURCES = Symbol("IMPORT_SOURCES");
 
 /** Lets a long-running analyze/commit push progress onto the polled job. */
 export interface ProgressReporter {
-  /** Set the denominator once the total to process is known. */
   setTotal(total: number): void;
-  /** Advance the numerator by one processed item. */
   tick(): void;
 }
 

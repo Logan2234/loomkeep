@@ -2,7 +2,6 @@ import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
 import { parseCsv } from "../../csv";
 import { parseReadCount, parseStarRatingToTen } from "./csv-field.util";
 
-/** One Goodreads CSV row reduced to the fields the import needs. */
 export interface ParsedGoodreadsRow {
   title: string;
   authors: string[];
@@ -22,7 +21,6 @@ export interface ParsedGoodreadsRow {
   readCount: number;
 }
 
-// Goodreads' default shelves; a custom shelf falls back to TO_READ.
 const STATUS_BY_SHELF: Record<string, BookStatus> = {
   read: "READ",
   "to-read": "TO_READ",

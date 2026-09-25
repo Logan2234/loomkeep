@@ -1,18 +1,12 @@
 <script lang="ts">
-  // [G8] Mobile half of the "Première séance" checklist: a bar docked right
-  // above the bottom nav bar (not floating over content — MobileLayout
-  // reserves the extra room for it, the same way it already reserves room
-  // for the nav bar itself). See OnboardingWidget for the desktop half.
+  // MobileLayout reserves room for this bar above the bottom navigation.
   import { afterNavigate } from "$app/navigation";
-  import {
-    getOnboardingChecklist,
-    skipOnboardingStep,
-  } from "$lib/api/gamification";
+  import { skipOnboardingStep } from "$lib/api/gamification";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
-  import { createApiQuery } from "$lib/api/query.svelte";
   import Drawer from "$lib/components/Drawer.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { useOnboardingChecklist } from "$lib/gamification/onboarding-checklist.svelte";
   import { m } from "$lib/paraglide/messages.js";
   import type { OnboardingStepKey } from "@loomkeep/shared";
   import { deriveStepViews } from "./onboarding-checklist";
@@ -27,11 +21,7 @@
     open = false;
   });
 
-  const checklistQuery = createApiQuery(() => ({
-    key: keys.gamification.onboarding(),
-    fetch: getOnboardingChecklist,
-    refetchInterval: (data) => (data?.allDone ? false : 30_000),
-  }));
+  const checklistQuery = useOnboardingChecklist();
 
   const steps = $derived(
     checklistQuery.data ? deriveStepViews(checklistQuery.data.steps) : [],
@@ -81,7 +71,7 @@
     labelledby="onboarding-checklist-title">
     <div
       data-drawer-scroll
-      class="touch-pan-y overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      class="min-h-0 flex-1 touch-pan-y overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
       <h2
         id="onboarding-checklist-title"
         class="font-display mb-3 text-lg font-bold">

@@ -1,9 +1,5 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages.js";
-  // Horizontal ranked bars (genres, authors, artists, platforms…) — the
-  // pattern already used ad hoc on /stats, extracted so every domain section
-  // shares it. Shows the top `initialCount` items with a "tout voir" toggle
-  // when there are more; the caller passes the full ranked list.
   import { formatNumber } from "$lib/format";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
 

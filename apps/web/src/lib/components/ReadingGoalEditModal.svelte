@@ -44,7 +44,10 @@
 </script>
 
 <Modal title={m.reading_goal_modal_title({ year })} {onclose}>
+  <!-- The submit button lives in the pinned footer, outside this form —
+       `form="…"` is what still submits it from there. -->
   <form
+    id="reading-goal-form"
     class="flex flex-col gap-3"
     onsubmit={(e) => {
       e.preventDefault();
@@ -65,13 +68,20 @@
     {#if error}
       <p class="text-danger text-xs">{error}</p>
     {/if}
-    <div class="mt-2 flex justify-end gap-2">
+  </form>
+
+  {#snippet actions()}
+    <div class="flex justify-end gap-2">
       <button type="button" class="btn btn-ghost" onclick={onclose}>
         {m.common_cancel()}
       </button>
-      <button class="btn btn-primary" disabled={saving} type="submit">
+      <button
+        class="btn btn-primary"
+        disabled={saving}
+        type="submit"
+        form="reading-goal-form">
         {saving ? m.common_save_loading() : m.common_save()}
       </button>
     </div>
-  </form>
+  {/snippet}
 </Modal>

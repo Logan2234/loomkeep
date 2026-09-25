@@ -5,6 +5,13 @@
   // how far down it's dragged, snapping back if released before the
   // threshold. Shared by Modal.svelte (its mobile mode) and MenuSheet.svelte.
   //
+  // The panel is a capped flex column, so a caller whose content can outgrow
+  // it owes its scrolling child `min-h-0 flex-1 overflow-y-auto touch-pan-y`
+  // and `data-drawer-scroll` (see below). Without `min-h-0` that child keeps
+  // `min-height: auto`, grows past the panel and hangs its own bottom off
+  // the screen, where nothing can reach it — the sheet is the only thing
+  // that moves.
+  //
   // The enter/exit animation is driven by plain CSS transitions off a local
   // `visible` flag rather than a Svelte `transition:` directive. A
   // transition: directive here previously made Svelte defer destroying the
@@ -19,6 +26,7 @@
   import { dialogFocus } from "$lib/actions/dialogFocus";
   import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
@@ -46,9 +54,7 @@
   } = $props();
 
   // JS transitions ignore prefers-reduced-motion, so gate duration manually.
-  const reduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = prefersReducedMotion();
   const dur = reduced ? 0 : 220;
 
   let visible = $state(false);
@@ -171,11 +177,12 @@
       onEscape: dismissable ? requestClose : undefined,
     }}
     bind:this={panelEl}
+    use:dialogFocus
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}
     tabindex="-1"
-    class="border-border bg-surface fixed inset-x-0 bottom-0 flex max-h-[88vh] w-full touch-none flex-col rounded-t-3xl border-t shadow-2xl {closing
+    class="border-border bg-surface fixed inset-x-0 bottom-0 flex max-h-[88dvh] w-full touch-none flex-col rounded-t-3xl border-t shadow-2xl {closing
       ? 'pointer-events-none'
       : ''}"
     style="z-index: {zIndex + 10}; {dragging

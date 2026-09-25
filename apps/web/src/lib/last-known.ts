@@ -1,5 +1,5 @@
 /**
- * "Last known value" tracking, shared by the two rise-only reactions of [G6]:
+ * "Last known value" tracking shared by rise-only reactions:
  * the level-up bubble and the streak badge. Factored out rather than written
  * twice because both need the exact same rule, including the one that
  * matters most — a drop updates the stored value *in silence*. XP (and so
@@ -11,6 +11,8 @@
  * comparison point can only be local. A cleared browser simply means the
  * next rise isn't announced — the same graceful degradation as a first run.
  */
+import { readStorage, writeStorage } from "./local-storage";
+
 export type ValueChange = "first" | "up" | "down" | "same";
 
 /**
@@ -32,26 +34,15 @@ const PREFIX = "loomkeep.lastKnown.";
 
 /** Null when nothing is stored, unreadable, or not a number. */
 export function readLastKnown(key: string): number | null {
-  if (typeof localStorage === "undefined") return null;
+  const raw = readStorage(PREFIX + key);
+  if (raw === null) return null;
 
-  try {
-    const raw = localStorage.getItem(PREFIX + key);
-    if (raw === null) return null;
-
-    const value = Number(raw);
-    return Number.isFinite(value) ? value : null;
-  } catch {
-    return null;
-  }
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
 }
 
+// Losing the marker (private mode, full quota) only costs a missed
+// announcement, never correctness.
 export function writeLastKnown(key: string, value: number): void {
-  if (typeof localStorage === "undefined") return;
-
-  try {
-    localStorage.setItem(PREFIX + key, String(value));
-  } catch {
-    // Private mode or a full quota: losing the marker only costs a missed
-    // announcement, never correctness — nothing to report to the user.
-  }
+  writeStorage(PREFIX + key, String(value));
 }

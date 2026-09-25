@@ -7,6 +7,7 @@ import { hashToken } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import type { HibpService } from "../common/hibp.service";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { XpService } from "../gamification/xp.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -62,6 +63,7 @@ describe("UsersService — email change", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   });
 
@@ -288,6 +290,7 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   });
 
@@ -365,6 +368,7 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   }
 
@@ -409,10 +413,19 @@ describe("UsersService — uploadAvatar", () => {
   const userId = "user-1";
   let prisma: PrismaService;
   let service: UsersService;
+  let events: EventsGateway;
 
   const PNG_MAGIC = Buffer.from([
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
   ]);
+
+  // A real 1x1 PNG, not just the magic bytes: uploads are decoded and
+  // re-encoded now (see reencodeAvatar), so a bare header is rejected —
+  // which is the point of that change.
+  const PNG_1X1 = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  );
 
   function updatedUser() {
     return {
@@ -437,6 +450,7 @@ describe("UsersService — uploadAvatar", () => {
     prisma = {
       user: { update: vi.fn() },
     } as unknown as PrismaService;
+    events = { emitToUser: vi.fn() } as unknown as EventsGateway;
     service = new UsersService(
       prisma,
       {} as unknown as MailService,
@@ -453,24 +467,69 @@ describe("UsersService — uploadAvatar", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      events,
     );
   });
 
-  it("stores a valid PNG upload and cache-busts avatarUrl", async () => {
+  it("stores a valid PNG upload as WebP and cache-busts avatarUrl", async () => {
     (prisma.user.update as Mock).mockResolvedValueOnce(updatedUser());
 
     const dto = await service.uploadAvatar(userId, {
       mimeType: "image/png",
-      data: PNG_MAGIC.toString("base64"),
+      data: PNG_1X1.toString("base64"),
     });
 
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: userId },
-        data: expect.objectContaining({ avatarMimeType: "image/png" }),
-      }),
-    );
+    const { data } = (prisma.user.update as Mock).mock.calls[0][0];
+    // Stored as the re-encoder's own output, never the uploaded bytes.
+    expect(data.avatarMimeType).toBe("image/webp");
+    expect(Buffer.from(data.avatar).equals(PNG_1X1)).toBe(false);
     expect(dto.avatarUrl).toContain(`/users/${userId}/avatar`);
+  });
+
+  it("pushes onboarding-updated once the profile is complete (avatar set, bio already present)", async () => {
+    (prisma.user.update as Mock).mockResolvedValueOnce({
+      ...updatedUser(),
+      avatar: PNG_1X1,
+      bio: "Ciné, jeux, romans noirs.",
+    });
+
+    await service.uploadAvatar(userId, {
+      mimeType: "image/png",
+      data: PNG_1X1.toString("base64"),
+    });
+
+    expect(events.emitToUser).toHaveBeenCalledWith(
+      userId,
+      "onboarding-updated",
+    );
+  });
+
+  it("pushes nothing when the avatar is set but bio is still empty", async () => {
+    (prisma.user.update as Mock).mockResolvedValueOnce({
+      ...updatedUser(),
+      avatar: PNG_1X1,
+      bio: null,
+    });
+
+    await service.uploadAvatar(userId, {
+      mimeType: "image/png",
+      data: PNG_1X1.toString("base64"),
+    });
+
+    expect(events.emitToUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects a header glued onto something that isn't an image", async () => {
+    // Passes the magic-byte check, fails the decode — the polyglot case.
+    await expect(
+      service.uploadAvatar(userId, {
+        mimeType: "image/png",
+        data: Buffer.concat([
+          PNG_MAGIC,
+          Buffer.from("<script>alert(1)</script>"),
+        ]).toString("base64"),
+      }),
+    ).rejects.toThrow(AppException);
   });
 
   it("rejects a payload whose bytes don't match the declared mime type", async () => {
@@ -547,6 +606,7 @@ describe("UsersService — changePassword", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   });
 
@@ -642,6 +702,7 @@ describe("UsersService — deleteAccount", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       accountDeletion,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   });
 
@@ -703,6 +764,7 @@ describe("UsersService — deletionSummary", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   });
 
@@ -762,6 +824,7 @@ describe("UsersService.getMyEntitlement", () => {
       { getProfile: vi.fn() } as unknown as ProfileService,
       { deleteAccount: vi.fn() } as unknown as AccountDeletionService,
       { award: vi.fn() } as unknown as XpService,
+      { emitToUser: vi.fn() } as unknown as EventsGateway,
     );
   }
 

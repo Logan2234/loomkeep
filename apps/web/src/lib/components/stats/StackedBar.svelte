@@ -1,8 +1,4 @@
 <script lang="ts">
-  // Single-row stacked bar + legend (domain composition, movie/series/anime
-  // split…). Segments can carry a second value (e.g. time alongside count) —
-  // passing `toggle` renders a small switch between the two, matching the
-  // "Temps / Nombre" pattern in the video section.
   import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
 

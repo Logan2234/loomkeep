@@ -74,6 +74,10 @@
   {:else if name === "bell"}
     <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
     <path d="M10.5 20a1.8 1.8 0 0 0 3 0" />
+  {:else if name === "bell-off"}
+    <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
+    <path d="M10.5 20a1.8 1.8 0 0 0 3 0" />
+    <path d="M3 3l18 18" />
   {:else if name === "monitor"}
     <rect x="3" y="4" width="18" height="12" rx="2" />
     <path d="M8 20h8M12 16v4" />
@@ -189,6 +193,11 @@
     <path
       d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
     <circle cx="12" cy="12.5" r="3.5" />
+  {:else if name === "globe"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path
+      d="M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3Z" />
   {:else if name === "link"}
     <path d="M9 12h6" />
     <path
@@ -257,5 +266,16 @@
   {:else if name === "key"}
     <circle cx="8" cy="8" r="4.2" />
     <path d="M11 11l9 9M16 16l2.5-2.5M18.5 18.5 21 16" />
+  {:else if name === "keyboard"}
+    <rect x="2" y="6" width="20" height="13" rx="2" />
+    <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01" />
+    <rect
+      x="8"
+      y="13.2"
+      width="8"
+      height="1.8"
+      rx="0.9"
+      fill="currentColor"
+      stroke="none" />
   {/if}
 </svg>

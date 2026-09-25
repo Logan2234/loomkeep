@@ -93,8 +93,7 @@
       {/each}
     </div>
     <div class="flex flex-col">
-      <span
-        class="text-dim text-[0.6rem] font-semibold tracking-widest uppercase">
+      <span class="text-dim text-micro font-semibold tracking-widest uppercase">
         {m.gamification_hero_recent()}
       </span>
       <span class="font-display text-fg text-sm font-bold">

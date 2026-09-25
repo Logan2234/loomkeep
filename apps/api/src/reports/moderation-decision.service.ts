@@ -7,7 +7,9 @@ import {
   type ReportTargetType,
 } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { MailService } from "../mail/mail.service";
+import type { NotificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -24,7 +26,7 @@ export interface RecordModerationDecisionInput {
   reasonMotif?: ReportMotif | null;
   reasonText: string;
   tosClause: string;
-  /** COMMENT_REMOVED only: the comment's text before the tombstone nulled it. */
+  /** Content removals only: what the removed content said (for a review, its rating too). */
   contentSnapshot?: string | null;
   decidedById: string;
   reportId?: string | null;
@@ -32,10 +34,9 @@ export interface RecordModerationDecisionInput {
 
 /**
  * DSA art. 17: persists the "statement of reasons" for a restrictive measure
- * and notifies the sanctioned user. Email always fires; the in-app bell only
- * for measures that leave an account behind to show it to — ACCOUNT_DELETED
- * has none by the time this runs (see admin-users.controller.ts deleteUser,
- * which calls this before the actual `user.delete`).
+ * and notifies the sanctioned user. Report takedowns persist the decision
+ * before attempting email delivery; account deletion still uses `record`.
+ * The in-app bell is only for measures that leave an account behind.
  */
 @Injectable()
 export class ModerationDecisionService {
@@ -47,25 +48,50 @@ export class ModerationDecisionService {
 
   async record(input: RecordModerationDecisionInput): Promise<void> {
     await this.prisma.moderationDecision.create({
-      data: {
-        measure: input.measure,
-        targetType: input.targetType,
-        targetId: input.targetId,
-        subjectUserId: input.subjectUserId,
-        subjectEmail: input.subjectEmail,
-        subjectUsername: input.subjectUsername,
-        legalBasis: input.legalBasis,
-        reasonCategory: input.reasonCategory ?? null,
-        reasonMotif: input.reasonMotif ?? null,
-        reasonText: input.reasonText,
-        tosClause: input.tosClause,
-        contentSnapshot: input.contentSnapshot ?? null,
-        decidedById: input.decidedById,
-        reportId: input.reportId ?? null,
-      },
+      data: this.decisionData(input),
     });
 
-    await this.mail.sendModerationDecision(
+    await this.sendEmail(input);
+
+    if (input.measure !== ModerationMeasure.ACCOUNT_DELETED) {
+      const copy = await this.notifications.copyFor(input.subjectUserId);
+      await this.notifications.create({
+        userId: input.subjectUserId,
+        type: NotificationType.MODERATION_ACTION,
+        title: this.notificationTitle(input.measure, copy),
+        body: input.reasonText,
+        url: "/app/settings",
+      });
+    }
+  }
+
+  async recordForReportInTransaction(
+    tx: Prisma.TransactionClient,
+    input: RecordModerationDecisionInput & { reportId: string },
+  ): Promise<void> {
+    await tx.moderationDecision.create({
+      data: this.decisionData(input),
+    });
+    const copy = await this.notifications.copyFor(input.subjectUserId);
+    await this.notifications.createInTransaction(tx, {
+      userId: input.subjectUserId,
+      type: NotificationType.MODERATION_ACTION,
+      title: this.notificationTitle(input.measure, copy),
+      body: input.reasonText,
+      url: "/app/settings",
+      dedupeKey: `moderation:${input.reportId}`,
+    });
+  }
+
+  publishForReport(userId: string): void {
+    this.notifications.publishCreated(
+      userId,
+      NotificationType.MODERATION_ACTION,
+    );
+  }
+
+  sendEmail(input: RecordModerationDecisionInput): Promise<void> {
+    return this.mail.sendModerationDecision(
       { email: input.subjectEmail, locale: input.subjectLocale },
       {
         measure: input.measure,
@@ -74,21 +100,40 @@ export class ModerationDecisionService {
         tosClause: input.tosClause,
       },
     );
-
-    if (input.measure !== ModerationMeasure.ACCOUNT_DELETED) {
-      await this.notifications.create({
-        userId: input.subjectUserId,
-        type: NotificationType.MODERATION_ACTION,
-        title: this.notificationTitle(input.measure),
-        body: input.reasonText,
-        url: "/app/settings",
-      });
-    }
   }
 
-  private notificationTitle(measure: ModerationMeasure): string {
-    return measure === ModerationMeasure.COMMENT_REMOVED
-      ? "Un de tes commentaires a été retiré"
-      : "Une mesure a été prise sur ton compte";
+  private decisionData(
+    input: RecordModerationDecisionInput,
+  ): Prisma.ModerationDecisionUncheckedCreateInput {
+    return {
+      measure: input.measure,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      subjectUserId: input.subjectUserId,
+      subjectEmail: input.subjectEmail,
+      subjectUsername: input.subjectUsername,
+      legalBasis: input.legalBasis,
+      reasonCategory: input.reasonCategory ?? null,
+      reasonMotif: input.reasonMotif ?? null,
+      reasonText: input.reasonText,
+      tosClause: input.tosClause,
+      contentSnapshot: input.contentSnapshot ?? null,
+      decidedById: input.decidedById,
+      reportId: input.reportId ?? null,
+    };
+  }
+
+  private notificationTitle(
+    measure: ModerationMeasure,
+    copy: NotificationCopy,
+  ): string {
+    switch (measure) {
+      case ModerationMeasure.COMMENT_REMOVED:
+        return copy.moderation.commentRemoved;
+      case ModerationMeasure.REVIEW_REMOVED:
+        return copy.moderation.reviewRemoved;
+      default:
+        return copy.moderation.other;
+    }
   }
 }

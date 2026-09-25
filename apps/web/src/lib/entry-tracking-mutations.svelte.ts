@@ -9,15 +9,12 @@ interface EntryTrackingMutationsOptions<TDetail, TChanges> {
   detail: () => TDetail | null | undefined;
   /** The tracked entry's id, once one exists. */
   entryId: () => string | undefined;
-  /** Creates the library entry for a not-yet-tracked item. */
   upsert: (detail: TDetail) => Promise<unknown>;
   /** Patches the tracked entry (status, notes, ownership, favorite…). */
   update: (entryId: string, changes: TChanges) => Promise<unknown>;
-  /** Removes the tracked entry entirely. */
   remove: (entryId: string) => Promise<unknown>;
   /** Records a rewatch/reread/replay. Omit for domains with no replay concept (e.g. music). */
   addReplay?: (entryId: string) => Promise<unknown>;
-  /** Deletes one previously recorded replay. */
   removeReplay?: (replayId: string) => Promise<unknown>;
   /** Closes the confirmation modal once the entry is gone. */
   onRemoveSuccess: () => void;

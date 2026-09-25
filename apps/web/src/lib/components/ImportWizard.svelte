@@ -21,7 +21,9 @@
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { IMPORTS_DEFINITION } from "$lib/constants/import-sources";
   import { formatNumber } from "$lib/format";
+  import { readImportFile } from "$lib/import-file";
   import { m } from "$lib/paraglide/messages.js";
+  import { onRealtimeEvent, socket } from "$lib/realtime/socket";
   import {
     Domain,
     type BookSummaryDto,
@@ -30,9 +32,11 @@
     type ImportMatch,
     type ImportPlan,
     type ImportPlanItem,
+    type ImportProgressEvent,
     type ImportSource,
     type MediaSummaryDto,
   } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { Snippet } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import {
@@ -70,7 +74,6 @@
   let jobError = $state<string | null>(null);
   let showOverwriteConfirm = $state(false);
 
-  // --- Input step ---
   // The raw payload sent as-is to the source: CSV text, a base64 ZIP, or a Steam id.
   let inputValue = $state("");
   let fileName = $state("");
@@ -78,6 +81,7 @@
   let dragOver = $state(false);
 
   const descriptor = IMPORTS_DEFINITION[source];
+  const queryClient = useQueryClient();
 
   const quotaQuery = createApiQuery(() => ({
     key: keys.import.quota(),
@@ -95,7 +99,6 @@
     [Domain.PODCASTS]: "/app/podcasts",
   };
 
-  // --- Job / plan ---
   let analyzeJobId = $state<string | null>(null);
   let job = $state<ImportJobDto | null>(null);
   let plan = $state<ImportPlan | null>(null);
@@ -114,7 +117,6 @@
     key: keys.import.job(source, pollingJobId ?? ""),
     fetch: () => getImportJob(source, pollingJobId!),
     enabled: !!pollingJobId,
-    refetchInterval: (j) => (j?.status === "running" ? 1000 : false),
     onSuccess: (j) => {
       job = j;
       if (j.status === "running") return;
@@ -134,19 +136,50 @@
     },
   }));
 
-  // --- Decisions (reactive collections, mutated in place) ---
+  // Merge running progress into the cache; once the job settles, the plan/report
+  // only exist server-side, so the completion event triggers a real refetch
+  // instead of guessing at the shape.
+  $effect(() => {
+    if (!pollingJobId) return;
+    const jobId = pollingJobId;
+    const jobKey = keys.import.job(source, jobId);
+
+    const apply = (payload: ImportProgressEvent & { jobId: string }) => {
+      if (payload.jobId !== jobId) return;
+      if (payload.status !== "running") {
+        void queryClient.invalidateQueries({ queryKey: jobKey });
+        return;
+      }
+      queryClient.setQueryData<ImportJobDto>(jobKey, (old) =>
+        old
+          ? { ...old, progress: { done: payload.done, total: payload.total } }
+          : old,
+      );
+    };
+    const offEvent = onRealtimeEvent("import-progress", apply);
+
+    // A dropped connection could have swallowed a tick or the final
+    // completion event — reconnecting re-fetches the authoritative state.
+    const refetchOnReconnect = () =>
+      void queryClient.invalidateQueries({ queryKey: jobKey });
+    socket.on("connect", refetchOnReconnect);
+
+    return () => {
+      offEvent();
+      socket.off("connect", refetchOnReconnect);
+    };
+  });
+
   const included = new SvelteSet<string>();
   const statuses = new SvelteMap<string, string>();
   const picked = new SvelteMap<string, ImportMatch>();
   let overwrite = $state(false);
 
-  // --- Per-item manual search ---
   let searchKey = $state<string | null>(null);
   let searchQuery = $state("");
   let searchResults = $state<ImportMatch[]>([]);
   let searching = $state(false);
 
-  // --- Review-step filter ---
   // Shows only items still needing a manual match; toggled from the recap bar.
   let filterUnresolved = $state(false);
 
@@ -195,7 +228,6 @@
   const matchOf = (item: ImportPlanItem): ImportMatch | null =>
     picked.get(item.key) ?? item.match;
 
-  // --- Input handling ---
   function readBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -226,7 +258,7 @@
       }
       inputValue = b64;
     } else {
-      inputValue = await file.text();
+      inputValue = await readImportFile(file, descriptor.input.textEncoding);
     }
     fileName = file.name;
   }
@@ -243,7 +275,6 @@
     if (file) void handleFile(file);
   }
 
-  // --- Analyze / commit ---
   // Both go through createApiMutation rather than a hand-rolled try/catch:
   // `error` is then a translated string by construction, and a double submit
   // is ignored instead of starting a second job. The *polling* that follows

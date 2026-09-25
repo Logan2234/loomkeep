@@ -1,4 +1,6 @@
 import { Domain } from "@loomkeep/shared";
+import { auth } from "./auth.svelte";
+import { orderedDomains } from "./domains";
 import { m } from "./paraglide/messages.js";
 import type { IconName } from "./types/icon-name";
 
@@ -140,6 +142,23 @@ const isNavItemVisible = (item: NavItem, opts: NavGateOptions): boolean =>
   (!item.gamification || opts.gamificationEnabled);
 
 /**
+ * Applies the user's domain display order (see settings' Domaines section)
+ * to a section, but only when every one of its items is domain-tagged —
+ * the Library section qualifies, a mixed one like Tracking (Calendar next to
+ * Stats/Feed) is left in its authored order instead of being scrambled.
+ */
+function sortByDomainOrder(items: NavItem[]): NavItem[] {
+  if (items.length === 0 || !items.every((item) => item.domain)) return items;
+  const rank = new Map(
+    orderedDomains(auth.user?.domainOrder).map((d, i) => [d, i]),
+  );
+  return [...items].sort(
+    (a, b) =>
+      (rank.get(a.domain!) ?? Infinity) - (rank.get(b.domain!) ?? Infinity),
+  );
+}
+
+/**
  * `NAVIGATION` sections filtered to what's visible on this deployment/user.
  * `includeComingSoon` defaults to true (the desktop rail renders a planned
  * domain dimmed with a "Bientôt" badge); the board/dock/mobile-bar skins have
@@ -151,9 +170,12 @@ export function visibleNavSections(
 ): NavSection[] {
   return NAVIGATION.map((section) => ({
     label: section.label,
-    items: section.items.filter(
-      (item) =>
-        isNavItemVisible(item, opts) && (includeComingSoon || !item.comingSoon),
+    items: sortByDomainOrder(
+      section.items.filter(
+        (item) =>
+          isNavItemVisible(item, opts) &&
+          (includeComingSoon || !item.comingSoon),
+      ),
     ),
   })).filter((section) => section.items.length > 0);
 }
@@ -166,15 +188,12 @@ export function visibleNavItems(
   return visibleNavSections(opts, filterOpts).flatMap((s) => s.items);
 }
 
-// ---------------------------------------------------------------------------
 // Mobile navigation
-//
 // The mobile UI is driven by a flat registry of destinations (below) rather
 // than the desktop `NAVIGATION` sections: the bottom tab bar shows a short,
-// user-orderable subset (Phase B) and the "Menu" launcher sheet shows all of
+// user-orderable subset and the "Menu" launcher sheet shows all of
 // them, grouped. Desktop keeps its own rail structure above — the two don't
 // share layout, only the underlying routes.
-// ---------------------------------------------------------------------------
 
 // Stable id for a mobile destination; also the value stored in the user's
 //  bottom-bar shortcut list. `menu` is the launcher itself (no route).
@@ -383,6 +402,9 @@ const BOTTOM_SHORTCUT_CHOICES: MobileNavId[] = [
   "music",
   "calendar",
   "stats",
+  "leaderboard",
+  "feed",
+  "profile",
   "settings",
   "admin",
 ];

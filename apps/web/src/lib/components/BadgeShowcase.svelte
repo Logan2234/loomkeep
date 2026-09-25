@@ -1,9 +1,5 @@
 <script lang="ts">
-  // [G9] Up to MAX_EQUIPPED_BADGES equipped achievements on the profile, one
-  // small self-contained box per badge — no wrapping card, no "Badges"
-  // heading and no tier text (the medallion's ring already carries the
-  // tier), so an empty list renders literally nothing (the ticket's
-  // "zero-footprint when empty" requirement).
+  // An empty showcase deliberately occupies no space.
   import {
     achievementDescription,
     achievementName,

@@ -26,6 +26,7 @@ import {
 } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
+import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
 import { parsePageQuery } from "../common/pagination.util";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
@@ -68,6 +69,18 @@ export class CommentController {
     return this.comments
       .count(parseTarget(type), id)
       .then((count) => ({ count }));
+  }
+
+  /** Recent contributors to a discussion, offered when composing an @mention. */
+  @Get(":type/:id/participants")
+  @ApiOkResponse({ type: UserSummaryResponseDto, isArray: true })
+  participants(
+    @CurrentUser() user: JwtPayload,
+    @Param("type") type: string,
+    @Param("id") id: string,
+    @Query("q") query?: string,
+  ) {
+    return this.comments.participants(user.sub, parseTarget(type), id, query);
   }
 
   @Get(":type/:id")
@@ -160,6 +173,7 @@ export class CommentController {
   }
 
   @Post(":id/report")
+  @Throttle({ default: { limit: 1, ttl: 5_000 } })
   report(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
