@@ -1078,5 +1078,6 @@ export function toUserDto(user: User): UserDto {
     spoilerSensitivity:
       user.spoilerSensitivity as UserDto["spoilerSensitivity"],
     domainOrder: user.domainOrder as UserDto["domainOrder"],
+    homeLayout: user.homeLayout as unknown as UserDto["homeLayout"],
   };
 }

@@ -19,6 +19,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
 } from "@nestjs/common";
@@ -37,6 +38,7 @@ import { CsvExportResponseDto } from "./dto/csv-export-response.dto";
 import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-response.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
+import { HomeLayoutBody } from "./dto/home-layout.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
 import { UploadAvatarDto } from "./dto/upload-avatar.dto";
@@ -195,6 +197,21 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ): Promise<UserDto> {
     return this.users.updateMe(payload.sub, dto);
+  }
+
+  @Put("me/home-layout")
+  @ApiOkResponse({ type: UserResponseDto })
+  setHomeLayout(
+    @CurrentUser() payload: JwtPayload,
+    @Body() body: HomeLayoutBody,
+  ): Promise<UserDto> {
+    return this.users.setHomeLayout(payload.sub, body);
+  }
+
+  @Delete("me/home-layout")
+  @ApiOkResponse({ type: UserResponseDto })
+  resetHomeLayout(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
+    return this.users.resetHomeLayout(payload.sub);
   }
 
   /**

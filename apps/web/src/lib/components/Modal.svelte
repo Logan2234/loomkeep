@@ -67,7 +67,7 @@
   {#if showClose}
     <button
       type="button"
-      class="text-dim hover:bg-surface-2 hover:text-fg absolute top-3 right-3 rounded-full p-1.5"
+      class="text-dim hover:bg-surface-2 hover:text-fg absolute top-3 right-3 rounded-full p-1.5 transition-[color,background-color,scale] duration-150 active:scale-90"
       aria-label={m.common_close()}
       onclick={onclose}>
       <Icon name="x" class="h-5 w-5" />

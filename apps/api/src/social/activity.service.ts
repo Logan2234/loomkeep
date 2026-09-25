@@ -57,7 +57,6 @@ type EventRow = {
 };
 
 export const FEED_PAGE_SIZE = 30;
-const PREVIEW_SIZE = 6;
 
 /**
  * Feed domains no user turns on or off, so the viewer's enabled domains can't
@@ -147,11 +146,6 @@ export class ActivityService {
     });
 
     return this.buildFeed(viewerId, rows, limit);
-  }
-
-  async homePreview(viewerId: string): Promise<ActivityEventDto[]> {
-    const feed = await this.homeFeed(viewerId, 1, PREVIEW_SIZE);
-    return feed.items;
   }
 
   /**

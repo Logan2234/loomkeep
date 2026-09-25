@@ -659,3 +659,93 @@ describe("ReviewService.adminRemove", () => {
     await expect(svc.adminRemove("missing")).rejects.toThrow();
   });
 });
+
+describe("ReviewService.listMine — target links", () => {
+  it("links every domain's work under /app", async () => {
+    const row = (targetType: string, targetId: string) => ({
+      id: `r-${targetId}`,
+      userId: VIEWER,
+      targetType,
+      targetId,
+      rating: 8,
+      text: null,
+      visibility: "PUBLIC",
+      spoilerTag: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const item = (id: string, sourceId: string, source: string) => ({
+      id,
+      title: id,
+      coverUrl: null,
+      canonicalSource: source,
+      externalIds: [{ source, externalId: sourceId }],
+    });
+    const prisma = {
+      review: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            row("MEDIA", "m1"),
+            row("GAME", "g1"),
+            row("BOOK", "b1"),
+            row("MUSIC", "a1"),
+          ]),
+      },
+      reviewVote: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      user: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: VIEWER,
+          username: VIEWER,
+          displayName: VIEWER,
+          avatarUrl: null,
+          hideProgression: false,
+        }),
+      },
+      userScore: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaItem: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            ...item("m1", "550", "TMDB"),
+            posterUrl: null,
+            type: "MOVIE",
+          },
+        ]),
+      },
+      gameItem: {
+        findMany: vi.fn().mockResolvedValue([item("g1", "1942", "IGDB")]),
+      },
+      bookItem: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([item("b1", "OL1W", "OPEN_LIBRARY")]),
+      },
+      musicItem: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([item("a1", "mbid-1", "MUSICBRAINZ")]),
+      },
+    } as unknown as PrismaService;
+    const svc = new ReviewService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      stubXp(),
+      CONFIG,
+      FLAGS,
+      stubAchievements(),
+    );
+
+    const hrefs = (await svc.listMine(VIEWER)).map((r) => r.target?.href);
+
+    expect(hrefs).toEqual([
+      "/app/media/movie/550",
+      "/app/games/1942",
+      "/app/books/OL1W",
+      "/app/music/mbid-1",
+    ]);
+  });
+});
