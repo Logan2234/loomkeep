@@ -67,13 +67,6 @@ export class SocialController {
     );
   }
 
-  /** A short home-page teaser of the home feed. */
-  @Get("feed/preview")
-  @ApiOkResponse({ type: ActivityEventResponseDto, isArray: true })
-  feedPreview(@CurrentUser() user: JwtPayload): Promise<ActivityEventDto[]> {
-    return this.activity.homePreview(user.sub);
-  }
-
   /** A user's detailed activity timeline (visibility-filtered). */
   @Get("users/:username/activity")
   @ApiOkResponse({ type: PagedResponseDto(ActivityEventResponseDto) })

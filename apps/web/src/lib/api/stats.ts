@@ -39,3 +39,7 @@ export const getVideoTemporal = (period: StatsWindow = "ALL") =>
   typedRequest("/stats/video/temporal", { query: { period } });
 
 export const getSocialStats = () => typedRequest("/stats/social");
+
+/** What the viewer was on around `date` (local YYYY-MM-DD) a year ago. */
+export const getOnThisDay = (date: string) =>
+  typedRequest("/stats/on-this-day", { query: { date } });

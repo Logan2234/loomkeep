@@ -23,19 +23,19 @@ export const keys = {
       ["books", "detail", source, sourceId, edition] as const,
     editions: (source: string, sourceId: string) =>
       ["books", "editions", source, sourceId] as const,
-    reading: () => ["books", "reading"] as const,
+    reading: (sort: string) => ["books", "reading", sort] as const,
     tracked: () => ["books", "tracked"] as const,
     search: (query: string) => ["books", "search", query] as const,
   },
   games: {
-    playing: () => ["games", "playing"] as const,
+    playing: (sort: string) => ["games", "playing", sort] as const,
     detail: (source: string, sourceId: string) =>
       ["games", "detail", source, sourceId] as const,
     tracked: () => ["games", "tracked"] as const,
     search: (query: string) => ["games", "search", query] as const,
   },
   music: {
-    toListen: () => ["music", "to-listen"] as const,
+    toListen: (sort: string) => ["music", "to-listen", sort] as const,
     detail: (source: string, sourceId: string) =>
       ["music", "detail", source, sourceId] as const,
     tracked: () => ["music", "tracked"] as const,
@@ -102,10 +102,17 @@ export const keys = {
     revisions: (targetType: string, targetId: string) =>
       ["reviews", "revisions", targetType, targetId] as const,
   },
+  home: {
+    favorites: (domain: string) => ["home", "favorites", domain] as const,
+    onThisDay: (date: string) => ["home", "on-this-day", date] as const,
+    tonightPick: () => ["home", "tonight-pick"] as const,
+  },
   feed: {
     all: () => ["feed"] as const,
     list: (domain: string | null) => ["feed", "list", domain ?? "ALL"] as const,
-    preview: () => ["feed", "preview"] as const,
+    // The home widget's merged first pages — not the feed page's infinite
+    // query, whose cached shape differs.
+    home: (domains: string) => ["feed", "home", domains] as const,
   },
   notifications: {
     feed: () => ["notifications", "feed"] as const,
@@ -125,6 +132,7 @@ export const keys = {
     domainCounts: () => ["library", "domain-counts"] as const,
     watching: () => ["library", "watching"] as const,
     plannedMovies: () => ["library", "planned-movies"] as const,
+    dormant: () => ["library", "dormant"] as const,
     browse: (
       domain: string,
       filters: {

@@ -8,6 +8,7 @@ import {
   Role,
   SpoilerSensitivity,
 } from "../enums";
+import type { HomeLayoutDto } from "./home-layout";
 
 export interface UserDto {
   id: string;
@@ -95,6 +96,12 @@ export interface UserDto {
    * position at the end. See web `domains.ts`'s `orderedDomains()`.
    */
   domainOrder: Domain[];
+  /**
+   * The home page's widget grid, or null for the default one — which is
+   * built from the enabled domains on the web rather than stored, so it
+   * keeps following them until the user edits the page.
+   */
+  homeLayout: HomeLayoutDto | null;
 }
 
 export interface UpdateUserRequestDto {

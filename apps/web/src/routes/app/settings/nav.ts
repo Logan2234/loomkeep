@@ -318,7 +318,25 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         description: m.settings_appearance_description(),
         keywords: ["apparence", "appearance", "ui"],
         legacyHash: "apparence",
+        newBadgeKey: "home-layout",
         entries: [
+          {
+            id: "home-layout",
+            label: m.settings_home_layout_title(),
+            keywords: [
+              "accueil",
+              "home",
+              "dashboard",
+              "tableau de bord",
+              "widgets",
+              "grille",
+              "grid",
+              "disposition",
+              "layout",
+              "liens rapides",
+              "quick links",
+            ],
+          },
           {
             id: "theme",
             label: m.common_theme(),

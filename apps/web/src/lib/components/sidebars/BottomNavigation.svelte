@@ -65,11 +65,7 @@
         href={item.href}
         aria-current={active ? "page" : undefined}
         class="
-          relative flex min-w-0 flex-1 flex-col items-center gap-1
-          text-[0.62rem]
-          font-semibold
-          transition-transform
-          duration-200
+          relative flex min-w-0 flex-1 flex-col items-center gap-1 text-[0.62rem] font-semibold transition-transform duration-200
           {active ? 'text-accent -translate-y-1.5' : 'text-dim'}
         ">
         {#if active}
@@ -89,7 +85,7 @@
           {/if}
         </span>
 
-        <span class="w-full truncate px-0.5 max-[359px]:sr-only">
+        <span class="truncate max-[359px]:sr-only">
           {item.label}
         </span>
       </a>
