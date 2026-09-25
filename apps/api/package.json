@@ -32,7 +32,6 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.mts",
     "test:e2e:cov": "vitest run --config ./vitest.config.e2e.mts --coverage",
     "graph": "pnpm exec ts-node -r tsconfig-paths/register scripts/graph.ts",
-    "ee:license": "ts-node src/ee/licensing/license-cli.ts",
     "check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
