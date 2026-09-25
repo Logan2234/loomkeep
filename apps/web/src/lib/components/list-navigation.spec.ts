@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getEnabledOptionIndex } from "./list-navigation";
+import {
+  getEnabledOptionIndex,
+  reconcileActiveOptionValue,
+} from "./list-navigation";
 
 const options = [{}, { disabled: true }, {}, { disabled: true }];
 
@@ -18,5 +21,22 @@ describe("list keyboard navigation", () => {
   it("returns no active option for empty or fully disabled results", () => {
     expect(getEnabledOptionIndex([], -1, "first")).toBe(-1);
     expect(getEnabledOptionIndex([{ disabled: true }], -1, "next")).toBe(-1);
+  });
+
+  it("reconciles an active value after async options are replaced", () => {
+    const results = [
+      { value: "all" },
+      { value: "alice" },
+      { value: "bob", disabled: true },
+    ];
+
+    expect(reconcileActiveOptionValue(results, "stale", [])).toBe("all");
+    expect(reconcileActiveOptionValue(results, "alice", [])).toBe("alice");
+    expect(reconcileActiveOptionValue(results, "stale", ["alice"])).toBe(
+      "alice",
+    );
+    expect(
+      reconcileActiveOptionValue([{ value: "x", disabled: true }], "x", []),
+    ).toBeNull();
   });
 });

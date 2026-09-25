@@ -1,5 +1,28 @@
 export type ListNavigationCommand = "next" | "previous" | "first" | "last";
 
+type ValueOption = { value: string; disabled?: boolean };
+
+export function reconcileActiveOptionValue(
+  options: ReadonlyArray<ValueOption>,
+  activeValue: string | null,
+  selectedValues: ReadonlyArray<string>,
+): string | null {
+  const enabled = options.filter((option) => !option.disabled);
+
+  if (
+    activeValue !== null &&
+    enabled.some((option) => option.value === activeValue)
+  ) {
+    return activeValue;
+  }
+
+  return (
+    enabled.find((option) => selectedValues.includes(option.value))?.value ??
+    enabled[0]?.value ??
+    null
+  );
+}
+
 export function getEnabledOptionIndex(
   options: ReadonlyArray<object & { disabled?: boolean }>,
   currentIndex: number,

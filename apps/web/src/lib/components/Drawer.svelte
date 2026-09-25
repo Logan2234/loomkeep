@@ -177,7 +177,6 @@
       onEscape: dismissable ? requestClose : undefined,
     }}
     bind:this={panelEl}
-    use:dialogFocus
     role="dialog"
     aria-modal="true"
     aria-labelledby={labelledby}

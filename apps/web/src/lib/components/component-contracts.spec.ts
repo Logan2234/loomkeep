@@ -43,9 +43,11 @@ describe("shared component contracts", () => {
   );
 
   it.each(["Modal", "Drawer", "FocusOverlay", "Lightbox"])(
-    "%s uses the shared focus contract",
+    "%s uses the shared focus contract exactly once",
     (component) => {
-      expect(componentSource(component)).toContain("use:dialogFocus");
+      expect(componentSource(component).match(/use:dialogFocus/g)).toHaveLength(
+        1,
+      );
     },
   );
 
@@ -89,10 +91,13 @@ describe("shared component contracts", () => {
 
   it("supports arrow navigation and restores focus in dropdown menus", () => {
     const source = componentSource("Dropdown");
+    const reviewCard = componentSource("ReviewCard");
 
     expect(source).toContain("onTriggerKeydown");
     expect(source).toContain("onPanelKeydown");
     expect(source).toContain("triggerElement?.focus()");
+    expect(reviewCard).toContain("{ open, toggle, onkeydown }");
+    expect(reviewCard).toContain("{onkeydown}");
   });
 
   it("opens tooltips for keyboard focus and dismisses them with Escape", () => {

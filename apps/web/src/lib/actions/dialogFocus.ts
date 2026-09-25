@@ -26,12 +26,11 @@ export function nextFocusIndex(
   currentIndex: number,
   focusableCount: number,
   reverse: boolean,
-): number {
+): number | null {
   if (focusableCount === 0) return -1;
   if (currentIndex < 0) return reverse ? focusableCount - 1 : 0;
-  return reverse
-    ? (currentIndex - 1 + focusableCount) % focusableCount
-    : (currentIndex + 1) % focusableCount;
+  if (reverse) return currentIndex === 0 ? focusableCount - 1 : null;
+  return currentIndex === focusableCount - 1 ? 0 : null;
 }
 
 function isAvailable(element: HTMLElement): boolean {
@@ -162,7 +161,6 @@ export function dialogFocus(
 
     if (event.key !== "Tab") return;
     const focusable = focusableElements(node);
-    event.preventDefault();
     const currentIndex = focusable.indexOf(
       document.activeElement as HTMLElement,
     );
@@ -171,6 +169,8 @@ export function dialogFocus(
       focusable.length,
       event.shiftKey,
     );
+    if (nextIndex === null) return;
+    event.preventDefault();
     (nextIndex === -1 ? node : focusable[nextIndex]).focus({
       preventScroll: true,
     });
