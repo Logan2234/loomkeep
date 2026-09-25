@@ -12,6 +12,77 @@ this point beyond the roadmap phases already documented in the README.
 
 ## [Unreleased]
 
+## 1.9.0 — Real-time push, the open-core `ee/` split, and passkeys
+
+- **Real-time push over WebSocket.** A single socket.io `EventsGateway`
+  replaces the notification badge's 20s poll and the comment/import polling:
+  a per-user room for private pushes (notifications, admin report counts,
+  achievement unlocks, import progress, onboarding, follow requests) and
+  joined rooms for shared resources (comment threads, collaborative lists),
+  gated by the same rules as their REST endpoints. The gateway lives under
+  `/api/socket.io` so the `Path=/api` access cookie reaches the handshake,
+  runs websocket-only (Fastify never completes engine.io's polling upgrade),
+  and the global `JwtAuthGuard`/`ThrottlerGuard` now no-op outside HTTP
+  contexts. Session revocation and list-editor removal evict live sockets;
+  Prometheus gets `ws_connections_active` and `ws_connection_rejections_total`.
+- **The first premium features move to `ee/` under `LICENSE-EE`** (option B
+  of ADR 0001). The iCal subscription, the Dock/Board navigation styles and
+  the advanced/temporal/social stats now live in `apps/api/src/ee` /
+  `apps/web/src/lib/ee`; the core never imports them (ESLint-enforced) and
+  ee/ hands itself to the core at startup, so routes and DTOs are unchanged.
+  An offline-signed annual `LOOMKEEP_LICENSE_KEY` is required only once
+  `premium-features` is on — without it ee/ routes 404 and the web locks
+  their screens — and a self-host (`--instance`) key makes every account of
+  its instance premium. Contributors now sign a CLA (CLA Assistant) so
+  contributions can ship under both licenses.
+- **Accounts gained passkeys and an activity history.** WebAuthn joins TOTP
+  and email as an MFA method, with optional passwordless sign-in once a key
+  is registered. Auth tokens moved to encrypted `HttpOnly` cookies, session
+  revocation now takes effect immediately (sid checked against a cached live
+  session) instead of after the access token expires, and a new "Account
+  activity" settings screen lists every sensitive action of the last year
+  with its device and IP (IPs purged after a year and on account deletion).
+- **Settings became an index plus one route per section**, driven by a single
+  `nav.ts` model with keyword search (⌘K), a shared `SettingRow`, new
+  `GET /library/domain-counts` and `GET /import/last-run` endpoints, and
+  redirects for legacy `/app/settings#…` anchors.
+- **Social and community surfaces grew.** Shared lists are collaborative
+  (per-item author, editor notifications with per-list mute, editors picked
+  among friends); reviews were redesigned (rating slider, community summary,
+  spoiler tags, reporting, and a `REVIEW_REMOVED` moderation measure);
+  comment discussions were redesigned and go live; the activity feed filters
+  by domain (and now hides disabled/locked domains everywhere); the XP
+  leaderboard gains an all-time tab; a gamified onboarding checklist ends on
+  the "première séance" achievement.
+- **More ways in and out of the library.** MyAnimeList (XML) and Babelio
+  (CSV) imports; a manual, language-based Open Library edition selector on
+  book pages (`GET /books/:source/:sourceId/editions`); and RSS/Atom feeds
+  of recent episodes (`/library/releases.{atom,rss}`) behind the iCal token.
+- **Operators got new levers.** A `NEWS_BANNER` Unleash flag drives a live,
+  translated maintenance/degraded-service (or custom) banner; admins are
+  emailed (and GlitchTip alerted) when OMDb, Simkl, Steam or SMTP reach 80%
+  and 100% of their daily quota, with counters now counting every HTTP retry;
+  admins can adjust a user's XP by hand (`ADMIN_ADJUSTMENT` ledger entries);
+  every registered admin job can actually be run; Postgres metrics and
+  `pg_stat_statements` join the observability stack.
+- **Mobile audit cleared end to end.** One JS-selected app shell instead of
+  two CSS-hidden trees, `viewport-fit=cover`, `svh`/`dvh` full-height
+  surfaces, pinned modal action footers, scrollable bottom sheets, an 11px
+  floor for running text, per-screen `<title>`s, theme-following status bar,
+  no logout on a dropped connection, and a French catalogue settled on "tu"
+  and "critique" (spec-enforced).
+- **Four internal audit rounds** fixed provider-throttle and XP daily-cap
+  races, batched episode sync and XP reconciliation, turned the hourly
+  notification scan episode-driven, pushed stats filtering into Postgres,
+  re-encode uploaded avatars through sharp (dropping EXIF/GPS), release import
+  parse models once committed, require library ownership to record a watch,
+  keep the Twitch secret out of query strings, and slim `/api/health`. The
+  four library domains now share one entry lifecycle
+  (`common/entry-lifecycle.util.ts`), persisted API copy follows the
+  recipient's locale (operator-facing strings are English), argument-less
+  validation failures return 400 instead of 500, and knip plus type-aware
+  promise rules became blocking CI gates. The e2e suite was split per flow
+  (MFA, import, social) with a shared bootstrap.
 ## 1.8.0 — Gamification, complete localization, and security hardening
 
 - **Gamification is now a broad product surface.** An append-only
