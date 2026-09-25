@@ -422,18 +422,29 @@
         class="relative select-none"
         class:cursor-grabbing={active?.kind === "move"}
         style:height={`${spanY(canvasRows)}px`}>
-        <!-- The 12 columns, and the rows as hairlines across them. -->
+        <!-- A dot at every gutter crossing: the grid's rhythm without drawing
+             its cells, which fought the widgets for attention. It wakes up
+             during a drag, when the snap points are what you're looking at. -->
         <div
-          class="guides pointer-events-none absolute inset-0 grid"
-          style:grid-template-columns={`repeat(${COLUMNS}, minmax(0, 1fr))`}
-          style:column-gap={`${gap}px`}
-          style:--row-pitch={`${rowHeight + gap}px`}
-          style:--row-height={`${rowHeight}px`}
+          class="dots pointer-events-none absolute inset-0"
+          class:awake={!!active}
+          style:--pitch-x={`${column + gap}px`}
+          style:--pitch-y={`${rowHeight + gap}px`}
+          style:--gap={`${gap}px`}
           aria-hidden="true">
-          {#each { length: COLUMNS } as _, i (i)}
-            <div class="guide rounded-md"></div>
-          {/each}
         </div>
+
+        <!-- The columns the widget will land on, lit like a projector beam —
+             over the widgets it passes, under the one being held. -->
+        {#if activeWidget}
+          <div
+            class="beam pointer-events-none absolute top-0 bottom-0 left-0 z-20 motion-safe:transition-[transform,width] motion-safe:duration-150"
+            style:transform={`translateX(${left(activeWidget.x)}px)`}
+            style:width={`${spanX(activeWidget.w)}px`}
+            aria-hidden="true"
+            transition:fade={{ duration: reduced ? 0 : 150 }}>
+          </div>
+        {/if}
 
         {#if active?.kind === "move" && activeWidget}
           <div
@@ -589,14 +600,30 @@
 {/if}
 
 <style>
-  .guide {
-    background-color: color-mix(in srgb, var(--surface-2) 30%, transparent);
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0 var(--row-height),
-      color-mix(in srgb, var(--border) 45%, transparent) var(--row-height)
-        var(--row-pitch)
+  .dots {
+    background-image: radial-gradient(
+      circle at calc(var(--pitch-x) - var(--gap) / 2)
+        calc(var(--pitch-y) - var(--gap) / 2),
+      var(--dim) 1.25px,
+      transparent 1.75px
     );
+    background-size: var(--pitch-x) var(--pitch-y);
+    opacity: 0.5;
+    transition: opacity 200ms;
+  }
+  .dots.awake {
+    opacity: 0.9;
+  }
+
+  .beam {
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--accent) 7%, transparent) 12%,
+      color-mix(in srgb, var(--accent) 7%, transparent) 88%,
+      transparent
+    );
+    border-inline: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   .control {
