@@ -38,8 +38,11 @@
       {/each}
     </div>
   {:else if events.length > 0}
+    <!-- Rows as tall as their event: each event is a card, which hides its
+         overflow and so may shrink to nothing — auto rows would squeeze
+         them all into the widget's height rather than let the list scroll. -->
     <ul
-      class="no-scrollbar grid h-full content-start gap-2 overflow-y-auto"
+      class="no-scrollbar grid h-full auto-rows-max content-start gap-2 overflow-y-auto"
       style:grid-template-columns={`repeat(${columns}, minmax(0, 1fr))`}>
       {#each events as event (event.id)}
         <ActivityItem {event} />
