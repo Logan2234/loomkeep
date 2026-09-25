@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 
 import type { ConfigService } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
 import { hashToken } from "../auth/auth.service";
@@ -319,6 +320,64 @@ describe("UsersService — updateMe mobile nav shortcuts", () => {
     ).rejects.toBeInstanceOf(AppException);
 
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("UsersService — home layout", () => {
+  const userId = "user-1";
+  let prisma: PrismaService;
+  let service: UsersService;
+
+  beforeEach(() => {
+    prisma = {
+      user: {
+        update: vi.fn().mockImplementation(({ data }) => ({
+          id: userId,
+          createdAt: new Date(),
+          homeLayout: data.homeLayout,
+        })),
+      },
+    } as unknown as PrismaService;
+    service = new UsersService(
+      prisma,
+      {} as unknown as MailService,
+      {} as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      {} as unknown as HibpService,
+      {} as unknown as EntitlementService,
+      {} as unknown as ProfileService,
+      {} as unknown as AccountDeletionService,
+      {} as unknown as XpService,
+      {} as unknown as EventsGateway,
+    );
+  });
+
+  it("slides a widget overflowing the grid back inside and drops a repeated id", async () => {
+    const dto = await service.setHomeLayout(userId, {
+      widgets: [
+        { id: "a", type: "toWatch", x: 8, y: 0, w: 6, h: 5 },
+        { id: "a", type: "thisWeek", x: 0, y: 5, w: 3, h: 4 },
+        { id: "b", type: "myLists", x: 0, y: 5, w: 4, h: 4 },
+      ],
+    });
+
+    expect(dto.homeLayout).toEqual({
+      widgets: [
+        { id: "a", type: "toWatch", x: 6, y: 0, w: 6, h: 5 },
+        { id: "b", type: "myLists", x: 0, y: 5, w: 4, h: 4 },
+      ],
+    });
+  });
+
+  it("clears the stored grid back to the default one", async () => {
+    await service.resetHomeLayout(userId);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: userId },
+      data: { homeLayout: Prisma.DbNull },
+    });
   });
 });
 

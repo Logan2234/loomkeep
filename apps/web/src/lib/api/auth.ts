@@ -6,6 +6,7 @@ import type {
   ConfirmEmailChangeRequestDto,
   DeleteAccountRequestDto,
   Domain,
+  HomeLayoutDto,
   LoginRequestDto,
   LoginResponseDto,
   MfaVerifyRequestDto,
@@ -223,6 +224,24 @@ export async function uploadAvatar(
 
 export async function deleteAvatar(): Promise<UserDto> {
   const user = await typedRequest("/users/me/avatar", {
+    method: "DELETE",
+  });
+  auth.user = user;
+  return user;
+}
+
+export async function saveHomeLayout(body: HomeLayoutDto): Promise<UserDto> {
+  const user = await typedRequest("/users/me/home-layout", {
+    method: "PUT",
+    body,
+  });
+  auth.user = user;
+  return user;
+}
+
+/** Back to the default home page, which follows the enabled domains again. */
+export async function resetHomeLayout(): Promise<UserDto> {
+  const user = await typedRequest("/users/me/home-layout", {
     method: "DELETE",
   });
   auth.user = user;

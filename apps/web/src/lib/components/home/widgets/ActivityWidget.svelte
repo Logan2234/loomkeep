@@ -1,0 +1,51 @@
+<script lang="ts">
+  import { getFeedPreview } from "$lib/api/client";
+  import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
+  import ActivityItem from "$lib/components/ActivityItem.svelte";
+  import { HOME_WIDGETS } from "$lib/home/widgets";
+  import { bodyOf, type BoxSize } from "$lib/home/sizing";
+  import { m } from "$lib/paraglide/messages.js";
+  import WidgetShell from "../WidgetShell.svelte";
+
+  let { size }: { size: BoxSize } = $props();
+
+  const def = HOME_WIDGETS.activity;
+
+  const previewQuery = createApiQuery(() => ({
+    key: keys.feed.preview(),
+    fetch: getFeedPreview,
+  }));
+  const events = $derived(previewQuery.data ?? []);
+
+  // Events wrap onto a second line unpredictably, so the list scrolls rather
+  // than counting how many fit.
+  const columns = $derived(bodyOf(size).width >= 720 ? 2 : 1);
+</script>
+
+<WidgetShell
+  icon={def.icon}
+  title={def.title()}
+  href="/app/feed"
+  linkLabel={m.home_activity_view_feed()}>
+  {#if previewQuery.loading}
+    <div class="space-y-2">
+      {#each { length: 3 } as _, i (i)}
+        <div class="skeleton h-14 w-full rounded-xl"></div>
+      {/each}
+    </div>
+  {:else if events.length > 0}
+    <ul
+      class="no-scrollbar grid h-full content-start gap-2 overflow-y-auto"
+      style:grid-template-columns={`repeat(${columns}, minmax(0, 1fr))`}>
+      {#each events as event (event.id)}
+        <ActivityItem {event} />
+      {/each}
+    </ul>
+  {:else}
+    <p
+      class="text-dim flex h-full items-center justify-center text-center text-sm">
+      {m.home_activity_empty()}
+    </p>
+  {/if}
+</WidgetShell>

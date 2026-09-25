@@ -125,6 +125,7 @@ export const keys = {
     domainCounts: () => ["library", "domain-counts"] as const,
     watching: () => ["library", "watching"] as const,
     plannedMovies: () => ["library", "planned-movies"] as const,
+    dormant: () => ["library", "dormant"] as const,
     browse: (
       domain: string,
       filters: {
