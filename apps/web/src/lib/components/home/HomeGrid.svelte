@@ -22,6 +22,8 @@
   let width = $state(0);
   const placed = $derived(width >= HOME_GRID_MIN_WIDTH);
   const ordered = $derived(stackOrder(widgets));
+  // A vertical divider separates columns, which a stacked page no longer has.
+  const stacked = $derived(ordered.filter((w) => w.type !== "dividerVertical"));
   const rank = $derived(new Map(ordered.map((w, i) => [w.id, i])));
 
   const reduced = prefersReducedMotion();
@@ -58,7 +60,7 @@
     </div>
   {:else if width > 0}
     <div class="flex flex-col" style:gap={`${HOME_GAP}px`}>
-      {#each ordered as widget (widget.id)}
+      {#each stacked as widget (widget.id)}
         <div
           style:height={widget.type === "quickLinks"
             ? undefined

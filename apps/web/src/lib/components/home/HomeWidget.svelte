@@ -5,6 +5,7 @@
   import type { HomeWidgetDto } from "@loomkeep/shared";
   import ActivityWidget from "./widgets/ActivityWidget.svelte";
   import BooksReadingWidget from "./widgets/BooksReadingWidget.svelte";
+  import DividerWidget from "./widgets/DividerWidget.svelte";
   import GamesPlayingWidget from "./widgets/GamesPlayingWidget.svelte";
   import ListContentWidget from "./widgets/ListContentWidget.svelte";
   import MusicToListenWidget from "./widgets/MusicToListenWidget.svelte";
@@ -40,4 +41,8 @@
   <MyListsWidget {size} />
 {:else if widget.type === "listContent"}
   <ListContentWidget {widget} {size} />
+{:else if widget.type === "dividerHorizontal"}
+  <DividerWidget />
+{:else if widget.type === "dividerVertical"}
+  <DividerWidget vertical />
 {/if}

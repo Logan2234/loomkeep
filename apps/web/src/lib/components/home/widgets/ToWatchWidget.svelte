@@ -9,7 +9,7 @@
   import { auth } from "$lib/auth.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, posterLayout, type BoxSize } from "$lib/home/sizing";
+  import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import type { LibraryEntryDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -50,8 +50,6 @@
       .sort((a, b) => updatedTime(b) - updatedTime(a))
       .slice(0, LIMIT),
   );
-
-  const layout = $derived(posterLayout(bodyOf(size), { meta: 12, action: 36 }));
 
   let busy = $state<string | null>(null);
   let carousel = $state<{ scrollToStart: () => void }>();
@@ -109,7 +107,8 @@
         ? epCode(e.progress.nextEpisode)
         : undefined,
     })}
-    {layout}
+    {size}
+    metaHeight={8}
     loading={watchingQuery.loading || plannedMoviesQuery.loading}
     empty={m.home_nothing_to_watch()}>
     {#snippet meta(e)}
@@ -127,7 +126,7 @@
         <button
           type="button"
           class="btn btn-primary btn-sm {variant === 'strip'
-            ? 'mt-2 w-full'
+            ? 'h-6 w-full'
             : 'shrink-0'}"
           disabled={busy === e.id}
           onclick={() => resume(e)}>
@@ -137,7 +136,7 @@
         <button
           type="button"
           class="btn btn-primary btn-sm {variant === 'strip'
-            ? 'mt-2 w-full'
+            ? 'h-6 w-full'
             : 'shrink-0'}"
           disabled={busy === e.id}
           onclick={() => markMovieSeen(e)}>

@@ -22,6 +22,7 @@
     HOME_GRID_MIN_WIDTH,
     HOME_ROW_HEIGHT,
     HOME_WIDGETS,
+    isDivider,
   } from "$lib/home/widgets";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
@@ -51,6 +52,8 @@
   const dirty = $derived(JSON.stringify(draft) !== JSON.stringify(saved));
   const usingDefault = $derived(!auth.user?.homeLayout && !dirty);
   const full = $derived(draft.length >= HOME_LAYOUT_LIMITS.widgets);
+  // Dividers only arrange the others: a page needs one real widget to save.
+  const hasContent = $derived(draft.some((w) => !isDivider(w.type)));
   const placedTypes = $derived(new Set(draft.map((w) => w.type)));
 
   // Geometry. The plan keeps the page's proportions but not its sizes.
@@ -63,8 +66,8 @@
   const top = (y: number) => y * (rowHeight + gap);
   const spanX = (w: number) => w * column + (w - 1) * gap;
   const spanY = (h: number) => h * rowHeight + (h - 1) * gap;
-  // Three empty rows under the last widget, to drop one below everything.
-  const canvasRows = $derived(bottomRow(draft) + 3);
+  // Two empty rows under the last widget, to drop one below everything.
+  const canvasRows = $derived(bottomRow(draft) + 2);
 
   // A drag in progress. Positions are replayed from `start` on every pointer
   // move, so dragging back to where it began restores the layout exactly.
@@ -293,6 +296,11 @@
     });
   }
 
+  function removeAll() {
+    draft = [];
+    announcement = m.home_editor_removed_all();
+  }
+
   function applyConfig(id: string, config: HomeWidgetConfigDto) {
     draft = draft.map((w) => (w.id === id ? { ...w, config } : w));
   }
@@ -344,19 +352,30 @@
   );
 </script>
 
-<div
-  class="bg-bg/85 border-border sticky top-0 z-40 -mx-5 mb-4 flex flex-wrap items-center gap-2 border-b px-5 py-3 backdrop-blur md:-mx-8 md:px-8">
+{#snippet resizeHandle(widget: HomeWidgetDto, cls: string)}
+  {@const name = HOME_WIDGETS[widget.type].title()}
   <button
     type="button"
-    class="btn btn-ghost btn-sm gap-1.5"
-    disabled={full}
-    onclick={() => (catalogOpen = true)}>
-    <Icon name="plus" class="h-4 w-4" />
-    {m.home_editor_add()}
+    class="control cursor-se-resize touch-none {cls}"
+    aria-label={m.home_editor_resize({ name })}
+    title={m.home_editor_resize({ name })}
+    onpointerdown={(e) => begin("resize", widget, e)}
+    onpointermove={onPointerMove}
+    onpointerup={finish}
+    onpointercancel={finish}
+    onkeydown={(e) => onHandleKey(e, widget, { resize: true })}>
+    <Icon name="resize" class="h-4 w-4" />
   </button>
+{/snippet}
 
+<div
+  class="bg-bg/85 border-border sticky top-0 z-40 -mx-5 mb-4 flex flex-wrap items-center gap-2 border-b px-5 py-3 backdrop-blur md:-mx-8 md:px-8">
   <div class="min-w-0 flex-1 text-xs">
-    {#if dirty}
+    {#if dirty && !hasContent}
+      <span class="text-dim" in:fade={{ duration: reduced ? 0 : 150 }}>
+        {m.home_editor_needs_widget()}
+      </span>
+    {:else if dirty}
       <span
         class="text-accent inline-flex items-center gap-1.5 font-semibold"
         in:fade={{ duration: reduced ? 0 : 150 }}>
@@ -378,14 +397,14 @@
   <button
     type="button"
     class="btn btn-ghost btn-sm"
-    disabled={!dirty || saveMut.loading}
-    onclick={() => (draft = clone(saved))}>
-    {m.common_cancel()}
+    disabled={draft.length === 0 || saveMut.loading}
+    onclick={removeAll}>
+    {m.home_editor_remove_all()}
   </button>
   <button
     type="button"
     class="btn btn-primary btn-sm"
-    disabled={!dirty || saveMut.loading}
+    disabled={!dirty || !hasContent || saveMut.loading}
     onclick={save}>
     {m.common_save()}
   </button>
@@ -408,170 +427,185 @@
 
 <div bind:clientWidth={width}>
   {#if width > 0}
-    {#if draft.length === 0}
-      <button
-        type="button"
-        class="border-border text-dim hover:border-accent hover:text-accent flex w-full flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center transition-colors"
-        onclick={() => (catalogOpen = true)}>
-        <Icon name="plus" class="h-7 w-7" />
-        <span class="text-sm font-semibold">{m.home_editor_empty()}</span>
-      </button>
-    {:else}
-      <div
-        bind:this={canvas}
-        class="relative select-none"
-        class:cursor-grabbing={active?.kind === "move"}
-        style:height={`${spanY(canvasRows)}px`}>
-        <!-- A dot at every gutter crossing: the grid's rhythm without drawing
+    <div
+      bind:this={canvas}
+      class="relative select-none"
+      class:cursor-grabbing={active?.kind === "move"}
+      style:height={`${spanY(canvasRows)}px`}>
+      <!-- A dot at every gutter crossing: the grid's rhythm without drawing
              its cells, which fought the widgets for attention. It wakes up
              during a drag, when the snap points are what you're looking at. -->
-        <div
-          class="dots pointer-events-none absolute inset-0"
-          class:awake={!!active}
-          style:--pitch-x={`${column + gap}px`}
-          style:--pitch-y={`${rowHeight + gap}px`}
-          style:--gap={`${gap}px`}
-          aria-hidden="true">
-        </div>
+      <div
+        class="dots pointer-events-none absolute inset-0"
+        class:awake={!!active}
+        style:--pitch-x={`${column + gap}px`}
+        style:--pitch-y={`${rowHeight + gap}px`}
+        style:--gap={`${gap}px`}
+        aria-hidden="true">
+      </div>
 
-        <!-- The columns the widget will land on, lit like a projector beam —
+      <!-- The columns the widget will land on, lit like a projector beam —
              over the widgets it passes, under the one being held. -->
-        {#if activeWidget}
-          <div
-            class="beam pointer-events-none absolute top-0 bottom-0 left-0 z-20 motion-safe:transition-[transform,width] motion-safe:duration-150"
-            style:transform={`translateX(${left(activeWidget.x)}px)`}
-            style:width={`${spanX(activeWidget.w)}px`}
-            aria-hidden="true"
-            transition:fade={{ duration: reduced ? 0 : 150 }}>
-          </div>
-        {/if}
+      {#if activeWidget}
+        <div
+          class="beam pointer-events-none absolute top-0 bottom-0 left-0 z-20 motion-safe:transition-[transform,width] motion-safe:duration-150"
+          style:transform={`translateX(${left(activeWidget.x)}px)`}
+          style:width={`${spanX(activeWidget.w)}px`}
+          aria-hidden="true"
+          transition:fade={{ duration: reduced ? 0 : 150 }}>
+        </div>
+      {/if}
 
-        {#if active?.kind === "move" && activeWidget}
-          <div
-            class="border-accent/70 bg-accent/10 absolute top-0 left-0 rounded-xl border-2 border-dashed motion-safe:transition-[transform,width,height] motion-safe:duration-150"
-            style:transform={`translate(${left(activeWidget.x)}px, ${top(activeWidget.y)}px)`}
-            style:width={`${spanX(activeWidget.w)}px`}
-            style:height={`${spanY(activeWidget.h)}px`}
-            transition:fade={{ duration: reduced ? 0 : 120 }}>
-          </div>
-        {/if}
+      {#if active?.kind === "move" && activeWidget}
+        <div
+          class="border-accent/70 bg-accent/10 absolute top-0 left-0 rounded-xl border-2 border-dashed motion-safe:transition-[transform,width,height] motion-safe:duration-150"
+          style:transform={`translate(${left(activeWidget.x)}px, ${top(activeWidget.y)}px)`}
+          style:width={`${spanX(activeWidget.w)}px`}
+          style:height={`${spanY(activeWidget.h)}px`}
+          transition:fade={{ duration: reduced ? 0 : 120 }}>
+        </div>
+      {/if}
 
-        {#each draft as widget (widget.id)}
-          {@const def = HOME_WIDGETS[widget.type]}
-          {@const lifted = active?.id === widget.id}
-          {@const moving = lifted && active?.kind === "move"}
+      {#each draft as widget (widget.id)}
+        {@const def = HOME_WIDGETS[widget.type]}
+        {@const lifted = active?.id === widget.id}
+        {@const moving = lifted && active?.kind === "move"}
+        {@const tight = spanY(widget.h) < 76}
+        {@const thin = spanX(widget.w) < 96}
+        <div
+          id="widget-{widget.id}"
+          class="group absolute top-0 left-0 {lifted ? 'z-30' : 'z-10'} {moving
+            ? ''
+            : 'motion-safe:transition-[transform,width,height] motion-safe:duration-200 motion-safe:ease-out'}"
+          style={cellStyle(widget)}
+          in:scale|global={{ start: 0.94, duration: reduced ? 0 : 220 }}
+          out:scale={{ start: 0.94, duration: reduced ? 0 : 160 }}>
           <div
-            id="widget-{widget.id}"
-            class="group absolute top-0 left-0 {lifted
-              ? 'z-30'
-              : 'z-10'} {moving
-              ? ''
-              : 'motion-safe:transition-[transform,width,height] motion-safe:duration-200 motion-safe:ease-out'}"
-            style={cellStyle(widget)}
-            in:scale|global={{ start: 0.94, duration: reduced ? 0 : 220 }}
-            out:scale={{ start: 0.94, duration: reduced ? 0 : 160 }}>
-            <div
-              class="relative h-full rounded-xl transition-[box-shadow,scale] duration-150 {lifted
-                ? 'ring-accent scale-[1.015] shadow-2xl ring-2'
-                : 'group-hover:ring-accent/50 group-focus-within:ring-accent/70 ring-1 ring-transparent'} {arrived ===
-              widget.id
-                ? 'arrive'
-                : ''}"
-              onanimationend={(e) => {
-                if (e.target === e.currentTarget) arrived = null;
-              }}>
-              {#if plan}
-                <div
-                  class="card flex h-full items-end overflow-hidden p-1.5 pl-2">
-                  <span
-                    class="flex min-w-0 items-center gap-1 text-[0.65rem] leading-tight font-semibold">
-                    <Icon
-                      name={def.icon}
-                      class="text-accent h-3 w-3 shrink-0" />
-                    <span class="truncate">{def.title()}</span>
-                  </span>
-                </div>
-              {:else}
-                <div class="pointer-events-none h-full" inert>
-                  <HomeWidget
-                    {widget}
-                    size={{
-                      width: spanX(widget.w),
-                      height: spanY(widget.h),
-                    }} />
-                </div>
-              {/if}
-
-              <!-- Controls: on hover or focus with a mouse, always on touch. -->
+            class="relative h-full rounded-xl transition-[box-shadow,scale] duration-150 {lifted
+              ? 'ring-accent scale-[1.015] shadow-2xl ring-2'
+              : 'group-hover:ring-accent/50 group-focus-within:ring-accent/70 ring-1 ring-transparent'} {arrived ===
+            widget.id
+              ? 'arrive'
+              : ''}"
+            onanimationend={(e) => {
+              if (e.target === e.currentTarget) arrived = null;
+            }}>
+            {#if isDivider(widget.type)}
+              <!-- A hairline alone is hard to find and grab: outlined here. -->
               <div
-                class="absolute inset-x-1 top-1 flex items-start gap-1 transition-opacity duration-150 {lifted
-                  ? 'opacity-100'
-                  : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100'}">
-                <button
-                  type="button"
-                  class="control cursor-grab touch-none active:cursor-grabbing"
-                  aria-label={m.home_editor_move({ name: def.title() })}
-                  title={m.home_editor_move({ name: def.title() })}
-                  onpointerdown={(e) => begin("move", widget, e)}
-                  onpointermove={onPointerMove}
-                  onpointerup={finish}
-                  onpointercancel={finish}
-                  onkeydown={(e) => onHandleKey(e, widget)}>
-                  <Icon name="grip" class="h-4 w-4" />
-                </button>
-                <span class="flex-1"></span>
-                {#if def.configurable}
-                  <button
-                    type="button"
-                    class="control"
-                    aria-label={m.home_editor_configure({ name: def.title() })}
-                    title={m.home_editor_configure({ name: def.title() })}
-                    onclick={() => (configuring = widget.id)}>
-                    <Icon name="gear" class="h-4 w-4" />
-                  </button>
-                {/if}
-                <button
-                  type="button"
-                  class="control hover:text-danger"
-                  aria-label={m.home_editor_remove({ name: def.title() })}
-                  title={m.home_editor_remove({ name: def.title() })}
-                  onclick={() => remove(widget)}>
-                  <Icon name="x" class="h-4 w-4" />
-                </button>
+                class="border-border/70 h-full rounded-lg border border-dashed"
+                inert>
+                <HomeWidget
+                  {widget}
+                  size={{
+                    width: spanX(widget.w),
+                    height: spanY(widget.h),
+                  }} />
               </div>
+            {:else if plan}
+              <div
+                class="card flex h-full items-end overflow-hidden p-1.5 pl-2">
+                <span
+                  class="flex min-w-0 items-center gap-1 text-[0.65rem] leading-tight font-semibold">
+                  <Icon name={def.icon} class="text-accent h-3 w-3 shrink-0" />
+                  <span class="truncate">{def.title()}</span>
+                </span>
+              </div>
+            {:else}
+              <div class="pointer-events-none h-full" inert>
+                <HomeWidget
+                  {widget}
+                  size={{
+                    width: spanX(widget.w),
+                    height: spanY(widget.h),
+                  }} />
+              </div>
+            {/if}
 
+            <!-- Controls: on hover or focus with a mouse, always on touch.
+                   A one-cell-thick widget (a divider) lines them up along
+                   its length instead. -->
+            <div
+              class="absolute flex gap-1 transition-opacity duration-150 {thin
+                ? 'inset-y-1 left-1/2 -translate-x-1/2 flex-col items-center'
+                : tight
+                  ? 'inset-x-1 top-1/2 -translate-y-1/2 items-center'
+                  : 'inset-x-1 top-1 items-start'} {lifted
+                ? 'opacity-100'
+                : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100'}">
               <button
                 type="button"
-                class="control absolute right-1 bottom-1 cursor-se-resize touch-none transition-opacity duration-150 {lifted
-                  ? 'opacity-100'
-                  : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100'}"
-                aria-label={m.home_editor_resize({ name: def.title() })}
-                title={m.home_editor_resize({ name: def.title() })}
-                onpointerdown={(e) => begin("resize", widget, e)}
+                class="control cursor-grab touch-none active:cursor-grabbing"
+                aria-label={m.home_editor_move({ name: def.title() })}
+                title={m.home_editor_move({ name: def.title() })}
+                onpointerdown={(e) => begin("move", widget, e)}
                 onpointermove={onPointerMove}
                 onpointerup={finish}
                 onpointercancel={finish}
-                onkeydown={(e) => onHandleKey(e, widget, { resize: true })}>
-                <Icon name="resize" class="h-4 w-4" />
+                onkeydown={(e) => onHandleKey(e, widget)}>
+                <Icon name="grip" class="h-4 w-4" />
               </button>
-
-              {#if lifted}
-                <span
-                  class="timecode bg-bg/90 border-accent/50 text-accent pointer-events-none absolute bottom-1.5 left-1.5 rounded-md border px-1.5 py-0.5 text-[0.65rem] shadow"
-                  transition:fade={{ duration: reduced ? 0 : 120 }}>
-                  {m.home_editor_readout({
-                    x: String(widget.x + 1).padStart(2, "0"),
-                    y: String(widget.y + 1).padStart(2, "0"),
-                    w: widget.w,
-                    h: widget.h,
-                  })}
-                </span>
+              <span class="flex-1"></span>
+              {#if def.configurable}
+                <button
+                  type="button"
+                  class="control"
+                  aria-label={m.home_editor_configure({ name: def.title() })}
+                  title={m.home_editor_configure({ name: def.title() })}
+                  onclick={() => (configuring = widget.id)}>
+                  <Icon name="gear" class="h-4 w-4" />
+                </button>
+              {/if}
+              <button
+                type="button"
+                class="control hover:text-danger"
+                aria-label={m.home_editor_remove({ name: def.title() })}
+                title={m.home_editor_remove({ name: def.title() })}
+                onclick={() => remove(widget)}>
+                <Icon name="x" class="h-4 w-4" />
+              </button>
+              {#if tight || thin}
+                {@render resizeHandle(widget, "")}
               {/if}
             </div>
+            {#if !tight && !thin}
+              {@render resizeHandle(
+                widget,
+                `absolute right-1 bottom-1 transition-opacity duration-150 ${
+                  lifted
+                    ? "opacity-100"
+                    : "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                }`,
+              )}
+            {/if}
+
+            {#if lifted}
+              <span
+                class="timecode bg-bg/90 border-accent/50 text-accent pointer-events-none absolute bottom-1.5 left-1.5 rounded-md border px-1.5 py-0.5 text-[0.65rem] shadow"
+                transition:fade={{ duration: reduced ? 0 : 120 }}>
+                {m.home_editor_readout({
+                  x: String(widget.x + 1).padStart(2, "0"),
+                  y: String(widget.y + 1).padStart(2, "0"),
+                  w: widget.w,
+                  h: widget.h,
+                })}
+              </span>
+            {/if}
           </div>
-        {/each}
-      </div>
-    {/if}
+        </div>
+      {/each}
+    </div>
+
+    <button
+      type="button"
+      class="group border-border text-dim hover:border-accent hover:text-accent hover:bg-accent/5 mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-sm font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50"
+      disabled={full}
+      onclick={() => (catalogOpen = true)}>
+      <Icon
+        name="plus"
+        class="h-5 w-5 transition-transform duration-200 group-hover:rotate-90" />
+      {m.home_editor_add()}
+    </button>
   {/if}
 </div>
 

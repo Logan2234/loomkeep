@@ -4,7 +4,7 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, posterLayout, type BoxSize } from "$lib/home/sizing";
+  import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
@@ -19,7 +19,6 @@
     enabled: !!auth.user,
   }));
 
-  const layout = $derived(posterLayout(bodyOf(size), { meta: 16 }));
   const hours = (minutes: number) =>
     `${Math.round(minutes / 60)} ${m.home_played_hours_suffix()}`;
 </script>
@@ -34,7 +33,8 @@
       imageUrl: e.game.coverUrl,
       subtitle: e.playtimeMinutes > 0 ? hours(e.playtimeMinutes) : undefined,
     })}
-    {layout}
+    {size}
+    metaHeight={16}
     loading={gamesQuery.loading}
     empty={m.home_nothing_playing()}>
     {#snippet meta(e)}

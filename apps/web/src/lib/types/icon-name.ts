@@ -65,6 +65,8 @@ export type IconName =
   | "layout"
   | "resize"
   | "external"
+  | "divider-horizontal"
+  | "divider-vertical"
   | "hourglass"
   | "mask"
   | "footprint"

@@ -6,7 +6,12 @@ import type {
 import { HOME_GRID_COLUMNS } from "@loomkeep/shared";
 import { compact } from "./grid";
 import { DEFAULT_QUICK_LINKS } from "./quick-links";
-import { HOME_WIDGETS, isWidgetShown, type HomeGate } from "./widgets";
+import {
+  HOME_WIDGETS,
+  isDivider,
+  isWidgetShown,
+  type HomeGate,
+} from "./widgets";
 
 // The default page keeps the old home's shape: a wide main column and a
 // narrow sidebar that never interleave.
@@ -103,15 +108,23 @@ function clampWidget(widget: HomeWidgetDto): HomeWidgetDto {
   };
 }
 
-/** The widgets the home page shows: stored or default, gated, then compacted. */
+const shownOn = (widgets: HomeWidgetDto[], gate: HomeGate) =>
+  compact(widgets.filter((w) => isWidgetShown(w.type, gate)).map(clampWidget));
+
+/**
+ * The widgets the home page shows: stored or default, gated, then compacted.
+ * A stored page left with nothing to show (every widget's domain turned off,
+ * only dividers) falls back to the default one — the home page is never
+ * empty.
+ */
 export function resolveHomeLayout(
   stored: HomeLayoutDto | null | undefined,
   gate: HomeGate,
 ): HomeWidgetDto[] {
-  const widgets = stored?.widgets ?? defaultHomeLayout(gate);
-  return compact(
-    widgets.filter((w) => isWidgetShown(w.type, gate)).map(clampWidget),
-  );
+  const widgets = shownOn(stored?.widgets ?? [], gate);
+  return widgets.some((w) => !isDivider(w.type))
+    ? widgets
+    : shownOn(defaultHomeLayout(gate), gate);
 }
 
 /**

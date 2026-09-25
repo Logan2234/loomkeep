@@ -7,6 +7,7 @@ import {
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsIn,
   IsInt,
@@ -94,8 +95,10 @@ class HomeWidgetBody {
 
 // Each kind's size bounds live on the web, which clamps at render time; the
 // API only keeps a layout inside the grid.
+// An empty page isn't a layout: going back to the default is DELETE.
 export class HomeLayoutBody implements HomeLayoutDto {
   @IsArray()
+  @ArrayMinSize(1)
   @ArrayMaxSize(HOME_LAYOUT_LIMITS.widgets)
   @ValidateNested({ each: true })
   @Type(() => HomeWidgetBody)

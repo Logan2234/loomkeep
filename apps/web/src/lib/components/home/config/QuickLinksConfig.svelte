@@ -16,6 +16,8 @@
   let { links = $bindable() }: { links: HomeQuickLinkDto[] } = $props();
 
   const MAX = HOME_LAYOUT_LIMITS.quickLinks;
+  // The scheme a web address starts with — not a phrase to translate.
+  const URL_PLACEHOLDER = "https://";
   const gate = $derived(currentHomeGate());
 
   // svelte-dnd-action wants its own `id` on every row (a link's `id` is the
@@ -158,7 +160,7 @@
           type="url"
           inputmode="url"
           maxlength={HOME_LAYOUT_LIMITS.urlLength}
-          placeholder="https://"
+          placeholder={URL_PLACEHOLDER}
           aria-invalid={urlError}
           bind:value={url}
           oninput={() => (urlError = false)} />

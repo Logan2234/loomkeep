@@ -248,6 +248,12 @@
     <path d="M14 4h6v6" />
     <path d="M20 4 11 13" />
     <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+  {:else if name === "divider-horizontal"}
+    <path d="M3 12h18" />
+    <path d="M8 7h8M8 17h8" opacity="0.45" />
+  {:else if name === "divider-vertical"}
+    <path d="M12 3v18" />
+    <path d="M7 8v8M17 8v8" opacity="0.45" />
   {:else if name === "hourglass"}
     <path d="M6 3h12M6 21h12" />
     <path

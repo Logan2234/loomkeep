@@ -5,7 +5,7 @@
   import { auth } from "$lib/auth.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, posterLayout, type BoxSize } from "$lib/home/sizing";
+  import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import type { BookEntryDto } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
@@ -21,16 +21,6 @@
     enabled: !!auth.user,
   }));
 
-  // The other way round from the video widgets: a list by default (a book is
-  // read one page at a time, the page matters more than the cover), covers
-  // side by side only once the widget is wide enough for several.
-  const layout = $derived.by(() => {
-    const body = bodyOf(size);
-    return body.width >= 480
-      ? posterLayout(body, { meta: 26 })
-      : posterLayout({ ...body, width: 0 });
-  });
-
   function pct(e: BookEntryDto): number | null {
     if (!e.book.pageCount) return null;
     return Math.round((e.currentPage / e.book.pageCount) * 100);
@@ -42,6 +32,9 @@
 </script>
 
 <WidgetShell icon={def.icon} title={def.title()} href="/app/books">
+  <!-- The other way round from the video widgets: a list by default (the
+       page matters more than the cover), covers side by side only once the
+       widget is wide enough for several. -->
   <PosterRail
     items={booksQuery.data ?? []}
     keyOf={(e) => e.id}
@@ -51,7 +44,9 @@
       imageUrl: e.book.coverUrl,
       subtitle: pages(e),
     })}
-    {layout}
+    {size}
+    metaHeight={26}
+    stripMinWidth={480}
     loading={booksQuery.loading}
     empty={m.home_nothing_reading()}>
     {#snippet meta(e)}

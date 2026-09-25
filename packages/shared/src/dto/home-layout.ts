@@ -28,6 +28,8 @@ export const HOME_WIDGET_TYPES = [
   "savedView",
   "listContent",
   "myLists",
+  "dividerHorizontal",
+  "dividerVertical",
 ] as const;
 export type HomeWidgetType = (typeof HOME_WIDGET_TYPES)[number];
 

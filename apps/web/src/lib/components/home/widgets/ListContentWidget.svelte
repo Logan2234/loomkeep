@@ -3,7 +3,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, posterLayout, type BoxSize } from "$lib/home/sizing";
+  import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import type { HomeWidgetDto } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
@@ -21,8 +21,6 @@
     enabled: !!listId,
   }));
   const list = $derived(listQuery.data);
-
-  const layout = $derived(posterLayout(bodyOf(size)));
 </script>
 
 <WidgetShell
@@ -49,7 +47,7 @@
         title: item.target?.title ?? "—",
         imageUrl: item.target?.imageUrl ?? null,
       })}
-      {layout}
+      {size}
       loading={listQuery.loading}
       empty={m.home_list_content_empty()} />
   {/if}

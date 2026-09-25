@@ -4,7 +4,7 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, posterLayout, type BoxSize } from "$lib/home/sizing";
+  import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import type { LibraryEntryDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -36,8 +36,6 @@
       (a, b) => lastWatched(b) - lastWatched(a),
     ),
   );
-
-  const layout = $derived(posterLayout(bodyOf(size), { meta: 16, action: 36 }));
 
   const DAY_MS = 86_400_000;
   const pausedDays = (e: LibraryEntryDto) =>
@@ -77,7 +75,8 @@
       imageUrl: e.mediaItem.posterUrl,
       subtitle: m.home_resume_paused_days({ days: pausedDays(e) }),
     })}
-    {layout}
+    {size}
+    metaHeight={16}
     loading={dormantQuery.loading}
     empty={m.home_nothing_to_resume()}>
     {#snippet meta(e)}
@@ -91,7 +90,7 @@
         <button
           type="button"
           class="btn btn-primary btn-sm {variant === 'strip'
-            ? 'mt-2 w-full'
+            ? 'h-6 w-full'
             : 'shrink-0'}"
           disabled={busy === e.id}
           onclick={() => resume(e)}>

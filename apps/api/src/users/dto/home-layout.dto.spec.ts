@@ -38,6 +38,10 @@ describe("HomeLayoutBody", () => {
     expect(errors).not.toEqual([]);
   });
 
+  it("rejects an empty page", async () => {
+    expect(await errorsFor([])).not.toEqual([]);
+  });
+
   it("rejects an unknown widget kind and a widget outside the grid", async () => {
     const errors = await errorsFor([
       { id: "w1", type: "weather", x: 0, y: 0, w: 3, h: 3 },

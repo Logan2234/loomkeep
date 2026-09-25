@@ -1,32 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { posterLayout, rowsLayout } from "./sizing";
+import { POSTER_ACTION_HEIGHT, posterLayout, rowsLayout } from "./sizing";
 
-const TO_WATCH = { meta: 12, action: 36 };
+const TO_WATCH = { meta: 8, action: true };
 
 describe("posterLayout", () => {
-  it("shows posters with their progress and button when there's room", () => {
-    expect(posterLayout({ width: 780, height: 252 }, TO_WATCH)).toEqual({
+  it("gives the posters every pixel of height the rest leaves", () => {
+    const layout = posterLayout({ width: 780, height: 250 }, TO_WATCH);
+
+    expect(layout).toMatchObject({
       mode: "strip",
-      posterWidth: 111,
       showMeta: true,
       showAction: true,
     });
+    if (layout.mode !== "strip") throw new Error("strip expected");
+    // title 22 + border 2 + track 4 + progress 8 + button 32
+    expect(layout.posterHeight).toBe(
+      250 - 22 - 2 - 4 - 8 - POSTER_ACTION_HEIGHT,
+    );
   });
 
   it("drops the button, then the progress, as the widget gets shorter", () => {
-    const medium = posterLayout({ width: 780, height: 196 }, TO_WATCH);
+    const medium = posterLayout({ width: 780, height: 200 }, TO_WATCH);
     const short = posterLayout({ width: 780, height: 140 }, TO_WATCH);
 
     expect(medium).toMatchObject({ showMeta: true, showAction: false });
     expect(short).toMatchObject({ showMeta: false, showAction: false });
   });
 
-  it("grows the posters with the height, up to a cap", () => {
-    const tall = posterLayout({ width: 780, height: 250 });
-    const huge = posterLayout({ width: 780, height: 900 });
+  it("keeps room for the page dots on a touch screen", () => {
+    const mouse = posterLayout({ width: 780, height: 250 });
+    const touch = posterLayout({ width: 780, height: 250 }, { touch: true });
 
-    expect(tall).toMatchObject({ posterWidth: 141 });
-    expect(huge).toMatchObject({ posterWidth: 173 });
+    if (mouse.mode !== "strip" || touch.mode !== "strip")
+      throw new Error("strip expected");
+    expect(mouse.posterHeight - touch.posterHeight).toBe(16);
   });
 
   it("switches to a list of rows when the widget is narrow", () => {
@@ -35,6 +42,12 @@ describe("posterLayout", () => {
       rows: 4,
       showAction: true,
     });
+  });
+
+  it("stays a list below a wider threshold when asked", () => {
+    expect(
+      posterLayout({ width: 400, height: 252 }, { stripMinWidth: 480 }),
+    ).toMatchObject({ mode: "list" });
   });
 });
 

@@ -4,7 +4,7 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import ListCoverGrid from "$lib/components/ListCoverGrid.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
-  import { bodyOf, posterLayout, type BoxSize } from "$lib/home/sizing";
+  import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
@@ -24,7 +24,6 @@
     ),
   );
 
-  const layout = $derived(posterLayout(bodyOf(size), { meta: 16 }));
   const count = (n: number) =>
     `${n} ${n > 1 ? m.lists_works_plural() : m.lists_works_singular()}`;
 </script>
@@ -47,7 +46,8 @@
         imageUrl: list.previewImageUrls[0] ?? null,
         subtitle: count(list.itemCount),
       })}
-      {layout}
+      {size}
+      metaHeight={16}
       loading={listsQuery.loading}
       empty={m.home_my_lists_empty()}>
       {#snippet image(list)}

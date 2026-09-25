@@ -35,7 +35,6 @@
 
 <Modal
   title={m.home_editor_configure_title({ name: def.title() })}
-  eyebrow={def.description()}
   wide
   {onclose}>
   {#if widget.type === "quickLinks"}

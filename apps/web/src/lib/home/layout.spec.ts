@@ -67,15 +67,41 @@ describe("resolveHomeLayout", () => {
       gate(ALL),
     );
 
-    expect(out[0]).toMatchObject({ x: 6, w: 6, h: 3 });
+    expect(out[0]).toMatchObject({ x: 9, w: 3, h: 3 });
   });
 
   it("never shows a widget that isn't shipped yet", () => {
     const out = resolveHomeLayout(
-      { widgets: [{ id: "s", type: "savedView", x: 0, y: 0, w: 6, h: 5 }] },
+      {
+        widgets: [
+          { id: "q", type: "quickLinks", x: 0, y: 0, w: 3, h: 4 },
+          { id: "s", type: "savedView", x: 3, y: 0, w: 6, h: 5 },
+        ],
+      },
       gate(ALL),
     );
 
-    expect(out).toEqual([]);
+    expect(out.map((w) => w.id)).toEqual(["q"]);
+  });
+
+  it("falls back to the default page when nothing but dividers is left", () => {
+    const stored = {
+      widgets: [
+        {
+          id: "d",
+          type: "dividerHorizontal" as const,
+          x: 0,
+          y: 0,
+          w: 12,
+          h: 1,
+        },
+        { id: "g", type: "gamesPlaying" as const, x: 0, y: 1, w: 6, h: 5 },
+      ],
+    };
+
+    const out = resolveHomeLayout(stored, gate([Domain.MEDIA]));
+
+    expect(out.map((w) => w.type)).toContain("toWatch");
+    expect(out.map((w) => w.type)).not.toContain("dividerHorizontal");
   });
 });
