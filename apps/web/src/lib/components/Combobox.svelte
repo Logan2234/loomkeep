@@ -5,6 +5,7 @@
   import Icon from "./Icon.svelte";
   import {
     getEnabledOptionIndex,
+    reconcileActiveOptionValue,
     type ListNavigationCommand,
   } from "./list-navigation";
 
@@ -47,7 +48,6 @@
 
   let query = $state("");
   let searchInput: HTMLInputElement | undefined = $state();
-  let activeIndex = $state(-1);
   const componentId = $props.id();
   const listboxId = `combobox-${componentId}-listbox`;
 
@@ -71,6 +71,9 @@
         )
       : options,
   );
+  let activeValue = $derived(
+    reconcileActiveOptionValue(visibleOptions, null, values),
+  );
   const accessibleLabel = $derived(
     multiselect
       ? triggerText
@@ -80,6 +83,11 @@
             selection: selectedOption?.label ?? selectedLabel ?? "",
           })
         : label,
+  );
+  const activeIndex = $derived(
+    visibleOptions.findIndex(
+      (option) => option.value === activeValue && !option.disabled,
+    ),
   );
   const activeOptionId = $derived(
     activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined,
@@ -100,17 +108,18 @@
   }
 
   function resetActive(command: "first" | "last" = "first") {
-    const selected = visibleOptions.findIndex(
-      (option) => values.includes(option.value) && !option.disabled,
-    );
-    activeIndex =
-      command === "first" && selected >= 0
-        ? selected
-        : getEnabledOptionIndex(visibleOptions, -1, command);
+    if (command === "first") {
+      activeValue = reconcileActiveOptionValue(visibleOptions, null, values);
+      return;
+    }
+
+    const index = getEnabledOptionIndex(visibleOptions, -1, command);
+    activeValue = index >= 0 ? visibleOptions[index].value : null;
   }
 
   function moveActive(command: ListNavigationCommand) {
-    activeIndex = getEnabledOptionIndex(visibleOptions, activeIndex, command);
+    const index = getEnabledOptionIndex(visibleOptions, activeIndex, command);
+    activeValue = index >= 0 ? visibleOptions[index].value : null;
   }
 
   function focusSearchInput() {
@@ -284,7 +293,7 @@
           activeIndex
             ? 'bg-surface-2'
             : ''}"
-          onmouseenter={() => !o.disabled && (activeIndex = index)}
+          onmouseenter={() => !o.disabled && (activeValue = o.value)}
           onclick={() => choose(o, close)}>
           {#if multiselect}
             <span
