@@ -630,7 +630,7 @@ export class ReviewService {
     if (!sourceId) return null;
     return domain === "media"
       ? `/app/media/${mediaType}/${sourceId}`
-      : `/${domain}/${sourceId}`;
+      : `/app/${domain}/${sourceId}`;
   }
 
   /**
