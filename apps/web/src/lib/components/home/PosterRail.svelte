@@ -146,10 +146,14 @@
     {/snippet}
   </Carousel>
 {:else}
-  <ul class="divide-border divide-y">
-    {#each items.slice(0, layout.rows) as item (keyOf(item))}
+  {@const rows = items.slice(0, layout.rows)}
+  {@const filled = rows.length === layout.rows}
+  <!-- When the rows are all filled, they share the height left over rather
+       than leaving it under the last one. -->
+  <ul class="divide-border flex h-full flex-col divide-y">
+    {#each rows as item (keyOf(item))}
       {@const entry = info(item)}
-      <li class="flex h-14 items-center gap-3">
+      <li class="flex items-center gap-3 {filled ? 'min-h-14 flex-1' : 'h-14'}">
         <svelte:element
           this={entry.href ? "a" : "div"}
           href={entry.href ?? undefined}

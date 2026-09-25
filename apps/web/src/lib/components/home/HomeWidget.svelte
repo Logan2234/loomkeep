@@ -6,10 +6,15 @@
   import ActivityWidget from "./widgets/ActivityWidget.svelte";
   import BooksReadingWidget from "./widgets/BooksReadingWidget.svelte";
   import DividerWidget from "./widgets/DividerWidget.svelte";
+  import FavoritesWidget from "./widgets/FavoritesWidget.svelte";
+  import FriendsPodiumWidget from "./widgets/FriendsPodiumWidget.svelte";
+  import LatestReviewsWidget from "./widgets/LatestReviewsWidget.svelte";
+  import LevelStreakWidget from "./widgets/LevelStreakWidget.svelte";
   import GamesPlayingWidget from "./widgets/GamesPlayingWidget.svelte";
   import ListContentWidget from "./widgets/ListContentWidget.svelte";
   import MusicToListenWidget from "./widgets/MusicToListenWidget.svelte";
   import MyListsWidget from "./widgets/MyListsWidget.svelte";
+  import NoteWidget from "./widgets/NoteWidget.svelte";
   import QuickLinksWidget from "./widgets/QuickLinksWidget.svelte";
   import ReadingGoalWidget from "./widgets/ReadingGoalWidget.svelte";
   import ResumeWidget from "./widgets/ResumeWidget.svelte";
@@ -45,4 +50,14 @@
   <DividerWidget />
 {:else if widget.type === "dividerVertical"}
   <DividerWidget vertical />
+{:else if widget.type === "note"}
+  <NoteWidget {widget} />
+{:else if widget.type === "friendsPodium"}
+  <FriendsPodiumWidget />
+{:else if widget.type === "levelStreak"}
+  <LevelStreakWidget />
+{:else if widget.type === "favorites"}
+  <FavoritesWidget {size} />
+{:else if widget.type === "latestReviews"}
+  <LatestReviewsWidget {size} />
 {/if}

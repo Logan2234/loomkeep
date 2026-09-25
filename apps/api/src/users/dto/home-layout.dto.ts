@@ -58,6 +58,11 @@ class HomeWidgetConfigBody {
   @IsString()
   @MaxLength(64)
   listId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(HOME_LAYOUT_LIMITS.noteLength)
+  text?: string;
 }
 
 class HomeWidgetBody {

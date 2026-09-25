@@ -102,6 +102,9 @@ export const keys = {
     revisions: (targetType: string, targetId: string) =>
       ["reviews", "revisions", targetType, targetId] as const,
   },
+  home: {
+    favorites: (domain: string) => ["home", "favorites", domain] as const,
+  },
   feed: {
     all: () => ["feed"] as const,
     list: (domain: string | null) => ["feed", "list", domain ?? "ALL"] as const,

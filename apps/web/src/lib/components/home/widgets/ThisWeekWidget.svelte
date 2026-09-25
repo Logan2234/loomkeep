@@ -24,6 +24,7 @@
 
   const rows = $derived(rowsLayout(bodyOf(size)));
   const shown = $derived((calendarQuery.data ?? []).slice(0, rows.count));
+  const filled = $derived(shown.length === rows.count);
 
   const WEEKDAY_SHORT: Intl.DateTimeFormatOptions = { weekday: "short" };
   const DAY_MONTH: Intl.DateTimeFormatOptions = {
@@ -60,12 +61,18 @@
       {/each}
     </div>
   {:else if shown.length > 0}
+    <!-- Like PosterRail's rows: filled, they share the leftover height. -->
     <ul
-      class="grid gap-x-4"
-      style:grid-template-columns={`repeat(${rows.columns}, minmax(0, 1fr))`}>
+      class="grid gap-x-4 {filled ? 'h-full' : ''}"
+      style:grid-template-columns={`repeat(${rows.columns}, minmax(0, 1fr))`}
+      style:grid-template-rows={filled
+        ? `repeat(${rows.count / rows.columns}, minmax(3.5rem, 1fr))`
+        : undefined}>
       {#each shown as e (keyOf(e))}
         <li class="border-border border-b last:border-b-0">
-          <a href={mediaHref(e.mediaItem)} class="flex h-14 items-center gap-3">
+          <a
+            href={mediaHref(e.mediaItem)}
+            class="flex h-full min-h-14 items-center gap-3">
             <div class="w-8 shrink-0 overflow-hidden rounded-md">
               <Poster src={e.mediaItem.posterUrl} title={e.mediaItem.title} />
             </div>

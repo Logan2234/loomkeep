@@ -8,7 +8,7 @@
   import { HOME_WIDGET_GROUPS, HOME_WIDGETS } from "$lib/home/widgets";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import { HOME_GRID_COLUMNS, type HomeWidgetType } from "@loomkeep/shared";
+  import type { HomeWidgetType } from "@loomkeep/shared";
   import { fly } from "svelte/transition";
 
   let {
@@ -32,9 +32,6 @@
     })).filter((group) => group.widgets.length > 0),
   );
 
-  // The silhouette: a 12 × 8 thumbnail of the page with the widget's
-  // starting footprint in it, so its size reads before it's placed.
-  const THUMB_ROWS = 8;
   const reduced = prefersReducedMotion();
 </script>
 
@@ -82,19 +79,6 @@
                   </span>
                   <span class="text-dim mt-0.5 block text-xs">
                     {def.description()}
-                  </span>
-                </span>
-                <span
-                  class="border-border relative mt-0.5 h-6 w-9 shrink-0 overflow-hidden rounded-sm border"
-                  title={m.home_catalog_initial_size({
-                    w: def.initial.w,
-                    h: def.initial.h,
-                  })}
-                  aria-hidden="true">
-                  <span
-                    class="bg-accent/35 border-accent/70 group-hover:bg-accent/55 absolute top-0 left-0 rounded-[1px] border transition-colors"
-                    style:width={`${(def.initial.w / HOME_GRID_COLUMNS) * 100}%`}
-                    style:height={`${(Math.min(def.initial.h, THUMB_ROWS) / THUMB_ROWS) * 100}%`}>
                   </span>
                 </span>
               </button>

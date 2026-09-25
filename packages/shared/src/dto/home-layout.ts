@@ -9,6 +9,7 @@ export const HOME_LAYOUT_LIMITS = {
   maxHeight: 24,
   labelLength: 60,
   urlLength: 2048,
+  noteLength: 1000,
 } as const;
 
 /**
@@ -30,6 +31,15 @@ export const HOME_WIDGET_TYPES = [
   "myLists",
   "dividerHorizontal",
   "dividerVertical",
+  "note",
+  "friendsPodium",
+  "levelStreak",
+  "favorites",
+  "latestReviews",
+  "statsBrief",
+  "tonightPick",
+  "onThisDay",
+  "quickSearch",
 ] as const;
 export type HomeWidgetType = (typeof HOME_WIDGET_TYPES)[number];
 
@@ -51,6 +61,8 @@ export interface HomeWidgetConfigDto {
   links?: HomeQuickLinkDto[];
   /** listContent: the list to show. */
   listId?: string;
+  /** note: its text, as typed. */
+  text?: string;
 }
 
 /** A widget on the grid, in grid cells: column `x`, row `y`, `w` × `h`. */

@@ -29,6 +29,8 @@
   // widget, centred above it once the widget is tall.
   const body = $derived(bodyOf(size));
   const stacked = $derived(body.height >= 150);
+  // Two columns leave room for the count, not the sentence under it.
+  const wide = $derived(body.width >= 180);
   const gaugeSize = $derived(
     stacked
       ? Math.min(140, body.height - 70, body.width - 16)
@@ -58,15 +60,17 @@
         <span class="timecode text-fg block text-lg font-semibold">
           {goal.completed} / {goal.target}
         </span>
-        <span class="text-dim block text-xs">
-          {remaining > 0
-            ? m.reading_goal_remaining({
-                count: remaining,
-                noun: remaining > 1 ? m.common_books() : m.common_book(),
-                year,
-              })
-            : m.reading_goal_reached()}
-        </span>
+        {#if wide}
+          <span class="text-dim block text-xs">
+            {remaining > 0
+              ? m.reading_goal_remaining({
+                  count: remaining,
+                  noun: remaining > 1 ? m.common_books() : m.common_book(),
+                  year,
+                })
+              : m.reading_goal_reached()}
+          </span>
+        {/if}
       </span>
     </button>
   {:else}

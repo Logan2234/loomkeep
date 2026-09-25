@@ -65,9 +65,11 @@
   const left = (x: number) => x * (column + gap);
   const top = (y: number) => y * (rowHeight + gap);
   const spanX = (w: number) => w * column + (w - 1) * gap;
-  const spanY = (h: number) => h * rowHeight + (h - 1) * gap;
-  // Two empty rows under the last widget, to drop one below everything.
-  const canvasRows = $derived(bottomRow(draft) + 2);
+  const spanY = (h: number) => Math.max(0, h * rowHeight + (h - 1) * gap);
+  // No spare rows under the last widget: gravity lifts anything dropped
+  // below everything back up anyway, and an empty band of dots read as a
+  // missing widget.
+  const canvasRows = $derived(bottomRow(draft));
 
   // A drag in progress. Positions are replayed from `start` on every pointer
   // move, so dragging back to where it began restores the layout exactly.
@@ -285,8 +287,8 @@
       block: "center",
       behavior: reduced ? "auto" : "smooth",
     });
-    // A list widget shows nothing until it knows which list.
-    if (type === "listContent") configuring = id;
+    // A list or a note shows nothing until it's set up.
+    if (type === "listContent" || type === "note") configuring = id;
   }
 
   function remove(widget: HomeWidgetDto) {
@@ -444,9 +446,10 @@
         aria-hidden="true">
       </div>
 
-      <!-- The columns the widget will land on, lit like a projector beam —
-             over the widgets it passes, under the one being held. -->
-      {#if activeWidget}
+      <!-- The columns a dragged widget will land on, lit like a projector
+           beam — over the widgets it passes, under the one being held. A
+           resize stays in its own columns: nothing to point at there. -->
+      {#if active?.kind === "move" && activeWidget}
         <div
           class="beam pointer-events-none absolute top-0 bottom-0 left-0 z-20 motion-safe:transition-[transform,width] motion-safe:duration-150"
           style:transform={`translateX(${left(activeWidget.x)}px)`}
@@ -581,7 +584,10 @@
 
             {#if lifted}
               <span
-                class="timecode bg-bg/90 border-accent/50 text-accent pointer-events-none absolute bottom-1.5 left-1.5 rounded-md border px-1.5 py-0.5 text-[0.65rem] shadow"
+                class="timecode bg-bg/90 border-accent/50 text-accent pointer-events-none absolute rounded-md border px-1.5 py-0.5 text-[0.65rem] whitespace-nowrap shadow {tight ||
+                thin
+                  ? 'bottom-full left-0 mb-1.5'
+                  : 'bottom-1.5 left-1.5'}"
                 transition:fade={{ duration: reduced ? 0 : 120 }}>
                 {m.home_editor_readout({
                   x: String(widget.x + 1).padStart(2, "0"),
