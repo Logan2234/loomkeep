@@ -12,6 +12,7 @@
     type HomeWidgetDto,
   } from "@loomkeep/shared";
   import { untrack } from "svelte";
+  import DomainsConfig from "./config/DomainsConfig.svelte";
   import ListContentConfig from "./config/ListContentConfig.svelte";
   import QuickLinksConfig from "./config/QuickLinksConfig.svelte";
 
@@ -31,6 +32,7 @@
   );
   let listId = $state(untrack(() => widget.config?.listId));
   let text = $state(untrack(() => widget.config?.text ?? ""));
+  let domains = $state(untrack(() => widget.config?.domains ?? []));
 
   function apply() {
     onapply(
@@ -38,7 +40,9 @@
         ? { links }
         : widget.type === "note"
           ? { text }
-          : { listId },
+          : widget.type === "listContent"
+            ? { listId }
+            : { domains },
     );
     onclose();
   }
@@ -52,6 +56,8 @@
     <QuickLinksConfig bind:links />
   {:else if widget.type === "listContent"}
     <ListContentConfig bind:listId />
+  {:else if widget.type === "activity" || widget.type === "favorites"}
+    <DomainsConfig bind:domains />
   {:else if widget.type === "note"}
     <label class="block">
       <span class="sr-only">{def.title()}</span>

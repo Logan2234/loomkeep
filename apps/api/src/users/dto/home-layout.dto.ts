@@ -1,5 +1,6 @@
-import type { HomeLayoutDto, HomeWidgetType } from "@loomkeep/shared";
+import type { Domain, HomeLayoutDto, HomeWidgetType } from "@loomkeep/shared";
 import {
+  Domain as DomainValues,
   HOME_GRID_COLUMNS,
   HOME_LAYOUT_LIMITS,
   HOME_WIDGET_TYPES,
@@ -63,6 +64,12 @@ class HomeWidgetConfigBody {
   @IsString()
   @MaxLength(HOME_LAYOUT_LIMITS.noteLength)
   text?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(Object.values(DomainValues).length)
+  @IsIn(Object.values(DomainValues), { each: true })
+  domains?: Domain[];
 }
 
 class HomeWidgetBody {

@@ -8,13 +8,15 @@
   import DividerWidget from "./widgets/DividerWidget.svelte";
   import FavoritesWidget from "./widgets/FavoritesWidget.svelte";
   import FriendsPodiumWidget from "./widgets/FriendsPodiumWidget.svelte";
-  import LatestReviewsWidget from "./widgets/LatestReviewsWidget.svelte";
   import LevelStreakWidget from "./widgets/LevelStreakWidget.svelte";
   import GamesPlayingWidget from "./widgets/GamesPlayingWidget.svelte";
   import ListContentWidget from "./widgets/ListContentWidget.svelte";
   import MusicToListenWidget from "./widgets/MusicToListenWidget.svelte";
   import MyListsWidget from "./widgets/MyListsWidget.svelte";
   import NoteWidget from "./widgets/NoteWidget.svelte";
+  import OnThisDayWidget from "./widgets/OnThisDayWidget.svelte";
+  import StatsBriefWidget from "./widgets/StatsBriefWidget.svelte";
+  import TonightPickWidget from "./widgets/TonightPickWidget.svelte";
   import QuickLinksWidget from "./widgets/QuickLinksWidget.svelte";
   import ReadingGoalWidget from "./widgets/ReadingGoalWidget.svelte";
   import ResumeWidget from "./widgets/ResumeWidget.svelte";
@@ -39,7 +41,7 @@
 {:else if widget.type === "musicToListen"}
   <MusicToListenWidget {size} />
 {:else if widget.type === "activity"}
-  <ActivityWidget {size} />
+  <ActivityWidget {widget} {size} />
 {:else if widget.type === "quickLinks"}
   <QuickLinksWidget {widget} {size} />
 {:else if widget.type === "myLists"}
@@ -55,9 +57,13 @@
 {:else if widget.type === "friendsPodium"}
   <FriendsPodiumWidget />
 {:else if widget.type === "levelStreak"}
-  <LevelStreakWidget />
+  <LevelStreakWidget {size} />
 {:else if widget.type === "favorites"}
-  <FavoritesWidget {size} />
-{:else if widget.type === "latestReviews"}
-  <LatestReviewsWidget {size} />
+  <FavoritesWidget {widget} {size} />
+{:else if widget.type === "statsBrief"}
+  <StatsBriefWidget />
+{:else if widget.type === "tonightPick"}
+  <TonightPickWidget {size} />
+{:else if widget.type === "onThisDay"}
+  <OnThisDayWidget {size} />
 {/if}

@@ -137,6 +137,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 4, h: 4 },
     max: { w: 12, h: 12 },
     initial: { w: 9, h: 6 },
+    configurable: true,
     available: (gate) => gate.socialEnabled,
   },
   quickLinks: {
@@ -212,7 +213,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     title: () => m.home_widget_level_streak_title(),
     description: () => m.home_widget_level_streak_description(),
     min: { w: 3, h: 3 },
-    max: { w: 6, h: 4 },
+    max: { w: 4, h: 3 },
     initial: { w: 3, h: 3 },
     available: (gate) => gate.gamificationEnabled,
   },
@@ -224,16 +225,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 12, h: 8 },
     initial: { w: 6, h: 5 },
-    available: always,
-  },
-  latestReviews: {
-    type: "latestReviews",
-    icon: "message",
-    title: () => m.home_widget_latest_reviews_title(),
-    description: () => m.home_widget_latest_reviews_description(),
-    min: { w: 3, h: 4 },
-    max: { w: 12, h: 10 },
-    initial: { w: 6, h: 5 },
+    configurable: true,
     available: always,
   },
   statsBrief: {
@@ -244,7 +236,6 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 3 },
     max: { w: 12, h: 6 },
     initial: { w: 6, h: 3 },
-    comingSoon: true,
     available: always,
   },
   tonightPick: {
@@ -255,7 +246,6 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 6, h: 8 },
     initial: { w: 3, h: 6 },
-    comingSoon: true,
     available: domain(Domain.MEDIA),
   },
   onThisDay: {
@@ -266,7 +256,6 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 12, h: 8 },
     initial: { w: 6, h: 5 },
-    comingSoon: true,
     available: always,
   },
   quickSearch: {
@@ -343,13 +332,7 @@ export const HOME_WIDGET_GROUPS: {
     id: "collections",
     title: () => m.home_catalog_group_collections_title(),
     description: () => m.home_catalog_group_collections_description(),
-    types: [
-      "favorites",
-      "myLists",
-      "listContent",
-      "latestReviews",
-      "savedView",
-    ],
+    types: ["favorites", "myLists", "listContent", "savedView"],
   },
   {
     id: "layout",

@@ -104,6 +104,9 @@ export const keys = {
   },
   home: {
     favorites: (domain: string) => ["home", "favorites", domain] as const,
+    brief: (from: string) => ["home", "brief", from] as const,
+    onThisDay: (date: string) => ["home", "on-this-day", date] as const,
+    tonightPick: () => ["home", "tonight-pick"] as const,
   },
   feed: {
     all: () => ["feed"] as const,

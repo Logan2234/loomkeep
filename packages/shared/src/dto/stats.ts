@@ -340,3 +340,35 @@ export interface SocialStatsDto {
   /** Consecutive days with a review or comment, same rule as the video streak. */
   contributionStreakDays: number;
 }
+
+/**
+ * This month so far, for the home page's "Statistiques en bref": viewings
+ * and completions counted since `from`. A domain the user turned off is
+ * null, not 0.
+ */
+export interface StatsBriefDto {
+  /** Episode viewings, rewatches included. */
+  episodes: number | null;
+  /** Movie viewings, rewatches included. */
+  movies: number | null;
+  /** Games finished, replays included. */
+  games: number | null;
+  /** Books finished, rereads included. */
+  books: number | null;
+  albums: number | null;
+}
+
+export type OnThisDayKind = "watched" | "started" | "finished";
+
+/** A work you were on around this date a year ago ("Il y a un an"). */
+export interface OnThisDayEntryDto {
+  domain: StatsDomain;
+  title: string;
+  imageUrl: string | null;
+  href: string | null;
+  kind: OnThisDayKind;
+  /** ISO — the day it happened. */
+  date: string;
+  /** Episodes watched that week, for a series; 1 otherwise. */
+  count: number;
+}

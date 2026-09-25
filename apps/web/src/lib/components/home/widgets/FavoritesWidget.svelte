@@ -12,12 +12,19 @@
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
-  import { Domain } from "@loomkeep/shared";
+  import { Domain, type HomeWidgetDto } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
+  import { widgetDomains } from "./domains";
   import { mediaHref } from "./media";
 
-  let { size }: { size: BoxSize } = $props();
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
+
+  const picked = $derived(widgetDomains(widget));
+  const shows = (domain: Domain) =>
+    !!auth.user &&
+    isDomainEnabled(domain) &&
+    (!picked || picked.includes(domain));
 
   const def = HOME_WIDGETS.favorites;
 
@@ -42,7 +49,7 @@
           addedAt: e.createdAt,
         })),
       ),
-    enabled: !!auth.user && isDomainEnabled(Domain.MEDIA),
+    enabled: shows(Domain.MEDIA),
   }));
   const gamesQuery = createApiQuery(() => ({
     key: keys.home.favorites(Domain.GAMES),
@@ -56,7 +63,7 @@
           addedAt: e.createdAt,
         })),
       ),
-    enabled: !!auth.user && isDomainEnabled(Domain.GAMES),
+    enabled: shows(Domain.GAMES),
   }));
   const booksQuery = createApiQuery(() => ({
     key: keys.home.favorites(Domain.BOOKS),
@@ -70,7 +77,7 @@
           addedAt: e.createdAt,
         })),
       ),
-    enabled: !!auth.user && isDomainEnabled(Domain.BOOKS),
+    enabled: shows(Domain.BOOKS),
   }));
   const musicQuery = createApiQuery(() => ({
     key: keys.home.favorites(Domain.MUSIC),
@@ -84,18 +91,26 @@
           addedAt: e.createdAt,
         })),
       ),
-    enabled: !!auth.user && isDomainEnabled(Domain.MUSIC),
+    enabled: shows(Domain.MUSIC),
   }));
 
   const queries = [mediaQuery, gamesQuery, booksQuery, musicQuery];
+  const FAVORITE_DOMAINS = [
+    Domain.MEDIA,
+    Domain.GAMES,
+    Domain.BOOKS,
+    Domain.MUSIC,
+  ];
   // Every domain mixed, the most recently added first.
   const favorites = $derived(
     queries
+      .filter((_, i) => shows(FAVORITE_DOMAINS[i]))
       .flatMap((q) => q.data ?? [])
       .sort((a, b) => b.addedAt.localeCompare(a.addedAt)),
   );
   const loading = $derived(
-    favorites.length === 0 && queries.some((q) => q.loading),
+    favorites.length === 0 &&
+      queries.some((q, i) => shows(FAVORITE_DOMAINS[i]) && q.loading),
   );
 </script>
 

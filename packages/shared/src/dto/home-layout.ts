@@ -1,3 +1,5 @@
+import type { Domain } from "../enums";
+
 /** Columns of the home grid on a wide screen; a phone stacks the widgets instead. */
 export const HOME_GRID_COLUMNS = 12;
 
@@ -35,7 +37,6 @@ export const HOME_WIDGET_TYPES = [
   "friendsPodium",
   "levelStreak",
   "favorites",
-  "latestReviews",
   "statsBrief",
   "tonightPick",
   "onThisDay",
@@ -63,6 +64,8 @@ export interface HomeWidgetConfigDto {
   listId?: string;
   /** note: its text, as typed. */
   text?: string;
+  /** activity, favorites: the domains to show — all enabled ones when unset. */
+  domains?: Domain[];
 }
 
 /** A widget on the grid, in grid cells: column `x`, row `y`, `w` × `h`. */

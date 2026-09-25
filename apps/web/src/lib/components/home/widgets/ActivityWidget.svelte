@@ -1,20 +1,32 @@
 <script lang="ts">
-  import { getFeedPreview } from "$lib/api/client";
+  import { getFeed, getFeedPreview } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import ActivityItem from "$lib/components/ActivityItem.svelte";
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import { bodyOf, type BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
+  import type { HomeWidgetDto } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
+  import { widgetDomains } from "./domains";
 
-  let { size }: { size: BoxSize } = $props();
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.activity;
 
+  // Every domain: the feed's own home preview. Some of them: the first page
+  // of each domain's feed, merged newest first.
+  const domains = $derived(widgetDomains(widget));
   const previewQuery = createApiQuery(() => ({
-    key: keys.feed.preview(),
-    fetch: getFeedPreview,
+    key: domains ? keys.feed.list(domains.join(",")) : keys.feed.preview(),
+    fetch: () =>
+      domains
+        ? Promise.all(domains.map((d) => getFeed(1, d))).then((pages) =>
+            pages
+              .flatMap((page) => page.items)
+              .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+          )
+        : getFeedPreview(),
   }));
   const events = $derived(previewQuery.data ?? []);
 

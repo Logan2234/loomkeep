@@ -5,12 +5,17 @@
   import { auth } from "$lib/auth.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import StreakBadge from "$lib/components/StreakBadge.svelte";
+  import { bodyOf, type BoxSize } from "$lib/home/sizing";
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import { m } from "$lib/paraglide/messages.js";
   import { levelProgress, xpForLevel } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
 
+  let { size }: { size: BoxSize } = $props();
+
   const def = HOME_WIDGETS.levelStreak;
+  // At 3 columns the "next level in…" half of the line doesn't fit.
+  const roomy = $derived(bodyOf(size).width >= 280);
 
   // The same cache entries as the level-up bubble and the profile page.
   const progressionQuery = createApiQuery(() => ({
@@ -60,11 +65,16 @@
         value={levelSpan > 0 ? (progress.xpInLevel / levelSpan) * 100 : 0}
         height="h-2" />
       <p class="timecode truncate text-[0.65rem]">
-        {m.profile_level_progress({
-          xpInLevel: progress.xpInLevel,
-          xpForLevel: levelSpan,
-          xpToNext: progress.xpToNext,
-        })}
+        {roomy
+          ? m.profile_level_progress({
+              xpInLevel: progress.xpInLevel,
+              xpForLevel: levelSpan,
+              xpToNext: progress.xpToNext,
+            })
+          : m.home_level_xp({
+              xpInLevel: progress.xpInLevel,
+              xpForLevel: levelSpan,
+            })}
       </p>
     </div>
   {:else}

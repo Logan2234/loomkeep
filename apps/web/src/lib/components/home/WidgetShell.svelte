@@ -12,12 +12,15 @@
     title,
     href,
     linkLabel,
+    tag,
     children,
   }: {
     icon: IconName;
     title: string;
     href?: string;
     linkLabel?: string;
+    /** What the numbers cover — a month, a date — in the timecode voice. */
+    tag?: string;
     children: Snippet;
   } = $props();
 </script>
@@ -28,6 +31,11 @@
       class="font-display flex min-w-0 items-center gap-2 text-base font-bold">
       <Icon name={icon} class="text-accent h-4 w-4 shrink-0" />
       <span class="truncate">{title}</span>
+      {#if tag}
+        <span class="timecode shrink-0 text-[0.65rem] font-normal uppercase">
+          {tag}
+        </span>
+      {/if}
     </h2>
     {#if href}
       <a {href} class="btn-text group shrink-0">
