@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getOnThisDay } from "$lib/api/client";
+  import { getOnThisDay } from "$lib/api/stats";
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { auth } from "$lib/auth.svelte";
