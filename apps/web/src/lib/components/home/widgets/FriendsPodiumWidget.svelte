@@ -6,16 +6,29 @@
   import { formatNumber } from "$lib/format";
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import { m } from "$lib/paraglide/messages.js";
-  import type { LeaderboardEntryDto } from "@loomkeep/shared";
+  import type {
+    HomeWidgetDto,
+    LeaderboardEntryDto,
+    LeaderboardPeriod,
+  } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
+
+  let { widget }: { widget: HomeWidgetDto } = $props();
 
   const def = HOME_WIDGETS.friendsPodium;
 
-  // Same cache entry as the leaderboard's "Amis · Ce mois-ci" tab.
+  const scope = $derived(widget.config?.scope ?? "friends");
+  const period = $derived(widget.config?.period ?? "month");
+  // Same cache entry as the leaderboard's matching tab.
   const boardQuery = createApiQuery(() => ({
-    key: keys.gamification.leaderboard("friends", "month"),
-    fetch: () => getLeaderboard("friends", "month"),
+    key: keys.gamification.leaderboard(scope, period),
+    fetch: () => getLeaderboard(scope, period),
   }));
+  const PERIOD_LABELS: Record<LeaderboardPeriod, () => string> = {
+    month: m.gamification_leaderboard_period_month,
+    year: m.gamification_leaderboard_period_year,
+    all: m.gamification_leaderboard_period_all,
+  };
   const top = $derived((boardQuery.data?.entries ?? []).slice(0, 3));
   // The viewer's own line, when they're ranked but not on the podium.
   const viewer = $derived.by((): LeaderboardEntryDto | null => {
@@ -36,7 +49,10 @@
 
 <WidgetShell
   icon={def.icon}
-  title={def.title()}
+  title={scope === "friends"
+    ? def.title()
+    : m.home_widget_podium_global_title()}
+  tag={PERIOD_LABELS[period]()}
   href="/app/leaderboard"
   linkLabel={m.common_see()}>
   {#if boardQuery.loading}

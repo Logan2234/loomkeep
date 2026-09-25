@@ -3,8 +3,6 @@ import type { PrismaService } from "../prisma/prisma.service";
 import type { DomainGateService } from "../users/domain-gate.service";
 import { HomeStatsService } from "./home-stats.service";
 
-const count = (n: number) => vi.fn().mockResolvedValue(n);
-
 function makeService(enabled: string[], prisma: Record<string, unknown>) {
   return new HomeStatsService(
     prisma as unknown as PrismaService,
@@ -13,28 +11,6 @@ function makeService(enabled: string[], prisma: Record<string, unknown>) {
     } as unknown as DomainGateService,
   );
 }
-
-describe("HomeStatsService.brief", () => {
-  it("adds replays to first viewings and leaves a disabled domain null", async () => {
-    const service = makeService(["MEDIA", "BOOKS"], {
-      episodeWatch: { count: count(12) },
-      libraryEntry: { count: count(2) },
-      movieReplay: { count: count(1) },
-      bookEntry: { count: count(1) },
-      bookReplay: { count: count(1) },
-    });
-
-    const brief = await service.brief("user-1", new Date("2026-09-01"));
-
-    expect(brief).toEqual({
-      episodes: 12,
-      movies: 3,
-      games: null,
-      books: 2,
-      albums: null,
-    });
-  });
-});
 
 describe("HomeStatsService.onThisDay", () => {
   const show = (id: string, title: string) => ({

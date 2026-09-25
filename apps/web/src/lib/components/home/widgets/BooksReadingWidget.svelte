@@ -7,17 +7,31 @@
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
-  import type { BookEntryDto } from "@loomkeep/shared";
+  import type {
+    BookEntryDto,
+    HomeWidgetDto,
+    HomeWidgetSort,
+  } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
+  import { ENTRY_SORTS } from "./sorts";
 
-  let { size }: { size: BoxSize } = $props();
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.booksReading;
+  const SORTS: Partial<Record<HomeWidgetSort, string>> = {
+    ...ENTRY_SORTS,
+    progress: "progress",
+  };
 
+  const sort = $derived(widget.config?.sort ?? "recent");
   const booksQuery = createApiQuery(() => ({
-    key: keys.books.reading(),
-    fetch: () => listBooks({ statuses: ["READING"] }).then((r) => r.items),
+    key: keys.books.reading(sort),
+    fetch: () =>
+      listBooks({
+        statuses: ["READING"],
+        sort: SORTS[sort],
+      }).then((r) => r.items),
     enabled: !!auth.user,
   }));
 

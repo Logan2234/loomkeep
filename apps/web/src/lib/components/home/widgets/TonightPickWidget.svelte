@@ -8,11 +8,11 @@
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import { bodyOf, type BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
-  import type { MediaType } from "@loomkeep/shared";
+  import type { HomeWidgetDto, MediaType } from "@loomkeep/shared";
   import WidgetShell from "../WidgetShell.svelte";
   import { mediaHref } from "./media";
 
-  let { size }: { size: BoxSize } = $props();
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.tonightPick;
 
@@ -23,8 +23,12 @@
   }));
 
   // Sorted by id so the pick doesn't depend on the order the API sends.
+  // Nothing picked means every type.
+  const types = $derived(widget.config?.mediaTypes ?? []);
   const candidates = $derived(
-    [...(plannedQuery.data ?? [])].sort((a, b) => a.id.localeCompare(b.id)),
+    (plannedQuery.data ?? [])
+      .filter((e) => types.length === 0 || types.includes(e.mediaItem.type))
+      .sort((a, b) => a.id.localeCompare(b.id)),
   );
   const pick = $derived.by(() => {
     const index = dailyPick(

@@ -1,15 +1,25 @@
-import type { Domain, HomeLayoutDto, HomeWidgetType } from "@loomkeep/shared";
+import type {
+  Domain,
+  HomeLayoutDto,
+  HomeWidgetSort,
+  HomeWidgetType,
+  LeaderboardPeriod,
+  LeaderboardScope,
+} from "@loomkeep/shared";
 import {
   Domain as DomainValues,
   HOME_GRID_COLUMNS,
   HOME_LAYOUT_LIMITS,
+  HOME_WIDGET_SORTS,
   HOME_WIDGET_TYPES,
+  MediaType,
 } from "@loomkeep/shared";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -70,6 +80,28 @@ class HomeWidgetConfigBody {
   @ArrayMaxSize(Object.values(DomainValues).length)
   @IsIn(Object.values(DomainValues), { each: true })
   domains?: Domain[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(Object.values(MediaType).length)
+  @IsIn(Object.values(MediaType), { each: true })
+  mediaTypes?: MediaType[];
+
+  @IsOptional()
+  @IsIn(["global", "friends"])
+  scope?: LeaderboardScope;
+
+  @IsOptional()
+  @IsIn(["month", "year", "all"])
+  period?: LeaderboardPeriod;
+
+  @IsOptional()
+  @IsIn(HOME_WIDGET_SORTS)
+  sort?: HomeWidgetSort;
+
+  @IsOptional()
+  @IsBoolean()
+  ownOnly?: boolean;
 }
 
 class HomeWidgetBody {

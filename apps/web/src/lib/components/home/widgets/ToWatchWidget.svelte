@@ -11,17 +11,25 @@
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
-  import type { LibraryEntryDto } from "@loomkeep/shared";
+  import type { HomeWidgetDto, LibraryEntryDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
   import { entryPct, epCode, mediaHref } from "./media";
 
-  let { size }: { size: BoxSize } = $props();
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.toWatch;
   const queryClient = useQueryClient();
+
+  // Nothing picked means every type; the shows or the movies aren't even
+  // fetched once left out.
+  const types = $derived(widget.config?.mediaTypes ?? []);
+  const shows = (type: LibraryEntryDto["mediaItem"]["type"]) =>
+    types.length === 0 || types.includes(type);
+  const wantsShows = $derived(shows("SERIES") || shows("ANIME"));
+  const wantsMovies = $derived(shows("MOVIE"));
 
   const watchingQuery = createApiQuery(() => ({
     key: keys.library.watching(),
@@ -29,7 +37,7 @@
       listLibrary({ statuses: ["WATCHING"], types: ["SERIES", "ANIME"] }).then(
         (r) => r.items,
       ),
-    enabled: !!auth.user,
+    enabled: !!auth.user && wantsShows,
   }));
   const plannedMoviesQuery = createApiQuery(() => ({
     key: keys.library.plannedMovies(),
@@ -37,7 +45,7 @@
       listLibrary({ statuses: ["PLANNED"], types: ["MOVIE"] }).then(
         (r) => r.items,
       ),
-    enabled: !!auth.user,
+    enabled: !!auth.user && wantsMovies,
   }));
 
   // Most recently touched first, the in-progress shows and the movies to see
@@ -47,6 +55,7 @@
     new Date(entry.lastWatchedAt || entry.updatedAt).getTime();
   const toWatch = $derived(
     [...(watchingQuery.data ?? []), ...(plannedMoviesQuery.data ?? [])]
+      .filter((e) => shows(e.mediaItem.type))
       .sort((a, b) => updatedTime(b) - updatedTime(a))
       .slice(0, LIMIT),
   );
@@ -109,7 +118,8 @@
     })}
     {size}
     metaHeight={8}
-    loading={watchingQuery.loading || plannedMoviesQuery.loading}
+    loading={(wantsShows && watchingQuery.loading) ||
+      (wantsMovies && plannedMoviesQuery.loading)}
     empty={m.home_nothing_to_watch()}>
     {#snippet meta(e)}
       {#if e.progress}

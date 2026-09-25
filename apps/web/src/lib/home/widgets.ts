@@ -1,6 +1,6 @@
 import { m } from "$lib/paraglide/messages.js";
 import type { IconName } from "$lib/types/icon-name";
-import type { HomeWidgetType } from "@loomkeep/shared";
+import type { HomeWidgetSort, HomeWidgetType } from "@loomkeep/shared";
 import { Domain, HOME_GRID_COLUMNS } from "@loomkeep/shared";
 
 /** What decides whether a widget can show on this deployment, for this user. */
@@ -32,6 +32,8 @@ interface HomeWidgetDef {
   comingSoon?: boolean;
   /** Has settings beyond its size and place. */
   configurable?: boolean;
+  /** The orders its settings offer, the first one being the default. */
+  sorts?: HomeWidgetSort[];
   available: (gate: HomeGate) => boolean;
 }
 
@@ -67,6 +69,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 12, h: 8 },
     initial: { w: 9, h: 6 },
+    configurable: true,
     available: domain(Domain.MEDIA),
   },
   thisWeek: {
@@ -97,6 +100,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 12, h: 8 },
     initial: { w: 6, h: 5 },
+    configurable: true,
+    sorts: ["recent", "title", "progress"],
     available: domain(Domain.GAMES),
   },
   booksReading: {
@@ -107,6 +112,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 3 },
     max: { w: 12, h: 8 },
     initial: { w: 3, h: 5 },
+    configurable: true,
+    sorts: ["recent", "title", "progress"],
     available: domain(Domain.BOOKS),
   },
   readingGoal: {
@@ -127,6 +134,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 3 },
     max: { w: 12, h: 8 },
     initial: { w: 3, h: 5 },
+    configurable: true,
+    sorts: ["recent", "title"],
     available: domain(Domain.MUSIC),
   },
   activity: {
@@ -160,6 +169,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 12, h: 8 },
     initial: { w: 6, h: 5 },
+    configurable: true,
+    sorts: ["recent", "created", "size", "title"],
     available: always,
   },
   listContent: {
@@ -205,6 +216,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 6, h: 6 },
     initial: { w: 3, h: 5 },
+    configurable: true,
     available: (gate) => gate.socialEnabled && gate.gamificationEnabled,
   },
   levelStreak: {
@@ -228,16 +240,6 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     configurable: true,
     available: always,
   },
-  statsBrief: {
-    type: "statsBrief",
-    icon: "stats",
-    title: () => m.home_widget_stats_brief_title(),
-    description: () => m.home_widget_stats_brief_description(),
-    min: { w: 3, h: 3 },
-    max: { w: 12, h: 6 },
-    initial: { w: 6, h: 3 },
-    available: always,
-  },
   tonightPick: {
     type: "tonightPick",
     icon: "sparkles",
@@ -246,6 +248,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 6, h: 8 },
     initial: { w: 3, h: 6 },
+    configurable: true,
     available: domain(Domain.MEDIA),
   },
   onThisDay: {
@@ -266,7 +269,6 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 1 },
     max: { w: 12, h: 1 },
     initial: { w: 6, h: 1 },
-    comingSoon: true,
     available: always,
   },
   // A hairline to set groups of widgets apart, one cell thick.
@@ -324,7 +326,6 @@ export const HOME_WIDGET_GROUPS: {
       "levelStreak",
       "friendsPodium",
       "activity",
-      "statsBrief",
       "onThisDay",
     ],
   },

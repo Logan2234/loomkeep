@@ -40,10 +40,6 @@ export const getVideoTemporal = (period: StatsWindow = "ALL") =>
 
 export const getSocialStats = () => typedRequest("/stats/social");
 
-/** This month's counts, from the viewer's local start of month. */
-export const getStatsBrief = (from: Date) =>
-  typedRequest("/stats/brief", { query: { from: from.toISOString() } });
-
 /** What the viewer was on around `date` (local YYYY-MM-DD) a year ago. */
 export const getOnThisDay = (date: string) =>
   typedRequest("/stats/on-this-day", { query: { date } });

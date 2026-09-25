@@ -50,4 +50,33 @@ describe("HomeLayoutBody", () => {
 
     expect(errors).not.toEqual([]);
   });
+
+  it("accepts a widget's order and filters, and refuses unknown ones", async () => {
+    const podium = (config: object) => ({
+      id: "p",
+      type: "friendsPodium",
+      x: 0,
+      y: 0,
+      w: 3,
+      h: 5,
+      config,
+    });
+
+    expect(
+      await errorsFor([
+        podium({ scope: "global", period: "all" }),
+        {
+          ...podium({ sort: "title", ownOnly: true }),
+          id: "l",
+          type: "myLists",
+        },
+        { ...podium({ mediaTypes: ["MOVIE"] }), id: "t", type: "toWatch" },
+      ]),
+    ).toEqual([]);
+    expect(await errorsFor([podium({ scope: "everyone" })])).not.toEqual([]);
+    expect(await errorsFor([podium({ sort: "random" })])).not.toEqual([]);
+    expect(await errorsFor([podium({ mediaTypes: ["PODCAST"] })])).not.toEqual(
+      [],
+    );
+  });
 });

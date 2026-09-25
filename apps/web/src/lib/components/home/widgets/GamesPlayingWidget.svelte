@@ -6,16 +6,28 @@
   import { HOME_WIDGETS } from "$lib/home/widgets";
   import type { BoxSize } from "$lib/home/sizing";
   import { m } from "$lib/paraglide/messages.js";
+  import type { HomeWidgetDto, HomeWidgetSort } from "@loomkeep/shared";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
+  import { ENTRY_SORTS } from "./sorts";
 
-  let { size }: { size: BoxSize } = $props();
+  let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 
   const def = HOME_WIDGETS.gamesPlaying;
+  // A game's progress is how long it's been played.
+  const SORTS: Partial<Record<HomeWidgetSort, string>> = {
+    ...ENTRY_SORTS,
+    progress: "playtime",
+  };
 
+  const sort = $derived(widget.config?.sort ?? "recent");
   const gamesQuery = createApiQuery(() => ({
-    key: keys.games.playing(),
-    fetch: () => listGames({ statuses: ["PLAYING"] }).then((r) => r.items),
+    key: keys.games.playing(sort),
+    fetch: () =>
+      listGames({
+        statuses: ["PLAYING"],
+        sort: SORTS[sort],
+      }).then((r) => r.items),
     enabled: !!auth.user,
   }));
 

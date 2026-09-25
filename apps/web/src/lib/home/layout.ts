@@ -13,13 +13,16 @@ import {
   type HomeGate,
 } from "./widgets";
 
-// The default page keeps the old home's shape: a wide main column and a
+// The default page: the search across the top, then a wide main column and a
 // narrow sidebar that never interleave.
 const MAIN_COLUMNS = 9;
 const SIDEBAR_COLUMNS = HOME_GRID_COLUMNS - MAIN_COLUMNS;
+const SEARCH_HEIGHT = 1;
 
 // Each main row shares the 9 columns between its widgets by weight, so a row
-// missing one (its domain turned off) lets the others fill it.
+// missing one (its domain turned off) lets the others fill it. "Il y a un an"
+// needs no domain: the third row is never empty, and "Ce soir ?" (6 columns
+// at most) never has to stretch over 9 alone.
 const MAIN_ROWS: { h: number; cells: [HomeWidgetType, number][] }[] = [
   { h: 6, cells: [["toWatch", 1]] },
   {
@@ -33,12 +36,14 @@ const MAIN_ROWS: { h: number; cells: [HomeWidgetType, number][] }[] = [
     h: 5,
     cells: [
       ["musicToListen", 1],
-      ["resume", 2],
+      ["tonightPick", 1],
+      ["onThisDay", 1],
     ],
   },
   { h: 6, cells: [["activity", 1]] },
 ];
 const SIDEBAR: [HomeWidgetType, number][] = [
+  ["levelStreak", 3],
   ["thisWeek", 5],
   ["readingGoal", 3],
   ["quickLinks", 6],
@@ -52,8 +57,17 @@ const configFor = (type: HomeWidgetType): HomeWidgetDto["config"] =>
  * domains they turn on and off, and whatever the default becomes later.
  */
 export function defaultHomeLayout(gate: HomeGate): HomeWidgetDto[] {
-  const widgets: HomeWidgetDto[] = [];
-  let y = 0;
+  const widgets: HomeWidgetDto[] = [
+    {
+      id: "quickSearch",
+      type: "quickSearch",
+      x: 0,
+      y: 0,
+      w: HOME_GRID_COLUMNS,
+      h: SEARCH_HEIGHT,
+    },
+  ];
+  let y = SEARCH_HEIGHT;
 
   for (const row of MAIN_ROWS) {
     const cells = row.cells.filter(([type]) => isWidgetShown(type, gate));
@@ -70,11 +84,7 @@ export function defaultHomeLayout(gate: HomeGate): HomeWidgetDto[] {
     if (cells.length > 0) y += row.h;
   }
 
-  // With nothing in the main column, the sidebar widgets line up across the
-  // page rather than hugging its right edge.
-  const alone = widgets.length === 0;
-  let sideX = 0;
-  let sideY = 0;
+  let sideY = SEARCH_HEIGHT;
 
   for (const [type, h] of SIDEBAR) {
     if (!isWidgetShown(type, gate)) continue;
@@ -82,13 +92,12 @@ export function defaultHomeLayout(gate: HomeGate): HomeWidgetDto[] {
     widgets.push({
       id: type,
       type,
-      x: alone ? sideX : MAIN_COLUMNS,
-      y: alone ? 0 : sideY,
-      w: alone ? 4 : SIDEBAR_COLUMNS,
+      x: MAIN_COLUMNS,
+      y: sideY,
+      w: SIDEBAR_COLUMNS,
       h,
       ...(config ? { config } : {}),
     });
-    sideX += 4;
     sideY += h;
   }
 
@@ -130,11 +139,14 @@ export function resolveHomeLayout(
 /**
  * Stored widgets the page can't show right now (a domain turned off, social
  * disabled). The editor saves them back untouched, so turning the domain on
- * again brings them back where they were.
+ * again brings them back where they were. A kind that no longer exists is
+ * left out: the API would refuse the whole layout over it.
  */
 export function hiddenWidgets(
   stored: HomeLayoutDto | null | undefined,
   gate: HomeGate,
 ): HomeWidgetDto[] {
-  return (stored?.widgets ?? []).filter((w) => !isWidgetShown(w.type, gate));
+  return (stored?.widgets ?? []).filter(
+    (w) => w.type in HOME_WIDGETS && !isWidgetShown(w.type, gate),
+  );
 }

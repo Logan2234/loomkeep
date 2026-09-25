@@ -15,9 +15,9 @@
   import MyListsWidget from "./widgets/MyListsWidget.svelte";
   import NoteWidget from "./widgets/NoteWidget.svelte";
   import OnThisDayWidget from "./widgets/OnThisDayWidget.svelte";
-  import StatsBriefWidget from "./widgets/StatsBriefWidget.svelte";
   import TonightPickWidget from "./widgets/TonightPickWidget.svelte";
   import QuickLinksWidget from "./widgets/QuickLinksWidget.svelte";
+  import QuickSearchWidget from "./widgets/QuickSearchWidget.svelte";
   import ReadingGoalWidget from "./widgets/ReadingGoalWidget.svelte";
   import ResumeWidget from "./widgets/ResumeWidget.svelte";
   import ThisWeekWidget from "./widgets/ThisWeekWidget.svelte";
@@ -27,25 +27,25 @@
 </script>
 
 {#if widget.type === "toWatch"}
-  <ToWatchWidget {size} />
+  <ToWatchWidget {widget} {size} />
 {:else if widget.type === "thisWeek"}
   <ThisWeekWidget {size} />
 {:else if widget.type === "resume"}
   <ResumeWidget {size} />
 {:else if widget.type === "gamesPlaying"}
-  <GamesPlayingWidget {size} />
+  <GamesPlayingWidget {widget} {size} />
 {:else if widget.type === "booksReading"}
-  <BooksReadingWidget {size} />
+  <BooksReadingWidget {widget} {size} />
 {:else if widget.type === "readingGoal"}
   <ReadingGoalWidget {size} />
 {:else if widget.type === "musicToListen"}
-  <MusicToListenWidget {size} />
+  <MusicToListenWidget {widget} {size} />
 {:else if widget.type === "activity"}
   <ActivityWidget {widget} {size} />
 {:else if widget.type === "quickLinks"}
   <QuickLinksWidget {widget} {size} />
 {:else if widget.type === "myLists"}
-  <MyListsWidget {size} />
+  <MyListsWidget {widget} {size} />
 {:else if widget.type === "listContent"}
   <ListContentWidget {widget} {size} />
 {:else if widget.type === "dividerHorizontal"}
@@ -55,15 +55,15 @@
 {:else if widget.type === "note"}
   <NoteWidget {widget} />
 {:else if widget.type === "friendsPodium"}
-  <FriendsPodiumWidget />
+  <FriendsPodiumWidget {widget} />
 {:else if widget.type === "levelStreak"}
   <LevelStreakWidget {size} />
 {:else if widget.type === "favorites"}
   <FavoritesWidget {widget} {size} />
-{:else if widget.type === "statsBrief"}
-  <StatsBriefWidget />
 {:else if widget.type === "tonightPick"}
-  <TonightPickWidget {size} />
+  <TonightPickWidget {widget} {size} />
 {:else if widget.type === "onThisDay"}
   <OnThisDayWidget {size} />
+{:else if widget.type === "quickSearch"}
+  <QuickSearchWidget {size} />
 {/if}

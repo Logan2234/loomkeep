@@ -1,4 +1,5 @@
-import type { Domain } from "../enums";
+import type { Domain, MediaType } from "../enums";
+import type { LeaderboardPeriod, LeaderboardScope } from "./gamification";
 
 /** Columns of the home grid on a wide screen; a phone stacks the widgets instead. */
 export const HOME_GRID_COLUMNS = 12;
@@ -37,12 +38,24 @@ export const HOME_WIDGET_TYPES = [
   "friendsPodium",
   "levelStreak",
   "favorites",
-  "statsBrief",
   "tonightPick",
   "onThisDay",
   "quickSearch",
 ] as const;
 export type HomeWidgetType = (typeof HOME_WIDGET_TYPES)[number];
+
+/**
+ * Orders a widget can sort its works in. Each kind offers the ones that mean
+ * something for it, and the web maps them onto that kind's own sort.
+ */
+export const HOME_WIDGET_SORTS = [
+  "recent",
+  "title",
+  "progress",
+  "created",
+  "size",
+] as const;
+export type HomeWidgetSort = (typeof HOME_WIDGET_SORTS)[number];
 
 /**
  * An app screen (`kind: "app"`, with `id` a web navigation id) or any http(s)
@@ -66,6 +79,16 @@ export interface HomeWidgetConfigDto {
   text?: string;
   /** activity, favorites: the domains to show — all enabled ones when unset. */
   domains?: Domain[];
+  /** toWatch, tonightPick: the media types to include — all when unset. */
+  mediaTypes?: MediaType[];
+  /** friendsPodium: who is ranked — the user's friends when unset. */
+  scope?: LeaderboardScope;
+  /** friendsPodium: the XP counted — this month's when unset. */
+  period?: LeaderboardPeriod;
+  /** myLists, gamesPlaying, booksReading, musicToListen: "recent" when unset. */
+  sort?: HomeWidgetSort;
+  /** myLists: only the user's own lists, not those they edit with others. */
+  ownOnly?: boolean;
 }
 
 /** A widget on the grid, in grid cells: column `x`, row `y`, `w` × `h`. */

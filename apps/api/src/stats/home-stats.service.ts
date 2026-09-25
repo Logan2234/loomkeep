@@ -1,8 +1,4 @@
-import type {
-  OnThisDayEntryDto,
-  StatsBriefDto,
-  StatsDomain,
-} from "@loomkeep/shared";
+import type { OnThisDayEntryDto, StatsDomain } from "@loomkeep/shared";
 import { Domain } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { canonicalExternalId } from "../common/external-id.util";
@@ -16,9 +12,8 @@ const externalIds = {
 } as const;
 
 /**
- * The two home-page widgets that need their own query: this month's counts
- * ("Statistiques en bref") and what you were on a year ago ("Il y a un
- * an"). Counting stats, so free — nothing here is premium.
+ * The home-page widget that needs its own query: what you were on a year
+ * ago ("Il y a un an"). Counting stats, so free — nothing here is premium.
  */
 @Injectable()
 export class HomeStatsService {
@@ -26,55 +21,6 @@ export class HomeStatsService {
     private readonly prisma: PrismaService,
     private readonly domainGate: DomainGateService,
   ) {}
-
-  async brief(userId: string, from: Date): Promise<StatsBriefDto> {
-    const enabled = await this.domainGate.getEnabledDomains(userId);
-    const since = { gte: from };
-    const ifEnabled = async (domain: Domain, count: () => Promise<number>) =>
-      enabled.includes(domain) ? count() : null;
-
-    const [episodes, movies, games, books, albums] = await Promise.all([
-      ifEnabled(Domain.MEDIA, () =>
-        this.prisma.episodeWatch.count({
-          where: { userId, watchedAt: since },
-        }),
-      ),
-      ifEnabled(Domain.MEDIA, async () => {
-        // The first viewing is the entry's finishedAt, each later one a replay.
-        const [first, again] = await Promise.all([
-          this.prisma.libraryEntry.count({
-            where: { userId, finishedAt: since, mediaItem: { type: "MOVIE" } },
-          }),
-          this.prisma.movieReplay.count({
-            where: { finishedAt: since, libraryEntry: { userId } },
-          }),
-        ]);
-        return first + again;
-      }),
-      ifEnabled(Domain.GAMES, async () => {
-        const [first, again] = await Promise.all([
-          this.prisma.gameEntry.count({ where: { userId, finishedAt: since } }),
-          this.prisma.gameReplay.count({
-            where: { finishedAt: since, gameEntry: { userId } },
-          }),
-        ]);
-        return first + again;
-      }),
-      ifEnabled(Domain.BOOKS, async () => {
-        const [first, again] = await Promise.all([
-          this.prisma.bookEntry.count({ where: { userId, finishedAt: since } }),
-          this.prisma.bookReplay.count({
-            where: { finishedAt: since, bookEntry: { userId } },
-          }),
-        ]);
-        return first + again;
-      }),
-      ifEnabled(Domain.MUSIC, () =>
-        this.prisma.musicEntry.count({ where: { userId, finishedAt: since } }),
-      ),
-    ]);
-    return { episodes, movies, games, books, albums };
-  }
 
   async onThisDay(userId: string, date: string): Promise<OnThisDayEntryDto[]> {
     const enabled = await this.domainGate.getEnabledDomains(userId);
