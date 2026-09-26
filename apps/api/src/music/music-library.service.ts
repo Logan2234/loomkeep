@@ -27,8 +27,11 @@ import {
   assertEntryOwnership,
   awardNewEntryXp,
   emitEntryActivity,
-  paginateEntries,
+  listEntryPage,
   polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
+  titleContains,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -62,11 +65,42 @@ const MUSIC_SORT_KEYS = [
 ] as const satisfies readonly MusicSortKey[];
 const MUSIC_STATUS_SORT_ORDER = ["TO_LISTEN", "LISTENED"] as const;
 
+/** What ranking an album entry reads — a light slice of its DTO. */
+type MusicRow = Pick<
+  MusicEntryDto,
+  "id" | "status" | "rating" | "finishedAt" | "createdAt"
+> & { album: Pick<MusicItemDto, "title" | "artists"> };
+
+const MUSIC_ROW_SELECT = {
+  id: true,
+  musicItemId: true,
+  status: true,
+  finishedAt: true,
+  createdAt: true,
+  musicItem: { select: { title: true, artists: true } },
+} satisfies Prisma.MusicEntrySelect;
+
+// The sorts on a stored column, which Postgres pages itself. Unset dates go
+// last in the natural (newest first) order, where `timeMs` ranks them.
+const MUSIC_SQL_SORTS: Partial<
+  Record<
+    MusicSortKey,
+    (asc: boolean) => Prisma.MusicEntryOrderByWithRelationInput[]
+  >
+> = {
+  added: (asc) => [{ createdAt: asc ? "asc" : "desc" }],
+  finished: (asc) => [
+    {
+      finishedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+};
+
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMusicEntries(
   sort: MusicSortKey,
-  a: MusicEntryDto,
-  b: MusicEntryDto,
+  a: MusicRow,
+  b: MusicRow,
   locale: string | undefined,
 ): number {
   switch (sort) {
@@ -200,32 +234,66 @@ export class MusicLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<MusicEntryDto>> {
-    const entries = await this.prisma.musicEntry.findMany({
-      where: {
-        userId,
-        status:
-          filters.statuses && filters.statuses.length > 0
-            ? { in: filters.statuses as DbMusicStatus[] }
-            : undefined,
-      },
-      include: ENTRY_INCLUDE,
-      orderBy: { updatedAt: "desc" },
-    });
-
-    const ratings = await this.reviews.getRatings(
+    const q = searchTerm(filters);
+    const where: Prisma.MusicEntryWhereInput = {
       userId,
-      ReviewTargetType.MUSIC,
-      entries.map((e) => e.musicItemId),
-    );
-    const dtos = entries.map((e) =>
-      toEntryDto(e, ratings.get(e.musicItemId) ?? null),
-    );
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbMusicStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      musicItem: q ? { title: titleContains(q) } : undefined,
+    };
+    const ratingsOf = (musicItemIds: string[]) =>
+      this.reviews.getRatings(userId, ReviewTargetType.MUSIC, musicItemIds);
 
-    return paginateEntries(dtos, filters, {
+    return listEntryPage(filters, {
       sortKeys: MUSIC_SORT_KEYS,
       defaultSort: "added",
       compare: compareMusicEntries,
-      title: (dto) => dto.album.title,
+      sqlSorts: MUSIC_SQL_SORTS,
+      sqlPage: async (orderBy, skip, take) => {
+        const [page, total] = await Promise.all([
+          this.prisma.musicEntry.findMany({
+            where,
+            orderBy: [...orderBy, ...RECENTLY_UPDATED_FIRST],
+            skip,
+            take,
+            select: { id: true },
+          }),
+          this.prisma.musicEntry.count({ where }),
+        ]);
+        return { ids: page.map((e) => e.id), total };
+      },
+      rows: async (sort) => {
+        const rows = await this.prisma.musicEntry.findMany({
+          where,
+          orderBy: RECENTLY_UPDATED_FIRST,
+          select: MUSIC_ROW_SELECT,
+        });
+        const ratings =
+          sort === "rating"
+            ? await ratingsOf(rows.map((r) => r.musicItemId))
+            : new Map<string, number>();
+        return rows.map((r) => ({
+          id: r.id,
+          status: r.status,
+          rating: ratings.get(r.musicItemId) ?? null,
+          finishedAt: r.finishedAt?.toISOString() ?? null,
+          createdAt: r.createdAt.toISOString(),
+          album: { title: r.musicItem.title, artists: r.musicItem.artists },
+        }));
+      },
+      load: async (ids) => {
+        const entries = await this.prisma.musicEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const ratings = await ratingsOf(entries.map((e) => e.musicItemId));
+        return entries.map((e) =>
+          toEntryDto(e, ratings.get(e.musicItemId) ?? null),
+        );
+      },
     });
   }
 

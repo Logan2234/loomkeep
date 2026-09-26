@@ -68,7 +68,7 @@ export const DORMANT_AFTER_DAYS = 30;
 
 /** Whether an entry is a WATCHING series/anime with no recent viewing. */
 export function isDormant(
-  entry: LibraryEntryDto,
+  entry: Pick<LibraryEntryDto, "status" | "lastWatchedAt">,
   now: Date = new Date(),
 ): boolean {
   if (entry.status !== "WATCHING" || !entry.lastWatchedAt) return false;

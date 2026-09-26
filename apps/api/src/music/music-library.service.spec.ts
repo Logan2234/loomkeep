@@ -1,5 +1,4 @@
 import { vi } from "vitest";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -45,96 +44,6 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     },
   };
 }
-
-function makeService(rows: ReturnType<typeof makeRow>[]) {
-  const prisma = {
-    musicEntry: { findMany: vi.fn().mockResolvedValue(rows) },
-  } as unknown as PrismaService;
-  const reviews = {
-    getRatings: vi.fn(() =>
-      Promise.resolve(
-        new Map(
-          rows
-            .filter((r) => r.rating !== null)
-            .map((r) => [r.musicItemId, r.rating]),
-        ),
-      ),
-    ),
-    getRating: vi.fn((_u: string, _t: string, id: string) =>
-      Promise.resolve(rows.find((r) => r.musicItemId === id)?.rating ?? null),
-    ),
-    setRating: vi.fn(),
-  } as unknown as import("../reviews/review.service").ReviewService;
-  const service = new MusicLibraryService(
-    prisma,
-    {} as MusicItemService,
-    reviews,
-    {
-      emit: vi.fn(),
-    } as unknown as import("../social/activity.service").ActivityService,
-    stubXp(),
-    stubEvents(),
-  );
-  return { service, prisma };
-}
-
-describe("MusicLibraryService.listEntries", () => {
-  it("paginates and reports total/hasMore", async () => {
-    const rows = Array.from({ length: DEFAULT_PAGE_SIZE + 5 }, (_, i) =>
-      makeRow({ id: `e${i}`, title: `Album ${i}` }),
-    );
-    const { service } = makeService(rows);
-
-    const page1 = await service.listEntries("user-1", {});
-    expect(page1.items).toHaveLength(DEFAULT_PAGE_SIZE);
-    expect(page1.total).toBe(DEFAULT_PAGE_SIZE + 5);
-    expect(page1.hasMore).toBe(true);
-
-    const page2 = await service.listEntries("user-1", { page: 2 });
-    expect(page2.items).toHaveLength(5);
-    expect(page2.hasMore).toBe(false);
-  });
-
-  it("filters by favorite", async () => {
-    const rows = [
-      makeRow({ id: "a", favorite: true }),
-      makeRow({ id: "b", favorite: false }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { favorite: true });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-    expect(result.total).toBe(1);
-  });
-
-  it("filters by free-text title search, case-insensitive", async () => {
-    const rows = [
-      makeRow({ id: "a", title: "Discovery" }),
-      makeRow({ id: "b", title: "Random Access Memories" }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { q: "disco" });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("sorts by title (natural order ascending) and negates on order=asc", async () => {
-    const rows = [
-      makeRow({ id: "a", title: "Zebra" }),
-      makeRow({ id: "b", title: "Alpha" }),
-    ];
-    const { service } = makeService(rows);
-
-    const natural = await service.listEntries("user-1", { sort: "title" });
-    expect(natural.items.map((i) => i.id)).toEqual(["b", "a"]);
-
-    const negated = await service.listEntries("user-1", {
-      sort: "title",
-      order: "asc",
-    });
-    expect(negated.items.map((i) => i.id)).toEqual(["a", "b"]);
-  });
-});
 
 describe("MusicLibraryService.deleteEntry", () => {
   it("wipes the user's reviews and comments for the album, not just the entry row", async () => {

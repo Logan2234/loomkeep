@@ -14,9 +14,9 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "./coverage",
       include: ["src/**/*.{ts,svelte}"],
-      // Vitest's v8 provider defaults to text/html/clover/json — no lcov,
-      // which is what Codecov's upload actually reads.
+      // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
+      exclude: ["src/**/*.spec.ts"],
     },
   },
 });

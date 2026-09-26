@@ -72,12 +72,13 @@
     if (!open || !triggerElement || !panelElement) return;
     const viewport = viewportBounds();
     const trigger = triggerElement.getBoundingClientRect();
-    const panel = panelElement.getBoundingClientRect();
     const nextPosition = computeDropdownPosition({
       trigger,
+      // offset* ignores the opening scale transition, which would shrink
+      // getBoundingClientRect() and cap max-height just below the content.
       panel: {
-        width: Math.max(panel.width, panelElement.scrollWidth),
-        height: Math.max(panel.height, panelElement.scrollHeight),
+        width: Math.max(panelElement.offsetWidth, panelElement.scrollWidth),
+        height: Math.max(panelElement.offsetHeight, panelElement.scrollHeight),
       },
       viewport,
       placement,

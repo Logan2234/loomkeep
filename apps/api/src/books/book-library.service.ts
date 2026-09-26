@@ -32,8 +32,11 @@ import {
   awardNewEntryXp,
   deleteOwnedReplay,
   emitEntryActivity,
-  paginateEntries,
+  listEntryPage,
   polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
+  titleContains,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -91,15 +94,61 @@ const BOOK_STATUS_SORT_ORDER = [
   "DROPPED",
 ] as const;
 
-function readPct(e: BookEntryDto): number {
+/** What ranking a book entry reads — a light slice of its DTO. */
+type BookRow = Pick<
+  BookEntryDto,
+  | "id"
+  | "status"
+  | "rating"
+  | "currentPage"
+  | "startedAt"
+  | "finishedAt"
+  | "createdAt"
+> & { book: Pick<BookItemDto, "title" | "authors" | "pageCount"> };
+
+const BOOK_ROW_SELECT = {
+  id: true,
+  bookItemId: true,
+  status: true,
+  currentPage: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  bookItem: { select: { title: true, authors: true, pageCount: true } },
+} satisfies Prisma.BookEntrySelect;
+
+// The sorts on a stored column, which Postgres pages itself. Unset dates go
+// last in the natural (newest first) order, where `timeMs` ranks them. Not
+// "pages": an unknown page count ranks as 0, level with a real 0, which
+// NULLS LAST would split.
+const BOOK_SQL_SORTS: Partial<
+  Record<
+    BookSortKey,
+    (asc: boolean) => Prisma.BookEntryOrderByWithRelationInput[]
+  >
+> = {
+  added: (asc) => [{ createdAt: asc ? "asc" : "desc" }],
+  finished: (asc) => [
+    {
+      finishedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+  started: (asc) => [
+    {
+      startedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+};
+
+function readPct(e: BookRow): number {
   return e.book.pageCount ? e.currentPage / e.book.pageCount : 0;
 }
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareBookEntries(
   sort: BookSortKey,
-  a: BookEntryDto,
-  b: BookEntryDto,
+  a: BookRow,
+  b: BookRow,
   locale: string | undefined,
 ): number {
   switch (sort) {
@@ -243,32 +292,72 @@ export class BookLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<BookEntryDto>> {
-    const entries = await this.prisma.bookEntry.findMany({
-      where: {
-        userId,
-        status:
-          filters.statuses && filters.statuses.length > 0
-            ? { in: filters.statuses as DbBookStatus[] }
-            : undefined,
-      },
-      include: ENTRY_INCLUDE,
-      orderBy: { updatedAt: "desc" },
-    });
-
-    const ratings = await this.reviews.getRatings(
+    const q = searchTerm(filters);
+    const where: Prisma.BookEntryWhereInput = {
       userId,
-      ReviewTargetType.BOOK,
-      entries.map((e) => e.bookItemId),
-    );
-    const dtos = entries.map((e) =>
-      toEntryDto(e, ratings.get(e.bookItemId) ?? null),
-    );
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbBookStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      bookItem: q ? { title: titleContains(q) } : undefined,
+    };
+    const ratingsOf = (bookItemIds: string[]) =>
+      this.reviews.getRatings(userId, ReviewTargetType.BOOK, bookItemIds);
 
-    return paginateEntries(dtos, filters, {
+    return listEntryPage(filters, {
       sortKeys: BOOK_SORT_KEYS,
       defaultSort: "added",
       compare: compareBookEntries,
-      title: (dto) => dto.book.title,
+      sqlSorts: BOOK_SQL_SORTS,
+      sqlPage: async (orderBy, skip, take) => {
+        const [page, total] = await Promise.all([
+          this.prisma.bookEntry.findMany({
+            where,
+            orderBy: [...orderBy, ...RECENTLY_UPDATED_FIRST],
+            skip,
+            take,
+            select: { id: true },
+          }),
+          this.prisma.bookEntry.count({ where }),
+        ]);
+        return { ids: page.map((e) => e.id), total };
+      },
+      rows: async (sort) => {
+        const rows = await this.prisma.bookEntry.findMany({
+          where,
+          orderBy: RECENTLY_UPDATED_FIRST,
+          select: BOOK_ROW_SELECT,
+        });
+        const ratings =
+          sort === "rating"
+            ? await ratingsOf(rows.map((r) => r.bookItemId))
+            : new Map<string, number>();
+        return rows.map((r) => ({
+          id: r.id,
+          status: r.status,
+          rating: ratings.get(r.bookItemId) ?? null,
+          currentPage: r.currentPage,
+          startedAt: r.startedAt?.toISOString() ?? null,
+          finishedAt: r.finishedAt?.toISOString() ?? null,
+          createdAt: r.createdAt.toISOString(),
+          book: {
+            title: r.bookItem.title,
+            authors: r.bookItem.authors,
+            pageCount: r.bookItem.pageCount,
+          },
+        }));
+      },
+      load: async (ids) => {
+        const entries = await this.prisma.bookEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const ratings = await ratingsOf(entries.map((e) => e.bookItemId));
+        return entries.map((e) =>
+          toEntryDto(e, ratings.get(e.bookItemId) ?? null),
+        );
+      },
     });
   }
 
