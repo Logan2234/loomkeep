@@ -5,7 +5,7 @@ import type {
 } from "@loomkeep/shared";
 
 /** Each domain's library page. */
-export const LIBRARY_HREF: Record<SavedViewDomain, string> = {
+const LIBRARY_HREF: Record<SavedViewDomain, string> = {
   MEDIA: "/app/media",
   GAMES: "/app/games",
   BOOKS: "/app/books",
