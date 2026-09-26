@@ -16,7 +16,7 @@ import { DEFAULT_PAGE_SIZE } from "./pagination.util";
  * Each domain keeps its own service and its own Prisma delegate — the tables,
  * statuses and XP reasons genuinely differ. What lives here is the behaviour
  * that belongs to the product rather than to any one domain: the activity
- * matrix, the XP owed by a new entry, the in-memory list contract, and the
+ * matrix, the XP owed by a new entry, the list contract, and the
  * polymorphic Review/Comment cleanup an entry removal owes. Those are exactly
  * the places where a fix used to land in three domains out of four — the
  * `deleteEntry` comments about commit `0db5dc6` are that bug, found twice.
@@ -117,57 +117,115 @@ export async function awardNewEntryXp(
   }
 }
 
-export interface EntryListSpec<T, K extends string> {
+/**
+ * How one domain's list is filtered, ranked and loaded. `Row` is what ranking
+ * reads — a light slice of the entry — and `T` the full DTO a page returns.
+ */
+interface EntryListSpec<
+  Row extends { id: string },
+  T extends { id: string },
+  K extends string,
+  Order,
+> {
   sortKeys: readonly K[];
   defaultSort: K;
   /** Natural order per criterion; `order: "asc"` negates it. */
-  compare: (sort: K, a: T, b: T, locale: string | undefined) => number;
-  /** The field the `q` search matches on. */
-  title: (entry: T) => string;
-  /** Extra per-domain predicate — MEDIA filters on a derived status. */
-  keep?: (entry: T) => boolean;
+  compare: (sort: K, a: Row, b: Row, locale: string | undefined) => number;
+  /**
+   * The sorts Postgres can apply itself — a stored column, unset values last
+   * in the natural order — as an `orderBy`, reversed when `asc`.
+   */
+  sqlSorts?: Partial<Record<K, (asc: boolean) => Order>>;
+  /** One page of matching ids under `orderBy`, and how many match in all. */
+  sqlPage?: (
+    orderBy: Order,
+    skip: number,
+    take: number,
+  ) => Promise<{ ids: string[]; total: number }>;
+  /** Every matching entry as a light row, the most recently updated first. */
+  rows: (sort: K) => Promise<Row[]>;
+  /** A filter Postgres can't apply — media's derived status. */
+  keep?: (row: Row) => boolean;
+  /** The page's entries as full DTOs, in any order. */
+  load: (ids: string[]) => Promise<T[]>;
 }
 
 /**
- * The filter/sort/paginate tail every `listEntries` ends with, applied to the
- * DTOs rather than in SQL because progress and effective status are derived.
- * PRF-01 will attack this one place instead of four.
+ * One page of a library list, in two steps so that only the page is ever
+ * loaded in full: first which entries make the page, then those entries.
+ *
+ * A stored-column sort lets Postgres pick the page. Any other — derived
+ * (progress, effective status), read from another table (rating), or
+ * alphabetical, whose locale-aware collation Postgres doesn't share — ranks
+ * light rows of every matching entry here instead. Ties keep the most
+ * recently updated entry first either way: `rows` comes in that order and
+ * the sort is stable, and `sqlPage` breaks ties the same.
  */
-export function paginateEntries<
-  T extends { favorite: boolean },
+export async function listEntryPage<
+  Row extends { id: string },
+  T extends { id: string },
   K extends string,
+  Order,
 >(
-  entries: T[],
   filters: ListEntriesFilters,
-  spec: EntryListSpec<T, K>,
-): PagedResult<T> {
-  const q = filters.q?.trim().toLowerCase();
-  const kept = entries.filter((entry) => {
-    if (spec.keep && !spec.keep(entry)) return false;
-    if (filters.favorite && !entry.favorite) return false;
-    if (q && !spec.title(entry).toLowerCase().includes(q)) return false;
-    return true;
-  });
-
+  spec: EntryListSpec<Row, T, K, Order>,
+): Promise<PagedResult<T>> {
   const sort = spec.sortKeys.includes(filters.sort as K)
     ? (filters.sort as K)
     : spec.defaultSort;
   const asc = filters.order === "asc";
-  kept.sort((a, b) => {
-    const c = spec.compare(sort, a, b, filters.lang);
-    return asc ? -c : c;
-  });
-
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const limit =
     filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
-  const start = (page - 1) * limit;
+  const skip = (page - 1) * limit;
+
+  const sqlSort = spec.keep ? undefined : spec.sqlSorts?.[sort];
+  let ids: string[];
+  let total: number;
+
+  if (sqlSort && spec.sqlPage) {
+    ({ ids, total } = await spec.sqlPage(sqlSort(asc), skip, limit));
+  } else {
+    const rows = await spec.rows(sort);
+    const kept = spec.keep ? rows.filter(spec.keep) : rows;
+    kept.sort((a, b) => {
+      const c = spec.compare(sort, a, b, filters.lang);
+      return asc ? -c : c;
+    });
+    total = kept.length;
+    ids = kept.slice(skip, skip + limit).map((row) => row.id);
+  }
+
+  const loaded = new Map((await spec.load(ids)).map((e) => [e.id, e]));
   return {
-    items: kept.slice(start, start + limit),
-    total: kept.length,
-    hasMore: kept.length > page * limit,
+    items: ids.flatMap((id) => loaded.get(id) ?? []),
+    total,
+    hasMore: total > page * limit,
   };
 }
+
+/**
+ * The order `rows` comes in and `sqlPage` breaks ties with — the id only to
+ * make equal timestamps deterministic.
+ */
+export const RECENTLY_UPDATED_FIRST: [{ updatedAt: "desc" }, { id: "asc" }] = [
+  { updatedAt: "desc" },
+  { id: "asc" },
+];
+
+/**
+ * A title search, matched literally and ignoring case — like the substring
+ * match it replaced. Prisma hands `contains` to LIKE as is, so `%` and `_`
+ * would otherwise be wildcards: "%" matched every title.
+ */
+export const titleContains = (q: string) => ({
+  contains: q.replace(/[\\%_]/g, "\\$&"),
+  mode: "insensitive" as const,
+});
+
+/** The search box's words, or nothing to filter on. */
+export const searchTerm = (filters: ListEntriesFilters): string | undefined =>
+  filters.q?.trim() || undefined;
 
 /**
  * Loads an entry and refuses it unless it belongs to the caller. A missing

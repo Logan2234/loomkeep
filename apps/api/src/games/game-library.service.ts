@@ -31,8 +31,11 @@ import {
   awardNewEntryXp,
   deleteOwnedReplay,
   emitEntryActivity,
-  paginateEntries,
+  listEntryPage,
   polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
+  titleContains,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -79,11 +82,56 @@ const GAME_STATUS_SORT_ORDER = [
   "DROPPED",
 ] as const;
 
+/** What ranking a game entry reads — a light slice of its DTO. */
+type GameRow = Pick<
+  GameEntryDto,
+  | "id"
+  | "status"
+  | "rating"
+  | "playtimeMinutes"
+  | "startedAt"
+  | "finishedAt"
+  | "createdAt"
+> & { game: Pick<GameItemDto, "title"> };
+
+const GAME_ROW_SELECT = {
+  id: true,
+  gameItemId: true,
+  status: true,
+  playtimeMinutes: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  gameItem: { select: { title: true } },
+} satisfies Prisma.GameEntrySelect;
+
+// The sorts on a stored column, which Postgres pages itself. Unset dates go
+// last in the natural (newest first) order, where `timeMs` ranks them.
+const GAME_SQL_SORTS: Partial<
+  Record<
+    GameSortKey,
+    (asc: boolean) => Prisma.GameEntryOrderByWithRelationInput[]
+  >
+> = {
+  added: (asc) => [{ createdAt: asc ? "asc" : "desc" }],
+  playtime: (asc) => [{ playtimeMinutes: asc ? "asc" : "desc" }],
+  finished: (asc) => [
+    {
+      finishedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+  started: (asc) => [
+    {
+      startedAt: { sort: asc ? "asc" : "desc", nulls: asc ? "first" : "last" },
+    },
+  ],
+};
+
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareGameEntries(
   sort: GameSortKey,
-  a: GameEntryDto,
-  b: GameEntryDto,
+  a: GameRow,
+  b: GameRow,
   locale: string | undefined,
 ): number {
   switch (sort) {
@@ -217,32 +265,68 @@ export class GameLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<GameEntryDto>> {
-    const entries = await this.prisma.gameEntry.findMany({
-      where: {
-        userId,
-        status:
-          filters.statuses && filters.statuses.length > 0
-            ? { in: filters.statuses as DbGameStatus[] }
-            : undefined,
-      },
-      include: ENTRY_INCLUDE,
-      orderBy: { updatedAt: "desc" },
-    });
-
-    const ratings = await this.reviews.getRatings(
+    const q = searchTerm(filters);
+    const where: Prisma.GameEntryWhereInput = {
       userId,
-      ReviewTargetType.GAME,
-      entries.map((e) => e.gameItemId),
-    );
-    const dtos = entries.map((e) =>
-      toEntryDto(e, ratings.get(e.gameItemId) ?? null),
-    );
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbGameStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      gameItem: q ? { title: titleContains(q) } : undefined,
+    };
+    const ratingsOf = (gameItemIds: string[]) =>
+      this.reviews.getRatings(userId, ReviewTargetType.GAME, gameItemIds);
 
-    return paginateEntries(dtos, filters, {
+    return listEntryPage(filters, {
       sortKeys: GAME_SORT_KEYS,
       defaultSort: "added",
       compare: compareGameEntries,
-      title: (dto) => dto.game.title,
+      sqlSorts: GAME_SQL_SORTS,
+      sqlPage: async (orderBy, skip, take) => {
+        const [page, total] = await Promise.all([
+          this.prisma.gameEntry.findMany({
+            where,
+            orderBy: [...orderBy, ...RECENTLY_UPDATED_FIRST],
+            skip,
+            take,
+            select: { id: true },
+          }),
+          this.prisma.gameEntry.count({ where }),
+        ]);
+        return { ids: page.map((e) => e.id), total };
+      },
+      rows: async (sort) => {
+        const rows = await this.prisma.gameEntry.findMany({
+          where,
+          orderBy: RECENTLY_UPDATED_FIRST,
+          select: GAME_ROW_SELECT,
+        });
+        const ratings =
+          sort === "rating"
+            ? await ratingsOf(rows.map((r) => r.gameItemId))
+            : new Map<string, number>();
+        return rows.map((r) => ({
+          id: r.id,
+          status: r.status,
+          rating: ratings.get(r.gameItemId) ?? null,
+          playtimeMinutes: r.playtimeMinutes,
+          startedAt: r.startedAt?.toISOString() ?? null,
+          finishedAt: r.finishedAt?.toISOString() ?? null,
+          createdAt: r.createdAt.toISOString(),
+          game: { title: r.gameItem.title },
+        }));
+      },
+      load: async (ids) => {
+        const entries = await this.prisma.gameEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const ratings = await ratingsOf(entries.map((e) => e.gameItemId));
+        return entries.map((e) =>
+          toEntryDto(e, ratings.get(e.gameItemId) ?? null),
+        );
+      },
     });
   }
 

@@ -1,5 +1,4 @@
 import { vi } from "vitest";
-import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { XpService } from "../gamification/xp.service";
@@ -53,91 +52,6 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     },
   };
 }
-
-function makeService(rows: ReturnType<typeof makeRow>[]) {
-  const prisma = {
-    bookEntry: { findMany: vi.fn().mockResolvedValue(rows) },
-  } as unknown as PrismaService;
-  const reviews = {
-    getRatings: vi.fn(() =>
-      Promise.resolve(
-        new Map(
-          rows
-            .filter((r) => r.rating !== null)
-            .map((r) => [r.bookItemId, r.rating]),
-        ),
-      ),
-    ),
-    getRating: vi.fn((_u: string, _t: string, id: string) =>
-      Promise.resolve(rows.find((r) => r.bookItemId === id)?.rating ?? null),
-    ),
-    setRating: vi.fn(),
-  } as unknown as import("../reviews/review.service").ReviewService;
-  const service = new BookLibraryService(
-    prisma,
-    {} as BookItemService,
-    {} as AgeGateService,
-    reviews,
-    {
-      emit: vi.fn(),
-    } as unknown as import("../social/activity.service").ActivityService,
-    stubXp(),
-    stubAchievements(),
-    stubEvents(),
-  );
-  return { service, prisma };
-}
-
-describe("BookLibraryService.listEntries", () => {
-  it("paginates and reports total/hasMore", async () => {
-    const rows = Array.from({ length: DEFAULT_PAGE_SIZE + 5 }, (_, i) =>
-      makeRow({ id: `e${i}`, title: `Book ${i}` }),
-    );
-    const { service } = makeService(rows);
-
-    const page1 = await service.listEntries("user-1", {});
-    expect(page1.items).toHaveLength(DEFAULT_PAGE_SIZE);
-    expect(page1.total).toBe(DEFAULT_PAGE_SIZE + 5);
-    expect(page1.hasMore).toBe(true);
-
-    const page2 = await service.listEntries("user-1", { page: 2 });
-    expect(page2.items).toHaveLength(5);
-    expect(page2.hasMore).toBe(false);
-  });
-
-  it("filters by favorite", async () => {
-    const rows = [
-      makeRow({ id: "a", favorite: true }),
-      makeRow({ id: "b", favorite: false }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { favorite: true });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("filters by free-text title search, case-insensitive", async () => {
-    const rows = [
-      makeRow({ id: "a", title: "Dune" }),
-      makeRow({ id: "b", title: "Foundation" }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { q: "dun" });
-    expect(result.items.map((i) => i.id)).toEqual(["a"]);
-  });
-
-  it("sorts by pages, descending by default", async () => {
-    const rows = [
-      makeRow({ id: "a", pageCount: 200 }),
-      makeRow({ id: "b", pageCount: 900 }),
-    ];
-    const { service } = makeService(rows);
-
-    const result = await service.listEntries("user-1", { sort: "pages" });
-    expect(result.items.map((i) => i.id)).toEqual(["b", "a"]);
-  });
-});
 
 describe("BookLibraryService.deleteEntry", () => {
   it("wipes the user's reviews and comments for the book, not just the entry row", async () => {

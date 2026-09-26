@@ -41,8 +41,10 @@ import {
   awardNewEntryXp,
   deleteOwnedReplay,
   emitEntryActivity,
-  paginateEntries,
+  listEntryPage,
   polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -113,7 +115,32 @@ export interface ListEntriesFilters extends SharedListEntriesFilters {
   types?: MediaType[];
 }
 
-function mediaProgressPct(entry: LibraryEntryDto): number {
+/** What ranking and filtering a media entry read — a light slice of its DTO. */
+type MediaRow = Pick<
+  LibraryEntryDto,
+  | "id"
+  | "status"
+  | "rating"
+  | "startedAt"
+  | "finishedAt"
+  | "createdAt"
+  | "lastWatchedAt"
+> & {
+  mediaItem: Pick<MediaItemDto, "title">;
+  progress: Pick<ProgressDto, "watchedEpisodes" | "totalEpisodes"> | null;
+};
+
+const MEDIA_ROW_SELECT = {
+  id: true,
+  mediaItemId: true,
+  status: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  mediaItem: { select: { type: true, status: true, title: true } },
+} satisfies Prisma.LibraryEntrySelect;
+
+function mediaProgressPct(entry: MediaRow): number {
   if (!entry.progress || entry.progress.totalEpisodes === 0) return 0;
   return Math.round(
     (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
@@ -123,8 +150,8 @@ function mediaProgressPct(entry: LibraryEntryDto): number {
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
 function compareMediaEntries(
   sort: MediaSortKey,
-  a: LibraryEntryDto,
-  b: LibraryEntryDto,
+  a: MediaRow,
+  b: MediaRow,
   locale: string | undefined,
 ): number {
   switch (sort) {
@@ -277,55 +304,113 @@ export class LibraryService {
     };
   }
 
+  /**
+   * Media can't let Postgres pick the page: the status is derived from watch
+   * progress, the default sort is the last viewing, and the search matches
+   * the translated title. Every entry is ranked on a light row instead, its
+   * progress counted in SQL — only the page gets the full progress (next
+   * episode included) and the full DTO.
+   */
   async listEntries(
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<LibraryEntryDto>> {
-    const entries = await this.prisma.libraryEntry.findMany({
-      where: {
-        userId,
-        mediaItem:
-          filters.types && filters.types.length > 0
-            ? { type: { in: filters.types } }
-            : undefined,
-      },
-      include: ENTRY_INCLUDE,
-      orderBy: { updatedAt: "desc" },
-    });
+    const q = searchTerm(filters)?.toLowerCase();
+    const where: Prisma.LibraryEntryWhereInput = {
+      userId,
+      favorite: filters.favorite ? true : undefined,
+      mediaItem:
+        filters.types && filters.types.length > 0
+          ? { type: { in: filters.types } }
+          : undefined,
+    };
+    const statuses = filters.statuses ?? [];
+    const lang = filters.lang;
+    const titlesIn = (mediaItemIds: string[]) =>
+      lang
+        ? this.mediaItemService.translatedTitles(mediaItemIds, lang)
+        : Promise.resolve(new Map<string, string>());
 
-    const mediaItemIds = entries.map((e) => e.mediaItemId);
-    const [ratings, progressByMedia, translatedTitles] = await Promise.all([
-      this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
-      this.computeProgressBatch(userId, mediaItemIds),
-      filters.lang
-        ? this.mediaItemService.translatedTitles(mediaItemIds, filters.lang)
-        : Promise.resolve(new Map<string, string>()),
-    ]);
-    const dtos = entries.map((entry) => {
-      const p = progressByMedia.get(entry.mediaItemId);
-      return this.toEntryDto(
-        entry,
-        p?.progress ?? null,
-        p?.lastWatchedAt ?? null,
-        ratings.get(entry.mediaItemId) ?? null,
-        translatedTitles.get(entry.mediaItemId),
-      );
-    });
-
-    return paginateEntries(dtos, filters, {
+    return listEntryPage(filters, {
       sortKeys: MEDIA_SORT_KEYS,
       defaultSort: "recent",
       compare: compareMediaEntries,
-      title: (dto) => dto.mediaItem.title,
-      // Status is derived, so filter on the effective status, not the stored
-      // one — "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
-      // The other three domains filter status in SQL; media cannot.
-      keep: (dto) =>
-        !filters.statuses ||
-        filters.statuses.length === 0 ||
-        filters.statuses.some((s) =>
-          s === "DORMANT" ? isDormant(dto) : dto.status === s,
-        ),
+      rows: async (sort) => {
+        const entries = await this.prisma.libraryEntry.findMany({
+          where,
+          orderBy: RECENTLY_UPDATED_FIRST,
+          select: MEDIA_ROW_SELECT,
+        });
+        const ids = entries.map((e) => e.mediaItemId);
+        const [counts, ratings, titles] = await Promise.all([
+          this.progressCounts(userId, ids),
+          sort === "rating"
+            ? this.reviews.getRatings(userId, ReviewTargetType.MEDIA, ids)
+            : new Map<string, number>(),
+          q || sort === "title" ? titlesIn(ids) : new Map<string, string>(),
+        ]);
+
+        return entries.map((entry) => {
+          const count = counts.get(entry.mediaItemId);
+          const progress =
+            count && count.total > 0
+              ? {
+                  watchedEpisodes: count.watched,
+                  totalEpisodes: count.total,
+                  nextEpisode: null,
+                }
+              : null;
+          // Same fallback as toEntryDto: a movie has no episode watches.
+          const lastWatchedAt = count?.lastWatchedAt ?? entry.finishedAt;
+          return {
+            id: entry.id,
+            status: deriveStatus(
+              entry.mediaItem.type,
+              progress,
+              normalizeAiringFinished(entry.mediaItem.status),
+              entry.status,
+            ),
+            rating: ratings.get(entry.mediaItemId) ?? null,
+            startedAt: entry.startedAt?.toISOString() ?? null,
+            finishedAt: entry.finishedAt?.toISOString() ?? null,
+            createdAt: entry.createdAt.toISOString(),
+            lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
+            mediaItem: {
+              title: titles.get(entry.mediaItemId) ?? entry.mediaItem.title,
+            },
+            progress,
+          };
+        });
+      },
+      // "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
+      keep: (row) =>
+        (statuses.length === 0 ||
+          statuses.some((s) =>
+            s === "DORMANT" ? isDormant(row) : row.status === s,
+          )) &&
+        (!q || row.mediaItem.title.toLowerCase().includes(q)),
+      load: async (ids) => {
+        const entries = await this.prisma.libraryEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const mediaItemIds = entries.map((e) => e.mediaItemId);
+        const [ratings, progressByMedia, titles] = await Promise.all([
+          this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
+          this.computeProgressBatch(userId, mediaItemIds),
+          titlesIn(mediaItemIds),
+        ]);
+        return entries.map((entry) => {
+          const p = progressByMedia.get(entry.mediaItemId);
+          return this.toEntryDto(
+            entry,
+            p?.progress ?? null,
+            p?.lastWatchedAt ?? null,
+            ratings.get(entry.mediaItemId) ?? null,
+            titles.get(entry.mediaItemId),
+          );
+        });
+      },
     });
   }
 
@@ -1016,6 +1101,50 @@ export class LibraryService {
    * so this fetches every relevant episode/watch once and reduces them
    * per media item in memory instead.
    */
+  /**
+   * Per media: its regular episodes, how many of them the user watched, and
+   * their last viewing of any episode (specials included) — the counts
+   * computeProgressBatch derives, without loading every episode and watch.
+   */
+  private async progressCounts(
+    userId: string,
+    mediaItemIds: string[],
+  ): Promise<
+    Map<string, { total: number; watched: number; lastWatchedAt: Date | null }>
+  > {
+    if (mediaItemIds.length === 0) return new Map();
+
+    const rows = await this.prisma.$queryRaw<
+      {
+        mediaItemId: string;
+        total: bigint;
+        watched: bigint;
+        lastWatchedAt: Date | null;
+      }[]
+    >`
+      SELECT s."mediaItemId",
+             COUNT(DISTINCT e.id) FILTER (WHERE s.number > 0) AS total,
+             COUNT(DISTINCT w."episodeId") FILTER (WHERE s.number > 0) AS watched,
+             MAX(w."watchedAt") AS "lastWatchedAt"
+      FROM "Season" s
+      JOIN "Episode" e ON e."seasonId" = s.id
+      LEFT JOIN "EpisodeWatch" w
+        ON w."episodeId" = e.id AND w."userId" = ${userId}
+      WHERE s."mediaItemId" = ANY(${mediaItemIds})
+      GROUP BY s."mediaItemId"
+    `;
+    return new Map(
+      rows.map((r) => [
+        r.mediaItemId,
+        {
+          total: Number(r.total),
+          watched: Number(r.watched),
+          lastWatchedAt: r.lastWatchedAt,
+        },
+      ]),
+    );
+  }
+
   private async computeProgressBatch(
     userId: string,
     mediaItemIds: string[],

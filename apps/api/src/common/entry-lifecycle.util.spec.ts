@@ -14,8 +14,9 @@ import {
   awardNewEntryXp,
   deleteOwnedReplay,
   emitEntryActivity,
-  paginateEntries,
+  listEntryPage,
   polymorphicTargetCleanup,
+  titleContains,
 } from "./entry-lifecycle.util";
 import { DEFAULT_PAGE_SIZE } from "./pagination.util";
 
@@ -25,118 +26,142 @@ import { DEFAULT_PAGE_SIZE } from "./pagination.util";
  * this is where it is pinned down.
  */
 
-type Row = { favorite: boolean; title: string; rank: number };
+type Row = { id: string; title: string; rank: number };
 
-const SORT_KEYS = ["rank", "title"] as const;
+const SORT_KEYS = ["rank", "title", "stored"] as const;
+type SortKey = (typeof SORT_KEYS)[number];
 
-function rows(...specs: [string, number, boolean?][]): Row[] {
-  return specs.map(([title, rank, favorite]) => ({
-    title,
-    rank,
-    favorite: favorite ?? false,
-  }));
+function rows(...specs: [string, number][]): Row[] {
+  return specs.map(([title, rank]) => ({ id: title, title, rank }));
 }
 
-const spec = {
-  sortKeys: SORT_KEYS,
-  defaultSort: "rank" as const,
-  compare: (sort: (typeof SORT_KEYS)[number], a: Row, b: Row) =>
-    sort === "title" ? a.title.localeCompare(b.title) : b.rank - a.rank,
-  title: (row: Row) => row.title,
-};
+/**
+ * A spec over in-memory rows. "stored" stands for a stored-column sort, which
+ * the list hands to `sqlPage` — here, the rows' own order.
+ */
+function specOf(all: Row[]) {
+  const sqlPage = vi.fn((_orderBy: string, skip: number, take: number) =>
+    Promise.resolve({
+      ids: all.slice(skip, skip + take).map((r) => r.id),
+      total: all.length,
+    }),
+  );
+  const rowsFn = vi.fn(() => Promise.resolve([...all]));
+  // Loads in reverse, as Postgres may: the page keeps its ranking anyway.
+  const load = vi.fn((ids: string[]) =>
+    Promise.resolve(
+      [...ids].reverse().map((id) => all.find((r) => r.id === id)!),
+    ),
+  );
 
-describe("paginateEntries", () => {
-  it("sorts on the default key when the requested one is unknown", () => {
-    const res = paginateEntries(
-      rows(["a", 1], ["b", 3], ["c", 2]),
-      {
-        sort: "not-a-key",
-      },
+  return {
+    sqlPage,
+    rows: rowsFn,
+    load,
+    spec: {
+      sortKeys: SORT_KEYS,
+      defaultSort: "rank" as SortKey,
+      compare: (sort: SortKey, a: Row, b: Row) =>
+        sort === "title" ? a.title.localeCompare(b.title) : b.rank - a.rank,
+      sqlSorts: { stored: (asc: boolean) => (asc ? "asc" : "desc") },
+      sqlPage,
+      rows: rowsFn,
+      load,
+    },
+  };
+}
+
+const titles = (res: { items: Row[] }) => res.items.map((r) => r.title);
+
+describe("listEntryPage", () => {
+  it("sorts on the default key when the requested one is unknown", async () => {
+    const { spec } = specOf(rows(["a", 1], ["b", 3], ["c", 2]));
+
+    const res = await listEntryPage({ sort: "not-a-key" }, spec);
+
+    expect(titles(res)).toEqual(["b", "c", "a"]);
+  });
+
+  it("negates the comparator for an ascending order", async () => {
+    const { spec } = specOf(rows(["a", 1], ["b", 3], ["c", 2]));
+
+    const res = await listEntryPage({ sort: "rank", order: "asc" }, spec);
+
+    expect(titles(res)).toEqual(["a", "c", "b"]);
+  });
+
+  it("keeps ties in the order the rows came in", async () => {
+    const { spec } = specOf(rows(["b", 1], ["a", 1], ["c", 1]));
+
+    const res = await listEntryPage({ order: "asc" }, spec);
+
+    expect(titles(res)).toEqual(["b", "a", "c"]);
+  });
+
+  it("lets Postgres page a stored-column sort, without loading every row", async () => {
+    const {
+      spec,
+      rows: rowsFn,
+      sqlPage,
+    } = specOf(rows(["a", 1], ["b", 2], ["c", 3]));
+
+    const res = await listEntryPage(
+      { sort: "stored", order: "asc", page: 2, limit: 2 },
       spec,
     );
 
-    expect(res.items.map((r) => r.title)).toEqual(["b", "c", "a"]);
-  });
-
-  it("negates the comparator for an ascending order", () => {
-    const res = paginateEntries(
-      rows(["a", 1], ["b", 3], ["c", 2]),
-      { sort: "rank", order: "asc" },
-      spec,
-    );
-
-    expect(res.items.map((r) => r.title)).toEqual(["a", "c", "b"]);
-  });
-
-  it("matches the q filter case-insensitively on the spec's title", () => {
-    const res = paginateEntries(
-      rows(["Discovery", 1], ["Random Access", 2]),
-      { q: "  DISCO " },
-      spec,
-    );
-
-    expect(res.items.map((r) => r.title)).toEqual(["Discovery"]);
-  });
-
-  it("keeps only favorites when asked", () => {
-    const res = paginateEntries(
-      rows(["a", 1, true], ["b", 2, false]),
-      { favorite: true },
-      spec,
-    );
-
-    expect(res.items.map((r) => r.title)).toEqual(["a"]);
-  });
-
-  it("applies the domain's own predicate on top of the shared ones", () => {
-    const res = paginateEntries(
-      rows(["a", 1], ["b", 2]),
-      { q: "" },
-      {
-        ...spec,
-        keep: (row) => row.title !== "a",
-      },
-    );
-
-    expect(res.items.map((r) => r.title)).toEqual(["b"]);
-    // `total` is the filtered count, not the input size — it drives the
-    // paginator's "x results" label.
-    expect(res.total).toBe(1);
-  });
-
-  it("counts the page against the filtered set, not the raw one", () => {
-    const res = paginateEntries(
-      rows(["a", 1], ["b", 2], ["c", 3]),
-      { page: 2, limit: 2 },
-      spec,
-    );
-
-    expect(res.items.map((r) => r.title)).toEqual(["a"]);
+    expect(sqlPage).toHaveBeenCalledWith("asc", 2, 2);
+    expect(rowsFn).not.toHaveBeenCalled();
+    expect(titles(res)).toEqual(["c"]);
     expect(res.total).toBe(3);
     expect(res.hasMore).toBe(false);
   });
 
-  it("reports hasMore while a further page exists", () => {
-    const res = paginateEntries(
-      rows(["a", 1], ["b", 2], ["c", 3]),
-      { page: 1, limit: 2 },
-      spec,
+  it("ranks every row itself once a filter needs them all", async () => {
+    const { spec, sqlPage } = specOf(rows(["a", 1], ["b", 2]));
+
+    const res = await listEntryPage(
+      { sort: "stored" },
+      { ...spec, keep: (row) => row.title !== "a" },
     );
 
+    expect(sqlPage).not.toHaveBeenCalled();
+    expect(titles(res)).toEqual(["b"]);
+    // `total` is the filtered count — it drives the "x results" label.
+    expect(res.total).toBe(1);
+  });
+
+  it("loads only the page, and returns it in ranking order", async () => {
+    const { spec, load } = specOf(rows(["a", 1], ["b", 2], ["c", 3]));
+
+    const res = await listEntryPage({ page: 1, limit: 2 }, spec);
+
+    expect(load).toHaveBeenCalledWith(["c", "b"]);
+    expect(titles(res)).toEqual(["c", "b"]);
     expect(res.hasMore).toBe(true);
   });
 
-  it("falls back to the shared page size on a missing or absurd limit", () => {
+  it("falls back to the shared page size on a missing or absurd limit", async () => {
     const many = rows(
       ...Array.from({ length: 60 }, (_, i): [string, number] => [`t${i}`, i]),
     );
+    const { spec } = specOf(many);
 
-    expect(paginateEntries(many, {}, spec).items).toHaveLength(
+    expect((await listEntryPage({}, spec)).items).toHaveLength(
       DEFAULT_PAGE_SIZE,
     );
     expect(
-      paginateEntries(many, { limit: 0, page: -3 }, spec).items,
+      (await listEntryPage({ limit: 0, page: -3 }, spec)).items,
     ).toHaveLength(DEFAULT_PAGE_SIZE);
+  });
+});
+
+describe("titleContains", () => {
+  it("matches LIKE wildcards literally", () => {
+    expect(titleContains("100%_off\\")).toEqual({
+      contains: "100\\%\\_off\\\\",
+      mode: "insensitive",
+    });
   });
 });
 
