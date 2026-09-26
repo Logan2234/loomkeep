@@ -32,10 +32,17 @@
   import PageHeader from "$lib/components/PageHeader.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
+  import SavedViewBar from "$lib/components/SavedViewBar.svelte";
   import { debounce } from "$lib/debounce";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
-  import type { Domain, MediaType, PagedResult } from "@loomkeep/shared";
+  import { filtersToSearchParams } from "$lib/saved-views";
+  import type {
+    MediaType,
+    PagedResult,
+    SavedViewDomain,
+    SavedViewFiltersDto,
+  } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
   import { untrack } from "svelte";
   import { flip } from "svelte/animate";
@@ -69,8 +76,8 @@
     subtitle: (count: number) => string;
     /** Masculine noun for the empty-state copy: "livre", "jeu", "titre". */
     noun: string;
-    /** This library's domain, to preselect the right tab on /search. */
-    domain: Domain;
+    /** This library's domain: its saved views, and the tab to preselect on /search. */
+    domain: SavedViewDomain;
     load: (params: LibraryLoadParams) => Promise<PagedResult<T>>;
     /** Stable key for the poster grid's keyed each. */
     keyOf: (entry: T) => string;
@@ -105,6 +112,7 @@
   // actually drives the fetch (see the input's oninput below).
   let query = $state(initialParams.get("q") ?? "");
   let queryFilter = $state(initialParams.get("q") ?? "");
+  let activeViewId = $state(initialParams.get("view"));
 
   let sentinel = $state<HTMLElement | null>(null);
 
@@ -115,6 +123,28 @@
   );
 
   const reduced = prefersReducedMotion();
+
+  const current = $derived<SavedViewFiltersDto>({
+    q: queryFilter,
+    statuses,
+    favorite: favoritesOnly,
+    types,
+    sort,
+    order: reversed ? "asc" : "desc",
+  });
+
+  function applyFilters(filters: SavedViewFiltersDto) {
+    query = queryFilter = filters.q ?? "";
+    statuses = filters.statuses ?? [];
+    favoritesOnly = filters.favorite ?? false;
+    types = filters.types ?? [];
+    // A sort this library no longer offers falls back to its default.
+    sort = sorts.some((o) => o.value === filters.sort)
+      ? filters.sort!
+      : defaultSort;
+    reversed = filters.order === "asc";
+    previewCount = null;
+  }
 
   const debouncedQueryFilter = debounce(() => {
     queryFilter = query.trim();
@@ -139,17 +169,12 @@
   // that happens during an effect's synchronous execution — including ones
   // buried in a called function, not just ones written directly in the
   // effect body. Reading it untracked keeps the effect's dependencies to
-  // exactly the six filter/sort fields it's meant to react to; without this,
+  // exactly the filters and the view in use; without this,
   // `goto()` (which updates `page.url`) makes the effect see its own output
   // as a fresh dependency change and re-fire itself, forever.
   function syncUrl() {
-    const params = new URLSearchParams();
-    if (queryFilter) params.set("q", queryFilter);
-    if (statuses.length) params.set("status", statuses.join(","));
-    if (favoritesOnly) params.set("fav", "1");
-    if (types.length) params.set("type", types.join(","));
-    if (sort !== defaultSort) params.set("sort", sort);
-    if (reversed) params.set("order", "asc");
+    const params = filtersToSearchParams(current, defaultSort);
+    if (activeViewId) params.set("view", activeViewId);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : untrack(() => page.url.pathname), {
       replaceState: true,
@@ -159,7 +184,7 @@
   }
 
   $effect(() => {
-    // Tracked: queryFilter, statuses, favoritesOnly, types, sort, reversed.
+    // Tracked: the filters in `current`, and the view in use.
     syncUrl();
   });
 
@@ -242,6 +267,13 @@
     subtitle={subtitle(total)}
     actions={headerActions}
     class="mb-6" />
+
+  <SavedViewBar
+    {domain}
+    {current}
+    {defaultSort}
+    bind:activeId={activeViewId}
+    onApply={applyFilters} />
 
   <div class="relative mb-4">
     <span

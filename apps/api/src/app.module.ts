@@ -32,6 +32,7 @@ import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ReviewsModule } from "./reviews/reviews.module";
+import { SavedViewsModule } from "./saved-views/saved-view.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
 import { UsersModule } from "./users/users.module";
@@ -76,6 +77,7 @@ import { UsersModule } from "./users/users.module";
     ReviewsModule,
     CommentsModule,
     ListsModule,
+    SavedViewsModule,
     StatsModule,
     NewsletterModule,
     MetricsModule,

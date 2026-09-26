@@ -75,6 +75,8 @@ export interface HomeWidgetConfigDto {
   links?: HomeQuickLinkDto[];
   /** listContent: the list to show. */
   listId?: string;
+  /** savedView: the saved library view to show. */
+  viewId?: string;
   /** note: its text, as typed. */
   text?: string;
   /** activity, favorites: the domains to show — all enabled ones when unset. */
