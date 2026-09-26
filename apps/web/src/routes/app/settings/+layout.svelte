@@ -10,7 +10,6 @@
   import { keys } from "$lib/api/keys";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import LegalLinks from "$lib/components/LegalLinks.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { m } from "$lib/paraglide/messages.js";
@@ -103,18 +102,19 @@
   <div
     class="mx-auto flex min-h-svh max-w-3xl flex-col px-5 py-6 md:px-8 md:py-10 lg:max-w-6xl">
     {#if recoveryLow && mfa}
-      <Banner variant="warning" class="mb-6 flex items-center gap-3">
-        <Icon name="warning" class="h-5 w-5 shrink-0" />
-        <span class="flex-1">
-          {m.settings_mfa_recovery_low_warning({
-            count: mfa.recoveryCodesRemaining,
-          })}
-        </span>
-        <a
-          href={sectionHref("two-factor-authentication")}
-          class="link-accent shrink-0 text-sm">
-          {m.settings_recovery_codes_regenerate()}
-        </a>
+      <Banner variant="warning" class="mb-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="flex-1">
+            {m.settings_mfa_recovery_low_warning({
+              count: mfa.recoveryCodesRemaining,
+            })}
+          </span>
+          <a
+            href={sectionHref("two-factor-authentication")}
+            class="link-accent shrink-0 text-sm">
+            {m.settings_recovery_codes_regenerate()}
+          </a>
+        </div>
       </Banner>
     {/if}
 

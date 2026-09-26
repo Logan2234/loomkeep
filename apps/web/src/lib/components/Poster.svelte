@@ -49,7 +49,7 @@
   {/if}
   {#if adult}
     <span
-      class="bg-danger absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-black text-white shadow">
+      class="bg-danger text-btn-fg absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-black shadow">
       18+
     </span>
   {/if}

@@ -651,7 +651,7 @@
 {/snippet}
 
 {#snippet loadingState()}
-  <div aria-label={m.common_loading()}><CardRowSkeleton count={2} /></div>
+  <CardRowSkeleton count={2} />
 {/snippet}
 
 {#snippet identity()}

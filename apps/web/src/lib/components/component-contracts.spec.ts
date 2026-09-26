@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { parse } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
+import { bannerRole } from "./banner-semantics";
 
 const componentSource = (name: string) =>
   readFileSync(new URL(`./${name}.svelte`, import.meta.url), "utf8");
@@ -107,5 +108,60 @@ describe("shared component contracts", () => {
     expect(source).toContain("onfocusout={onFocusOut}");
     expect(source).toContain('e.key === "Escape"');
     expect(source).toContain('setAttribute("aria-describedby"');
+  });
+
+  it("announces dynamic banner content without making informational copy noisy", () => {
+    expect(bannerRole("error", "auto")).toBe("alert");
+    expect(bannerRole("warning", "auto")).toBeUndefined();
+    expect(bannerRole("info", "polite")).toBe("status");
+    expect(bannerRole("neutral", "assertive")).toBe("alert");
+    expect(bannerRole("error", "off")).toBeUndefined();
+
+    const source = componentSource("Banner");
+    expect(source).toContain("role={bannerRole(variant, live)}");
+    expect(source).toContain(
+      '{#if variant === "error" || variant === "warning"}',
+    );
+  });
+
+  it("keeps page heading semantics limited to the title", () => {
+    const heading =
+      componentSource("PageHeader").match(/<h1[\s\S]*?<\/h1>/)?.[0];
+
+    expect(heading).toContain("{title}");
+    expect(heading).not.toContain("<a");
+    expect(heading).not.toContain("<Icon");
+    expect(heading).not.toContain("<NewBadge");
+  });
+
+  it("portals the lightbox while preserving focus and scroll contracts", () => {
+    const source = componentSource("Lightbox");
+
+    expect(source).toContain("use:portal");
+    expect(source).toContain("use:scrollLock");
+    expect(source).toContain("use:dialogFocus");
+  });
+
+  it.each(["CardRowSkeleton", "PosterGridSkeleton"])(
+    "%s exposes one named busy region and hides its placeholder artwork",
+    (component) => {
+      const source = componentSource(component);
+
+      expect(source).toContain('role="status"');
+      expect(source).toContain('aria-busy="true"');
+      expect(source).toContain('aria-hidden="true"');
+      expect(source).toContain("m.common_loading()");
+    },
+  );
+
+  it("uses readable foregrounds for confirmed contrast failures", () => {
+    expect(componentSource("BetaBadge")).not.toContain("opacity-60");
+    expect(componentSource("Poster")).toContain("text-btn-fg");
+    expect(componentSource("Banner")).toContain(
+      'error: "border-danger/40 bg-danger/10 text-fg"',
+    );
+    expect(componentSource("ProviderMark")).toContain(
+      "style:color={mark.foreground}",
+    );
   });
 });

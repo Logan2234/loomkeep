@@ -18,8 +18,9 @@
     aria-label={mark.name}><path d={mark.path} /></svg>
 {:else}
   <span
-    class="inline-grid place-items-center rounded-[0.2em] text-[0.52em] leading-none font-black tracking-[-0.08em] text-white {className}"
+    class="inline-grid place-items-center rounded-[0.2em] text-[0.52em] leading-none font-black tracking-[-0.08em] {className}"
     style:background-color={mark.color}
+    style:color={mark.foreground}
     role="img"
     aria-label={mark.name}>{mark.monogram}</span>
 {/if}
