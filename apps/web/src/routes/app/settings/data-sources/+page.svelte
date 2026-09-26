@@ -76,7 +76,10 @@
           rel="noopener noreferrer"
           class="card hover:border-accent hover:bg-surface-2 flex h-full w-full items-start gap-2.5 p-4 text-left text-sm transition-[border-color,background-color]">
           {#if p.brand}
-            <ProviderMark brand={p.brand} class="mt-0.5 h-4 w-4 shrink-0" />
+            <ProviderMark
+              brand={p.brand}
+              decorative
+              class="mt-0.5 h-4 w-4 shrink-0" />
           {/if}
           <span class="min-w-0">
             <span class="font-semibold">{p.name}</span>

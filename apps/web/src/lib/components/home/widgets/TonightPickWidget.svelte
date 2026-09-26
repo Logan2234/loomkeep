@@ -73,7 +73,10 @@
         class="card group-hover:border-accent shrink-0 overflow-hidden transition-[border-color]"
         style:height={`${posterHeight}px`}
         style:width={`${(posterHeight * 2) / 3}px`}>
-        <Poster src={pick.mediaItem.posterUrl} title={pick.mediaItem.title} />
+        <Poster
+          src={pick.mediaItem.posterUrl}
+          title={pick.mediaItem.title}
+          alt="" />
       </div>
       <div class="flex min-w-0 flex-col {side ? 'justify-center' : ''}">
         <p class="timecode text-[0.65rem] uppercase">

@@ -375,7 +375,7 @@
         class="absolute right-4 bottom-4 z-10 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-lg border border-white/20 shadow-lg sm:w-20 md:right-6 md:bottom-6 md:w-24"
         aria-label={m.media_enlarge_poster()}
         onclick={() => openLightbox(detail?.posterUrl ?? null)}>
-        <Poster src={detail.posterUrl} title={detail.title} />
+        <Poster src={detail.posterUrl} title={detail.title} alt="" />
       </button>
     {/if}
 
@@ -722,6 +722,7 @@
     <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
       <ProviderMark
         brand={type === "ANIME" ? "anilist" : "tmdb"}
+        decorative
         class="h-3 w-3 shrink-0 opacity-70" />
       {type === "ANIME" ? m.media_anilist_notice() : m.datasource_tmdb_notice()}
     </p>

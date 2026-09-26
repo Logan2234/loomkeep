@@ -98,6 +98,15 @@
       <Icon name="question" class="h-4 w-4" />
     </button>
   </Tooltip>
+
+  <Tooltip text={m.admin_components_tooltip_long_text()} placement="bottom">
+    <button
+      type="button"
+      class="btn-icon-bordered"
+      aria-label={m.admin_components_tooltip_long_trigger()}>
+      <Icon name="question" class="h-4 w-4" />
+    </button>
+  </Tooltip>
 </div>
 
 <div

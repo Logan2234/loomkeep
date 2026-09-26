@@ -181,7 +181,7 @@
               : ''}"
             aria-label={m.common_enlarge_image()}
             onclick={() => openLightbox(detail?.coverUrl ?? null)}>
-            <Poster src={detail.coverUrl} title={detail.title} />
+            <Poster src={detail.coverUrl} title={detail.title} alt="" />
           </button>
 
           <div class="min-w-0 flex-1">
@@ -328,7 +328,8 @@
                   onclick={() => openLightbox(img.url)}>
                   <Poster
                     src={img.url}
-                    title={`${detail.title} — ${img.type}`} />
+                    title={`${detail.title} — ${img.type}`}
+                    alt="" />
                 </button>
               {/each}
             </div>

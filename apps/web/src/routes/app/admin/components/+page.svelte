@@ -222,6 +222,7 @@
   let viewMode = $state<ViewMode>("compact");
   let genres = $state<string[]>(["drama"]);
   let sources = $state<string[]>(["tmdb", "anilist"]);
+  let longSelection = $state<string[]>(["long"]);
   let rating = $state<number | null>(7);
   let wizardStep = $state(0);
 
@@ -230,6 +231,7 @@
     { value: "comedy", label: m.admin_components_option_comedy() },
     { value: "documentary", label: m.admin_components_option_documentary() },
     { value: "animation", label: m.admin_components_option_animation() },
+    { value: "long", label: m.admin_components_option_long() },
   ];
   const SOURCE_OPTIONS = [
     { value: "tmdb", label: "TMDB" },
@@ -596,6 +598,11 @@
       options={GENRE_OPTIONS}
       disabled
       onChange={() => {}} />
+    <Combobox
+      label={m.admin_components_combobox_long_label()}
+      options={GENRE_OPTIONS}
+      values={longSelection}
+      onChange={(values) => (longSelection = values)} />
   </div>
 {/snippet}
 
@@ -670,7 +677,7 @@
   <div class="grid max-w-md grid-cols-2 gap-4 sm:grid-cols-3">
     {#each CAROUSEL_ITEMS.slice(0, 3) as title, index (title)}
       <div class="card">
-        <Poster {title} adult={index === 2} />
+        <Poster {title} alt="" adult={index === 2} />
         <p class="truncate p-3 text-sm font-semibold">{title}</p>
       </div>
     {/each}
@@ -702,10 +709,20 @@
     {#each PROVIDERS as provider (provider)}
       <span
         class="border-border bg-surface-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-        <ProviderMark brand={provider} />
+        <ProviderMark brand={provider} decorative />
         {provider}
       </span>
     {/each}
+    <span
+      class="border-border bg-surface-2 flex max-w-sm items-start gap-2 rounded-lg border px-3 py-2 text-sm">
+      <ProviderMark
+        brand="openlibrary"
+        decorative
+        class="mt-0.5 h-4 w-4 shrink-0" />
+      <span class="wrap-anywhere">
+        {m.admin_components_provider_long_name()}
+      </span>
+    </span>
   </div>
 {/snippet}
 
@@ -722,7 +739,7 @@
     label={m.admin_components_carousel_label()}>
     {#snippet card(title)}
       <div class="card w-32">
-        <Poster {title} />
+        <Poster {title} alt="" />
         <p class="truncate p-3 text-xs font-semibold">{title}</p>
       </div>
     {/snippet}

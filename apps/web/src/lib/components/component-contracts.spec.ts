@@ -164,4 +164,36 @@ describe("shared component contracts", () => {
       "style:color={mark.foreground}",
     );
   });
+
+  it("exposes machine-readable relative timestamps", () => {
+    const source = componentSource("RelativeTime");
+
+    expect(source).toContain("<time");
+    expect(source).toContain("datetime={iso}");
+    expect(source).toContain("aria-label={absolute}");
+  });
+
+  it("lets composed artwork avoid duplicate accessible names", () => {
+    const poster = componentSource("Poster");
+    const providerMark = componentSource("ProviderMark");
+
+    expect(poster).toContain("alt?: string;");
+    expect(poster).toContain("alt={resolvedAlt}");
+    expect(poster).toContain(
+      'aria-hidden={resolvedAlt === "" ? "true" : undefined}',
+    );
+    expect(providerMark).toContain("decorative = false");
+    expect(providerMark).toContain(
+      'aria-hidden={decorative ? "true" : undefined}',
+    );
+  });
+
+  it("keeps long combobox content inside the viewport", () => {
+    const source = componentSource("Combobox");
+
+    expect(source).toContain("max-w-[calc(100vw-1rem)]");
+    expect(source).toContain('<span class="truncate">{triggerText}</span>');
+    expect(source).toContain("wrap-anywhere");
+    expect(source).toContain("whitespace-normal");
+  });
 });

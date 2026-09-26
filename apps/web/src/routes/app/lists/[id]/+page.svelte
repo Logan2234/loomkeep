@@ -248,7 +248,8 @@
       class="card group-hover:border-accent overflow-hidden transition-colors">
       <Poster
         src={item.target?.imageUrl ?? null}
-        title={item.target?.title ?? "?"} />
+        title={item.target?.title ?? "?"}
+        alt="" />
     </div>
     {@render addedByMark(item, 24, "ring-bg absolute top-2 left-2 ring-2")}
     <p class="mt-1.5 truncate text-sm font-semibold">
@@ -398,7 +399,8 @@
               <div class="h-16 w-11 shrink-0 overflow-hidden rounded">
                 <Poster
                   src={item.target?.imageUrl ?? null}
-                  title={item.target?.title ?? "?"} />
+                  title={item.target?.title ?? "?"}
+                  alt="" />
               </div>
               <p class="min-w-0 truncate font-semibold">
                 {item.target?.title ?? m.common_work()}

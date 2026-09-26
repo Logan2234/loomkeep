@@ -185,7 +185,7 @@
               class="block w-20">
               <div
                 class="card hover:border-accent overflow-hidden transition-[border-color]">
-                <Poster src={k.posterUrl} title={k.title} />
+                <Poster src={k.posterUrl} title={k.title} alt="" />
               </div>
               <p class="mt-1 truncate text-[0.65rem] font-semibold">
                 {k.title}

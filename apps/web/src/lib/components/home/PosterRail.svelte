@@ -75,7 +75,7 @@
   {#if image}
     {@render image(item)}
   {:else}
-    <Poster src={entry.imageUrl} title={entry.title} />
+    <Poster src={entry.imageUrl} title={entry.title} alt="" />
   {/if}
 {/snippet}
 

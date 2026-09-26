@@ -37,22 +37,6 @@ Retain compact visuals but enlarge interactive hit areas towards 40–44 px usin
 
 **Regression coverage:** measured hitboxes on phone layouts and compact application rows.
 
-### DS-P04 — Improve RelativeTime semantics only if product value warrants it
-
-**Component:** `RelativeTime`.
-
-Use a semantic `<time datetime>` element. Keep the full timestamp available via accessible text/title without desktop hover color behavior. Decide separately whether live refresh is needed: it should be bounded and justified by real long-lived pages, not added automatically.
-
-**Regression coverage:** timestamp semantics and a long-open-page scenario only if refresh is introduced.
-
-### DS-P07 — Decide whether Wizard is truly generic
-
-**Component:** `Wizard`.
-
-There is one real use outside the catalogue and its layout encodes modal/onboarding assumptions. Do not add more generic props now. Either document it as an onboarding-oriented component, or split reusable step-state logic from modal chrome only after a second real usage appears.
-
-If it remains generic, define behavior for empty steps and invalid active indices rather than relying on an array access exception.
-
 ### DS-P08 — Establish form control/error wiring incrementally
 
 **Components:** `PasswordInput`, `FieldError`; potential `FormField`.
@@ -62,14 +46,6 @@ Audit real auth/settings forms and ensure `id`, label, help text, `aria-invalid`
 **Regression coverage:** login, registration and reset-password errors with keyboard and screen-reader tree assertions.
 
 ## P3 — incremental refinements and validation-dependent improvements
-
-### DS-P05 — Avoid duplicate accessible names in Poster and ProviderMark compositions
-
-Add an explicit decorative/alt contract so a provider mark or poster image adjacent to an already-labelled link does not repeat the same name. Preserve meaningful defaults when `Poster` or `ProviderMark` is used independently. Validate with a real screen reader before changing the default behavior.
-
-### DS-P09 — Add long-content cases and width constraints for floating UI
-
-Add catalogue specimens with 80–120 character labels, provider names, options and translated strings. Constrain tooltip and Combobox panel widths to the viewport, allow intentional wrapping or truncation, then verify at 320 px and 200% zoom.
 
 ### Catalogue coverage improvements
 

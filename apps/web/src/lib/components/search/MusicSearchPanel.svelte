@@ -120,7 +120,7 @@
           href={`/app/music/${album.sourceId}`}
           class="absolute inset-0 z-1"
           aria-label={album.title}></a>
-        <Poster src={album.coverUrl} title={album.title} />
+        <Poster src={album.coverUrl} title={album.title} alt="" />
         <div class="flex flex-1 flex-col gap-2 p-3">
           <span class="font-display text-sm leading-tight font-semibold">
             {album.title}
