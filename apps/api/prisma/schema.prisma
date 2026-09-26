@@ -1511,11 +1511,20 @@ model Season {
 }
 
 model Episode {
-  id       String    @id @default(cuid())
-  seasonId String
-  number   Int
-  title    String?
-  airDate  DateTime?
+  id         String    @id @default(cuid())
+  seasonId   String
+  number     Int
+  title      String?
+  airDate    DateTime?
+  // The episode's own length, when the source gives one (TMDB per episode;
+  // AniList only has a per-title duration, copied onto every episode). Stats
+  // fall back to MediaItem.runtimeMin, then a per-type default, when null.
+  runtimeMin Int?
+  // Stored for the upcoming season display rework, not shown yet. Always in
+  // the provider's default language (English): the season endpoint is
+  // queried without one, and there is no per-episode translation table.
+  overview   String?
+  stillUrl   String?
 
   season  Season         @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   watches EpisodeWatch[]

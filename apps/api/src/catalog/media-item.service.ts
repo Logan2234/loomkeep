@@ -37,7 +37,7 @@ const MAX_REFRESHED_PER_RUN = 500;
 // refreshing one at a time.
 const REFRESH_CONCURRENCY = 3;
 
-// Episode rows whose title or air date actually changed, updated at a time.
+// Episode rows whose provider fields actually changed, updated at a time.
 // Matches REFRESH_CONCURRENCY above: same pool, same reason to bound it.
 const EPISODE_UPDATE_CONCURRENCY = 3;
 
@@ -246,7 +246,13 @@ export class MediaItemService {
         id: null,
         number: season.number,
         title: season.title,
-        episodes: season.episodes.map((episode) => ({ id: null, ...episode })),
+        episodes: season.episodes.map((episode) => ({
+          id: null,
+          number: episode.number,
+          title: episode.title,
+          airDate: episode.airDate,
+          runtimeMin: episode.runtimeMin,
+        })),
       })),
     };
   }
@@ -342,8 +348,7 @@ export class MediaItemService {
             episodes: {
               create: season.episodes.map((episode) => ({
                 number: episode.number,
-                title: episode.title,
-                airDate: episode.airDate ? new Date(episode.airDate) : null,
+                ...episodeFields(episode),
               })),
             },
           })),
@@ -427,7 +432,7 @@ export class MediaItemService {
   /**
    * Brings one season's episodes in line with the provider in a fixed number
    * of queries: read what's stored, insert what's missing, and update only
-   * the rows whose title or air date actually moved.
+   * the rows where one of the provider's fields actually moved.
    *
    * It used to be one upsert per episode, strictly sequential — thousands of
    * round-trips for a long-running series, on a path taken both by the
@@ -445,37 +450,28 @@ export class MediaItemService {
 
     const stored = await this.prisma.episode.findMany({
       where: { seasonId },
-      select: { number: true, title: true, airDate: true },
+      select: {
+        number: true,
+        title: true,
+        airDate: true,
+        runtimeMin: true,
+        overview: true,
+        stillUrl: true,
+      },
     });
     const byNumber = new Map(stored.map((e) => [e.number, e]));
 
     const toCreate: Prisma.EpisodeCreateManyInput[] = [];
-    const toUpdate: {
-      number: number;
-      title: string | null;
-      airDate: Date | null;
-    }[] = [];
+    const toUpdate: ({ number: number } & EpisodeFields)[] = [];
 
     for (const episode of episodes) {
-      const airDate = episode.airDate ? new Date(episode.airDate) : null;
+      const fields = episodeFields(episode);
       const current = byNumber.get(episode.number);
 
       if (!current) {
-        toCreate.push({
-          seasonId,
-          number: episode.number,
-          title: episode.title,
-          airDate,
-        });
-      } else if (
-        current.title !== episode.title ||
-        current.airDate?.getTime() !== airDate?.getTime()
-      ) {
-        toUpdate.push({
-          number: episode.number,
-          title: episode.title,
-          airDate,
-        });
+        toCreate.push({ seasonId, number: episode.number, ...fields });
+      } else if (episodeChanged(current, fields)) {
+        toUpdate.push({ number: episode.number, ...fields });
       }
     }
 
@@ -492,11 +488,14 @@ export class MediaItemService {
     // Bounded rather than Promise.all: a provider-wide retitling (or a first
     // sync after a listing overhaul) can touch every episode at once, and an
     // unbounded fan-out would empty the connection pool.
-    await mapWithConcurrency(toUpdate, EPISODE_UPDATE_CONCURRENCY, (episode) =>
-      this.prisma.episode.update({
-        where: { seasonId_number: { seasonId, number: episode.number } },
-        data: { title: episode.title, airDate: episode.airDate },
-      }),
+    await mapWithConcurrency(
+      toUpdate,
+      EPISODE_UPDATE_CONCURRENCY,
+      ({ number, ...fields }) =>
+        this.prisma.episode.update({
+          where: { seasonId_number: { seasonId, number } },
+          data: fields,
+        }),
     );
   }
 
@@ -522,4 +521,29 @@ export class MediaItemService {
       genres: details.genres,
     };
   }
+}
+
+type EpisodeFields = Pick<
+  Prisma.EpisodeCreateManyInput,
+  "title" | "runtimeMin" | "overview" | "stillUrl"
+> & { airDate: Date | null };
+
+function episodeFields(episode: ProviderEpisode): EpisodeFields {
+  return {
+    title: episode.title,
+    airDate: episode.airDate ? new Date(episode.airDate) : null,
+    runtimeMin: episode.runtimeMin,
+    overview: episode.overview,
+    stillUrl: episode.stillUrl,
+  };
+}
+
+function episodeChanged(current: EpisodeFields, next: EpisodeFields): boolean {
+  return (
+    current.title !== next.title ||
+    current.airDate?.getTime() !== next.airDate?.getTime() ||
+    current.runtimeMin !== next.runtimeMin ||
+    current.overview !== next.overview ||
+    current.stillUrl !== next.stillUrl
+  );
 }

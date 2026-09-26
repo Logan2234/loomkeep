@@ -1481,6 +1481,7 @@ export class LibraryService {
           number: episode.number,
           title: episode.title,
           airDate: episode.airDate,
+          runtimeMin: episode.runtimeMin,
           watchCount: 0,
           watches: [],
         })),
@@ -1568,6 +1569,7 @@ export class LibraryService {
           number: episode.number,
           title: episode.title,
           airDate: episode.airDate?.toISOString() ?? null,
+          runtimeMin: episode.runtimeMin,
           watchCount: episode.watches.length,
           watches: episode.watches.map((w) => ({
             id: w.id,

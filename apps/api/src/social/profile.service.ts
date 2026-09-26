@@ -18,7 +18,7 @@ import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
-import { runtimeFor } from "../stats/video-stats.util";
+import { episodeRuntimeFor } from "../stats/video-stats.util";
 import {
   computeHeatmap,
   computeStreak,
@@ -426,6 +426,7 @@ export class ProfileService {
           watchedAt: true,
           episode: {
             select: {
+              runtimeMin: true,
               season: {
                 select: {
                   number: true,
@@ -448,15 +449,17 @@ export class ProfileService {
 
     const watchMinutes = regular.map((w) => ({
       watchedAt: w.watchedAt,
-      minutes: runtimeFor(
+      minutes: episodeRuntimeFor(
         w.episode.season.mediaItem.type,
+        w.episode.runtimeMin,
         w.episode.season.mediaItem.runtimeMin,
       ),
     }));
     const datedMinutes = datedRegular.map((w) => ({
       watchedAt: w.watchedAt,
-      minutes: runtimeFor(
+      minutes: episodeRuntimeFor(
         w.episode.season.mediaItem.type,
+        w.episode.runtimeMin,
         w.episode.season.mediaItem.runtimeMin,
       ),
     }));

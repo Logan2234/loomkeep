@@ -9,6 +9,7 @@ export class MediaDetailEpisodeResponseDto implements MediaDetailEpisodeDto {
   number!: number;
   title!: string | null;
   airDate!: string | null;
+  runtimeMin!: number | null;
   watchCount!: number;
   watches!: EpisodeWatchResponseDto[];
 }

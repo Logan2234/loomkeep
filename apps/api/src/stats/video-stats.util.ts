@@ -20,6 +20,22 @@ export function runtimeFor(type: MediaType, runtimeMin: number | null): number {
   return runtimeMin && runtimeMin > 0 ? runtimeMin : DEFAULT_RUNTIME_MIN[type];
 }
 
+/**
+ * One watched episode's length: its own runtime when the source gave one,
+ * else the title's average, else the per-type default — the single rule every
+ * watch-time figure (stats, profile, advanced stats) must share, or the same
+ * viewing would add up differently from one screen to the next.
+ */
+export function episodeRuntimeFor(
+  type: MediaType,
+  episodeRuntimeMin: number | null,
+  itemRuntimeMin: number | null,
+): number {
+  return episodeRuntimeMin && episodeRuntimeMin > 0
+    ? episodeRuntimeMin
+    : runtimeFor(type, itemRuntimeMin);
+}
+
 export interface TypeSplitInput {
   type: MediaType;
   minutes: number;

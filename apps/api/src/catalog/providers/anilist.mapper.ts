@@ -211,6 +211,9 @@ function buildEpisodes(media: AnilistMedia): ProviderEpisode[] {
     number: index + 1,
     title: media.streamingEpisodes?.[index]?.title ?? null,
     airDate: null,
+    runtimeMin: media.duration ?? null,
+    overview: null,
+    stillUrl: null,
   }));
 }
 
