@@ -179,7 +179,10 @@
       target="_blank"
       rel="noopener noreferrer"
       class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
-      <ProviderMark brand="igdb" decorative class="h-3 w-3 shrink-0 opacity-70" />
+      <ProviderMark
+        brand="igdb"
+        decorative
+        class="h-3 w-3 shrink-0 opacity-70" />
       {m.datasource_igdb_notice()}
     </a>
   {/if}
