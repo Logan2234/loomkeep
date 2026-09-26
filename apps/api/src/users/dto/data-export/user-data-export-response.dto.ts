@@ -1,5 +1,6 @@
 import type { UserDataExportDto } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
+import { SavedViewResponseDto } from "../../../saved-views/dto/saved-view.dto";
 import { UserResponseDto } from "../user-response.dto";
 import { DataExportBlockResponseDto } from "./data-export-block-response.dto";
 import { DataExportBookEntryResponseDto } from "./data-export-book-entry-response.dto";
@@ -71,4 +72,5 @@ export class UserDataExportResponseDto implements UserDataExportDto {
   subscriptions!: DataExportSubscriptionResponseDto[];
   readingGoals!: DataExportReadingGoalResponseDto[];
   importRuns!: DataExportImportRunResponseDto[];
+  savedViews!: SavedViewResponseDto[];
 }

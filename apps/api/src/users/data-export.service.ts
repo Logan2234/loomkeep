@@ -1,4 +1,8 @@
-import type { UserDataExportDto } from "@loomkeep/shared";
+import type {
+  SavedViewDomain,
+  SavedViewFiltersDto,
+  UserDataExportDto,
+} from "@loomkeep/shared";
 import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto } from "../auth/auth.service";
@@ -60,6 +64,7 @@ export class DataExportService {
       subscriptionRows,
       readingGoalRows,
       importRunRows,
+      savedViewRows,
     ] = await Promise.all([
       this.prisma.libraryEntry.findMany({
         where: { userId },
@@ -184,6 +189,10 @@ export class DataExportService {
       this.prisma.importRun.findMany({
         where: { userId },
         orderBy: { startedAt: "asc" },
+      }),
+      this.prisma.savedView.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
       }),
     ]);
 
@@ -481,6 +490,14 @@ export class DataExportService {
         error: i.error,
         startedAt: i.startedAt.toISOString(),
         finishedAt: i.finishedAt.toISOString(),
+      })),
+      savedViews: savedViewRows.map((v) => ({
+        id: v.id,
+        name: v.name,
+        domain: v.domain as SavedViewDomain,
+        filters: v.filters as SavedViewFiltersDto,
+        createdAt: v.createdAt.toISOString(),
+        updatedAt: v.updatedAt.toISOString(),
       })),
     };
   }
