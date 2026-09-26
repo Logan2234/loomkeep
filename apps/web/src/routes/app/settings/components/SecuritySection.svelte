@@ -20,6 +20,7 @@
   import Modal from "$lib/components/Modal.svelte";
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import PasswordRequirements from "$lib/components/PasswordRequirements.svelte";
+  import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import { isPasswordValid } from "@loomkeep/shared";
@@ -490,12 +491,13 @@
               inputmode="numeric"
               autocomplete="one-time-code"
               minlength="6"
-              maxlength="6"
               required
               enterkeyhint="done"
               class="input"
               placeholder="123456"
-              bind:value={emailCodeInput} />
+              value={emailCodeInput}
+              oninput={(e) =>
+                (emailCodeInput = normalizeCodeInput(e.currentTarget, 6))} />
           </label>
           {#if confirmEmailMut.error}
             <p class="text-danger text-sm">{confirmEmailMut.error}</p>

@@ -16,6 +16,7 @@
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { Cooldown } from "$lib/cooldown.svelte";
+  import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
   import type { MfaMethod } from "@loomkeep/shared";
 
@@ -122,14 +123,6 @@
     onSuccess: () =>
       goto(safeRedirect(page.url.searchParams.get("redirectTo"))),
   }));
-
-  // Codes are often pasted with spaces around or within them ("123 456" in
-  // an email). A `maxlength` would count those spaces and cut digits off
-  // before they could be trimmed, so the cap applies once they're removed.
-  function normalizeCode(value: string): string {
-    const length = selectedMethod === "recovery" ? 11 : 6;
-    return value.replace(/\s/g, "").slice(0, length);
-  }
 
   function verifyCode(event: SubmitEvent) {
     event.preventDefault();
@@ -322,10 +315,11 @@
           class="input font-mono text-lg tracking-[0.3em]"
           placeholder={selectedMethod === "recovery" ? "XXXXX-XXXXX" : "000000"}
           value={codeInput}
-          oninput={(e) => {
-            codeInput = normalizeCode(e.currentTarget.value);
-            e.currentTarget.value = codeInput;
-          }} />
+          oninput={(e) =>
+            (codeInput = normalizeCodeInput(
+              e.currentTarget,
+              selectedMethod === "recovery" ? 11 : 6,
+            ))} />
       </label>
 
       {#if selectedMethod === "email"}
