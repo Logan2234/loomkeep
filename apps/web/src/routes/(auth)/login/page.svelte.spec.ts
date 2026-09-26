@@ -104,16 +104,29 @@ describe("login page", () => {
     await waitFor(() => expect(goto).toHaveBeenCalledWith("/app/books?fav=1"));
   });
 
-  it.each(["https://evil.example", "//evil.example"])(
-    "never follows an external redirect target (%s)",
-    async (target) => {
-      visit(`/login?redirectTo=${encodeURIComponent(target)}`);
-      serveLogin();
-      await signIn();
+  // Browsers read "\" as "/" and drop tabs/newlines in a URL, so the last
+  // three all resolve to https://evil.example.
+  it.each([
+    "https://evil.example",
+    "//evil.example",
+    "/\\evil.example",
+    "/\t/evil.example",
+    "/\n/evil.example",
+  ])("never follows an external redirect target (%s)", async (target) => {
+    visit(`/login?redirectTo=${encodeURIComponent(target)}`);
+    serveLogin();
+    await signIn();
 
-      await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
-    },
-  );
+    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
+  });
+
+  it("falls back to the app on a redirect target that isn't a URL", async () => {
+    visit(`/login?redirectTo=${encodeURIComponent("http://[")}`);
+    serveLogin();
+    await signIn();
+
+    await waitFor(() => expect(goto).toHaveBeenCalledWith("/app"));
+  });
 
   it("explains a rejected sign-in and stays on the form", async () => {
     serveLogin(() =>

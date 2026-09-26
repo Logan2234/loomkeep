@@ -31,10 +31,20 @@
   let codeInput = $state("");
   const resendCooldown = new Cooldown();
 
-  // Only follow redirectTo when it's an internal path — anything else could
-  // be an open-redirect vector (e.g. redirectTo=https://evil.example).
+  // Only follow redirectTo when it stays on this site — anything else could
+  // be an open-redirect vector (e.g. redirectTo=https://evil.example). The
+  // browser's own URL parser decides rather than a prefix check: it reads
+  // "/\evil.example" or a tab-split "/\t/evil.example" as another host.
   function safeRedirect(target: string | null): string {
-    if (target?.startsWith("/") && !target.startsWith("//")) return target;
+    if (!target) return "/app";
+    try {
+      const url = new URL(target, page.url.origin);
+      if (url.origin === page.url.origin) {
+        return url.pathname + url.search + url.hash;
+      }
+    } catch {
+      // Not a URL at all: fall through to the default.
+    }
     return "/app";
   }
 
