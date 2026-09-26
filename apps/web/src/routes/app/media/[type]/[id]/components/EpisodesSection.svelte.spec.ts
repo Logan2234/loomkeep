@@ -23,6 +23,7 @@ function episode(season: number, number: number, watchCount = 0) {
     number,
     title: `Episode ${season}.${number}`,
     airDate: inDays(-30),
+    runtimeMin: null as number | null,
     watchCount,
     watches: watchCount
       ? [
@@ -113,6 +114,16 @@ describe("EpisodesSection", () => {
     expect(screen.getByText("Episode 1.1")).toBeTruthy();
     expect(screen.queryByText("Episode 2.1")).toBeNull();
     expect(seasonHeader(1).getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("shows an episode's runtime as a timecode, and nothing when unknown", async () => {
+    const withRuntime = season(1);
+    withRuntime.episodes[0].runtimeMin = 48;
+    const { user } = renderSection([withRuntime]);
+    await openSeason(user);
+
+    expect(screen.getByText("48:00")).toBeTruthy();
+    expect(screen.getAllByText(m.media_episode_runtime())).toHaveLength(1);
   });
 
   it("marks the next episode watched right away", async () => {

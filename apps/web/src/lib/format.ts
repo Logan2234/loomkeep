@@ -139,6 +139,18 @@ export function formatDurationMs(ms: number, locale?: string): string {
   return `${formatNumber(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, locale)} s`;
 }
 
+/**
+ * A length in minutes as a Séance timecode (DESIGN.md): "48:00" under an
+ * hour, "2:46:00" from an hour up. Locale-independent on purpose — the
+ * timecode is a visual device, not a sentence.
+ */
+export function formatRuntimeTimecode(minutes: number): string {
+  const rounded = Math.round(minutes);
+  const hours = Math.floor(rounded / 60);
+  const mins = String(rounded % 60).padStart(2, "0");
+  return hours > 0 ? `${hours}:${mins}:00` : `${mins}:00`;
+}
+
 const relativeTimeFormatCache = new Map<string, Intl.RelativeTimeFormat>();
 
 function getRelativeTimeFormat(locale: string): Intl.RelativeTimeFormat {

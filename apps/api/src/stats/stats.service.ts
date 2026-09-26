@@ -45,6 +45,7 @@ import {
   classifyStaleness,
   computeTypeSplit,
   countCompletedSeasons,
+  episodeRuntimeFor,
   lastWatchedPerMediaItem,
   runtimeFor,
   type TypeSplitInput,
@@ -421,6 +422,7 @@ export class StatsService {
             select: {
               id: true,
               seasonId: true,
+              runtimeMin: true,
               season: {
                 select: {
                   mediaItemId: true,
@@ -441,7 +443,11 @@ export class StatsService {
 
     for (const w of regularWatches) {
       const mi = w.episode.season.mediaItem;
-      const minutes = runtimeFor(mi.type, mi.runtimeMin);
+      const minutes = episodeRuntimeFor(
+        mi.type,
+        w.episode.runtimeMin,
+        mi.runtimeMin,
+      );
       episodeMinutes += minutes;
       typeSplitRows.push({ type: mi.type, minutes });
     }

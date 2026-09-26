@@ -201,9 +201,55 @@ describe("TmdbProvider", () => {
     expect(details.seasons.map((s) => s.number)).toEqual([0, 1]);
     const seasonOne = details.seasons.find((s) => s.number === 1);
     expect(seasonOne?.episodes).toEqual([
-      { number: 1, title: "Pilot", airDate: "2008-01-20" },
-      { number: 2, title: "Cat's in the Bag...", airDate: "2008-01-27" },
+      {
+        number: 1,
+        title: "Pilot",
+        airDate: "2008-01-20",
+        runtimeMin: 58,
+        overview:
+          "A high school chemistry teacher learns he has terminal cancer.",
+        stillUrl: null,
+      },
+      {
+        number: 2,
+        title: "Cat's in the Bag...",
+        airDate: "2008-01-27",
+        runtimeMin: 48,
+        overview: "Walt and Jesse attempt to dispose of the bodies.",
+        stillUrl: null,
+      },
     ]);
+  });
+
+  it("falls back to the median episode runtime, specials excluded, when episode_run_time is empty", async () => {
+    // Most recent series ship an empty episode_run_time; without this their
+    // watch time fell back to the generic 42-minute default.
+    const special = { episode_number: 1, name: "Recap", runtime: 3 };
+    mockFetchByUrl({
+      "/tv/1396/season/0": {
+        episodes: [special, { ...special, episode_number: 2 }],
+      },
+      "/tv/1396/season/1": {
+        episodes: [
+          { episode_number: 1, runtime: 58, still_path: "/pilot.jpg" },
+          { episode_number: 2, runtime: 0 },
+          { episode_number: 3, runtime: 48 },
+          { episode_number: 4, runtime: 50 },
+        ],
+      },
+      "/tv/1396": {
+        ...(fixture("tmdb-tv-details.json") as object),
+        episode_run_time: [],
+      },
+    });
+
+    const details = await provider.getDetails("1396", MediaType.SERIES);
+
+    expect(details.runtimeMin).toBe(50);
+    const pilot = details.seasons.find((s) => s.number === 1)?.episodes[0];
+    expect(pilot?.stillUrl).toBe("https://image.tmdb.org/t/p/w300/pilot.jpg");
+    // TMDB's 0 means "unknown", not a zero-minute episode.
+    expect(details.seasons[1].episodes[1].runtimeMin).toBeNull();
   });
 
   it("maps a person with a most-popular, deduped, poster-only knownFor list", async () => {

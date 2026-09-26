@@ -16,7 +16,11 @@
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import { appConfig } from "$lib/config.svelte";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRuntimeTimecode,
+  } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
   import type {
@@ -402,6 +406,12 @@
                       <span class="text-success">×{episode.watchCount}</span>
                     {/if}
                   </span>
+                  {#if episode.runtimeMin}
+                    <span class="timecode shrink-0 text-xs">
+                      <span class="sr-only">{m.media_episode_runtime()}</span>
+                      {formatRuntimeTimecode(episode.runtimeMin)}
+                    </span>
+                  {/if}
                 </div>
 
                 <!-- Right-aligned on its own line: indenting it under the

@@ -143,6 +143,8 @@ interface EpisodeDto {
   number: number;
   title: string | null;
   airDate: string | null;
+  /** The episode's own length in minutes, when the source gives one. */
+  runtimeMin: number | null;
 }
 
 interface SeasonDto {
@@ -169,6 +171,8 @@ export interface MediaDetailEpisodeDto {
   number: number;
   title: string | null;
   airDate: string | null;
+  /** The episode's own length in minutes, when the source gives one. */
+  runtimeMin: number | null;
   watchCount: number;
   /** The current user's viewings of this episode (date + rating), most recent first. */
   watches: EpisodeWatchDto[];

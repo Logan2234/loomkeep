@@ -184,6 +184,40 @@ describe("MediaItemService episode sync", () => {
     expect(updated.sort()).toEqual([1, 3]);
   });
 
+  it("backfills the runtime, overview and still of an already-stored episode", async () => {
+    // Episodes stored before these columns existed must pick them up on the
+    // next refresh, even though their title and air date did not move.
+    const { service, prisma } = makeService([
+      {
+        number: 1,
+        title: "Pilote",
+        airDate: null,
+        runtimeMin: null,
+        overview: null,
+        stillUrl: null,
+      },
+    ]);
+
+    await sync(service, [
+      {
+        number: 1,
+        title: "Pilote",
+        airDate: null,
+        runtimeMin: 47,
+        overview: "Mark reçoit une promotion.",
+        stillUrl: "https://image.tmdb.org/t/p/w300/still.jpg",
+      },
+    ]);
+
+    expect(prisma.episode.update).toHaveBeenCalledTimes(1);
+    const [[call]] = (prisma.episode.update as Mock).mock.calls;
+    expect(call.data).toMatchObject({
+      runtimeMin: 47,
+      overview: "Mark reçoit une promotion.",
+      stillUrl: "https://image.tmdb.org/t/p/w300/still.jpg",
+    });
+  });
+
   it("never deletes an episode the provider stopped listing", async () => {
     // An EpisodeWatch has to keep a valid target even if the source
     // reorganises its listing.

@@ -22,7 +22,7 @@ import type {
 } from "../../stats/advanced-stats.source";
 import { computeRatingDistribution } from "../../stats/rating-distribution.util";
 import { StatsService } from "../../stats/stats.service";
-import { runtimeFor } from "../../stats/video-stats.util";
+import { episodeRuntimeFor } from "../../stats/video-stats.util";
 import {
   computeHeatmap,
   computeHourCounts,
@@ -274,6 +274,7 @@ export class AdvancedStatsService implements AdvancedStatsSource {
         watchedAt: true,
         episode: {
           select: {
+            runtimeMin: true,
             season: {
               select: {
                 mediaItem: { select: { type: true, runtimeMin: true } },
@@ -299,8 +300,9 @@ export class AdvancedStatsService implements AdvancedStatsSource {
 
     const datedMinutes = regular.map((w) => ({
       watchedAt: w.watchedAt,
-      minutes: runtimeFor(
+      minutes: episodeRuntimeFor(
         w.episode.season.mediaItem.type,
+        w.episode.runtimeMin,
         w.episode.season.mediaItem.runtimeMin,
       ),
     }));
