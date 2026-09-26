@@ -1,4 +1,6 @@
 import { m } from "$lib/paraglide/messages.js";
+import { apiUrl, server } from "$lib/test/msw";
+import { renderWithQuery } from "$lib/test/render";
 import {
   Domain,
   ErrorCode,
@@ -10,8 +12,6 @@ import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiUrl, server } from "../../test/msw";
-import { renderWithQuery } from "../../test/render";
 import { importJobError } from "./import-presentation";
 import ImportWizard from "./ImportWizard.svelte";
 

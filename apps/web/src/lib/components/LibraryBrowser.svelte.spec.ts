@@ -1,30 +1,21 @@
 import { ApiError } from "$lib/api/core";
 import { resolveApiError } from "$lib/api/errors";
 import { m } from "$lib/paraglide/messages.js";
+import { apiUrl, server } from "$lib/test/msw";
+import { goto, visit } from "$lib/test/navigation.svelte";
+import { renderWithQuery } from "$lib/test/render";
 import { ErrorCode, type PagedResult } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createRawSnippet } from "svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiUrl, server } from "../../test/msw";
-import { renderWithQuery } from "../../test/render";
 import LibraryBrowser, {
   type LibraryLoadParams,
 } from "./LibraryBrowser.svelte";
 
-const nav = vi.hoisted(() => ({
-  url: new URL("http://localhost/app/books"),
-  goto: vi.fn(async () => {}),
-}));
-vi.mock("$app/state", () => ({
-  page: {
-    get url() {
-      return nav.url;
-    },
-  },
-}));
-vi.mock("$app/navigation", () => ({ goto: nav.goto }));
+vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
+vi.mock("$app/navigation", () => import("$lib/test/navigation.svelte"));
 
 // happy-dom's IntersectionObserver never reports an intersection, so the
 // infinite-scroll sentinel is driven by hand.
@@ -95,8 +86,7 @@ const lastLoad = (load: ReturnType<typeof vi.fn>) =>
   load.mock.lastCall?.[0] as LibraryLoadParams;
 
 beforeEach(() => {
-  nav.url = new URL("http://localhost/app/books");
-  nav.goto.mockClear();
+  visit("/app/books");
   server.use(http.get(apiUrl("/saved-views"), () => HttpResponse.json([])));
 });
 
@@ -137,9 +127,7 @@ describe("LibraryBrowser", () => {
   });
 
   it("restores the filters a previous visit left in the address", async () => {
-    nav.url = new URL(
-      "http://localhost/app/books?q=dune&status=READ&fav=1&sort=title&order=asc",
-    );
+    visit("/app/books?q=dune&status=READ&fav=1&sort=title&order=asc");
     const load = vi.fn(async () => pageOf([DUNE]));
     renderBrowser(load);
 
@@ -172,10 +160,25 @@ describe("LibraryBrowser", () => {
         page: 1,
       }),
     );
-    expect(nav.goto).toHaveBeenLastCalledWith(
+    expect(goto).toHaveBeenLastCalledWith(
       "?fav=1&order=asc",
       expect.objectContaining({ replaceState: true }),
     );
+  });
+
+  // Regression for #182: syncing the address used to re-trigger itself,
+  // navigating forever as soon as the page mounted.
+  it("syncs the address once per change, not in a loop", async () => {
+    const load = vi.fn(async () => pageOf([DUNE]));
+    renderBrowser(load);
+    await screen.findByText("Dune");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: m.common_favorites() }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(goto.mock.calls.length).toBeLessThanOrEqual(3);
   });
 
   it("filters by status through the status picker", async () => {
@@ -225,7 +228,7 @@ describe("LibraryBrowser", () => {
   });
 
   it("offers to clear filters that match nothing", async () => {
-    nav.url = new URL("http://localhost/app/books?fav=1");
+    visit("/app/books?fav=1");
     const load = vi.fn(async ({ favoritesOnly }: LibraryLoadParams) =>
       favoritesOnly ? pageOf([]) : pageOf([DUNE]),
     );

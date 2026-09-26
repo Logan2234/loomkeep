@@ -28,7 +28,7 @@ export default defineConfig({
           name: "component",
           environment: "happy-dom",
           include: ["src/**/*.svelte.spec.ts"],
-          setupFiles: ["./src/test/setup.ts"],
+          setupFiles: ["./src/lib/test/setup.ts"],
         },
       },
     ],
@@ -38,7 +38,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,svelte}"],
       // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
-      exclude: ["src/**/*.spec.ts", "src/test/**"],
+      exclude: ["src/**/*.spec.ts", "src/lib/test/**"],
     },
   },
 });
