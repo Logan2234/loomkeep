@@ -25,7 +25,13 @@ function episode(season: number, number: number, watchCount = 0) {
     airDate: inDays(-30),
     watchCount,
     watches: watchCount
-      ? [{ id: `w${season}${number}`, watchedAt: inDays(-1), rating: null }]
+      ? [
+          {
+            id: `w${season}${number}`,
+            episodeId: `s${season}e${number}`,
+            watchedAt: inDays(-1),
+          },
+        ]
       : [],
   };
 }
