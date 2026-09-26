@@ -182,13 +182,16 @@ fix does.
   rendering.
 - Test behaviour, not internals: query by role/label, and take expected text
   from `m.*()` rather than hardcoding the French copy.
-- The API is stubbed at the network level with msw (`src/test/msw.ts`,
+- The API is stubbed at the network level with msw (`src/lib/test/msw.ts`,
   `server.use(http.get(apiUrl(...)))`), so `core.ts` and the TanStack helpers
   run for real — don't `vi.mock` `$lib/api/*` per component. An unhandled
   request fails the test. A component using the API helpers renders through
-  `renderWithQuery()` (`src/test/render.ts`), which provides a fresh
-  retry-less `QueryClient`. `$app/*` and the realtime socket are mocked per
-  spec file.
+  `renderWithQuery()` (`src/lib/test/render.ts`), which provides a fresh
+  retry-less `QueryClient`. `$app/state` + `$app/navigation` are mocked with
+  `src/lib/test/navigation.svelte.ts` (reactive `page.url`, a `goto` that
+  updates it like SvelteKit does); the realtime socket per spec file. Props a
+  test changes after mounting live in a `$state` object — the reason specs
+  are `.svelte.spec.ts`.
 - No coverage threshold (Codecov stays informational) and no snapshot tests.
   Browser E2E (Playwright against the API on the `e2e` schema) is
   deliberately deferred until the component layer is settled.
