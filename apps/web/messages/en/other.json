@@ -213,6 +213,7 @@
   "settings_datasources_title": "Data sources",
   "settings_datasources_body": "Loomkeep queries these catalogues live for search and detail pages; it doesn't host or edit them. Each remains subject to its own terms of use and licenses.",
   "datasource_tmdb_notice": "This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
+  "datasource_igdb_notice": "Games metadata is powered by IGDB.com",
   "settings_datasources_openlibrary_notice": "Book data provided by Open Library (Internet Archive) — catalogue data licensed CC0.",
   "settings_datasources_omdb_notice": "IMDb, Rotten Tomatoes and Metacritic scores provided by OMDb, under a Creative Commons BY-NC 4.0 license.",
   "settings_datasources_anilist_notice": "Anime data provided by AniList.",

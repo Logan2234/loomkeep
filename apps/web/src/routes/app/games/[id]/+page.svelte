@@ -24,11 +24,13 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
+  import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "$lib/components/TrackingPanel.svelte";
   import { appConfig } from "$lib/config.svelte";
+  import { IGDB_API } from "$lib/constants/external-links";
   import {
     GAME_OWNERSHIP_SOURCES,
     GAME_OWNERSHIP_STATUS_OPTIONS,
@@ -472,6 +474,20 @@
         <RelatedCarousel
           title={m.media_similar_titles()}
           items={toCarouselItems(detail.similarGames, "/app/games")} />
+
+        <!-- Attribution required by the IGDB API/Data Commercial Usage
+             Addendum: linked mention on every page using IGDB Services. -->
+        <a
+          href={IGDB_API}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
+          <ProviderMark
+            brand="igdb"
+            decorative
+            class="h-3 w-3 shrink-0 opacity-70" />
+          {m.datasource_igdb_notice()}
+        </a>
 
         {#if entry}
           <ReviewsSection

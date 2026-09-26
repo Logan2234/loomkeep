@@ -13,6 +13,8 @@
   import Icon from "$lib/components/Icon.svelte";
   import Poster from "$lib/components/Poster.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
+  import ProviderMark from "$lib/components/ProviderMark.svelte";
+  import { IGDB_API } from "$lib/constants/external-links";
   import { debounce } from "$lib/debounce";
   import { m } from "$lib/paraglide/messages.js";
   import type { GameSummaryDto } from "@loomkeep/shared";
@@ -168,6 +170,19 @@
       </div>
     {/each}
   </PosterGrid>
+
+  {#if !limit}
+    <!-- Attribution required by the IGDB API/Data Commercial Usage
+         Addendum: linked mention after IGDB results on the search page. -->
+    <a
+      href={IGDB_API}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-dim hover:text-accent text-micro mt-4 flex w-fit items-center gap-1.5 transition-colors">
+      <ProviderMark brand="igdb" decorative class="h-3 w-3 shrink-0 opacity-70" />
+      {m.datasource_igdb_notice()}
+    </a>
+  {/if}
 {:else if !limit}
   {#if searched}
     <p class="timecode text-sm">{m.search_games_empty()}</p>
