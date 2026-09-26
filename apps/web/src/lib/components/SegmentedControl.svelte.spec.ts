@@ -4,13 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import SegmentedControl from "./SegmentedControl.svelte";
 
-// Tooltip's bubble scales in without going through prefersReducedMotion(),
-// and happy-dom never finishes an animation: the bubble would never leave.
-vi.mock("svelte/transition", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("svelte/transition")>()),
-  scale: () => ({ duration: 0 }),
-}));
-
 type View = "grid" | "list" | "table";
 
 function renderControl(
