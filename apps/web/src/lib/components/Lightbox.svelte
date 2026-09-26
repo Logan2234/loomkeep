@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from "$lib/actions/dialogFocus";
+  import { portal } from "$lib/actions/portal";
   import { scrollLock } from "$lib/actions/scrollLock";
   import { m } from "$lib/paraglide/messages.js";
   import { prefersReducedMotion } from "$lib/motion";
@@ -56,6 +57,7 @@
 </script>
 
 <div
+  use:portal
   use:scrollLock
   use:dialogFocus={{ initialFocus: closeButton, onEscape: onClose }}
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
