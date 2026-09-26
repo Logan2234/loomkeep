@@ -72,6 +72,11 @@ class HomeWidgetConfigBody {
 
   @IsOptional()
   @IsString()
+  @MaxLength(64)
+  viewId?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(HOME_LAYOUT_LIMITS.noteLength)
   text?: string;
 

@@ -1,6 +1,6 @@
 import { formatRetryDelay } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode, SAVED_VIEW_LIMITS } from "@loomkeep/shared";
 import { ApiError } from "./core";
 
 /**
@@ -71,6 +71,14 @@ const MESSAGES = {
   [ErrorCode.LibraryReplayNotMovie]: () => m.apierr_library_replay_not_movie(),
   [ErrorCode.LibraryReplayNotFound]: () => m.apierr_library_replay_not_found(),
   [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
+  [ErrorCode.LibrarySavedViewNotFound]: () =>
+    m.apierr_library_saved_view_not_found(),
+  [ErrorCode.LibrarySavedViewFreeQuotaExceeded]: () =>
+    m.apierr_library_saved_view_free_quota_exceeded({
+      free: SAVED_VIEW_LIMITS.free,
+    }),
+  [ErrorCode.LibrarySavedViewLimitReached]: () =>
+    m.apierr_library_saved_view_limit_reached({ max: SAVED_VIEW_LIMITS.max }),
   [ErrorCode.CatalogUnknownMediaType]: () =>
     m.apierr_catalog_unknown_media_type(),
   [ErrorCode.CatalogNoPersonDetails]: () =>

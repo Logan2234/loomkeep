@@ -60,6 +60,7 @@ function makeService() {
     subscription: { findMany: vi.fn().mockResolvedValue([]) },
     readingGoal: { findMany: vi.fn().mockResolvedValue([]) },
     importRun: { findMany: vi.fn().mockResolvedValue([]) },
+    savedView: { findMany: vi.fn().mockResolvedValue([]) },
     mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
     gameItem: { findMany: vi.fn().mockResolvedValue([]) },
     bookItem: { findMany: vi.fn().mockResolvedValue([]) },
@@ -299,5 +300,34 @@ describe("DataExportService.buildExport", () => {
     expect(result.entitlement).toEqual(
       expect.objectContaining({ plan: "FREE" }),
     );
+  });
+
+  it("includes saved library views, by the id home widgets refer to", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+    (prisma.savedView.findMany as Mock).mockResolvedValue([
+      {
+        id: "view-1",
+        userId: "user-1",
+        name: "Backlog Switch",
+        domain: "GAMES",
+        filters: { statuses: ["BACKLOG"], sort: "added" },
+        createdAt: new Date("2026-09-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-09-02T00:00:00.000Z"),
+      },
+    ]);
+
+    const result = await service.buildExport("user-1");
+
+    expect(result.savedViews).toEqual([
+      {
+        id: "view-1",
+        name: "Backlog Switch",
+        domain: "GAMES",
+        filters: { statuses: ["BACKLOG"], sort: "added" },
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-02T00:00:00.000Z",
+      },
+    ]);
   });
 });

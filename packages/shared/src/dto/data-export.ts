@@ -31,6 +31,7 @@ import type {
   VisibilityAudience,
   VisibilityFacet,
 } from "../enums";
+import type { SavedViewDto } from "./saved-view";
 import { UserDto } from "./user";
 
 export interface DataExportEntry {
@@ -323,6 +324,8 @@ export interface UserDataExportDto {
   subscriptions: DataExportSubscription[];
   readingGoals: DataExportReadingGoal[];
   importRuns: DataExportImportRun[];
+  /** With their ids: a home widget of `account.homeLayout` refers to one by it. */
+  savedViews: SavedViewDto[];
 }
 
 /**

@@ -23,6 +23,7 @@
   import DomainsConfig from "./config/DomainsConfig.svelte";
   import ListContentConfig from "./config/ListContentConfig.svelte";
   import QuickLinksConfig from "./config/QuickLinksConfig.svelte";
+  import SavedViewConfig from "./config/SavedViewConfig.svelte";
 
   let {
     widget,
@@ -38,6 +39,7 @@
   const stored = untrack(() => widget.config ?? {});
   let links = $state(stored.links ?? DEFAULT_QUICK_LINKS);
   let listId = $state(stored.listId);
+  let viewId = $state(stored.viewId);
   let text = $state(stored.text ?? "");
   let domains = $state(stored.domains ?? []);
   let mediaTypes = $state<MediaType[]>(stored.mediaTypes ?? []);
@@ -54,6 +56,7 @@
       quickLinks: () => ({ links }),
       note: () => ({ text }),
       listContent: () => ({ listId }),
+      savedView: () => ({ viewId }),
       activity: () => ({ domains }),
       favorites: () => ({ domains }),
       toWatch: () => ({ mediaTypes }),
@@ -131,6 +134,8 @@
       <QuickLinksConfig bind:links />
     {:else if widget.type === "listContent"}
       <ListContentConfig bind:listId />
+    {:else if widget.type === "savedView"}
+      <SavedViewConfig bind:viewId />
     {:else if widget.type === "activity" || widget.type === "favorites"}
       <DomainsConfig bind:domains />
     {:else if widget.type === "toWatch" || widget.type === "tonightPick"}
@@ -204,7 +209,8 @@
       <button
         type="button"
         class="btn btn-primary"
-        disabled={widget.type === "listContent" && !listId}
+        disabled={(widget.type === "listContent" && !listId) ||
+          (widget.type === "savedView" && !viewId)}
         onclick={apply}>
         {m.common_apply()}
       </button>

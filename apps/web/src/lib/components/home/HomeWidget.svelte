@@ -20,6 +20,7 @@
   import QuickSearchWidget from "./widgets/QuickSearchWidget.svelte";
   import ReadingGoalWidget from "./widgets/ReadingGoalWidget.svelte";
   import ResumeWidget from "./widgets/ResumeWidget.svelte";
+  import SavedViewWidget from "./widgets/SavedViewWidget.svelte";
   import ThisWeekWidget from "./widgets/ThisWeekWidget.svelte";
   import ToWatchWidget from "./widgets/ToWatchWidget.svelte";
 
@@ -48,6 +49,8 @@
   <MyListsWidget {widget} {size} />
 {:else if widget.type === "listContent"}
   <ListContentWidget {widget} {size} />
+{:else if widget.type === "savedView"}
+  <SavedViewWidget {widget} {size} />
 {:else if widget.type === "dividerHorizontal"}
   <DividerWidget />
 {:else if widget.type === "dividerVertical"}

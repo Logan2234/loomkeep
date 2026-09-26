@@ -17,4 +17,5 @@ export * from "./mfa";
 export * from "./music";
 export * from "./notifications";
 export * from "./reviews";
+export * from "./saved-views";
 export * from "./social";

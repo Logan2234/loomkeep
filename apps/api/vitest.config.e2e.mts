@@ -30,6 +30,8 @@ export default defineConfig({
       reportsDirectory: "./coverage-e2e",
       include: ["src/**/*.{ts,js}"],
       reporter: ["lcov", "text", "html"],
+      // The unit specs never run here: kept in, each would report at 0%.
+      exclude: ["src/**/*.spec.ts"],
     },
   },
 });

@@ -287,8 +287,10 @@
       block: "center",
       behavior: reduced ? "auto" : "smooth",
     });
-    // A list or a note shows nothing until it's set up.
-    if (type === "listContent" || type === "note") configuring = id;
+    // A list, a view or a note shows nothing until it's set up.
+    if (type === "listContent" || type === "savedView" || type === "note") {
+      configuring = id;
+    }
   }
 
   function remove(widget: HomeWidgetDto) {

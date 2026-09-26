@@ -110,20 +110,6 @@ describe("resolveHomeLayout", () => {
     expect(out[0]).toMatchObject({ x: 9, w: 3, h: 3 });
   });
 
-  it("never shows a widget that isn't shipped yet", () => {
-    const out = resolveHomeLayout(
-      {
-        widgets: [
-          { id: "q", type: "quickLinks", x: 0, y: 0, w: 3, h: 4 },
-          { id: "s", type: "savedView", x: 3, y: 0, w: 6, h: 5 },
-        ],
-      },
-      gate(ALL),
-    );
-
-    expect(out.map((w) => w.id)).toEqual(["q"]);
-  });
-
   it("falls back to the default page when nothing but dividers is left", () => {
     const stored = {
       widgets: [

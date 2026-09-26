@@ -78,6 +78,11 @@ export const keys = {
     newsletterUnsubscribe: (token: string) =>
       ["verification", "newsletter-unsubscribe", token] as const,
   },
+  savedViews: {
+    all: () => ["saved-views"] as const,
+    content: (id: string, filters: unknown) =>
+      ["saved-views", "content", id, filters] as const,
+  },
   lists: {
     editable: () => ["lists", "editable"] as const,
     membership: (targetType: string, targetId: string) =>

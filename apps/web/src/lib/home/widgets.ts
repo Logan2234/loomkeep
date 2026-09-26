@@ -193,7 +193,8 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     min: { w: 3, h: 4 },
     max: { w: 12, h: 8 },
     initial: { w: 6, h: 5 },
-    comingSoon: true,
+    repeatable: true,
+    configurable: true,
     available: always,
   },
   note: {
