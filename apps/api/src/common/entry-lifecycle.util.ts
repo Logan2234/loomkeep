@@ -170,16 +170,19 @@ export async function listEntryPage<
   filters: ListEntriesFilters,
   spec: EntryListSpec<Row, T, K, Order>,
 ): Promise<PagedResult<T>> {
-  const sort = spec.sortKeys.includes(filters.sort as K)
-    ? (filters.sort as K)
-    : spec.defaultSort;
+  // The key is taken from `sortKeys`, never from the query itself.
+  const sort =
+    spec.sortKeys.find((key) => key === filters.sort) ?? spec.defaultSort;
   const asc = filters.order === "asc";
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const limit =
     filters.limit && filters.limit > 0 ? filters.limit : DEFAULT_PAGE_SIZE;
   const skip = (page - 1) * limit;
 
-  const sqlSort = spec.keep ? undefined : spec.sqlSorts?.[sort];
+  const sqlSort =
+    spec.keep || !spec.sqlSorts || !Object.hasOwn(spec.sqlSorts, sort)
+      ? undefined
+      : spec.sqlSorts[sort];
   let ids: string[];
   let total: number;
 
