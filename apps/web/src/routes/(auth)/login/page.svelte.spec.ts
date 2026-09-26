@@ -149,6 +149,27 @@ describe("login page", () => {
     });
   });
 
+  // The field's length cap used to count the spaces of a pasted code, cutting
+  // " 123456" down to " 12345" before they could be trimmed.
+  it.each([" 123456", "123 456", "123456\n"])(
+    "keeps every digit of a code pasted with spaces (%j)",
+    async (pasted) => {
+      serveLogin(mfaChallenge(["totp", "recovery"]));
+      const user = await signIn();
+
+      await user.click(await screen.findByRole("textbox"));
+      await user.paste(pasted);
+      await user.click(screen.getByRole("button", { name: m.common_verify() }));
+
+      await waitFor(() =>
+        expect(posted["/auth/mfa/verify"]).toEqual({
+          challengeId: "challenge-1",
+          code: "123456",
+        }),
+      );
+    },
+  );
+
   it("only sends an email code once the user picks that method", async () => {
     serveLogin(mfaChallenge(["totp", "email", "recovery"]));
     const user = await signIn();
