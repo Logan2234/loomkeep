@@ -12,6 +12,9 @@ allowBuilds:
   # Only needed for source-map upload during build (not set up yet — see
   # docker-compose.glitchtip.yml's GlitchTip section, "not for now" call).
   "@sentry/cli": false
+  # Its postinstall only copies the browser Service Worker script; the web
+  # component tests use msw/node, which intercepts fetch without it.
+  msw: false
   prisma: true
   puppeteer: false
   unrs-resolver: true

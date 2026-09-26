@@ -113,60 +113,77 @@ describe("shared component translations", () => {
     }
   });
 
-  it("does not embed untranslated phrases in dynamic text attributes", () => {
-    const missing: string[] = [];
+  // This test and the next parse every component: seconds of CPU on their
+  // own, past the default 5s timeout when the component tests run alongside.
+  it(
+    "does not embed untranslated phrases in dynamic text attributes",
+    {
+      timeout: 30_000,
+    },
+    () => {
+      const missing: string[] = [];
 
-    for (const file of readdirSync(new URL("./", import.meta.url), {
-      recursive: true,
-      encoding: "utf8",
-    }).filter((path) => path.endsWith(".svelte"))) {
-      const source = readFileSync(
-        new URL(file.replaceAll("\\", "/"), import.meta.url),
-        "utf8",
-      );
-      visit(parse(source, { modern: true }), (node) => {
-        if (node.type !== "Attribute" || !textAttributes.has(String(node.name)))
-          return;
-        visit(node.value, (part) => {
-          const value =
-            part.type === "Literal"
-              ? part.value
-              : part.type === "TemplateElement"
-                ? (part.value as { raw: string }).raw
-                : null;
-
+      for (const file of readdirSync(new URL("./", import.meta.url), {
+        recursive: true,
+        encoding: "utf8",
+      }).filter((path) => path.endsWith(".svelte"))) {
+        const source = readFileSync(
+          new URL(file.replaceAll("\\", "/"), import.meta.url),
+          "utf8",
+        );
+        visit(parse(source, { modern: true }), (node) => {
           if (
-            typeof value === "string" &&
-            /\p{L}[\p{L}'-]*\s+\p{L}/u.test(value)
-          ) {
-            missing.push(`${file}: ${node.name}: ${value}`);
-          }
+            node.type !== "Attribute" ||
+            !textAttributes.has(String(node.name))
+          )
+            return;
+          visit(node.value, (part) => {
+            const value =
+              part.type === "Literal"
+                ? part.value
+                : part.type === "TemplateElement"
+                  ? (part.value as { raw: string }).raw
+                  : null;
+
+            if (
+              typeof value === "string" &&
+              /\p{L}[\p{L}'-]*\s+\p{L}/u.test(value)
+            ) {
+              missing.push(`${file}: ${node.name}: ${value}`);
+            }
+          });
         });
-      });
-    }
+      }
 
-    expect(missing).toEqual([]);
-  });
+      expect(missing).toEqual([]);
+    },
+  );
 
-  it("translates visible text and static accessibility attributes", () => {
-    const missing: string[] = [];
+  it(
+    "translates visible text and static accessibility attributes",
+    {
+      timeout: 30_000,
+    },
+    () => {
+      const missing: string[] = [];
 
-    for (const file of readdirSync(new URL("./", import.meta.url), {
-      recursive: true,
-      encoding: "utf8",
-    }).filter((path) => path.endsWith(".svelte"))) {
-      const source = readFileSync(
-        new URL(file.replaceAll("\\", "/"), import.meta.url),
-        "utf8",
-      );
-      visit(parse(source, { modern: true }), (node) => {
-        if (node.type !== "Text") return;
-        const text = String(node.data).trim();
-        if (/\p{L}/u.test(text) && !technicalText.has(text))
-          missing.push(`${file}: ${text}`);
-      });
-    }
+      for (const file of readdirSync(new URL("./", import.meta.url), {
+        recursive: true,
+        encoding: "utf8",
+      }).filter((path) => path.endsWith(".svelte"))) {
+        const source = readFileSync(
+          new URL(file.replaceAll("\\", "/"), import.meta.url),
+          "utf8",
+        );
+        visit(parse(source, { modern: true }), (node) => {
+          if (node.type !== "Text") return;
+          const text = String(node.data).trim();
+          if (/\p{L}/u.test(text) && !technicalText.has(text))
+            missing.push(`${file}: ${text}`);
+        });
+      }
 
-    expect(missing).toEqual([]);
-  });
+      expect(missing).toEqual([]);
+    },
+  );
 });
