@@ -11,14 +11,15 @@ coverage:
         informational: true
 
 comment:
-  layout: "flags, diff, files"
+  layout: "header, flags, diff, files, footer"
   behavior: default
   require_changes: true
   require_base: true
   require_head: true
+  hide_project_coverage: false
 
 github_checks:
-  annotations: true
+  annotations: false
 
 codecov:
   require_ci_to_pass: false

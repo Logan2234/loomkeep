@@ -24,6 +24,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,js}"],
       // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
+      exclude: ["src/**/*.spec.ts"]
     },
   },
 });
