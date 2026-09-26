@@ -162,6 +162,29 @@ describe("SavedViewBar", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  // The stale-view check used to run against the list fetched before the
+  // save, which didn't hold the new view yet, and dropped it at once.
+  it("marks a newly saved view as the one in use", async () => {
+    const { user } = renderBar({ favorite: true });
+
+    await user.click(
+      await screen.findByRole("button", { name: saveButtonName }),
+    );
+    await user.type(
+      within(screen.getByRole("dialog")).getByRole("textbox"),
+      "Favoris",
+    );
+    await user.click(screen.getByRole("button", { name: m.common_save() }));
+
+    const created = await chip("Favoris");
+    await waitFor(() =>
+      expect(created.getAttribute("aria-pressed")).toBe("true"),
+    );
+    expect(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    ).toBeTruthy();
+  });
+
   it("keeps the name dialog open with the reason a save was refused", async () => {
     server.use(
       http.post(apiUrl("/saved-views"), () =>

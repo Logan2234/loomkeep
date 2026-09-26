@@ -27,6 +27,7 @@
     type SavedViewFiltersDto,
     type UpdateSavedViewDto,
   } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   let {
     domain,
@@ -43,6 +44,8 @@
     activeId: string | null;
     onApply: (filters: SavedViewFiltersDto) => void;
   } = $props();
+
+  const queryClient = useQueryClient();
 
   const viewsQuery = createApiQuery(() => ({
     key: keys.savedViews.all(),
@@ -73,6 +76,13 @@
     invalidates: [keys.savedViews.all()],
     successToast: m.saved_view_created(),
     onSuccess: (view) => {
+      // Into the cached list before it's marked in use: the stale-view
+      // effect above would otherwise drop it against the pre-save list,
+      // before the invalidation's refetch lands.
+      queryClient.setQueryData<SavedViewDto[]>(keys.savedViews.all(), (old) => [
+        ...(old ?? []),
+        view,
+      ]);
       activeId = view.id;
       naming = null;
     },
