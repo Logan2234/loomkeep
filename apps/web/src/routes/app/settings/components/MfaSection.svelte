@@ -23,6 +23,7 @@
   import Switch from "$lib/components/Switch.svelte";
   import { downloadBlob } from "$lib/download";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
   import { toast } from "$lib/toast.svelte";
   import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
@@ -594,12 +595,13 @@
             inputmode="numeric"
             autocomplete="one-time-code"
             minlength="6"
-            maxlength="6"
             required
             enterkeyhint="done"
             class="input font-mono text-lg tracking-[0.3em]"
             placeholder="000000"
-            bind:value={totpCodeInput} />
+            value={totpCodeInput}
+            oninput={(e) =>
+              (totpCodeInput = normalizeCodeInput(e.currentTarget, 6))} />
         </label>
         {#if totpConfirmMut.error}
           <p class="text-danger text-sm">

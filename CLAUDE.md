@@ -28,6 +28,9 @@ pnpm --filter @loomkeep/api exec vitest src/catalog/providers/tmdb.provider.spec
 pnpm --filter @loomkeep/api test:e2e           # full API flow; needs the dev Postgres running
 pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
 
+# Web
+pnpm --filter @loomkeep/web exec vitest --project component   # component tests only (see "Web tests")
+
 # Tools
 pnpm lint / pnpm lint:fix                      # global eslint + prettier
 pnpm check                                     # global typecheck (tsc on api/shared, svelte-check on web)
@@ -169,6 +172,29 @@ fix does.
   request params (`apps/api/src/common/pagination.util.ts`'s
   `parsePageQuery`), `PagedResult<T>` response
   (`packages/shared/src/dto/pagination.ts`: `{ items, hasMore, total? }`).
+
+### Web tests
+
+- Two Vitest projects (`apps/web/vitest.config.ts`): `unit` runs plain
+  `*.spec.ts` in Node; `component` runs `*.svelte.spec.ts` in happy-dom with
+  `@testing-library/svelte` + `user-event`. Logic that can live in a plain
+  `.ts` module (like `wizard-state.ts`) is tested there first — cheaper than
+  rendering.
+- Test behaviour, not internals: query by role/label, and take expected text
+  from `m.*()` rather than hardcoding the French copy.
+- The API is stubbed at the network level with msw (`src/lib/test/msw.ts`,
+  `server.use(http.get(apiUrl(...)))`), so `core.ts` and the TanStack helpers
+  run for real — don't `vi.mock` `$lib/api/*` per component. An unhandled
+  request fails the test. A component using the API helpers renders through
+  `renderWithQuery()` (`src/lib/test/render.ts`), which provides a fresh
+  retry-less `QueryClient`. `$app/state` + `$app/navigation` are mocked with
+  `src/lib/test/navigation.svelte.ts` (reactive `page.url`, a `goto` that
+  updates it like SvelteKit does); the realtime socket per spec file. Props a
+  test changes after mounting live in a `$state` object — the reason specs
+  are `.svelte.spec.ts`.
+- No coverage threshold (Codecov stays informational) and no snapshot tests.
+  Browser E2E (Playwright against the API on the `e2e` schema) is
+  deliberately deferred until the component layer is settled.
 
 ### Ops
 

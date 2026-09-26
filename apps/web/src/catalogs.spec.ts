@@ -133,79 +133,89 @@ describe("message catalogs", () => {
     );
   });
 
-  it("resolves message calls throughout the frontend after key renames", () => {
-    const directory = fileURLToPath(new URL("./", import.meta.url));
-    const keys = new Set(
-      names.flatMap((name) => Object.keys(catalogs.en[name].messages)),
-    );
-    const missing: string[] = [];
+  // Parses every frontend file: seconds of CPU on its own, past the default
+  // 5s timeout when the component tests run alongside it.
+  it(
+    "resolves message calls throughout the frontend after key renames",
+    {
+      timeout: 30_000,
+    },
+    () => {
+      const directory = fileURLToPath(new URL("./", import.meta.url));
+      const keys = new Set(
+        names.flatMap((name) => Object.keys(catalogs.en[name].messages)),
+      );
+      const missing: string[] = [];
 
-    for (const file of readdirSync(directory, {
-      recursive: true,
-      encoding: "utf8",
-    })) {
-      const path = file.replaceAll("\\", "/");
-      if (
-        !/\.(ts|svelte)$/.test(path) ||
-        path.includes("paraglide/") ||
-        path.endsWith(".spec.ts")
-      )
-        continue;
-      const source = readFileSync(new URL(path, import.meta.url), "utf8");
+      for (const file of readdirSync(directory, {
+        recursive: true,
+        encoding: "utf8",
+      })) {
+        const path = file.replaceAll("\\", "/");
+        if (
+          !/\.(ts|svelte)$/.test(path) ||
+          path.includes("paraglide/") ||
+          path.endsWith(".spec.ts")
+        )
+          continue;
+        const source = readFileSync(new URL(path, import.meta.url), "utf8");
 
-      const checkKey = (key: string) => {
-        if (!keys.has(key)) missing.push(`${path}: ${key}`);
-      };
-
-      if (path.endsWith(".svelte")) {
-        const visit = (value: unknown) => {
-          if (!value || typeof value !== "object") return;
-          if (Array.isArray(value)) return value.forEach(visit);
-          const node = value as Record<string, unknown>;
-          const callee = node.callee as
-            | {
-                type: string;
-                computed?: boolean;
-                object?: { type: string; name: string };
-                property?: { name: string };
-              }
-            | undefined;
-
-          if (
-            node.type === "CallExpression" &&
-            callee?.type === "MemberExpression" &&
-            !callee.computed &&
-            callee.object?.type === "Identifier" &&
-            callee.object.name === "m" &&
-            callee.property
-          ) {
-            checkKey(callee.property.name);
-          }
-
-          for (const [key, child] of Object.entries(node)) {
-            if (key !== "metadata" && key !== "loc") visit(child);
-          }
+        const checkKey = (key: string) => {
+          if (!keys.has(key)) missing.push(`${path}: ${key}`);
         };
 
-        visit(parse(source, { modern: true }));
-      } else {
-        const visit = (node: ts.Node) => {
-          if (
-            ts.isCallExpression(node) &&
-            ts.isPropertyAccessExpression(node.expression) &&
-            ts.isIdentifier(node.expression.expression) &&
-            node.expression.expression.text === "m"
-          ) {
-            checkKey(node.expression.name.text);
-          }
+        if (path.endsWith(".svelte")) {
+          const visit = (value: unknown) => {
+            if (!value || typeof value !== "object") return;
+            if (Array.isArray(value)) return value.forEach(visit);
+            const node = value as Record<string, unknown>;
+            const callee = node.callee as
+              | {
+                  type: string;
+                  computed?: boolean;
+                  object?: { type: string; name: string };
+                  property?: { name: string };
+                }
+              | undefined;
 
-          ts.forEachChild(node, visit);
-        };
+            if (
+              node.type === "CallExpression" &&
+              callee?.type === "MemberExpression" &&
+              !callee.computed &&
+              callee.object?.type === "Identifier" &&
+              callee.object.name === "m" &&
+              callee.property
+            ) {
+              checkKey(callee.property.name);
+            }
 
-        visit(ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true));
+            for (const [key, child] of Object.entries(node)) {
+              if (key !== "metadata" && key !== "loc") visit(child);
+            }
+          };
+
+          visit(parse(source, { modern: true }));
+        } else {
+          const visit = (node: ts.Node) => {
+            if (
+              ts.isCallExpression(node) &&
+              ts.isPropertyAccessExpression(node.expression) &&
+              ts.isIdentifier(node.expression.expression) &&
+              node.expression.expression.text === "m"
+            ) {
+              checkKey(node.expression.name.text);
+            }
+
+            ts.forEachChild(node, visit);
+          };
+
+          visit(
+            ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true),
+          );
+        }
       }
-    }
 
-    expect(missing).toEqual([]);
-  });
+      expect(missing).toEqual([]);
+    },
+  );
 });

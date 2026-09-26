@@ -16,6 +16,7 @@
   import PasswordInput from "$lib/components/PasswordInput.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { Cooldown } from "$lib/cooldown.svelte";
+  import { normalizeCodeInput } from "$lib/one-time-code";
   import { m } from "$lib/paraglide/messages.js";
   import type { MfaMethod } from "@loomkeep/shared";
 
@@ -30,10 +31,20 @@
   let codeInput = $state("");
   const resendCooldown = new Cooldown();
 
-  // Only follow redirectTo when it's an internal path — anything else could
-  // be an open-redirect vector (e.g. redirectTo=https://evil.example).
+  // Only follow redirectTo when it stays on this site — anything else could
+  // be an open-redirect vector (e.g. redirectTo=https://evil.example). The
+  // browser's own URL parser decides rather than a prefix check: it reads
+  // "/\evil.example" or a tab-split "/\t/evil.example" as another host.
   function safeRedirect(target: string | null): string {
-    if (target?.startsWith("/") && !target.startsWith("//")) return target;
+    if (!target) return "/app";
+    try {
+      const url = new URL(target, page.url.origin);
+      if (url.origin === page.url.origin) {
+        return url.pathname + url.search + url.hash;
+      }
+    } catch {
+      // Not a URL at all: fall through to the default.
+    }
     return "/app";
   }
 
@@ -309,12 +320,16 @@
           autocomplete={selectedMethod === "recovery"
             ? undefined
             : "one-time-code"}
-          maxlength={selectedMethod === "recovery" ? 11 : 6}
           required
           enterkeyhint="done"
           class="input font-mono text-lg tracking-[0.3em]"
           placeholder={selectedMethod === "recovery" ? "XXXXX-XXXXX" : "000000"}
-          bind:value={codeInput} />
+          value={codeInput}
+          oninput={(e) =>
+            (codeInput = normalizeCodeInput(
+              e.currentTarget,
+              selectedMethod === "recovery" ? 11 : 6,
+            ))} />
       </label>
 
       {#if selectedMethod === "email"}

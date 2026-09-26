@@ -9,14 +9,36 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [sveltekit()],
   test: {
-    include: ["src/**/*.spec.ts"],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          environment: "node",
+          include: ["src/**/*.spec.ts"],
+          exclude: ["src/**/*.svelte.spec.ts"],
+        },
+      },
+      {
+        extends: true,
+        // Without the "browser" condition, `svelte` resolves to its server
+        // build, where mount() — and so render() — is unavailable.
+        resolve: { conditions: ["browser"] },
+        test: {
+          name: "component",
+          environment: "happy-dom",
+          include: ["src/**/*.svelte.spec.ts"],
+          setupFiles: ["./src/lib/test/setup.ts"],
+        },
+      },
+    ],
     coverage: {
       provider: "v8",
       reportsDirectory: "./coverage",
       include: ["src/**/*.{ts,svelte}"],
       // Codecov reads lcov, which Vitest's v8 defaults omit.
       reporter: ["lcov", "text", "html"],
-      exclude: ["src/**/*.spec.ts"],
+      exclude: ["src/**/*.spec.ts", "src/lib/test/**"],
     },
   },
 });

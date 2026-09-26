@@ -2,10 +2,13 @@
   import type { Snippet } from "svelte";
   import { onMount, tick } from "svelte";
   import { scale } from "svelte/transition";
+  import { prefersReducedMotion } from "$lib/motion";
   import {
     computeTooltipPosition,
     type TooltipPosition,
   } from "./tooltip-position";
+
+  const reduced = prefersReducedMotion();
 
   let {
     text,
@@ -206,7 +209,7 @@
         : 'hidden'}; transform-origin: center {pos.placement === 'top'
         ? 'bottom'
         : 'top'};"
-      transition:scale|global={{ duration: 120, start: 0.9 }}
+      transition:scale|global={{ duration: reduced ? 0 : 120, start: 0.9 }}
       class="border-border bg-surface text-fg pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1rem))] rounded-lg border px-2.5 py-1.5 text-xs font-medium break-words whitespace-normal shadow-lg">
       {text}
     </span>

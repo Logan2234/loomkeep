@@ -97,7 +97,7 @@ jobs:
         run: python3 .github/eslint/strip-suppressed.py apps/web/eslint-results.sarif
       - name: svelte-check
         run: pnpm --filter @loomkeep/web check
-      - name: Web unit tests (with coverage)
+      - name: Web unit + component tests (with coverage)
         run: pnpm --filter @loomkeep/web test:cov
       - name: upload unit coverage to Codecov
         background: true
