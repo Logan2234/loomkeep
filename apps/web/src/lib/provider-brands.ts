@@ -30,6 +30,7 @@ export const PROVIDER_BRANDS = {
   omdb: {
     name: "OMDb",
     color: "#d84a32",
+    foreground: "#120a04",
     url: OMDB_API,
     monogram: "OM",
   },
@@ -48,6 +49,7 @@ export const PROVIDER_BRANDS = {
   openlibrary: {
     name: "Open Library",
     color: "#1a75a8",
+    foreground: "#ffffff",
     url: OPENLIBRARY_API,
     monogram: "OL",
   },

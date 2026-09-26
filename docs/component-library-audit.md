@@ -12,78 +12,7 @@ Scope: shared UI primitives, their real application usages, visual responsive be
 - Preserve the Séance visual language. Correct contrast or interaction defects without replacing the visual identity.
 - Validate all overlay and selection changes with keyboard navigation, reduced motion, French/English, 390 px portrait and 812 x 375 px landscape.
 
-## P1 — shared interaction and accessibility defects
-
-### DS-005 — Fix confirmed WCAG contrast failures
-
-**Components:** `BetaBadge`, adult badge in `Poster`, error `Banner`, OMDb `ProviderMark`.
-
-Correct the foreground/background combinations that fail WCAG AA in one or both themes:
-
-- Beta badge: 2.49:1 in light theme and 4.44:1 in dark theme;
-- adult badge in dark theme: 3.07:1;
-- error banner in light theme: 4.30:1;
-- OMDb monogram: 4.24:1.
-
-Use semantic tokens or component-specific token pairs. Do not alter brand colors blindly; a border, background or accessible fallback treatment may be preferable for provider marks.
-
-**Regression coverage:** axe contrast checks in both themes and visual review against the Séance palette.
-
 ## P2 — semantic quality, responsive resilience and maintainability
-
-### DS-008 — Define SegmentedControl as a real selection control
-
-**Component:** `SegmentedControl`.
-
-Choose one accessible model and apply it consistently: either a labelled radiogroup or a labelled group of toggle buttons with `aria-pressed`. Implement a selected state that is announced, plus arrow-key navigation if using a radiogroup/roving model.
-
-The locked state must explain why it is unavailable without relying on a disabled control alone.
-
-**Regression coverage:** two and three choices; selected state; disabled/locked item; long labels; keyboard navigation; screen-reader tree.
-
-### DS-009 — Redesign RatingPips interaction semantics
-
-**Component:** `RatingPips`.
-
-**Status (2026-09-17):** addressed — `RatingPips` was replaced by `RatingSlider`, a native discrete range input with a separate clear-to-`null` action.
-
-The rating is a single 0–10 value, not eleven independent pressed buttons. Use a radiogroup with roving tabindex or a discrete slider, while preserving a deliberate way to clear to `null` if the product needs it. Increase touch hit areas without making the row visually bulky.
-
-**Regression coverage:** `null`, 0, 10 and selected values; arrow/Home/End keys; clear action; disabled and readonly state; legacy decimal values if supported.
-
-### DS-010 — Add Banner live-region and severity semantics
-
-**Component:** `Banner`.
-
-Give error banners an appropriate `alert` behavior when newly introduced and use `status` or an opt-out live mode for success/information messages. Add a non-color-only severity marker where the component does not already have textual context. Avoid turning static page content into noisy live announcements.
-
-**Regression coverage:** static banner; dynamically inserted error; success; warning; screen-reader announcement behavior.
-
-### DS-011 — Keep PageHeader's heading clean
-
-**Component:** `PageHeader`.
-
-Move the back link and decorative icon outside the `h1`. Preserve the visual composition with sibling layout so heading navigation announces only the page title.
-
-**Regression coverage:** French/English accessible heading name; multiline title on mobile and desktop.
-
-### DS-012 — Give Lightbox the same page-locking guarantees as other overlays
-
-**Component:** `Lightbox`.
-
-Compose the shared overlay focus contract with `portal` and `scrollLock`. The page must not scroll behind an open lightbox, including PageDown and short viewport situations.
-
-**Regression coverage:** image gallery; YouTube/video; failed image; keyboard navigation; close restoration; mobile short landscape; nested overlay if supported.
-
-### DS-014 — Establish an accessible loading contract for skeletons
-
-**Components:** `CardRowSkeleton`, `PosterGridSkeleton`, catalogue examples.
-
-Skeleton primitives should be decorative (`aria-hidden`) by default. The parent loading region should own `aria-busy` and any accessible loading name. Remove invalid ARIA such as `aria-label` on a non-semantic `div`.
-
-Do not add a new `LoadingRegion` component unless real usages demonstrate that a shared wrapper will reduce duplicated wiring.
-
-**Regression coverage:** axe checks; loading list; loading grid; region transitioning to content.
 
 ### DS-017 — Add a focused interaction and accessibility test suite
 
@@ -98,11 +27,11 @@ Prioritized suite:
 3. Tooltip keyboard behavior;
 4. Carousel keyboard behavior;
 5. contrast and invalid-ARIA axe assertions;
-6. ProgressBar, SegmentedControl, RatingPips and Banner semantics.
+6. ProgressBar, SegmentedControl, RatingSlider and Banner semantics.
 
 ### DS-018 — Normalize touch hitboxes without inflating visual density
 
-**Components/classes:** `Switch`, `.btn-icon`, `RatingPips`, chips.
+**Components/classes:** `Switch`, `.btn-icon`, `RatingSlider`, chips.
 
 Retain compact visuals but enlarge interactive hit areas towards 40–44 px using padding, wrapper geometry or pseudo-elements where appropriate. Document when compact desktop controls may intentionally be smaller and preserve spacing in dense lists.
 
@@ -156,7 +85,7 @@ Extend `/app/admin/components` only with states observed in real use or required
 - dropdown at bottom/right edges, disabled item and long menu;
 - tooltip focus, Escape, collision and long content;
 - Lightbox gallery, video and error states;
-- RatingPips null/0/10/readonly;
+- RatingSlider null/0/10/readonly;
 - Carousel empty, one item, interactive/non-interactive contents and reduced motion.
 
 ### Local catalogue navigation affordance
@@ -179,7 +108,7 @@ Consider a thin wrapper around existing icon-button classes to standardize acces
 
 ## Manual validation still required after implementation
 
-- NVDA with Firefox and VoiceOver with Safari: overlays, multiselect Combobox, Switch, RatingPips, Tooltip and dynamic announcements.
+- NVDA with Firefox and VoiceOver with Safari: overlays, multiselect Combobox, Switch, RatingSlider, Tooltip and dynamic announcements.
 - Real iPhone Safari and Android Chrome: Drawer/Carousel gestures, safe areas and keyboard overlays.
 - Browser zoom at 200% and 400%.
 - OS-level `prefers-reduced-motion`, especially Carousel and progress completion.

@@ -49,8 +49,7 @@
          wrapped to two lines, which it does on a phone ("Appareils
          connectés", "Statistiques d'instance"). The slot keeps them centred
          on the first line at both text sizes. -->
-    <h1
-      class="font-display flex items-start gap-2 text-3xl font-extrabold tracking-tight md:text-4xl">
+    <div class="flex items-start gap-2 text-3xl md:text-4xl">
       {#if back}
         <a
           href={back}
@@ -64,11 +63,13 @@
           <Icon name={icon} class="text-accent h-7 w-7" />
         </span>
       {/if}
-      {title}
+      <h1 class="font-display min-w-0 font-extrabold tracking-tight">
+        {title}
+      </h1>
       {#if isNew}
         <span class="flex h-lh shrink-0 items-center"><NewBadge /></span>
       {/if}
-    </h1>
+    </div>
     {#if subtitle}
       <p class="text-dim mt-1">{subtitle}</p>
     {/if}
