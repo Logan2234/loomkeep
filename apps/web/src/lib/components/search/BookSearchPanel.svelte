@@ -143,7 +143,11 @@
           href={`/app/books/${book.sourceId}`}
           class="absolute inset-0 z-1"
           aria-label={book.title}></a>
-        <Poster src={book.coverUrl} title={book.title} adult={book.isAdult} />
+        <Poster
+          src={book.coverUrl}
+          title={book.title}
+          alt=""
+          adult={book.isAdult} />
         <div class="flex flex-1 flex-col gap-2 p-3">
           <span class="font-display text-sm leading-tight font-semibold">
             {book.title}

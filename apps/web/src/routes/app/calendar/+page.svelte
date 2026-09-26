@@ -133,7 +133,8 @@
                 <div class="w-12 shrink-0 overflow-hidden rounded-md">
                   <Poster
                     src={e.mediaItem.posterUrl}
-                    title={e.mediaItem.title} />
+                    title={e.mediaItem.title}
+                    alt="" />
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="font-display truncate font-semibold">

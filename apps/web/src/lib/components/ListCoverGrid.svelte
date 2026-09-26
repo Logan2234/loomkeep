@@ -11,7 +11,7 @@
 </script>
 
 {#if images.length <= 1}
-  <Poster src={images[0] ?? null} {title} />
+  <Poster src={images[0] ?? null} {title} alt="" />
 {:else}
   <!-- min-h-0: an aspect-ratio box otherwise grows to fit its images'
        natural height, spilling out of a small slot (a list row's cover). -->

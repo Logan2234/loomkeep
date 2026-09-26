@@ -193,6 +193,7 @@
         <Poster
           src={media.posterUrl}
           title={media.title}
+          alt=""
           adult={media.isAdult} />
         <div class="flex flex-1 flex-col gap-1.5 p-3">
           <span class="font-display text-sm leading-tight font-semibold"

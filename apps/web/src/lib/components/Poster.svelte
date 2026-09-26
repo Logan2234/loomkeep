@@ -4,16 +4,20 @@
   let {
     src = null,
     title,
+    alt,
     class: cls = "",
     adult = false,
   }: {
     src?: string | null;
     title: string;
+    /** Accessible image alternative. Pass an empty string when nearby text names it. */
+    alt?: string;
     class?: string;
     /** 18+ title — shows a small corner badge. */
     adult?: boolean;
   } = $props();
 
+  const resolvedAlt = $derived(alt ?? title);
   const hue = $derived(
     [...title].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7),
   );
@@ -31,12 +35,15 @@
   {#if src && !failed}
     <img
       {src}
-      alt={title}
+      alt={resolvedAlt}
       loading="lazy"
       onerror={() => (failed = true)}
       class="bg-surface-2 aspect-2/3 w-full object-cover {cls}" />
   {:else}
     <div
+      role={resolvedAlt === "" ? undefined : "img"}
+      aria-label={resolvedAlt || undefined}
+      aria-hidden={resolvedAlt === "" ? "true" : undefined}
       class="flex aspect-2/3 w-full items-end p-2 {cls}"
       style="background: linear-gradient(150deg, hsl({hue} 32% 24%), hsl({(hue +
         40) %

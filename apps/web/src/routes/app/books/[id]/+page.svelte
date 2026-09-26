@@ -206,7 +206,7 @@
               : ''}"
             aria-label={m.common_enlarge_image()}
             onclick={() => detail?.coverUrl && (lightboxOpen = true)}>
-            <Poster src={detail.coverUrl} title={detail.title} />
+            <Poster src={detail.coverUrl} title={detail.title} alt="" />
           </button>
 
           <div class="min-w-0 flex-1">
@@ -276,6 +276,7 @@
                         brand={RATING_BRANDS[
                           r.source as keyof typeof RATING_BRANDS
                         ]}
+                        decorative
                         class="h-3.5 w-3.5 shrink-0" />
                     {/if}
                     <span>{r.source}</span>

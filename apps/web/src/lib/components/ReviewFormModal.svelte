@@ -207,7 +207,7 @@
     {#if imageUrl !== undefined}
       <div
         class="w-10 shrink-0 overflow-hidden rounded-md ring-1 ring-white/10">
-        <Poster src={imageUrl} {title} />
+        <Poster src={imageUrl} {title} alt="" />
       </div>
     {/if}
   {/snippet}

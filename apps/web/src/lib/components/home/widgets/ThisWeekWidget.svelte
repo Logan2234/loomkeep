@@ -74,7 +74,10 @@
             href={mediaHref(e.mediaItem)}
             class="flex h-full min-h-14 items-center gap-3">
             <div class="w-8 shrink-0 overflow-hidden rounded-md">
-              <Poster src={e.mediaItem.posterUrl} title={e.mediaItem.title} />
+              <Poster
+                src={e.mediaItem.posterUrl}
+                title={e.mediaItem.title}
+                alt="" />
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-display truncate text-sm font-semibold">

@@ -134,7 +134,11 @@
           href={`/app/games/${game.sourceId}`}
           class="absolute inset-0 z-1"
           aria-label={game.title}></a>
-        <Poster src={game.coverUrl} title={game.title} adult={game.isAdult} />
+        <Poster
+          src={game.coverUrl}
+          title={game.title}
+          alt=""
+          adult={game.isAdult} />
         <div class="flex flex-1 flex-col gap-2 p-3">
           <span class="font-display text-sm leading-tight font-semibold">
             {game.title}

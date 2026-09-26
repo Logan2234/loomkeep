@@ -781,7 +781,7 @@
                       class="hover:bg-surface-2 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm"
                       onclick={() => chooseMatch(item.key, r)}>
                       <div class="h-10 w-7 shrink-0 overflow-hidden rounded">
-                        <Poster src={r.coverUrl} title={r.title} />
+                        <Poster src={r.coverUrl} title={r.title} alt="" />
                       </div>
                       <span class="min-w-0 flex-1 truncate">
                         {r.title}

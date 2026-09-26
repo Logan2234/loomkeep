@@ -218,12 +218,12 @@
   {/each}
 {/if}
 
-<Dropdown role="presentation" class="min-w-48">
+<Dropdown role="presentation" class="max-w-[calc(100vw-1rem)] min-w-48">
   {#snippet trigger({ open, toggle, close })}
     <button
       type="button"
       role={searchable ? undefined : "combobox"}
-      class="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40 {multiselect &&
+      class="inline-flex max-w-[calc(100vw-1rem)] items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40 {multiselect &&
       values.length > 0
         ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
         : 'border-border text-dim hover:text-fg'}"
@@ -242,7 +242,7 @@
           toggle(e);
         }
       }}>
-      {triggerText}
+      <span class="truncate">{triggerText}</span>
       <Icon
         name="chevron-right"
         class="h-3.5 w-3.5 transition-transform {open
@@ -289,7 +289,7 @@
           aria-disabled={o.disabled ? "true" : undefined}
           tabindex="-1"
           disabled={o.disabled}
-          class="hover:bg-surface-2 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-40 {index ===
+          class="hover:bg-surface-2 flex w-full min-w-0 items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-40 {index ===
           activeIndex
             ? 'bg-surface-2'
             : ''}"
@@ -307,7 +307,10 @@
               {#if on}<Icon name="check" class="h-3.5 w-3.5" />{/if}
             </span>
           {/if}
-          <span class="{on && !multiselect ? 'font-semibold' : ''} truncate">
+          <span
+            class="min-w-0 wrap-anywhere whitespace-normal {on && !multiselect
+              ? 'font-semibold'
+              : ''}">
             {o.label}
           </span>
         </button>
