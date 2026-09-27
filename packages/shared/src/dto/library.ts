@@ -49,6 +49,8 @@ export interface LibraryEntryDto {
   ownershipStatus: MediaOwnershipStatus;
   /** Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise. */
   ownershipSource: string | null;
+  /** Series/anime: left out of the new-episode push/email digest (still in the calendar). */
+  episodeAlertsMuted: boolean;
   /** Completed rewatches beyond the first, movies only, most recent first. */
   replays: MovieReplayDto[];
 }
@@ -131,6 +133,15 @@ export interface EntryEpisodesResponseDto {
 /** An upcoming episode of a tracked series/anime (release calendar). */
 export interface CalendarEntryDto {
   mediaItem: MediaItemDto;
+  /** The user's library entry for the show — the target for muting its alerts. */
+  entryId: string;
+  /** Mirrors `LibraryEntryDto.episodeAlertsMuted`: the whole show, not this episode. */
+  episodeAlertsMuted: boolean;
+  /**
+   * The show's regular episodes aired before today that the user hasn't
+   * watched — the backlog to catch up on before this one.
+   */
+  episodesBehind: number;
   seasonNumber: number;
   episodeNumber: number;
   episodeTitle: string | null;

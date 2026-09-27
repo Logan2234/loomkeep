@@ -566,6 +566,7 @@ export class LibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        episodeAlertsMuted: dto.episodeAlertsMuted,
       },
       include: ENTRY_INCLUDE,
     });
@@ -1225,7 +1226,10 @@ export class LibraryService {
 
   /**
    * Upcoming episodes (air date today or later) of the series/anime the user
-   * tracks, excluding dropped ones — the release calendar.
+   * tracks, excluding dropped ones — the release calendar. Shows with muted
+   * alerts stay listed: muting only silences the digest. Each carries the
+   * show's backlog (`episodesBehind`), counted up to the start of today so
+   * an episode airing today is never its own backlog.
    */
   async getCalendar(userId: string): Promise<CalendarEntryDto[]> {
     const startOfToday = new Date();
@@ -1244,13 +1248,35 @@ export class LibraryService {
       take: 60,
       include: {
         season: {
-          include: { mediaItem: { include: { externalIds: true } } },
+          include: {
+            mediaItem: {
+              include: {
+                externalIds: true,
+                // Unique per (userId, mediaItemId), and guaranteed to exist
+                // by the `where` above — this is the user's tracked entry.
+                entries: {
+                  where: { userId },
+                  select: { id: true, episodeAlertsMuted: true },
+                },
+              },
+            },
+          },
         },
       },
     });
 
+    const behind = await this.episodesBehind(
+      userId,
+      [...new Set(episodes.map((e) => e.season.mediaItemId))],
+      startOfToday,
+    );
+
     return episodes.map((episode) => ({
       mediaItem: toMediaItemDto(episode.season.mediaItem),
+      entryId: episode.season.mediaItem.entries[0].id,
+      episodeAlertsMuted:
+        episode.season.mediaItem.entries[0].episodeAlertsMuted,
+      episodesBehind: behind.get(episode.season.mediaItemId) ?? 0,
       seasonNumber: episode.season.number,
       episodeNumber: episode.number,
       episodeTitle: episode.title,
@@ -1374,6 +1400,36 @@ export class LibraryService {
         },
       ]),
     );
+  }
+
+  /**
+   * Per media: regular episodes aired before `before` (or undated — AniList's
+   * generated ones, available like in `computeProgress`) the user never
+   * watched. Media with no backlog are absent from the map.
+   */
+  private async episodesBehind(
+    userId: string,
+    mediaItemIds: string[],
+    before: Date,
+  ): Promise<Map<string, number>> {
+    if (mediaItemIds.length === 0) return new Map();
+
+    const rows = await this.prisma.$queryRaw<
+      { mediaItemId: string; behind: bigint }[]
+    >`
+      SELECT s."mediaItemId", COUNT(*) AS behind
+      FROM "Season" s
+      JOIN "Episode" e ON e."seasonId" = s.id
+      WHERE s."mediaItemId" = ANY(${mediaItemIds})
+        AND s.number > 0
+        AND (e."airDate" IS NULL OR e."airDate" < ${before})
+        AND NOT EXISTS (
+          SELECT 1 FROM "EpisodeWatch" w
+          WHERE w."episodeId" = e.id AND w."userId" = ${userId}
+        )
+      GROUP BY s."mediaItemId"
+    `;
+    return new Map(rows.map((r) => [r.mediaItemId, Number(r.behind)]));
   }
 
   private async computeProgressBatch(
@@ -1577,6 +1633,7 @@ export class LibraryService {
       progress,
       ownershipStatus: entry.ownershipStatus,
       ownershipSource: entry.ownershipSource,
+      episodeAlertsMuted: entry.episodeAlertsMuted,
       replays: entry.replays.map(toReplayDto),
     };
   }

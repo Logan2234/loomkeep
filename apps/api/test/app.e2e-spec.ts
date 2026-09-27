@@ -305,9 +305,13 @@ describe("Loomkeep API (e2e)", () => {
     // Only episode 3 has a future air date.
     expect(response.body).toHaveLength(1);
     expect(response.body[0]).toMatchObject({
+      entryId,
+      episodeAlertsMuted: false,
       seasonNumber: 1,
       episodeNumber: 3,
       episodeTitle: "Episode 3",
+      // Episodes 1 and 2 were watched through the season above.
+      episodesBehind: 0,
     });
     expect(response.body[0].mediaItem.title).toBe("Test Anime");
   });

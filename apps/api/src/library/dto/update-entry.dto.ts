@@ -32,6 +32,10 @@ export class UpdateEntryDto {
   favorite?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  episodeAlertsMuted?: boolean;
+
+  @IsOptional()
   @IsDateString()
   startedAt?: string | null;
 

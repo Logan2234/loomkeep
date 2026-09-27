@@ -1537,19 +1537,22 @@ model Episode {
 }
 
 model LibraryEntry {
-  id              String               @id @default(cuid())
-  userId          String
-  mediaItemId     String
-  status          EntryStatus          @default(PLANNED)
-  notes           String?
-  favorite        Boolean              @default(false)
-  startedAt       DateTime?
-  finishedAt      DateTime?
-  ownershipStatus MediaOwnershipStatus @default(NONE)
+  id                 String               @id @default(cuid())
+  userId             String
+  mediaItemId        String
+  status             EntryStatus          @default(PLANNED)
+  notes              String?
+  favorite           Boolean              @default(false)
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  ownershipStatus    MediaOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
-  ownershipSource String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  ownershipSource    String?
+  // Series/anime only: skip this show in the new-episode push/email digest.
+  // It stays in the release calendar — only the alerts are silenced.
+  episodeAlertsMuted Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   mediaItem MediaItem     @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
@@ -1588,15 +1591,15 @@ model EpisodeWatch {
 // at least one user references it. Games have no seasons/episodes, so there is
 // no progress model — the library entry's status is user-set.
 model GameItem {
-  id              String     @id @default(cuid())
-  canonicalSource GameSource
-  title           String
-  coverUrl        String?
-  backdropUrl     String?
-  overview        String?
-  releaseDate     DateTime?
-  genres          String[]
-  platforms       String[]
+  id                      String     @id @default(cuid())
+  canonicalSource         GameSource
+  title                   String
+  coverUrl                String?
+  backdropUrl             String?
+  overview                String?
+  releaseDate             DateTime?
+  genres                  String[]
+  platforms               String[]
   // IGDB's average time to beat, in minutes: to the credits without the
   // extras, a normal playthrough, and to 100 %. All four stay null when IGDB
   // has too few player submissions for the averages to mean anything (see
@@ -1607,11 +1610,11 @@ model GameItem {
   timeToBeatCompletelyMin Int?
   timeToBeatSubmissions   Int?
   // 18+ title (IGDB "Erotic" theme). Restricted per-account, like MediaItem.
-  isAdult         Boolean    @default(false)
-  metadata        Json       @default("{}")
-  lastSyncedAt    DateTime   @default(now())
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  isAdult                 Boolean    @default(false)
+  metadata                Json       @default("{}")
+  lastSyncedAt            DateTime   @default(now())
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
 
   externalIds GameExternalId[]
   entries     GameEntry[]

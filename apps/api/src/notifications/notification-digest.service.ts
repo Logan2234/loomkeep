@@ -164,12 +164,35 @@ export class NotificationDigestService {
           ? { emailDigestedAt: null }
           : { pushDigestedAt: null }),
       },
-      select: { id: true, title: true, body: true, url: true },
+      select: { id: true, title: true, body: true, url: true, dedupeKey: true },
       orderBy: { createdAt: "asc" },
     });
     if (pending.length === 0) return 0;
 
-    const items: DigestItem[] = pending.map((n) => ({
+    // Shows the user muted are filtered here rather than at scan time: their
+    // rows are still marked digested below, so an episode that aired while
+    // muted never resurfaces once the user unmutes.
+    const muted = await this.mutedEpisodeIds(user.id, pending);
+    const deliverable = pending.filter(
+      (n) => !muted.has(episodeIdOf(n.dedupeKey)),
+    );
+
+    const now = new Date();
+    const markDigested = () =>
+      this.prisma.notification.updateMany({
+        where: { id: { in: pending.map((n) => n.id) } },
+        data:
+          channel === "email"
+            ? { emailDigestedAt: now }
+            : { pushDigestedAt: now },
+      });
+
+    if (deliverable.length === 0) {
+      await markDigested();
+      return 0;
+    }
+
+    const items: DigestItem[] = deliverable.map((n) => ({
       title: n.title,
       body: n.body ?? "",
       url: n.url ?? "/app/calendar",
@@ -191,15 +214,38 @@ export class NotificationDigestService {
       });
     }
 
-    const now = new Date();
-    await this.prisma.notification.updateMany({
-      where: { id: { in: pending.map((n) => n.id) } },
-      data:
-        channel === "email"
-          ? { emailDigestedAt: now }
-          : { pushDigestedAt: now },
-    });
+    await markDigested();
 
     return 1;
   }
+
+  /** Episode ids, among these rows, of shows the user muted episode alerts for. */
+  private async mutedEpisodeIds(
+    userId: string,
+    rows: { dedupeKey: string | null }[],
+  ): Promise<Set<string | null>> {
+    const episodes = await this.prisma.episode.findMany({
+      where: {
+        id: {
+          in: rows
+            .map((n) => episodeIdOf(n.dedupeKey))
+            .filter((id): id is string => id !== null),
+        },
+        season: {
+          mediaItem: {
+            entries: { some: { userId, episodeAlertsMuted: true } },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    return new Set(episodes.map((e) => e.id));
+  }
+}
+
+/** `episode:<id>` (see `NotificationService`) back to the bare episode id. */
+function episodeIdOf(dedupeKey: string | null): string | null {
+  return dedupeKey?.startsWith("episode:")
+    ? dedupeKey.slice("episode:".length)
+    : null;
 }

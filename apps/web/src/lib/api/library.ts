@@ -63,6 +63,7 @@ export const updateLibraryEntry = (
       | "favorite"
       | "ownershipStatus"
       | "ownershipSource"
+      | "episodeAlertsMuted"
     >
   >,
 ) =>
