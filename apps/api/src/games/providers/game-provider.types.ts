@@ -1,4 +1,9 @@
-import type { GameSource, GameSummaryDto, RatingDto } from "@loomkeep/shared";
+import type {
+  GameSource,
+  GameSummaryDto,
+  GameTimeToBeatDto,
+  RatingDto,
+} from "@loomkeep/shared";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one game, in canonical form. */
@@ -32,6 +37,10 @@ export interface ProviderGameDetails {
   ageRatingImageUrls: string[];
   /** Multiplayer modes beyond the generic `gameModes` (co-op, split screen…). */
   multiplayerModes: string[];
+  /** Average times to beat; null below the submission threshold. */
+  timeToBeat: GameTimeToBeatDto | null;
+  /** The game's page on its source, for attribution. */
+  sourceUrl: string | null;
 }
 
 export interface GameCatalogProvider {

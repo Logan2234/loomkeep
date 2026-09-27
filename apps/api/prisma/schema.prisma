@@ -1593,6 +1593,15 @@ model GameItem {
   releaseDate     DateTime?
   genres          String[]
   platforms       String[]
+  // IGDB's average time to beat, in minutes: to the credits without the
+  // extras, a normal playthrough, and to 100 %. All four stay null when IGDB
+  // has too few player submissions for the averages to mean anything (see
+  // MIN_TIME_TO_BEAT_SUBMISSIONS); a single one can be null on its own.
+  // Typed columns rather than `metadata`, so the library can sum them in SQL.
+  timeToBeatHastilyMin    Int?
+  timeToBeatNormallyMin   Int?
+  timeToBeatCompletelyMin Int?
+  timeToBeatSubmissions   Int?
   // 18+ title (IGDB "Erotic" theme). Restricted per-account, like MediaItem.
   isAdult         Boolean    @default(false)
   metadata        Json       @default("{}")

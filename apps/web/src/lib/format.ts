@@ -200,6 +200,24 @@ export function formatRetryDelay(seconds: number, locale?: string): string {
   return relFmt.format(Math.max(1, Math.ceil(seconds)), "second");
 }
 
+/**
+ * A length in minutes as a rounded reading figure, e.g. "45 min", "2,5 h",
+ * "41 h", "1 240 h" — for estimates and totals, where a timecode's false
+ * precision would mislead. Half-hours under 10 h, whole hours above.
+ */
+export function formatHours(minutes: number): string {
+  const locale = resolveLocale();
+  const options = { locale: messageLocale(locale) };
+
+  if (minutes < 60) {
+    return `${formatNumber(Math.round(minutes), {}, locale)} ${m.common_minutes_short({}, options)}`;
+  }
+
+  const hours = minutes / 60;
+  const rounded = hours < 10 ? Math.round(hours * 2) / 2 : Math.round(hours);
+  return `${formatNumber(rounded, { maximumFractionDigits: 1 }, locale)} ${m.common_hours_short({}, options)}`;
+}
+
 /** Byte size in the largest unit that keeps it readable, e.g. "218 Mo", "1,4 Go". */
 export function formatBytes(bytes: number): string {
   const locale = resolveLocale();

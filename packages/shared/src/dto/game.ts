@@ -18,6 +18,22 @@ export interface GameSearchResponseDto {
 }
 
 /** Full game details, fetched live from the source. */
+/**
+ * IGDB's average time to beat, in minutes, from its players' submissions.
+ * Only ever present once enough players submitted a time; any single one of
+ * the three can still be null.
+ */
+export interface GameTimeToBeatDto {
+  /** To the credits, without spending notable time on the extras. */
+  hastilyMin: number | null;
+  /** A normal playthrough, main story plus some side content. */
+  normallyMin: number | null;
+  /** 100 % completion. */
+  completelyMin: number | null;
+  /** How many player submissions the averages come from. */
+  submissions: number;
+}
+
 export interface GameDetailsDto extends GameSummaryDto {
   overview: string | null;
   /** Wide artwork/screenshot for the detail header, when available. */
@@ -52,6 +68,10 @@ export interface GameDetailsDto extends GameSummaryDto {
   ageRatingImageUrls: string[];
   /** Multiplayer modes beyond the generic `gameModes` (co-op, split screen…). */
   multiplayerModes: string[];
+  /** Null when the source has too few player submissions. */
+  timeToBeat: GameTimeToBeatDto | null;
+  /** The game's page on its source, for attribution. */
+  sourceUrl: string | null;
 }
 
 /** A persisted game referenced by at least one user (on-demand cache). */

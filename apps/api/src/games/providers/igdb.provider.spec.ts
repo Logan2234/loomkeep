@@ -7,10 +7,13 @@ import { IgdbProvider } from "./igdb.provider";
 // plain assignment + manual restore is more reliable.
 const originalFetch = global.fetch;
 
+// Every details call also asks /game_time_to_beats; a test that doesn't
+// care about it gets "no submissions" rather than an unexpected-call error.
 function mockFetchByUrl(routes: Record<string, unknown>): Mock {
+  const withDefaults = { "/game_time_to_beats": [], ...routes };
   const fn = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
-    const match = Object.entries(routes).find(([pathPart]) =>
+    const match = Object.entries(withDefaults).find(([pathPart]) =>
       url.includes(pathPart),
     );
 
@@ -216,7 +219,73 @@ describe("IgdbProvider", () => {
       trailerVideoId: null,
       ageRatingImageUrls: [],
       multiplayerModes: [],
+      timeToBeat: null,
+      sourceUrl: null,
     });
+  });
+
+  it("maps IGDB's times to beat from seconds to minutes", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [
+        {
+          game_id: 1020,
+          hastily: 93_600,
+          normally: 147_600,
+          completely: 0,
+          count: 152,
+        },
+      ],
+      "/games": [{ id: 1020, name: "Hollow Knight", slug: "hollow-knight" }],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.timeToBeat).toEqual({
+      hastilyMin: 1560,
+      normallyMin: 2460,
+      // IGDB's 0 means no data, not a zero-minute game.
+      completelyMin: null,
+      submissions: 152,
+    });
+    expect(details.sourceUrl).toBe("https://www.igdb.com/games/hollow-knight");
+  });
+
+  it("shows no time to beat under three player submissions", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [{ game_id: 1020, normally: 36_000, count: 2 }],
+      "/games": [{ id: 1020, name: "Obscure Game" }],
+    });
+
+    const details = await provider.getDetails("1020");
+
+    expect(details.timeToBeat).toBeNull();
+  });
+
+  it("fetches a batch's times to beat in one query and matches them by game", async () => {
+    const fn = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/game_time_to_beats": [{ game_id: 2, normally: 3_600, count: 10 }],
+      "/games": [
+        { id: 1, name: "One" },
+        { id: 2, name: "Two" },
+      ],
+    });
+
+    const details = await provider.getDetailsByIds(["1", "2"]);
+
+    expect(details.map((d) => d.timeToBeat?.normallyMin ?? null)).toEqual([
+      null,
+      60,
+    ]);
+    const ttbCalls = fn.mock.calls.filter(([url]) =>
+      String(url).includes("/game_time_to_beats"),
+    );
+    expect(ttbCalls).toHaveLength(1);
+    expect(String((ttbCalls[0][1] as RequestInit).body)).toContain(
+      "where game_id = (1,2)",
+    );
   });
 
   it("maps rating and aggregated_rating to IGDB/Critiques percentages", async () => {

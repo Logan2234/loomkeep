@@ -1,4 +1,4 @@
-import type { RatingDto } from "@loomkeep/shared";
+import type { GameTimeToBeatDto, RatingDto } from "@loomkeep/shared";
 import { ErrorCode, GameSource, GameSummaryDto } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -105,6 +105,21 @@ interface IgdbGame {
   rating_count?: number;
   aggregated_rating_count?: number;
 }
+
+// One row per game on `/game_time_to_beats`, times in seconds. A separate
+// endpoint: `/games` has no field pointing to it, so it can't be expanded
+// into the main query.
+interface IgdbTimeToBeat {
+  game_id: number;
+  hastily?: number;
+  normally?: number;
+  completely?: number;
+  count?: number;
+}
+
+// Below this many player submissions, an "average" is one person's run and
+// reads as an authoritative figure it isn't — shown as nothing instead.
+const MIN_TIME_TO_BEAT_SUBMISSIONS = 3;
 
 // IGDB computes this list itself (genre/theme/franchise co-occurrence); it can
 // run long, so the detail page only shows the top handful.
@@ -257,13 +272,15 @@ export class IgdbProvider implements GameCatalogProvider {
       );
     }
 
-    return this.toDetails(game);
+    const timesToBeat = await this.timesToBeat([id]);
+    return this.toDetails(game, timesToBeat.get(id) ?? null);
   }
 
   /**
-   * Batch details for many IGDB ids in one query each 500 (IGDB's result cap),
-   * used by the Steam import so a large library is persisted in a couple of
-   * calls instead of one per game.
+   * Batch details for many IGDB ids in two queries each 500 (IGDB's result
+   * cap: the games, then their times to beat), used by the Steam import and
+   * the stale-cache refresh so hundreds of games cost a couple of calls
+   * instead of two per game.
    */
   async getDetailsByIds(ids: string[]): Promise<ProviderGameDetails[]> {
     const details: ProviderGameDetails[] = [];
@@ -276,7 +293,10 @@ export class IgdbProvider implements GameCatalogProvider {
         "/games",
         `fields ${IgdbProvider.DETAIL_FIELDS}; where id = (${idList}); limit 500;`,
       );
-      details.push(...games.map((g) => this.toDetails(g)));
+      const timesToBeat = await this.timesToBeat(batch.map(Number));
+      details.push(
+        ...games.map((g) => this.toDetails(g, timesToBeat.get(g.id) ?? null)),
+      );
     }
 
     return details;
@@ -309,7 +329,28 @@ export class IgdbProvider implements GameCatalogProvider {
     return byAppId;
   }
 
-  private toDetails(game: IgdbGame): ProviderGameDetails {
+  /** Times to beat by IGDB game id; a game under the threshold is absent. */
+  private async timesToBeat(
+    ids: number[],
+  ): Promise<Map<number, GameTimeToBeatDto>> {
+    const rows = await this.query<IgdbTimeToBeat[]>(
+      "/game_time_to_beats",
+      `fields game_id, hastily, normally, completely, count; where game_id = (${ids.join(",")}); limit 500;`,
+    );
+    const byGame = new Map<number, GameTimeToBeatDto>();
+
+    for (const row of rows) {
+      const timeToBeat = toTimeToBeat(row);
+      if (timeToBeat) byGame.set(row.game_id, timeToBeat);
+    }
+
+    return byGame;
+  }
+
+  private toDetails(
+    game: IgdbGame,
+    timeToBeat: GameTimeToBeatDto | null,
+  ): ProviderGameDetails {
     return {
       summary: this.toSummary(game),
       overview: game.summary ?? null,
@@ -342,6 +383,8 @@ export class IgdbProvider implements GameCatalogProvider {
       trailerVideoId: pickTrailer(game.videos),
       ageRatingImageUrls: uniqueAgeRatingImages(game.age_ratings),
       multiplayerModes: multiplayerModeLabels(game.multiplayer_modes),
+      timeToBeat,
+      sourceUrl: igdbUrl(game),
     };
   }
 
@@ -434,10 +477,36 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 }
 
+function igdbUrl(game: IgdbGame): string | null {
+  return game.slug ? `https://www.igdb.com/games/${game.slug}` : null;
+}
+
+/** Seconds to whole minutes, with IGDB's 0 read as "no data". */
+function secondsToMinutes(seconds: number | undefined): number | null {
+  return seconds && seconds > 0 ? Math.round(seconds / 60) : null;
+}
+
+function toTimeToBeat(row: IgdbTimeToBeat): GameTimeToBeatDto | null {
+  const submissions = row.count ?? 0;
+  if (submissions < MIN_TIME_TO_BEAT_SUBMISSIONS) return null;
+
+  const timeToBeat = {
+    hastilyMin: secondsToMinutes(row.hastily),
+    normallyMin: secondsToMinutes(row.normally),
+    completelyMin: secondsToMinutes(row.completely),
+    submissions,
+  };
+  const hasAny =
+    timeToBeat.hastilyMin !== null ||
+    timeToBeat.normallyMin !== null ||
+    timeToBeat.completelyMin !== null;
+  return hasAny ? timeToBeat : null;
+}
+
 /** IGDB's own user rating + critic aggregate (both 0–100), when present. */
 function toRatings(game: IgdbGame): RatingDto[] {
   const ratings: RatingDto[] = [];
-  const url = game.slug ? `https://www.igdb.com/games/${game.slug}` : undefined;
+  const url = igdbUrl(game) ?? undefined;
 
   if (game.rating !== null && game.rating !== undefined) {
     ratings.push({

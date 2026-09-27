@@ -10,6 +10,7 @@ import {
 import { ApiOkResponse } from "@nestjs/swagger";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import { GameItemService } from "../games/game-item.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { XpService } from "../gamification/xp.service";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
@@ -36,6 +37,7 @@ export class AdminJobsController {
     private readonly notifications: NotificationService,
     private readonly notificationDigests: NotificationDigestService,
     private readonly mediaItems: MediaItemService,
+    private readonly gameItems: GameItemService,
     private readonly reports: ReportService,
     private readonly backup: BackupService,
     private readonly inactiveAccount: InactiveAccountService,
@@ -66,6 +68,7 @@ export class AdminJobsController {
       [JOB_KEYS.NOTIFICATIONS_DIGEST]: () =>
         this.notificationDigests.runDigests(),
       [JOB_KEYS.MEDIA_REFRESH_STALE]: () => this.mediaItems.refreshStale(),
+      [JOB_KEYS.GAMES_REFRESH_STALE]: () => this.gameItems.refreshStale(),
       [JOB_KEYS.REPORTS_DIGEST]: () => this.reports.sendDailyDigest(),
       [JOB_KEYS.BACKUP]: () => this.backup.runScheduled(),
       [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: () => this.inactiveAccount.scan(),
