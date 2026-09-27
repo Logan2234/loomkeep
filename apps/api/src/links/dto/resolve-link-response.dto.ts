@@ -5,7 +5,7 @@ import type {
 } from "@loomkeep/shared";
 
 export class ResolvedLinkResponseDto implements ResolvedLinkDto {
-  domain!: Domain;
+  domain!: Domain | null;
   href!: string;
 }
 

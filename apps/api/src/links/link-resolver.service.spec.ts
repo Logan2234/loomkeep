@@ -1,5 +1,6 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
+import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import type { AnilistProvider } from "../catalog/providers/anilist.provider";
@@ -16,7 +17,14 @@ function makeResolver(overrides: {
   openLibrary?: Partial<OpenLibraryProvider>;
   musicBrainz?: Partial<MusicBrainzProvider>;
 }) {
+  const config = {
+    get: (key: string) =>
+      key === "WEB_ORIGIN"
+        ? "https://tracker.example.org, http://localhost:5173"
+        : undefined,
+  } as unknown as ConfigService;
   return new LinkResolverService(
+    config,
     (overrides.tmdb ?? {}) as TmdbProvider,
     (overrides.anilist ?? {}) as AnilistProvider,
     (overrides.igdb ?? {}) as IgdbProvider,
@@ -111,6 +119,17 @@ describe("LinkResolverService", () => {
     await expect(
       resolver.resolve("https://myanimelist.net/anime/52991"),
     ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it("opens a link to this instance, or to the hosted one, on the same page", async () => {
+    const resolver = makeResolver({});
+
+    await expect(
+      resolver.resolve("https://tracker.example.org/app/games/14593"),
+    ).resolves.toEqual({ domain: "GAMES", href: "/app/games/14593" });
+    await expect(
+      resolver.resolve("https://loomkeep.app/app/u/logan?tab=reviews"),
+    ).resolves.toEqual({ domain: null, href: "/app/u/logan?tab=reviews" });
   });
 
   it("recognizes nothing from a site it doesn't know", async () => {

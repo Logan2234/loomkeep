@@ -76,3 +76,25 @@ describe("parseCatalogLink", () => {
     expect(parseCatalogLink(url)).toBeNull();
   });
 });
+
+describe("parseCatalogLink on Loomkeep hosts", () => {
+  const HOSTS = ["tracker.example.org", "loomkeep.app"];
+
+  it("hands back an /app/ page as a path, query included", () => {
+    expect(
+      parseCatalogLink(
+        "https://www.loomkeep.app/app/media/movie/603?tab=cast",
+        HOSTS,
+      ),
+    ).toEqual({ source: "loomkeep", path: "/app/media/movie/603?tab=cast" });
+  });
+
+  it("ignores the public site, and /app/ paths on any other host", () => {
+    expect(
+      parseCatalogLink("https://loomkeep.app/legal/cgu", HOSTS),
+    ).toBeNull();
+    expect(
+      parseCatalogLink("https://evil.example/app/games/14593", HOSTS),
+    ).toBeNull();
+  });
+});

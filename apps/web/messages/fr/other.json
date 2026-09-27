@@ -1493,9 +1493,9 @@
   "admin_service_refused": "Connexion ou authentification refusée",
   "share_resolving": "Ouverture du lien…",
   "share_unrecognized_title": "Lien non reconnu",
-  "share_unrecognized_body": "Loomkeep sait ouvrir les liens TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library et MusicBrainz. Tu peux chercher le titre à la place.",
+  "share_unrecognized_body": "Loomkeep sait ouvrir les liens TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library, MusicBrainz et Loomkeep lui-même. Tu peux chercher le titre à la place.",
   "share_search_cta": "Chercher un titre",
   "search_link_title": "Tu as collé un lien",
-  "search_link_body": "S'il vient de TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library ou MusicBrainz, Loomkeep ouvre la fiche correspondante.",
+  "search_link_body": "S'il vient de TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library, MusicBrainz ou de Loomkeep lui-même, Loomkeep ouvre la fiche correspondante.",
   "search_link_open": "Ouvrir la fiche"
 }

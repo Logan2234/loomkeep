@@ -4,6 +4,7 @@
  * user-supplied URL server-side would be an open door to SSRF.
  */
 export type CatalogLink =
+  | { source: "loomkeep"; path: string }
   | { source: "tmdb"; type: "MOVIE" | "SERIES"; id: string }
   | { source: "imdb"; id: string }
   | { source: "anilist"; id: string }
@@ -89,7 +90,15 @@ const RULES: Record<
   ],
 };
 
-export function parseCatalogLink(raw: string): CatalogLink | null {
+/**
+ * `loomkeepHosts`: hostnames serving a Loomkeep web app, whose `/app/…`
+ * pages open as they are — every instance routes works by the same source
+ * ids, so a link from another instance means the same page here.
+ */
+export function parseCatalogLink(
+  raw: string,
+  loomkeepHosts: readonly string[] = [],
+): CatalogLink | null {
   let url: URL;
 
   try {
@@ -101,6 +110,13 @@ export function parseCatalogLink(raw: string): CatalogLink | null {
   if (url.protocol !== "https:" && url.protocol !== "http:") return null;
 
   const host = url.hostname.toLowerCase().replace(/^(www|m)\./, "");
+
+  // Only ever handed back as a path, never with its host: an in-app
+  // navigation, which can't be turned into a redirect to another site.
+  if (loomkeepHosts.includes(host) && url.pathname.startsWith("/app/")) {
+    return { source: "loomkeep", path: `${url.pathname}${url.search}` };
+  }
+
   // Own keys only: a host like "__proto__" must not reach Object.prototype.
   if (!Object.hasOwn(RULES, host)) return null;
 

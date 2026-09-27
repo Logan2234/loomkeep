@@ -4,6 +4,7 @@ import {
   type ResolvedLinkDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import { AnilistProvider } from "../catalog/providers/anilist.provider";
 import { TmdbProvider } from "../catalog/providers/tmdb.provider";
@@ -11,6 +12,16 @@ import { AppException } from "../common/app.exception";
 import { IgdbProvider } from "../games/providers/igdb.provider";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { type CatalogLink, parseCatalogLink } from "./link-parser";
+
+// The hosted instance: its links open on a self-hosted one too.
+const HOSTED_INSTANCE_HOST = "loomkeep.app";
+
+const DOMAIN_BY_SECTION: Record<string, Domain> = {
+  media: Domain.MEDIA,
+  games: Domain.GAMES,
+  books: Domain.BOOKS,
+  music: Domain.MUSIC,
+};
 
 const mediaHref = (media: MediaSummaryDto): ResolvedLinkDto => ({
   domain: Domain.MEDIA,
@@ -38,6 +49,7 @@ const musicHref = (releaseGroupId: string): ResolvedLinkDto => ({
 @Injectable()
 export class LinkResolverService {
   constructor(
+    private readonly config: ConfigService,
     private readonly tmdb: TmdbProvider,
     private readonly anilist: AnilistProvider,
     private readonly igdb: IgdbProvider,
@@ -46,7 +58,7 @@ export class LinkResolverService {
   ) {}
 
   async resolve(url: string): Promise<ResolvedLinkDto | null> {
-    const link = parseCatalogLink(url);
+    const link = parseCatalogLink(url, this.loomkeepHosts());
     if (!link) return null;
 
     try {
@@ -65,8 +77,32 @@ export class LinkResolverService {
     }
   }
 
+  /** This instance's own web hostnames (WEB_ORIGIN), plus the hosted one. */
+  private loomkeepHosts(): string[] {
+    const own = (this.config.get<string>("WEB_ORIGIN") ?? "")
+      .split(",")
+      .flatMap((origin) => {
+        try {
+          return [new URL(origin.trim()).hostname.replace(/^www\./, "")];
+        } catch {
+          return [];
+        }
+      });
+    return [...own, HOSTED_INSTANCE_HOST];
+  }
+
   private async pageFor(link: CatalogLink): Promise<ResolvedLinkDto | null> {
     switch (link.source) {
+      case "loomkeep": {
+        const section = link.path.split("/")[2];
+        return {
+          domain: Object.hasOwn(DOMAIN_BY_SECTION, section)
+            ? DOMAIN_BY_SECTION[section]
+            : null,
+          href: link.path,
+        };
+      }
+
       case "tmdb":
         return {
           domain: Domain.MEDIA,
