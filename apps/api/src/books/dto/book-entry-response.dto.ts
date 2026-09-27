@@ -14,6 +14,9 @@ export class BookEntryResponseDto implements BookEntryDto {
   notes!: string | null;
   favorite!: boolean;
   currentPage!: number;
+  editionKey!: string | null;
+  referencePageCount!: number | null;
+  trackedReadingMinutes!: number;
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;

@@ -1,5 +1,7 @@
 import type {
+  CreateBookSessionDto,
   UpdateBookEntryDto,
+  UpdateBookSessionDto,
   UpsertBookEntryDto,
   UpsertReadingGoalDto,
 } from "@loomkeep/shared";
@@ -77,6 +79,38 @@ export const deleteBookReplay = (replayId: string): Promise<void> =>
   typedRequest("/books/replays/{id}", {
     method: "DELETE",
     params: { id: replayId },
+  });
+
+export const getBookSessions = (entryId: string, page = 1) =>
+  typedRequest("/books/entries/{id}/sessions", {
+    params: { id: entryId },
+    query: { page: String(page) },
+  });
+
+export const createBookSession = (
+  entryId: string,
+  body: CreateBookSessionDto,
+) =>
+  typedRequest("/books/entries/{id}/sessions", {
+    method: "POST",
+    params: { id: entryId },
+    body,
+  });
+
+export const updateBookSession = (
+  sessionId: string,
+  body: UpdateBookSessionDto,
+) =>
+  typedRequest("/books/sessions/{id}", {
+    method: "PATCH",
+    params: { id: sessionId },
+    body,
+  });
+
+export const deleteBookSession = (sessionId: string): Promise<void> =>
+  typedRequest("/books/sessions/{id}", {
+    method: "DELETE",
+    params: { id: sessionId },
   });
 
 export const getReadingGoal = (year: number) =>

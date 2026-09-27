@@ -121,6 +121,13 @@ export const ActivityType = {
 } as const;
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 
+export const SessionSource = {
+  MANUAL: "MANUAL",
+  TIMER: "TIMER",
+  IMPORT: "IMPORT",
+} as const;
+export type SessionSource = (typeof SessionSource)[keyof typeof SessionSource];
+
 /** Kind of media. MOVIE/SERIES come from TMDB, ANIME from AniList. */
 export const MediaType = {
   MOVIE: "MOVIE",
@@ -682,6 +689,7 @@ export const XpReason = {
   GAME_REPLAYED: "GAME_REPLAYED",
   BOOK_FINISHED: "BOOK_FINISHED",
   BOOK_REPLAYED: "BOOK_REPLAYED",
+  SESSION_DAY_LOGGED: "SESSION_DAY_LOGGED",
   ALBUM_LISTENED: "ALBUM_LISTENED",
   WORK_ADDED: "WORK_ADDED",
   DOMAIN_STARTED: "DOMAIN_STARTED",

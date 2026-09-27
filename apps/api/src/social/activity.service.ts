@@ -39,6 +39,8 @@ export interface EmitActivityInput {
   /** Whether it surfaces on followers' home feed (matrix milestone). */
   homeFeed?: boolean;
   data?: Record<string, unknown>;
+  sourceType?: string;
+  sourceId?: string;
 }
 
 type EventRow = {
@@ -97,11 +99,44 @@ export class ActivityService {
           imageUrl: snap.imageUrl,
           href: snap.href,
           data: (input.data ?? {}) as Prisma.InputJsonValue,
+          sourceType: input.sourceType,
+          sourceId: input.sourceId,
         },
       });
     } catch (err) {
       this.logger.error(
         `Failed to emit ${input.type} activity for user ${input.userId}`,
+        err,
+      );
+    }
+  }
+
+  async updateLinked(
+    sourceType: string,
+    sourceId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      await this.prisma.activityEvent.updateMany({
+        where: { sourceType, sourceId },
+        data: { data: data as Prisma.InputJsonValue },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to update activity projection ${sourceType}/${sourceId}`,
+        err,
+      );
+    }
+  }
+
+  async deleteLinked(sourceType: string, sourceId: string): Promise<void> {
+    try {
+      await this.prisma.activityEvent.deleteMany({
+        where: { sourceType, sourceId },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to delete activity projection ${sourceType}/${sourceId}`,
         err,
       );
     }

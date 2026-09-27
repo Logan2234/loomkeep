@@ -1,4 +1,9 @@
-import type { BookOwnershipStatus, BookSource, BookStatus } from "../enums";
+import type {
+  BookOwnershipStatus,
+  BookSource,
+  BookStatus,
+  SessionSource,
+} from "../enums";
 import type { RatingDto } from "./catalog";
 
 /** A book as returned by a live catalogue search (not persisted). */
@@ -45,6 +50,8 @@ export interface BookDetailsDto extends BookSummaryDto {
   genres: string[];
   /** Number of pages, when known. */
   pageCount: number | null;
+  /** Source edition used for edition-specific pagination and cover data. */
+  editionKey: string | null;
   /** ISO first-publication date; null when the source has none. */
   releaseDate: string | null;
   /** Permalink to the work's Open Library page, when known. */
@@ -95,6 +102,11 @@ export interface BookEntryDto {
   favorite: boolean;
   /** Current reading position, in pages (0 = not started). */
   currentPage: number;
+  /** Edition used as the reference for page progress. */
+  editionKey: string | null;
+  referencePageCount: number | null;
+  /** Sum of dated reading sessions recorded in Loomkeep. */
+  trackedReadingMinutes: number;
   startedAt: string | null;
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
@@ -115,6 +127,8 @@ export interface UpsertBookEntryDto {
   rating?: number | null;
   notes?: string | null;
   favorite?: boolean;
+  editionKey?: string | null;
+  referencePageCount?: number | null;
 }
 
 /** Body for patching an existing book library entry. */
@@ -125,10 +139,60 @@ export interface UpdateBookEntryDto {
   favorite?: boolean;
   /** Current reading position, in pages. */
   currentPage?: number;
+  editionKey?: string | null;
+  referencePageCount?: number | null;
   startedAt?: string | null;
   finishedAt?: string | null;
   ownershipStatus?: BookOwnershipStatus;
   ownershipSource?: string | null;
+}
+
+export interface BookSessionDto {
+  id: string;
+  durationMinutes: number;
+  pagesRead: number;
+  startPage: number | null;
+  endPage: number | null;
+  occurredAt: string;
+  source: SessionSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBookSessionDto {
+  durationMinutes: number;
+  occurredAt: string;
+  /** Quantity mode. Mutually exclusive with startPage/endPage. */
+  pagesRead?: number;
+  /** Range mode. Both values are required together. */
+  startPage?: number;
+  endPage?: number;
+}
+
+export interface UpdateBookSessionDto {
+  durationMinutes?: number;
+  occurredAt?: string;
+  pagesRead?: number;
+  startPage?: number | null;
+  endPage?: number | null;
+}
+
+export interface BookSessionSummaryDto {
+  items: BookSessionDto[];
+  hasMore: boolean;
+  totalTrackedMinutes: number;
+  totalPagesRead: number;
+  weekMinutes: number;
+  monthMinutes: number;
+  averagePagesPerDay: number | null;
+  estimatedCompletionDate: string | null;
+  completionSuggested: boolean;
+}
+
+export interface BookSessionMutationDto {
+  session: BookSessionDto;
+  summary: BookSessionSummaryDto;
+  xpAwarded: boolean;
 }
 
 /**

@@ -276,6 +276,8 @@ describe("checkStreakTier", () => {
             { watchedAt: new Date("2026-01-03T00:00:00Z") },
           ]),
       },
+      gameSession: { findMany: vi.fn().mockResolvedValue([]) },
+      bookSession: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
 
     vi.setSystemTime(now);

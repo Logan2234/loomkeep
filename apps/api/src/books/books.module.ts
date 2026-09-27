@@ -5,6 +5,7 @@ import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
+import { BookSessionService } from "./book-session.service";
 import { BooksController } from "./books.controller";
 import { OpenLibraryProvider } from "./providers/open-library.provider";
 
@@ -13,7 +14,12 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
 @Module({
   imports: [UsersModule, ReviewsModule, GamificationModule, EventsModule],
   controllers: [BooksController],
-  providers: [BookItemService, BookLibraryService, OpenLibraryProvider],
+  providers: [
+    BookItemService,
+    BookLibraryService,
+    BookSessionService,
+    OpenLibraryProvider,
+  ],
   exports: [BookItemService],
 })
 export class BooksModule {}

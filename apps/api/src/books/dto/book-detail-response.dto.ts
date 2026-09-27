@@ -21,6 +21,7 @@ export class BookDetailResponseDto implements BookDetailDto {
   publisher!: string | null;
   genres!: string[];
   pageCount!: number | null;
+  editionKey!: string | null;
   releaseDate!: string | null;
   website!: string | null;
   sameAuthorBooks!: BookSummaryResponseDto[];

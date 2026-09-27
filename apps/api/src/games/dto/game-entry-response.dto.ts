@@ -14,6 +14,9 @@ export class GameEntryResponseDto implements GameEntryDto {
   notes!: string | null;
   favorite!: boolean;
   playtimeMinutes!: number;
+  trackedPlaytimeMinutes!: number;
+  steamPlaytimeMinutes!: number | null;
+  steamSyncedAt!: string | null;
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;

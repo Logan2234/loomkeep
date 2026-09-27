@@ -3,6 +3,7 @@ import type {
   BookSource,
   BookStatus,
   DataExportBookEntry,
+  SessionSource,
 } from "@loomkeep/shared";
 
 class DataExportBookExternalIdResponseDto {
@@ -18,6 +19,16 @@ class DataExportBookEntryBookResponseDto {
   externalIds!: DataExportBookExternalIdResponseDto[];
 }
 
+class DataExportBookSessionResponseDto {
+  durationMinutes!: number;
+  pagesRead!: number;
+  startPage!: number | null;
+  endPage!: number | null;
+  occurredAt!: string;
+  source!: SessionSource;
+  createdAt!: string;
+}
+
 export class DataExportBookEntryResponseDto implements DataExportBookEntry {
   book!: DataExportBookEntryBookResponseDto;
   status!: BookStatus;
@@ -25,10 +36,14 @@ export class DataExportBookEntryResponseDto implements DataExportBookEntry {
   notes!: string | null;
   favorite!: boolean;
   currentPage!: number;
+  editionKey!: string | null;
+  referencePageCount!: number | null;
+  trackedReadingMinutes!: number;
   ownershipStatus!: BookOwnershipStatus;
   ownershipSource!: string | null;
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;
   replays!: string[];
+  sessions!: DataExportBookSessionResponseDto[];
 }

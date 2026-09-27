@@ -229,7 +229,7 @@ export const checkEarlyBird = checkHourWindow(5, 7);
 
 /**
  * Streak tiers reuse `computeStreak` from `stats/video-temporal.util.ts` — the
- * same episode-only streak the profile and stats pages already show, so a
+ * same cross-domain streak the profile already shows, so a
  * badge can never disagree with the number displayed next to it.
  */
 export function checkStreakTier(target: number) {
@@ -237,11 +237,25 @@ export function checkStreakTier(target: number) {
     prisma: PrismaService,
     userId: string,
   ): Promise<AchievementCheckResult> => {
-    const watches = await prisma.episodeWatch.findMany({
-      where: { userId },
-      select: { watchedAt: true },
-    });
-    const current = computeStreak(knownWatchDates(watches));
+    const [watches, gameSessions, bookSessions] = await Promise.all([
+      prisma.episodeWatch.findMany({
+        where: { userId },
+        select: { watchedAt: true },
+      }),
+      prisma.gameSession.findMany({
+        where: { gameEntry: { userId } },
+        select: { occurredAt: true },
+      }),
+      prisma.bookSession.findMany({
+        where: { bookEntry: { userId } },
+        select: { occurredAt: true },
+      }),
+    ]);
+    const current = computeStreak([
+      ...knownWatchDates(watches),
+      ...gameSessions.map((session) => session.occurredAt),
+      ...bookSessions.map((session) => session.occurredAt),
+    ]);
     return { unlocked: current >= target, progress: { current, target } };
   };
 }

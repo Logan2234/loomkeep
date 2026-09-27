@@ -18,6 +18,7 @@
   import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
+  import GameSessionDock from "$lib/components/GameSessionDock.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
   import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
@@ -370,36 +371,7 @@
               placeholder={m.game_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
 
-            <div class="flex items-center justify-between gap-2">
-              <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                {m.game_playtime()}
-              </span>
-              <div class="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  name="playtimeHours"
-                  min="0"
-                  step="0.5"
-                  inputmode="decimal"
-                  aria-label={m.game_playtime_hours()}
-                  class="input w-20 text-right text-sm"
-                  disabled={saving}
-                  value={Math.round((entry.playtimeMinutes / 60) * 10) / 10}
-                  onchange={(e) => {
-                    const hours = parseFloat(e.currentTarget.value);
-                    if (Number.isFinite(hours) && hours >= 0) {
-                      patchMut.mutate({
-                        playtimeMinutes: Math.round(hours * 60),
-                      });
-                    } else {
-                      e.currentTarget.value = String(
-                        Math.round((entry.playtimeMinutes / 60) * 10) / 10,
-                      );
-                    }
-                  }} />
-                <span class="text-dim text-xs">{m.common_hours_short()}</span>
-              </div>
-            </div>
+            <GameSessionDock {entry} {detailKey} />
 
             <hr class="border-border" />
 

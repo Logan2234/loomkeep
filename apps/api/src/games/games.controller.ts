@@ -5,6 +5,8 @@ import {
   GameDetailDto,
   GameEntryDto,
   GameSearchResponseDto,
+  GameSessionMutationDto,
+  GameSessionSummaryDto,
   GameSource,
 } from "@loomkeep/shared";
 import {
@@ -32,19 +34,27 @@ import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
+import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { GameDetailResponseDto } from "./dto/game-detail-response.dto";
 import { GameEntryResponseDto } from "./dto/game-entry-response.dto";
 import { GameSearchResultResponseDto } from "./dto/game-search-response.dto";
+import {
+  GameSessionMutationResponseDto,
+  GameSessionSummaryResponseDto,
+} from "./dto/game-session-response.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
+import { UpdateGameSessionDto } from "./dto/update-game-session.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
+import { GameSessionService } from "./game-session.service";
 
 @Controller("games")
 export class GamesController {
   constructor(
     private readonly gameItemService: GameItemService,
     private readonly gameLibraryService: GameLibraryService,
+    private readonly gameSessionService: GameSessionService,
     private readonly ageGate: AgeGateService,
     private readonly domainGate: DomainGateService,
   ) {}
@@ -75,6 +85,49 @@ export class GamesController {
       this.ageGate.allowsAdultContent(user.sub),
     ]);
     return { results: filterAdultContent(results, allowAdult) };
+  }
+
+  @Get("entries/:id/sessions")
+  @ApiOkResponse({ type: GameSessionSummaryResponseDto })
+  listSessions(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Query("page") page?: string,
+  ): Promise<GameSessionSummaryDto> {
+    return this.gameSessionService.list(
+      user.sub,
+      entryId,
+      page ? Number(page) : 1,
+    );
+  }
+
+  @Post("entries/:id/sessions")
+  @ApiCreatedResponse({ type: GameSessionMutationResponseDto })
+  createSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") entryId: string,
+    @Body() dto: CreateGameSessionDto,
+  ): Promise<GameSessionMutationDto> {
+    return this.gameSessionService.create(user.sub, entryId, dto);
+  }
+
+  @Patch("sessions/:id")
+  @ApiOkResponse({ type: GameSessionMutationResponseDto })
+  updateSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") sessionId: string,
+    @Body() dto: UpdateGameSessionDto,
+  ): Promise<GameSessionMutationDto> {
+    return this.gameSessionService.update(user.sub, sessionId, dto);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete("sessions/:id")
+  async deleteSession(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") sessionId: string,
+  ): Promise<void> {
+    await this.gameSessionService.delete(user.sub, sessionId);
   }
 
   @Get()

@@ -1,4 +1,9 @@
-import type { GameOwnershipStatus, GameSource, GameStatus } from "../enums";
+import type {
+  GameOwnershipStatus,
+  GameSource,
+  GameStatus,
+  SessionSource,
+} from "../enums";
 import type { RatingDto } from "./catalog";
 
 /** A game as returned by a live catalogue search (not persisted). */
@@ -80,6 +85,11 @@ export interface GameEntryDto {
   favorite: boolean;
   /** Total time played, in minutes (imported from Steam or set manually). */
   playtimeMinutes: number;
+  /** Sum of dated sessions recorded in Loomkeep. */
+  trackedPlaytimeMinutes: number;
+  /** Latest total reported by Steam, kept separate from Loomkeep sessions. */
+  steamPlaytimeMinutes: number | null;
+  steamSyncedAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
@@ -114,6 +124,39 @@ export interface UpdateGameEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: GameOwnershipStatus;
   ownershipSource?: string | null;
+}
+
+export interface GameSessionDto {
+  id: string;
+  durationMinutes: number;
+  occurredAt: string;
+  source: SessionSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGameSessionDto {
+  durationMinutes: number;
+  occurredAt: string;
+}
+
+export interface UpdateGameSessionDto {
+  durationMinutes?: number;
+  occurredAt?: string;
+}
+
+export interface GameSessionSummaryDto {
+  items: GameSessionDto[];
+  hasMore: boolean;
+  totalTrackedMinutes: number;
+  weekMinutes: number;
+  monthMinutes: number;
+}
+
+export interface GameSessionMutationDto {
+  session: GameSessionDto;
+  summary: GameSessionSummaryDto;
+  xpAwarded: boolean;
 }
 
 /**

@@ -58,6 +58,9 @@ describe("BookLibraryService.deleteEntry", () => {
     const reviewDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
     const commentUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
     const bookEntryDelete = vi.fn().mockResolvedValue({});
+    const sessionCreatedAt = new Date("2026-01-02T12:00:00.000Z");
+    const deleteLinked = vi.fn();
+    const refreshAfterDelete = vi.fn();
 
     const prisma = {
       bookEntry: {
@@ -74,6 +77,13 @@ describe("BookLibraryService.deleteEntry", () => {
       },
       comment: { updateMany: commentUpdateMany },
       bookReplay: { findMany: vi.fn().mockResolvedValue([]) },
+      bookSession: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "session-1", createdAt: sessionCreatedAt },
+          ]),
+      },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
     const xp = stubXp();
@@ -85,10 +95,12 @@ describe("BookLibraryService.deleteEntry", () => {
       {} as import("../reviews/review.service").ReviewService,
       {
         emit: vi.fn(),
+        deleteLinked,
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       stubAchievements(),
       stubEvents(),
+      { refreshAfterDelete } as never,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -107,6 +119,8 @@ describe("BookLibraryService.deleteEntry", () => {
     expect(bookEntryDelete).toHaveBeenCalledWith({ where: { id: "entry-1" } });
     expect(xp.revokeBySource).toHaveBeenCalledWith("BookEntry", ["entry-1"]);
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
+    expect(deleteLinked).toHaveBeenCalledWith("BookSession", "session-1");
+    expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
   });
 });
 

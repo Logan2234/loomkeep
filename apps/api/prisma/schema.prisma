@@ -404,6 +404,12 @@ enum BookOwnershipStatus {
   BORROWED
 }
 
+enum SessionSource {
+  MANUAL
+  TIMER
+  IMPORT
+}
+
 // Source a music item's catalogue data comes from. MusicBrainz only.
 enum MusicSource {
   MUSICBRAINZ
@@ -1076,6 +1082,10 @@ model ActivityEvent {
   // Kind-specific extras: { rating } for REVIEWED, { seasonNumber, episodeNumber }
   // for PROGRESS, etc.
   data       Json     @default("{}")
+  // Optional link to the domain record projected into the feed. Session
+  // edits/deletions use it to update or remove their projection explicitly.
+  sourceType String?
+  sourceId   String?
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1083,6 +1093,7 @@ model ActivityEvent {
   // Home feed: recent events of followed users, filtered on homeFeed.
   @@index([userId, createdAt])
   @@index([homeFeed, createdAt])
+  @@index([sourceType, sourceId])
 }
 
 // One row per execution of a scheduled/admin-triggered job (notification scan,
@@ -1617,6 +1628,11 @@ model GameEntry {
   // Total time played, in minutes. Imported from Steam (playtime_forever);
   // manually editable. No session history yet — this is the running total.
   playtimeMinutes Int                 @default(0)
+  // Dated Loomkeep sessions and Steam's external counter intentionally stay
+  // separate because the same play time can be present in both.
+  trackedPlaytimeMinutes Int          @default(0)
+  steamPlaytimeMinutes   Int?
+  steamSyncedAt          DateTime?
   startedAt       DateTime?
   finishedAt      DateTime?
   ownershipStatus GameOwnershipStatus @default(NONE)
@@ -1628,8 +1644,24 @@ model GameEntry {
   user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameItem GameItem     @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
   replays  GameReplay[]
+  sessions GameSession[]
 
   @@unique([userId, gameItemId])
+}
+
+model GameSession {
+  id              String        @id @default(cuid())
+  gameEntryId     String
+  durationMinutes Int
+  occurredAt      DateTime
+  source          SessionSource @default(MANUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  gameEntry GameEntry @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+
+  @@index([gameEntryId, occurredAt])
+  @@index([createdAt])
 }
 
 // One row per completed replay, beyond the entry's own first completion —
@@ -1690,8 +1722,14 @@ model BookEntry {
   status          BookStatus          @default(TO_READ)
   notes           String?
   favorite        Boolean             @default(false)
-  // Current reading position, in pages. No session history — running position.
+  // Current reading position, derived from the baseline and dated sessions.
   currentPage     Int                 @default(0)
+  // Stable progress reference for the selected edition. `readingBaselinePage`
+  // preserves the position that existed before dated sessions were introduced.
+  editionKey            String?
+  referencePageCount    Int?
+  readingBaselinePage   Int                 @default(0)
+  trackedReadingMinutes Int                 @default(0)
   startedAt       DateTime?
   finishedAt      DateTime?
   ownershipStatus BookOwnershipStatus @default(NONE)
@@ -1703,8 +1741,27 @@ model BookEntry {
   user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookItem BookItem     @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
   replays  BookReplay[]
+  sessions BookSession[]
 
   @@unique([userId, bookItemId])
+}
+
+model BookSession {
+  id              String        @id @default(cuid())
+  bookEntryId     String
+  durationMinutes Int
+  pagesRead       Int
+  startPage       Int?
+  endPage         Int?
+  occurredAt      DateTime
+  source          SessionSource @default(MANUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  bookEntry BookEntry @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+
+  @@index([bookEntryId, occurredAt])
+  @@index([createdAt])
 }
 
 // One row per completed reread, beyond the entry's own first completion —

@@ -89,6 +89,7 @@ export class DataExportService {
         include: {
           gameItem: { include: { externalIds: true } },
           replays: { orderBy: { finishedAt: "asc" } },
+          sessions: { orderBy: { occurredAt: "asc" } },
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -97,6 +98,7 @@ export class DataExportService {
         include: {
           bookItem: { include: { externalIds: true } },
           replays: { orderBy: { finishedAt: "asc" } },
+          sessions: { orderBy: { occurredAt: "asc" } },
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -283,12 +285,21 @@ export class DataExportService {
         notes: entry.notes,
         favorite: entry.favorite,
         playtimeMinutes: entry.playtimeMinutes,
+        trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
+        steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
+        steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
         replays: entry.replays.map((r) => r.finishedAt.toISOString()),
+        sessions: entry.sessions.map((session) => ({
+          durationMinutes: session.durationMinutes,
+          occurredAt: session.occurredAt.toISOString(),
+          source: session.source,
+          createdAt: session.createdAt.toISOString(),
+        })),
       })),
       books: bookEntries.map((entry) => ({
         book: {
@@ -306,12 +317,24 @@ export class DataExportService {
         notes: entry.notes,
         favorite: entry.favorite,
         currentPage: entry.currentPage,
+        editionKey: entry.editionKey,
+        referencePageCount: entry.referencePageCount,
+        trackedReadingMinutes: entry.trackedReadingMinutes,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
         replays: entry.replays.map((r) => r.finishedAt.toISOString()),
+        sessions: entry.sessions.map((session) => ({
+          durationMinutes: session.durationMinutes,
+          pagesRead: session.pagesRead,
+          startPage: session.startPage,
+          endPage: session.endPage,
+          occurredAt: session.occurredAt.toISOString(),
+          source: session.source,
+          createdAt: session.createdAt.toISOString(),
+        })),
       })),
       music: musicEntries.map((entry) => ({
         album: {

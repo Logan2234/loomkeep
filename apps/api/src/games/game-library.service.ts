@@ -42,6 +42,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
+import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -166,6 +167,7 @@ export class GameLibraryService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly sessionXp?: SessionXpService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a game entry write. */
@@ -432,6 +434,10 @@ export class GameLibraryService {
       where: { gameEntryId: entryId },
       select: { id: true },
     });
+    const sessions = await this.prisma.gameSession.findMany({
+      where: { gameEntryId: entryId },
+      select: { id: true, createdAt: true },
+    });
     // Same reason: the transaction below deletes this Review outright (not
     // via ReviewService, which handles its own XP revocation) —
     // WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED would otherwise linger
@@ -456,6 +462,17 @@ export class GameLibraryService {
       "Review",
       reviews.map((r) => r.id),
     ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await Promise.all(
+      sessions.map((session) =>
+        this.activity.deleteLinked("GameSession", session.id),
+      ),
+    );
+
+    if (this.sessionXp) {
+      for (const session of sessions) {
+        await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
+      }
+    }
   }
 
   async addReplay(
@@ -590,6 +607,9 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     notes: entry.notes,
     favorite: entry.favorite,
     playtimeMinutes: entry.playtimeMinutes,
+    trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
+    steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
+    steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),

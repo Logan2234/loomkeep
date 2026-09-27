@@ -1,5 +1,10 @@
 import { getLocale } from "$lib/paraglide/runtime.js";
-import type { UpdateGameEntryDto, UpsertGameEntryDto } from "@loomkeep/shared";
+import type {
+  CreateGameSessionDto,
+  UpdateGameEntryDto,
+  UpdateGameSessionDto,
+  UpsertGameEntryDto,
+} from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 export const searchGames = (query: string) =>
@@ -60,4 +65,36 @@ export const deleteGameReplay = (replayId: string): Promise<void> =>
   typedRequest("/games/replays/{id}", {
     method: "DELETE",
     params: { id: replayId },
+  });
+
+export const getGameSessions = (entryId: string, page = 1) =>
+  typedRequest("/games/entries/{id}/sessions", {
+    params: { id: entryId },
+    query: { page: String(page) },
+  });
+
+export const createGameSession = (
+  entryId: string,
+  body: CreateGameSessionDto,
+) =>
+  typedRequest("/games/entries/{id}/sessions", {
+    method: "POST",
+    params: { id: entryId },
+    body,
+  });
+
+export const updateGameSession = (
+  sessionId: string,
+  body: UpdateGameSessionDto,
+) =>
+  typedRequest("/games/sessions/{id}", {
+    method: "PATCH",
+    params: { id: sessionId },
+    body,
+  });
+
+export const deleteGameSession = (sessionId: string): Promise<void> =>
+  typedRequest("/games/sessions/{id}", {
+    method: "DELETE",
+    params: { id: sessionId },
   });

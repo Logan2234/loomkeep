@@ -353,7 +353,13 @@ describe("SteamImportSource (via ImportJobService)", () => {
           ownershipStatus: "DIGITAL",
           ownershipSource: "Steam",
         }),
+        update: {
+          playtimeMinutes: 600,
+          steamPlaytimeMinutes: 600,
+          steamSyncedAt: expect.any(Date),
+        },
       }),
     );
+    expect(mocks.prisma.gameEntry.deleteMany).not.toHaveBeenCalled();
   });
 });

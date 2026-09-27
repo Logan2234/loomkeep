@@ -93,6 +93,9 @@ describe("DataExportService.buildExport", () => {
         notes: null,
         favorite: true,
         playtimeMinutes: 120,
+        trackedPlaytimeMinutes: 0,
+        steamPlaytimeMinutes: 120,
+        steamSyncedAt: new Date("2026-02-02T00:00:00.000Z"),
         ownershipStatus: "DIGITAL",
         ownershipSource: "Steam",
         startedAt: new Date("2026-02-01T00:00:00.000Z"),
@@ -104,6 +107,7 @@ describe("DataExportService.buildExport", () => {
           externalIds: [{ source: "IGDB", externalId: "1234" }],
         },
         replays: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
+        sessions: [],
       },
     ]);
 
@@ -128,6 +132,9 @@ describe("DataExportService.buildExport", () => {
         notes: "great",
         favorite: false,
         currentPage: 320,
+        editionKey: "OL1M",
+        referencePageCount: 320,
+        trackedReadingMinutes: 0,
         ownershipStatus: "PHYSICAL",
         ownershipSource: null,
         startedAt: null,
@@ -140,6 +147,7 @@ describe("DataExportService.buildExport", () => {
           externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
         },
         replays: [],
+        sessions: [],
       },
     ]);
 

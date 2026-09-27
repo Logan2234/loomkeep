@@ -26,6 +26,9 @@ export const keys = {
     reading: (sort: string) => ["books", "reading", sort] as const,
     tracked: () => ["books", "tracked"] as const,
     search: (query: string) => ["books", "search", query] as const,
+    sessionsRoot: (entryId: string) => ["books", "sessions", entryId] as const,
+    sessions: (entryId: string, page = 1) =>
+      ["books", "sessions", entryId, page] as const,
   },
   games: {
     playing: (sort: string) => ["games", "playing", sort] as const,
@@ -33,6 +36,9 @@ export const keys = {
       ["games", "detail", source, sourceId] as const,
     tracked: () => ["games", "tracked"] as const,
     search: (query: string) => ["games", "search", query] as const,
+    sessionsRoot: (entryId: string) => ["games", "sessions", entryId] as const,
+    sessions: (entryId: string, page = 1) =>
+      ["games", "sessions", entryId, page] as const,
   },
   music: {
     toListen: (sort: string) => ["music", "to-listen", sort] as const,

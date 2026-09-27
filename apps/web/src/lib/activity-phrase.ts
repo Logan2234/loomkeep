@@ -24,6 +24,18 @@ export function activityPhrase(e: ActivityEventDto): string {
     case "REVIEWED":
       return m.activity_reviewed();
     case "PROGRESS":
+      if (e.domain === "GAMES" && typeof e.data.durationMinutes === "number") {
+        return e.count > 1
+          ? m.activity_game_sessions({ count: e.count })
+          : m.activity_game_session({ minutes: e.data.durationMinutes });
+      }
+
+      if (e.domain === "BOOKS" && typeof e.data.pagesRead === "number") {
+        return e.count > 1
+          ? m.activity_book_sessions({ count: e.count })
+          : m.activity_book_session({ pages: e.data.pagesRead });
+      }
+
       return e.count > 1
         ? m.activity_progress_count({ count: e.count })
         : m.activity_progress();

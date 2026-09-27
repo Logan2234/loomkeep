@@ -88,6 +88,14 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     dailyCap: 3,
     socialGated: false,
   },
+  SESSION_DAY_LOGGED: {
+    reason: XpReason.SESSION_DAY_LOGGED,
+    amount: 10,
+    sourceType: "SESSION_DAY",
+    // One shared reward across game and book sessions per local day.
+    dailyCap: 1,
+    socialGated: false,
+  },
   ALBUM_LISTENED: {
     reason: XpReason.ALBUM_LISTENED,
     amount: 20,

@@ -15,6 +15,7 @@
   import { toCarouselItems } from "$lib/carousel";
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
+  import BookSessionDock from "$lib/components/BookSessionDock.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -26,7 +27,6 @@
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
   import Poster from "$lib/components/Poster.svelte";
-  import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ProviderMark from "$lib/components/ProviderMark.svelte";
   import RelatedCarousel from "$lib/components/RelatedCarousel.svelte";
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
@@ -124,13 +124,6 @@
         !!detail.isbn),
   );
 
-  // Reading progress as a percentage of the known page count (0 when unknown).
-  const progressPct = $derived(
-    entry && detail?.pageCount
-      ? Math.min(100, Math.round((entry.currentPage / detail.pageCount) * 100))
-      : 0,
-  );
-
   const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
     createEntryTrackingMutations({
       detailKey: () => detailKey,
@@ -141,6 +134,8 @@
           source: d.source,
           sourceId: d.sourceId,
           status: "TO_READ",
+          editionKey: d.editionKey,
+          referencePageCount: d.pageCount,
         }),
       update: (id, changes: Parameters<typeof updateBookEntry>[1]) =>
         updateBookEntry(id, changes),
@@ -159,6 +154,31 @@
       addReplayMut.loading ||
       removeReplayMut.loading,
   );
+
+  let restoredEdition = $state(false);
+  let editionSyncTarget = $state<string | null>(null);
+  $effect(() => {
+    if (!restoredEdition && entry) {
+      restoredEdition = true;
+      if (entry.editionKey) selectedEdition = entry.editionKey;
+    }
+  });
+  $effect(() => {
+    const editionKey = detail?.editionKey ?? null;
+    const pageCount = detail?.pageCount ?? null;
+    if (!restoredEdition || !entry || !editionKey || !pageCount) return;
+    if (selectedEdition && editionKey !== selectedEdition) return;
+    if (
+      entry.editionKey === editionKey &&
+      entry.referencePageCount === pageCount
+    ) {
+      editionSyncTarget = null;
+      return;
+    }
+    if (editionSyncTarget === editionKey || patchMut.loading) return;
+    editionSyncTarget = editionKey;
+    patchMut.mutate({ editionKey, referencePageCount: pageCount });
+  });
 </script>
 
 <svelte:head>
@@ -361,40 +381,10 @@
 
             <AddToListButton targetType="BOOK" targetId={entry.book.id} />
 
-            <!-- Reading progress: page position, with a bar when the total is known. -->
-            <div class="flex flex-col gap-2">
-              <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase"
-                >{m.book_reading_progress()}</span>
-              <div class="text-dim flex items-center gap-2 text-sm">
-                <span>{m.book_page()}</span>
-                <input
-                  type="number"
-                  name="currentPage"
-                  min="0"
-                  max={detail.pageCount ?? undefined}
-                  aria-label={m.book_reading_progress()}
-                  class="input w-24"
-                  value={entry.currentPage || ""}
-                  onchange={(e) => {
-                    const raw = e.currentTarget.value;
-                    patchMut.mutate({
-                      currentPage: raw === "" ? 0 : Number(raw),
-                    });
-                  }} />
-                {#if detail.pageCount}
-                  <span class="timecode">/ {detail.pageCount}</span>
-                  <span class="font-display text-fg ml-auto font-bold">
-                    {progressPct} %
-                  </span>
-                {/if}
-              </div>
-              {#if detail.pageCount}
-                <ProgressBar
-                  value={progressPct}
-                  label={m.book_reading_progress()}
-                  height="h-2" />
-              {/if}
-            </div>
+            <BookSessionDock
+              {entry}
+              {detailKey}
+              onMarkFinished={() => patchMut.mutate({ status: "READ" })} />
 
             <hr class="border-border" />
 

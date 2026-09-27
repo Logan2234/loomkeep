@@ -43,6 +43,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
+import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
@@ -191,6 +192,7 @@ export class BookLibraryService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly sessionXp?: SessionXpService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a book entry write. */
@@ -230,6 +232,8 @@ export class BookLibraryService {
       status: dto.status,
       notes: dto.notes,
       favorite: dto.favorite,
+      editionKey: dto.editionKey,
+      referencePageCount: dto.referencePageCount,
     };
     const entry = await this.prisma.bookEntry.upsert({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
@@ -396,6 +400,9 @@ export class BookLibraryService {
         notes: dto.notes,
         favorite: dto.favorite,
         currentPage: dto.currentPage,
+        readingBaselinePage: dto.currentPage,
+        editionKey: dto.editionKey,
+        referencePageCount: dto.referencePageCount,
         startedAt:
           dto.startedAt === undefined ? undefined : toDateOrNull(dto.startedAt),
         finishedAt:
@@ -469,6 +476,10 @@ export class BookLibraryService {
       where: { bookEntryId: entryId },
       select: { id: true },
     });
+    const sessions = await this.prisma.bookSession.findMany({
+      where: { bookEntryId: entryId },
+      select: { id: true, createdAt: true },
+    });
     // Same reason: the transaction below deletes this Review outright (not
     // via ReviewService, which handles its own XP revocation) —
     // WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED would otherwise linger
@@ -493,6 +504,17 @@ export class BookLibraryService {
       "Review",
       reviews.map((r) => r.id),
     ); // WORK_RATED / REVIEW_WRITTEN / REVIEW_DETAILED
+    await Promise.all(
+      sessions.map((session) =>
+        this.activity.deleteLinked("BookSession", session.id),
+      ),
+    );
+
+    if (this.sessionXp) {
+      for (const session of sessions) {
+        await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
+      }
+    }
   }
 
   async addReplay(
@@ -714,6 +736,9 @@ function toEntryDto(entry: EntryWithBook, rating: number | null): BookEntryDto {
     notes: entry.notes,
     favorite: entry.favorite,
     currentPage: entry.currentPage,
+    editionKey: entry.editionKey,
+    referencePageCount: entry.referencePageCount,
+    trackedReadingMinutes: entry.trackedReadingMinutes,
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),
