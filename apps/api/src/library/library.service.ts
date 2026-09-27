@@ -752,6 +752,78 @@ export class LibraryService {
     return finishedAt;
   }
 
+  /**
+   * Emits the SEASON_FINISHED milestone for every season, among the ones
+   * touched by `affectedEpisodeIds`, that has just become fully watched and
+   * wasn't before this action — distinct from the work-level FINISHED
+   * (`syncFinishedAt`), so a feed can tell "finished season 3" from
+   * "finished the whole show". Season 0 (TMDB specials) is excluded,
+   * matching `computeProgress`'s own exclusion.
+   *
+   * `previouslyWatchedIds` must cover every episode of every season
+   * `affectedEpisodeIds` might touch (not just the acted-upon ones) — a
+   * partial set would under-count an already-complete season as "newly"
+   * finished.
+   */
+  private async emitSeasonFinishedMilestones(
+    userId: string,
+    mediaItemId: string,
+    affectedEpisodeIds: string[],
+    previouslyWatchedIds: Set<string>,
+  ): Promise<void> {
+    if (affectedEpisodeIds.length === 0) return;
+
+    const rawSeasons = await this.prisma.season.findMany({
+      where: {
+        mediaItemId,
+        number: { gt: 0 },
+        episodes: { some: { id: { in: affectedEpisodeIds } } },
+      },
+      select: { number: true, episodes: { select: { id: true } } },
+    });
+    // `?? []` tolerates a caller-narrowed select that doesn't happen to
+    // include `episodes` — never the case for this query's own shape above,
+    // but keeps this from throwing on a shared-mock testing setup.
+    const seasons = rawSeasons.map((s) => ({
+      number: s.number,
+      episodes: s.episodes ?? [],
+    }));
+    if (seasons.length === 0) return;
+
+    const nowWatched = await this.prisma.episodeWatch.findMany({
+      where: {
+        userId,
+        episodeId: { in: seasons.flatMap((s) => s.episodes.map((e) => e.id)) },
+      },
+      distinct: ["episodeId"],
+      select: { episodeId: true },
+    });
+    const nowWatchedIds = new Set(nowWatched.map((w) => w.episodeId));
+
+    for (const season of seasons) {
+      if (season.episodes.length === 0) continue;
+
+      const wasComplete = season.episodes.every((e) =>
+        previouslyWatchedIds.has(e.id),
+      );
+      if (wasComplete) continue; // already emitted on an earlier watch
+
+      const isComplete = season.episodes.every((e) => nowWatchedIds.has(e.id));
+      if (!isComplete) continue;
+
+      await this.activity.emit({
+        userId,
+        type: ActivityType.SEASON_FINISHED,
+        domain: Domain.MEDIA,
+        targetType: ReviewTargetType.MEDIA,
+        targetId: mediaItemId,
+        level: "SEASON",
+        data: { seasonNumber: season.number },
+        homeFeed: true,
+      });
+    }
+  }
+
   /** Persisted seasons/episodes of an entry's media, with the user's watch counts. */
   async getEntryEpisodes(
     userId: string,
@@ -816,6 +888,15 @@ export class LibraryService {
       );
     }
 
+    const previouslyWatched = await this.prisma.episodeWatch.findMany({
+      where: { userId, episode: { seasonId: episode.seasonId } },
+      distinct: ["episodeId"],
+      select: { episodeId: true },
+    });
+    const previouslyWatchedIds = new Set(
+      previouslyWatched.map((w) => w.episodeId),
+    );
+
     const watch = await this.prisma.episodeWatch.create({
       data: {
         userId,
@@ -835,6 +916,13 @@ export class LibraryService {
       userId,
       episode.season.mediaItemId,
       episode.season.mediaItem.type,
+    );
+
+    await this.emitSeasonFinishedMilestones(
+      userId,
+      episode.season.mediaItemId,
+      [episodeId],
+      previouslyWatchedIds,
     );
 
     await this.activity.emit({
@@ -877,6 +965,15 @@ export class LibraryService {
 
     await this.assertMediaOwnership(userId, season.mediaItemId);
 
+    const previouslyWatched = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
+      distinct: ["episodeId"],
+      select: { episodeId: true },
+    });
+    const previouslyWatchedIds = new Set(
+      previouslyWatched.map((w) => w.episodeId),
+    );
+
     // Unreleased episodes (future airDate) are silently skipped rather than
     // blocking the whole season.
     const now = new Date();
@@ -888,6 +985,12 @@ export class LibraryService {
       userId,
       season.mediaItemId,
       season.mediaItem.type,
+    );
+    await this.emitSeasonFinishedMilestones(
+      userId,
+      season.mediaItemId,
+      episodes.map((e) => e.id),
+      previouslyWatchedIds,
     );
   }
 
@@ -993,7 +1096,27 @@ export class LibraryService {
             (!e.airDate || e.airDate <= now),
         )
         .map((e) => e.id);
+
+      // Scoped to every regular episode of the series (not just `throughIds`)
+      // so a season that was already fully watched before this call — but
+      // only partially covered by `throughIds` (the target's own season) —
+      // isn't under-counted as "newly" finished below.
+      const previouslyWatched = await this.prisma.episodeWatch.findMany({
+        where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
+        distinct: ["episodeId"],
+        select: { episodeId: true },
+      });
+      const previouslyWatchedIds = new Set(
+        previouslyWatched.map((w) => w.episodeId),
+      );
+
       await this.markUnwatched(userId, throughIds);
+      await this.emitSeasonFinishedMilestones(
+        userId,
+        target.season.mediaItemId,
+        throughIds,
+        previouslyWatchedIds,
+      );
     }
 
     await this.syncFinishedAt(

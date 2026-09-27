@@ -2,12 +2,15 @@ import { Module } from "@nestjs/common";
 import { EntitlementModule } from "../entitlements/entitlement.module";
 import { LibraryModule } from "../library/library.module";
 import { ReviewsModule } from "../reviews/reviews.module";
+import { SocialModule } from "../social/social.module";
 import { StatsModule } from "../stats/stats.module";
 import { CalendarFeedController } from "./calendar/calendar-feed.controller";
 import { CalendarFeedService } from "./calendar/calendar-feed.service";
 import { EeLicenseGuard } from "./licensing/ee-license.guard";
 import { EeStatusController } from "./licensing/ee-status.controller";
 import { LicenseService } from "./licensing/license.service";
+import { ActivityFeedController } from "./social/activity-feed.controller";
+import { ActivityFeedService } from "./social/activity-feed.service";
 import { AdvancedStatsService } from "./stats/advanced-stats.service";
 
 /**
@@ -15,13 +18,24 @@ import { AdvancedStatsService } from "./stats/advanced-stats.service";
  * core never imports from here; app.module.ts is the one place that does.
  */
 @Module({
-  imports: [EntitlementModule, LibraryModule, ReviewsModule, StatsModule],
-  controllers: [EeStatusController, CalendarFeedController],
+  imports: [
+    EntitlementModule,
+    LibraryModule,
+    ReviewsModule,
+    StatsModule,
+    SocialModule,
+  ],
+  controllers: [
+    EeStatusController,
+    CalendarFeedController,
+    ActivityFeedController,
+  ],
   providers: [
     LicenseService,
     EeLicenseGuard,
     CalendarFeedService,
     AdvancedStatsService,
+    ActivityFeedService,
   ],
 })
 export class EeModule {}

@@ -101,6 +101,7 @@ export const ErrorCode = {
   SocialFollowRequestNotFound: "social.follow_request_not_found",
   SocialCannotBlockSelf: "social.cannot_block_self",
   SocialFeatureDisabled: "social.feature_disabled",
+  SocialActivityFeedUnavailable: "social.activity_feed_unavailable",
 
   // stats
   StatsRatingOrDecadeOnly: "stats.rating_or_decade_only",

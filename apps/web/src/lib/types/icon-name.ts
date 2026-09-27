@@ -77,4 +77,5 @@ export type IconName =
   | "crown"
   | "key"
   | "keyboard"
-  | "send";
+  | "send"
+  | "rss";

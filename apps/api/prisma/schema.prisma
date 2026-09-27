@@ -536,6 +536,10 @@ model User {
   // looked up directly by calendar apps, which can't send an Authorization
   // header). Null until first requested from Réglages > Export.
   calendarToken                 String?            @unique
+  // Same pattern as calendarToken, for the public Atom activity feed
+  // (ee/social/activity-feed): a feed reader can't send an Authorization
+  // header either. Null until first requested from Réglages > Vie privée.
+  activityFeedToken             String?            @unique
   createdAt                     DateTime           @default(now())
   updatedAt                     DateTime           @updatedAt
   // Set once the mandatory first-run onboarding wizard is completed (see
