@@ -312,6 +312,24 @@
         onClose={() => (avatarLightbox = false)} />
     {/if}
 
+    {#if user.invitation}
+      <p
+        class="border-border text-dim mb-4 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs">
+        <Icon name="mail" class="h-3.5 w-3.5 shrink-0" />
+        <span class="min-w-0">
+          {user.invitation.createdByName
+            ? m.admin_invitations_invited_by({
+                name: user.invitation.createdByName,
+              })
+            : m.admin_invitations_invited()}
+          {#if user.invitation.label}
+            <span aria-hidden="true">·</span>
+            <span class="text-fg">{user.invitation.label}</span>
+          {/if}
+        </span>
+      </p>
+    {/if}
+
     {#if user.inactivityWarningSentAt}
       <p
         class="border-warning/40 bg-warning/10 text-warning mb-4 rounded-lg border px-3 py-2 text-xs">

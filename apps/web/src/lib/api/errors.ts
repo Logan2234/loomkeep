@@ -52,6 +52,10 @@ const MESSAGES = {
     m.apierr_auth_passwordless_requires_credential(),
   [ErrorCode.AuthPasswordlessNotEligible]: () =>
     m.apierr_auth_passwordless_not_eligible(),
+  [ErrorCode.AuthInvalidInvitation]: () => m.apierr_auth_invalid_invitation(),
+  [ErrorCode.AuthInvitationExpired]: () => m.apierr_auth_invitation_expired(),
+  [ErrorCode.AuthInvitationEmailMismatch]: () =>
+    m.apierr_auth_invitation_email_mismatch(),
   [ErrorCode.AdminCacheItemNotFound]: () =>
     m.apierr_admin_cache_item_not_found(),
   [ErrorCode.AdminCacheResyncFailed]: () =>
@@ -110,6 +114,14 @@ const MESSAGES = {
   [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
   [ErrorCode.AdminMisconfigured]: () => m.apierr_admin_misconfigured(),
   [ErrorCode.AdminUnauthorized]: () => m.apierr_admin_unauthorized(),
+  [ErrorCode.AdminInvitationNotFound]: () =>
+    m.apierr_admin_invitation_not_found(),
+  [ErrorCode.AdminInvitationEmailRegistered]: () =>
+    m.apierr_admin_invitation_email_registered(),
+  [ErrorCode.AdminInvitationAlreadyPending]: () =>
+    m.apierr_admin_invitation_already_pending(),
+  [ErrorCode.AdminInvitationNotRenewable]: () =>
+    m.apierr_admin_invitation_not_renewable(),
   [ErrorCode.CommentUnknownTargetType]: () =>
     m.apierr_comment_unknown_target_type(),
   [ErrorCode.CommentParentNotFound]: () => m.apierr_comment_parent_not_found(),

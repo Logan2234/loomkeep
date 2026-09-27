@@ -323,7 +323,74 @@ export interface AdminUserDto {
   inactivityWarningSentAt: string | null;
   /** Total XP (`UserScore`), 0 before any gain. */
   xp: number;
+  /** The invitation this account signed up through — null for an open registration. */
+  invitation: AdminUserInvitationDto | null;
 }
+
+export interface AdminUserInvitationDto {
+  label: string | null;
+  /** Display name of whoever minted it — null once that account is deleted. */
+  createdByName: string | null;
+}
+
+/**
+ * Derived, never stored: `revoked` wins over everything, then `used` (every
+ * place taken), then `expired`; a multi-use link that still has room is
+ * `pending` even after its first redemption.
+ */
+export type AdminInvitationStatus = "pending" | "used" | "expired" | "revoked";
+
+export interface AdminInvitationDto {
+  id: string;
+  /** Only this address may redeem it; null for a link shared by hand. */
+  email: string | null;
+  label: string | null;
+  maxUses: number;
+  useCount: number;
+  status: AdminInvitationStatus;
+  expiresAt: string;
+  revokedAt: string | null;
+  /** Last time the link was mailed — null if it was only ever copied. */
+  emailedAt: string | null;
+  createdAt: string;
+  /** Display name of whoever minted it — null once that account is deleted. */
+  createdByName: string | null;
+  /** Accounts created through it, oldest first. */
+  redeemedBy: AdminInvitationRedeemerDto[];
+}
+
+export interface AdminInvitationRedeemerDto {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface CreateAdminInvitationRequestDto {
+  /** Optional: binds the invitation to this address and mails it the link. */
+  email?: string;
+  label?: string;
+  /** 1..INVITATION_MAX_USES. */
+  maxUses: number;
+  /** One of INVITATION_VALIDITY_DAYS. */
+  validityDays: number;
+}
+
+/**
+ * Returned on creation and renewal only: the raw link exists nowhere else
+ * (the database keeps its hash), so this is the one chance to copy it.
+ */
+export interface AdminInvitationLinkDto {
+  invitation: AdminInvitationDto;
+  url: string;
+  /** Whether the link was mailed — false without an email or without SMTP. */
+  emailed: boolean;
+}
+
+/** Validity choices offered when minting an invitation, in days. */
+export const INVITATION_VALIDITY_DAYS = [1, 7, 30] as const;
+/** Upper bound on the places of one multi-use ("family") link. */
+export const INVITATION_MAX_USES = 20;
 
 /** A manual XP correction: a signed amount, never zero. */
 export interface AdjustAdminUserXpRequestDto {

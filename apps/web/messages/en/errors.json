@@ -180,5 +180,12 @@
   "valerr_array_max_size": "Must contain at most {max} item(s).",
   "valerr_array_not_empty": "Can't be empty.",
   "valerr_array_unique": "Each item must be unique.",
-  "valerr_is_push_endpoint": "This notification service isn't supported."
+  "valerr_is_push_endpoint": "This notification service isn't supported.",
+  "apierr_auth_invalid_invitation": "This invitation link isn't valid (anymore).",
+  "apierr_auth_invitation_expired": "This invitation link has expired. Ask whoever sent it for a new one.",
+  "apierr_auth_invitation_email_mismatch": "This invitation is reserved for another email address.",
+  "apierr_admin_invitation_not_found": "Invitation not found.",
+  "apierr_admin_invitation_email_registered": "An account already exists with this email address.",
+  "apierr_admin_invitation_already_pending": "An invitation is already pending for this address: generate a new link for it from the Invitations tab.",
+  "apierr_admin_invitation_not_renewable": "This invitation is revoked or already used: create a new one."
 }

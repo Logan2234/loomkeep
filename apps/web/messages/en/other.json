@@ -1542,5 +1542,12 @@
   "share_search_cta": "Search for a title",
   "search_link_title": "You pasted a link",
   "search_link_body": "If it comes from TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library, MusicBrainz or Loomkeep itself, Loomkeep opens the matching page.",
-  "search_link_open": "Open the page"
+  "search_link_open": "Open the page",
+  "auth_invitation_from": "{name} invited you to Loomkeep",
+  "auth_invitation_generic": "You're invited to Loomkeep",
+  "auth_invitation_body": "Create your account to join this instance.",
+  "auth_invitation_email_locked": "This invitation is tied to this address.",
+  "auth_invitation_checking": "Checking the invitation…",
+  "auth_invitation_back_to_login": "Back to sign in",
+  "auth_registration_invite_only": "Sign-up is by invitation only."
 }

@@ -190,7 +190,15 @@ export class AdminUsersController {
       orderBy: { createdAt: "desc" },
       skip,
       take: take + 1,
-      include: { score: { select: { xp: true } } },
+      include: {
+        score: { select: { xp: true } },
+        invitation: {
+          select: {
+            label: true,
+            createdBy: { select: { displayName: true } },
+          },
+        },
+      },
     });
     const hasMore = rows.length > pageLimit;
     const users = rows.slice(0, pageLimit);
@@ -219,6 +227,12 @@ export class AdminUsersController {
         inactivityWarningSentAt:
           u.inactivityWarningSentAt?.toISOString() ?? null,
         xp: u.score?.xp ?? 0,
+        invitation: u.invitation
+          ? {
+              label: u.invitation.label,
+              createdByName: u.invitation.createdBy?.displayName ?? null,
+            }
+          : null,
       })),
     };
   }

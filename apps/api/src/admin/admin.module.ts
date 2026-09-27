@@ -21,6 +21,7 @@ import { AdminCacheController } from "./admin-cache.controller";
 import { AdminCatalogueStatsService } from "./admin-catalogue-stats.service";
 import { AdminEmailsController } from "./admin-emails.controller";
 import { AdminImportsController } from "./admin-imports.controller";
+import { AdminInvitationsController } from "./admin-invitations.controller";
 import { AdminJobsController } from "./admin-jobs.controller";
 import { AdminOverviewService } from "./admin-overview.service";
 import { AdminPushController } from "./admin-push.controller";
@@ -62,6 +63,7 @@ import { QuotaAlertService } from "./quota-alert.service";
     AdminSecurityController,
     AdminJobsController,
     AdminUsersController,
+    AdminInvitationsController,
     AdminEmailsController,
     AdminPushController,
     AdminCacheController,
