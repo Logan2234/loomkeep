@@ -23,6 +23,12 @@ class AchievementProgressResponseDto {
   target!: number;
 }
 
+/** Not exported either, for the same reasons as the progress class above. */
+class AchievementRarityResponseDto {
+  percent!: number;
+  upperBound!: boolean;
+}
+
 /**
  * One catalogue entry projected for the current user (GET /achievements).
  * Every nullable field here is null at once for a still-locked secret — see
@@ -66,4 +72,7 @@ export class AchievementResponseDto implements AchievementDto {
   progress!: { current: number; target: number } | null;
 
   equipped!: boolean;
+
+  @ApiProperty({ type: AchievementRarityResponseDto, nullable: true })
+  rarity!: { percent: number; upperBound: boolean } | null;
 }

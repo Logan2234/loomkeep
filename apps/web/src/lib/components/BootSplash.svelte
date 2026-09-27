@@ -2,12 +2,23 @@
   // Shown while the one-shot bootstrap (session + runtime config) resolves,
   // so a reload lands on something rather than an empty page. It only ever
   // appears before the first `bootstrap.ready` — SPA navigations don't re-run
-  // the bootstrap — and on an explicit reconnect retry.
+  // the bootstrap — and on an explicit reconnect retry. The share target
+  // reuses it, with a message, while it looks the shared link up.
   import { m } from "$lib/paraglide/messages.js";
+
+  let {
+    message,
+    class: cls = "min-h-[100svh]",
+  }: {
+    /** Said under the reel; without one, only screen readers hear "loading". */
+    message?: string;
+    /** Height: full screen by default, less when shown under the app chrome. */
+    class?: string;
+  } = $props();
 </script>
 
 <div
-  class="boot-splash flex min-h-[100svh] flex-col items-center justify-center gap-8 px-6"
+  class="boot-splash flex {cls} flex-col items-center justify-center gap-8 px-6"
   role="status"
   aria-live="polite">
   <p class="font-display text-2xl font-extrabold tracking-tight">
@@ -24,7 +35,11 @@
     </g>
   </svg>
 
-  <span class="sr-only">{m.common_loading()}</span>
+  {#if message}
+    <p class="timecode -mt-2 text-sm">{message}</p>
+  {:else}
+    <span class="sr-only">{m.common_loading()}</span>
+  {/if}
 </div>
 
 <style>

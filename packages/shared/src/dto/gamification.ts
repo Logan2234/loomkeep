@@ -60,6 +60,22 @@ export interface AchievementDto {
    * `GET /achievements` only ever returns the viewer's own.
    */
   equipped: boolean;
+  /**
+   * Share of active members holding it, from the last nightly count — shown
+   * for a masked secret too. Null on an instance too small for a share to
+   * mean anything.
+   */
+  rarity: AchievementRarityDto | null;
+}
+
+/**
+ * `percent` is exact, unless `upperBound`: then only "under `percent` %" is
+ * said, because so few members hold it that the exact share would point at
+ * who they are.
+ */
+export interface AchievementRarityDto {
+  percent: number;
+  upperBound: boolean;
 }
 
 /**

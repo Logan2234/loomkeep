@@ -8,6 +8,7 @@ import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
 import type { XpService } from "../xp.service";
 import { AchievementService } from "./achievement.service";
+import { RARITY_ACTIVE_WINDOW_DAYS } from "./rarity.util";
 
 // A social-gated fixture exercises behavior independent of the real registry.
 const { socialGatedCheck } = vi.hoisted(() => ({
@@ -60,6 +61,7 @@ function makeService(configValues: Record<string, string> = {}) {
       create: vi.fn().mockResolvedValue({ id: "achievement-1" }),
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({}),
+      groupBy: vi.fn().mockResolvedValue([]),
     },
     episodeWatch: { findFirst: vi.fn().mockResolvedValue(null) },
     libraryEntry: { count: vi.fn().mockResolvedValue(0) },
@@ -68,7 +70,13 @@ function makeService(configValues: Record<string, string> = {}) {
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue({ timezone: "Europe/Paris" }),
       update: vi.fn().mockResolvedValue({}),
+      count: vi.fn().mockResolvedValue(0),
     },
+    achievementRarity: {
+      deleteMany: vi.fn((args?: unknown) => ({ op: "deleteMany", args })),
+      createMany: vi.fn((args: unknown) => ({ op: "createMany", args })),
+    },
+    $transaction: vi.fn().mockResolvedValue([]),
   } as unknown as PrismaService;
   const config = makeConfig({ GAMIFICATION_ENABLED: "true", ...configValues });
   const flags = makeFlags();
@@ -408,5 +416,47 @@ describe("AchievementService.equip/unequip", () => {
       "cinephile_bronze",
     ]);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("AchievementService rarity snapshot", () => {
+  it("counts holders among eligible members only, every registry key included", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.count as ReturnType<typeof vi.fn>).mockResolvedValue(120);
+    (
+      prisma.userAchievement.groupBy as ReturnType<typeof vi.fn>
+    ).mockResolvedValue([{ key: "first_episode", _count: { _all: 30 } }]);
+
+    await service.runAchievementsSweepJob();
+
+    const [[{ where }]] = (prisma.user.count as ReturnType<typeof vi.fn>).mock
+      .calls;
+    expect(where).toMatchObject({
+      onboardedAt: { not: null },
+      profileAccess: { not: "GHOST" },
+      hideProgression: false,
+    });
+    // The window itself is RARITY_ACTIVE_WINDOW_DAYS; a minute of slack
+    // covers the time between the query and this line.
+    const windowStart =
+      Date.now() - RARITY_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    expect(
+      Math.abs(where.lastActiveAt.gte.getTime() - windowStart),
+    ).toBeLessThan(60_000);
+    const [[rows]] = (
+      prisma.achievementRarity.createMany as ReturnType<typeof vi.fn>
+    ).mock.calls;
+    expect(rows.data).toContainEqual({
+      key: "first_episode",
+      holders: 30,
+      eligibleUsers: 120,
+    });
+    // Zero-holder keys get a row too, so all read against one denominator.
+    expect(rows.data).toContainEqual({
+      key: "marathon",
+      holders: 0,
+      eligibleUsers: 120,
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });

@@ -233,5 +233,7 @@
   "gamification_onboarding_step_comment": "Post a comment",
   "gamification_onboarding_step_comment_desc": "Reply to a review or a work.",
   "gamification_onboarding_skip": "Skip",
-  "gamification_onboarding_locked": "Finish or skip the previous step to unlock this one."
+  "gamification_onboarding_locked": "Finish or skip the previous step to unlock this one.",
+  "gamification_rarity": "Unlocked by {percent} of members",
+  "gamification_rarity_under": "Unlocked by less than {percent} of members"
 }

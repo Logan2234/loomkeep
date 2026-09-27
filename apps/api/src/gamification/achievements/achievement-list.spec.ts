@@ -56,6 +56,7 @@ vi.mock("./registry", async (importOriginal) => {
 function makeService(configValues: Record<string, string> = {}) {
   const prisma = {
     userAchievement: { findMany: vi.fn().mockResolvedValue([]) },
+    achievementRarity: { findMany: vi.fn().mockResolvedValue([]) },
     user: {
       findUnique: vi.fn().mockResolvedValue({ equippedBadgeKeys: [] }),
     },
@@ -113,6 +114,7 @@ describe("AchievementService.list", () => {
       unlockedAt: null,
       progress: null,
       equipped: false,
+      rarity: null,
     });
     // The key alone would reveal the achievement (the web resolves its name
     // from an i18n catalogue indexed by it), so nothing may leak — not even
@@ -156,7 +158,30 @@ describe("AchievementService.list", () => {
       unlockedAt: null,
       progress: { current: 68, target: 200 },
       equipped: false,
+      rarity: null,
     });
+  });
+
+  it("gives each achievement its share from the nightly snapshot, a masked secret's too", async () => {
+    const { service, prisma } = makeService();
+    (
+      prisma.achievementRarity.findMany as ReturnType<typeof vi.fn>
+    ).mockResolvedValue([
+      { key: "test_plain", holders: 40, eligibleUsers: 1000 },
+      { key: "test_secret", holders: 2, eligibleUsers: 1000 },
+    ]);
+
+    const list = await service.list("user-1");
+
+    expect(list.find((a) => a.key === "test_plain")?.rarity).toEqual({
+      percent: 4,
+      upperBound: false,
+    });
+    expect(list.find((a) => a.family === "misc")?.rarity).toEqual({
+      percent: 1,
+      upperBound: true,
+    });
+    expect(list.find((a) => a.key === "test_tiered_silver")?.rarity).toBeNull();
   });
 
   it("returns null progress for an on/off achievement", async () => {

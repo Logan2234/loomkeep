@@ -10,6 +10,8 @@ describe("localized PWA manifest", () => {
     expect(en.start_url).toBe("/app");
     expect(en.start_url).toBe(fr.start_url);
     expect(en.icons).toEqual(fr.icons);
+    expect(en.share_target).toEqual(fr.share_target);
+    expect(en.share_target.action).toBe("/app/share");
     expect(en.shortcuts.map((shortcut) => shortcut.url)).toEqual(
       fr.shortcuts.map((shortcut) => shortcut.url),
     );
