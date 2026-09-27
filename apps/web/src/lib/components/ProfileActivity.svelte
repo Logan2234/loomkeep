@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { activityPhrase, activityRating } from "$lib/activity-phrase";
   import { getUserActivity } from "$lib/api/client";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { activityPhrase, activityRating } from "$lib/activity-phrase";
   import { keys } from "$lib/api/keys";
   import Avatar from "$lib/components/Avatar.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -10,8 +10,8 @@
   import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
-  import ActivityFeedSubscribeModal from "$lib/ee/social/ActivityFeedSubscribeModal.svelte";
   import { useEeLock } from "$lib/ee/license.svelte";
+  import ActivityFeedSubscribeModal from "$lib/ee/social/ActivityFeedSubscribeModal.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
@@ -54,7 +54,7 @@
           {#snippet feedButton()}
             <button
               type="button"
-              class="text-dim hover:text-accent flex items-center gap-1 text-xs font-semibold whitespace-nowrap"
+              class="btn-text"
               disabled={feedLocked}
               onclick={() => (showSubscribeModal = true)}>
               <Icon name="rss" class="h-3.5 w-3.5" />
@@ -91,12 +91,14 @@
             <p class="text-sm leading-snug wrap-anywhere">
               <a
                 href="/app/u/{event.actor.username}"
-                class="font-semibold hover:underline">
+                class="btn-text text-fg hover:text-accent text-sm">
                 {event.actor.displayName}
               </a>
               <span class="text-dim">{activityPhrase(event)}</span>
               {#if event.href}
-                <a href={event.href} class="hover:text-accent font-medium">
+                <a
+                  href={event.href}
+                  class="btn-text text-fg hover:text-accent text-sm">
                   {event.title}
                 </a>
               {:else}

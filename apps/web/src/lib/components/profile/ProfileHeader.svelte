@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { auth } from "$lib/auth.svelte";
   import Avatar from "$lib/components/Avatar.svelte";
   import CountFlash from "$lib/components/CountFlash.svelte";
@@ -205,10 +206,10 @@
   </div>
 
   <div
-    class="border-border relative -mx-5 mt-auto -mb-5 grid grid-cols-3 border-t sm:grid-cols-5 md:-mx-6 md:-mb-6">
+    class="relative -mx-5 mt-auto -mb-5 grid grid-cols-6 text-center sm:grid-cols-5 md:-mx-6 md:-mb-6">
     <button
       type="button"
-      class="hover:bg-surface-2 px-4 py-3 text-left transition-colors md:px-6"
+      class="border-border hover:bg-surface-2 col-span-3 border-y py-3 text-center transition-colors sm:col-span-1 sm:border-b-0"
       onclick={() => onOpenConnections("followers")}>
       <CountFlash
         value={profile.followerCount}
@@ -222,7 +223,7 @@
     </button>
     <button
       type="button"
-      class="border-border hover:bg-surface-2 border-l px-4 py-3 text-left transition-colors md:px-6"
+      class="border-border hover:bg-surface-2 col-span-3 border-y border-l py-3 text-center transition-colors sm:col-span-1 sm:border-b-0"
       onclick={() => onOpenConnections("following")}>
       <span class="font-display block text-lg font-extrabold tabular-nums"
         >{profile.followingCount}</span>
@@ -233,35 +234,75 @@
           : m.profile_following_singular()}
       </span>
     </button>
-    <div class="border-border border-l px-4 py-3 md:px-6">
-      <span class="font-display block text-lg font-extrabold tabular-nums"
-        >{profile.reviewsCount}</span>
-      <span
-        class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
-        {profile.reviewsCount > 1
-          ? m.profile_reviews_count_plural()
-          : m.profile_reviews_count_singular()}
-      </span>
-    </div>
-    <div
-      class="border-border border-t px-4 py-3 sm:border-t-0 sm:border-l md:px-6">
-      <span class="font-display block text-lg font-extrabold tabular-nums"
-        >{profile.commentsCount}</span>
-      <span
-        class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
-        {m.profile_comments_count()}
-      </span>
-    </div>
-    <div
-      class="border-border border-t border-l px-4 py-3 sm:border-t-0 md:px-6">
-      <span class="font-display block text-lg font-extrabold tabular-nums"
-        >{profile.listsCount}</span>
-      <span
-        class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
-        {profile.listsCount > 1
-          ? m.profile_lists_count_plural()
-          : m.profile_lists_count_singular()}
-      </span>
-    </div>
+    {#if rel?.isSelf}
+      <button
+        type="button"
+        class="border-border hover:bg-surface-2 col-span-2 py-3 text-center transition-colors sm:col-span-1 sm:border-t sm:border-l"
+        onclick={() => goto("/app/reviews")}>
+        <span class="font-display block text-lg font-extrabold tabular-nums"
+          >{profile.reviewsCount}</span>
+        <span
+          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          {profile.reviewsCount > 1
+            ? m.profile_reviews_count_plural()
+            : m.profile_reviews_count_singular()}
+        </span>
+      </button>
+      <button
+        type="button"
+        class="border-border hover:bg-surface-2 pointer-events-none col-span-2 border-x py-3 text-center transition-colors sm:col-span-1 sm:border-t"
+        onclick={() => goto("/app/comments")}>
+        <span class="font-display block text-lg font-extrabold tabular-nums"
+          >{profile.commentsCount}</span>
+        <span
+          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          {m.profile_comments_count()}
+        </span>
+      </button>
+      <button
+        type="button"
+        class="border-border hover:bg-surface-2 col-span-2 py-3 text-center transition-colors sm:col-span-1 sm:border-t"
+        onclick={() => goto("/app/lists")}>
+        <span class="font-display block text-lg font-extrabold tabular-nums"
+          >{profile.listsCount}</span>
+        <span
+          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          {profile.listsCount > 1
+            ? m.profile_lists_count_plural()
+            : m.profile_lists_count_singular()}
+        </span>
+      </button>
+    {:else}
+      <div
+        class="border-border col-span-2 py-3 sm:col-span-1 sm:border-t sm:border-l">
+        <span class="font-display block text-lg font-extrabold tabular-nums"
+          >{profile.reviewsCount}</span>
+        <span
+          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          {profile.reviewsCount > 1
+            ? m.profile_reviews_count_plural()
+            : m.profile_reviews_count_singular()}
+        </span>
+      </div>
+      <div
+        class="border-border col-span-2 border-x py-3 sm:col-span-1 sm:border-t">
+        <span class="font-display block text-lg font-extrabold tabular-nums"
+          >{profile.commentsCount}</span>
+        <span
+          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          {m.profile_comments_count()}
+        </span>
+      </div>
+      <div class="border-border col-span-2 py-3 sm:col-span-1 sm:border-t">
+        <span class="font-display block text-lg font-extrabold tabular-nums"
+          >{profile.listsCount}</span>
+        <span
+          class="text-dim mt-0.5 block font-mono text-[10px] tracking-[0.13em] uppercase">
+          {profile.listsCount > 1
+            ? m.profile_lists_count_plural()
+            : m.profile_lists_count_singular()}
+        </span>
+      </div>
+    {/if}
   </div>
 </section>
