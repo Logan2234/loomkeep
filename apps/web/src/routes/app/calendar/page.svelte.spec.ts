@@ -19,6 +19,7 @@ function upcoming(
   title: string,
   episodeNumber: number,
   days: number,
+  overrides: Partial<CalendarEntryDto> = {},
 ): CalendarEntryDto {
   return {
     mediaItem: {
@@ -31,11 +32,19 @@ function upcoming(
     },
     entryId,
     episodeAlertsMuted: false,
+    episodesBehind: 0,
     seasonNumber: 1,
     episodeNumber,
     episodeTitle: null,
     airDate: inDays(days),
+    ...overrides,
   };
+}
+
+function serveCalendar(entries: CalendarEntryDto[]) {
+  server.use(
+    http.get(apiUrl("/library/calendar"), () => HttpResponse.json(entries)),
+  );
 }
 
 let patched: { id: string; body: unknown }[];
@@ -84,5 +93,45 @@ describe("calendar page", () => {
         name: m.calendar_mute_series({ title: "Futurama" }),
       }),
     ).toHaveLength(1);
+  });
+
+  it("shows today's episodes as the Ce soir cards, with the show's backlog", async () => {
+    serveCalendar([
+      upcoming("e1", "Lanterns", 7, 0, { episodesBehind: 3 }),
+      upcoming("e2", "Futurama", 10, 1),
+    ]);
+    renderWithQuery(CalendarPage, {});
+
+    expect(await screen.findByText(m.calendar_tonight())).toBeTruthy();
+    expect(screen.getByText(m.calendar_behind({ count: 3 }))).toBeTruthy();
+  });
+
+  it("narrows the list with the filter tabs", async () => {
+    serveCalendar([
+      upcoming("e1", "Lanterns", 7, 1, { episodeAlertsMuted: true }),
+      upcoming("e2", "Futurama", 10, 1),
+    ]);
+    renderWithQuery(CalendarPage, {});
+    const user = userEvent.setup();
+
+    await screen.findByRole("button", {
+      name: m.calendar_mute_series({ title: "Futurama" }),
+    });
+    await user.click(
+      screen.getByRole("tab", { name: m.calendar_alerts_muted() }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", {
+          name: m.calendar_mute_series({ title: "Futurama" }),
+        }),
+      ).toBeNull(),
+    );
+    expect(
+      screen.getByRole("button", {
+        name: m.calendar_unmute_series({ title: "Lanterns" }),
+      }),
+    ).toBeTruthy();
   });
 });

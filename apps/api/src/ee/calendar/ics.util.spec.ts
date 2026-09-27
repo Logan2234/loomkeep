@@ -13,6 +13,7 @@ function entry(overrides: Partial<CalendarEntryDto> = {}): CalendarEntryDto {
     },
     entryId: "entry-1",
     episodeAlertsMuted: false,
+    episodesBehind: 0,
     seasonNumber: 2,
     episodeNumber: 3,
     episodeTitle: null,

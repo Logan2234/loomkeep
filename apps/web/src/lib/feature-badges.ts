@@ -20,6 +20,7 @@ const SHIPPED = {
   pile: "2026-09-27",
   "activity-feed": "2026-09-27",
   "episode-alerts-mute": "2026-09-27",
+  "calendar-redesign": "2026-09-27",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;

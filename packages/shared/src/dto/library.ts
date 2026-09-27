@@ -137,6 +137,11 @@ export interface CalendarEntryDto {
   entryId: string;
   /** Mirrors `LibraryEntryDto.episodeAlertsMuted`: the whole show, not this episode. */
   episodeAlertsMuted: boolean;
+  /**
+   * The show's regular episodes aired before today that the user hasn't
+   * watched — the backlog to catch up on before this one.
+   */
+  episodesBehind: number;
   seasonNumber: number;
   episodeNumber: number;
   episodeTitle: string | null;
