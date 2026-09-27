@@ -56,6 +56,7 @@ const JOB_LABELS = {
   "notifications.scan": () => m.admin_job_notifications_scan(),
   "notifications.digest": () => m.admin_job_notifications_digest(),
   "media.refreshStale": () => m.admin_job_media_refresh(),
+  "games.refreshStale": () => m.admin_job_games_refresh(),
   "reports.digest": () => m.admin_job_reports_digest(),
   "backup.run": () => m.admin_job_backup(),
   "users.inactiveAccountsScan": () => m.admin_job_inactive_accounts(),
@@ -87,6 +88,7 @@ export function adminJobSchedule(key: string): string | null {
     case "notifications.digest":
       return m.admin_job_digest_schedule();
     case "media.refreshStale":
+    case "games.refreshStale":
       return m.admin_job_every_hours({ hours: 6 });
     case "reports.digest":
       return m.admin_job_daily_at({ time: "07:00" });

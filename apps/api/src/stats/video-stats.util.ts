@@ -5,21 +5,6 @@ import type {
 } from "@loomkeep/shared";
 import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
 
-/**
- * Fallback runtime (minutes) for a title with no captured `runtimeMin` yet —
- * rough per-type averages so watch time stays plausible until the real value
- * lands. Mirrors the pre-P4-social stats aggregation.
- */
-const DEFAULT_RUNTIME_MIN: Record<MediaType, number> = {
-  MOVIE: 110,
-  SERIES: 42,
-  ANIME: 24,
-};
-
-export function runtimeFor(type: MediaType, runtimeMin: number | null): number {
-  return runtimeMin && runtimeMin > 0 ? runtimeMin : DEFAULT_RUNTIME_MIN[type];
-}
-
 export interface TypeSplitInput {
   type: MediaType;
   minutes: number;

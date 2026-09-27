@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { JobsModule } from "../jobs/jobs.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { GameItemService } from "./game-item.service";
@@ -11,9 +12,15 @@ import { IgdbProvider } from "./providers/igdb.provider";
 // Import flows live in the generic ImportModule (its Steam source reuses
 // GameItemService + IgdbProvider, hence the exports).
 @Module({
-  imports: [UsersModule, ReviewsModule, GamificationModule, EventsModule],
+  imports: [
+    UsersModule,
+    ReviewsModule,
+    GamificationModule,
+    EventsModule,
+    JobsModule,
+  ],
   controllers: [GamesController],
   providers: [GameItemService, GameLibraryService, IgdbProvider],
-  exports: [GameItemService, IgdbProvider],
+  exports: [GameItemService, GameLibraryService, IgdbProvider],
 })
 export class GamesModule {}

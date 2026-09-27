@@ -1,6 +1,10 @@
 import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import type { GameItem } from "@prisma/client";
+import { mapWithConcurrency } from "../common/concurrency.util";
+import { JOB_KEYS } from "../jobs/job-keys";
+import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   GameCatalogProvider,
@@ -11,12 +15,83 @@ import { IgdbProvider } from "./providers/igdb.provider";
 // A cached game referenced by users is refreshed at most once a day.
 const SYNC_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Same bound as the media refresh: a catalog bigger than this is caught up
+// over the next runs, most stale first. IGDB serves them 500 per query.
+const MAX_REFRESHED_PER_RUN = 500;
+
+// Games persisted in parallel once a batch is fetched — each is a handful of
+// writes, bounded so a full run can't empty the connection pool.
+const PERSIST_CONCURRENCY = 3;
+
 @Injectable()
 export class GameItemService {
+  private readonly logger = new Logger(GameItemService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly igdbProvider: IgdbProvider,
+    private readonly jobRuns: JobRunService,
   ) {}
+
+  /**
+   * Every 6h, like the media refresh: re-sync tracked (non-dropped) games
+   * whose cache is stale. The Twitch developer agreement IGDB runs under asks
+   * for stored data to be kept up to date, and the times to beat drift as
+   * players submit theirs — before this, a game was only ever refreshed when
+   * someone re-added it.
+   */
+  @Cron(CronExpression.EVERY_6_HOURS)
+  async refreshStale(): Promise<number> {
+    return this.jobRuns.record(
+      JOB_KEYS.GAMES_REFRESH_STALE,
+      () => this.runRefreshStale(),
+      (refreshed) =>
+        refreshed > 0
+          ? `${refreshed} game item(s) refreshed`
+          : "Nothing to refresh",
+    );
+  }
+
+  private async runRefreshStale(): Promise<number> {
+    const staleBefore = new Date(Date.now() - SYNC_TTL_MS);
+    const items = await this.prisma.gameItem.findMany({
+      where: {
+        lastSyncedAt: { lt: staleBefore },
+        entries: { some: { status: { not: "DROPPED" } } },
+      },
+      orderBy: { lastSyncedAt: "asc" },
+      take: MAX_REFRESHED_PER_RUN,
+      include: { externalIds: true },
+    });
+    const sourceIds = items.flatMap(
+      (item) =>
+        item.externalIds.find((ext) => ext.source === item.canonicalSource)
+          ?.externalId ?? [],
+    );
+    if (sourceIds.length === 0) return 0;
+
+    // Batched rather than upsertFromSource per game: two IGDB queries per
+    // 500 games instead of two per game, under a 4 requests/second cap.
+    const details = await this.igdbProvider.getDetailsByIds(sourceIds);
+    const outcomes = await mapWithConcurrency(
+      details,
+      PERSIST_CONCURRENCY,
+      async (detail): Promise<boolean> => {
+        try {
+          await this.persistDetails(detail.summary.source, detail);
+          return true;
+        } catch (err) {
+          this.logger.error(
+            `Refresh failed for IGDB game ${detail.summary.sourceId}`,
+            err,
+          );
+          return false;
+        }
+      },
+    );
+
+    return outcomes.filter(Boolean).length;
+  }
 
   providerFor(): GameCatalogProvider {
     // IGDB is the only game source today; this indirection keeps the
@@ -51,6 +126,7 @@ export class GameItemService {
       trailerVideoId: details.trailerVideoId,
       ageRatingImageUrls: details.ageRatingImageUrls,
       multiplayerModes: details.multiplayerModes,
+      timeToBeat: details.timeToBeat,
     };
   }
 
@@ -171,6 +247,10 @@ export class GameItemService {
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
       genres: details.genres,
       platforms: details.platforms,
+      timeToBeatHastilyMin: details.timeToBeat?.hastilyMin ?? null,
+      timeToBeatNormallyMin: details.timeToBeat?.normallyMin ?? null,
+      timeToBeatCompletelyMin: details.timeToBeat?.completelyMin ?? null,
+      timeToBeatSubmissions: details.timeToBeat?.submissions ?? null,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
     };

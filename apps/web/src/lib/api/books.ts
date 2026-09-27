@@ -32,6 +32,18 @@ export function listBooks(filters: ListBooksFilters = {}) {
   });
 }
 
+/** What's left in the pile among the entries `listBooks` returns for the same filters. */
+export function getBooksPile(filters: ListBooksFilters = {}) {
+  return typedRequest("/books/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+    },
+  });
+}
+
 export function getBookDetail(
   source: string,
   sourceId: string,

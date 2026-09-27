@@ -14,6 +14,6 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
   imports: [UsersModule, ReviewsModule, GamificationModule, EventsModule],
   controllers: [BooksController],
   providers: [BookItemService, BookLibraryService, OpenLibraryProvider],
-  exports: [BookItemService],
+  exports: [BookItemService, BookLibraryService],
 })
 export class BooksModule {}
