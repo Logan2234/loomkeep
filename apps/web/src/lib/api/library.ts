@@ -36,6 +36,19 @@ export function listLibrary(filters: ListLibraryFilters = {}) {
   });
 }
 
+/** What's left to watch among the entries `listLibrary` returns for the same filters. */
+export function getLibraryPile(filters: ListLibraryFilters = {}) {
+  return typedRequest("/library/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+      type: filters.types,
+    },
+  });
+}
+
 export const upsertLibraryEntry = (body: UpsertLibraryEntryDto) =>
   typedRequest("/library", { method: "PUT", body });
 

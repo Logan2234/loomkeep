@@ -20,6 +20,7 @@ export class MediaDetailResponseDto implements MediaDetailDto {
   genres!: string[];
   airingStatus!: string | null;
   airingFinished!: boolean;
+  runtimeMin!: number | null;
   seasons!: MediaDetailSeasonResponseDto[];
   commentTargetId!: string | null;
   entry!: LibraryEntryResponseDto | null;

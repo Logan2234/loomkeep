@@ -6,6 +6,7 @@ import type {
   LibraryEntryDto,
   MediaType,
   PagedResult,
+  PileSummaryDto,
 } from "@loomkeep/shared";
 import { Domain, Locale } from "@loomkeep/shared";
 import {
@@ -26,6 +27,7 @@ import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { toQueryArray } from "../common/query-array.util";
+import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
@@ -69,6 +71,27 @@ export class LibraryController {
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
+      lang: Locale.includes(lang as Locale) ? lang : undefined,
+    });
+  }
+
+  /** What's left in the pile among the entries the list shows under the same filters. */
+  @Get("pile")
+  @ApiOkResponse({ type: PileSummaryResponseDto })
+  async getPile(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("favorite") favorite?: string,
+    @Query("status") status?: string | string[],
+    @Query("type") type?: string | string[],
+    @Query("lang") lang?: string,
+  ): Promise<PileSummaryDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    return this.libraryService.getPile(user.sub, {
+      q,
+      favorite: favorite === "true",
+      statuses: toQueryArray(status),
+      types: toQueryArray(type) as MediaType[],
       lang: Locale.includes(lang as Locale) ? lang : undefined,
     });
   }

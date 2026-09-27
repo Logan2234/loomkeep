@@ -1,4 +1,4 @@
-import type { PagedResult } from "@loomkeep/shared";
+import type { PagedResult, PileSummaryDto } from "@loomkeep/shared";
 import {
   BookDetailDto,
   BookEditionDto,
@@ -30,6 +30,7 @@ import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { toQueryArray } from "../common/query-array.util";
+import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -106,6 +107,25 @@ export class BooksController {
       order: order === "asc" ? "asc" : "desc",
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
+      lang: safeLang(lang),
+    });
+  }
+
+  /** What's left in the pile among the entries the list shows under the same filters. */
+  @Get("pile")
+  @ApiOkResponse({ type: PileSummaryResponseDto })
+  async getPile(
+    @CurrentUser() user: JwtPayload,
+    @Query("q") q?: string,
+    @Query("favorite") favorite?: string,
+    @Query("status") status?: string | string[],
+    @Query("lang") lang?: string,
+  ): Promise<PileSummaryDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookLibraryService.getPile(user.sub, {
+      q,
+      favorite: favorite === "true",
+      statuses: toQueryArray(status),
       lang: safeLang(lang),
     });
   }

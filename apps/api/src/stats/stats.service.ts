@@ -14,7 +14,11 @@ import type {
   VideoTemporalDto,
   WatchStaleness,
 } from "@loomkeep/shared";
-import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import {
+  DORMANT_AFTER_DAYS,
+  episodeRuntimeFor,
+  runtimeFor,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
@@ -45,9 +49,7 @@ import {
   classifyStaleness,
   computeTypeSplit,
   countCompletedSeasons,
-  episodeRuntimeFor,
   lastWatchedPerMediaItem,
-  runtimeFor,
   type TypeSplitInput,
 } from "./video-stats.util";
 

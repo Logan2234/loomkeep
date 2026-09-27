@@ -17,6 +17,7 @@ const SHIPPED = {
   "home-layout": "2026-09-25",
   "saved-views": "2026-09-26",
   "game-time-to-beat": "2026-09-27",
+  pile: "2026-09-27",
 };
 
 type FeatureBadgeKey = keyof typeof SHIPPED;
