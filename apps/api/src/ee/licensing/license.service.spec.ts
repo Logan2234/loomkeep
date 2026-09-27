@@ -83,6 +83,7 @@ function makeService(key: string | undefined, premiumLaunched: boolean) {
   } as unknown as FeatureFlagsService;
   const entitlements = {
     setInstancePremiumSource: vi.fn(),
+    setLicenseStatusSource: vi.fn(),
   } as unknown as EntitlementService;
 
   return {
