@@ -413,7 +413,7 @@
       {/if}
 
       <div class="order-5 min-w-0 lg:order-0 lg:col-start-1">
-        <ProfileActivity username={profile.username} />
+        <ProfileActivity username={profile.username} {selfManage} />
       </div>
     </div>
   {/if}

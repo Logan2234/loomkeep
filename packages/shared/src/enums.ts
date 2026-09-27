@@ -118,6 +118,12 @@ export const ActivityType = {
   LIST_ITEM_ADDED: "LIST_ITEM_ADDED",
   /** A list's visibility moved from PRIVATE to FRIENDS/PUBLIC. */
   LIST_SHARED: "LIST_SHARED",
+  /**
+   * Every episode of one season now watched — distinct from the work-level
+   * FINISHED, so a feed can tell "finished season 3" from "finished the
+   * whole show". MEDIA only, level SEASON, `data.seasonNumber` set.
+   */
+  SEASON_FINISHED: "SEASON_FINISHED",
 } as const;
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 

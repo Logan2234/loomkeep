@@ -295,5 +295,9 @@
       rx="0.9"
       fill="currentColor"
       stroke="none" />
+  {:else if name === "rss"}
+    <circle cx="5.5" cy="18.5" r="1.8" fill="currentColor" stroke="none" />
+    <path d="M4 11.5a8.5 8.5 0 0 1 8.5 8.5" />
+    <path d="M4 5a15 15 0 0 1 15 15" />
   {/if}
 </svg>

@@ -11,6 +11,8 @@ import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PROVIDER_DAILY_QUOTAS } from "../common/quota-tracker.service";
+import { EntitlementService } from "../entitlements/entitlement.service";
+import { JOB_HEALTHCHECK_ENV } from "../jobs/job-keys";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import type { ProviderQuotaSpec } from "./admin-system-stats.util";
@@ -81,6 +83,7 @@ export class AdminService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly prisma: PrismaService,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   private get specs(): ServiceSpec[] {
@@ -241,6 +244,84 @@ export class AdminService {
         required: false,
         envKeys: ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"],
       },
+      {
+        // isEnabled() already falls back to the caller's default when the
+        // client isn't configured or hasn't synced, so an unreachable
+        // Unleash never breaks anything — only presence is worth reporting.
+        key: "unleash",
+        label: "Unleash (flags)",
+        area: "Système",
+        required: false,
+        envKeys: ["UNLEASH_API_URL", "UNLEASH_API_TOKEN"],
+      },
+      {
+        // Evaluated separately (see evaluateLicense): verified offline
+        // (Ed25519 signature), nothing to probe over the network.
+        key: "license",
+        label: "Licence EE",
+        area: "Système",
+        required: false,
+        envKeys: ["LOOMKEEP_LICENSE_KEY"],
+      },
+      {
+        // No probe: siteverify only accepts a real challenge response from a
+        // browser, so there's nothing cheap to ping in the background.
+        key: "turnstile",
+        label: "Turnstile (anti-bot)",
+        area: "Système",
+        required: false,
+        envKeys: ["TURNSTILE_SECRET_KEY"],
+        keyUrl: "https://dash.cloudflare.com/?to=/:account/turnstile",
+      },
+      {
+        // Evaluated separately (see evaluateHealthchecks): a dead-man's-switch
+        // per job, not one key — pinging its own URL here would falsely
+        // check a job in that never actually ran.
+        key: "healthchecks",
+        label: "Healthchecks.io",
+        area: "Système",
+        required: false,
+        envKeys: [],
+        keyUrl: "https://healthchecks.io",
+      },
+      {
+        // Presence-only, like VAPID: AllExceptionsFilter either reports to it
+        // or doesn't, nothing to ping.
+        key: "glitchtipApi",
+        label: "GlitchTip (API)",
+        area: "Système",
+        required: false,
+        envKeys: ["GLITCHTIP_API_DSN"],
+      },
+      {
+        // The web-side DSN (apps/web/src/hooks.client.ts) — forwarded to the
+        // api container too (see docker-compose.yml) purely so this page can
+        // report its presence; the API itself never uses the value.
+        key: "glitchtipWeb",
+        label: "GlitchTip (Web)",
+        area: "Système",
+        required: false,
+        envKeys: ["PUBLIC_GLITCHTIP_WEB_DSN"],
+      },
+      {
+        // Only read to fetch a changelog's full content (NewsletterService)
+        // when an older Quackback webhook sends just a preview — presence-only.
+        key: "quackback",
+        label: "Quackback (API)",
+        area: "Système",
+        required: false,
+        envKeys: ["QUACKBACK_API_KEY"],
+      },
+      {
+        // Required in practice (see .env.example): without it BackupService
+        // can't encrypt a dump, so a missing key means backups are silently
+        // broken, not just a disabled enrichment.
+        key: "backupEncryption",
+        label: "Sauvegardes (chiffrement)",
+        area: "Système",
+        required: true,
+        envKeys: ["BACKUP_ENCRYPTION_PUBLIC_KEY"],
+      },
       // Planned P3 providers — no integration yet, surfaced as "coming soon" so
       // their areas already show on the page. Keep to sources we'd build against.
       {
@@ -337,6 +418,9 @@ export class AdminService {
       };
     }
 
+    if (spec.key === "license") return this.evaluateLicense(spec);
+    if (spec.key === "healthchecks") return this.evaluateHealthchecks(spec);
+
     const configured = spec.envKeys.every((key) => Boolean(this.env(key)));
     const quota = this.quotaFieldsFor(spec, now, callRows);
 
@@ -396,6 +480,52 @@ export class AdminService {
       failure,
       latencyMs,
       ...quota,
+    };
+  }
+
+  /**
+   * The license is verified offline (Ed25519 signature), never over the
+   * network — `configured` reflects a valid key, and a present-but-invalid
+   * one is reported through `failure: "invalid"` rather than the generic
+   * "missing key" (see {@link EntitlementService.getLicenseStatus}, set from
+   * `ee/licensing` without this core service importing it directly).
+   */
+  private evaluateLicense(spec: ServiceSpec): ServiceStatusDto {
+    const keyPresent = Boolean(this.env("LOOMKEEP_LICENSE_KEY"));
+    const status = keyPresent ? this.entitlements.getLicenseStatus() : null;
+
+    return {
+      key: spec.key,
+      label: spec.label,
+      area: spec.area,
+      required: false,
+      configured: status !== null,
+      reachable: null,
+      failure: keyPresent && !status ? "invalid" : undefined,
+      license: status ?? undefined,
+    };
+  }
+
+  /**
+   * One ping URL per scheduled job (see {@link JOB_HEALTHCHECK_ENV}) rather
+   * than a single key — `configured` is "at least one is set", and `partial`
+   * carries the actual count for the page to render.
+   */
+  private evaluateHealthchecks(spec: ServiceSpec): ServiceStatusDto {
+    const envVars = Object.values(JOB_HEALTHCHECK_ENV);
+    const configuredCount = envVars.filter((key) =>
+      Boolean(this.env(key)),
+    ).length;
+
+    return {
+      key: spec.key,
+      label: spec.label,
+      area: spec.area,
+      required: false,
+      configured: configuredCount > 0,
+      reachable: null,
+      keyUrl: spec.keyUrl,
+      partial: { configured: configuredCount, total: envVars.length },
     };
   }
 

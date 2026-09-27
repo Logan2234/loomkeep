@@ -1,15 +1,29 @@
 <script lang="ts">
+  import { activityPhrase, activityRating } from "$lib/activity-phrase";
   import { getUserActivity } from "$lib/api/client";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
-  import { activityPhrase, activityRating } from "$lib/activity-phrase";
   import { keys } from "$lib/api/keys";
   import Avatar from "$lib/components/Avatar.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
+  import PremiumLockBadge from "$lib/components/PremiumLockBadge.svelte";
   import ProfileSectionHeading from "$lib/components/profile/ProfileSectionHeading.svelte";
   import RelativeTime from "$lib/components/RelativeTime.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
+  import { useEeLock } from "$lib/ee/license.svelte";
+  import ActivityFeedSubscribeModal from "$lib/ee/social/ActivityFeedSubscribeModal.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { m } from "$lib/paraglide/messages.js";
   import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
-  let { username }: { username: string } = $props();
+  let {
+    username,
+    selfManage = false,
+  }: { username: string; selfManage?: boolean } = $props();
+
+  const eeLock = useEeLock();
+  const feedLocked = $derived(eeLock.locked);
+  let showSubscribeModal = $state(false);
 
   const activity = createApiInfiniteQuery<
     PagedResult<ActivityEventDto>,
@@ -34,7 +48,31 @@
 
 {#if !activity.loading && activity.data.length > 0}
   <section>
-    <ProfileSectionHeading label={m.profile_recent_activity()} />
+    <ProfileSectionHeading label={m.profile_recent_activity()}>
+      {#snippet action()}
+        {#if selfManage}
+          {#snippet feedButton()}
+            <button
+              type="button"
+              class="btn-text"
+              disabled={feedLocked}
+              onclick={() => (showSubscribeModal = true)}>
+              <Icon name="rss" class="h-3.5 w-3.5" />
+              {m.activity_feed_subscribe_button()}
+              {#if isFeatureNew("activity-feed")}<NewBadge />{/if}
+            </button>
+          {/snippet}
+          {#if feedLocked}
+            <Tooltip text={m.premium_locked()} class="inline-flex shrink-0">
+              {@render feedButton()}
+              <PremiumLockBadge />
+            </Tooltip>
+          {:else}
+            {@render feedButton()}
+          {/if}
+        {/if}
+      {/snippet}
+    </ProfileSectionHeading>
     <ul class="border-border ml-3.5 flex flex-col border-l pl-7">
       {#each activity.data as event (event.id)}
         {@const rating = activityRating(event)}
@@ -53,12 +91,14 @@
             <p class="text-sm leading-snug wrap-anywhere">
               <a
                 href="/app/u/{event.actor.username}"
-                class="font-semibold hover:underline">
+                class="btn-text text-fg hover:text-accent text-sm">
                 {event.actor.displayName}
               </a>
               <span class="text-dim">{activityPhrase(event)}</span>
               {#if event.href}
-                <a href={event.href} class="hover:text-accent font-medium">
+                <a
+                  href={event.href}
+                  class="btn-text text-fg hover:text-accent text-sm">
                   {event.title}
                 </a>
               {:else}
@@ -109,4 +149,8 @@
       </div>
     {/if}
   </section>
+{/if}
+
+{#if showSubscribeModal}
+  <ActivityFeedSubscribeModal onclose={() => (showSubscribeModal = false)} />
 {/if}

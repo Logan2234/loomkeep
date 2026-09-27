@@ -165,6 +165,8 @@ const MESSAGES = {
     m.apierr_social_follow_request_not_found(),
   [ErrorCode.SocialCannotBlockSelf]: () => m.apierr_social_cannot_block_self(),
   [ErrorCode.SocialFeatureDisabled]: () => m.apierr_social_feature_disabled(),
+  [ErrorCode.SocialActivityFeedUnavailable]: () =>
+    m.apierr_social_activity_feed_unavailable(),
   [ErrorCode.StatsRatingOrDecadeOnly]: () =>
     m.apierr_stats_rating_or_decade_only(),
   [ErrorCode.StatsInvalidRating]: () => m.apierr_stats_invalid_rating(),

@@ -1,3 +1,4 @@
+import type { LicenseStatusDto } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EntitlementService } from "../../entitlements/entitlement.service";
@@ -36,6 +37,7 @@ export class LicenseService {
     }
 
     entitlements.setInstancePremiumSource(() => this.grantsInstancePremium());
+    entitlements.setLicenseStatusSource(() => this.getStatus());
   }
 
   /**
@@ -56,5 +58,16 @@ export class LicenseService {
     return (
       this.license?.instanceWide === true && isLicenseCurrent(this.license, now)
     );
+  }
+
+  /** Parsed key details for the admin services page — null absent or invalid. */
+  getStatus(now = new Date()): LicenseStatusDto | null {
+    if (!this.license) return null;
+    return {
+      licensee: this.license.licensee,
+      expiresAt: this.license.expiresAt,
+      instanceWide: this.license.instanceWide === true,
+      current: isLicenseCurrent(this.license, now),
+    };
   }
 }
