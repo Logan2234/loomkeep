@@ -74,21 +74,35 @@
   }
 
   let filter = $state<CalendarFilter>("all");
-  const filterTabs: { value: CalendarFilter; label: string }[] = [
-    { value: "all", label: m.calendar_filter_all() },
-    { value: "series", label: m.calendar_filter_series() },
-    { value: "anime", label: m.calendar_filter_anime() },
-    { value: "muted", label: m.calendar_alerts_muted() },
-  ];
+
+  // Each tab counts shows, not episodes: the same series airing three times
+  // this week is still one series to follow (or to mute).
+  function showCount(f: CalendarFilter): number {
+    return new Set(
+      entries.filter((e) => matchesFilter(e, f)).map((e) => e.entryId),
+    ).size;
+  }
+
+  const filterTabs = $derived<{ value: CalendarFilter; label: string }[]>([
+    { value: "all", label: `${m.calendar_filter_all()} (${showCount("all")})` },
+    {
+      value: "series",
+      label: `${m.calendar_filter_series()} (${showCount("series")})`,
+    },
+    {
+      value: "anime",
+      label: `${m.calendar_filter_anime()} (${showCount("anime")})`,
+    },
+    {
+      value: "muted",
+      label: `${m.calendar_alerts_muted()} (${showCount("muted")})`,
+    },
+  ]);
 
   const days = $derived(
     groupByDay(entries.filter((e) => matchesFilter(e, filter))),
   );
   const hasAny = $derived(days.some((d) => d.items.length > 0));
-  // Today's episodes get the "Ce soir" cards; the day list then picks up
-  // from tomorrow. An empty today stays in the list, as a day off.
-  const tonight = $derived(days[0]?.items ?? []);
-  const listDays = $derived(tonight.length > 0 ? days.slice(1) : days);
 
   const TYPE_LABELS: Record<MediaType, () => string> = {
     MOVIE: () => m.media_movie(),
@@ -121,10 +135,7 @@
     return m.calendar_strip_many({ day: label, count });
   }
 
-  const dayId = (day: CalendarDay) =>
-    day.offset === 0 && tonight.length > 0
-      ? "calendar-tonight"
-      : `calendar-${day.key}`;
+  const dayId = (day: CalendarDay) => `calendar-${day.key}`;
 
   const code = (e: CalendarEntryDto) =>
     `S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}`;
@@ -132,6 +143,19 @@
     `/app/media/${e.mediaItem.type.toLowerCase()}/${e.mediaItem.sourceId}`;
   const rowKey = (e: CalendarEntryDto) => e.mediaItem.id + code(e);
 </script>
+
+{#snippet badges(e: CalendarEntryDto)}
+  <span
+    class="border-border text-dim shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold">
+    {TYPE_LABELS[e.mediaItem.type]()}
+  </span>
+  {#if e.episodesBehind > 0}
+    <span
+      class="border-accent/40 text-accent shrink-0 rounded-full border px-2 py-0.5 font-mono text-[0.65rem]">
+      {m.calendar_behind({ count: e.episodesBehind })}
+    </span>
+  {/if}
+{/snippet}
 
 <div class="mx-auto max-w-4xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
@@ -189,7 +213,7 @@
             <a
               href="#{dayId(day)}"
               aria-label={stripLabel(day)}
-              class="flex flex-col items-center gap-1 rounded-xl border py-2 transition-colors sm:py-3 {day.offset ===
+              class="flex flex-col items-center gap-0.5 rounded-xl border py-2 transition-colors sm:gap-1 sm:py-3 {day.offset ===
               0
                 ? 'border-accent bg-surface-2'
                 : 'border-border hover:border-dim'}">
@@ -203,89 +227,18 @@
               <span class="font-mono text-base font-bold sm:text-xl">
                 {day.date.getDate()}
               </span>
-              <span class="flex h-1 gap-0.5" aria-hidden="true">
-                {#each day.items.slice(0, 4) as e (rowKey(e))}
-                  <span
-                    class="h-1 w-1 rounded-full {e.episodeAlertsMuted
-                      ? 'bg-border'
-                      : 'bg-accent'}"></span>
-                {/each}
+              <span class="text-dim font-mono text-[0.6rem] sm:text-xs">
+                {day.items.length > 0
+                  ? m.calendar_strip_count({ count: day.items.length })
+                  : "—"}
               </span>
             </a>
           {/each}
         </nav>
 
-        {#if tonight.length > 0}
-          <section
-            id="calendar-tonight"
-            aria-labelledby="calendar-tonight-title"
-            class="mb-10 scroll-mt-6">
-            <div class="mb-3 flex items-center gap-3">
-              <span
-                class="bg-accent text-accent-fg rounded px-2 py-0.5 font-mono text-xs font-bold tracking-wider uppercase">
-                {m.calendar_tonight()}
-              </span>
-              <h2
-                id="calendar-tonight-title"
-                class="font-display text-lg font-bold">
-                {m.common_today()}
-                <span class="timecode ml-1 text-sm font-normal">
-                  {formatDate(days[0].date, DAY_LABEL_OPTIONS)}
-                </span>
-              </h2>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {#each tonight as e (rowKey(e))}
-                <article
-                  class="card has-[a:hover]:border-accent flex gap-4 p-3.5 transition-[border-color]">
-                  <a
-                    href={href(e)}
-                    tabindex="-1"
-                    aria-hidden="true"
-                    class="w-20 shrink-0 self-start overflow-hidden rounded-lg transition-opacity {e.episodeAlertsMuted
-                      ? 'opacity-50'
-                      : ''}">
-                    <Poster
-                      src={e.mediaItem.posterUrl}
-                      title={e.mediaItem.title}
-                      alt="" />
-                  </a>
-                  <div class="flex min-w-0 flex-1 flex-col gap-1">
-                    <span class="timecode text-accent text-sm">{code(e)}</span>
-                    <h3 class="font-display truncate font-bold">
-                      {e.mediaItem.title}
-                    </h3>
-                    {#if e.episodeTitle}
-                      <p class="text-dim line-clamp-2 text-sm">
-                        {e.episodeTitle}
-                      </p>
-                    {/if}
-                    {#if e.episodesBehind > 0}
-                      <p class="text-accent font-mono text-xs">
-                        {m.calendar_behind({ count: e.episodesBehind })}
-                      </p>
-                    {/if}
-                    <div
-                      class="mt-auto flex items-center justify-between gap-2 pt-1">
-                      <a href={href(e)} class="link-accent text-sm">
-                        {m.calendar_open_details()}
-                      </a>
-                      <AlertBellButton
-                        title={e.mediaItem.title}
-                        muted={e.episodeAlertsMuted}
-                        disabled={alertsMut.loading}
-                        onToggle={() => toggleAlerts(e)} />
-                    </div>
-                  </div>
-                </article>
-              {/each}
-            </div>
-          </section>
-        {/if}
-
         <div class="flex flex-col gap-6 md:gap-3">
-          {#each listDays as day, i (day.key)}
-            {#if day.offset >= WEEK_DAYS && (i === 0 || listDays[i - 1].offset < WEEK_DAYS)}
+          {#each days as day, i (day.key)}
+            {#if day.offset >= WEEK_DAYS && (i === 0 || days[i - 1].offset < WEEK_DAYS)}
               <div class="flex items-center gap-3 pt-3">
                 <span class="timecode text-xs tracking-widest uppercase">
                   {m.calendar_next_week()}
@@ -298,7 +251,13 @@
               aria-labelledby="{dayId(day)}-title"
               class="scroll-mt-6 md:grid md:grid-cols-[8rem_minmax(0,1fr)] md:gap-6 md:py-2">
               <div
-                class="border-border mb-3 flex items-baseline gap-3 border-b pb-2 md:mb-0 md:flex-col md:gap-0.5 md:border-0 md:pt-2 md:pb-0">
+                class="border-border mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2 md:mb-0 md:flex-col md:gap-0.5 md:border-0 md:pt-2 md:pb-0">
+                {#if day.offset === 0 && day.items.length > 0}
+                  <span
+                    class="bg-accent text-accent-fg self-center rounded px-2 py-0.5 font-mono text-xs font-bold tracking-wider uppercase md:mb-1.5 md:self-start">
+                    {m.calendar_tonight()}
+                  </span>
+                {/if}
                 <h2
                   id="{dayId(day)}-title"
                   class="font-display text-lg font-bold {day.offset === 0
@@ -312,14 +271,60 @@
               </div>
               {#if day.items.length === 0}
                 <p
-                  class="border-border text-dim rounded-xl border border-dashed px-4 py-3 text-sm">
+                  class="border-border text-dim flex min-h-24.5 items-center rounded-xl border border-dashed px-4 text-sm">
                   {m.calendar_day_off()}
                 </p>
+              {:else if day.offset === 0}
+                <div class="grid gap-3 sm:grid-cols-2">
+                  {#each day.items as e (rowKey(e))}
+                    <!-- The bell sits beside the card's link, not inside it:
+                         a click on it mutes, never opens the page. -->
+                    <article
+                      class="card has-[a:hover]:border-accent relative flex overflow-hidden transition-[border-color]">
+                      <a href={href(e)} class="flex min-w-0 flex-1">
+                        <div
+                          class="w-28 shrink-0 transition-opacity {e.episodeAlertsMuted
+                            ? 'opacity-50'
+                            : ''}">
+                          <Poster
+                            src={e.mediaItem.posterUrl}
+                            title={e.mediaItem.title}
+                            alt="" />
+                        </div>
+                        <div
+                          class="flex min-w-0 flex-1 flex-col gap-1.5 py-3.5 pr-14 pl-4">
+                          <span class="timecode text-accent text-sm">
+                            {code(e)}
+                          </span>
+                          <h3
+                            class="font-display line-clamp-2 text-lg leading-snug font-bold">
+                            {e.mediaItem.title}
+                          </h3>
+                          {#if e.episodeTitle}
+                            <p class="text-dim line-clamp-2 text-sm">
+                              {e.episodeTitle}
+                            </p>
+                          {/if}
+                          <div class="mt-auto flex flex-wrap gap-1.5 pt-1">
+                            {@render badges(e)}
+                          </div>
+                        </div>
+                      </a>
+                      <div class="absolute top-3 right-3">
+                        <AlertBellButton
+                          title={e.mediaItem.title}
+                          muted={e.episodeAlertsMuted}
+                          disabled={alertsMut.loading}
+                          onToggle={() => toggleAlerts(e)} />
+                      </div>
+                    </article>
+                  {/each}
+                </div>
               {:else}
                 <div class="flex flex-col gap-2.5">
                   {#each day.items as e (rowKey(e))}
                     <div
-                      class="card has-[a:hover]:border-accent flex items-center gap-3 p-3 pr-2 transition-[border-color] sm:gap-4">
+                      class="card has-[a:hover]:border-accent flex items-center gap-3 p-3 transition-[border-color] sm:gap-4">
                       <a
                         href={href(e)}
                         class="flex min-w-0 flex-1 items-center gap-4">
@@ -333,22 +338,17 @@
                             alt="" />
                         </div>
                         <div class="min-w-0 flex-1">
-                          <p class="font-display truncate font-semibold">
-                            {e.mediaItem.title}
-                          </p>
-                          <p class="timecode truncate text-sm">
+                          <div
+                            class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <p
+                              class="font-display max-w-full truncate font-semibold">
+                              {e.mediaItem.title}
+                            </p>
+                            {@render badges(e)}
+                          </div>
+                          <p class="timecode mt-0.5 truncate text-sm">
                             {code(e)}{#if e.episodeTitle}
                               &nbsp;· {e.episodeTitle}{/if}
-                          </p>
-                          <p class="text-dim mt-0.5 flex gap-1.5 text-xs">
-                            <span>{TYPE_LABELS[e.mediaItem.type]()}</span>
-                            {#if e.episodesBehind > 0}
-                              <span class="text-accent font-mono">
-                                · {m.calendar_behind({
-                                  count: e.episodesBehind,
-                                })}
-                              </span>
-                            {/if}
                           </p>
                         </div>
                       </a>

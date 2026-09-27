@@ -118,7 +118,7 @@ describe("calendar page", () => {
       name: m.calendar_mute_series({ title: "Futurama" }),
     });
     await user.click(
-      screen.getByRole("tab", { name: m.calendar_alerts_muted() }),
+      screen.getByRole("tab", { name: `${m.calendar_alerts_muted()} (1)` }),
     );
 
     await waitFor(() =>

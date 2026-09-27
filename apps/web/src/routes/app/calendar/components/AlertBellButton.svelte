@@ -25,7 +25,7 @@
 
 <button
   type="button"
-  class="btn-icon h-11 w-11"
+  class="btn-icon-bordered"
   {disabled}
   title={label}
   aria-label={label}
