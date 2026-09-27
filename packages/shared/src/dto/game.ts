@@ -70,8 +70,6 @@ export interface GameDetailsDto extends GameSummaryDto {
   multiplayerModes: string[];
   /** Null when the source has too few player submissions. */
   timeToBeat: GameTimeToBeatDto | null;
-  /** The game's page on its source, for attribution. */
-  sourceUrl: string | null;
 }
 
 /** A persisted game referenced by at least one user (on-demand cache). */

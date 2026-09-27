@@ -220,7 +220,6 @@ describe("IgdbProvider", () => {
       ageRatingImageUrls: [],
       multiplayerModes: [],
       timeToBeat: null,
-      sourceUrl: null,
     });
   });
 
@@ -248,7 +247,6 @@ describe("IgdbProvider", () => {
       completelyMin: null,
       submissions: 152,
     });
-    expect(details.sourceUrl).toBe("https://www.igdb.com/games/hollow-knight");
   });
 
   it("shows no time to beat under three player submissions", async () => {

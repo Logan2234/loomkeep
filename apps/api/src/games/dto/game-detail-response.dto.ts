@@ -36,7 +36,6 @@ export class GameDetailResponseDto implements GameDetailDto {
   ageRatingImageUrls!: string[];
   multiplayerModes!: string[];
   timeToBeat!: GameTimeToBeatResponseDto | null;
-  sourceUrl!: string | null;
   commentTargetId!: string | null;
   entry!: GameEntryResponseDto | null;
 }

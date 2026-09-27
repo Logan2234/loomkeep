@@ -39,8 +39,6 @@ export interface ProviderGameDetails {
   multiplayerModes: string[];
   /** Average times to beat; null below the submission threshold. */
   timeToBeat: GameTimeToBeatDto | null;
-  /** The game's page on its source, for attribution. */
-  sourceUrl: string | null;
 }
 
 export interface GameCatalogProvider {

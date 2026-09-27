@@ -60,7 +60,6 @@ function detail(id: string, adult = false): ProviderGameDetails {
     ageRatingImageUrls: [],
     multiplayerModes: [],
     timeToBeat: null,
-    sourceUrl: null,
   };
 }
 

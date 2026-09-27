@@ -541,11 +541,6 @@
                 </dd>
               </div>
             {/if}
-            {#if detail?.timeToBeat}
-              <GameTimeToBeat
-                timeToBeat={detail.timeToBeat}
-                sourceUrl={detail.sourceUrl} />
-            {/if}
             {#if detail && detail.gameModes.length > 0}
               <div>
                 <dt class="timecode text-xs">{m.game_play_modes()}</dt>
@@ -567,6 +562,11 @@
                   {detail.multiplayerModes.join(", ")}
                 </dd>
               </div>
+            {/if}
+            <!-- Last of the metadata: the only block with its own layout,
+                 it breaks the label/value rhythm when set between them. -->
+            {#if detail?.timeToBeat}
+              <GameTimeToBeat timeToBeat={detail.timeToBeat} />
             {/if}
 
             {#if detail && detail.website}

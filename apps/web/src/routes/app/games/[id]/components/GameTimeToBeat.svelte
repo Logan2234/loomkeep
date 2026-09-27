@@ -8,10 +8,7 @@
   // Rendered inside the details panel's <dl>. Deliberately never compared
   // with the player's own playtime: someone taking their time is not "at 40 %
   // of the recommended length".
-  let {
-    timeToBeat,
-    sourceUrl,
-  }: { timeToBeat: GameTimeToBeatDto; sourceUrl: string | null } = $props();
+  let { timeToBeat }: { timeToBeat: GameTimeToBeatDto } = $props();
 
   const rows = $derived(
     [
@@ -53,16 +50,9 @@
         </li>
       {/each}
     </ul>
+    <!-- No source link here: the page's IGDB notice already credits it. -->
     <p class="text-dim text-micro mt-1.5">
       {m.game_time_to_beat_source({ count: timeToBeat.submissions })}
-      {#if sourceUrl}
-        ·
-        <a
-          href={sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="link-accent">IGDB</a>
-      {/if}
     </p>
   </dd>
 </div>

@@ -127,7 +127,6 @@ export class GameItemService {
       ageRatingImageUrls: details.ageRatingImageUrls,
       multiplayerModes: details.multiplayerModes,
       timeToBeat: details.timeToBeat,
-      sourceUrl: details.sourceUrl,
     };
   }
 

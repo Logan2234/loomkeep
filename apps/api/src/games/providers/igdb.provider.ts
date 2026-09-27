@@ -384,7 +384,6 @@ export class IgdbProvider implements GameCatalogProvider {
       ageRatingImageUrls: uniqueAgeRatingImages(game.age_ratings),
       multiplayerModes: multiplayerModeLabels(game.multiplayer_modes),
       timeToBeat,
-      sourceUrl: igdbUrl(game),
     };
   }
 
@@ -477,10 +476,6 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 }
 
-function igdbUrl(game: IgdbGame): string | null {
-  return game.slug ? `https://www.igdb.com/games/${game.slug}` : null;
-}
-
 /** Seconds to whole minutes, with IGDB's 0 read as "no data". */
 function secondsToMinutes(seconds: number | undefined): number | null {
   return seconds && seconds > 0 ? Math.round(seconds / 60) : null;
@@ -506,7 +501,7 @@ function toTimeToBeat(row: IgdbTimeToBeat): GameTimeToBeatDto | null {
 /** IGDB's own user rating + critic aggregate (both 0–100), when present. */
 function toRatings(game: IgdbGame): RatingDto[] {
   const ratings: RatingDto[] = [];
-  const url = igdbUrl(game) ?? undefined;
+  const url = game.slug ? `https://www.igdb.com/games/${game.slug}` : undefined;
 
   if (game.rating !== null && game.rating !== undefined) {
     ratings.push({

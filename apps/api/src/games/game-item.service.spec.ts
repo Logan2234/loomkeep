@@ -30,7 +30,6 @@ const details: ProviderGameDetails = {
   ratings: [],
   externalIds: [{ source: "IGDB", externalId: "42" }],
   timeToBeat: null,
-  sourceUrl: null,
 } as unknown as ProviderGameDetails;
 
 const jobRunsStub = {
