@@ -3,6 +3,7 @@ import {
   MAX_EQUIPPED_BADGES,
   XpReason,
   type AchievementDto,
+  type AchievementRarityDto,
   type PendingAchievementDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
@@ -18,6 +19,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { isGamificationEnabled } from "../gamification.config";
 import { XpService } from "../xp.service";
+import { RARITY_ACTIVE_WINDOW_DAYS, toRarity } from "./rarity.util";
 import {
   ACHIEVEMENT_LIST,
   ACHIEVEMENTS,
@@ -172,13 +174,17 @@ export class AchievementService {
     if (!isGamificationEnabled(this.config, this.flags)) return [];
 
     const socialEnabled = isSocialEnabled(this.config, this.flags);
-    const [unlockedRows, equippedKeys] = await Promise.all([
+    const [unlockedRows, equippedKeys, rarityRows] = await Promise.all([
       this.prisma.userAchievement.findMany({
         where: { userId },
         select: { key: true, unlockedAt: true },
       }),
       this.equippedKeys(userId),
+      this.prisma.achievementRarity.findMany(),
     ]);
+    const rarityByKey = new Map(
+      rarityRows.map((r) => [r.key, toRarity(r.holders, r.eligibleUsers)]),
+    );
     const unlockedAtByKey = new Map(
       unlockedRows.map((r) => [r.key, r.unlockedAt]),
     );
@@ -198,6 +204,7 @@ export class AchievementService {
           definition,
           unlockedAtByKey.get(definition.key),
           equipped.has(definition.key),
+          rarityByKey.get(definition.key) ?? null,
         ),
       ),
     );
@@ -208,6 +215,7 @@ export class AchievementService {
     definition: AchievementDefinition,
     unlockedAt: Date | undefined,
     equipped: boolean,
+    rarity: AchievementRarityDto | null,
   ): Promise<AchievementDto> {
     const unlocked = unlockedAt !== undefined;
 
@@ -223,6 +231,7 @@ export class AchievementService {
         unlockedAt: null,
         progress: null,
         equipped: false,
+        rarity,
       };
     }
 
@@ -239,6 +248,7 @@ export class AchievementService {
       unlockedAt: unlockedAt?.toISOString() ?? null,
       progress: result.progress ?? null,
       equipped,
+      rarity,
     };
   }
 
@@ -407,6 +417,48 @@ export class AchievementService {
       await this.evaluate(user.id);
     }
 
-    return `Swept ${users.length} user(s)`;
+    const eligible = await this.recomputeRarity();
+    return `Swept ${users.length} user(s), rarity over ${eligible} member(s)`;
+  }
+
+  /**
+   * Snapshots how many eligible members hold each achievement, right after
+   * the sweep has granted whatever the day's activity earned — the screen
+   * reads this instead of counting on every request. Eligible: onboarded,
+   * active within RARITY_ACTIVE_WINDOW_DAYS, neither a Figurant nor hiding
+   * their progression (their achievements aren't shown to others either).
+   */
+  private async recomputeRarity(): Promise<number> {
+    const activeSince = new Date(
+      Date.now() - RARITY_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const eligible: Prisma.UserWhereInput = {
+      onboardedAt: { not: null },
+      lastActiveAt: { gte: activeSince },
+      profileAccess: { not: "GHOST" },
+      hideProgression: false,
+    };
+    const [eligibleUsers, counts] = await Promise.all([
+      this.prisma.user.count({ where: eligible }),
+      this.prisma.userAchievement.groupBy({
+        by: ["key"],
+        where: { user: eligible },
+        _count: { _all: true },
+      }),
+    ]);
+    const holdersByKey = new Map(counts.map((c) => [c.key, c._count._all]));
+
+    await this.prisma.$transaction([
+      this.prisma.achievementRarity.deleteMany(),
+      this.prisma.achievementRarity.createMany({
+        data: ACHIEVEMENT_LIST.map(({ key }) => ({
+          key,
+          holders: holdersByKey.get(key) ?? 0,
+          eligibleUsers,
+        })),
+      }),
+    ]);
+
+    return eligibleUsers;
   }
 }

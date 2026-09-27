@@ -608,6 +608,28 @@ describe("IgdbProvider", () => {
     );
     expect(tokenCalls).toHaveLength(1);
   });
+  it("finds a game's id from its IGDB page slug", async () => {
+    const fn = mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [{ id: 14593 }],
+    });
+
+    await expect(provider.gameIdForSlug("hollow-knight")).resolves.toBe(
+      "14593",
+    );
+    const [, init] = fn.mock.calls.find(([u]) => String(u).includes("/games"))!;
+    expect(String((init as RequestInit).body)).toContain(
+      'where slug = "hollow-knight"',
+    );
+  });
+
+  it("never quotes a slug outside IGDB's alphabet into a query", async () => {
+    const fn = mockFetchByUrl({ "id.twitch.tv": TOKEN_RESPONSE, "/games": [] });
+
+    await expect(provider.gameIdForSlug('x"; fields *;')).resolves.toBeNull();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it("rejects a non-numeric id without calling IGDB", async () => {
     const fn = mockFetchByUrl({ "id.twitch.tv": TOKEN_RESPONSE, "/games": [] });
 

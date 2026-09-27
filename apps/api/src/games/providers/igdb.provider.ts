@@ -302,6 +302,18 @@ export class IgdbProvider implements GameCatalogProvider {
     return details;
   }
 
+  /** The IGDB id behind a game page's slug (igdb.com/games/{slug}), if any. */
+  async gameIdForSlug(slug: string): Promise<string | null> {
+    // Quoted into an Apicalypse string literal: only IGDB's own slug alphabet
+    // gets through, so a stray quote can't break out of it.
+    if (!/^[a-z0-9-]+$/.test(slug)) return null;
+    const [game] = await this.query<{ id: number }[]>(
+      "/games",
+      `fields id; where slug = "${slug}"; limit 1;`,
+    );
+    return game ? String(game.id) : null;
+  }
+
   /**
    * Map Steam appids to IGDB ids via IGDB's external_games cross-reference.
    * (`external_game_source = 1` is Steam; the old `category` field is

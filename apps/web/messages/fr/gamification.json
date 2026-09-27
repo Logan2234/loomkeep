@@ -233,5 +233,7 @@
   "gamification_onboarding_step_comment": "Poste un commentaire",
   "gamification_onboarding_step_comment_desc": "Réagis à une critique ou une œuvre.",
   "gamification_onboarding_skip": "Passer",
-  "gamification_onboarding_locked": "Termine ou passe l'étape précédente pour débloquer celle-ci."
+  "gamification_onboarding_locked": "Termine ou passe l'étape précédente pour débloquer celle-ci.",
+  "gamification_rarity": "Débloqué par {percent} des membres",
+  "gamification_rarity_under": "Débloqué par moins de {percent} des membres"
 }
