@@ -59,25 +59,33 @@
 </script>
 
 <!-- One grid, rows as subgrids: every column lines up from one tier to the
-     next, however wide its figures ("45 %" vs "< 8 %", "50 XP" vs "400 XP"). -->
-<div class="grid grid-cols-[0.875rem_1fr_auto_auto_auto_auto] gap-x-2">
+     next, however wide its figures ("45 %" vs "< 8 %", "50 XP" vs "400 XP").
+     The wider gap keeps share, reward and pin apart as three separate reads. -->
+<div class="grid grid-cols-[1fr_auto_auto_auto] gap-x-4">
   {#each group.entries as entry, index (entry.key ?? index)}
     {@const current = entry === group.next}
     {@const canEquip = entry.unlocked && !entry.secret}
     {@const atLimit = !entry.equipped && equippedCount >= MAX_EQUIPPED_BADGES}
     <div
       class="border-border col-span-full grid grid-cols-subgrid items-center border-b py-1.5 last:border-b-0">
-      <i
-        class="block h-1 w-3.5 rounded-full border {entry.unlocked
-          ? FILL[entry.tier ?? 'gold']
-          : 'border-border bg-surface-2'}">
-      </i>
-      <span
-        class="text-xs {entry.unlocked || current ? 'text-fg' : 'text-dim'}">
-        {tierLabel(entry.tier)}
-      </span>
-      <span class="timecode text-xs {current ? 'text-accent' : ''}">
-        {entry.progress ? formatNumber(entry.progress.target) : "1"}
+      <!-- The goal stands for the tier: its colour is already the pip's, and
+           "Bronze · 25" said the same thing twice. The name stays for screen
+           readers, which get no colour. -->
+      <span class="flex items-center gap-2">
+        <i
+          class="block h-1 w-3.5 shrink-0 rounded-full border {entry.unlocked
+            ? FILL[entry.tier ?? 'gold']
+            : 'border-border bg-surface-2'}">
+        </i>
+        <span class="sr-only">{tierLabel(entry.tier)}</span>
+        <span
+          class="timecode text-xs {current
+            ? 'text-accent'
+            : entry.unlocked
+              ? 'text-fg'
+              : ''}">
+          {entry.progress ? formatNumber(entry.progress.target) : "1"}
+        </span>
       </span>
       {#if entry.rarity}
         {@const sentence = rarityLabel(entry.rarity)}

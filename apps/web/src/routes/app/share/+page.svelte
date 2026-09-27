@@ -40,7 +40,7 @@
 </script>
 
 {#if unrecognized}
-  <div class="mx-auto max-w-xl px-5 py-10 md:px-8">
+  <div class="mx-auto flex h-full max-w-2xl items-center px-5 py-10 md:px-8">
     <EmptyState>
       <p class="font-display text-fg text-lg font-bold">
         {m.share_unrecognized_title()}
