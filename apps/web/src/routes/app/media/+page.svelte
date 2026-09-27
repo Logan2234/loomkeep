@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { listLibrary } from "$lib/api/client";
+  import { getLibraryPile, listLibrary } from "$lib/api/client";
   import { updateLibraryEntry } from "$lib/api/library";
-  import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
+  import type {
+    LibraryLoadParams,
+    PileLoadParams,
+  } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
@@ -51,6 +54,14 @@
       order: params.order,
       page: params.page,
     });
+
+  const loadPile = (params: PileLoadParams) =>
+    getLibraryPile({
+      query: params.query,
+      favorite: params.favoritesOnly,
+      statuses: params.statuses,
+      types: params.extra as MediaType[],
+    });
 </script>
 
 <LibraryBrowser
@@ -63,6 +74,7 @@
   noun="titre"
   domain={Domain.MEDIA}
   {load}
+  {loadPile}
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}

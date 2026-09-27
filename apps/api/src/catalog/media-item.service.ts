@@ -242,6 +242,7 @@ export class MediaItemService {
       backdropUrl: details.backdropUrl,
       genres: details.genres,
       status: details.status,
+      runtimeMin: details.runtimeMin,
       seasons: details.seasons.map((season) => ({
         id: null,
         number: season.number,

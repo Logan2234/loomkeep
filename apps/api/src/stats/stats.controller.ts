@@ -1,5 +1,6 @@
 import type {
   BookStatsDto,
+  DomainPileDto,
   GameStatsDto,
   MusicStatsDto,
   SocialStatsDto,
@@ -24,11 +25,13 @@ import { DomainGateService } from "../users/domain-gate.service";
 import { BookStatsResponseDto } from "./dto/book-stats-response.dto";
 import { GameStatsResponseDto } from "./dto/game-stats-response.dto";
 import { MusicStatsResponseDto } from "./dto/music-stats-response.dto";
+import { DomainPileResponseDto } from "./dto/pile-summary-response.dto";
 import { SocialStatsResponseDto } from "./dto/social-stats-response.dto";
 import { StatsOverviewResponseDto } from "./dto/stats-overview-response.dto";
 import { StatsWorkResponseDto } from "./dto/stats-work-response.dto";
 import { VideoStatsResponseDto } from "./dto/video-stats-response.dto";
 import { VideoTemporalResponseDto } from "./dto/video-temporal-response.dto";
+import { PileService } from "./pile.service";
 import { StatsService } from "./stats.service";
 
 const DOMAIN_CHOICES = ["ALL", ...STATS_DOMAINS] as const;
@@ -41,7 +44,18 @@ export class StatsController {
     private readonly statsService: StatsService,
     private readonly domainGate: DomainGateService,
     private readonly entitlements: EntitlementService,
+    private readonly piles: PileService,
   ) {}
+
+  /** What's left in each enabled domain's pile, unfiltered (UX-02). */
+  @Get("pile")
+  @ApiOkResponse({ type: DomainPileResponseDto, isArray: true })
+  getPiles(
+    @CurrentUser() user: JwtPayload,
+    @Query("domain") domainParam = "ALL",
+  ): Promise<DomainPileDto[]> {
+    return this.piles.getPiles(user.sub, parseDomain(domainParam));
+  }
 
   @Get("overview")
   @ApiOkResponse({ type: StatsOverviewResponseDto })

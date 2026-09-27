@@ -1,9 +1,18 @@
 <script lang="ts">
+  import NewBadge from "$lib/components/NewBadge.svelte";
+
   let {
     label,
     badge,
+    isNew = false,
     class: className = "",
-  }: { label: string; badge?: string; class?: string } = $props();
+  }: {
+    label: string;
+    badge?: string;
+    /** Shows a "Nouveau" pill — see feature-badges.ts. */
+    isNew?: boolean;
+    class?: string;
+  } = $props();
 </script>
 
 <p
@@ -15,5 +24,6 @@
       {badge}
     </span>
   {/if}
+  {#if isNew}<NewBadge />{/if}
   <span class="border-border flex-1 border-t" aria-hidden="true"></span>
 </p>

@@ -3,6 +3,7 @@ import { auth } from "./auth.svelte";
 import {
   formatBytes,
   formatDurationMs,
+  formatHours,
   formatRelative,
   formatRuntimeTimecode,
   joinMeta,
@@ -32,6 +33,17 @@ describe("formatRuntimeTimecode", () => {
     expect(formatRuntimeTimecode(7)).toBe("07:00");
     expect(formatRuntimeTimecode(60)).toBe("1:00:00");
     expect(formatRuntimeTimecode(166)).toBe("2:46:00");
+  });
+});
+
+describe("formatHours", () => {
+  it("rounds to minutes, half-hours under 10 h, then whole hours", () => {
+    auth.user!.locale = "fr";
+    overwriteGetLocale(() => "fr");
+    expect(formatHours(45)).toBe("45 min");
+    expect(formatHours(150)).toBe("2,5 h");
+    expect(formatHours(2460)).toBe("41 h");
+    expect(formatHours(74_400)).toBe("1 240 h");
   });
 });
 

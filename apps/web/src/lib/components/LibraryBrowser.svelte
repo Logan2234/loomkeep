@@ -10,6 +10,12 @@
     /** 1-indexed. */
     page: number;
   }
+
+  /** The list's filters without its order: what a pile is summed over. */
+  export type PileLoadParams = Omit<
+    LibraryLoadParams,
+    "sort" | "order" | "page"
+  >;
 </script>
 
 <script lang="ts" generics="T">
@@ -25,6 +31,7 @@
   import { page } from "$app/state";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
@@ -36,10 +43,12 @@
   import { debounce } from "$lib/debounce";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { pileHeaderLabel } from "$lib/pile";
   import { filtersToSearchParams } from "$lib/saved-views";
   import type {
     MediaType,
     PagedResult,
+    PileSummaryDto,
     SavedViewDomain,
     SavedViewFiltersDto,
   } from "@loomkeep/shared";
@@ -62,6 +71,7 @@
     noun,
     domain,
     load,
+    loadPile,
     keyOf,
     statusOptions,
     sorts,
@@ -79,6 +89,8 @@
     /** This library's domain: its saved views, and the tab to preselect on /search. */
     domain: SavedViewDomain;
     load: (params: LibraryLoadParams) => Promise<PagedResult<T>>;
+    /** What's left in the pile under the same filters, for the header. */
+    loadPile?: (params: PileLoadParams) => Promise<PileSummaryDto>;
     /** Stable key for the poster grid's keyed each. */
     keyOf: (entry: T) => string;
     statusOptions: Option[];
@@ -218,11 +230,29 @@
     keepPreviousData: true,
   }));
 
+  const pileParams = $derived<PileLoadParams>({
+    query: queryFilter,
+    statuses,
+    favoritesOnly,
+    extra: types,
+  });
+  const pileQuery = createApiQuery(() => ({
+    key: keys.library.pile(domain, pileParams),
+    fetch: () => loadPile!(pileParams),
+    enabled: !!loadPile,
+    keepPreviousData: true,
+  }));
+
   const items = $derived(browseQuery.data);
   const error = $derived(browseQuery.error);
   const total = $derived(browseQuery.pages.at(-1)?.total ?? 0);
   const loading = $derived(browseQuery.loading);
   const loadingMore = $derived(browseQuery.isFetchingNextPage);
+  const headerSubtitle = $derived(
+    [subtitle(total), pileQuery.data && pileHeaderLabel(domain, pileQuery.data)]
+      .filter(Boolean)
+      .join(" · "),
+  );
 
   let showSkeleton = $state(false);
   $effect(() => {
@@ -264,7 +294,7 @@
   <PageHeader
     {icon}
     {title}
-    subtitle={subtitle(total)}
+    subtitle={headerSubtitle}
     actions={headerActions}
     class="mb-6" />
 

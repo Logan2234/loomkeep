@@ -9,6 +9,7 @@ export const keys = {
     videoTemporal: (period: string) =>
       ["stats", "video-temporal", period] as const,
     overview: (domain: string) => ["stats", "overview", domain] as const,
+    piles: (domain: string) => ["stats", "piles", domain] as const,
   },
   gamification: {
     achievements: () => ["gamification", "achievements"] as const,
@@ -149,6 +150,17 @@ export const keys = {
         order: string;
       },
     ) => ["library", "browse", domain, filters] as const,
+    // Under the same "browse" prefix as the list it sums, so whatever
+    // refreshes one domain's list refreshes its pile too.
+    pile: (
+      domain: string,
+      filters: {
+        query: string;
+        statuses: string[];
+        favoritesOnly: boolean;
+        extra: unknown;
+      },
+    ) => ["library", "browse", domain, "pile", filters] as const,
     // Whole library, catalogue-identity-keyed — drives the "already
     // tracked" flag on search results.
     tracked: () => ["library", "tracked"] as const,

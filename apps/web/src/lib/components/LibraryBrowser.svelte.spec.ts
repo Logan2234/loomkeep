@@ -1,9 +1,11 @@
 import { ApiError } from "$lib/api/core";
 import { resolveApiError } from "$lib/api/errors";
 import { m } from "$lib/paraglide/messages.js";
+import { pileHeaderLabel } from "$lib/pile";
 import { apiUrl, server } from "$lib/test/msw";
 import { goto, visit } from "$lib/test/navigation.svelte";
 import { renderWithQuery } from "$lib/test/render";
+import type { PileSummaryDto } from "@loomkeep/shared";
 import { ErrorCode, type PagedResult } from "@loomkeep/shared";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -12,6 +14,7 @@ import { createRawSnippet } from "svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LibraryBrowser, {
   type LibraryLoadParams,
+  type PileLoadParams,
 } from "./LibraryBrowser.svelte";
 
 vi.mock("$app/state", () => import("$lib/test/navigation.svelte"));
@@ -60,8 +63,10 @@ const HYPERION = { id: "2", title: "Hyperion" };
 
 function renderBrowser(
   load: (params: LibraryLoadParams) => Promise<PagedResult<Entry>>,
+  loadPile?: (params: PileLoadParams) => Promise<PileSummaryDto>,
 ) {
   return renderWithQuery(LibraryBrowser, {
+    loadPile,
     icon: "book",
     title: "Books",
     subtitle: (count: number) => `${count} books`,
@@ -108,6 +113,48 @@ describe("LibraryBrowser", () => {
       order: "desc",
       page: 1,
     });
+  });
+
+  it("adds what's left in the pile to the header, summed over the list's filters", async () => {
+    const pile: PileSummaryDto = {
+      unit: "PAGES",
+      amount: 4812,
+      entries: 63,
+      counted: 59,
+      estimated: false,
+    };
+    const loadPile = vi.fn(async () => pile);
+    visit("/app/books?status=READING&fav=1&sort=title");
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE], { total: 63 })),
+      loadPile,
+    );
+
+    expect(
+      await screen.findByText(`63 books · ${pileHeaderLabel("BOOKS", pile)}`),
+    ).toBeTruthy();
+    // The filters, never the order or the page: a pile has neither.
+    expect(loadPile).toHaveBeenLastCalledWith({
+      query: "",
+      statuses: ["READING"],
+      favoritesOnly: true,
+      extra: [],
+    });
+  });
+
+  it("leaves the header alone when nothing in the pile can be counted", async () => {
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE], { total: 1 })),
+      vi.fn(async () => ({
+        unit: "PAGES" as const,
+        amount: 0,
+        entries: 3,
+        counted: 0,
+        estimated: false,
+      })),
+    );
+
+    expect(await screen.findByText("1 books")).toBeTruthy();
   });
 
   it("loads the next page once the end of the grid is reached", async () => {
