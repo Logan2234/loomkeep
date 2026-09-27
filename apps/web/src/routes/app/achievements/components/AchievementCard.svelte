@@ -21,7 +21,6 @@
     achievementDescription,
     achievementName,
     groupIcon,
-    rarityLabel,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
   import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
@@ -63,7 +62,6 @@
   // rail counts towards and its reward is the XP on offer. Once every tier
   // is earned, the last one is what there is left to say.
   const focusEntry = $derived(group.next ?? group.entries.at(-1)!);
-  const rarity = $derived(rarityLabel(focusEntry.rarity));
   const progress = $derived(focusEntry.progress);
   // Nothing left to earn: the rail would count past its own target (54 / 30),
   // so the card states the fact instead.
@@ -124,9 +122,6 @@
   <p class="text-dim text-xs leading-snug">
     {achievementDescription(focusEntry)}
   </p>
-  {#if rarity}
-    <p class="timecode text-micro">{rarity}</p>
-  {/if}
 
   <div class="mt-auto flex flex-col gap-1.5">
     {#if progress && !complete}

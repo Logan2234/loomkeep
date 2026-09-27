@@ -3,7 +3,7 @@ import { m } from "$lib/paraglide/messages.js";
 import type { AchievementDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import { groupAchievements } from "./achievements";
-import { contextNote, rarityLabel } from "./labels";
+import { contextNote, rarityLabel, rarityPercent } from "./labels";
 
 function entry(over: Partial<AchievementDto> = {}): AchievementDto {
   return {
@@ -88,5 +88,14 @@ describe("rarityLabel", () => {
       m.gamification_rarity_under({ percent: pct(0.08) }),
     );
     expect(rarityLabel(null)).toBeNull();
+  });
+
+  it("gives the ladder a compact figure, marking a bound", () => {
+    const pct = (value: number) =>
+      formatNumber(value, { style: "percent", maximumFractionDigits: 1 });
+    expect(rarityPercent({ percent: 45, upperBound: false })).toBe(pct(0.45));
+    expect(rarityPercent({ percent: 8, upperBound: true })).toBe(
+      `< ${pct(0.08)}`,
+    );
   });
 });
