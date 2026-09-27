@@ -6,6 +6,7 @@
     achievementDescription,
     achievementName,
     groupIcon,
+    rarityLabel,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
   import AchievementMedallion from "$lib/components/AchievementMedallion.svelte";
@@ -21,6 +22,7 @@
   } = $props();
 
   const focusEntry = $derived(group.next ?? group.entries.at(-1)!);
+  const rarity = $derived(rarityLabel(focusEntry.rarity));
 </script>
 
 <Drawer {onclose} labelledby="achievement-drawer-title">
@@ -38,6 +40,9 @@
         <p class="text-dim mt-0.5 text-xs leading-snug">
           {achievementDescription(focusEntry)}
         </p>
+        {#if rarity}
+          <p class="timecode text-micro mt-1">{rarity}</p>
+        {/if}
       </div>
     </div>
 

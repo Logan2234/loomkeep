@@ -7,7 +7,11 @@ import { entryIcon } from "$lib/achievement-labels";
 import { formatDate, formatNumber } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
 import type { IconName } from "$lib/types/icon-name";
-import type { AchievementFamily, AchievementTier } from "@loomkeep/shared";
+import type {
+  AchievementFamily,
+  AchievementRarityDto,
+  AchievementTier,
+} from "@loomkeep/shared";
 import type { AchievementGroup } from "./achievements";
 
 export {
@@ -138,4 +142,22 @@ export function contextNote(group: AchievementGroup): NoteSegment[] {
   }
 
   return segments;
+}
+
+/**
+ * "Débloqué par 4 % des membres" — a share of real members, deliberately
+ * distinct from the XP award (50/150/400), which is Loomkeep's own rating of
+ * how hard an achievement is. Null when the instance is too small to say.
+ */
+export function rarityLabel(
+  rarity: AchievementRarityDto | null,
+): string | null {
+  if (!rarity) return null;
+  const percent = formatNumber(rarity.percent / 100, {
+    style: "percent",
+    maximumFractionDigits: 1,
+  });
+  return rarity.upperBound
+    ? m.gamification_rarity_under({ percent })
+    : m.gamification_rarity({ percent });
 }

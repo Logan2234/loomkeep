@@ -1,7 +1,9 @@
+import { formatNumber } from "$lib/format";
+import { m } from "$lib/paraglide/messages.js";
 import type { AchievementDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import { groupAchievements } from "./achievements";
-import { contextNote } from "./labels";
+import { contextNote, rarityLabel } from "./labels";
 
 function entry(over: Partial<AchievementDto> = {}): AchievementDto {
   return {
@@ -15,6 +17,7 @@ function entry(over: Partial<AchievementDto> = {}): AchievementDto {
     unlockedAt: null,
     progress: { current: 2, target: 10 },
     equipped: false,
+    rarity: null,
     ...over,
   };
 }
@@ -68,5 +71,22 @@ describe("contextNote", () => {
     ]);
 
     expect(segments.map((s) => s.text).join("")).not.toContain("<<@>>");
+  });
+});
+
+describe("rarityLabel", () => {
+  it("states the share of members, or only a bound when so few hold it", () => {
+    const pct = (value: number) =>
+      formatNumber(value, { style: "percent", maximumFractionDigits: 1 });
+    expect(rarityLabel({ percent: 4, upperBound: false })).toBe(
+      m.gamification_rarity({ percent: pct(0.04) }),
+    );
+    expect(rarityLabel({ percent: 0.4, upperBound: false })).toBe(
+      m.gamification_rarity({ percent: pct(0.004) }),
+    );
+    expect(rarityLabel({ percent: 8, upperBound: true })).toBe(
+      m.gamification_rarity_under({ percent: pct(0.08) }),
+    );
+    expect(rarityLabel(null)).toBeNull();
   });
 });

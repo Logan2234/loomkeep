@@ -271,6 +271,8 @@ export class ProfileService {
           unlockedAt: unlockedAt.toISOString(),
           progress: null,
           equipped: true,
+          // Shown on the achievements screen only, not in a showcase.
+          rarity: null,
         },
       ];
     });

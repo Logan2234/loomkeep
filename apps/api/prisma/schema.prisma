@@ -1899,3 +1899,16 @@ model UserAchievement {
 
   @@unique([userId, key])
 }
+
+// How many members hold each achievement, as of the last nightly sweep —
+// read by the achievements screen ("débloqué par 4 % des membres"), never
+// computed per request. One row per registry key, zero holders included, so
+// every key reads against the same `eligibleUsers`. Only onboarded members
+// active in the last 90 days count, Figurants and hidden progressions aside:
+// see RARITY_* in achievements/rarity.util.ts.
+model AchievementRarity {
+  key           String   @id
+  holders       Int
+  eligibleUsers Int
+  computedAt    DateTime @default(now())
+}
