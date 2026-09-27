@@ -118,6 +118,19 @@ export function formatDateTime(
   );
 }
 
+/** A country's name from its ISO 3166-1 code ("BE" → "Belgique"), the code itself if unknown. */
+export function formatRegion(code: string, locale?: string): string {
+  try {
+    return (
+      new Intl.DisplayNames([resolveLocale(locale)], { type: "region" }).of(
+        code,
+      ) ?? code
+    );
+  } catch {
+    return code;
+  }
+}
+
 /** e.g. "42 %" — rounded percentage. */
 export const PERCENT_OPTIONS: Intl.NumberFormatOptions = {
   style: "percent",

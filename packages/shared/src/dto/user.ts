@@ -96,6 +96,10 @@ export interface UserDto {
    * position at the end. See web `domains.ts`'s `orderedDomains()`.
    */
   domainOrder: Domain[];
+  /** Country of the streaming offers shown; null for automatic. */
+  watchRegion: string | null;
+  /** TMDB ids of the watch providers the user has, see `WatchProviderDto.id`. */
+  watchProviderIds: number[];
   /**
    * The home page's widget grid, or null for the default one — which is
    * built from the enabled domains on the web rather than stored, so it
@@ -132,6 +136,10 @@ export interface UpdateUserRequestDto {
   spoilerSensitivity?: SpoilerSensitivity;
   /** See `UserDto.domainOrder`. */
   domainOrder?: Domain[];
+  /** See `UserDto.watchRegion`; null goes back to automatic. */
+  watchRegion?: string | null;
+  /** See `UserDto.watchProviderIds`. */
+  watchProviderIds?: number[];
 }
 
 export interface UpdateUsernameRequestDto {

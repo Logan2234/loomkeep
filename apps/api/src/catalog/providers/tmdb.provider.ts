@@ -1,4 +1,8 @@
-import type { CastDetailDto, MediaExtrasDto } from "@loomkeep/shared";
+import type {
+  CastDetailDto,
+  MediaExtrasDto,
+  WatchProviderDto,
+} from "@loomkeep/shared";
 import { CatalogSource, MediaSummaryDto, MediaType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -19,6 +23,7 @@ import {
   toTvDetails,
   toTvSeason,
   toTvSummary,
+  toWatchProviders,
   type TmdbExtras,
   type TmdbFindResult,
   type TmdbMovieDetails,
@@ -27,20 +32,82 @@ import {
   type TmdbSeasonDetails,
   type TmdbTvDetails,
   type TmdbTvResult,
+  type TmdbWatchProvider,
 } from "./tmdb.mapper";
 
 const BASE_URL = "https://api.themoviedb.org/3";
+
+// The provider lists barely move: a day-old copy spares two TMDB calls each
+// time someone opens their services settings.
+const WATCH_LIST_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** Films and (western) series, from The Movie Database. */
 @Injectable()
 export class TmdbProvider implements CatalogProvider {
   readonly source = CatalogSource.TMDB;
 
+  private readonly watchProviderLists = new Map<
+    string,
+    { fetchedAt: number; providers: WatchProviderDto[] }
+  >();
+  private watchRegions: { fetchedAt: number; codes: string[] } | null = null;
+
   constructor(
     private readonly configService: ConfigService,
     private readonly omdb: OmdbService,
     private readonly quota: QuotaTrackerService,
   ) {}
+
+  /** Every provider JustWatch lists in a region, the most used there first. */
+  async listWatchProviders(region: string): Promise<WatchProviderDto[]> {
+    const cached = this.watchProviderLists.get(region);
+    if (cached && Date.now() - cached.fetchedAt < WATCH_LIST_TTL_MS) {
+      return cached.providers;
+    }
+
+    // Films and series have a list each: some services only carry one kind.
+    const [movie, tv] = await Promise.all(
+      ["movie", "tv"].map((kind) =>
+        this.get<{ results?: TmdbWatchProvider[] }>(
+          `/watch/providers/${kind}`,
+          { watch_region: region },
+        ),
+      ),
+    );
+    const byId = new Map<number, TmdbWatchProvider>();
+    for (const provider of [...(movie.results ?? []), ...(tv.results ?? [])]) {
+      byId.set(provider.provider_id, provider);
+    }
+    const rank = (p: TmdbWatchProvider) =>
+      p.display_priorities?.[region] ??
+      p.display_priority ??
+      Number.MAX_SAFE_INTEGER;
+    const providers = toWatchProviders(
+      [...byId.values()].sort((a, b) => rank(a) - rank(b)),
+    );
+
+    this.watchProviderLists.set(region, { fetchedAt: Date.now(), providers });
+    return providers;
+  }
+
+  /** ISO 3166-1 codes of the countries JustWatch covers. */
+  async listWatchRegions(): Promise<string[]> {
+    if (
+      this.watchRegions &&
+      Date.now() - this.watchRegions.fetchedAt < WATCH_LIST_TTL_MS
+    ) {
+      return this.watchRegions.codes;
+    }
+
+    const data = await this.get<{ results?: { iso_3166_1: string }[] }>(
+      "/watch/providers/regions",
+      {},
+    );
+    const codes = (data.results ?? []).map((r) => r.iso_3166_1);
+
+    this.watchRegions = { fetchedAt: Date.now(), codes };
+    return codes;
+  }
 
   async search(
     query: string,
@@ -177,7 +244,8 @@ export class TmdbProvider implements CatalogProvider {
   async getExtras(
     sourceId: string,
     type: MediaType,
-    lang?: string,
+    lang: string | undefined,
+    watchRegion: string,
   ): Promise<MediaExtrasDto> {
     const path = type === MediaType.MOVIE ? "movie" : "tv";
     // Movie and TV certifications live under different append keys.
@@ -196,7 +264,7 @@ export class TmdbProvider implements CatalogProvider {
       data.external_ids?.imdb_id ?? null,
     );
 
-    return toExtras(type, sourceId, data, omdbRatings);
+    return toExtras(type, sourceId, data, omdbRatings, watchRegion);
   }
 
   /** Live detail of a TMDB person for the cast modal. */

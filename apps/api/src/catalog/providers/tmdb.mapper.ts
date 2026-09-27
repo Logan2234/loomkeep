@@ -97,14 +97,20 @@ export interface TmdbSeasonDetails {
   }[];
 }
 
-interface TmdbWatchProvider {
+export interface TmdbWatchProvider {
+  provider_id: number;
   provider_name: string;
   logo_path?: string | null;
+  /** Only on /watch/providers/{movie,tv}: rank per region, lowest first. */
+  display_priorities?: Record<string, number>;
+  display_priority?: number;
 }
 
 interface TmdbWatchRegion {
   link?: string;
   flatrate?: TmdbWatchProvider[];
+  free?: TmdbWatchProvider[];
+  ads?: TmdbWatchProvider[];
   rent?: TmdbWatchProvider[];
   buy?: TmdbWatchProvider[];
 }
@@ -297,6 +303,7 @@ export function toExtras(
   sourceId: string,
   data: TmdbExtras,
   omdbRatings: RatingDto[],
+  watchRegion: string,
 ): MediaExtrasDto {
   const path = type === MediaType.MOVIE ? "movie" : "tv";
   const tmdbRating =
@@ -310,20 +317,18 @@ export function toExtras(
         ]
       : [];
 
-  const region = data["watch/providers"]?.results?.FR;
-  const toProviders = (list?: TmdbWatchProvider[]): WatchProviderDto[] =>
-    (list ?? []).map((p) => ({
-      name: p.provider_name,
-      logoUrl: p.logo_path ? `${IMG}/w92${p.logo_path}` : null,
-    }));
+  const region = data["watch/providers"]?.results?.[watchRegion];
   const summarize = (r: TmdbMovieResult & TmdbTvResult): MediaSummaryDto =>
     type === MediaType.MOVIE ? toMovieSummary(r) : toTvSummary(r);
 
   return {
     watchProviders: {
-      flatrate: toProviders(region?.flatrate),
-      rent: toProviders(region?.rent),
-      buy: toProviders(region?.buy),
+      region: watchRegion,
+      flatrate: toWatchProviders(region?.flatrate),
+      free: toWatchProviders(region?.free),
+      ads: toWatchProviders(region?.ads),
+      rent: toWatchProviders(region?.rent),
+      buy: toWatchProviders(region?.buy),
       link: region?.link ?? null,
     },
     cast: (data.credits?.cast ?? []).slice(0, 12).map((c) => ({
@@ -442,4 +447,27 @@ function certification(type: MediaType, data: TmdbExtras): string | null {
     byCountry.find((r) => r.iso_3166_1 === "FR") ??
     byCountry.find((r) => r.iso_3166_1 === "US");
   return region?.rating || null;
+}
+
+// "Netflix Standard with Ads" is a cheaper Netflix plan, not another service:
+// listed next to Netflix it shows the same logo twice.
+const AD_TIER_SUFFIX = /\s+(?:Standard\s+)?with Ads$/i;
+
+/**
+ * Providers as the DTO carries them, in the given order, without the ad-tier
+ * plans of a service already in the list.
+ */
+export function toWatchProviders(list?: TmdbWatchProvider[]): WatchProviderDto[] {
+  const names = new Set((list ?? []).map((p) => p.provider_name.trim()));
+
+  return (list ?? [])
+    .filter((p) => {
+      const base = p.provider_name.trim().replace(AD_TIER_SUFFIX, "");
+      return base === p.provider_name.trim() || !names.has(base);
+    })
+    .map((p) => ({
+      id: p.provider_id,
+      name: p.provider_name.trim(),
+      logoUrl: p.logo_path ? `${IMG}/w92${p.logo_path}` : null,
+    }));
 }

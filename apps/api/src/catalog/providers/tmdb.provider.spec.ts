@@ -316,6 +316,66 @@ describe("TmdbProvider", () => {
   });
 
   describe("getExtras", () => {
+    it("lists the asked region's offers by kind, with provider ids and one entry per service", async () => {
+      const netflix = { provider_id: 8, provider_name: "Netflix", logo_path: "/n.png" };
+      mockFetchByUrl({
+        "/tv/1396": {
+          id: 1396,
+          "watch/providers": {
+            results: {
+              FR: {
+                link: "https://www.themoviedb.org/tv/1396/watch?locale=FR",
+                flatrate: [
+                  netflix,
+                  { provider_id: 1796, provider_name: "Netflix Standard with Ads" },
+                ],
+                ads: [{ provider_id: 300, provider_name: "Pluto TV" }],
+                buy: [{ provider_id: 2, provider_name: "Apple TV Store" }],
+              },
+              BE: { flatrate: [{ provider_id: 337, provider_name: "Disney Plus" }] },
+            },
+          },
+        },
+      });
+
+      const fr = await provider.getExtras("1396", MediaType.SERIES, undefined, "FR");
+      const be = await provider.getExtras("1396", MediaType.SERIES, undefined, "BE");
+
+      expect(fr.watchProviders).toEqual({
+        region: "FR",
+        flatrate: [
+          { id: 8, name: "Netflix", logoUrl: "https://image.tmdb.org/t/p/w92/n.png" },
+        ],
+        free: [],
+        ads: [{ id: 300, name: "Pluto TV", logoUrl: null }],
+        rent: [],
+        buy: [{ id: 2, name: "Apple TV Store", logoUrl: null }],
+        link: "https://www.themoviedb.org/tv/1396/watch?locale=FR",
+      });
+      expect(be.watchProviders.flatrate.map((p) => p.id)).toEqual([337]);
+    });
+
+    it("keeps an ad-tier plan whose full service isn't offered", async () => {
+      mockFetchByUrl({
+        "/movie/27205": {
+          id: 27205,
+          "watch/providers": {
+            results: {
+              FR: {
+                flatrate: [
+                  { provider_id: 2100, provider_name: "Amazon Prime Video with Ads" },
+                ],
+              },
+            },
+          },
+        },
+      });
+
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
+
+      expect(extras.watchProviders.flatrate.map((p) => p.id)).toEqual([2100]);
+    });
+
     it("sends the requested language, defaulting to English", async () => {
       let requestedUrl = "";
       global.fetch = vi.fn((input: RequestInfo | URL) => {
@@ -325,10 +385,10 @@ describe("TmdbProvider", () => {
         );
       }) as typeof fetch;
 
-      await provider.getExtras("27205", MediaType.MOVIE);
+      await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
       expect(decodeURIComponent(requestedUrl)).toContain("language=en-US");
 
-      await provider.getExtras("27205", MediaType.MOVIE, "fr");
+      await provider.getExtras("27205", MediaType.MOVIE, "fr", "FR");
       expect(decodeURIComponent(requestedUrl)).toContain("language=fr-FR");
     });
 
@@ -342,7 +402,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.tagline).toBe("Your mind is the scene of the crime.");
       expect(extras.ratings).toEqual([
@@ -359,7 +419,7 @@ describe("TmdbProvider", () => {
         "/movie/27205": { id: 27205, vote_average: 8.4 },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.ratings).toEqual([]);
     });
@@ -378,7 +438,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.directors).toEqual(["Christopher Nolan"]);
     });
@@ -394,7 +454,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("1396", MediaType.SERIES);
+      const extras = await provider.getExtras("1396", MediaType.SERIES, undefined, "FR");
 
       expect(extras.directors).toEqual(["Vince Gilligan"]);
     });
@@ -424,7 +484,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.trailerVideoId).toBe("trailer2");
     });
@@ -439,7 +499,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.trailerVideoId).toBe("trailer1");
     });
@@ -447,7 +507,7 @@ describe("TmdbProvider", () => {
     it("returns no trailer when TMDB lists none", async () => {
       mockFetchByUrl({ "/movie/27205": { id: 27205 } });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.trailerVideoId).toBeNull();
     });
@@ -468,7 +528,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.contentRating).toBe("12");
     });
@@ -488,7 +548,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.contentRating).toBe("PG-13");
     });
@@ -506,7 +566,7 @@ describe("TmdbProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("1396", MediaType.SERIES);
+      const extras = await provider.getExtras("1396", MediaType.SERIES, undefined, "FR");
 
       expect(extras.contentRating).toBe("16");
     });
@@ -514,9 +574,35 @@ describe("TmdbProvider", () => {
     it("returns no certification when TMDB reports none", async () => {
       mockFetchByUrl({ "/movie/27205": { id: 27205 } });
 
-      const extras = await provider.getExtras("27205", MediaType.MOVIE);
+      const extras = await provider.getExtras("27205", MediaType.MOVIE, undefined, "FR");
 
       expect(extras.contentRating).toBeNull();
+    });
+  });
+
+  describe("listWatchProviders", () => {
+    it("merges the film and series lists, most used in the region first, and caches them", async () => {
+      mockFetchByUrl({
+        "/watch/providers/movie": {
+          results: [
+            { provider_id: 2, provider_name: "Apple TV Store", display_priorities: { FR: 6 } },
+            { provider_id: 8, provider_name: "Netflix", display_priorities: { FR: 0 } },
+            { provider_id: 1796, provider_name: "Netflix Standard with Ads", display_priorities: { FR: 1 } },
+          ],
+        },
+        "/watch/providers/tv": {
+          results: [
+            { provider_id: 8, provider_name: "Netflix", display_priorities: { FR: 0 } },
+            { provider_id: 381, provider_name: "Canal+", display_priorities: { FR: 8 } },
+          ],
+        },
+      });
+
+      const providers = await provider.listWatchProviders("FR");
+      await provider.listWatchProviders("FR");
+
+      expect(providers.map((p) => p.id)).toEqual([8, 2, 381]);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
 });
