@@ -9,9 +9,6 @@
   import { m } from "$lib/paraglide/messages";
   import { readSharedLink } from "$lib/share-link";
 
-  // The PWA's share target (UX-05): another app's share sheet lands here
-  // with ?url/?text/?title, and this page hands over to the matching work's
-  // page — or to the search, when the link isn't one Loomkeep can read.
   const { link, searchTerm } = readSharedLink(page.url.searchParams);
   const searchHref = `/app/search?query=${encodeURIComponent(searchTerm)}`;
 
@@ -22,17 +19,12 @@
   }));
 
   const target = $derived(resolved.data?.match?.href ?? null);
-  // Done asking: no link to look up, or the lookup came back either way.
   const settled = $derived(
     link === null || resolved.error !== null || resolved.data !== null,
   );
-  // Nothing to open or search for: said on the page instead of landing on
-  // an empty search that looks like the share did nothing.
   const unrecognized = $derived(settled && !target && !searchTerm);
 
   $effect(() => {
-    // replaceState: back from the work's page returns to the sharing app,
-    // not to this hand-off screen.
     if (target) void goto(target, { replaceState: true });
     else if (settled && searchTerm)
       void goto(searchHref, { replaceState: true });
@@ -52,6 +44,5 @@
     </EmptyState>
   </div>
 {:else}
-  <!-- The boot screen's reel and wordmark: this is a hand-off, not a page. -->
   <BootSplash message={m.share_resolving()} class="min-h-[70svh]" />
 {/if}
