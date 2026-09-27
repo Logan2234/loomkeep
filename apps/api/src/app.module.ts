@@ -24,6 +24,7 @@ import { GamificationModule } from "./gamification/gamification.module";
 import { HealthModule } from "./health/health.module";
 import { ImportModule } from "./import/import.module";
 import { LibraryModule } from "./library/library.module";
+import { LinksModule } from "./links/links.module";
 import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -70,6 +71,7 @@ import { UsersModule } from "./users/users.module";
     BooksModule,
     MusicModule,
     LibraryModule,
+    LinksModule,
     ImportModule,
     NotificationModule,
     HealthModule,

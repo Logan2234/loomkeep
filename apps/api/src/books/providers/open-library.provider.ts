@@ -131,6 +131,7 @@ interface OpenLibrarySearchResponse {
 /** The body of `/books/{OLID}.json` — one concrete edition, in full. */
 interface OpenLibraryEditionDetail {
   key: string; // "/books/OL62190138M".
+  works?: { key: string }[]; // [{ key: "/works/OL893414W" }].
   title?: string;
   covers?: number[];
   languages?: { key: string }[]; // [{ key: "/languages/eng" }].
@@ -425,6 +426,12 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     return this.get<OpenLibraryEditionsResponse>(
       `/works/${encodeURIComponent(workId)}/editions.json?limit=${EDITIONS_SCAN_LIMIT}`,
     );
+  }
+
+  /** The work an edition belongs to — book pages are keyed by work, not edition. */
+  async workIdForEdition(olid: string): Promise<string | null> {
+    const edition = await this.fetchEditionDetail(olid);
+    return idFromKey(edition?.works?.[0]?.key);
   }
 
   /** The full record for one edition — series, first sentence, cross-reference ids. */

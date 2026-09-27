@@ -13,6 +13,7 @@
   import { isDomainEnabled } from "$lib/domains";
   import { layout } from "$lib/layout.svelte";
   import { m } from "$lib/paraglide/messages";
+  import { isPastedLink } from "$lib/share-link";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
   // Only the domains the user keeps enabled are searchable (mirrors the nav;
@@ -36,6 +37,11 @@
   const placeholder = $derived(
     m.search_placeholder({ domain: DOMAINS[domain].searchHint }),
   );
+
+  // A pasted TMDB/IMDb/Steam/… link opens its page through the share target
+  // (UX-05) rather than being searched for as words — the way to share a
+  // link from a device whose browser has no share target (iOS, desktop).
+  const pastedLink = $derived(isPastedLink(query) ? query.trim() : null);
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
   const comingSoon = $derived(DOMAINS[domain]?.comingSoon ?? false);
@@ -296,7 +302,17 @@
     </div>
   </div>
 
-  {#if comingSoon}
+  {#if pastedLink}
+    <section class="card p-5">
+      <h2 class="font-display text-lg font-bold">{m.search_link_title()}</h2>
+      <p class="text-dim mt-1 text-sm">{m.search_link_body()}</p>
+      <a
+        class="btn btn-primary mt-4"
+        href={`/app/share?url=${encodeURIComponent(pastedLink)}`}>
+        {m.search_link_open()}
+      </a>
+    </section>
+  {:else if comingSoon}
     <div
       class="border-border text-dim flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-14 text-center">
       <Icon

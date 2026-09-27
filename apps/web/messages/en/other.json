@@ -1490,5 +1490,12 @@
   "settings_search_count_many": "{count} results for “{query}”",
   "admin_service_timeout": "Response timed out",
   "admin_service_network_error": "Network error",
-  "admin_service_refused": "Connection or authentication refused"
+  "admin_service_refused": "Connection or authentication refused",
+  "share_resolving": "Opening the link…",
+  "share_unrecognized_title": "Link not recognized",
+  "share_unrecognized_body": "Loomkeep can open TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library and MusicBrainz links. You can search for the title instead.",
+  "share_search_cta": "Search for a title",
+  "search_link_title": "You pasted a link",
+  "search_link_body": "If it comes from TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library or MusicBrainz, Loomkeep opens the matching page.",
+  "search_link_open": "Open the page"
 }
