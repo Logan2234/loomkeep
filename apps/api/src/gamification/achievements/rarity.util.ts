@@ -9,7 +9,7 @@ export const RARITY_MIN_ELIGIBLE_USERS = 20;
 export const RARITY_MIN_EXACT_HOLDERS = 3;
 
 // Who counts as a member for the share: onboarded, active in this window.
-export const RARITY_ACTIVE_WINDOW_DAYS = 90;
+export const RARITY_ACTIVE_WINDOW_DAYS = 365;
 
 export function toRarity(
   holders: number,

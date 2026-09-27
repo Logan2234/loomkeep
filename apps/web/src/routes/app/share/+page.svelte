@@ -4,6 +4,7 @@
   import { keys } from "$lib/api/keys";
   import { resolveLink } from "$lib/api/links";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import BootSplash from "$lib/components/BootSplash.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/paraglide/messages";
   import { readSharedLink } from "$lib/share-link";
@@ -38,8 +39,8 @@
   });
 </script>
 
-<div class="mx-auto max-w-xl px-5 py-10 md:px-8">
-  {#if unrecognized}
+{#if unrecognized}
+  <div class="mx-auto max-w-xl px-5 py-10 md:px-8">
     <EmptyState>
       <p class="font-display text-fg text-lg font-bold">
         {m.share_unrecognized_title()}
@@ -49,7 +50,8 @@
         {m.share_search_cta()}
       </a>
     </EmptyState>
-  {:else}
-    <p class="text-dim text-center" role="status">{m.share_resolving()}</p>
-  {/if}
-</div>
+  </div>
+{:else}
+  <!-- The boot screen's reel and wordmark: this is a hand-off, not a page. -->
+  <BootSplash message={m.share_resolving()} class="min-h-[70svh]" />
+{/if}
