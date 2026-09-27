@@ -2,6 +2,8 @@
   import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Dropdown from "$lib/components/Dropdown.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import NewBadge from "$lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages";
@@ -11,7 +13,7 @@
 
   // Sticky action bar for the media detail page ("Cinéma minimal"). Kept to a
   // handful of frequent, glanceable controls — Continuer/favori/liste, plus a
-  // "…" for the two rare, consequential actions (abandonner, retirer).
+  // "…" for the rare, set-and-forget actions (alertes, abandonner, retirer).
   // Everything else (note privée, possession) lives in the "Mon suivi" panel
   // further down the page, not here.
   let {
@@ -28,6 +30,7 @@
     onToggleWatched,
     onDrop,
     onResume,
+    onToggleEpisodeAlerts,
     onRemove,
     socialActions,
   }: {
@@ -45,6 +48,7 @@
     onToggleWatched: () => void;
     onDrop: () => void;
     onResume: () => void;
+    onToggleEpisodeAlerts: () => void;
     onRemove: () => void;
     socialActions?: Snippet;
   } = $props();
@@ -166,6 +170,26 @@
             </button>
           {/snippet}
           {#snippet children({ close })}
+            {#if !isMovie}
+              <button
+                role="menuitem"
+                type="button"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onToggleEpisodeAlerts();
+                }}>
+                <Icon
+                  name={entry.episodeAlertsMuted ? "bell" : "bell-off"}
+                  class="h-4 w-4" />
+                {entry.episodeAlertsMuted
+                  ? m.media_unmute_episode_alerts()
+                  : m.media_mute_episode_alerts()}
+                {#if isFeatureNew("episode-alerts-mute")}
+                  <span class="ml-auto"><NewBadge /></span>
+                {/if}
+              </button>
+            {/if}
             {#if isDropped}
               <button
                 role="menuitem"

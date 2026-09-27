@@ -23,6 +23,7 @@ const pendingRow = {
   title: "Severance",
   body: "S2E5 · The One With The Finale",
   url: "/app/media/series/42",
+  dedupeKey: "episode:ep1",
 };
 
 function makeService(opts: {
@@ -30,12 +31,15 @@ function makeService(opts: {
   notifyPush?: DigestCadence;
   pending?: (typeof pendingRow)[];
   isPremium?: boolean;
+  /** Episode ids whose show the user muted alerts for. */
+  mutedEpisodeIds?: string[];
 }) {
   const {
     notifyEmail = DigestCadence.WEEKLY,
     notifyPush = DigestCadence.DISABLED,
     pending = [pendingRow],
     isPremium = false,
+    mutedEpisodeIds = [],
   } = opts;
 
   const prisma = {
@@ -47,6 +51,11 @@ function makeService(opts: {
     notification: {
       findMany: vi.fn().mockResolvedValue(pending),
       updateMany: vi.fn().mockResolvedValue({ count: pending.length }),
+    },
+    episode: {
+      findMany: vi
+        .fn()
+        .mockResolvedValue(mutedEpisodeIds.map((id) => ({ id }))),
     },
   } as unknown as PrismaService;
   const push = { sendToUser: vi.fn() } as unknown as PushService;
@@ -196,6 +205,58 @@ describe("NotificationDigestService.runDigests", () => {
       expect.any(Array),
       "weekly",
     );
+
+    vi.useRealTimers();
+  });
+
+  it("leaves muted shows out of the digest but still marks them digested", async () => {
+    const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(monday9amParis);
+
+    const mutedRow = {
+      id: "n2",
+      title: "Lanterns",
+      body: "S1E7",
+      url: "/app/media/series/7",
+      dedupeKey: "episode:ep2",
+    };
+    const { service, mail, prisma } = makeService({
+      notifyEmail: DigestCadence.WEEKLY,
+      pending: [pendingRow, mutedRow],
+      mutedEpisodeIds: ["ep2"],
+    });
+    const sent = await service.runDigests();
+
+    expect(sent).toBe(1);
+    expect(mail.sendEpisodeDigest).toHaveBeenCalledWith(
+      expect.anything(),
+      [expect.objectContaining({ title: "Severance" })],
+      "weekly",
+    );
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["n1", "n2"] } },
+      data: { emailDigestedAt: monday9amParis },
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("sends nothing when every pending row belongs to a muted show", async () => {
+    const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(monday9amParis);
+
+    const { service, mail, prisma } = makeService({
+      notifyEmail: DigestCadence.WEEKLY,
+      mutedEpisodeIds: ["ep1"],
+    });
+    const sent = await service.runDigests();
+
+    expect(sent).toBe(0);
+    expect(mail.sendEpisodeDigest).not.toHaveBeenCalled();
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["n1"] } },
+      data: { emailDigestedAt: monday9amParis },
+    });
 
     vi.useRealTimers();
   });

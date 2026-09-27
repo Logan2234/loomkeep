@@ -327,6 +327,19 @@
   function resumeEntry() {
     patchMut.mutate({ status: "WATCHING" });
   }
+
+  // Its own mutation rather than patchMut, for the confirmation toast — the
+  // "…" menu has closed by then, so nothing else shows the change took.
+  const episodeAlertsMut = createApiMutation(() => ({
+    mutate: (muted: boolean) =>
+      updateLibraryEntry(entry!.id, { episodeAlertsMuted: muted }),
+    invalidates: [detailKey],
+    successToast: (_, muted) =>
+      muted
+        ? m.media_episode_alerts_muted_toast({ title: detail?.title ?? "" })
+        : m.media_episode_alerts_unmuted_toast({ title: detail?.title ?? "" }),
+    errorToast: true,
+  }));
 </script>
 
 <svelte:head>
@@ -506,6 +519,8 @@
     onToggleWatched={toggleWatched}
     onDrop={dropEntry}
     onResume={resumeEntry}
+    onToggleEpisodeAlerts={() =>
+      episodeAlertsMut.mutate(!entry?.episodeAlertsMuted)}
     onRemove={() => (confirmRemove = true)}>
     {#snippet socialActions()}
       {#if appConfig.socialEnabled && detail.commentTargetId}
