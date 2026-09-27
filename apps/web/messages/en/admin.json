@@ -4,6 +4,7 @@
   "admin_job_notifications_digest": "Release notification digest",
   "admin_job_media_refresh": "Media refresh",
   "admin_job_games_refresh": "Games refresh",
+  "admin_job_books_refresh": "Books refresh",
   "admin_job_reports_digest": "Report digest",
   "admin_job_backup": "Automatic backup",
   "admin_job_inactive_accounts": "Inactive accounts (reminder + deletion)",

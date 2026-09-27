@@ -11,6 +11,7 @@ function makeController() {
     { runDigests: vi.fn() } as never,
     { refreshStale: vi.fn() } as never,
     { refreshStale: vi.fn() } as never,
+    { refreshStale: vi.fn() } as never,
     { sendDailyDigest: vi.fn() } as never,
     { runScheduled: vi.fn() } as never,
     { scan: vi.fn() } as never,

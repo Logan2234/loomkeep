@@ -508,6 +508,7 @@ export class MediaItemService {
       overview: details.overview,
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
       status: details.status,
+      format: details.format,
       genres: details.genres,
       runtimeMin: details.runtimeMin,
       isAdult: details.summary.isAdult,

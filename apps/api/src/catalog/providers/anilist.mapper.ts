@@ -18,6 +18,7 @@ export interface AnilistMedia {
   bannerImage?: string | null;
   genres?: string[];
   status?: string | null;
+  format?: string | null;
   episodes?: number | null;
   /** Average minutes per episode. */
   duration?: number | null;
@@ -98,6 +99,7 @@ export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
     backdropUrl: media.bannerImage ?? null,
     genres: media.genres ?? [],
     status: media.status ?? null,
+    format: media.format ?? null,
     releaseDate: toIsoDate(media.startDate),
     runtimeMin: media.duration ?? null,
     externalIds: [

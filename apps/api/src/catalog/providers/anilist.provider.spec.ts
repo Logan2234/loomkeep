@@ -146,6 +146,7 @@ describe("AnilistProvider", () => {
           bannerImage: null,
           genres: [],
           status: "RELEASING",
+          format: "TV",
           episodes: null,
           startDate: { year: 2026, month: 1, day: 5 },
           nextAiringEpisode: { episode: 8 },
@@ -159,6 +160,7 @@ describe("AnilistProvider", () => {
 
     // 7 aired episodes (next airing is #8), romaji title fallback.
     expect(details.summary.title).toBe("Ongoing Show");
+    expect(details.format).toBe("TV");
     expect(details.seasons[0].episodes).toHaveLength(7);
     // AniList only has a per-title duration, copied onto every episode.
     expect(details.seasons[0].episodes.every((e) => e.runtimeMin === 24)).toBe(
