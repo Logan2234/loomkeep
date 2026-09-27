@@ -11,6 +11,8 @@ function entry(overrides: Partial<CalendarEntryDto> = {}): CalendarEntryDto {
       canonicalSource: "TMDB",
       sourceId: "12345",
     },
+    entryId: "entry-1",
+    episodeAlertsMuted: false,
     seasonNumber: 2,
     episodeNumber: 3,
     episodeTitle: null,
