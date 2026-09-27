@@ -38,9 +38,6 @@
     m.search_placeholder({ domain: DOMAINS[domain].searchHint }),
   );
 
-  // A pasted TMDB/IMDb/Steam/… link opens its page through the share target
-  // (UX-05) rather than being searched for as words — the way to share a
-  // link from a device whose browser has no share target (iOS, desktop).
   const pastedLink = $derived(isPastedLink(query) ? query.trim() : null);
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
