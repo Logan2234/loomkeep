@@ -59,6 +59,8 @@ function detail(id: string, adult = false): ProviderGameDetails {
     trailerVideoId: null,
     ageRatingImageUrls: [],
     multiplayerModes: [],
+    timeToBeat: null,
+    sourceUrl: null,
   };
 }
 

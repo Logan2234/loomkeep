@@ -24,8 +24,8 @@
         label: m.game_time_to_beat_completely(),
         minutes: timeToBeat.completelyMin,
       },
-    ].filter(
-      (row): row is { label: string; minutes: number } => row.minutes !== null,
+    ].flatMap(({ label, minutes }) =>
+      minutes === null ? [] : [{ label, minutes }],
     ),
   );
   const longest = $derived(Math.max(...rows.map((row) => row.minutes)));
