@@ -1522,11 +1522,20 @@ model Season {
 }
 
 model Episode {
-  id       String    @id @default(cuid())
-  seasonId String
-  number   Int
-  title    String?
-  airDate  DateTime?
+  id         String    @id @default(cuid())
+  seasonId   String
+  number     Int
+  title      String?
+  airDate    DateTime?
+  // The episode's own length, when the source gives one (TMDB per episode;
+  // AniList only has a per-title duration, copied onto every episode). Stats
+  // fall back to MediaItem.runtimeMin, then a per-type default, when null.
+  runtimeMin Int?
+  // Stored for the upcoming season display rework, not shown yet. Always in
+  // the provider's default language (English): the season endpoint is
+  // queried without one, and there is no per-episode translation table.
+  overview   String?
+  stillUrl   String?
 
   season  Season         @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   watches EpisodeWatch[]
@@ -1595,6 +1604,15 @@ model GameItem {
   releaseDate     DateTime?
   genres          String[]
   platforms       String[]
+  // IGDB's average time to beat, in minutes: to the credits without the
+  // extras, a normal playthrough, and to 100 %. All four stay null when IGDB
+  // has too few player submissions for the averages to mean anything (see
+  // MIN_TIME_TO_BEAT_SUBMISSIONS); a single one can be null on its own.
+  // Typed columns rather than `metadata`, so the library can sum them in SQL.
+  timeToBeatHastilyMin    Int?
+  timeToBeatNormallyMin   Int?
+  timeToBeatCompletelyMin Int?
+  timeToBeatSubmissions   Int?
   // 18+ title (IGDB "Erotic" theme). Restricted per-account, like MediaItem.
   isAdult         Boolean    @default(false)
   metadata        Json       @default("{}")

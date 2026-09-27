@@ -12,6 +12,6 @@ import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
   imports: [UsersModule, ReviewsModule, GamificationModule, EventsModule],
   controllers: [MusicController],
   providers: [MusicItemService, MusicLibraryService, MusicBrainzProvider],
-  exports: [MusicItemService],
+  exports: [MusicItemService, MusicLibraryService],
 })
 export class MusicModule {}

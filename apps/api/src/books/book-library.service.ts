@@ -5,6 +5,7 @@ import type {
   BookReplayDto,
   BookSource,
   PagedResult,
+  PileSummaryDto,
   ReadingGoalDto,
 } from "@loomkeep/shared";
 import {
@@ -48,6 +49,11 @@ import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
+import {
+  BOOK_PILE_STATUSES,
+  bookPileItem,
+  summarizePile,
+} from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
@@ -296,16 +302,7 @@ export class BookLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<BookEntryDto>> {
-    const q = searchTerm(filters);
-    const where: Prisma.BookEntryWhereInput = {
-      userId,
-      status:
-        filters.statuses && filters.statuses.length > 0
-          ? { in: filters.statuses as DbBookStatus[] }
-          : undefined,
-      favorite: filters.favorite ? true : undefined,
-      bookItem: q ? { title: titleContains(q) } : undefined,
-    };
+    const where = this.entryWhere(userId, filters);
     const ratingsOf = (bookItemIds: string[]) =>
       this.reviews.getRatings(userId, ReviewTargetType.BOOK, bookItemIds);
 
@@ -363,6 +360,49 @@ export class BookLibraryService {
         );
       },
     });
+  }
+
+  /**
+   * Pages left to read among the entries the list would show under the same
+   * filters (UX-02). A book with no known page count is left out of the
+   * total, and `counted` says so.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
+    const entries = await this.prisma.bookEntry.findMany({
+      where: {
+        AND: [
+          this.entryWhere(userId, filters),
+          { status: { in: [...BOOK_PILE_STATUSES] } },
+        ],
+      },
+      select: {
+        currentPage: true,
+        bookItem: { select: { pageCount: true } },
+      },
+    });
+    return summarizePile(
+      "PAGES",
+      entries.map((e) => bookPileItem(e.bookItem.pageCount, e.currentPage)),
+    );
+  }
+
+  private entryWhere(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Prisma.BookEntryWhereInput {
+    const q = searchTerm(filters);
+    return {
+      userId,
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbBookStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      bookItem: q ? { title: titleContains(q) } : undefined,
+    };
   }
 
   async getEntry(userId: string, entryId: string): Promise<BookEntryDto> {

@@ -1,7 +1,10 @@
 <script lang="ts">
   import { updateBookEntry } from "$lib/api/books";
-  import { listBooks } from "$lib/api/client";
-  import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
+  import { getBooksPile, listBooks } from "$lib/api/client";
+  import type {
+    LibraryLoadParams,
+    PileLoadParams,
+  } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
@@ -50,6 +53,13 @@
       order: params.order,
       page: params.page,
     });
+
+  const loadPile = (params: PileLoadParams) =>
+    getBooksPile({
+      query: params.query,
+      favorite: params.favoritesOnly,
+      statuses: params.statuses,
+    });
 </script>
 
 <LibraryBrowser
@@ -62,6 +72,7 @@
   noun={m.common_book()}
   domain={Domain.BOOKS}
   {load}
+  {loadPile}
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}

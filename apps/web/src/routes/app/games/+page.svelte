@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { listGames } from "$lib/api/client";
+  import { getGamesPile, listGames } from "$lib/api/client";
   import { updateGameEntry } from "$lib/api/games";
-  import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
+  import type {
+    LibraryLoadParams,
+    PileLoadParams,
+  } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
@@ -37,6 +40,13 @@
       order: params.order,
       page: params.page,
     });
+
+  const loadPile = (params: PileLoadParams) =>
+    getGamesPile({
+      query: params.query,
+      favorite: params.favoritesOnly,
+      statuses: params.statuses,
+    });
 </script>
 
 <LibraryBrowser
@@ -49,6 +59,7 @@
   noun="jeu"
   domain={Domain.GAMES}
   {load}
+  {loadPile}
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}

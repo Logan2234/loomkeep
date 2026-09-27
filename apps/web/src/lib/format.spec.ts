@@ -3,7 +3,9 @@ import { auth } from "./auth.svelte";
 import {
   formatBytes,
   formatDurationMs,
+  formatHours,
   formatRelative,
+  formatRuntimeTimecode,
   joinMeta,
 } from "./format";
 import { getLocale, overwriteGetLocale } from "./paraglide/runtime.js";
@@ -22,6 +24,26 @@ describe("joinMeta", () => {
     expect(joinMeta("Film", 2024)).toBe("Film · 2024");
     expect(joinMeta("", null, 2024, undefined)).toBe("2024");
     expect(joinMeta(null)).toBe("");
+  });
+});
+
+describe("formatRuntimeTimecode", () => {
+  it("reads as mm:00 under an hour and h:mm:00 from an hour up", () => {
+    expect(formatRuntimeTimecode(48)).toBe("48:00");
+    expect(formatRuntimeTimecode(7)).toBe("07:00");
+    expect(formatRuntimeTimecode(60)).toBe("1:00:00");
+    expect(formatRuntimeTimecode(166)).toBe("2:46:00");
+  });
+});
+
+describe("formatHours", () => {
+  it("rounds to minutes, half-hours under 10 h, then whole hours", () => {
+    auth.user!.locale = "fr";
+    overwriteGetLocale(() => "fr");
+    expect(formatHours(45)).toBe("45 min");
+    expect(formatHours(150)).toBe("2,5 h");
+    expect(formatHours(2460)).toBe("41 h");
+    expect(formatHours(74_400)).toBe("1 240 h");
   });
 });
 

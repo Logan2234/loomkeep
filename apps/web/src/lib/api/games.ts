@@ -33,6 +33,18 @@ export function listGames(filters: ListGamesFilters = {}) {
   });
 }
 
+/** What's left in the pile among the entries `listGames` returns for the same filters. */
+export function getGamesPile(filters: ListGamesFilters = {}) {
+  return typedRequest("/games/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+    },
+  });
+}
+
 export const getGameDetail = (source: string, sourceId: string) =>
   typedRequest("/games/{source}/{sourceId}", {
     params: { source: source.toLowerCase(), sourceId },

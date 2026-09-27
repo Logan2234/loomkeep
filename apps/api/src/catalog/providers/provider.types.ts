@@ -14,6 +14,9 @@ export interface ProviderEpisode {
   number: number;
   title: string | null;
   airDate: string | null;
+  runtimeMin: number | null;
+  overview: string | null;
+  stillUrl: string | null;
 }
 
 export interface ProviderSeason {

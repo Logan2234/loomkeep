@@ -2,23 +2,27 @@ import type {
   CalendarEntryDto,
   CatalogSource,
   EntryEpisodesResponseDto,
-  EntryStatus,
   EpisodeWatchDto,
   LibraryDomainCountsDto,
   LibraryEntryDto,
   MediaDetailDto,
   MediaItemDto,
-  MediaType,
   MovieReplayDto,
   PagedResult,
+  PileSummaryDto,
   ProgressDto,
 } from "@loomkeep/shared";
 import {
   ActivityType,
   Domain,
+  EntryStatus,
+  episodeRuntimeFor,
   ErrorCode,
   isDormant,
+  isRuntimeKnown,
+  MediaType,
   ReviewTargetType,
+  runtimeFor,
   XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -59,6 +63,7 @@ import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
+import { summarizePile } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
@@ -315,80 +320,14 @@ export class LibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<LibraryEntryDto>> {
-    const q = searchTerm(filters)?.toLowerCase();
-    const where: Prisma.LibraryEntryWhereInput = {
-      userId,
-      favorite: filters.favorite ? true : undefined,
-      mediaItem:
-        filters.types && filters.types.length > 0
-          ? { type: { in: filters.types } }
-          : undefined,
-    };
-    const statuses = filters.statuses ?? [];
-    const lang = filters.lang;
-    const titlesIn = (mediaItemIds: string[]) =>
-      lang
-        ? this.mediaItemService.translatedTitles(mediaItemIds, lang)
-        : Promise.resolve(new Map<string, string>());
+    const { rows, keep } = this.filteredRows(userId, filters);
 
     return listEntryPage(filters, {
       sortKeys: MEDIA_SORT_KEYS,
       defaultSort: "recent",
       compare: compareMediaEntries,
-      rows: async (sort) => {
-        const entries = await this.prisma.libraryEntry.findMany({
-          where,
-          orderBy: RECENTLY_UPDATED_FIRST,
-          select: MEDIA_ROW_SELECT,
-        });
-        const ids = entries.map((e) => e.mediaItemId);
-        const [counts, ratings, titles] = await Promise.all([
-          this.progressCounts(userId, ids),
-          sort === "rating"
-            ? this.reviews.getRatings(userId, ReviewTargetType.MEDIA, ids)
-            : new Map<string, number>(),
-          q || sort === "title" ? titlesIn(ids) : new Map<string, string>(),
-        ]);
-
-        return entries.map((entry) => {
-          const count = counts.get(entry.mediaItemId);
-          const progress =
-            count && count.total > 0
-              ? {
-                  watchedEpisodes: count.watched,
-                  totalEpisodes: count.total,
-                  nextEpisode: null,
-                }
-              : null;
-          // Same fallback as toEntryDto: a movie has no episode watches.
-          const lastWatchedAt = count?.lastWatchedAt ?? entry.finishedAt;
-          return {
-            id: entry.id,
-            status: deriveStatus(
-              entry.mediaItem.type,
-              progress,
-              normalizeAiringFinished(entry.mediaItem.status),
-              entry.status,
-            ),
-            rating: ratings.get(entry.mediaItemId) ?? null,
-            startedAt: entry.startedAt?.toISOString() ?? null,
-            finishedAt: entry.finishedAt?.toISOString() ?? null,
-            createdAt: entry.createdAt.toISOString(),
-            lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
-            mediaItem: {
-              title: titles.get(entry.mediaItemId) ?? entry.mediaItem.title,
-            },
-            progress,
-          };
-        });
-      },
-      // "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
-      keep: (row) =>
-        (statuses.length === 0 ||
-          statuses.some((s) =>
-            s === "DORMANT" ? isDormant(row) : row.status === s,
-          )) &&
-        (!q || row.mediaItem.title.toLowerCase().includes(q)),
+      rows,
+      keep,
       load: async (ids) => {
         const entries = await this.prisma.libraryEntry.findMany({
           where: { id: { in: ids } },
@@ -398,7 +337,7 @@ export class LibraryService {
         const [ratings, progressByMedia, titles] = await Promise.all([
           this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
           this.computeProgressBatch(userId, mediaItemIds),
-          titlesIn(mediaItemIds),
+          this.titlesIn(mediaItemIds, filters.lang),
         ]);
         return entries.map((entry) => {
           const p = progressByMedia.get(entry.mediaItemId);
@@ -412,6 +351,175 @@ export class LibraryService {
         });
       },
     });
+  }
+
+  /**
+   * What's left to watch among the entries the library list would show under
+   * the same filters (UX-02): planned titles in full, plus the aired,
+   * unwatched episodes of what's in progress. Specials (season 0) never
+   * count, as for progress. A title with no known length falls back to the
+   * per-type default, flagged as an estimate — same rule as the stats.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
+    const { rows, keep } = this.filteredRows(userId, filters);
+    const pileIds = (await rows("recent"))
+      .filter(
+        (row) =>
+          keep(row) &&
+          (row.status === EntryStatus.PLANNED ||
+            row.status === EntryStatus.WATCHING),
+      )
+      .map((row) => row.id);
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: { id: { in: pileIds } },
+      select: {
+        mediaItemId: true,
+        mediaItem: { select: { type: true, runtimeMin: true } },
+      },
+    });
+    const now = new Date();
+    const episodes = await this.prisma.episode.findMany({
+      where: {
+        season: {
+          number: { not: 0 },
+          mediaItemId: {
+            in: entries
+              .filter((e) => e.mediaItem.type !== MediaType.MOVIE)
+              .map((e) => e.mediaItemId),
+          },
+        },
+        OR: [{ airDate: null }, { airDate: { lte: now } }],
+        watches: { none: { userId } },
+      },
+      select: { runtimeMin: true, season: { select: { mediaItemId: true } } },
+    });
+    const episodesByMedia = new Map<string, typeof episodes>();
+
+    for (const episode of episodes) {
+      const id = episode.season.mediaItemId;
+      episodesByMedia.set(id, [...(episodesByMedia.get(id) ?? []), episode]);
+    }
+
+    return summarizePile(
+      "MINUTES",
+      entries.map(({ mediaItemId, mediaItem }) => {
+        if (mediaItem.type === MediaType.MOVIE) {
+          return {
+            amount: runtimeFor(mediaItem.type, mediaItem.runtimeMin),
+            estimated: !isRuntimeKnown(null, mediaItem.runtimeMin),
+          };
+        }
+
+        const left = episodesByMedia.get(mediaItemId) ?? [];
+        return {
+          amount: left.reduce(
+            (sum, e) =>
+              sum +
+              episodeRuntimeFor(
+                mediaItem.type,
+                e.runtimeMin,
+                mediaItem.runtimeMin,
+              ),
+            0,
+          ),
+          estimated: left.some(
+            (e) => !isRuntimeKnown(e.runtimeMin, mediaItem.runtimeMin),
+          ),
+        };
+      }),
+    );
+  }
+
+  /**
+   * Media can't let Postgres filter everything: the status is derived from
+   * watch progress and the search matches the translated title. Every entry
+   * is read as a light row, its progress counted in SQL, then `keep` applies
+   * what SQL couldn't — shared by the list and the pile so the header's
+   * figure always covers exactly what the list shows.
+   */
+  private filteredRows(userId: string, filters: ListEntriesFilters) {
+    const q = searchTerm(filters)?.toLowerCase();
+    const where: Prisma.LibraryEntryWhereInput = {
+      userId,
+      favorite: filters.favorite ? true : undefined,
+      mediaItem:
+        filters.types && filters.types.length > 0
+          ? { type: { in: filters.types } }
+          : undefined,
+    };
+    const statuses = filters.statuses ?? [];
+
+    const rows = async (sort: MediaSortKey): Promise<MediaRow[]> => {
+      const entries = await this.prisma.libraryEntry.findMany({
+        where,
+        orderBy: RECENTLY_UPDATED_FIRST,
+        select: MEDIA_ROW_SELECT,
+      });
+      const ids = entries.map((e) => e.mediaItemId);
+      const [counts, ratings, titles] = await Promise.all([
+        this.progressCounts(userId, ids),
+        sort === "rating"
+          ? this.reviews.getRatings(userId, ReviewTargetType.MEDIA, ids)
+          : new Map<string, number>(),
+        q || sort === "title"
+          ? this.titlesIn(ids, filters.lang)
+          : new Map<string, string>(),
+      ]);
+
+      return entries.map((entry) => {
+        const count = counts.get(entry.mediaItemId);
+        const progress =
+          count && count.total > 0
+            ? {
+                watchedEpisodes: count.watched,
+                totalEpisodes: count.total,
+                nextEpisode: null,
+              }
+            : null;
+        // Same fallback as toEntryDto: a movie has no episode watches.
+        const lastWatchedAt = count?.lastWatchedAt ?? entry.finishedAt;
+        return {
+          id: entry.id,
+          status: deriveStatus(
+            entry.mediaItem.type,
+            progress,
+            normalizeAiringFinished(entry.mediaItem.status),
+            entry.status,
+          ),
+          rating: ratings.get(entry.mediaItemId) ?? null,
+          startedAt: entry.startedAt?.toISOString() ?? null,
+          finishedAt: entry.finishedAt?.toISOString() ?? null,
+          createdAt: entry.createdAt.toISOString(),
+          lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
+          mediaItem: {
+            title: titles.get(entry.mediaItemId) ?? entry.mediaItem.title,
+          },
+          progress,
+        };
+      });
+    };
+
+    // "DORMANT" is a synthetic refinement of WATCHING (see isDormant).
+    const keep = (row: MediaRow) =>
+      (statuses.length === 0 ||
+        statuses.some((s) =>
+          s === "DORMANT" ? isDormant(row) : row.status === s,
+        )) &&
+      (!q || row.mediaItem.title.toLowerCase().includes(q));
+
+    return { rows, keep };
+  }
+
+  private titlesIn(
+    mediaItemIds: string[],
+    lang: string | undefined,
+  ): Promise<Map<string, string>> {
+    return lang
+      ? this.mediaItemService.translatedTitles(mediaItemIds, lang)
+      : Promise.resolve(new Map<string, string>());
   }
 
   async getEntry(userId: string, entryId: string): Promise<LibraryEntryDto> {
@@ -1471,6 +1579,7 @@ export class LibraryService {
       genres: details.genres,
       airingStatus: details.status,
       airingFinished: normalizeAiringFinished(details.status),
+      runtimeMin: details.runtimeMin,
       isAdult: details.isAdult,
       seasons: details.seasons.map((season) => ({
         id: null,
@@ -1481,6 +1590,7 @@ export class LibraryService {
           number: episode.number,
           title: episode.title,
           airDate: episode.airDate,
+          runtimeMin: episode.runtimeMin,
           watchCount: 0,
           watches: [],
         })),
@@ -1558,6 +1668,7 @@ export class LibraryService {
       genres: translation?.genres ?? media.genres,
       airingStatus: media.status,
       airingFinished: normalizeAiringFinished(media.status),
+      runtimeMin: media.runtimeMin,
       isAdult: media.isAdult,
       seasons: seasons.map((season) => ({
         id: season.id,
@@ -1568,6 +1679,7 @@ export class LibraryService {
           number: episode.number,
           title: episode.title,
           airDate: episode.airDate?.toISOString() ?? null,
+          runtimeMin: episode.runtimeMin,
           watchCount: episode.watches.length,
           watches: episode.watches.map((w) => ({
             id: w.id,

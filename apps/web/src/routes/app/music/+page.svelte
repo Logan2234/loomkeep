@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { listMusic } from "$lib/api/client";
+  import { getMusicPile, listMusic } from "$lib/api/client";
   import { updateMusicEntry } from "$lib/api/music";
-  import type { LibraryLoadParams } from "$lib/components/LibraryBrowser.svelte";
+  import type {
+    LibraryLoadParams,
+    PileLoadParams,
+  } from "$lib/components/LibraryBrowser.svelte";
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
@@ -36,6 +39,13 @@
       order: params.order,
       page: params.page,
     });
+
+  const loadPile = (params: PileLoadParams) =>
+    getMusicPile({
+      query: params.query,
+      favorite: params.favoritesOnly,
+      statuses: params.statuses,
+    });
 </script>
 
 <LibraryBrowser
@@ -48,6 +58,7 @@
   noun="album"
   domain={Domain.MUSIC}
   {load}
+  {loadPile}
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}

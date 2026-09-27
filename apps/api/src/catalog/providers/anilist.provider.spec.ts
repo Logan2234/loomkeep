@@ -109,10 +109,14 @@ describe("AnilistProvider", () => {
     const [season] = details.seasons;
     expect(season.number).toBe(1);
     expect(season.episodes).toHaveLength(28);
+    // The fixture carries no `duration`, so no per-episode runtime either.
     expect(season.episodes[0]).toEqual({
       number: 1,
       title: "Episode 1 - The Journey's End",
       airDate: null,
+      runtimeMin: null,
+      overview: null,
+      stillUrl: null,
     });
   });
 
@@ -146,6 +150,7 @@ describe("AnilistProvider", () => {
           startDate: { year: 2026, month: 1, day: 5 },
           nextAiringEpisode: { episode: 8 },
           streamingEpisodes: [],
+          duration: 24,
         },
       },
     });
@@ -155,6 +160,10 @@ describe("AnilistProvider", () => {
     // 7 aired episodes (next airing is #8), romaji title fallback.
     expect(details.summary.title).toBe("Ongoing Show");
     expect(details.seasons[0].episodes).toHaveLength(7);
+    // AniList only has a per-title duration, copied onto every episode.
+    expect(details.seasons[0].episodes.every((e) => e.runtimeMin === 24)).toBe(
+      true,
+    );
   });
 
   describe("getExtras", () => {

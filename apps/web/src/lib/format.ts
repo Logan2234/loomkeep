@@ -139,6 +139,18 @@ export function formatDurationMs(ms: number, locale?: string): string {
   return `${formatNumber(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, locale)} s`;
 }
 
+/**
+ * A length in minutes as a Séance timecode (DESIGN.md): "48:00" under an
+ * hour, "2:46:00" from an hour up. Locale-independent on purpose — the
+ * timecode is a visual device, not a sentence.
+ */
+export function formatRuntimeTimecode(minutes: number): string {
+  const rounded = Math.round(minutes);
+  const hours = Math.floor(rounded / 60);
+  const mins = String(rounded % 60).padStart(2, "0");
+  return hours > 0 ? `${hours}:${mins}:00` : `${mins}:00`;
+}
+
 const relativeTimeFormatCache = new Map<string, Intl.RelativeTimeFormat>();
 
 function getRelativeTimeFormat(locale: string): Intl.RelativeTimeFormat {
@@ -186,6 +198,36 @@ export function formatRetryDelay(seconds: number, locale?: string): string {
   if (seconds >= 3600) return relFmt.format(Math.ceil(seconds / 3600), "hour");
   if (seconds >= 60) return relFmt.format(Math.ceil(seconds / 60), "minute");
   return relFmt.format(Math.max(1, Math.ceil(seconds)), "second");
+}
+
+/**
+ * A length in minutes as a rounded reading figure, e.g. "45 min", "2,5 h",
+ * "41 h", "1 240 h" — for estimates and totals, where a timecode's false
+ * precision would mislead. Half-hours under 10 h, whole hours above.
+ */
+export function formatHours(minutes: number): string {
+  const { value, unit } = hoursParts(minutes);
+  return `${value} ${unit}`;
+}
+
+/** {@link formatHours} split in two, for a figure set apart from its unit. */
+export function hoursParts(minutes: number): { value: string; unit: string } {
+  const locale = resolveLocale();
+  const options = { locale: messageLocale(locale) };
+
+  if (minutes < 60) {
+    return {
+      value: formatNumber(Math.round(minutes), {}, locale),
+      unit: m.common_minutes_short({}, options),
+    };
+  }
+
+  const hours = minutes / 60;
+  const rounded = hours < 10 ? Math.round(hours * 2) / 2 : Math.round(hours);
+  return {
+    value: formatNumber(rounded, { maximumFractionDigits: 1 }, locale),
+    unit: m.common_hours_short({}, options),
+  };
 }
 
 /** Byte size in the largest unit that keeps it readable, e.g. "218 Mo", "1,4 Go". */

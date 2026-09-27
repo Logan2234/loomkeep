@@ -14,7 +14,11 @@ import type {
   VideoTemporalDto,
   WatchStaleness,
 } from "@loomkeep/shared";
-import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import {
+  DORMANT_AFTER_DAYS,
+  episodeRuntimeFor,
+  runtimeFor,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { canonicalExternalId } from "../common/external-id.util";
 import { PrismaService } from "../prisma/prisma.service";
@@ -46,7 +50,6 @@ import {
   computeTypeSplit,
   countCompletedSeasons,
   lastWatchedPerMediaItem,
-  runtimeFor,
   type TypeSplitInput,
 } from "./video-stats.util";
 
@@ -421,6 +424,7 @@ export class StatsService {
             select: {
               id: true,
               seasonId: true,
+              runtimeMin: true,
               season: {
                 select: {
                   mediaItemId: true,
@@ -441,7 +445,11 @@ export class StatsService {
 
     for (const w of regularWatches) {
       const mi = w.episode.season.mediaItem;
-      const minutes = runtimeFor(mi.type, mi.runtimeMin);
+      const minutes = episodeRuntimeFor(
+        mi.type,
+        w.episode.runtimeMin,
+        mi.runtimeMin,
+      );
       episodeMinutes += minutes;
       typeSplitRows.push({ type: mi.type, minutes });
     }

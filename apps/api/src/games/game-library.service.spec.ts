@@ -217,3 +217,50 @@ describe("GameLibraryService — XP wiring", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("GameReplay", ["replay-1"]);
   });
 });
+
+describe("GameLibraryService.getPile", () => {
+  it("sums IGDB's estimates over the list's filters, crossed with the pile's statuses", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        status: "BACKLOG",
+        playtimeMinutes: 0,
+        gameItem: { timeToBeatNormallyMin: 2460 },
+      },
+      {
+        status: "PLAYING",
+        playtimeMinutes: 600,
+        gameItem: { timeToBeatNormallyMin: 1200 },
+      },
+      {
+        status: "BACKLOG",
+        playtimeMinutes: 0,
+        gameItem: { timeToBeatNormallyMin: null },
+      },
+    ]);
+    const service = new GameLibraryService(
+      { gameEntry: { findMany } } as unknown as PrismaService,
+      {} as GameItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {} as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+
+    const pile = await service.getPile("user-1", { favorite: true });
+
+    expect(pile).toEqual({
+      unit: "MINUTES",
+      amount: 3060,
+      entries: 3,
+      counted: 2,
+      estimated: true,
+    });
+    const [[query]] = findMany.mock.calls;
+    expect(query.where.AND).toEqual([
+      expect.objectContaining({ userId: "user-1", favorite: true }),
+      { status: { in: ["BACKLOG", "PLAYING"] } },
+    ]);
+  });
+});

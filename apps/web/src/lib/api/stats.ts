@@ -5,6 +5,10 @@ import type {
 } from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
+/** What's left in each enabled domain's pile, unfiltered. */
+export const getStatsPiles = (domain: StatsDomain | "ALL" = "ALL") =>
+  typedRequest("/stats/pile", { query: { domain } });
+
 export const getStatsOverview = (domain: StatsDomain | "ALL" = "ALL") =>
   typedRequest("/stats/overview", { query: { domain } });
 

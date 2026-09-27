@@ -91,6 +91,9 @@ export interface TmdbSeasonDetails {
     episode_number: number;
     name?: string | null;
     air_date?: string | null;
+    runtime?: number | null;
+    overview?: string | null;
+    still_path?: string | null;
   }[];
 }
 
@@ -238,10 +241,31 @@ export function toTvDetails(
     genres: tv.genres?.map((g) => g.name) ?? [],
     status: tv.status ?? null,
     releaseDate: tv.first_air_date || null,
-    runtimeMin: tv.episode_run_time?.[0] ?? null,
+    runtimeMin: tv.episode_run_time?.[0] ?? medianEpisodeRuntime(seasons),
     externalIds: toExternalIds(String(tv.id), tv.external_ids),
     seasons,
   };
+}
+
+/**
+ * TMDB leaves `episode_run_time` empty on most recent series, which used to
+ * send their watch time to the generic per-type default. The median of the
+ * episodes' own runtimes stands in, ignoring specials (season 0), which are
+ * often a 3-minute recap or a feature-length film.
+ */
+function medianEpisodeRuntime(seasons: ProviderSeason[]): number | null {
+  const runtimes = seasons
+    .filter((s) => s.number !== 0)
+    .flatMap((s) => s.episodes.map((e) => e.runtimeMin))
+    .filter((r): r is number => r !== null && r > 0)
+    .sort((a, b) => a - b);
+
+  if (runtimes.length === 0) return null;
+
+  const mid = Math.floor(runtimes.length / 2);
+  return runtimes.length % 2 === 1
+    ? runtimes[mid]
+    : Math.round((runtimes[mid - 1] + runtimes[mid]) / 2);
 }
 
 export function toTvSeason(
@@ -258,6 +282,10 @@ export function toTvSeason(
       number: e.episode_number,
       title: e.name ?? null,
       airDate: e.air_date || null,
+      // TMDB reports 0 as well as null for an unknown runtime.
+      runtimeMin: e.runtime || null,
+      overview: e.overview?.trim() || null,
+      stillUrl: e.still_path ? `${IMG}/w300${e.still_path}` : null,
     })),
   };
 }

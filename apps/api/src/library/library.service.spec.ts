@@ -871,3 +871,101 @@ describe("LibraryService.getDomainCounts", () => {
     }
   });
 });
+
+describe("LibraryService.getPile", () => {
+  function makePileService() {
+    const rows = [
+      makeRow({ id: "arrival", type: "MOVIE", status: "PLANNED" }),
+      makeRow({
+        id: "severance",
+        type: "SERIES",
+        status: "WATCHING",
+        title: "Severance",
+      }),
+      makeRow({
+        id: "dune",
+        type: "MOVIE",
+        status: "COMPLETED",
+        title: "Dune",
+      }),
+    ];
+    const runtimes: Record<string, number | null> = {
+      "media-arrival": null,
+      "media-severance": 45,
+      "media-dune": 155,
+    };
+    const findMany = vi.fn(
+      (args: { where: { id?: { in: string[] } }; select: object }) => {
+        if (!args.where.id) return Promise.resolve(rows);
+        return Promise.resolve(
+          rows
+            .filter((r) => args.where.id!.in.includes(r.id))
+            .map((r) => ({
+              mediaItemId: r.mediaItemId,
+              mediaItem: {
+                type: r.mediaItem.type,
+                runtimeMin: runtimes[r.mediaItemId],
+              },
+            })),
+        );
+      },
+    );
+    const episodeFindMany = vi.fn().mockResolvedValue([
+      { runtimeMin: 50, season: { mediaItemId: "media-severance" } },
+      { runtimeMin: null, season: { mediaItemId: "media-severance" } },
+    ]);
+    const prisma = {
+      libraryEntry: { findMany },
+      episode: { findMany: episodeFindMany },
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          mediaItemId: "media-severance",
+          total: 3n,
+          watched: 1n,
+          lastWatchedAt: null,
+        },
+      ]),
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+    return { service, episodeFindMany };
+  }
+
+  it("adds planned titles in full and the unwatched episodes of what's in progress", async () => {
+    const { service, episodeFindMany } = makePileService();
+
+    const pile = await service.getPile("user-1", {});
+
+    // Arrival: no known length, so the 110-minute film default (estimated).
+    // Severance: 50 + the title's 45-minute average. Dune is finished.
+    expect(pile).toEqual({
+      unit: "MINUTES",
+      amount: 205,
+      entries: 2,
+      counted: 2,
+      estimated: true,
+    });
+    const [[query]] = episodeFindMany.mock.calls;
+    expect(query.where.season).toEqual({
+      number: { not: 0 },
+      mediaItemId: { in: ["media-severance"] },
+    });
+    expect(query.where.watches).toEqual({ none: { userId: "user-1" } });
+  });
+
+  it("only counts what the list shows under the same filters", async () => {
+    const { service } = makePileService();
+
+    const pile = await service.getPile("user-1", { q: "arri" });
+
+    expect(pile).toMatchObject({ amount: 110, entries: 1 });
+  });
+});

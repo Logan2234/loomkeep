@@ -5,6 +5,7 @@ import type {
   GameReplayDto,
   GameSource,
   PagedResult,
+  PileSummaryDto,
 } from "@loomkeep/shared";
 import {
   ActivityType,
@@ -47,6 +48,11 @@ import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
+import {
+  GAME_PILE_STATUSES,
+  gamePileItem,
+  summarizePile,
+} from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
@@ -267,16 +273,7 @@ export class GameLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<GameEntryDto>> {
-    const q = searchTerm(filters);
-    const where: Prisma.GameEntryWhereInput = {
-      userId,
-      status:
-        filters.statuses && filters.statuses.length > 0
-          ? { in: filters.statuses as DbGameStatus[] }
-          : undefined,
-      favorite: filters.favorite ? true : undefined,
-      gameItem: q ? { title: titleContains(q) } : undefined,
-    };
+    const where = this.entryWhere(userId, filters);
     const ratingsOf = (gameItemIds: string[]) =>
       this.reviews.getRatings(userId, ReviewTargetType.GAME, gameItemIds);
 
@@ -330,6 +327,56 @@ export class GameLibraryService {
         );
       },
     });
+  }
+
+  /**
+   * What's left to play among the entries the list would show under the same
+   * filters (UX-02), from IGDB's "normal" playthrough average. A game IGDB
+   * has no average for is left out of the total, and `counted` says so.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
+    const entries = await this.prisma.gameEntry.findMany({
+      where: {
+        AND: [
+          this.entryWhere(userId, filters),
+          { status: { in: [...GAME_PILE_STATUSES] } },
+        ],
+      },
+      select: {
+        status: true,
+        playtimeMinutes: true,
+        gameItem: { select: { timeToBeatNormallyMin: true } },
+      },
+    });
+    return summarizePile(
+      "MINUTES",
+      entries.map((e) =>
+        gamePileItem(
+          e.status,
+          e.gameItem.timeToBeatNormallyMin,
+          e.playtimeMinutes,
+        ),
+      ),
+    );
+  }
+
+  private entryWhere(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Prisma.GameEntryWhereInput {
+    const q = searchTerm(filters);
+    return {
+      userId,
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbGameStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      gameItem: q ? { title: titleContains(q) } : undefined,
+    };
   }
 
   async getEntry(userId: string, entryId: string): Promise<GameEntryDto> {

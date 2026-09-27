@@ -4,20 +4,7 @@ import {
   countCompletedSeasons,
   GHOST_AFTER_DAYS,
   lastWatchedPerMediaItem,
-  runtimeFor,
 } from "./video-stats.util";
-
-describe("runtimeFor", () => {
-  it("uses the real runtime when known", () => {
-    expect(runtimeFor("MOVIE", 142)).toBe(142);
-  });
-
-  it("falls back to the per-type default when unknown", () => {
-    expect(runtimeFor("MOVIE", null)).toBe(110);
-    expect(runtimeFor("SERIES", 0)).toBe(42);
-    expect(runtimeFor("ANIME", null)).toBe(24);
-  });
-});
 
 describe("computeTypeSplit", () => {
   it("returns nothing for no rows", () => {

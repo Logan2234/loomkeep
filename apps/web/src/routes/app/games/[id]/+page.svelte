@@ -47,6 +47,7 @@
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { slide } from "svelte/transition";
+  import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
 
   // IGDB is the only game source today; the web route carries just the id.
   const SOURCE = "igdb";
@@ -95,7 +96,8 @@
         detail.publishers.length > 0 ||
         detail.gameModes.length > 0 ||
         detail.playerPerspectives.length > 0 ||
-        detail.multiplayerModes.length > 0),
+        detail.multiplayerModes.length > 0 ||
+        detail.timeToBeat !== null),
   );
 
   // Cover + backdrop + screenshots, deduped, for the lightbox carousel.
@@ -532,6 +534,11 @@
                   {detail.multiplayerModes.join(", ")}
                 </dd>
               </div>
+            {/if}
+            <!-- Last of the metadata: the only block with its own layout,
+                 it breaks the label/value rhythm when set between them. -->
+            {#if detail?.timeToBeat}
+              <GameTimeToBeat timeToBeat={detail.timeToBeat} />
             {/if}
 
             {#if detail && detail.website}
