@@ -84,7 +84,9 @@
             : entry.unlocked
               ? 'text-fg'
               : ''}">
-          {entry.progress ? formatNumber(entry.progress.target) : "1"}
+          {entry.progress
+            ? formatNumber(entry.progress.target)
+            : m.gamification_tier_single()}
         </span>
       </span>
       {#if entry.rarity}
@@ -99,7 +101,10 @@
       {:else}
         <span></span>
       {/if}
-      <span class="timecode text-xs {entry.unlocked ? 'text-accent' : ''}">
+      <span
+        class="timecode text-right text-xs {entry.unlocked
+          ? 'text-accent'
+          : ''}">
         {entry.xpAward === null
           ? m.gamification_secret_locked_name()
           : m.gamification_xp_award({ xp: formatNumber(entry.xpAward) })}
