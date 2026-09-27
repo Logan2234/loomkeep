@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { JobsModule } from "../jobs/jobs.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { BookItemService } from "./book-item.service";
@@ -12,7 +13,13 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
 // Import flows live in the generic ImportModule (its book sources reuse
 // BookItemService, hence the export).
 @Module({
-  imports: [UsersModule, ReviewsModule, GamificationModule, EventsModule],
+  imports: [
+    UsersModule,
+    ReviewsModule,
+    GamificationModule,
+    EventsModule,
+    JobsModule,
+  ],
   controllers: [BooksController],
   providers: [
     BookItemService,

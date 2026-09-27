@@ -8,6 +8,7 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { GameItemService } from "../games/game-item.service";
@@ -38,6 +39,7 @@ export class AdminJobsController {
     private readonly notificationDigests: NotificationDigestService,
     private readonly mediaItems: MediaItemService,
     private readonly gameItems: GameItemService,
+    private readonly bookItems: BookItemService,
     private readonly reports: ReportService,
     private readonly backup: BackupService,
     private readonly inactiveAccount: InactiveAccountService,
@@ -69,6 +71,7 @@ export class AdminJobsController {
         this.notificationDigests.runDigests(),
       [JOB_KEYS.MEDIA_REFRESH_STALE]: () => this.mediaItems.refreshStale(),
       [JOB_KEYS.GAMES_REFRESH_STALE]: () => this.gameItems.refreshStale(),
+      [JOB_KEYS.BOOKS_REFRESH_STALE]: () => this.bookItems.refreshStale(),
       [JOB_KEYS.REPORTS_DIGEST]: () => this.reports.sendDailyDigest(),
       [JOB_KEYS.BACKUP]: () => this.backup.runScheduled(),
       [JOB_KEYS.INACTIVE_ACCOUNTS_SCAN]: () => this.inactiveAccount.scan(),

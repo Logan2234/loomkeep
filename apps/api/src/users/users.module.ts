@@ -16,6 +16,7 @@ import { DataExportService } from "./data-export.service";
 import { DomainGateModule } from "./domain-gate.module";
 import { InactiveAccountService } from "./inactive-account.service";
 import { MfaController } from "./mfa.controller";
+import { MigrationExportService } from "./migration-export.service";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
@@ -38,6 +39,7 @@ import { UsersService } from "./users.service";
     AgeGateService,
     DataExportService,
     CsvExportService,
+    MigrationExportService,
     AccountDeletionService,
     InactiveAccountService,
     UsersService,

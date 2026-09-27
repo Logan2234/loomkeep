@@ -550,6 +550,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         description: m.settings_export_body(),
         keywords: ["export", "json", "csv", "telecharger", "download", "rgpd"],
         legacyHash: "export",
+        newBadgeKey: "migration-export",
         entries: [
           {
             id: "export-json",
@@ -567,6 +568,11 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               "music",
               "spreadsheet",
             ],
+          },
+          {
+            id: "export-services",
+            label: m.settings_export_services_title(),
+            keywords: ["letterboxd", "goodreads", "storygraph", "migrate"],
           },
         ],
       },

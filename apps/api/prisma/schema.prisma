@@ -1451,6 +1451,9 @@ model MediaItem {
   releaseDate     DateTime?
   // Airing status as reported by the source (free-form: "Returning Series", "FINISHED"…).
   status          String?
+  // AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB titles, whose
+  // type already tells a film apart. Lets the Letterboxd export include anime films.
+  format          String?
   genres          String[]
   // Average minutes per episode (series/anime) or the film's runtime; null until
   // captured from the source. Used by the stats aggregation for watch time.
@@ -1715,6 +1718,9 @@ model BookItem {
   genres          String[]
   // Number of pages, when the source knows it.
   pageCount       Int?
+  // ISBN of the edition the source picked, when it has one. Goodreads matches
+  // an imported row on it first, before falling back to title and author.
+  isbn            String?
   // 18+ title, restricted per-account like MediaItem/GameItem. Open Library
   // exposes no maturity rating, so this stays false for now — kept so the
   // per-account restriction still has a hook the day a source provides one.

@@ -285,6 +285,16 @@ export const exportMyData = () => typedRequest("/users/me/export");
 export const exportMyDataCsv = (domain: Domain) =>
   typedRequest("/users/me/export.csv", { query: { domain } });
 
+export const exportForLetterboxd = (withReviews: boolean) =>
+  typedRequest("/users/me/export/letterboxd", {
+    query: { reviews: String(withReviews) },
+  });
+
+export const exportForGoodreads = (withReviews: boolean) =>
+  typedRequest("/users/me/export/goodreads", {
+    query: { reviews: String(withReviews) },
+  });
+
 const _getWidgetToken = (): Promise<WidgetTokenDto> =>
   typedRequest("/users/me/widget-token");
 

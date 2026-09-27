@@ -2,6 +2,7 @@ import type {
   AccountDeletionSummaryDto,
   CsvExportDto,
   EntitlementDto,
+  MigrationExportDto,
   SocialProfileDto,
   UserDataExportDto,
   UserDto,
@@ -39,17 +40,22 @@ import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-re
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
 import { HomeLayoutBody } from "./dto/home-layout.dto";
+import { MigrationExportResponseDto } from "./dto/migration-export-response.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
 import { UploadAvatarDto } from "./dto/upload-avatar.dto";
 import { UserResponseDto } from "./dto/user-response.dto";
 import { UsernameAvailabilityResponseDto } from "./dto/username-availability-response.dto";
 import { WidgetTokenResponseDto } from "./dto/widget-token-response.dto";
+import { MigrationExportService } from "./migration-export.service";
 import { UsersService } from "./users.service";
 
 @Controller("users")
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly migrationExport: MigrationExportService,
+  ) {}
 
   @Get("me")
   @ApiOkResponse({ type: UserResponseDto })
@@ -157,6 +163,41 @@ export class UsersController {
     @Query("domain") domainParam: string,
   ): Promise<CsvExportDto> {
     return this.users.exportCsv(payload.sub, domainParam);
+  }
+
+  /**
+   * Films in Letterboxd's import format. `reviews=true` adds the review
+   * texts — opt-in, since they become public once imported there.
+   */
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Get("me/export/letterboxd")
+  @ApiOkResponse({ type: MigrationExportResponseDto })
+  async exportLetterboxd(
+    @CurrentUser() payload: JwtPayload,
+    @Query("reviews") reviews?: string,
+  ): Promise<MigrationExportDto> {
+    return {
+      files: await this.migrationExport.buildLetterboxd(
+        payload.sub,
+        reviews === "true",
+      ),
+    };
+  }
+
+  /** Books in Goodreads' export format, which StoryGraph imports too. */
+  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  @Get("me/export/goodreads")
+  @ApiOkResponse({ type: MigrationExportResponseDto })
+  async exportGoodreads(
+    @CurrentUser() payload: JwtPayload,
+    @Query("reviews") reviews?: string,
+  ): Promise<MigrationExportDto> {
+    return {
+      files: await this.migrationExport.buildGoodreads(
+        payload.sub,
+        reviews === "true",
+      ),
+    };
   }
 
   /**

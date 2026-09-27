@@ -36,7 +36,7 @@ function makeController() {
     checkUsernameAvailability: vi.fn(),
     updateUsername: vi.fn(),
   } as unknown as UsersService;
-  return { controller: new UsersController(users), users };
+  return { controller: new UsersController(users, {} as never), users };
 }
 
 function fakeReply() {
