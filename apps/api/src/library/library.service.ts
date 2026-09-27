@@ -566,6 +566,7 @@ export class LibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        episodeAlertsMuted: dto.episodeAlertsMuted,
       },
       include: ENTRY_INCLUDE,
     });
@@ -1225,7 +1226,8 @@ export class LibraryService {
 
   /**
    * Upcoming episodes (air date today or later) of the series/anime the user
-   * tracks, excluding dropped ones — the release calendar.
+   * tracks, excluding dropped ones — the release calendar. Shows with muted
+   * alerts stay listed: muting only silences the digest.
    */
   async getCalendar(userId: string): Promise<CalendarEntryDto[]> {
     const startOfToday = new Date();
@@ -1244,13 +1246,28 @@ export class LibraryService {
       take: 60,
       include: {
         season: {
-          include: { mediaItem: { include: { externalIds: true } } },
+          include: {
+            mediaItem: {
+              include: {
+                externalIds: true,
+                // Unique per (userId, mediaItemId), and guaranteed to exist
+                // by the `where` above — this is the user's tracked entry.
+                entries: {
+                  where: { userId },
+                  select: { id: true, episodeAlertsMuted: true },
+                },
+              },
+            },
+          },
         },
       },
     });
 
     return episodes.map((episode) => ({
       mediaItem: toMediaItemDto(episode.season.mediaItem),
+      entryId: episode.season.mediaItem.entries[0].id,
+      episodeAlertsMuted:
+        episode.season.mediaItem.entries[0].episodeAlertsMuted,
       seasonNumber: episode.season.number,
       episodeNumber: episode.number,
       episodeTitle: episode.title,
@@ -1577,6 +1594,7 @@ export class LibraryService {
       progress,
       ownershipStatus: entry.ownershipStatus,
       ownershipSource: entry.ownershipSource,
+      episodeAlertsMuted: entry.episodeAlertsMuted,
       replays: entry.replays.map(toReplayDto),
     };
   }

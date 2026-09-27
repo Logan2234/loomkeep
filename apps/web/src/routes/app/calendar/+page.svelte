@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { getCalendar } from "$lib/api/client";
+  import { getCalendar, updateLibraryEntry } from "$lib/api/client";
   import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CalendarSubscribeModal from "$lib/ee/calendar/CalendarSubscribeModal.svelte";
@@ -17,6 +18,7 @@
   import { formatDate } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { SvelteDate } from "svelte/reactivity";
 
   const eeLock = useEeLock();
@@ -31,6 +33,28 @@
   const entries = $derived(calendarQuery.data ?? []);
   const loading = $derived(calendarQuery.loading);
   const error = $derived(calendarQuery.error);
+
+  const queryClient = useQueryClient();
+
+  // Muting is per show, not per episode: flipping one row flips every
+  // upcoming episode of that series, since they all share the entry.
+  const alertsMut = createApiMutation(() => ({
+    mutate: (args: { entryId: string; muted: boolean; title: string }) =>
+      updateLibraryEntry(args.entryId, { episodeAlertsMuted: args.muted }),
+    onSuccess: (_, { entryId, muted }) =>
+      queryClient.setQueryData<CalendarEntryDto[]>(
+        keys.calendar.upcoming(),
+        (prev) =>
+          prev?.map((e) =>
+            e.entryId === entryId ? { ...e, episodeAlertsMuted: muted } : e,
+          ),
+      ),
+    successToast: (_, { muted, title }) =>
+      muted
+        ? m.media_episode_alerts_muted_toast({ title })
+        : m.media_episode_alerts_unmuted_toast({ title }),
+    errorToast: true,
+  }));
 
   const WEEKDAY_LONG_OPTIONS: Intl.DateTimeFormatOptions = { weekday: "long" };
   const DAY_LABEL_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -127,25 +151,56 @@
           </div>
           <div class="flex flex-col gap-2.5">
             {#each day.items as e (e.mediaItem.id + code(e))}
-              <a
-                href={href(e)}
-                class="card hover:border-accent flex items-center gap-4 p-3 transition-[border-color]">
-                <div class="w-12 shrink-0 overflow-hidden rounded-md">
-                  <Poster
-                    src={e.mediaItem.posterUrl}
-                    title={e.mediaItem.title}
-                    alt="" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="font-display truncate font-semibold">
-                    {e.mediaItem.title}
-                  </p>
-                  <p class="timecode text-sm">
-                    {code(e)}{#if e.episodeTitle}
-                      &nbsp;· {e.episodeTitle}{/if}
-                  </p>
-                </div>
-              </a>
+              <div
+                class="card has-[a:hover]:border-accent flex items-center gap-3 p-3 pr-2 transition-[border-color] sm:gap-4">
+                <a
+                  href={href(e)}
+                  class="flex min-w-0 flex-1 items-center gap-4">
+                  <div
+                    class="w-12 shrink-0 overflow-hidden rounded-md transition-opacity {e.episodeAlertsMuted
+                      ? 'opacity-60'
+                      : ''}">
+                    <Poster
+                      src={e.mediaItem.posterUrl}
+                      title={e.mediaItem.title}
+                      alt="" />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-display truncate font-semibold">
+                      {e.mediaItem.title}
+                    </p>
+                    <p class="timecode truncate text-sm">
+                      {code(e)}{#if e.episodeTitle}
+                        &nbsp;· {e.episodeTitle}{/if}
+                    </p>
+                  </div>
+                </a>
+                {#if e.episodeAlertsMuted}
+                  <span class="text-dim hidden shrink-0 text-xs sm:inline">
+                    {m.calendar_alerts_muted()}
+                  </span>
+                {/if}
+                <button
+                  type="button"
+                  class="btn-icon h-11 w-11"
+                  disabled={alertsMut.loading}
+                  title={e.episodeAlertsMuted
+                    ? m.calendar_unmute_series({ title: e.mediaItem.title })
+                    : m.calendar_mute_series({ title: e.mediaItem.title })}
+                  aria-label={e.episodeAlertsMuted
+                    ? m.calendar_unmute_series({ title: e.mediaItem.title })
+                    : m.calendar_mute_series({ title: e.mediaItem.title })}
+                  onclick={() =>
+                    alertsMut.mutate({
+                      entryId: e.entryId,
+                      muted: !e.episodeAlertsMuted,
+                      title: e.mediaItem.title,
+                    })}>
+                  <Icon
+                    name={e.episodeAlertsMuted ? "bell-off" : "bell"}
+                    class="h-4 w-4" />
+                </button>
+              </div>
             {/each}
           </div>
         </section>
