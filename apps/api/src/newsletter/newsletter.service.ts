@@ -131,6 +131,7 @@ export class NewsletterService {
     }
 
     const apiKey = process.env.QUACKBACK_API_KEY;
+
     if (!apiKey) {
       this.logger.warn(
         `Quackback did not include the full content for ${changelogId}, and QUACKBACK_API_KEY is not configured`,
@@ -143,6 +144,7 @@ export class NewsletterService {
         `${QUACKBACK_CHANGELOG_API_URL}/${encodeURIComponent(changelogId)}`,
         { headers: { Authorization: `Bearer ${apiKey}` } },
       );
+
       if (!response.ok) {
         throw new Error(`Quackback returned HTTP ${response.status}`);
       }
@@ -150,6 +152,7 @@ export class NewsletterService {
       const payload: unknown = await response.json();
       const content = (payload as { data?: { content?: unknown } }).data
         ?.content;
+
       if (typeof content !== "string" || !content) {
         throw new Error("Quackback returned no changelog content");
       }

@@ -146,6 +146,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
       );
     } finally {
       vi.unstubAllGlobals();
+
       if (previousApiKey === undefined) {
         delete process.env.QUACKBACK_API_KEY;
       } else {
