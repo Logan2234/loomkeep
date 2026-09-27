@@ -355,3 +355,27 @@ export interface OnThisDayEntryDto {
   /** Episodes watched that week, for a series; 1 otherwise. */
   count: number;
 }
+
+/**
+ * What's left in one library's pile (UX-02): everything planned, plus the
+ * rest of what's in progress. Minutes for video, games and music, pages for
+ * books.
+ */
+export interface PileSummaryDto {
+  unit: "MINUTES" | "PAGES";
+  amount: number;
+  /** Pile entries matching the request's filters. */
+  entries: number;
+  /**
+   * Among them, those with enough data to count. Always `entries` for video,
+   * where a title with no length falls back to a per-type default instead.
+   */
+  counted: number;
+  /** Part of `amount` is an estimate: a default length, or an IGDB average. */
+  estimated: boolean;
+}
+
+export interface DomainPileDto {
+  domain: StatsDomain;
+  pile: PileSummaryDto;
+}

@@ -31,6 +31,18 @@ export function listMusic(filters: ListMusicFilters = {}) {
   });
 }
 
+/** What's left in the pile among the entries `listMusic` returns for the same filters. */
+export function getMusicPile(filters: ListMusicFilters = {}) {
+  return typedRequest("/music/pile", {
+    query: {
+      lang: getLocale(),
+      q: filters.query,
+      favorite: filters.favorite ? "true" : undefined,
+      status: filters.statuses,
+    },
+  });
+}
+
 export const getMusicDetail = (source: string, sourceId: string) =>
   typedRequest("/music/{source}/{sourceId}", {
     params: { source: source.toLowerCase(), sourceId },

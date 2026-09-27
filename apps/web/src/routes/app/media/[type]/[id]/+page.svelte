@@ -37,9 +37,10 @@
     MEDIA_OWNERSHIP_SOURCES,
     MEDIA_OWNERSHIP_STATUS_OPTIONS,
   } from "$lib/constants/ownership-sources";
-  import { formatDate, joinMeta } from "$lib/format";
+  import { formatDate, formatRuntimeTimecode, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import { timeLeftToWatch } from "$lib/pile";
   import type { EntryStatus, MediaType } from "@loomkeep/shared";
   import { isDormant } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -266,6 +267,11 @@
     detail ? joinMeta(TYPE_LABELS[detail.type], detail.year) : "",
   );
   const isMovie = $derived(detail?.type === "MOVIE");
+  const timeLeft = $derived(
+    detail && entry?.progress && !isMovie
+      ? timeLeftToWatch(detail.type, detail.runtimeMin, detail.seasons)
+      : null,
+  );
   const dormant = $derived(entry ? isDormant(entry) : false);
   const pct = $derived(
     entry?.progress && entry.progress.totalEpisodes > 0
@@ -522,6 +528,14 @@
           {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
           {m.media_watched_episodes_suffix()}
           {pct} %
+          {#if timeLeft}
+            ·
+            <span class="text-fg">
+              {m.media_time_left({
+                time: `${timeLeft.estimated ? "~" : ""}${formatRuntimeTimecode(timeLeft.minutes)}`,
+              })}
+            </span>
+          {/if}
         </p>
       </div>
     {/if}

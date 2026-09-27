@@ -1,6 +1,7 @@
 import {
   type AchievementDto,
   Domain,
+  episodeRuntimeFor,
   ErrorCode,
   type ListVisibility,
   ProfileAccess,
@@ -18,7 +19,6 @@ import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { ACHIEVEMENTS } from "../gamification/achievements/registry";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { PrismaService } from "../prisma/prisma.service";
-import { episodeRuntimeFor } from "../stats/video-stats.util";
 import {
   computeHeatmap,
   computeStreak,

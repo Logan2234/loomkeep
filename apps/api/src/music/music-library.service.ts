@@ -4,6 +4,7 @@ import type {
   MusicItemDto,
   MusicSource,
   PagedResult,
+  PileSummaryDto,
 } from "@loomkeep/shared";
 import {
   Domain,
@@ -40,6 +41,7 @@ import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
+import { MUSIC_PILE_STATUSES, summarizePile } from "../stats/pile.util";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
 import { MusicItemService } from "./music-item.service";
@@ -234,16 +236,7 @@ export class MusicLibraryService {
     userId: string,
     filters: ListEntriesFilters,
   ): Promise<PagedResult<MusicEntryDto>> {
-    const q = searchTerm(filters);
-    const where: Prisma.MusicEntryWhereInput = {
-      userId,
-      status:
-        filters.statuses && filters.statuses.length > 0
-          ? { in: filters.statuses as DbMusicStatus[] }
-          : undefined,
-      favorite: filters.favorite ? true : undefined,
-      musicItem: q ? { title: titleContains(q) } : undefined,
-    };
+    const where = this.entryWhere(userId, filters);
     const ratingsOf = (musicItemIds: string[]) =>
       this.reviews.getRatings(userId, ReviewTargetType.MUSIC, musicItemIds);
 
@@ -295,6 +288,49 @@ export class MusicLibraryService {
         );
       },
     });
+  }
+
+  /**
+   * What's left to listen to among the entries the list would show under the
+   * same filters (UX-02). An album with no known length is left out of the
+   * total, and `counted` says so.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
+    const entries = await this.prisma.musicEntry.findMany({
+      where: {
+        AND: [
+          this.entryWhere(userId, filters),
+          { status: { in: [...MUSIC_PILE_STATUSES] } },
+        ],
+      },
+      select: { musicItem: { select: { durationMin: true } } },
+    });
+    return summarizePile(
+      "MINUTES",
+      entries.map((e) => ({
+        amount: e.musicItem.durationMin,
+        estimated: false,
+      })),
+    );
+  }
+
+  private entryWhere(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Prisma.MusicEntryWhereInput {
+    const q = searchTerm(filters);
+    return {
+      userId,
+      status:
+        filters.statuses && filters.statuses.length > 0
+          ? { in: filters.statuses as DbMusicStatus[] }
+          : undefined,
+      favorite: filters.favorite ? true : undefined,
+      musicItem: q ? { title: titleContains(q) } : undefined,
+    };
   }
 
   async getEntry(userId: string, entryId: string): Promise<MusicEntryDto> {

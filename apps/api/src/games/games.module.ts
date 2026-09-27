@@ -21,6 +21,6 @@ import { IgdbProvider } from "./providers/igdb.provider";
   ],
   controllers: [GamesController],
   providers: [GameItemService, GameLibraryService, IgdbProvider],
-  exports: [GameItemService, IgdbProvider],
+  exports: [GameItemService, GameLibraryService, IgdbProvider],
 })
 export class GamesModule {}

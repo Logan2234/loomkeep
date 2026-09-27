@@ -161,6 +161,8 @@ export interface MediaDetailsDto extends MediaSummaryDto {
   genres: string[];
   /** In-production / ended / releasing… free-form, source-dependent. */
   status: string | null;
+  /** Film length, or a series' average episode length; null if unknown. */
+  runtimeMin: number | null;
   seasons: SeasonDto[];
 }
 

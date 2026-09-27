@@ -4,6 +4,7 @@ import type {
   StatsWindow,
   VideoTemporalDto,
 } from "@loomkeep/shared";
+import { episodeRuntimeFor } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ReviewService } from "../../reviews/review.service";
@@ -22,7 +23,6 @@ import type {
 } from "../../stats/advanced-stats.source";
 import { computeRatingDistribution } from "../../stats/rating-distribution.util";
 import { StatsService } from "../../stats/stats.service";
-import { episodeRuntimeFor } from "../../stats/video-stats.util";
 import {
   computeHeatmap,
   computeHourCounts,

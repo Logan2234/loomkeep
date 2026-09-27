@@ -4,6 +4,7 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import {
     getStatsOverview,
+    getStatsPiles,
     getStatsWorksByDecade,
     getStatsWorksByRating,
   } from "$lib/api/stats";
@@ -37,7 +38,9 @@
   } from "$lib/components/stats/stats-domain";
   import { appConfig } from "$lib/config.svelte";
   import { useEeLock } from "$lib/ee/license.svelte";
+  import { isFeatureNew } from "$lib/feature-badges";
   import { formatNumber, PERCENT_OPTIONS } from "$lib/format";
+  import { isPileEmpty, pileTile } from "$lib/pile";
   import { m } from "$lib/paraglide/messages";
   import type {
     StatsDomain,
@@ -72,6 +75,18 @@
   }));
   const overview = $derived(overviewQuery.data);
   const error = $derived(overviewQuery.error);
+
+  // A present state, not a history: it follows the domain filter, never the
+  // period one.
+  const pilesQuery = createApiQuery(() => ({
+    key: keys.stats.piles(selected),
+    fetch: () => getStatsPiles(selected),
+  }));
+  const pileTiles = $derived(
+    (pilesQuery.data ?? [])
+      .filter(({ pile }) => !isPileEmpty(pile))
+      .map(({ domain, pile }) => ({ domain, ...pileTile(domain, pile) })),
+  );
 
   // "Tous" shows the domain split; a single domain shows its status funnel.
   const compositionSegments = $derived.by(() => {
@@ -227,6 +242,22 @@
         unit="/10"
         label={m.stats_avg_rating()} />
     </div>
+
+    {#if pileTiles.length > 0}
+      <SectionLabel
+        label={m.pile_title()}
+        isNew={isFeatureNew("pile")}
+        class="mt-8" />
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {#each pileTiles as tile (tile.domain)}
+          <StatTile
+            value={tile.value}
+            unit={tile.unit}
+            label={tile.label}
+            hint={tile.hint} />
+        {/each}
+      </div>
+    {/if}
 
     <div class="mt-5 grid gap-5 md:grid-cols-2">
       <section class="card p-5">
