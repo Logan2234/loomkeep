@@ -174,6 +174,9 @@ export const keys = {
     // tracked" flag on search results.
     tracked: () => ["library", "tracked"] as const,
   },
+  links: {
+    resolve: (url: string) => ["links", "resolve", url] as const,
+  },
   catalog: {
     search: (filters: { query: string; type: string | undefined }) =>
       ["catalog", "search", filters] as const,

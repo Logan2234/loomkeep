@@ -1956,3 +1956,10 @@ model UserAchievement {
 
   @@unique([userId, key])
 }
+
+model AchievementRarity {
+  key           String   @id
+  holders       Int
+  eligibleUsers Int
+  computedAt    DateTime @default(now())
+}

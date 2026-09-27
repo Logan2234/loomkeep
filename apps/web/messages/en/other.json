@@ -1544,5 +1544,12 @@
   "book_session_eta": "Estimated finish: {date}",
   "book_session_finish_title": "It looks like you finished this book",
   "book_session_finish_body": "You reached the last page. Mark it as read?",
-  "book_session_finish_action": "Mark as read"
+  "book_session_finish_action": "Mark as read",
+  "share_resolving": "Opening the link…",
+  "share_unrecognized_title": "Link not recognized",
+  "share_unrecognized_body": "Loomkeep can open TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library, MusicBrainz and Loomkeep links. You can search for the title instead.",
+  "share_search_cta": "Search for a title",
+  "search_link_title": "You pasted a link",
+  "search_link_body": "If it comes from TMDB, IMDb, AniList, MyAnimeList, IGDB, Steam, Open Library, MusicBrainz or Loomkeep itself, Loomkeep opens the matching page.",
+  "search_link_open": "Open the page"
 }

@@ -20,6 +20,6 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
     BookSessionService,
     OpenLibraryProvider,
   ],
-  exports: [BookItemService, BookLibraryService],
+  exports: [BookItemService, BookLibraryService, OpenLibraryProvider],
 })
 export class BooksModule {}

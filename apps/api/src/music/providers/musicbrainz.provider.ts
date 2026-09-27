@@ -75,6 +75,7 @@ interface MusicBrainzLabelInfo {
 interface MusicBrainzRelease {
   id: string;
   status?: string;
+  "release-group"?: { id: string };
   "label-info"?: MusicBrainzLabelInfo[];
   media?: MusicBrainzMedium[];
 }
@@ -201,6 +202,15 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
     const releases = data?.releases ?? [];
     if (releases.length === 0) return null;
     return releases.find((r) => r.status === "Official") ?? releases[0];
+  }
+
+  /** The release group a release belongs to — album pages are keyed by it. */
+  async releaseGroupIdForRelease(releaseId: string): Promise<string | null> {
+    const params = new URLSearchParams({ inc: "release-groups", fmt: "json" });
+    const release = await this.get<MusicBrainzRelease>(
+      `/release/${encodeURIComponent(releaseId)}?${params}`,
+    );
+    return release["release-group"]?.id ?? null;
   }
 
   /**
