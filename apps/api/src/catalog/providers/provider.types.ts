@@ -32,6 +32,8 @@ export interface ProviderMediaDetails {
   backdropUrl: string | null;
   genres: string[];
   status: string | null;
+  /** AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB. */
+  format: string | null;
   releaseDate: string | null;
   /** Average minutes per episode (series/anime) or the film's runtime; null if unknown. */
   runtimeMin: number | null;

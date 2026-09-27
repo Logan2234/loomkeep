@@ -58,6 +58,7 @@ const DETAILS_QUERY = `
       bannerImage
       genres
       status
+      format
       episodes
       duration
       startDate { year month day }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import SettingsSection from "../components/SettingsSection.svelte";
+  import MigrationExportCard from "./MigrationExportCard.svelte";
 
   import { page } from "$app/state";
   import { exportMyData, exportMyDataCsv } from "$lib/api/client";
@@ -125,5 +126,7 @@
         <p class="text-danger mt-2 text-sm">{csvExportMut.error}</p>
       {/if}
     </section>
+
+    <MigrationExportCard />
   </div>
 </SettingsSection>

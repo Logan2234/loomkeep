@@ -45,6 +45,7 @@ const ANIME_DETAILS: ProviderMediaDetails = {
   backdropUrl: null,
   genres: ["Fantasy"],
   status: "FINISHED",
+  format: "TV",
   releaseDate: "2024-01-05",
   runtimeMin: null,
   externalIds: [{ source: MediaSource.ANILIST, externalId: "4242" }],

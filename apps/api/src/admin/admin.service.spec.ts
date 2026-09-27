@@ -2,6 +2,7 @@ import type { LicenseStatusDto } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import { JOB_KEYS } from "../jobs/job-keys";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
@@ -259,7 +260,7 @@ describe("AdminService.getServicesStatus", () => {
     expect(healthchecks).toMatchObject({
       configured: true,
       reachable: null,
-      partial: { configured: 2, total: 9 },
+      partial: { configured: 2, total: Object.keys(JOB_KEYS).length },
     });
   });
 
@@ -272,7 +273,7 @@ describe("AdminService.getServicesStatus", () => {
 
     expect(healthchecks).toMatchObject({
       configured: false,
-      partial: { configured: 0, total: 9 },
+      partial: { configured: 0, total: Object.keys(JOB_KEYS).length },
     });
   });
 });

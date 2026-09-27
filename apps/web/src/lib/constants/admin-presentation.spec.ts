@@ -100,6 +100,7 @@ describe("admin presentation", () => {
         "notifications.digest",
         "media.refreshStale",
         "games.refreshStale",
+        "books.refreshStale",
         "reports.digest",
         "backup.run",
         "users.inactiveAccountsScan",
