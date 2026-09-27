@@ -212,7 +212,7 @@ body {
     @apply inline-block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform;
   }
   .switch-on .switch-thumb {
-    @apply translate-x-[18px];
+    @apply translate-x-4.5;
   }
   /* A row inside a Dropdown menu ("…" popovers). Pair with `.menu-item-danger`
      for destructive actions. */

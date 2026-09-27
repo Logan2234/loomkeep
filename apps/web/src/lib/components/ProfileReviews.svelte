@@ -39,11 +39,11 @@
   <section>
     <ProfileSectionHeading label={m.profile_reviews_title()}>
       {#snippet action()}
-        <a
-          href="/app/reviews"
-          class="text-dim hover:text-accent flex items-center gap-1 text-xs font-semibold whitespace-nowrap">
+        <a href="/app/reviews" class="btn-text group shrink-0">
           {m.common_manage()}
-          <Icon name="chevron-right" class="h-3.5 w-3.5" />
+          <Icon
+            name="arrow-right"
+            class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </a>
       {/snippet}
     </ProfileSectionHeading>

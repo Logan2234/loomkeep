@@ -57,7 +57,7 @@
   <ProfileSectionHeading label={m.common_library()} />
 
   {#if visibleTotal > 0}
-    <div class="flex h-3 gap-0.75" role="img" aria-label={m.common_library()}>
+    <div class="flex h-2 gap-0.75" role="img" aria-label={m.common_library()}>
       {#each domains as d (d.domain)}
         {#if d.visible && d.count > 0}
           <span
@@ -87,11 +87,11 @@
       <svelte:element
         this={href ? "a" : "div"}
         {href}
-        class="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 {href
+        class="group -mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 {href
           ? 'hover:bg-surface-2 transition-colors'
           : ''}">
         <span
-          class="grid h-6.5 w-6.5 shrink-0 place-items-center rounded-lg"
+          class="grid h-6.5 w-6.5 shrink-0 place-items-center rounded-lg transition-transform group-hover:scale-110"
           style="background: color-mix(in srgb, {color} 16%, transparent); color: {color};">
           <Icon name={DOMAIN_ICON[d.domain] ?? "library"} class="h-3.5 w-3.5" />
         </span>

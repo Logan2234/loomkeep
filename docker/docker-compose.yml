@@ -63,7 +63,14 @@ services:
       BACKUP_DIR: /data/backups
       BACKUP_ENCRYPTION_PUBLIC_KEY: ${BACKUP_ENCRYPTION_PUBLIC_KEY:?set BACKUP_ENCRYPTION_PUBLIC_KEY in .env}
       GLITCHTIP_API_DSN: ${GLITCHTIP_API_DSN:-}
+      # Web-side DSN (see the `web` service below) — the api never reports to
+      # it, this is only so the admin services page can show it as configured.
+      PUBLIC_GLITCHTIP_WEB_DSN: ${PUBLIC_GLITCHTIP_WEB_DSN:-}
       LOOMKEEP_LICENSE_KEY: ${LOOMKEEP_LICENSE_KEY:-}
+      # Base value is empty; the unleash override (docker-compose.unleash.yml)
+      # sets both to the real values once that add-on is enabled.
+      UNLEASH_API_URL: ${UNLEASH_API_URL:-}
+      UNLEASH_API_TOKEN: ${UNLEASH_API_TOKEN:-}
       HEALTHCHECKS_NOTIFICATIONS_SCAN_URL: ${HEALTHCHECKS_NOTIFICATIONS_SCAN_URL:-}
       HEALTHCHECKS_NOTIFICATIONS_DIGEST_URL: ${HEALTHCHECKS_NOTIFICATIONS_DIGEST_URL:-}
       HEALTHCHECKS_MEDIA_REFRESH_STALE_URL: ${HEALTHCHECKS_MEDIA_REFRESH_STALE_URL:-}

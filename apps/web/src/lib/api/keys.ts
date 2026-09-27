@@ -103,6 +103,9 @@ export const keys = {
   calendarSubscribe: {
     token: () => ["calendar-subscribe", "token"] as const,
   },
+  activityFeedSubscribe: {
+    token: () => ["activity-feed-subscribe", "token"] as const,
+  },
   privacy: {
     settings: () => ["privacy", "settings"] as const,
   },

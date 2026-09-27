@@ -47,6 +47,10 @@ export function activityPhrase(e: ActivityEventDto): string {
         : m.activity_list_item_added();
     case "LIST_SHARED":
       return m.activity_list_shared();
+    case "SEASON_FINISHED":
+      return typeof e.data.seasonNumber === "number"
+        ? m.activity_season_finished({ season: e.data.seasonNumber })
+        : m.activity_finished();
     default:
       return m.activity_updated();
   }

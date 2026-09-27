@@ -142,6 +142,7 @@
   "apierr_social_follow_request_not_found": "This follow request could not be found.",
   "apierr_social_cannot_block_self": "You can't block yourself.",
   "apierr_social_feature_disabled": "This feature isn't available on this instance.",
+  "apierr_social_activity_feed_unavailable": "This activity feed is unavailable.",
   "apierr_stats_rating_or_decade_only": "Pass either a rating or a decade, not both.",
   "apierr_stats_invalid_rating": "The rating must be an integer from 1 to 10.",
   "apierr_stats_invalid_decade": "The decade must be a multiple of 10.",

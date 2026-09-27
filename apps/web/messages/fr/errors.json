@@ -142,6 +142,7 @@
   "apierr_social_follow_request_not_found": "Cette demande d'abonnement est introuvable.",
   "apierr_social_cannot_block_self": "Tu ne peux pas te bloquer toi-même.",
   "apierr_social_feature_disabled": "Cette fonctionnalité n'est pas disponible sur cette instance.",
+  "apierr_social_activity_feed_unavailable": "Ce flux d'activité est indisponible.",
   "apierr_stats_rating_or_decade_only": "Indique soit une note, soit une décennie, pas les deux.",
   "apierr_stats_invalid_rating": "La note doit être un entier entre 1 et 10.",
   "apierr_stats_invalid_decade": "La décennie doit être un multiple de 10.",
