@@ -9,9 +9,6 @@
   import { m } from "$lib/paraglide/messages";
   import { readSharedLink } from "$lib/share-link";
 
-  // The PWA's share target (UX-05): another app's share sheet lands here
-  // with ?url/?text/?title, and this page hands over to the matching work's
-  // page — or to the search, when the link isn't one Loomkeep can read.
   const { link, searchTerm } = readSharedLink(page.url.searchParams);
   const searchHref = `/app/search?query=${encodeURIComponent(searchTerm)}`;
 
