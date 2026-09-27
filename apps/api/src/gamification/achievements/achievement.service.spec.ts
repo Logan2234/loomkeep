@@ -8,6 +8,7 @@ import type { JobRunService } from "../../jobs/job-run.service";
 import type { PrismaService } from "../../prisma/prisma.service";
 import type { XpService } from "../xp.service";
 import { AchievementService } from "./achievement.service";
+import { RARITY_ACTIVE_WINDOW_DAYS } from "./rarity.util";
 
 // A social-gated fixture exercises behavior independent of the real registry.
 const { socialGatedCheck } = vi.hoisted(() => ({
@@ -435,9 +436,13 @@ describe("AchievementService rarity snapshot", () => {
       profileAccess: { not: "GHOST" },
       hideProgression: false,
     });
-    expect(where.lastActiveAt.gte.getTime()).toBeGreaterThan(
-      Date.now() - 91 * 24 * 60 * 60 * 1000,
-    );
+    // The window itself is RARITY_ACTIVE_WINDOW_DAYS; a minute of slack
+    // covers the time between the query and this line.
+    const windowStart =
+      Date.now() - RARITY_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    expect(
+      Math.abs(where.lastActiveAt.gte.getTime() - windowStart),
+    ).toBeLessThan(60_000);
     const [[rows]] = (
       prisma.achievementRarity.createMany as ReturnType<typeof vi.fn>
     ).mock.calls;

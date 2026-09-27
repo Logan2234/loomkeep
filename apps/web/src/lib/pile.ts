@@ -60,7 +60,7 @@ export function isPileEmpty(pile: PileSummaryDto): boolean {
 }
 
 /** "sur 94 % des livres" when part of the pile had no data, else null. */
-export function pileCoverage(
+function pileCoverage(
   domain: StatsDomain,
   pile: PileSummaryDto,
 ): string | null {
