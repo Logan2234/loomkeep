@@ -26,7 +26,9 @@
   import Banner from "./Banner.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
+  import Modal from "./Modal.svelte";
   import ProgressBar from "./ProgressBar.svelte";
+  import SessionWeekChart from "./SessionWeekChart.svelte";
 
   let {
     entry,
@@ -49,6 +51,8 @@
   let startPage = $state(0);
   let endPage = $state(10);
   let page = $state(1);
+  let showAdd = $state(false);
+  let showHistory = $state(false);
   let editingId = $state<string | null>(null);
   let editDuration = $state(0);
   let editDate = $state(today);
@@ -57,8 +61,6 @@
   let editStartPage = $state(0);
   let editEndPage = $state(1);
   let deletingId = $state<string | null>(null);
-  let savedToday = $state(false);
-  let totalPulse = $state(false);
   let initializedEntryId = $state<string | null>(null);
 
   $effect(() => {
@@ -80,12 +82,7 @@
     fetch: () => getBookSessions(entry.id, page),
   }));
   const summary = $derived(sessionsQuery.data);
-
-  function pulseTotal() {
-    totalPulse = false;
-    requestAnimationFrame(() => (totalPulse = true));
-    setTimeout(() => (totalPulse = false), 650);
-  }
+  const totalSessions = $derived(summary?.totalSessions ?? 0);
 
   const createMut = createApiMutation<
     CreateBookSessionDto,
@@ -100,13 +97,11 @@
       keys.gamification.progression(),
       keys.feed.all(),
     ],
-    onSuccess: (_result, body) => {
+    onSuccess: () => {
       page = 1;
-      savedToday = localDateInput(new Date(body.occurredAt)) === today;
-      pulseTotal();
+      showAdd = false;
     },
-    successToast: (result) =>
-      result.xpAwarded ? m.session_saved_xp() : m.session_saved(),
+    successToast: m.session_saved(),
     errorToast: true,
   }));
 
@@ -122,10 +117,7 @@
       keys.stats.social(),
       keys.feed.all(),
     ],
-    onSuccess: () => {
-      editingId = null;
-      pulseTotal();
-    },
+    onSuccess: () => (editingId = null),
     successToast: m.session_saved(),
     errorToast: true,
   }));
@@ -142,11 +134,22 @@
     ],
     onSuccess: () => {
       deletingId = null;
-      pulseTotal();
+      page = 1;
     },
     successToast: m.session_deleted(),
     errorToast: true,
   }));
+
+  function weeklySummary(count: number, minutes: number): string {
+    const duration = formatSessionMinutes(minutes);
+    return count === 1
+      ? m.session_week_summary_one({ duration })
+      : m.session_week_summary_many({ count, duration });
+  }
+
+  function historyLabel(count: number): string {
+    return count === 1 ? m.session_view_one() : m.session_view_many({ count });
+  }
 
   function submit() {
     if (!referencePages || durationMinutes < 1) return;
@@ -157,6 +160,12 @@
       occurredAt: sessionDateToIso(occurredOn),
       ...pageData,
     });
+  }
+
+  function openHistory() {
+    page = 1;
+    editingId = null;
+    showHistory = true;
   }
 
   function beginEdit(session: BookSessionDto) {
@@ -194,211 +203,124 @@
   }
 </script>
 
-<section
-  class="border-border bg-bg/45 relative overflow-hidden rounded-xl border p-3.5 pr-7"
-  aria-labelledby="book-session-title">
-  <div class="bookmark-track bg-surface-2" aria-hidden="true">
-    <div class="bookmark-fill bg-accent" style="height: {progressPct}%"></div>
-  </div>
-
-  <div class="flex items-start justify-between gap-3">
-    <div>
-      <h3
-        id="book-session-title"
-        class="font-display flex items-center gap-2 font-bold">
-        <span class="bg-accent/12 text-accent rounded-lg p-1.5">
-          <Icon name="book" class="h-4 w-4" />
-        </span>
-        {m.session_log_title()}
-      </h3>
-      {#if referencePages}
-        <p class="text-dim mt-1 text-xs">
-          {m.book_session_reference({ count: referencePages })}
+<section class="space-y-3" aria-labelledby="book-session-title">
+  <div class="border-border bg-bg/45 rounded-xl border p-4">
+    <div class="flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <h3 id="book-session-title" class="font-display font-bold">
+          {m.session_week()}
+        </h3>
+        <p class="text-dim mt-1 text-sm tabular-nums">
+          {weeklySummary(summary?.weekSessions ?? 0, summary?.weekMinutes ?? 0)}
         </p>
-      {/if}
-    </div>
-    <div class="text-right" aria-live="polite">
-      <p class="timecode text-[0.58rem] tracking-[0.16em] uppercase">
-        {m.book_session_progress()}
-      </p>
-      <p
-        class="font-display text-xl font-extrabold tabular-nums {totalPulse
-          ? 'total-pulse'
-          : ''}">
-        {progressPct} %
-      </p>
-    </div>
-  </div>
-
-  {#if referencePages}
-    <div class="mt-3">
-      <div class="text-dim mb-1 flex justify-between text-xs tabular-nums">
-        <span>{entry.currentPage} / {referencePages}</span>
-        <span
-          >{summary?.totalPagesRead ?? 0}
-          {m.book_session_pages().toLocaleLowerCase()}</span>
       </div>
-      <ProgressBar
-        value={progressPct}
-        label={m.book_session_progress()}
-        height="h-2" />
-    </div>
-  {:else}
-    <div class="mt-3">
-      <Banner variant="info">{m.book_session_reference_missing()}</Banner>
-    </div>
-  {/if}
-
-  <div class="bg-surface mt-4 grid grid-cols-2 gap-1 rounded-lg p-1">
-    <button
-      type="button"
-      class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {mode ===
-      'quantity'
-        ? 'bg-bg text-fg shadow-sm'
-        : 'text-dim'}"
-      aria-pressed={mode === "quantity"}
-      onclick={() => (mode = "quantity")}
-      >{m.book_session_mode_quantity()}</button>
-    <button
-      type="button"
-      class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {mode ===
-      'range'
-        ? 'bg-bg text-fg shadow-sm'
-        : 'text-dim'}"
-      aria-pressed={mode === "range"}
-      onclick={() => (mode = "range")}>{m.book_session_mode_range()}</button>
-  </div>
-
-  <div class="mt-3 grid gap-3 sm:grid-cols-2">
-    {#if mode === "quantity"}
-      <label class="flex flex-col gap-1.5 text-xs font-semibold">
-        {m.book_session_pages()}
-        <input
-          class="input"
-          type="number"
-          min="1"
-          bind:value={pagesRead}
-          disabled={!referencePages || createMut.loading} />
-      </label>
-    {:else}
-      <div class="grid grid-cols-2 gap-2">
-        <label class="flex flex-col gap-1.5 text-xs font-semibold">
-          {m.book_session_start_page()}
-          <input
-            class="input min-w-0"
-            type="number"
-            min="0"
-            max={referencePages ?? undefined}
-            bind:value={startPage}
-            disabled={!referencePages || createMut.loading} />
-        </label>
-        <label class="flex flex-col gap-1.5 text-xs font-semibold">
-          {m.book_session_end_page()}
-          <input
-            class="input min-w-0"
-            type="number"
-            min="1"
-            max={referencePages ?? undefined}
-            bind:value={endPage}
-            disabled={!referencePages || createMut.loading} />
-        </label>
-      </div>
-    {/if}
-    <label class="flex flex-col gap-1.5 text-xs font-semibold">
-      {m.session_duration()}
-      <span class="flex items-center gap-2">
-        <input
-          class="input min-w-0 flex-1"
-          type="number"
-          min="1"
-          step="5"
-          bind:value={durationMinutes}
-          disabled={!referencePages || createMut.loading} />
-        <span class="text-dim">{m.session_minutes_short()}</span>
-      </span>
-    </label>
-  </div>
-
-  <div class="mt-2.5 flex flex-wrap gap-1.5">
-    {#each quickDurations as minutes (minutes)}
       <button
         type="button"
-        class="rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors {durationMinutes ===
-        minutes
-          ? 'border-accent bg-accent/12 text-accent'
-          : 'border-border text-dim hover:text-fg'}"
-        aria-pressed={durationMinutes === minutes}
-        onclick={() => (durationMinutes = minutes)}
-        >{formatSessionMinutes(minutes)}</button>
-    {/each}
+        class="btn btn-primary shrink-0"
+        disabled={!referencePages}
+        onclick={() => (showAdd = true)}>
+        <Icon name="plus" class="h-4 w-4" />
+        {m.book_session_add_short()}
+      </button>
+    </div>
+
+    {#if sessionsQuery.error}
+      <div class="mt-4">
+        <Banner variant="error">{sessionsQuery.error}</Banner>
+      </div>
+    {:else if summary}
+      <SessionWeekChart days={summary.weekDays} />
+    {:else}
+      <div
+        class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
+        aria-hidden="true">
+        {#each Array(7) as i (i)}
+          <span class="bg-surface-2 h-2 rounded-t-md"></span>
+        {/each}
+      </div>
+    {/if}
   </div>
 
-  <label class="mt-3 flex flex-col gap-1.5 text-xs font-semibold">
-    {m.session_date()}
-    <input
-      class="input w-full"
-      type="date"
-      max={today}
-      bind:value={occurredOn}
-      disabled={!referencePages || createMut.loading} />
-  </label>
+  {#if !referencePages}
+    <Banner variant="info">{m.book_session_reference_missing()}</Banner>
+  {/if}
 
   <button
     type="button"
-    class="btn btn-primary mt-3 w-full"
-    disabled={!referencePages ||
-      createMut.loading ||
-      durationMinutes < 1 ||
-      !occurredOn ||
-      (mode === "quantity"
-        ? pagesRead < 1
-        : startPage < 0 || endPage <= startPage)}
-    onclick={submit}>
-    <Icon name="plus" class="h-4 w-4" />
-    {m.session_save()}
+    class="border-border hover:border-accent/60 hover:text-accent font-display w-full rounded-xl border px-4 py-3 font-bold transition-colors disabled:cursor-default disabled:opacity-50"
+    disabled={totalSessions === 0}
+    onclick={openHistory}>
+    {historyLabel(totalSessions)}
   </button>
 
-  {#if savedToday}
-    <p class="text-accent mt-2 flex items-center gap-1.5 text-xs font-semibold">
-      <Icon name="check" class="h-3.5 w-3.5" />
-      {m.session_today_streak()}
-    </p>
-  {/if}
-
-  {#if summary}
-    <dl class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <div class="bg-surface rounded-lg p-2.5">
-        <dt class="text-dim text-[0.68rem]">{m.session_week()}</dt>
-        <dd class="font-display mt-0.5 font-bold tabular-nums">
-          {formatSessionMinutes(summary.weekMinutes)}
-        </dd>
-      </div>
-      <div class="bg-surface rounded-lg p-2.5">
-        <dt class="text-dim text-[0.68rem]">{m.session_month()}</dt>
-        <dd class="font-display mt-0.5 font-bold tabular-nums">
-          {formatSessionMinutes(summary.monthMinutes)}
-        </dd>
-      </div>
-      <div class="bg-surface rounded-lg p-2.5 sm:col-span-2">
-        <dt class="text-dim text-[0.68rem]">{m.book_session_pace()}</dt>
-        <dd class="font-display mt-0.5 text-sm font-bold">
-          {summary.averagePagesPerDay === null
-            ? m.book_session_pace_pending()
-            : m.book_session_pace_value({ count: summary.averagePagesPerDay })}
-        </dd>
-        {#if summary.estimatedCompletionDate}
-          <p class="text-accent mt-1 text-xs">
-            {m.book_session_eta({
-              date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
-            })}
+  <div class="border-border bg-bg/45 rounded-xl border p-3.5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h4 class="font-display font-bold">{m.book_session_progress()}</h4>
+        {#if referencePages}
+          <p class="text-dim mt-1 text-xs">
+            {m.book_session_reference({ count: referencePages })}
           </p>
         {/if}
       </div>
-    </dl>
-  {/if}
+      <p class="font-display text-xl font-extrabold tabular-nums">
+        {progressPct} %
+      </p>
+    </div>
+
+    {#if referencePages}
+      <div class="mt-3">
+        <div class="text-dim mb-1 flex justify-between text-xs tabular-nums">
+          <span>{entry.currentPage} / {referencePages}</span>
+          <span>
+            {summary?.totalPagesRead ?? 0}
+            {m.book_session_pages().toLocaleLowerCase()}
+          </span>
+        </div>
+        <ProgressBar
+          value={progressPct}
+          label={m.book_session_progress()}
+          height="h-2" />
+      </div>
+    {/if}
+
+    {#if summary}
+      <dl class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div class="bg-surface rounded-lg p-2.5">
+          <dt class="text-dim text-[0.68rem]">{m.session_total()}</dt>
+          <dd class="font-display mt-0.5 font-bold tabular-nums">
+            {formatSessionMinutes(summary.totalTrackedMinutes)}
+          </dd>
+        </div>
+        <div class="bg-surface rounded-lg p-2.5">
+          <dt class="text-dim text-[0.68rem]">{m.session_month()}</dt>
+          <dd class="font-display mt-0.5 font-bold tabular-nums">
+            {formatSessionMinutes(summary.monthMinutes)}
+          </dd>
+        </div>
+        <div class="bg-surface col-span-2 rounded-lg p-2.5 sm:col-span-1">
+          <dt class="text-dim text-[0.68rem]">{m.book_session_pace()}</dt>
+          <dd class="font-display mt-0.5 text-sm font-bold">
+            {summary.averagePagesPerDay === null
+              ? m.book_session_pace_pending()
+              : m.book_session_pace_value({
+                  count: summary.averagePagesPerDay,
+                })}
+          </dd>
+          {#if summary.estimatedCompletionDate}
+            <p class="text-accent mt-1 text-xs">
+              {m.book_session_eta({
+                date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
+              })}
+            </p>
+          {/if}
+        </div>
+      </dl>
+    {/if}
+  </div>
 
   {#if summary?.completionSuggested && entry.status !== "READ"}
-    <div class="border-accent/40 bg-accent/8 mt-4 rounded-lg border p-3">
+    <div class="border-accent/40 bg-accent/8 rounded-lg border p-3">
       <p class="font-display text-sm font-bold">
         {m.book_session_finish_title()}
       </p>
@@ -412,19 +334,149 @@
       </button>
     </div>
   {/if}
+</section>
 
-  <div class="border-border mt-4 border-t pt-3">
-    <h4 class="timecode text-[0.6rem] tracking-[0.16em] uppercase">
-      {m.session_history()}
-    </h4>
-    {#if sessionsQuery.error}
-      <div class="mt-2">
-        <Banner variant="error">{sessionsQuery.error}</Banner>
+{#if showAdd}
+  <Modal title={m.book_session_add_title()} onclose={() => (showAdd = false)}>
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}>
+      <div class="bg-surface grid grid-cols-2 gap-1 rounded-lg p-1">
+        <button
+          type="button"
+          class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {mode ===
+          'quantity'
+            ? 'bg-bg text-fg shadow-sm'
+            : 'text-dim'}"
+          aria-pressed={mode === "quantity"}
+          onclick={() => (mode = "quantity")}>
+          {m.book_session_mode_quantity()}
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {mode ===
+          'range'
+            ? 'bg-bg text-fg shadow-sm'
+            : 'text-dim'}"
+          aria-pressed={mode === "range"}
+          onclick={() => (mode = "range")}>
+          {m.book_session_mode_range()}
+        </button>
       </div>
+
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        {#if mode === "quantity"}
+          <label class="flex flex-col gap-1.5 text-xs font-semibold">
+            {m.book_session_pages()}
+            <input
+              class="input"
+              type="number"
+              min="1"
+              bind:value={pagesRead}
+              disabled={createMut.loading} />
+          </label>
+        {:else}
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex flex-col gap-1.5 text-xs font-semibold">
+              {m.book_session_start_page()}
+              <input
+                class="input min-w-0"
+                type="number"
+                min="0"
+                max={referencePages ?? undefined}
+                bind:value={startPage}
+                disabled={createMut.loading} />
+            </label>
+            <label class="flex flex-col gap-1.5 text-xs font-semibold">
+              {m.book_session_end_page()}
+              <input
+                class="input min-w-0"
+                type="number"
+                min="1"
+                max={referencePages ?? undefined}
+                bind:value={endPage}
+                disabled={createMut.loading} />
+            </label>
+          </div>
+        {/if}
+        <label class="flex flex-col gap-1.5 text-xs font-semibold">
+          {m.session_duration()}
+          <span class="flex items-center gap-2">
+            <input
+              class="input min-w-0 flex-1"
+              type="number"
+              min="1"
+              step="5"
+              bind:value={durationMinutes}
+              disabled={createMut.loading} />
+            <span class="text-dim">{m.session_minutes_short()}</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        {#each quickDurations as minutes (minutes)}
+          <button
+            type="button"
+            class="rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors {durationMinutes ===
+            minutes
+              ? 'border-accent bg-accent/12 text-accent'
+              : 'border-border text-dim hover:text-fg'}"
+            aria-pressed={durationMinutes === minutes}
+            onclick={() => (durationMinutes = minutes)}>
+            {formatSessionMinutes(minutes)}
+          </button>
+        {/each}
+      </div>
+
+      <label class="mt-3 flex flex-col gap-1.5 text-xs font-semibold">
+        {m.session_date()}
+        <input
+          class="input w-full"
+          type="date"
+          max={today}
+          bind:value={occurredOn}
+          disabled={createMut.loading} />
+      </label>
+
+      <div class="mt-5 flex justify-end gap-2">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          disabled={createMut.loading}
+          onclick={() => (showAdd = false)}>
+          {m.common_cancel()}
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={!referencePages ||
+            createMut.loading ||
+            durationMinutes < 1 ||
+            !occurredOn ||
+            (mode === "quantity"
+              ? pagesRead < 1
+              : startPage < 0 || endPage <= startPage)}>
+          {m.session_save()}
+        </button>
+      </div>
+    </form>
+  </Modal>
+{/if}
+
+{#if showHistory}
+  <Modal
+    title={historyLabel(totalSessions)}
+    wide
+    onclose={() => (showHistory = false)}>
+    {#if sessionsQuery.error}
+      <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}
-      <ul class="mt-2 flex flex-col gap-1.5">
+      <ul class="flex flex-col gap-2">
         {#each summary.items as session (session.id)}
-          <li class="bg-surface rounded-lg p-2.5">
+          <li class="bg-surface rounded-lg p-3">
             {#if editingId === session.id}
               <div class="grid gap-2 sm:grid-cols-2">
                 <input
@@ -446,15 +498,17 @@
                   class="rounded-md px-2 py-1 text-xs {editMode === 'quantity'
                     ? 'bg-surface font-semibold'
                     : 'text-dim'}"
-                  onclick={() => (editMode = "quantity")}
-                  >{m.book_session_mode_quantity()}</button>
+                  onclick={() => (editMode = "quantity")}>
+                  {m.book_session_mode_quantity()}
+                </button>
                 <button
                   type="button"
                   class="rounded-md px-2 py-1 text-xs {editMode === 'range'
                     ? 'bg-surface font-semibold'
                     : 'text-dim'}"
-                  onclick={() => (editMode = "range")}
-                  >{m.book_session_mode_range()}</button>
+                  onclick={() => (editMode = "range")}>
+                  {m.book_session_mode_range()}
+                </button>
               </div>
               {#if editMode === "quantity"}
                 <input
@@ -483,14 +537,16 @@
                 <button
                   type="button"
                   class="btn btn-ghost text-xs"
-                  onclick={() => (editingId = null)}
-                  >{m.common_cancel()}</button>
+                  onclick={() => (editingId = null)}>
+                  {m.common_cancel()}
+                </button>
                 <button
                   type="button"
                   class="btn btn-primary text-xs"
                   disabled={updateMut.loading}
-                  onclick={() => saveEdit(session.id)}
-                  >{m.common_save()}</button>
+                  onclick={() => saveEdit(session.id)}>
+                  {m.common_save()}
+                </button>
               </div>
             {:else}
               <div class="flex items-center gap-2">
@@ -512,21 +568,23 @@
                   type="button"
                   class="text-dim hover:text-fg rounded p-1"
                   aria-label={m.session_edit()}
-                  onclick={() => beginEdit(session)}
-                  ><Icon name="edit" class="h-4 w-4" /></button>
+                  onclick={() => beginEdit(session)}>
+                  <Icon name="edit" class="h-4 w-4" />
+                </button>
                 <button
                   type="button"
                   class="text-dim hover:text-danger rounded p-1"
                   aria-label={m.session_delete()}
-                  onclick={() => (deletingId = session.id)}
-                  ><Icon name="trash" class="h-4 w-4" /></button>
+                  onclick={() => (deletingId = session.id)}>
+                  <Icon name="trash" class="h-4 w-4" />
+                </button>
               </div>
             {/if}
           </li>
         {/each}
       </ul>
       {#if page > 1 || summary.hasMore}
-        <div class="mt-2 flex justify-between gap-2">
+        <div class="mt-3 flex justify-between gap-2">
           <button
             type="button"
             class="btn-text text-xs"
@@ -540,10 +598,10 @@
         </div>
       {/if}
     {:else if !sessionsQuery.loading}
-      <p class="text-dim mt-2 text-xs">{m.session_history_empty()}</p>
+      <p class="text-dim text-sm">{m.session_history_empty()}</p>
     {/if}
-  </div>
-</section>
+  </Modal>
+{/if}
 
 {#if deletingId}
   <ConfirmationModal
@@ -555,30 +613,3 @@
     onConfirm={() => deleteMut.mutate(deletingId!)}
     onCancel={() => (deletingId = null)} />
 {/if}
-
-<style>
-  .bookmark-track {
-    position: absolute;
-    inset: 0.7rem 0.45rem 0.7rem auto;
-    width: 0.55rem;
-    border-radius: 999px 999px 0 0;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%);
-  }
-
-  .bookmark-fill {
-    position: absolute;
-    inset: auto 0 0;
-    transition: height 300ms ease-out;
-  }
-
-  .total-pulse {
-    animation: total-pulse 620ms cubic-bezier(0.2, 1.4, 0.4, 1);
-  }
-
-  @keyframes total-pulse {
-    35% {
-      color: var(--accent);
-      transform: translateY(-2px) scale(1.06);
-    }
-  }
-</style>

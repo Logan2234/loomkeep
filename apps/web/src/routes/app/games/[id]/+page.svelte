@@ -13,7 +13,6 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import CommentsPanel from "$lib/components/CommentsPanel.svelte";
   import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
@@ -96,9 +95,9 @@
         detail.publishers.length > 0 ||
         detail.gameModes.length > 0 ||
         detail.playerPerspectives.length > 0 ||
-        detail.multiplayerModes.length > 0 ||
-        detail.timeToBeat !== null),
+        detail.multiplayerModes.length > 0),
   );
+  const hasSidePanels = $derived(hasMeta || !!detail?.timeToBeat);
 
   // Cover + backdrop + screenshots, deduped, for the lightbox carousel.
   const galleryImages = $derived.by(() => {
@@ -354,7 +353,9 @@
             {saving}
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
-            onRemove={() => (confirmRemove = true)}>
+            onRemove={() => (confirmRemove = true)}
+            targetType="GAME"
+            targetId={entry.game.id}>
             <SegmentedStatusControl
               statuses={STATUS_ORDER}
               current={entry.status}
@@ -363,15 +364,6 @@
               desc={STATUS_DESC}
               activeClass={SEG_ACTIVE}
               onSelect={(status) => patchMut.mutate({ status })} />
-
-            <AddToListButton targetType="GAME" targetId={entry.game.id} />
-
-            <hr class="border-border" />
-
-            <NoteField
-              value={entry.notes}
-              placeholder={m.game_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <GameSessionDock {entry} {detailKey} />
 
@@ -387,6 +379,13 @@
                   ownershipStatus: status as typeof entry.ownershipStatus,
                   ownershipSource: source,
                 })} />
+
+            <hr class="border-border" />
+
+            <NoteField
+              value={entry.notes}
+              placeholder={m.game_note_placeholder()}
+              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             {#if entry.status === "COMPLETED" || entry.replays.length > 0}
               <hr class="border-border" />
@@ -432,10 +431,10 @@
           </TrackingPanel>
         {/if}
 
-        <!-- Details panel, mobile position: after "Mon suivi", before the carousels. -->
-        {#if hasMeta}
+        <!-- Side panels, mobile position: after "Mon suivi", before the carousels. -->
+        {#if hasSidePanels}
           <div class="mt-8 md:hidden">
-            {@render detailsPanel()}
+            {@render sidePanels()}
           </div>
         {/if}
 
@@ -490,7 +489,17 @@
         {/if}
       </div>
 
-      <!-- Details panel, desktop position: sidebar next to the main column. -->
+      <!-- Side panels, desktop position: sidebar next to the main column. -->
+      {#snippet sidePanels()}
+        <div class="flex flex-col gap-4">
+          {#if hasMeta}
+            {@render detailsPanel()}
+          {/if}
+          {#if detail?.timeToBeat}
+            <GameTimeToBeat timeToBeat={detail.timeToBeat} />
+          {/if}
+        </div>
+      {/snippet}
       {#snippet detailsPanel()}
         <div class="card p-4">
           <h2 class="font-display text-sm font-bold tracking-tight">
@@ -535,27 +544,22 @@
                 </dd>
               </div>
             {/if}
-            <!-- Last of the metadata: the only block with its own layout,
-                 it breaks the label/value rhythm when set between them. -->
-            {#if detail?.timeToBeat}
-              <GameTimeToBeat timeToBeat={detail.timeToBeat} />
-            {/if}
 
             {#if detail && detail.website}
               <a
                 href={detail.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-accent mt-0.5">
+                class="link-accent mt-0.5 w-fit text-xs decoration-1">
                 {m.media_official_site()}
               </a>
             {/if}
           </dl>
         </div>
       {/snippet}
-      {#if hasMeta}
+      {#if hasSidePanels}
         <div class="hidden md:block">
-          {@render detailsPanel()}
+          {@render sidePanels()}
         </div>
       {/if}
     </div>

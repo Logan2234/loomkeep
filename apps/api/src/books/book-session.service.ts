@@ -190,6 +190,7 @@ export class BookSessionService {
       }),
       this.prisma.bookSession.aggregate({
         where: { bookEntryId: entryId },
+        _count: true,
         _sum: { pagesRead: true },
       }),
       this.prisma.bookEntry.findUniqueOrThrow({
@@ -235,6 +236,7 @@ export class BookSessionService {
     return {
       items: rows.slice(0, PAGE_SIZE).map(toDto),
       hasMore: rows.length > PAGE_SIZE,
+      totalSessions: totals._count,
       totalTrackedMinutes: entry.trackedReadingMinutes,
       totalPagesRead: totals._sum.pagesRead ?? 0,
       ...periods,

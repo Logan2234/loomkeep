@@ -26,6 +26,7 @@ export * from "./dto/push";
 export * from "./dto/report";
 export * from "./dto/review";
 export * from "./dto/saved-view";
+export * from "./dto/session";
 export * from "./dto/social";
 export * from "./dto/stats";
 export * from "./dto/user";

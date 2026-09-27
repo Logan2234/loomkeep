@@ -20,7 +20,7 @@ describe("GameSessionService", () => {
       findUnique: vi.fn(),
       findUniqueOrThrow: vi.fn(),
     },
-    gameSession: { findMany: vi.fn() },
+    gameSession: { count: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn(),
   };
   const activity = { emit: vi.fn() };
@@ -40,6 +40,7 @@ describe("GameSessionService", () => {
       .mockResolvedValueOnce([
         { occurredAt: created.occurredAt, durationMinutes: 60 },
       ]);
+    prisma.gameSession.count.mockResolvedValue(1);
     activity.emit.mockResolvedValue(undefined);
     sessionXp.awardForToday.mockResolvedValue(true);
     service = new GameSessionService(

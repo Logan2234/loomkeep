@@ -13,7 +13,6 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { toCarouselItems } from "$lib/carousel";
-  import AddToListButton from "$lib/components/AddToListButton.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import BookSessionDock from "$lib/components/BookSessionDock.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
@@ -321,38 +320,6 @@
           </p>
         {/if}
 
-        {#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
-          <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-            {#if detail.website}
-              <a
-                href={detail.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent inline-flex items-center gap-1 text-sm">
-                {m.book_open_library_link()}
-              </a>
-            {/if}
-            {#if detail.readOnlineUrl}
-              <a
-                href={detail.readOnlineUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent inline-flex items-center gap-1 text-sm">
-                {m.book_read_online()}
-              </a>
-            {/if}
-            {#each detail.externalLinks as link (link.label)}
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-accent inline-flex items-center gap-1 text-sm">
-                {link.label} ↗
-              </a>
-            {/each}
-          </div>
-        {/if}
-
         {#if !entry}
           <div class="mt-6">
             <button
@@ -369,7 +336,9 @@
             {saving}
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
-            onRemove={() => (confirmRemove = true)}>
+            onRemove={() => (confirmRemove = true)}
+            targetType="BOOK"
+            targetId={entry.book.id}>
             <SegmentedStatusControl
               statuses={STATUS_ORDER}
               current={entry.status}
@@ -379,19 +348,10 @@
               activeClass={SEG_ACTIVE}
               onSelect={(status) => patchMut.mutate({ status })} />
 
-            <AddToListButton targetType="BOOK" targetId={entry.book.id} />
-
             <BookSessionDock
               {entry}
               {detailKey}
               onMarkFinished={() => patchMut.mutate({ status: "READ" })} />
-
-            <hr class="border-border" />
-
-            <NoteField
-              value={entry.notes}
-              placeholder={m.book_note_placeholder()}
-              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             <hr class="border-border" />
 
@@ -405,6 +365,13 @@
                   ownershipStatus: status as typeof entry.ownershipStatus,
                   ownershipSource: source,
                 })} />
+
+            <hr class="border-border" />
+
+            <NoteField
+              value={entry.notes}
+              placeholder={m.book_note_placeholder()}
+              onChange={(v) => patchMut.mutate({ notes: v })} />
 
             {#if entry.status === "READ" || entry.replays.length > 0}
               <hr class="border-border" />
@@ -549,6 +516,39 @@
               </div>
             {/if}
           </dl>
+
+          {#if detail.website || detail.readOnlineUrl || detail.externalLinks.length > 0}
+            <div
+              class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+              {#if detail.website}
+                <a
+                  href={detail.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="link-accent inline-flex items-center decoration-1">
+                  {m.book_open_library_link()}
+                </a>
+              {/if}
+              {#if detail.readOnlineUrl}
+                <a
+                  href={detail.readOnlineUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="link-accent inline-flex items-center decoration-1">
+                  {m.book_read_online()}
+                </a>
+              {/if}
+              {#each detail.externalLinks as link (link.label)}
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="link-accent inline-flex items-center gap-1 decoration-1">
+                  {link.label} ↗
+                </a>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/snippet}
       {#if hasMeta}

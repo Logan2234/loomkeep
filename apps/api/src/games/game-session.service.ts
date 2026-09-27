@@ -161,7 +161,9 @@ export class GameSessionService {
     entry: { id: string; trackedPlaytimeMinutes: number },
     page: number,
   ): Promise<GameSessionSummaryDto> {
-    const [rows, user] = await Promise.all([
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - 40);
+    const [rows, user, totalSessions, recent] = await Promise.all([
       this.prisma.gameSession.findMany({
         where: { gameEntryId: entry.id },
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
@@ -172,17 +174,19 @@ export class GameSessionService {
         where: { id: entry.id },
         select: { user: { select: { timezone: true } } },
       }),
+      this.prisma.gameSession.count({
+        where: { gameEntryId: entry.id },
+      }),
+      this.prisma.gameSession.findMany({
+        where: { gameEntryId: entry.id, occurredAt: { gte: since } },
+        select: { occurredAt: true, durationMinutes: true },
+      }),
     ]);
-    const since = new Date();
-    since.setUTCDate(since.getUTCDate() - 40);
-    const recent = await this.prisma.gameSession.findMany({
-      where: { gameEntryId: entry.id, occurredAt: { gte: since } },
-      select: { occurredAt: true, durationMinutes: true },
-    });
     const periods = sessionPeriodMinutes(recent, user.user.timezone ?? "UTC");
     return {
       items: rows.slice(0, PAGE_SIZE).map(toDto),
       hasMore: rows.length > PAGE_SIZE,
+      totalSessions,
       totalTrackedMinutes: entry.trackedPlaytimeMinutes,
       ...periods,
     };

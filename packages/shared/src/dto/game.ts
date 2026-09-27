@@ -5,6 +5,7 @@ import type {
   SessionSource,
 } from "../enums";
 import type { RatingDto } from "./catalog";
+import type { SessionWeekDayDto } from "./session";
 
 /** A game as returned by a live catalogue search (not persisted). */
 export interface GameSummaryDto {
@@ -166,8 +167,11 @@ export interface UpdateGameSessionDto {
 export interface GameSessionSummaryDto {
   items: GameSessionDto[];
   hasMore: boolean;
+  totalSessions: number;
   totalTrackedMinutes: number;
   weekMinutes: number;
+  weekSessions: number;
+  weekDays: SessionWeekDayDto[];
   monthMinutes: number;
 }
 

@@ -5,6 +5,7 @@ import type {
   SessionSource,
 } from "../enums";
 import type { RatingDto } from "./catalog";
+import type { SessionWeekDayDto } from "./session";
 
 /** A book as returned by a live catalogue search (not persisted). */
 export interface BookSummaryDto {
@@ -180,9 +181,12 @@ export interface UpdateBookSessionDto {
 export interface BookSessionSummaryDto {
   items: BookSessionDto[];
   hasMore: boolean;
+  totalSessions: number;
   totalTrackedMinutes: number;
   totalPagesRead: number;
   weekMinutes: number;
+  weekSessions: number;
+  weekDays: SessionWeekDayDto[];
   monthMinutes: number;
   averagePagesPerDay: number | null;
   estimatedCompletionDate: string | null;

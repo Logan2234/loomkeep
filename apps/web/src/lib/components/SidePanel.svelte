@@ -56,7 +56,7 @@
       duration: reduced ? 0 : 220,
     }}
     class="bg-bg border-border fixed z-10 flex flex-col overflow-hidden shadow-2xl {layout.compact
-      ? 'inset-0 h-[100dvh] w-full'
+      ? 'inset-0 h-dvh w-full'
       : `inset-y-0 right-0 h-full w-full border-l ${desktopClass}`} {panelClass}"
     style="z-index: {zIndex + 1}">
     {@render children()}
