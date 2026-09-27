@@ -78,6 +78,8 @@ export const keys = {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>
       ["verification", "newsletter-unsubscribe", token] as const,
+    invitation: (token: string) =>
+      ["verification", "invitation", token] as const,
   },
   savedViews: {
     all: () => ["saved-views"] as const,
@@ -218,6 +220,7 @@ export const keys = {
       push: string;
       session: string;
     }) => ["admin", "users", filters] as const,
+    invitations: () => ["admin", "invitations"] as const,
     userSessions: (userId: string) =>
       ["admin", "user-sessions", userId] as const,
     userLibraryStats: (userId: string) =>

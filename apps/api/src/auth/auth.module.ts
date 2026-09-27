@@ -6,6 +6,7 @@ import { MailModule } from "../mail/mail.module";
 import { SecurityModule } from "../security/security.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { InvitationService } from "./invitation.service";
 import { MfaService } from "./mfa.service";
 import { SessionsController } from "./sessions.controller";
 import { TurnstileService } from "./turnstile.service";
@@ -24,7 +25,13 @@ import { WebauthnService } from "./webauthn.service";
     EventsModule,
   ],
   controllers: [AuthController, SessionsController, VerificationController],
-  providers: [AuthService, TurnstileService, MfaService, WebauthnService],
-  exports: [AuthService, MfaService, WebauthnService],
+  providers: [
+    AuthService,
+    TurnstileService,
+    MfaService,
+    WebauthnService,
+    InvitationService,
+  ],
+  exports: [AuthService, MfaService, WebauthnService, InvitationService],
 })
 export class AuthModule {}

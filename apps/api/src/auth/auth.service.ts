@@ -35,6 +35,7 @@ import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { InvitationService } from "./invitation.service";
 import {
   JWT_ACCESS_AUDIENCE,
   JWT_ALGORITHM,
@@ -91,6 +92,7 @@ export class AuthService {
     private readonly webauthn: WebauthnService,
     private readonly sessionCache: SessionCacheService,
     private readonly events: EventsGateway,
+    private readonly invitations: InvitationService,
   ) {}
 
   async register(
@@ -99,7 +101,13 @@ export class AuthService {
     ip?: string,
     acceptLanguage?: string,
   ): Promise<AuthResult> {
-    if (!isRegistrationEnabled(this.configService, this.flags)) {
+    // An invitation is what lets a sign-up through a closed instance — so it
+    // is checked first, and only its absence falls back on the global switch.
+    const invitation = dto.inviteToken
+      ? await this.invitations.findRedeemableFor(dto.inviteToken, dto.email)
+      : null;
+
+    if (!invitation && !isRegistrationEnabled(this.configService, this.flags)) {
       throw new AppException(
         HttpStatus.FORBIDDEN,
         ErrorCode.AuthRegistrationDisabled,
@@ -131,22 +139,31 @@ export class AuthService {
       );
     }
 
+    // An address-bound invitation reached this mailbox (or someone who knows
+    // it), which is what the verification email would otherwise prove.
+    const emailVerified = Boolean(invitation?.email);
+    const data: Prisma.UserUncheckedCreateInput = {
+      email: dto.email,
+      passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
+      displayName: dto.displayName,
+      username: await this.generateUniqueUsername(dto.displayName),
+      locale: dto.locale ?? detectLocale(acceptLanguage),
+      acceptedTermsAt: new Date(),
+      acceptedTermsVersion: LEGAL_VERSION,
+      certifiedAgeAt: new Date(),
+      lastActiveAt: new Date(),
+      emailVerified,
+      invitationId: invitation?.id,
+    };
     let user: User;
 
     try {
-      user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
-          displayName: dto.displayName,
-          username: await this.generateUniqueUsername(dto.displayName),
-          locale: dto.locale ?? detectLocale(acceptLanguage),
-          acceptedTermsAt: new Date(),
-          acceptedTermsVersion: LEGAL_VERSION,
-          certifiedAgeAt: new Date(),
-          lastActiveAt: new Date(),
-        },
-      });
+      user = invitation
+        ? await this.prisma.$transaction(async (tx) => {
+            await this.invitations.claim(tx, invitation.id);
+            return tx.user.create({ data });
+          })
+        : await this.prisma.user.create({ data });
     } catch (err) {
       // The findUnique() email check above doesn't prevent two concurrent
       // registrations for the same email from both passing it and racing to
@@ -170,18 +187,24 @@ export class AuthService {
       throw err;
     }
 
-    const verifyToken = randomBytes(32).toString("hex");
-    await this.prisma.userToken.create({
-      data: {
-        userId: user.id,
-        type: "EMAIL_VERIFICATION",
-        tokenHash: hashToken(verifyToken),
-        expiresAt: new Date(Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000),
-      },
-    });
     const recipient = { email: user.email, locale: user.locale };
     await this.mail.sendWelcome(recipient, user.displayName);
-    await this.mail.sendVerifyEmail(recipient, verifyToken);
+
+    if (!emailVerified) {
+      const verifyToken = randomBytes(32).toString("hex");
+      await this.prisma.userToken.create({
+        data: {
+          userId: user.id,
+          type: "EMAIL_VERIFICATION",
+          tokenHash: hashToken(verifyToken),
+          expiresAt: new Date(
+            Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60_000,
+          ),
+        },
+      });
+      await this.mail.sendVerifyEmail(recipient, verifyToken);
+    }
+
     await this.security.record({
       type: "USER_REGISTERED",
       userId: user.id,

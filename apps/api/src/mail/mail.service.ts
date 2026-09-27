@@ -201,6 +201,20 @@ export class MailService {
       ],
       build: (locale, v) => this.buildVerifyEmail(locale, v.token),
     },
+    invitation: {
+      label: "Invitation à s'inscrire",
+      fields: [
+        { key: "inviter", label: "Invité par", default: "Logan" },
+        { key: "token", label: "Token", default: "sample-invite-token" },
+      ],
+      build: (locale, v) =>
+        this.buildInvitation(
+          locale,
+          v.inviter || null,
+          `${this.webOrigin}/register?invite=${v.token}`,
+          new Date(Date.now() + 7 * 24 * 60 * 60_000),
+        ),
+    },
     passwordResetLink: {
       label: "Lien de réinitialisation",
       fields: [{ key: "token", label: "Token", default: "sample-reset-token" }],
@@ -590,6 +604,20 @@ export class MailService {
     });
   }
 
+  /** A sign-up invitation (InvitationService) — `url` carries the raw token. */
+  async sendInvitation(
+    recipient: MailRecipient,
+    inviterName: string | null,
+    url: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildInvitation(locale, inviterName, url, expiresAt),
+    });
+  }
+
   /**
    * The recurring "new episode" digest — see NotificationDigestService,
    * which is the only caller and already guarantees `items` is non-empty.
@@ -962,6 +990,30 @@ export class MailService {
         `<p>${escapeHtml(copy.intro)}</p>
          ${this.button(url, copy.button)}
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry)}</p>`,
+      ),
+    };
+  }
+
+  private buildInvitation(
+    locale: Locale,
+    inviterName: string | null,
+    url: string,
+    expiresAt: Date,
+  ): TemplateBody {
+    const copy = MAIL_COPY[locale].invitation;
+    const formattedDate = new Intl.DateTimeFormat(dateLocale(locale), {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(expiresAt);
+    return {
+      subject: copy.subject(inviterName),
+      text: `${copy.intro(inviterName)}\n\n${url}\n\n${copy.expiry(formattedDate)}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(inviterName))}</p>
+         ${this.button(url, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry(formattedDate))}</p>`,
       ),
     };
   }

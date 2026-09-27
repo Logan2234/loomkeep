@@ -1,5 +1,6 @@
 import {
   ErrorCode,
+  type InvitationPreviewDto,
   type LoginResponseDto,
   type UserDto,
   WebauthnLoginOptionsResponseDto,
@@ -35,12 +36,14 @@ import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { AuthResultResponseDto } from "./dto/auth-result-response.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
+import { InvitationPreviewResponseDto } from "./dto/invitation-preview-response.dto";
 import {
   LoginMfaChallengeResponseDto,
   LoginSuccessResponseDto,
 } from "./dto/login-response.dto";
 import { LoginDto } from "./dto/login.dto";
 import { MfaVerifyDto } from "./dto/mfa-verify.dto";
+import { PreviewInvitationDto } from "./dto/preview-invitation.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { ResendMfaEmailCodeDto } from "./dto/resend-mfa-email-code.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
@@ -51,11 +54,15 @@ import { WebauthnLoginVerifyDto } from "./dto/webauthn-login-verify.dto";
 import { WebauthnMfaOptionsResultDto } from "./dto/webauthn-mfa-options-response.dto";
 import { WebauthnMfaOptionsDto } from "./dto/webauthn-mfa-options.dto";
 import { WebauthnMfaVerifyDto } from "./dto/webauthn-mfa-verify.dto";
+import { InvitationService } from "./invitation.service";
 
 @Public()
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly invitations: InvitationService,
+  ) {}
 
   // Brute-force / abuse guards on top of the global 60 req/min default. The
   // budget lives in auth-throttle.ts: the e2e suite raises it by env rather
@@ -267,5 +274,19 @@ export class AuthController {
   @Post("verify-email")
   async verifyEmail(@Body() dto: VerifyEmailDto): Promise<void> {
     await this.authService.verifyEmail(dto.token);
+  }
+
+  // POST with the token in the body, not GET /invitations/:token: a URL
+  // lands in access logs, a body doesn't.
+  @Throttle({
+    default: { limit: AUTH_THROTTLE_LIMIT, ttl: AUTH_THROTTLE_TTL_MS },
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: InvitationPreviewResponseDto })
+  @Post("invitations/preview")
+  async previewInvitation(
+    @Body() dto: PreviewInvitationDto,
+  ): Promise<InvitationPreviewDto> {
+    return this.invitations.preview(dto.token);
   }
 }

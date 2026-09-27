@@ -59,4 +59,9 @@ export class RegisterDto implements RegisterRequestDto {
   @IsOptional()
   @IsString()
   turnstileToken?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  inviteToken?: string;
 }
