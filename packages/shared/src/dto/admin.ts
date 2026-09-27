@@ -22,7 +22,23 @@ export type QuotaWindow = "day" | "month";
  * actually needs to see.
  */
 export type ServiceProbeFailure =
-  "missingKey" | "timeout" | "network" | "refused";
+  "missingKey" | "invalid" | "timeout" | "network" | "refused";
+
+/**
+ * EE license details (docs/adr/0001-open-core-agpl.md), exposed by
+ * `EntitlementService.getLicenseStatus()` — the AGPL core's only window into
+ * `ee/licensing`, set from there without the core importing `ee/`.
+ */
+export interface LicenseStatusDto {
+  /** Who the key was issued to (LicensePayload#licensee). */
+  licensee: string;
+  /** ISO datetime. */
+  expiresAt: string;
+  /** Self-host key: every account of the instance is premium. */
+  instanceWide: boolean;
+  /** Still before `expiresAt`, or within its grace period. */
+  current: boolean;
+}
 
 export interface ServiceStatusDto {
   /** Stable identifier, e.g. "tmdb". */
@@ -63,6 +79,14 @@ export interface ServiceStatusDto {
    * badge and never probed. When set, `configured`/`reachable` are meaningless.
    */
   comingSoon?: boolean;
+  /** Present only for the "license" service, once a key is set and verified. */
+  license?: LicenseStatusDto;
+  /**
+   * For a service backed by several independent keys rather than one (e.g.
+   * Healthchecks.io: one ping URL per scheduled job) — how many are set, out
+   * of how many exist. `configured` is then `partial.configured > 0`.
+   */
+  partial?: { configured: number; total: number };
 }
 
 export interface ServiceStatusResponseDto {

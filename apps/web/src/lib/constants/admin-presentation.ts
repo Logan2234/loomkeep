@@ -1,3 +1,4 @@
+import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
 import { m } from "$lib/paraglide/messages.js";
 import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared";
 
@@ -31,6 +32,7 @@ export function adminServiceLabel(key: string, label: string): string {
 
 const PROBE_FAILURES = {
   missingKey: () => m.admin_service_missing_key(),
+  invalid: () => m.admin_service_invalid_key(),
   timeout: () => m.admin_service_timeout(),
   network: () => m.admin_service_network_error(),
   refused: () => m.admin_service_refused(),
@@ -38,6 +40,18 @@ const PROBE_FAILURES = {
 
 export function adminServiceDetail(service: ServiceStatusDto): string | null {
   if (service.comingSoon) return null;
+  if (service.key === "license") return licenseServiceDetail(service);
+
+  // A service backed by several independent keys (Healthchecks.io, one ping
+  // URL per job) reads as a count rather than the generic configured/failure
+  // pair below, whether or not any are set yet.
+  if (service.partial) {
+    return m.admin_services_jobs_monitored({
+      configured: service.partial.configured,
+      total: service.partial.total,
+    });
+  }
+
   if (!service.configured) return m.admin_service_missing_key();
 
   if (service.reachable === false) {
@@ -50,6 +64,32 @@ export function adminServiceDetail(service: ServiceStatusDto): string | null {
   }
 
   return null;
+}
+
+/**
+ * `license` reads from its own structured field rather than the generic
+ * reachable/failure pair: there's nothing to probe, only a key to verify
+ * offline (see AdminService.evaluateLicense).
+ */
+function licenseServiceDetail(service: ServiceStatusDto): string | null {
+  if (service.failure === "invalid") return m.admin_service_invalid_key();
+  if (!service.license) return m.admin_service_missing_key();
+
+  const date = formatDate(service.license.expiresAt, DATE_MEDIUM_OPTIONS);
+
+  if (!service.license.current) {
+    return m.admin_service_license_expired({ date });
+  }
+
+  return service.license.instanceWide
+    ? m.admin_service_license_detail_instance({
+        licensee: service.license.licensee,
+        date,
+      })
+    : m.admin_service_license_detail_account({
+        licensee: service.license.licensee,
+        date,
+      });
 }
 
 const JOB_LABELS = {

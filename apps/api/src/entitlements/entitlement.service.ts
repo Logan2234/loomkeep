@@ -1,3 +1,4 @@
+import type { LicenseStatusDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import type { Plan, UserEntitlement } from "@prisma/client";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
@@ -16,6 +17,7 @@ import { PrismaService } from "../prisma/prisma.service";
 @Injectable()
 export class EntitlementService {
   private instancePremium: () => boolean = () => false;
+  private licenseStatus: () => LicenseStatusDto | null = () => null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -29,6 +31,20 @@ export class EntitlementService {
    */
   setInstancePremiumSource(source: () => boolean): void {
     this.instancePremium = source;
+  }
+
+  /**
+   * Same inversion as `setInstancePremiumSource`, for the parsed license
+   * itself (licensee/expiry/scope) rather than the boolean it grants — the
+   * admin services page reads it through {@link getLicenseStatus} without
+   * the core importing ee/. Null without ee/, or without a valid key.
+   */
+  setLicenseStatusSource(source: () => LicenseStatusDto | null): void {
+    this.licenseStatus = source;
+  }
+
+  getLicenseStatus(): LicenseStatusDto | null {
+    return this.licenseStatus();
   }
 
   async getEntitlement(userId: string): Promise<UserEntitlement> {
