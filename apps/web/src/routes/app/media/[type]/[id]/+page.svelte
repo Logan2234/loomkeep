@@ -15,6 +15,7 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { auth } from "$lib/auth.svelte";
   import { goBack } from "$lib/backNav.svelte";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import Banner from "$lib/components/Banner.svelte";
@@ -48,6 +49,7 @@
   import ActionBar from "./components/ActionBar.svelte";
   import CastSection from "./components/CastSection.svelte";
   import EpisodesSection from "./components/EpisodesSection.svelte";
+  import WhereToWatch from "./components/WhereToWatch.svelte";
 
   const TYPE_LABELS: Record<MediaType, string> = {
     MOVIE: m.media_movie(),
@@ -236,9 +238,18 @@
   // the route), independent of watch-state reloads. Best-effort: errors are
   // swallowed so a provider hiccup never breaks the page.
   const extrasQuery = createApiQuery(() => ({
-    key: keys.media.extras(type === "ANIME" ? "anilist" : "tmdb", id),
+    key: keys.media.extras(
+      type === "ANIME" ? "anilist" : "tmdb",
+      id,
+      auth.user?.watchRegion ?? null,
+    ),
     fetch: () =>
-      getMediaExtras(type === "ANIME" ? "anilist" : "tmdb", id, type),
+      getMediaExtras(
+        type === "ANIME" ? "anilist" : "tmdb",
+        id,
+        type,
+        auth.user?.watchRegion ?? undefined,
+      ),
     enabled: !!type && !!id,
   }));
   const extras = $derived(extrasQuery.data);
@@ -250,6 +261,8 @@
   const hasProviders = $derived(
     !!extras &&
       (extras.watchProviders.flatrate.length > 0 ||
+        extras.watchProviders.free.length > 0 ||
+        extras.watchProviders.ads.length > 0 ||
         extras.watchProviders.rent.length > 0 ||
         extras.watchProviders.buy.length > 0),
   );
@@ -687,47 +700,7 @@
     {/if}
 
     {#if hasProviders && extras}
-      <!-- Où regarder: deliberately discreet (small, muted logos). -->
-      <section class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span class="timecode text-xs">{m.media_where_to_watch()}</span>
-        {#each [{ label: m.media_streaming(), list: extras.watchProviders.flatrate }, { label: m.media_rent(), list: extras.watchProviders.rent }, { label: m.media_buy(), list: extras.watchProviders.buy }] as group (group.label)}
-          {#if group.list.length > 0}
-            <div class="flex items-center gap-1.5">
-              <span class="text-dim text-[0.65rem]">{group.label}</span>
-              {#each group.list as p (p.name)}
-                <span
-                  title={p.name}
-                  class="bg-surface-2 grid h-6 w-6 place-items-center overflow-hidden rounded opacity-80">
-                  {#if p.logoUrl}
-                    <img
-                      src={p.logoUrl}
-                      alt={p.name}
-                      loading="lazy"
-                      class="h-full w-full object-cover" />
-                  {:else}
-                    <span class="text-dim text-[0.55rem] font-bold"
-                      >{p.name.slice(0, 2)}</span>
-                  {/if}
-                </span>
-              {/each}
-            </div>
-          {/if}
-        {/each}
-        {#if extras.watchProviders.link}
-          <div class="w-full">
-            <a
-              href={extras.watchProviders.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="link-accent timecode text-micro decoration-1">
-              {m.media_tmdb_france()}
-            </a>
-          </div>
-        {:else}
-          <span class="timecode text-dim text-micro w-full"
-            >{m.media_france()}</span>
-        {/if}
-      </section>
+      <WhereToWatch offers={extras.watchProviders} />
     {/if}
 
     {#if extras && extras.externalLinks.length > 0}

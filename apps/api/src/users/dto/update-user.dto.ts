@@ -22,9 +22,12 @@ import {
   IsBoolean,
   IsDateString,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
 
@@ -117,4 +120,17 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @ArrayUnique()
   @IsIn(Object.values(DomainValues), { each: true })
   domainOrder?: Domain[];
+
+  // An ISO 3166-1 code; null (let through by IsOptional) is "automatic".
+  @IsOptional()
+  @Matches(/^[A-Z]{2}$/)
+  watchRegion?: string | null;
+
+  // Not checked against TMDB's list: an unknown id just never matches an offer.
+  @IsOptional()
+  @ArrayMaxSize(200)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  watchProviderIds?: number[];
 }

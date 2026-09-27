@@ -215,12 +215,17 @@ export class AnilistProvider implements CatalogProvider {
 
   // AniList exposes no streaming providers; cast = characters, similar =
   // recommendations. `type` is always ANIME here.
-  async getExtras(sourceId: string): Promise<MediaExtrasDto> {
+  async getExtras(
+    sourceId: string,
+    _type: MediaType,
+    _lang: string | undefined,
+    watchRegion: string,
+  ): Promise<MediaExtrasDto> {
     const data = await this.query<{ Media: AnilistExtras | null }>(
       EXTRAS_QUERY,
       { id: Number(sourceId) },
     );
-    return toExtras(data.Media, sourceId);
+    return toExtras(data.Media, sourceId, watchRegion);
   }
 
   /** Live detail of an AniList staff member (voice actor) for the cast modal. */

@@ -24,17 +24,36 @@ export type SearchResponseDto = PagedResult<MediaSummaryDto>;
 
 /** A streaming platform where a title is available (from TMDB / JustWatch). */
 export interface WatchProviderDto {
+  /** TMDB's provider id, what `UserDto.watchProviderIds` holds. */
+  id: number;
   name: string;
   logoUrl: string | null;
 }
 
 /** Where to watch, split by offer type, for one region. */
 export interface WatchProvidersDto {
+  /** ISO 3166-1 code of the country the offers are for ("FR"). */
+  region: string;
+  /** Included in a subscription. */
   flatrate: WatchProviderDto[];
+  /** Free, without ads. */
+  free: WatchProviderDto[];
+  /** Free, with ads. */
+  ads: WatchProviderDto[];
   rent: WatchProviderDto[];
   buy: WatchProviderDto[];
   /** JustWatch deep link for the region, if any. */
   link: string | null;
+}
+
+/** Every watch provider of a region, to pick one's own services from. */
+export interface WatchProviderCatalogDto {
+  /** The region the list is for: the one asked for, else the automatic one. */
+  region: string;
+  /** Every region JustWatch covers, as ISO 3166-1 codes. */
+  regions: string[];
+  /** Most used in the region first. */
+  providers: WatchProviderDto[];
 }
 
 export interface CastMemberDto {

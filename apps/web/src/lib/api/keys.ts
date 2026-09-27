@@ -45,8 +45,8 @@ export const keys = {
   media: {
     detail: (type: string, sourceId: string) =>
       ["media", "detail", type, sourceId] as const,
-    extras: (source: string, sourceId: string) =>
-      ["media", "extras", source, sourceId] as const,
+    extras: (source: string, sourceId: string, region: string | null) =>
+      ["media", "extras", source, sourceId, region] as const,
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,
@@ -176,6 +176,8 @@ export const keys = {
       ["catalog", "search", filters] as const,
     castDetail: (source: string, personId: string) =>
       ["catalog", "cast-detail", source, personId] as const,
+    watchProviders: (region: string | null) =>
+      ["catalog", "watch-providers", region] as const,
   },
   admin: {
     overview: () => ["admin", "overview"] as const,

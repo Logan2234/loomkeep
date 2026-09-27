@@ -6,8 +6,16 @@ import {
   MediaExtrasDto,
   MediaType,
   SearchResponseDto,
+  WatchProviderCatalogDto,
 } from "@loomkeep/shared";
-import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Headers,
+  HttpStatus,
+  Param,
+  Query,
+} from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -22,8 +30,11 @@ import { CastDetailResponseDto } from "./dto/cast-detail-response.dto";
 import { MediaExtrasResponseDto } from "./dto/media-extras-response.dto";
 import { MediaSummaryResponseDto } from "./dto/media-summary-response.dto";
 import { SearchQueryDto } from "./dto/search-query.dto";
+import { WatchProviderCatalogResponseDto } from "./dto/watch-provider-catalog-response.dto";
 import { MediaItemService } from "./media-item.service";
+import { TmdbProvider } from "./providers/tmdb.provider";
 import { rankBySearchRelevance } from "./search-ranking";
+import { resolveWatchRegion } from "./watch-region.util";
 
 @Controller("catalog")
 export class CatalogController {
@@ -31,7 +42,27 @@ export class CatalogController {
     private readonly mediaItemService: MediaItemService,
     private readonly ageGate: AgeGateService,
     private readonly domainGate: DomainGateService,
+    private readonly tmdb: TmdbProvider,
   ) {}
+
+  /**
+   * Every watch provider of a region, for picking one's own services. The
+   * region is the one asked for, else the automatic one — returned, so the
+   * settings can say which it is.
+   */
+  @Get("watch-providers")
+  @ApiOkResponse({ type: WatchProviderCatalogResponseDto })
+  async getWatchProviders(
+    @Query("region") region?: string,
+    @Headers("accept-language") acceptLanguage?: string,
+  ): Promise<WatchProviderCatalogDto> {
+    const resolved = resolveWatchRegion(region, acceptLanguage);
+    const [regions, providers] = await Promise.all([
+      this.tmdb.listWatchRegions(),
+      this.tmdb.listWatchProviders(resolved),
+    ]);
+    return { region: resolved, regions, providers };
+  }
 
   /**
    * Live search. ANIME goes to AniList, MOVIE/SERIES to TMDB; without a type
@@ -118,12 +149,19 @@ export class CatalogController {
     @Param("id") id: string,
     @Query("type") type?: MediaType,
     @Query("lang") lang?: string,
+    @Query("region") region?: string,
+    @Headers("accept-language") acceptLanguage?: string,
   ): Promise<MediaExtrasDto> {
     const source = parseSource(sourceParam);
     const resolvedType = resolveType(source, type);
     const extras = await this.mediaItemService
       .providerFor(source)
-      .getExtras(id, resolvedType, safeLang(lang));
+      .getExtras(
+        id,
+        resolvedType,
+        safeLang(lang),
+        resolveWatchRegion(region, acceptLanguage),
+      );
     const allowAdult = await this.ageGate.allowsAdultContent(user.sub);
     return {
       ...extras,

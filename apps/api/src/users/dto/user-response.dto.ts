@@ -40,5 +40,7 @@ export class UserResponseDto implements UserDto {
   hideProgression!: boolean;
   spoilerSensitivity!: SpoilerSensitivity;
   domainOrder!: Domain[];
+  watchRegion!: string | null;
+  watchProviderIds!: number[];
   homeLayout!: HomeLayoutBody | null;
 }

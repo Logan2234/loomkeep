@@ -518,6 +518,14 @@ model User {
   // brand-new one, or before this preference ever existed) just keeps its
   // canonical position at the end — see web domains.ts's orderedDomains().
   domainOrder                   Domain[]           @default([])
+  // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
+  // Null means automatic: taken from the browser's Accept-Language on each
+  // request — see resolveWatchRegion().
+  watchRegion                   String?
+  // TMDB watch provider ids of the services the user has, put first (and in
+  // colour) wherever a title's offers are listed. Not tied to a region: the
+  // ids are global, a region only decides which of them offer a title.
+  watchProviderIds              Int[]              @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
