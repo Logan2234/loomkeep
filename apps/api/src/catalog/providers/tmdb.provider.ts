@@ -50,6 +50,7 @@ export class TmdbProvider implements CatalogProvider {
     string,
     { fetchedAt: number; providers: WatchProviderDto[] }
   >();
+
   private watchRegions: { fetchedAt: number; codes: string[] } | null = null;
 
   constructor(
@@ -61,6 +62,7 @@ export class TmdbProvider implements CatalogProvider {
   /** Every provider JustWatch lists in a region, the most used there first. */
   async listWatchProviders(region: string): Promise<WatchProviderDto[]> {
     const cached = this.watchProviderLists.get(region);
+
     if (cached && Date.now() - cached.fetchedAt < WATCH_LIST_TTL_MS) {
       return cached.providers;
     }
@@ -75,9 +77,11 @@ export class TmdbProvider implements CatalogProvider {
       ),
     );
     const byId = new Map<number, TmdbWatchProvider>();
+
     for (const provider of [...(movie.results ?? []), ...(tv.results ?? [])]) {
       byId.set(provider.provider_id, provider);
     }
+
     const rank = (p: TmdbWatchProvider) =>
       p.display_priorities?.[region] ??
       p.display_priority ??

@@ -457,7 +457,9 @@ const AD_TIER_SUFFIX = /\s+(?:Standard\s+)?with Ads$/i;
  * Providers as the DTO carries them, in the given order, without the ad-tier
  * plans of a service already in the list.
  */
-export function toWatchProviders(list?: TmdbWatchProvider[]): WatchProviderDto[] {
+export function toWatchProviders(
+  list?: TmdbWatchProvider[],
+): WatchProviderDto[] {
   const names = new Set((list ?? []).map((p) => p.provider_name.trim()));
 
   return (list ?? [])

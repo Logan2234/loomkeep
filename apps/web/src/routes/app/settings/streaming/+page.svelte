@@ -51,10 +51,7 @@
 
   let search = $state("");
   const normalize = (value: string) =>
-    value
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase();
+    value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const matchingRest = $derived(
     search.trim()
       ? rest.filter((p) => normalize(p.name).includes(normalize(search.trim())))
