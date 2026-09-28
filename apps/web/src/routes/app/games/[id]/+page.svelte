@@ -20,6 +20,7 @@
   import GameSessionDock from "$lib/components/GameSessionDock.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import Modal from "$lib/components/Modal.svelte";
   import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
   import OwnershipField from "$lib/components/OwnershipField.svelte";
@@ -45,6 +46,10 @@
   import { formatDate, joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    GAME_DIRECT_STATUS_TARGETS,
+    getStatusCorrections,
+  } from "$lib/status-corrections";
   import { slide } from "svelte/transition";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
 
@@ -59,6 +64,7 @@
   };
 
   let confirmRemove = $state(false);
+  let statusEditorOpen = $state(false);
   let historyOpen = $state(false);
   const reduced = prefersReducedMotion();
 
@@ -155,6 +161,23 @@
       addReplayMut.loading ||
       removeReplayMut.loading,
   );
+  const statusCorrections = $derived(
+    entry
+      ? getStatusCorrections(
+          STATUS_ORDER,
+          entry.status,
+          GAME_DIRECT_STATUS_TARGETS[entry.status],
+        )
+      : [],
+  );
+
+  function openStatusCorrection() {
+    if (statusCorrections.length === 1) {
+      patchMut.mutate({ status: statusCorrections[0]! });
+      return;
+    }
+    statusEditorOpen = true;
+  }
 </script>
 
 <svelte:head>
@@ -354,17 +377,42 @@
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}
+            actions={[
+              ...(entry.status === "PLAYING"
+                ? [
+                    {
+                      label: m.game_status_mark_completed(),
+                      icon: "check" as const,
+                      onSelect: () => patchMut.mutate({ status: "COMPLETED" }),
+                    },
+                    {
+                      label: m.game_status_drop(),
+                      icon: "archive" as const,
+                      onSelect: () => patchMut.mutate({ status: "DROPPED" }),
+                    },
+                  ]
+                : []),
+              ...(entry.status === "DROPPED"
+                ? [
+                    {
+                      label: m.game_status_resume(),
+                      icon: "refresh" as const,
+                      onSelect: () => patchMut.mutate({ status: "PLAYING" }),
+                    },
+                  ]
+                : []),
+              {
+                label:
+                  statusCorrections.length === 1
+                    ? m.game_status_reset_backlog()
+                    : m.tracking_correct_status(),
+                icon: "edit" as const,
+                separator: true,
+                onSelect: openStatusCorrection,
+              },
+            ]}
             targetType="GAME"
             targetId={entry.game.id}>
-            <SegmentedStatusControl
-              statuses={STATUS_ORDER}
-              current={entry.status}
-              disabled={saving}
-              meta={STATUS_META}
-              desc={STATUS_DESC}
-              activeClass={SEG_ACTIVE}
-              onSelect={(status) => patchMut.mutate({ status })} />
-
             <GameSessionDock {entry} {detailKey} />
 
             <hr class="border-border" />
@@ -574,6 +622,27 @@
       busy={removeMut.loading}
       onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
+  {/if}
+
+  {#if statusEditorOpen && entry}
+    <Modal
+      title={m.tracking_correct_status()}
+      onclose={() => (statusEditorOpen = false)}>
+      <p class="text-dim mb-4 text-sm">
+        {m.tracking_correct_status_help()}
+      </p>
+      <SegmentedStatusControl
+        statuses={statusCorrections}
+        current={entry.status}
+        disabled={saving}
+        meta={STATUS_META}
+        desc={STATUS_DESC}
+        activeClass={SEG_ACTIVE}
+        onSelect={(status) => {
+          statusEditorOpen = false;
+          patchMut.mutate({ status });
+        }} />
+    </Modal>
   {/if}
 
   {#if lightboxOpen}

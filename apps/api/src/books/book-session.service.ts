@@ -5,17 +5,22 @@ import type {
 } from "@loomkeep/shared";
 import {
   ActivityType,
+  BookStatus,
   Domain,
   ErrorCode,
   ReviewTargetType,
+  XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import type { BookSession, Prisma } from "@prisma/client";
+import { SessionSource, type BookSession, type Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { localDay } from "../common/local-day.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { SessionXpService } from "../gamification/session-xp.service";
+import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { CreateBookSessionDto } from "./dto/create-book-session.dto";
@@ -30,6 +35,8 @@ export class BookSessionService {
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
     private readonly sessionXp: SessionXpService,
+    private readonly xp: XpService,
+    private readonly achievements: AchievementService,
   ) {}
 
   async list(
@@ -45,31 +52,37 @@ export class BookSessionService {
     userId: string,
     entryId: string,
     dto: CreateBookSessionDto,
+    source: SessionSource = SessionSource.MANUAL,
   ): Promise<BookSessionMutationDto> {
     const occurredAt = this.validDate(dto.occurredAt);
     const entry = await this.ownedEntry(userId, entryId);
     this.assertEdition(entry);
-    const pages = this.normalizePages(dto);
+    const pages = this.normalizePages(dto, entry.referencePageCount);
 
-    const session = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.bookSession.create({
-        data: {
-          bookEntryId: entry.id,
-          durationMinutes: dto.durationMinutes,
-          occurredAt,
-          ...pages,
-        },
-      });
-      await this.recomputeEntry(tx, entry.id);
-      await tx.bookEntry.update({
-        where: { id: entry.id },
-        data: {
-          ...(entry.status === "TO_READ" ? { status: "READING" } : {}),
-          ...(entry.startedAt === null ? { startedAt: occurredAt } : {}),
-        },
-      });
-      return created;
-    });
+    const { session, completed } = await this.prisma.$transaction(
+      async (tx) => {
+        const created = await tx.bookSession.create({
+          data: {
+            bookEntryId: entry.id,
+            durationMinutes: dto.durationMinutes,
+            notes: normalizeSessionNotes(dto.notes),
+            occurredAt,
+            source,
+            ...pages,
+          },
+        });
+
+        if (entry.status === BookStatus.DROPPED && dto.resumeTracking) {
+          await tx.bookEntry.update({
+            where: { id: entry.id },
+            data: { status: BookStatus.READING },
+          });
+        }
+
+        const recomputed = await this.recomputeEntry(tx, entry.id, occurredAt);
+        return { session: created, completed: recomputed.completed };
+      },
+    );
 
     await this.activity.emit({
       userId,
@@ -82,6 +95,7 @@ export class BookSessionService {
       sourceId: session.id,
       data: this.activityData(session),
     });
+    await this.awardCompletion(userId, entry.id, completed);
     const xpAwarded = await this.sessionXp.awardForToday(userId);
 
     return {
@@ -100,25 +114,40 @@ export class BookSessionService {
     const occurredAt = dto.occurredAt
       ? this.validDate(dto.occurredAt)
       : before.occurredAt;
-    const pages = this.normalizeUpdatePages(before, dto);
-    const session = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.bookSession.update({
-        where: { id: sessionId },
-        data: {
-          durationMinutes: dto.durationMinutes ?? before.durationMinutes,
+    const pages = this.normalizeUpdatePages(
+      before,
+      dto,
+      before.bookEntry.referencePageCount,
+    );
+    const { session, completed } = await this.prisma.$transaction(
+      async (tx) => {
+        const updated = await tx.bookSession.update({
+          where: { id: sessionId },
+          data: {
+            durationMinutes: dto.durationMinutes ?? before.durationMinutes,
+            notes:
+              dto.notes === undefined
+                ? before.notes
+                : normalizeSessionNotes(dto.notes),
+            occurredAt,
+            ...pages,
+          },
+        });
+        const recomputed = await this.recomputeEntry(
+          tx,
+          before.bookEntryId,
           occurredAt,
-          ...pages,
-        },
-      });
-      await this.recomputeEntry(tx, before.bookEntryId);
-      return updated;
-    });
+        );
+        return { session: updated, completed: recomputed.completed };
+      },
+    );
 
     await this.activity.updateLinked(
       "BookSession",
       session.id,
       this.activityData(session),
     );
+    await this.awardCompletion(userId, before.bookEntryId, completed);
     return {
       session: toDto(session),
       summary: await this.summary(before.bookEntryId, 1),
@@ -139,11 +168,18 @@ export class BookSessionService {
   private async recomputeEntry(
     tx: Prisma.TransactionClient,
     entryId: string,
-  ): Promise<void> {
+    completionAt?: Date,
+  ): Promise<{ completed: boolean }> {
     const [entry, sessions] = await Promise.all([
       tx.bookEntry.findUniqueOrThrow({
         where: { id: entryId },
-        select: { readingBaselinePage: true, referencePageCount: true },
+        select: {
+          readingBaselinePage: true,
+          referencePageCount: true,
+          status: true,
+          startedAt: true,
+          finishedAt: true,
+        },
       }),
       tx.bookSession.findMany({
         where: { bookEntryId: entryId },
@@ -153,6 +189,7 @@ export class BookSessionService {
           pagesRead: true,
           startPage: true,
           endPage: true,
+          occurredAt: true,
         },
       }),
     ]);
@@ -161,13 +198,51 @@ export class BookSessionService {
       entry.referencePageCount,
       sessions,
     );
+    const completed =
+      completionAt !== undefined &&
+      entry.status !== BookStatus.READ &&
+      entry.status !== BookStatus.DROPPED &&
+      aggregate.completionSuggested;
+    const started =
+      entry.status === BookStatus.TO_READ && sessions.length > 0 && !completed;
+    const resetToRead =
+      completionAt === undefined &&
+      entry.status === BookStatus.READING &&
+      entry.readingBaselinePage === 0 &&
+      sessions.length === 0;
+
     await tx.bookEntry.update({
       where: { id: entryId },
       data: {
         currentPage: aggregate.currentPage,
         trackedReadingMinutes: aggregate.trackedMinutes,
+        ...(completed ? { status: BookStatus.READ } : {}),
+        ...(started ? { status: BookStatus.READING } : {}),
+        ...(resetToRead ? { status: BookStatus.TO_READ, startedAt: null } : {}),
+        ...(entry.startedAt === null && sessions[0]
+          ? { startedAt: sessions[0].occurredAt }
+          : {}),
+        ...(completed && entry.finishedAt === null
+          ? { finishedAt: completionAt }
+          : {}),
       },
     });
+
+    return { completed };
+  }
+
+  private async awardCompletion(
+    userId: string,
+    entryId: string,
+    completed: boolean,
+  ): Promise<void> {
+    if (!completed) return;
+
+    await this.xp.award(userId, XpReason.BOOK_FINISHED, entryId);
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.BOOK_FINISHED],
+    );
   }
 
   private async summary(
@@ -249,11 +324,19 @@ export class BookSessionService {
     };
   }
 
-  private normalizePages(dto: {
-    pagesRead?: number;
-    startPage?: number | null;
-    endPage?: number | null;
-  }): { pagesRead: number; startPage: number | null; endPage: number | null } {
+  private normalizePages(
+    dto: {
+      pagesRead?: number;
+      startPage?: number | null;
+      endPage?: number | null;
+    },
+    referencePageCount: number | null,
+  ): {
+    pagesRead: number;
+    startPage: number | null;
+    endPage: number | null;
+  } {
+    if (!referencePageCount) this.invalidPages();
     const quantity = dto.pagesRead !== undefined;
     const range =
       (dto.startPage !== null && dto.startPage !== undefined) ||
@@ -261,6 +344,7 @@ export class BookSessionService {
     if (quantity === range) this.invalidPages();
 
     if (quantity) {
+      if (dto.pagesRead! > referencePageCount) this.invalidPages();
       return { pagesRead: dto.pagesRead!, startPage: null, endPage: null };
     }
 
@@ -269,7 +353,8 @@ export class BookSessionService {
       dto.startPage === undefined ||
       dto.endPage === null ||
       dto.endPage === undefined ||
-      dto.endPage <= dto.startPage
+      dto.endPage <= dto.startPage ||
+      dto.endPage > referencePageCount
     ) {
       this.invalidPages();
     }
@@ -281,16 +366,26 @@ export class BookSessionService {
     };
   }
 
-  private normalizeUpdatePages(before: BookSession, dto: UpdateBookSessionDto) {
+  private normalizeUpdatePages(
+    before: BookSession,
+    dto: UpdateBookSessionDto,
+    referencePageCount: number | null,
+  ) {
     if (dto.pagesRead !== undefined) {
-      return this.normalizePages({ pagesRead: dto.pagesRead });
+      return this.normalizePages(
+        { pagesRead: dto.pagesRead },
+        referencePageCount,
+      );
     }
 
     if (dto.startPage !== undefined || dto.endPage !== undefined) {
-      return this.normalizePages({
-        startPage: dto.startPage,
-        endPage: dto.endPage,
-      });
+      return this.normalizePages(
+        {
+          startPage: dto.startPage,
+          endPage: dto.endPage,
+        },
+        referencePageCount,
+      );
     }
 
     return {
@@ -334,7 +429,9 @@ export class BookSessionService {
   private async ownedSession(userId: string, sessionId: string) {
     const session = await this.prisma.bookSession.findUnique({
       where: { id: sessionId },
-      include: { bookEntry: { select: { userId: true } } },
+      include: {
+        bookEntry: { select: { userId: true, referencePageCount: true } },
+      },
     });
 
     if (!session) {
@@ -409,9 +506,17 @@ function toDto(session: BookSession): BookSessionDto {
     pagesRead: session.pagesRead,
     startPage: session.startPage,
     endPage: session.endPage,
+    notes: session.notes,
     occurredAt: session.occurredAt.toISOString(),
     source: session.source,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
   };
+}
+
+function normalizeSessionNotes(
+  notes: string | null | undefined,
+): string | null {
+  const trimmed = notes?.trim();
+  return trimmed ? trimmed : null;
 }

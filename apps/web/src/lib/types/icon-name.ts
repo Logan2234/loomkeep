@@ -23,6 +23,7 @@ export type IconName =
   | "bell-off"
   | "monitor"
   | "plus"
+  | "minus"
   | "trash"
   | "x"
   | "eye"

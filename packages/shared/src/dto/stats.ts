@@ -174,6 +174,8 @@ export interface GameStatsDto {
   totalPlaytimeMinutes: number;
   avgPlaytimePerCompletedMinutes: number | null;
   neverLaunchedCount: number;
+  /** PLAYING entries whose latest session is older than 30 days. */
+  pausedInProgressCount: number;
   /** Completed replays beyond each game's first completion. */
   replaysCount: number;
   /** Full ranked list, minutes descending — the front caps the display. */
@@ -212,9 +214,8 @@ export interface BookStatsDto {
   distinctAuthorsCount: number;
   /** Completed rereads beyond each book's first completion. */
   rereadsCount: number;
-  // READING entries untouched 30+ days (proxy: `updatedAt`, the entry has
-  // no per-page-turn log).
-  stagnantInProgressCount: number;
+  /** READING entries whose latest session is older than 30 days. */
+  pausedInProgressCount: number;
 }
 
 // The Musique deep section on /stats — everything not already covered by

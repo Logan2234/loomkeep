@@ -24,6 +24,7 @@ class DataExportBookSessionResponseDto {
   pagesRead!: number;
   startPage!: number | null;
   endPage!: number | null;
+  notes!: string | null;
   occurredAt!: string;
   source!: SessionSource;
   createdAt!: string;

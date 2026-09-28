@@ -41,6 +41,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     replays: [],
+    sessions: [],
     bookItem: {
       id: `book-${id}`,
       title: overrides.title ?? "Dune",
@@ -121,6 +122,35 @@ describe("BookLibraryService.deleteEntry", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
     expect(deleteLinked).toHaveBeenCalledWith("BookSession", "session-1");
     expect(refreshAfterDelete).toHaveBeenCalledWith("user-1", sessionCreatedAt);
+  });
+});
+
+describe("BookLibraryService.getPile", () => {
+  it("turns the paused pseudo-status into a dated-session filter", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const service = new BookLibraryService(
+      { bookEntry: { findMany } } as unknown as PrismaService,
+      {} as BookItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {} as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+
+    await service.getPile("user-1", { statuses: ["PAUSED"] });
+
+    const [[query]] = findMany.mock.calls;
+    expect(query.where.AND[0].AND[0].OR).toEqual([
+      {
+        status: "READING",
+        sessions: {
+          some: { occurredAt: { lt: expect.any(Date) } },
+          none: { occurredAt: { gte: expect.any(Date) } },
+        },
+      },
+    ]);
   });
 });
 

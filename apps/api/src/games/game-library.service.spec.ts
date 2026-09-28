@@ -41,6 +41,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     replays: [],
+    sessions: [],
     gameItem: {
       id: `game-${id}`,
       title: overrides.title ?? "Hades",
@@ -261,6 +262,33 @@ describe("GameLibraryService.getPile", () => {
     expect(query.where.AND).toEqual([
       expect.objectContaining({ userId: "user-1", favorite: true }),
       { status: { in: ["BACKLOG", "PLAYING"] } },
+    ]);
+  });
+
+  it("turns the paused pseudo-status into a dated-session filter", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const service = new GameLibraryService(
+      { gameEntry: { findMany } } as unknown as PrismaService,
+      {} as GameItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {} as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+    );
+
+    await service.getPile("user-1", { statuses: ["PAUSED"] });
+
+    const [[query]] = findMany.mock.calls;
+    expect(query.where.AND[0].AND[0].OR).toEqual([
+      {
+        status: "PLAYING",
+        sessions: {
+          some: { occurredAt: { lt: expect.any(Date) } },
+          none: { occurredAt: { gte: expect.any(Date) } },
+        },
+      },
     ]);
   });
 });

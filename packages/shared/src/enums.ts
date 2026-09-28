@@ -168,10 +168,9 @@ export const GameSource = {
 export type GameSource = (typeof GameSource)[keyof typeof GameSource];
 
 /**
- * Status of a game in a user's library. Unlike media (whose status is derived
- * from episode progress), a game's status is entirely user-set: there is no
- * per-episode progress to infer "playing" or "completed" from. BACKLOG doubles
- * as the wishlist ("want to play").
+ * Status of a game in a user's library. The first play session moves BACKLOG
+ * to PLAYING, but completion and abandonment remain explicit user choices.
+ * BACKLOG doubles as the wishlist ("want to play").
  */
 export const GameStatus = {
   BACKLOG: "BACKLOG",
@@ -202,10 +201,10 @@ export const BookSource = {
 export type BookSource = (typeof BookSource)[keyof typeof BookSource];
 
 /**
- * Status of a book in a user's library. Like GameStatus it is entirely
- * user-set: books have no per-chapter progress to derive "reading"/"read" from
- * (page progress is tracked separately, on the entry). TO_READ doubles as the
- * wishlist ("want to read").
+ * Status of a book in a user's library. Reading sessions move TO_READ to
+ * READING and then READ once page progress reaches the selected edition's
+ * reference page count. DROPPED remains an explicit user choice. TO_READ
+ * doubles as the wishlist ("want to read").
  */
 export const BookStatus = {
   TO_READ: "TO_READ",

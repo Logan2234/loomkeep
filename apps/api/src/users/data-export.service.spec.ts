@@ -107,7 +107,15 @@ describe("DataExportService.buildExport", () => {
           externalIds: [{ source: "IGDB", externalId: "1234" }],
         },
         replays: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
-        sessions: [],
+        sessions: [
+          {
+            durationMinutes: 45,
+            notes: "Beat Meg",
+            occurredAt: new Date("2026-02-03T00:00:00.000Z"),
+            source: "MANUAL",
+            createdAt: new Date("2026-02-03T00:00:00.000Z"),
+          },
+        ],
       },
     ]);
 
@@ -118,6 +126,7 @@ describe("DataExportService.buildExport", () => {
         game: expect.objectContaining({ title: "Hades", sourceId: "1234" }),
         playtimeMinutes: 120,
         replays: ["2026-03-01T00:00:00.000Z"],
+        sessions: [expect.objectContaining({ notes: "Beat Meg" })],
       }),
     ]);
   });
@@ -147,7 +156,18 @@ describe("DataExportService.buildExport", () => {
           externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
         },
         replays: [],
-        sessions: [],
+        sessions: [
+          {
+            durationMinutes: 30,
+            pagesRead: 25,
+            startPage: null,
+            endPage: null,
+            notes: "The spice must flow",
+            occurredAt: new Date("2026-02-05T00:00:00.000Z"),
+            source: "MANUAL",
+            createdAt: new Date("2026-02-05T00:00:00.000Z"),
+          },
+        ],
       },
     ]);
 
@@ -161,6 +181,7 @@ describe("DataExportService.buildExport", () => {
           sourceId: "OL1W",
         }),
         currentPage: 320,
+        sessions: [expect.objectContaining({ notes: "The spice must flow" })],
       }),
     ]);
   });

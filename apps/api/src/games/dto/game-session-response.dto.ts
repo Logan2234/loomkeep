@@ -10,6 +10,7 @@ import { SessionWeekDayResponseDto } from "../../common/dto/session-week-day-res
 export class GameSessionResponseDto implements GameSessionDto {
   id!: string;
   durationMinutes!: number;
+  notes!: string | null;
   occurredAt!: string;
   source!: SessionSource;
   createdAt!: string;

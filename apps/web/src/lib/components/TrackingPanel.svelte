@@ -1,6 +1,7 @@
 <script lang="ts">
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
+  import type { IconName } from "$lib/types/icon-name";
   import type { ListItemTargetType } from "@loomkeep/shared";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
@@ -17,6 +18,7 @@
     targetId,
     onToggleFavorite,
     onRemove,
+    actions = [],
     children,
   }: {
     favorite: boolean;
@@ -25,6 +27,12 @@
     targetId: string;
     onToggleFavorite: () => void;
     onRemove: () => void;
+    actions?: {
+      label: string;
+      icon: IconName;
+      onSelect: () => void;
+      separator?: boolean;
+    }[];
     children: Snippet;
   } = $props();
 </script>
@@ -73,10 +81,27 @@
           </button>
         {/snippet}
         {#snippet children({ close })}
+          {#each actions as action (action.label)}
+            <button
+              role="menuitem"
+              type="button"
+              class="menu-item"
+              class:border-t={action.separator}
+              class:border-border={action.separator}
+              disabled={saving}
+              onclick={() => {
+                close();
+                action.onSelect();
+              }}>
+              <Icon name={action.icon} class="h-4 w-4" />
+              {action.label}
+            </button>
+          {/each}
           <button
             role="menuitem"
             type="button"
             class="menu-item menu-item-danger border-border border-t"
+            disabled={saving}
             onclick={() => {
               close();
               onRemove();

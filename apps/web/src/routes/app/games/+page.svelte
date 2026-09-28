@@ -14,12 +14,15 @@
   } from "$lib/constants/status-labels";
   import { toggleFavorite } from "$lib/favorite-toggle";
   import { m } from "$lib/paraglide/messages";
-  import { Domain, type GameEntryDto } from "@loomkeep/shared";
+  import { Domain, isSessionPaused, type GameEntryDto } from "@loomkeep/shared";
 
-  const STATUS_OPTIONS = GAME_STATUS_ORDER.map((value) => ({
-    label: GAME_STATUS_LABELS[value],
-    value,
-  }));
+  const STATUS_OPTIONS = [
+    ...GAME_STATUS_ORDER.map((value) => ({
+      label: GAME_STATUS_LABELS[value],
+      value,
+    })),
+    { label: m.media_status_paused(), value: "PAUSED" },
+  ];
 
   const SORTS = [
     { label: m.library_sort_added(), value: "added" },
@@ -80,7 +83,8 @@
       {#snippet meta()}
         <span class="timecode text-xs">
           {GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-            · ★ {entry.rating}{/if}
+            · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "PLAYING")}
+            {m.media_paused_suffix()}{/if}
         </span>
       {/snippet}
     </PosterCard>

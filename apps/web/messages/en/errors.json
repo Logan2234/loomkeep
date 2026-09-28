@@ -66,6 +66,8 @@
   "apierr_library_session_forbidden": "This session does not belong to you.",
   "apierr_library_session_date_future": "A session date cannot be in the future.",
   "apierr_library_session_invalid_pages": "Enter either a page count or a valid page range.",
+  "apierr_library_session_timer_already_running": "A timer is already active. Finish or cancel it before starting another one.",
+  "apierr_library_session_timer_not_found": "This timer is no longer active.",
   "apierr_library_book_edition_required": "Choose an edition and its page count before logging a session.",
   "apierr_import_archive_empty": "The uploaded archive is empty.",
   "apierr_import_archive_unreadable": "The archive couldn't be read.",

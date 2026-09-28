@@ -21,6 +21,7 @@
   import DetailHeroSkeleton from "$lib/components/DetailHeroSkeleton.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import Lightbox from "$lib/components/Lightbox.svelte";
+  import Modal from "$lib/components/Modal.svelte";
   import MyRatingBadge from "$lib/components/MyRatingBadge.svelte";
   import NewBadge from "$lib/components/NewBadge.svelte";
   import NoteField from "$lib/components/NoteField.svelte";
@@ -46,6 +47,10 @@
   import { isFeatureNew } from "$lib/feature-badges";
   import { formatDate, joinMeta } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
+  import {
+    BOOK_DIRECT_STATUS_TARGETS,
+    getStatusCorrections,
+  } from "$lib/status-corrections";
 
   // Open Library is the only book source today; the web route carries just
   // the work id (e.g. "OL893414W").
@@ -59,6 +64,7 @@
   } as const;
 
   let confirmRemove = $state(false);
+  let statusEditorOpen = $state(false);
   let lightboxOpen = $state(false);
   // Manually picked edition (an OLID from `editionsQuery`); undefined = the
   // interface-language auto-pick. Local to this page view — not persisted.
@@ -153,6 +159,23 @@
       addReplayMut.loading ||
       removeReplayMut.loading,
   );
+  const statusCorrections = $derived(
+    entry
+      ? getStatusCorrections(
+          STATUS_ORDER,
+          entry.status,
+          BOOK_DIRECT_STATUS_TARGETS[entry.status],
+        )
+      : [],
+  );
+
+  function openStatusCorrection() {
+    if (statusCorrections.length === 1) {
+      patchMut.mutate({ status: statusCorrections[0]! });
+      return;
+    }
+    statusEditorOpen = true;
+  }
 
   let restoredEdition = $state(false);
   let editionSyncTarget = $state<string | null>(null);
@@ -337,21 +360,43 @@
             onToggleFavorite={() =>
               patchMut.mutate({ favorite: !entry.favorite })}
             onRemove={() => (confirmRemove = true)}
+            actions={[
+              ...(entry.status === "READING"
+                ? [
+                    {
+                      label: m.book_status_mark_read(),
+                      icon: "check" as const,
+                      onSelect: () => patchMut.mutate({ status: "READ" }),
+                    },
+                    {
+                      label: m.book_status_drop(),
+                      icon: "archive" as const,
+                      onSelect: () => patchMut.mutate({ status: "DROPPED" }),
+                    },
+                  ]
+                : []),
+              ...(entry.status === "DROPPED"
+                ? [
+                    {
+                      label: m.book_status_resume(),
+                      icon: "refresh" as const,
+                      onSelect: () => patchMut.mutate({ status: "READING" }),
+                    },
+                  ]
+                : []),
+              {
+                label:
+                  statusCorrections.length === 1
+                    ? m.book_status_reset_to_read()
+                    : m.tracking_correct_status(),
+                icon: "edit" as const,
+                separator: true,
+                onSelect: openStatusCorrection,
+              },
+            ]}
             targetType="BOOK"
             targetId={entry.book.id}>
-            <SegmentedStatusControl
-              statuses={STATUS_ORDER}
-              current={entry.status}
-              disabled={saving}
-              meta={STATUS_META}
-              desc={STATUS_DESC}
-              activeClass={SEG_ACTIVE}
-              onSelect={(status) => patchMut.mutate({ status })} />
-
-            <BookSessionDock
-              {entry}
-              {detailKey}
-              onMarkFinished={() => patchMut.mutate({ status: "READ" })} />
+            <BookSessionDock {entry} {detailKey} />
 
             <hr class="border-border" />
 
@@ -568,6 +613,27 @@
       busy={removeMut.loading}
       onConfirm={() => removeMut.mutate()}
       onCancel={() => (confirmRemove = false)} />
+  {/if}
+
+  {#if statusEditorOpen && entry}
+    <Modal
+      title={m.tracking_correct_status()}
+      onclose={() => (statusEditorOpen = false)}>
+      <p class="text-dim mb-4 text-sm">
+        {m.tracking_correct_status_help()}
+      </p>
+      <SegmentedStatusControl
+        statuses={statusCorrections}
+        current={entry.status}
+        disabled={saving}
+        meta={STATUS_META}
+        desc={STATUS_DESC}
+        activeClass={SEG_ACTIVE}
+        onSelect={(status) => {
+          statusEditorOpen = false;
+          patchMut.mutate({ status });
+        }} />
+    </Modal>
   {/if}
 
   {#if lightboxOpen && detail.coverUrl}

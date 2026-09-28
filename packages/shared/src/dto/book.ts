@@ -108,6 +108,8 @@ export interface BookEntryDto {
   referencePageCount: number | null;
   /** Sum of dated reading sessions recorded in Loomkeep. */
   trackedReadingMinutes: number;
+  /** Latest dated reading session, used for the derived paused signal. */
+  lastSessionAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
@@ -154,6 +156,7 @@ export interface BookSessionDto {
   pagesRead: number;
   startPage: number | null;
   endPage: number | null;
+  notes: string | null;
   occurredAt: string;
   source: SessionSource;
   createdAt: string;
@@ -163,6 +166,9 @@ export interface BookSessionDto {
 export interface CreateBookSessionDto {
   durationMinutes: number;
   occurredAt: string;
+  notes?: string | null;
+  /** Explicitly resume an abandoned entry when recording this session. */
+  resumeTracking?: boolean;
   /** Quantity mode. Mutually exclusive with startPage/endPage. */
   pagesRead?: number;
   /** Range mode. Both values are required together. */
@@ -173,6 +179,7 @@ export interface CreateBookSessionDto {
 export interface UpdateBookSessionDto {
   durationMinutes?: number;
   occurredAt?: string;
+  notes?: string | null;
   pagesRead?: number;
   startPage?: number | null;
   endPage?: number | null;

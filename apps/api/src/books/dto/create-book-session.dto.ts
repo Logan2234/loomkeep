@@ -1,14 +1,35 @@
-import type { CreateBookSessionDto as Contract } from "@loomkeep/shared";
-import { IsDateString, IsInt, IsOptional, Max, Min } from "class-validator";
+import {
+  MAX_SESSION_DURATION_MINUTES,
+  type CreateBookSessionDto as Contract,
+} from "@loomkeep/shared";
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from "class-validator";
 
 export class CreateBookSessionDto implements Contract {
   @IsInt()
   @Min(1)
-  @Max(1440)
+  @Max(MAX_SESSION_DURATION_MINUTES)
   durationMinutes!: number;
 
   @IsDateString()
   occurredAt!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeTracking?: boolean;
 
   @IsOptional()
   @IsInt()

@@ -5,47 +5,65 @@
     getBookSessions,
     updateBookSession,
   } from "$lib/api/books";
+  import { finishSessionTimer } from "$lib/api/session-timer";
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import { formatDate } from "$lib/format";
+  import { isFeatureNew } from "$lib/feature-badges";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import {
     formatSessionMinutes,
     localDateInput,
     sessionDateToIso,
   } from "$lib/session-presentation";
+  import { toast } from "$lib/toast.svelte";
+  import { MAX_SESSION_DURATION_MINUTES } from "@loomkeep/shared";
   import type {
     BookEntryDto,
     BookSessionDto,
     BookSessionMutationDto,
     CreateBookSessionDto,
+    FinishSessionTimerDto,
     UpdateBookSessionDto,
   } from "@loomkeep/shared";
   import type { QueryKey } from "@tanstack/svelte-query";
+  import { fly } from "svelte/transition";
   import Banner from "./Banner.svelte";
+  import AnimatedNumberInput from "./AnimatedNumberInput.svelte";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
+  import NewBadge from "./NewBadge.svelte";
+  import PageNumberControl from "./PageNumberControl.svelte";
   import ProgressBar from "./ProgressBar.svelte";
+  import SegmentedControl from "./SegmentedControl.svelte";
+  import SessionDurationPicker from "./SessionDurationPicker.svelte";
+  import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
 
   let {
     entry,
     detailKey,
-    onMarkFinished,
   }: {
     entry: BookEntryDto;
     detailKey: QueryKey;
-    onMarkFinished: () => void;
   } = $props();
 
   type PageMode = "quantity" | "range";
 
+  const pageModeOptions = $derived([
+    { value: "quantity" as const, label: m.book_session_mode_quantity() },
+    { value: "range" as const, label: m.book_session_mode_range() },
+  ]);
+
   const quickDurations = [15, 30, 45, 60] as const;
   const today = localDateInput();
+  const reduced = prefersReducedMotion();
   let durationMinutes = $state(30);
   let occurredOn = $state(today);
+  let notes = $state("");
   let mode = $state<PageMode>("quantity");
   let pagesRead = $state(10);
   let startPage = $state(0);
@@ -56,12 +74,15 @@
   let editingId = $state<string | null>(null);
   let editDuration = $state(0);
   let editDate = $state(today);
+  let editNotes = $state("");
   let editMode = $state<PageMode>("quantity");
   let editPagesRead = $state(0);
   let editStartPage = $state(0);
   let editEndPage = $state(1);
   let deletingId = $state<string | null>(null);
   let initializedEntryId = $state<string | null>(null);
+  let finishingTimer = $state(false);
+  let resumeTracking = $state(true);
 
   $effect(() => {
     if (initializedEntryId === entry.id) return;
@@ -99,9 +120,31 @@
     ],
     onSuccess: () => {
       page = 1;
+      notes = "";
       showAdd = false;
     },
     successToast: m.session_saved(),
+    errorToast: true,
+  }));
+
+  const finishTimerMut = createApiMutation<FinishSessionTimerDto, void>(() => ({
+    mutate: finishSessionTimer,
+    invalidates: [
+      keys.sessionTimer.current(),
+      keys.books.sessionsRoot(entry.id),
+      detailKey,
+      keys.stats.books(),
+      keys.stats.social(),
+      keys.gamification.progression(),
+      keys.feed.all(),
+    ],
+    onSuccess: () => {
+      page = 1;
+      notes = "";
+      finishingTimer = false;
+      showAdd = false;
+    },
+    successToast: m.session_timer_saved(),
     errorToast: true,
   }));
 
@@ -122,6 +165,24 @@
     errorToast: true,
   }));
 
+  const restoreMut = createApiMutation<
+    CreateBookSessionDto,
+    BookSessionMutationDto
+  >(() => ({
+    mutate: (body) => createBookSession(entry.id, body),
+    invalidates: [
+      keys.books.sessionsRoot(entry.id),
+      detailKey,
+      keys.stats.books(),
+      keys.stats.social(),
+      keys.gamification.progression(),
+      keys.feed.all(),
+    ],
+    onSuccess: () => (page = 1),
+    successToast: m.session_restored(),
+    errorToast: true,
+  }));
+
   const deleteMut = createApiMutation<string, void>(() => ({
     mutate: (id) => deleteBookSession(id),
     invalidates: [
@@ -132,11 +193,34 @@
       keys.gamification.progression(),
       keys.feed.all(),
     ],
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
+      const deleted = summary?.items.find(
+        (session) => session.id === deletedId,
+      );
       deletingId = null;
       page = 1;
+      if (deleted) {
+        toast.action(
+          m.session_deleted(),
+          {
+            label: m.common_undo(),
+            onSelect: () =>
+              restoreMut.mutate({
+                durationMinutes: deleted.durationMinutes,
+                occurredAt: deleted.occurredAt,
+                notes: deleted.notes,
+                ...(deleted.startPage === null
+                  ? { pagesRead: deleted.pagesRead }
+                  : {
+                      startPage: deleted.startPage,
+                      endPage: deleted.endPage!,
+                    }),
+              }),
+          },
+          "success",
+        );
+      }
     },
-    successToast: m.session_deleted(),
     errorToast: true,
   }));
 
@@ -155,11 +239,29 @@
     if (!referencePages || durationMinutes < 1) return;
     const pageData =
       mode === "quantity" ? { pagesRead } : { startPage, endPage };
+    if (finishingTimer) {
+      finishTimerMut.mutate({ notes: notes || null, ...pageData });
+      return;
+    }
     createMut.mutate({
       durationMinutes,
       occurredAt: sessionDateToIso(occurredOn),
+      notes: notes || null,
+      resumeTracking: entry.status === "DROPPED" && resumeTracking,
       ...pageData,
     });
+  }
+
+  function openAdd() {
+    finishingTimer = false;
+    showAdd = true;
+  }
+
+  function finishTimedSession(elapsedSeconds: number) {
+    durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    notes = "";
+    finishingTimer = true;
+    showAdd = true;
   }
 
   function openHistory() {
@@ -172,6 +274,7 @@
     editingId = session.id;
     editDuration = session.durationMinutes;
     editDate = localDateInput(new Date(session.occurredAt));
+    editNotes = session.notes ?? "";
     editMode = session.startPage === null ? "quantity" : "range";
     editPagesRead = session.pagesRead;
     editStartPage = session.startPage ?? 1;
@@ -197,6 +300,7 @@
       body: {
         durationMinutes: editDuration,
         occurredAt: sessionDateToIso(editDate),
+        notes: editNotes || null,
         ...pageData,
       },
     });
@@ -207,9 +311,12 @@
   <div class="border-border bg-bg/45 rounded-xl border p-4">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
-        <h3 id="book-session-title" class="font-display font-bold">
-          {m.session_week()}
-        </h3>
+        <div class="flex items-center gap-2">
+          <h3 id="book-session-title" class="font-display font-bold">
+            {m.session_week()}
+          </h3>
+          {#if isFeatureNew("sessions")}<NewBadge />{/if}
+        </div>
         <p class="text-dim mt-1 text-sm tabular-nums">
           {weeklySummary(summary?.weekSessions ?? 0, summary?.weekMinutes ?? 0)}
         </p>
@@ -218,7 +325,7 @@
         type="button"
         class="btn btn-primary shrink-0"
         disabled={!referencePages}
-        onclick={() => (showAdd = true)}>
+        onclick={openAdd}>
         <Icon name="plus" class="h-4 w-4" />
         {m.book_session_add_short()}
       </button>
@@ -234,12 +341,34 @@
       <div
         class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
         aria-hidden="true">
-        {#each Array(7) as i (i)}
+        {#each Array(7) as _, i (i)}
           <span class="bg-surface-2 h-2 rounded-t-md"></span>
         {/each}
       </div>
     {/if}
   </div>
+
+  {#if entry.status === "DROPPED"}
+    <label
+      class="border-border bg-bg/45 flex items-start gap-3 rounded-xl border p-3 text-sm">
+      <input class="mt-0.5" type="checkbox" bind:checked={resumeTracking} />
+      <span>
+        <span class="font-semibold">{m.session_resume_tracking()}</span>
+        <span class="text-dim mt-0.5 block text-xs">
+          {m.session_resume_tracking_help()}
+        </span>
+      </span>
+    </label>
+  {:else if entry.status === "READ"}
+    <Banner variant="info">{m.session_completed_notice()}</Banner>
+  {/if}
+
+  <SessionTimerControl
+    domain="BOOKS"
+    entryId={entry.id}
+    disabled={!referencePages}
+    resumeTracking={entry.status === "DROPPED" && resumeTracking}
+    onFinish={finishTimedSession} />
 
   {#if !referencePages}
     <Banner variant="info">{m.book_session_reference_missing()}</Banner>
@@ -318,135 +447,133 @@
       </dl>
     {/if}
   </div>
-
-  {#if summary?.completionSuggested && entry.status !== "READ"}
-    <div class="border-accent/40 bg-accent/8 rounded-lg border p-3">
-      <p class="font-display text-sm font-bold">
-        {m.book_session_finish_title()}
-      </p>
-      <p class="text-dim mt-1 text-xs">{m.book_session_finish_body()}</p>
-      <button
-        type="button"
-        class="btn btn-primary mt-2 text-xs"
-        onclick={onMarkFinished}>
-        <Icon name="check" class="h-4 w-4" />
-        {m.book_session_finish_action()}
-      </button>
-    </div>
-  {/if}
 </section>
 
 {#if showAdd}
-  <Modal title={m.book_session_add_title()} onclose={() => (showAdd = false)}>
+  <Modal
+    title={m.book_session_add_title()}
+    onclose={() => {
+      showAdd = false;
+      finishingTimer = false;
+    }}>
     <form
       onsubmit={(event) => {
         event.preventDefault();
         submit();
       }}>
-      <div class="bg-surface grid grid-cols-2 gap-1 rounded-lg p-1">
-        <button
-          type="button"
-          class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {mode ===
-          'quantity'
-            ? 'bg-bg text-fg shadow-sm'
-            : 'text-dim'}"
-          aria-pressed={mode === "quantity"}
-          onclick={() => (mode = "quantity")}>
-          {m.book_session_mode_quantity()}
-        </button>
-        <button
-          type="button"
-          class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors {mode ===
-          'range'
-            ? 'bg-bg text-fg shadow-sm'
-            : 'text-dim'}"
-          aria-pressed={mode === "range"}
-          onclick={() => (mode = "range")}>
-          {m.book_session_mode_range()}
-        </button>
-      </div>
+      <SegmentedControl
+        options={pageModeOptions}
+        value={mode}
+        onChange={(next) => (mode = next)}
+        label={m.book_session_pages()}
+        class="w-full [&>button]:flex-1 [&>button]:justify-center" />
 
-      <div class="mt-3 grid gap-3 sm:grid-cols-2">
-        {#if mode === "quantity"}
-          <label class="flex flex-col gap-1.5 text-xs font-semibold">
-            {m.book_session_pages()}
-            <input
-              class="input"
-              type="number"
-              min="1"
-              bind:value={pagesRead}
-              disabled={createMut.loading} />
-          </label>
-        {:else}
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex flex-col gap-1.5 text-xs font-semibold">
-              {m.book_session_start_page()}
-              <input
-                class="input min-w-0"
-                type="number"
-                min="0"
-                max={referencePages ?? undefined}
-                bind:value={startPage}
-                disabled={createMut.loading} />
-            </label>
-            <label class="flex flex-col gap-1.5 text-xs font-semibold">
-              {m.book_session_end_page()}
-              <input
-                class="input min-w-0"
-                type="number"
-                min="1"
-                max={referencePages ?? undefined}
-                bind:value={endPage}
-                disabled={createMut.loading} />
-            </label>
-          </div>
-        {/if}
-        <label class="flex flex-col gap-1.5 text-xs font-semibold">
-          {m.session_duration()}
-          <span class="flex items-center gap-2">
-            <input
-              class="input min-w-0 flex-1"
-              type="number"
-              min="1"
-              step="5"
-              bind:value={durationMinutes}
-              disabled={createMut.loading} />
-            <span class="text-dim">{m.session_minutes_short()}</span>
+      {#if entry.status === "DROPPED" && !finishingTimer}
+        <label
+          class="border-border mt-3 flex items-start gap-3 rounded-xl border p-3 text-sm">
+          <input class="mt-0.5" type="checkbox" bind:checked={resumeTracking} />
+          <span>
+            <span class="font-semibold">{m.session_resume_tracking()}</span>
+            <span class="text-dim mt-0.5 block text-xs">
+              {m.session_resume_tracking_help()}
+            </span>
           </span>
         </label>
+      {:else if entry.status === "READ"}
+        <div class="mt-3">
+          <Banner variant="info">{m.session_completed_notice()}</Banner>
+        </div>
+      {/if}
+
+      <div
+        class="border-accent/35 from-accent/14 to-accent/3 mt-3 rounded-2xl border bg-linear-to-br p-4 sm:p-5">
+        {#if mode === "quantity"}
+          <PageNumberControl
+            bind:value={pagesRead}
+            label={m.book_session_pages()}
+            min={1}
+            max={referencePages ?? undefined}
+            disabled={createMut.loading} />
+        {:else}
+          <div
+            class="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-3">
+            <PageNumberControl
+              bind:value={startPage}
+              label={m.book_session_start_page()}
+              min={0}
+              max={referencePages ?? undefined}
+              disabled={createMut.loading}
+              compact />
+            <span
+              class="text-dim rotate-90 justify-self-center text-xl sm:mb-4 sm:rotate-0"
+              aria-hidden="true">→</span>
+            <PageNumberControl
+              bind:value={endPage}
+              label={m.book_session_end_page()}
+              min={1}
+              max={referencePages ?? undefined}
+              disabled={createMut.loading}
+              compact />
+          </div>
+        {/if}
       </div>
 
-      <div class="mt-3 flex flex-wrap gap-1.5">
-        {#each quickDurations as minutes (minutes)}
-          <button
-            type="button"
-            class="rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors {durationMinutes ===
-            minutes
-              ? 'border-accent bg-accent/12 text-accent'
-              : 'border-border text-dim hover:text-fg'}"
-            aria-pressed={durationMinutes === minutes}
-            onclick={() => (durationMinutes = minutes)}>
-            {formatSessionMinutes(minutes)}
-          </button>
-        {/each}
+      <div class="mt-3">
+        <SessionDurationPicker
+          bind:value={durationMinutes}
+          {quickDurations}
+          disabled={createMut.loading ||
+            finishTimerMut.loading ||
+            finishingTimer}
+          variant="neutral" />
       </div>
 
-      <label class="mt-3 flex flex-col gap-1.5 text-xs font-semibold">
+      <label
+        class="mt-3 flex flex-col gap-1.5 text-xs font-semibold {finishingTimer
+          ? 'hidden'
+          : ''}">
         {m.session_date()}
-        <input
-          class="input w-full"
-          type="date"
-          max={today}
-          bind:value={occurredOn}
-          disabled={createMut.loading} />
+        <span class="relative">
+          <Icon
+            name="calendar"
+            class="text-dim pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <input
+            class="input w-full pl-10"
+            type="date"
+            max={today}
+            bind:value={occurredOn}
+            disabled={createMut.loading || finishTimerMut.loading} />
+        </span>
+      </label>
+
+      <label class="mt-4 flex flex-col gap-1.5 text-xs font-semibold">
+        <span>
+          {m.session_notes()}
+          <span class="text-dim font-normal">{m.common_optional_marker()}</span>
+        </span>
+        <span class="relative">
+          <textarea
+            class="input min-h-28 w-full resize-y pb-7 leading-relaxed"
+            maxlength="1000"
+            placeholder={m.book_session_notes_placeholder()}
+            bind:value={notes}
+            disabled={createMut.loading || finishTimerMut.loading}></textarea>
+          <span
+            class="text-dim pointer-events-none absolute right-3 bottom-2 text-[0.65rem] tabular-nums">
+            {notes.length} / 1000
+          </span>
+        </span>
       </label>
 
       <div class="mt-5 flex justify-end gap-2">
         <button
           type="button"
           class="btn btn-ghost"
-          disabled={createMut.loading}
-          onclick={() => (showAdd = false)}>
+          disabled={createMut.loading || finishTimerMut.loading}
+          onclick={() => {
+            showAdd = false;
+            finishingTimer = false;
+          }}>
           {m.common_cancel()}
         </button>
         <button
@@ -454,6 +581,7 @@
           class="btn btn-primary"
           disabled={!referencePages ||
             createMut.loading ||
+            finishTimerMut.loading ||
             durationMinutes < 1 ||
             !occurredOn ||
             (mode === "quantity"
@@ -474,17 +602,55 @@
     {#if sessionsQuery.error}
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}
-      <ul class="flex flex-col gap-2">
-        {#each summary.items as session (session.id)}
-          <li class="bg-surface rounded-lg p-3">
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div class="border-border bg-surface rounded-xl border p-3">
+          <p
+            class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
+            {m.session_total()}
+          </p>
+          <p class="font-display mt-1 text-lg font-bold tabular-nums">
+            {formatSessionMinutes(summary.totalTrackedMinutes)}
+          </p>
+        </div>
+        <div class="border-border bg-surface rounded-xl border p-3">
+          <p
+            class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
+            {m.book_session_pages()}
+          </p>
+          <p class="font-display mt-1 text-lg font-bold tabular-nums">
+            {summary.totalPagesRead}
+          </p>
+        </div>
+        <div
+          class="border-border bg-surface col-span-2 rounded-xl border p-3 sm:col-span-1">
+          <p
+            class="timecode text-dim text-[0.58rem] tracking-[0.14em] uppercase">
+            {m.session_month()}
+          </p>
+          <p class="font-display mt-1 text-lg font-bold tabular-nums">
+            {formatSessionMinutes(summary.monthMinutes)}
+          </p>
+        </div>
+      </div>
+
+      <ol class="mt-4 flex flex-col gap-3">
+        {#each summary.items as session, index (session.id)}
+          <li
+            in:fly|global={{
+              y: reduced ? 0 : 8,
+              duration: reduced ? 0 : 220,
+              delay: reduced ? 0 : Math.min(index * 35, 175),
+            }}
+            class="border-border bg-surface group hover:border-accent/35 rounded-xl border p-3.5 transition-colors">
             {#if editingId === session.id}
               <div class="grid gap-2 sm:grid-cols-2">
-                <input
-                  class="input"
-                  type="number"
-                  min="1"
+                <AnimatedNumberInput
                   bind:value={editDuration}
-                  aria-label={m.session_duration()} />
+                  label={m.session_duration()}
+                  min={1}
+                  max={MAX_SESSION_DURATION_MINUTES}
+                  class="border-border bg-bg h-10 w-full"
+                  numberClass="text-sm" />
                 <input
                   class="input"
                   type="date"
@@ -492,47 +658,46 @@
                   bind:value={editDate}
                   aria-label={m.session_date()} />
               </div>
-              <div class="bg-bg mt-2 grid grid-cols-2 gap-1 rounded-lg p-1">
-                <button
-                  type="button"
-                  class="rounded-md px-2 py-1 text-xs {editMode === 'quantity'
-                    ? 'bg-surface font-semibold'
-                    : 'text-dim'}"
-                  onclick={() => (editMode = "quantity")}>
-                  {m.book_session_mode_quantity()}
-                </button>
-                <button
-                  type="button"
-                  class="rounded-md px-2 py-1 text-xs {editMode === 'range'
-                    ? 'bg-surface font-semibold'
-                    : 'text-dim'}"
-                  onclick={() => (editMode = "range")}>
-                  {m.book_session_mode_range()}
-                </button>
-              </div>
+              <SegmentedControl
+                options={pageModeOptions}
+                value={editMode}
+                onChange={(next) => (editMode = next)}
+                label={m.book_session_pages()}
+                class="mt-2 w-full [&>button]:flex-1 [&>button]:justify-center" />
               {#if editMode === "quantity"}
-                <input
-                  class="input mt-2 w-full"
-                  type="number"
-                  min="1"
+                <AnimatedNumberInput
                   bind:value={editPagesRead}
-                  aria-label={m.book_session_pages()} />
+                  label={m.book_session_pages()}
+                  min={1}
+                  max={referencePages ?? undefined}
+                  class="border-border bg-bg mt-2 h-10 w-full"
+                  numberClass="text-sm" />
               {:else}
                 <div class="mt-2 grid grid-cols-2 gap-2">
-                  <input
-                    class="input min-w-0"
-                    type="number"
-                    min="0"
+                  <AnimatedNumberInput
                     bind:value={editStartPage}
-                    aria-label={m.book_session_start_page()} />
-                  <input
-                    class="input min-w-0"
-                    type="number"
-                    min="1"
+                    label={m.book_session_start_page()}
+                    min={0}
+                    max={referencePages ?? undefined}
+                    class="border-border bg-bg h-10 w-full min-w-0"
+                    numberClass="text-sm" />
+                  <AnimatedNumberInput
                     bind:value={editEndPage}
-                    aria-label={m.book_session_end_page()} />
+                    label={m.book_session_end_page()}
+                    min={1}
+                    max={referencePages ?? undefined}
+                    class="border-border bg-bg h-10 w-full min-w-0"
+                    numberClass="text-sm" />
                 </div>
               {/if}
+              <label class="mt-2 block">
+                <span class="sr-only">{m.session_notes()}</span>
+                <textarea
+                  class="input min-h-24 w-full resize-y"
+                  maxlength="1000"
+                  placeholder={m.book_session_notes_placeholder()}
+                  bind:value={editNotes}></textarea>
+              </label>
               <div class="mt-2 flex justify-end gap-2">
                 <button
                   type="button"
@@ -549,40 +714,61 @@
                 </button>
               </div>
             {:else}
-              <div class="flex items-center gap-2">
-                <div class="min-w-0 flex-1">
-                  <p class="font-display text-sm font-bold">
-                    {session.pagesRead}
-                    {m.book_session_pages().toLocaleLowerCase()} · {formatSessionMinutes(
-                      session.durationMinutes,
-                    )}
-                  </p>
-                  <p class="text-dim text-xs">
-                    {formatDate(
-                      session.occurredAt,
-                    )}{#if session.startPage !== null}
-                      · {session.startPage}–{session.endPage}{/if}
-                  </p>
+              <div class="flex items-start gap-3">
+                <div
+                  class="bg-accent/12 text-accent mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl">
+                  <Icon name="book" class="h-4 w-4" />
                 </div>
-                <button
-                  type="button"
-                  class="text-dim hover:text-fg rounded p-1"
-                  aria-label={m.session_edit()}
-                  onclick={() => beginEdit(session)}>
-                  <Icon name="edit" class="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  class="text-dim hover:text-danger rounded p-1"
-                  aria-label={m.session_delete()}
-                  onclick={() => (deletingId = session.id)}>
-                  <Icon name="trash" class="h-4 w-4" />
-                </button>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="font-display text-base font-bold">
+                        {session.pagesRead}
+                        {m.book_session_pages().toLocaleLowerCase()}
+                        <span class="text-dim font-normal">·</span>
+                        <span class="tabular-nums">
+                          {formatSessionMinutes(session.durationMinutes)}
+                        </span>
+                      </p>
+                      <p
+                        class="text-dim mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
+                        <Icon name="calendar" class="h-3.5 w-3.5" />
+                        {formatDate(session.occurredAt)}
+                        {#if session.startPage !== null}
+                          <span aria-hidden="true">·</span>
+                          <span>{session.startPage}–{session.endPage}</span>
+                        {/if}
+                      </p>
+                    </div>
+                    <div class="flex gap-1">
+                      <button
+                        type="button"
+                        class="text-dim hover:bg-bg hover:text-fg rounded-lg p-1.5 transition-colors"
+                        aria-label={m.session_edit()}
+                        onclick={() => beginEdit(session)}>
+                        <Icon name="edit" class="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        class="text-dim hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors"
+                        aria-label={m.session_delete()}
+                        onclick={() => (deletingId = session.id)}>
+                        <Icon name="trash" class="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {#if session.notes}
+                    <p
+                      class="border-border text-dim mt-3 border-l-2 pl-3 text-sm leading-relaxed whitespace-pre-line">
+                      {session.notes}
+                    </p>
+                  {/if}
+                </div>
               </div>
             {/if}
           </li>
         {/each}
-      </ul>
+      </ol>
       {#if page > 1 || summary.hasMore}
         <div class="mt-3 flex justify-between gap-2">
           <button

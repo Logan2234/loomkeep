@@ -20,6 +20,7 @@ class DataExportGameEntryGameResponseDto {
 
 class DataExportGameSessionResponseDto {
   durationMinutes!: number;
+  notes!: string | null;
   occurredAt!: string;
   source!: SessionSource;
   createdAt!: string;

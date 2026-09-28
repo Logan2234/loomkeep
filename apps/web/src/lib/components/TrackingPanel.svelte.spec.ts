@@ -7,7 +7,17 @@ import TrackingPanel from "./TrackingPanel.svelte";
 
 const body = createRawSnippet(() => ({ render: () => "<p>Domain body</p>" }));
 
-function renderPanel(props: { favorite?: boolean; saving?: boolean } = {}) {
+function renderPanel(
+  props: {
+    favorite?: boolean;
+    saving?: boolean;
+    actions?: {
+      label: string;
+      icon: "check";
+      onSelect: () => void;
+    }[];
+  } = {},
+) {
   const onToggleFavorite = vi.fn();
   const onRemove = vi.fn();
   render(TrackingPanel, {
@@ -16,6 +26,7 @@ function renderPanel(props: { favorite?: boolean; saving?: boolean } = {}) {
       saving: props.saving ?? false,
       onToggleFavorite,
       onRemove,
+      actions: props.actions ?? [],
       children: body,
     },
   });
@@ -54,10 +65,29 @@ describe("TrackingPanel", () => {
     const { onRemove } = renderPanel();
 
     await userEvent.click(
-      screen.getByRole("button", { name: m.tracking_remove() }),
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: m.tracking_remove() }),
     );
 
     expect(onRemove).toHaveBeenCalledOnce();
+  });
+
+  it("runs contextual lifecycle actions from the more-actions menu", async () => {
+    const onSelect = vi.fn();
+    renderPanel({
+      actions: [{ label: "Mark as finished", icon: "check", onSelect }],
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Mark as finished" }),
+    );
+
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 
   it("locks both actions while a save is in flight", async () => {
@@ -66,7 +96,10 @@ describe("TrackingPanel", () => {
     const toggle = screen.getByRole<HTMLButtonElement>("button", {
       name: m.common_favorite_add(),
     });
-    const remove = screen.getByRole<HTMLButtonElement>("button", {
+    await userEvent.click(
+      screen.getByRole("button", { name: m.common_more_actions() }),
+    );
+    const remove = screen.getByRole<HTMLButtonElement>("menuitem", {
       name: m.tracking_remove(),
     });
     expect(toggle.disabled).toBe(true);

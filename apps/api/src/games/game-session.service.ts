@@ -10,7 +10,7 @@ import {
   ReviewTargetType,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import type { GameSession } from "@prisma/client";
+import { SessionSource, type GameSession } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -42,6 +42,7 @@ export class GameSessionService {
     userId: string,
     entryId: string,
     dto: CreateGameSessionDto,
+    source: SessionSource = SessionSource.MANUAL,
   ): Promise<GameSessionMutationDto> {
     const occurredAt = this.validDate(dto.occurredAt);
     const entry = await this.ownedEntry(userId, entryId);
@@ -50,7 +51,9 @@ export class GameSessionService {
         data: {
           gameEntryId: entry.id,
           durationMinutes: dto.durationMinutes,
+          notes: normalizeSessionNotes(dto.notes),
           occurredAt,
+          source,
         },
       });
       await tx.gameEntry.update({
@@ -60,7 +63,10 @@ export class GameSessionService {
           ...(entry.steamPlaytimeMinutes === null
             ? { playtimeMinutes: { increment: dto.durationMinutes } }
             : {}),
-          ...(entry.status === "BACKLOG" ? { status: "PLAYING" } : {}),
+          ...(entry.status === "BACKLOG" ||
+          (entry.status === "DROPPED" && dto.resumeTracking)
+            ? { status: "PLAYING" }
+            : {}),
           ...(entry.startedAt === null ? { startedAt: occurredAt } : {}),
         },
       });
@@ -104,11 +110,13 @@ export class GameSessionService {
       ? this.validDate(dto.occurredAt)
       : before.occurredAt;
     const durationMinutes = dto.durationMinutes ?? before.durationMinutes;
+    const notes =
+      dto.notes === undefined ? before.notes : normalizeSessionNotes(dto.notes);
     const delta = durationMinutes - before.durationMinutes;
     const session = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.gameSession.update({
         where: { id: sessionId },
-        data: { durationMinutes, occurredAt },
+        data: { durationMinutes, notes, occurredAt },
       });
 
       if (delta !== 0) {
@@ -143,6 +151,13 @@ export class GameSessionService {
     const session = await this.ownedSession(userId, sessionId);
     await this.prisma.$transaction(async (tx) => {
       await tx.gameSession.delete({ where: { id: sessionId } });
+      const remainingSessions = await tx.gameSession.count({
+        where: { gameEntryId: session.gameEntryId },
+      });
+      const resetToBacklog =
+        remainingSessions === 0 &&
+        session.gameEntry.status === "PLAYING" &&
+        (session.gameEntry.steamPlaytimeMinutes ?? 0) === 0;
       await tx.gameEntry.update({
         where: { id: session.gameEntryId },
         data: {
@@ -150,6 +165,7 @@ export class GameSessionService {
           ...(session.gameEntry.steamPlaytimeMinutes === null
             ? { playtimeMinutes: { decrement: session.durationMinutes } }
             : {}),
+          ...(resetToBacklog ? { status: "BACKLOG", startedAt: null } : {}),
         },
       });
     });
@@ -228,7 +244,13 @@ export class GameSessionService {
     const session = await this.prisma.gameSession.findUnique({
       where: { id: sessionId },
       include: {
-        gameEntry: { select: { userId: true, steamPlaytimeMinutes: true } },
+        gameEntry: {
+          select: {
+            userId: true,
+            status: true,
+            steamPlaytimeMinutes: true,
+          },
+        },
       },
     });
 
@@ -276,9 +298,17 @@ function toDto(session: GameSession): GameSessionDto {
   return {
     id: session.id,
     durationMinutes: session.durationMinutes,
+    notes: session.notes,
     occurredAt: session.occurredAt.toISOString(),
     source: session.source,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
   };
+}
+
+function normalizeSessionNotes(
+  notes: string | null | undefined,
+): string | null {
+  const trimmed = notes?.trim();
+  return trimmed ? trimmed : null;
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Banner from "$lib/components/Banner.svelte";
   import ImportWizard from "$lib/components/ImportWizard.svelte";
   import { m } from "$lib/paraglide/messages.js";
 </script>
@@ -12,9 +13,8 @@
       class="link-accent">{m.settings_import_babelio_intro()}</a>
     {m.settings_import_babelio_hint()}
     <code class="text-fg">.csv</code>
-    <p
-      class="border-warning/40 bg-warning/10 text-warning mt-3 rounded-lg border px-3 py-2 text-xs">
+    <Banner variant="warning" class="mt-4">
       {m.settings_import_babelio_limits()}
-    </p>
+    </Banner>
   {/snippet}
 </ImportWizard>

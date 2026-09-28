@@ -17,6 +17,7 @@ export class BookEntryResponseDto implements BookEntryDto {
   editionKey!: string | null;
   referencePageCount!: number | null;
   trackedReadingMinutes!: number;
+  lastSessionAt!: string | null;
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;

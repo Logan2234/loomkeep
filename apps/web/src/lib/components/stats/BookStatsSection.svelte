@@ -81,8 +81,8 @@
             })
         : undefined} />
     <StatTile
-      value={books.stagnantInProgressCount}
-      label={m.stats_books_stagnant()} />
+      value={books.pausedInProgressCount}
+      label={m.stats_books_paused()} />
     <StatTile value={books.rereadsCount} label={m.book_rereads()} />
   </div>
 

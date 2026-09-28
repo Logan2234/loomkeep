@@ -12,6 +12,7 @@ import {
   ActivityType,
   BookStatus,
   Domain,
+  DORMANT_AFTER_DAYS,
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
@@ -67,6 +68,11 @@ import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 const ENTRY_INCLUDE = {
   bookItem: { include: { externalIds: true } },
   replays: { orderBy: { finishedAt: "desc" } },
+  sessions: {
+    orderBy: { occurredAt: "desc" },
+    take: 1,
+    select: { occurredAt: true },
+  },
 } satisfies Prisma.BookEntryInclude;
 
 type EntryWithBook = Prisma.BookEntryGetPayload<{
@@ -394,12 +400,32 @@ export class BookLibraryService {
     filters: ListEntriesFilters,
   ): Prisma.BookEntryWhereInput {
     const q = searchTerm(filters);
+    const statuses = filters.statuses ?? [];
+    const persistedStatuses = statuses.filter(
+      (status) => status !== "PAUSED",
+    ) as DbBookStatus[];
+    const statusFilters: Prisma.BookEntryWhereInput[] = [];
+
+    if (persistedStatuses.length > 0) {
+      statusFilters.push({ status: { in: persistedStatuses } });
+    }
+
+    if (statuses.includes("PAUSED")) {
+      const cutoff = new Date(
+        Date.now() - DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000,
+      );
+      statusFilters.push({
+        status: BookStatus.READING,
+        sessions: {
+          some: { occurredAt: { lt: cutoff } },
+          none: { occurredAt: { gte: cutoff } },
+        },
+      });
+    }
+
     return {
       userId,
-      status:
-        filters.statuses && filters.statuses.length > 0
-          ? { in: filters.statuses as DbBookStatus[] }
-          : undefined,
+      AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
       bookItem: q ? { title: titleContains(q) } : undefined,
     };
@@ -779,6 +805,7 @@ function toEntryDto(entry: EntryWithBook, rating: number | null): BookEntryDto {
     editionKey: entry.editionKey,
     referencePageCount: entry.referencePageCount,
     trackedReadingMinutes: entry.trackedReadingMinutes,
+    lastSessionAt: entry.sessions[0]?.occurredAt.toISOString() ?? null,
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),

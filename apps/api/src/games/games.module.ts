@@ -27,6 +27,11 @@ import { IgdbProvider } from "./providers/igdb.provider";
     GameSessionService,
     IgdbProvider,
   ],
-  exports: [GameItemService, GameLibraryService, IgdbProvider],
+  exports: [
+    GameItemService,
+    GameLibraryService,
+    GameSessionService,
+    IgdbProvider,
+  ],
 })
 export class GamesModule {}

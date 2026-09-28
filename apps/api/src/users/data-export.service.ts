@@ -296,6 +296,7 @@ export class DataExportService {
         replays: entry.replays.map((r) => r.finishedAt.toISOString()),
         sessions: entry.sessions.map((session) => ({
           durationMinutes: session.durationMinutes,
+          notes: session.notes,
           occurredAt: session.occurredAt.toISOString(),
           source: session.source,
           createdAt: session.createdAt.toISOString(),
@@ -331,6 +332,7 @@ export class DataExportService {
           pagesRead: session.pagesRead,
           startPage: session.startPage,
           endPage: session.endPage,
+          notes: session.notes,
           occurredAt: session.occurredAt.toISOString(),
           source: session.source,
           createdAt: session.createdAt.toISOString(),

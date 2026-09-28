@@ -109,6 +109,8 @@ export interface GameEntryDto {
   /** Latest total reported by Steam, kept separate from Loomkeep sessions. */
   steamPlaytimeMinutes: number | null;
   steamSyncedAt: string | null;
+  /** Latest dated Loomkeep session, used for the derived paused signal. */
+  lastSessionAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
@@ -148,6 +150,7 @@ export interface UpdateGameEntryDto {
 export interface GameSessionDto {
   id: string;
   durationMinutes: number;
+  notes: string | null;
   occurredAt: string;
   source: SessionSource;
   createdAt: string;
@@ -157,11 +160,15 @@ export interface GameSessionDto {
 export interface CreateGameSessionDto {
   durationMinutes: number;
   occurredAt: string;
+  notes?: string | null;
+  /** Explicitly resume an abandoned entry when recording this session. */
+  resumeTracking?: boolean;
 }
 
 export interface UpdateGameSessionDto {
   durationMinutes?: number;
   occurredAt?: string;
+  notes?: string | null;
 }
 
 export interface GameSessionSummaryDto {

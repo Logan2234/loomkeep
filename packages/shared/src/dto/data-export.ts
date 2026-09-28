@@ -86,6 +86,7 @@ export interface DataExportGameEntry {
   replays: string[];
   sessions: {
     durationMinutes: number;
+    notes: string | null;
     occurredAt: string;
     source: SessionSource;
     createdAt: string;
@@ -120,6 +121,7 @@ export interface DataExportBookEntry {
     pagesRead: number;
     startPage: number | null;
     endPage: number | null;
+    notes: string | null;
     occurredAt: string;
     source: SessionSource;
     createdAt: string;

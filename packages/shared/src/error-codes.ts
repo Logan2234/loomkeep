@@ -130,6 +130,8 @@ export const ErrorCode = {
   LibrarySessionForbidden: "library.session_forbidden",
   LibrarySessionDateFuture: "library.session_date_future",
   LibrarySessionInvalidPages: "library.session_invalid_pages",
+  LibrarySessionTimerAlreadyRunning: "library.session_timer_already_running",
+  LibrarySessionTimerNotFound: "library.session_timer_not_found",
   LibraryBookEditionRequired: "library.book_edition_required",
   LibrarySavedViewNotFound: "library.saved_view_not_found",
   LibrarySavedViewFreeQuotaExceeded: "library.saved_view_free_quota_exceeded",

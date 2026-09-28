@@ -10,6 +10,7 @@ import type {
 import {
   ActivityType,
   Domain,
+  DORMANT_AFTER_DAYS,
   GameStatus,
   ReviewTargetType,
   XpReason,
@@ -65,6 +66,11 @@ import { GameItemService } from "./game-item.service";
 const ENTRY_INCLUDE = {
   gameItem: { include: { externalIds: true } },
   replays: { orderBy: { finishedAt: "desc" } },
+  sessions: {
+    orderBy: { occurredAt: "desc" },
+    take: 1,
+    select: { occurredAt: true },
+  },
 } satisfies Prisma.GameEntryInclude;
 
 type EntryWithGame = Prisma.GameEntryGetPayload<{
@@ -368,12 +374,32 @@ export class GameLibraryService {
     filters: ListEntriesFilters,
   ): Prisma.GameEntryWhereInput {
     const q = searchTerm(filters);
+    const statuses = filters.statuses ?? [];
+    const persistedStatuses = statuses.filter(
+      (status) => status !== "PAUSED",
+    ) as DbGameStatus[];
+    const statusFilters: Prisma.GameEntryWhereInput[] = [];
+
+    if (persistedStatuses.length > 0) {
+      statusFilters.push({ status: { in: persistedStatuses } });
+    }
+
+    if (statuses.includes("PAUSED")) {
+      const cutoff = new Date(
+        Date.now() - DORMANT_AFTER_DAYS * 24 * 60 * 60 * 1000,
+      );
+      statusFilters.push({
+        status: GameStatus.PLAYING,
+        sessions: {
+          some: { occurredAt: { lt: cutoff } },
+          none: { occurredAt: { gte: cutoff } },
+        },
+      });
+    }
+
     return {
       userId,
-      status:
-        filters.statuses && filters.statuses.length > 0
-          ? { in: filters.statuses as DbGameStatus[] }
-          : undefined,
+      AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
       gameItem: q ? { title: titleContains(q) } : undefined,
     };
@@ -657,6 +683,7 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
     steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
     steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
+    lastSessionAt: entry.sessions[0]?.occurredAt.toISOString() ?? null,
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),

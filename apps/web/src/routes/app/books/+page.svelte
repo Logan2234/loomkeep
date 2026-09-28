@@ -16,12 +16,15 @@
   } from "$lib/constants/status-labels";
   import { toggleFavorite } from "$lib/favorite-toggle";
   import { m } from "$lib/paraglide/messages";
-  import { Domain, type BookEntryDto } from "@loomkeep/shared";
+  import { Domain, isSessionPaused, type BookEntryDto } from "@loomkeep/shared";
 
-  const STATUS_OPTIONS = BOOK_STATUS_ORDER.map((value) => ({
-    label: BOOK_STATUS_LABELS[value],
-    value,
-  }));
+  const STATUS_OPTIONS = [
+    ...BOOK_STATUS_ORDER.map((value) => ({
+      label: BOOK_STATUS_LABELS[value],
+      value,
+    })),
+    { label: m.media_status_paused(), value: "PAUSED" },
+  ];
 
   function pct(entry: BookEntryDto): number {
     if (!entry.book.pageCount) return 0;
@@ -104,11 +107,15 @@
           <span class="timecode text-xs">
             {entry.currentPage} / {entry.book.pageCount}
             {m.book_pages_lower()}
+            {#if isSessionPaused(entry, "READING")}
+              {m.media_paused_suffix()}
+            {/if}
           </span>
         {:else}
           <span class="timecode text-xs">
             {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-              · ★ {entry.rating}{/if}
+              · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "READING")}
+              {m.media_paused_suffix()}{/if}
           </span>
         {/if}
       {/snippet}

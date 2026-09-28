@@ -34,6 +34,7 @@ import { NotificationModule } from "./notifications/notification.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SavedViewsModule } from "./saved-views/saved-view.module";
+import { SessionTimerModule } from "./session-timer/session-timer.module";
 import { SocialModule } from "./social/social.module";
 import { StatsModule } from "./stats/stats.module";
 import { UsersModule } from "./users/users.module";
@@ -80,6 +81,7 @@ import { UsersModule } from "./users/users.module";
     CommentsModule,
     ListsModule,
     SavedViewsModule,
+    SessionTimerModule,
     StatsModule,
     NewsletterModule,
     MetricsModule,
