@@ -50,7 +50,7 @@
     "@inlang/paraglide-js": "^2.25.4",
     "@sveltejs/adapter-node": "^5.5.7",
     "@sveltejs/kit": "^2.70.3",
-    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/svelte": "^5.4.2",
     "@testing-library/user-event": "^14.6.7",
@@ -62,10 +62,10 @@
     "mermaid": "^12.0.0",
     "msw": "^2.15.0",
     "openapi-typescript": "^7.13.0",
-    "svelte": "^5.57.0",
+    "svelte": "^5.57.1",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.3.0",
+    "vite": "^8.3.1",
     "vitest": "^5.0.1",
     "workbox-precaching": "^7.4.1"
   }
