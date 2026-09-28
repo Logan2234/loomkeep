@@ -24,6 +24,15 @@ export interface MailCopy {
     exhausted: string;
     button: string;
   };
+  jobAlert: {
+    failedSubject: (job: string) => string;
+    recoveredSubject: (job: string) => string;
+    heading: string;
+    failed: (job: string) => string;
+    recovered: (job: string) => string;
+    onlyOnce: string;
+    button: string;
+  };
   moderation: {
     comment: ModerationVariant;
     review: ModerationVariant;
@@ -149,6 +158,16 @@ export const MAIL_COPY = {
       exhausted:
         "Les appels suivants risquent d'être refusés jusqu'au changement de jour (minuit UTC).",
       button: "Voir les services",
+    },
+    jobAlert: {
+      failedSubject: (job) => `Échec du job ${job}`,
+      recoveredSubject: (job) => `Job ${job} rétabli`,
+      heading: "Jobs planifiés",
+      failed: (job) => `Le job ${job} vient d'échouer :`,
+      recovered: (job) => `Le job ${job} fonctionne de nouveau.`,
+      onlyOnce:
+        "Tu ne recevras pas d'autre e-mail pour ses échecs suivants, seulement quand il fonctionnera de nouveau.",
+      button: "Voir les jobs",
     },
     moderation: {
       comment: {
@@ -305,6 +324,16 @@ export const MAIL_COPY = {
       exhausted:
         "Further calls may be refused until the day rolls over (midnight UTC).",
       button: "Open services",
+    },
+    jobAlert: {
+      failedSubject: (job) => `Job ${job} failed`,
+      recoveredSubject: (job) => `Job ${job} recovered`,
+      heading: "Scheduled jobs",
+      failed: (job) => `The ${job} job just failed:`,
+      recovered: (job) => `The ${job} job is working again.`,
+      onlyOnce:
+        "You won't get another email for its next failures, only once it works again.",
+      button: "Open jobs",
     },
     moderation: {
       comment: {

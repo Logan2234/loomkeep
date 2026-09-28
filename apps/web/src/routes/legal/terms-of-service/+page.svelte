@@ -227,7 +227,7 @@
       diffuser des contenus illégaux ou des contenus sexuels impliquant des
       mineurs.
     </p>
-    <h2>9. Signalement et modération</h2>
+    <h2 id="moderation">9. Signalement et modération</h2>
     <h3>Notification d'un contenu illicite</h3>
     <p>
       Toute personne, notamment un ayant droit ou un tiers concerné par un

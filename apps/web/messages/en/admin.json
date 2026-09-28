@@ -39,6 +39,8 @@
   "admin_users_xp_hint": "A negative number removes XP. To undo an adjustment, make it again with the opposite sign. The user isn't notified.",
   "admin_users_xp_done": "XP adjusted: {xp} XP",
   "admin_template_quota_alert": "Provider quota alert",
+  "admin_template_job_alert": "Job alert",
+  "admin_template_job": "Job",
   "admin_template_provider": "Provider",
   "admin_template_calls_today": "Calls today",
   "admin_template_daily_quota": "Daily quota",

@@ -400,6 +400,24 @@ describe("MailService template gallery", () => {
     }
   });
 
+  it("shows an escaped job error only in the failure alert", () => {
+    const service = new MailService(quota);
+
+    const failed = service.renderTemplatePreview("jobAlert", "fr", {
+      jobKey: "backup.run",
+      error: "<script>boom</script>",
+    });
+    const recovered = service.renderTemplatePreview("jobAlert", "fr", {
+      jobKey: "backup.run",
+      status: "SUCCESS",
+    });
+
+    expect(failed?.subject).toBe("Échec du job backup.run");
+    expect(failed?.html).toContain("&lt;script&gt;boom&lt;/script&gt;");
+    expect(recovered?.subject).toBe("Job backup.run rétabli");
+    expect(recovered?.text).not.toContain("boom");
+  });
+
   it("keeps editorial moderation content as authored", () => {
     const service = new MailService(quota);
     const preview = service.renderTemplatePreview("moderationDecision", "en", {

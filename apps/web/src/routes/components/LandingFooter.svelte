@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "$lib/components/Icon.svelte";
+  import { appConfig } from "$lib/config.svelte";
   import {
     CHANGELOG_URL,
     FEEDBACK_BUG_REPORTS_URL,
@@ -13,7 +14,13 @@
 
   const COLUMNS: {
     title: string;
-    links: { label: string; href: string; external?: boolean; event: string }[];
+    links: {
+      label: string;
+      href: string;
+      external?: boolean;
+      event: string;
+      socialOnly?: boolean;
+    }[];
   }[] = [
     {
       title: m.landing_footer_col_product(),
@@ -85,6 +92,12 @@
           href: "/legal/terms-of-service",
           event: "footer-terms",
         },
+        {
+          label: m.common_transparency(),
+          href: "/legal/transparency",
+          event: "footer-transparency",
+          socialOnly: true,
+        },
       ],
     },
   ];
@@ -118,7 +131,7 @@
             {column.title}
           </p>
           <ul class="mt-4 flex flex-col gap-2.5">
-            {#each column.links as link (link.label)}
+            {#each column.links.filter((l) => !l.socialOnly || appConfig.socialEnabled) as link (link.label)}
               <li>
                 <a
                   href={link.href}
