@@ -74,7 +74,7 @@
         class="mt-5 flex flex-wrap gap-1.5"
         in:fly|global={enter(0)}
         role="group"
-        aria-label={m.transparency_year_label()}>
+        aria-label={m.common_year()}>
         {#each data.years as y (y)}
           <button
             type="button"
@@ -129,7 +129,7 @@
                 <thead>
                   <tr>
                     <th>{m.transparency_col_outcome()}</th>
-                    <th class="num">{m.transparency_col_count()}</th>
+                    <th class="num">{m.common_count()}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -158,7 +158,7 @@
                   <thead>
                     <tr>
                       <th>{m.transparency_col_category()}</th>
-                      <th class="num">{m.transparency_col_count()}</th>
+                      <th class="num">{m.common_count()}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -197,7 +197,7 @@
                 <thead>
                   <tr>
                     <th>{m.transparency_col_measure()}</th>
-                    <th class="num">{m.transparency_col_count()}</th>
+                    <th class="num">{m.common_count()}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,7 +215,7 @@
                 <thead>
                   <tr>
                     <th>{m.transparency_col_basis()}</th>
-                    <th class="num">{m.transparency_col_count()}</th>
+                    <th class="num">{m.common_count()}</th>
                   </tr>
                 </thead>
                 <tbody>
