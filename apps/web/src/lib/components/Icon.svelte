@@ -299,5 +299,17 @@
     <circle cx="5.5" cy="18.5" r="1.8" fill="currentColor" stroke="none" />
     <path d="M4 11.5a8.5 8.5 0 0 1 8.5 8.5" />
     <path d="M4 5a15 15 0 0 1 15 15" />
+  {:else if name === "table"}
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 9.5h18M3 14.5h18M9 9.5V20" />
+  {:else if name === "wall"}
+    <rect x="3" y="3" width="4" height="7" rx="1" />
+    <rect x="10" y="3" width="4" height="7" rx="1" />
+    <rect x="17" y="3" width="4" height="7" rx="1" />
+    <rect x="3" y="14" width="4" height="7" rx="1" />
+    <rect x="10" y="14" width="4" height="7" rx="1" />
+    <rect x="17" y="14" width="4" height="7" rx="1" />
+  {:else if name === "rows"}
+    <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
   {/if}
 </svg>

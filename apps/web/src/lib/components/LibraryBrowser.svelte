@@ -23,10 +23,11 @@
   // pages: server-paginated infinite scroll (mirrors MediaSearchPanel's
   // debounce + sentinel pattern), text filter, status multi-select, favorites
   // toggle, sort + direction, loading states, the three empty states and the
-  // poster grid. Filtering/sorting itself happens server-side (see each
-  // domain's `listEntries`); everything domain-specific (labels, card markup,
-  // the actual `load` call, and media's extra "type" filter) is injected via
-  // props/snippets.
+  // results in the mode picked from the "Affichage" menu (cards, table, wall,
+  // compact). Filtering/sorting itself happens server-side (see each domain's
+  // `listEntries`); everything domain-specific (labels, card markup, the
+  // table's columns, the actual `load` call, and media's extra "type"
+  // filter) is injected via props/snippets.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
@@ -36,11 +37,21 @@
   import Combobox from "$lib/components/Combobox.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import LibraryTable from "$lib/components/LibraryTable.svelte";
+  import LibraryViewMenu from "$lib/components/LibraryViewMenu.svelte";
+  import LibraryWall from "$lib/components/LibraryWall.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import PosterGrid from "$lib/components/PosterGrid.svelte";
   import PosterGridSkeleton from "$lib/components/PosterGridSkeleton.svelte";
   import SavedViewBar from "$lib/components/SavedViewBar.svelte";
   import { debounce } from "$lib/debounce";
+  import {
+    readLibraryViewMode,
+    writeLibraryViewMode,
+    type LibraryColumn,
+    type LibraryItemView,
+    type LibraryViewMode,
+  } from "$lib/library-view";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { pileHeaderLabel } from "$lib/pile";
@@ -55,7 +66,7 @@
   import type { ComponentProps, Snippet } from "svelte";
   import { untrack } from "svelte";
   import { flip } from "svelte/animate";
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
 
   type IconName = ComponentProps<typeof Icon>["name"];
 
@@ -77,6 +88,8 @@
     sorts,
     defaultSort,
     card,
+    itemView,
+    columns,
     catalogPreview,
     headerActions,
   }: {
@@ -97,6 +110,10 @@
     sorts: Option[];
     defaultSort: string;
     card: Snippet<[T]>;
+    /** An entry as the table, compact and wall modes show it. */
+    itemView: (entry: T) => LibraryItemView;
+    /** The table and compact modes' columns. */
+    columns: LibraryColumn<T>[];
     /** Renders a capped catalogue-search preview for the current query, when a
      * library search comes up empty (no filters). Receives the trimmed query
      * and a callback to report back how many catalogue results it found. */
@@ -135,6 +152,18 @@
   );
 
   const reduced = prefersReducedMotion();
+
+  let mode = $state<LibraryViewMode>(readLibraryViewMode(domain));
+
+  function setMode(next: LibraryViewMode) {
+    mode = next;
+    writeLibraryViewMode(domain, next);
+  }
+
+  function sortBy(value: string) {
+    if (sort === value) reversed = !reversed;
+    else sort = value;
+  }
 
   const current = $derived<SavedViewFiltersDto>({
     q: queryFilter,
@@ -343,8 +372,9 @@
         values={statuses}
         onChange={(v) => (statuses = v)} />
       <button
-        class="chip inline-flex items-center gap-1"
-        class:chip-on={favoritesOnly}
+        class="{favoritesOnly
+          ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
+          : 'border-border text-dim hover:text-fg'} inline-flex items-center gap-0.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors"
         onclick={() => (favoritesOnly = !favoritesOnly)}>
         <Icon name="star" class="h-3.5 w-3.5" />&nbsp;
         {m.common_favorites()}
@@ -364,13 +394,14 @@
         onclick={() => (reversed = !reversed)}>
         {reversed ? "↑" : "↓"}
       </button>
+      <LibraryViewMenu {mode} onChange={setMode} />
     </div>
   </div>
 
   {#if error}
     <Banner variant="error">{error}</Banner>
   {:else if showSkeleton}
-    <PosterGridSkeleton />
+    {@render skeleton(10)}
   {:else if items.length === 0 && hasQuery && !hasFilters && !loading}
     <!-- No local match: a live catalogue preview instead of only a link out
          to /search — `previewCount` (reported by the panel) decides whether
@@ -427,24 +458,77 @@
       </EmptyState>
     </div>
   {:else if items.length > 0}
-    <PosterGrid>
-      {#each items as entry (keyOf(entry))}
-        <div
-          animate:flip={{ duration: reduced ? 0 : 250 }}
-          in:fade|global={{ duration: reduced ? 0 : 150 }}
-          out:fade|global={{ duration: reduced ? 0 : 100 }}>
-          {@render card(entry)}
-        </div>
-      {/each}
-    </PosterGrid>
+    {#key mode}
+      <div in:fly={{ y: 8, duration: reduced ? 0 : 220 }}>
+        {#if mode === "cards"}
+          <PosterGrid>
+            {#each items as entry (keyOf(entry))}
+              <div
+                animate:flip={{ duration: reduced ? 0 : 250 }}
+                in:fade|global={{ duration: reduced ? 0 : 150 }}
+                out:fade={{ duration: reduced ? 0 : 100 }}>
+                {@render card(entry)}
+              </div>
+            {/each}
+          </PosterGrid>
+        {:else if mode === "wall"}
+          <LibraryWall {items} {keyOf} {itemView} />
+        {:else}
+          <LibraryTable
+            {items}
+            {keyOf}
+            {itemView}
+            {columns}
+            {sort}
+            {reversed}
+            onSort={sortBy}
+            compact={mode === "compact"} />
+        {/if}
+      </div>
+    {/key}
     {#if browseQuery.hasNextPage}
       <!-- Sentinel: entering the viewport triggers the next page. -->
       <div bind:this={sentinel} class="absolute h-10"></div>
     {/if}
     {#if loadingMore}
       <div class="mt-4">
-        <PosterGridSkeleton count={5} />
+        {@render skeleton(5)}
       </div>
     {/if}
   {/if}
 </div>
+
+{#snippet skeleton(count: number)}
+  {#if mode === "cards"}
+    <PosterGridSkeleton {count} />
+  {:else}
+    <div role="status" aria-busy="true">
+      <span class="sr-only">{m.common_loading()}</span>
+      {#if mode === "wall"}
+        <div
+          aria-hidden="true"
+          class="grid grid-cols-4 gap-1.5 sm:grid-cols-6 sm:gap-2 lg:grid-cols-8">
+          {#each { length: count * 2 } as _, i (i)}
+            <div class="skeleton aspect-2/3 rounded-lg"></div>
+          {/each}
+        </div>
+      {:else}
+        <div
+          aria-hidden="true"
+          class="border-border divide-border divide-y overflow-hidden rounded-xl border">
+          {#each { length: count } as _, i (i)}
+            <div class="flex items-center gap-3 px-3 py-2.5">
+              {#if mode === "table"}
+                <div class="skeleton h-12 w-8 rounded"></div>
+              {/if}
+              <div class="flex flex-1 flex-col gap-2">
+                <div class="skeleton h-3.5 w-2/5 rounded"></div>
+                <div class="skeleton h-3 w-1/4 rounded"></div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
+{/snippet}

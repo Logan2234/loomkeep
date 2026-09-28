@@ -1582,5 +1582,15 @@
   "transparency_unavailable": "This instance doesn't publish a moderation record.",
   "transparency_appeal_prefix": "To appeal a decision, reply to the email that notified you or write to",
   "transparency_appeal_middle": ". The full procedure is described in",
-  "transparency_appeal_terms_link": "section 9 of the terms of service"
+  "transparency_appeal_terms_link": "section 9 of the terms of service",
+  "library_display": "Display",
+  "library_view_cards": "Cards",
+  "library_view_table": "Table",
+  "library_view_rows": "Rows",
+  "library_view_wall": "Wall",
+  "library_view_compact": "Compact",
+  "library_col_watched": "Watched",
+  "library_col_added": "Added",
+  "library_col_finished": "Finished",
+  "library_col_listened": "Listened"
 }

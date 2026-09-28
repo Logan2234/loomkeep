@@ -9,7 +9,15 @@
   import PosterCard from "$lib/components/PosterCard.svelte";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
+  import { MEDIA_OWNERSHIP_STATUS_OPTIONS } from "$lib/constants/ownership-sources";
+  import { MEDIA_STATUS_META } from "$lib/constants/status-labels";
   import { toggleFavorite } from "$lib/favorite-toggle";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
+  import {
+    ownershipText,
+    type LibraryColumn,
+    type LibraryItemView,
+  } from "$lib/library-view";
   import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
   import { Domain, isDormant } from "@loomkeep/shared";
@@ -43,6 +51,75 @@
       (entry.progress.watchedEpisodes / entry.progress.totalEpisodes) * 100,
     );
   }
+
+  const TYPE_LABELS: Record<MediaType, string> = {
+    MOVIE: m.media_movie(),
+    SERIES: m.media_series(),
+    ANIME: m.media_anime(),
+  };
+
+  const mediaHref = (entry: LibraryEntryDto) =>
+    `/app/media/${entry.mediaItem.type.toLowerCase()}/${entry.mediaItem.sourceId}`;
+
+  const setFavorite = (entry: LibraryEntryDto, next: boolean) =>
+    toggleFavorite(entry, next, (n) =>
+      updateLibraryEntry(entry.id, { favorite: n }),
+    );
+
+  const itemView = (entry: LibraryEntryDto): LibraryItemView => ({
+    href: mediaHref(entry),
+    title: entry.mediaItem.title,
+    subtitle: TYPE_LABELS[entry.mediaItem.type],
+    imageUrl: entry.mediaItem.posterUrl,
+    status: MEDIA_STATUS_META[entry.status],
+    rating: entry.rating,
+    favorite: entry.favorite,
+    onToggleFavorite: (next) => setFavorite(entry, next),
+    progress: entry.progress
+      ? {
+          percent: pct(entry),
+          label: `${entry.progress.watchedEpisodes} / ${entry.progress.totalEpisodes} ${m.media_episode_short()}`,
+          paused: isDormant(entry),
+        }
+      : null,
+  });
+
+  const COLUMNS: LibraryColumn<LibraryEntryDto>[] = [
+    { kind: "title", label: m.common_title(), sort: "title" },
+    { kind: "status", label: m.common_status(), sort: "status" },
+    { kind: "progress", label: m.common_progress(), sort: "progress" },
+    {
+      kind: "rating",
+      label: m.library_rating(),
+      sort: "rating",
+      numeric: true,
+    },
+    {
+      kind: "text",
+      label: m.ownership_title(),
+      value: (e) =>
+        ownershipText(
+          MEDIA_OWNERSHIP_STATUS_OPTIONS,
+          e.ownershipStatus,
+          e.ownershipSource,
+        ),
+    },
+    {
+      kind: "text",
+      label: m.library_col_watched(),
+      sort: "recent",
+      value: (e) =>
+        e.lastWatchedAt
+          ? formatDate(e.lastWatchedAt, DATE_MEDIUM_OPTIONS)
+          : null,
+    },
+    {
+      kind: "text",
+      label: m.library_col_added(),
+      sort: "added",
+      value: (e) => formatDate(e.createdAt, DATE_MEDIUM_OPTIONS),
+    },
+  ];
 
   const load = (params: LibraryLoadParams) =>
     listLibrary({
@@ -78,20 +155,19 @@
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}
-  defaultSort="recent">
+  defaultSort="recent"
+  {itemView}
+  columns={COLUMNS}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MediaSearchPanel {query} limit={10} {onResults} />
   {/snippet}
   {#snippet card(entry: LibraryEntryDto)}
     <PosterCard
-      href={`/app/media/${entry.mediaItem.type.toLowerCase()}/${entry.mediaItem.sourceId}`}
+      href={mediaHref(entry)}
       src={entry.mediaItem.posterUrl}
       title={entry.mediaItem.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) =>
-        toggleFavorite(entry, next, (n) =>
-          updateLibraryEntry(entry.id, { favorite: n }),
-        )}>
+      onToggleFavorite={(next) => setFavorite(entry, next)}>
       {#snippet meta()}
         {#if entry.progress}
           <ProgressBar

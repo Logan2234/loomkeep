@@ -1,5 +1,6 @@
 import { ApiError } from "$lib/api/core";
 import { resolveApiError } from "$lib/api/errors";
+import type { LibraryColumn, LibraryItemView } from "$lib/library-view";
 import { m } from "$lib/paraglide/messages.js";
 import { pileHeaderLabel } from "$lib/pile";
 import { apiUrl, server } from "$lib/test/msw";
@@ -48,6 +49,22 @@ const card = createRawSnippet((entry: () => Entry) => ({
   render: () => `<p>${entry().title}</p>`,
 }));
 
+const itemView = (entry: Entry): LibraryItemView => ({
+  href: `/app/books/${entry.id}`,
+  title: entry.title,
+  subtitle: null,
+  imageUrl: null,
+  status: { label: "Reading", cls: "" },
+  rating: null,
+  favorite: false,
+  onToggleFavorite: () => {},
+  progress: null,
+});
+
+const columns: LibraryColumn<Entry>[] = [
+  { kind: "title", label: "Titre", sort: "title" },
+];
+
 const pageOf = (
   items: Entry[],
   extra: Partial<PagedResult<Entry>> = {},
@@ -84,6 +101,8 @@ function renderBrowser(
     ],
     defaultSort: "addedAt",
     card,
+    itemView,
+    columns,
   } as never);
 }
 
@@ -91,11 +110,34 @@ const lastLoad = (load: ReturnType<typeof vi.fn>) =>
   load.mock.lastCall?.[0] as LibraryLoadParams;
 
 beforeEach(() => {
+  localStorage.clear();
   visit("/app/books");
   server.use(http.get(apiUrl("/saved-views"), () => HttpResponse.json([])));
 });
 
 describe("LibraryBrowser", () => {
+  it("renders the mode picked in the display menu, remembered for this library", async () => {
+    const user = userEvent.setup();
+    const load = vi.fn(async () => pageOf([DUNE, HYPERION]));
+    renderBrowser(load);
+    expect(await screen.findByText("Dune")).toBeTruthy();
+
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(m.library_display()) }),
+    );
+    await user.click(
+      screen.getByRole("menuitem", { name: m.library_view_table() }),
+    );
+
+    expect(await screen.findByRole("table")).toBeTruthy();
+    expect(localStorage.getItem("lk-library-view-books")).toBe("table");
+
+    await user.click(screen.getByRole("button", { name: "Titre" }));
+    await waitFor(() =>
+      expect(lastLoad(load)).toMatchObject({ sort: "title" }),
+    );
+  });
+
   it("shows the first page and the library's total", async () => {
     const load = vi.fn(async () =>
       pageOf([DUNE, HYPERION], { hasMore: true, total: 42 }),

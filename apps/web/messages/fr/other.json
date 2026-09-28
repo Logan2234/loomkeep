@@ -1582,5 +1582,15 @@
   "transparency_unavailable": "Cette instance ne publie pas de bilan de modération.",
   "transparency_appeal_prefix": "Pour contester une décision, réponds à l'e-mail qui te l'a notifiée ou écris à",
   "transparency_appeal_middle": ". Le détail de la procédure figure au",
-  "transparency_appeal_terms_link": "§9 des conditions d'utilisation"
+  "transparency_appeal_terms_link": "§9 des conditions d'utilisation",
+  "library_display": "Affichage",
+  "library_view_cards": "Cartes",
+  "library_view_table": "Tableau",
+  "library_view_rows": "Lignes",
+  "library_view_wall": "Mur",
+  "library_view_compact": "Compact",
+  "library_col_watched": "Vu le",
+  "library_col_added": "Ajouté le",
+  "library_col_finished": "Terminé le",
+  "library_col_listened": "Écouté le"
 }
