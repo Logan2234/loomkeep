@@ -36,6 +36,16 @@
       target="_blank"
       rel="noopener noreferrer"
       class="btn-text font-normal">{m.common_terms()}</a>
+
+    {#if appConfig.socialEnabled}
+      <span class="mx-1.5">·</span>
+
+      <a
+        href="/legal/transparency"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-text font-normal">{m.common_transparency()}</a>
+    {/if}
   </nav>
 
   <p class="flex gap-2">

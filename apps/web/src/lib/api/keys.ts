@@ -245,4 +245,5 @@ export const keys = {
       ["admin", "reports", filters] as const,
     reportsSummary: () => ["admin", "reports-summary"] as const,
   },
+  transparency: (year: number | undefined) => ["transparency", year] as const,
 } as const;
