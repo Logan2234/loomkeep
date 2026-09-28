@@ -205,7 +205,7 @@
                   {:else}
                     <span class="text-dim">—</span>
                   {/if}
-                {:else}
+                {:else if column.kind === "text"}
                   {@const value = column.value(entry)}
                   <span class="whitespace-nowrap {value ? '' : 'text-dim'}">
                     {value ?? "—"}
