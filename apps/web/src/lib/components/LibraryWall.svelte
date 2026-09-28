@@ -28,42 +28,47 @@
     {@const item = itemView(entry)}
     <a
       href={item.href}
-      class="group relative block overflow-hidden rounded-lg"
+      class="group relative block"
       aria-label={item.title}
       animate:flip={{ duration: reduced ? 0 : 250 }}
       in:fade|global={{ duration: reduced ? 0 : 150 }}
       out:fade={{ duration: reduced ? 0 : 100 }}>
+      <!-- Its own element: the anchor's transform belongs to animate:flip. -->
       <div
-        class="transition-transform duration-300 group-hover:scale-[1.04] group-focus-visible:scale-[1.04]">
-        <Poster src={item.imageUrl} title={item.title} alt="" />
-      </div>
-      <div
-        class="absolute inset-0 flex flex-col justify-end gap-0.5 bg-linear-to-b from-transparent from-30% to-black/85 p-2 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-        <span class="font-display line-clamp-2 text-xs leading-tight font-bold">
-          {item.title}
-        </span>
-        <span class="line-clamp-2 font-mono text-[0.62rem] opacity-85">
-          {joinMeta(
-            item.status.label,
-            item.rating !== null ? `★ ${item.rating}` : null,
-            item.progress?.label,
-          )}
-        </span>
-      </div>
-      {#if item.favorite}
-        <span
-          class="text-accent absolute top-1.5 right-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]">
-          <Icon name="star" class="fill-accent h-3.5 w-3.5" />
-        </span>
-      {/if}
-      {#if item.progress && item.progress.percent < 100}
-        <div class="absolute inset-x-0 bottom-0 h-0.75 bg-black/45">
-          <div
-            class="bg-accent h-full transition-[width] duration-500"
-            style="width: {item.progress.percent}%">
-          </div>
+        class="relative overflow-hidden rounded-lg transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:scale-[0.95] group-active:duration-75 group-active:ease-out">
+        <div
+          class="transition-transform duration-300 group-hover:scale-[1.04] group-focus-visible:scale-[1.04]">
+          <Poster src={item.imageUrl} title={item.title} alt="" />
         </div>
-      {/if}
+        <div
+          class="absolute inset-0 flex flex-col justify-end gap-0.5 bg-linear-to-b from-transparent from-30% to-black/85 p-2 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+          <span
+            class="font-display line-clamp-2 text-xs leading-tight font-bold">
+            {item.title}
+          </span>
+          <span class="line-clamp-2 font-mono text-[0.62rem] opacity-85">
+            {joinMeta(
+              item.status.label,
+              item.rating !== null ? `★ ${item.rating}` : null,
+              item.progress?.label,
+            )}
+          </span>
+        </div>
+        {#if item.favorite}
+          <span
+            class="text-accent absolute top-1.5 right-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]">
+            <Icon name="star" class="fill-accent h-3.5 w-3.5" />
+          </span>
+        {/if}
+        {#if item.progress && item.progress.percent < 100}
+          <div class="absolute inset-x-0 bottom-0 h-0.75 bg-black/45">
+            <div
+              class="bg-accent h-full transition-[width] duration-500"
+              style="width: {item.progress.percent}%">
+            </div>
+          </div>
+        {/if}
+      </div>
     </a>
   {/each}
 </div>

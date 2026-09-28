@@ -28,8 +28,11 @@
   const reduced = prefersReducedMotion();
 </script>
 
+<!-- Pressing the card sinks it; releasing springs it back (a slight
+     overshoot on the way up). Keyed on the overlay link so pressing the
+     favorite button doesn't press the whole card. -->
 <div
-  class="card group hover:border-accent relative transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
+  class="card group hover:border-accent relative transition-[transform,border-color] duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-0.5 has-[a:active]:translate-y-0 has-[a:active]:scale-[0.97] has-[a:active]:duration-75 has-[a:active]:ease-out">
   <a {href} class="absolute inset-0 z-1" aria-label={title}></a>
   <Poster {src} {title} alt="" />
   <div class="flex flex-col gap-1.5 p-3">
@@ -48,7 +51,7 @@
         ? m.common_favorite_remove()
         : m.common_favorite_add()}
       aria-pressed={favorite}
-      class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full backdrop-blur-sm transition-opacity {favorite
+      class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full backdrop-blur-sm transition-[opacity,transform] active:scale-90 {favorite
         ? 'opacity-100'
         : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100'}">
       {#key favorite}

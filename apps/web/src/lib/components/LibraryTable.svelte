@@ -64,7 +64,7 @@
       ? m.common_favorite_remove()
       : m.common_favorite_add()}
     aria-pressed={item.favorite}
-    class="hover:text-fg relative grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors {item.favorite
+    class="hover:text-fg relative grid h-8 w-8 shrink-0 place-items-center rounded-full transition-[color,transform] active:scale-90 {item.favorite
       ? 'text-accent'
       : 'text-dim'}">
     {#key item.favorite}
@@ -132,7 +132,7 @@
         {#each items as entry (keyOf(entry))}
           {@const item = itemView(entry)}
           <tr
-            class="border-border hover:bg-surface-2 cursor-pointer border-t transition-colors"
+            class="border-border hover:bg-surface-2 [&:active:not(:has(button:active))]:bg-accent/10 cursor-pointer border-t transition-colors"
             onclick={(e) => openRow(e, item.href)}
             animate:flip={{ duration: reduced ? 0 : 250 }}
             in:fade|global={{ duration: reduced ? 0 : 150 }}
@@ -227,7 +227,7 @@
     {#each items as entry (keyOf(entry))}
       {@const item = itemView(entry)}
       <li
-        class="hover:bg-surface-2 relative flex items-center gap-3 px-3 transition-colors {compact
+        class="hover:bg-surface-2 [&:active:not(:has(button:active))]:bg-accent/10 relative flex items-center gap-3 px-3 transition-colors {compact
           ? 'py-2'
           : 'py-2.5'}"
         animate:flip={{ duration: reduced ? 0 : 250 }}
