@@ -18,6 +18,13 @@ export interface QuotaAlert {
   threshold: number;
 }
 
+/** A scheduled job that started failing (`error` set) or succeeded again (`error: null`). */
+export interface JobAlert {
+  jobKey: string;
+  /** First line of the error message; null once the job has recovered. */
+  error: string | null;
+}
+
 export interface MailRecipient {
   email: string;
   locale: string;
@@ -324,6 +331,27 @@ export class MailService {
           threshold: count / limit,
         });
       },
+    },
+    jobAlert: {
+      label: "Alerte de job planifié",
+      fields: [
+        { key: "jobKey", label: "Job", default: "backup.run" },
+        {
+          key: "status",
+          label: "Statut (FAILURE/SUCCESS)",
+          default: "FAILURE",
+        },
+        {
+          key: "error",
+          label: "Erreur",
+          default: "BACKUP_ENCRYPTION_PUBLIC_KEY is not set",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildJobAlert(locale, {
+          jobKey: v.jobKey,
+          error: v.status === "SUCCESS" ? null : v.error,
+        }),
     },
     reportsDigest: {
       label: "Digest des signalements",
@@ -658,6 +686,15 @@ export class MailService {
     });
   }
 
+  /** Tells an admin a scheduled job started failing, or recovered. */
+  async sendJobAlert(recipient: MailRecipient, alert: JobAlert): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildJobAlert(locale, alert),
+    });
+  }
+
   /**
    * warns an inactive account it will be deleted on `deletionDate`
    * (the account-preservation notice required before InactiveAccountService's
@@ -738,6 +775,30 @@ export class MailService {
         copy.heading,
         `<p>${escapeHtml(sentence)}</p>
          ${exhausted ? `<p>${escapeHtml(exhausted)}</p>` : ""}
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
+  private buildJobAlert(locale: Locale, alert: JobAlert): TemplateBody {
+    const copy = MAIL_COPY[locale].jobAlert;
+    const url = `${this.webOrigin}/app/admin/jobs`;
+    const failed = alert.error !== null;
+    const sentence = failed
+      ? copy.failed(alert.jobKey)
+      : copy.recovered(alert.jobKey);
+    return {
+      subject: failed
+        ? copy.failedSubject(alert.jobKey)
+        : copy.recoveredSubject(alert.jobKey),
+      text: [sentence, alert.error, failed ? copy.onlyOnce : null, url]
+        .filter(Boolean)
+        .join("\n\n"),
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(sentence)}</p>
+         ${failed ? `<p><code>${escapeHtml(alert.error ?? "")}</code></p><p>${escapeHtml(copy.onlyOnce)}</p>` : ""}
          ${this.button(url, copy.button)}`,
       ),
     };

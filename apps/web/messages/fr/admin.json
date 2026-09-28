@@ -39,6 +39,8 @@
   "admin_users_xp_hint": "Un nombre négatif retire de l'XP. Pour annuler un ajustement, refais-le avec le signe inverse. L'utilisateur n'est pas prévenu.",
   "admin_users_xp_done": "XP ajusté : {xp} XP",
   "admin_template_quota_alert": "Alerte de quota fournisseur",
+  "admin_template_job_alert": "Alerte de job",
+  "admin_template_job": "Job",
   "admin_template_provider": "Fournisseur",
   "admin_template_calls_today": "Appels du jour",
   "admin_template_daily_quota": "Quota quotidien",

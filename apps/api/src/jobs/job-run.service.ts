@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { JobRun } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { JobAlertService } from "./job-alert.service";
 import { JOB_HEALTHCHECK_ENV, JOB_KEYS, type JobKey } from "./job-keys";
 
 /** Runs kept per job — bounds the table on a self-host instance running for years. */
@@ -14,11 +15,15 @@ const RECENT_RUNS_SHOWN = 20;
 export class JobRunService {
   private readonly logger = new Logger(JobRunService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly alerts: JobAlertService,
+  ) {}
 
   /**
    * Runs `fn`, records the outcome (success/failure + a summary), prunes old
    * runs for this job, then returns `fn`'s result (or rethrows its error).
+   * The admins are alerted when the outcome differs from the previous run's.
    */
   async record<T>(
     jobKey: JobKey,
@@ -34,12 +39,15 @@ export class JobRunService {
 
     try {
       const result = await fn();
+      const previous = await this.lastStatus(jobKey);
       await this.persist(jobKey, startedAt, "SUCCESS", summarize(result));
       await this.ping(jobKey, true);
+      if (previous === "FAILURE") await this.alerts.jobRecovered(jobKey);
       return result;
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       this.logger.error(`[${runId}] Job ${jobKey} failed`, error.stack);
+      const previous = await this.lastStatus(jobKey);
       await this.persist(
         jobKey,
         startedAt,
@@ -51,6 +59,7 @@ export class JobRunService {
         `[${runId}] ${error.stack ?? error.message}`,
       );
       await this.ping(jobKey, false);
+      if (previous !== "FAILURE") await this.alerts.jobFailed(jobKey, error);
       throw err;
     }
   }
@@ -89,6 +98,15 @@ export class JobRunService {
       key,
       runs: runsByKey[i].map(toRunDto),
     }));
+  }
+
+  private async lastStatus(jobKey: JobKey): Promise<string | undefined> {
+    const last = await this.prisma.jobRun.findFirst({
+      where: { jobKey },
+      orderBy: { startedAt: "desc" },
+      select: { status: true },
+    });
+    return last?.status;
   }
 
   private async persist(
