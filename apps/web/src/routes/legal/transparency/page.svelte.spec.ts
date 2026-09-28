@@ -67,7 +67,7 @@ describe("/legal/transparency", () => {
         );
       }),
     );
-    renderWithQuery(TransparencyPage);
+    renderWithQuery(TransparencyPage, {});
 
     expect(
       await screen.findByText(
@@ -95,7 +95,7 @@ describe("/legal/transparency", () => {
         HttpResponse.json(transparency(2026, { years: [2026] })),
       ),
     );
-    renderWithQuery(TransparencyPage);
+    renderWithQuery(TransparencyPage, {});
 
     await screen.findByText(m.transparency_reports_heading());
     expect(screen.queryByRole("button", { name: "2026" })).toBeNull();
@@ -110,7 +110,7 @@ describe("/legal/transparency", () => {
         ),
       ),
     );
-    renderWithQuery(TransparencyPage);
+    renderWithQuery(TransparencyPage, {});
 
     expect(await screen.findByText(m.transparency_unavailable())).toBeTruthy();
   });
