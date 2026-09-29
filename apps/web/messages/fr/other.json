@@ -1618,5 +1618,15 @@
   "settings_shortcuts_library_select": "Sélectionner ou désélectionner l'élément",
   "settings_shortcuts_library_range": "Sélectionner jusqu'à l'élément",
   "settings_shortcuts_library_select_all": "Tout sélectionner (en mode sélection)",
-  "settings_shortcuts_library_exit": "Quitter le mode sélection"
+  "settings_shortcuts_library_exit": "Quitter le mode sélection",
+  "library_col_started": "Commencé le",
+  "library_col_notes": "Notes",
+  "library_columns": "Colonnes",
+  "library_columns_reset": "Réinitialiser les colonnes",
+  "library_rating_add": "Noter {title}",
+  "library_rating_edit": "Modifier la note de {title}",
+  "library_edit_status": "Changer le statut de {title}",
+  "library_edit_ownership": "Changer la possession de {title}",
+  "library_rating_short": "Noter",
+  "ownership_unspecified": "Sans précision"
 }

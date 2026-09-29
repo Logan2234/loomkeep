@@ -2,6 +2,7 @@ import type {
   BulkEntriesResultDto,
   BulkEntriesTargetDto,
   BulkUpdateEntriesDto,
+  ReviewTargetType,
   SavedViewDomain,
 } from "@loomkeep/shared";
 import { joinMeta } from "./format";
@@ -43,6 +44,37 @@ export function writeLibraryViewMode(
   }
 }
 
+const columnsKey = (domain: SavedViewDomain) =>
+  `lk-library-columns-${domain.toLowerCase()}`;
+
+/** The table's visible column keys, or null when never customised (or unreadable). */
+export function readLibraryColumns(domain: SavedViewDomain): string[] | null {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(columnsKey(domain)) ?? "null",
+    );
+    return Array.isArray(stored) &&
+      stored.every((key) => typeof key === "string")
+      ? stored
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Null forgets the choice, back to the library's default columns. */
+export function writeLibraryColumns(
+  domain: SavedViewDomain,
+  keys: string[] | null,
+): void {
+  try {
+    if (keys) localStorage.setItem(columnsKey(domain), JSON.stringify(keys));
+    else localStorage.removeItem(columnsKey(domain));
+  } catch {
+    // Private browsing or blocked storage: the choice just won't be remembered.
+  }
+}
+
 /** What the table, compact and wall modes show of an entry, whatever its domain. */
 export interface LibraryItemView {
   href: string;
@@ -50,21 +82,37 @@ export interface LibraryItemView {
   /** Type, authors or artists, shown under the title. */
   subtitle: string | null;
   imageUrl: string | null;
-  status: { label: string; cls: string };
+  status: { value: string; label: string; cls: string };
+  /** The ownership status value ("NONE" when unset), for its inline menu. */
+  ownership: string;
+  ownershipSource: string | null;
+  /** Where the entry's review lives: the rating is edited through it. */
+  reviewTarget: { type: ReviewTargetType; id: string };
   rating: number | null;
   favorite: boolean;
-  onToggleFavorite: (next: boolean) => void;
   progress: { percent: number; label: string; paused: boolean } | null;
 }
 
-/** A table column. `sort` is the library sort it drives from its header. */
+/**
+ * A table column. `sort` is the library sort it drives from its header;
+ * `defaultHidden` leaves it out until picked in the display menu.
+ */
 export type LibraryColumn<T> = {
+  key: string;
   label: string;
   sort?: string;
   numeric?: boolean;
+  defaultHidden?: boolean;
 } & (
   | { kind: "title" | "status" | "progress" | "rating" }
-  | { kind: "text"; value: (entry: T) => string | null }
+  | {
+      kind: "text";
+      value: (entry: T) => string | null;
+      /** Long free text (notes): cut to one line. */
+      truncate?: boolean;
+      /** Editable in place through the ownership menu. */
+      ownership?: boolean;
+    }
 );
 
 /** "Streaming · Netflix" for the ownership column, null when unset. */
@@ -94,6 +142,27 @@ export interface LibrarySelection<T> {
 export interface LibraryBulkActions {
   statusOptions: { label: string; value: string }[];
   ownershipOptions: { label: string; value: string }[];
+  /** Presets offered in a submenu of their ownership status. */
+  ownershipSources: Record<string, string[]>;
   update: (dto: BulkUpdateEntriesDto) => Promise<BulkEntriesResultDto>;
   remove: (target: BulkEntriesTargetDto) => Promise<BulkEntriesResultDto>;
+}
+
+/** In-place editing of a table row (desktop only, outside selection mode). */
+export interface LibraryInlineEdit<T> {
+  statusOptions: { label: string; value: string }[];
+  ownershipOptions: { label: string; value: string }[];
+  ownershipSources: Record<string, string[]>;
+  save: (
+    entry: T,
+    action: {
+      status?: string;
+      ownershipStatus?: string;
+      ownershipSource?: string | null;
+    },
+  ) => void;
+  /** The cell that just saved, to acknowledge it in place. */
+  saved: { key: string; field: "status" | "ownership" } | null;
+  /** Opens the entry's review, where its rating lives. */
+  review: (entry: T) => void;
 }

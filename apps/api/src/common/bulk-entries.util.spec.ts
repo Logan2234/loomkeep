@@ -15,6 +15,7 @@ const row = (overrides: Partial<BulkEntryRow> = {}): BulkEntryRow => ({
   status: "PLAYING",
   favorite: false,
   ownershipStatus: "NONE",
+  ownershipSource: null,
   ...overrides,
 });
 
@@ -31,6 +32,7 @@ describe("assertBulkUpdate", () => {
     ["two targets", { ids: ["a"], filters: {}, status: "PLAYING" }],
     ["no action", { ids: ["a"] }],
     ["two actions", { ids: ["a"], status: "PLAYING", favorite: true }],
+    ["a source with no ownership", { ids: ["a"], ownershipSource: "Steam" }],
   ])("rejects a request with %s", (_label, dto) => {
     expect(() => assertBulkUpdate(dto)).toThrow(
       expect.objectContaining({ code: ErrorCode.LibraryBulkInvalid }),
@@ -56,6 +58,34 @@ describe("applyBulkUpdate", () => {
 
     expect(o.update).toHaveBeenCalledTimes(1);
     expect(o.update).toHaveBeenCalledWith("a", { status: "COMPLETED" });
+    expect(result).toEqual({ updated: 1, skipped: 1 });
+  });
+
+  it("sets the ownership source picked with it, and skips an entry already owned that way", async () => {
+    const o = ops();
+
+    const result = await applyBulkUpdate(
+      [
+        row({ id: "a", ownershipStatus: "DIGITAL" }),
+        row({
+          id: "b",
+          ownershipStatus: "STREAMING",
+          ownershipSource: "Netflix",
+        }),
+      ],
+      {
+        ids: ["a", "b"],
+        ownershipStatus: "STREAMING",
+        ownershipSource: "Netflix",
+      },
+      o,
+    );
+
+    expect(o.update).toHaveBeenCalledTimes(1);
+    expect(o.update).toHaveBeenCalledWith("a", {
+      ownershipStatus: "STREAMING",
+      ownershipSource: "Netflix",
+    });
     expect(result).toEqual({ updated: 1, skipped: 1 });
   });
 

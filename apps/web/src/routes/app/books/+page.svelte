@@ -14,13 +14,15 @@
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import ReadingGoalChip from "$lib/components/ReadingGoalChip.svelte";
   import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
-  import { BOOK_OWNERSHIP_STATUS_OPTIONS } from "$lib/constants/ownership-sources";
+  import {
+    BOOK_OWNERSHIP_SOURCES,
+    BOOK_OWNERSHIP_STATUS_OPTIONS,
+  } from "$lib/constants/ownership-sources";
   import {
     BOOK_STATUS_LABELS,
     BOOK_STATUS_META,
     BOOK_STATUS_ORDER,
   } from "$lib/constants/status-labels";
-  import { toggleFavorite } from "$lib/favorite-toggle";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import {
     ownershipText,
@@ -58,19 +60,19 @@
   ];
 
   const setFavorite = (entry: BookEntryDto, next: boolean) =>
-    toggleFavorite(entry, next, (n) =>
-      updateBookEntry(entry.id, { favorite: n }),
-    );
+    updateBookEntry(entry.id, { favorite: next });
 
   const itemView = (entry: BookEntryDto): LibraryItemView => ({
     href: `/app/books/${entry.book.sourceId}`,
     title: entry.book.title,
     subtitle: entry.book.authors.join(", ") || null,
     imageUrl: entry.book.coverUrl,
-    status: BOOK_STATUS_META[entry.status],
+    status: { value: entry.status, ...BOOK_STATUS_META[entry.status] },
+    ownership: entry.ownershipStatus,
+    ownershipSource: entry.ownershipSource,
+    reviewTarget: { type: "BOOK", id: entry.book.id },
     rating: entry.rating,
     favorite: entry.favorite,
-    onToggleFavorite: (next) => setFavorite(entry, next),
     progress: entry.book.pageCount
       ? {
           percent: pct(entry),
@@ -81,17 +83,25 @@
   });
 
   const COLUMNS: LibraryColumn<BookEntryDto>[] = [
-    { kind: "title", label: m.common_title(), sort: "title" },
-    { kind: "status", label: m.common_status(), sort: "status" },
-    { kind: "progress", label: m.common_progress(), sort: "progress" },
+    { key: "title", kind: "title", label: m.common_title(), sort: "title" },
+    { key: "status", kind: "status", label: m.common_status(), sort: "status" },
     {
+      key: "progress",
+      kind: "progress",
+      label: m.common_progress(),
+      sort: "progress",
+    },
+    {
+      key: "rating",
       kind: "rating",
       label: m.library_rating(),
       sort: "rating",
       numeric: true,
     },
     {
+      key: "ownership",
       kind: "text",
+      ownership: true,
       label: m.ownership_title(),
       value: (e) =>
         ownershipText(
@@ -101,6 +111,7 @@
         ),
     },
     {
+      key: "finished",
       kind: "text",
       label: m.library_col_finished(),
       sort: "finished",
@@ -108,16 +119,35 @@
         e.finishedAt ? formatDate(e.finishedAt, DATE_MEDIUM_OPTIONS) : null,
     },
     {
+      key: "added",
       kind: "text",
       label: m.library_col_added(),
       sort: "added",
       value: (e) => formatDate(e.createdAt, DATE_MEDIUM_OPTIONS),
+    },
+    {
+      key: "started",
+      kind: "text",
+      label: m.library_col_started(),
+      sort: "started",
+      defaultHidden: true,
+      value: (e) =>
+        e.startedAt ? formatDate(e.startedAt, DATE_MEDIUM_OPTIONS) : null,
+    },
+    {
+      key: "notes",
+      kind: "text",
+      label: m.library_col_notes(),
+      defaultHidden: true,
+      truncate: true,
+      value: (e) => e.notes,
     },
   ];
 
   const BULK: LibraryBulkActions = {
     statusOptions: STATUS_OPTIONS,
     ownershipOptions: BOOK_OWNERSHIP_STATUS_OPTIONS,
+    ownershipSources: BOOK_OWNERSHIP_SOURCES,
     update: (dto) =>
       bulkUpdateBookEntries(dto as Parameters<typeof bulkUpdateBookEntries>[0]),
     remove: bulkDeleteBookEntries,
@@ -158,20 +188,24 @@
   defaultSort="added"
   {itemView}
   columns={COLUMNS}
-  bulk={BULK}>
+  bulk={BULK}
+  {setFavorite}>
   {#snippet headerActions()}
     <ReadingGoalChip />
   {/snippet}
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <BookSearchPanel {query} limit={10} {onResults} />
   {/snippet}
-  {#snippet card(entry: BookEntryDto)}
+  {#snippet card(
+    entry: BookEntryDto,
+    onToggleFavorite: (next: boolean) => void,
+  )}
     <PosterCard
       href={`/app/books/${entry.book.sourceId}`}
       src={entry.book.coverUrl}
       title={entry.book.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) => setFavorite(entry, next)}>
+      {onToggleFavorite}>
       {#snippet meta()}
         {#if entry.book.pageCount}
           <ProgressBar

@@ -18,7 +18,7 @@
   >;
 </script>
 
-<script lang="ts" generics="T">
+<script lang="ts" generics="T extends { favorite: boolean }">
   // Generic library browser shared by the games / books / media / music list
   // pages: server-paginated infinite scroll (mirrors MediaSearchPanel's
   // debounce + sentinel pattern), text filter, status multi-select, favorites
@@ -41,6 +41,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import LibraryBulkBar from "$lib/components/LibraryBulkBar.svelte";
+  import LibraryReviewEditor from "$lib/components/LibraryReviewEditor.svelte";
   import LibraryTable from "$lib/components/LibraryTable.svelte";
   import LibraryViewMenu from "$lib/components/LibraryViewMenu.svelte";
   import LibraryWall from "$lib/components/LibraryWall.svelte";
@@ -50,10 +51,13 @@
   import SavedViewBar from "$lib/components/SavedViewBar.svelte";
   import { debounce } from "$lib/debounce";
   import {
+    readLibraryColumns,
     readLibraryViewMode,
+    writeLibraryColumns,
     writeLibraryViewMode,
     type LibraryBulkActions,
     type LibraryColumn,
+    type LibraryInlineEdit,
     type LibraryItemView,
     type LibrarySelection,
     type LibraryViewMode,
@@ -74,10 +78,10 @@
     SavedViewFiltersDto,
   } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient, type InfiniteData } from "@tanstack/svelte-query";
   import { onDestroy, untrack } from "svelte";
   import { flip } from "svelte/animate";
-  import { SvelteSet } from "svelte/reactivity";
+  import { MediaQuery, SvelteSet } from "svelte/reactivity";
   import { fade, fly, scale, slide } from "svelte/transition";
 
   type IconName = ComponentProps<typeof Icon>["name"];
@@ -105,6 +109,7 @@
     catalogPreview,
     headerActions,
     bulk,
+    setFavorite,
   }: {
     icon: IconName;
     title: string;
@@ -122,7 +127,8 @@
     statusOptions: Option[];
     sorts: Option[];
     defaultSort: string;
-    card: Snippet<[T]>;
+    /** Gets the toggle the card's favorite star should call. */
+    card: Snippet<[T, (next: boolean) => void]>;
     /** An entry as the table, compact and wall modes show it. */
     itemView: (entry: T) => LibraryItemView;
     /** The table and compact modes' columns. */
@@ -135,6 +141,8 @@
     headerActions?: Snippet;
     /** The selection mode's actions (UX-04); without them there's no selection mode. */
     bulk?: LibraryBulkActions;
+    /** Saves an entry's favorite flag; the list shows it at once. */
+    setFavorite: (entry: T, next: boolean) => Promise<unknown>;
   } = $props();
 
   // Result count reported by `catalogPreview`, reset whenever the query
@@ -423,6 +431,117 @@
       : done;
   }
 
+  // The list's pages come from the query cache, not a deep $state: flipping
+  // `entry.favorite` in place wouldn't re-render. Patch the cached pages
+  // instead, and put the flag back if the save fails.
+  function patchFavorite(key: string, favorite: boolean) {
+    queryClient.setQueriesData<InfiniteData<PagedResult<T>>>(
+      { queryKey: ["library", "browse", domain] },
+      (data) =>
+        data?.pages
+          ? {
+              ...data,
+              pages: data.pages.map((p) => ({
+                ...p,
+                items: p.items.map((e) =>
+                  keyOf(e) === key ? { ...e, favorite } : e,
+                ),
+              })),
+            }
+          : data,
+    );
+  }
+
+  async function toggleFavorite(entry: T, next: boolean) {
+    const key = keyOf(entry);
+    patchFavorite(key, next);
+    try {
+      await setFavorite(entry, next);
+    } catch (err) {
+      patchFavorite(key, !next);
+      toast.error(resolveApiError(err));
+    }
+  }
+
+  // ── Table columns and in-place editing
+  const wide = new MediaQuery("min-width: 768px");
+  const defaultColumns = $derived(
+    columns.filter((c) => !c.defaultHidden).map((c) => c.key),
+  );
+  let visibleColumns = $state<string[] | null>(readLibraryColumns(domain));
+  const shownColumns = $derived(
+    columns.filter(
+      (c) =>
+        c.kind === "title" ||
+        (visibleColumns ?? defaultColumns).includes(c.key),
+    ),
+  );
+  // Only where the table is a table: phones get rows with no columns.
+  const columnMenu = $derived(
+    wide.current && (mode === "table" || mode === "compact")
+      ? columns.map((c) => ({
+          key: c.key,
+          label: c.label,
+          visible: shownColumns.includes(c),
+          locked: c.kind === "title",
+        }))
+      : undefined,
+  );
+
+  function toggleColumn(key: string) {
+    const current = visibleColumns ?? defaultColumns;
+    visibleColumns = current.includes(key)
+      ? current.filter((k) => k !== key)
+      : [...current, key];
+    writeLibraryColumns(domain, visibleColumns);
+  }
+
+  function resetColumns() {
+    visibleColumns = null;
+    writeLibraryColumns(domain, null);
+  }
+
+  let reviewing = $state<T | null>(null);
+  let savedCell = $state<LibraryInlineEdit<T>["saved"]>(null);
+  let savedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // A single row goes through the bulk endpoint too, so completing a series
+  // in place marks its episodes exactly as the selection bar would.
+  const inlineMut = createApiMutation(() => ({
+    mutate: ({
+      entry,
+      action,
+    }: {
+      entry: T;
+      action: {
+        status?: string;
+        ownershipStatus?: string;
+        ownershipSource?: string | null;
+      };
+    }) => bulk!.update({ ids: [keyOf(entry)], ...action }),
+    invalidates: [["library"]],
+    errorToast: true,
+    onSuccess: (_result, { entry, action }) => {
+      clearTimeout(savedTimer);
+      savedCell = {
+        key: keyOf(entry),
+        field: action.status !== undefined ? "status" : "ownership",
+      };
+      savedTimer = setTimeout(() => (savedCell = null), 1600);
+    },
+  }));
+
+  const inlineEdit: LibraryInlineEdit<T> | undefined = bulk && {
+    statusOptions: bulk.statusOptions,
+    ownershipOptions: bulk.ownershipOptions,
+    ownershipSources: bulk.ownershipSources,
+    save: (entry, action) => inlineMut.mutate({ entry, action }),
+    get saved() {
+      return savedCell;
+    },
+    review: (entry) => (reviewing = entry),
+  };
+
   const bulkMut = createApiMutation(() => ({
     mutate: (dto: BulkUpdateEntriesDto) => bulk!.update(dto),
     invalidates: [["library"]],
@@ -689,7 +808,10 @@
         onChange={setMode}
         selecting={bulk ? selecting : undefined}
         onToggleSelecting={() =>
-          selecting ? exitSelecting() : (selecting = true)} />
+          selecting ? exitSelecting() : (selecting = true)}
+        columns={columnMenu}
+        onToggleColumn={toggleColumn}
+        onResetColumns={resetColumns} />
     </div>
   </div>
 
@@ -814,7 +936,7 @@
                 animate:flip={{ duration: reduced ? 0 : 250 }}
                 in:fade|global={{ duration: reduced ? 0 : 150 }}
                 out:fade={{ duration: reduced ? 0 : 100 }}>
-                {@render card(entry)}
+                {@render card(entry, (next) => toggleFavorite(entry, next))}
                 {#if selecting}
                   <button
                     type="button"
@@ -851,11 +973,13 @@
             items={shown}
             {keyOf}
             {itemView}
-            {columns}
+            columns={shownColumns}
             {sort}
             {reversed}
             onSort={sortBy}
             {selection}
+            edit={inlineEdit}
+            onToggleFavorite={toggleFavorite}
             compact={mode === "compact"} />
         {/if}
       </div>
@@ -882,6 +1006,12 @@
     onUpdate={(action) => bulkMut.mutate({ ...bulkTarget(), ...action })}
     onRemove={() => (confirmingRemove = true)}
     onExit={exitSelecting} />
+{/if}
+
+{#if reviewing}
+  <LibraryReviewEditor
+    item={itemView(reviewing)}
+    onClose={() => (reviewing = null)} />
 {/if}
 
 {#if confirmingRemove}

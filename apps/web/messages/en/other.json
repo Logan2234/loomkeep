@@ -1618,5 +1618,15 @@
   "settings_shortcuts_library_select": "Select or deselect the item",
   "settings_shortcuts_library_range": "Select up to the item",
   "settings_shortcuts_library_select_all": "Select all (in selection mode)",
-  "settings_shortcuts_library_exit": "Leave selection mode"
+  "settings_shortcuts_library_exit": "Leave selection mode",
+  "library_col_started": "Started",
+  "library_col_notes": "Notes",
+  "library_columns": "Columns",
+  "library_columns_reset": "Reset columns",
+  "library_rating_add": "Rate {title}",
+  "library_rating_edit": "Edit the rating of {title}",
+  "library_edit_status": "Change the status of {title}",
+  "library_edit_ownership": "Change how you own {title}",
+  "library_rating_short": "Rate",
+  "ownership_unspecified": "Unspecified"
 }

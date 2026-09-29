@@ -38,6 +38,11 @@ export class BulkUpdateEntriesBaseBody extends BulkEntriesTargetBody {
   @IsString()
   @MaxLength(64)
   listId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  ownershipSource?: string | null;
 }
 
 export class BulkEntriesResultResponseDto implements BulkEntriesResultDto {

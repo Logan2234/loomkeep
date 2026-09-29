@@ -347,6 +347,7 @@ export class MusicLibraryService {
         status: true,
         favorite: true,
         ownershipStatus: true,
+        ownershipSource: true,
       },
     });
     return applyBulkUpdate(
