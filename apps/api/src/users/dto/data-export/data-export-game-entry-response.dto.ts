@@ -19,6 +19,7 @@ class DataExportGameEntryGameResponseDto {
 }
 
 class DataExportGameSessionResponseDto {
+  playthroughNumber!: number | null;
   durationMinutes!: number;
   notes!: string | null;
   occurredAt!: string;

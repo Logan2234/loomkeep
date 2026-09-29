@@ -7,6 +7,7 @@ describe("BookSessionService", () => {
   const created = {
     id: "session-1",
     bookEntryId: "entry-1",
+    readingId: null,
     durationMinutes: 45,
     pagesRead: 100,
     startPage: null,
@@ -18,8 +19,21 @@ describe("BookSessionService", () => {
     updatedAt: new Date("2026-09-26T12:01:00.000Z"),
   };
   const tx = {
-    bookSession: { create: vi.fn(), delete: vi.fn(), findMany: vi.fn() },
+    bookSession: {
+      count: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+      findMany: vi.fn(),
+    },
     bookEntry: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
+    bookReading: {
+      aggregate: vi.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
   };
   const prisma = {
     bookEntry: { findUnique: vi.fn(), findUniqueOrThrow: vi.fn() },
@@ -44,7 +58,9 @@ describe("BookSessionService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    tx.bookSession.create.mockResolvedValue(created);
+    tx.bookSession.create.mockImplementation(({ data }) =>
+      Promise.resolve({ ...created, readingId: data.readingId }),
+    );
     tx.bookSession.delete.mockResolvedValue(created);
     tx.bookSession.findMany.mockResolvedValue([
       {
@@ -55,14 +71,45 @@ describe("BookSessionService", () => {
         occurredAt,
       },
     ]);
+    tx.bookSession.count.mockResolvedValue(0);
     tx.bookEntry.findUniqueOrThrow.mockResolvedValue({
-      readingBaselinePage: 0,
-      referencePageCount: 100,
-      status: "TO_READ",
       startedAt: null,
       finishedAt: null,
     });
     tx.bookEntry.update.mockResolvedValue({});
+    tx.bookReading.aggregate.mockResolvedValue({ _max: { number: null } });
+    tx.bookReading.findFirst.mockResolvedValue(null);
+    tx.bookReading.findUniqueOrThrow.mockResolvedValue({
+      id: "reading-1",
+      baselinePage: 0,
+      referencePageCount: 100,
+      status: "ACTIVE",
+      startedAt: occurredAt,
+      finishedAt: null,
+    });
+    tx.bookReading.update.mockImplementation(({ where, data }) =>
+      Promise.resolve({
+        id: where.id,
+        number: 1,
+        status: data.status ?? "ACTIVE",
+        editionKey: "edition-1",
+        referencePageCount: 100,
+        baselinePage: 0,
+        currentPage: data.currentPage ?? 0,
+        startedAt: occurredAt,
+        finishedAt: data.finishedAt ?? null,
+      }),
+    );
+    tx.bookReading.create.mockResolvedValue({
+      id: "reading-1",
+      number: 1,
+      status: "ACTIVE",
+      editionKey: "edition-1",
+      referencePageCount: 100,
+      baselinePage: 0,
+      currentPage: 0,
+      startedAt: occurredAt,
+    });
     prisma.$transaction.mockImplementation((run) => run(tx));
     prisma.bookSession.findMany
       .mockResolvedValueOnce([created])
@@ -78,6 +125,7 @@ describe("BookSessionService", () => {
       referencePageCount: 100,
       trackedReadingMinutes: 45,
       status: "READ",
+      readings: [],
       user: { timezone: "UTC" },
     });
     activity.emit.mockResolvedValue(undefined);
@@ -116,6 +164,7 @@ describe("BookSessionService", () => {
     expect(tx.bookSession.create).toHaveBeenCalledWith({
       data: {
         bookEntryId: "entry-1",
+        readingId: "reading-1",
         durationMinutes: 45,
         notes: "The ending finally clicked.",
         occurredAt,
@@ -127,18 +176,118 @@ describe("BookSessionService", () => {
     });
     expect(activity.emit.mock.calls[0]?.[0].data).not.toHaveProperty("notes");
 
-    expect(tx.bookEntry.update).toHaveBeenCalledWith({
+    expect(tx.bookEntry.update).toHaveBeenNthCalledWith(1, {
+      where: { id: "entry-1" },
+      data: { trackedReadingMinutes: { increment: 45 } },
+    });
+    expect(tx.bookEntry.update).toHaveBeenNthCalledWith(2, {
       where: { id: "entry-1" },
       data: expect.objectContaining({
         currentPage: 100,
-        trackedReadingMinutes: 45,
         status: "READ",
         startedAt: occurredAt,
         finishedAt: occurredAt,
       }),
     });
-    expect(xp.award).toHaveBeenCalledWith("user-1", "BOOK_FINISHED", "entry-1");
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_FINISHED",
+      "reading-1",
+    );
     expect(achievements.evaluate).toHaveBeenCalledOnce();
+  });
+
+  it("starts a new reading at page zero without reusing completed progress", async () => {
+    prisma.bookEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      bookItemId: "book-1",
+      status: "READ",
+      startedAt: occurredAt,
+      finishedAt: occurredAt,
+      editionKey: "edition-1",
+      referencePageCount: 100,
+    });
+    tx.bookReading.aggregate.mockResolvedValue({ _max: { number: 1 } });
+    tx.bookReading.create.mockResolvedValue({
+      id: "reading-2",
+      number: 2,
+      status: "ACTIVE",
+      editionKey: "edition-1",
+      referencePageCount: 100,
+      baselinePage: 0,
+      currentPage: 0,
+      startedAt: occurredAt,
+    });
+    tx.bookReading.findUniqueOrThrow.mockResolvedValue({
+      id: "reading-2",
+      baselinePage: 0,
+      referencePageCount: 100,
+      status: "ACTIVE",
+      startedAt: occurredAt,
+      finishedAt: null,
+    });
+    tx.bookSession.findMany.mockResolvedValue([
+      {
+        durationMinutes: 45,
+        pagesRead: 10,
+        startPage: null,
+        endPage: null,
+        occurredAt,
+      },
+    ]);
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 45,
+      pagesRead: 10,
+      occurredAt: occurredAt.toISOString(),
+      cycleAction: "RESTART",
+    });
+
+    expect(tx.bookReading.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        number: 2,
+        baselinePage: 0,
+        currentPage: 0,
+        editionKey: "edition-1",
+        referencePageCount: 100,
+      }),
+    });
+    expect(tx.bookSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ readingId: "reading-2" }),
+    });
+    expect(tx.bookEntry.update).toHaveBeenCalledWith({
+      where: { id: "entry-1" },
+      data: expect.objectContaining({ currentPage: 10, status: "READING" }),
+    });
+  });
+
+  it("keeps a post-completion reading session out of current progress", async () => {
+    prisma.bookEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      bookItemId: "book-1",
+      status: "READ",
+      startedAt: occurredAt,
+      finishedAt: occurredAt,
+      editionKey: "edition-1",
+      referencePageCount: 100,
+    });
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 45,
+      pagesRead: 10,
+      occurredAt: occurredAt.toISOString(),
+      cycleAction: "HISTORY_ONLY",
+    });
+
+    expect(tx.bookReading.create).not.toHaveBeenCalled();
+    expect(tx.bookSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ readingId: null }),
+    });
+    expect(tx.bookEntry.update.mock.calls[0]?.[0].data.currentPage).toBe(
+      undefined,
+    );
   });
 
   it("rejects a page quantity beyond the selected edition", async () => {
@@ -202,24 +351,35 @@ describe("BookSessionService", () => {
       editionKey: "edition-1",
       referencePageCount: 100,
     });
-    tx.bookEntry.findUniqueOrThrow.mockResolvedValue({
-      readingBaselinePage: 0,
+    tx.bookReading.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: "reading-1",
+      number: 1,
+      status: "DROPPED",
+      editionKey: "edition-1",
       referencePageCount: 100,
-      status: "READING",
-      startedAt: occurredAt,
-      finishedAt: null,
+      baselinePage: 0,
+      currentPage: 20,
     });
+    tx.bookSession.findMany.mockResolvedValue([
+      {
+        durationMinutes: 45,
+        pagesRead: 10,
+        startPage: null,
+        endPage: null,
+        occurredAt,
+      },
+    ]);
 
     await service.create("user-1", "entry-1", {
       durationMinutes: 45,
       pagesRead: 10,
       occurredAt: occurredAt.toISOString(),
-      resumeTracking: true,
+      cycleAction: "CONTINUE",
     });
 
-    expect(tx.bookEntry.update).toHaveBeenNthCalledWith(1, {
+    expect(tx.bookEntry.update).toHaveBeenCalledWith({
       where: { id: "entry-1" },
-      data: { status: "READING" },
+      data: expect.objectContaining({ status: "READING" }),
     });
   });
 
@@ -234,31 +394,47 @@ describe("BookSessionService", () => {
       editionKey: "edition-1",
       referencePageCount: 100,
     });
-    tx.bookEntry.findUniqueOrThrow.mockResolvedValue({
-      readingBaselinePage: 0,
+    tx.bookReading.findUniqueOrThrow.mockResolvedValue({
+      id: "reading-2",
+      baselinePage: 0,
       referencePageCount: 100,
-      status: "READING",
+      status: "ACTIVE",
       startedAt: occurredAt,
-      finishedAt: occurredAt,
+      finishedAt: null,
     });
+    tx.bookSession.findMany.mockResolvedValue([
+      {
+        durationMinutes: 45,
+        pagesRead: 10,
+        startPage: null,
+        endPage: null,
+        occurredAt,
+      },
+    ]);
 
     await service.create("user-1", "entry-1", {
       durationMinutes: 45,
       pagesRead: 10,
       occurredAt: occurredAt.toISOString(),
-      resumeTracking: true,
+      cycleAction: "RESTART",
     });
 
-    expect(tx.bookEntry.update).toHaveBeenNthCalledWith(1, {
+    expect(tx.bookEntry.update).toHaveBeenCalledWith({
       where: { id: "entry-1" },
-      data: { status: "READING" },
+      data: expect.objectContaining({ status: "READING" }),
     });
-    expect(tx.bookEntry.update.mock.calls[1]?.[0].data.status).toBeUndefined();
   });
 
   it("does not roll a read status back when its session is deleted", async () => {
     prisma.bookSession.findUnique.mockResolvedValue({
       ...created,
+      readingId: "reading-1",
+      reading: {
+        id: "reading-1",
+        number: 1,
+        status: "COMPLETED",
+        referencePageCount: 100,
+      },
       bookEntry: { userId: "user-1" },
     });
     tx.bookSession.findMany.mockResolvedValue([]);
@@ -275,8 +451,7 @@ describe("BookSessionService", () => {
     expect(tx.bookEntry.update).toHaveBeenCalledWith({
       where: { id: "entry-1" },
       data: {
-        currentPage: 0,
-        trackedReadingMinutes: 0,
+        trackedReadingMinutes: { decrement: 45 },
       },
     });
     expect(activity.deleteLinked).toHaveBeenCalledWith(
@@ -289,6 +464,13 @@ describe("BookSessionService", () => {
   it("returns a reading book to the to-read state when its only session is deleted", async () => {
     prisma.bookSession.findUnique.mockResolvedValue({
       ...created,
+      readingId: "reading-1",
+      reading: {
+        id: "reading-1",
+        number: 1,
+        status: "ACTIVE",
+        referencePageCount: 100,
+      },
       bookEntry: { userId: "user-1" },
     });
     tx.bookSession.findMany.mockResolvedValue([]);
@@ -302,11 +484,11 @@ describe("BookSessionService", () => {
 
     await service.delete("user-1", "session-1");
 
-    expect(tx.bookEntry.update).toHaveBeenCalledWith({
+    expect(tx.bookEntry.update).toHaveBeenLastCalledWith({
       where: { id: "entry-1" },
       data: {
         currentPage: 0,
-        trackedReadingMinutes: 0,
+        readingBaselinePage: 0,
         status: "TO_READ",
         startedAt: null,
       },

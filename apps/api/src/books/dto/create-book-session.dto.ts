@@ -1,10 +1,11 @@
 import {
   MAX_SESSION_DURATION_MINUTES,
+  SessionCycleAction,
   type CreateBookSessionDto as Contract,
 } from "@loomkeep/shared";
 import {
-  IsBoolean,
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -28,8 +29,8 @@ export class CreateBookSessionDto implements Contract {
   notes?: string | null;
 
   @IsOptional()
-  @IsBoolean()
-  resumeTracking?: boolean;
+  @IsIn(Object.values(SessionCycleAction))
+  cycleAction?: SessionCycleAction;
 
   @IsOptional()
   @IsInt()

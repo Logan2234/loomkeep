@@ -106,7 +106,7 @@ describe("DataExportService.buildExport", () => {
           canonicalSource: "IGDB",
           externalIds: [{ source: "IGDB", externalId: "1234" }],
         },
-        replays: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
+        playthroughs: [{ finishedAt: new Date("2026-03-01T00:00:00.000Z") }],
         sessions: [
           {
             durationMinutes: 45,
@@ -114,6 +114,7 @@ describe("DataExportService.buildExport", () => {
             occurredAt: new Date("2026-02-03T00:00:00.000Z"),
             source: "MANUAL",
             createdAt: new Date("2026-02-03T00:00:00.000Z"),
+            playthrough: { number: 1 },
           },
         ],
       },
@@ -155,7 +156,7 @@ describe("DataExportService.buildExport", () => {
           canonicalSource: "OPEN_LIBRARY",
           externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
         },
-        replays: [],
+        readings: [],
         sessions: [
           {
             durationMinutes: 30,
@@ -166,6 +167,7 @@ describe("DataExportService.buildExport", () => {
             occurredAt: new Date("2026-02-05T00:00:00.000Z"),
             source: "MANUAL",
             createdAt: new Date("2026-02-05T00:00:00.000Z"),
+            reading: { number: 1 },
           },
         ],
       },

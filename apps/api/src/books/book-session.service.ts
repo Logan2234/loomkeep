@@ -9,10 +9,17 @@ import {
   Domain,
   ErrorCode,
   ReviewTargetType,
+  SessionCycleAction,
+  TrackingCycleStatus,
   XpReason,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { SessionSource, type BookSession, type Prisma } from "@prisma/client";
+import {
+  SessionSource,
+  type BookReading,
+  type BookSession,
+  type Prisma,
+} from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { localDay } from "../common/local-day.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
@@ -59,11 +66,18 @@ export class BookSessionService {
     this.assertEdition(entry);
     const pages = this.normalizePages(dto, entry.referencePageCount);
 
-    const { session, completed } = await this.prisma.$transaction(
+    const { session, reading, completed } = await this.prisma.$transaction(
       async (tx) => {
+        const reading = await this.resolveReading(
+          tx,
+          entry,
+          occurredAt,
+          dto.cycleAction,
+        );
         const created = await tx.bookSession.create({
           data: {
             bookEntryId: entry.id,
+            readingId: reading?.id ?? null,
             durationMinutes: dto.durationMinutes,
             notes: normalizeSessionNotes(dto.notes),
             occurredAt,
@@ -71,26 +85,35 @@ export class BookSessionService {
             ...pages,
           },
         });
+        await tx.bookEntry.update({
+          where: { id: entry.id },
+          data: {
+            trackedReadingMinutes: { increment: dto.durationMinutes },
+          },
+        });
 
-        const resumesTracking =
-          (entry.status === BookStatus.DROPPED ||
-            entry.status === BookStatus.READ) &&
-          dto.resumeTracking;
-
-        if (resumesTracking) {
-          await tx.bookEntry.update({
-            where: { id: entry.id },
-            data: { status: BookStatus.READING },
-          });
+        if (!reading) {
+          return { session: created, reading: null, completed: false };
         }
 
-        const recomputed = await this.recomputeEntry(
+        await tx.bookReading.update({
+          where: { id: reading.id },
+          data: {
+            trackedMinutes: { increment: dto.durationMinutes },
+            pagesRead: { increment: pages.pagesRead },
+          },
+        });
+        const recomputed = await this.recomputeReading(
           tx,
+          reading.id,
           entry.id,
           occurredAt,
-          entry.status === BookStatus.READ && dto.resumeTracking,
         );
-        return { session: created, completed: recomputed.completed };
+        return {
+          session: created,
+          reading,
+          completed: recomputed.completed,
+        };
       },
     );
 
@@ -105,11 +128,11 @@ export class BookSessionService {
       sourceId: session.id,
       data: this.activityData(session),
     });
-    await this.awardCompletion(userId, entry.id, completed);
+    await this.awardCompletion(userId, reading, completed);
     const xpAwarded = await this.sessionXp.awardForToday(userId);
 
     return {
-      session: toDto(session),
+      session: toDto(session, reading?.number ?? null),
       summary: await this.summary(entry.id, 1),
       xpAwarded,
     };
@@ -127,14 +150,17 @@ export class BookSessionService {
     const pages = this.normalizeUpdatePages(
       before,
       dto,
-      before.bookEntry.referencePageCount,
+      before.reading?.referencePageCount ?? before.bookEntry.referencePageCount,
     );
+    const durationMinutes = dto.durationMinutes ?? before.durationMinutes;
+    const durationDelta = durationMinutes - before.durationMinutes;
+    const pagesDelta = pages.pagesRead - before.pagesRead;
     const { session, completed } = await this.prisma.$transaction(
       async (tx) => {
         const updated = await tx.bookSession.update({
           where: { id: sessionId },
           data: {
-            durationMinutes: dto.durationMinutes ?? before.durationMinutes,
+            durationMinutes,
             notes:
               dto.notes === undefined
                 ? before.notes
@@ -143,12 +169,41 @@ export class BookSessionService {
             ...pages,
           },
         });
-        const recomputed = await this.recomputeEntry(
-          tx,
-          before.bookEntryId,
-          occurredAt,
-        );
-        return { session: updated, completed: recomputed.completed };
+
+        if (durationDelta !== 0) {
+          await tx.bookEntry.update({
+            where: { id: before.bookEntryId },
+            data: {
+              trackedReadingMinutes: { increment: durationDelta },
+            },
+          });
+        }
+
+        if (before.readingId) {
+          await tx.bookReading.update({
+            where: { id: before.readingId },
+            data: {
+              ...(durationDelta !== 0
+                ? { trackedMinutes: { increment: durationDelta } }
+                : {}),
+              ...(pagesDelta !== 0
+                ? { pagesRead: { increment: pagesDelta } }
+                : {}),
+            },
+          });
+
+          if (before.reading?.status === TrackingCycleStatus.ACTIVE) {
+            const recomputed = await this.recomputeReading(
+              tx,
+              before.readingId,
+              before.bookEntryId,
+              occurredAt,
+            );
+            return { session: updated, completed: recomputed.completed };
+          }
+        }
+
+        return { session: updated, completed: false };
       },
     );
 
@@ -157,9 +212,9 @@ export class BookSessionService {
       session.id,
       this.activityData(session),
     );
-    await this.awardCompletion(userId, before.bookEntryId, completed);
+    await this.awardCompletion(userId, before.reading, completed);
     return {
-      session: toDto(session),
+      session: toDto(session, before.reading?.number ?? null),
       summary: await this.summary(before.bookEntryId, 1),
       xpAwarded: false,
     };
@@ -169,31 +224,91 @@ export class BookSessionService {
     const session = await this.ownedSession(userId, sessionId);
     await this.prisma.$transaction(async (tx) => {
       await tx.bookSession.delete({ where: { id: sessionId } });
-      await this.recomputeEntry(tx, session.bookEntryId);
+      await tx.bookEntry.update({
+        where: { id: session.bookEntryId },
+        data: {
+          trackedReadingMinutes: { decrement: session.durationMinutes },
+        },
+      });
+      if (!session.readingId) return;
+
+      const remaining = await tx.bookSession.count({
+        where: { readingId: session.readingId },
+      });
+
+      if (
+        remaining === 0 &&
+        session.reading?.status === TrackingCycleStatus.ACTIVE
+      ) {
+        await tx.bookReading.delete({ where: { id: session.readingId } });
+        const previous = await tx.bookReading.findFirst({
+          where: { bookEntryId: session.bookEntryId },
+          orderBy: { number: "desc" },
+        });
+        await tx.bookEntry.update({
+          where: { id: session.bookEntryId },
+          data: previous
+            ? {
+                status:
+                  previous.status === TrackingCycleStatus.COMPLETED
+                    ? BookStatus.READ
+                    : previous.status === TrackingCycleStatus.DROPPED
+                      ? BookStatus.DROPPED
+                      : BookStatus.READING,
+                currentPage: previous.currentPage,
+                editionKey: previous.editionKey,
+                referencePageCount: previous.referencePageCount,
+                readingBaselinePage: previous.baselinePage,
+              }
+            : {
+                status: BookStatus.TO_READ,
+                currentPage: 0,
+                readingBaselinePage: 0,
+                startedAt: null,
+              },
+        });
+        return;
+      }
+
+      await tx.bookReading.update({
+        where: { id: session.readingId },
+        data: {
+          trackedMinutes: { decrement: session.durationMinutes },
+          pagesRead: { decrement: session.pagesRead },
+        },
+      });
+
+      if (session.reading?.status === TrackingCycleStatus.ACTIVE) {
+        await this.recomputeReading(tx, session.readingId, session.bookEntryId);
+      }
     });
     await this.activity.deleteLinked("BookSession", sessionId);
     await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
   }
 
-  private async recomputeEntry(
+  private async recomputeReading(
     tx: Prisma.TransactionClient,
+    readingId: string,
     entryId: string,
     completionAt?: Date,
-    suppressCompletion = false,
   ): Promise<{ completed: boolean }> {
-    const [entry, sessions] = await Promise.all([
-      tx.bookEntry.findUniqueOrThrow({
-        where: { id: entryId },
+    const [reading, entry, sessions] = await Promise.all([
+      tx.bookReading.findUniqueOrThrow({
+        where: { id: readingId },
         select: {
-          readingBaselinePage: true,
+          baselinePage: true,
           referencePageCount: true,
           status: true,
           startedAt: true,
           finishedAt: true,
         },
       }),
+      tx.bookEntry.findUniqueOrThrow({
+        where: { id: entryId },
+        select: { startedAt: true, finishedAt: true },
+      }),
       tx.bookSession.findMany({
-        where: { bookEntryId: entryId },
+        where: { readingId },
         orderBy: [{ occurredAt: "asc" }, { createdAt: "asc" }],
         select: {
           durationMinutes: true,
@@ -205,32 +320,35 @@ export class BookSessionService {
       }),
     ]);
     const aggregate = bookSessionAggregate(
-      entry.readingBaselinePage,
-      entry.referencePageCount,
+      reading.baselinePage,
+      reading.referencePageCount,
       sessions,
     );
     const completed =
       completionAt !== undefined &&
-      !suppressCompletion &&
-      entry.status !== BookStatus.READ &&
-      entry.status !== BookStatus.DROPPED &&
+      reading.status === TrackingCycleStatus.ACTIVE &&
       aggregate.completionSuggested;
-    const started =
-      entry.status === BookStatus.TO_READ && sessions.length > 0 && !completed;
-    const resetToRead =
-      completionAt === undefined &&
-      entry.status === BookStatus.READING &&
-      entry.readingBaselinePage === 0 &&
-      sessions.length === 0;
+
+    await tx.bookReading.update({
+      where: { id: readingId },
+      data: {
+        currentPage: aggregate.currentPage,
+        ...(completed
+          ? {
+              status: TrackingCycleStatus.COMPLETED,
+              finishedAt: completionAt,
+            }
+          : {}),
+      },
+    });
 
     await tx.bookEntry.update({
       where: { id: entryId },
       data: {
         currentPage: aggregate.currentPage,
-        trackedReadingMinutes: aggregate.trackedMinutes,
-        ...(completed ? { status: BookStatus.READ } : {}),
-        ...(started ? { status: BookStatus.READING } : {}),
-        ...(resetToRead ? { status: BookStatus.TO_READ, startedAt: null } : {}),
+        readingBaselinePage: reading.baselinePage,
+        referencePageCount: reading.referencePageCount,
+        status: completed ? BookStatus.READ : BookStatus.READING,
         ...(entry.startedAt === null && sessions[0]
           ? { startedAt: sessions[0].occurredAt }
           : {}),
@@ -245,15 +363,17 @@ export class BookSessionService {
 
   private async awardCompletion(
     userId: string,
-    entryId: string,
+    reading: Pick<BookReading, "id" | "number"> | null | undefined,
     completed: boolean,
   ): Promise<void> {
-    if (!completed) return;
+    if (!completed || !reading) return;
 
-    await this.xp.award(userId, XpReason.BOOK_FINISHED, entryId);
+    const reason =
+      reading.number === 1 ? XpReason.BOOK_FINISHED : XpReason.BOOK_REPLAYED;
+    await this.xp.award(userId, reason, reading.id);
     await this.achievements.evaluate(
       userId,
-      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.BOOK_FINISHED],
+      ACHIEVEMENT_KEYS_BY_XP_REASON[reason],
     );
   }
 
@@ -270,6 +390,7 @@ export class BookSessionService {
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * PAGE_SIZE,
         take: PAGE_SIZE + 1,
+        include: { reading: { select: { number: true } } },
       }),
       this.prisma.bookSession.findMany({
         where: { bookEntryId: entryId, occurredAt: { gte: paceSince } },
@@ -287,6 +408,24 @@ export class BookSessionService {
           referencePageCount: true,
           trackedReadingMinutes: true,
           status: true,
+          readings: {
+            where: { status: TrackingCycleStatus.ACTIVE },
+            take: 1,
+            select: {
+              id: true,
+              number: true,
+              status: true,
+              editionKey: true,
+              referencePageCount: true,
+              currentPage: true,
+              startedAt: true,
+              finishedAt: true,
+              trackedMinutes: true,
+              pagesRead: true,
+              legacyIncomplete: true,
+              _count: { select: { sessions: true } },
+            },
+          },
           user: { select: { timezone: true } },
         },
       }),
@@ -321,11 +460,14 @@ export class BookSessionService {
         : null;
 
     return {
-      items: rows.slice(0, PAGE_SIZE).map(toDto),
+      items: rows
+        .slice(0, PAGE_SIZE)
+        .map((session) => toDto(session, session.reading?.number ?? null)),
       hasMore: rows.length > PAGE_SIZE,
       totalSessions: totals._count,
       totalTrackedMinutes: entry.trackedReadingMinutes,
       totalPagesRead: totals._sum.pagesRead ?? 0,
+      activeReading: entry.readings[0] ? toReadingDto(entry.readings[0]) : null,
       ...periods,
       averagePagesPerDay,
       estimatedCompletionDate,
@@ -418,6 +560,9 @@ export class BookSessionService {
         startedAt: true,
         editionKey: true,
         referencePageCount: true,
+        readingBaselinePage: true,
+        currentPage: true,
+        finishedAt: true,
       },
     });
 
@@ -443,6 +588,17 @@ export class BookSessionService {
       where: { id: sessionId },
       include: {
         bookEntry: { select: { userId: true, referencePageCount: true } },
+        reading: {
+          select: {
+            id: true,
+            number: true,
+            status: true,
+            editionKey: true,
+            referencePageCount: true,
+            baselinePage: true,
+            currentPage: true,
+          },
+        },
       },
     });
 
@@ -461,6 +617,65 @@ export class BookSessionService {
     }
 
     return session;
+  }
+
+  private async resolveReading(
+    tx: Prisma.TransactionClient,
+    entry: Awaited<ReturnType<BookSessionService["ownedEntry"]>>,
+    occurredAt: Date,
+    action?: (typeof SessionCycleAction)[keyof typeof SessionCycleAction],
+  ): Promise<BookReading | null> {
+    if (action === SessionCycleAction.HISTORY_ONLY) return null;
+
+    const active = await tx.bookReading.findFirst({
+      where: { bookEntryId: entry.id, status: TrackingCycleStatus.ACTIVE },
+      orderBy: { number: "desc" },
+    });
+    if (active) return active;
+
+    if (
+      entry.status === BookStatus.DROPPED &&
+      action === SessionCycleAction.CONTINUE
+    ) {
+      const dropped = await tx.bookReading.findFirst({
+        where: {
+          bookEntryId: entry.id,
+          status: TrackingCycleStatus.DROPPED,
+        },
+        orderBy: { number: "desc" },
+      });
+
+      if (dropped) {
+        return tx.bookReading.update({
+          where: { id: dropped.id },
+          data: { status: TrackingCycleStatus.ACTIVE, finishedAt: null },
+        });
+      }
+    }
+
+    const mayStart =
+      entry.status === BookStatus.TO_READ ||
+      entry.status === BookStatus.READING ||
+      action === SessionCycleAction.RESTART;
+    if (!mayStart) return null;
+
+    const last = await tx.bookReading.aggregate({
+      where: { bookEntryId: entry.id },
+      _max: { number: true },
+    });
+    const restarting = action === SessionCycleAction.RESTART;
+    return tx.bookReading.create({
+      data: {
+        bookEntryId: entry.id,
+        number: (last._max.number ?? 0) + 1,
+        status: TrackingCycleStatus.ACTIVE,
+        editionKey: entry.editionKey,
+        referencePageCount: entry.referencePageCount,
+        baselinePage: restarting ? 0 : entry.readingBaselinePage,
+        currentPage: restarting ? 0 : entry.currentPage,
+        startedAt: occurredAt,
+      },
+    });
   }
 
   private assertEdition(entry: {
@@ -511,9 +726,14 @@ export class BookSessionService {
   }
 }
 
-function toDto(session: BookSession): BookSessionDto {
+function toDto(
+  session: BookSession,
+  readingNumber: number | null = null,
+): BookSessionDto {
   return {
     id: session.id,
+    readingId: session.readingId,
+    readingNumber,
     durationMinutes: session.durationMinutes,
     pagesRead: session.pagesRead,
     startPage: session.startPage,
@@ -523,6 +743,36 @@ function toDto(session: BookSession): BookSessionDto {
     source: session.source,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
+  };
+}
+
+function toReadingDto(reading: {
+  id: string;
+  number: number;
+  status: string;
+  editionKey: string | null;
+  referencePageCount: number | null;
+  currentPage: number;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  trackedMinutes: number;
+  pagesRead: number;
+  legacyIncomplete: boolean;
+  _count: { sessions: number };
+}) {
+  return {
+    id: reading.id,
+    number: reading.number,
+    status: reading.status as "ACTIVE" | "COMPLETED" | "DROPPED",
+    editionKey: reading.editionKey,
+    referencePageCount: reading.referencePageCount,
+    currentPage: reading.currentPage,
+    startedAt: reading.startedAt?.toISOString() ?? null,
+    finishedAt: reading.finishedAt?.toISOString() ?? null,
+    sessionCount: reading._count.sessions,
+    trackedMinutes: reading.trackedMinutes,
+    pagesRead: reading.pagesRead,
+    legacyIncomplete: reading.legacyIncomplete,
   };
 }
 

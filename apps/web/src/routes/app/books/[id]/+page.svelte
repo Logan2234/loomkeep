@@ -1,9 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
-    addBookReplay,
     deleteBookEntry,
-    deleteBookReplay,
     getBookDetail,
     getBookEditions,
     updateBookEntry,
@@ -45,7 +43,7 @@
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
   import { isFeatureNew } from "$lib/feature-badges";
-  import { formatDate, joinMeta } from "$lib/format";
+  import { joinMeta } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
   import {
     BOOK_DIRECT_STATUS_TARGETS,
@@ -129,42 +127,41 @@
         !!detail.isbn),
   );
 
-  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
-    createEntryTrackingMutations({
-      detailKey: () => detailKey,
-      detail: () => detail,
-      entryId: () => entry?.id,
-      upsert: (d) =>
-        upsertBookEntry({
-          source: d.source,
-          sourceId: d.sourceId,
-          status: "TO_READ",
-          editionKey: d.editionKey,
-          referencePageCount: d.pageCount,
-        }),
-      update: (id, changes: Parameters<typeof updateBookEntry>[1]) =>
-        updateBookEntry(id, changes),
-      remove: (id) => deleteBookEntry(id),
-      addReplay: (id) => addBookReplay(id),
-      removeReplay: (replayId) => deleteBookReplay(replayId),
-      onRemoveSuccess: () => (confirmRemove = false),
-    });
+  const { addMut, patchMut, removeMut } = createEntryTrackingMutations({
+    detailKey: () => detailKey,
+    detail: () => detail,
+    entryId: () => entry?.id,
+    upsert: (d) =>
+      upsertBookEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "TO_READ",
+        editionKey: d.editionKey,
+        referencePageCount: d.pageCount,
+      }),
+    update: (id, changes: Parameters<typeof updateBookEntry>[1]) =>
+      updateBookEntry(id, changes),
+    remove: (id) => deleteBookEntry(id),
+    onRemoveSuccess: () => (confirmRemove = false),
+  });
 
   // Every action but "remove" shared one `saving` flag before the move to
   // the centralized API layer — kept combined here rather than split
   // per-button, since that's what the template already disables on.
-  const saving = $derived(
-    addMut.loading ||
-      patchMut.loading ||
-      addReplayMut.loading ||
-      removeReplayMut.loading,
-  );
+  const saving = $derived(addMut.loading || patchMut.loading);
   const statusCorrections = $derived(
     entry
       ? getStatusCorrections(
           STATUS_ORDER,
           entry.status,
           BOOK_DIRECT_STATUS_TARGETS[entry.status],
+        ).filter(
+          (status) =>
+            status !== "TO_READ" ||
+            !entry.readings.some(
+              (reading) =>
+                reading.status === "ACTIVE" && reading.sessionCount > 0,
+            ),
         )
       : [],
   );
@@ -417,48 +414,6 @@
               value={entry.notes}
               placeholder={m.book_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
-
-            {#if entry.status === "READ" || entry.replays.length > 0}
-              <hr class="border-border" />
-
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span
-                    class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    {m.book_rereads()}{#if entry.replays.length > 0}
-                      &nbsp;· {entry.replays.length}{/if}
-                  </span>
-                  {#if entry.status === "READ"}
-                    <button
-                      type="button"
-                      class="link-accent text-xs disabled:opacity-50"
-                      disabled={saving}
-                      onclick={() => addReplayMut.mutate()}>
-                      {m.book_add_reread()}
-                    </button>
-                  {/if}
-                </div>
-                {#if entry.replays.length > 0}
-                  <ul class="flex flex-col gap-1">
-                    {#each entry.replays as replay (replay.id)}
-                      <li class="text-dim flex items-center gap-2 text-xs">
-                        <span class="flex-1">
-                          {formatDate(replay.finishedAt)}
-                        </span>
-                        <button
-                          type="button"
-                          class="hover:text-danger"
-                          aria-label={m.book_delete_reread()}
-                          disabled={saving}
-                          onclick={() => removeReplayMut.mutate(replay.id)}>
-                          {m.common_delete()}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/if}
           </TrackingPanel>
         {/if}
 

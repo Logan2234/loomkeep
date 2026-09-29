@@ -6,9 +6,12 @@ import type {
 } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { SessionWeekDayResponseDto } from "../../common/dto/session-week-day-response.dto";
+import { GamePlaythroughResponseDto } from "./game-entry-response.dto";
 
 export class GameSessionResponseDto implements GameSessionDto {
   id!: string;
+  playthroughId!: string | null;
+  playthroughNumber!: number | null;
   durationMinutes!: number;
   notes!: string | null;
   occurredAt!: string;
@@ -31,6 +34,9 @@ export class GameSessionSummaryResponseDto implements GameSessionSummaryDto {
   weekDays!: SessionWeekDayResponseDto[];
 
   monthMinutes!: number;
+
+  @ApiProperty({ type: GamePlaythroughResponseDto, nullable: true })
+  activePlaythrough!: GamePlaythroughResponseDto | null;
 }
 
 export class GameSessionMutationResponseDto implements GameSessionMutationDto {

@@ -80,7 +80,7 @@ describe("CsvExportService.buildCsv", () => {
           genres: ["Roguelike"],
           platforms: ["PC"],
         },
-        replays: [{}, {}],
+        playthroughs: [{}, {}, {}],
       },
     ]);
 
@@ -111,7 +111,7 @@ describe("CsvExportService.buildCsv", () => {
           pageCount: 412,
           genres: ["Sci-Fi"],
         },
-        replays: [],
+        readings: [],
       },
     ]);
 

@@ -267,7 +267,7 @@ export async function deleteOwnedReplay(
   args: {
     userId: string;
     replayId: string;
-    /** `XpEntry.sourceType` for this domain's replay, e.g. "BookReplay". */
+    /** `XpEntry.sourceType` for this domain's replay, e.g. "MovieReplay". */
     xpSource: string;
     findOwnerId: () => Promise<string | null>;
     remove: () => Promise<unknown>;

@@ -5,6 +5,7 @@ describe("GameSessionService", () => {
   const created = {
     id: "session-1",
     gameEntryId: "entry-1",
+    playthroughId: null,
     durationMinutes: 60,
     notes: "Beat the final boss.",
     occurredAt: new Date("2024-09-26T12:00:00.000Z"),
@@ -15,6 +16,13 @@ describe("GameSessionService", () => {
   const tx = {
     gameSession: { count: vi.fn(), create: vi.fn(), delete: vi.fn() },
     gameEntry: { update: vi.fn() },
+    gamePlaythrough: {
+      aggregate: vi.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
   };
   const prisma = {
     gameEntry: {
@@ -36,13 +44,32 @@ describe("GameSessionService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    tx.gameSession.create.mockResolvedValue(created);
+    tx.gameSession.create.mockImplementation(({ data }) =>
+      Promise.resolve({ ...created, playthroughId: data.playthroughId }),
+    );
     tx.gameSession.delete.mockResolvedValue(created);
     tx.gameSession.count.mockResolvedValue(0);
     tx.gameEntry.update.mockResolvedValue({});
+    tx.gamePlaythrough.aggregate.mockResolvedValue({ _max: { number: null } });
+    tx.gamePlaythrough.findFirst.mockResolvedValue(null);
+    tx.gamePlaythrough.update.mockImplementation(({ where, data }) =>
+      Promise.resolve({
+        id: where.id,
+        number: 1,
+        status: data.status ?? "ACTIVE",
+        startedAt: created.occurredAt,
+      }),
+    );
+    tx.gamePlaythrough.create.mockResolvedValue({
+      id: "playthrough-1",
+      number: 1,
+      status: "ACTIVE",
+      startedAt: created.occurredAt,
+    });
     prisma.$transaction.mockImplementation((run) => run(tx));
     prisma.gameEntry.findUniqueOrThrow.mockResolvedValue({
       user: { timezone: "UTC" },
+      playthroughs: [],
     });
     prisma.gameSession.findMany
       .mockResolvedValueOnce([created])
@@ -82,6 +109,7 @@ describe("GameSessionService", () => {
     expect(tx.gameSession.create).toHaveBeenCalledWith({
       data: {
         gameEntryId: "entry-1",
+        playthroughId: "playthrough-1",
         durationMinutes: 60,
         notes: "Beat the final boss.",
         occurredAt: created.occurredAt,
@@ -100,6 +128,96 @@ describe("GameSessionService", () => {
     });
     expect(result.summary.totalTrackedMinutes).toBe(60);
     expect(result.xpAwarded).toBe(true);
+  });
+
+  it("creates the first playthrough and links the first session to it", async () => {
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      gameItemId: "game-1",
+      status: "BACKLOG",
+      startedAt: null,
+      playtimeMinutes: 0,
+      trackedPlaytimeMinutes: 0,
+      steamPlaytimeMinutes: null,
+    });
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 60,
+      occurredAt: created.occurredAt.toISOString(),
+    });
+
+    expect(tx.gamePlaythrough.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        gameEntryId: "entry-1",
+        number: 1,
+        status: "ACTIVE",
+        startedAt: created.occurredAt,
+      }),
+    });
+    expect(tx.gameSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ playthroughId: "playthrough-1" }),
+    });
+  });
+
+  it("starts a new playthrough from zero after a completed game", async () => {
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      gameItemId: "game-1",
+      status: "COMPLETED",
+      startedAt: created.occurredAt,
+      finishedAt: created.occurredAt,
+      playtimeMinutes: 60,
+      trackedPlaytimeMinutes: 60,
+      steamPlaytimeMinutes: null,
+    });
+    tx.gamePlaythrough.aggregate.mockResolvedValue({ _max: { number: 2 } });
+    tx.gamePlaythrough.create.mockResolvedValue({
+      id: "playthrough-3",
+      number: 3,
+      status: "ACTIVE",
+      startedAt: created.occurredAt,
+    });
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 60,
+      occurredAt: created.occurredAt.toISOString(),
+      cycleAction: "RESTART",
+    });
+
+    expect(tx.gamePlaythrough.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ number: 3, status: "ACTIVE" }),
+    });
+    expect(tx.gameSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ playthroughId: "playthrough-3" }),
+    });
+  });
+
+  it("keeps a post-completion session outside playthrough progress", async () => {
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      gameItemId: "game-1",
+      status: "COMPLETED",
+      startedAt: created.occurredAt,
+      finishedAt: created.occurredAt,
+      playtimeMinutes: 60,
+      trackedPlaytimeMinutes: 60,
+      steamPlaytimeMinutes: null,
+    });
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 60,
+      occurredAt: created.occurredAt.toISOString(),
+      cycleAction: "HISTORY_ONLY",
+    });
+
+    expect(tx.gamePlaythrough.create).not.toHaveBeenCalled();
+    expect(tx.gameSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ playthroughId: null }),
+    });
+    expect(tx.gameEntry.update.mock.calls[0]?.[0].data.status).toBeUndefined();
   });
 
   it("keeps the legacy total aligned when no Steam counter exists", async () => {
@@ -124,6 +242,7 @@ describe("GameSessionService", () => {
       data: {
         trackedPlaytimeMinutes: { increment: 60 },
         playtimeMinutes: { increment: 60 },
+        status: "PLAYING",
       },
     });
   });
@@ -163,11 +282,18 @@ describe("GameSessionService", () => {
       trackedPlaytimeMinutes: 30,
       steamPlaytimeMinutes: null,
     });
+    tx.gamePlaythrough.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "playthrough-1",
+        number: 1,
+        status: "DROPPED",
+      });
 
     await service.create("user-1", "entry-1", {
       durationMinutes: 60,
       occurredAt: "2024-09-26T12:00:00.000Z",
-      resumeTracking: true,
+      cycleAction: "CONTINUE",
     });
 
     expect(tx.gameEntry.update.mock.calls[0]?.[0].data.status).toBe("PLAYING");
@@ -189,7 +315,7 @@ describe("GameSessionService", () => {
     await service.create("user-1", "entry-1", {
       durationMinutes: 60,
       occurredAt: "2024-09-26T12:00:00.000Z",
-      resumeTracking: true,
+      cycleAction: "RESTART",
     });
 
     expect(tx.gameEntry.update.mock.calls[0]?.[0].data.status).toBe("PLAYING");
@@ -198,12 +324,15 @@ describe("GameSessionService", () => {
   it("returns a playing game to the backlog when its only session is deleted", async () => {
     prisma.gameSession.findUnique.mockResolvedValue({
       ...created,
+      playthroughId: "playthrough-1",
+      playthrough: { number: 1, status: "ACTIVE" },
       gameEntry: {
         userId: "user-1",
         status: "PLAYING",
         steamPlaytimeMinutes: null,
       },
     });
+    tx.gamePlaythrough.findFirst.mockResolvedValue(null);
 
     await service.delete("user-1", "session-1");
 

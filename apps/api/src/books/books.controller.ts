@@ -47,7 +47,6 @@ import { DomainGateService } from "../users/domain-gate.service";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 import { BookSessionService } from "./book-session.service";
-import { AddBookReplayDto } from "./dto/add-book-replay.dto";
 import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
 import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
@@ -250,26 +249,6 @@ export class BooksController {
     @Param("id") entryId: string,
   ): Promise<void> {
     await this.bookLibraryService.deleteEntry(user.sub, entryId);
-  }
-
-  /** Log a completed reread (a completion beyond the entry's first one). */
-  @Post("entries/:id/replays")
-  @ApiCreatedResponse({ type: BookEntryResponseDto })
-  addReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") entryId: string,
-    @Body() dto: AddBookReplayDto,
-  ): Promise<BookEntryDto> {
-    return this.bookLibraryService.addReplay(user.sub, entryId, dto);
-  }
-
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete("replays/:id")
-  async deleteReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") replayId: string,
-  ): Promise<void> {
-    await this.bookLibraryService.deleteReplay(user.sub, replayId);
   }
 
   /** The current user's reading goal for `year` (defaults to this year) + progress. */

@@ -666,8 +666,12 @@ export class StatsService {
           },
         },
       }),
-      this.prisma.gameReplay.count({
-        where: { gameEntry: { userId } },
+      this.prisma.gamePlaythrough.count({
+        where: {
+          gameEntry: { userId },
+          status: "COMPLETED",
+          number: { gt: 1 },
+        },
       }),
     ]);
 
@@ -736,8 +740,12 @@ export class StatsService {
           },
         },
       }),
-      this.prisma.bookReplay.count({
-        where: { bookEntry: { userId } },
+      this.prisma.bookReading.count({
+        where: {
+          bookEntry: { userId },
+          status: "COMPLETED",
+          number: { gt: 1 },
+        },
       }),
     ]);
 

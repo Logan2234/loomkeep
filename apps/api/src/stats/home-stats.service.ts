@@ -95,12 +95,12 @@ export class HomeStatsService {
               mediaItem: { type: "MOVIE" },
               OR: [
                 { finishedAt: within },
-                { replays: { some: { finishedAt: within } } },
+                { playthroughs: { some: { finishedAt: within } } },
               ],
             },
             select: {
               finishedAt: true,
-              replays: {
+              playthroughs: {
                 where: { finishedAt: within },
                 select: { finishedAt: true },
               },
@@ -156,7 +156,13 @@ export class HomeStatsService {
               imageUrl: game.gameItem.coverUrl,
               href: workHref("games", game.gameItem),
             };
-            pushTimeline(push, Domain.GAMES, work, game, inWindow);
+            pushTimeline(
+              push,
+              Domain.GAMES,
+              work,
+              { ...game, replays: game.playthroughs },
+              inWindow,
+            );
           }
         })(),
       );
@@ -171,13 +177,13 @@ export class HomeStatsService {
               OR: [
                 { startedAt: within },
                 { finishedAt: within },
-                { replays: { some: { finishedAt: within } } },
+                { readings: { some: { finishedAt: within } } },
               ],
             },
             select: {
               startedAt: true,
               finishedAt: true,
-              replays: {
+              readings: {
                 where: { finishedAt: within },
                 select: { finishedAt: true },
               },
@@ -193,7 +199,13 @@ export class HomeStatsService {
               imageUrl: book.bookItem.coverUrl,
               href: workHref("books", book.bookItem),
             };
-            pushTimeline(push, Domain.BOOKS, work, book, inWindow);
+            pushTimeline(
+              push,
+              Domain.BOOKS,
+              work,
+              { ...book, replays: book.readings },
+              inWindow,
+            );
           }
         })(),
       );

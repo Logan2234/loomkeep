@@ -15,7 +15,7 @@ const baseTimer: SessionTimer = {
   startedAt: new Date("2026-09-28T12:00:00.000Z"),
   pausedAt: null,
   accumulatedSeconds: 30,
-  resumeTracking: false,
+  cycleAction: null,
   createdAt: new Date("2026-09-28T12:00:00.000Z"),
   updatedAt: new Date("2026-09-28T12:00:00.000Z"),
 };
@@ -79,7 +79,10 @@ describe("SessionTimerService", () => {
     games.create.mockResolvedValue({});
     prisma.sessionTimer.delete.mockResolvedValue(baseTimer);
 
-    const finishDto = { notes: "Boss attempt", resumeTracking: true };
+    const finishDto = {
+      notes: "Boss attempt",
+      cycleAction: "RESTART" as const,
+    };
     await service.finish("user-1", finishDto);
 
     expect(games.create).toHaveBeenCalledWith(
@@ -88,7 +91,7 @@ describe("SessionTimerService", () => {
       expect.objectContaining({
         durationMinutes: 2,
         notes: "Boss attempt",
-        resumeTracking: true,
+        cycleAction: "RESTART",
       }),
       SessionSource.TIMER,
     );

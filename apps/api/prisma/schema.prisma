@@ -410,6 +410,18 @@ enum SessionSource {
   IMPORT
 }
 
+enum TrackingCycleStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum SessionCycleAction {
+  CONTINUE
+  RESTART
+  HISTORY_ONLY
+}
+
 // Source a music item's catalogue data comes from. MusicBrainz only.
 enum MusicSource {
   MUSICBRAINZ
@@ -1629,7 +1641,7 @@ model LibraryEntry {
 }
 
 // One row per completed replay, beyond the entry's own first completion —
-// same shape as GameReplay/BookReplay. Movies only: series/anime rewatches
+// Movies only: series/anime rewatches
 // are tracked per-episode via EpisodeWatch instead.
 model MovieReplay {
   id             String   @id @default(cuid())
@@ -1724,7 +1736,7 @@ model GameEntry {
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameItem      GameItem       @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
-  replays       GameReplay[]
+  playthroughs  GamePlaythrough[]
   sessions      GameSession[]
   sessionTimers SessionTimer[]
 
@@ -1734,6 +1746,7 @@ model GameEntry {
 model GameSession {
   id              String        @id @default(cuid())
   gameEntryId     String
+  playthroughId   String?
   durationMinutes Int
   notes           String?
   occurredAt      DateTime
@@ -1741,22 +1754,31 @@ model GameSession {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  gameEntry GameEntry @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  gameEntry   GameEntry        @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  playthrough GamePlaythrough? @relation(fields: [playthroughId], references: [id], onDelete: SetNull)
 
   @@index([gameEntryId, occurredAt])
+  @@index([playthroughId, occurredAt])
   @@index([createdAt])
 }
 
-// One row per completed replay, beyond the entry's own first completion —
-// mirrors EpisodeWatch's minimalism (a single "when" per viewing/completion).
-model GameReplay {
-  id          String   @id @default(cuid())
-  gameEntryId String
-  finishedAt  DateTime @default(now())
+model GamePlaythrough {
+  id               String              @id @default(cuid())
+  gameEntryId      String
+  number           Int
+  status           TrackingCycleStatus
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  trackedMinutes   Int                 @default(0)
+  legacyIncomplete Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
-  gameEntry GameEntry @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  gameEntry GameEntry    @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  sessions  GameSession[]
 
-  @@index([gameEntryId])
+  @@unique([gameEntryId, number])
+  @@index([gameEntryId, status])
 }
 
 // On-demand cache for books, mirroring GameItem: a book exists here only once
@@ -1826,7 +1848,7 @@ model BookEntry {
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookItem      BookItem       @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
-  replays       BookReplay[]
+  readings      BookReading[]
   sessions      BookSession[]
   sessionTimers SessionTimer[]
 
@@ -1836,6 +1858,7 @@ model BookEntry {
 model BookSession {
   id              String        @id @default(cuid())
   bookEntryId     String
+  readingId       String?
   durationMinutes Int
   pagesRead       Int
   startPage       Int?
@@ -1846,22 +1869,36 @@ model BookSession {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  bookEntry BookEntry @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  bookEntry BookEntry   @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  reading   BookReading? @relation(fields: [readingId], references: [id], onDelete: SetNull)
 
   @@index([bookEntryId, occurredAt])
+  @@index([readingId, occurredAt])
   @@index([createdAt])
 }
 
-// One row per completed reread, beyond the entry's own first completion —
-// mirrors EpisodeWatch's minimalism (a single "when" per viewing/completion).
-model BookReplay {
-  id          String   @id @default(cuid())
-  bookEntryId String
-  finishedAt  DateTime @default(now())
+model BookReading {
+  id                 String              @id @default(cuid())
+  bookEntryId        String
+  number             Int
+  status             TrackingCycleStatus
+  editionKey         String?
+  referencePageCount Int?
+  baselinePage       Int                 @default(0)
+  currentPage        Int                 @default(0)
+  trackedMinutes     Int                 @default(0)
+  pagesRead          Int                 @default(0)
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  legacyIncomplete   Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
-  bookEntry BookEntry @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  bookEntry BookEntry    @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  sessions  BookSession[]
 
-  @@index([bookEntryId])
+  @@unique([bookEntryId, number])
+  @@index([bookEntryId, status])
 }
 
 // One durable stopwatch per account. The elapsed segment is accumulated on
@@ -1875,7 +1912,7 @@ model SessionTimer {
   startedAt          DateTime
   pausedAt           DateTime?
   accumulatedSeconds Int       @default(0)
-  resumeTracking     Boolean   @default(false)
+  cycleAction        SessionCycleAction?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

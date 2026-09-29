@@ -20,6 +20,7 @@ class DataExportBookEntryBookResponseDto {
 }
 
 class DataExportBookSessionResponseDto {
+  readingNumber!: number | null;
   durationMinutes!: number;
   pagesRead!: number;
   startPage!: number | null;

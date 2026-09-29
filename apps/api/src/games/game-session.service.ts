@@ -8,9 +8,16 @@ import {
   Domain,
   ErrorCode,
   ReviewTargetType,
+  SessionCycleAction,
+  TrackingCycleStatus,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { SessionSource, type GameSession } from "@prisma/client";
+import {
+  SessionSource,
+  type GamePlaythrough,
+  type GameSession,
+  type Prisma,
+} from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -46,33 +53,48 @@ export class GameSessionService {
   ): Promise<GameSessionMutationDto> {
     const occurredAt = this.validDate(dto.occurredAt);
     const entry = await this.ownedEntry(userId, entryId);
-    const session = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.gameSession.create({
-        data: {
-          gameEntryId: entry.id,
-          durationMinutes: dto.durationMinutes,
-          notes: normalizeSessionNotes(dto.notes),
+    const { session, playthrough } = await this.prisma.$transaction(
+      async (tx) => {
+        const playthrough = await this.resolvePlaythrough(
+          tx,
+          entry,
           occurredAt,
-          source,
-        },
-      });
-      await tx.gameEntry.update({
-        where: { id: entry.id },
-        data: {
-          trackedPlaytimeMinutes: { increment: dto.durationMinutes },
-          ...(entry.steamPlaytimeMinutes === null
-            ? { playtimeMinutes: { increment: dto.durationMinutes } }
-            : {}),
-          ...(entry.status === "BACKLOG" ||
-          ((entry.status === "DROPPED" || entry.status === "COMPLETED") &&
-            dto.resumeTracking)
-            ? { status: "PLAYING" }
-            : {}),
-          ...(entry.startedAt === null ? { startedAt: occurredAt } : {}),
-        },
-      });
-      return created;
-    });
+          dto.cycleAction,
+        );
+        const created = await tx.gameSession.create({
+          data: {
+            gameEntryId: entry.id,
+            playthroughId: playthrough?.id ?? null,
+            durationMinutes: dto.durationMinutes,
+            notes: normalizeSessionNotes(dto.notes),
+            occurredAt,
+            source,
+          },
+        });
+
+        if (playthrough) {
+          await tx.gamePlaythrough.update({
+            where: { id: playthrough.id },
+            data: { trackedMinutes: { increment: dto.durationMinutes } },
+          });
+        }
+
+        await tx.gameEntry.update({
+          where: { id: entry.id },
+          data: {
+            trackedPlaytimeMinutes: { increment: dto.durationMinutes },
+            ...(entry.steamPlaytimeMinutes === null
+              ? { playtimeMinutes: { increment: dto.durationMinutes } }
+              : {}),
+            ...(playthrough ? { status: "PLAYING" as const } : {}),
+            ...(playthrough && entry.startedAt === null
+              ? { startedAt: occurredAt }
+              : {}),
+          },
+        });
+        return { session: created, playthrough };
+      },
+    );
 
     await this.activity.emit({
       userId,
@@ -88,7 +110,7 @@ export class GameSessionService {
     const xpAwarded = await this.sessionXp.awardForToday(userId);
 
     return {
-      session: toDto(session),
+      session: toDto(session, playthrough?.number ?? null),
       summary: await this.summary(
         {
           ...entry,
@@ -121,6 +143,13 @@ export class GameSessionService {
       });
 
       if (delta !== 0) {
+        if (before.playthroughId) {
+          await tx.gamePlaythrough.update({
+            where: { id: before.playthroughId },
+            data: { trackedMinutes: { increment: delta } },
+          });
+        }
+
         await tx.gameEntry.update({
           where: { id: before.gameEntryId },
           data: {
@@ -142,7 +171,7 @@ export class GameSessionService {
     );
     const entry = await this.ownedEntry(userId, before.gameEntryId);
     return {
-      session: toDto(session),
+      session: toDto(session, before.playthrough?.number ?? null),
       summary: await this.summary(entry, 1),
       xpAwarded: false,
     };
@@ -152,13 +181,42 @@ export class GameSessionService {
     const session = await this.ownedSession(userId, sessionId);
     await this.prisma.$transaction(async (tx) => {
       await tx.gameSession.delete({ where: { id: sessionId } });
-      const remainingSessions = await tx.gameSession.count({
-        where: { gameEntryId: session.gameEntryId },
-      });
-      const resetToBacklog =
-        remainingSessions === 0 &&
-        session.gameEntry.status === "PLAYING" &&
-        (session.gameEntry.steamPlaytimeMinutes ?? 0) === 0;
+      let lifecycleData: Prisma.GameEntryUpdateInput = {};
+
+      if (session.playthroughId) {
+        const remainingInPlaythrough = await tx.gameSession.count({
+          where: { playthroughId: session.playthroughId },
+        });
+
+        if (
+          remainingInPlaythrough === 0 &&
+          session.playthrough?.status === TrackingCycleStatus.ACTIVE
+        ) {
+          await tx.gamePlaythrough.delete({
+            where: { id: session.playthroughId },
+          });
+          const previous = await tx.gamePlaythrough.findFirst({
+            where: { gameEntryId: session.gameEntryId },
+            orderBy: { number: "desc" },
+          });
+          lifecycleData = previous
+            ? {
+                status:
+                  previous.status === TrackingCycleStatus.COMPLETED
+                    ? "COMPLETED"
+                    : previous.status === TrackingCycleStatus.DROPPED
+                      ? "DROPPED"
+                      : "PLAYING",
+              }
+            : { status: "BACKLOG", startedAt: null };
+        } else {
+          await tx.gamePlaythrough.update({
+            where: { id: session.playthroughId },
+            data: { trackedMinutes: { decrement: session.durationMinutes } },
+          });
+        }
+      }
+
       await tx.gameEntry.update({
         where: { id: session.gameEntryId },
         data: {
@@ -166,7 +224,7 @@ export class GameSessionService {
           ...(session.gameEntry.steamPlaytimeMinutes === null
             ? { playtimeMinutes: { decrement: session.durationMinutes } }
             : {}),
-          ...(resetToBacklog ? { status: "BACKLOG", startedAt: null } : {}),
+          ...lifecycleData,
         },
       });
     });
@@ -186,10 +244,27 @@ export class GameSessionService {
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * PAGE_SIZE,
         take: PAGE_SIZE + 1,
+        include: { playthrough: { select: { number: true } } },
       }),
       this.prisma.gameEntry.findUniqueOrThrow({
         where: { id: entry.id },
-        select: { user: { select: { timezone: true } } },
+        select: {
+          user: { select: { timezone: true } },
+          playthroughs: {
+            where: { status: TrackingCycleStatus.ACTIVE },
+            take: 1,
+            select: {
+              id: true,
+              number: true,
+              status: true,
+              startedAt: true,
+              finishedAt: true,
+              trackedMinutes: true,
+              legacyIncomplete: true,
+              _count: { select: { sessions: true } },
+            },
+          },
+        },
       }),
       this.prisma.gameSession.count({
         where: { gameEntryId: entry.id },
@@ -201,10 +276,15 @@ export class GameSessionService {
     ]);
     const periods = sessionPeriodMinutes(recent, user.user.timezone ?? "UTC");
     return {
-      items: rows.slice(0, PAGE_SIZE).map(toDto),
+      items: rows
+        .slice(0, PAGE_SIZE)
+        .map((session) => toDto(session, session.playthrough?.number ?? null)),
       hasMore: rows.length > PAGE_SIZE,
       totalSessions,
       totalTrackedMinutes: entry.trackedPlaytimeMinutes,
+      activePlaythrough: user.playthroughs[0]
+        ? toPlaythroughDto(user.playthroughs[0])
+        : null,
       ...periods,
     };
   }
@@ -221,6 +301,7 @@ export class GameSessionService {
         playtimeMinutes: true,
         trackedPlaytimeMinutes: true,
         steamPlaytimeMinutes: true,
+        finishedAt: true,
       },
     });
 
@@ -252,6 +333,9 @@ export class GameSessionService {
             steamPlaytimeMinutes: true,
           },
         },
+        playthrough: {
+          select: { number: true, status: true },
+        },
       },
     });
 
@@ -270,6 +354,60 @@ export class GameSessionService {
     }
 
     return session;
+  }
+
+  private async resolvePlaythrough(
+    tx: Prisma.TransactionClient,
+    entry: Awaited<ReturnType<GameSessionService["ownedEntry"]>>,
+    occurredAt: Date,
+    action?: (typeof SessionCycleAction)[keyof typeof SessionCycleAction],
+  ): Promise<Pick<GamePlaythrough, "id" | "number"> | null> {
+    if (action === SessionCycleAction.HISTORY_ONLY) return null;
+
+    const active = await tx.gamePlaythrough.findFirst({
+      where: {
+        gameEntryId: entry.id,
+        status: TrackingCycleStatus.ACTIVE,
+      },
+      orderBy: { number: "desc" },
+    });
+    if (active) return active;
+
+    if (entry.status === "DROPPED" && action === SessionCycleAction.CONTINUE) {
+      const dropped = await tx.gamePlaythrough.findFirst({
+        where: {
+          gameEntryId: entry.id,
+          status: TrackingCycleStatus.DROPPED,
+        },
+        orderBy: { number: "desc" },
+      });
+
+      if (dropped) {
+        return tx.gamePlaythrough.update({
+          where: { id: dropped.id },
+          data: { status: TrackingCycleStatus.ACTIVE, finishedAt: null },
+        });
+      }
+    }
+
+    const mayStart =
+      entry.status === "BACKLOG" ||
+      entry.status === "PLAYING" ||
+      action === SessionCycleAction.RESTART;
+    if (!mayStart) return null;
+
+    const last = await tx.gamePlaythrough.aggregate({
+      where: { gameEntryId: entry.id },
+      _max: { number: true },
+    });
+    return tx.gamePlaythrough.create({
+      data: {
+        gameEntryId: entry.id,
+        number: (last._max.number ?? 0) + 1,
+        status: TrackingCycleStatus.ACTIVE,
+        startedAt: occurredAt,
+      },
+    });
   }
 
   private validDate(value: string): Date {
@@ -295,15 +433,42 @@ export class GameSessionService {
   }
 }
 
-function toDto(session: GameSession): GameSessionDto {
+function toDto(
+  session: GameSession,
+  playthroughNumber: number | null = null,
+): GameSessionDto {
   return {
     id: session.id,
+    playthroughId: session.playthroughId,
+    playthroughNumber,
     durationMinutes: session.durationMinutes,
     notes: session.notes,
     occurredAt: session.occurredAt.toISOString(),
     source: session.source,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
+  };
+}
+
+function toPlaythroughDto(playthrough: {
+  id: string;
+  number: number;
+  status: string;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  trackedMinutes: number;
+  legacyIncomplete: boolean;
+  _count: { sessions: number };
+}) {
+  return {
+    id: playthrough.id,
+    number: playthrough.number,
+    status: playthrough.status as "ACTIVE" | "COMPLETED" | "DROPPED",
+    startedAt: playthrough.startedAt?.toISOString() ?? null,
+    finishedAt: playthrough.finishedAt?.toISOString() ?? null,
+    sessionCount: playthrough._count.sessions,
+    trackedMinutes: playthrough.trackedMinutes,
+    legacyIncomplete: playthrough.legacyIncomplete,
   };
 }
 

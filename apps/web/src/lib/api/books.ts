@@ -84,19 +84,6 @@ export const deleteBookEntry = (entryId: string): Promise<void> =>
     params: { id: entryId },
   });
 
-export const addBookReplay = (entryId: string) =>
-  typedRequest("/books/entries/{id}/replays", {
-    method: "POST",
-    params: { id: entryId },
-    body: {},
-  });
-
-export const deleteBookReplay = (replayId: string): Promise<void> =>
-  typedRequest("/books/replays/{id}", {
-    method: "DELETE",
-    params: { id: replayId },
-  });
-
 export const getBookSessions = (entryId: string, page = 1) =>
   typedRequest("/books/entries/{id}/sessions", {
     params: { id: entryId },

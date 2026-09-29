@@ -83,7 +83,8 @@
   let deletingId = $state<string | null>(null);
   let initializedEntryId = $state<string | null>(null);
   let finishingTimer = $state(false);
-  let resumeTracking = $state(true);
+  let linkToReading = $state(true);
+  let restartDropped = $state(false);
 
   $effect(() => {
     if (initializedEntryId === entry.id) return;
@@ -105,6 +106,10 @@
   }));
   const summary = $derived(sessionsQuery.data);
   const totalSessions = $derived(summary?.totalSessions ?? 0);
+  const activeReading = $derived(summary?.activeReading ?? null);
+  const lastFinishedReading = $derived(
+    entry.readings.find((reading) => reading.status !== "ACTIVE") ?? null,
+  );
 
   const createMut = createApiMutation<
     CreateBookSessionDto,
@@ -238,14 +243,19 @@
 
   function submit() {
     if (!referencePages || durationMinutes < 1) return;
+    const cycleAction = !linkToReading
+      ? ("HISTORY_ONLY" as const)
+      : entry.status === "READ" || restartDropped
+        ? ("RESTART" as const)
+        : entry.status === "DROPPED"
+          ? ("CONTINUE" as const)
+          : undefined;
     const pageData =
       mode === "quantity" ? { pagesRead } : { startPage, endPage };
     if (finishingTimer) {
       finishTimerMut.mutate({
         notes: notes || null,
-        resumeTracking:
-          (entry.status === "DROPPED" || entry.status === "READ") &&
-          resumeTracking,
+        cycleAction,
         ...pageData,
       });
       return;
@@ -254,23 +264,23 @@
       durationMinutes,
       occurredAt: sessionDateToIso(occurredOn),
       notes: notes || null,
-      resumeTracking:
-        (entry.status === "DROPPED" || entry.status === "READ") &&
-        resumeTracking,
+      cycleAction,
       ...pageData,
     });
   }
 
   function openAdd() {
     finishingTimer = false;
-    resumeTracking = true;
+    linkToReading = true;
+    restartDropped = false;
     showAdd = true;
   }
 
   function finishTimedSession(elapsedSeconds: number) {
     durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     notes = "";
-    resumeTracking = true;
+    linkToReading = true;
+    restartDropped = false;
     finishingTimer = true;
     showAdd = true;
   }
@@ -319,6 +329,66 @@
 </script>
 
 <section class="space-y-3" aria-labelledby="book-session-title">
+  <div class="border-border bg-surface/55 rounded-xl border p-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="timecode text-dim text-[0.58rem] tracking-[0.16em] uppercase">
+          {activeReading
+            ? m.book_cycle_current({ number: activeReading.number })
+            : m.session_cycle_global_total()}
+        </p>
+        <p class="mt-1 text-sm font-semibold">
+          {activeReading
+            ? m.session_cycle_active()
+            : entry.status === "READ"
+              ? m.session_cycle_completed()
+              : entry.status === "DROPPED"
+                ? m.session_cycle_dropped()
+                : m.book_cycle_explainer()}
+        </p>
+      </div>
+      {#if activeReading}
+        <p class="font-display text-xl font-extrabold tabular-nums">
+          {activeReading.currentPage} / {activeReading.referencePageCount ??
+            "—"}
+        </p>
+      {/if}
+    </div>
+    <p class="text-dim mt-2 text-xs leading-relaxed">
+      {m.book_cycle_explainer()}
+    </p>
+    {#if activeReading?.referencePageCount}
+      <div class="mt-3">
+        <ProgressBar
+          value={Math.min(
+            100,
+            Math.round(
+              (activeReading.currentPage / activeReading.referencePageCount) *
+                100,
+            ),
+          )}
+          label={m.book_session_progress()}
+          height="h-2" />
+      </div>
+    {/if}
+    <dl class="border-border mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-xs">
+      <div>
+        <dt class="text-dim">{m.session_cycle_current_total()}</dt>
+        <dd class="mt-0.5 font-semibold tabular-nums">
+          {formatSessionMinutes(activeReading?.trackedMinutes ?? 0)}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-dim">{m.session_cycle_global_total()}</dt>
+        <dd class="mt-0.5 font-semibold tabular-nums">
+          {formatSessionMinutes(
+            summary?.totalTrackedMinutes ?? entry.trackedReadingMinutes,
+          )}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
   <div class="border-border bg-bg/45 rounded-xl border p-4">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
@@ -371,11 +441,23 @@
 
   <button
     type="button"
-    class="border-border hover:border-accent/60 hover:text-accent font-display w-full rounded-xl border px-4 py-3 font-bold transition-colors disabled:cursor-default disabled:opacity-50"
+    class="text-dim hover:text-accent mx-auto flex items-center gap-2 px-2 py-1 text-sm font-semibold transition-colors disabled:cursor-default disabled:opacity-50"
     disabled={totalSessions === 0}
     onclick={openHistory}>
     {historyLabel(totalSessions)}
   </button>
+
+  {#if lastFinishedReading}
+    <p class="text-dim text-center text-xs">
+      {m.book_cycle_current({ number: lastFinishedReading.number })} ·
+      {lastFinishedReading.status === "COMPLETED"
+        ? m.session_cycle_completed()
+        : m.session_cycle_dropped()}
+      {#if lastFinishedReading.finishedAt}
+        · {formatDate(lastFinishedReading.finishedAt)}
+      {/if}
+    </p>
+  {/if}
 
   <div class="border-border bg-bg/45 rounded-xl border p-3.5">
     <div class="flex items-start justify-between gap-3">
@@ -469,21 +551,35 @@
           <div class="min-w-0">
             <p class="text-sm font-semibold">
               {entry.status === "READ"
-                ? m.session_resume_completed()
-                : m.session_resume_tracking()}
+                ? m.session_cycle_restart_book()
+                : restartDropped
+                  ? m.session_cycle_restart_book()
+                  : m.session_cycle_continue_book()}
             </p>
             <p class="text-dim mt-0.5 text-xs leading-relaxed">
-              {entry.status === "READ"
-                ? m.session_resume_completed_help()
-                : m.session_resume_tracking_help()}
+              {linkToReading
+                ? entry.status === "READ" || restartDropped
+                  ? m.session_cycle_restart_book_help()
+                  : m.session_cycle_continue_book_help()
+                : m.session_cycle_history_only_book_help()}
             </p>
+            {#if entry.status === "DROPPED" && linkToReading}
+              <button
+                type="button"
+                class="link-accent mt-2 text-xs"
+                onclick={() => (restartDropped = !restartDropped)}>
+                {restartDropped
+                  ? m.session_cycle_continue_instead()
+                  : m.session_cycle_restart_instead()}
+              </button>
+            {/if}
           </div>
           <Switch
-            checked={resumeTracking}
-            onChange={(checked) => (resumeTracking = checked)}
+            checked={linkToReading}
+            onChange={(checked) => (linkToReading = checked)}
             label={entry.status === "READ"
-              ? m.session_resume_completed()
-              : m.session_resume_tracking()} />
+              ? m.session_cycle_restart_book()
+              : m.session_cycle_continue_book()} />
         </div>
       {/if}
 
@@ -637,6 +733,16 @@
 
       <ol class="mt-4 flex flex-col gap-3">
         {#each summary.items as session, index (session.id)}
+          {#if index === 0 || summary.items[index - 1]?.readingNumber !== session.readingNumber}
+            <li
+              class="timecode text-dim flex items-center gap-2 pt-1 text-[0.6rem] tracking-[0.16em] uppercase">
+              <span class="bg-border h-px flex-1"></span>
+              {session.readingNumber
+                ? m.book_cycle_current({ number: session.readingNumber })
+                : m.session_cycle_standalone()}
+              <span class="bg-border h-px flex-1"></span>
+            </li>
+          {/if}
           <li
             in:fly|global={{
               y: reduced ? 0 : 8,

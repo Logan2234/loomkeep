@@ -863,15 +863,15 @@ export async function checkFullCircle(
   }
 
   if (first.kind === "game") {
-    const replay = await prisma.gameReplay.findFirst({
-      where: { gameEntryId: first.id },
+    const replay = await prisma.gamePlaythrough.findFirst({
+      where: { gameEntryId: first.id, status: "COMPLETED", number: { gt: 1 } },
       select: { id: true },
     });
     return { unlocked: replay !== null };
   }
 
-  const replay = await prisma.bookReplay.findFirst({
-    where: { bookEntryId: first.id },
+  const replay = await prisma.bookReading.findFirst({
+    where: { bookEntryId: first.id, status: "COMPLETED", number: { gt: 1 } },
     select: { id: true },
   });
   return { unlocked: replay !== null };

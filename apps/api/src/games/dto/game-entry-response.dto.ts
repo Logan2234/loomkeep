@@ -1,10 +1,21 @@
 import type {
   GameEntryDto,
   GameOwnershipStatus,
+  GamePlaythroughDto,
   GameStatus,
 } from "@loomkeep/shared";
 import { GameItemResponseDto } from "./game-item-response.dto";
-import { GameReplayResponseDto } from "./game-replay-response.dto";
+
+export class GamePlaythroughResponseDto implements GamePlaythroughDto {
+  id!: string;
+  number!: number;
+  status!: GamePlaythroughDto["status"];
+  startedAt!: string | null;
+  finishedAt!: string | null;
+  sessionCount!: number;
+  trackedMinutes!: number;
+  legacyIncomplete!: boolean;
+}
 
 export class GameEntryResponseDto implements GameEntryDto {
   id!: string;
@@ -21,7 +32,7 @@ export class GameEntryResponseDto implements GameEntryDto {
   startedAt!: string | null;
   finishedAt!: string | null;
   createdAt!: string;
-  replays!: GameReplayResponseDto[];
+  playthroughs!: GamePlaythroughResponseDto[];
   ownershipStatus!: GameOwnershipStatus;
   ownershipSource!: string | null;
 }

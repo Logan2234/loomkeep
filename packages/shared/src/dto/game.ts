@@ -2,7 +2,9 @@ import type {
   GameOwnershipStatus,
   GameSource,
   GameStatus,
+  SessionCycleAction,
   SessionSource,
+  TrackingCycleStatus,
 } from "../enums";
 import type { RatingDto } from "./catalog";
 import type { SessionWeekDayDto } from "./session";
@@ -88,10 +90,16 @@ export interface GameItemDto {
   sourceId: string;
 }
 
-export interface GameReplayDto {
+export interface GamePlaythroughDto {
   id: string;
-  /** ISO date the replay was completed. */
-  finishedAt: string;
+  number: number;
+  status: TrackingCycleStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  sessionCount: number;
+  trackedMinutes: number;
+  /** True when migrated history only supplied a completion date. */
+  legacyIncomplete: boolean;
 }
 
 export interface GameEntryDto {
@@ -115,8 +123,8 @@ export interface GameEntryDto {
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
   createdAt: string;
-  /** Completed replays beyond the first, most recent first. */
-  replays: GameReplayDto[];
+  /** Playthrough history, current one first. */
+  playthroughs: GamePlaythroughDto[];
   /** How the user holds this game, if set (NONE = unset). */
   ownershipStatus: GameOwnershipStatus;
   /** Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise. */
@@ -149,6 +157,8 @@ export interface UpdateGameEntryDto {
 
 export interface GameSessionDto {
   id: string;
+  playthroughId: string | null;
+  playthroughNumber: number | null;
   durationMinutes: number;
   notes: string | null;
   occurredAt: string;
@@ -161,8 +171,7 @@ export interface CreateGameSessionDto {
   durationMinutes: number;
   occurredAt: string;
   notes?: string | null;
-  /** Explicitly resume an abandoned entry when recording this session. */
-  resumeTracking?: boolean;
+  cycleAction?: SessionCycleAction;
 }
 
 export interface UpdateGameSessionDto {
@@ -180,6 +189,7 @@ export interface GameSessionSummaryDto {
   weekSessions: number;
   weekDays: SessionWeekDayDto[];
   monthMinutes: number;
+  activePlaythrough: GamePlaythroughDto | null;
 }
 
 export interface GameSessionMutationDto {

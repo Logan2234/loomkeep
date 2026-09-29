@@ -1,10 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
-    addGameReplay,
     ApiError,
     deleteGameEntry,
-    deleteGameReplay,
     getGameDetail,
     updateGameEntry,
     upsertGameEntry,
@@ -43,7 +41,7 @@
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "$lib/constants/status-labels";
   import { createEntryTrackingMutations } from "$lib/entry-tracking-mutations.svelte";
-  import { formatDate, joinMeta } from "$lib/format";
+  import { joinMeta } from "$lib/format";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import {
@@ -136,37 +134,36 @@
     lightboxOpen = true;
   }
 
-  const { addMut, patchMut, removeMut, addReplayMut, removeReplayMut } =
-    createEntryTrackingMutations({
-      detailKey: () => detailKey,
-      detail: () => detail,
-      entryId: () => entry?.id,
-      upsert: (d) =>
-        upsertGameEntry({
-          source: d.source,
-          sourceId: d.sourceId,
-          status: "BACKLOG",
-        }),
-      update: (id, changes: Parameters<typeof updateGameEntry>[1]) =>
-        updateGameEntry(id, changes),
-      remove: (id) => deleteGameEntry(id),
-      addReplay: (id) => addGameReplay(id),
-      removeReplay: (replayId) => deleteGameReplay(replayId),
-      onRemoveSuccess: () => (confirmRemove = false),
-    });
+  const { addMut, patchMut, removeMut } = createEntryTrackingMutations({
+    detailKey: () => detailKey,
+    detail: () => detail,
+    entryId: () => entry?.id,
+    upsert: (d) =>
+      upsertGameEntry({
+        source: d.source,
+        sourceId: d.sourceId,
+        status: "BACKLOG",
+      }),
+    update: (id, changes: Parameters<typeof updateGameEntry>[1]) =>
+      updateGameEntry(id, changes),
+    remove: (id) => deleteGameEntry(id),
+    onRemoveSuccess: () => (confirmRemove = false),
+  });
 
-  const saving = $derived(
-    addMut.loading ||
-      patchMut.loading ||
-      addReplayMut.loading ||
-      removeReplayMut.loading,
-  );
+  const saving = $derived(addMut.loading || patchMut.loading);
   const statusCorrections = $derived(
     entry
       ? getStatusCorrections(
           STATUS_ORDER,
           entry.status,
           GAME_DIRECT_STATUS_TARGETS[entry.status],
+        ).filter(
+          (status) =>
+            status !== "BACKLOG" ||
+            !entry.playthroughs.some(
+              (playthrough) =>
+                playthrough.status === "ACTIVE" && playthrough.sessionCount > 0,
+            ),
         )
       : [],
   );
@@ -434,48 +431,6 @@
               value={entry.notes}
               placeholder={m.game_note_placeholder()}
               onChange={(v) => patchMut.mutate({ notes: v })} />
-
-            {#if entry.status === "COMPLETED" || entry.replays.length > 0}
-              <hr class="border-border" />
-
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span
-                    class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
-                    {m.game_replays()}{#if entry.replays.length > 0}
-                      &nbsp;· {entry.replays.length}{/if}
-                  </span>
-                  {#if entry.status === "COMPLETED"}
-                    <button
-                      type="button"
-                      class="link-accent text-xs disabled:opacity-50"
-                      disabled={saving}
-                      onclick={() => addReplayMut.mutate()}>
-                      {m.game_add_replay()}
-                    </button>
-                  {/if}
-                </div>
-                {#if entry.replays.length > 0}
-                  <ul class="flex flex-col gap-1">
-                    {#each entry.replays as replay (replay.id)}
-                      <li class="text-dim flex items-center gap-2 text-xs">
-                        <span class="flex-1">
-                          {formatDate(replay.finishedAt)}
-                        </span>
-                        <button
-                          type="button"
-                          class="hover:text-danger"
-                          aria-label={m.game_delete_replay()}
-                          disabled={saving}
-                          onclick={() => removeReplayMut.mutate(replay.id)}>
-                          {m.common_delete()}
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/if}
           </TrackingPanel>
         {/if}
 

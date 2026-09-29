@@ -70,7 +70,7 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   GAME_REPLAYED: {
     reason: XpReason.GAME_REPLAYED,
     amount: 50,
-    sourceType: "GameReplay",
+    sourceType: "GamePlaythrough",
     dailyCap: 3,
     socialGated: false,
   },
@@ -84,7 +84,7 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   BOOK_REPLAYED: {
     reason: XpReason.BOOK_REPLAYED,
     amount: 50,
-    sourceType: "BookReplay",
+    sourceType: "BookReading",
     dailyCap: 3,
     socialGated: false,
   },

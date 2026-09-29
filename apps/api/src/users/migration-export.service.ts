@@ -159,7 +159,13 @@ export class MigrationExportService {
   ): Promise<MigrationExportFileDto[]> {
     const entries = await this.prisma.bookEntry.findMany({
       where: { userId },
-      include: { bookItem: true, replays: true },
+      include: {
+        bookItem: true,
+        readings: {
+          where: { status: "COMPLETED" },
+          orderBy: { number: "asc" },
+        },
+      },
       orderBy: { createdAt: "asc" },
     });
     if (entries.length === 0) return [];
@@ -174,12 +180,9 @@ export class MigrationExportService {
       const book = entry.bookItem;
       const review = reviews.get(book.id);
       const isbn = book.isbn ?? "";
-      const finishes = [
-        ...(entry.status === "READ" && entry.finishedAt
-          ? [entry.finishedAt]
-          : []),
-        ...entry.replays.map((r) => r.finishedAt),
-      ];
+      const finishes = entry.readings.flatMap((reading) =>
+        reading.finishedAt ? [reading.finishedAt] : [],
+      );
       const lastRead = finishes.reduce<Date | null>(
         (latest, date) => (latest && latest > date ? latest : date),
         null,
@@ -199,7 +202,7 @@ export class MigrationExportService {
         entry.status === "DROPPED" ? GOODREADS_SHELF.DROPPED : null,
         GOODREADS_SHELF[entry.status],
         withReviews ? (review?.text ?? null) : null,
-        (entry.status === "READ" ? 1 : 0) + entry.replays.length,
+        entry.readings.length,
       ];
     });
 

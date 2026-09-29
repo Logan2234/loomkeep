@@ -43,12 +43,13 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 
 ## Jeux vidéo
 
-| Table            | Description                                                            |
-| ---------------- | ---------------------------------------------------------------------- |
-| `GameItem`       | Jeu mis en cache localement dès qu'un `User` le référence.             |
-| `GameExternalId` | ID externe (IGDB) rattaché à un `GameItem`.                            |
-| `GameEntry`      | Entrée de bibliothèque reliant un `User` à un `GameItem`.              |
-| `GameReplay`     | Un replay complété au-delà de la première complétion d'un `GameEntry`. |
+| Table             | Description                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `GameItem`        | Jeu mis en cache localement dès qu'un `User` le référence.                                      |
+| `GameExternalId`  | ID externe (IGDB) rattaché à un `GameItem`.                                                     |
+| `GameEntry`       | Entrée de bibliothèque reliant un `User` à un `GameItem`.                                       |
+| `GamePlaythrough` | Une partie numérotée, active, terminée ou abandonnée, regroupant les sessions d'un `GameEntry`. |
+| `GameSession`     | Une session de jeu datée, rattachée à une partie ou conservée uniquement dans l'historique.     |
 
 ## Livres
 
@@ -57,7 +58,8 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 | `BookItem`       | Livre mis en cache localement dès qu'un `User` le référence.                     |
 | `BookExternalId` | ID externe (Open Library) rattaché à un `BookItem`.                              |
 | `BookEntry`      | Entrée de bibliothèque reliant un `User` à un `BookItem`.                        |
-| `BookReplay`     | Une relecture complétée au-delà de la première lecture d'un `BookEntry`.         |
+| `BookReading`    | Une lecture numérotée avec son édition, sa pagination et ses sessions.           |
+| `BookSession`    | Une session de lecture datée, rattachée à une lecture ou à l'historique global.  |
 | `ReadingGoal`    | Objectif annuel de lecture (nombre de livres) d'un `User` pour une année donnée. |
 
 ## Musique

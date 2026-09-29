@@ -42,7 +42,6 @@ import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
-import { AddGameReplayDto } from "./dto/add-game-replay.dto";
 import { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { GameDetailResponseDto } from "./dto/game-detail-response.dto";
@@ -243,26 +242,6 @@ export class GamesController {
     @Param("id") entryId: string,
   ): Promise<void> {
     await this.gameLibraryService.deleteEntry(user.sub, entryId);
-  }
-
-  /** Log a completed replay (a completion beyond the entry's first one). */
-  @Post("entries/:id/replays")
-  @ApiCreatedResponse({ type: GameEntryResponseDto })
-  addReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") entryId: string,
-    @Body() dto: AddGameReplayDto,
-  ): Promise<GameEntryDto> {
-    return this.gameLibraryService.addReplay(user.sub, entryId, dto);
-  }
-
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete("replays/:id")
-  async deleteReplay(
-    @CurrentUser() user: JwtPayload,
-    @Param("id") replayId: string,
-  ): Promise<void> {
-    await this.gameLibraryService.deleteReplay(user.sub, replayId);
   }
 
   /** Game detail page: catalogue metadata + the user's library state. */

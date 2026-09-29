@@ -69,9 +69,11 @@ fix does.
 - `MediaExternalId` is multi-source (TMDB/ANILIST/TVDB/IMDB) — TVDB is
   captured from TMDB responses specifically because the TV Time import
   reconciles through TVDB ids.
-- **Watch model**: one row per viewing (`EpisodeWatch`, mirrored by
-  `MovieReplay`/`GameReplay`/`BookReplay`) — a rewatch is a new row, never an
-  update. `LibraryService.computeProgress` excludes season 0 (TMDB specials).
+- **Tracking history**: films keep one row per viewing (`MovieReplay`) and
+  `EpisodeWatch` keeps one row per episode view. Games and books group dated
+  sessions into `GamePlaythrough` / `BookReading` cycles; sessions deliberately
+  logged as history-only keep a null cycle relation. `LibraryService.computeProgress`
+  excludes season 0 (TMDB specials).
 - **Import sources** (`apps/api/src/import/sources/`) share a base class per
   domain: `MediaImportSource` (TV Time CSV, Trakt account-export ZIP, Simkl
   OAuth, MyAnimeList XML) and `BookCsvSource` (Goodreads, StoryGraph) own the

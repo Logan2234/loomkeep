@@ -70,19 +70,6 @@ export const deleteGameEntry = (entryId: string): Promise<void> =>
     params: { id: entryId },
   });
 
-export const addGameReplay = (entryId: string) =>
-  typedRequest("/games/entries/{id}/replays", {
-    method: "POST",
-    params: { id: entryId },
-    body: {},
-  });
-
-export const deleteGameReplay = (replayId: string): Promise<void> =>
-  typedRequest("/games/replays/{id}", {
-    method: "DELETE",
-    params: { id: replayId },
-  });
-
 export const getGameSessions = (entryId: string, page = 1) =>
   typedRequest("/games/entries/{id}/sessions", {
     params: { id: entryId },

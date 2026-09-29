@@ -134,6 +134,22 @@ export const SessionSource = {
 } as const;
 export type SessionSource = (typeof SessionSource)[keyof typeof SessionSource];
 
+export const TrackingCycleStatus = {
+  ACTIVE: "ACTIVE",
+  COMPLETED: "COMPLETED",
+  DROPPED: "DROPPED",
+} as const;
+export type TrackingCycleStatus =
+  (typeof TrackingCycleStatus)[keyof typeof TrackingCycleStatus];
+
+export const SessionCycleAction = {
+  CONTINUE: "CONTINUE",
+  RESTART: "RESTART",
+  HISTORY_ONLY: "HISTORY_ONLY",
+} as const;
+export type SessionCycleAction =
+  (typeof SessionCycleAction)[keyof typeof SessionCycleAction];
+
 /** Kind of media. MOVIE/SERIES come from TMDB, ANIME from AniList. */
 export const MediaType = {
   MOVIE: "MOVIE",

@@ -40,7 +40,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     ownershipSource: null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-    replays: [],
+    readings: [],
     sessions: [],
     bookItem: {
       id: `book-${id}`,
@@ -77,7 +77,7 @@ describe("BookLibraryService.deleteEntry", () => {
         deleteMany: reviewDeleteMany,
       },
       comment: { updateMany: commentUpdateMany },
-      bookReplay: { findMany: vi.fn().mockResolvedValue([]) },
+      bookReading: { findMany: vi.fn().mockResolvedValue([]) },
       bookSession: {
         findMany: vi
           .fn()
@@ -166,16 +166,35 @@ describe("BookLibraryService — finishedAt sync", () => {
       // assertEntryOwnership
       .mockResolvedValueOnce({ id: "e1", userId: "user-1" })
       // updateEntry's own "before" lookup
-      .mockResolvedValueOnce({ status: "TO_READ", favorite: false })
+      .mockResolvedValueOnce({
+        status: "TO_READ",
+        favorite: false,
+        finishedAt: null,
+      })
       // syncFinishedAt's lookup, post-write
       .mockResolvedValueOnce({ status: "READ", finishedAt: null });
-    const update = vi
-      .fn()
-      .mockResolvedValueOnce({ ...entryRow, status: "READ" })
-      .mockResolvedValueOnce({});
+    const update = vi.fn().mockResolvedValueOnce({
+      ...entryRow,
+      status: "READ",
+      finishedAt: new Date("2026-01-02T00:00:00.000Z"),
+    });
 
     const prisma = {
-      bookEntry: { findUnique, update },
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          editionKey: null,
+          referencePageCount: null,
+          readingBaselinePage: 0,
+          currentPage: 0,
+        }),
+        update,
+      },
+      bookReading: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+      },
     } as unknown as PrismaService;
     const reviews = {
       getRating: vi.fn().mockResolvedValue(null),
@@ -201,9 +220,10 @@ describe("BookLibraryService — finishedAt sync", () => {
     });
 
     expect(result.finishedAt).not.toBeNull();
-    expect(update).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ data: { finishedAt: expect.any(Date) } }),
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ finishedAt: expect.any(Date) }),
+      }),
     );
   });
 
@@ -222,7 +242,21 @@ describe("BookLibraryService — finishedAt sync", () => {
     });
 
     const prisma = {
-      bookEntry: { findUnique, update },
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          editionKey: null,
+          referencePageCount: null,
+          readingBaselinePage: 0,
+          currentPage: 0,
+        }),
+        update,
+      },
+      bookReading: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+      },
     } as unknown as PrismaService;
     const reviews = {
       getRating: vi.fn().mockResolvedValue(null),
@@ -256,33 +290,29 @@ describe("BookLibraryService — finishedAt sync", () => {
 describe("BookLibraryService reading goal", () => {
   function makeGoalPrisma(overrides: {
     goal?: { target: number } | null;
-    entryCount?: number;
-    replayCount?: number;
+    completedCount?: number;
   }) {
     const readingGoalFindUnique = vi
       .fn()
       .mockResolvedValue(overrides.goal ?? null);
     const readingGoalUpsert = vi.fn().mockResolvedValue({});
-    const bookEntryCount = vi.fn().mockResolvedValue(overrides.entryCount ?? 0);
-    const bookReplayCount = vi
+    const bookReadingCount = vi
       .fn()
-      .mockResolvedValue(overrides.replayCount ?? 0);
+      .mockResolvedValue(overrides.completedCount ?? 0);
 
     const prisma = {
       readingGoal: {
         findUnique: readingGoalFindUnique,
         upsert: readingGoalUpsert,
       },
-      bookEntry: { count: bookEntryCount },
-      bookReplay: { count: bookReplayCount },
+      bookReading: { count: bookReadingCount },
     } as unknown as PrismaService;
 
     return {
       prisma,
       readingGoalFindUnique,
       readingGoalUpsert,
-      bookEntryCount,
-      bookReplayCount,
+      bookReadingCount,
     };
   }
 
@@ -301,31 +331,31 @@ describe("BookLibraryService reading goal", () => {
   }
 
   it("reports target 0 with no goal set, but still counts progress", async () => {
-    const { prisma, bookEntryCount } = makeGoalPrisma({
+    const { prisma, bookReadingCount } = makeGoalPrisma({
       goal: null,
-      entryCount: 3,
+      completedCount: 3,
     });
     const service = makeGoalService(prisma);
 
     const result = await service.getReadingGoal("user-1", 2026);
 
     expect(result).toEqual({ year: 2026, target: 0, completed: 3 });
-    expect(bookEntryCount).toHaveBeenCalledWith({
+    expect(bookReadingCount).toHaveBeenCalledWith({
       where: {
-        userId: "user-1",
         finishedAt: {
           gte: new Date(Date.UTC(2026, 0, 1)),
           lt: new Date(Date.UTC(2027, 0, 1)),
         },
+        status: "COMPLETED",
+        bookEntry: { userId: "user-1" },
       },
     });
   });
 
-  it("adds rereads (BookReplay) to the completed count", async () => {
+  it("counts every completed reading cycle", async () => {
     const { prisma } = makeGoalPrisma({
       goal: { target: 30 },
-      entryCount: 10,
-      replayCount: 2,
+      completedCount: 12,
     });
     const service = makeGoalService(prisma);
 
@@ -335,17 +365,18 @@ describe("BookLibraryService reading goal", () => {
   });
 
   it("scopes the replay count to the current user's entries only", async () => {
-    const { prisma, bookReplayCount } = makeGoalPrisma({ goal: null });
+    const { prisma, bookReadingCount } = makeGoalPrisma({ goal: null });
     const service = makeGoalService(prisma);
 
     await service.getReadingGoal("user-1", 2026);
 
-    expect(bookReplayCount).toHaveBeenCalledWith({
+    expect(bookReadingCount).toHaveBeenCalledWith({
       where: {
         finishedAt: {
           gte: new Date(Date.UTC(2026, 0, 1)),
           lt: new Date(Date.UTC(2027, 0, 1)),
         },
+        status: "COMPLETED",
         bookEntry: { userId: "user-1" },
       },
     });
@@ -353,8 +384,7 @@ describe("BookLibraryService reading goal", () => {
 
   it("upserts the target and returns fresh progress", async () => {
     const { prisma, readingGoalUpsert } = makeGoalPrisma({
-      entryCount: 5,
-      replayCount: 1,
+      completedCount: 6,
     });
     const service = makeGoalService(prisma);
 
@@ -458,7 +488,24 @@ describe("BookLibraryService — XP wiring", () => {
       .fn()
       .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "READ" });
     const prisma = {
-      bookEntry: { findUnique, upsert, count: vi.fn().mockResolvedValue(1) },
+      bookEntry: {
+        findUnique,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          ...makeRow({ id: "e1" }),
+          status: "READ",
+          editionKey: null,
+          referencePageCount: null,
+          readingBaselinePage: 0,
+          currentPage: 0,
+        }),
+        upsert,
+        count: vi.fn().mockResolvedValue(1),
+      },
+      bookReading: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
+      },
     } as unknown as PrismaService;
     const xp = stubXp();
 
@@ -482,53 +529,10 @@ describe("BookLibraryService — XP wiring", () => {
       status: "READ",
     } as never);
 
-    expect(xp.award).toHaveBeenCalledWith("user-1", "BOOK_FINISHED", "e1");
-  });
-
-  it("awards BOOK_REPLAYED on addReplay and revokes it on deleteReplay", async () => {
-    const findUnique = vi
-      .fn()
-      .mockResolvedValueOnce({ id: "e1", userId: "user-1" }); // assertEntryOwnership
-    const bookEntryFindUniqueOrThrow = vi
-      .fn()
-      .mockResolvedValue(makeRow({ id: "e1" }));
-    const replayCreate = vi.fn().mockResolvedValue({ id: "replay-1" });
-    const prisma = {
-      bookEntry: {
-        findUnique,
-        findUniqueOrThrow: bookEntryFindUniqueOrThrow,
-      },
-      bookReplay: {
-        create: replayCreate,
-        findUnique: vi.fn().mockResolvedValue({
-          id: "replay-1",
-          bookEntry: { userId: "user-1" },
-        }),
-        delete: vi.fn().mockResolvedValue({}),
-      },
-    } as unknown as PrismaService;
-    const xp = stubXp();
-
-    const service = new BookLibraryService(
-      prisma,
-      {} as BookItemService,
-      {} as AgeGateService,
-      reviews,
-      activity,
-      xp,
-      stubAchievements(),
-      stubEvents(),
-      {} as import("../lists/list.service").ListService,
-    );
-
-    await service.addReplay("user-1", "e1", {} as never);
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
-      "BOOK_REPLAYED",
-      "replay-1",
+      "BOOK_FINISHED",
+      "reading-1",
     );
-
-    await service.deleteReplay("user-1", "replay-1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("BookReplay", ["replay-1"]);
   });
 });

@@ -65,7 +65,16 @@ function bookEntry(overrides: {
     notes: "private note, never exported",
     finishedAt: overrides.finishedAt ?? null,
     createdAt: new Date("2025-03-04T10:00:00.000Z"),
-    replays: (overrides.replays ?? []).map((finishedAt) => ({ finishedAt })),
+    readings: [
+      ...(overrides.status === "READ" && overrides.finishedAt
+        ? [overrides.finishedAt]
+        : []),
+      ...(overrides.replays ?? []),
+    ].map((finishedAt, index) => ({
+      number: index + 1,
+      status: "COMPLETED",
+      finishedAt,
+    })),
     bookItem: {
       id: overrides.id,
       title: `Book ${overrides.id}`,

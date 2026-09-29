@@ -2,7 +2,9 @@ import type {
   BookOwnershipStatus,
   BookSource,
   BookStatus,
+  SessionCycleAction,
   SessionSource,
+  TrackingCycleStatus,
 } from "../enums";
 import type { RatingDto } from "./catalog";
 import type { SessionWeekDayDto } from "./session";
@@ -87,10 +89,20 @@ export interface BookItemDto {
   sourceId: string;
 }
 
-export interface BookReplayDto {
+export interface BookReadingDto {
   id: string;
-  /** ISO date the reread was completed. */
-  finishedAt: string;
+  number: number;
+  status: TrackingCycleStatus;
+  editionKey: string | null;
+  referencePageCount: number | null;
+  currentPage: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  sessionCount: number;
+  trackedMinutes: number;
+  pagesRead: number;
+  /** True when migrated history only supplied a completion date. */
+  legacyIncomplete: boolean;
 }
 
 export interface BookEntryDto {
@@ -114,8 +126,8 @@ export interface BookEntryDto {
   finishedAt: string | null;
   /** When the entry was added to the library (ISO). */
   createdAt: string;
-  /** Completed rereads beyond the first, most recent first. */
-  replays: BookReplayDto[];
+  /** Reading history, current one first. */
+  readings: BookReadingDto[];
   /** How the user holds this book, if set (NONE = unset). */
   ownershipStatus: BookOwnershipStatus;
   /** Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise. */
@@ -152,6 +164,8 @@ export interface UpdateBookEntryDto {
 
 export interface BookSessionDto {
   id: string;
+  readingId: string | null;
+  readingNumber: number | null;
   durationMinutes: number;
   pagesRead: number;
   startPage: number | null;
@@ -167,8 +181,7 @@ export interface CreateBookSessionDto {
   durationMinutes: number;
   occurredAt: string;
   notes?: string | null;
-  /** Explicitly resume an abandoned entry when recording this session. */
-  resumeTracking?: boolean;
+  cycleAction?: SessionCycleAction;
   /** Quantity mode. Mutually exclusive with startPage/endPage. */
   pagesRead?: number;
   /** Range mode. Both values are required together. */
@@ -198,6 +211,7 @@ export interface BookSessionSummaryDto {
   averagePagesPerDay: number | null;
   estimatedCompletionDate: string | null;
   completionSuggested: boolean;
+  activeReading: BookReadingDto | null;
 }
 
 export interface BookSessionMutationDto {

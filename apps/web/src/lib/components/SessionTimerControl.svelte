@@ -16,13 +16,11 @@
   let {
     domain,
     entryId,
-    resumeTracking = false,
     disabled = false,
     onFinish,
   }: {
     domain: Extract<Domain, "GAMES" | "BOOKS">;
     entryId: string;
-    resumeTracking?: boolean;
     disabled?: boolean;
     onFinish: (elapsedSeconds: number) => void;
   } = $props();
@@ -48,7 +46,7 @@
   });
 
   const startMut = createApiMutation<void, SessionTimerDto>(() => ({
-    mutate: () => startSessionTimer({ domain, entryId, resumeTracking }),
+    mutate: () => startSessionTimer({ domain, entryId }),
     invalidates: [timerKey],
     errorToast: true,
   }));

@@ -57,7 +57,7 @@ export class SessionTimerService {
         gameEntryId: dto.domain === Domain.GAMES ? dto.entryId : null,
         bookEntryId: dto.domain === Domain.BOOKS ? dto.entryId : null,
         startedAt: new Date(),
-        resumeTracking: dto.resumeTracking ?? false,
+        cycleAction: dto.cycleAction,
       },
     });
     return this.toDto(timer);
@@ -110,7 +110,7 @@ export class SessionTimerService {
           durationMinutes,
           occurredAt,
           notes: dto.notes,
-          resumeTracking: dto.resumeTracking ?? timer.resumeTracking,
+          cycleAction: dto.cycleAction ?? timer.cycleAction ?? undefined,
         },
         SessionSource.TIMER,
       );
@@ -122,7 +122,7 @@ export class SessionTimerService {
           durationMinutes,
           occurredAt,
           notes: dto.notes,
-          resumeTracking: dto.resumeTracking ?? timer.resumeTracking,
+          cycleAction: dto.cycleAction ?? timer.cycleAction ?? undefined,
           pagesRead: dto.pagesRead,
           startPage: dto.startPage,
           endPage: dto.endPage,

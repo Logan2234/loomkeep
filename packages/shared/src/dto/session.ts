@@ -1,4 +1,4 @@
-import type { Domain } from "../enums";
+import type { Domain, SessionCycleAction } from "../enums";
 import { DORMANT_AFTER_DAYS } from "./library";
 
 export const MAX_SESSION_DURATION_MINUTES = 9999;
@@ -15,12 +15,12 @@ export interface SessionTimerDto {
 export interface StartSessionTimerDto {
   domain: Extract<Domain, "GAMES" | "BOOKS">;
   entryId: string;
-  resumeTracking?: boolean;
+  cycleAction?: SessionCycleAction;
 }
 
 export interface FinishSessionTimerDto {
   notes?: string | null;
-  resumeTracking?: boolean;
+  cycleAction?: SessionCycleAction;
   pagesRead?: number;
   startPage?: number;
   endPage?: number;

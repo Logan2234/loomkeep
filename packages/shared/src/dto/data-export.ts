@@ -85,6 +85,7 @@ export interface DataExportGameEntry {
   /** Completed replays beyond the first, oldest first. */
   replays: string[];
   sessions: {
+    playthroughNumber: number | null;
     durationMinutes: number;
     notes: string | null;
     occurredAt: string;
@@ -117,6 +118,7 @@ export interface DataExportBookEntry {
   /** Completed rereads beyond the first, oldest first. */
   replays: string[];
   sessions: {
+    readingNumber: number | null;
     durationMinutes: number;
     pagesRead: number;
     startPage: number | null;

@@ -1,6 +1,9 @@
-import type { FinishSessionTimerDto as Contract } from "@loomkeep/shared";
 import {
-  IsBoolean,
+  SessionCycleAction,
+  type FinishSessionTimerDto as Contract,
+} from "@loomkeep/shared";
+import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -11,8 +14,8 @@ import {
 
 export class FinishSessionTimerDto implements Contract {
   @IsOptional()
-  @IsBoolean()
-  resumeTracking?: boolean;
+  @IsIn(Object.values(SessionCycleAction))
+  cycleAction?: SessionCycleAction;
 
   @IsOptional()
   @IsString()

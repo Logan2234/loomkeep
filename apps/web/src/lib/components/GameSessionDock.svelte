@@ -59,7 +59,8 @@
   let editNotes = $state("");
   let deletingId = $state<string | null>(null);
   let finishingTimer = $state(false);
-  let resumeTracking = $state(true);
+  let linkToPlaythrough = $state(true);
+  let restartDropped = $state(false);
 
   const sessionKey = $derived(keys.games.sessions(entry.id, page));
   const sessionsQuery = createApiQuery(() => ({
@@ -68,6 +69,11 @@
   }));
   const summary = $derived(sessionsQuery.data);
   const totalSessions = $derived(summary?.totalSessions ?? 0);
+  const activePlaythrough = $derived(summary?.activePlaythrough ?? null);
+  const lastFinishedPlaythrough = $derived(
+    entry.playthroughs.find((playthrough) => playthrough.status !== "ACTIVE") ??
+      null,
+  );
 
   const createMut = createApiMutation<
     CreateGameSessionDto,
@@ -195,12 +201,17 @@
 
   function submit() {
     if (durationMinutes < 1) return;
+    const cycleAction = !linkToPlaythrough
+      ? ("HISTORY_ONLY" as const)
+      : entry.status === "COMPLETED" || restartDropped
+        ? ("RESTART" as const)
+        : entry.status === "DROPPED"
+          ? ("CONTINUE" as const)
+          : undefined;
     if (finishingTimer) {
       finishTimerMut.mutate({
         notes: notes || null,
-        resumeTracking:
-          (entry.status === "DROPPED" || entry.status === "COMPLETED") &&
-          resumeTracking,
+        cycleAction,
       });
       return;
     }
@@ -208,22 +219,22 @@
       durationMinutes,
       occurredAt: sessionDateToIso(occurredOn),
       notes: notes || null,
-      resumeTracking:
-        (entry.status === "DROPPED" || entry.status === "COMPLETED") &&
-        resumeTracking,
+      cycleAction,
     });
   }
 
   function openAdd() {
     finishingTimer = false;
-    resumeTracking = true;
+    linkToPlaythrough = true;
+    restartDropped = false;
     showAdd = true;
   }
 
   function finishTimedSession(elapsedSeconds: number) {
     durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
     notes = "";
-    resumeTracking = true;
+    linkToPlaythrough = true;
+    restartDropped = false;
     finishingTimer = true;
     showAdd = true;
   }
@@ -255,6 +266,51 @@
 </script>
 
 <section class="space-y-3" aria-labelledby="game-session-title">
+  <div class="border-border bg-surface/55 rounded-xl border p-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="timecode text-dim text-[0.58rem] tracking-[0.16em] uppercase">
+          {activePlaythrough
+            ? m.game_cycle_current({ number: activePlaythrough.number })
+            : m.session_cycle_global_total()}
+        </p>
+        <p class="mt-1 text-sm font-semibold">
+          {activePlaythrough
+            ? m.session_cycle_active()
+            : entry.status === "COMPLETED"
+              ? m.session_cycle_completed()
+              : entry.status === "DROPPED"
+                ? m.session_cycle_dropped()
+                : m.game_cycle_explainer()}
+        </p>
+      </div>
+      {#if activePlaythrough}
+        <p class="font-display text-xl font-extrabold tabular-nums">
+          {formatSessionMinutes(activePlaythrough.trackedMinutes)}
+        </p>
+      {/if}
+    </div>
+    <p class="text-dim mt-2 text-xs leading-relaxed">
+      {m.game_cycle_explainer()}
+    </p>
+    <dl class="border-border mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-xs">
+      <div>
+        <dt class="text-dim">{m.session_cycle_current_total()}</dt>
+        <dd class="mt-0.5 font-semibold tabular-nums">
+          {formatSessionMinutes(activePlaythrough?.trackedMinutes ?? 0)}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-dim">{m.session_cycle_global_total()}</dt>
+        <dd class="mt-0.5 font-semibold tabular-nums">
+          {formatSessionMinutes(
+            summary?.totalTrackedMinutes ?? entry.trackedPlaytimeMinutes,
+          )}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
   <div class="border-border bg-bg/45 rounded-xl border p-4">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
@@ -298,11 +354,23 @@
 
   <button
     type="button"
-    class="border-border hover:border-accent/60 hover:text-accent font-display w-full rounded-xl border px-4 py-3 font-bold transition-colors disabled:cursor-default disabled:opacity-50"
+    class="text-dim hover:text-accent mx-auto flex items-center gap-2 px-2 py-1 text-sm font-semibold transition-colors disabled:cursor-default disabled:opacity-50"
     disabled={totalSessions === 0}
     onclick={openHistory}>
     {historyLabel(totalSessions)}
   </button>
+
+  {#if lastFinishedPlaythrough}
+    <p class="text-dim text-center text-xs">
+      {m.game_cycle_current({ number: lastFinishedPlaythrough.number })} ·
+      {lastFinishedPlaythrough.status === "COMPLETED"
+        ? m.session_cycle_completed()
+        : m.session_cycle_dropped()}
+      {#if lastFinishedPlaythrough.finishedAt}
+        · {formatDate(lastFinishedPlaythrough.finishedAt)}
+      {/if}
+    </p>
+  {/if}
 
   {#if entry.steamPlaytimeMinutes !== null}
     <div class="border-border bg-bg/45 rounded-xl border p-3.5">
@@ -365,21 +433,35 @@
           <div class="min-w-0">
             <p class="text-sm font-semibold">
               {entry.status === "COMPLETED"
-                ? m.session_resume_completed()
-                : m.session_resume_tracking()}
+                ? m.session_cycle_restart_game()
+                : restartDropped
+                  ? m.session_cycle_restart_game()
+                  : m.session_cycle_continue_game()}
             </p>
             <p class="text-dim mt-0.5 text-xs leading-relaxed">
-              {entry.status === "COMPLETED"
-                ? m.session_resume_completed_help()
-                : m.session_resume_tracking_help()}
+              {linkToPlaythrough
+                ? entry.status === "COMPLETED" || restartDropped
+                  ? m.session_cycle_restart_game_help()
+                  : m.session_cycle_continue_game_help()
+                : m.session_cycle_history_only_game_help()}
             </p>
+            {#if entry.status === "DROPPED" && linkToPlaythrough}
+              <button
+                type="button"
+                class="link-accent mt-2 text-xs"
+                onclick={() => (restartDropped = !restartDropped)}>
+                {restartDropped
+                  ? m.session_cycle_continue_instead()
+                  : m.session_cycle_restart_instead()}
+              </button>
+            {/if}
           </div>
           <Switch
-            checked={resumeTracking}
-            onChange={(checked) => (resumeTracking = checked)}
+            checked={linkToPlaythrough}
+            onChange={(checked) => (linkToPlaythrough = checked)}
             label={entry.status === "COMPLETED"
-              ? m.session_resume_completed()
-              : m.session_resume_tracking()} />
+              ? m.session_cycle_restart_game()
+              : m.session_cycle_continue_game()} />
         </div>
       {/if}
 
@@ -476,6 +558,16 @@
 
       <ol class="mt-4 flex flex-col gap-3">
         {#each summary.items as session, index (session.id)}
+          {#if index === 0 || summary.items[index - 1]?.playthroughNumber !== session.playthroughNumber}
+            <li
+              class="timecode text-dim flex items-center gap-2 pt-1 text-[0.6rem] tracking-[0.16em] uppercase">
+              <span class="bg-border h-px flex-1"></span>
+              {session.playthroughNumber
+                ? m.game_cycle_current({ number: session.playthroughNumber })
+                : m.session_cycle_standalone()}
+              <span class="bg-border h-px flex-1"></span>
+            </li>
+          {/if}
           <li
             in:fly|global={{
               y: reduced ? 0 : 8,
