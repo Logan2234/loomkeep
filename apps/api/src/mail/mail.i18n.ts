@@ -24,6 +24,15 @@ export interface MailCopy {
     exhausted: string;
     button: string;
   };
+  jobAlert: {
+    failedSubject: (job: string) => string;
+    recoveredSubject: (job: string) => string;
+    heading: string;
+    failed: (job: string) => string;
+    recovered: (job: string) => string;
+    onlyOnce: string;
+    button: string;
+  };
   moderation: {
     comment: ModerationVariant;
     review: ModerationVariant;
@@ -103,6 +112,13 @@ export interface MailCopy {
     button: string;
     expiry: string;
   };
+  invitation: {
+    subject: (inviter: string | null) => string;
+    heading: string;
+    intro: (inviter: string | null) => string;
+    button: string;
+    expiry: (date: string) => string;
+  };
   episodeDigest: {
     today: string;
     thisWeek: string;
@@ -142,6 +158,16 @@ export const MAIL_COPY = {
       exhausted:
         "Les appels suivants risquent d'être refusés jusqu'au changement de jour (minuit UTC).",
       button: "Voir les services",
+    },
+    jobAlert: {
+      failedSubject: (job) => `Échec du job ${job}`,
+      recoveredSubject: (job) => `Job ${job} rétabli`,
+      heading: "Jobs planifiés",
+      failed: (job) => `Le job ${job} vient d'échouer :`,
+      recovered: (job) => `Le job ${job} fonctionne de nouveau.`,
+      onlyOnce:
+        "Tu ne recevras pas d'autre e-mail pour ses échecs suivants, seulement quand il fonctionnera de nouveau.",
+      button: "Voir les jobs",
     },
     moderation: {
       comment: {
@@ -248,6 +274,18 @@ export const MAIL_COPY = {
       button: "Confirmer mon email",
       expiry: "Ce lien expire dans 24h.",
     },
+    invitation: {
+      subject: (inviter) =>
+        inviter
+          ? `${inviter} t'invite sur Loomkeep`
+          : "Tu es invité·e sur Loomkeep",
+      heading: "Une place t'attend sur Loomkeep",
+      intro: (inviter) =>
+        `${inviter ? `${inviter} t'invite` : "Tu es invité·e"} à rejoindre Loomkeep pour suivre tes séries, films, animés, jeux, livres et albums. Crée ton compte avec le bouton ci-dessous.`,
+      button: "Créer mon compte",
+      expiry: (date) =>
+        `Cette invitation est valable jusqu'au ${date}. Si tu ne t'attendais pas à la recevoir, ignore simplement cet email.`,
+    },
     episodeDigest: {
       today: "aujourd'hui",
       thisWeek: "cette semaine",
@@ -286,6 +324,16 @@ export const MAIL_COPY = {
       exhausted:
         "Further calls may be refused until the day rolls over (midnight UTC).",
       button: "Open services",
+    },
+    jobAlert: {
+      failedSubject: (job) => `Job ${job} failed`,
+      recoveredSubject: (job) => `Job ${job} recovered`,
+      heading: "Scheduled jobs",
+      failed: (job) => `The ${job} job just failed:`,
+      recovered: (job) => `The ${job} job is working again.`,
+      onlyOnce:
+        "You won't get another email for its next failures, only once it works again.",
+      button: "Open jobs",
     },
     moderation: {
       comment: {
@@ -390,6 +438,18 @@ export const MAIL_COPY = {
       intro: "Confirm your email address by clicking the button below.",
       button: "Confirm my email",
       expiry: "This link expires in 24 hours.",
+    },
+    invitation: {
+      subject: (inviter) =>
+        inviter
+          ? `${inviter} invited you to Loomkeep`
+          : "You're invited to Loomkeep",
+      heading: "A seat is waiting for you on Loomkeep",
+      intro: (inviter) =>
+        `${inviter ? `${inviter} invited you` : "You're invited"} to join Loomkeep and track your series, movies, anime, games, books and albums. Create your account with the button below.`,
+      button: "Create my account",
+      expiry: (date) =>
+        `This invitation is valid until ${date}. If you weren't expecting it, just ignore this email.`,
     },
     episodeDigest: {
       today: "today",

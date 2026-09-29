@@ -101,6 +101,7 @@ describe("BookLibraryService.deleteEntry", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
       { refreshAfterDelete } as never,
     );
 
@@ -191,6 +192,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -237,6 +239,7 @@ describe("BookLibraryService — finishedAt sync", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -292,6 +295,7 @@ describe("BookLibraryService reading goal", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
   }
 
@@ -404,6 +408,7 @@ describe("BookLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       events,
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -467,6 +472,7 @@ describe("BookLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -511,6 +517,7 @@ describe("BookLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.addReplay("user-1", "e1", {} as never);

@@ -19,6 +19,21 @@ export interface RegisterRequestDto {
   certifiedAge: boolean;
   /** Cloudflare Turnstile response token — required only when TURNSTILE_SECRET_KEY is set server-side. */
   turnstileToken?: string;
+  /** Raw token from an invitation link — lets the sign-up through even while registration is closed. */
+  inviteToken?: string;
+}
+
+export interface InvitationPreviewRequestDto {
+  token: string;
+}
+
+/** What the sign-up page shows about a still-redeemable invitation. */
+export interface InvitationPreviewDto {
+  /** Display name of whoever sent it — null once that account is deleted. */
+  inviterName: string | null;
+  /** When set, the only address the account can be created with. */
+  email: string | null;
+  expiresAt: string;
 }
 
 export interface LoginRequestDto {

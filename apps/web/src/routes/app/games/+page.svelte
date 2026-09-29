@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getGamesPile, listGames } from "$lib/api/client";
-  import { updateGameEntry } from "$lib/api/games";
+  import {
+    bulkDeleteGameEntries,
+    bulkUpdateGameEntries,
+    updateGameEntry,
+  } from "$lib/api/games";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -9,10 +13,21 @@
   import PosterCard from "$lib/components/PosterCard.svelte";
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
   import {
+    GAME_OWNERSHIP_SOURCES,
+    GAME_OWNERSHIP_STATUS_OPTIONS,
+  } from "$lib/constants/ownership-sources";
+  import {
     GAME_STATUS_LABELS,
+    GAME_STATUS_META,
     GAME_STATUS_ORDER,
   } from "$lib/constants/status-labels";
-  import { toggleFavorite } from "$lib/favorite-toggle";
+  import { DATE_MEDIUM_OPTIONS, formatDate, formatHours } from "$lib/format";
+  import {
+    ownershipText,
+    type LibraryBulkActions,
+    type LibraryColumn,
+    type LibraryItemView,
+  } from "$lib/library-view";
   import { m } from "$lib/paraglide/messages";
   import { Domain, isSessionPaused, type GameEntryDto } from "@loomkeep/shared";
 
@@ -33,6 +48,97 @@
     { label: m.library_sort_started(), value: "started" },
     { label: m.common_status(), value: "status" },
   ];
+
+  const setFavorite = (entry: GameEntryDto, next: boolean) =>
+    updateGameEntry(entry.id, { favorite: next });
+
+  const itemView = (entry: GameEntryDto): LibraryItemView => ({
+    href: `/app/games/${entry.game.sourceId}`,
+    title: entry.game.title,
+    subtitle: null,
+    imageUrl: entry.game.coverUrl,
+    status: { value: entry.status, ...GAME_STATUS_META[entry.status] },
+    ownership: entry.ownershipStatus,
+    ownershipSource: entry.ownershipSource,
+    reviewTarget: { type: "GAME", id: entry.game.id },
+    rating: entry.rating,
+    favorite: entry.favorite,
+    progress: null,
+  });
+
+  const COLUMNS: LibraryColumn<GameEntryDto>[] = [
+    { key: "title", kind: "title", label: m.common_title(), sort: "title" },
+    { key: "status", kind: "status", label: m.common_status(), sort: "status" },
+    {
+      key: "playtime",
+      kind: "text",
+      label: m.game_playtime(),
+      sort: "playtime",
+      numeric: true,
+      value: (e) =>
+        e.playtimeMinutes > 0 ? formatHours(e.playtimeMinutes) : null,
+    },
+    {
+      key: "rating",
+      kind: "rating",
+      label: m.library_rating(),
+      sort: "rating",
+      numeric: true,
+    },
+    {
+      key: "ownership",
+      kind: "text",
+      ownership: true,
+      label: m.ownership_title(),
+      value: (e) =>
+        ownershipText(
+          GAME_OWNERSHIP_STATUS_OPTIONS,
+          e.ownershipStatus,
+          e.ownershipSource,
+        ),
+    },
+    {
+      key: "finished",
+      kind: "text",
+      label: m.library_col_finished(),
+      sort: "finished",
+      value: (e) =>
+        e.finishedAt ? formatDate(e.finishedAt, DATE_MEDIUM_OPTIONS) : null,
+    },
+    {
+      key: "added",
+      kind: "text",
+      label: m.library_col_added(),
+      sort: "added",
+      value: (e) => formatDate(e.createdAt, DATE_MEDIUM_OPTIONS),
+    },
+    {
+      key: "started",
+      kind: "text",
+      label: m.library_col_started(),
+      sort: "started",
+      defaultHidden: true,
+      value: (e) =>
+        e.startedAt ? formatDate(e.startedAt, DATE_MEDIUM_OPTIONS) : null,
+    },
+    {
+      key: "notes",
+      kind: "text",
+      label: m.library_col_notes(),
+      defaultHidden: true,
+      truncate: true,
+      value: (e) => e.notes,
+    },
+  ];
+
+  const BULK: LibraryBulkActions = {
+    statusOptions: STATUS_OPTIONS,
+    ownershipOptions: GAME_OWNERSHIP_STATUS_OPTIONS,
+    ownershipSources: GAME_OWNERSHIP_SOURCES,
+    update: (dto) =>
+      bulkUpdateGameEntries(dto as Parameters<typeof bulkUpdateGameEntries>[0]),
+    remove: bulkDeleteGameEntries,
+  };
 
   const load = (params: LibraryLoadParams) =>
     listGames({
@@ -66,20 +172,24 @@
   keyOf={(e) => e.id}
   statusOptions={STATUS_OPTIONS}
   sorts={SORTS}
-  defaultSort="added">
+  defaultSort="added"
+  {itemView}
+  columns={COLUMNS}
+  bulk={BULK}
+  {setFavorite}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <GameSearchPanel {query} limit={10} {onResults} />
   {/snippet}
-  {#snippet card(entry: GameEntryDto)}
+  {#snippet card(
+    entry: GameEntryDto,
+    onToggleFavorite: (next: boolean) => void,
+  )}
     <PosterCard
       href={`/app/games/${entry.game.sourceId}`}
       src={entry.game.coverUrl}
       title={entry.game.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) =>
-        toggleFavorite(entry, next, (n) =>
-          updateGameEntry(entry.id, { favorite: n }),
-        )}>
+      {onToggleFavorite}>
       {#snippet meta()}
         <span class="timecode text-xs">
           {GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}

@@ -245,7 +245,8 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     expect(achievements.evaluate).toHaveBeenCalledWith("user-1", [
       "locked_down",
     ]);
-  });
+    // Same bcrypt cost as the recovery code test above.
+  }, 20_000);
 
   it("confirmTotp rejects an invalid code", async () => {
     const { service, prisma } = makeService();

@@ -51,8 +51,8 @@ export const keys = {
   media: {
     detail: (type: string, sourceId: string) =>
       ["media", "detail", type, sourceId] as const,
-    extras: (source: string, sourceId: string) =>
-      ["media", "extras", source, sourceId] as const,
+    extras: (source: string, sourceId: string, region: string | null) =>
+      ["media", "extras", source, sourceId, region] as const,
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,
@@ -87,6 +87,8 @@ export const keys = {
     email: (token: string) => ["verification", "email", token] as const,
     newsletterUnsubscribe: (token: string) =>
       ["verification", "newsletter-unsubscribe", token] as const,
+    invitation: (token: string) =>
+      ["verification", "invitation", token] as const,
   },
   savedViews: {
     all: () => ["saved-views"] as const,
@@ -185,6 +187,8 @@ export const keys = {
       ["catalog", "search", filters] as const,
     castDetail: (source: string, personId: string) =>
       ["catalog", "cast-detail", source, personId] as const,
+    watchProviders: (region: string | null) =>
+      ["catalog", "watch-providers", region] as const,
   },
   admin: {
     overview: () => ["admin", "overview"] as const,
@@ -225,6 +229,7 @@ export const keys = {
       push: string;
       session: string;
     }) => ["admin", "users", filters] as const,
+    invitations: () => ["admin", "invitations"] as const,
     userSessions: (userId: string) =>
       ["admin", "user-sessions", userId] as const,
     userLibraryStats: (userId: string) =>
@@ -249,4 +254,5 @@ export const keys = {
       ["admin", "reports", filters] as const,
     reportsSummary: () => ["admin", "reports-summary"] as const,
   },
+  transparency: (year: number | undefined) => ["transparency", year] as const,
 } as const;

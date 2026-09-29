@@ -247,7 +247,12 @@ describe("AnilistProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("154587");
+      const extras = await provider.getExtras(
+        "154587",
+        MediaType.ANIME,
+        undefined,
+        "FR",
+      );
 
       expect(extras.ratings).toEqual([
         {
@@ -292,7 +297,12 @@ describe("AnilistProvider", () => {
         },
       });
 
-      const extras = await provider.getExtras("1");
+      const extras = await provider.getExtras(
+        "1",
+        MediaType.ANIME,
+        undefined,
+        "FR",
+      );
 
       expect(extras.trailerVideoId).toBeNull();
       expect(extras.cast[0].id).toBeNull();

@@ -100,6 +100,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -148,6 +149,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -206,6 +208,7 @@ describe("LibraryService — finishedAt sync (comment-masking gate)", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.watchEpisode("user-1", "ep2", {});
@@ -269,6 +272,7 @@ describe("LibraryService.unwatchSeason", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.unwatchSeason("user-1", "season-1");
@@ -296,6 +300,7 @@ describe("LibraryService.unwatchSeason", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await expect(service.unwatchSeason("user-1", "missing")).rejects.toThrow(
@@ -350,6 +355,7 @@ describe("LibraryService.deleteEntry", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -407,6 +413,7 @@ describe("LibraryService.deleteEntry", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await expect(
@@ -473,6 +480,7 @@ describe("LibraryService — XP wiring", () => {
       xp,
       achievements,
       events,
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -526,6 +534,7 @@ describe("LibraryService — XP wiring", () => {
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.updateEntry("user-1", "entry-1", {
@@ -571,6 +580,7 @@ describe("LibraryService — XP wiring", () => {
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -636,6 +646,7 @@ describe("LibraryService — XP wiring", () => {
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.addReplay("user-1", "entry-1", {} as never);
@@ -708,6 +719,7 @@ describe("LibraryService — XP wiring", () => {
       xp,
       achievements,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.watchEpisode("user-1", "ep2", {} as never);
@@ -776,6 +788,7 @@ describe("LibraryService — watch endpoints require a tracked entry", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
     return { service, prisma, xp };
   }
@@ -851,6 +864,7 @@ describe("LibraryService.getDomainCounts", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const counts = await service.getDomainCounts("u1");
@@ -935,6 +949,7 @@ describe("LibraryService.getPile", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
     return { service, episodeFindMany };
   }
@@ -967,5 +982,84 @@ describe("LibraryService.getPile", () => {
     const pile = await service.getPile("user-1", { q: "arri" });
 
     expect(pile).toMatchObject({ amount: 110, entries: 1 });
+  });
+});
+
+describe("LibraryService.bulkUpdate", () => {
+  function serviceWith(entries: object[], seasons: object[]) {
+    const prisma = {
+      libraryEntry: {
+        findMany: vi
+          .fn()
+          // bulkTargetIds: the picks the user owns
+          .mockResolvedValueOnce(
+            entries.map((e) => ({ id: (e as { id: string }).id })),
+          )
+          // the targeted entries themselves
+          .mockResolvedValueOnce(entries),
+      },
+      season: { findMany: vi.fn().mockResolvedValue(seasons) },
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {} as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+    const updateEntry = vi
+      .spyOn(service, "updateEntry")
+      .mockResolvedValue({} as never);
+    const watchSeason = vi
+      .spyOn(service, "watchSeason")
+      .mockResolvedValue(undefined);
+    return { service, updateEntry, watchSeason };
+  }
+
+  const entry = (id: string, type: string, status: string) => ({
+    id,
+    mediaItemId: `${id}-item`,
+    status,
+    favorite: false,
+    ownershipStatus: "NONE",
+    mediaItem: { type },
+  });
+
+  it("completes a movie through its status, and a series by watching every aired season", async () => {
+    const { service, updateEntry, watchSeason } = serviceWith(
+      [entry("movie", "MOVIE", "PLANNED"), entry("show", "SERIES", "WATCHING")],
+      [{ id: "s1" }, { id: "s2" }],
+    );
+
+    const result = await service.bulkUpdate("user-1", {
+      ids: ["movie", "show"],
+      status: "COMPLETED",
+    });
+
+    expect(updateEntry).toHaveBeenCalledWith("user-1", "movie", {
+      status: "COMPLETED",
+    });
+    expect(watchSeason).toHaveBeenNthCalledWith(1, "user-1", "s1");
+    expect(watchSeason).toHaveBeenNthCalledWith(2, "user-1", "s2");
+    expect(result).toEqual({ updated: 2, skipped: 0 });
+  });
+
+  it("leaves a series already caught up alone", async () => {
+    const { service, watchSeason } = serviceWith(
+      [entry("show", "ANIME", "UP_TO_DATE")],
+      [{ id: "s1" }],
+    );
+
+    const result = await service.bulkUpdate("user-1", {
+      ids: ["show"],
+      status: "COMPLETED",
+    });
+
+    expect(watchSeason).not.toHaveBeenCalled();
+    expect(result).toEqual({ updated: 0, skipped: 1 });
   });
 });

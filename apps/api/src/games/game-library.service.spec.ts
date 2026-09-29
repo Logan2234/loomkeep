@@ -99,6 +99,7 @@ describe("GameLibraryService.deleteEntry", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
       { refreshAfterDelete } as never,
     );
 
@@ -155,6 +156,7 @@ describe("GameLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       events,
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {
@@ -205,6 +207,7 @@ describe("GameLibraryService — XP wiring", () => {
       xp,
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.addReplay("user-1", "e1", {} as never);
@@ -247,6 +250,7 @@ describe("GameLibraryService.getPile", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     const pile = await service.getPile("user-1", { favorite: true });

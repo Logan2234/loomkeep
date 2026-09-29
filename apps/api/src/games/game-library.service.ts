@@ -1,4 +1,6 @@
 import type {
+  BulkEntriesResultDto,
+  BulkEntriesTargetDto,
   GameDetailDto,
   GameEntryDto,
   GameItemDto,
@@ -23,6 +25,13 @@ import type {
   GameReplay,
   Prisma,
 } from "@prisma/client";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../common/bulk-entries.util";
 import { toDateOrNull } from "../common/date.util";
 import type {
   EntryStatusChange,
@@ -46,6 +55,7 @@ import { AchievementService } from "../gamification/achievements/achievement.ser
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
@@ -57,6 +67,7 @@ import {
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
+import type { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { GameItemService } from "./game-item.service";
@@ -179,6 +190,7 @@ export class GameLibraryService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly lists: ListService,
     private readonly sessionXp?: SessionXpService,
   ) {}
 
@@ -367,6 +379,64 @@ export class GameLibraryService {
         ),
       ),
     );
+  }
+
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateGameEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.gameEntry.findMany({
+      where: this.bulkWhere(userId, dto),
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        gameItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+        ownershipSource: true,
+      },
+    });
+    return applyBulkUpdate(
+      entries.map((e) => ({ ...e, itemId: e.gameItemId })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateGameEntryDto),
+        addToList: (itemId) =>
+          addToList(this.lists, userId, dto.listId!, "GAME", itemId),
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    const entries = await this.prisma.gameEntry.findMany({
+      where: this.bulkWhere(userId, target),
+      select: { id: true },
+    });
+    return applyToEntries(entries, async (e) => {
+      await this.deleteEntry(userId, e.id);
+      return true;
+    });
+  }
+
+  private bulkWhere(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Prisma.GameEntryWhereInput {
+    return target.filters
+      ? this.entryWhere(userId, target.filters)
+      : { userId, id: { in: target.ids ?? [] } };
   }
 
   private entryWhere(

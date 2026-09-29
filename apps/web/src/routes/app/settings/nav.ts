@@ -458,6 +458,34 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         ],
       },
       {
+        slug: "streaming",
+        label: m.settings_streaming_title(),
+        icon: "tv",
+        description: m.settings_streaming_description(),
+        keywords: [
+          "streaming",
+          "services",
+          "plateformes",
+          "abonnements",
+          "netflix",
+          "ou regarder",
+          "where to watch",
+        ],
+        newBadgeKey: "watch-providers",
+        entries: [
+          {
+            id: "streaming-region",
+            label: m.settings_streaming_region_label(),
+            keywords: ["pays", "country", "region"],
+          },
+          {
+            id: "streaming-services",
+            label: m.settings_streaming_title(),
+            keywords: ["netflix", "canal", "disney", "prime", "crunchyroll"],
+          },
+        ],
+      },
+      {
         slug: "communications",
         label: m.settings_section_communications(),
         icon: "bell",

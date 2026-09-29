@@ -59,11 +59,13 @@ export interface CatalogProvider {
   /**
    * Live, non-persisted extras: where to watch, cast, similar titles.
    * `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known.
+   * `watchRegion` (ISO 3166-1, e.g. "FR"): the country of the offers.
    */
   getExtras(
     sourceId: string,
     type: MediaType,
-    lang?: string,
+    lang: string | undefined,
+    watchRegion: string,
   ): Promise<MediaExtrasDto>;
   /**
    * Live detail of a cast entity (a TMDB person, or an AniList staff/voice

@@ -14,6 +14,7 @@ import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
+import type { InvitationService } from "./invitation.service";
 import type { MfaService } from "./mfa.service";
 import { SessionCacheService } from "./session-cache.service";
 import type { TurnstileService } from "./turnstile.service";
@@ -160,6 +161,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
 
   const sessionCache = new SessionCacheService();
   const events = { disconnectSession: vi.fn() } as unknown as EventsGateway;
+  const invitations = {
+    findRedeemableFor: vi.fn(),
+    claim: vi.fn(),
+  } as unknown as InvitationService;
 
   const service = new AuthService(
     prisma,
@@ -174,6 +179,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     webauthn,
     sessionCache,
     events,
+    invitations,
   );
 
   return {
@@ -190,8 +196,100 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     webauthn,
     sessionCache,
     events,
+    invitations,
   };
 }
+
+describe("AuthService.register with an invitation", () => {
+  const dto = {
+    email: "bob@example.com",
+    password: "secret1234",
+    displayName: "Bob",
+    acceptedTerms: true,
+    certifiedAge: true,
+    inviteToken: "raw-invite",
+  };
+
+  function withFreshAccount(prisma: PrismaService) {
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce(null) // email uniqueness
+      .mockResolvedValueOnce(null); // username uniqueness
+    (prisma.user.create as Mock).mockImplementation(
+      async ({ data }: { data: Partial<User> }) => makeUser(data),
+    );
+  }
+
+  it("lets the sign-up through while registration is closed", async () => {
+    const { service, prisma, invitations } = makeService(undefined, "false");
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(invitations.findRedeemableFor).toHaveBeenCalledWith(
+      "raw-invite",
+      "bob@example.com",
+    );
+    expect(invitations.claim).toHaveBeenCalledWith(prisma, "inv-1");
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        invitationId: "inv-1",
+        emailVerified: false,
+      }),
+    });
+  });
+
+  it("marks the email verified and skips the verification mail for an address-bound invitation", async () => {
+    const { service, prisma, invitations, mail } = makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: "bob@example.com",
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ emailVerified: true }),
+    });
+    expect(prisma.userToken.create).not.toHaveBeenCalled();
+    expect(mail.sendVerifyEmail).not.toHaveBeenCalled();
+    expect(mail.sendWelcome).toHaveBeenCalled();
+  });
+
+  it("creates no account when the invitation can't be redeemed", async () => {
+    const { service, prisma, invitations } = makeService(undefined, "false");
+    (invitations.findRedeemableFor as Mock).mockRejectedValue(
+      new AppException(400, ErrorCode.AuthInvalidInvitation),
+    );
+
+    await expect(service.register(dto)).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidInvitation,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("rolls the account back when the last place was taken meanwhile", async () => {
+    const { service, prisma, invitations } = makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+    });
+    (invitations.claim as Mock).mockRejectedValue(
+      new AppException(400, ErrorCode.AuthInvalidInvitation),
+    );
+    withFreshAccount(prisma);
+
+    await expect(service.register(dto)).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidInvitation,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+  });
+});
 
 describe("AuthService.register", () => {
   it("throws AppException(auth.registration_disabled) when registration is disabled", async () => {

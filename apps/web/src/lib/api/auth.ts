@@ -106,6 +106,14 @@ export const verifyEmail = (token: string): Promise<void> =>
     withAuth: false,
   });
 
+/** What the sign-up page shows about an invitation link — throws when it can't be redeemed. */
+export const previewInvitation = (token: string) =>
+  typedRequest("/auth/invitations/preview", {
+    method: "POST",
+    body: { token },
+    withAuth: false,
+  });
+
 export const resendVerificationEmail = (): Promise<void> =>
   typedRequest("/auth/verification/resend", {
     method: "POST",

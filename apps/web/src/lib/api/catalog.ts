@@ -13,16 +13,21 @@ export function searchCatalog(query: string, type?: MediaType, page = 1) {
   });
 }
 
+// `region` undefined: the API picks it from the browser's language.
 export function getMediaExtras(
   source: string,
   sourceId: string,
   type: MediaType,
+  region: string | undefined,
 ) {
   return typedRequest("/catalog/{source}/{id}/extras", {
     params: { source: source.toLowerCase(), id: sourceId },
-    query: { type, lang: getLocale() },
+    query: { type, lang: getLocale(), region },
   });
 }
+
+export const getWatchProviderCatalog = (region: string | undefined) =>
+  typedRequest("/catalog/watch-providers", { query: { region } });
 
 export const getCastDetail = (source: string, id: string) =>
   typedRequest("/catalog/{source}/person/{id}", {

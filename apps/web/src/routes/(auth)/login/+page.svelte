@@ -218,6 +218,10 @@
           <a href="/register" class="link-accent text-sm"
             >{m.common_register()}</a>
         </p>
+      {:else}
+        <p class="text-dim text-center text-sm">
+          {m.auth_registration_invite_only()}
+        </p>
       {/if}
     </form>
   {:else if step === "choose-method"}

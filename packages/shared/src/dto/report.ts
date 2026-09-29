@@ -1,4 +1,6 @@
 import type {
+  ModerationLegalBasis,
+  ModerationMeasure,
   ReportCategory,
   ReportMotif,
   ReportStatus,
@@ -36,4 +38,28 @@ export interface ReportDto {
 /** `GET /admin/reports/pending-count` response. */
 export interface ReportPendingCountDto {
   count: number;
+}
+
+/** `GET /transparency` response: one calendar year of moderation, aggregated for the public page. */
+export interface ModerationTransparencyDto {
+  year: number;
+  /** Every year since the first report or measure, newest first. */
+  years: number[];
+  reports: {
+    total: number;
+    withMeasure: number;
+    closedWithoutMeasure: number;
+    pending: number;
+    /** Categories reported at least once, most frequent first. */
+    byCategory: { category: ReportCategory; count: number }[];
+    /** Over the reports filed this year and already closed; null when none is. */
+    medianHandlingHours: number | null;
+  };
+  measures: {
+    total: number;
+    /** Measures an admin took on their own initiative, with no report behind them. */
+    withoutReport: number;
+    byMeasure: { measure: ModerationMeasure; count: number }[];
+    byLegalBasis: { legalBasis: ModerationLegalBasis; count: number }[];
+  };
 }

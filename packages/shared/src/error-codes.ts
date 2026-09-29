@@ -29,6 +29,9 @@ export const ErrorCode = {
   AuthWebauthnCredentialNotFound: "auth.webauthn_credential_not_found",
   AuthPasswordlessRequiresCredential: "auth.passwordless_requires_credential",
   AuthPasswordlessNotEligible: "auth.passwordless_not_eligible",
+  AuthInvalidInvitation: "auth.invalid_invitation",
+  AuthInvitationExpired: "auth.invitation_expired",
+  AuthInvitationEmailMismatch: "auth.invitation_email_mismatch",
 
   // admin
   AdminCacheItemNotFound: "admin.cache_item_not_found",
@@ -48,6 +51,10 @@ export const ErrorCode = {
   AdminBackupNotOrphan: "admin.backup_not_orphan",
   AdminMisconfigured: "admin.misconfigured",
   AdminUnauthorized: "admin.unauthorized",
+  AdminInvitationNotFound: "admin.invitation_not_found",
+  AdminInvitationEmailRegistered: "admin.invitation_email_registered",
+  AdminInvitationAlreadyPending: "admin.invitation_already_pending",
+  AdminInvitationNotRenewable: "admin.invitation_not_renewable",
 
   // comments
   CommentUnknownTargetType: "comment.unknown_target_type",
@@ -136,6 +143,7 @@ export const ErrorCode = {
   LibrarySavedViewNotFound: "library.saved_view_not_found",
   LibrarySavedViewFreeQuotaExceeded: "library.saved_view_free_quota_exceeded",
   LibrarySavedViewLimitReached: "library.saved_view_limit_reached",
+  LibraryBulkInvalid: "library.bulk_invalid",
 
   // catalog — item/person/provider codes are shared across every catalogue
   // source (TMDB, AniList, IGDB, Open Library, MusicBrainz)

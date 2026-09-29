@@ -1,5 +1,9 @@
 import { getLocale } from "$lib/paraglide/runtime.js";
 import type {
+  BulkEntriesTargetDto,
+  BulkUpdateEntriesDto,
+  MusicOwnershipStatus,
+  MusicStatus,
   UpdateMusicEntryDto,
   UpsertMusicEntryDto,
 } from "@loomkeep/shared";
@@ -63,3 +67,10 @@ export const deleteMusicEntry = (entryId: string): Promise<void> =>
     method: "DELETE",
     params: { id: entryId },
   });
+
+export const bulkUpdateMusicEntries = (
+  body: BulkUpdateEntriesDto<MusicStatus, MusicOwnershipStatus>,
+) => typedRequest("/music/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteMusicEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/music/entries/bulk-delete", { method: "POST", body });

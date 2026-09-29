@@ -18,6 +18,13 @@ export interface QuotaAlert {
   threshold: number;
 }
 
+/** A scheduled job that started failing (`error` set) or succeeded again (`error: null`). */
+export interface JobAlert {
+  jobKey: string;
+  /** First line of the error message; null once the job has recovered. */
+  error: string | null;
+}
+
 export interface MailRecipient {
   email: string;
   locale: string;
@@ -201,6 +208,20 @@ export class MailService {
       ],
       build: (locale, v) => this.buildVerifyEmail(locale, v.token),
     },
+    invitation: {
+      label: "Invitation à s'inscrire",
+      fields: [
+        { key: "inviter", label: "Invité par", default: "Logan" },
+        { key: "token", label: "Token", default: "sample-invite-token" },
+      ],
+      build: (locale, v) =>
+        this.buildInvitation(
+          locale,
+          v.inviter || null,
+          `${this.webOrigin}/register?invite=${v.token}`,
+          new Date(Date.now() + 7 * 24 * 60 * 60_000),
+        ),
+    },
     passwordResetLink: {
       label: "Lien de réinitialisation",
       fields: [{ key: "token", label: "Token", default: "sample-reset-token" }],
@@ -310,6 +331,27 @@ export class MailService {
           threshold: count / limit,
         });
       },
+    },
+    jobAlert: {
+      label: "Alerte de job planifié",
+      fields: [
+        { key: "jobKey", label: "Job", default: "backup.run" },
+        {
+          key: "status",
+          label: "Statut (FAILURE/SUCCESS)",
+          default: "FAILURE",
+        },
+        {
+          key: "error",
+          label: "Erreur",
+          default: "BACKUP_ENCRYPTION_PUBLIC_KEY is not set",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildJobAlert(locale, {
+          jobKey: v.jobKey,
+          error: v.status === "SUCCESS" ? null : v.error,
+        }),
     },
     reportsDigest: {
       label: "Digest des signalements",
@@ -590,6 +632,20 @@ export class MailService {
     });
   }
 
+  /** A sign-up invitation (InvitationService) — `url` carries the raw token. */
+  async sendInvitation(
+    recipient: MailRecipient,
+    inviterName: string | null,
+    url: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildInvitation(locale, inviterName, url, expiresAt),
+    });
+  }
+
   /**
    * The recurring "new episode" digest — see NotificationDigestService,
    * which is the only caller and already guarantees `items` is non-empty.
@@ -627,6 +683,15 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...this.buildQuotaAlert(locale, alert),
+    });
+  }
+
+  /** Tells an admin a scheduled job started failing, or recovered. */
+  async sendJobAlert(recipient: MailRecipient, alert: JobAlert): Promise<void> {
+    const locale = resolveMailLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildJobAlert(locale, alert),
     });
   }
 
@@ -710,6 +775,30 @@ export class MailService {
         copy.heading,
         `<p>${escapeHtml(sentence)}</p>
          ${exhausted ? `<p>${escapeHtml(exhausted)}</p>` : ""}
+         ${this.button(url, copy.button)}`,
+      ),
+    };
+  }
+
+  private buildJobAlert(locale: Locale, alert: JobAlert): TemplateBody {
+    const copy = MAIL_COPY[locale].jobAlert;
+    const url = `${this.webOrigin}/app/admin/jobs`;
+    const failed = alert.error !== null;
+    const sentence = failed
+      ? copy.failed(alert.jobKey)
+      : copy.recovered(alert.jobKey);
+    return {
+      subject: failed
+        ? copy.failedSubject(alert.jobKey)
+        : copy.recoveredSubject(alert.jobKey),
+      text: [sentence, alert.error, failed ? copy.onlyOnce : null, url]
+        .filter(Boolean)
+        .join("\n\n"),
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(sentence)}</p>
+         ${failed ? `<p><code>${escapeHtml(alert.error ?? "")}</code></p><p>${escapeHtml(copy.onlyOnce)}</p>` : ""}
          ${this.button(url, copy.button)}`,
       ),
     };
@@ -962,6 +1051,30 @@ export class MailService {
         `<p>${escapeHtml(copy.intro)}</p>
          ${this.button(url, copy.button)}
          <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry)}</p>`,
+      ),
+    };
+  }
+
+  private buildInvitation(
+    locale: Locale,
+    inviterName: string | null,
+    url: string,
+    expiresAt: Date,
+  ): TemplateBody {
+    const copy = MAIL_COPY[locale].invitation;
+    const formattedDate = new Intl.DateTimeFormat(dateLocale(locale), {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(expiresAt);
+    return {
+      subject: copy.subject(inviterName),
+      text: `${copy.intro(inviterName)}\n\n${url}\n\n${copy.expiry(formattedDate)}`,
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(copy.intro(inviterName))}</p>
+         ${this.button(url, copy.button)}
+         <p style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(copy.expiry(formattedDate))}</p>`,
       ),
     };
   }

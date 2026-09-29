@@ -524,6 +524,14 @@ model User {
   // brand-new one, or before this preference ever existed) just keeps its
   // canonical position at the end — see web domains.ts's orderedDomains().
   domainOrder                   Domain[]           @default([])
+  // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
+  // Null means automatic: taken from the browser's Accept-Language on each
+  // request — see resolveWatchRegion().
+  watchRegion                   String?
+  // TMDB watch provider ids of the services the user has, put first (and in
+  // colour) wherever a title's offers are listed. Not tied to a region: the
+  // ids are global, a region only decides which of them offer a title.
+  watchProviderIds              Int[]              @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
@@ -576,6 +584,10 @@ model User {
   // next bumped, so a returning user gets the full inactivity window again
   // instead of being deleted on the strength of a stale warning.
   inactivityWarningSentAt       DateTime?
+  // Invitation this account signed up through — null for an open
+  // registration. "Invité par" is read through invitation.createdBy rather
+  // than a second FK. SetNull: purging an invitation never touches accounts.
+  invitationId                  String?
 
   // MFA
   // Two independently-toggleable methods; admin accounts with neither active
@@ -635,8 +647,11 @@ model User {
   score                      UserScore?
   achievements               UserAchievement[]
   sessionTimer               SessionTimer?
+  invitation                 Invitation?            @relation("InvitedVia", fields: [invitationId], references: [id], onDelete: SetNull)
+  invitationsCreated         Invitation[]           @relation("InvitationsCreated")
 
   @@index([lastActiveAt])
+  @@index([invitationId])
 }
 
 // Social (P4): per-user, per-domain, per-facet audience. One row overrides the
@@ -1200,6 +1215,43 @@ model UserToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
+}
+
+// Sign-up link, letting someone register even while REGISTRATION_ENABLED is
+// off. Not a UserToken: the invitee has no User row yet, and one creator
+// holds any number of live invitations at once. createdBy is any account,
+// not just an admin — today only admins mint them (AdminInvitationsController),
+// member referral can come later without a schema change. Status is derived
+// (revokedAt / expiresAt / useCount vs maxUses), never stored. Same token
+// scheme as UserToken: the raw token is only ever shown once or mailed, its
+// SHA-256 is what's stored — renewing mints a new one (tokenIssuedAt).
+model Invitation {
+  id            String    @id @default(cuid())
+  tokenHash     String    @unique
+  // SetNull: deleting the admin doesn't silently kill pending invitations.
+  createdById   String?
+  // Normalized (normalizeEmail). When set, only this address may redeem it,
+  // and redeeming marks the account's email verified — the link was mailed
+  // there, or handed over by someone who knows it.
+  email         String?
+  // Free-form admin note ("Famille", "Club ciné").
+  label         String?
+  maxUses       Int       @default(1)
+  useCount      Int       @default(0)
+  // When the current token was minted — creation, then each renewal. The
+  // renewal keeps the original validity (expiresAt − tokenIssuedAt).
+  tokenIssuedAt DateTime  @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  // Last time the link was mailed to `email` (null: shared by hand only).
+  emailedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  createdBy  User?  @relation("InvitationsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  redeemedBy User[] @relation("InvitedVia")
+
+  @@index([createdAt])
+  @@index([email])
 }
 
 enum SecurityEventType {

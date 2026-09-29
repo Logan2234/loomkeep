@@ -1,4 +1,14 @@
-import type { AdminUserDto, Plan, Role } from "@loomkeep/shared";
+import type {
+  AdminUserDto,
+  AdminUserInvitationDto,
+  Plan,
+  Role,
+} from "@loomkeep/shared";
+
+class AdminUserInvitationResponseDto implements AdminUserInvitationDto {
+  label!: string | null;
+  createdByName!: string | null;
+}
 
 export class AdminUserResponseDto implements AdminUserDto {
   id!: string;
@@ -13,4 +23,5 @@ export class AdminUserResponseDto implements AdminUserDto {
   lastActiveAt!: string | null;
   inactivityWarningSentAt!: string | null;
   xp!: number;
+  invitation!: AdminUserInvitationResponseDto | null;
 }

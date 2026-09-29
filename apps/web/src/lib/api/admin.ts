@@ -4,6 +4,7 @@ import type {
   AdminCacheSort,
   AdminUserFilter,
   AdminUserOptionDto,
+  CreateAdminInvitationRequestDto,
   Domain,
   JobStatus,
   Locale,
@@ -128,6 +129,29 @@ export function getAdminUsers(
     },
   });
 }
+
+export function getAdminInvitations(filters: { page?: number } = {}) {
+  return typedRequest("/admin/invitations", {
+    query: {
+      page: filters.page && filters.page > 1 ? String(filters.page) : undefined,
+    },
+  });
+}
+
+export const createAdminInvitation = (body: CreateAdminInvitationRequestDto) =>
+  typedRequest("/admin/invitations", { method: "POST", body });
+
+export const renewAdminInvitation = (id: string) =>
+  typedRequest("/admin/invitations/{id}/renew", {
+    method: "POST",
+    params: { id },
+  });
+
+export const revokeAdminInvitation = (id: string) =>
+  typedRequest("/admin/invitations/{id}/revoke", {
+    method: "POST",
+    params: { id },
+  });
 
 export function getAdminUserOptions(
   filters: { search?: string; page?: number; limit?: number } = {},

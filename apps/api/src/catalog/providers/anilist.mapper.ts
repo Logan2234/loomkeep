@@ -112,9 +112,20 @@ export function toMediaDetails(media: AnilistMedia): ProviderMediaDetails {
 export function toExtras(
   media: AnilistExtras | null,
   sourceId: string,
+  watchRegion: string,
 ): MediaExtrasDto {
   return {
-    watchProviders: { flatrate: [], rent: [], buy: [], link: null },
+    // AniList's streaming links name no country, so they can't say where a
+    // title is available: they stay in `externalLinks` only.
+    watchProviders: {
+      region: watchRegion,
+      flatrate: [],
+      free: [],
+      ads: [],
+      rent: [],
+      buy: [],
+      link: null,
+    },
     cast: (media?.characters?.edges ?? []).map((e) => {
       // Mirrors TMDB's actor→character pairing: the Japanese voice actor is
       // the named/pictured person, the character is the role underneath.

@@ -6,6 +6,7 @@ import { AppException } from "../common/app.exception";
 import { setAuthCookies } from "./auth-cookies";
 import { AuthController } from "./auth.controller";
 import type { AuthService } from "./auth.service";
+import type { InvitationService } from "./invitation.service";
 
 // Auth cookies are encrypted with a key derived from the JWT secrets, so the
 // helpers refuse to run without them — set before the module does any work.
@@ -56,7 +57,7 @@ function setCookies(headers: Record<string, unknown>): string[] {
 }
 
 function makeController(auth: Partial<AuthService> = {}) {
-  return new AuthController(auth as AuthService);
+  return new AuthController(auth as AuthService, {} as InvitationService);
 }
 
 describe("AuthController.register", () => {

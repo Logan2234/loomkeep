@@ -122,9 +122,10 @@
   function menuItems() {
     return Array.from(
       panelElement?.querySelectorAll<HTMLElement>(
-        '[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)',
+        ':is([role="menuitem"], [role="menuitemcheckbox"]):not([aria-disabled="true"]):not(:disabled)',
       ) ?? [],
-    );
+      // A DropdownSubmenu's items belong to its own menu and navigation.
+    ).filter((item) => item.closest('[role="menu"]') === panelElement);
   }
 
   function focusMenuItem(command: "next" | "previous" | "first" | "last") {

@@ -1,20 +1,32 @@
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { JobAlertService } from "./job-alert.service";
 import { JOB_KEYS } from "./job-keys";
 import { JobRunService } from "./job-run.service";
 
-function makeService() {
+function makeService(previousStatus?: "SUCCESS" | "FAILURE") {
   const prisma = {
     jobRun: {
       create: vi.fn().mockResolvedValue(undefined),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(previousStatus ? { status: previousStatus } : null),
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue(undefined),
     },
   };
+  const alerts = {
+    jobFailed: vi.fn().mockResolvedValue(undefined),
+    jobRecovered: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
-    service: new JobRunService(prisma as unknown as PrismaService),
+    service: new JobRunService(
+      prisma as unknown as PrismaService,
+      alerts as unknown as JobAlertService,
+    ),
     prisma,
+    alerts,
   };
 }
 
@@ -159,5 +171,81 @@ describe("JobRunService.record — run history", () => {
       }),
     });
     expect(prisma.jobRun.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("JobRunService.record — admin alerts", () => {
+  const fail = () => {
+    throw new Error("boom");
+  };
+
+  it("alerts on the first failure after a success", async () => {
+    const { service, alerts } = makeService("SUCCESS");
+
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => fail(),
+        () => "",
+      ),
+    ).rejects.toThrow("boom");
+
+    expect(alerts.jobFailed).toHaveBeenCalledWith(
+      JOB_KEYS.BACKUP,
+      expect.objectContaining({ message: "boom" }),
+    );
+  });
+
+  it("alerts when a job's very first run fails", async () => {
+    const { service, alerts } = makeService();
+
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => fail(),
+        () => "",
+      ),
+    ).rejects.toThrow("boom");
+
+    expect(alerts.jobFailed).toHaveBeenCalledOnce();
+  });
+
+  it("stays silent while a job keeps failing", async () => {
+    const { service, alerts } = makeService("FAILURE");
+
+    await expect(
+      service.record(
+        JOB_KEYS.BACKUP,
+        async () => fail(),
+        () => "",
+      ),
+    ).rejects.toThrow("boom");
+
+    expect(alerts.jobFailed).not.toHaveBeenCalled();
+  });
+
+  it("announces the recovery on the first success after a failure", async () => {
+    const { service, alerts } = makeService("FAILURE");
+
+    await service.record(
+      JOB_KEYS.BACKUP,
+      async () => "ok",
+      () => "",
+    );
+
+    expect(alerts.jobRecovered).toHaveBeenCalledWith(JOB_KEYS.BACKUP);
+  });
+
+  it("stays silent while a job keeps succeeding", async () => {
+    const { service, alerts } = makeService("SUCCESS");
+
+    await service.record(
+      JOB_KEYS.BACKUP,
+      async () => "ok",
+      () => "",
+    );
+
+    expect(alerts.jobRecovered).not.toHaveBeenCalled();
+    expect(alerts.jobFailed).not.toHaveBeenCalled();
   });
 });

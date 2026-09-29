@@ -4,6 +4,8 @@ import type {
   BookItemDto,
   BookReplayDto,
   BookSource,
+  BulkEntriesResultDto,
+  BulkEntriesTargetDto,
   PagedResult,
   PileSummaryDto,
   ReadingGoalDto,
@@ -24,6 +26,13 @@ import type {
   BookStatus as DbBookStatus,
   Prisma,
 } from "@prisma/client";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../common/bulk-entries.util";
 import { toDateOrNull } from "../common/date.util";
 import type {
   EntryStatusChange,
@@ -47,6 +56,7 @@ import { AchievementService } from "../gamification/achievements/achievement.ser
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/registry";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
@@ -59,6 +69,7 @@ import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
 import { AddBookReplayDto } from "./dto/add-book-replay.dto";
+import type { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
 import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
@@ -204,6 +215,7 @@ export class BookLibraryService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly lists: ListService,
     private readonly sessionXp?: SessionXpService,
   ) {}
 
@@ -393,6 +405,64 @@ export class BookLibraryService {
       "PAGES",
       entries.map((e) => bookPileItem(e.bookItem.pageCount, e.currentPage)),
     );
+  }
+
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateBookEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.bookEntry.findMany({
+      where: this.bulkWhere(userId, dto),
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        bookItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+        ownershipSource: true,
+      },
+    });
+    return applyBulkUpdate(
+      entries.map((e) => ({ ...e, itemId: e.bookItemId })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateBookEntryDto),
+        addToList: (itemId) =>
+          addToList(this.lists, userId, dto.listId!, "BOOK", itemId),
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    const entries = await this.prisma.bookEntry.findMany({
+      where: this.bulkWhere(userId, target),
+      select: { id: true },
+    });
+    return applyToEntries(entries, async (e) => {
+      await this.deleteEntry(userId, e.id);
+      return true;
+    });
+  }
+
+  private bulkWhere(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Prisma.BookEntryWhereInput {
+    return target.filters
+      ? this.entryWhere(userId, target.filters)
+      : { userId, id: { in: target.ids ?? [] } };
   }
 
   private entryWhere(

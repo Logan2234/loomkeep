@@ -1,4 +1,8 @@
-import type { PagedResult, PileSummaryDto } from "@loomkeep/shared";
+import type {
+  BulkEntriesResultDto,
+  PagedResult,
+  PileSummaryDto,
+} from "@loomkeep/shared";
 import {
   Domain,
   ErrorCode,
@@ -26,6 +30,10 @@ import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
@@ -35,6 +43,7 @@ import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddGameReplayDto } from "./dto/add-game-replay.dto";
+import { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { GameDetailResponseDto } from "./dto/game-detail-response.dto";
 import { GameEntryResponseDto } from "./dto/game-entry-response.dto";
@@ -202,6 +211,29 @@ export class GamesController {
     @Body() dto: UpdateGameEntryDto,
   ): Promise<GameEntryDto> {
     return this.gameLibraryService.updateEntry(user.sub, entryId, dto);
+  }
+
+  /** One change applied to many entries (UX-04), with a single update's side effects on each. */
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkUpdate(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkUpdateGameEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
+    return this.gameLibraryService.bulkUpdate(user.sub, dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk-delete")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkDelete(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkEntriesTargetBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
+    return this.gameLibraryService.bulkDelete(user.sub, dto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -385,6 +385,8 @@ export class UsersService {
         hideProgression: dto.hideProgression,
         spoilerSensitivity: dto.spoilerSensitivity,
         domainOrder: dto.domainOrder,
+        watchRegion: dto.watchRegion,
+        watchProviderIds: dto.watchProviderIds,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);

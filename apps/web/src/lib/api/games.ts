@@ -1,6 +1,10 @@
 import { getLocale } from "$lib/paraglide/runtime.js";
 import type {
+  BulkEntriesTargetDto,
+  BulkUpdateEntriesDto,
   CreateGameSessionDto,
+  GameOwnershipStatus,
+  GameStatus,
   UpdateGameEntryDto,
   UpdateGameSessionDto,
   UpsertGameEntryDto,
@@ -110,3 +114,10 @@ export const deleteGameSession = (sessionId: string): Promise<void> =>
     method: "DELETE",
     params: { id: sessionId },
   });
+
+export const bulkUpdateGameEntries = (
+  body: BulkUpdateEntriesDto<GameStatus, GameOwnershipStatus>,
+) => typedRequest("/games/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteGameEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/games/entries/bulk-delete", { method: "POST", body });
