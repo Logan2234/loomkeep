@@ -765,7 +765,7 @@ export class GameLibraryService {
       (await this.prisma.gamePlaythrough.create({
         data: {
           gameEntryId: entryId,
-          number: (latest?.number ?? 0) + 1,
+          number: 1,
           status: TrackingCycleStatus.ACTIVE,
           startedAt: new Date(),
         },

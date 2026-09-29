@@ -820,7 +820,7 @@ export class BookLibraryService {
       (await this.prisma.bookReading.create({
         data: {
           bookEntryId: entryId,
-          number: (latest?.number ?? 0) + 1,
+          number: 1,
           status: TrackingCycleStatus.ACTIVE,
           editionKey: entry.editionKey,
           referencePageCount: entry.referencePageCount,
