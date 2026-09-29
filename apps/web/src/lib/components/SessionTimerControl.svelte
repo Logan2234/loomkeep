@@ -129,7 +129,7 @@
           type="button"
           class="btn btn-primary"
           disabled={pauseMut.loading}
-          onclick={finish}>{m.session_timer_finish()}</button>
+          onclick={finish}>{m.common_finish()}</button>
         <button
           type="button"
           class="btn btn-ghost"

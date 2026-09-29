@@ -58,7 +58,7 @@
           class="h-16 w-32"
           numberClass="text-5xl" />
         <span class="text-dim text-sm font-bold"
-          >{m.session_minutes_short()}</span>
+          >{m.common_minutes_short()}</span>
       </span>
       {#if value >= 60}
         <span

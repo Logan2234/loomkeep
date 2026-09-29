@@ -837,7 +837,7 @@
                                 numberClass="text-base" />
                               <span
                                 class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold">
-                                min
+                                {m.common_minutes_short()}
                               </span>
                             </span>
                           </label>
