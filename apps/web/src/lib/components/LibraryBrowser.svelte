@@ -581,7 +581,7 @@
       UNDO_DELAY_MS,
       {
         label: m.common_cancel(),
-        run: () => {
+        onSelect: () => {
           if (pendingRemoval) clearTimeout(pendingRemoval.timer);
           pendingRemoval = null;
           restore();

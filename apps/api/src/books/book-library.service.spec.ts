@@ -138,6 +138,7 @@ describe("BookLibraryService.getPile", () => {
       stubXp(),
       stubAchievements(),
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.getPile("user-1", { statuses: ["PAUSED"] });
