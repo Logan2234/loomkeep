@@ -15,6 +15,7 @@ export type IconName =
   | "gamepad"
   | "book"
   | "book-open"
+  | "info"
   | "chevron-left"
   | "chevron-right"
   | "chevron-up"

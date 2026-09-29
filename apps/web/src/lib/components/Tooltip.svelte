@@ -210,7 +210,7 @@
         ? 'bottom'
         : 'top'};"
       transition:scale|global={{ duration: reduced ? 0 : 120, start: 0.9 }}
-      class="border-border bg-surface text-fg pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1rem))] rounded-lg border px-2.5 py-1.5 text-xs font-medium break-words whitespace-normal shadow-lg">
+      class="border-border bg-surface text-fg pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1rem))] rounded-lg border px-2.5 py-1.5 text-xs font-medium break-words whitespace-pre-line shadow-lg">
       {text}
     </span>
   {/if}

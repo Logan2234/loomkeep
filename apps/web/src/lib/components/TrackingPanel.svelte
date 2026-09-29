@@ -38,7 +38,7 @@
 </script>
 
 <div
-  class="tracking-panel border-border bg-surface mt-6 flex max-w-xl flex-col gap-4 rounded-xl border p-4 {reduced
+  class="tracking-panel border-border bg-surface mt-6 flex flex-col gap-4 rounded-xl border p-4 {reduced
     ? ''
     : 'tracking-panel-enter'}">
   <div class="flex items-center justify-between gap-2">

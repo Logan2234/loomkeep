@@ -9,8 +9,10 @@
   import { keys } from "$lib/api/keys";
   import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
+  import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import type { Domain, SessionTimerDto } from "@loomkeep/shared";
+  import { slide } from "svelte/transition";
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
 
@@ -28,6 +30,7 @@
     onFinish: (elapsedSeconds: number) => void;
   } = $props();
 
+  const reduced = prefersReducedMotion();
   let elapsedSeconds = $state(0);
   let confirmCancel = $state(false);
   const timerKey = keys.sessionTimer.current();
@@ -89,6 +92,7 @@
 
 {#if !timer}
   <button
+    transition:slide|global={{ duration: reduced ? 0 : 180 }}
     type="button"
     class="btn btn-ghost border-border border {compact
       ? 'px-3 text-sm'
@@ -100,6 +104,7 @@
   </button>
 {:else if isCurrentEntry}
   <div
+    transition:slide|global={{ duration: reduced ? 0 : 220 }}
     class="border-accent/35 bg-accent/6 w-full basis-full rounded-xl border p-3">
     <div class="flex items-center justify-between gap-3">
       <div>
@@ -135,6 +140,7 @@
   </div>
 {:else}
   <p
+    transition:slide|global={{ duration: reduced ? 0 : 180 }}
     class="border-border text-dim w-full basis-full rounded-xl border px-3 py-2.5 text-sm">
     {m.session_timer_other_work()}
   </p>

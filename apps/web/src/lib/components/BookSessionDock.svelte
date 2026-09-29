@@ -73,6 +73,7 @@
   let page = $state(1);
   let showAdd = $state(false);
   let showHistory = $state(false);
+  let historyDirection = $state(1);
   let editingId = $state<string | null>(null);
   let editDuration = $state(0);
   let editDate = $state(today);
@@ -136,6 +137,33 @@
       ? Math.max(0, displayedReferencePages - displayedCurrentPage)
       : null,
   );
+  const historyGroups = $derived.by(() => {
+    const groups: {
+      key: string;
+      label: string;
+      sessions: BookSessionDto[];
+      totalMinutes: number;
+    }[] = [];
+    const groupsByKey = new Map<string, (typeof groups)[number]>();
+    for (const session of summary?.items ?? []) {
+      const key = String(session.readingNumber ?? "standalone");
+      const existing = groupsByKey.get(key);
+      if (!existing) {
+        const group = {
+          key,
+          label: historyGroupLabel(session),
+          sessions: [session],
+          totalMinutes: session.durationMinutes,
+        };
+        groups.push(group);
+        groupsByKey.set(key, group);
+      } else {
+        existing.sessions.push(session);
+        existing.totalMinutes += session.durationMinutes;
+      }
+    }
+    return groups;
+  });
 
   const createMut = createApiMutation<
     CreateBookSessionDto,
@@ -339,8 +367,15 @@
 
   function openHistory() {
     page = 1;
+    historyDirection = 1;
     editingId = null;
     showHistory = true;
+  }
+
+  function changeHistoryPage(nextPage: number) {
+    historyDirection = nextPage > page ? 1 : -1;
+    editingId = null;
+    page = nextPage;
   }
 
   function beginEdit(session: BookSessionDto) {
@@ -395,23 +430,18 @@
             class="font-display mt-0.5 text-xl font-bold">
             {m.book_cycle_current({ number: displayedReading?.number ?? 1 })}
           </h3>
-          <p class="text-dim mt-1 flex flex-wrap gap-x-1 text-xs">
-            {#if displayedReferencePages}
-              <span
-                >{m.book_session_reference({
-                  count: displayedReferencePages,
-                })}</span>
-            {/if}
-            {#if displayedReading?.startedAt}
-              <span aria-hidden="true">·</span>
-              <span
-                >{m.book_cycle_started({
-                  date: formatDate(displayedReading.startedAt),
-                })}</span>
-            {/if}
-          </p>
+          {#if displayedReading?.startedAt}
+            <p class="text-dim mt-1 text-xs">
+              {m.book_cycle_started({
+                date: formatDate(displayedReading.startedAt),
+              })}
+            </p>
+          {/if}
         </div>
-        <TrackingStatusBadge domain="BOOKS" status={entry.status} />
+        <div class="flex items-center gap-2">
+          {#if isFeatureNew("sessions")}<NewBadge />{/if}
+          <TrackingStatusBadge domain="BOOKS" status={entry.status} />
+        </div>
       </header>
 
       <div
@@ -428,34 +458,24 @@
                 progress: progressPct,
               })}
             </p>
-            <div class="text-dim mt-4 flex justify-between gap-3 text-xs">
-              <span>
-                {displayedReading
-                  ? m.book_cycle_progress_label({
-                      number: displayedReading.number,
-                    })
-                  : m.book_session_progress()}
-              </span>
-              {#if remainingPages !== null}
-                <span class="tabular-nums"
-                  >{m.book_cycle_remaining({ count: remainingPages })}</span>
-              {/if}
-            </div>
+            {#if remainingPages !== null}
+              <p class="text-dim mt-4 text-right text-xs tabular-nums">
+                {m.book_cycle_remaining({ count: remainingPages })}
+              </p>
+            {/if}
             <ProgressBar
               value={progressPct}
               label={m.book_session_progress()}
               height="h-2.5"
-              fillClass="bg-accent [clip-path:polygon(0_0,100%_0,calc(100%_-_5px)_50%,100%_100%,0_100%)]"
+              fillClass="bg-accent"
+              endCap="bookmark"
               class="mt-2" />
           {/if}
         </div>
 
         <div>
           <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <h4 class="font-display font-bold">{m.session_week()}</h4>
-              {#if isFeatureNew("sessions")}<NewBadge />{/if}
-            </div>
+            <h4 class="font-display font-bold">{m.session_week()}</h4>
             <p class="text-dim text-xs tabular-nums">
               {weeklySummary(
                 summary?.weekSessions ?? 0,
@@ -761,155 +781,213 @@
     {#if sessionsQuery.error}
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}
-      <ol
-        class="before:bg-border relative before:absolute before:top-3 before:bottom-3 before:left-1.5 before:w-px">
-        {#each summary.items as session, index (session.id)}
-          {#if index === 0 || summary.items[index - 1]?.readingNumber !== session.readingNumber}
-            <li
-              class="relative flex items-center gap-3 pt-5 pb-1 pl-7 first:pt-0">
-              <span
-                class="border-border bg-surface text-fg rounded-full border px-2.5 py-1 text-xs font-bold">
-                {historyGroupLabel(session)}
-              </span>
-              <span class="bg-border h-px flex-1" aria-hidden="true"></span>
-            </li>
-          {/if}
-          <li
-            in:fly|global={{
-              y: reduced ? 0 : 8,
-              duration: reduced ? 0 : 220,
-              delay: reduced ? 0 : Math.min(index * 35, 175),
-            }}
-            class="border-border group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b py-4 pl-7 last:border-b-0 sm:grid-cols-[7.5rem_minmax(0,1fr)_auto] sm:gap-x-5">
-            <span
-              class="bg-accent ring-bg absolute top-[1.35rem] left-0.5 h-2.5 w-2.5 rounded-full ring-4"
-              aria-hidden="true"></span>
-            <time
-              class="text-dim col-span-2 mb-1 text-xs tabular-nums sm:col-span-1 sm:mb-0">
-              {formatDate(session.occurredAt)}
-            </time>
-            {#if editingId === session.id}
-              <div class="col-span-2 min-w-0">
-                <div class="grid gap-2 sm:grid-cols-2">
-                  <AnimatedNumberInput
-                    bind:value={editDuration}
-                    label={m.session_duration()}
-                    min={1}
-                    max={MAX_SESSION_DURATION_MINUTES}
-                    class="border-border bg-bg h-10 w-full"
-                    numberClass="text-sm" />
-                  <input
-                    class="input"
-                    type="date"
-                    max={today}
-                    bind:value={editDate}
-                    aria-label={m.session_date()} />
+      {#key page}
+        <div
+          in:fly|global={{
+            x: reduced ? 0 : historyDirection * 28,
+            duration: reduced ? 0 : 220,
+          }}
+          out:fly|global={{
+            x: reduced ? 0 : historyDirection * -28,
+            duration: reduced ? 0 : 180,
+          }}
+          class="space-y-3">
+          {#each historyGroups as group, groupIndex (group.key)}
+            <section
+              in:fly|global={{
+                y: reduced ? 0 : 10,
+                duration: reduced ? 0 : 220,
+                delay: reduced ? 0 : Math.min(groupIndex * 55, 165),
+              }}
+              class="border-border bg-bg/35 overflow-hidden rounded-xl border">
+              <header
+                class="border-border bg-surface/70 flex items-center justify-between gap-3 border-b px-4 py-2.5">
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class="bg-accent h-5 w-1 rounded-full"
+                    aria-hidden="true"></span>
+                  <h4 class="text-sm font-bold">{group.label}</h4>
                 </div>
-                <SegmentedControl
-                  options={pageModeOptions}
-                  value={editMode}
-                  onChange={(next) => (editMode = next)}
-                  label={m.book_session_pages()}
-                  class="mt-2 w-full [&>button]:flex-1 [&>button]:justify-center" />
-                {#if editMode === "quantity"}
-                  <AnimatedNumberInput
-                    bind:value={editPagesRead}
-                    label={m.book_session_pages()}
-                    min={1}
-                    max={referencePages ?? undefined}
-                    class="border-border bg-bg mt-2 h-10 w-full"
-                    numberClass="text-sm" />
-                {:else}
-                  <div class="mt-2 grid grid-cols-2 gap-2">
-                    <AnimatedNumberInput
-                      bind:value={editStartPage}
-                      label={m.book_session_start_page()}
-                      min={0}
-                      max={referencePages ?? undefined}
-                      class="border-border bg-bg h-10 w-full min-w-0"
-                      numberClass="text-sm" />
-                    <AnimatedNumberInput
-                      bind:value={editEndPage}
-                      label={m.book_session_end_page()}
-                      min={1}
-                      max={referencePages ?? undefined}
-                      class="border-border bg-bg h-10 w-full min-w-0"
-                      numberClass="text-sm" />
-                  </div>
-                {/if}
-                <label class="mt-2 block">
-                  <span class="sr-only">{m.session_notes()}</span>
-                  <textarea
-                    class="input min-h-24 w-full resize-y"
-                    maxlength="1000"
-                    placeholder={m.book_session_notes_placeholder()}
-                    bind:value={editNotes}></textarea>
-                </label>
-                <div class="mt-2 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    class="btn btn-ghost text-xs"
-                    onclick={() => (editingId = null)}>
-                    {m.common_cancel()}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-primary text-xs"
-                    disabled={updateMut.loading}
-                    onclick={() => saveEdit(session.id)}>
-                    {m.common_save()}
-                  </button>
-                </div>
-              </div>
-            {:else}
-              <div class="min-w-0">
-                <p class="text-sm font-semibold">{historyItemTitle(session)}</p>
-                {#if session.notes}
-                  <p
-                    class="text-dim mt-1 text-sm leading-relaxed whitespace-pre-line">
-                    « {session.notes} »
-                  </p>
-                {/if}
-              </div>
-              <div class="flex items-start gap-2">
-                <span
-                  class="font-display pt-0.5 text-sm font-bold tabular-nums">
-                  {formatSessionMinutes(session.durationMinutes)}
-                </span>
-                <div
-                  class="flex opacity-60 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-                  <button
-                    type="button"
-                    class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg p-1.5 transition-colors"
-                    aria-label={m.session_edit()}
-                    onclick={() => beginEdit(session)}>
-                    <Icon name="edit" class="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    class="text-dim hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors"
-                    aria-label={m.session_delete()}
-                    onclick={() => (deletingId = session.id)}>
-                    <Icon name="trash" class="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            {/if}
-          </li>
-        {/each}
-      </ol>
+                <p class="text-dim text-xs tabular-nums">
+                  {weeklySummary(group.sessions.length, group.totalMinutes)}
+                </p>
+              </header>
+              <ol
+                class="before:bg-border relative before:absolute before:top-5 before:bottom-5 before:left-5 before:w-px">
+                {#each group.sessions as session (session.id)}
+                  <li
+                    class="border-border group relative border-b py-4 pr-3 pl-10 last:border-b-0 sm:pr-4">
+                    <span
+                      class="bg-accent ring-bg absolute top-[1.35rem] left-4 h-2.5 w-2.5 rounded-full ring-4"
+                      aria-hidden="true"></span>
+                    {#if editingId === session.id}
+                      <div
+                        class="border-border bg-surface/60 min-w-0 rounded-xl border p-3">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          <label
+                            class="flex flex-col gap-1.5 text-xs font-semibold">
+                            <span>{m.session_duration()}</span>
+                            <span class="relative">
+                              <AnimatedNumberInput
+                                bind:value={editDuration}
+                                label={m.session_duration()}
+                                min={1}
+                                max={MAX_SESSION_DURATION_MINUTES}
+                                class="border-border bg-bg h-11 w-full"
+                                numberClass="text-base" />
+                              <span
+                                class="text-dim pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold">
+                                min
+                              </span>
+                            </span>
+                          </label>
+                          <label
+                            class="flex flex-col gap-1.5 text-xs font-semibold">
+                            <span>{m.session_date()}</span>
+                            <input
+                              class="input"
+                              type="date"
+                              max={today}
+                              bind:value={editDate} />
+                          </label>
+                        </div>
+                        <SegmentedControl
+                          options={pageModeOptions}
+                          value={editMode}
+                          onChange={(next) => (editMode = next)}
+                          label={m.book_session_pages()}
+                          class="mt-3 w-full [&>button]:flex-1 [&>button]:justify-center" />
+                        {#if editMode === "quantity"}
+                          <label
+                            class="mt-3 flex flex-col gap-1.5 text-xs font-semibold">
+                            <span>{m.book_session_pages()}</span>
+                            <AnimatedNumberInput
+                              bind:value={editPagesRead}
+                              label={m.book_session_pages()}
+                              min={1}
+                              max={referencePages ?? undefined}
+                              class="border-border bg-bg h-11 w-full"
+                              numberClass="text-base" />
+                          </label>
+                        {:else}
+                          <div class="mt-3 grid grid-cols-2 gap-3">
+                            <label
+                              class="flex min-w-0 flex-col gap-1.5 text-xs font-semibold">
+                              <span>{m.book_session_start_page()}</span>
+                              <AnimatedNumberInput
+                                bind:value={editStartPage}
+                                label={m.book_session_start_page()}
+                                min={0}
+                                max={referencePages ?? undefined}
+                                class="border-border bg-bg h-11 w-full min-w-0"
+                                numberClass="text-base" />
+                            </label>
+                            <label
+                              class="flex min-w-0 flex-col gap-1.5 text-xs font-semibold">
+                              <span>{m.book_session_end_page()}</span>
+                              <AnimatedNumberInput
+                                bind:value={editEndPage}
+                                label={m.book_session_end_page()}
+                                min={1}
+                                max={referencePages ?? undefined}
+                                class="border-border bg-bg h-11 w-full min-w-0"
+                                numberClass="text-base" />
+                            </label>
+                          </div>
+                        {/if}
+                        <label
+                          class="mt-3 flex flex-col gap-1.5 text-xs font-semibold">
+                          <span>
+                            {m.session_notes()}
+                            <span class="text-dim font-normal"
+                              >{m.common_optional_marker()}</span>
+                          </span>
+                          <textarea
+                            class="input min-h-24 w-full resize-y"
+                            maxlength="1000"
+                            placeholder={m.book_session_notes_placeholder()}
+                            bind:value={editNotes}></textarea>
+                        </label>
+                        <div class="mt-2 flex justify-end gap-2">
+                          <button
+                            type="button"
+                            class="btn btn-ghost text-xs"
+                            onclick={() => (editingId = null)}>
+                            {m.common_cancel()}
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-primary text-xs"
+                            disabled={updateMut.loading}
+                            onclick={() => saveEdit(session.id)}>
+                            {m.common_save()}
+                          </button>
+                        </div>
+                      </div>
+                    {:else}
+                      <div
+                        class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[7.5rem_minmax(0,1fr)_auto] sm:gap-x-5">
+                        <time
+                          class="text-dim col-span-2 mb-1 text-xs tabular-nums sm:col-span-1 sm:mb-0">
+                          {formatDate(session.occurredAt)}
+                        </time>
+                        <div class="min-w-0">
+                          <p class="text-sm font-semibold">
+                            {historyItemTitle(session)}
+                          </p>
+                          {#if session.notes}
+                            <p
+                              class="text-dim mt-1 text-sm leading-relaxed whitespace-pre-line">
+                              « {session.notes} »
+                            </p>
+                          {/if}
+                        </div>
+                        <div class="flex items-start gap-2">
+                          <span
+                            class="font-display pt-0.5 text-sm font-bold tabular-nums">
+                            {formatSessionMinutes(session.durationMinutes)}
+                          </span>
+                          <div
+                            class="flex opacity-60 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                            <button
+                              type="button"
+                              class="text-dim hover:bg-surface-2 hover:text-fg rounded-lg p-1.5 transition-colors"
+                              aria-label={m.session_edit()}
+                              onclick={() => beginEdit(session)}>
+                              <Icon name="edit" class="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              class="text-dim hover:bg-danger/10 hover:text-danger rounded-lg p-1.5 transition-colors"
+                              aria-label={m.session_delete()}
+                              onclick={() => (deletingId = session.id)}>
+                              <Icon name="trash" class="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
+              </ol>
+            </section>
+          {/each}
+        </div>
+      {/key}
       {#if page > 1 || summary.hasMore}
         <div class="mt-3 flex justify-between gap-2">
           <button
             type="button"
             class="btn-text text-xs"
             disabled={page === 1}
-            onclick={() => page--}>← {m.session_previous()}</button>
+            onclick={() => changeHistoryPage(page - 1)}
+            >← {m.session_previous()}</button>
           <button
             type="button"
             class="btn-text text-xs"
             disabled={!summary.hasMore}
-            onclick={() => page++}>{m.session_next()} →</button>
+            onclick={() => changeHistoryPage(page + 1)}
+            >{m.session_next()} →</button>
         </div>
       {/if}
     {:else if !sessionsQuery.loading}

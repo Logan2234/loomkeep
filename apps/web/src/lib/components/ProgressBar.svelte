@@ -22,6 +22,8 @@
      * (e.g. a per-item stat color) that isn't a Tailwind class. */
     fillStyle?: string;
     rounded?: boolean;
+    /** Optional subject-specific marker at the trailing edge of the fill. */
+    endCap?: "bookmark";
     /** Tooltip on the fill, e.g. "6 / 62 episodes". */
     title?: string;
     class?: string;
@@ -36,6 +38,7 @@
     fillClass = "bg-accent",
     fillStyle = "",
     rounded = true,
+    endCap,
     title,
     class: cls = "",
   }: Props = $props();
@@ -100,11 +103,14 @@
   aria-valuemin={value === null ? undefined : 0}
   aria-valuemax={value === null ? undefined : 100}
   aria-valuenow={value === null ? undefined : clamped}
-  class="{track} {height} overflow-hidden {rounded
-    ? 'rounded-full'
-    : ''} {cls}">
+  class="{track} {height} {endCap
+    ? 'overflow-visible'
+    : 'overflow-hidden'} {rounded ? 'rounded-full' : ''} {cls}">
   <div
-    class="progress-fill {value === null
+    data-end-cap={endCap}
+    class="progress-fill {endCap === 'bookmark' && displayValue > 0
+      ? 'progress-bookmark'
+      : ''} {value === null
       ? 'progress-indeterminate'
       : ''} {fillClass} h-full {rounded ? 'rounded-full' : ''} {completing
       ? 'progress-complete'
@@ -123,6 +129,22 @@
 
   .progress-indeterminate {
     animation: progress-indeterminate 1.2s ease-in-out infinite;
+  }
+
+  .progress-bookmark {
+    position: relative;
+  }
+
+  .progress-bookmark::after {
+    position: absolute;
+    top: 50%;
+    right: -5px;
+    width: 10px;
+    height: 18px;
+    background: var(--accent);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+    content: "";
+    transform: translateY(-50%);
   }
 
   @keyframes progress-indeterminate {

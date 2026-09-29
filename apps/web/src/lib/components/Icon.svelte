@@ -64,6 +64,9 @@
   {:else if name === "book-open"}
     <path d="M3 5.5c3.2-.9 6-.3 9 1.7v13c-3-2-5.8-2.6-9-1.7Z" />
     <path d="M21 5.5c-3.2-.9-6-.3-9 1.7v13c3-2 5.8-2.6 9-1.7Z" />
+  {:else if name === "info"}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v6M12 7h.01" />
   {:else if name === "chevron-left"}
     <path d="M15 6l-6 6 6 6" />
   {:else if name === "chevron-right"}

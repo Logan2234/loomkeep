@@ -7,8 +7,8 @@ const trigger = createRawSnippet(() => ({
   render: () => `<button type="button">Share</button>`,
 }));
 
-function renderTooltip() {
-  render(Tooltip, { props: { text: "Copy the link", children: trigger } });
+function renderTooltip(text = "Copy the link") {
+  render(Tooltip, { props: { text, children: trigger } });
   return screen.getByRole("button", { name: "Share" });
 }
 
@@ -34,5 +34,17 @@ describe("Tooltip", () => {
 
     share.blur();
     await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  });
+
+  it("preserves deliberate line breaks in supporting details", async () => {
+    const share = renderTooltip(
+      "Steam remains authoritative.\nLast sync: today",
+    );
+
+    share.focus();
+
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip.classList.contains("whitespace-pre-line")).toBe(true);
+    expect(tooltip.textContent).toContain("\nLast sync: today");
   });
 });
