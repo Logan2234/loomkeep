@@ -1,7 +1,9 @@
 <script lang="ts">
   import { m } from "$lib/paraglide/messages.js";
-  import { formatSessionMinutes } from "$lib/session-presentation";
-  import { MAX_SESSION_DURATION_MINUTES } from "@loomkeep/shared";
+  import {
+    formatSessionMinutes,
+    MAX_SESSION_DURATION_MINUTES,
+  } from "$lib/session-presentation";
   import AnimatedNumberInput from "./AnimatedNumberInput.svelte";
   import Icon from "./Icon.svelte";
 

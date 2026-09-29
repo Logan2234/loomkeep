@@ -16,10 +16,10 @@
   import {
     formatSessionMinutes,
     localDateInput,
+    MAX_SESSION_DURATION_MINUTES,
     sessionDateToIso,
   } from "$lib/session-presentation";
   import { toast } from "$lib/toast.svelte";
-  import { MAX_SESSION_DURATION_MINUTES } from "@loomkeep/shared";
   import type {
     BookEntryDto,
     BookSessionDto,

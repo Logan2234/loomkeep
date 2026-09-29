@@ -20,7 +20,7 @@ describe("AnimatedNumberInput", () => {
     await user.clear(input);
     await user.type(input, "10000");
     expect(input.value).toBe("9999");
-    await fireEvent.blur(input);
+    await user.tab();
     expect(input.value).toBe("9999");
   });
 });
