@@ -19,6 +19,7 @@
     searchable = false,
     searchPlaceholder,
     selectedLabel,
+    emptySelection,
     loading = false,
     hasMore = false,
     name,
@@ -36,6 +37,8 @@
     searchPlaceholder?: string;
     /** Label retained when a server-selected value is outside the current page. */
     selectedLabel?: string;
+    /** What an empty multiselect reads as, when it isn't "no filter". */
+    emptySelection?: string;
     loading?: boolean;
     hasMore?: boolean;
     name?: string;
@@ -60,7 +63,9 @@
       ? m.common_selection_summary({
           label,
           selection:
-            values.length === 0 ? m.common_all() : String(values.length),
+            values.length === 0
+              ? (emptySelection ?? m.common_all())
+              : String(values.length),
         })
       : (selectedOption?.label ?? selectedLabel ?? label),
   );
@@ -225,7 +230,7 @@
       role={searchable ? undefined : "combobox"}
       class="inline-flex max-w-[calc(100vw-1rem)] items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-40 {multiselect &&
       values.length > 0
-        ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
+        ? 'border-accent text-accent'
         : 'border-border text-dim hover:text-fg'}"
       aria-haspopup="listbox"
       aria-expanded={open}

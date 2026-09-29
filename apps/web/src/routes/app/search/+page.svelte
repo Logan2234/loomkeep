@@ -1,18 +1,23 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { keys } from "$lib/api/keys";
+  import { resolveLink } from "$lib/api/links";
+  import { createApiQuery } from "$lib/api/query.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import PageHeader from "$lib/components/PageHeader.svelte";
   import BookSearchPanel from "$lib/components/search/BookSearchPanel.svelte";
   import GameSearchPanel from "$lib/components/search/GameSearchPanel.svelte";
   import MediaSearchPanel from "$lib/components/search/MediaSearchPanel.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
+  import QuickAddPanel from "$lib/components/QuickAddPanel.svelte";
   import ScanIsbnModal from "$lib/components/ScanIsbnModal.svelte";
   import { DOMAINS } from "$lib/constants/domains";
   import { debounce } from "$lib/debounce";
   import { isDomainEnabled } from "$lib/domains";
   import { layout } from "$lib/layout.svelte";
   import { m } from "$lib/paraglide/messages";
+  import { quickAddTarget } from "$lib/quick-add";
   import { isPastedLink } from "$lib/share-link";
   import { Domain, type MediaType } from "@loomkeep/shared";
 
@@ -39,6 +44,20 @@
   );
 
   const pastedLink = $derived(isPastedLink(query) ? query.trim() : null);
+
+  // A pasted link to a work gets the same quick-add panel as a share (UX-09):
+  // iOS and desktop browsers have no share sheet to reach it through.
+  const linkQuery = createApiQuery(() => ({
+    key: keys.links.resolve(pastedLink ?? ""),
+    fetch: () => resolveLink(pastedLink!),
+    enabled: pastedLink !== null,
+  }));
+  const pastedHref = $derived(
+    pastedLink ? (linkQuery.data?.match?.href ?? null) : null,
+  );
+  const pastedWork = $derived(
+    pastedHref !== null && quickAddTarget(pastedHref) !== null,
+  );
 
   // Planned domains show a "coming soon" placeholder instead of a search panel.
   const comingSoon = $derived(DOMAINS[domain]?.comingSoon ?? false);
@@ -299,7 +318,15 @@
     </div>
   </div>
 
-  {#if pastedLink}
+  {#if pastedLink && pastedWork}
+    {#key pastedHref}
+      <div class="max-w-xl">
+        <QuickAddPanel href={pastedHref!} link={pastedLink} />
+      </div>
+    {/key}
+  {:else if pastedLink && linkQuery.loading}
+    <div class="card h-40 max-w-xl animate-pulse" aria-busy="true"></div>
+  {:else if pastedLink}
     <section class="card p-5">
       <h2 class="font-display text-lg font-bold">{m.search_link_title()}</h2>
       <p class="text-dim mt-1 text-sm">{m.search_link_body()}</p>

@@ -6,7 +6,9 @@
   import { createApiQuery } from "$lib/api/query.svelte";
   import BootSplash from "$lib/components/BootSplash.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
+  import QuickAddPanel from "$lib/components/QuickAddPanel.svelte";
   import { m } from "$lib/paraglide/messages";
+  import { quickAddTarget } from "$lib/quick-add";
   import { readSharedLink } from "$lib/share-link";
 
   const { link, searchTerm } = readSharedLink(page.url.searchParams);
@@ -19,19 +21,26 @@
   }));
 
   const target = $derived(resolved.data?.match?.href ?? null);
+  // A work gets the quick-add panel (UX-09); any other page opens as is.
+  const quickAdd = $derived(target !== null && quickAddTarget(target) !== null);
   const settled = $derived(
     link === null || resolved.error !== null || resolved.data !== null,
   );
   const unrecognized = $derived(settled && !target && !searchTerm);
 
   $effect(() => {
+    if (quickAdd) return;
     if (target) void goto(target, { replaceState: true });
     else if (settled && searchTerm)
       void goto(searchHref, { replaceState: true });
   });
 </script>
 
-{#if unrecognized}
+{#if quickAdd}
+  <div class="mx-auto w-full max-w-md px-4 py-6 md:py-10">
+    <QuickAddPanel href={target!} link={link!} shared />
+  </div>
+{:else if unrecognized}
   <div class="mx-auto flex h-full max-w-2xl items-center px-5 py-10 md:px-8">
     <EmptyState>
       <p class="font-display text-fg text-lg font-bold">
