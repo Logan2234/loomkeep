@@ -78,6 +78,7 @@ describe("MusicLibraryService.deleteEntry", () => {
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       stubEvents(),
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -129,6 +130,7 @@ describe("MusicLibraryService — XP wiring", () => {
       } as unknown as import("../social/activity.service").ActivityService,
       xp,
       events,
+      {} as import("../lists/list.service").ListService,
     );
 
     await service.upsertEntry("user-1", {

@@ -1,4 +1,6 @@
 import type {
+  BulkEntriesResultDto,
+  BulkEntriesTargetDto,
   MusicDetailDto,
   MusicEntryDto,
   MusicItemDto,
@@ -19,6 +21,13 @@ import type {
   MusicItem,
   Prisma,
 } from "@prisma/client";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../common/bulk-entries.util";
 import { toDateOrNull } from "../common/date.util";
 import type {
   EntryStatusChange,
@@ -38,10 +47,12 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
 import { MUSIC_PILE_STATUSES, summarizePile } from "../stats/pile.util";
+import type { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
 import { MusicItemService } from "./music-item.service";
@@ -137,6 +148,7 @@ export class MusicLibraryService {
     private readonly activity: ActivityService,
     private readonly xp: XpService,
     private readonly events: EventsGateway,
+    private readonly lists: ListService,
   ) {}
 
   /** Emits the status milestone + FAVORITED events for a music entry write. */
@@ -315,6 +327,63 @@ export class MusicLibraryService {
         estimated: false,
       })),
     );
+  }
+
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateMusicEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.musicEntry.findMany({
+      where: this.bulkWhere(userId, dto),
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        musicItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+      },
+    });
+    return applyBulkUpdate(
+      entries.map((e) => ({ ...e, itemId: e.musicItemId })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateMusicEntryDto),
+        addToList: (itemId) =>
+          addToList(this.lists, userId, dto.listId!, "MUSIC", itemId),
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    const entries = await this.prisma.musicEntry.findMany({
+      where: this.bulkWhere(userId, target),
+      select: { id: true },
+    });
+    return applyToEntries(entries, async (e) => {
+      await this.deleteEntry(userId, e.id);
+      return true;
+    });
+  }
+
+  private bulkWhere(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Prisma.MusicEntryWhereInput {
+    return target.filters
+      ? this.entryWhere(userId, target.filters)
+      : { userId, id: { in: target.ids ?? [] } };
   }
 
   private entryWhere(

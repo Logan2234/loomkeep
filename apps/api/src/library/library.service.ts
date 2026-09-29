@@ -1,4 +1,6 @@
 import type {
+  BulkEntriesResultDto,
+  BulkEntriesTargetDto,
   CalendarEntryDto,
   CatalogSource,
   EntryEpisodesResponseDto,
@@ -35,6 +37,13 @@ import type {
 } from "@prisma/client";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../common/bulk-entries.util";
 import { toDateOrNull } from "../common/date.util";
 import type {
   EntryStatusChange,
@@ -60,12 +69,14 @@ import {
   isSeriesComplete,
 } from "../gamification/xp-verifiers";
 import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
 import { summarizePile } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
+import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
@@ -193,6 +204,7 @@ export class LibraryService {
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
+    private readonly lists: ListService,
   ) {}
 
   /** First touch of a media persists it (on-demand cache), then upserts the entry. */
@@ -440,6 +452,113 @@ export class LibraryService {
    * what SQL couldn't — shared by the list and the pile so the header's
    * figure always covers exactly what the list shows.
    */
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: { userId, id: { in: await this.bulkTargetIds(userId, dto) } },
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        mediaItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+        mediaItem: { select: { type: true } },
+      },
+    });
+    const types = new Map(entries.map((e) => [e.id, e.mediaItem.type]));
+
+    return applyBulkUpdate(
+      entries.map((e) => ({
+        id: e.id,
+        itemId: e.mediaItemId,
+        status: e.status,
+        favorite: e.favorite,
+        ownershipStatus: e.ownershipStatus,
+      })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateEntryDto),
+        addToList: (itemId) =>
+          addToList(this.lists, userId, dto.listId!, "MEDIA", itemId),
+        setStatus: async (entry, status) => {
+          // A series is complete once its episodes are watched: every aired
+          // one gets marked, as the season buttons do, and the status follows.
+          if (
+            status === EntryStatus.COMPLETED &&
+            types.get(entry.id) !== MediaType.MOVIE
+          ) {
+            if (entry.status === EntryStatus.UP_TO_DATE) return false;
+            return this.watchAllAired(userId, entry.itemId);
+          }
+
+          await this.updateEntry(userId, entry.id, {
+            status,
+          } as UpdateEntryDto);
+          return true;
+        },
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    return applyToEntries(
+      await this.bulkTargetIds(userId, target),
+      async (id) => {
+        await this.deleteEntry(userId, id);
+        return true;
+      },
+    );
+  }
+
+  /** The user's own picks, or every entry the list shows under the filters. */
+  private async bulkTargetIds(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<string[]> {
+    if (!target.filters) {
+      const owned = await this.prisma.libraryEntry.findMany({
+        where: { userId, id: { in: target.ids ?? [] } },
+        select: { id: true },
+      });
+      return owned.map((e) => e.id);
+    }
+
+    const { rows, keep } = this.filteredRows(userId, target.filters);
+    return (await rows("recent")).filter(keep).map((row) => row.id);
+  }
+
+  /** Every aired episode of every regular season watched (specials never count, as for progress). */
+  private async watchAllAired(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<boolean> {
+    const seasons = await this.prisma.season.findMany({
+      where: { mediaItemId, number: { not: 0 }, episodes: { some: {} } },
+      orderBy: { number: "asc" },
+      select: { id: true },
+    });
+
+    for (const season of seasons) {
+      await this.watchSeason(userId, season.id);
+    }
+
+    return seasons.length > 0;
+  }
+
   private filteredRows(userId: string, filters: ListEntriesFilters) {
     const q = searchTerm(filters)?.toLowerCase();
     const where: Prisma.LibraryEntryWhereInput = {
