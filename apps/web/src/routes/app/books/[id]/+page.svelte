@@ -30,6 +30,7 @@
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "$lib/components/TrackingPanel.svelte";
+  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
   import {
     BOOK_OWNERSHIP_SOURCES,
@@ -261,13 +262,7 @@
                 </span>
               {/if}
               {#if entry}
-                <span
-                  title={STATUS_DESC[entry.status]}
-                  class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                    entry.status
-                  ].cls}">
-                  {STATUS_META[entry.status].label}
-                </span>
+                <TrackingStatusBadge domain="BOOKS" status={entry.status} />
               {/if}
             </div>
             <h1

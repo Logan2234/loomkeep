@@ -28,6 +28,7 @@
   import ReviewsSection from "$lib/components/ReviewsSection.svelte";
   import SegmentedStatusControl from "$lib/components/SegmentedStatusControl.svelte";
   import TrackingPanel from "$lib/components/TrackingPanel.svelte";
+  import TrackingStatusBadge from "$lib/components/TrackingStatusBadge.svelte";
   import { appConfig } from "$lib/config.svelte";
   import { IGDB_API } from "$lib/constants/external-links";
   import {
@@ -264,13 +265,7 @@
                 <img src={url} alt={m.game_age_rating()} class="h-6 rounded" />
               {/each}
               {#if entry}
-                <span
-                  title={STATUS_DESC[entry.status]}
-                  class="rounded-full px-2.5 py-0.5 text-xs font-bold {STATUS_META[
-                    entry.status
-                  ].cls}">
-                  {STATUS_META[entry.status].label}
-                </span>
+                <TrackingStatusBadge domain="GAMES" status={entry.status} />
               {/if}
             </div>
             <h1

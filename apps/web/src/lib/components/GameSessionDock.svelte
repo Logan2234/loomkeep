@@ -40,6 +40,7 @@
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
   import Switch from "./Switch.svelte";
+  import TrackingStatusBadge from "./TrackingStatusBadge.svelte";
 
   let { entry, detailKey }: { entry: GameEntryDto; detailKey: QueryKey } =
     $props();
@@ -70,9 +71,24 @@
   const summary = $derived(sessionsQuery.data);
   const totalSessions = $derived(summary?.totalSessions ?? 0);
   const activePlaythrough = $derived(summary?.activePlaythrough ?? null);
+  const completedPlaythroughs = $derived(
+    entry.playthroughs.filter(
+      (playthrough) => playthrough.status === "COMPLETED",
+    ),
+  );
   const lastFinishedPlaythrough = $derived(
     entry.playthroughs.find((playthrough) => playthrough.status !== "ACTIVE") ??
       null,
+  );
+  const displayedPlaythrough = $derived(
+    activePlaythrough ??
+      entry.playthroughs.find(
+        (playthrough) => playthrough.status === "ACTIVE",
+      ) ??
+      lastFinishedPlaythrough,
+  );
+  const displayedPlaythroughIsActive = $derived(
+    displayedPlaythrough?.status === "ACTIVE",
   );
 
   const createMut = createApiMutation<
@@ -208,7 +224,13 @@
   function historyItemTitle(session: GameSessionDto): string {
     return session.playthroughNumber === null
       ? m.game_session_history_standalone()
-      : m.game_session_history_item({ number: session.playthroughNumber });
+      : m.game_session_history_item();
+  }
+
+  function historyGroupLabel(session: GameSessionDto): string {
+    return session.playthroughNumber === null
+      ? m.session_cycle_standalone()
+      : m.game_cycle_current({ number: session.playthroughNumber });
   }
 
   function submit() {
@@ -277,147 +299,178 @@
   }
 </script>
 
-<section class="space-y-3" aria-labelledby="game-session-title">
-  <div class="border-border bg-surface/55 rounded-xl border p-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
-        <p class="timecode text-dim text-[0.58rem] tracking-[0.16em] uppercase">
-          {activePlaythrough
-            ? m.game_cycle_current({ number: activePlaythrough.number })
-            : m.session_cycle_global_total()}
-        </p>
-        <p class="mt-1 text-sm font-semibold">
-          {activePlaythrough
-            ? m.session_cycle_active()
-            : entry.status === "COMPLETED"
-              ? m.session_cycle_completed()
-              : entry.status === "DROPPED"
-                ? m.session_cycle_dropped()
-                : m.game_cycle_explainer()}
-        </p>
-      </div>
-      {#if activePlaythrough}
-        <p class="font-display text-xl font-extrabold tabular-nums">
-          {formatSessionMinutes(activePlaythrough.trackedMinutes)}
-        </p>
-      {/if}
-    </div>
-    <p class="text-dim mt-2 text-xs leading-relaxed">
-      {m.game_cycle_explainer()}
-    </p>
-    <dl class="border-border mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-xs">
-      <div>
-        <dt class="text-dim">{m.session_cycle_current_total()}</dt>
-        <dd class="mt-0.5 font-semibold tabular-nums">
-          {formatSessionMinutes(activePlaythrough?.trackedMinutes ?? 0)}
-        </dd>
-      </div>
-      <div>
-        <dt class="text-dim">{m.session_cycle_global_total()}</dt>
-        <dd class="mt-0.5 font-semibold tabular-nums">
-          {formatSessionMinutes(
-            summary?.totalTrackedMinutes ?? entry.trackedPlaytimeMinutes,
-          )}
-        </dd>
-      </div>
-    </dl>
-  </div>
-
-  <div class="border-border bg-bg/45 rounded-xl border p-4">
-    <div class="flex items-start justify-between gap-4">
-      <div class="min-w-0">
-        <div class="flex items-center gap-2">
-          <h3 id="game-session-title" class="font-display font-bold">
-            {m.session_week()}
+<section aria-labelledby="game-session-title">
+  <article class="border-border bg-bg/45 overflow-hidden rounded-2xl border">
+    <div class="p-4 sm:p-5">
+      <header class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-dim text-sm">
+            {displayedPlaythroughIsActive
+              ? m.game_cycle_current_label()
+              : m.game_cycle_last_label()}
+          </p>
+          <h3
+            id="game-session-title"
+            class="font-display mt-0.5 text-xl font-bold">
+            {m.game_cycle_current({
+              number: displayedPlaythrough?.number ?? 1,
+            })}
           </h3>
-          {#if isFeatureNew("sessions")}<NewBadge />{/if}
+          {#if displayedPlaythrough?.startedAt}
+            <p class="text-dim mt-1 text-xs">
+              {m.game_cycle_started({
+                date: formatDate(displayedPlaythrough.startedAt),
+              })}
+            </p>
+          {/if}
         </div>
-        <p class="text-dim mt-1 text-sm tabular-nums">
-          {weeklySummary(summary?.weekSessions ?? 0, summary?.weekMinutes ?? 0)}
-        </p>
-      </div>
-      <button type="button" class="btn btn-primary shrink-0" onclick={openAdd}>
-        <Icon name="plus" class="h-4 w-4" />
-        {m.game_session_add_short()}
-      </button>
-    </div>
+        <TrackingStatusBadge domain="GAMES" status={entry.status} />
+      </header>
 
-    {#if sessionsQuery.error}
-      <div class="mt-4">
-        <Banner variant="error">{sessionsQuery.error}</Banner>
-      </div>
-    {:else if summary}
-      <SessionWeekChart days={summary.weekDays} />
-    {:else}
       <div
-        class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
-        aria-hidden="true">
-        {#each Array(7) as _, i (i)}
-          <span class="bg-surface-2 h-2 rounded-t-md"></span>
-        {/each}
-      </div>
-    {/if}
-  </div>
-
-  <SessionTimerControl
-    domain="GAMES"
-    entryId={entry.id}
-    onFinish={finishTimedSession} />
-
-  <button
-    type="button"
-    class="text-dim hover:text-accent mx-auto flex items-center gap-2 px-2 py-1 text-sm font-semibold transition-colors disabled:cursor-default disabled:opacity-50"
-    disabled={totalSessions === 0}
-    onclick={openHistory}>
-    {historyLabel(totalSessions)}
-  </button>
-
-  {#if lastFinishedPlaythrough}
-    <p class="text-dim text-center text-xs">
-      {m.game_cycle_current({ number: lastFinishedPlaythrough.number })} ·
-      {lastFinishedPlaythrough.status === "COMPLETED"
-        ? m.session_cycle_completed()
-        : m.session_cycle_dropped()}
-      {#if lastFinishedPlaythrough.finishedAt}
-        · {formatDate(lastFinishedPlaythrough.finishedAt)}
-      {/if}
-    </p>
-  {/if}
-
-  {#if entry.steamPlaytimeMinutes !== null}
-    <div class="border-border bg-bg/45 rounded-xl border p-3.5">
-      <div class="grid grid-cols-2 gap-2">
-        <div class="bg-surface rounded-lg p-2.5">
-          <p class="timecode text-[0.56rem] tracking-[0.14em] uppercase">
-            {m.game_session_steam_total()}
+        class="mt-5 grid gap-6 lg:grid-cols-[minmax(13rem,0.85fr)_minmax(20rem,1.15fr)] lg:items-end">
+        <div>
+          <p class="text-dim text-xs">{m.session_cycle_current_total()}</p>
+          <p
+            class="font-display mt-1 text-4xl leading-none font-extrabold tabular-nums sm:text-5xl">
+            {formatSessionMinutes(displayedPlaythrough?.trackedMinutes ?? 0)}
           </p>
-          <p class="font-display mt-1 font-bold tabular-nums">
-            {formatSessionMinutes(entry.steamPlaytimeMinutes)}
+          <p class="text-dim mt-3 max-w-sm text-xs leading-relaxed">
+            {m.game_cycle_explainer()}
           </p>
         </div>
-        <div class="bg-surface rounded-lg p-2.5">
-          <p class="timecode text-[0.56rem] tracking-[0.14em] uppercase">
-            {m.game_session_manual_total()}
-          </p>
-          <p class="font-display mt-1 font-bold tabular-nums">
+
+        <div>
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <h4 class="font-display font-bold">{m.session_week()}</h4>
+              {#if isFeatureNew("sessions")}<NewBadge />{/if}
+            </div>
+            <p class="text-dim text-xs tabular-nums">
+              {weeklySummary(
+                summary?.weekSessions ?? 0,
+                summary?.weekMinutes ?? 0,
+              )}
+            </p>
+          </div>
+          {#if sessionsQuery.error}
+            <div class="mt-4">
+              <Banner variant="error">{sessionsQuery.error}</Banner>
+            </div>
+          {:else if summary}
+            <SessionWeekChart days={summary.weekDays} />
+          {:else}
+            <div
+              class="mt-4 grid h-20 grid-cols-7 items-end gap-2"
+              aria-hidden="true">
+              {#each Array(7) as _, i (i)}
+                <span class="bg-surface-2 h-2 rounded-t-md"></span>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <dl class="border-border mt-5 grid grid-cols-1 border-y sm:grid-cols-3">
+        <div class="border-border px-1 py-3 sm:border-r sm:px-4">
+          <dt class="text-dim text-xs">{m.game_cycle_sessions()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {displayedPlaythrough?.sessionCount ?? 0}
+          </dd>
+        </div>
+        <div
+          class="border-border border-t px-1 py-3 sm:border-t-0 sm:border-r sm:px-4">
+          <dt class="text-dim text-xs">{m.game_session_manual_total()}</dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
             {formatSessionMinutes(
               summary?.totalTrackedMinutes ?? entry.trackedPlaytimeMinutes,
             )}
-          </p>
+          </dd>
         </div>
+        <div class="border-border border-t px-1 py-3 sm:border-t-0 sm:px-4">
+          <dt class="text-dim text-xs">
+            {entry.steamPlaytimeMinutes !== null
+              ? m.game_session_steam_total()
+              : m.session_month()}
+          </dt>
+          <dd class="font-display mt-1 text-lg font-bold tabular-nums">
+            {formatSessionMinutes(
+              entry.steamPlaytimeMinutes ?? summary?.monthMinutes ?? 0,
+            )}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="btn btn-primary" onclick={openAdd}>
+            <Icon name="plus" class="h-4 w-4" />
+            {m.game_session_add_short()}
+          </button>
+          <SessionTimerControl
+            domain="GAMES"
+            entryId={entry.id}
+            compact
+            onFinish={finishTimedSession} />
+        </div>
+        {#if entry.steamPlaytimeMinutes !== null}
+          <div class="max-w-sm text-right">
+            <p class="text-dim text-[0.7rem] leading-relaxed">
+              {m.game_session_steam_explainer()}
+            </p>
+            {#if entry.steamSyncedAt}
+              <p class="text-dim mt-0.5 text-[0.65rem]">
+                {m.game_session_steam_synced({
+                  date: formatDate(entry.steamSyncedAt),
+                })}
+              </p>
+            {/if}
+          </div>
+        {/if}
       </div>
-      <p class="text-dim mt-2 text-[0.7rem] leading-relaxed">
-        {m.game_session_steam_explainer()}
-      </p>
-      {#if entry.steamSyncedAt}
-        <p class="text-dim mt-1 text-[0.65rem]">
-          {m.game_session_steam_synced({
-            date: formatDate(entry.steamSyncedAt),
-          })}
+    </div>
+
+    <footer
+      class="border-border bg-surface/55 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-5">
+      {#if completedPlaythroughs.length > 0}
+        <div class="flex min-w-0 items-center gap-3">
+          <span
+            class="bg-success/12 text-success grid h-9 w-9 shrink-0 place-items-center rounded-full">
+            <Icon name="check" class="h-4 w-4" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold">
+              {completedPlaythroughs.length === 1
+                ? m.game_cycle_completed_one()
+                : m.game_cycle_completed_many({
+                    count: completedPlaythroughs.length,
+                  })}
+            </p>
+            <p class="text-dim truncate text-xs">
+              {m.game_cycle_completed_detail({
+                number: completedPlaythroughs[0]!.number,
+                duration: formatSessionMinutes(
+                  completedPlaythroughs[0]!.trackedMinutes,
+                ),
+              })}
+            </p>
+          </div>
+        </div>
+      {:else if lastFinishedPlaythrough?.status === "DROPPED"}
+        <p class="text-dim text-xs">
+          {m.game_cycle_current({ number: lastFinishedPlaythrough.number })} ·
+          {m.session_cycle_dropped()}
         </p>
       {/if}
-    </div>
-  {/if}
+      <button
+        type="button"
+        class="text-dim hover:text-accent ml-auto text-sm font-semibold underline decoration-current/40 underline-offset-4 transition-colors disabled:cursor-default disabled:opacity-50"
+        disabled={totalSessions === 0}
+        onclick={openHistory}>
+        {historyLabel(totalSessions)}
+      </button>
+    </footer>
+  </article>
 </section>
 
 {#if showAdd}
@@ -549,17 +602,27 @@
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}
       <ol
-        class="before:bg-border relative before:absolute before:top-3 before:bottom-3 before:left-1.5 before:w-px sm:before:left-[8.65rem]">
+        class="before:bg-border relative before:absolute before:top-3 before:bottom-3 before:left-1.5 before:w-px">
         {#each summary.items as session, index (session.id)}
+          {#if index === 0 || summary.items[index - 1]?.playthroughNumber !== session.playthroughNumber}
+            <li
+              class="relative flex items-center gap-3 pt-5 pb-1 pl-7 first:pt-0">
+              <span
+                class="border-border bg-surface text-fg rounded-full border px-2.5 py-1 text-xs font-bold">
+                {historyGroupLabel(session)}
+              </span>
+              <span class="bg-border h-px flex-1" aria-hidden="true"></span>
+            </li>
+          {/if}
           <li
             in:fly|global={{
               y: reduced ? 0 : 8,
               duration: reduced ? 0 : 220,
               delay: reduced ? 0 : Math.min(index * 35, 175),
             }}
-            class="border-border group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b py-4 pl-7 last:border-b-0 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:gap-x-6 sm:pl-0">
+            class="border-border group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b py-4 pl-7 last:border-b-0 sm:grid-cols-[7.5rem_minmax(0,1fr)_auto] sm:gap-x-5">
             <span
-              class="bg-accent ring-bg absolute top-[1.35rem] left-0.5 h-2.5 w-2.5 rounded-full ring-4 sm:left-[8.35rem]"
+              class="bg-accent ring-bg absolute top-[1.35rem] left-0.5 h-2.5 w-2.5 rounded-full ring-4"
               aria-hidden="true"></span>
             <time
               class="text-dim col-span-2 mb-1 text-xs tabular-nums sm:col-span-1 sm:mb-0">

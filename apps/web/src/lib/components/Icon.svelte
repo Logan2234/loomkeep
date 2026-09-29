@@ -61,6 +61,9 @@
     <path
       d="M6 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
     <path d="M4 18h13" />
+  {:else if name === "book-open"}
+    <path d="M3 5.5c3.2-.9 6-.3 9 1.7v13c-3-2-5.8-2.6-9-1.7Z" />
+    <path d="M21 5.5c-3.2-.9-6-.3-9 1.7v13c3-2 5.8-2.6 9-1.7Z" />
   {:else if name === "chevron-left"}
     <path d="M15 6l-6 6 6 6" />
   {:else if name === "chevron-right"}

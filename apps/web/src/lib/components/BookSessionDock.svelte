@@ -43,6 +43,7 @@
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
   import Switch from "./Switch.svelte";
+  import TrackingStatusBadge from "./TrackingStatusBadge.svelte";
 
   let {
     entry,
@@ -278,14 +279,18 @@
     }
     return session.startPage === null
       ? m.book_session_history_quantity({
-          number: session.readingNumber,
           count: session.pagesRead,
         })
       : m.book_session_history_range({
-          number: session.readingNumber,
           start: session.startPage,
           end: session.endPage!,
         });
+  }
+
+  function historyGroupLabel(session: BookSessionDto): string {
+    return session.readingNumber === null
+      ? m.session_cycle_standalone()
+      : m.book_cycle_current({ number: session.readingNumber });
   }
 
   function submit() {
@@ -406,31 +411,7 @@
             {/if}
           </p>
         </div>
-        <span
-          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold {displayedReadingIsActive
-            ? 'bg-accent/12 text-accent'
-            : displayedReading?.status === 'COMPLETED'
-              ? 'bg-success/12 text-success'
-              : displayedReading?.status === 'DROPPED'
-                ? 'bg-danger/10 text-danger'
-                : 'bg-surface-2 text-dim'}">
-          <Icon
-            name={displayedReadingIsActive
-              ? "book"
-              : displayedReading?.status === "COMPLETED"
-                ? "check"
-                : displayedReading?.status === "DROPPED"
-                  ? "x"
-                  : "book"}
-            class="h-3.5 w-3.5" />
-          {displayedReadingIsActive
-            ? m.session_cycle_active()
-            : displayedReading?.status === "COMPLETED"
-              ? m.session_cycle_completed()
-              : displayedReading?.status === "DROPPED"
-                ? m.session_cycle_dropped()
-                : m.book_status_to_read()}
-        </span>
+        <TrackingStatusBadge domain="BOOKS" status={entry.status} />
       </header>
 
       <div
@@ -442,7 +423,10 @@
           </p>
           {#if displayedReferencePages}
             <p class="text-dim mt-2 text-sm tabular-nums">
-              {displayedCurrentPage} / {displayedReferencePages} · {progressPct} %
+              {m.book_cycle_page_context({
+                count: displayedReferencePages,
+                progress: progressPct,
+              })}
             </p>
             <div class="text-dim mt-4 flex justify-between gap-3 text-xs">
               <span>
@@ -499,9 +483,9 @@
 
       <dl class="border-border mt-5 grid grid-cols-1 border-y sm:grid-cols-3">
         <div class="border-border px-1 py-3 sm:border-r sm:px-4">
-          <dt class="text-dim text-xs">{m.book_session_current_pages()}</dt>
+          <dt class="text-dim text-xs">{m.book_cycle_time()}</dt>
           <dd class="font-display mt-1 text-lg font-bold tabular-nums">
-            {m.book_session_pages_count({ count: displayedCurrentPage })}
+            {formatSessionMinutes(displayedReading?.trackedMinutes ?? 0)}
           </dd>
         </div>
         <div
@@ -778,17 +762,27 @@
       <Banner variant="error">{sessionsQuery.error}</Banner>
     {:else if summary?.items.length}
       <ol
-        class="before:bg-border relative before:absolute before:top-3 before:bottom-3 before:left-1.5 before:w-px sm:before:left-[8.65rem]">
+        class="before:bg-border relative before:absolute before:top-3 before:bottom-3 before:left-1.5 before:w-px">
         {#each summary.items as session, index (session.id)}
+          {#if index === 0 || summary.items[index - 1]?.readingNumber !== session.readingNumber}
+            <li
+              class="relative flex items-center gap-3 pt-5 pb-1 pl-7 first:pt-0">
+              <span
+                class="border-border bg-surface text-fg rounded-full border px-2.5 py-1 text-xs font-bold">
+                {historyGroupLabel(session)}
+              </span>
+              <span class="bg-border h-px flex-1" aria-hidden="true"></span>
+            </li>
+          {/if}
           <li
             in:fly|global={{
               y: reduced ? 0 : 8,
               duration: reduced ? 0 : 220,
               delay: reduced ? 0 : Math.min(index * 35, 175),
             }}
-            class="border-border group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b py-4 pl-7 last:border-b-0 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:gap-x-6 sm:pl-0">
+            class="border-border group relative grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b py-4 pl-7 last:border-b-0 sm:grid-cols-[7.5rem_minmax(0,1fr)_auto] sm:gap-x-5">
             <span
-              class="bg-accent ring-bg absolute top-[1.35rem] left-0.5 h-2.5 w-2.5 rounded-full ring-4 sm:left-[8.35rem]"
+              class="bg-accent ring-bg absolute top-[1.35rem] left-0.5 h-2.5 w-2.5 rounded-full ring-4"
               aria-hidden="true"></span>
             <time
               class="text-dim col-span-2 mb-1 text-xs tabular-nums sm:col-span-1 sm:mb-0">
