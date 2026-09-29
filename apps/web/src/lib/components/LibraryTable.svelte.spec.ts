@@ -48,6 +48,14 @@ function renderTable(overrides: { sort?: string; reversed?: boolean } = {}) {
       sort: overrides.sort ?? "title",
       reversed: overrides.reversed ?? false,
       onSort,
+      selection: {
+        active: false,
+        has: () => false,
+        toggle: () => {},
+        allLoaded: false,
+        someLoaded: false,
+        toggleLoaded: () => {},
+      },
     },
   });
   return { onSort, onToggleFavorite, user: userEvent.setup() };

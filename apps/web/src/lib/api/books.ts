@@ -1,4 +1,8 @@
 import type {
+  BookOwnershipStatus,
+  BookStatus,
+  BulkEntriesTargetDto,
+  BulkUpdateEntriesDto,
   UpdateBookEntryDto,
   UpsertBookEntryDto,
   UpsertReadingGoalDto,
@@ -96,3 +100,10 @@ export const getReadingGoal = (year: number) =>
 
 export const upsertReadingGoal = (body: UpsertReadingGoalDto) =>
   typedRequest("/books/reading-goal", { method: "PUT", body });
+
+export const bulkUpdateBookEntries = (
+  body: BulkUpdateEntriesDto<BookStatus, BookOwnershipStatus>,
+) => typedRequest("/books/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteBookEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/books/entries/bulk-delete", { method: "POST", body });

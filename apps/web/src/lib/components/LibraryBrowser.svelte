@@ -30,13 +30,17 @@
   // filter) is injected via props/snippets.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { resolveApiError } from "$lib/api/errors";
   import { createApiInfiniteQuery } from "$lib/api/infinite-query.svelte";
   import { keys } from "$lib/api/keys";
+  import { createApiMutation } from "$lib/api/mutation.svelte";
   import { createApiQuery } from "$lib/api/query.svelte";
   import Banner from "$lib/components/Banner.svelte";
   import Combobox from "$lib/components/Combobox.svelte";
+  import ConfirmationModal from "$lib/components/ConfirmationModal.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import LibraryBulkBar from "$lib/components/LibraryBulkBar.svelte";
   import LibraryTable from "$lib/components/LibraryTable.svelte";
   import LibraryViewMenu from "$lib/components/LibraryViewMenu.svelte";
   import LibraryWall from "$lib/components/LibraryWall.svelte";
@@ -48,15 +52,21 @@
   import {
     readLibraryViewMode,
     writeLibraryViewMode,
+    type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
+    type LibrarySelection,
     type LibraryViewMode,
   } from "$lib/library-view";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { pileHeaderLabel } from "$lib/pile";
   import { filtersToSearchParams } from "$lib/saved-views";
+  import { toast } from "$lib/toast.svelte";
   import type {
+    BulkEntriesResultDto,
+    BulkEntriesTargetDto,
+    BulkUpdateEntriesDto,
     MediaType,
     PagedResult,
     PileSummaryDto,
@@ -64,9 +74,11 @@
     SavedViewFiltersDto,
   } from "@loomkeep/shared";
   import type { ComponentProps, Snippet } from "svelte";
-  import { untrack } from "svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { onDestroy, untrack } from "svelte";
   import { flip } from "svelte/animate";
-  import { fade, fly } from "svelte/transition";
+  import { SvelteSet } from "svelte/reactivity";
+  import { fade, fly, scale, slide } from "svelte/transition";
 
   type IconName = ComponentProps<typeof Icon>["name"];
 
@@ -92,6 +104,7 @@
     columns,
     catalogPreview,
     headerActions,
+    bulk,
   }: {
     icon: IconName;
     title: string;
@@ -120,6 +133,8 @@
     catalogPreview?: Snippet<[string, (count: number) => void]>;
     /** Rendered beside the title, e.g. books' reading-goal chip. */
     headerActions?: Snippet;
+    /** The selection mode's actions (UX-04); without them there's no selection mode. */
+    bulk?: LibraryBulkActions;
   } = $props();
 
   // Result count reported by `catalogPreview`, reset whenever the query
@@ -307,6 +322,281 @@
     return () => io.disconnect();
   });
 
+  // ── Selection mode (UX-04)
+  const UNDO_DELAY_MS = 6000;
+  const LONG_PRESS_MS = 450;
+  const queryClient = useQueryClient();
+
+  let selecting = $state(false);
+  const selected = new SvelteSet<string>();
+  // Every entry the filters match, loaded or not: sent as the filters
+  // themselves, since the pages past the loaded ones have no ids here yet.
+  let allMatching = $state(false);
+  let anchor: string | null = null;
+  let confirmingRemove = $state(false);
+  // Removed entries stay hidden, not deleted, while their undo toast shows.
+  const hidden = new SvelteSet<string>();
+  let hideAll = $state(false);
+  let pendingRemoval: {
+    timer: ReturnType<typeof setTimeout>;
+    commit: () => Promise<void>;
+  } | null = null;
+
+  const shown = $derived(
+    hideAll ? [] : items.filter((entry) => !hidden.has(keyOf(entry))),
+  );
+  const selectedCount = $derived(allMatching ? total : selected.size);
+  const allLoaded = $derived(
+    shown.length > 0 && shown.every((entry) => selected.has(keyOf(entry))),
+  );
+
+  function toggle(entry: T, range: boolean) {
+    const key = keyOf(entry);
+    if (allMatching) {
+      allMatching = false;
+      for (const e of shown) selected.add(keyOf(e));
+    }
+    const order = shown.map(keyOf);
+    const from = anchor ? order.indexOf(anchor) : -1;
+    const to = order.indexOf(key);
+    if (range && from >= 0 && to >= 0) {
+      for (const k of order.slice(Math.min(from, to), Math.max(from, to) + 1))
+        selected.add(k);
+    } else if (selected.has(key)) {
+      selected.delete(key);
+    } else {
+      selected.add(key);
+    }
+    anchor = key;
+  }
+
+  function selectLoaded() {
+    allMatching = false;
+    for (const entry of shown) selected.add(keyOf(entry));
+  }
+
+  function clearSelection() {
+    selected.clear();
+    allMatching = false;
+    anchor = null;
+  }
+
+  function exitSelecting() {
+    selecting = false;
+    clearSelection();
+  }
+
+  const selection: LibrarySelection<T> = {
+    get active() {
+      return selecting;
+    },
+    has: (entry) => allMatching || selected.has(keyOf(entry)),
+    toggle,
+    get allLoaded() {
+      return allMatching || allLoaded;
+    },
+    get someLoaded() {
+      return !allLoaded && shown.some((entry) => selected.has(keyOf(entry)));
+    },
+    toggleLoaded: () =>
+      allMatching || allLoaded ? clearSelection() : selectLoaded(),
+  };
+
+  // Other filters show other entries: a selection made under the previous
+  // ones would act on rows no longer in sight.
+  $effect(() => {
+    void browseKey;
+    untrack(clearSelection);
+  });
+
+  function bulkTarget(): BulkEntriesTargetDto {
+    return allMatching ? { filters: current } : { ids: [...selected] };
+  }
+
+  function resultMessage(result: BulkEntriesResultDto): string {
+    const done =
+      result.updated === 1
+        ? m.library_bulk_done_one({ count: result.updated })
+        : m.library_bulk_done_many({ count: result.updated });
+    return result.skipped > 0
+      ? `${done} · ${m.library_bulk_skipped({ count: result.skipped })}`
+      : done;
+  }
+
+  const bulkMut = createApiMutation(() => ({
+    mutate: (dto: BulkUpdateEntriesDto) => bulk!.update(dto),
+    invalidates: [["library"]],
+    successToast: resultMessage,
+    errorToast: true,
+  }));
+
+  function removeSelection() {
+    confirmingRemove = false;
+    const target = bulkTarget();
+    const count = selectedCount;
+    if (allMatching) hideAll = true;
+    else for (const key of selected) hidden.add(key);
+    exitSelecting();
+
+    const restore = () => {
+      hidden.clear();
+      hideAll = false;
+    };
+    const commit = async () => {
+      pendingRemoval = null;
+      try {
+        await bulk!.remove(target);
+        await queryClient.invalidateQueries({ queryKey: ["library"] });
+      } catch (err) {
+        toast.error(resolveApiError(err));
+      } finally {
+        restore();
+      }
+    };
+    pendingRemoval = { timer: setTimeout(commit, UNDO_DELAY_MS), commit };
+    toast.show(
+      count === 1
+        ? m.library_bulk_removed_one({ count })
+        : m.library_bulk_removed_many({ count }),
+      "info",
+      UNDO_DELAY_MS,
+      {
+        label: m.common_cancel(),
+        run: () => {
+          if (pendingRemoval) clearTimeout(pendingRemoval.timer);
+          pendingRemoval = null;
+          restore();
+        },
+      },
+    );
+  }
+
+  // Leaving the page before the undo delay runs out confirms the removal.
+  onDestroy(() => {
+    if (!pendingRemoval) return;
+    clearTimeout(pendingRemoval.timer);
+    void pendingRemoval.commit();
+  });
+
+  let container = $state<HTMLElement | null>(null);
+
+  function entryOf(element: Element | null): T | undefined {
+    const key = element?.closest<HTMLElement>("[data-library-item]")?.dataset
+      .libraryItem;
+    return key === undefined ? undefined : shown.find((e) => keyOf(e) === key);
+  }
+
+  function focusItem(element: HTMLElement | undefined) {
+    if (!element) return;
+    const target = element.matches("a, button, input, [tabindex]")
+      ? element
+      : element.querySelector<HTMLElement>("input, a, button");
+    // Keyboard-driven, so the focus ring must show even where the browser
+    // would not infer it from a script call.
+    target?.focus({ focusVisible: true } as FocusOptions);
+    element.scrollIntoView({ block: "nearest" });
+  }
+
+  // J/K move to the next/previous entry, as do the arrows along the mode's
+  // own axis (left/right in a grid, up/down in a list) once an entry has
+  // focus. X toggles the focused one, Shift+A selects every loaded one,
+  // Escape leaves selection mode.
+  function onKeydown(e: KeyboardEvent) {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        "input:not([type=checkbox]), textarea, select, [role=dialog]",
+      )
+    )
+      return;
+
+    if (e.key === "Escape" && selecting) {
+      exitSelecting();
+      return;
+    }
+
+    const elements = [
+      ...(container?.querySelectorAll<HTMLElement>("[data-library-item]") ??
+        []),
+    ];
+    const index = elements.indexOf(
+      target.closest<HTMLElement>("[data-library-item]")!,
+    );
+    const key = e.key.toLowerCase();
+    const grid = mode === "cards" || mode === "wall";
+    const [next, previous] = grid
+      ? ["ArrowRight", "ArrowLeft"]
+      : ["ArrowDown", "ArrowUp"];
+    const isArrow = e.key === next || e.key === previous;
+    const step =
+      key === "j" || e.key === next
+        ? 1
+        : key === "k" || e.key === previous
+          ? -1
+          : 0;
+
+    if (step !== 0 && (!isArrow || index >= 0)) {
+      e.preventDefault();
+      focusItem(
+        elements[
+          index < 0
+            ? 0
+            : Math.min(elements.length - 1, Math.max(0, index + step))
+        ],
+      );
+    } else if (key === "x" && bulk) {
+      const entry = entryOf(target);
+      if (!entry) return;
+      e.preventDefault();
+      selecting = true;
+      toggle(entry, e.shiftKey);
+    } else if (e.key === "A" && e.shiftKey && selecting) {
+      e.preventDefault();
+      selectLoaded();
+    }
+  }
+
+  // Long press on touch: enters selection mode with the pressed entry.
+  let pressTimer: ReturnType<typeof setTimeout> | null = null;
+  let pressOrigin = { x: 0, y: 0 };
+  let swallowClick = false;
+
+  function onPointerDown(e: PointerEvent) {
+    if (e.pointerType === "mouse" || !bulk) return;
+    const entry = entryOf(e.target as Element);
+    if (!entry) return;
+    pressOrigin = { x: e.clientX, y: e.clientY };
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      selecting = true;
+      if (!selection.has(entry)) toggle(entry, false);
+      swallowClick = true;
+      navigator.vibrate?.(10);
+    }, LONG_PRESS_MS);
+  }
+
+  function cancelPress() {
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    if (
+      pressTimer &&
+      Math.hypot(e.clientX - pressOrigin.x, e.clientY - pressOrigin.y) > 8
+    )
+      cancelPress();
+  }
+
+  // The click that ends a long press must not also open the entry.
+  function onClickCapture(e: MouseEvent) {
+    if (!swallowClick) return;
+    swallowClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   const hasQuery = $derived(query.trim() !== "");
   const hasFilters = $derived(
     statuses.length > 0 || favoritesOnly || types.length > 0,
@@ -394,9 +684,52 @@
         onclick={() => (reversed = !reversed)}>
         {reversed ? "↑" : "↓"}
       </button>
-      <LibraryViewMenu {mode} onChange={setMode} />
+      <LibraryViewMenu
+        {mode}
+        onChange={setMode}
+        selecting={bulk ? selecting : undefined}
+        onToggleSelecting={() =>
+          selecting ? exitSelecting() : (selecting = true)} />
     </div>
   </div>
+
+  {#if selecting}
+    <div
+      transition:slide={{ duration: reduced ? 0 : 180 }}
+      class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm {allMatching ||
+      (allLoaded && total > shown.length)
+        ? 'bg-accent/10 justify-center rounded-xl px-4 py-2.5'
+        : 'text-dim'}">
+      {#if allMatching}
+        <span>{m.library_selected_matching({ count: total })}</span>
+        <button type="button" class="link-accent" onclick={clearSelection}>
+          {m.library_clear_selection()}
+        </button>
+      {:else if allLoaded && total > shown.length}
+        <span>{m.library_selected_loaded({ count: shown.length })}</span>
+        <button
+          type="button"
+          class="link-accent"
+          onclick={() => (allMatching = true)}>
+          {m.library_select_matching({ count: total })}
+        </button>
+      {:else}
+        <span>{m.library_select_hint()}</span>
+        {#if allLoaded}
+          <button type="button" class="link-accent" onclick={clearSelection}>
+            {m.library_clear_selection()}
+          </button>
+        {:else}
+          <button type="button" class="link-accent" onclick={selectLoaded}>
+            {m.common_select_all()}
+          </button>
+        {/if}
+        <button type="button" class="link-accent" onclick={exitSelecting}>
+          {m.common_cancel()}
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   {#if error}
     <Banner variant="error">{error}</Banner>
@@ -459,29 +792,70 @@
     </div>
   {:else if items.length > 0}
     {#key mode}
-      <div in:fly={{ y: 8, duration: reduced ? 0 : 220 }}>
+      <!-- Long press is a touch shortcut for entering selection mode; the
+           keyboard has X and the "Affichage" menu. -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        bind:this={container}
+        class="[-webkit-touch-callout:none]"
+        in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
+        onpointerdown={onPointerDown}
+        onpointermove={onPointerMove}
+        onpointerup={cancelPress}
+        onpointercancel={cancelPress}
+        onclickcapture={onClickCapture}>
         {#if mode === "cards"}
           <PosterGrid>
-            {#each items as entry (keyOf(entry))}
+            {#each shown as entry (keyOf(entry))}
+              {@const on = selection.has(entry)}
               <div
+                class="has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-bg relative rounded-xl transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
+                data-library-item={keyOf(entry)}
                 animate:flip={{ duration: reduced ? 0 : 250 }}
                 in:fade|global={{ duration: reduced ? 0 : 150 }}
                 out:fade={{ duration: reduced ? 0 : 100 }}>
                 {@render card(entry)}
+                {#if selecting}
+                  <button
+                    type="button"
+                    class="absolute inset-0 z-20 rounded-xl transition-[background-color,box-shadow] duration-150 active:bg-black/10 {on
+                      ? 'bg-accent/10 ring-accent ring-2'
+                      : ''}"
+                    aria-pressed={on}
+                    aria-label={itemView(entry).title}
+                    in:fade={{ duration: reduced ? 0 : 120 }}
+                    onclick={(e) => toggle(entry, e.shiftKey)}>
+                    <span
+                      class="absolute top-2 left-2 grid h-6 w-6 place-items-center rounded-lg border-2 transition-colors {on
+                        ? 'border-accent bg-accent text-accent-fg'
+                        : 'border-white bg-black/40'}">
+                      {#if on}
+                        <span
+                          in:scale={{
+                            duration: reduced ? 0 : 160,
+                            start: 0.4,
+                          }}>
+                          <Icon name="check" class="h-3.5 w-3.5" />
+                        </span>
+                      {/if}
+                    </span>
+                  </button>
+                {/if}
               </div>
             {/each}
           </PosterGrid>
         {:else if mode === "wall"}
-          <LibraryWall {items} {keyOf} {itemView} />
+          <LibraryWall items={shown} {keyOf} {itemView} {selection} />
         {:else}
           <LibraryTable
-            {items}
+            items={shown}
             {keyOf}
             {itemView}
             {columns}
             {sort}
             {reversed}
             onSort={sortBy}
+            {selection}
             compact={mode === "compact"} />
         {/if}
       </div>
@@ -497,6 +871,30 @@
     {/if}
   {/if}
 </div>
+
+<svelte:window onkeydown={onKeydown} />
+
+{#if bulk && selecting && selectedCount > 0}
+  <LibraryBulkBar
+    count={selectedCount}
+    {bulk}
+    busy={bulkMut.loading}
+    onUpdate={(action) => bulkMut.mutate({ ...bulkTarget(), ...action })}
+    onRemove={() => (confirmingRemove = true)}
+    onExit={exitSelecting} />
+{/if}
+
+{#if confirmingRemove}
+  <ConfirmationModal
+    title={selectedCount === 1
+      ? m.library_bulk_remove_title_one({ count: selectedCount })
+      : m.library_bulk_remove_title_many({ count: selectedCount })}
+    message={m.library_bulk_remove_message()}
+    confirmLabel={m.common_remove()}
+    danger
+    onConfirm={removeSelection}
+    onCancel={() => (confirmingRemove = false)} />
+{/if}
 
 {#snippet skeleton(count: number)}
   {#if mode === "cards"}

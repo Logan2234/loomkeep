@@ -1,4 +1,9 @@
-import type { SavedViewDomain } from "@loomkeep/shared";
+import type {
+  BulkEntriesResultDto,
+  BulkEntriesTargetDto,
+  BulkUpdateEntriesDto,
+  SavedViewDomain,
+} from "@loomkeep/shared";
 import { joinMeta } from "./format";
 
 export const LIBRARY_VIEW_MODES = [
@@ -71,4 +76,24 @@ export function ownershipText(
   if (status === "NONE") return null;
   const label = options.find((o) => o.value === status)?.label ?? status;
   return joinMeta(label, source);
+}
+
+/** Selection mode (UX-04), as each display mode renders it. */
+export interface LibrarySelection<T> {
+  active: boolean;
+  has: (entry: T) => boolean;
+  /** `range` (Shift) also selects everything since the last toggled entry. */
+  toggle: (entry: T, range: boolean) => void;
+  /** Every loaded entry is selected (the table header's checkbox). */
+  allLoaded: boolean;
+  someLoaded: boolean;
+  toggleLoaded: () => void;
+}
+
+/** A library's bulk actions, wired to its domain's endpoints. */
+export interface LibraryBulkActions {
+  statusOptions: { label: string; value: string }[];
+  ownershipOptions: { label: string; value: string }[];
+  update: (dto: BulkUpdateEntriesDto) => Promise<BulkEntriesResultDto>;
+  remove: (target: BulkEntriesTargetDto) => Promise<BulkEntriesResultDto>;
 }

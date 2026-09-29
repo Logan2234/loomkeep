@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getGamesPile, listGames } from "$lib/api/client";
-  import { updateGameEntry } from "$lib/api/games";
+  import {
+    bulkDeleteGameEntries,
+    bulkUpdateGameEntries,
+    updateGameEntry,
+  } from "$lib/api/games";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -18,6 +22,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate, formatHours } from "$lib/format";
   import {
     ownershipText,
+    type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
   } from "$lib/library-view";
@@ -98,6 +103,14 @@
     },
   ];
 
+  const BULK: LibraryBulkActions = {
+    statusOptions: STATUS_OPTIONS,
+    ownershipOptions: GAME_OWNERSHIP_STATUS_OPTIONS,
+    update: (dto) =>
+      bulkUpdateGameEntries(dto as Parameters<typeof bulkUpdateGameEntries>[0]),
+    remove: bulkDeleteGameEntries,
+  };
+
   const load = (params: LibraryLoadParams) =>
     listGames({
       query: params.query,
@@ -132,7 +145,8 @@
   sorts={SORTS}
   defaultSort="added"
   {itemView}
-  columns={COLUMNS}>
+  columns={COLUMNS}
+  bulk={BULK}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <GameSearchPanel {query} limit={10} {onResults} />
   {/snippet}

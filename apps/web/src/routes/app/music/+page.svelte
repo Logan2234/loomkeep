@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getMusicPile, listMusic } from "$lib/api/client";
-  import { updateMusicEntry } from "$lib/api/music";
+  import {
+    bulkDeleteMusicEntries,
+    bulkUpdateMusicEntries,
+    updateMusicEntry,
+  } from "$lib/api/music";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -18,6 +22,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import {
     ownershipText,
+    type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
   } from "$lib/library-view";
@@ -89,6 +94,16 @@
     },
   ];
 
+  const BULK: LibraryBulkActions = {
+    statusOptions: STATUS_OPTIONS,
+    ownershipOptions: MUSIC_OWNERSHIP_STATUS_OPTIONS,
+    update: (dto) =>
+      bulkUpdateMusicEntries(
+        dto as Parameters<typeof bulkUpdateMusicEntries>[0],
+      ),
+    remove: bulkDeleteMusicEntries,
+  };
+
   const load = (params: LibraryLoadParams) =>
     listMusic({
       query: params.query,
@@ -123,7 +138,8 @@
   sorts={SORTS}
   defaultSort="added"
   {itemView}
-  columns={COLUMNS}>
+  columns={COLUMNS}
+  bulk={BULK}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MusicSearchPanel {query} limit={10} {onResults} />
   {/snippet}

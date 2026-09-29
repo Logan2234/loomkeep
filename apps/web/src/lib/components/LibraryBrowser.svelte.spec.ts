@@ -1,14 +1,19 @@
 import { ApiError } from "$lib/api/core";
 import { resolveApiError } from "$lib/api/errors";
-import type { LibraryColumn, LibraryItemView } from "$lib/library-view";
+import type {
+  LibraryBulkActions,
+  LibraryColumn,
+  LibraryItemView,
+} from "$lib/library-view";
 import { m } from "$lib/paraglide/messages.js";
 import { pileHeaderLabel } from "$lib/pile";
 import { apiUrl, server } from "$lib/test/msw";
 import { goto, visit } from "$lib/test/navigation.svelte";
 import { renderWithQuery } from "$lib/test/render";
+import { toast } from "$lib/toast.svelte";
 import type { PileSummaryDto } from "@loomkeep/shared";
 import { ErrorCode, type PagedResult } from "@loomkeep/shared";
-import { screen, waitFor } from "@testing-library/svelte";
+import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createRawSnippet } from "svelte";
@@ -81,9 +86,11 @@ const HYPERION = { id: "2", title: "Hyperion" };
 function renderBrowser(
   load: (params: LibraryLoadParams) => Promise<PagedResult<Entry>>,
   loadPile?: (params: PileLoadParams) => Promise<PileSummaryDto>,
+  bulk?: LibraryBulkActions,
 ) {
   return renderWithQuery(LibraryBrowser, {
     loadPile,
+    bulk,
     icon: "book",
     title: "Books",
     subtitle: (count: number) => `${count} books`,
@@ -112,10 +119,150 @@ const lastLoad = (load: ReturnType<typeof vi.fn>) =>
 beforeEach(() => {
   localStorage.clear();
   visit("/app/books");
-  server.use(http.get(apiUrl("/saved-views"), () => HttpResponse.json([])));
+  server.use(
+    http.get(apiUrl("/saved-views"), () => HttpResponse.json([])),
+    http.get(apiUrl("/lists/editable"), () => HttpResponse.json([])),
+  );
 });
 
 describe("LibraryBrowser", () => {
+  function bulkActions(): LibraryBulkActions & {
+    update: ReturnType<typeof vi.fn>;
+    remove: ReturnType<typeof vi.fn>;
+  } {
+    return {
+      statusOptions: [{ label: "Read", value: "READ" }],
+      ownershipOptions: [{ label: "Physical", value: "PHYSICAL" }],
+      update: vi.fn(async () => ({ updated: 1, skipped: 0 })),
+      remove: vi.fn(async () => ({ updated: 1, skipped: 0 })),
+    };
+  }
+
+  async function startSelecting(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(m.library_display()) }),
+    );
+    await user.click(
+      screen.getByRole("menuitem", { name: m.library_select_start() }),
+    );
+  }
+
+  it("applies a bulk action to exactly the picked entries", async () => {
+    const user = userEvent.setup();
+    const bulk = bulkActions();
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE, HYPERION])),
+      undefined,
+      bulk,
+    );
+    await screen.findByText("Dune");
+
+    await startSelecting(user);
+    await user.click(screen.getByRole("button", { name: "Hyperion" }));
+    expect(
+      screen.getByText(m.library_bulk_count_one({ count: 1 })),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: m.common_favorite() }));
+    await user.click(
+      screen.getByRole("menuitem", { name: m.common_favorite_add() }),
+    );
+
+    await waitFor(() =>
+      expect(bulk.update).toHaveBeenCalledWith({ ids: ["2"], favorite: true }),
+    );
+  });
+
+  it("targets the filters, not ids, once every matching entry is selected", async () => {
+    const user = userEvent.setup();
+    const bulk = bulkActions();
+    visit("/app/books?status=READING");
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE, HYPERION], { hasMore: true, total: 42 })),
+      undefined,
+      bulk,
+    );
+    await screen.findByText("Dune");
+
+    await startSelecting(user);
+    await user.click(
+      screen.getByRole("button", { name: m.common_select_all() }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: m.library_select_matching({ count: 42 }),
+      }),
+    );
+    expect(
+      screen.getByText(m.library_bulk_count_many({ count: 42 })),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: m.common_status() }));
+    await user.click(screen.getByRole("menuitem", { name: "Read" }));
+
+    await waitFor(() =>
+      expect(bulk.update).toHaveBeenCalledWith({
+        filters: expect.objectContaining({ statuses: ["READING"] }),
+        status: "READ",
+      }),
+    );
+  });
+
+  it("moves between entries with J/K and the arrows of the mode's axis", async () => {
+    const user = userEvent.setup();
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE, HYPERION])),
+      undefined,
+      bulkActions(),
+    );
+    await screen.findByText("Dune");
+    await startSelecting(user);
+    const focusedTitle = () =>
+      document.activeElement?.getAttribute("aria-label");
+
+    await user.keyboard("j");
+    expect(focusedTitle()).toBe("Dune");
+    await user.keyboard("{ArrowRight}");
+    expect(focusedTitle()).toBe("Hyperion");
+    // Cards are a grid: up/down keep their native meaning.
+    await user.keyboard("{ArrowUp}");
+    expect(focusedTitle()).toBe("Hyperion");
+    await user.keyboard("k");
+    expect(focusedTitle()).toBe("Dune");
+
+    await user.keyboard("x");
+    expect(
+      screen.getByRole("button", { name: "Dune" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
+  it("hides removed entries until the undo delay, and undoing keeps them", async () => {
+    const user = userEvent.setup();
+    const bulk = bulkActions();
+    renderBrowser(
+      vi.fn(async () => pageOf([DUNE, HYPERION])),
+      undefined,
+      bulk,
+    );
+    await screen.findByText("Dune");
+
+    await startSelecting(user);
+    await user.click(screen.getByRole("button", { name: "Dune" }));
+    await user.click(screen.getByRole("button", { name: m.common_remove() }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(
+      within(dialog).getByRole("button", { name: m.common_remove() }),
+    );
+
+    await waitFor(() => expect(screen.queryByText("Dune")).toBeNull());
+    expect(bulk.remove).not.toHaveBeenCalled();
+
+    toast.items.at(-1)!.action!.run();
+
+    expect(await screen.findByText("Dune")).toBeTruthy();
+    expect(bulk.remove).not.toHaveBeenCalled();
+  });
+
   it("renders the mode picked in the display menu, remembered for this library", async () => {
     const user = userEvent.setup();
     const load = vi.fn(async () => pageOf([DUNE, HYPERION]));

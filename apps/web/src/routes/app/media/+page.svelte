@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getLibraryPile, listLibrary } from "$lib/api/client";
-  import { updateLibraryEntry } from "$lib/api/library";
+  import {
+    bulkDeleteLibraryEntries,
+    bulkUpdateLibraryEntries,
+    updateLibraryEntry,
+  } from "$lib/api/library";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -15,12 +19,13 @@
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import {
     ownershipText,
+    type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
   } from "$lib/library-view";
   import { m } from "$lib/paraglide/messages";
   import type { LibraryEntryDto, MediaType } from "@loomkeep/shared";
-  import { Domain, isDormant } from "@loomkeep/shared";
+  import { Domain, isDormant, MEDIA_BULK_STATUSES } from "@loomkeep/shared";
 
   const STATUS_OPTIONS = [
     { label: m.library_status_in_progress(), value: "WATCHING" },
@@ -121,6 +126,19 @@
     },
   ];
 
+  const BULK: LibraryBulkActions = {
+    statusOptions: MEDIA_BULK_STATUSES.map((value) => ({
+      value,
+      label: MEDIA_STATUS_META[value].label,
+    })),
+    ownershipOptions: MEDIA_OWNERSHIP_STATUS_OPTIONS,
+    update: (dto) =>
+      bulkUpdateLibraryEntries(
+        dto as Parameters<typeof bulkUpdateLibraryEntries>[0],
+      ),
+    remove: bulkDeleteLibraryEntries,
+  };
+
   const load = (params: LibraryLoadParams) =>
     listLibrary({
       query: params.query,
@@ -157,7 +175,8 @@
   sorts={SORTS}
   defaultSort="recent"
   {itemView}
-  columns={COLUMNS}>
+  columns={COLUMNS}
+  bulk={BULK}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MediaSearchPanel {query} limit={10} {onResults} />
   {/snippet}

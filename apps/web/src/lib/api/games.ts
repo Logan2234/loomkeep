@@ -1,5 +1,12 @@
 import { getLocale } from "$lib/paraglide/runtime.js";
-import type { UpdateGameEntryDto, UpsertGameEntryDto } from "@loomkeep/shared";
+import type {
+  BulkEntriesTargetDto,
+  BulkUpdateEntriesDto,
+  GameOwnershipStatus,
+  GameStatus,
+  UpdateGameEntryDto,
+  UpsertGameEntryDto,
+} from "@loomkeep/shared";
 import { typedRequest } from "./generated/typed-request";
 
 export const searchGames = (query: string) =>
@@ -73,3 +80,10 @@ export const deleteGameReplay = (replayId: string): Promise<void> =>
     method: "DELETE",
     params: { id: replayId },
   });
+
+export const bulkUpdateGameEntries = (
+  body: BulkUpdateEntriesDto<GameStatus, GameOwnershipStatus>,
+) => typedRequest("/games/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteGameEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/games/entries/bulk-delete", { method: "POST", body });

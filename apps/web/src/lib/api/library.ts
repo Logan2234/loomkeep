@@ -1,5 +1,9 @@
 import type {
+  BulkEntriesTargetDto,
+  BulkUpdateEntriesDto,
   LibraryEntryDto,
+  MEDIA_BULK_STATUSES,
+  MediaOwnershipStatus,
   MediaType,
   UpsertLibraryEntryDto,
 } from "@loomkeep/shared";
@@ -129,3 +133,13 @@ export const unwatchSeason = (seasonId: string): Promise<void> =>
   });
 
 export const getCalendar = () => typedRequest("/library/calendar");
+
+export const bulkUpdateLibraryEntries = (
+  body: BulkUpdateEntriesDto<
+    (typeof MEDIA_BULK_STATUSES)[number],
+    MediaOwnershipStatus
+  >,
+) => typedRequest("/library/entries/bulk", { method: "POST", body });
+
+export const bulkDeleteLibraryEntries = (body: BulkEntriesTargetDto) =>
+  typedRequest("/library/entries/bulk-delete", { method: "POST", body });

@@ -13,9 +13,14 @@
   let {
     mode,
     onChange,
+    selecting,
+    onToggleSelecting,
   }: {
     mode: LibraryViewMode;
     onChange: (mode: LibraryViewMode) => void;
+    /** Whether selection mode is on; undefined hides its entry. */
+    selecting?: boolean;
+    onToggleSelecting?: () => void;
   } = $props();
 
   // Below md the table renders as rows, and the trigger drops its label.
@@ -85,5 +90,19 @@
         {label(value)}
       </button>
     {/each}
+    {#if selecting !== undefined}
+      <div class="border-border my-1 border-t"></div>
+      <button
+        role="menuitem"
+        class="menu-item"
+        onclick={() => {
+          close();
+          onToggleSelecting?.();
+        }}>
+        <span class="grid h-4 w-4"></span>
+        <Icon name="check" class="text-dim h-4 w-4" />
+        {selecting ? m.library_select_done() : m.library_select_start()}
+      </button>
+    {/if}
   {/snippet}
 </Dropdown>

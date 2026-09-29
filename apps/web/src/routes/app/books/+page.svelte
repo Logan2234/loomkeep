@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { updateBookEntry } from "$lib/api/books";
+  import {
+    bulkDeleteBookEntries,
+    bulkUpdateBookEntries,
+    updateBookEntry,
+  } from "$lib/api/books";
   import { getBooksPile, listBooks } from "$lib/api/client";
   import type {
     LibraryLoadParams,
@@ -20,6 +24,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import {
     ownershipText,
+    type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
   } from "$lib/library-view";
@@ -110,6 +115,14 @@
     },
   ];
 
+  const BULK: LibraryBulkActions = {
+    statusOptions: STATUS_OPTIONS,
+    ownershipOptions: BOOK_OWNERSHIP_STATUS_OPTIONS,
+    update: (dto) =>
+      bulkUpdateBookEntries(dto as Parameters<typeof bulkUpdateBookEntries>[0]),
+    remove: bulkDeleteBookEntries,
+  };
+
   const load = (params: LibraryLoadParams) =>
     listBooks({
       query: params.query,
@@ -144,7 +157,8 @@
   sorts={SORTS}
   defaultSort="added"
   {itemView}
-  columns={COLUMNS}>
+  columns={COLUMNS}
+  bulk={BULK}>
   {#snippet headerActions()}
     <ReadingGoalChip />
   {/snippet}

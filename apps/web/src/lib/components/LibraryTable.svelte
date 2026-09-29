@@ -4,7 +4,11 @@
   // with the status, rating and progress on one line.
   import { goto } from "$app/navigation";
   import { joinMeta } from "$lib/format";
-  import type { LibraryColumn, LibraryItemView } from "$lib/library-view";
+  import type {
+    LibraryColumn,
+    LibraryItemView,
+    LibrarySelection,
+  } from "$lib/library-view";
   import { prefersReducedMotion } from "$lib/motion";
   import { m } from "$lib/paraglide/messages.js";
   import { MediaQuery } from "svelte/reactivity";
@@ -22,6 +26,7 @@
     sort,
     reversed,
     onSort,
+    selection,
     compact = false,
   }: {
     items: T[];
@@ -33,14 +38,24 @@
     reversed: boolean;
     /** Header click: the column's sort, reversed when already active. */
     onSort: (sort: string) => void;
+    selection: LibrarySelection<T>;
     compact?: boolean;
   } = $props();
 
   const wide = new MediaQuery("min-width: 768px");
   const reduced = prefersReducedMotion();
 
-  function openRow(e: MouseEvent, href: string) {
-    if ((e.target as HTMLElement).closest("a, button")) return;
+  // In selection mode a click anywhere on the row (title link included)
+  // toggles it; otherwise the row opens the entry like its title does.
+  function onRowClick(e: MouseEvent, entry: T, href: string) {
+    const target = e.target as HTMLElement;
+    if (selection.active) {
+      if (target.closest("input")) return;
+      e.preventDefault();
+      selection.toggle(entry, e.shiftKey);
+      return;
+    }
+    if (target.closest("a, button")) return;
     void goto(href);
   }
 
@@ -77,6 +92,19 @@
   </button>
 {/snippet}
 
+{#snippet checkbox(entry: T, title: string)}
+  <input
+    type="checkbox"
+    class="accent-accent relative z-1 h-4 w-4 shrink-0 cursor-pointer"
+    checked={selection.has(entry)}
+    aria-label={title}
+    in:scale={{ duration: reduced ? 0 : 150, start: 0.5 }}
+    onclick={(e) => {
+      e.stopPropagation();
+      selection.toggle(entry, e.shiftKey);
+    }} />
+{/snippet}
+
 {#snippet status(item: LibraryItemView)}
   <span
     class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap {item
@@ -90,6 +118,17 @@
     <table class="w-full border-collapse text-sm">
       <thead>
         <tr>
+          {#if selection.active}
+            <th scope="col" class="bg-surface-2 w-10 pl-3">
+              <input
+                type="checkbox"
+                class="accent-accent h-4 w-4 cursor-pointer"
+                checked={selection.allLoaded}
+                indeterminate={selection.someLoaded}
+                aria-label={m.common_select_all()}
+                onchange={selection.toggleLoaded} />
+            </th>
+          {/if}
           {#each columns as column (column.label)}
             {@const active = column.sort === sort}
             <th
@@ -123,20 +162,29 @@
               {/if}
             </th>
           {/each}
-          <th scope="col" class="bg-surface-2 w-12">
-            <span class="sr-only">{m.common_favorite()}</span>
-          </th>
+          {#if !selection.active}
+            <th scope="col" class="bg-surface-2 w-12">
+              <span class="sr-only">{m.common_favorite()}</span>
+            </th>
+          {/if}
         </tr>
       </thead>
       <tbody>
         {#each items as entry (keyOf(entry))}
           {@const item = itemView(entry)}
+          {@const on = selection.active && selection.has(entry)}
           <tr
-            class="border-border hover:bg-surface-2 [&:active:not(:has(button:active))]:bg-accent/10 cursor-pointer border-t transition-colors"
-            onclick={(e) => openRow(e, item.href)}
+            class="border-border [&:active:not(:has(button:active))]:bg-accent/10 has-[:focus-visible]:bg-surface-2 cursor-pointer border-t transition-[background-color,box-shadow] has-[:focus-visible]:shadow-[inset_3px_0_0_var(--color-accent)] {on
+              ? 'bg-accent/10'
+              : 'hover:bg-surface-2'}"
+            data-library-item={keyOf(entry)}
+            onclick={(e) => onRowClick(e, entry, item.href)}
             animate:flip={{ duration: reduced ? 0 : 250 }}
             in:fade|global={{ duration: reduced ? 0 : 150 }}
             out:fade={{ duration: reduced ? 0 : 100 }}>
+            {#if selection.active}
+              <td class="w-10 pl-3">{@render checkbox(entry, item.title)}</td>
+            {/if}
             {#each columns as column (column.label)}
               <td
                 class="px-3 align-middle {compact
@@ -161,7 +209,7 @@
                         : ''}">
                       <a
                         href={item.href}
-                        class="hover:text-accent font-semibold transition-colors">
+                        class="hover:text-accent font-semibold transition-colors focus-visible:outline-none">
                         {item.title}
                       </a>
                       {#if item.subtitle}
@@ -213,9 +261,11 @@
                 {/if}
               </td>
             {/each}
-            <td class="px-2 {compact ? 'py-0.5' : 'py-1'}">
-              {@render favorite(item)}
-            </td>
+            {#if !selection.active}
+              <td class="px-2 {compact ? 'py-0.5' : 'py-1'}">
+                {@render favorite(item)}
+              </td>
+            {/if}
           </tr>
         {/each}
       </tbody>
@@ -226,13 +276,22 @@
     class="border-border bg-surface divide-border divide-y overflow-hidden rounded-xl border">
     {#each items as entry (keyOf(entry))}
       {@const item = itemView(entry)}
+      {@const on = selection.active && selection.has(entry)}
+      <!-- The row click is a pointer shortcut: keyboard users reach the same
+           actions through the title link and the checkbox. -->
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
       <li
-        class="hover:bg-surface-2 [&:active:not(:has(button:active))]:bg-accent/10 relative flex items-center gap-3 px-3 transition-colors {compact
+        class="[&:active:not(:has(button:active))]:bg-accent/10 has-[:focus-visible]:bg-surface-2 relative flex items-center gap-3 px-3 transition-[background-color,box-shadow] has-[:focus-visible]:shadow-[inset_3px_0_0_var(--color-accent)] {compact
           ? 'py-2'
-          : 'py-2.5'}"
+          : 'py-2.5'} {on ? 'bg-accent/10' : 'hover:bg-surface-2'}"
+        data-library-item={keyOf(entry)}
+        onclick={(e) => onRowClick(e, entry, item.href)}
         animate:flip={{ duration: reduced ? 0 : 250 }}
         in:fade|global={{ duration: reduced ? 0 : 150 }}
         out:fade={{ duration: reduced ? 0 : 100 }}>
+        {#if selection.active}
+          {@render checkbox(entry, item.title)}
+        {/if}
         {#if !compact}
           <div class="w-9 shrink-0 overflow-hidden rounded">
             <Poster
@@ -245,7 +304,7 @@
         <div class="min-w-0 flex-1">
           <a
             href={item.href}
-            class="block truncate text-sm font-semibold after:absolute after:inset-0">
+            class="block truncate text-sm font-semibold after:absolute after:inset-0 focus-visible:outline-none">
             {item.title}
           </a>
           <p class="text-dim truncate font-mono text-xs">{rowMeta(item)}</p>
@@ -260,7 +319,9 @@
               class="mt-1.5" />
           {/if}
         </div>
-        <div class="relative z-1">{@render favorite(item)}</div>
+        {#if !selection.active}
+          <div class="relative z-1">{@render favorite(item)}</div>
+        {/if}
       </li>
     {/each}
   </ul>
