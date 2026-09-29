@@ -77,6 +77,7 @@ const MESSAGES = {
   [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
   [ErrorCode.LibrarySavedViewNotFound]: () =>
     m.apierr_library_saved_view_not_found(),
+  [ErrorCode.LibraryBulkInvalid]: () => m.apierr_library_bulk_invalid(),
   [ErrorCode.LibrarySavedViewFreeQuotaExceeded]: () =>
     m.apierr_library_saved_view_free_quota_exceeded({
       free: SAVED_VIEW_LIMITS.free,

@@ -5,6 +5,7 @@ export * from "./dto/admin";
 export * from "./dto/admin-stats";
 export * from "./dto/auth";
 export * from "./dto/book";
+export * from "./dto/bulk-entries";
 export * from "./dto/catalog";
 export * from "./dto/comment";
 export * from "./dto/config";

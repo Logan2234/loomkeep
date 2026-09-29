@@ -136,6 +136,7 @@ export const ErrorCode = {
   LibrarySavedViewNotFound: "library.saved_view_not_found",
   LibrarySavedViewFreeQuotaExceeded: "library.saved_view_free_quota_exceeded",
   LibrarySavedViewLimitReached: "library.saved_view_limit_reached",
+  LibraryBulkInvalid: "library.bulk_invalid",
 
   // catalog — item/person/provider codes are shared across every catalogue
   // source (TMDB, AniList, IGDB, Open Library, MusicBrainz)

@@ -47,6 +47,24 @@
         <Icon name={style.icon} class="h-3.5 w-3.5" />
       </span>
       <span class="flex-1 leading-snug">{t.message}</span>
+      {#if t.action}
+        {@const action = t.action}
+        {#if t.duration > 0}
+          <!-- How long is left to undo: runs out with the toast itself. -->
+          <span
+            class="toast-countdown bg-accent absolute inset-x-0 bottom-0 h-0.5 origin-left"
+            style="animation-duration: {t.duration}ms"></span>
+        {/if}
+        <button
+          type="button"
+          class="text-accent hover:bg-surface-2 shrink-0 rounded-md px-2 py-1 font-semibold transition-colors"
+          onclick={() => {
+            toast.dismiss(t.id);
+            action.run();
+          }}>
+          {action.label}
+        </button>
+      {/if}
       <button
         type="button"
         aria-label={m.common_close()}
@@ -57,3 +75,17 @@
     </div>
   {/each}
 </div>
+
+<style>
+  .toast-countdown {
+    animation-name: toast-countdown;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes toast-countdown {
+    to {
+      transform: scaleX(0);
+    }
+  }
+</style>

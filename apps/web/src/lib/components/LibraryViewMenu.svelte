@@ -13,9 +13,26 @@
   let {
     mode,
     onChange,
+    selecting,
+    onToggleSelecting,
+    columns,
+    onToggleColumn,
+    onResetColumns,
   }: {
     mode: LibraryViewMode;
     onChange: (mode: LibraryViewMode) => void;
+    /** Whether selection mode is on; undefined hides its entry. */
+    selecting?: boolean;
+    onToggleSelecting?: () => void;
+    /** The table's columns and whether each shows; undefined hides the section. */
+    columns?: {
+      key: string;
+      label: string;
+      visible: boolean;
+      locked: boolean;
+    }[];
+    onToggleColumn?: (key: string) => void;
+    onResetColumns?: () => void;
   } = $props();
 
   // Below md the table renders as rows, and the trigger drops its label.
@@ -65,25 +82,74 @@
     </button>
   {/snippet}
   {#snippet children({ close })}
-    <p
-      class="text-dim px-3 pt-2 pb-1 font-mono text-[0.65rem] tracking-widest uppercase">
-      {m.library_display()}
-    </p>
-    {#each LIBRARY_VIEW_MODES as value (value)}
-      <button
-        role="menuitem"
-        class="menu-item {value === mode ? 'text-fg font-semibold' : ''}"
-        aria-current={value === mode ? "true" : undefined}
-        onclick={() => {
-          close();
-          onChange(value);
-        }}>
-        <span class="text-accent grid h-4 w-4 place-items-center">
-          {#if value === mode}<Icon name="check" class="h-3.5 w-3.5" />{/if}
-        </span>
-        <Icon name={ICONS[value]} class="text-dim h-4 w-4" />
-        {label(value)}
-      </button>
-    {/each}
+    <!-- The panel caps its height to the viewport but clips what overflows:
+         with the columns listed, this menu needs its own scroll. -->
+    <div class="min-h-0 overflow-y-auto">
+      <p
+        class="text-dim px-3 pt-2 pb-1 font-mono text-[0.65rem] tracking-widest uppercase">
+        {m.library_display()}
+      </p>
+      {#each LIBRARY_VIEW_MODES as value (value)}
+        <button
+          role="menuitem"
+          class="menu-item {value === mode ? 'text-fg font-semibold' : ''}"
+          aria-current={value === mode ? "true" : undefined}
+          onclick={() => {
+            close();
+            onChange(value);
+          }}>
+          <span class="text-accent grid h-4 w-4 place-items-center">
+            {#if value === mode}<Icon name="check" class="h-3.5 w-3.5" />{/if}
+          </span>
+          <Icon name={ICONS[value]} class="text-dim h-4 w-4" />
+          {label(value)}
+        </button>
+      {/each}
+      {#if selecting !== undefined}
+        <div class="border-border my-1 border-t"></div>
+        <button
+          role="menuitem"
+          class="menu-item"
+          onclick={() => {
+            close();
+            onToggleSelecting?.();
+          }}>
+          <span class="grid h-4 w-4"></span>
+          <Icon name="check" class="text-dim h-4 w-4" />
+          {selecting ? m.library_select_done() : m.library_select_start()}
+        </button>
+      {/if}
+      {#if columns}
+        <div class="border-border my-1 border-t"></div>
+        <p
+          class="text-dim px-3 pt-2 pb-1 font-mono text-[0.65rem] tracking-widest uppercase">
+          {m.library_columns()}
+        </p>
+        {#each columns as column (column.key)}
+          <!-- Stays open on toggle, so several columns can be picked in a row. -->
+          <button
+            role="menuitemcheckbox"
+            class="menu-item"
+            aria-checked={column.visible}
+            disabled={column.locked}
+            onclick={() => onToggleColumn?.(column.key)}>
+            <span
+              class="grid h-4 w-4 place-items-center rounded border transition-colors {column.visible
+                ? 'border-accent bg-accent text-accent-fg'
+                : 'border-border'}">
+              {#if column.visible}<Icon name="check" class="h-3 w-3" />{/if}
+            </span>
+            {column.label}
+          </button>
+        {/each}
+        <button
+          role="menuitem"
+          class="menu-item text-accent font-semibold"
+          onclick={() => onResetColumns?.()}>
+          <span class="grid h-4 w-4"></span>
+          {m.library_columns_reset()}
+        </button>
+      {/if}
+    </div>
   {/snippet}
 </Dropdown>

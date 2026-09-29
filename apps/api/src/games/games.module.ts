@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
+import { ListsModule } from "../lists/list.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { GameItemService } from "./game-item.service";
@@ -16,6 +17,7 @@ import { IgdbProvider } from "./providers/igdb.provider";
     UsersModule,
     ReviewsModule,
     GamificationModule,
+    ListsModule,
     EventsModule,
     JobsModule,
   ],

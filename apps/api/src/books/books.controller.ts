@@ -1,4 +1,8 @@
-import type { PagedResult, PileSummaryDto } from "@loomkeep/shared";
+import type {
+  BulkEntriesResultDto,
+  PagedResult,
+  PileSummaryDto,
+} from "@loomkeep/shared";
 import {
   BookDetailDto,
   BookEditionDto,
@@ -26,6 +30,10 @@ import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
@@ -41,6 +49,7 @@ import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
 import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
 import { BookSearchResultResponseDto } from "./dto/book-search-response.dto";
+import { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { ReadingGoalResponseDto } from "./dto/reading-goal-response.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
@@ -156,6 +165,29 @@ export class BooksController {
     @Body() dto: UpdateBookEntryDto,
   ): Promise<BookEntryDto> {
     return this.bookLibraryService.updateEntry(user.sub, entryId, dto);
+  }
+
+  /** One change applied to many entries (UX-04), with a single update's side effects on each. */
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkUpdate(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkUpdateBookEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookLibraryService.bulkUpdate(user.sub, dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk-delete")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkDelete(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkEntriesTargetBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
+    return this.bookLibraryService.bulkDelete(user.sub, dto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

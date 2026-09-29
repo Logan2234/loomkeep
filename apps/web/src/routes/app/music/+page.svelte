@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getMusicPile, listMusic } from "$lib/api/client";
-  import { updateMusicEntry } from "$lib/api/music";
+  import {
+    bulkDeleteMusicEntries,
+    bulkUpdateMusicEntries,
+    updateMusicEntry,
+  } from "$lib/api/music";
   import type {
     LibraryLoadParams,
     PileLoadParams,
@@ -8,16 +12,19 @@
   import LibraryBrowser from "$lib/components/LibraryBrowser.svelte";
   import PosterCard from "$lib/components/PosterCard.svelte";
   import MusicSearchPanel from "$lib/components/search/MusicSearchPanel.svelte";
-  import { MUSIC_OWNERSHIP_STATUS_OPTIONS } from "$lib/constants/ownership-sources";
+  import {
+    MUSIC_OWNERSHIP_SOURCES,
+    MUSIC_OWNERSHIP_STATUS_OPTIONS,
+  } from "$lib/constants/ownership-sources";
   import {
     MUSIC_STATUS_LABELS,
     MUSIC_STATUS_META,
     MUSIC_STATUS_ORDER,
   } from "$lib/constants/status-labels";
-  import { toggleFavorite } from "$lib/favorite-toggle";
   import { DATE_MEDIUM_OPTIONS, formatDate } from "$lib/format";
   import {
     ownershipText,
+    type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
   } from "$lib/library-view";
@@ -39,33 +46,36 @@
   ];
 
   const setFavorite = (entry: MusicEntryDto, next: boolean) =>
-    toggleFavorite(entry, next, (n) =>
-      updateMusicEntry(entry.id, { favorite: n }),
-    );
+    updateMusicEntry(entry.id, { favorite: next });
 
   const itemView = (entry: MusicEntryDto): LibraryItemView => ({
     href: `/app/music/${entry.album.sourceId}`,
     title: entry.album.title,
     subtitle: entry.album.artists.join(", ") || null,
     imageUrl: entry.album.coverUrl,
-    status: MUSIC_STATUS_META[entry.status],
+    status: { value: entry.status, ...MUSIC_STATUS_META[entry.status] },
+    ownership: entry.ownershipStatus,
+    ownershipSource: entry.ownershipSource,
+    reviewTarget: { type: "MUSIC", id: entry.album.id },
     rating: entry.rating,
     favorite: entry.favorite,
-    onToggleFavorite: (next) => setFavorite(entry, next),
     progress: null,
   });
 
   const COLUMNS: LibraryColumn<MusicEntryDto>[] = [
-    { kind: "title", label: m.common_title(), sort: "title" },
-    { kind: "status", label: m.common_status(), sort: "status" },
+    { key: "title", kind: "title", label: m.common_title(), sort: "title" },
+    { key: "status", kind: "status", label: m.common_status(), sort: "status" },
     {
+      key: "rating",
       kind: "rating",
       label: m.library_rating(),
       sort: "rating",
       numeric: true,
     },
     {
+      key: "ownership",
       kind: "text",
+      ownership: true,
       label: m.ownership_title(),
       value: (e) =>
         ownershipText(
@@ -75,6 +85,7 @@
         ),
     },
     {
+      key: "listened",
       kind: "text",
       label: m.library_col_listened(),
       sort: "finished",
@@ -82,12 +93,40 @@
         e.finishedAt ? formatDate(e.finishedAt, DATE_MEDIUM_OPTIONS) : null,
     },
     {
+      key: "added",
       kind: "text",
       label: m.library_col_added(),
       sort: "added",
       value: (e) => formatDate(e.createdAt, DATE_MEDIUM_OPTIONS),
     },
+    {
+      key: "started",
+      kind: "text",
+      label: m.library_col_started(),
+      defaultHidden: true,
+      value: (e) =>
+        e.startedAt ? formatDate(e.startedAt, DATE_MEDIUM_OPTIONS) : null,
+    },
+    {
+      key: "notes",
+      kind: "text",
+      label: m.library_col_notes(),
+      defaultHidden: true,
+      truncate: true,
+      value: (e) => e.notes,
+    },
   ];
+
+  const BULK: LibraryBulkActions = {
+    statusOptions: STATUS_OPTIONS,
+    ownershipOptions: MUSIC_OWNERSHIP_STATUS_OPTIONS,
+    ownershipSources: MUSIC_OWNERSHIP_SOURCES,
+    update: (dto) =>
+      bulkUpdateMusicEntries(
+        dto as Parameters<typeof bulkUpdateMusicEntries>[0],
+      ),
+    remove: bulkDeleteMusicEntries,
+  };
 
   const load = (params: LibraryLoadParams) =>
     listMusic({
@@ -123,17 +162,22 @@
   sorts={SORTS}
   defaultSort="added"
   {itemView}
-  columns={COLUMNS}>
+  columns={COLUMNS}
+  bulk={BULK}
+  {setFavorite}>
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MusicSearchPanel {query} limit={10} {onResults} />
   {/snippet}
-  {#snippet card(entry: MusicEntryDto)}
+  {#snippet card(
+    entry: MusicEntryDto,
+    onToggleFavorite: (next: boolean) => void,
+  )}
     <PosterCard
       href={`/app/music/${entry.album.sourceId}`}
       src={entry.album.coverUrl}
       title={entry.album.title}
       favorite={entry.favorite}
-      onToggleFavorite={(next) => setFavorite(entry, next)}>
+      {onToggleFavorite}>
       {#snippet meta()}
         <span class="timecode text-xs">
           {MUSIC_STATUS_LABELS[entry.status]}{#if entry.rating !== null}

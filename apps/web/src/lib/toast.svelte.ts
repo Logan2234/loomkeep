@@ -1,9 +1,17 @@
 export type ToastVariant = "success" | "error" | "info";
 
+interface ToastAction {
+  label: string;
+  run: () => void;
+}
+
 interface ToastItem {
   id: number;
   message: string;
   variant: ToastVariant;
+  /** Milliseconds before it goes away on its own; 0 keeps it. */
+  duration: number;
+  action?: ToastAction;
 }
 
 // Global toast queue (rune store) — transient confirmations that don't need
@@ -12,9 +20,14 @@ class ToastStore {
   items = $state<ToastItem[]>([]);
   #nextId = 0;
 
-  show(message: string, variant: ToastVariant = "info", duration = 4000): void {
+  show(
+    message: string,
+    variant: ToastVariant = "info",
+    duration = 4000,
+    action?: ToastAction,
+  ): void {
     const id = this.#nextId++;
-    this.items.push({ id, message, variant });
+    this.items.push({ id, message, variant, duration, action });
 
     if (duration > 0) {
       setTimeout(() => this.dismiss(id), duration);

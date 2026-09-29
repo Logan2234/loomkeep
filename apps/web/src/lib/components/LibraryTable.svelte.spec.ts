@@ -1,4 +1,8 @@
-import type { LibraryColumn, LibraryItemView } from "$lib/library-view";
+import type {
+  LibraryColumn,
+  LibraryInlineEdit,
+  LibraryItemView,
+} from "$lib/library-view";
 import { m } from "$lib/paraglide/messages.js";
 import { render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
@@ -20,12 +24,48 @@ const ENTRIES: Entry[] = [
 ];
 
 const COLUMNS: LibraryColumn<Entry>[] = [
-  { kind: "title", label: "Titre", sort: "title" },
-  { kind: "status", label: "Statut", sort: "status" },
-  { kind: "text", label: "Possession", value: (e) => e.owned },
+  { key: "title", kind: "title", label: "Titre", sort: "title" },
+  { key: "status", kind: "status", label: "Statut", sort: "status" },
+  {
+    key: "ownership",
+    kind: "text",
+    label: "Possession",
+    value: (e) => e.owned,
+  },
 ];
 
-function renderTable(overrides: { sort?: string; reversed?: boolean } = {}) {
+const EDITABLE_COLUMNS: LibraryColumn<Entry>[] = [
+  ...COLUMNS.slice(0, 2),
+  { key: "rating", kind: "rating", label: "Note", numeric: true },
+  { ...COLUMNS[2], ownership: true } as LibraryColumn<Entry>,
+];
+
+function inlineEdit() {
+  return {
+    statusOptions: [
+      { label: "En cours", value: "READING" },
+      { label: "Lu", value: "READ" },
+    ],
+    ownershipOptions: [
+      { label: "Aucune", value: "NONE" },
+      { label: "Physique", value: "PHYSICAL" },
+      { label: "Numérique", value: "DIGITAL" },
+    ],
+    ownershipSources: { DIGITAL: ["Steam", "GOG"] },
+    save: vi.fn<LibraryInlineEdit<Entry>["save"]>(),
+    saved: null,
+    review: vi.fn<LibraryInlineEdit<Entry>["review"]>(),
+  } satisfies LibraryInlineEdit<Entry>;
+}
+
+function renderTable(
+  overrides: {
+    sort?: string;
+    reversed?: boolean;
+    edit?: LibraryInlineEdit<Entry>;
+    columns?: LibraryColumn<Entry>[];
+  } = {},
+) {
   const onSort = vi.fn();
   const onToggleFavorite = vi.fn();
   const itemView = (entry: Entry): LibraryItemView => ({
@@ -33,10 +73,12 @@ function renderTable(overrides: { sort?: string; reversed?: boolean } = {}) {
     title: entry.title,
     subtitle: "Série",
     imageUrl: null,
-    status: { label: "En cours", cls: "" },
+    status: { value: "READING", label: "En cours", cls: "" },
+    ownership: "NONE",
+    ownershipSource: null,
+    reviewTarget: { type: "BOOK", id: "item" },
     rating: null,
     favorite: entry.favorite,
-    onToggleFavorite: (next) => onToggleFavorite(entry.id, next),
     progress: null,
   });
   render(LibraryTable<Entry>, {
@@ -44,10 +86,21 @@ function renderTable(overrides: { sort?: string; reversed?: boolean } = {}) {
       items: ENTRIES,
       keyOf: (e) => e.id,
       itemView,
-      columns: COLUMNS,
+      columns: overrides.columns ?? COLUMNS,
+      edit: overrides.edit,
+      onToggleFavorite: (entry: Entry, next: boolean) =>
+        onToggleFavorite(entry.id, next),
       sort: overrides.sort ?? "title",
       reversed: overrides.reversed ?? false,
       onSort,
+      selection: {
+        active: false,
+        has: () => false,
+        toggle: () => {},
+        allLoaded: false,
+        someLoaded: false,
+        toggleLoaded: () => {},
+      },
     },
   });
   return { onSort, onToggleFavorite, user: userEvent.setup() };
@@ -100,5 +153,75 @@ describe("LibraryTable", () => {
 
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("changes a status in place from its menu, leaving the current one alone", async () => {
+    const edit = inlineEdit();
+    const { user } = renderTable({ edit, columns: EDITABLE_COLUMNS });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: m.library_edit_status({ title: "Severance" }),
+      }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Lu" }));
+
+    expect(edit.save).toHaveBeenCalledWith(ENTRIES[0], { status: "READ" });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: m.library_edit_status({ title: "Severance" }),
+      }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "En cours" }));
+    expect(edit.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("changes the ownership in place from its menu", async () => {
+    const edit = inlineEdit();
+    const { user } = renderTable({ edit, columns: EDITABLE_COLUMNS });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: m.library_edit_ownership({ title: "Past Lives" }),
+      }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Physique" }));
+
+    expect(edit.save).toHaveBeenCalledWith(ENTRIES[1], {
+      ownershipStatus: "PHYSICAL",
+      ownershipSource: null,
+    });
+  });
+
+  it("picks an ownership source from its status's submenu", async () => {
+    const edit = inlineEdit();
+    const { user } = renderTable({ edit, columns: EDITABLE_COLUMNS });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: m.library_edit_ownership({ title: "Past Lives" }),
+      }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: /Numérique/ }));
+    await user.click(screen.getByRole("menuitem", { name: "Steam" }));
+
+    expect(edit.save).toHaveBeenCalledWith(ENTRIES[1], {
+      ownershipStatus: "DIGITAL",
+      ownershipSource: "Steam",
+    });
+  });
+
+  it("opens the review form from an unrated row's +", async () => {
+    const edit = inlineEdit();
+    const { user } = renderTable({ edit, columns: EDITABLE_COLUMNS });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: m.library_rating_add({ title: "Past Lives" }),
+      }),
+    );
+
+    expect(edit.review).toHaveBeenCalledWith(ENTRIES[1]);
   });
 });

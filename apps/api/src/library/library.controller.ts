@@ -1,4 +1,5 @@
 import type {
+  BulkEntriesResultDto,
   CalendarEntryDto,
   EntryEpisodesResponseDto,
   EpisodeWatchDto,
@@ -25,11 +26,16 @@ import {
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
+import { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
 import { EntryEpisodesResponseResponseDto } from "./dto/entry-episodes-response.dto";
 import { EpisodeWatchResponseDto } from "./dto/episode-watch-response.dto";
@@ -137,6 +143,29 @@ export class LibraryController {
     @Body() dto: UpdateEntryDto,
   ): Promise<LibraryEntryDto> {
     return this.libraryService.updateEntry(user.sub, entryId, dto);
+  }
+
+  /** One change applied to many entries (UX-04), with a single update's side effects on each. */
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkUpdate(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkUpdateEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    return this.libraryService.bulkUpdate(user.sub, dto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("entries/bulk-delete")
+  @ApiOkResponse({ type: BulkEntriesResultResponseDto })
+  async bulkDelete(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkEntriesTargetBody,
+  ): Promise<BulkEntriesResultDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    return this.libraryService.bulkDelete(user.sub, dto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

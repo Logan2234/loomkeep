@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { joinMeta } from "$lib/format";
   import { m } from "$lib/paraglide/messages.js";
-  import Combobox from "./Combobox.svelte";
+  import Dropdown from "./Dropdown.svelte";
+  import Icon from "./Icon.svelte";
+  import OwnershipMenuItems from "./OwnershipMenuItems.svelte";
 
   // Possession status (physique/numérique/abonnement…/emprunté) plus an
   // optional free-form detail (e.g. "Steam", "Netflix") for whichever statuses
-  // the caller maps a preset list to. Picking "Autre…" in the detail dropdown
-  // reveals a text input for a value outside the presets.
-  const CUSTOM = "__custom__";
-
+  // the caller maps a preset list to — picked from one menu, the presets in a
+  // submenu of their status.
   let {
     status,
     source,
@@ -23,74 +23,46 @@
     onChange: (status: string, source: string | null) => void;
   } = $props();
 
-  const presets = $derived(sourceOptionsByStatus[status] ?? null);
-
-  let showCustomInput = $state(false);
-  let customText = $state("");
-
-  // Recomputed only when `status` changes (not on every `source` update), so
-  // picking "Autre…" isn't immediately overridden by the round-tripped null.
-  $effect(() => {
-    const s = status;
-    const presetsForStatus = sourceOptionsByStatus[s] ?? null;
-    const src = untrack(() => source);
-    const isCustom =
-      !!presetsForStatus && src !== null && !presetsForStatus.includes(src);
-    showCustomInput = isCustom;
-    customText = isCustom ? (src ?? "") : "";
-  });
-
-  function pickStatus(values: string[]) {
-    onChange(values[0], null);
-  }
-
-  function pickSource(values: string[]) {
-    const next = values[0];
-    if (next === CUSTOM) {
-      showCustomInput = true;
-      customText = "";
-    } else {
-      showCustomInput = false;
-      onChange(status, next);
-    }
-  }
-
-  function commitCustom(e: Event & { currentTarget: HTMLInputElement }) {
-    const trimmed = e.currentTarget.value.trim();
-    customText = trimmed;
-    onChange(status, trimmed === "" ? null : trimmed);
-  }
+  const current = $derived(
+    joinMeta(
+      statusOptions.find((option) => option.value === status)?.label ?? status,
+      source,
+    ),
+  );
 </script>
 
 <div class="flex flex-col gap-2">
   <span class="timecode text-[0.62rem] tracking-[0.18em] uppercase">
     {m.ownership_title()}
   </span>
-  <div class="flex flex-wrap items-center gap-2">
-    <Combobox
-      label={m.common_status()}
-      options={statusOptions}
-      values={[status]}
-      onChange={pickStatus} />
-    {#if presets}
-      <Combobox
-        label={m.common_detail()}
-        options={[
-          ...presets.map((p) => ({ label: p, value: p })),
-          { label: m.ownership_other(), value: CUSTOM },
-        ]}
-        values={[showCustomInput ? CUSTOM : (source ?? "")]}
-        onChange={pickSource} />
-    {/if}
-  </div>
-  {#if presets && showCustomInput}
-    <input
-      type="text"
-      name="source"
-      class="input"
-      maxlength="100"
-      placeholder={m.ownership_source_placeholder()}
-      value={customText}
-      onchange={commitCustom} />
-  {/if}
+  <Dropdown placement="bottom-start" role="menu" class="min-w-52">
+    {#snippet trigger({ open, toggle, onkeydown })}
+      <button
+        type="button"
+        class="border-border text-fg hover:border-accent inline-flex max-w-full items-center gap-1.5 self-start rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors"
+        aria-label={`${m.ownership_title()} : ${current}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        {onkeydown}
+        onclick={toggle}>
+        <span class="truncate">{current}</span>
+        <Icon
+          name="chevron-right"
+          class="h-3.5 w-3.5 transition-transform {open
+            ? 'rotate-270'
+            : 'rotate-90'}" />
+      </button>
+    {/snippet}
+    {#snippet children({ close })}
+      <OwnershipMenuItems
+        options={statusOptions}
+        sourcesByStatus={sourceOptionsByStatus}
+        {status}
+        {source}
+        onPick={(nextStatus, nextSource) => {
+          close();
+          onChange(nextStatus, nextSource);
+        }} />
+    {/snippet}
+  </Dropdown>
 </div>
