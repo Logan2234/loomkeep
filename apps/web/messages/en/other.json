@@ -1770,5 +1770,20 @@
   "library_edit_status": "Change the status of {title}",
   "library_edit_ownership": "Change how you own {title}",
   "library_rating_short": "Rate",
-  "ownership_unspecified": "Unspecified"
+  "ownership_unspecified": "Unspecified",
+  "quick_add_from_link": "Recognized link · {site}",
+  "quick_add_seen": "Already seen",
+  "quick_add_series_seen_hint": "Episodes aired so far will be marked as watched.",
+  "quick_add_tracked": "Already in your library · {status}",
+  "quick_add_book_progress": "p. {page} / {total}",
+  "quick_add_lists_hint": "Also add to lists (optional)",
+  "quick_add_no_list": "none",
+  "quick_add_open": "Open the page",
+  "quick_add_done_title": "{title} is in your library",
+  "quick_add_saved_title": "Changes saved",
+  "quick_add_done_status": "Status: {status}.",
+  "quick_add_done_status_lists": "Status: {status}. Lists: {lists}.",
+  "quick_add_back_hint": "Your phone's back button takes you back to the app you shared from.",
+  "quick_add_undo": "Undo adding",
+  "quick_add_undone": "Addition undone"
 }

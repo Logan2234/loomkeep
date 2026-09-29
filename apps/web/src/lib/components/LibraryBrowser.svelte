@@ -782,7 +782,7 @@
         onChange={(v) => (statuses = v)} />
       <button
         class="{favoritesOnly
-          ? 'border-accent bg-accent text-accent-fg hover:text-accent-fg'
+          ? 'border-accent text-accent'
           : 'border-border text-dim hover:text-fg'} inline-flex items-center gap-0.5 rounded-lg border px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors"
         onclick={() => (favoritesOnly = !favoritesOnly)}>
         <Icon name="star" class="h-3.5 w-3.5" />&nbsp;

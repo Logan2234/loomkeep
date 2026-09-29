@@ -1770,5 +1770,20 @@
   "library_edit_status": "Changer le statut de {title}",
   "library_edit_ownership": "Changer la possession de {title}",
   "library_rating_short": "Noter",
-  "ownership_unspecified": "Sans précision"
+  "ownership_unspecified": "Sans précision",
+  "quick_add_from_link": "Lien reconnu · {site}",
+  "quick_add_seen": "Déjà vu",
+  "quick_add_series_seen_hint": "Les épisodes déjà diffusés seront marqués vus.",
+  "quick_add_tracked": "Déjà dans ta bibliothèque · {status}",
+  "quick_add_book_progress": "p. {page} / {total}",
+  "quick_add_lists_hint": "Ajouter aussi à des listes (facultatif)",
+  "quick_add_no_list": "aucune",
+  "quick_add_open": "Voir la fiche",
+  "quick_add_done_title": "{title} est dans ta bibliothèque",
+  "quick_add_saved_title": "Modifications enregistrées",
+  "quick_add_done_status": "Statut : {status}.",
+  "quick_add_done_status_lists": "Statut : {status}. Listes : {lists}.",
+  "quick_add_back_hint": "Le bouton retour de ton téléphone te ramène à l'appli d'où tu as partagé.",
+  "quick_add_undo": "Annuler l'ajout",
+  "quick_add_undone": "Ajout annulé"
 }
