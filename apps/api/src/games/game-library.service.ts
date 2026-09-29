@@ -391,6 +391,7 @@ export class GameLibraryService {
         status: true,
         favorite: true,
         ownershipStatus: true,
+        ownershipSource: true,
       },
     });
     return applyBulkUpdate(

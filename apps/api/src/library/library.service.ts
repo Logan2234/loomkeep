@@ -470,6 +470,7 @@ export class LibraryService {
         status: true,
         favorite: true,
         ownershipStatus: true,
+        ownershipSource: true,
         mediaItem: { select: { type: true } },
       },
     });
@@ -482,6 +483,7 @@ export class LibraryService {
         status: e.status,
         favorite: e.favorite,
         ownershipStatus: e.ownershipStatus,
+        ownershipSource: e.ownershipSource,
       })),
       dto,
       {

@@ -415,6 +415,7 @@ export class BookLibraryService {
         status: true,
         favorite: true,
         ownershipStatus: true,
+        ownershipSource: true,
       },
     });
     return applyBulkUpdate(

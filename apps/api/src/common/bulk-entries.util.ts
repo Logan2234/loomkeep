@@ -17,6 +17,7 @@ export interface BulkEntryRow {
   status: string;
   favorite: boolean;
   ownershipStatus: string;
+  ownershipSource: string | null;
 }
 
 /** The entry fields a bulk update writes through the domain's own updateEntry. */
@@ -24,7 +25,7 @@ export interface BulkEntryPatch {
   status?: string;
   favorite?: boolean;
   ownershipStatus?: string;
-  ownershipSource?: null;
+  ownershipSource?: string | null;
 }
 
 /** Rejects a bulk request that doesn't name exactly one target. */
@@ -41,8 +42,13 @@ export function assertBulkTarget(dto: BulkEntriesTargetDto): void {
 export function assertBulkUpdate(dto: BulkUpdateEntriesDto): void {
   assertBulkTarget(dto);
   const actions = [dto.status, dto.ownershipStatus, dto.favorite, dto.listId];
+  const strayOwnershipSource =
+    dto.ownershipSource !== undefined && dto.ownershipStatus === undefined;
 
-  if (actions.filter((action) => action !== undefined).length !== 1) {
+  if (
+    strayOwnershipSource ||
+    actions.filter((action) => action !== undefined).length !== 1
+  ) {
     throw new AppException(
       HttpStatus.BAD_REQUEST,
       ErrorCode.LibraryBulkInvalid,
@@ -100,11 +106,17 @@ export function applyBulkUpdate(
     }
 
     if (dto.ownershipStatus !== undefined) {
-      if (entry.ownershipStatus === dto.ownershipStatus) return false;
-      // The source ("Netflix") described the previous way of owning it.
+      // Without a source, any previous one ("Netflix") goes: it described
+      // the former way of owning the work.
+      const source = dto.ownershipSource ?? null;
+      if (
+        entry.ownershipStatus === dto.ownershipStatus &&
+        entry.ownershipSource === source
+      )
+        return false;
       await ops.update(entry.id, {
         ownershipStatus: dto.ownershipStatus,
-        ownershipSource: null,
+        ownershipSource: source,
       });
       return true;
     }

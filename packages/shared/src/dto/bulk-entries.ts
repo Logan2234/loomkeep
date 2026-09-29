@@ -26,6 +26,8 @@ export interface BulkUpdateEntriesDto<
 > extends BulkEntriesTargetDto {
   status?: Status;
   ownershipStatus?: Ownership;
+  /** The detail that goes with `ownershipStatus` ("Netflix"); cleared when omitted. */
+  ownershipSource?: string | null;
   favorite?: boolean;
   /** Adds the entries' works to this list. */
   listId?: string;
